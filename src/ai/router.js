@@ -4,57 +4,163 @@ const { Mistral } = require('@mistralai/mistralai');
 // SYSTEM PROMPTS
 // ============================================
 
-const PARSE_TMDB_FILTERS_PROMPT = `
-Sei un assistente per un catalogo cinematografico (API TheMovieDB).
-Il tuo obiettivo è leggere la richiesta utente ed estrarne i filtri di ricerca in formato JSON.
+const ADVANCED_AI_SYSTEM_PROMPT = `You are a TMDB Query Architect. Your job is to convert user input into precise API parameters. Current Year: ${new Date().getFullYear()}.
 
-Esempio:
-Utente: "Commedie romantiche natalizie"
-JSON Output:
-{
-    "genre_ids": "35,10749",
-    "keyword": "christmas"
+### DECISION LOGIC (FOLLOW STRICTLY):
+1. **STRATEGY: "similar"**
+   - TRIGGER: User asks for recommendations similar to a specific title.
+   - KEYWORDS: "tipo", "simile a", "stile", "like", "similar to", "se mi piace".
+   - ACTION: Extract the reference title into 'similar_to'.
+
+2. **STRATEGY: "discovery"** (The Builder)
+   - TRIGGER: User describes attributes (Genre, Actor, Year, Plot, Vibe) BUT does not name a specific movie title to watch.
+   - INDICATORS:
+     - Genre mentions ("Horror", "Comedy", "Anime").
+     - People mentions ("con Brad Pitt", "di Nolan").
+     - Time periods ("anni 80", "2023", "vecchi").
+     - Plot keywords ("sui viaggi nel tempo", "alieni").
+   - ACTION: Map all constraints to filters (genre_ids, people_list, year_from, etc).
+
+3. **STRATEGY: "multi_search"** (The Finder)
+   - TRIGGER: User provides a specific Name/Title and wants to find THAT exact entity.
+   - EXAMPLES: "Matrix", "Breaking Bad", "Stranger Things", "Il Padrino".
+
+### PARAMETER EXTRACTION RULES:
+- **KEYWORDS**: You MUST map specific Italian concepts to these EXACT English keywords. Do NOT invent new ones.
+   - "natalizia", "natale" -> "christmas"
+   - "balene" -> "whale"
+   - "isekai" -> "isekai"
+   - "anime" -> "anime"
+   - "kdrama", "k-drama" -> "kdrama"
+   - "zodiacali", "zodiaco" -> "zodiac"
+   - "robot", "mecha" -> "robot"
+   - "alieni", "alieno" -> "alien"
+   - "fantasmi", "fantasma" -> "ghost"
+   - "maghi", "mago" -> "wizard"
+   - "draghi", "drago" -> "dragon"
+   - "mostri", "mostro" -> "monster"
+   - "animali" -> "animal"
+   - "bambini" -> "children"
+   - "zombie" -> "zombie"
+   - "viaggi nel tempo" -> "time travel"
+   - "cyberpunk" -> "cyberpunk"
+   - "steampunk" -> "steampunk"
+   - "squali", "squalo" -> "shark"
+   - "vampiri", "vampiro" -> "vampire"
+   - "pirati", "pirata" -> "pirate"
+   - "apocalisse", "post-apocalittico" -> "apocalypse"
+   - "ninja" -> "ninja"
+   - "samurai" -> "samurai"
+   - "spionaggio", "spie" -> "spy"
+   - "supereroi", "supereroe" -> "superhero"
+   - For other topics, translate to the closest simple English noun.
+
+- **MOOD/GENRE**: Map adjectives to GENRE IDs (e.g., "divertente" -> 35, "azione" -> 28, "avventura" -> 12, "animazione" -> 16).
+- **PEOPLE**: Remove prepositions like "con", "di", "starring" before extracting names.
+
+- **LANGUAGE PREFERENCE**:
+   - "in inglese", "in english" (metadata/audio) -> "language": "en-US"
+   - "tradotti in italiano", "in italiano" (metadata) -> "language": "it-IT"
+   - "film italiani" (production) -> "original_language": "it"
+   - "film americani" (production) -> "original_language": "en"
+
+### EXAMPLES (FEW-SHOT):
+// 1. Similarità diretta
+- Query: "Film tipo Interstellar" -> { "strategy": "similar", "similar_to": "Interstellar" }
+
+// 2. Ricerca specifica (Titolo esatto)
+- Query: "Breaking Bad" -> { "strategy": "multi_search", "text_search": "Breaking Bad" }
+
+// 3. Discovery Complessa: Genere + Anno + Attore
+- Query: "Film thriller anni 90 con Brad Pitt" -> { 
+    "strategy": "discovery", 
+    "genre_ids": [53], 
+    "people_list": ["Brad Pitt"], 
+    "year_from": "1990", 
+    "year_to": "1999" 
 }
 
-Restituisci ESCLUSIVAMENTE un blocco JSON valido con questi campi (usali solo se esplicitati dalla richiesta):
-- "genre_ids": (stringa di id separati da virgola. Azione=28, Avventura=12, Animazione=16, Commedia=35, Crime=80, Documentario=99, Dramma=18, Famiglia=10751, Fantasy=14, Storia=36, Horror=27, Musica=10402, Mistero=9648, Romance=10749, Fantascienza=878, TV Movie=10770, Thriller=53, Guerra=10752, Western=37)
-- "primary_release_year": (numero intero)
-- "primary_release_date.gte": (data stringa YYYY-MM-DD per indicare un decennio "anni 80" faresti .gte 1980-01-01 e .lte 1989-12-31)
-- "primary_release_date.lte": (data stringa YYYY-MM-DD)
-- "sort_by": (stringa, e.g. "popularity.desc", "vote_average.desc", "revenue.desc") - DEFAULT A "popularity.desc"
-
-Se l'utente parla di un tema o keyword generico (es: "alieni", "spazio", "babbi natale", "zombie"), non devi farti problemi, puoi inserire "keyword": "stringa". Esempio: "alien". 
-(Il backend poi sbroglierà la keyword in tmdb ID, tu scrivi solo la parola chiave in INGLESE).
-
-Non aggiungere commenti o testo fuori dal blocco JSON.
-`;
-
-const ROUTER_PROMPT = `
-Sei un router intelligente per un catalogo multimediale Stremio.
-Hai tre database a disposizione:
-1) "TMDB" (Perfetto per Film di Hollywood, Serie TV generali, registi, attori, generi).
-2) "KITSU" (Perfetto per ANIME, Manga, roba giapponese/otaku).
-3) "TRAKT" (Usa solo se chiede esplicitamente trending globali o "Cose più viste").
-
-Leggi la richiesta utente e decidi la destinazione migliore ("target"). 
-Se il target è TMDB, estrai una search string ("query"). Se per KITSU, usa "query".
-Rispondi SOLO in JSON:
-{
-  "target": "tmdb" | "kitsu" | "trakt",
-  "query": "stringa da cercare (lascia vuoto se non serve search diretta)"
+// 4. Discovery: Keyword + Lingua (Nicchia)
+- Query: "Film coreani di zombie recenti" -> { 
+    "strategy": "discovery", 
+    "keyword": "zombie", 
+    "genre_ids": [27], 
+    "original_language": "ko", 
+    "year_from": "2020" 
 }
-`;
 
+// 5. Discovery: Provider Streaming + Mood
+- Query: "Commedie romantiche su Netflix" -> { 
+    "strategy": "discovery", 
+    "genre_ids": [35, 10749], 
+    "watch_provider": "netflix"
+}
+
+### RESPONSE FORMAT (JSON ONLY):
+{
+  "strategy": "discovery" | "multi_search" | "similar",
+  "similar_to": "string" | null,
+  "text_search": "string" | null,
+  "genre_ids": [12, 16] | null,
+  "people_list": ["string"] | null,
+  "year_from": "YYYY" | null,
+  "year_to": "YYYY" | null,
+  "runtime_lte": 120 | null, 
+  "company_name": "string" | null,
+  "watch_provider": "netflix" | "amazon" | "disney" | "apple" | null,
+  "keyword": "string" | null,
+  "original_language": "en" | "it" | "ja" | "ko" | null,
+  "language": "it-IT" | "en-US" | "es-ES" | "fr-FR" | null,
+  "target": "tmdb" | "kitsu" | "trakt"
+}`;
 
 // ============================================
 // FUNCTIONS
 // ============================================
 
 /**
- * Utilizzato durante la fase di CONFIG per le liste custom.
+ * Pulisce la risposta JSON di Mistral da markdown e fallback
+ */
+function parseMistralResponse(content, originalPrompt) {
+    let jsonContent = content;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) jsonContent = jsonMatch[0];
+
+    try {
+        const parsed = JSON.parse(jsonContent);
+
+        // Safeguards
+        if (parsed.strategy === 'discovery' && !parsed.keyword && !parsed.genre_ids && !parsed.people_list && parsed.text_search) {
+            parsed.keyword = parsed.text_search;
+        }
+        if (parsed.strategy === 'multi_search' && (originalPrompt.includes(' con ') || originalPrompt.includes(' di '))) {
+            parsed.strategy = 'discovery';
+            if (!parsed.people_list) {
+                const name = originalPrompt.split(/ con | di /i)[1];
+                if (name) parsed.people_list = [name.trim()];
+            }
+        }
+
+        // Determina il target primario a meno che non sia esplicito l'anime
+        if (!parsed.target) {
+            const isAnime = originalPrompt.toLowerCase().includes('anime') || originalPrompt.toLowerCase().includes('manga');
+            parsed.target = isAnime ? 'kitsu' : 'tmdb';
+        }
+
+        return parsed;
+    } catch (err) {
+        console.error("Errore Parsing JSON Mistral:", err.message);
+        return { strategy: "multi_search", text_search: originalPrompt, target: "tmdb" };
+    }
+}
+
+/**
+ * Utilizzato durante la fase di CONFIG per le liste custom e anche per live search di Stremio.
+ * Mappa la richiesta libera dell'utente ai parametri TMDB basandosi sulle regole avanzate.
+ * 
  * @param {string} prompt "Film horror anni 80 sulle navi"
  * @param {string} mistralKey La chiave mistral dell'utente
- * @returns Object (Filtri TMDB JSON)
+ * @returns Object (Filtri JSON intelligenti)
  */
 async function generateTmdbFiltersFromPrompt(prompt, mistralKey) {
     try {
@@ -63,45 +169,35 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey) {
         const response = await client.chat.complete({
             model: "mistral-small-latest",
             messages: [
-                { role: "system", content: PARSE_TMDB_FILTERS_PROMPT },
-                { role: "user", content: prompt }
+                { role: "system", content: ADVANCED_AI_SYSTEM_PROMPT },
+                { role: "user", content: `QUERY: "${prompt}"` }
             ],
-            response_format: { type: "json_object" }
+            response_format: { type: "json_object" },
+            temperature: 0.1 // Manteniamo la confidenza alta e le allucinazioni basse
         });
 
         const rawJson = response.choices[0].message.content;
-        return JSON.parse(rawJson);
+        return parseMistralResponse(rawJson, prompt);
     } catch (err) {
-        console.error("Errore Fallback in generateTmdbFiltersFromPrompt (ritorno vuoto):", err.message);
-        return { sort_by: "popularity.desc" }; // Filtro fallback di sicurezza
+        console.error("Errore Fallback in AI (ritorno parametri base):", err.message);
+        return { strategy: "discovery", sort_by: "popularity.desc", target: "tmdb" };
     }
 }
 
 /**
  * Utilizzato durante la live search di Stremio per decidere dove instradare la query AI Libera.
- * @param {string} searchQuery La ricerca battuta in stremio
- * @param {string} mistralKey 
- * @returns Object { target: string, query: string }
+ * Abbiamo unificato la logica usando l'ADVANCED prompt perché ci dà anche le keywords e le strategie, 
+ * ma manteniamo questa firma di funzione isolando solo target e query base per retrocompatibilità.
  */
 async function routeLiveStremioSearch(searchQuery, mistralKey) {
-    try {
-        const client = new Mistral({ apiKey: mistralKey });
+    const filters = await generateTmdbFiltersFromPrompt(searchQuery, mistralKey);
 
-        const response = await client.chat.complete({
-            model: "mistral-small-latest",
-            messages: [
-                { role: "system", content: ROUTER_PROMPT },
-                { role: "user", content: searchQuery }
-            ],
-            response_format: { type: "json_object" }
-        });
-
-        const rawJson = response.choices[0].message.content;
-        return JSON.parse(rawJson);
-    } catch (err) {
-        console.error("Errore Router AI, fallback su TMDB Search:", err.message);
-        return { target: "tmdb", query: searchQuery };
-    }
+    // Convertiamo i filtri avanzati nel formato target/query atteso dal catalogHandler
+    return {
+        target: filters.target || "tmdb",
+        query: filters.text_search || filters.keyword || searchQuery,
+        filters: filters // Passiamo anche i filtri avanzati per future integrazioni nel client tmdb.js
+    };
 }
 
 module.exports = {

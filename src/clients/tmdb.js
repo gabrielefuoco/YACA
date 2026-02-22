@@ -12,13 +12,35 @@ const createTmdbClient = (apiKey) => axios.create({
     timeout: 10000
 });
 
+const idNameCache = new Map();
+
+/**
+ * Traduce una stringa (es. nome attore o keyword) nel suo ID TMDB effettuando una fetch al volo
+ */
+async function getTmdbIdByName(apiKey, endpoint, query) {
+    if (!query) return null;
+    const cacheKey = `${endpoint}:${query.toLowerCase()}`;
+    if (idNameCache.has(cacheKey)) return idNameCache.get(cacheKey);
+
+    try {
+        const client = createTmdbClient(apiKey);
+        const res = await client.get(`/search/${endpoint}`, { params: { query } });
+        const id = res.data?.results?.[0]?.id || null;
+        if (id) idNameCache.set(cacheKey, id);
+        return id;
+    } catch (e) {
+        console.error(`Errore getTmdbIdByName (${endpoint} - ${query}):`, e.message);
+        return null;
+    }
+}
+
 /**
  * Trasforma il risultato raw di TMDB nel formato Stremio Meta Preview.
  */
 function toStremioMetaItem(tmdbItem, type) {
     if (!tmdbItem) return null;
 
-    const id = `tmdb:${tmdbItem.id}`;
+    const id = `tmdb: ${tmdbItem.id} `;
     const year = tmdbItem.release_date ? tmdbItem.release_date.split('-')[0] : (tmdbItem.first_air_date ? tmdbItem.first_air_date.split('-')[0] : '');
 
     return {
@@ -122,5 +144,6 @@ async function getTmdbMetaDetails(apiKey, id, type) {
 module.exports = {
     createTmdbClient, // Esportato in caso serva passare chiavi specifiche
     fetchTmdbCatalog,
-    getTmdbMetaDetails
+    getTmdbMetaDetails,
+    getTmdbIdByName
 };

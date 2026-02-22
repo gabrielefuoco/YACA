@@ -84,7 +84,7 @@ function parseExtra(extraString) {
 }
 
 // 4. Endpoint per i Cataloghi Stremio
-app.get('/:uuid/catalog/:type/:id/:extra?.json', async (req, res) => {
+app.get(['/:uuid/catalog/:type/:id.json', '/:uuid/catalog/:type/:id/:extra.json'], async (req, res) => {
     const { uuid, type, id, extra: extraStr } = req.params;
     const extra = parseExtra(extraStr);
 
