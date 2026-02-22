@@ -9,6 +9,7 @@ const configureRoute = require('./src/api/configure');
 const UserConfig = require('./src/models/UserConfig');
 const { catalogHandler } = require('./src/handlers/catalogHandler');
 const { metaHandler } = require('./src/handlers/metaHandler');
+const presets = require('./src/data/presets');
 
 // 1. Inizializza Express
 const app = express();
@@ -20,6 +21,11 @@ app.use(express.json());
 
 // Inizializza Supabase Client
 initSupabase();
+
+// Endpoint per recuperare i preset disponibili
+app.get('/api/presets', (req, res) => {
+    res.json({ presets: presets.presets, profileTemplates: presets.profileTemplates });
+});
 
 // 2. Registra endpoint configuration (Frontend Web Web)
 app.post('/api/configure', configureRoute);
@@ -73,14 +79,26 @@ app.get('/:uuid/manifest.json', async (req, res) => {
             }
         };
 
-        // Inietta Dinamicamente i cataloghi personalizzati (Prompt dell'utente)
-        if (userConfig.catalogs && userConfig.catalogs.length > 0) {
-            for (const cat of userConfig.catalogs) {
-                // Aggiungiamo il catalogo custom per i Film. (Opzionalmente potremmo fare series/anime in futuro in base al prompt)
+        let activeProfileCatalogs = [];
+        if (userConfig.profiles && userConfig.activeProfileId) {
+            const profile = userConfig.profiles.find(p => p.id === userConfig.activeProfileId);
+            if (profile && profile.catalogs) {
+                activeProfileCatalogs = profile.catalogs;
+            }
+        } else if (userConfig.catalogs) {
+            // Retrocompatibilità per configurazioni senza profili
+            activeProfileCatalogs = userConfig.catalogs;
+        }
+
+        // Inietta Dinamicamente i cataloghi personalizzati (Prompt dell'utente) e i Preset
+        if (activeProfileCatalogs.length > 0) {
+            for (const cat of activeProfileCatalogs) {
+                const isPreset = cat.id.startsWith('yaca_preset_');
+                // Aggiungiamo il catalogo al manifest. Per i preset usiamo il loro tipo, per l'AI default 'movie' per ora
                 manifest.catalogs.unshift({
                     id: cat.id,
-                    type: 'movie',
-                    name: `AI: ${cat.name}`
+                    type: cat.type || 'movie',
+                    name: isPreset ? cat.name : `AI: ${cat.name}`
                 });
             }
         }

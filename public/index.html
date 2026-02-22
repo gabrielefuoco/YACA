@@ -85,8 +85,8 @@
                     <!-- Mistral Key -->
                     <div class="space-y-1">
                         <label for="mistralKey" class="block text-sm font-medium text-gray-400">Mistral API Key <span
-                                class="text-red-500">*</span></label>
-                        <input type="password" id="mistralKey" required
+                                class="text-gray-500 font-normal text-xs">(Opz. per i Preset)</span></label>
+                        <input type="password" id="mistralKey"
                             class="w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600"
                             placeholder="Inserisci la chiave Mistral">
                     </div>
@@ -95,7 +95,7 @@
 
             <hr class="border-dark-700">
 
-            <!-- Trakt Integration (Placeholder for next implementation step) -->
+            <!-- Trakt Integration -->
             <div class="space-y-4">
                 <h2 class="text-lg font-semibold text-white flex items-center">
                     <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-red-500">2</span>
@@ -116,14 +116,78 @@
 
             <hr class="border-dark-700">
 
+            <!-- Profiles Section -->
+            <div class="space-y-4">
+                <h2 class="text-lg font-semibold text-white flex items-center">
+                    <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-purple-400">3</span>
+                    Gestione Profili
+                </h2>
+                <p class="text-sm text-gray-400">Dividi i tuoi cataloghi per tipologia. Cambia in tempo reale cosa
+                    vedere su Stremio scegliendo il profilo Attivo.</p>
+
+                <div class="bg-dark-900 border border-dark-700 rounded-lg p-4 relative overflow-hidden">
+                    <div
+                        class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4 relative z-10">
+                        <select id="profileSelect"
+                            class="bg-dark-800 border border-dark-600 outline-none text-white text-sm rounded-lg focus:ring-stremio focus:border-stremio block w-full sm:w-auto p-2.5 min-w-[200px] cursor-pointer shadow-sm"></select>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button type="button" id="newProfileBtn"
+                                class="flex-1 sm:flex-none text-xs bg-dark-800 hover:bg-dark-700 text-white py-2 px-3 rounded border border-dark-600 transition-colors shadow-sm">+
+                                Nuovo</button>
+                            <button type="button" id="deleteProfileBtn"
+                                class="flex-1 sm:flex-none text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 py-2 px-3 rounded transition-colors hidden">Elimina</button>
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex flex-col sm:flex-row items-start sm:items-center gap-3 border-t border-dark-700 pt-4 relative z-10">
+                        <input type="text" id="profileNameInput"
+                            class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-stremio text-sm flex-1 w-full placeholder-gray-500 font-bold shadow-sm"
+                            placeholder="Nome Profilo">
+                        <button type="button" id="activateProfileBtn"
+                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded transition-colors whitespace-nowrap shadow-sm">Rendi
+                            Attivo</button>
+                    </div>
+                </div>
+
+                <!-- Template Selector -->
+                <div id="profileTemplateSelector"
+                    class="hidden mt-2 p-4 bg-stremio/10 border border-stremio/30 rounded-lg animate-fade-in shadow-inner">
+                    <p class="text-xs text-gray-300 font-medium mb-3">Scegli un modello rapido per riempire i cataloghi
+                        di questo profilo in un clic:</p>
+                    <div id="templateButtons" class="flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+
+            <hr class="border-dark-700">
+
+            <!-- Presets Section -->
+            <div class="space-y-4">
+                <h2 class="text-lg font-semibold text-white flex items-center">
+                    <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-blue-400">4</span>
+                    Cataloghi Curati (Zero Costi AI)
+                </h2>
+                <p class="text-sm text-gray-400">Questi cataloghi sono pre-impostati e richiamano TMDB in modo nativo.
+                    Non consumano token Mistral.</p>
+                <div id="presetFilters" class="flex flex-wrap gap-2 mt-4 hidden">
+                    <!-- Popolati via JS -->
+                </div>
+                <div id="presetsContainer" class="space-y-5 mt-4">
+                    <!-- Popolati via JS -->
+                    <div class="text-center text-sm text-gray-500">Caricamento preset...</div>
+                </div>
+            </div>
+
+            <hr class="border-dark-700">
+
             <!-- AI Catalogs Section -->
             <div class="space-y-4">
                 <h2 class="text-lg font-semibold text-white flex items-center">
-                    <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-green-400">3</span>
+                    <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-green-400">5</span>
                     Cataloghi AI Dinamici
                 </h2>
                 <p class="text-sm text-gray-400">Descrivi cosa vuoi vedere nella Home di Stremio. L'AI genererà listini
-                    perfetti per te.</p>
+                    perfetti per te. (Richiede Mistral Key).</p>
 
                 <div id="catalogList" class="space-y-3">
                     <div class="catalog-item flex gap-2">
@@ -186,91 +250,382 @@
     <script>
         let currentUuid = new URLSearchParams(window.location.search).get('uuid');
 
-        // On Load: If UUID is present, load existing config
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (currentUuid) {
-                try {
-                    const res = await fetch(`/api/configure/${currentUuid}`);
-                    if (res.ok) {
-                        const config = await res.json();
+        let availablePresets = [];
+        let profileTemplates = [];
+        let groupedPresets = {};
+        let activeCategory = null;
 
-                        // Populate basic API Keys
-                        if (config.apiKeys) {
-                            document.getElementById('tmdbKey').value = config.apiKeys.tmdb || '';
-                            document.getElementById('mistralKey').value = config.apiKeys.mistral || '';
-                            document.getElementById('traktUsername').value = config.apiKeys.trakt || '';
-                        }
+        let profiles = [{ id: 'default', name: 'Generale', raw_ui_state: { selectedPresets: [], newPrompts: [] }, existingCatalogs: [] }];
+        let activeProfileId = 'default';
+        let editingProfileId = 'default';
 
-                        // Populate AI Catalogs
-                        if (config.catalogs && config.catalogs.length > 0) {
-                            const list = document.getElementById('catalogList');
-                            list.innerHTML = ''; // Clear default empty input
+        // Estrae l'oggetto profilo in editing
+        const getEditingProfile = () => profiles.find(p => p.id === editingProfileId);
 
-                            config.catalogs.forEach(cat => {
-                                // If we don't have raw_prompt (old configs), use the name as fallback
-                                const promptText = cat.raw_prompt || cat.name || '';
-                                const div = document.createElement('div');
-                                div.className = 'catalog-item flex gap-2 animate-fade-in';
-                                div.innerHTML = `
-                                    <input type="text" value="${promptText}" class="catalog-prompt w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm placeholder-gray-600"
-                                           placeholder="Descrivi un altro catalogo...">
-                                    <button type="button" onclick="this.parentElement.remove()" class="px-4 py-2 text-gray-400 hover:text-red-400 bg-dark-900 border border-dark-600 rounded-lg hover:border-red-500/50 transition-colors">
-                                        ✕
-                                    </button>
-                                `;
-                                list.appendChild(div);
-                            });
-                        }
+        // -- CORE UI LOGIC --
 
-                        // Update UI to reflect "Edit Mode"
-                        document.getElementById('submitBtn').innerHTML = "Aggiorna Configurazione in Stremio";
+        function saveUIState() {
+            const ep = getEditingProfile();
+            if (!ep) return;
 
-                    }
-                } catch (e) {
-                    console.error("Errore caricamento config:", e);
+            // Salva checkbox
+            const checked = Array.from(document.querySelectorAll('.preset-toggle:checked')).map(cb => cb.value);
+            ep.raw_ui_state.selectedPresets = checked;
+
+            // Salva nuovi prompt
+            const promptsInputs = document.querySelectorAll('.catalog-prompt-new');
+            ep.raw_ui_state.newPrompts = Array.from(promptsInputs).map(i => i.value.trim()).filter(v => v !== '');
+
+            // Salva existingCatalogs salvati (quelli rimasti e non cancellati)
+            const remainingExistingIds = Array.from(document.querySelectorAll('.catalog-item-existing')).map(el => el.dataset.id);
+            ep.existingCatalogs = ep.existingCatalogs.filter(c => remainingExistingIds.includes(c.id));
+
+            // Salva Nome
+            ep.name = document.getElementById('profileNameInput').value.trim() || 'Senza Nome';
+        }
+
+        function renderProfileSelect() {
+            const select = document.getElementById('profileSelect');
+            select.innerHTML = '';
+            profiles.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                if (p.id === activeProfileId) opt.textContent = `★ ${p.name}`;
+                if (p.id === editingProfileId) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            document.getElementById('deleteProfileBtn').classList.toggle('hidden', profiles.length <= 1);
+
+            const btn = document.getElementById('activateProfileBtn');
+            if (editingProfileId === activeProfileId) {
+                btn.textContent = '★ Attivo su Stremio';
+                btn.className = 'w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded transition-colors whitespace-nowrap bg-green-500/20 text-green-400 border border-green-500/30 cursor-default shadow-[0_0_15px_rgba(34,197,94,0.1)]';
+            } else {
+                btn.textContent = 'Rendi Attivo';
+                btn.className = 'w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600';
+            }
+        }
+
+        function renderPresetsAndCatalogs() {
+            const ep = getEditingProfile();
+            document.getElementById('profileNameInput').value = ep.name;
+
+            // Checkboxes
+            document.querySelectorAll('.preset-toggle').forEach(cb => {
+                cb.checked = ep.raw_ui_state.selectedPresets.includes(cb.value);
+                const label = cb.closest('label');
+                if (cb.checked) {
+                    label.classList.add('border-stremio/50', 'bg-stremio/10');
+                    label.classList.remove('border-dark-700', 'bg-dark-900/40');
+                } else {
+                    label.classList.remove('border-stremio/50', 'bg-stremio/10');
+                    label.classList.add('border-dark-700', 'bg-dark-900/40');
                 }
+            });
+
+            // AI Catalogs
+            const list = document.getElementById('catalogList');
+            list.innerHTML = '';
+
+            // Render existing
+            ep.existingCatalogs.forEach(cat => {
+                const div = document.createElement('div');
+                div.className = 'catalog-item catalog-item-existing flex gap-2 animate-fade-in';
+                div.dataset.id = cat.id;
+                div.innerHTML = `
+                    <div class="flex-1 px-4 py-3 bg-dark-800 border border-dark-600/50 rounded-lg text-sm text-gray-400 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-green-500/50 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        <span class="truncate" title="${cat.raw_prompt || cat.name}">${cat.raw_prompt || cat.name}</span>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove()" class="px-4 py-2 text-gray-400 hover:text-red-400 bg-dark-900 border border-dark-600 rounded-lg hover:border-red-500/50 transition-colors" title="Elimina catalogo già generato">✕</button>
+                `;
+                list.appendChild(div);
+            });
+
+            // Render new
+            ep.raw_ui_state.newPrompts.forEach(pText => {
+                const div = document.createElement('div');
+                div.className = 'catalog-item catalog-item-new flex gap-2 animate-fade-in';
+                div.innerHTML = `
+                    <input type="text" value="${pText}" class="catalog-prompt-new w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm placeholder-gray-600" placeholder="Descrivi un altro catalogo...">
+                    <button type="button" onclick="this.parentElement.remove()" class="px-4 py-2 text-gray-400 hover:text-red-400 bg-dark-900 border border-dark-600 rounded-lg hover:border-red-500/50 transition-colors">✕</button>
+                `;
+                list.appendChild(div);
+            });
+
+            if (ep.existingCatalogs.length === 0 && ep.raw_ui_state.newPrompts.length === 0) {
+                // add empty input
+                document.getElementById('addCatalogBtn').click();
+            }
+        }
+
+        function switchEditingProfile(id) {
+            saveUIState();
+            editingProfileId = id;
+            document.getElementById('profileTemplateSelector').classList.add('hidden');
+            renderProfileSelect();
+            renderPresetsAndCatalogs();
+        }
+
+        // --- DOM SETUP AND BINDINGS ---
+
+        document.getElementById('profileSelect').addEventListener('change', (e) => switchEditingProfile(e.target.value));
+        document.getElementById('profileNameInput').addEventListener('input', (e) => {
+            const ep = getEditingProfile();
+            if (ep) {
+                ep.name = e.target.value || 'Senza Nome';
+                renderProfileSelect();
+            }
+        });
+        document.getElementById('activateProfileBtn').addEventListener('click', () => {
+            saveUIState();
+            if (editingProfileId !== activeProfileId) {
+                activeProfileId = editingProfileId;
+                renderProfileSelect();
             }
         });
 
-        // Gestione Aggiunta Cataloghi Form
+        document.getElementById('newProfileBtn').addEventListener('click', () => {
+            saveUIState();
+            const newId = 'prof_' + Date.now();
+            profiles.push({
+                id: newId,
+                name: 'Nuovo Profilo',
+                raw_ui_state: { selectedPresets: [], newPrompts: [] },
+                existingCatalogs: []
+            });
+            editingProfileId = newId;
+            renderProfileSelect();
+            renderPresetsAndCatalogs();
+
+            // Show Templates
+            document.getElementById('profileTemplateSelector').classList.remove('hidden');
+        });
+
+        document.getElementById('deleteProfileBtn').addEventListener('click', () => {
+            if (profiles.length <= 1) return;
+            const confirmDel = confirm('Eliminare questo profilo?');
+            if (confirmDel) {
+                profiles = profiles.filter(p => p.id !== editingProfileId);
+                if (activeProfileId === editingProfileId) activeProfileId = profiles[0].id;
+                editingProfileId = profiles[0].id;
+                renderProfileSelect();
+                renderPresetsAndCatalogs();
+            }
+        });
+
         document.getElementById('addCatalogBtn').addEventListener('click', () => {
             const list = document.getElementById('catalogList');
             const div = document.createElement('div');
-            div.className = 'catalog-item flex gap-2 animate-fade-in';
+            div.className = 'catalog-item catalog-item-new flex gap-2 animate-fade-in';
             div.innerHTML = `
-                <input type="text" class="catalog-prompt w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm placeholder-gray-600"
-                       placeholder="Descrivi un altro catalogo...">
-                <button type="button" onclick="this.parentElement.remove()" class="px-4 py-2 text-gray-400 hover:text-red-400 bg-dark-900 border border-dark-600 rounded-lg hover:border-red-500/50 transition-colors">
-                    ✕
-                </button>
+                <input type="text" class="catalog-prompt-new w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm placeholder-gray-600" placeholder="Descrivi un altro catalogo...">
+                <button type="button" onclick="this.parentElement.remove()" class="px-4 py-2 text-gray-400 hover:text-red-400 bg-dark-900 border border-dark-600 rounded-lg hover:border-red-500/50 transition-colors">✕</button>
             `;
             list.appendChild(div);
         });
 
-        // Gestione Submit Form
+
+        // -- STARTUP FETCHING AND RENDERING --
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 1. Fetch Presets
+            try {
+                const pRes = await fetch('/api/presets');
+                if (pRes.ok) {
+                    const json = await pRes.json();
+                    availablePresets = json.presets || [];
+                    profileTemplates = json.profileTemplates || [];
+                }
+            } catch (e) { console.error("Failed loading presets", e); }
+
+            // Render Base Checkboxes to DOM (Hidden but present for logic to work)
+            const presetsContainer = document.getElementById('presetsContainer');
+            const presetFilters = document.getElementById('presetFilters');
+            if (availablePresets.length > 0) {
+                presetsContainer.innerHTML = '';
+                presetFilters.innerHTML = '';
+                presetFilters.classList.remove('hidden');
+
+                groupedPresets = availablePresets.reduce((acc, current) => {
+                    if (!acc[current.category]) acc[current.category] = [];
+                    acc[current.category].push(current);
+                    return acc;
+                }, {});
+
+                const categories = Object.keys(groupedPresets);
+                activeCategory = categories[0];
+
+                const renderFilters = () => {
+                    presetFilters.innerHTML = '';
+                    categories.forEach(cat => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = `px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${cat === activeCategory ? 'bg-stremio text-white border-stremio' : 'bg-dark-900 text-gray-400 border-dark-600 hover:border-dark-500 hover:text-gray-200'}`;
+                        btn.textContent = cat;
+                        btn.onclick = () => { activeCategory = cat; renderFilters(); _showGroup(cat); };
+                        presetFilters.appendChild(btn);
+                    });
+                };
+
+                const renderAllGroupsHidden = () => {
+                    for (const [category, items] of Object.entries(groupedPresets)) {
+                        const groupDiv = document.createElement('div');
+                        groupDiv.className = `space-y-2 transition-opacity duration-300 group-category hidden`;
+                        groupDiv.dataset.category = category;
+
+                        const grid = document.createElement('div');
+                        grid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2';
+
+                        items.forEach(preset => {
+                            const label = document.createElement('label');
+                            label.className = `flex items-center space-x-3 cursor-pointer p-2 rounded-lg border border-dark-700 bg-dark-900/40 hover:bg-dark-700/60 transition-all`;
+
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.className = 'preset-toggle w-5 h-5 text-stremio bg-dark-900 border-dark-600 rounded focus:ring-stremio focus:ring-2';
+                            checkbox.value = preset.id;
+
+                            checkbox.addEventListener('change', (e) => {
+                                if (e.target.checked) {
+                                    label.classList.add('border-stremio/50', 'bg-stremio/10');
+                                    label.classList.remove('border-dark-700', 'bg-dark-900/40');
+                                } else {
+                                    label.classList.remove('border-stremio/50', 'bg-stremio/10');
+                                    label.classList.add('border-dark-700', 'bg-dark-900/40');
+                                }
+                            });
+
+                            const span = document.createElement('span');
+                            span.className = 'text-sm font-medium text-gray-200 truncate';
+                            span.title = preset.name;
+                            span.textContent = preset.name;
+
+                            label.appendChild(checkbox);
+                            label.appendChild(span);
+                            grid.appendChild(label);
+                        });
+                        groupDiv.appendChild(grid);
+                        presetsContainer.appendChild(groupDiv);
+                    }
+                };
+
+                const _showGroup = (cat) => {
+                    document.querySelectorAll('.group-category').forEach(el => el.classList.add('hidden'));
+                    const actGroup = document.querySelector(`.group-category[data-category="${cat}"]`);
+                    if (actGroup) actGroup.classList.remove('hidden');
+                }
+
+                renderFilters();
+                renderAllGroupsHidden();
+                _showGroup(activeCategory);
+            }
+
+            // Render Templates
+            const tplContainer = document.getElementById('templateButtons');
+            profileTemplates.forEach(tpl => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-1.5 px-3 rounded-full border border-dark-600 transition-colors';
+                btn.textContent = tpl.name;
+                btn.onclick = () => {
+                    const ep = getEditingProfile();
+                    ep.raw_ui_state.selectedPresets = tpl.presets;
+                    // change name automatically if untouched
+                    if (ep.name === 'Nuovo Profilo') { ep.name = tpl.name; }
+                    renderProfileSelect();
+                    renderPresetsAndCatalogs();
+                    document.getElementById('profileTemplateSelector').classList.add('hidden');
+                };
+                tplContainer.appendChild(btn);
+            });
+
+            // 2. Fetch Existing Config
+            let existingConfig = null;
+            if (currentUuid) {
+                try {
+                    const res = await fetch(`/api/configure/${currentUuid}`);
+                    if (res.ok) existingConfig = await res.json();
+                } catch (e) { console.error("Errore caricamento config:", e); }
+            }
+
+            // 3. Populate State
+            if (existingConfig) {
+                document.getElementById('tmdbKey').value = existingConfig.apiKeys?.tmdb || '';
+                document.getElementById('mistralKey').value = existingConfig.apiKeys?.mistral || '';
+                document.getElementById('traktUsername').value = existingConfig.apiKeys?.trakt || '';
+                document.getElementById('submitBtn').innerHTML = "Aggiorna Configurazione in Stremio";
+
+                if (existingConfig.profiles && existingConfig.profiles.length > 0) {
+                    profiles = existingConfig.profiles;
+                    activeProfileId = existingConfig.activeProfileId || profiles[0].id;
+                    editingProfileId = activeProfileId;
+
+                    // Ensure raw_ui_state defaults exists
+                    profiles.forEach(p => {
+                        if (!p.raw_ui_state) p.raw_ui_state = { selectedPresets: [], newPrompts: [] };
+                        if (!p.existingCatalogs) {
+                            p.existingCatalogs = (p.catalogs || []).filter(c => !c.id.startsWith('yaca_preset_'));
+                            p.raw_ui_state.selectedPresets = (p.catalogs || []).filter(c => c.id.startsWith('yaca_preset_')).map(c => c.id.replace('yaca_preset_', ''));
+                            p.raw_ui_state.newPrompts = [];
+                        }
+                    });
+                } else if (existingConfig.catalogs) {
+                    // Legacy migration
+                    const presets = existingConfig.catalogs.filter(c => c.id.startsWith('yaca_preset_')).map(c => c.id.replace('yaca_preset_', ''));
+                    const customCats = existingConfig.catalogs.filter(c => !c.id.startsWith('yaca_preset_'));
+                    profiles = [{
+                        id: 'legacy_default', name: 'Profilo Importato', existingCatalogs: customCats,
+                        raw_ui_state: { selectedPresets: presets, newPrompts: [] }
+                    }];
+                    activeProfileId = 'legacy_default';
+                    editingProfileId = 'legacy_default';
+                }
+            }
+
+            renderProfileSelect();
+            renderPresetsAndCatalogs();
+        });
+
+        // 4. SUBMIT FORM
         document.getElementById('configForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            saveUIState(); // salva le ultime modifiche del form nell'editing profile
 
             const tmdbKey = document.getElementById('tmdbKey').value;
             const mistralKey = document.getElementById('mistralKey').value;
             const traktUsername = document.getElementById('traktUsername').value;
 
-            const catalogInputs = document.querySelectorAll('.catalog-prompt');
-            const prompts = Array.from(catalogInputs).map(i => i.value.trim()).filter(v => v !== '');
+            // Validazione Frontend: Se c'è almeno 1 prompt custom (in qualsiasi profilo), Mistral è richiesto
+            const hasNewPrompts = profiles.some(p => p.raw_ui_state.newPrompts.length > 0);
+            if (hasNewPrompts && mistralKey.trim() === '') {
+                alert("Attenzione: Uno o più profili hanno cataloghi IA. Questi richiedono la chiave Mistral. Inserisci la chiave o usa solo i preset.");
+                return;
+            }
 
             const submitBtn = document.getElementById('submitBtn');
             const originalBtnText = submitBtn.innerHTML;
 
             submitBtn.innerHTML = `
-                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                Elaborazione AI (Attendi)...
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Generazione Configurazione...
             `;
             submitBtn.disabled = true;
             submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
 
             try {
-                // Passiamo l'UUID se siamo in edit mode
-                const payload = { tmdbKey, mistralKey, traktUsername, prompts };
+                // Costruisci payload per backend
+                const payloadProfiles = profiles.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    selectedPresets: p.raw_ui_state.selectedPresets,
+                    newPrompts: p.raw_ui_state.newPrompts,
+                    existingCatalogs: p.existingCatalogs
+                }));
+
+                const payload = { tmdbKey, mistralKey, traktUsername, activeProfileId, profiles: payloadProfiles };
                 if (currentUuid) payload.uuid = currentUuid;
 
                 const res = await fetch('/api/configure', {
@@ -300,11 +655,11 @@
 
                     if (currentUuid) {
                         document.querySelector('#successBox h3').textContent = "Configurazione Aggiornata!";
-                        document.querySelector('#successBox p').textContent = "Torna su Stremio: le modifiche verranno ricaricate al prossimo avvio (o reinstalla per forzare subito l'aggiornamento).";
+                        document.querySelector('#successBox p').textContent = "Hai cambiato il profilo attivo? Torna in Stremio e aspetta qualche minuto, oppure chiudi e riapri l'interfaccia (il manifest.json si ricaricherà automaticamente in background senza reinstallare).";
                     }
 
                 } else {
-                    alert('Errore dal server: ' + (data.error || 'Autenticazione Fallita / Server Offline'));
+                    alert('Errore dal server: ' + (data.error || 'Server Offline'));
                     submitBtn.innerHTML = originalBtnText;
                     submitBtn.disabled = false;
                     submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');

@@ -21,7 +21,7 @@ const UserConfig = {
         return data; // Ritorna l'oggetto { uuid, apiKeys: {}, catalogs: [] } esattamente come Mongoose
     },
 
-    async saveConfig({ uuid, apiKeys, catalogs }) {
+    async saveConfig({ uuid, apiKeys, catalogs, profiles, activeProfileId }) {
         const supabase = getSupabase();
         if (!supabase) throw new Error("Supabase non disponibile");
 
@@ -31,6 +31,8 @@ const UserConfig = {
                 uuid,
                 apiKeys,
                 catalogs,
+                profiles,
+                activeProfileId,
                 updated_at: new Date()
             }, { onConflict: 'uuid' });
 

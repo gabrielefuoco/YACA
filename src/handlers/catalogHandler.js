@@ -28,11 +28,29 @@ function resolveGenreIds(genreIdsArray, type) {
  */
 async function buildDiscoveryParams(filters, tmdbApiKey, type) {
     const tmdbParams = {
+        ...filters, // Spread per far passare le chiavi TMDB dirette usate nei preset
         sort_by: filters.sort_by || 'popularity.desc',
-        'vote_count.gte': 5,
-        language: filters.language || 'it-IT',
-        with_original_language: filters.original_language
+        'vote_count.gte': filters['vote_count.gte'] !== undefined ? filters['vote_count.gte'] : 5,
+        language: filters.language || 'it-IT'
     };
+
+    if (filters.original_language) {
+        tmdbParams.with_original_language = filters.original_language;
+    }
+
+    // Pulisci le chiavi custom dell'AI per non inviarle sporche a TMDB (opzionale ma pulito)
+    delete tmdbParams.strategy;
+    delete tmdbParams.similar_to;
+    delete tmdbParams.text_search;
+    delete tmdbParams.people_list;
+    delete tmdbParams.keyword;
+    delete tmdbParams.company_name;
+    delete tmdbParams.genre_ids;
+    delete tmdbParams.year_from;
+    delete tmdbParams.year_to;
+    delete tmdbParams.runtime_lte;
+    delete tmdbParams.runtime_gte;
+    delete tmdbParams.watch_provider;
 
     if (filters.genre_ids?.length) {
         const finalGenres = resolveGenreIds(filters.genre_ids, type);
@@ -178,6 +196,30 @@ async function catalogHandler(args, userUuid) {
         if (id === 'yaca_anime_trending' && type === 'series') {
             results = await fetchKitsuCatalog('/anime', skip, { sort: '-popularityRank' });
             return { metas: results };
+        }
+
+        // ==========================================
+        // SCENARIO 3: CATALOGHI TRAKT
+        // ==========================================
+        const { fetchTraktCatalog } = require('../clients/trakt');
+        const traktUname = userConfig.traktUsername;
+
+        if (id === 'trakt_watchlist_movies' && type === 'movie') {
+            results = await fetchTraktCatalog('watchlist_movies', skip, traktUname);
+            return { metas: results };
+        }
+        if (id === 'trakt_watchlist_series' && type === 'series') {
+            results = await fetchTraktCatalog('watchlist_shows', skip, traktUname);
+            return { metas: results };
+        }
+        if (id === 'trakt_favorites_movies' && type === 'movie') {
+            results = await fetchTraktCatalog('favorites', skip, traktUname);
+            // Trakt lists are mixed. Let's filter client-side just in case.
+            return { metas: results.filter(r => r.type === 'movie') };
+        }
+        if (id === 'trakt_favorites_series' && type === 'series') {
+            results = await fetchTraktCatalog('favorites', skip, traktUname);
+            return { metas: results.filter(r => r.type === 'series') };
         }
 
         // ==========================================

@@ -99,16 +99,59 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
 }
 
 /**
+ * Recupera le stagioni e gli episodi per una Serie TV da TMDB
+ */
+async function fetchTmdbEpisodes(client, tmdbId, totalSeasons) {
+    try {
+        const promises = [];
+        // TMDB Seasons are 1-indexed. Sometimes there is Season 0 (Specials).
+        // For performance, we fetch up to the most recent 5 seasons if a show is huge.
+        const startSeason = totalSeasons > 5 ? totalSeasons - 4 : 1;
+
+        for (let i = startSeason; i <= totalSeasons; i++) {
+            promises.push(client.get(`/tv/${tmdbId}/season/${i}`));
+        }
+
+        const results = await Promise.allSettled(promises);
+        const videos = [];
+
+        results.forEach(res => {
+            if (res.status === 'fulfilled' && res.value?.data?.episodes) {
+                const seasonData = res.value.data;
+                seasonData.episodes.forEach(ep => {
+                    videos.push({
+                        id: `tmdb:${tmdbId}:${ep.season_number}:${ep.episode_number}`,
+                        title: ep.name || `Episodio ${ep.episode_number}`,
+                        released: ep.air_date ? new Date(ep.air_date).toISOString() : null,
+                        season: ep.season_number,
+                        episode: ep.episode_number,
+                        overview: ep.overview || '',
+                        thumbnail: ep.still_path ? `https://image.tmdb.org/t/p/w500${ep.still_path}` : null
+                    });
+                });
+            }
+        });
+
+        return videos;
+    } catch (e) {
+        console.error("Errore fetchTmdbEpisodes:", e.message);
+        return [];
+    }
+}
+
+/**
  * Ottiene i dettagli completi per il Meta Handler di Stremio
  */
 async function getTmdbMetaDetails(apiKey, id, type) {
     const client = createTmdbClient(apiKey);
-    const tmdbId = id.replace('tmdb:', '');
+    const tmdbId = id.replace('tmdb:', '').trim();
     const endpoint = type === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
 
     try {
         const res = await client.get(endpoint, {
-            params: { append_to_response: 'videos,credits' }
+            // Include videos (trailers) and images (for logos)
+            // also we can append credits for cast
+            params: { append_to_response: 'videos,credits,images', include_image_language: 'it,en,null' }
         });
 
         const data = res.data;
@@ -116,7 +159,7 @@ async function getTmdbMetaDetails(apiKey, id, type) {
 
         // Aggiungiamo metadati avanzati
         if (data.credits && data.credits.cast) {
-            meta.cast = data.credits.cast.slice(0, 5).map(c => c.name);
+            meta.cast = data.credits.cast.slice(0, 10).map(c => c.name);
         }
         if (data.genres) {
             meta.genres = data.genres.map(g => g.name);
@@ -125,12 +168,26 @@ async function getTmdbMetaDetails(apiKey, id, type) {
             meta.runtime = `${data.runtime} min`;
         }
 
-        // Troviamo il trailer (YouTube)
+        // Troviamo il ClearLogo (il logo col nome del film trasparente)
+        if (data.images && data.images.logos && data.images.logos.length > 0) {
+            // Preferiamo quello in italiano, se non c'è prendiamo il primo disponibile (in genere inglese)
+            const itLogo = data.images.logos.find(l => l.iso_639_1 === 'it');
+            const targetLogo = itLogo || data.images.logos[0];
+            meta.logo = `https://image.tmdb.org/t/p/w500${targetLogo.file_path}`;
+        }
+
+        // Troviamo i trailer (YouTube) e formattiamoli secondo le specifiche Stremio
         if (data.videos && data.videos.results) {
-            const trailer = data.videos.results.find(v => v.site === 'YouTube' && v.type === 'Trailer');
-            if (trailer) {
-                meta.trailers = [{ source: trailer.key, type: 'Trailer' }];
+            const trailers = data.videos.results.filter(v => v.site === 'YouTube' && v.type === 'Trailer');
+            if (trailers.length > 0) {
+                // Stremio supports array of { source: "youtubeId", type: "Trailer" }
+                meta.trailers = trailers.map(t => ({ source: t.key, type: t.type }));
             }
+        }
+
+        // Se è una serie TV, scarica gli episodi per popolare la griglia in Stremio
+        if (type === 'series' && data.number_of_seasons) {
+            meta.videos = await fetchTmdbEpisodes(client, tmdbId, data.number_of_seasons);
         }
 
         return meta;

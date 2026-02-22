@@ -59,8 +59,36 @@ async function fetchKitsuCatalog(endpoint, skip = 0, customParams = {}) {
 }
 
 /**
+ * Recupera l'elenco degli episodi per un Anime e li formatta per Stremio
+ */
+async function fetchKitsuEpisodes(kitsuId) {
+    try {
+        const res = await kitsuClient.get(`/anime/${kitsuId}/episodes`, {
+            params: { 'page[limit]': 200 } // Kitsu usually has max 20, up to 200 episodes. Pagination might be needed for very long anime, simplified here.
+        });
+
+        if (!res.data || !res.data.data) return [];
+
+        return res.data.data.map(ep => {
+            const attrs = ep.attributes;
+            return {
+                id: `kitsu:${kitsuId}:${attrs.number}`,
+                title: attrs.titles?.en || attrs.titles?.en_jp || `Episodio ${attrs.number}`,
+                released: attrs.airdate ? new Date(attrs.airdate).toISOString() : null,
+                season: 1, // Kitsu uses seasons differently, usually mapping to season 1 for Stremio series
+                episode: attrs.number,
+                overview: attrs.synopsis || '',
+                thumbnail: attrs.thumbnail ? attrs.thumbnail.original : null
+            };
+        });
+    } catch (e) {
+        console.error("Errore fetchKitsuEpisodes:", e.message);
+        return [];
+    }
+}
+
+/**
  * Fetch Meta completo (utile per MetaHandler di Stremio)
- * Manca in questo boilerplate l'elenco degli episodi (si può fare un'altra query interna a 'anime_id/episodes')
  */
 async function getKitsuMetaDetails(id) {
     const kitsuId = id.replace('kitsu:', '');
@@ -70,9 +98,13 @@ async function getKitsuMetaDetails(id) {
         const meta = toStremioMetaItem(item);
 
         if (meta && item.attributes) {
-            meta.genres = []; // Richiede side-loading 'categories' in Kitsu, saltato per brevità
+            meta.genres = [];
             if (item.attributes.youtubeVideoId) {
                 meta.trailers = [{ source: item.attributes.youtubeVideoId, type: 'Trailer' }];
+            }
+            if (item.attributes.subtype !== 'movie') {
+                meta.videos = await fetchKitsuEpisodes(kitsuId);
+                meta.type = 'series'; // Force Stremio to render it as a series to show the episodes grid
             }
         }
         return meta;
