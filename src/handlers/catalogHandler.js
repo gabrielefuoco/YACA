@@ -1,5 +1,6 @@
 const { fetchTmdbCatalog, createTmdbClient, getTmdbIdByName } = require('../clients/tmdb');
 const { fetchKitsuCatalog } = require('../clients/kitsu');
+const { fetchTraktCatalog } = require('../clients/trakt');
 const { routeLiveStremioSearch } = require('../ai/router');
 const UserConfig = require('../models/UserConfig');
 
@@ -52,6 +53,8 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
     delete tmdbParams.runtime_lte;
     delete tmdbParams.runtime_gte;
     delete tmdbParams.watch_provider;
+    delete tmdbParams.original_language;
+    delete tmdbParams.target;
 
     if (filters.genre_ids?.length) {
         const finalGenres = resolveGenreIds(filters.genre_ids, type);
@@ -150,8 +153,10 @@ async function catalogHandler(args, userUuid) {
         const userConfig = await UserConfig.findOne({ uuid: userUuid });
         if (!userConfig) throw new Error("Utente o config non trovata nel DB");
 
-        const tmdbApiKey = userConfig.apiKeys.tmdb;
-        const mistralKey = userConfig.apiKeys.mistral;
+        const tmdbApiKey = userConfig.apiKeys?.tmdb;
+        if (!tmdbApiKey) throw new Error("TMDB API key mancante nella configurazione utente");
+
+        const mistralKey = userConfig.apiKeys?.mistral;
         const tmdbClient = createTmdbClient(tmdbApiKey);
 
         // Recupera impostazioni del profilo attivo per filtrare spazzatura
@@ -167,18 +172,24 @@ async function catalogHandler(args, userUuid) {
         // SCENARIO 1: RICERCA VIVA TRAMITE BARRA
         // ==========================================
         if (search) {
-            if (id === 'yaca_ai_search') {
-                // Esegue Mistral live per decidere dove instradare e calcolare i filtri avanzati
-                const routing = await routeLiveStremioSearch(search, mistralKey);
-
-                if (routing.target === 'kitsu' && type === 'series') {
-                    // Anime Search
-                    results = await fetchKitsuCatalog('/anime', 0, { filter: { text: routing.query } });
+            if (id === 'yaca_ai_search' || id === 'yaca_ai_search_series') {
+                if (!mistralKey) {
+                    // Fallback a ricerca TMDB nativa se Mistral non è configurato
+                    const ep = type === 'movie' ? '/search/movie' : '/search/tv';
+                    results = await fetchTmdbCatalog(tmdbClient, ep, skip, { query: search }, type);
                 } else {
-                    // Sfrutta il nuovo esecutore per processare i filtri Mistral
-                    results = await executeComplexStrategy(routing.filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
+                    // Esegue Mistral live per decidere dove instradare e calcolare i filtri avanzati
+                    const routing = await routeLiveStremioSearch(search, mistralKey);
+
+                    if (routing.target === 'kitsu' && type === 'series') {
+                        // Anime Search
+                        results = await fetchKitsuCatalog('/anime', 0, { filter: { text: routing.query } });
+                    } else {
+                        // Sfrutta il nuovo esecutore per processare i filtri Mistral
+                        results = await executeComplexStrategy(routing.filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
+                    }
                 }
-            } else if (id === 'yaca_anime_trending' && type === 'series') {
+            } else if (id === 'yaca_anime_trending') {
                 // Ricerca testuale nativa limitata a Kitsu
                 results = await fetchKitsuCatalog('/anime', skip, { filter: { text: search } });
             } else {
@@ -205,7 +216,7 @@ async function catalogHandler(args, userUuid) {
             return { metas: results };
         }
 
-        if (id === 'yaca_anime_trending' && type === 'series') {
+        if (id === 'yaca_anime_trending') {
             results = await fetchKitsuCatalog('/anime', skip, { sort: '-popularityRank' });
             return { metas: results };
         }
@@ -213,29 +224,67 @@ async function catalogHandler(args, userUuid) {
         // ==========================================
         // SCENARIO 3: CATALOGHI TRAKT
         // ==========================================
-        const { fetchTraktCatalog } = require('../clients/trakt');
         const traktUname = userConfig.apiKeys?.trakt;
 
         if (id === 'trakt_watchlist_movies' && type === 'movie') {
-            results = await fetchTraktCatalog('watchlist_movies', skip, traktUname);
+            results = await fetchTraktCatalog('watchlist_movies', skip, traktUname, tmdbApiKey);
             return { metas: results };
         }
         if (id === 'trakt_watchlist_series' && type === 'series') {
-            results = await fetchTraktCatalog('watchlist_shows', skip, traktUname);
+            results = await fetchTraktCatalog('watchlist_shows', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_recommendations_movies' && type === 'movie') {
+            results = await fetchTraktCatalog('recommendations_movies', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_recommendations_series' && type === 'series') {
+            results = await fetchTraktCatalog('recommendations_shows', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_history_movies' && type === 'movie') {
+            results = await fetchTraktCatalog('history_movies', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_history_series' && type === 'series') {
+            results = await fetchTraktCatalog('history_shows', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_ratings_movies' && type === 'movie') {
+            results = await fetchTraktCatalog('ratings_movies', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_ratings_series' && type === 'series') {
+            results = await fetchTraktCatalog('ratings_shows', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_trending_movies' && type === 'movie') {
+            results = await fetchTraktCatalog('trending_movies', skip, null, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_trending_series' && type === 'series') {
+            results = await fetchTraktCatalog('trending_shows', skip, null, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_popular_movies' && type === 'movie') {
+            results = await fetchTraktCatalog('popular_movies', skip, null, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_popular_series' && type === 'series') {
+            results = await fetchTraktCatalog('popular_shows', skip, null, tmdbApiKey);
             return { metas: results };
         }
         if (id === 'trakt_favorites_movies' && type === 'movie') {
-            results = await fetchTraktCatalog('favorites', skip, traktUname);
-            // Trakt lists are mixed. Let's filter client-side just in case.
+            results = await fetchTraktCatalog('favorites', skip, traktUname, tmdbApiKey);
             return { metas: results.filter(r => r.type === 'movie') };
         }
         if (id === 'trakt_favorites_series' && type === 'series') {
-            results = await fetchTraktCatalog('favorites', skip, traktUname);
+            results = await fetchTraktCatalog('favorites', skip, traktUname, tmdbApiKey);
             return { metas: results.filter(r => r.type === 'series') };
         }
 
         // ==========================================
-        // SCENARIO 3: CATALOGHI CUSTOM AI / PRESET
+        // SCENARIO 4: CATALOGHI CUSTOM AI / PRESET
         // ==========================================
         // Cerchiamo il catalogo prima nel profilo attivo, poi nel fallback globale (per vecchi utenti)
         let customCat = null;

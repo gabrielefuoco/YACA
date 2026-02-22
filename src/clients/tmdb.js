@@ -47,13 +47,13 @@ function toStremioMetaItem(tmdbItem, type) {
     return {
         id,
         type: type === 'movie' ? 'movie' : 'series',
-        name: tmdbItem.title || tmdbItem.name,
+        name: tmdbItem.title || tmdbItem.name || 'Titolo sconosciuto',
         poster: tmdbItem.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbItem.poster_path}` : null,
         background: tmdbItem.backdrop_path ? `https://image.tmdb.org/t/p/original${tmdbItem.backdrop_path}` : null,
-        posterShape: 'regular',
+        posterShape: 'poster',
         description: tmdbItem.overview,
         releaseInfo: year,
-        imdbRating: tmdbItem.vote_average ? tmdbItem.vote_average.toString() : null
+        imdbRating: tmdbItem.vote_average ? parseFloat(tmdbItem.vote_average).toFixed(1) : null
     };
 }
 
@@ -149,6 +149,13 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons) {
 async function getTmdbMetaDetails(apiKey, id, type) {
     const client = createTmdbClient(apiKey);
     const tmdbId = id.replace('tmdb:', '').trim();
+
+    // Validate tmdbId is a number to prevent path injection
+    if (!/^\d+$/.test(tmdbId)) {
+        console.error(`ID TMDB non valido: ${tmdbId}`);
+        return null;
+    }
+
     const endpoint = type === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
 
     try {
@@ -159,7 +166,9 @@ async function getTmdbMetaDetails(apiKey, id, type) {
         });
 
         const data = res.data;
+        if (!data) return null;
         const meta = toStremioMetaItem(data, type);
+        if (!meta) return null;
 
         // Aggiungiamo metadati avanzati
         if (data.credits && data.credits.cast) {
@@ -169,7 +178,7 @@ async function getTmdbMetaDetails(apiKey, id, type) {
             meta.genres = data.genres.map(g => g.name);
         }
         if (data.runtime) {
-            meta.runtime = `${data.runtime} min`;
+            meta.runtime = `${data.runtime}m`;
         }
 
         // Troviamo il ClearLogo (il logo col nome del film trasparente)

@@ -108,6 +108,8 @@ const presets = [
     { id: 'preset_slasher', name: 'Horror Slasher (Anni 80/90)', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Horror, with_keywords: '12335' } },
     { id: 'preset_whodunit', name: 'Whodunit & Indagini', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: '9648', with_keywords: '11134,10391' } },
     { id: 'preset_post_apocalyptic', name: 'Sopravvivenza & Post-Apocalisse', category: 'Mood & Tematiche', type: 'movie', filters: { with_keywords: '285366,4564' } },
+    { id: 'preset_cyberpunk', name: 'Cyberpunk & Futuro Distopico', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.SciFi},${TMDB_GENRES.MOVIE.Action}`, with_keywords: '12190,4565' } },
+    { id: 'preset_zombie', name: 'Zombie & Non-Morti', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Horror, with_keywords: '12377' } },
     { id: 'preset_sad_romance', name: 'Storie d\'Amore Drammatiche', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: '18,10749', with_keywords: '13130' } },
     { id: 'preset_heist', name: 'Rapine & Colpi Grossi (Heist)', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Crime},${TMDB_GENRES.MOVIE.Action}`, with_keywords: '10051' } },
     { id: 'preset_true_story', name: 'Basato su Storie Vere', category: 'Mood & Tematiche', type: 'movie', filters: { with_keywords: '9672', 'vote_average.gte': 6.5 } },

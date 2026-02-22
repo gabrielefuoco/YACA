@@ -8,6 +8,11 @@ const memoryCache = new LRUCache({ max: 5000, ttl: 1000 * 60 * 60 * 24 }); // 24
  * Traduce un imdb_id (es. tt1234567) in un tmdb_id usando l'API TMDB /find
  */
 async function translateImdbToTmdb(imdbId, tmdbApiKey) {
+    // Validate IMDB ID format (tt followed by digits)
+    if (!imdbId || !/^tt\d+$/.test(imdbId)) {
+        return null;
+    }
+
     if (memoryCache.has(imdbId)) {
         return memoryCache.get(imdbId);
     }

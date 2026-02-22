@@ -163,8 +163,11 @@ function parseMistralResponse(content, originalPrompt) {
  * @returns Object (Filtri JSON intelligenti)
  */
 async function generateTmdbFiltersFromPrompt(prompt, mistralKey) {
+    if (!mistralKey) {
+        return { strategy: "multi_search", text_search: prompt, target: "tmdb" };
+    }
     try {
-        const client = new Mistral({ apiKey: mistralKey });
+        const client = new Mistral({ apiKey: mistralKey, timeout: 25000 });
 
         const response = await client.chat.complete({
             model: "mistral-small-latest",
@@ -176,7 +179,11 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey) {
             temperature: 0.1 // Manteniamo la confidenza alta e le allucinazioni basse
         });
 
-        const rawJson = response.choices[0].message.content;
+        const rawJson = response.choices?.[0]?.message?.content;
+        if (!rawJson) {
+            console.error("Risposta Mistral vuota o malformata");
+            return { strategy: "multi_search", text_search: prompt, target: "tmdb" };
+        }
         return parseMistralResponse(rawJson, prompt);
     } catch (err) {
         console.error("Errore Fallback in AI (ritorno parametri base):", err.message);

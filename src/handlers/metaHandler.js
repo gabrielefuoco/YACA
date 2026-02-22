@@ -13,7 +13,8 @@ async function metaHandler(args, userUuid) {
         const userConfig = await UserConfig.findOne({ uuid: userUuid });
         if (!userConfig) throw new Error("Utente non trovato");
 
-        const tmdbApiKey = userConfig.apiKeys.tmdb;
+        const tmdbApiKey = userConfig.apiKeys?.tmdb;
+        if (!tmdbApiKey) throw new Error("TMDB API key mancante");
         let meta = null;
 
         // Caso 1: È un ID di Kitsu (Anime)
@@ -41,11 +42,11 @@ async function metaHandler(args, userUuid) {
             return { meta };
         }
 
-        return { meta: {} };
+        return { meta: null };
 
     } catch (err) {
         console.error("Errore Meta Handler:", err.message);
-        return { meta: {} };
+        return { meta: null };
     }
 }
 
