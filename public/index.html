@@ -800,13 +800,17 @@
                     editingProfileId = 'legacy_default';
                 }
             } else {
-                // Quick Start per nuovo utente: Crea 4 profili predefiniti di alta qualità
+                // Quick Start per nuovo utente: Crea 4 profili predefiniti ricchi di contenuti
                 profiles = [
                     {
                         id: 'default_main',
                         name: '🏠 Generale',
                         raw_ui_state: {
-                            selectedPresets: ['preset_pop_movies', 'preset_pop_series', 'preset_new_movies', 'preset_new_series'],
+                            selectedPresets: [
+                                'preset_pop_movies', 'preset_pop_series', 'preset_new_movies', 'preset_new_series',
+                                'preset_new_series_eps', 'preset_top_rated_movies', 'preset_top_rated_series',
+                                'preset_oscar_winners', 'preset_hidden_gems', 'preset_pop_anime'
+                            ],
                             newPrompts: []
                         },
                         existingCatalogs: [],
@@ -816,7 +820,12 @@
                         id: 'default_mystery',
                         name: '🔍 Mistero & Thriller',
                         raw_ui_state: {
-                            selectedPresets: ['preset_whodunit', 'preset_mindfuck', 'preset_true_crime', 'preset_nordic_noir', 'preset_crime_procedural'],
+                            selectedPresets: [
+                                'preset_whodunit', 'preset_mindfuck', 'preset_neo_noir', 'preset_fincher',
+                                'preset_true_crime', 'preset_crime_procedural', 'preset_tv_mafia',
+                                'preset_nordic_noir', 'preset_british_crime', 'preset_tv_thriller',
+                                'preset_kdrama_thriller'
+                            ],
                             newPrompts: []
                         },
                         existingCatalogs: [],
@@ -826,7 +835,12 @@
                         id: 'default_cinema',
                         name: '🎬 Cinema d\'Autore',
                         raw_ui_state: {
-                            selectedPresets: ['preset_nolan', 'preset_tarantino', 'preset_scorsese', 'preset_a24', 'preset_wesanderson', 'preset_lynch'],
+                            selectedPresets: [
+                                'preset_a24', 'preset_nolan', 'preset_kubrick', 'preset_villeneuve',
+                                'preset_ghibli', 'preset_fincher', 'preset_wesanderson', 'preset_lynch',
+                                'preset_french_cinema', 'preset_cinema_coreano', 'preset_italian_cinema',
+                                'preset_oscar_winners'
+                            ],
                             newPrompts: []
                         },
                         existingCatalogs: [],
@@ -836,7 +850,12 @@
                         id: 'default_anime',
                         name: '🏮 Anime & Ghibli',
                         raw_ui_state: {
-                            selectedPresets: ['preset_pop_anime', 'preset_new_anime', 'preset_anime_shonen', 'preset_ghibli', 'preset_anime_movies_top'],
+                            selectedPresets: [
+                                'preset_pop_anime', 'preset_new_anime', 'preset_new_anime_eps',
+                                'preset_anime_shonen', 'preset_anime_seinen', 'preset_anime_dark',
+                                'preset_anime_isekai', 'preset_anime_slice_of_life', 'preset_anime_action',
+                                'preset_anime_movies_top', 'preset_anime_classic', 'preset_ghibli'
+                            ],
                             newPrompts: []
                         },
                         existingCatalogs: [],
