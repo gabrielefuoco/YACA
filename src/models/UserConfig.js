@@ -26,18 +26,27 @@ const UserConfig = {
         if (!supabase) throw new Error("Supabase non disponibile");
 
         const configVersion = Date.now().toString(36);
+        const row = {
+            uuid,
+            apiKeys,
+            catalogs,
+            profiles,
+            activeProfileId,
+            configVersion,
+            updated_at: new Date()
+        };
 
-        const { data, error } = await supabase
+        let { data, error } = await supabase
             .from('user_configs')
-            .upsert({
-                uuid,
-                apiKeys,
-                catalogs,
-                profiles,
-                activeProfileId,
-                configVersion,
-                updated_at: new Date()
-            }, { onConflict: 'uuid' });
+            .upsert(row, { onConflict: 'uuid' });
+
+        if (error && /configVersion/.test(error.message || '')) {
+            const rowWithoutConfigVersion = { ...row };
+            delete rowWithoutConfigVersion.configVersion;
+            ({ data, error } = await supabase
+                .from('user_configs')
+                .upsert(rowWithoutConfigVersion, { onConflict: 'uuid' }));
+        }
 
         if (error) {
             throw new Error(error.message);
