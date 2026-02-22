@@ -50,7 +50,7 @@ app.get('/:uuid/configure', (req, res) => {
 // 3. Endpoint dinamico per il Manifest di Stremio (L'addon vero e proprio risponde qui)
 app.get('/:uuid/manifest.json', async (req, res) => {
     const { uuid } = req.params;
-
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     try {
         const userConfig = await UserConfig.findOne({ uuid });
         if (!userConfig) {
@@ -60,7 +60,7 @@ app.get('/:uuid/manifest.json', async (req, res) => {
         // Costruiamo il manifest di default base
         const manifest = {
             id: 'org.stremio.yaca.catalog',
-            version: '1.0.0',
+            version: '1.0.1',
             name: 'YACA (Yet Another Catalog Addon)',
             description: 'Catalogo Intelligente Potenziato da AI',
             resources: ['catalog', 'meta'],

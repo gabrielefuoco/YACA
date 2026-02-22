@@ -30,8 +30,8 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
     const tmdbParams = {
         ...filters, // Spread per far passare le chiavi TMDB dirette usate nei preset
         sort_by: filters.sort_by || 'popularity.desc',
-        'vote_count.gte': filters['vote_count.gte'] !== undefined ? filters['vote_count.gte'] : (baseSettings.minVoteCount || 10),
-        'vote_average.gte': filters['vote_average.gte'] !== undefined ? filters['vote_average.gte'] : (baseSettings.minVoteAverage || 0),
+        'vote_count.gte': filters['vote_count.gte'] !== undefined ? filters['vote_count.gte'] : (isNaN(baseSettings.minVoteCount) ? 5 : baseSettings.minVoteCount),
+        'vote_average.gte': filters['vote_average.gte'] !== undefined ? filters['vote_average.gte'] : (isNaN(baseSettings.minVoteAverage) ? 0 : baseSettings.minVoteAverage),
         language: filters.language || 'it-IT'
     };
 
