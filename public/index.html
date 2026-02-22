@@ -747,10 +747,10 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        tmdbKey: document.getElementById('tmdbApiKey').value,
-                        mistralKey: document.getElementById('mistralApiKey').value,
-                        traktUsername: document.getElementById('traktUsername').value,
-                        activeProfileId: activeProfileId,
+                        tmdbKey,
+                        mistralKey,
+                        traktUsername,
+                        activeProfileId,
                         profiles: payloadProfiles,
                         uuid: currentUuid
                     })
