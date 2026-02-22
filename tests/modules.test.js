@@ -91,4 +91,26 @@ describe('presets module', () => {
         const uniqueIds = new Set(ids);
         expect(uniqueIds.size).toBe(ids.length);
     });
+
+    it('should have structured filters with sort_by on most presets', () => {
+        const { presets } = require('../src/data/presets');
+        const withSortBy = presets.filter(p => p.filters.sort_by);
+        // At least 80% of presets should have sort_by defined
+        expect(withSortBy.length / presets.length).toBeGreaterThan(0.8);
+    });
+
+    it('should have profile templates with at least 8 presets each', () => {
+        const { profileTemplates } = require('../src/data/presets');
+        for (const template of profileTemplates) {
+            expect(template.presets.length).toBeGreaterThanOrEqual(8);
+        }
+    });
+
+    it('should have no duplicate presets within a single template', () => {
+        const { profileTemplates } = require('../src/data/presets');
+        for (const template of profileTemplates) {
+            const unique = new Set(template.presets);
+            expect(unique.size).toBe(template.presets.length);
+        }
+    });
 });

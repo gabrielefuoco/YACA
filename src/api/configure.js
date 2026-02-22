@@ -65,17 +65,20 @@ module.exports = async (req, res) => {
                 parsedCatalogs.push(...profile.existingCatalogs.slice(0, 50));
             }
 
-            // 2. Aggiungi i Preset Hardcoded
+            // 2. Aggiungi i Preset Hardcoded (deduplicati)
             if (profile.selectedPresets && Array.isArray(profile.selectedPresets)) {
+                const seenPresets = new Set();
                 for (const presetId of profile.selectedPresets.slice(0, 50)) {
                     if (typeof presetId !== 'string') continue;
+                    if (seenPresets.has(presetId)) continue;
+                    seenPresets.add(presetId);
                     const presetObj = presetsList.find(p => p.id === presetId);
                     if (presetObj) {
                         parsedCatalogs.push({
                             id: `yaca_preset_${presetId}`,
                             name: presetObj.name,
                             type: presetObj.type,
-                            filters: presetObj.filters
+                            filters: { ...presetObj.filters }
                         });
                     }
                 }
@@ -105,9 +108,11 @@ module.exports = async (req, res) => {
                 }
             }
 
+            const profileName = (typeof profile.name === 'string' ? profile.name.trim() : '') || 'Nuovo Profilo';
+
             parsedProfiles.push({
                 id: profile.id || `prof_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-                name: profile.name || 'Nuovo Profilo',
+                name: profileName.substring(0, 50),
                 catalogs: parsedCatalogs,
                 settings: profile.settings || { minVoteAverage: 0, minVoteCount: 0 },
                 raw_ui_state: { // Salva lo stato UI grezzo per ripopolare i form facilmente
@@ -117,7 +122,11 @@ module.exports = async (req, res) => {
             });
         }
 
-        const finalActiveProfileId = activeProfileId || (parsedProfiles.length > 0 ? parsedProfiles[0].id : null);
+        // Verifica che activeProfileId punti a un profilo esistente
+        const profileIds = new Set(parsedProfiles.map(p => p.id));
+        const finalActiveProfileId = (activeProfileId && profileIds.has(activeProfileId))
+            ? activeProfileId
+            : (parsedProfiles.length > 0 ? parsedProfiles[0].id : null);
 
         // 4. Salva la configurazione
         await UserConfig.saveConfig({
@@ -132,7 +141,14 @@ module.exports = async (req, res) => {
             activeProfileId: finalActiveProfileId
         });
 
-        res.json({ success: true, uuid });
+        // Recupera configVersion per il link di aggiornamento Stremio
+        let configVersion = null;
+        try {
+            const savedConfig = await UserConfig.findOne({ uuid });
+            if (savedConfig) configVersion = savedConfig.configVersion;
+        } catch (_) { /* ignore */ }
+
+        res.json({ success: true, uuid, configVersion });
 
     } catch (err) {
         console.error("Errore salvataggio config:", err);
