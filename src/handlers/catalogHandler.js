@@ -301,11 +301,12 @@ async function catalogHandler(args, userUuid) {
         }
 
         if (customCat && customCat.filters) {
-            // Esegue i filtri salvati a database sfruttando il Discovery Builder
-            if (!customCat.filters.strategy) customCat.filters.strategy = 'discovery'; // Retrocompatibilità
+            // Crea una copia per evitare mutazioni sull'oggetto originale
+            const filters = { ...customCat.filters };
+            if (!filters.strategy) filters.strategy = 'discovery'; // Retrocompatibilità
             // Applica ordinamento da Stremio se specificato
-            if (sortBy) customCat.filters.sort_by = sortBy;
-            results = await executeComplexStrategy(customCat.filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
+            if (sortBy) filters.sort_by = sortBy;
+            results = await executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
             return { metas: results };
         }
 
