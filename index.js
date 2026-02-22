@@ -75,7 +75,7 @@ app.get('/:uuid/manifest.json', async (req, res) => {
             idPrefixes: ['tt', 'tmdb:', 'kitsu:'],
             behaviorHints: {
                 configurable: true,
-                configurationRequired: true
+                configurationRequired: false
             }
         };
 
@@ -118,6 +118,24 @@ app.get('/:uuid/manifest.json', async (req, res) => {
         console.error("Manifest Error:", err);
         return res.status(500).json({ error: "Errore caricamento manifest" });
     }
+});
+
+// Root manifest (senza UUID) per guidare l'utente alla configurazione
+app.get('/manifest.json', (req, res) => {
+    const manifest = {
+        id: 'org.stremio.yaca.catalog',
+        version: '1.0.0',
+        name: 'YACA (Yet Another Catalog Addon)',
+        description: 'Catalogo Intelligente Potenziato da AI - Configurazione Richiesta',
+        resources: [],
+        types: [],
+        catalogs: [],
+        behaviorHints: {
+            configurable: true,
+            configurationRequired: true
+        }
+    };
+    res.json(manifest);
 });
 
 // Helper interno per parsare i parametri "extra" stile Stremio (es. "search=avengers&skip=20")
