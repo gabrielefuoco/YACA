@@ -157,10 +157,20 @@ app.get('/:uuid/manifest.json', async (req, res) => {
         // Inietta i Cataloghi Trakt se l'utente ha configurato l'username
         if (userConfig.apiKeys && userConfig.apiKeys.trakt) {
             manifest.catalogs.unshift(
+                // Cataloghi personali (richiedono profilo pubblico)
+                { id: 'trakt_recommendations_movies', type: 'movie', name: 'Trakt Consigliati', extra: [{ name: 'skip' }] },
+                { id: 'trakt_recommendations_series', type: 'series', name: 'Trakt Consigliati', extra: [{ name: 'skip' }] },
                 { id: 'trakt_watchlist_movies', type: 'movie', name: 'Trakt Watchlist', extra: [{ name: 'skip' }] },
                 { id: 'trakt_watchlist_series', type: 'series', name: 'Trakt Watchlist', extra: [{ name: 'skip' }] },
-                { id: 'trakt_favorites_movies', type: 'movie', name: 'Trakt Preferiti', extra: [{ name: 'skip' }] },
-                { id: 'trakt_favorites_series', type: 'series', name: 'Trakt Preferiti', extra: [{ name: 'skip' }] }
+                { id: 'trakt_history_movies', type: 'movie', name: 'Trakt Cronologia', extra: [{ name: 'skip' }] },
+                { id: 'trakt_history_series', type: 'series', name: 'Trakt Cronologia', extra: [{ name: 'skip' }] },
+                { id: 'trakt_ratings_movies', type: 'movie', name: 'Trakt Valutazioni', extra: [{ name: 'skip' }] },
+                { id: 'trakt_ratings_series', type: 'series', name: 'Trakt Valutazioni', extra: [{ name: 'skip' }] },
+                // Cataloghi pubblici globali
+                { id: 'trakt_trending_movies', type: 'movie', name: 'Trakt Tendenze', extra: [{ name: 'skip' }] },
+                { id: 'trakt_trending_series', type: 'series', name: 'Trakt Tendenze', extra: [{ name: 'skip' }] },
+                { id: 'trakt_popular_movies', type: 'movie', name: 'Trakt Popolari', extra: [{ name: 'skip' }] },
+                { id: 'trakt_popular_series', type: 'series', name: 'Trakt Popolari', extra: [{ name: 'skip' }] }
             );
         }
 

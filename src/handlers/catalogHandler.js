@@ -227,20 +227,59 @@ async function catalogHandler(args, userUuid) {
         const traktUname = userConfig.apiKeys?.trakt;
 
         if (id === 'trakt_watchlist_movies' && type === 'movie') {
-            results = await fetchTraktCatalog('watchlist_movies', skip, traktUname);
+            results = await fetchTraktCatalog('watchlist_movies', skip, traktUname, tmdbApiKey);
             return { metas: results };
         }
         if (id === 'trakt_watchlist_series' && type === 'series') {
-            results = await fetchTraktCatalog('watchlist_shows', skip, traktUname);
+            results = await fetchTraktCatalog('watchlist_shows', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_recommendations_movies' && type === 'movie') {
+            results = await fetchTraktCatalog('recommendations_movies', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_recommendations_series' && type === 'series') {
+            results = await fetchTraktCatalog('recommendations_shows', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_history_movies' && type === 'movie') {
+            results = await fetchTraktCatalog('history_movies', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_history_series' && type === 'series') {
+            results = await fetchTraktCatalog('history_shows', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_ratings_movies' && type === 'movie') {
+            results = await fetchTraktCatalog('ratings_movies', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_ratings_series' && type === 'series') {
+            results = await fetchTraktCatalog('ratings_shows', skip, traktUname, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_trending_movies' && type === 'movie') {
+            results = await fetchTraktCatalog('trending_movies', skip, null, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_trending_series' && type === 'series') {
+            results = await fetchTraktCatalog('trending_shows', skip, null, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_popular_movies' && type === 'movie') {
+            results = await fetchTraktCatalog('popular_movies', skip, null, tmdbApiKey);
+            return { metas: results };
+        }
+        if (id === 'trakt_popular_series' && type === 'series') {
+            results = await fetchTraktCatalog('popular_shows', skip, null, tmdbApiKey);
             return { metas: results };
         }
         if (id === 'trakt_favorites_movies' && type === 'movie') {
-            results = await fetchTraktCatalog('favorites', skip, traktUname);
-            // Trakt lists are mixed. Let's filter client-side just in case.
+            results = await fetchTraktCatalog('favorites', skip, traktUname, tmdbApiKey);
             return { metas: results.filter(r => r.type === 'movie') };
         }
         if (id === 'trakt_favorites_series' && type === 'series') {
-            results = await fetchTraktCatalog('favorites', skip, traktUname);
+            results = await fetchTraktCatalog('favorites', skip, traktUname, tmdbApiKey);
             return { metas: results.filter(r => r.type === 'series') };
         }
 
