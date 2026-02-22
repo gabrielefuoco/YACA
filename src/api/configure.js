@@ -4,7 +4,7 @@ const { generateTmdbFiltersFromPrompt } = require('../ai/router');
 
 module.exports = async (req, res) => {
     try {
-        const { tmdbKey, mistralKey, prompts, traktToken } = req.body;
+        const { tmdbKey, mistralKey, prompts, traktUsername } = req.body;
 
         if (!tmdbKey || !mistralKey) {
             return res.status(400).json({ error: "Le API Key di TMDB e Mistral sono obbligatorie." });
@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
             apiKeys: {
                 tmdb: tmdbKey,
                 mistral: mistralKey,
-                trakt: traktToken || null
+                trakt: traktUsername || null
             },
             catalogs: parsedCatalogs
         });
