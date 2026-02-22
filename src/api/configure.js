@@ -86,6 +86,7 @@ module.exports = async (req, res) => {
                 id: profile.id || `prof_${Date.now()}_${Math.random().toString(36).substring(7)}`,
                 name: profile.name || 'Nuovo Profilo',
                 catalogs: parsedCatalogs,
+                settings: profile.settings || { minVoteAverage: 0, minVoteCount: 0 },
                 raw_ui_state: { // Salva lo stato UI grezzo per ripopolare i form facilmente
                     selectedPresets: profile.selectedPresets || [],
                     prompts: parsedCatalogs.filter(c => c.raw_prompt).map(c => c.raw_prompt)

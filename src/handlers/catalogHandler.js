@@ -26,11 +26,12 @@ function resolveGenreIds(genreIdsArray, type) {
 /**
  * Traduce l'oggetto filtri AI (o salvato a DB) in un oggetto query params per TMDB /discover
  */
-async function buildDiscoveryParams(filters, tmdbApiKey, type) {
+async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}) {
     const tmdbParams = {
         ...filters, // Spread per far passare le chiavi TMDB dirette usate nei preset
         sort_by: filters.sort_by || 'popularity.desc',
-        'vote_count.gte': filters['vote_count.gte'] !== undefined ? filters['vote_count.gte'] : 5,
+        'vote_count.gte': filters['vote_count.gte'] !== undefined ? filters['vote_count.gte'] : (baseSettings.minVoteCount || 10),
+        'vote_average.gte': filters['vote_average.gte'] !== undefined ? filters['vote_average.gte'] : (baseSettings.minVoteAverage || 0),
         language: filters.language || 'it-IT'
     };
 
@@ -103,7 +104,7 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type) {
 /**
  * Esegue una query complessa determinando la strategia (similar, discovery, search)
  */
-async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip) {
+async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, settings = {}) {
     let results = [];
     const searchType = type === 'series' ? 'tv' : 'movie';
 
@@ -127,7 +128,7 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
     }
     // === STRATEGIA 3: DISCOVERY (Filtri) ===
     else {
-        const tmdbParams = await buildDiscoveryParams(filters, tmdbApiKey, type);
+        const tmdbParams = await buildDiscoveryParams(filters, tmdbApiKey, type, settings);
         results = await fetchTmdbCatalog(tmdbClient, `/discover/${searchType}`, skip, tmdbParams, type);
     }
 
@@ -153,6 +154,15 @@ async function catalogHandler(args, userUuid) {
         const mistralKey = userConfig.apiKeys.mistral;
         const tmdbClient = createTmdbClient(tmdbApiKey);
 
+        // Recupera impostazioni del profilo attivo per filtrare spazzatura
+        let activeProfileSettings = { minVoteAverage: 0, minVoteCount: 0 };
+        if (userConfig.profiles && userConfig.activeProfileId) {
+            const profile = userConfig.profiles.find(p => p.id === userConfig.activeProfileId);
+            if (profile && profile.settings) {
+                activeProfileSettings = profile.settings;
+            }
+        }
+
         // ==========================================
         // SCENARIO 1: RICERCA VIVA TRAMITE BARRA
         // ==========================================
@@ -166,7 +176,7 @@ async function catalogHandler(args, userUuid) {
                     results = await fetchKitsuCatalog('/anime', 0, { filter: { text: routing.query } });
                 } else {
                     // Sfrutta il nuovo esecutore per processare i filtri Mistral
-                    results = await executeComplexStrategy(routing.filters, tmdbClient, tmdbApiKey, type, skip);
+                    results = await executeComplexStrategy(routing.filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
                 }
             } else if (id === 'yaca_anime_trending' && type === 'series') {
                 // Ricerca testuale nativa limitata a Kitsu
@@ -184,12 +194,14 @@ async function catalogHandler(args, userUuid) {
         // SCENARIO 2: CATALOGHI ESPLORATIVI STANDARD
         // ==========================================
         if (id === 'yaca_discover_movies') {
-            results = await fetchTmdbCatalog(tmdbClient, '/discover/movie', skip, { sort_by: 'popularity.desc' }, 'movie');
+            const params = { sort_by: 'popularity.desc', 'vote_average.gte': activeProfileSettings.minVoteAverage, 'vote_count.gte': activeProfileSettings.minVoteCount };
+            results = await fetchTmdbCatalog(tmdbClient, '/discover/movie', skip, params, 'movie');
             return { metas: results };
         }
 
         if (id === 'yaca_discover_series') {
-            results = await fetchTmdbCatalog(tmdbClient, '/discover/tv', skip, { sort_by: 'popularity.desc' }, 'series');
+            const params = { sort_by: 'popularity.desc', 'vote_average.gte': activeProfileSettings.minVoteAverage, 'vote_count.gte': activeProfileSettings.minVoteCount };
+            results = await fetchTmdbCatalog(tmdbClient, '/discover/tv', skip, params, 'series');
             return { metas: results };
         }
 
@@ -223,15 +235,25 @@ async function catalogHandler(args, userUuid) {
         }
 
         // ==========================================
-        // SCENARIO 3: CATALOGHI CUSTOM AI
+        // SCENARIO 3: CATALOGHI CUSTOM AI / PRESET
         // ==========================================
-        // Verifichiamo se l'ID richiesto combacia con uno dei cataloghi generati
-        const customCat = userConfig.catalogs.find(c => c.id === id);
+        // Cerchiamo il catalogo prima nel profilo attivo, poi nel fallback globale (per vecchi utenti)
+        let customCat = null;
+        if (userConfig.profiles && userConfig.activeProfileId) {
+            const profile = userConfig.profiles.find(p => p.id === userConfig.activeProfileId);
+            if (profile && profile.catalogs) {
+                customCat = profile.catalogs.find(c => c.id === id);
+            }
+        }
+
+        if (!customCat && userConfig.catalogs) {
+            customCat = userConfig.catalogs.find(c => c.id === id);
+        }
+
         if (customCat && customCat.filters) {
             // Esegue i filtri salvati a database sfruttando il Discovery Builder
-            // Se nel DB è stata salvata una strategy "discovery" / "similar", l'esecutore la gestirà correttamente
             if (!customCat.filters.strategy) customCat.filters.strategy = 'discovery'; // Retrocompatibilità 
-            results = await executeComplexStrategy(customCat.filters, tmdbClient, tmdbApiKey, type, skip);
+            results = await executeComplexStrategy(customCat.filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
             return { metas: results };
         }
 
