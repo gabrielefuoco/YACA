@@ -29,8 +29,7 @@ async function enhanceTraktItem(traktItem) {
 
     // L'ID preferito da Stremio è il tmdb:xxx per il nostro addon, o ttXXXXX
     if (!tmdbId && !imdbId) return null;
-    const stremioId = tmdbId ? `tmdb:${tmdbId}` : (imdbId ? `tt${imdbId}` : null);
-    if (!stremioId) return null;
+    const stremioId = tmdbId ? `tmdb:${tmdbId}` : `tt${imdbId}`;
 
     const baseMeta = {
         id: stremioId,
