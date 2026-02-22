@@ -1,4 +1,5 @@
 const { getSupabase } = require('../utils/database');
+const MISSING_CONFIG_VERSION_COLUMN_ERROR = /Could not find the 'configVersion' column of 'user_configs' in the schema cache/;
 
 // Questo file funge da "Model" astratto per facilitare il passaggio da Mongoose a Supabase 
 // senza dover stravolgere tutta l'app.
@@ -40,7 +41,7 @@ const UserConfig = {
             .from('user_configs')
             .upsert(row, { onConflict: 'uuid' });
 
-        if (error && /configVersion/.test(error.message || '')) {
+        if (error && MISSING_CONFIG_VERSION_COLUMN_ERROR.test(error.message || '')) {
             const rowWithoutConfigVersion = { ...row };
             delete rowWithoutConfigVersion.configVersion;
             ({ data, error } = await supabase
