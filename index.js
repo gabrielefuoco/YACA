@@ -11,6 +11,7 @@ const { catalogHandler } = require('./src/handlers/catalogHandler');
 const { metaHandler } = require('./src/handlers/metaHandler');
 const presets = require('./src/data/presets');
 const { isValidUUID, parseExtra } = require('./src/utils/helpers');
+const { blurImage } = require('./src/utils/imageProcessor');
 
 // 1. Inizializza Express
 const app = express();
@@ -39,6 +40,27 @@ app.get('/health', (req, res) => {
 // Endpoint per recuperare i preset disponibili
 app.get('/api/presets', (req, res) => {
     res.json({ presets: presets.presets, profileTemplates: presets.profileTemplates });
+});
+
+// Endpoint per la sfocatura immagini proxy (usato nei metadati TMDB e Trakt)
+app.get('/blur', async (req, res) => {
+    const { url } = req.query;
+    if (!url) {
+        return res.status(400).send('URL mancante');
+    }
+    try {
+        const imageBuffer = await blurImage(url);
+        if (imageBuffer) {
+            res.set('Content-Type', 'image/jpeg');
+            // Cache per 1 settimana
+            res.set('Cache-Control', 'public, max-age=604800');
+            return res.send(imageBuffer);
+        } else {
+            return res.status(500).send('Errore elaborazione immagine');
+        }
+    } catch (err) {
+        return res.status(500).send('Errore elaborazione immagine');
+    }
 });
 
 // Endpoint per validare una TMDB API Key

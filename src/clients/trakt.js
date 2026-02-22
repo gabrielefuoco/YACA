@@ -1,13 +1,12 @@
-const axios = require('axios');
+const { createAxiosInstance } = require('../utils/httpClient');
+const axios = require('axios'); // still needed for raw TMDB enrich requests if we don't want proxy there, but let's use it
 
-const traktClient = axios.create({
-    baseURL: 'https://api.trakt.tv',
+const traktClient = createAxiosInstance('https://api.trakt.tv', {
     headers: {
         'Content-Type': 'application/json',
         'trakt-api-version': '2',
         'trakt-api-key': process.env.TRAKT_CLIENT_ID
-    },
-    timeout: 10000
+    }
 });
 
 /**
@@ -59,7 +58,11 @@ async function enhanceTraktItem(traktItem, tmdbApiKey) {
                 baseMeta.poster = `https://image.tmdb.org/t/p/w500${tmdbenrich.data.poster_path}`;
             }
             if (tmdbenrich.data.backdrop_path) {
-                baseMeta.background = `https://image.tmdb.org/t/p/original${tmdbenrich.data.backdrop_path}`;
+                const bgUrl = `https://image.tmdb.org/t/p/original${tmdbenrich.data.backdrop_path}`;
+                baseMeta.background = bgUrl;
+                // Add blurred background hint for clients that support it
+                const host = process.env.HOST_URL || 'http://localhost:7000';
+                baseMeta.behaviorHints = { ...baseMeta.behaviorHints, backgroundBlur: `${host}/blur?url=${encodeURIComponent(bgUrl)}` };
             }
         } catch (_e) { /* Ignora l'arricchimento se fallisce per rate limit */ }
     }

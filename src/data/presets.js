@@ -230,7 +230,16 @@ const presets = [
     { id: 'preset_netflix', name: 'Originali Netflix', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.Netflix, sort_by: 'popularity.desc', 'vote_count.gte': 100 } },
     { id: 'preset_amazon', name: 'Amazon Prime Video', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.Amazon, sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
     { id: 'preset_disney_plus', name: 'Disney+', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.DisneyPlus, sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
-    { id: 'preset_apple_tv', name: 'Apple TV+', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.AppleTV, sort_by: 'vote_average.desc', 'vote_count.gte': 50 } }
+    { id: 'preset_apple_tv', name: 'Apple TV+', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.AppleTV, sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
+
+    // =============================================
+    // --- MDBLIST (Liste Curate dalla Community) ---
+    // =============================================
+    { id: 'mdblist_123', name: 'MDBList: Top 100 Movies (All Time)', category: 'Community Lists (MDB)', type: 'movie' },
+    { id: 'mdblist_456', name: 'MDBList: Top 100 Shows (All Time)', category: 'Community Lists (MDB)', type: 'series' },
+    { id: 'mdblist_789', name: 'MDBList: Latest Releases', category: 'Community Lists (MDB)', type: 'movie' },
+    { id: 'mdblist_101', name: 'MDBList: Trending this Week', category: 'Community Lists (MDB)', type: 'movie' },
+    { id: 'mdblist_102', name: 'MDBList: Hidden Gems', category: 'Community Lists (MDB)', type: 'movie' }
 ];
 
 const profileTemplates = [
@@ -251,6 +260,7 @@ const profileTemplates = [
         presets: [
             'preset_pop_movies', 'preset_new_movies', 'preset_top_rated_movies', 'preset_oscar_winners',
             'preset_blockbusters', 'preset_hidden_gems', 'preset_nolan', 'preset_tarantino',
+            'mdblist_123', 'mdblist_789', // MDBList
             'preset_scorsese', 'preset_a24', 'preset_mindfuck', 'preset_pure_comedy'
         ]
     },

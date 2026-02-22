@@ -1,6 +1,7 @@
 const { fetchTmdbCatalog, createTmdbClient, getTmdbIdByName } = require('../clients/tmdb');
 const { fetchKitsuCatalog } = require('../clients/kitsu');
 const { fetchTraktCatalog } = require('../clients/trakt');
+const { fetchMDBListItems, parseMDBListItems } = require('../utils/mdblist');
 const { routeLiveStremioSearch } = require('../ai/router');
 const UserConfig = require('../models/UserConfig');
 
@@ -285,7 +286,20 @@ async function catalogHandler(args, userUuid) {
         }
 
         // ==========================================
-        // SCENARIO 4: CATALOGHI CUSTOM AI / PRESET
+        // SCENARIO 4: CATALOGHI MDBLIST
+        // ==========================================
+        if (id.startsWith('mdblist_')) {
+            const listId = id.replace('mdblist_', '');
+            // You can optionally grab an MDBList API key from userConfig if needed, but public lists work without it
+            const mdblistKey = userConfig.apiKeys?.mdblist || null;
+            const page = Math.floor(skip / 20) + 1;
+            const items = await fetchMDBListItems(listId, mdblistKey, 'it', page); // Pass language
+            results = await parseMDBListItems(items, type, tmdbApiKey, 'it-IT');
+            return { metas: results };
+        }
+
+        // ==========================================
+        // SCENARIO 5: CATALOGHI CUSTOM AI / PRESET
         // ==========================================
         // Cerchiamo il catalogo prima nel profilo attivo, poi nel fallback globale (per vecchi utenti)
         let customCat = null;

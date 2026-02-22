@@ -1,9 +1,11 @@
-const axios = require('axios');
+const { createAxiosInstance } = require('../utils/httpClient');
 const LRUCache = require('../utils/LRUCache');
 const { TMDB_ENDPOINT, DEFAULT_LANGUAGE, DEFAULT_REGION, PAGES_PER_REQUEST, ITEMS_PER_PAGE } = require('../config');
+const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
+const { isMovieReleasedDigitally, isMovieReleasedInRegion } = require('../utils/releaseFilter');
 
 // Helper interno per costruire oggetti request TMDB
-const createTmdbClient = (apiKey) => axios.create({
+const createTmdbClient = (apiKey) => createAxiosInstance(TMDB_ENDPOINT, {
     baseURL: TMDB_ENDPOINT,
     params: {
         api_key: apiKey,
@@ -41,7 +43,8 @@ async function getTmdbIdByName(apiKey, endpoint, query) {
 function toStremioMetaItem(tmdbItem, type) {
     if (!tmdbItem) return null;
 
-    const id = `tmdb:${tmdbItem.id}`;
+    // Se abbiamo l'IMDB ID (grazie a external_ids) lo esponiamo, altrimenti fallback a tmdb:
+    const id = (tmdbItem.external_ids && tmdbItem.external_ids.imdb_id) ? tmdbItem.external_ids.imdb_id : `tmdb:${tmdbItem.id}`;
     const year = tmdbItem.release_date ? tmdbItem.release_date.split('-')[0] : (tmdbItem.first_air_date ? tmdbItem.first_air_date.split('-')[0] : '');
 
     return {
@@ -53,7 +56,11 @@ function toStremioMetaItem(tmdbItem, type) {
         posterShape: 'poster',
         description: tmdbItem.overview,
         releaseInfo: year,
-        imdbRating: tmdbItem.vote_average ? parseFloat(tmdbItem.vote_average).toFixed(1) : null
+        imdbRating: tmdbItem.vote_average ? parseFloat(tmdbItem.vote_average).toFixed(1) : null,
+        behaviorHints: {
+            defaultVideoId: id,
+            hasScheduledVideos: type === 'series'
+        }
     };
 }
 
@@ -76,7 +83,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
 
     try {
         const results = await Promise.allSettled(promises);
-        const items = [];
+        let items = [];
 
         // Uniamo e deduplichiamo
         const seenIds = new Set();
@@ -86,8 +93,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
                 for (const item of res.value.data.results) {
                     if (!seenIds.has(item.id)) {
                         seenIds.add(item.id);
-                        const mapped = toStremioMetaItem(item, type);
-                        if (mapped) items.push(mapped);
+                        items.push({ item, type });
                     }
                 }
             } else if (res.status === 'rejected') {
@@ -95,7 +101,21 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
             }
         });
 
-        return items;
+        // Applichiamo filtro di rilascio usando rateLimiter batch per non esplodere
+        const apiKey = client.defaults.params.api_key;
+
+        const filteredMetas = await rateLimitedMapFiltered(items, async ({ item, type }) => {
+            if (type === 'movie' && (!customParams.with_original_language || customParams.with_original_language !== 'ko')) {
+                // Esempio: Nascondiamo film non rilasciati in digitale o al di fuori del paese 
+                // (Molto utile per evitare flussi vuoti su Torrentio per film appena usciti in USA)
+                // Se c'è un filtro regionale stretto o se vogliamo solo roba digitale globale:
+                const isReleased = await isMovieReleasedDigitally(item.id, apiKey);
+                if (!isReleased) return null;
+            }
+            return toStremioMetaItem(item, type);
+        }, { batchSize: 10, delayMs: 100 });
+
+        return filteredMetas;
     } catch (err) {
         console.error(`Errore fetchTmdbCatalog ${endpoint}:`, err.message);
         return [];
@@ -105,7 +125,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
 /**
  * Recupera le stagioni e gli episodi per una Serie TV da TMDB
  */
-async function fetchTmdbEpisodes(client, tmdbId, totalSeasons) {
+async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId) {
     try {
         const promises = [];
         // TMDB Seasons are 1-indexed. Sometimes there is Season 0 (Specials).
@@ -124,7 +144,8 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons) {
                 const seasonData = res.value.data;
                 seasonData.episodes.forEach(ep => {
                     videos.push({
-                        id: `tmdb:${tmdbId}:${ep.season_number}:${ep.episode_number}`,
+                        // Usa IMDB ID se disponibile, essenziale per Torrentio!
+                        id: imdbId ? `${imdbId}:${ep.season_number}:${ep.episode_number}` : `tmdb:${tmdbId}:${ep.season_number}:${ep.episode_number}`,
                         title: ep.name || `Episodio ${ep.episode_number}`,
                         released: ep.air_date ? new Date(ep.air_date).toISOString() : null,
                         season: ep.season_number,
@@ -161,8 +182,9 @@ async function getTmdbMetaDetails(apiKey, id, type) {
     try {
         const res = await client.get(endpoint, {
             // Include videos (trailers) and images (for logos)
-            // also we can append credits for cast
-            params: { append_to_response: 'videos,credits,images', include_image_language: 'it,en,null' }
+            // also we can append credits for cast and external_ids for IMDB ID (streaming fix)
+            // appending release_dates for movies age ratings and content_ratings for series
+            params: { append_to_response: 'videos,credits,images,external_ids,release_dates,content_ratings', include_image_language: 'it,en,null' }
         });
 
         const data = res.data;
@@ -181,12 +203,36 @@ async function getTmdbMetaDetails(apiKey, id, type) {
             meta.runtime = `${data.runtime}m`;
         }
 
+        // Estrazione Certificazione Età (Age Rating)
+        try {
+            if (type === 'movie' && data.release_dates?.results) {
+                // Cerchiamo preferibilmente in US o primo disponibile
+                const releaseData = data.release_dates.results.find(r => r.iso_3166_1 === 'US') || data.release_dates.results[0];
+                if (releaseData?.release_dates?.[0]?.certification) {
+                    const cert = releaseData.release_dates[0].certification;
+                    if (cert) meta.description = `[${cert}] ${meta.description}`; // Stremio visualizza bene le label testuali nel body
+                }
+            } else if (type === 'series' && data.content_ratings?.results) {
+                const ratingData = data.content_ratings.results.find(r => r.iso_3166_1 === 'US') || data.content_ratings.results[0];
+                if (ratingData?.rating) {
+                    const cert = ratingData.rating;
+                    if (cert) meta.description = `[${cert}] ${meta.description}`;
+                }
+            }
+        } catch (_e) { /* fallback silenzioso se fallisce estrazione certification */ }
+
         // Troviamo il ClearLogo (il logo col nome del film trasparente)
         if (data.images && data.images.logos && data.images.logos.length > 0) {
             // Preferiamo quello in italiano, se non c'è prendiamo il primo disponibile (in genere inglese)
             const itLogo = data.images.logos.find(l => l.iso_639_1 === 'it');
             const targetLogo = itLogo || data.images.logos[0];
             meta.logo = `https://image.tmdb.org/t/p/w500${targetLogo.file_path}`;
+        }
+
+        // Add Blurred Background link
+        if (meta.background) {
+            const host = process.env.HOST_URL || 'http://localhost:7000';
+            meta.behaviorHints.backgroundBlur = `${host}/blur?url=${encodeURIComponent(meta.background)}`;
         }
 
         // Troviamo i trailer (YouTube) e formattiamoli secondo le specifiche Stremio
@@ -200,7 +246,7 @@ async function getTmdbMetaDetails(apiKey, id, type) {
 
         // Se è una serie TV, scarica gli episodi per popolare la griglia in Stremio
         if (type === 'series' && data.number_of_seasons) {
-            meta.videos = await fetchTmdbEpisodes(client, tmdbId, data.number_of_seasons);
+            meta.videos = await fetchTmdbEpisodes(client, tmdbId, data.number_of_seasons, meta.id.startsWith('tt') ? meta.id : null);
         }
 
         return meta;
