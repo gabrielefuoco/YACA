@@ -65,7 +65,7 @@ async function enhanceTraktItem(traktItem, tmdbApiKey) {
     }
 
     if (!baseMeta.poster) {
-        baseMeta.poster = `https://via.placeholder.com/300x450/1c1c24/8a5aeb?text=${encodeURIComponent(item.title || 'N/A')}`;
+        baseMeta.poster = `https://via.placeholder.com/300x450/1c1c24/8a5aeb?text=${encodeURIComponent(baseMeta.name)}`;
     }
 
     return baseMeta;
