@@ -185,8 +185,8 @@ const presets = [
     // =============================================
     // --- BAMBINI & FAMIGLIA ---
     // =============================================
-    { id: 'preset_kids_cn_nostalgia', name: 'Cartoon Network (\'90/00)', category: 'Bambini & Famiglia', type: 'series', filters: { with_networks: '56', 'first_air_date.lte': '2010-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
-    { id: 'preset_kids_nick_nostalgia', name: 'Nickelodeon (\'90/00)', category: 'Bambini & Famiglia', type: 'series', filters: { with_networks: '13', 'first_air_date.lte': '2010-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
+    { id: 'preset_kids_cn_nostalgia', name: 'Cartoon Network (\'90/\'00)', category: 'Bambini & Famiglia', type: 'series', filters: { with_networks: '56', 'first_air_date.gte': '1990-01-01', 'first_air_date.lte': '2009-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
+    { id: 'preset_kids_nick_nostalgia', name: 'Nickelodeon (\'90/\'00)', category: 'Bambini & Famiglia', type: 'series', filters: { with_networks: '13', 'first_air_date.gte': '1990-01-01', 'first_air_date.lte': '2009-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
     { id: 'preset_family_magic_adv', name: 'Avventure Magiche (Live Action)', category: 'Bambini & Famiglia', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Family},${TMDB_GENRES.MOVIE.Fantasy}`, with_keywords: '11024,3205', sort_by: 'revenue.desc', 'vote_count.gte': 100 } },
     { id: 'preset_teens_coming_of_age', name: 'Coming of Age', category: 'Bambini & Famiglia', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Drama, with_keywords: '10683', sort_by: 'vote_average.desc', 'vote_average.gte': 7.0, 'vote_count.gte': 200 } },
     { id: 'preset_family_animation', name: 'Animazione per Tutti', category: 'Bambini & Famiglia', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Animation},${TMDB_GENRES.MOVIE.Family}`, sort_by: 'vote_average.desc', 'vote_count.gte': 500 } },
