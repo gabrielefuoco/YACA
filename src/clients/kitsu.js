@@ -21,11 +21,11 @@ function toStremioMetaItem(kitsuItem) {
 
     return {
         id,
-        type: 'anime',
+        type: 'series',
         name: title,
         poster: attrs.posterImage ? attrs.posterImage.original : null,
         background: attrs.coverImage ? attrs.coverImage.original : null,
-        posterShape: 'regular',
+        posterShape: 'poster',
         description: attrs.synopsis,
         releaseInfo: year,
         imdbRating: attrs.averageRating ? (parseFloat(attrs.averageRating) / 10).toFixed(1) : null

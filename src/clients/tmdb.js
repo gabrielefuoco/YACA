@@ -50,10 +50,10 @@ function toStremioMetaItem(tmdbItem, type) {
         name: tmdbItem.title || tmdbItem.name,
         poster: tmdbItem.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbItem.poster_path}` : null,
         background: tmdbItem.backdrop_path ? `https://image.tmdb.org/t/p/original${tmdbItem.backdrop_path}` : null,
-        posterShape: 'regular',
+        posterShape: 'poster',
         description: tmdbItem.overview,
         releaseInfo: year,
-        imdbRating: tmdbItem.vote_average ? tmdbItem.vote_average.toString() : null
+        imdbRating: tmdbItem.vote_average ? parseFloat(tmdbItem.vote_average).toFixed(1) : null
     };
 }
 
@@ -169,7 +169,7 @@ async function getTmdbMetaDetails(apiKey, id, type) {
             meta.genres = data.genres.map(g => g.name);
         }
         if (data.runtime) {
-            meta.runtime = `${data.runtime} min`;
+            meta.runtime = `${data.runtime}m`;
         }
 
         // Troviamo il ClearLogo (il logo col nome del film trasparente)

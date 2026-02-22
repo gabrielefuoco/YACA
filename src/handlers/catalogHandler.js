@@ -170,7 +170,7 @@ async function catalogHandler(args, userUuid) {
         // SCENARIO 1: RICERCA VIVA TRAMITE BARRA
         // ==========================================
         if (search) {
-            if (id === 'yaca_ai_search') {
+            if (id === 'yaca_ai_search' || id === 'yaca_ai_search_series') {
                 // Esegue Mistral live per decidere dove instradare e calcolare i filtri avanzati
                 const routing = await routeLiveStremioSearch(search, mistralKey);
 
@@ -181,7 +181,7 @@ async function catalogHandler(args, userUuid) {
                     // Sfrutta il nuovo esecutore per processare i filtri Mistral
                     results = await executeComplexStrategy(routing.filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
                 }
-            } else if (id === 'yaca_anime_trending' && type === 'series') {
+            } else if (id === 'yaca_anime_trending') {
                 // Ricerca testuale nativa limitata a Kitsu
                 results = await fetchKitsuCatalog('/anime', skip, { filter: { text: search } });
             } else {
@@ -208,7 +208,7 @@ async function catalogHandler(args, userUuid) {
             return { metas: results };
         }
 
-        if (id === 'yaca_anime_trending' && type === 'series') {
+        if (id === 'yaca_anime_trending') {
             results = await fetchKitsuCatalog('/anime', skip, { sort: '-popularityRank' });
             return { metas: results };
         }

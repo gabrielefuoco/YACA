@@ -107,20 +107,22 @@ app.get('/:uuid/manifest.json', async (req, res) => {
             version: '1.0.2',
             name: 'YACA (Yet Another Catalog Addon)',
             description: 'Catalogo Intelligente Potenziato da AI',
+            logo: `${req.protocol}://${req.get('host')}/logo.png`,
             resources: ['catalog', 'meta'],
-            types: ['movie', 'series', 'anime'],
+            types: ['movie', 'series'],
             catalogs: [
                 { id: 'yaca_discover_movies', type: 'movie', name: 'Esplora Film (TMDB)', extra: [{ name: 'skip' }] },
                 { id: 'yaca_discover_series', type: 'series', name: 'Esplora Serie (TMDB)', extra: [{ name: 'skip' }] },
-                { id: 'yaca_anime_trending', type: 'anime', name: 'Anime Popolari (Kitsu)', extra: [{ name: 'skip' }] },
-                // La ricerca libera per usare Mistral al volo da Stremio
-                { id: 'yaca_ai_search', type: 'movie', name: 'Ricerca AI', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] }
+                { id: 'yaca_anime_trending', type: 'series', name: 'Anime Popolari (Kitsu)', extra: [{ name: 'skip' }] },
+                { id: 'yaca_ai_search', type: 'movie', name: 'Ricerca AI (Film)', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] },
+                { id: 'yaca_ai_search_series', type: 'series', name: 'Ricerca AI (Serie)', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] }
             ],
             idPrefixes: ['tt', 'tmdb:', 'kitsu:'],
             behaviorHints: {
                 configurable: true,
                 configurationRequired: false
             },
+            contactEmail: 'yaca.addon@proton.me',
             configurationURL: `${req.protocol}://${req.get('host')}/${uuid}/configure`
         };
 
@@ -173,6 +175,8 @@ app.get('/manifest.json', (req, res) => {
         version: '1.0.2',
         name: 'YACA (Yet Another Catalog Addon)',
         description: 'Catalogo Intelligente Potenziato da AI - Configurazione Richiesta',
+        logo: `${req.protocol}://${req.get('host')}/logo.png`,
+        contactEmail: 'yaca.addon@proton.me',
         resources: [],
         types: [],
         catalogs: [],
@@ -211,7 +215,7 @@ app.get(['/:uuid/catalog/:type/:id.json', '/:uuid/catalog/:type/:id/:extra.json'
 app.get('/:uuid/meta/:type/:id.json', async (req, res) => {
     const { uuid, type, id } = req.params;
     if (!isValidUUID(uuid)) {
-        return res.status(400).json({ meta: {} });
+        return res.status(400).json({ meta: null });
     }
 
     const args = { type, id };
@@ -222,7 +226,7 @@ app.get('/:uuid/meta/:type/:id.json', async (req, res) => {
         res.json(response);
     } catch (err) {
         console.error("Errore Meta Endpoint:", err.message);
-        res.json({ meta: {} });
+        res.json({ meta: null });
     }
 });
 

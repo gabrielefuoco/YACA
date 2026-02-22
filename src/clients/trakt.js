@@ -36,7 +36,7 @@ async function enhanceTraktItem(traktItem) {
         name: item.title,
         releaseInfo: item.year ? item.year.toString() : '',
         description: item.overview || "Metadati completi al click",
-        posterShape: 'regular'
+        posterShape: 'poster'
     };
 
     // Optiamo per un arricchimento leggero tramite le API TMDB che già abbiamo (se abbiamo il tmdb_id)

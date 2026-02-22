@@ -41,11 +41,11 @@ async function metaHandler(args, userUuid) {
             return { meta };
         }
 
-        return { meta: {} };
+        return { meta: null };
 
     } catch (err) {
         console.error("Errore Meta Handler:", err.message);
-        return { meta: {} };
+        return { meta: null };
     }
 }
 
