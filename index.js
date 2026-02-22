@@ -25,9 +25,44 @@ if (!supabaseClient) {
     console.error("⚠️ Supabase non inizializzato: le funzionalità che richiedono il database non saranno disponibili.");
 }
 
+// Health check endpoint per monitoring e deployment platforms
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        version: '1.0.2',
+        uptime: Math.floor(process.uptime()),
+        database: supabaseClient ? 'connected' : 'unavailable'
+    });
+});
+
 // Endpoint per recuperare i preset disponibili
 app.get('/api/presets', (req, res) => {
     res.json({ presets: presets.presets, profileTemplates: presets.profileTemplates });
+});
+
+// Endpoint per validare una TMDB API Key
+app.post('/api/validate-tmdb-key', async (req, res) => {
+    const { tmdbKey } = req.body;
+    if (!tmdbKey) {
+        return res.status(400).json({ valid: false, error: 'Chiave non fornita' });
+    }
+    try {
+        const axios = require('axios');
+        const testRes = await axios.get('https://api.themoviedb.org/3/configuration', {
+            params: { api_key: tmdbKey },
+            timeout: 5000
+        });
+        if (testRes.data && testRes.data.images) {
+            return res.json({ valid: true });
+        }
+        return res.json({ valid: false, error: 'Risposta non valida da TMDB' });
+    } catch (err) {
+        const status = err.response?.status;
+        if (status === 401) {
+            return res.json({ valid: false, error: 'Chiave TMDB non valida (401 Unauthorized)' });
+        }
+        return res.json({ valid: false, error: 'Impossibile verificare la chiave. Riprova.' });
+    }
 });
 
 // 2. Registra endpoint configuration (Frontend Web Web)
