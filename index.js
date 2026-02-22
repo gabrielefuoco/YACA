@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const axios = require('axios');
 
 const { initSupabase } = require('./src/utils/database');
 const configureRoute = require('./src/api/configure');
@@ -47,7 +48,6 @@ app.post('/api/validate-tmdb-key', async (req, res) => {
         return res.status(400).json({ valid: false, error: 'Chiave non fornita' });
     }
     try {
-        const axios = require('axios');
         const testRes = await axios.get('https://api.themoviedb.org/3/configuration', {
             params: { api_key: tmdbKey },
             timeout: 5000

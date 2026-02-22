@@ -323,6 +323,7 @@
     </div>
 
     <script>
+        const YACA_VERSION = '1.0.2';
         let currentUuid = new URLSearchParams(window.location.search).get('uuid');
 
         let availablePresets = [];
@@ -568,7 +569,7 @@
         document.getElementById('exportConfigBtn').addEventListener('click', () => {
             saveUIState();
             const exportData = {
-                _yaca_version: '1.0.2',
+                _yaca_version: YACA_VERSION,
                 _exported_at: new Date().toISOString(),
                 tmdbKey: document.getElementById('tmdbKey').value,
                 mistralKey: document.getElementById('mistralKey').value,
@@ -596,6 +597,9 @@
                     if (!data._yaca_version || !data.profiles) {
                         alert('File non valido. Assicurati che sia un backup di YACA.');
                         return;
+                    }
+                    if (data._yaca_version !== YACA_VERSION) {
+                        if (!confirm(`Attenzione: il backup è della versione ${data._yaca_version}, ma YACA è alla versione ${YACA_VERSION}. Continuare comunque?`)) return;
                     }
                     document.getElementById('tmdbKey').value = data.tmdbKey || '';
                     document.getElementById('mistralKey').value = data.mistralKey || '';
