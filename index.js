@@ -76,7 +76,8 @@ app.get('/:uuid/manifest.json', async (req, res) => {
             behaviorHints: {
                 configurable: true,
                 configurationRequired: false
-            }
+            },
+            configurationURL: `https://${req.get('host')}/${uuid}/configure`
         };
 
         let activeProfileCatalogs = [];
