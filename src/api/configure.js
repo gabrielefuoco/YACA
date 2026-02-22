@@ -19,10 +19,10 @@ module.exports = async (req, res) => {
         // Validation for Mistral
         if (profiles && Array.isArray(profiles)) {
             for (const p of profiles) {
-                if (p.newPrompts && p.newPrompts.length > 0) needsMistral = true;
+                if (p.newPrompts && p.newPrompts.some(pr => pr && pr.trim().length > 0)) needsMistral = true;
             }
-        } else if (req.body.prompts && req.body.prompts.length > 0) {
-            needsMistral = true;
+        } else if (req.body.prompts && Array.isArray(req.body.prompts)) {
+            if (req.body.prompts.some(pr => pr && pr.trim().length > 0)) needsMistral = true;
         }
 
         if (needsMistral && !mistralKey) {

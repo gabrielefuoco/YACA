@@ -60,7 +60,7 @@ app.get('/:uuid/manifest.json', async (req, res) => {
         // Costruiamo il manifest di default base
         const manifest = {
             id: 'org.stremio.yaca.catalog',
-            version: '1.0.1',
+            version: '1.0.2',
             name: 'YACA (Yet Another Catalog Addon)',
             description: 'Catalogo Intelligente Potenziato da AI',
             resources: ['catalog', 'meta'],
@@ -105,7 +105,7 @@ app.get('/:uuid/manifest.json', async (req, res) => {
         }
 
         // Inietta i Cataloghi Trakt se l'utente ha configurato l'username
-        if (userConfig.traktUsername) {
+        if (userConfig.apiKeys && userConfig.apiKeys.trakt) {
             manifest.catalogs.unshift(
                 { id: 'trakt_watchlist_movies', type: 'movie', name: 'Trakt Watchlist' },
                 { id: 'trakt_watchlist_series', type: 'series', name: 'Trakt Watchlist' },
