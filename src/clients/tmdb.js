@@ -1,4 +1,5 @@
 const axios = require('axios');
+const LRUCache = require('../utils/LRUCache');
 const { TMDB_ENDPOINT, DEFAULT_LANGUAGE, DEFAULT_REGION, PAGES_PER_REQUEST, ITEMS_PER_PAGE } = require('../config');
 
 // Helper interno per costruire oggetti request TMDB
@@ -12,7 +13,7 @@ const createTmdbClient = (apiKey) => axios.create({
     timeout: 10000
 });
 
-const idNameCache = new Map();
+const idNameCache = new LRUCache({ max: 1000, ttl: 1000 * 60 * 60 }); // 1 hour TTL
 
 /**
  * Traduce una stringa (es. nome attore o keyword) nel suo ID TMDB effettuando una fetch al volo
@@ -40,7 +41,7 @@ async function getTmdbIdByName(apiKey, endpoint, query) {
 function toStremioMetaItem(tmdbItem, type) {
     if (!tmdbItem) return null;
 
-    const id = `tmdb: ${tmdbItem.id} `;
+    const id = `tmdb:${tmdbItem.id}`;
     const year = tmdbItem.release_date ? tmdbItem.release_date.split('-')[0] : (tmdbItem.first_air_date ? tmdbItem.first_air_date.split('-')[0] : '');
 
     return {
@@ -72,7 +73,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
 
     try {
         const results = await Promise.allSettled(promises);
-        let items = [];
+        const items = [];
 
         // Uniamo e deduplichiamo
         const seenIds = new Set();

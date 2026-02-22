@@ -1,7 +1,8 @@
 const { createTmdbClient } = require('../clients/tmdb');
+const LRUCache = require('../utils/LRUCache');
 
-// Una semplice cache in memoria per evitare di chiamare /find troppe volte per gli stessi ID
-const memoryCache = new Map();
+// Cache limitata in memoria per evitare di chiamare /find troppe volte per gli stessi ID
+const memoryCache = new LRUCache({ max: 5000, ttl: 1000 * 60 * 60 * 24 }); // 24 hour TTL
 
 /**
  * Traduce un imdb_id (es. tt1234567) in un tmdb_id usando l'API TMDB /find

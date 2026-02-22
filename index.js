@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
 
 const { initSupabase } = require('./src/utils/database');
 const configureRoute = require('./src/api/configure');
@@ -10,6 +9,7 @@ const UserConfig = require('./src/models/UserConfig');
 const { catalogHandler } = require('./src/handlers/catalogHandler');
 const { metaHandler } = require('./src/handlers/metaHandler');
 const presets = require('./src/data/presets');
+const { isValidUUID, parseExtra } = require('./src/utils/helpers');
 
 // 1. Inizializza Express
 const app = express();
@@ -20,7 +20,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
 // Inizializza Supabase Client
-initSupabase();
+const supabaseClient = initSupabase();
+if (!supabaseClient) {
+    console.error("⚠️ Supabase non inizializzato: le funzionalità che richiedono il database non saranno disponibili.");
+}
 
 // Endpoint per recuperare i preset disponibili
 app.get('/api/presets', (req, res) => {
@@ -32,6 +35,9 @@ app.post('/api/configure', configureRoute);
 
 app.get('/api/configure/:uuid', async (req, res) => {
     try {
+        if (!isValidUUID(req.params.uuid)) {
+            return res.status(400).json({ error: "UUID non valido" });
+        }
         const userConfig = await UserConfig.findOne({ uuid: req.params.uuid });
         if (!userConfig) {
             return res.status(404).json({ error: "Configurazione non trovata" });
@@ -50,6 +56,9 @@ app.get('/:uuid/configure', (req, res) => {
 // 3. Endpoint dinamico per il Manifest di Stremio (L'addon vero e proprio risponde qui)
 app.get('/:uuid/manifest.json', async (req, res) => {
     const { uuid } = req.params;
+    if (!isValidUUID(uuid)) {
+        return res.status(400).json({ error: "UUID non valido" });
+    }
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     try {
         const userConfig = await UserConfig.findOne({ uuid });
@@ -139,42 +148,46 @@ app.get('/manifest.json', (req, res) => {
     res.json(manifest);
 });
 
-// Helper interno per parsare i parametri "extra" stile Stremio (es. "search=avengers&skip=20")
-function parseExtra(extraString) {
-    if (!extraString) return {};
-    const extra = {};
-    const params = extraString.split('&');
-    for (const p of params) {
-        const [k, v] = p.split('=');
-        if (k && v) extra[k] = decodeURIComponent(v);
-    }
-    return extra;
-}
-
 // 4. Endpoint per i Cataloghi Stremio
 app.get(['/:uuid/catalog/:type/:id.json', '/:uuid/catalog/:type/:id/:extra.json'], async (req, res) => {
     const { uuid, type, id, extra: extraStr } = req.params;
+    if (!isValidUUID(uuid)) {
+        return res.status(400).json({ metas: [] });
+    }
     const extra = parseExtra(extraStr);
 
     // Converti skip in intero se presente
     if (extra.skip) extra.skip = parseInt(extra.skip, 10) || 0;
 
     const args = { type, id, extra };
-    const response = await catalogHandler(args, uuid);
 
-    res.setHeader('Cache-Control', 'max-age=1800, public'); // Stremio caching
-    res.json(response);
+    try {
+        const response = await catalogHandler(args, uuid);
+        res.setHeader('Cache-Control', 'max-age=1800, public'); // Stremio caching
+        res.json(response);
+    } catch (err) {
+        console.error("Errore Catalog Endpoint:", err.message);
+        res.json({ metas: [] });
+    }
 });
 
 // 5. Endpoint per i Metadati Stremio
 app.get('/:uuid/meta/:type/:id.json', async (req, res) => {
     const { uuid, type, id } = req.params;
+    if (!isValidUUID(uuid)) {
+        return res.status(400).json({ meta: {} });
+    }
 
     const args = { type, id };
-    const response = await metaHandler(args, uuid);
 
-    res.setHeader('Cache-Control', 'max-age=86400, public'); // Cache giornaliera
-    res.json(response);
+    try {
+        const response = await metaHandler(args, uuid);
+        res.setHeader('Cache-Control', 'max-age=86400, public'); // Cache giornaliera
+        res.json(response);
+    } catch (err) {
+        console.error("Errore Meta Endpoint:", err.message);
+        res.json({ meta: {} });
+    }
 });
 
 // Avvia il server
