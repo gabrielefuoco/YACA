@@ -1,5 +1,6 @@
 const { fetchTmdbCatalog, createTmdbClient, getTmdbIdByName } = require('../clients/tmdb');
 const { fetchKitsuCatalog } = require('../clients/kitsu');
+const { fetchTraktCatalog } = require('../clients/trakt');
 const { routeLiveStremioSearch } = require('../ai/router');
 const UserConfig = require('../models/UserConfig');
 
@@ -52,6 +53,8 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
     delete tmdbParams.runtime_lte;
     delete tmdbParams.runtime_gte;
     delete tmdbParams.watch_provider;
+    delete tmdbParams.original_language;
+    delete tmdbParams.target;
 
     if (filters.genre_ids?.length) {
         const finalGenres = resolveGenreIds(filters.genre_ids, type);
@@ -213,7 +216,6 @@ async function catalogHandler(args, userUuid) {
         // ==========================================
         // SCENARIO 3: CATALOGHI TRAKT
         // ==========================================
-        const { fetchTraktCatalog } = require('../clients/trakt');
         const traktUname = userConfig.apiKeys?.trakt;
 
         if (id === 'trakt_watchlist_movies' && type === 'movie') {
@@ -235,7 +237,7 @@ async function catalogHandler(args, userUuid) {
         }
 
         // ==========================================
-        // SCENARIO 3: CATALOGHI CUSTOM AI / PRESET
+        // SCENARIO 4: CATALOGHI CUSTOM AI / PRESET
         // ==========================================
         // Cerchiamo il catalogo prima nel profilo attivo, poi nel fallback globale (per vecchi utenti)
         let customCat = null;

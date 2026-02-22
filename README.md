@@ -3,6 +3,11 @@ Il catalogo definitivo per Stremio, potenziato dall'intelligenza artificiale di 
 
 ## Funzionalità
 - **Cataloghi Intelligenti**: Genera cataloghi auto-aggiornanti con prompt testuali. (es. "Commedie romantiche natalizie").
+- **100+ Preset Curati**: Cataloghi pre-configurati per genere, regista, attore, studio, decennio e tematiche.
+- **Profili Multipli**: Organizza i tuoi cataloghi in profili (es. "Film", "Anime", "Serie TV") e passa da uno all'altro.
+- **Integrazione Trakt.tv**: Sincronizza Watchlist e Preferiti dal tuo account Trakt.
+- **Ricerca AI Live**: Cerca dalla barra di Stremio e l'AI interpreta la tua richiesta.
+
 ## Setup Cloud Zero-Costi
 Questo addon usa **Supabase** (PostgreSQL) come database cloud persistente gratuito per salvare le tue configurazioni senza doverti preoccupare di Docker o server.
 
@@ -14,6 +19,8 @@ create table user_configs (
   uuid uuid primary key,
   "apiKeys" jsonb not null,
   catalogs jsonb default '[]',
+  profiles jsonb default '[]',
+  "activeProfileId" text,
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
 ```
@@ -33,3 +40,6 @@ npm run dev
 ```
 
 Visita `http://localhost:7000` nel browser per configurare il tuo addon e ottenere il link personalizzato!
+
+## Aggiornamento
+Se hai già un'installazione esistente, visita `http://localhost:7000/?uuid=TUO-UUID` per modificare la configurazione. Dopo il salvataggio, clicca il link di reinstallazione per aggiornare l'addon in Stremio.

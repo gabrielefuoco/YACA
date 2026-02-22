@@ -86,7 +86,7 @@ app.get('/:uuid/manifest.json', async (req, res) => {
                 configurable: true,
                 configurationRequired: false
             },
-            configurationURL: `https://${req.get('host')}/${uuid}/configure`
+            configurationURL: `${req.protocol}://${req.get('host')}/${uuid}/configure`
         };
 
         let activeProfileCatalogs = [];
@@ -135,7 +135,7 @@ app.get('/:uuid/manifest.json', async (req, res) => {
 app.get('/manifest.json', (req, res) => {
     const manifest = {
         id: 'org.stremio.yaca.catalog',
-        version: '1.0.0',
+        version: '1.0.2',
         name: 'YACA (Yet Another Catalog Addon)',
         description: 'Catalogo Intelligente Potenziato da AI - Configurazione Richiesta',
         resources: [],
