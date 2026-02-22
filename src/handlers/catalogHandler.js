@@ -146,6 +146,7 @@ async function catalogHandler(args, userUuid) {
         const { type, id, extra } = args;
         const skip = extra.skip || 0;
         const search = extra.search || null;
+        const sortBy = extra.sortBy || null;
 
         let results = [];
 
@@ -205,13 +206,13 @@ async function catalogHandler(args, userUuid) {
         // SCENARIO 2: CATALOGHI ESPLORATIVI STANDARD
         // ==========================================
         if (id === 'yaca_discover_movies') {
-            const params = { sort_by: 'popularity.desc', 'vote_average.gte': activeProfileSettings.minVoteAverage, 'vote_count.gte': activeProfileSettings.minVoteCount };
+            const params = { sort_by: sortBy || 'popularity.desc', 'vote_average.gte': activeProfileSettings.minVoteAverage, 'vote_count.gte': activeProfileSettings.minVoteCount };
             results = await fetchTmdbCatalog(tmdbClient, '/discover/movie', skip, params, 'movie');
             return { metas: results };
         }
 
         if (id === 'yaca_discover_series') {
-            const params = { sort_by: 'popularity.desc', 'vote_average.gte': activeProfileSettings.minVoteAverage, 'vote_count.gte': activeProfileSettings.minVoteCount };
+            const params = { sort_by: sortBy || 'popularity.desc', 'vote_average.gte': activeProfileSettings.minVoteAverage, 'vote_count.gte': activeProfileSettings.minVoteCount };
             results = await fetchTmdbCatalog(tmdbClient, '/discover/tv', skip, params, 'series');
             return { metas: results };
         }
@@ -301,7 +302,9 @@ async function catalogHandler(args, userUuid) {
 
         if (customCat && customCat.filters) {
             // Esegue i filtri salvati a database sfruttando il Discovery Builder
-            if (!customCat.filters.strategy) customCat.filters.strategy = 'discovery'; // Retrocompatibilità 
+            if (!customCat.filters.strategy) customCat.filters.strategy = 'discovery'; // Retrocompatibilità
+            // Applica ordinamento da Stremio se specificato
+            if (sortBy) customCat.filters.sort_by = sortBy;
             results = await executeComplexStrategy(customCat.filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
             return { metas: results };
         }

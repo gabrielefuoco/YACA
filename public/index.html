@@ -139,14 +139,15 @@
                         </div>
                     </div>
 
-                    <div
-                        class="flex flex-col sm:flex-row items-start sm:items-center gap-3 border-t border-dark-700 pt-4 relative z-10">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 border-t border-dark-700 pt-4 relative z-10">
                         <input type="text" id="profileNameInput"
                             class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-stremio text-sm flex-1 w-full placeholder-gray-500 font-bold shadow-sm"
                             placeholder="Nome Profilo">
                         <button type="button" id="activateProfileBtn"
                             class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded transition-colors whitespace-nowrap shadow-sm">Rendi
                             Attivo</button>
+                        <button type="button" id="toggleTemplateBtn"
+                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600 shadow-sm">📋 Modelli</button>
                     </div>
                 </div>
 
@@ -487,6 +488,10 @@
 
         document.getElementById('newProfileBtn').addEventListener('click', () => {
             saveUIState();
+            if (profiles.length >= 20) {
+                alert('Massimo 20 profili raggiunto.');
+                return;
+            }
             const newId = 'prof_' + Date.now();
             profiles.push({
                 id: newId,
@@ -501,6 +506,11 @@
 
             // Show Templates
             document.getElementById('profileTemplateSelector').classList.remove('hidden');
+        });
+
+        document.getElementById('toggleTemplateBtn').addEventListener('click', () => {
+            const tplSelector = document.getElementById('profileTemplateSelector');
+            tplSelector.classList.toggle('hidden');
         });
 
         document.getElementById('deleteProfileBtn').addEventListener('click', () => {
@@ -734,9 +744,11 @@
                 btn.textContent = tpl.name;
                 btn.onclick = () => {
                     const ep = getEditingProfile();
-                    ep.raw_ui_state.selectedPresets = tpl.presets;
-                    // change name automatically if untouched
-                    if (ep.name === 'Nuovo Profilo') { ep.name = tpl.name; }
+                    // Unisci i preset del template con quelli esistenti (deduplicati)
+                    const merged = [...new Set([...ep.raw_ui_state.selectedPresets, ...tpl.presets])];
+                    ep.raw_ui_state.selectedPresets = merged;
+                    // Cambia nome solo se è quello di default
+                    if (ep.name === 'Nuovo Profilo' || ep.name === 'Senza Nome') { ep.name = tpl.name; }
                     renderProfileSelect();
                     renderPresetsAndCatalogs();
                     document.getElementById('profileTemplateSelector').classList.add('hidden');
@@ -918,15 +930,18 @@
 
                 if (response.ok) {
                     const data = await response.json();
+                    const cv = data.configVersion || '';
 
                     if (currentUuid) {
-                        // UPDATE MODE: Mostra successo con link reinstallazione
+                        // UPDATE MODE: Usa configVersion nel link per forzare aggiornamento in Stremio
                         const portStr = window.location.port ? `:${window.location.port}` : '';
                         const cleanUrl = `${window.location.protocol}//${window.location.hostname}${portStr}`;
                         const baseUrl = cleanUrl.replace('https://', 'stremio://').replace('http://', 'stremio://');
-                        const updateLink = `${baseUrl}/${data.uuid}/manifest.json`;
+                        const updateLink = cv
+                            ? `${baseUrl}/${data.uuid}/${cv}/manifest.json`
+                            : `${baseUrl}/${data.uuid}/manifest.json`;
 
-                        statusMsg.innerHTML = `✅ Configurazione aggiornata! <a href="${updateLink}" class="underline hover:text-green-300">Clicca qui per aggiornare in Stremio</a> oppure riavvia Stremio.`;
+                        statusMsg.innerHTML = `✅ Configurazione aggiornata! <a href="${updateLink}" class="underline hover:text-green-300">Clicca qui per aggiornare in Stremio</a> (Stremio ti chiederà di reinstallare con la nuova configurazione).`;
                         statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-green-500/20 text-green-400 block border border-green-500/30";
                         submitBtn.disabled = false;
                         submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
@@ -944,10 +959,13 @@
                         const cleanUrl = `${window.location.protocol}//${window.location.hostname}${portStr}`;
                         const baseUrl = cleanUrl.replace('https://', 'stremio://').replace('http://', 'stremio://');
 
-                        const finalLink = `${baseUrl}/${data.uuid}/manifest.json`;
+                        const finalLink = cv
+                            ? `${baseUrl}/${data.uuid}/${cv}/manifest.json`
+                            : `${baseUrl}/${data.uuid}/manifest.json`;
 
                         link.href = finalLink;
                         uuidDisplay.textContent = data.uuid;
+                        currentUuid = data.uuid;
 
                         document.getElementById('configForm').classList.add('hidden');
                         box.classList.remove('hidden');

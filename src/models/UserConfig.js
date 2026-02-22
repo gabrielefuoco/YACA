@@ -25,6 +25,8 @@ const UserConfig = {
         const supabase = getSupabase();
         if (!supabase) throw new Error("Supabase non disponibile");
 
+        const configVersion = Date.now().toString(36);
+
         const { data, error } = await supabase
             .from('user_configs')
             .upsert({
@@ -33,6 +35,7 @@ const UserConfig = {
                 catalogs,
                 profiles,
                 activeProfileId,
+                configVersion,
                 updated_at: new Date()
             }, { onConflict: 'uuid' });
 

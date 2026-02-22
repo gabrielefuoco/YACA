@@ -84,15 +84,37 @@ app.get('/api/configure/:uuid', async (req, res) => {
     }
 });
 
-app.get('/:uuid/configure', (req, res) => {
+app.get(['/:uuid/configure', '/:uuid/:configVersion/configure'], (req, res) => {
     if (!isValidUUID(req.params.uuid)) {
         return res.status(400).json({ error: "UUID non valido" });
     }
     res.redirect(`/?uuid=${req.params.uuid}`);
 });
 
+// Opzioni di ordinamento disponibili in Stremio per i cataloghi TMDB
+const SORT_OPTIONS = ['Popolarità', 'Voto Medio', 'Data di Uscita', 'Incassi'];
+const SORT_MAP = {
+    'Popolarità': 'popularity.desc',
+    'Voto Medio': 'vote_average.desc',
+    'Data di Uscita': null, // Gestito dinamicamente per movie/series
+    'Incassi': 'revenue.desc'
+};
+
+function getSortByValue(genreExtra, type) {
+    if (!genreExtra || !Object.prototype.hasOwnProperty.call(SORT_MAP, genreExtra)) return 'popularity.desc';
+    if (genreExtra === 'Data di Uscita') {
+        return type === 'movie' ? 'primary_release_date.desc' : 'first_air_date.desc';
+    }
+    return SORT_MAP[genreExtra];
+}
+
+// Extra standard per cataloghi con ordinamento
+const discoverExtra = [{ name: 'genre', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
+const presetExtra = [{ name: 'genre', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
+
 // 3. Endpoint dinamico per il Manifest di Stremio (L'addon vero e proprio risponde qui)
-app.get('/:uuid/manifest.json', async (req, res) => {
+// Supporta sia /:uuid/manifest.json (retrocompatibilità) che /:uuid/:configVersion/manifest.json
+app.get(['/:uuid/manifest.json', '/:uuid/:configVersion/manifest.json'], async (req, res) => {
     const { uuid } = req.params;
     if (!isValidUUID(uuid)) {
         return res.status(400).json({ error: "UUID non valido" });
@@ -104,18 +126,22 @@ app.get('/:uuid/manifest.json', async (req, res) => {
             return res.status(404).json({ error: "Configurazione non trovata. Reinstalla l'addon." });
         }
 
+        // Versione dinamica: include configVersion per forzare aggiornamento in Stremio
+        const cv = userConfig.configVersion;
+        const dynamicVersion = cv ? `1.0.2+${cv}` : '1.0.2';
+
         // Costruiamo il manifest di default base
         const manifest = {
             id: 'org.stremio.yaca.catalog',
-            version: '1.0.2',
+            version: dynamicVersion,
             name: 'YACA (Yet Another Catalog Addon)',
             description: 'Catalogo Intelligente Potenziato da AI',
             logo: `${req.protocol}://${req.get('host')}/logo.png`,
             resources: ['catalog', 'meta'],
             types: ['movie', 'series'],
             catalogs: [
-                { id: 'yaca_discover_movies', type: 'movie', name: 'Esplora Film (TMDB)', extra: [{ name: 'skip' }] },
-                { id: 'yaca_discover_series', type: 'series', name: 'Esplora Serie (TMDB)', extra: [{ name: 'skip' }] },
+                { id: 'yaca_discover_movies', type: 'movie', name: 'Esplora Film (TMDB)', extra: discoverExtra },
+                { id: 'yaca_discover_series', type: 'series', name: 'Esplora Serie (TMDB)', extra: discoverExtra },
                 { id: 'yaca_anime_trending', type: 'series', name: 'Anime Popolari (Kitsu)', extra: [{ name: 'skip' }] },
                 { id: 'yaca_ai_search', type: 'movie', name: 'Ricerca AI (Film)', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] },
                 { id: 'yaca_ai_search_series', type: 'series', name: 'Ricerca AI (Serie)', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] }
@@ -144,12 +170,11 @@ app.get('/:uuid/manifest.json', async (req, res) => {
         if (activeProfileCatalogs.length > 0) {
             for (const cat of activeProfileCatalogs) {
                 const isPreset = cat.id.startsWith('yaca_preset_');
-                // Aggiungiamo il catalogo al manifest. Per i preset usiamo il loro tipo, per l'AI default 'movie' per ora
                 manifest.catalogs.unshift({
                     id: cat.id,
                     type: cat.type || 'movie',
                     name: isPreset ? cat.name : `AI: ${cat.name}`,
-                    extra: [{ name: 'skip' }]
+                    extra: presetExtra
                 });
             }
         }
@@ -203,8 +228,13 @@ app.get('/manifest.json', (req, res) => {
     res.json(manifest);
 });
 
-// 4. Endpoint per i Cataloghi Stremio
-app.get(['/:uuid/catalog/:type/:id.json', '/:uuid/catalog/:type/:id/:extra.json'], async (req, res) => {
+// 4. Endpoint per i Cataloghi Stremio (con e senza configVersion)
+app.get([
+    '/:uuid/catalog/:type/:id.json',
+    '/:uuid/catalog/:type/:id/:extra.json',
+    '/:uuid/:configVersion/catalog/:type/:id.json',
+    '/:uuid/:configVersion/catalog/:type/:id/:extra.json'
+], async (req, res) => {
     const { uuid, type, id, extra: extraStr } = req.params;
     if (!isValidUUID(uuid)) {
         return res.status(400).json({ metas: [] });
@@ -213,6 +243,11 @@ app.get(['/:uuid/catalog/:type/:id.json', '/:uuid/catalog/:type/:id/:extra.json'
 
     // Converti skip in intero se presente
     if (extra.skip) extra.skip = parseInt(extra.skip, 10) || 0;
+
+    // Gestisci il parametro di ordinamento (genre usato come sort in Stremio)
+    if (extra.genre) {
+        extra.sortBy = getSortByValue(extra.genre, type);
+    }
 
     const args = { type, id, extra };
 
@@ -226,8 +261,8 @@ app.get(['/:uuid/catalog/:type/:id.json', '/:uuid/catalog/:type/:id/:extra.json'
     }
 });
 
-// 5. Endpoint per i Metadati Stremio
-app.get('/:uuid/meta/:type/:id.json', async (req, res) => {
+// 5. Endpoint per i Metadati Stremio (con e senza configVersion)
+app.get(['/:uuid/meta/:type/:id.json', '/:uuid/:configVersion/meta/:type/:id.json'], async (req, res) => {
     const { uuid, type, id } = req.params;
     if (!isValidUUID(uuid)) {
         return res.status(400).json({ meta: null });
