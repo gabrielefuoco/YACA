@@ -65,8 +65,11 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
     const startPage = Math.floor((skip || 0) / ITEMS_PER_PAGE) + 1;
     const promises = [];
 
-    // Fetcha N pagine simultaneamente (di base 3 pagine => 60 item) per popolare Stremio più fluidamente
-    for (let i = 0; i < PAGES_PER_REQUEST; i++) {
+    // Fetcha N pagine simultaneamente per popolare Stremio più fluidamente (solo se skip è 0 per velocità iniziale)
+    // Se skip > 0 carichiamo una pagina alla volta per evitare salti o duplicati
+    const pagesToFetch = (skip === 0) ? PAGES_PER_REQUEST : 1;
+
+    for (let i = 0; i < pagesToFetch; i++) {
         const pageParams = { ...customParams, page: startPage + i };
         promises.push(client.get(endpoint, { params: pageParams }));
     }

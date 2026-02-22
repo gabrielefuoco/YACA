@@ -75,11 +75,11 @@ app.get('/:uuid/manifest.json', async (req, res) => {
             resources: ['catalog', 'meta'],
             types: ['movie', 'series', 'anime'],
             catalogs: [
-                { id: 'yaca_discover_movies', type: 'movie', name: 'Esplora Film (TMDB)' },
-                { id: 'yaca_discover_series', type: 'series', name: 'Esplora Serie (TMDB)' },
-                { id: 'yaca_anime_trending', type: 'anime', name: 'Anime Popolari (Kitsu)' },
+                { id: 'yaca_discover_movies', type: 'movie', name: 'Esplora Film (TMDB)', extra: [{ name: 'skip' }] },
+                { id: 'yaca_discover_series', type: 'series', name: 'Esplora Serie (TMDB)', extra: [{ name: 'skip' }] },
+                { id: 'yaca_anime_trending', type: 'anime', name: 'Anime Popolari (Kitsu)', extra: [{ name: 'skip' }] },
                 // La ricerca libera per usare Mistral al volo da Stremio
-                { id: 'yaca_ai_search', type: 'movie', name: 'Ricerca AI', extra: [{ name: 'search', isRequired: true }] }
+                { id: 'yaca_ai_search', type: 'movie', name: 'Ricerca AI', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] }
             ],
             idPrefixes: ['tt', 'tmdb:', 'kitsu:'],
             behaviorHints: {
@@ -108,7 +108,8 @@ app.get('/:uuid/manifest.json', async (req, res) => {
                 manifest.catalogs.unshift({
                     id: cat.id,
                     type: cat.type || 'movie',
-                    name: isPreset ? cat.name : `AI: ${cat.name}`
+                    name: isPreset ? cat.name : `AI: ${cat.name}`,
+                    extra: [{ name: 'skip' }]
                 });
             }
         }
@@ -116,10 +117,10 @@ app.get('/:uuid/manifest.json', async (req, res) => {
         // Inietta i Cataloghi Trakt se l'utente ha configurato l'username
         if (userConfig.apiKeys && userConfig.apiKeys.trakt) {
             manifest.catalogs.unshift(
-                { id: 'trakt_watchlist_movies', type: 'movie', name: 'Trakt Watchlist' },
-                { id: 'trakt_watchlist_series', type: 'series', name: 'Trakt Watchlist' },
-                { id: 'trakt_favorites_movies', type: 'movie', name: 'Trakt Preferiti' },
-                { id: 'trakt_favorites_series', type: 'series', name: 'Trakt Preferiti' }
+                { id: 'trakt_watchlist_movies', type: 'movie', name: 'Trakt Watchlist', extra: [{ name: 'skip' }] },
+                { id: 'trakt_watchlist_series', type: 'series', name: 'Trakt Watchlist', extra: [{ name: 'skip' }] },
+                { id: 'trakt_favorites_movies', type: 'movie', name: 'Trakt Preferiti', extra: [{ name: 'skip' }] },
+                { id: 'trakt_favorites_series', type: 'series', name: 'Trakt Preferiti', extra: [{ name: 'skip' }] }
             );
         }
 

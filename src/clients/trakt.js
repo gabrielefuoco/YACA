@@ -87,18 +87,18 @@ async function fetchTraktCatalog(endpoint, skip = 0, traktUsername = null) {
 
         // 2. Watchlist Utente (Richiede Trakt Username e profilo pubblico)
         else if (endpoint === 'watchlist_movies' && traktUsername) {
-            const res = await traktClient.get(`/users/${traktUsername}/watchlist/movies`, { params: { sort: 'added', limit: 20 } });
+            const res = await traktClient.get(`/users/${traktUsername}/watchlist/movies`, { params: { sort: 'added', limit: 20, page } });
             results = res.data; // È un array di oggetti { listed_at, type, movie: {} }
         }
         else if (endpoint === 'watchlist_shows' && traktUsername) {
-            const res = await traktClient.get(`/users/${traktUsername}/watchlist/shows`, { params: { sort: 'added', limit: 20 } });
+            const res = await traktClient.get(`/users/${traktUsername}/watchlist/shows`, { params: { sort: 'added', limit: 20, page } });
             results = res.data;
         }
 
         // 3. Consigliati Utente (Richiede Trakt Username) - Trakt public API lets you get lists, we will map a "Favorites" list if exists or similar,
         // but 'recommendations' without OAuth relies on public lists. Let's provide "Favorites" instead as it works better for public profiles.
         else if (endpoint === 'favorites' && traktUsername) {
-            const res = await traktClient.get(`/users/${traktUsername}/lists/favorites/items`, { params: { limit: 20 } });
+            const res = await traktClient.get(`/users/${traktUsername}/lists/favorites/items`, { params: { limit: 20, page } });
             results = res.data;
         }
 
