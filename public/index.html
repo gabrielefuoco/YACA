@@ -148,12 +148,6 @@
                             class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded transition-colors whitespace-nowrap shadow-sm">Rendi
                             Attivo</button>
                     </div>
-                    <!-- Pulsante Salva -->
-                    <button type="submit" id="saveBtn"
-                        class="w-full py-4 bg-stremio hover:bg-stremio-600 text-white font-bold rounded-xl transition-all transform active:scale-95 shadow-lg shadow-stremio/20">
-                        Aggiorna Configurazione
-                    </button>
-                    <div id="statusMsg" class="hidden mt-4 p-4 rounded-xl text-center font-bold text-sm"></div>
                 </div>
 
                 <!-- Template Selector -->
@@ -256,7 +250,8 @@
             <hr class="border-dark-700">
 
             <!-- Submit Button -->
-            <div class="pt-4">
+            <div class="pt-4 space-y-4">
+                <div id="statusMsg" class="hidden p-4 rounded-xl text-center font-bold text-sm"></div>
                 <button type="submit" id="submitBtn"
                     class="w-full flex justify-center items-center py-4 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-stremio hover:bg-stremio-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stremio focus:ring-offset-dark-900 transition-colors">
                     Genera Link di Installazione
@@ -694,36 +689,41 @@
 
             renderProfileSelect();
             renderPresetsAndCatalogs();
+
+            if (currentUuid) {
+                document.getElementById('submitBtn').textContent = 'Aggiorna Configurazione';
+            }
         });
 
         // 4. SUBMIT FORM
         document.getElementById('configForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            saveUIState(); // salva le ultime modifiche del form nell'editing profile
+            saveUIState();
 
             const tmdbKey = document.getElementById('tmdbKey').value;
             const mistralKey = document.getElementById('mistralKey').value;
             const traktUsername = document.getElementById('traktUsername').value;
 
-            // Validazione Frontend: Se c'è almeno 1 prompt custom (in qualsiasi profilo), Mistral è richiesto
+            // Validazione
             const hasNewPrompts = profiles.some(p => p.raw_ui_state.newPrompts.length > 0);
             if (hasNewPrompts && mistralKey.trim() === '') {
-                alert("Attenzione: Uno o più profili hanno cataloghi IA. Questi richiedono la chiave Mistral. Inserisci la chiave o usa solo i preset.");
+                alert("Attenzione: Uno o più profili hanno cataloghi IA. Questi richiedono la chiave Mistral.");
                 return;
             }
 
             const submitBtn = document.getElementById('submitBtn');
+            const statusMsg = document.getElementById('statusMsg');
             const originalBtnText = submitBtn.innerHTML;
 
-            submitBtn.innerHTML = `
-                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                Generazione Configurazione...
-            `;
             submitBtn.disabled = true;
             submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            submitBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Salvataggio...
+            `;
+            statusMsg.classList.add('hidden');
 
             try {
-                // Costruisci payload per backend
                 const payloadProfiles = profiles.map(p => ({
                     id: p.id,
                     name: p.name,
@@ -733,67 +733,67 @@
                     settings: p.settings || { minVoteAverage: 0, minVoteCount: 0 }
                 }));
 
-                const payload = { tmdbKey, mistralKey, traktUsername, activeProfileId, profiles: payloadProfiles };
+                const payload = {
+                    tmdbKey,
+                    mistralKey,
+                    traktUsername,
+                    activeProfileId: activeProfileId,
+                    profiles: payloadProfiles
+                };
                 if (currentUuid) payload.uuid = currentUuid;
-
-                const statusMsg = document.getElementById('statusMsg');
-                const saveBtn = document.getElementById('saveBtn');
-
-                saveBtn.disabled = true;
-                saveBtn.textContent = 'Salvataggio in corso...';
-                statusMsg.className = 'hidden';
 
                 const response = await fetch('/api/configure', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        tmdbKey,
-                        mistralKey,
-                        traktUsername,
-                        activeProfileId,
-                        profiles: payloadProfiles,
-                        uuid: currentUuid
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    statusMsg.textContent = "✅ Configurazione aggiornata! Riavvia Stremio.";
-                    statusMsg.className = "mt-4 p-4 rounded-xl text-center font-bold text-sm bg-green-500/20 text-green-400 block border border-green-500/30";
-                    saveBtn.textContent = 'Aggiorna Configurazione';
-                    saveBtn.disabled = false;
-                    const box = document.getElementById('successBox');
-                    const link = document.getElementById('installLink');
-                    const uuidDisplay = document.getElementById('uuidDisplay');
-
-                    const portStr = window.location.port ? `:${window.location.port}` : '';
-                    const cleanUrl = `${window.location.protocol}//${window.location.hostname}${portStr}`;
-                    const baseUrl = cleanUrl.replace('https://', 'stremio://').replace('http://', 'stremio://');
-
-                    const finalLink = `${baseUrl}/${data.uuid}/manifest.json`;
-
-                    link.href = finalLink;
-                    uuidDisplay.textContent = data.uuid;
-
-                    document.getElementById('configForm').classList.add('hidden');
-                    box.classList.remove('hidden');
 
                     if (currentUuid) {
-                        document.querySelector('#successBox h3').textContent = "Configurazione Aggiornata!";
-                        document.querySelector('#successBox p').textContent = "Hai cambiato il profilo attivo? Torna in Stremio e aspetta qualche minuto, oppure chiudi e riapri l'interfaccia (il manifest.json si ricaricherà automaticamente in background senza reinstallare).";
-                    }
+                        // UPDATE MODE: Mostra successo senza nascondere form
+                        statusMsg.textContent = "✅ Configurazione aggiornata! Riavvia Stremio.";
+                        statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-green-500/20 text-green-400 block border border-green-500/30";
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                        submitBtn.innerHTML = "Aggiorna Configurazione";
 
+                        // Scroll to status
+                        statusMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                        // NEW INSTALL MODE: Nascondi form e mostra install box
+                        const box = document.getElementById('successBox');
+                        const link = document.getElementById('installLink');
+                        const uuidDisplay = document.getElementById('uuidDisplay');
+
+                        const portStr = window.location.port ? `:${window.location.port}` : '';
+                        const cleanUrl = `${window.location.protocol}//${window.location.hostname}${portStr}`;
+                        const baseUrl = cleanUrl.replace('https://', 'stremio://').replace('http://', 'stremio://');
+
+                        const finalLink = `${baseUrl}/${data.uuid}/manifest.json`;
+
+                        link.href = finalLink;
+                        uuidDisplay.textContent = data.uuid;
+
+                        document.getElementById('configForm').classList.add('hidden');
+                        box.classList.remove('hidden');
+                        window.scrollTo(0, 0);
+                    }
                 } else {
-                    alert('Errore dal server: ' + (data.error || 'Server Offline'));
-                    submitBtn.innerHTML = originalBtnText;
+                    const errorData = await response.json();
+                    statusMsg.textContent = "❌ Errore: " + (errorData.error || "Riprova tra poco");
+                    statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-red-500/20 text-red-400 block border border-red-500/30";
                     submitBtn.disabled = false;
                     submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                    submitBtn.innerHTML = currentUuid ? "Aggiorna Configurazione" : "Genera Link di Installazione";
                 }
             } catch (err) {
-                alert('Errore di connessione al server: ' + err.message);
-                submitBtn.innerHTML = originalBtnText;
+                statusMsg.textContent = "❌ Errore connessione: " + err.message;
+                statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-red-500/20 text-red-400 block border border-red-500/30";
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                submitBtn.innerHTML = currentUuid ? "Aggiorna Configurazione" : "Genera Link di Installazione";
             }
         });
     </script>
