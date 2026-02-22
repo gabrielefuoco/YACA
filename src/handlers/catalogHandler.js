@@ -214,7 +214,7 @@ async function catalogHandler(args, userUuid) {
         // SCENARIO 3: CATALOGHI TRAKT
         // ==========================================
         const { fetchTraktCatalog } = require('../clients/trakt');
-        const traktUname = userConfig.traktUsername;
+        const traktUname = userConfig.apiKeys?.trakt;
 
         if (id === 'trakt_watchlist_movies' && type === 'movie') {
             results = await fetchTraktCatalog('watchlist_movies', skip, traktUname);

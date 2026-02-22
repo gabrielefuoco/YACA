@@ -1,5 +1,4 @@
 const axios = require('axios');
-const { getTmdbMetaDetails } = require('./tmdb'); // Per arricchire i risultati poveri di Trakt
 
 const traktClient = axios.create({
     baseURL: 'https://api.trakt.tv',
@@ -53,7 +52,7 @@ async function enhanceTraktItem(traktItem) {
             if (tmdbenrich.data.backdrop_path) {
                 baseMeta.background = `https://image.tmdb.org/t/p/original${tmdbenrich.data.backdrop_path}`;
             }
-        } catch (e) { /* Ignora l'arricchimento se fallisce per rate limit */ }
+        } catch (_e) { /* Ignora l'arricchimento se fallisce per rate limit */ }
     }
 
     if (!baseMeta.poster) {

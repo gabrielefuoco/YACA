@@ -66,11 +66,16 @@ module.exports = async (req, res) => {
                 }
             }
 
-            // 3. Processa i nuovi prompt usando Mistral
+            // 3. Processa i nuovi prompt usando Mistral (in parallelo)
             if (profile.newPrompts && Array.isArray(profile.newPrompts)) {
-                for (const prompt of profile.newPrompts) {
-                    if (!prompt || prompt.trim() === '') continue;
-                    const filters = await generateTmdbFiltersFromPrompt(prompt, mistralKey);
+                const validPrompts = profile.newPrompts.filter(p => p && p.trim() !== '');
+                const filterResults = await Promise.all(
+                    validPrompts.map(prompt => generateTmdbFiltersFromPrompt(prompt, mistralKey))
+                );
+
+                for (let i = 0; i < validPrompts.length; i++) {
+                    const prompt = validPrompts[i];
+                    const filters = filterResults[i];
                     parsedCatalogs.push({
                         id: `ai_custom_${uuid.substring(0, 5)}_${Date.now()}_${catIndex}`,
                         name: prompt.substring(0, 30),
