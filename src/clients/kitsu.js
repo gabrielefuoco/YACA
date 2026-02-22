@@ -16,7 +16,7 @@ function toStremioMetaItem(kitsuItem) {
     const id = `kitsu:${kitsuItem.id}`;
 
     // Kitsu fornisce vari titoli (en, en_jp, ja_jp). Scegliamo user-friendly.
-    const title = attrs.titles.en || attrs.titles.en_jp || attrs.canonicalTitle;
+    const title = attrs.titles?.en || attrs.titles?.en_jp || attrs.canonicalTitle || 'Titolo sconosciuto';
     const year = attrs.startDate ? attrs.startDate.split('-')[0] : '';
 
     return {
@@ -91,7 +91,14 @@ async function fetchKitsuEpisodes(kitsuId) {
  * Fetch Meta completo (utile per MetaHandler di Stremio)
  */
 async function getKitsuMetaDetails(id) {
-    const kitsuId = id.replace('kitsu:', '');
+    const kitsuId = id.replace('kitsu:', '').trim();
+
+    // Validate kitsuId is a number
+    if (!/^\d+$/.test(kitsuId)) {
+        console.error(`ID Kitsu non valido: ${kitsuId}`);
+        return null;
+    }
+
     try {
         const res = await kitsuClient.get(`/anime/${kitsuId}`);
         const item = res.data.data;

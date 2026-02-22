@@ -28,12 +28,14 @@ async function enhanceTraktItem(traktItem) {
     const imdbId = item.ids.imdb;
 
     // L'ID preferito da Stremio è il tmdb:xxx per il nostro addon, o ttXXXXX
-    const stremioId = tmdbId ? `tmdb:${tmdbId}` : `tt${imdbId}`;
+    if (!tmdbId && !imdbId) return null;
+    const stremioId = tmdbId ? `tmdb:${tmdbId}` : (imdbId ? `tt${imdbId}` : null);
+    if (!stremioId) return null;
 
     const baseMeta = {
         id: stremioId,
         type: type,
-        name: item.title,
+        name: item.title || 'Titolo sconosciuto',
         releaseInfo: item.year ? item.year.toString() : '',
         description: item.overview || "Metadati completi al click",
         posterShape: 'poster'
@@ -68,6 +70,12 @@ async function enhanceTraktItem(traktItem) {
 async function fetchTraktCatalog(endpoint, skip = 0, traktUsername = null) {
     if (!process.env.TRAKT_CLIENT_ID) {
         console.error("Missing TRAKT_CLIENT_ID in environment variables");
+        return [];
+    }
+
+    // Sanitize username to prevent path traversal
+    if (traktUsername && !/^[a-zA-Z0-9_.-]+$/.test(traktUsername)) {
+        console.error("Invalid Trakt username format:", traktUsername);
         return [];
     }
 

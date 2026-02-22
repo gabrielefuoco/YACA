@@ -153,8 +153,10 @@ async function catalogHandler(args, userUuid) {
         const userConfig = await UserConfig.findOne({ uuid: userUuid });
         if (!userConfig) throw new Error("Utente o config non trovata nel DB");
 
-        const tmdbApiKey = userConfig.apiKeys.tmdb;
-        const mistralKey = userConfig.apiKeys.mistral;
+        const tmdbApiKey = userConfig.apiKeys?.tmdb;
+        if (!tmdbApiKey) throw new Error("TMDB API key mancante nella configurazione utente");
+
+        const mistralKey = userConfig.apiKeys?.mistral;
         const tmdbClient = createTmdbClient(tmdbApiKey);
 
         // Recupera impostazioni del profilo attivo per filtrare spazzatura
@@ -171,15 +173,21 @@ async function catalogHandler(args, userUuid) {
         // ==========================================
         if (search) {
             if (id === 'yaca_ai_search' || id === 'yaca_ai_search_series') {
-                // Esegue Mistral live per decidere dove instradare e calcolare i filtri avanzati
-                const routing = await routeLiveStremioSearch(search, mistralKey);
-
-                if (routing.target === 'kitsu' && type === 'series') {
-                    // Anime Search
-                    results = await fetchKitsuCatalog('/anime', 0, { filter: { text: routing.query } });
+                if (!mistralKey) {
+                    // Fallback a ricerca TMDB nativa se Mistral non è configurato
+                    const ep = type === 'movie' ? '/search/movie' : '/search/tv';
+                    results = await fetchTmdbCatalog(tmdbClient, ep, skip, { query: search }, type);
                 } else {
-                    // Sfrutta il nuovo esecutore per processare i filtri Mistral
-                    results = await executeComplexStrategy(routing.filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
+                    // Esegue Mistral live per decidere dove instradare e calcolare i filtri avanzati
+                    const routing = await routeLiveStremioSearch(search, mistralKey);
+
+                    if (routing.target === 'kitsu' && type === 'series') {
+                        // Anime Search
+                        results = await fetchKitsuCatalog('/anime', 0, { filter: { text: routing.query } });
+                    } else {
+                        // Sfrutta il nuovo esecutore per processare i filtri Mistral
+                        results = await executeComplexStrategy(routing.filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
+                    }
                 }
             } else if (id === 'yaca_anime_trending') {
                 // Ricerca testuale nativa limitata a Kitsu

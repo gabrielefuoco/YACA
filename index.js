@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 7000;
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // Inizializza Supabase Client
 const supabaseClient = initSupabase();
@@ -85,6 +85,9 @@ app.get('/api/configure/:uuid', async (req, res) => {
 });
 
 app.get('/:uuid/configure', (req, res) => {
+    if (!isValidUUID(req.params.uuid)) {
+        return res.status(400).json({ error: "UUID non valido" });
+    }
     res.redirect(`/?uuid=${req.params.uuid}`);
 });
 
@@ -231,6 +234,23 @@ app.get('/:uuid/meta/:type/:id.json', async (req, res) => {
 });
 
 // Avvia il server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`🚀 YACA Server in esecuzione su http://localhost:${PORT}`);
 });
+
+// Graceful shutdown
+const shutdown = (signal) => {
+    console.log(`\n${signal} ricevuto. Spegnimento in corso...`);
+    server.close(() => {
+        console.log('Server chiuso correttamente.');
+        process.exit(0);
+    });
+    // Forza lo spegnimento dopo 10 secondi
+    setTimeout(() => {
+        console.error('Spegnimento forzato dopo timeout.');
+        process.exit(1);
+    }, 10000);
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

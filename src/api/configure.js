@@ -11,6 +11,20 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: "La API Key di TMDB è obbligatoria." });
         }
 
+        // Input validation - limiti ragionevoli
+        if (typeof tmdbKey !== 'string' || tmdbKey.length > 200) {
+            return res.status(400).json({ error: "TMDB Key non valida." });
+        }
+        if (mistralKey && (typeof mistralKey !== 'string' || mistralKey.length > 200)) {
+            return res.status(400).json({ error: "Mistral Key non valida." });
+        }
+        if (traktUsername && (typeof traktUsername !== 'string' || traktUsername.length > 100 || !/^[a-zA-Z0-9_.-]+$/.test(traktUsername))) {
+            return res.status(400).json({ error: "Username Trakt non valido." });
+        }
+        if (profiles && (!Array.isArray(profiles) || profiles.length > 20)) {
+            return res.status(400).json({ error: "Massimo 20 profili consentiti." });
+        }
+
         const uuid = existingUuid || uuidv4();
         const parsedProfiles = [];
         let catIndex = 1;
@@ -48,12 +62,13 @@ module.exports = async (req, res) => {
 
             // 1. Aggiungi Cataloghi AI Esistenti (se stiamo modificando)
             if (profile.existingCatalogs && Array.isArray(profile.existingCatalogs)) {
-                parsedCatalogs.push(...profile.existingCatalogs);
+                parsedCatalogs.push(...profile.existingCatalogs.slice(0, 50));
             }
 
             // 2. Aggiungi i Preset Hardcoded
             if (profile.selectedPresets && Array.isArray(profile.selectedPresets)) {
-                for (const presetId of profile.selectedPresets) {
+                for (const presetId of profile.selectedPresets.slice(0, 50)) {
+                    if (typeof presetId !== 'string') continue;
                     const presetObj = presetsList.find(p => p.id === presetId);
                     if (presetObj) {
                         parsedCatalogs.push({
@@ -68,7 +83,10 @@ module.exports = async (req, res) => {
 
             // 3. Processa i nuovi prompt usando Mistral (in parallelo)
             if (profile.newPrompts && Array.isArray(profile.newPrompts)) {
-                const validPrompts = profile.newPrompts.filter(p => p && p.trim() !== '');
+                const validPrompts = profile.newPrompts
+                    .filter(p => typeof p === 'string' && p.trim() !== '')
+                    .map(p => p.trim().substring(0, 500))
+                    .slice(0, 20);
                 const filterResults = await Promise.all(
                     validPrompts.map(prompt => generateTmdbFiltersFromPrompt(prompt, mistralKey))
                 );
