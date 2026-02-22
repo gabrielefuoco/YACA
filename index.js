@@ -24,6 +24,23 @@ initSupabase();
 // 2. Registra endpoint configuration (Frontend Web Web)
 app.post('/api/configure', configureRoute);
 
+app.get('/api/configure/:uuid', async (req, res) => {
+    try {
+        const userConfig = await UserConfig.findOne({ uuid: req.params.uuid });
+        if (!userConfig) {
+            return res.status(404).json({ error: "Configurazione non trovata" });
+        }
+        return res.json(userConfig);
+    } catch (err) {
+        console.error("Errore recupero config:", err);
+        return res.status(500).json({ error: "Errore interno" });
+    }
+});
+
+app.get('/:uuid/configure', (req, res) => {
+    res.redirect(`/?uuid=${req.params.uuid}`);
+});
+
 // 3. Endpoint dinamico per il Manifest di Stremio (L'addon vero e proprio risponde qui)
 app.get('/:uuid/manifest.json', async (req, res) => {
     const { uuid } = req.params;
@@ -49,7 +66,11 @@ app.get('/:uuid/manifest.json', async (req, res) => {
                 // La ricerca libera per usare Mistral al volo da Stremio
                 { id: 'yaca_ai_search', type: 'movie', name: 'Ricerca AI', extra: [{ name: 'search', isRequired: true }] }
             ],
-            idPrefixes: ['tt', 'tmdb:', 'kitsu:']
+            idPrefixes: ['tt', 'tmdb:', 'kitsu:'],
+            behaviorHints: {
+                configurable: true,
+                configurationRequired: true
+            }
         };
 
         // Inietta Dinamicamente i cataloghi personalizzati (Prompt dell'utente)
@@ -62,6 +83,16 @@ app.get('/:uuid/manifest.json', async (req, res) => {
                     name: `AI: ${cat.name}`
                 });
             }
+        }
+
+        // Inietta i Cataloghi Trakt se l'utente ha configurato l'username
+        if (userConfig.traktUsername) {
+            manifest.catalogs.unshift(
+                { id: 'trakt_watchlist_movies', type: 'movie', name: 'Trakt Watchlist' },
+                { id: 'trakt_watchlist_series', type: 'series', name: 'Trakt Watchlist' },
+                { id: 'trakt_favorites_movies', type: 'movie', name: 'Trakt Preferiti' },
+                { id: 'trakt_favorites_series', type: 'series', name: 'Trakt Preferiti' }
+            );
         }
 
         return res.json(manifest);

@@ -4,14 +4,14 @@ const { generateTmdbFiltersFromPrompt } = require('../ai/router');
 
 module.exports = async (req, res) => {
     try {
-        const { tmdbKey, mistralKey, prompts, traktUsername } = req.body;
+        const { tmdbKey, mistralKey, prompts, traktUsername, uuid: existingUuid } = req.body;
 
         if (!tmdbKey || !mistralKey) {
             return res.status(400).json({ error: "Le API Key di TMDB e Mistral sono obbligatorie." });
         }
 
-        // Genera un UUID univoco per questo utente/setup
-        const uuid = uuidv4();
+        // Utilizza l'UUID esistente (se stiamo modificando un'istanza) oppure generane uno nuovo
+        const uuid = existingUuid || uuidv4();
 
         // 1. Processa ogni prompt inviato dal frontend usando Mistral
         const parsedCatalogs = [];
@@ -24,6 +24,7 @@ module.exports = async (req, res) => {
                 parsedCatalogs.push({
                     id: `ai_custom_${catIndex}`,
                     name: prompt.substring(0, 30), // Usa parte del prompt come nome
+                    raw_prompt: prompt, // Salviamo il testo originale per poterlo ri-popolare nella UI
                     filters: filters
                 });
                 catIndex++;

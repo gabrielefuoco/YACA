@@ -184,6 +184,54 @@
     </div>
 
     <script>
+        let currentUuid = new URLSearchParams(window.location.search).get('uuid');
+
+        // On Load: If UUID is present, load existing config
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (currentUuid) {
+                try {
+                    const res = await fetch(`/api/configure/${currentUuid}`);
+                    if (res.ok) {
+                        const config = await res.json();
+
+                        // Populate basic API Keys
+                        if (config.apiKeys) {
+                            document.getElementById('tmdbKey').value = config.apiKeys.tmdb || '';
+                            document.getElementById('mistralKey').value = config.apiKeys.mistral || '';
+                            document.getElementById('traktUsername').value = config.apiKeys.trakt || '';
+                        }
+
+                        // Populate AI Catalogs
+                        if (config.catalogs && config.catalogs.length > 0) {
+                            const list = document.getElementById('catalogList');
+                            list.innerHTML = ''; // Clear default empty input
+
+                            config.catalogs.forEach(cat => {
+                                // If we don't have raw_prompt (old configs), use the name as fallback
+                                const promptText = cat.raw_prompt || cat.name || '';
+                                const div = document.createElement('div');
+                                div.className = 'catalog-item flex gap-2 animate-fade-in';
+                                div.innerHTML = `
+                                    <input type="text" value="${promptText}" class="catalog-prompt w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm placeholder-gray-600"
+                                           placeholder="Descrivi un altro catalogo...">
+                                    <button type="button" onclick="this.parentElement.remove()" class="px-4 py-2 text-gray-400 hover:text-red-400 bg-dark-900 border border-dark-600 rounded-lg hover:border-red-500/50 transition-colors">
+                                        ✕
+                                    </button>
+                                `;
+                                list.appendChild(div);
+                            });
+                        }
+
+                        // Update UI to reflect "Edit Mode"
+                        document.getElementById('submitBtn').innerHTML = "Aggiorna Configurazione in Stremio";
+
+                    }
+                } catch (e) {
+                    console.error("Errore caricamento config:", e);
+                }
+            }
+        });
+
         // Gestione Aggiunta Cataloghi Form
         document.getElementById('addCatalogBtn').addEventListener('click', () => {
             const list = document.getElementById('catalogList');
@@ -205,7 +253,7 @@
 
             const tmdbKey = document.getElementById('tmdbKey').value;
             const mistralKey = document.getElementById('mistralKey').value;
-            const traktUsername = document.getElementById('traktUsername').value; // Per ora lo salviamo, poi lo implementeremo nel backend
+            const traktUsername = document.getElementById('traktUsername').value;
 
             const catalogInputs = document.querySelectorAll('.catalog-prompt');
             const prompts = Array.from(catalogInputs).map(i => i.value.trim()).filter(v => v !== '');
@@ -221,11 +269,14 @@
             submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
 
             try {
-                // Chiamata backend (Aggiungeremo il parametro traktUsername tra le info)
+                // Passiamo l'UUID se siamo in edit mode
+                const payload = { tmdbKey, mistralKey, traktUsername, prompts };
+                if (currentUuid) payload.uuid = currentUuid;
+
                 const res = await fetch('/api/configure', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tmdbKey, mistralKey, traktUsername, prompts })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await res.json();
@@ -246,6 +297,12 @@
 
                     document.getElementById('configForm').classList.add('hidden');
                     box.classList.remove('hidden');
+
+                    if (currentUuid) {
+                        document.querySelector('#successBox h3').textContent = "Configurazione Aggiornata!";
+                        document.querySelector('#successBox p').textContent = "Torna su Stremio: le modifiche verranno ricaricate al prossimo avvio (o reinstalla per forzare subito l'aggiornamento).";
+                    }
+
                 } else {
                     alert('Errore dal server: ' + (data.error || 'Autenticazione Fallita / Server Offline'));
                     submitBtn.innerHTML = originalBtnText;
