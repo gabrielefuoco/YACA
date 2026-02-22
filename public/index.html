@@ -583,6 +583,39 @@
                     activeProfileId = 'legacy_default';
                     editingProfileId = 'legacy_default';
                 }
+            } else {
+                // Quick Start per nuovo utente: Crea 3 profili predefiniti di alta qualità
+                profiles = [
+                    {
+                        id: 'default_main',
+                        name: '🏠 Generale',
+                        raw_ui_state: {
+                            selectedPresets: ['preset_pop_movies', 'preset_pop_series', 'preset_new_movies', 'preset_new_series'],
+                            newPrompts: []
+                        },
+                        existingCatalogs: []
+                    },
+                    {
+                        id: 'default_cinema',
+                        name: '🎬 Cinema d\'Autore',
+                        raw_ui_state: {
+                            selectedPresets: ['preset_nolan', 'preset_tarantino', 'preset_scorsese', 'preset_a24', 'preset_mindfuck'],
+                            newPrompts: []
+                        },
+                        existingCatalogs: []
+                    },
+                    {
+                        id: 'default_anime',
+                        name: '🏮 Anime & Ghibli',
+                        raw_ui_state: {
+                            selectedPresets: ['preset_pop_anime', 'preset_new_anime', 'preset_anime_shonen', 'preset_ghibli'],
+                            newPrompts: []
+                        },
+                        existingCatalogs: []
+                    }
+                ];
+                activeProfileId = 'default_main';
+                editingProfileId = 'default_main';
             }
 
             renderProfileSelect();

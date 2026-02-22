@@ -14,7 +14,12 @@ const TMDB_COMPANIES = {
 
 const TMDB_PEOPLE = {
     Nolan: 525, Tarantino: 138, Spielberg: 488, Scorsese: 224, Kubrick: 240, Villeneuve: 137427, Fincher: 1341,
-    Lynch: 5602, DelToro: 10828, Peele: 185153, Eastwood: 190, Cameron: 2710, Bay: 865, Carpenter: 887
+    Lynch: 5602, DelToro: 10828, Peele: 185153, Eastwood: 190, Cameron: 2710, Bay: 865, Carpenter: 887,
+    Hitchcock: 2636, Scott: 578, Miyazaki: 608, Burton: 510, Jackson: 108, WesAnderson: 5655
+};
+
+const TMDB_NETWORKS = {
+    HBO: 49, Netflix: 213, Amazon: 1024, DisneyPlus: 2739, AppleTV: 2552, Sky: 125
 };
 
 const today = new Date();
@@ -92,7 +97,15 @@ const presets = [
 
     // --- ANIME ---
     { id: 'preset_anime_shonen', name: 'Anime: Battle Shōnen', category: 'Anime', type: 'series', filters: { with_keywords: '210024,11545', with_genres: TMDB_GENRES.TV.Animation } },
-    { id: 'preset_anime_isekai', name: 'Anime: Isekai Fantasy', category: 'Anime', type: 'series', filters: { with_keywords: '210024,286460', with_genres: TMDB_GENRES.TV.Animation } }
+    { id: 'preset_anime_seinen', name: 'Anime: Seinen (Maturi)', category: 'Anime', type: 'series', filters: { with_keywords: '210024,33446', with_genres: TMDB_GENRES.TV.Animation } }, // 33446=seinen
+    { id: 'preset_anime_isekai', name: 'Anime: Isekai Fantasy', category: 'Anime', type: 'series', filters: { with_keywords: '210024,286460', with_genres: TMDB_GENRES.TV.Animation } },
+    { id: 'preset_anime_romance', name: 'Anime: Romantici & Shojo', category: 'Anime', type: 'series', filters: { with_keywords: '210024', with_genres: `${TMDB_GENRES.TV.Animation},${TMDB_GENRES.TV.Romance}` } },
+
+    // --- NETWORKS (Serie TV) ---
+    { id: 'preset_hbo', name: 'Produzione HBO', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.HBO } },
+    { id: 'preset_netflix', name: 'Originali Netflix', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.Netflix } },
+    { id: 'preset_amazon', name: 'Amazon Prime Video', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.Amazon } },
+    { id: 'preset_disney_plus', name: 'Disney+', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.DisneyPlus } }
 ];
 
 const profileTemplates = [
@@ -104,7 +117,7 @@ const profileTemplates = [
     {
         id: 'tpl_movies',
         name: 'Solo Film',
-        presets: ['preset_pop_movies', 'preset_new_movies', 'preset_nolan', 'preset_tarantino', 'preset_scorsese', 'preset_action_blockbuster', 'preset_mindfuck', 'preset_pure_comedy']
+        presets: ['preset_pop_movies', 'preset_new_movies', 'preset_nolan', 'preset_tarantino', 'preset_scorsese', 'preset_mindfuck', 'preset_pure_comedy']
     },
     {
         id: 'tpl_series',
@@ -114,12 +127,27 @@ const profileTemplates = [
     {
         id: 'tpl_anime',
         name: 'Solo Anime',
-        presets: ['preset_pop_anime', 'preset_new_anime', 'preset_new_anime_eps', 'preset_anime_shonen', 'preset_anime_isekai', 'preset_ghibli']
+        presets: ['preset_pop_anime', 'preset_new_anime', 'preset_new_anime_eps', 'preset_anime_shonen', 'preset_anime_seinen', 'preset_anime_isekai', 'preset_ghibli']
+    },
+    {
+        id: 'tpl_documentari',
+        name: 'Documentari',
+        presets: ['preset_nature_docs', 'preset_space_docs', 'preset_true_crime', 'preset_sports_docs']
+    },
+    {
+        id: 'tpl_horror',
+        name: 'Horror Night',
+        presets: ['preset_scary_horror', 'preset_blumhouse', 'preset_zombie', 'preset_80s_movies']
+    },
+    {
+        id: 'tpl_autori',
+        name: 'Cinema d\'Autore',
+        presets: ['preset_a24', 'preset_nolan', 'preset_kubrick', 'preset_villeneuve', 'preset_ghibli']
     },
     {
         id: 'tpl_kids',
         name: 'Bambini & Famiglia',
-        presets: ['preset_pixar', 'preset_disney_anim', 'preset_ghibli']
+        presets: ['preset_pixar', 'preset_dreamworks', 'preset_ghibli', 'preset_disney_plus']
     }
 ];
 
