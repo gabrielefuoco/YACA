@@ -655,7 +655,10 @@
 
                 const card = document.createElement('div');
                 card.className = `profile-card cursor-pointer rounded-lg border p-3 transition-all ${isEditing ? 'editing border-stremio/50 bg-stremio/5' : isActive ? 'active-profile border-green-500/30 bg-green-500/5' : 'border-dark-700 bg-dark-900/60 hover:bg-dark-800/80'}`;
+                card.tabIndex = 0;
+                card.setAttribute('role', 'button');
                 card.onclick = () => switchEditingProfile(p.id);
+                card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchEditingProfile(p.id); } };
 
                 card.innerHTML = `
                     <div class="flex items-start justify-between mb-2">
@@ -912,8 +915,9 @@
                         <svg class="w-4 h-4 text-green-500/50 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                         <span class="truncate" title="${escapeHtml(cat.raw_prompt || cat.name)}">${escapeHtml(cat.raw_prompt || cat.name)}</span>
                     </div>
-                    <button type="button" onclick="this.parentElement.remove()" class="px-4 py-2 text-gray-400 hover:text-red-400 bg-dark-900 border border-dark-600 rounded-lg hover:border-red-500/50 transition-colors" title="Elimina catalogo già generato">✕</button>
+                    <button type="button" class="catalog-remove-btn px-4 py-2 text-gray-400 hover:text-red-400 bg-dark-900 border border-dark-600 rounded-lg hover:border-red-500/50 transition-colors" title="Elimina catalogo già generato">✕</button>
                 `;
+                div.querySelector('.catalog-remove-btn').addEventListener('click', () => div.remove());
                 list.appendChild(div);
             });
 
@@ -923,8 +927,9 @@
                 div.className = 'catalog-item catalog-item-new flex gap-2 animate-fade-in';
                 div.innerHTML = `
                     <input type="text" value="${escapeHtml(pText)}" class="catalog-prompt-new w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm placeholder-gray-600" placeholder="Descrivi un altro catalogo...">
-                    <button type="button" onclick="this.parentElement.remove()" class="px-4 py-2 text-gray-400 hover:text-red-400 bg-dark-900 border border-dark-600 rounded-lg hover:border-red-500/50 transition-colors">✕</button>
+                    <button type="button" class="catalog-remove-btn px-4 py-2 text-gray-400 hover:text-red-400 bg-dark-900 border border-dark-600 rounded-lg hover:border-red-500/50 transition-colors">✕</button>
                 `;
+                div.querySelector('.catalog-remove-btn').addEventListener('click', () => div.remove());
                 list.appendChild(div);
             });
 
@@ -1014,8 +1019,9 @@
             div.className = 'catalog-item catalog-item-new flex gap-2 animate-fade-in';
             div.innerHTML = `
                 <input type="text" class="catalog-prompt-new w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm placeholder-gray-600" placeholder="Descrivi un altro catalogo...">
-                <button type="button" onclick="this.parentElement.remove()" class="px-4 py-2 text-gray-400 hover:text-red-400 bg-dark-900 border border-dark-600 rounded-lg hover:border-red-500/50 transition-colors">✕</button>
+                <button type="button" class="catalog-remove-btn px-4 py-2 text-gray-400 hover:text-red-400 bg-dark-900 border border-dark-600 rounded-lg hover:border-red-500/50 transition-colors">✕</button>
             `;
+            div.querySelector('.catalog-remove-btn').addEventListener('click', () => div.remove());
             list.appendChild(div);
         });
 
@@ -1072,9 +1078,10 @@
             // Add as existing catalog to the editing profile
             const ep = getEditingProfile();
             if (ep) {
+                const manualId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
                 ep.existingCatalogs.push({
-                    id: `manual_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-                    name: name.substring(0, 50),
+                    id: `manual_${manualId}`,
+                    name: name.substring(0, 50), // Max 50 chars, matching server-side limit
                     raw_prompt: `[Manuale] ${name}`,
                     type: type,
                     filters: filters
