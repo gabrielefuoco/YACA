@@ -16,6 +16,7 @@ const createTmdbClient = (apiKey) => createAxiosInstance(TMDB_ENDPOINT, {
 });
 
 const idNameCache = new LRUCache({ max: 1000, ttl: 1000 * 60 * 60 }); // 1 hour TTL
+const imdbIdCache = new LRUCache({ max: 10000, ttl: 1000 * 60 * 60 * 24 * 7 }); // 7 day TTL
 
 /**
  * Traduce una stringa (es. nome attore o keyword) nel suo ID TMDB effettuando una fetch al volo
@@ -33,6 +34,26 @@ async function getTmdbIdByName(apiKey, endpoint, query) {
         return id;
     } catch (e) {
         console.error(`Errore getTmdbIdByName (${endpoint} - ${query}):`, e.message);
+        return null;
+    }
+}
+
+/**
+ * Risolve l'IMDB ID per un dato TMDB ID usando l'endpoint external_ids (con cache).
+ * Essenziale per la compatibilità con addon di streaming come Torrentio.
+ */
+async function resolveImdbId(tmdbId, type, apiKey) {
+    const cacheKey = `imdb:${type}:${tmdbId}`;
+    if (imdbIdCache.has(cacheKey)) return imdbIdCache.get(cacheKey);
+
+    try {
+        const client = createTmdbClient(apiKey);
+        const searchType = type === 'movie' ? 'movie' : 'tv';
+        const res = await client.get(`/${searchType}/${tmdbId}/external_ids`);
+        const imdbId = res.data?.imdb_id || null;
+        if (imdbId) imdbIdCache.set(cacheKey, imdbId);
+        return imdbId;
+    } catch (_e) {
         return null;
     }
 }
@@ -111,6 +132,11 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
                 // Se c'è un filtro regionale stretto o se vogliamo solo roba digitale globale:
                 const isReleased = await isMovieReleasedDigitally(item.id, apiKey);
                 if (!isReleased) return null;
+            }
+            // Risolvi IMDB ID per compatibilità con addon di streaming (Torrentio, ecc.)
+            const imdbId = await resolveImdbId(item.id, type, apiKey);
+            if (imdbId) {
+                item.external_ids = { imdb_id: imdbId };
             }
             return toStremioMetaItem(item, type);
         }, { batchSize: 10, delayMs: 100 });
@@ -261,5 +287,6 @@ module.exports = {
     createTmdbClient, // Esportato in caso serva passare chiavi specifiche
     fetchTmdbCatalog,
     getTmdbMetaDetails,
-    getTmdbIdByName
+    getTmdbIdByName,
+    resolveImdbId
 };

@@ -46,9 +46,11 @@
         .preset-card {
             transition: all 0.2s ease;
         }
+
         .preset-card:hover {
             transform: translateY(-2px);
         }
+
         .preset-card.active {
             border-color: rgba(138, 90, 235, 0.5);
             background: rgba(138, 90, 235, 0.1);
@@ -59,6 +61,7 @@
             transition: all 0.2s ease;
             white-space: nowrap;
         }
+
         .category-tab.active {
             background: #8a5aeb;
             color: white;
@@ -68,10 +71,12 @@
         .preset-scroll::-webkit-scrollbar {
             height: 6px;
         }
+
         .preset-scroll::-webkit-scrollbar-track {
             background: #1c1c24;
             border-radius: 3px;
         }
+
         .preset-scroll::-webkit-scrollbar-thumb {
             background: #3a3a4a;
             border-radius: 3px;
@@ -80,13 +85,16 @@
         .profile-card {
             transition: all 0.2s ease;
         }
+
         .profile-card:hover {
             border-color: rgba(138, 90, 235, 0.3);
         }
+
         .profile-card.active-profile {
             border-color: rgba(34, 197, 94, 0.5);
             box-shadow: 0 0 20px rgba(34, 197, 94, 0.08);
         }
+
         .profile-card.editing {
             border-color: rgba(138, 90, 235, 0.5);
             box-shadow: 0 0 20px rgba(138, 90, 235, 0.08);
@@ -101,9 +109,11 @@
             cursor: pointer;
             transition: background 0.2s;
         }
+
         .toggle-switch.on {
             background: #8a5aeb;
         }
+
         .toggle-switch::after {
             content: '';
             position: absolute;
@@ -115,6 +125,7 @@
             border-radius: 50%;
             transition: transform 0.2s;
         }
+
         .toggle-switch.on::after {
             transform: translateX(16px);
         }
@@ -125,6 +136,7 @@
             transition: max-height 0.3s ease, opacity 0.3s ease;
             opacity: 0;
         }
+
         .filter-dropdown.open {
             max-height: 300px;
             opacity: 1;
@@ -209,6 +221,47 @@
 
             <hr class="border-dark-700">
 
+            <!-- Stremio Account Integration -->
+            <div class="space-y-4">
+                <h2 class="text-lg font-semibold text-white flex items-center">
+                    <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-blue-400">⚡</span>
+                    Aggiornamento Automatico <span class="text-gray-500 font-normal text-xs ml-2">(Opzionale)</span>
+                </h2>
+                <div class="bg-dark-900/50 border border-blue-900/30 rounded-lg p-4">
+                    <p class="text-xs text-gray-400 mb-3">Accedi con il tuo account Stremio per aggiornare l'addon
+                        automaticamente quando cambi la configurazione, senza dover reinstallare manualmente.</p>
+                    <div id="stremioAuthSection">
+                        <div id="stremioLoginForm" class="space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <input type="email" id="stremioEmail" placeholder="Email Stremio"
+                                    class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-blue-500 text-sm placeholder-gray-600">
+                                <input type="password" id="stremioPassword" placeholder="Password Stremio"
+                                    class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-blue-500 text-sm placeholder-gray-600">
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button type="button" id="stremioLoginBtn"
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors">
+                                    Accedi a Stremio
+                                </button>
+                                <span id="stremioAuthStatus" class="text-xs text-gray-400"></span>
+                            </div>
+                        </div>
+                        <div id="stremioLoggedIn" class="hidden flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-green-400 text-sm">✅ Connesso come <strong id="stremioUserEmail"
+                                        class="text-white"></strong></span>
+                            </div>
+                            <button type="button" id="stremioLogoutBtn"
+                                class="px-3 py-1 bg-dark-700 hover:bg-dark-600 text-gray-300 text-xs rounded-md transition-colors">
+                                Disconnetti
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-dark-700">
+
             <!-- Profiles Section - Card Layout -->
             <div class="space-y-4">
                 <h2 class="text-lg font-semibold text-white flex items-center">
@@ -233,7 +286,8 @@
                 <select id="profileSelect" class="hidden"></select>
 
                 <!-- Profile Editor (shown when a profile is selected) -->
-                <div id="profileEditor" class="bg-dark-900 border border-dark-700 rounded-lg p-4 relative overflow-hidden">
+                <div id="profileEditor"
+                    class="bg-dark-900 border border-dark-700 rounded-lg p-4 relative overflow-hidden">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 relative z-10">
                         <input type="text" id="profileNameInput"
                             class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-stremio text-sm flex-1 w-full placeholder-gray-500 font-bold shadow-sm"
@@ -242,7 +296,8 @@
                             class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded transition-colors whitespace-nowrap shadow-sm">Rendi
                             Attivo</button>
                         <button type="button" id="toggleTemplateBtn"
-                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600 shadow-sm">📋 Modelli</button>
+                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600 shadow-sm">📋
+                            Modelli</button>
                         <button type="button" id="deleteProfileBtn"
                             class="w-full sm:w-auto text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 py-2 px-3 rounded transition-colors hidden">Elimina</button>
                     </div>
@@ -266,14 +321,20 @@
                         <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-blue-400">4</span>
                         Cataloghi Curati (Zero Costi AI)
                     </h2>
-                    <span id="selectedPresetsCount" class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2.5 py-1 rounded-full border border-stremio/20">0 selezionati</span>
+                    <span id="selectedPresetsCount"
+                        class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2.5 py-1 rounded-full border border-stremio/20">0
+                        selezionati</span>
                 </div>
                 <p class="text-sm text-gray-400">Questi cataloghi sono pre-impostati e richiamano TMDB in modo nativo.
                     Non consumano token Mistral.</p>
 
                 <!-- Preset Search -->
                 <div class="relative">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
                     <input type="text" id="presetSearchInput" placeholder="Cerca preset... (es. horror, nolan, anime)"
                         class="w-full pl-10 pr-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder-gray-600">
                 </div>
@@ -290,14 +351,22 @@
 
                 <!-- Pagination Controls -->
                 <div id="presetPagination" class="hidden flex items-center justify-between pt-2">
-                    <button type="button" id="presetPrevBtn" class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed" disabled>← Precedente</button>
+                    <button type="button" id="presetPrevBtn"
+                        class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        disabled>← Precedente</button>
                     <span id="presetPageInfo" class="text-xs text-gray-500 font-mono"></span>
-                    <button type="button" id="presetNextBtn" class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed" disabled>Successivo →</button>
+                    <button type="button" id="presetNextBtn"
+                        class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        disabled>Successivo →</button>
                 </div>
 
                 <!-- Expand/Collapse Toggle -->
-                <button type="button" id="presetExpandBtn" class="hidden w-full py-2 text-xs text-gray-400 hover:text-stremio transition-colors flex items-center justify-center gap-1">
-                    <svg id="expandIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                <button type="button" id="presetExpandBtn"
+                    class="hidden w-full py-2 text-xs text-gray-400 hover:text-stremio transition-colors flex items-center justify-center gap-1">
+                    <svg id="expandIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
                     <span id="expandText">Mostra tutti</span>
                 </button>
             </div>
@@ -310,21 +379,25 @@
                     <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-green-400">5</span>
                     Creatore di Cataloghi
                 </h2>
-                <p class="text-sm text-gray-400">Crea cataloghi personalizzati usando l'AI o manualmente specificando i parametri TMDB.</p>
+                <p class="text-sm text-gray-400">Crea cataloghi personalizzati usando l'AI o manualmente specificando i
+                    parametri TMDB.</p>
 
                 <!-- Tab switcher: AI / Manual -->
                 <div class="flex bg-dark-900 rounded-lg border border-dark-700 p-1 gap-1">
-                    <button type="button" id="tabAiCatalog" class="flex-1 text-xs font-medium py-2 px-3 rounded-md bg-green-500/20 text-green-400 border border-green-500/30 transition-colors">
+                    <button type="button" id="tabAiCatalog"
+                        class="flex-1 text-xs font-medium py-2 px-3 rounded-md bg-green-500/20 text-green-400 border border-green-500/30 transition-colors">
                         🤖 Catalogo AI
                     </button>
-                    <button type="button" id="tabManualCatalog" class="flex-1 text-xs font-medium py-2 px-3 rounded-md text-gray-400 hover:text-gray-200 transition-colors">
+                    <button type="button" id="tabManualCatalog"
+                        class="flex-1 text-xs font-medium py-2 px-3 rounded-md text-gray-400 hover:text-gray-200 transition-colors">
                         🔧 Creazione Manuale
                     </button>
                 </div>
 
                 <!-- AI Catalog Tab -->
                 <div id="aiCatalogTab" class="space-y-3">
-                    <p class="text-xs text-gray-500">Descrivi cosa vuoi vedere nella Home di Stremio. L'AI genererà listini
+                    <p class="text-xs text-gray-500">Descrivi cosa vuoi vedere nella Home di Stremio. L'AI genererà
+                        listini
                         perfetti per te. (Richiede Mistral Key).</p>
                     <div id="catalogList" class="space-y-3">
                         <div class="catalog-item flex gap-2">
@@ -341,7 +414,8 @@
 
                 <!-- Manual Catalog Tab -->
                 <div id="manualCatalogTab" class="hidden space-y-4">
-                    <p class="text-xs text-gray-500">Specifica manualmente i parametri TMDB per creare un preset personalizzato.</p>
+                    <p class="text-xs text-gray-500">Specifica manualmente i parametri TMDB per creare un preset
+                        personalizzato.</p>
 
                     <div class="bg-dark-900/60 border border-dark-700 rounded-lg p-4 space-y-4">
                         <!-- Preset Name -->
@@ -355,14 +429,16 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div class="space-y-1">
                                 <label class="block text-xs font-medium text-gray-400">Tipo</label>
-                                <select id="manualPresetType" class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm text-gray-200">
+                                <select id="manualPresetType"
+                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm text-gray-200">
                                     <option value="movie">Film</option>
                                     <option value="series">Serie TV</option>
                                 </select>
                             </div>
                             <div class="space-y-1">
                                 <label class="block text-xs font-medium text-gray-400">Ordinamento</label>
-                                <select id="manualPresetSort" class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm text-gray-200">
+                                <select id="manualPresetSort"
+                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm text-gray-200">
                                     <option value="popularity.desc">Popolarità ↓</option>
                                     <option value="vote_average.desc">Voto Medio ↓</option>
                                     <option value="primary_release_date.desc">Data di Uscita ↓</option>
@@ -374,15 +450,19 @@
 
                         <!-- Genres -->
                         <div class="space-y-1">
-                            <label class="block text-xs font-medium text-gray-400">Generi (ID TMDB, separati da virgola)</label>
+                            <label class="block text-xs font-medium text-gray-400">Generi (ID TMDB, separati da
+                                virgola)</label>
                             <input type="text" id="manualPresetGenres" placeholder="Es: 28,53 (Azione, Thriller)"
                                 class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
-                            <p class="text-[10px] text-gray-600">Film: Azione=28, Avventura=12, Animazione=16, Commedia=35, Crimine=80, Documentario=99, Dramma=18, Famiglia=10751, Fantasy=14, Horror=27, Mistero=9648, Romance=10749, Sci-Fi=878, Thriller=53, Guerra=10752</p>
+                            <p class="text-[10px] text-gray-600">Film: Azione=28, Avventura=12, Animazione=16,
+                                Commedia=35, Crimine=80, Documentario=99, Dramma=18, Famiglia=10751, Fantasy=14,
+                                Horror=27, Mistero=9648, Romance=10749, Sci-Fi=878, Thriller=53, Guerra=10752</p>
                         </div>
 
                         <!-- Keywords -->
                         <div class="space-y-1">
-                            <label class="block text-xs font-medium text-gray-400">Keywords (ID TMDB, separati da virgola)</label>
+                            <label class="block text-xs font-medium text-gray-400">Keywords (ID TMDB, separati da
+                                virgola)</label>
                             <input type="text" id="manualPresetKeywords" placeholder="Es: 210024 (Anime)"
                                 class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
                         </div>
@@ -419,7 +499,8 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div class="space-y-1">
                                 <label class="block text-xs font-medium text-gray-400">Voto Minimo</label>
-                                <input type="number" id="manualPresetVoteAvg" step="0.5" min="0" max="10" placeholder="Es: 7.0"
+                                <input type="number" id="manualPresetVoteAvg" step="0.5" min="0" max="10"
+                                    placeholder="Es: 7.0"
                                     class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
                             </div>
                             <div class="space-y-1">
@@ -504,15 +585,23 @@
                     <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-cyan-400">7</span>
                     Backup & Ripristino
                 </h2>
-                <p class="text-sm text-gray-400">Esporta la tua configurazione come file JSON per avere un backup, oppure importa una configurazione salvata.</p>
+                <p class="text-sm text-gray-400">Esporta la tua configurazione come file JSON per avere un backup,
+                    oppure importa una configurazione salvata.</p>
                 <div class="flex flex-col sm:flex-row gap-3">
                     <button type="button" id="exportConfigBtn"
                         class="flex-1 py-2.5 px-4 bg-dark-800 border border-dark-600 rounded-lg text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors flex items-center justify-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
                         Esporta Configurazione
                     </button>
-                    <label class="flex-1 py-2.5 px-4 bg-dark-800 border border-dark-600 rounded-lg text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors flex items-center justify-center gap-2 cursor-pointer">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <label
+                        class="flex-1 py-2.5 px-4 bg-dark-800 border border-dark-600 rounded-lg text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
                         Importa Configurazione
                         <input type="file" id="importConfigInput" accept=".json" class="hidden">
                     </label>
@@ -606,6 +695,10 @@
             'series': { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20', label: 'Serie' }
         };
 
+        // Stremio Auth State (per aggiornamento automatico addon)
+        let stremioAuthKey = sessionStorage.getItem('stremioAuthKey') || null;
+        let stremioEmail = sessionStorage.getItem('stremioEmail') || null;
+
         // Estrae l'oggetto profilo in editing
         const getEditingProfile = () => profiles.find(p => p.id === editingProfileId);
 
@@ -614,6 +707,98 @@
             const div = document.createElement('div');
             div.appendChild(document.createTextNode(str));
             return div.innerHTML;
+        }
+
+        // -- STREMIO AUTH LOGIC --
+
+        function updateStremioAuthUI() {
+            const loginForm = document.getElementById('stremioLoginForm');
+            const loggedIn = document.getElementById('stremioLoggedIn');
+            const emailDisplay = document.getElementById('stremioUserEmail');
+
+            if (stremioAuthKey && stremioEmail) {
+                loginForm.classList.add('hidden');
+                loggedIn.classList.remove('hidden');
+                emailDisplay.textContent = stremioEmail;
+            } else {
+                loginForm.classList.remove('hidden');
+                loggedIn.classList.add('hidden');
+            }
+        }
+
+        async function stremioLogin() {
+            const email = document.getElementById('stremioEmail').value.trim();
+            const password = document.getElementById('stremioPassword').value;
+            const statusEl = document.getElementById('stremioAuthStatus');
+            const btn = document.getElementById('stremioLoginBtn');
+
+            if (!email || !password) {
+                statusEl.textContent = '❌ Inserisci email e password';
+                statusEl.className = 'text-xs text-red-400';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Accesso...';
+            statusEl.textContent = '';
+
+            try {
+                const res = await fetch('/api/stremio-auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (data.success && data.authKey) {
+                    stremioAuthKey = data.authKey;
+                    stremioEmail = data.email || email;
+                    sessionStorage.setItem('stremioAuthKey', stremioAuthKey);
+                    sessionStorage.setItem('stremioEmail', stremioEmail);
+                    document.getElementById('stremioPassword').value = '';
+                    updateStremioAuthUI();
+                } else {
+                    statusEl.textContent = '❌ ' + (data.error || 'Login fallito');
+                    statusEl.className = 'text-xs text-red-400';
+                }
+            } catch (err) {
+                statusEl.textContent = '❌ Errore di connessione';
+                statusEl.className = 'text-xs text-red-400';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Accedi a Stremio';
+            }
+        }
+
+        function stremioLogout() {
+            stremioAuthKey = null;
+            stremioEmail = null;
+            sessionStorage.removeItem('stremioAuthKey');
+            sessionStorage.removeItem('stremioEmail');
+            updateStremioAuthUI();
+        }
+
+        async function autoUpdateStremioAddon(uuid, configVersion) {
+            if (!stremioAuthKey) return false;
+
+            const portStr = window.location.port ? `:${window.location.port}` : '';
+            const baseHttpUrl = `${window.location.protocol}//${window.location.hostname}${portStr}`;
+            const manifestUrl = configVersion
+                ? `${baseHttpUrl}/${uuid}/${configVersion}/manifest.json`
+                : `${baseHttpUrl}/${uuid}/manifest.json`;
+
+            try {
+                const res = await fetch('/api/stremio-addon-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ authKey: stremioAuthKey, manifestUrl })
+                });
+                const data = await res.json();
+                return data.success === true;
+            } catch (err) {
+                console.error('Auto-update failed:', err);
+                return false;
+            }
         }
 
         // -- CORE UI LOGIC --
@@ -1421,6 +1606,11 @@
             if (currentUuid) {
                 document.getElementById('submitBtn').textContent = 'Aggiorna Configurazione';
             }
+
+            // Stremio Auth Event Listeners
+            document.getElementById('stremioLoginBtn').addEventListener('click', stremioLogin);
+            document.getElementById('stremioLogoutBtn').addEventListener('click', stremioLogout);
+            updateStremioAuthUI();
         });
 
         // 4. SUBMIT FORM
@@ -1501,7 +1691,7 @@
                     const cv = data.configVersion || '';
 
                     if (currentUuid) {
-                        // UPDATE MODE: Usa configVersion nel link per forzare aggiornamento in Stremio
+                        // UPDATE MODE
                         const portStr = window.location.port ? `:${window.location.port}` : '';
                         const cleanUrl = `${window.location.protocol}//${window.location.hostname}${portStr}`;
                         const baseUrl = cleanUrl.replace('https://', 'stremio://').replace('http://', 'stremio://');
@@ -1509,13 +1699,28 @@
                             ? `${baseUrl}/${data.uuid}/${cv}/manifest.json`
                             : `${baseUrl}/${data.uuid}/manifest.json`;
 
-                        statusMsg.innerHTML = `✅ Configurazione aggiornata! <a href="${updateLink}" class="underline hover:text-green-300">Clicca qui per aggiornare in Stremio</a> (Stremio ti chiederà di reinstallare con la nuova configurazione).`;
-                        statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-green-500/20 text-green-400 block border border-green-500/30";
+                        // Se connesso a Stremio, aggiorna automaticamente l'addon
+                        if (stremioAuthKey) {
+                            submitBtn.innerHTML = `
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                Aggiornamento Stremio...
+                            `;
+                            const updated = await autoUpdateStremioAddon(data.uuid, cv);
+                            if (updated) {
+                                statusMsg.innerHTML = `✅ Addon aggiornato automaticamente in Stremio! Le modifiche saranno visibili al prossimo riavvio dell'app.`;
+                                statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-green-500/20 text-green-400 block border border-green-500/30";
+                            } else {
+                                statusMsg.innerHTML = `⚠️ Configurazione salvata, ma aggiornamento automatico fallito. <a href="${updateLink}" class="underline hover:text-green-300">Aggiorna manualmente</a>.`;
+                                statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-yellow-500/20 text-yellow-400 block border border-yellow-500/30";
+                            }
+                        } else {
+                            statusMsg.innerHTML = `✅ Configurazione aggiornata! <a href="${updateLink}" class="underline hover:text-green-300">Clicca qui per aggiornare in Stremio</a> oppure connetti il tuo account Stremio per aggiornare automaticamente.`;
+                            statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-green-500/20 text-green-400 block border border-green-500/30";
+                        }
+
                         submitBtn.disabled = false;
                         submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
                         submitBtn.innerHTML = "Aggiorna Configurazione";
-
-                        // Scroll to status
                         statusMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     } else {
                         // NEW INSTALL MODE: Nascondi form e mostra install box
@@ -1535,9 +1740,27 @@
                         uuidDisplay.textContent = data.uuid;
                         currentUuid = data.uuid;
 
-                        document.getElementById('configForm').classList.add('hidden');
-                        box.classList.remove('hidden');
-                        window.scrollTo(0, 0);
+                        // Se connesso a Stremio, installa automaticamente l'addon
+                        if (stremioAuthKey) {
+                            const installed = await autoUpdateStremioAddon(data.uuid, cv);
+                            if (installed) {
+                                document.getElementById('configForm').classList.add('hidden');
+                                box.classList.remove('hidden');
+                                const installStatus = document.createElement('p');
+                                installStatus.className = 'text-green-400 text-sm mt-3 font-medium';
+                                installStatus.textContent = '✅ Addon installato automaticamente nel tuo account Stremio!';
+                                box.appendChild(installStatus);
+                                window.scrollTo(0, 0);
+                            } else {
+                                document.getElementById('configForm').classList.add('hidden');
+                                box.classList.remove('hidden');
+                                window.scrollTo(0, 0);
+                            }
+                        } else {
+                            document.getElementById('configForm').classList.add('hidden');
+                            box.classList.remove('hidden');
+                            window.scrollTo(0, 0);
+                        }
                     }
                 } else {
                     const errorData = await response.json();
