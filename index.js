@@ -87,6 +87,84 @@ app.post('/api/validate-tmdb-key', async (req, res) => {
     }
 });
 
+// Stremio API: Login con credenziali Stremio per ottenere authKey
+app.post('/api/stremio-auth', async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ success: false, error: 'Email e password obbligatorie' });
+    }
+    try {
+        const stremioRes = await axios.post('https://api.strem.io/api/login', { email, password }, { timeout: 10000 });
+        const data = stremioRes.data;
+        if (data && data.result && data.result.authKey) {
+            return res.json({ success: true, authKey: data.result.authKey, email: data.result.user?.email || email });
+        }
+        return res.json({ success: false, error: data?.result?.error || 'Credenziali non valide' });
+    } catch (err) {
+        const errMsg = err.response?.data?.result?.error || err.message || 'Errore di connessione';
+        return res.json({ success: false, error: errMsg });
+    }
+});
+
+// Stremio API: Aggiorna addon nella collezione dell'utente (senza reinstallare manualmente)
+app.post('/api/stremio-addon-update', async (req, res) => {
+    const { authKey, manifestUrl } = req.body;
+    if (!authKey || !manifestUrl) {
+        return res.status(400).json({ success: false, error: 'authKey e manifestUrl obbligatori' });
+    }
+    try {
+        // 1. Recupera la collezione attuale di addon dell'utente
+        const getRes = await axios.post('https://api.strem.io/api/addonCollectionGet', {
+            type: 'AddonCollectionGet',
+            authKey,
+            update: true,
+            addFromURL: []
+        }, { timeout: 10000 });
+
+        const addons = getRes.data?.result?.addons;
+        if (!addons || !Array.isArray(addons)) {
+            return res.json({ success: false, error: 'Impossibile recuperare la collezione addon' });
+        }
+
+        // 2. Cerca il nostro addon (YACA) nella collezione
+        const addonId = 'org.stremio.yaca.catalog';
+        const existingIdx = addons.findIndex(a => a.manifest?.id === addonId);
+
+        // 3. Recupera il nuovo manifest dal nostro server
+        const manifestRes = await axios.get(manifestUrl, { timeout: 10000 });
+        const manifest = manifestRes.data;
+
+        if (existingIdx !== -1) {
+            // Aggiorna l'addon esistente
+            addons[existingIdx].transportUrl = manifestUrl;
+            addons[existingIdx].manifest = manifest;
+        } else {
+            // Aggiungi come nuovo addon
+            addons.push({
+                transportUrl: manifestUrl,
+                transportName: 'http',
+                manifest: manifest,
+                flags: { official: false, protected: false }
+            });
+        }
+
+        // 4. Salva la collezione aggiornata
+        const setRes = await axios.post('https://api.strem.io/api/addonCollectionSet', {
+            type: 'AddonCollectionSet',
+            authKey,
+            addons
+        }, { timeout: 10000 });
+
+        if (setRes.data?.result?.success) {
+            return res.json({ success: true });
+        }
+        return res.json({ success: false, error: setRes.data?.result?.error || 'Errore aggiornamento collezione' });
+    } catch (err) {
+        const errMsg = err.response?.data?.result?.error || err.message || 'Errore di connessione';
+        return res.json({ success: false, error: errMsg });
+    }
+});
+
 // 2. Registra endpoint configuration (Frontend Web Web)
 app.post('/api/configure', configureRoute);
 

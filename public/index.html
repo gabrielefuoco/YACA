@@ -116,6 +116,45 @@
 
             <hr class="border-dark-700">
 
+            <!-- Stremio Account Integration -->
+            <div class="space-y-4">
+                <h2 class="text-lg font-semibold text-white flex items-center">
+                    <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-blue-400">⚡</span>
+                    Aggiornamento Automatico <span class="text-gray-500 font-normal text-xs ml-2">(Opzionale)</span>
+                </h2>
+                <div class="bg-dark-900/50 border border-blue-900/30 rounded-lg p-4">
+                    <p class="text-xs text-gray-400 mb-3">Accedi con il tuo account Stremio per aggiornare l'addon automaticamente quando cambi la configurazione, senza dover reinstallare manualmente.</p>
+                    <div id="stremioAuthSection">
+                        <div id="stremioLoginForm" class="space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <input type="email" id="stremioEmail" placeholder="Email Stremio"
+                                    class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-blue-500 text-sm placeholder-gray-600">
+                                <input type="password" id="stremioPassword" placeholder="Password Stremio"
+                                    class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-blue-500 text-sm placeholder-gray-600">
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button type="button" id="stremioLoginBtn"
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors">
+                                    Accedi a Stremio
+                                </button>
+                                <span id="stremioAuthStatus" class="text-xs text-gray-400"></span>
+                            </div>
+                        </div>
+                        <div id="stremioLoggedIn" class="hidden flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-green-400 text-sm">✅ Connesso come <strong id="stremioUserEmail" class="text-white"></strong></span>
+                            </div>
+                            <button type="button" id="stremioLogoutBtn"
+                                class="px-3 py-1 bg-dark-700 hover:bg-dark-600 text-gray-300 text-xs rounded-md transition-colors">
+                                Disconnetti
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-dark-700">
+
             <!-- Profiles Section -->
             <div class="space-y-4">
                 <h2 class="text-lg font-semibold text-white flex items-center">
@@ -336,6 +375,10 @@
         let activeProfileId = 'default';
         let editingProfileId = 'default';
 
+        // Stremio Auth State (per aggiornamento automatico addon)
+        let stremioAuthKey = sessionStorage.getItem('stremioAuthKey') || null;
+        let stremioEmail = sessionStorage.getItem('stremioEmail') || null;
+
         // Estrae l'oggetto profilo in editing
         const getEditingProfile = () => profiles.find(p => p.id === editingProfileId);
 
@@ -344,6 +387,98 @@
             const div = document.createElement('div');
             div.appendChild(document.createTextNode(str));
             return div.innerHTML;
+        }
+
+        // -- STREMIO AUTH LOGIC --
+
+        function updateStremioAuthUI() {
+            const loginForm = document.getElementById('stremioLoginForm');
+            const loggedIn = document.getElementById('stremioLoggedIn');
+            const emailDisplay = document.getElementById('stremioUserEmail');
+
+            if (stremioAuthKey && stremioEmail) {
+                loginForm.classList.add('hidden');
+                loggedIn.classList.remove('hidden');
+                emailDisplay.textContent = stremioEmail;
+            } else {
+                loginForm.classList.remove('hidden');
+                loggedIn.classList.add('hidden');
+            }
+        }
+
+        async function stremioLogin() {
+            const email = document.getElementById('stremioEmail').value.trim();
+            const password = document.getElementById('stremioPassword').value;
+            const statusEl = document.getElementById('stremioAuthStatus');
+            const btn = document.getElementById('stremioLoginBtn');
+
+            if (!email || !password) {
+                statusEl.textContent = '❌ Inserisci email e password';
+                statusEl.className = 'text-xs text-red-400';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Accesso...';
+            statusEl.textContent = '';
+
+            try {
+                const res = await fetch('/api/stremio-auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (data.success && data.authKey) {
+                    stremioAuthKey = data.authKey;
+                    stremioEmail = data.email || email;
+                    sessionStorage.setItem('stremioAuthKey', stremioAuthKey);
+                    sessionStorage.setItem('stremioEmail', stremioEmail);
+                    document.getElementById('stremioPassword').value = '';
+                    updateStremioAuthUI();
+                } else {
+                    statusEl.textContent = '❌ ' + (data.error || 'Login fallito');
+                    statusEl.className = 'text-xs text-red-400';
+                }
+            } catch (err) {
+                statusEl.textContent = '❌ Errore di connessione';
+                statusEl.className = 'text-xs text-red-400';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Accedi a Stremio';
+            }
+        }
+
+        function stremioLogout() {
+            stremioAuthKey = null;
+            stremioEmail = null;
+            sessionStorage.removeItem('stremioAuthKey');
+            sessionStorage.removeItem('stremioEmail');
+            updateStremioAuthUI();
+        }
+
+        async function autoUpdateStremioAddon(uuid, configVersion) {
+            if (!stremioAuthKey) return false;
+
+            const portStr = window.location.port ? `:${window.location.port}` : '';
+            const baseHttpUrl = `${window.location.protocol}//${window.location.hostname}${portStr}`;
+            const manifestUrl = configVersion
+                ? `${baseHttpUrl}/${uuid}/${configVersion}/manifest.json`
+                : `${baseHttpUrl}/${uuid}/manifest.json`;
+
+            try {
+                const res = await fetch('/api/stremio-addon-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ authKey: stremioAuthKey, manifestUrl })
+                });
+                const data = await res.json();
+                return data.success === true;
+            } catch (err) {
+                console.error('Auto-update failed:', err);
+                return false;
+            }
         }
 
         // -- CORE UI LOGIC --
@@ -872,6 +1007,11 @@
             if (currentUuid) {
                 document.getElementById('submitBtn').textContent = 'Aggiorna Configurazione';
             }
+
+            // Stremio Auth Event Listeners
+            document.getElementById('stremioLoginBtn').addEventListener('click', stremioLogin);
+            document.getElementById('stremioLogoutBtn').addEventListener('click', stremioLogout);
+            updateStremioAuthUI();
         });
 
         // 4. SUBMIT FORM
@@ -952,7 +1092,7 @@
                     const cv = data.configVersion || '';
 
                     if (currentUuid) {
-                        // UPDATE MODE: Usa configVersion nel link per forzare aggiornamento in Stremio
+                        // UPDATE MODE
                         const portStr = window.location.port ? `:${window.location.port}` : '';
                         const cleanUrl = `${window.location.protocol}//${window.location.hostname}${portStr}`;
                         const baseUrl = cleanUrl.replace('https://', 'stremio://').replace('http://', 'stremio://');
@@ -960,13 +1100,28 @@
                             ? `${baseUrl}/${data.uuid}/${cv}/manifest.json`
                             : `${baseUrl}/${data.uuid}/manifest.json`;
 
-                        statusMsg.innerHTML = `✅ Configurazione aggiornata! <a href="${updateLink}" class="underline hover:text-green-300">Clicca qui per aggiornare in Stremio</a> (Stremio ti chiederà di reinstallare con la nuova configurazione).`;
-                        statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-green-500/20 text-green-400 block border border-green-500/30";
+                        // Se connesso a Stremio, aggiorna automaticamente l'addon
+                        if (stremioAuthKey) {
+                            submitBtn.innerHTML = `
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                Aggiornamento Stremio...
+                            `;
+                            const updated = await autoUpdateStremioAddon(data.uuid, cv);
+                            if (updated) {
+                                statusMsg.innerHTML = `✅ Addon aggiornato automaticamente in Stremio! Le modifiche saranno visibili al prossimo riavvio dell'app.`;
+                                statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-green-500/20 text-green-400 block border border-green-500/30";
+                            } else {
+                                statusMsg.innerHTML = `⚠️ Configurazione salvata, ma aggiornamento automatico fallito. <a href="${updateLink}" class="underline hover:text-green-300">Aggiorna manualmente</a>.`;
+                                statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-yellow-500/20 text-yellow-400 block border border-yellow-500/30";
+                            }
+                        } else {
+                            statusMsg.innerHTML = `✅ Configurazione aggiornata! <a href="${updateLink}" class="underline hover:text-green-300">Clicca qui per aggiornare in Stremio</a> oppure connetti il tuo account Stremio per aggiornare automaticamente.`;
+                            statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-green-500/20 text-green-400 block border border-green-500/30";
+                        }
+
                         submitBtn.disabled = false;
                         submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
                         submitBtn.innerHTML = "Aggiorna Configurazione";
-
-                        // Scroll to status
                         statusMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     } else {
                         // NEW INSTALL MODE: Nascondi form e mostra install box
@@ -986,9 +1141,27 @@
                         uuidDisplay.textContent = data.uuid;
                         currentUuid = data.uuid;
 
-                        document.getElementById('configForm').classList.add('hidden');
-                        box.classList.remove('hidden');
-                        window.scrollTo(0, 0);
+                        // Se connesso a Stremio, installa automaticamente l'addon
+                        if (stremioAuthKey) {
+                            const installed = await autoUpdateStremioAddon(data.uuid, cv);
+                            if (installed) {
+                                document.getElementById('configForm').classList.add('hidden');
+                                box.classList.remove('hidden');
+                                const installStatus = document.createElement('p');
+                                installStatus.className = 'text-green-400 text-sm mt-3 font-medium';
+                                installStatus.textContent = '✅ Addon installato automaticamente nel tuo account Stremio!';
+                                box.appendChild(installStatus);
+                                window.scrollTo(0, 0);
+                            } else {
+                                document.getElementById('configForm').classList.add('hidden');
+                                box.classList.remove('hidden');
+                                window.scrollTo(0, 0);
+                            }
+                        } else {
+                            document.getElementById('configForm').classList.add('hidden');
+                            box.classList.remove('hidden');
+                            window.scrollTo(0, 0);
+                        }
                     }
                 } else {
                     const errorData = await response.json();
