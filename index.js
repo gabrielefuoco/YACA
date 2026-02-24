@@ -87,8 +87,25 @@ app.post('/api/validate-tmdb-key', async (req, res) => {
     }
 });
 
+// Rate limiter semplice per endpoint di autenticazione Stremio (anti brute-force)
+const authAttempts = new Map();
+const AUTH_WINDOW_MS = 15 * 60 * 1000; // 15 minuti
+const AUTH_MAX_ATTEMPTS = 10;
+
 // Stremio API: Login con credenziali Stremio per ottenere authKey
 app.post('/api/stremio-auth', async (req, res) => {
+    const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
+    const now = Date.now();
+
+    // Pulizia scaduti e verifica rate limit
+    const attempts = authAttempts.get(clientIp) || [];
+    const recentAttempts = attempts.filter(t => now - t < AUTH_WINDOW_MS);
+    if (recentAttempts.length >= AUTH_MAX_ATTEMPTS) {
+        return res.status(429).json({ success: false, error: 'Troppi tentativi. Riprova tra qualche minuto.' });
+    }
+    recentAttempts.push(now);
+    authAttempts.set(clientIp, recentAttempts);
+
     const { email, password } = req.body;
     if (!email || !password) {
         return res.status(400).json({ success: false, error: 'Email e password obbligatorie' });
@@ -112,6 +129,17 @@ app.post('/api/stremio-addon-update', async (req, res) => {
     if (!authKey || !manifestUrl) {
         return res.status(400).json({ success: false, error: 'authKey e manifestUrl obbligatori' });
     }
+
+    // Validazione SSRF: il manifestUrl deve essere un URL valido che punta al manifest del nostro addon
+    try {
+        const parsed = new URL(manifestUrl);
+        if (!parsed.pathname.endsWith('/manifest.json')) {
+            return res.status(400).json({ success: false, error: 'URL manifest non valido' });
+        }
+    } catch (_e) {
+        return res.status(400).json({ success: false, error: 'URL non valido' });
+    }
+
     try {
         // 1. Recupera la collezione attuale di addon dell'utente
         const getRes = await axios.post('https://api.strem.io/api/addonCollectionGet', {
