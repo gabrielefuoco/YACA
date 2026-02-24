@@ -37,8 +37,17 @@ async function metaHandler(args, userUuid) {
         }
 
         if (meta) {
-            // Forziamo l'ID a quello originariamente richiesto per compiacere l'SDK di Stremio
-            meta.id = id;
+            // Per richieste con tmdb: ID, manteniamo l'IMDB ID risolto per compatibilità streaming
+            // toStremioMetaItem preferisce già gli IMDB ID quando external_ids è disponibile
+            if (id.startsWith('tmdb:') && meta.id && meta.id.startsWith('tt')) {
+                // meta.id contiene l'IMDB ID risolto, teniamolo per Torrentio & co.
+                if (meta.behaviorHints) {
+                    meta.behaviorHints.defaultVideoId = meta.id;
+                }
+            } else {
+                // Per kitsu: e altri ID, forziamo l'ID originale
+                meta.id = id;
+            }
             return { meta };
         }
 
