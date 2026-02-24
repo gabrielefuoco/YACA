@@ -209,12 +209,21 @@
                 <div class="bg-dark-900/50 border border-red-900/30 rounded-lg p-4 flex items-center justify-between">
                     <div>
                         <h3 class="font-medium text-white mb-1">Sincronizza Liste e Cronologia</h3>
-                        <p class="text-xs text-gray-400">Collega l'account per vedere la tua Watchlist e i Consigliati
-                            in Home.</p>
+                        <p class="text-xs text-gray-400">Collega l'account privato per vedere la tua Watchlist e i
+                            Consigliati in Home.</p>
                     </div>
                     <div>
-                        <input type="text" id="traktUsername" placeholder="Es. mrrobot99"
-                            class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-red-500 text-sm w-32 sm:w-48 placeholder-gray-600">
+                        <button type="button" id="traktLoginBtn"
+                            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors text-sm font-bold flex items-center shadow-lg shadow-red-900/20">
+                            Connetti Trakt
+                        </button>
+                        <div id="traktConnectedUI" class="hidden flex-col items-end">
+                            <span class="text-green-500 font-bold text-sm mb-1">✓ Connesso</span>
+                            <button type="button" id="traktLogoutBtn"
+                                class="text-xs text-gray-400 hover:text-red-400 line-through transition-colors">Scollega
+                                Account</button>
+                        </div>
+                        <input type="hidden" id="traktToken">
                     </div>
                 </div>
             </div>
@@ -649,6 +658,25 @@
                 class="text-xs text-gray-400 hover:text-white underline mt-2">Torna alla configurazione</button>
         </div>
 
+    </div>
+
+    <!-- Trakt Device Auth Modal -->
+    <div id="traktAuthModal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div class="bg-dark-800 p-8 rounded-xl shadow-2xl max-w-sm w-full text-center border border-dark-600">
+            <h3 class="text-xl font-bold text-white mb-4">Autenticazione Trakt</h3>
+            <p class="text-sm text-gray-300 mb-4">1. Vai su <a id="traktAuthUrl" href="#" target="_blank"
+                    class="text-red-500 font-bold underline">trakt.tv/activate</a></p>
+            <p class="text-sm text-gray-300 mb-4">2. Inserisci questo codice:</p>
+            <div id="traktAuthCode"
+                class="text-3xl font-mono tracking-widest font-bold text-white bg-dark-900 py-4 rounded-lg mb-6 shadow-inner select-all border border-dark-700">
+                ----</div>
+            <p class="text-xs text-gray-400 mb-6">In attesa di conferma da Trakt... (<span
+                    id="traktAuthCountdown">0</span>s)</p>
+            <button type="button" id="traktAuthCancelBtn"
+                class="px-6 py-2.5 bg-dark-700 hover:bg-dark-600 border border-dark-600 text-white rounded-lg transition-colors text-sm font-medium w-full">Indietro
+                / Annulla</button>
+        </div>
     </div>
 
     <script>
@@ -1359,7 +1387,7 @@
                 _exported_at: new Date().toISOString(),
                 tmdbKey: document.getElementById('tmdbKey').value,
                 mistralKey: document.getElementById('mistralKey').value,
-                traktUsername: document.getElementById('traktUsername').value,
+                traktToken: document.getElementById('traktToken').value,
                 profiles: profiles,
                 activeProfileId: activeProfileId
             };
@@ -1389,7 +1417,18 @@
                     }
                     document.getElementById('tmdbKey').value = data.tmdbKey || '';
                     document.getElementById('mistralKey').value = data.mistralKey || '';
-                    document.getElementById('traktUsername').value = data.traktUsername || '';
+
+                    if (data.traktToken || data.traktUsername) {
+                        document.getElementById('traktToken').value = data.traktToken || data.traktUsername;
+                        document.getElementById('traktLoginBtn').classList.add('hidden');
+                        document.getElementById('traktConnectedUI').classList.remove('flex-col');
+                        document.getElementById('traktConnectedUI').classList.add('flex', 'flex-col');
+                    } else {
+                        document.getElementById('traktLoginBtn').classList.remove('hidden');
+                        document.getElementById('traktConnectedUI').classList.remove('flex', 'flex-col');
+                        document.getElementById('traktConnectedUI').classList.add('hidden');
+                    }
+
                     profiles = data.profiles;
                     activeProfileId = data.activeProfileId || profiles[0]?.id || 'default';
                     editingProfileId = activeProfileId;
@@ -1503,7 +1542,15 @@
             if (existingConfig) {
                 document.getElementById('tmdbKey').value = existingConfig.apiKeys?.tmdb || '';
                 document.getElementById('mistralKey').value = existingConfig.apiKeys?.mistral || '';
-                document.getElementById('traktUsername').value = existingConfig.apiKeys?.trakt || '';
+
+                const token = existingConfig.apiKeys?.trakt;
+                if (token) {
+                    document.getElementById('traktToken').value = token;
+                    document.getElementById('traktLoginBtn').classList.add('hidden');
+                    document.getElementById('traktConnectedUI').classList.add('flex');
+                    document.getElementById('traktConnectedUI').classList.remove('hidden');
+                }
+
                 document.getElementById('submitBtn').innerHTML = "Aggiorna Configurazione in Stremio";
 
                 if (existingConfig.profiles && existingConfig.profiles.length > 0) {
@@ -1620,7 +1667,7 @@
 
             const tmdbKey = document.getElementById('tmdbKey').value;
             const mistralKey = document.getElementById('mistralKey').value;
-            const traktUsername = document.getElementById('traktUsername').value;
+            const traktToken = document.getElementById('traktToken').value;
 
             // Validazione
             const hasNewPrompts = profiles.some(p => p.raw_ui_state.newPrompts.length > 0);
@@ -1674,7 +1721,7 @@
                 const payload = {
                     tmdbKey,
                     mistralKey,
-                    traktUsername,
+                    traktToken,
                     activeProfileId: activeProfileId,
                     profiles: payloadProfiles
                 };
@@ -1763,7 +1810,7 @@
                         }
                     }
                 } else {
-                    const errorData = await response.json();
+                coorData = await response.json();
                     statusMsg.textContent = "❌ Errore: " + (errorData.error || "Riprova tra poco");
                     statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-red-500/20 text-red-400 block border border-red-500/30";
                     submitBtn.disabled = false;

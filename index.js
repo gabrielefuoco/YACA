@@ -193,6 +193,53 @@ app.post('/api/stremio-addon-update', async (req, res) => {
     }
 });
 
+// --- Trakt Device Authentication ---
+app.post('/api/trakt/device/code', async (req, res) => {
+    const clientId = process.env.TRAKT_CLIENT_ID;
+    if (!clientId) return res.status(400).json({ error: 'TRAKT_CLIENT_ID mancante nel server.' });
+
+    try {
+        const response = await axios.post('https://api.trakt.tv/oauth/device/code', {
+            client_id: clientId
+        }, { headers: { 'Content-Type': 'application/json' } });
+        return res.json(response.data);
+    } catch (err) {
+        console.error("Errore Trakt Code:", err.response?.data || err.message);
+        return res.status(500).json({ error: "Errore di connessione a Trakt." });
+    }
+});
+
+app.post('/api/trakt/device/token', async (req, res) => {
+    const { device_code } = req.body;
+    const clientId = process.env.TRAKT_CLIENT_ID;
+    const clientSecret = process.env.TRAKT_CLIENT_SECRET;
+
+    if (!device_code) return res.status(400).json({ error: 'device_code mancante' });
+    if (!clientId || !clientSecret) return res.status(400).json({ error: 'TRAKT_CLIENT_SECRET o ID mancanti nel server (.env). Contattare l`amministratore.' });
+
+    try {
+        const response = await axios.post('https://api.trakt.tv/oauth/device/token', {
+            code: device_code,
+            client_id: clientId,
+            client_secret: clientSecret
+        }, { headers: { 'Content-Type': 'application/json' } });
+
+        // 200 OK -> abbiamo l'access token
+        return res.json(response.data);
+    } catch (err) {
+        const status = err.response?.status;
+        if (status === 400 || status === 429) {
+            return res.json({ pending: true }); // Polling deve continuare
+        } else if (status === 404 || status === 410) {
+            return res.json({ error: 'Token scaduto o invalido' });
+        } else if (status === 409) {
+            return res.json({ error: 'Utente ha negato l\'accesso' });
+        }
+        console.error("Errore Trakt Token:", err.response?.data || err.message);
+        return res.status(500).json({ error: "Errore recupero token Trakt." });
+    }
+});
+
 // 2. Registra endpoint configuration (Frontend Web Web)
 app.post('/api/configure', configureRoute);
 

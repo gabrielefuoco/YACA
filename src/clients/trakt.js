@@ -29,6 +29,7 @@ async function enhanceTraktItem(traktItem, tmdbApiKey) {
     const imdbId = item.ids.imdb;
 
     // L'ID preferito per la compatibilità con addon di streaming è l'IMDB ID (tt*)
+    // Per Torrentio è FONDAMENTALE usare l'IMDB ID (ttXXXX) se disponibile!
     if (!tmdbId && !imdbId) return null;
     const stremioId = imdbId || (tmdbId ? `tmdb:${tmdbId}` : null);
 
@@ -75,21 +76,15 @@ async function enhanceTraktItem(traktItem, tmdbApiKey) {
 }
 
 /**
- * Recupera i cataloghi Trakt in base al Trakt Username o agli endpoint pubblici.
+ * Recupera i cataloghi Trakt in base al Trakt Token OAuth o agli endpoint pubblici.
  * @param {string} endpoint - Tipo di catalogo Trakt da caricare
  * @param {number} skip - Offset per la paginazione Stremio
- * @param {string} [traktUsername] - Username Trakt dell'utente (profilo pubblico)
+ * @param {string} [traktToken] - Token OAuth Trakt dell'utente
  * @param {string} [tmdbApiKey] - Chiave TMDB dell'utente per arricchire i poster
  */
-async function fetchTraktCatalog(endpoint, skip = 0, traktUsername = null, tmdbApiKey = null) {
+async function fetchTraktCatalog(endpoint, skip = 0, traktToken = null, tmdbApiKey = null) {
     if (!process.env.TRAKT_CLIENT_ID) {
         console.error("Missing TRAKT_CLIENT_ID in environment variables");
-        return [];
-    }
-
-    // Sanitize username to prevent path traversal
-    if (traktUsername && !/^[a-zA-Z0-9_.-]+$/.test(traktUsername)) {
-        console.error("Invalid Trakt username format:", traktUsername);
         return [];
     }
 
@@ -117,51 +112,52 @@ async function fetchTraktCatalog(endpoint, skip = 0, traktUsername = null, tmdbA
             results = res.data.map(s => ({ type: 'show', show: s }));
         }
 
-        // === ENDPOINT UTENTE (Richiedono username e profilo pubblico) ===
+        // === ENDPOINT UTENTE (Richiedono OAuth Token) ===
+        const authConfig = traktToken ? { headers: { 'Authorization': `Bearer ${traktToken}` } } : {};
 
-        else if (endpoint === 'watchlist_movies' && traktUsername) {
-            const res = await traktClient.get(`/users/${traktUsername}/watchlist/movies`, { params: { sort: 'added', limit: 20, page } });
+        if (endpoint === 'watchlist_movies' && traktToken) {
+            const res = await traktClient.get(`/users/me/watchlist/movies`, { ...authConfig, params: { sort: 'added', limit: 20, page } });
             results = res.data;
         }
-        else if (endpoint === 'watchlist_shows' && traktUsername) {
-            const res = await traktClient.get(`/users/${traktUsername}/watchlist/shows`, { params: { sort: 'added', limit: 20, page } });
+        else if (endpoint === 'watchlist_shows' && traktToken) {
+            const res = await traktClient.get(`/users/me/watchlist/shows`, { ...authConfig, params: { sort: 'added', limit: 20, page } });
             results = res.data;
         }
 
         // Cronologia recente (ultimi titoli guardati)
-        else if (endpoint === 'history_movies' && traktUsername) {
-            const res = await traktClient.get(`/users/${traktUsername}/history/movies`, { params: { limit: 20, page } });
+        else if (endpoint === 'history_movies' && traktToken) {
+            const res = await traktClient.get(`/users/me/history/movies`, { ...authConfig, params: { limit: 20, page } });
             results = res.data;
         }
-        else if (endpoint === 'history_shows' && traktUsername) {
-            const res = await traktClient.get(`/users/${traktUsername}/history/shows`, { params: { limit: 20, page } });
+        else if (endpoint === 'history_shows' && traktToken) {
+            const res = await traktClient.get(`/users/me/history/shows`, { ...authConfig, params: { limit: 20, page } });
             results = res.data;
         }
 
         // Valutazioni dell'utente (ordinati per rating decrescente)
-        else if (endpoint === 'ratings_movies' && traktUsername) {
-            const res = await traktClient.get(`/users/${traktUsername}/ratings/movies`, { params: { limit: 20, page } });
+        else if (endpoint === 'ratings_movies' && traktToken) {
+            const res = await traktClient.get(`/users/me/ratings/movies`, { ...authConfig, params: { limit: 20, page } });
             results = res.data;
         }
-        else if (endpoint === 'ratings_shows' && traktUsername) {
-            const res = await traktClient.get(`/users/${traktUsername}/ratings/shows`, { params: { limit: 20, page } });
+        else if (endpoint === 'ratings_shows' && traktToken) {
+            const res = await traktClient.get(`/users/me/ratings/shows`, { ...authConfig, params: { limit: 20, page } });
             results = res.data;
         }
 
         // Raccomandazioni personali basate sulla cronologia
-        else if (endpoint === 'recommendations_movies' && traktUsername) {
-            const res = await traktClient.get(`/users/${traktUsername}/recommendations/movies`, { params: { limit: 20, page } });
+        else if (endpoint === 'recommendations_movies' && traktToken) {
+            const res = await traktClient.get(`/recommendations/movies`, { ...authConfig, params: { limit: 20, page } });
             // Le recommendations ritornano direttamente movie objects
             results = res.data.map(m => ({ type: 'movie', movie: m }));
         }
-        else if (endpoint === 'recommendations_shows' && traktUsername) {
-            const res = await traktClient.get(`/users/${traktUsername}/recommendations/shows`, { params: { limit: 20, page } });
+        else if (endpoint === 'recommendations_shows' && traktToken) {
+            const res = await traktClient.get(`/recommendations/shows`, { ...authConfig, params: { limit: 20, page } });
             results = res.data.map(s => ({ type: 'show', show: s }));
         }
 
         // Favorites (lista custom "favorites")
-        else if (endpoint === 'favorites' && traktUsername) {
-            const res = await traktClient.get(`/users/${traktUsername}/lists/favorites/items`, { params: { limit: 20, page } });
+        else if (endpoint === 'favorites' && traktToken) {
+            const res = await traktClient.get(`/users/me/lists/favorites/items`, { ...authConfig, params: { limit: 20, page } });
             results = res.data;
         }
 
@@ -182,11 +178,11 @@ async function fetchTraktCatalog(endpoint, skip = 0, traktUsername = null, tmdbA
     } catch (err) {
         const status = err.response?.status;
         if (status === 404) {
-            console.error(`Trakt: endpoint non trovato o profilo privato (${endpoint} - User: ${traktUsername})`);
+            console.error(`Trakt: endpoint non trovato (${endpoint})`);
         } else if (status === 401 || status === 403) {
-            console.error(`Trakt: accesso negato (${endpoint}). Verifica TRAKT_CLIENT_ID.`);
+            console.error(`Trakt: accesso negato (${endpoint}). Token scaduto o non valido.`);
         } else {
-            console.error(`Errore Trakt Catalog (${endpoint} - User: ${traktUsername}):`, err.response?.data || err.message);
+            console.error(`Errore Trakt Catalog (${endpoint}):`, err.response?.data || err.message);
         }
         return [];
     }

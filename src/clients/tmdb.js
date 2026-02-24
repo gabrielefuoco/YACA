@@ -17,6 +17,7 @@ const createTmdbClient = (apiKey) => createAxiosInstance(TMDB_ENDPOINT, {
 
 const idNameCache = new LRUCache({ max: 1000, ttl: 1000 * 60 * 60 }); // 1 hour TTL
 const imdbIdCache = new LRUCache({ max: 10000, ttl: 1000 * 60 * 60 * 24 * 7 }); // 7 day TTL
+const metaCache = new LRUCache({ max: 2000, ttl: 1000 * 60 * 60 * 12 }); // 12 ore TTL per metadati completi
 
 /**
  * Traduce una stringa (es. nome attore o keyword) nel suo ID TMDB effettuando una fetch al volo
@@ -133,12 +134,9 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
                 const isReleased = await isMovieReleasedDigitally(item.id, apiKey);
                 if (!isReleased) return null;
             }
-            // Risolvi IMDB ID per compatibilità con addon di streaming (Torrentio, ecc.)
-            const imdbId = await resolveImdbId(item.id, type, apiKey);
-            if (imdbId) {
-                item.external_ids = { imdb_id: imdbId };
-            }
-            return toStremioMetaItem(item, type);
+            // Utilizziamo getTmdbMetaDetails per assicurarci di avere l'IMDB ID e metadati ricchi
+            // Fondamentale affinché Torrentio trovi i flussi!
+            return await getTmdbMetaDetails(apiKey, `tmdb:${item.id}`, type);
         }, { batchSize: 10, delayMs: 100 });
 
         return filteredMetas;
@@ -194,7 +192,6 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId) {
  * Ottiene i dettagli completi per il Meta Handler di Stremio
  */
 async function getTmdbMetaDetails(apiKey, id, type) {
-    const client = createTmdbClient(apiKey);
     const tmdbId = id.replace('tmdb:', '').trim();
 
     // Validate tmdbId is a number to prevent path injection
@@ -203,6 +200,12 @@ async function getTmdbMetaDetails(apiKey, id, type) {
         return null;
     }
 
+    const cacheKey = `${type}:${tmdbId}`;
+    if (metaCache.has(cacheKey)) {
+        return metaCache.get(cacheKey);
+    }
+
+    const client = createTmdbClient(apiKey);
     const endpoint = type === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
 
     try {
@@ -273,6 +276,10 @@ async function getTmdbMetaDetails(apiKey, id, type) {
         // Se è una serie TV, scarica gli episodi per popolare la griglia in Stremio
         if (type === 'series' && data.number_of_seasons) {
             meta.videos = await fetchTmdbEpisodes(client, tmdbId, data.number_of_seasons, meta.id.startsWith('tt') ? meta.id : null);
+        }
+
+        if (meta) {
+            metaCache.set(cacheKey, meta);
         }
 
         return meta;

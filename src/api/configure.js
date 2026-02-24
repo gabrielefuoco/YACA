@@ -5,7 +5,8 @@ const { presets: presetsList } = require('../data/presets');
 
 module.exports = async (req, res) => {
     try {
-        const { tmdbKey, mistralKey, traktUsername, activeProfileId, profiles, uuid: existingUuid } = req.body;
+        const { tmdbKey, mistralKey, activeProfileId, profiles, uuid: existingUuid } = req.body;
+        const traktToken = req.body.traktToken || req.body.traktUsername;
 
         if (!tmdbKey) {
             return res.status(400).json({ error: "La API Key di TMDB è obbligatoria." });
@@ -18,8 +19,8 @@ module.exports = async (req, res) => {
         if (mistralKey && (typeof mistralKey !== 'string' || mistralKey.length > 200)) {
             return res.status(400).json({ error: "Mistral Key non valida." });
         }
-        if (traktUsername && (typeof traktUsername !== 'string' || traktUsername.length > 100 || !/^[a-zA-Z0-9_.-]+$/.test(traktUsername))) {
-            return res.status(400).json({ error: "Username Trakt non valido." });
+        if (traktToken && (typeof traktToken !== 'string' || traktToken.length > 500)) {
+            return res.status(400).json({ error: "Token Trakt non valido." });
         }
         if (profiles && (!Array.isArray(profiles) || profiles.length > 20)) {
             return res.status(400).json({ error: "Massimo 20 profili consentiti." });
@@ -134,7 +135,7 @@ module.exports = async (req, res) => {
             apiKeys: {
                 tmdb: tmdbKey,
                 mistral: mistralKey,
-                trakt: traktUsername || null
+                trakt: traktToken || null
             },
             catalogs: parsedProfiles[0]?.catalogs || [], // Mantiene il vecchio catalogs come fallback per chi ha client non aggiornati (o DB constraints)
             profiles: parsedProfiles,
