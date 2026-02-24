@@ -19,8 +19,14 @@
                         stremio: { DEFAULT: '#8a5aeb', hover: '#7540db', dark: '#5c2eb8' },
                         dark: { 900: '#0f0f13', 800: '#1c1c24', 700: '#272732', 600: '#3a3a4a' }
                     },
-                    animation: { 'fade-in': 'fadeIn 0.5s ease-out' },
-                    keyframes: { fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } } }
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+                        slideUp: { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
+                    }
                 }
             }
         }
@@ -36,6 +42,93 @@
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
+
+        .preset-card {
+            transition: all 0.2s ease;
+        }
+        .preset-card:hover {
+            transform: translateY(-2px);
+        }
+        .preset-card.active {
+            border-color: rgba(138, 90, 235, 0.5);
+            background: rgba(138, 90, 235, 0.1);
+            box-shadow: 0 0 20px rgba(138, 90, 235, 0.1);
+        }
+
+        .category-tab {
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .category-tab.active {
+            background: #8a5aeb;
+            color: white;
+            border-color: #8a5aeb;
+        }
+
+        .preset-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        .preset-scroll::-webkit-scrollbar-track {
+            background: #1c1c24;
+            border-radius: 3px;
+        }
+        .preset-scroll::-webkit-scrollbar-thumb {
+            background: #3a3a4a;
+            border-radius: 3px;
+        }
+
+        .profile-card {
+            transition: all 0.2s ease;
+        }
+        .profile-card:hover {
+            border-color: rgba(138, 90, 235, 0.3);
+        }
+        .profile-card.active-profile {
+            border-color: rgba(34, 197, 94, 0.5);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.08);
+        }
+        .profile-card.editing {
+            border-color: rgba(138, 90, 235, 0.5);
+            box-shadow: 0 0 20px rgba(138, 90, 235, 0.08);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 36px;
+            height: 20px;
+            background: #3a3a4a;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .toggle-switch.on {
+            background: #8a5aeb;
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        .toggle-switch.on::after {
+            transform: translateX(16px);
+        }
+
+        .filter-dropdown {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+        }
+        .filter-dropdown.open {
+            max-height: 300px;
+            opacity: 1;
+        }
     </style>
 </head>
 
@@ -48,7 +141,7 @@
     </div>
 
     <!-- Main Container -->
-    <div class="w-full max-w-2xl glass-panel rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
+    <div class="w-full max-w-3xl glass-panel rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
 
         <!-- Header -->
         <div class="px-8 py-6 border-b border-dark-700 bg-dark-800/80">
@@ -116,7 +209,7 @@
 
             <hr class="border-dark-700">
 
-            <!-- Profiles Section -->
+            <!-- Profiles Section - Card Layout -->
             <div class="space-y-4">
                 <h2 class="text-lg font-semibold text-white flex items-center">
                     <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-purple-400">3</span>
@@ -125,21 +218,23 @@
                 <p class="text-sm text-gray-400">Dividi i tuoi cataloghi per tipologia. Cambia in tempo reale cosa
                     vedere su Stremio scegliendo il profilo Attivo.</p>
 
-                <div class="bg-dark-900 border border-dark-700 rounded-lg p-4 relative overflow-hidden">
-                    <div
-                        class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4 relative z-10">
-                        <select id="profileSelect"
-                            class="bg-dark-800 border border-dark-600 outline-none text-white text-sm rounded-lg focus:ring-stremio focus:border-stremio block w-full sm:w-auto p-2.5 min-w-[200px] cursor-pointer shadow-sm"></select>
-                        <div class="flex gap-2 w-full sm:w-auto">
-                            <button type="button" id="newProfileBtn"
-                                class="flex-1 sm:flex-none text-xs bg-dark-800 hover:bg-dark-700 text-white py-2 px-3 rounded border border-dark-600 transition-colors shadow-sm">+
-                                Nuovo</button>
-                            <button type="button" id="deleteProfileBtn"
-                                class="flex-1 sm:flex-none text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 py-2 px-3 rounded transition-colors hidden">Elimina</button>
-                        </div>
-                    </div>
+                <!-- Profile Cards Grid -->
+                <div id="profileCardsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    <!-- Populated by JS -->
+                </div>
 
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 border-t border-dark-700 pt-4 relative z-10">
+                <!-- Add Profile Button -->
+                <button type="button" id="newProfileBtn"
+                    class="w-full py-3 px-4 bg-dark-800 border-2 border-dashed border-dark-600 rounded-lg text-sm text-gray-400 hover:border-stremio/50 hover:text-stremio transition-all flex items-center justify-center gap-2">
+                    <span class="text-xl">+</span> Nuovo Profilo
+                </button>
+
+                <!-- Hidden select for backward compat -->
+                <select id="profileSelect" class="hidden"></select>
+
+                <!-- Profile Editor (shown when a profile is selected) -->
+                <div id="profileEditor" class="bg-dark-900 border border-dark-700 rounded-lg p-4 relative overflow-hidden">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 relative z-10">
                         <input type="text" id="profileNameInput"
                             class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-stremio text-sm flex-1 w-full placeholder-gray-500 font-bold shadow-sm"
                             placeholder="Nome Profilo">
@@ -148,6 +243,8 @@
                             Attivo</button>
                         <button type="button" id="toggleTemplateBtn"
                             class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600 shadow-sm">📋 Modelli</button>
+                        <button type="button" id="deleteProfileBtn"
+                            class="w-full sm:w-auto text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 py-2 px-3 rounded transition-colors hidden">Elimina</button>
                     </div>
                 </div>
 
@@ -162,7 +259,7 @@
 
             <hr class="border-dark-700">
 
-            <!-- Presets Section -->
+            <!-- Presets Section - Card Viewer with Pagination -->
             <div class="space-y-4">
                 <div class="flex items-center justify-between">
                     <h2 class="text-lg font-semibold text-white flex items-center">
@@ -173,44 +270,186 @@
                 </div>
                 <p class="text-sm text-gray-400">Questi cataloghi sono pre-impostati e richiamano TMDB in modo nativo.
                     Non consumano token Mistral.</p>
+
                 <!-- Preset Search -->
                 <div class="relative">
                     <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     <input type="text" id="presetSearchInput" placeholder="Cerca preset... (es. horror, nolan, anime)"
                         class="w-full pl-10 pr-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder-gray-600">
                 </div>
-                <div id="presetFilters" class="flex flex-wrap gap-2 mt-4 hidden">
-                    <!-- Popolati via JS -->
+
+                <!-- Category Tabs (Scrollable) -->
+                <div id="presetFilters" class="flex gap-2 overflow-x-auto pb-2 preset-scroll hidden">
+                    <!-- Populated by JS -->
                 </div>
-                <div id="presetsContainer" class="space-y-5 mt-4">
-                    <!-- Popolati via JS -->
+
+                <!-- Preset Cards Container -->
+                <div id="presetsContainer" class="space-y-4">
                     <div class="text-center text-sm text-gray-500">Caricamento preset...</div>
                 </div>
+
+                <!-- Pagination Controls -->
+                <div id="presetPagination" class="hidden flex items-center justify-between pt-2">
+                    <button type="button" id="presetPrevBtn" class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed" disabled>← Precedente</button>
+                    <span id="presetPageInfo" class="text-xs text-gray-500 font-mono"></span>
+                    <button type="button" id="presetNextBtn" class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed" disabled>Successivo →</button>
+                </div>
+
+                <!-- Expand/Collapse Toggle -->
+                <button type="button" id="presetExpandBtn" class="hidden w-full py-2 text-xs text-gray-400 hover:text-stremio transition-colors flex items-center justify-center gap-1">
+                    <svg id="expandIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    <span id="expandText">Mostra tutti</span>
+                </button>
             </div>
 
             <hr class="border-dark-700">
 
-            <!-- AI Catalogs Section -->
+            <!-- AI Catalogs & Preset Creator Section -->
             <div class="space-y-4">
                 <h2 class="text-lg font-semibold text-white flex items-center">
                     <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-green-400">5</span>
-                    Cataloghi AI Dinamici
+                    Creatore di Cataloghi
                 </h2>
-                <p class="text-sm text-gray-400">Descrivi cosa vuoi vedere nella Home di Stremio. L'AI genererà listini
-                    perfetti per te. (Richiede Mistral Key).</p>
+                <p class="text-sm text-gray-400">Crea cataloghi personalizzati usando l'AI o manualmente specificando i parametri TMDB.</p>
 
-                <div id="catalogList" class="space-y-3">
-                    <div class="catalog-item flex gap-2">
-                        <input type="text"
-                            class="catalog-prompt w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm placeholder-gray-600"
-                            placeholder="Es: Serie TV Sci-Fi anni 90 sui viaggi nel tempo...">
-                    </div>
+                <!-- Tab switcher: AI / Manual -->
+                <div class="flex bg-dark-900 rounded-lg border border-dark-700 p-1 gap-1">
+                    <button type="button" id="tabAiCatalog" class="flex-1 text-xs font-medium py-2 px-3 rounded-md bg-green-500/20 text-green-400 border border-green-500/30 transition-colors">
+                        🤖 Catalogo AI
+                    </button>
+                    <button type="button" id="tabManualCatalog" class="flex-1 text-xs font-medium py-2 px-3 rounded-md text-gray-400 hover:text-gray-200 transition-colors">
+                        🔧 Creazione Manuale
+                    </button>
                 </div>
 
-                <button type="button" id="addCatalogBtn"
-                    class="w-full py-3 px-4 bg-dark-800 border-2 border-dashed border-dark-600 rounded-lg text-sm text-gray-400 hover:border-green-500/50 hover:text-green-400 transition-all flex items-center justify-center gap-2">
-                    <span class="text-xl">+</span> Aggiungi un altro catalogo personalizzato
-                </button>
+                <!-- AI Catalog Tab -->
+                <div id="aiCatalogTab" class="space-y-3">
+                    <p class="text-xs text-gray-500">Descrivi cosa vuoi vedere nella Home di Stremio. L'AI genererà listini
+                        perfetti per te. (Richiede Mistral Key).</p>
+                    <div id="catalogList" class="space-y-3">
+                        <div class="catalog-item flex gap-2">
+                            <input type="text"
+                                class="catalog-prompt w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm placeholder-gray-600"
+                                placeholder="Es: Serie TV Sci-Fi anni 90 sui viaggi nel tempo...">
+                        </div>
+                    </div>
+                    <button type="button" id="addCatalogBtn"
+                        class="w-full py-3 px-4 bg-dark-800 border-2 border-dashed border-dark-600 rounded-lg text-sm text-gray-400 hover:border-green-500/50 hover:text-green-400 transition-all flex items-center justify-center gap-2">
+                        <span class="text-xl">+</span> Aggiungi un altro catalogo AI
+                    </button>
+                </div>
+
+                <!-- Manual Catalog Tab -->
+                <div id="manualCatalogTab" class="hidden space-y-4">
+                    <p class="text-xs text-gray-500">Specifica manualmente i parametri TMDB per creare un preset personalizzato.</p>
+
+                    <div class="bg-dark-900/60 border border-dark-700 rounded-lg p-4 space-y-4">
+                        <!-- Preset Name -->
+                        <div class="space-y-1">
+                            <label class="block text-xs font-medium text-gray-400">Nome del Catalogo</label>
+                            <input type="text" id="manualPresetName" placeholder="Es: I Miei Film Horror Preferiti"
+                                class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                        </div>
+
+                        <!-- Type -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-gray-400">Tipo</label>
+                                <select id="manualPresetType" class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm text-gray-200">
+                                    <option value="movie">Film</option>
+                                    <option value="series">Serie TV</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-gray-400">Ordinamento</label>
+                                <select id="manualPresetSort" class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm text-gray-200">
+                                    <option value="popularity.desc">Popolarità ↓</option>
+                                    <option value="vote_average.desc">Voto Medio ↓</option>
+                                    <option value="primary_release_date.desc">Data di Uscita ↓</option>
+                                    <option value="revenue.desc">Incassi ↓</option>
+                                    <option value="vote_count.desc">Numero Voti ↓</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Genres -->
+                        <div class="space-y-1">
+                            <label class="block text-xs font-medium text-gray-400">Generi (ID TMDB, separati da virgola)</label>
+                            <input type="text" id="manualPresetGenres" placeholder="Es: 28,53 (Azione, Thriller)"
+                                class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                            <p class="text-[10px] text-gray-600">Film: Azione=28, Avventura=12, Animazione=16, Commedia=35, Crimine=80, Documentario=99, Dramma=18, Famiglia=10751, Fantasy=14, Horror=27, Mistero=9648, Romance=10749, Sci-Fi=878, Thriller=53, Guerra=10752</p>
+                        </div>
+
+                        <!-- Keywords -->
+                        <div class="space-y-1">
+                            <label class="block text-xs font-medium text-gray-400">Keywords (ID TMDB, separati da virgola)</label>
+                            <input type="text" id="manualPresetKeywords" placeholder="Es: 210024 (Anime)"
+                                class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                        </div>
+
+                        <!-- People -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-gray-400">Cast (ID attore TMDB)</label>
+                                <input type="text" id="manualPresetCast" placeholder="Es: 6193"
+                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-gray-400">Crew/Regista (ID TMDB)</label>
+                                <input type="text" id="manualPresetCrew" placeholder="Es: 525"
+                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                            </div>
+                        </div>
+
+                        <!-- Company & Language -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-gray-400">Studio (ID TMDB)</label>
+                                <input type="text" id="manualPresetCompany" placeholder="Es: 3 (Pixar)"
+                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-gray-400">Lingua Originale (ISO)</label>
+                                <input type="text" id="manualPresetLang" placeholder="Es: en, ko, ja"
+                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                            </div>
+                        </div>
+
+                        <!-- Vote Filters -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-gray-400">Voto Minimo</label>
+                                <input type="number" id="manualPresetVoteAvg" step="0.5" min="0" max="10" placeholder="Es: 7.0"
+                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-gray-400">Voti Minimi</label>
+                                <input type="number" id="manualPresetVoteCount" min="0" placeholder="Es: 100"
+                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                            </div>
+                        </div>
+
+                        <!-- Date Range -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-gray-400">Data Uscita Da</label>
+                                <input type="date" id="manualPresetDateFrom"
+                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm text-gray-200">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-xs font-medium text-gray-400">Data Uscita A</label>
+                                <input type="date" id="manualPresetDateTo"
+                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm text-gray-200">
+                            </div>
+                        </div>
+
+                        <!-- Add Manual Preset Button -->
+                        <button type="button" id="addManualPresetBtn"
+                            class="w-full py-3 px-4 bg-green-500/20 border border-green-500/30 rounded-lg text-sm text-green-400 hover:bg-green-500/30 transition-all flex items-center justify-center gap-2 font-medium">
+                            <span class="text-lg">+</span> Aggiungi Catalogo Manuale al Profilo
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <hr class="border-dark-700">
@@ -332,9 +571,40 @@
         let groupedPresets = {};
         let activeCategory = null;
 
+        // Preset pagination state
+        const PRESETS_PER_PAGE = 20;
+        let currentPresetPage = 0;
+        let isPresetExpanded = false;
+        let isSearchActive = false;
+
         let profiles = [{ id: 'default', name: 'Generale', raw_ui_state: { selectedPresets: [], newPrompts: [] }, existingCatalogs: [] }];
         let activeProfileId = 'default';
         let editingProfileId = 'default';
+
+        // Poster icon mapping for categories
+        const CATEGORY_ICONS = {
+            'Top & Trend': '🔥',
+            'Grandi Registi': '🎬',
+            'Grandi Attori': '⭐',
+            'Studios & Produzioni': '🏢',
+            'Cinema Asiatico & K-Drama': '🌸',
+            'Cinema Internazionale': '🌍',
+            'Decenni & Epoche': '📼',
+            'Mood & Tematiche': '🎭',
+            'Film: Sottogeneri': '🎥',
+            'Serie TV: Tematiche': '📺',
+            'Serie TV': '📺',
+            'Documentari': '🔬',
+            'Formati Speciali': '💎',
+            'Bambini & Famiglia': '👨‍👩‍👧‍👦',
+            'Anime & Manga': '🏮',
+            'Community Lists (MDB)': '📋'
+        };
+
+        const TYPE_COLORS = {
+            'movie': { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20', label: 'Film' },
+            'series': { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20', label: 'Serie' }
+        };
 
         // Estrae l'oggetto profilo in editing
         const getEditingProfile = () => profiles.find(p => p.id === editingProfileId);
@@ -352,9 +622,8 @@
             const ep = getEditingProfile();
             if (!ep) return;
 
-            // Salva checkbox
-            const checked = Array.from(document.querySelectorAll('.preset-toggle:checked')).map(cb => cb.value);
-            ep.raw_ui_state.selectedPresets = checked;
+            // Salva checkbox (hidden checkboxes are tracked in state)
+            ep.raw_ui_state.selectedPresets = [...ep.raw_ui_state.selectedPresets];
 
             // Salva nuovi prompt
             const promptsInputs = document.querySelectorAll('.catalog-prompt-new');
@@ -373,7 +642,37 @@
             ep.settings.minVoteCount = parseInt(document.getElementById('minVoteCount').value);
         }
 
+        // --- PROFILE CARD RENDERING ---
+        function renderProfileCards() {
+            const container = document.getElementById('profileCardsContainer');
+            container.innerHTML = '';
+
+            profiles.forEach(p => {
+                const isActive = p.id === activeProfileId;
+                const isEditing = p.id === editingProfileId;
+                const presetCount = p.raw_ui_state?.selectedPresets?.length || 0;
+                const catalogCount = (p.existingCatalogs?.length || 0) + (p.raw_ui_state?.newPrompts?.length || 0);
+
+                const card = document.createElement('div');
+                card.className = `profile-card cursor-pointer rounded-lg border p-3 transition-all ${isEditing ? 'editing border-stremio/50 bg-stremio/5' : isActive ? 'active-profile border-green-500/30 bg-green-500/5' : 'border-dark-700 bg-dark-900/60 hover:bg-dark-800/80'}`;
+                card.onclick = () => switchEditingProfile(p.id);
+
+                card.innerHTML = `
+                    <div class="flex items-start justify-between mb-2">
+                        <span class="text-sm font-bold text-white truncate flex-1" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+                        ${isActive ? '<span class="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full border border-green-500/30 shrink-0 ml-1">★</span>' : ''}
+                    </div>
+                    <div class="flex gap-2 text-[10px] text-gray-500">
+                        <span class="bg-dark-700 px-1.5 py-0.5 rounded">${presetCount} preset</span>
+                        ${catalogCount > 0 ? `<span class="bg-dark-700 px-1.5 py-0.5 rounded">${catalogCount} AI</span>` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
         function renderProfileSelect() {
+            // Update hidden select for compatibility
             const select = document.getElementById('profileSelect');
             select.innerHTML = '';
             profiles.forEach(p => {
@@ -395,24 +694,209 @@
                 btn.textContent = 'Rendi Attivo';
                 btn.className = 'w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600';
             }
+
+            // Render profile cards
+            renderProfileCards();
+        }
+
+        // --- PRESET CARD RENDERING ---
+        function getPresetTypeInfo(type) {
+            return TYPE_COLORS[type] || TYPE_COLORS['movie'];
+        }
+
+        function renderPresetCards() {
+            const ep = getEditingProfile();
+            if (!ep) return;
+            const presetsContainer = document.getElementById('presetsContainer');
+            presetsContainer.innerHTML = '';
+
+            if (!activeCategory || !groupedPresets[activeCategory]) return;
+
+            const allItems = groupedPresets[activeCategory];
+            const searchQuery = document.getElementById('presetSearchInput').value.toLowerCase().trim();
+
+            let filteredItems = allItems;
+            if (searchQuery) {
+                filteredItems = allItems.filter(p => p.name.toLowerCase().includes(searchQuery) || p.category.toLowerCase().includes(searchQuery));
+            }
+
+            // Pagination
+            const totalItems = filteredItems.length;
+            const totalPages = isPresetExpanded ? Math.ceil(totalItems / PRESETS_PER_PAGE) : 1;
+            const displayCount = isPresetExpanded ? PRESETS_PER_PAGE : Math.min(PRESETS_PER_PAGE, totalItems);
+            const startIdx = isPresetExpanded ? currentPresetPage * PRESETS_PER_PAGE : 0;
+            const pageItems = filteredItems.slice(startIdx, startIdx + displayCount);
+
+            if (pageItems.length === 0) {
+                presetsContainer.innerHTML = '<div class="text-center text-sm text-gray-500 py-4">Nessun preset trovato.</div>';
+                updatePaginationControls(0, 0, 0);
+                return;
+            }
+
+            // Create card grid
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-3';
+
+            pageItems.forEach(preset => {
+                const isSelected = ep.raw_ui_state.selectedPresets.includes(preset.id);
+                const typeInfo = getPresetTypeInfo(preset.type);
+                const icon = CATEGORY_ICONS[preset.category] || '📁';
+
+                const card = document.createElement('div');
+                card.className = `preset-card rounded-lg border p-3 ${isSelected ? 'active border-stremio/50 bg-stremio/10' : 'border-dark-700 bg-dark-900/60'}`;
+                card.dataset.presetId = preset.id;
+
+                // Filter summary
+                const filterKeys = preset.filters ? Object.keys(preset.filters) : [];
+                const hasCustomFilters = filterKeys.length > 0;
+
+                card.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <!-- Poster/Icon -->
+                        <div class="w-12 h-16 bg-dark-700 rounded-md flex items-center justify-center text-2xl shrink-0 border border-dark-600">
+                            ${icon}
+                        </div>
+                        <!-- Info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <h4 class="text-sm font-medium text-white truncate" title="${escapeHtml(preset.name)}">${escapeHtml(preset.name)}</h4>
+                                <div class="toggle-switch shrink-0 ${isSelected ? 'on' : ''}" data-preset-id="${preset.id}"></div>
+                            </div>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-[10px] ${typeInfo.bg} ${typeInfo.text} px-1.5 py-0.5 rounded ${typeInfo.border} border">${typeInfo.label}</span>
+                            </div>
+                            ${hasCustomFilters ? `
+                            <button type="button" class="filter-refine-btn text-[10px] text-gray-500 hover:text-stremio mt-1.5 flex items-center gap-1 transition-colors" data-preset-id="${preset.id}">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                                Raffina filtri
+                            </button>
+                            <div class="filter-dropdown mt-2" id="filter-${preset.id}">
+                                ${renderFilterDropdown(preset)}
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            presetsContainer.appendChild(grid);
+
+            // Attach toggle event listeners
+            presetsContainer.querySelectorAll('.toggle-switch').forEach(toggle => {
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const presetId = toggle.dataset.presetId;
+                    togglePreset(presetId);
+                });
+            });
+
+            // Attach filter refine event listeners
+            presetsContainer.querySelectorAll('.filter-refine-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const presetId = btn.dataset.presetId;
+                    const dropdown = document.getElementById(`filter-${presetId}`);
+                    if (dropdown) dropdown.classList.toggle('open');
+                });
+            });
+
+            // Attach filter change listeners
+            presetsContainer.querySelectorAll('.preset-filter-select').forEach(sel => {
+                sel.addEventListener('change', (e) => {
+                    // Filter refinement is visual-only since presets are hardcoded
+                    // The selected sort override is stored in preset filter state
+                });
+            });
+
+            // Update pagination
+            updatePaginationControls(totalItems, totalPages, currentPresetPage);
+
+            // Update counter
+            updatePresetsCounter();
+        }
+
+        function renderFilterDropdown(preset) {
+            if (!preset.filters) return '';
+            const sortBy = preset.filters.sort_by || 'popularity.desc';
+            const voteGte = preset.filters['vote_count.gte'] || 0;
+            const voteAvgGte = preset.filters['vote_average.gte'] || 0;
+
+            return `
+                <div class="bg-dark-800 rounded-md p-2 space-y-2 border border-dark-600">
+                    <div class="flex items-center gap-2">
+                        <label class="text-[10px] text-gray-500 w-16 shrink-0">Ordina:</label>
+                        <select class="preset-filter-select text-[10px] bg-dark-900 border border-dark-600 rounded px-2 py-1 text-gray-300 outline-none flex-1">
+                            <option value="popularity.desc" ${sortBy === 'popularity.desc' ? 'selected' : ''}>Popolarità</option>
+                            <option value="vote_average.desc" ${sortBy === 'vote_average.desc' ? 'selected' : ''}>Voto</option>
+                            <option value="revenue.desc" ${sortBy === 'revenue.desc' ? 'selected' : ''}>Incassi</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-[10px] text-gray-500 w-16 shrink-0">Voti min:</label>
+                        <span class="text-[10px] text-gray-400 font-mono">${voteGte}</span>
+                    </div>
+                    ${voteAvgGte > 0 ? `
+                    <div class="flex items-center gap-2">
+                        <label class="text-[10px] text-gray-500 w-16 shrink-0">Media min:</label>
+                        <span class="text-[10px] text-gray-400 font-mono">${voteAvgGte}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function togglePreset(presetId) {
+            const ep = getEditingProfile();
+            if (!ep) return;
+
+            const idx = ep.raw_ui_state.selectedPresets.indexOf(presetId);
+            if (idx >= 0) {
+                ep.raw_ui_state.selectedPresets.splice(idx, 1);
+            } else {
+                ep.raw_ui_state.selectedPresets.push(presetId);
+            }
+            renderPresetCards();
+        }
+
+        function updatePaginationControls(totalItems, totalPages, currentPage) {
+            const pagination = document.getElementById('presetPagination');
+            const expandBtn = document.getElementById('presetExpandBtn');
+            const prevBtn = document.getElementById('presetPrevBtn');
+            const nextBtn = document.getElementById('presetNextBtn');
+            const pageInfo = document.getElementById('presetPageInfo');
+
+            if (isPresetExpanded && totalPages > 1) {
+                pagination.classList.remove('hidden');
+                prevBtn.disabled = currentPage === 0;
+                nextBtn.disabled = currentPage >= totalPages - 1;
+                pageInfo.textContent = `${currentPage + 1} / ${totalPages}`;
+            } else {
+                pagination.classList.add('hidden');
+            }
+
+            if (totalItems > PRESETS_PER_PAGE && !isSearchActive) {
+                expandBtn.classList.remove('hidden');
+                const expandText = document.getElementById('expandText');
+                const expandIcon = document.getElementById('expandIcon');
+                if (isPresetExpanded) {
+                    expandText.textContent = 'Mostra meno';
+                    expandIcon.style.transform = 'rotate(180deg)';
+                } else {
+                    expandText.textContent = `Mostra tutti (${totalItems})`;
+                    expandIcon.style.transform = '';
+                }
+            } else {
+                expandBtn.classList.add('hidden');
+            }
         }
 
         function renderPresetsAndCatalogs() {
             const ep = getEditingProfile();
             document.getElementById('profileNameInput').value = ep.name;
 
-            // Checkboxes
-            document.querySelectorAll('.preset-toggle').forEach(cb => {
-                cb.checked = ep.raw_ui_state.selectedPresets.includes(cb.value);
-                const label = cb.closest('label');
-                if (cb.checked) {
-                    label.classList.add('border-stremio/50', 'bg-stremio/10');
-                    label.classList.remove('border-dark-700', 'bg-dark-900/40');
-                } else {
-                    label.classList.remove('border-stremio/50', 'bg-stremio/10');
-                    label.classList.add('border-dark-700', 'bg-dark-900/40');
-                }
-            });
+            // Render preset cards
+            renderPresetCards();
 
             // AI Catalogs
             const list = document.getElementById('catalogList');
@@ -438,14 +922,13 @@
                 const div = document.createElement('div');
                 div.className = 'catalog-item catalog-item-new flex gap-2 animate-fade-in';
                 div.innerHTML = `
-                    <input type="text" value="${pText}" class="catalog-prompt-new w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm placeholder-gray-600" placeholder="Descrivi un altro catalogo...">
+                    <input type="text" value="${escapeHtml(pText)}" class="catalog-prompt-new w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm placeholder-gray-600" placeholder="Descrivi un altro catalogo...">
                     <button type="button" onclick="this.parentElement.remove()" class="px-4 py-2 text-gray-400 hover:text-red-400 bg-dark-900 border border-dark-600 rounded-lg hover:border-red-500/50 transition-colors">✕</button>
                 `;
                 list.appendChild(div);
             });
 
             if (ep.existingCatalogs.length === 0 && ep.raw_ui_state.newPrompts.length === 0) {
-                // add empty input
                 document.getElementById('addCatalogBtn').click();
             }
 
@@ -536,6 +1019,102 @@
             list.appendChild(div);
         });
 
+        // Manual Catalog Creator
+        document.getElementById('tabAiCatalog').addEventListener('click', () => {
+            document.getElementById('aiCatalogTab').classList.remove('hidden');
+            document.getElementById('manualCatalogTab').classList.add('hidden');
+            document.getElementById('tabAiCatalog').className = 'flex-1 text-xs font-medium py-2 px-3 rounded-md bg-green-500/20 text-green-400 border border-green-500/30 transition-colors';
+            document.getElementById('tabManualCatalog').className = 'flex-1 text-xs font-medium py-2 px-3 rounded-md text-gray-400 hover:text-gray-200 transition-colors';
+        });
+
+        document.getElementById('tabManualCatalog').addEventListener('click', () => {
+            document.getElementById('aiCatalogTab').classList.add('hidden');
+            document.getElementById('manualCatalogTab').classList.remove('hidden');
+            document.getElementById('tabManualCatalog').className = 'flex-1 text-xs font-medium py-2 px-3 rounded-md bg-green-500/20 text-green-400 border border-green-500/30 transition-colors';
+            document.getElementById('tabAiCatalog').className = 'flex-1 text-xs font-medium py-2 px-3 rounded-md text-gray-400 hover:text-gray-200 transition-colors';
+        });
+
+        document.getElementById('addManualPresetBtn').addEventListener('click', () => {
+            const name = document.getElementById('manualPresetName').value.trim();
+            if (!name) { alert('Inserisci un nome per il catalogo.'); return; }
+
+            const type = document.getElementById('manualPresetType').value;
+            const sortBy = document.getElementById('manualPresetSort').value;
+            const genres = document.getElementById('manualPresetGenres').value.trim();
+            const keywords = document.getElementById('manualPresetKeywords').value.trim();
+            const cast = document.getElementById('manualPresetCast').value.trim();
+            const crew = document.getElementById('manualPresetCrew').value.trim();
+            const company = document.getElementById('manualPresetCompany').value.trim();
+            const lang = document.getElementById('manualPresetLang').value.trim();
+            const voteAvg = document.getElementById('manualPresetVoteAvg').value;
+            const voteCount = document.getElementById('manualPresetVoteCount').value;
+            const dateFrom = document.getElementById('manualPresetDateFrom').value;
+            const dateTo = document.getElementById('manualPresetDateTo').value;
+
+            const filters = { sort_by: sortBy };
+            if (genres) filters.with_genres = genres;
+            if (keywords) filters.with_keywords = keywords;
+            if (cast) filters.with_cast = cast;
+            if (crew) filters.with_crew = crew;
+            if (company) filters.with_companies = company;
+            if (lang) filters.with_original_language = lang;
+            if (voteAvg) filters['vote_average.gte'] = parseFloat(voteAvg);
+            if (voteCount) filters['vote_count.gte'] = parseInt(voteCount);
+            if (dateFrom) {
+                if (type === 'movie') filters['primary_release_date.gte'] = dateFrom;
+                else filters['first_air_date.gte'] = dateFrom;
+            }
+            if (dateTo) {
+                if (type === 'movie') filters['primary_release_date.lte'] = dateTo;
+                else filters['first_air_date.lte'] = dateTo;
+            }
+
+            // Add as existing catalog to the editing profile
+            const ep = getEditingProfile();
+            if (ep) {
+                ep.existingCatalogs.push({
+                    id: `manual_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+                    name: name.substring(0, 50),
+                    raw_prompt: `[Manuale] ${name}`,
+                    type: type,
+                    filters: filters
+                });
+                renderPresetsAndCatalogs();
+
+                // Clear form
+                document.getElementById('manualPresetName').value = '';
+                document.getElementById('manualPresetGenres').value = '';
+                document.getElementById('manualPresetKeywords').value = '';
+                document.getElementById('manualPresetCast').value = '';
+                document.getElementById('manualPresetCrew').value = '';
+                document.getElementById('manualPresetCompany').value = '';
+                document.getElementById('manualPresetLang').value = '';
+                document.getElementById('manualPresetVoteAvg').value = '';
+                document.getElementById('manualPresetVoteCount').value = '';
+                document.getElementById('manualPresetDateFrom').value = '';
+                document.getElementById('manualPresetDateTo').value = '';
+            }
+        });
+
+        // Preset pagination
+        document.getElementById('presetPrevBtn').addEventListener('click', () => {
+            if (currentPresetPage > 0) {
+                currentPresetPage--;
+                renderPresetCards();
+            }
+        });
+
+        document.getElementById('presetNextBtn').addEventListener('click', () => {
+            currentPresetPage++;
+            renderPresetCards();
+        });
+
+        document.getElementById('presetExpandBtn').addEventListener('click', () => {
+            isPresetExpanded = !isPresetExpanded;
+            currentPresetPage = 0;
+            renderPresetCards();
+        });
+
         // Sliders events
         document.getElementById('minVoteAverage').addEventListener('input', (e) => {
             document.getElementById('voteAvgVal').textContent = parseFloat(e.target.value).toFixed(1);
@@ -547,30 +1126,35 @@
         // -- PRESET SEARCH --
         document.getElementById('presetSearchInput').addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase().trim();
-            const allLabels = document.querySelectorAll('#presetsContainer label');
+            isSearchActive = query !== '';
 
-            if (query === '') {
-                // Reset: show category filters, hide all groups except active
-                document.getElementById('presetFilters').classList.remove('hidden');
-                document.querySelectorAll('.group-category').forEach(el => el.classList.add('hidden'));
-                const actGroup = document.querySelector(`.group-category[data-category="${activeCategory}"]`);
-                if (actGroup) actGroup.classList.remove('hidden');
-                allLabels.forEach(l => l.classList.remove('hidden'));
-                return;
+            if (isSearchActive) {
+                // Search across all categories
+                const allMatches = availablePresets.filter(p =>
+                    p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query)
+                );
+                // Temporarily show search results
+                const tempCategory = '__search__';
+                groupedPresets[tempCategory] = allMatches;
+                const prevCat = activeCategory;
+                activeCategory = tempCategory;
+                currentPresetPage = 0;
+                isPresetExpanded = false;
+                renderPresetCards();
+                activeCategory = prevCat; // restore for when search clears
+                delete groupedPresets[tempCategory];
+            } else {
+                // Restore normal view
+                currentPresetPage = 0;
+                isPresetExpanded = false;
+                renderPresetCards();
             }
-
-            // Show all groups, hide category pills, filter labels
-            document.getElementById('presetFilters').classList.add('hidden');
-            document.querySelectorAll('.group-category').forEach(el => el.classList.remove('hidden'));
-            allLabels.forEach(label => {
-                const text = label.textContent.toLowerCase();
-                label.classList.toggle('hidden', !text.includes(query));
-            });
         });
 
         // -- SELECTED PRESETS COUNTER --
         function updatePresetsCounter() {
-            const count = document.querySelectorAll('.preset-toggle:checked').length;
+            const ep = getEditingProfile();
+            const count = ep ? ep.raw_ui_state.selectedPresets.length : 0;
             const el = document.getElementById('selectedPresetsCount');
             el.textContent = `${count} selezionat${count === 1 ? 'o' : 'i'}`;
         }
@@ -652,7 +1236,7 @@
                 }
             } catch (e) { console.error("Failed loading presets", e); }
 
-            // Render Base Checkboxes to DOM (Hidden but present for logic to work)
+            // Build grouped presets and category tabs
             const presetsContainer = document.getElementById('presetsContainer');
             const presetFilters = document.getElementById('presetFilters');
             if (availablePresets.length > 0) {
@@ -669,70 +1253,28 @@
                 const categories = Object.keys(groupedPresets);
                 activeCategory = categories[0];
 
-                const renderFilters = () => {
-                    presetFilters.innerHTML = '';
-                    categories.forEach(cat => {
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = `px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${cat === activeCategory ? 'bg-stremio text-white border-stremio' : 'bg-dark-900 text-gray-400 border-dark-600 hover:border-dark-500 hover:text-gray-200'}`;
-                        btn.textContent = cat;
-                        btn.onclick = () => { activeCategory = cat; renderFilters(); _showGroup(cat); };
-                        presetFilters.appendChild(btn);
-                    });
-                };
-
-                const renderAllGroupsHidden = () => {
-                    for (const [category, items] of Object.entries(groupedPresets)) {
-                        const groupDiv = document.createElement('div');
-                        groupDiv.className = `space-y-2 transition-opacity duration-300 group-category hidden`;
-                        groupDiv.dataset.category = category;
-
-                        const grid = document.createElement('div');
-                        grid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2';
-
-                        items.forEach(preset => {
-                            const label = document.createElement('label');
-                            label.className = `flex items-center space-x-3 cursor-pointer p-2 rounded-lg border border-dark-700 bg-dark-900/40 hover:bg-dark-700/60 transition-all`;
-
-                            const checkbox = document.createElement('input');
-                            checkbox.type = 'checkbox';
-                            checkbox.className = 'preset-toggle w-5 h-5 text-stremio bg-dark-900 border-dark-600 rounded focus:ring-stremio focus:ring-2';
-                            checkbox.value = preset.id;
-
-                            checkbox.addEventListener('change', (e) => {
-                                if (e.target.checked) {
-                                    label.classList.add('border-stremio/50', 'bg-stremio/10');
-                                    label.classList.remove('border-dark-700', 'bg-dark-900/40');
-                                } else {
-                                    label.classList.remove('border-stremio/50', 'bg-stremio/10');
-                                    label.classList.add('border-dark-700', 'bg-dark-900/40');
-                                }
-                                updatePresetsCounter();
-                            });
-
-                            const span = document.createElement('span');
-                            span.className = 'text-sm font-medium text-gray-200 truncate';
-                            span.title = preset.name;
-                            span.textContent = preset.name;
-
-                            label.appendChild(checkbox);
-                            label.appendChild(span);
-                            grid.appendChild(label);
+                // Render category tabs
+                categories.forEach(cat => {
+                    const icon = CATEGORY_ICONS[cat] || '📁';
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = `category-tab px-3 py-1.5 text-xs font-medium rounded-full border transition-colors flex items-center gap-1.5 shrink-0 ${cat === activeCategory ? 'active' : 'bg-dark-900 text-gray-400 border-dark-600 hover:border-dark-500 hover:text-gray-200'}`;
+                    btn.innerHTML = `<span>${icon}</span> ${escapeHtml(cat)}`;
+                    btn.onclick = () => {
+                        activeCategory = cat;
+                        currentPresetPage = 0;
+                        isPresetExpanded = false;
+                        // Update tab styles
+                        presetFilters.querySelectorAll('.category-tab').forEach(t => {
+                            t.classList.remove('active');
+                            t.classList.add('bg-dark-900', 'text-gray-400', 'border-dark-600');
                         });
-                        groupDiv.appendChild(grid);
-                        presetsContainer.appendChild(groupDiv);
-                    }
-                };
-
-                const _showGroup = (cat) => {
-                    document.querySelectorAll('.group-category').forEach(el => el.classList.add('hidden'));
-                    const actGroup = document.querySelector(`.group-category[data-category="${cat}"]`);
-                    if (actGroup) actGroup.classList.remove('hidden');
-                }
-
-                renderFilters();
-                renderAllGroupsHidden();
-                _showGroup(activeCategory);
+                        btn.classList.add('active');
+                        btn.classList.remove('bg-dark-900', 'text-gray-400', 'border-dark-600');
+                        renderPresetCards();
+                    };
+                    presetFilters.appendChild(btn);
+                });
             }
 
             // Render Templates
