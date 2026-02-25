@@ -3,6 +3,8 @@ const LRUCache = require('../utils/LRUCache');
 const { TMDB_ENDPOINT, DEFAULT_LANGUAGE, DEFAULT_REGION, PAGES_PER_REQUEST, ITEMS_PER_PAGE } = require('../config');
 const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
 const { isMovieReleasedDigitally, isMovieReleasedInRegion } = require('../utils/releaseFilter');
+const { generateRequestHash } = require('../utils/requestHash');
+const TmdbRequestCache = require('../models/TmdbRequestCache');
 
 // Helper interno per costruire oggetti request TMDB
 const createTmdbClient = (apiKey) => createAxiosInstance(TMDB_ENDPOINT, {
@@ -89,8 +91,9 @@ function toStremioMetaItem(tmdbItem, type) {
 /**
  * Recupera un listato dinamico (discover) o una query di ricerca e si preoccupa
  * di parallelizzare le pagine TMDB per riempire lo skip di Stremio.
+ * Questa è la funzione interna senza cache.
  */
-async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type = 'movie') {
+async function fetchTmdbCatalogDirect(client, endpoint, skip, customParams = {}, type = 'movie') {
     const startPage = Math.floor((skip || 0) / ITEMS_PER_PAGE) + 1;
     const promises = [];
 
@@ -144,6 +147,48 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
         console.error(`Errore fetchTmdbCatalog ${endpoint}:`, err.message);
         return [];
     }
+}
+
+/**
+ * Wrapper con cache globale basata sulle richieste TMDB.
+ * Implementa il pattern Stale-While-Revalidate:
+ * - Cache Miss: chiama TMDB, salva in cache, ritorna.
+ * - Cache Hit Fresca (<24h): ritorna i dati dalla cache all'istante.
+ * - Cache Hit Scaduta (>24h): ritorna i dati vecchi, rinnova in background.
+ */
+async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type = 'movie') {
+    const requestHash = generateRequestHash(endpoint, customParams, skip, type);
+
+    try {
+        const cached = await TmdbRequestCache.get(requestHash);
+
+        if (cached) {
+            if (!cached.isStale) {
+                // Scenario B: Cache Hit Fresca — latenza minima
+                return cached.stremioData;
+            }
+
+            // Scenario C: Cache Hit Scaduta — Stale-While-Revalidate
+            // Ritorna dati vecchi all'utente, rinnova in background
+            fetchTmdbCatalogDirect(client, endpoint, skip, customParams, type)
+                .then(results => TmdbRequestCache.set(requestHash, endpoint, results))
+                .catch(e => console.error('Errore rinnovo cache in background:', e.message));
+
+            return cached.stremioData;
+        }
+    } catch (_e) {
+        // Cache non disponibile (Supabase down, tabella mancante, ecc.)
+        // Procediamo con la chiamata diretta a TMDB
+    }
+
+    // Scenario A: Cache Miss — chiama TMDB e salva in cache
+    const results = await fetchTmdbCatalogDirect(client, endpoint, skip, customParams, type);
+
+    // Salvataggio in background (fire-and-forget)
+    TmdbRequestCache.set(requestHash, endpoint, results)
+        .catch(e => console.error('Errore salvataggio cache:', e.message));
+
+    return results;
 }
 
 /**

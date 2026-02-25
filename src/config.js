@@ -15,4 +15,7 @@ module.exports = {
     // Default Fallbacks
     DEFAULT_REGION: 'IT',
     DEFAULT_LANGUAGE: 'it-IT',
+
+    // Cache TMDB Request (Fase 3)
+    CACHE_TTL_MS: 24 * 60 * 60 * 1000, // 24 ore
 };
