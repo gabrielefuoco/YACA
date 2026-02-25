@@ -235,11 +235,11 @@ const presets = [
     // =============================================
     // --- MDBLIST (Liste Curate dalla Community) ---
     // =============================================
-    { id: 'mdblist_123', name: 'MDBList: Top 100 Movies (All Time)', category: 'Community Lists (MDB)', type: 'movie' },
-    { id: 'mdblist_456', name: 'MDBList: Top 100 Shows (All Time)', category: 'Community Lists (MDB)', type: 'series' },
-    { id: 'mdblist_789', name: 'MDBList: Latest Releases', category: 'Community Lists (MDB)', type: 'movie' },
-    { id: 'mdblist_101', name: 'MDBList: Trending this Week', category: 'Community Lists (MDB)', type: 'movie' },
-    { id: 'mdblist_102', name: 'MDBList: Hidden Gems', category: 'Community Lists (MDB)', type: 'movie' }
+    { id: 'mdblist_123', name: 'MDBList: Top 100 Movies (All Time)', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } },
+    { id: 'mdblist_456', name: 'MDBList: Top 100 Shows (All Time)', category: 'Community Lists (MDB)', type: 'series', filters: { mdblist: true } },
+    { id: 'mdblist_789', name: 'MDBList: Latest Releases', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } },
+    { id: 'mdblist_101', name: 'MDBList: Trending this Week', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } },
+    { id: 'mdblist_102', name: 'MDBList: Hidden Gems', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } }
 ];
 
 const profileTemplates = [

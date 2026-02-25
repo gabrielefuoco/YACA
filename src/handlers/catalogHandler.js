@@ -288,8 +288,8 @@ async function catalogHandler(args, userUuid) {
         // ==========================================
         // SCENARIO 4: CATALOGHI MDBLIST
         // ==========================================
-        if (id.startsWith('mdblist_')) {
-            const listId = id.replace('mdblist_', '');
+        if (id.startsWith('mdblist_') || id.startsWith('yaca_preset_mdblist_')) {
+            const listId = id.replace('yaca_preset_mdblist_', '').replace('mdblist_', '');
             // You can optionally grab an MDBList API key from userConfig if needed, but public lists work without it
             const mdblistKey = userConfig.apiKeys?.mdblist || null;
             const page = Math.floor(skip / 20) + 1;

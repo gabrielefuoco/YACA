@@ -41,7 +41,8 @@ async function metaHandler(args, userUuid) {
             // toStremioMetaItem preferisce già gli IMDB ID quando external_ids è disponibile
             if (id.startsWith('tmdb:') && meta.id && meta.id.startsWith('tt')) {
                 // meta.id contiene l'IMDB ID risolto, teniamolo per Torrentio & co.
-                if (meta.behaviorHints) {
+                // defaultVideoId va impostato solo per i film (per le serie si usa la lista episodi)
+                if (meta.behaviorHints && type === 'movie') {
                     meta.behaviorHints.defaultVideoId = meta.id;
                 }
             } else {

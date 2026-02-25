@@ -81,10 +81,9 @@ function toStremioMetaItem(tmdbItem, type) {
         description: tmdbItem.overview,
         releaseInfo: year,
         imdbRating: tmdbItem.vote_average ? parseFloat(tmdbItem.vote_average).toFixed(1) : null,
-        behaviorHints: {
-            defaultVideoId: id,
-            hasScheduledVideos: type === 'series'
-        }
+        behaviorHints: type === 'movie'
+            ? { defaultVideoId: id }
+            : { hasScheduledVideos: true }
     };
 }
 
