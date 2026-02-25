@@ -773,10 +773,10 @@
             const loggedIn = document.getElementById('stremioLoggedIn');
             const emailDisplay = document.getElementById('stremioUserEmail');
 
-            if (stremioAuthKey && stremioEmail) {
+            if (stremioAuthKey) {
                 loginForm.classList.add('hidden');
                 loggedIn.classList.remove('hidden');
-                emailDisplay.textContent = stremioEmail;
+                emailDisplay.textContent = stremioEmail || 'utente Stremio';
             } else {
                 loginForm.classList.remove('hidden');
                 loggedIn.classList.add('hidden');
@@ -1686,6 +1686,13 @@
                     document.getElementById('traktConnectedUI').classList.add('flex');
                     document.getElementById('traktConnectedUI').classList.remove('hidden');
                 }
+                if (existingConfig.apiKeys?.stremioAuthKey) {
+                    stremioAuthKey = existingConfig.apiKeys.stremioAuthKey;
+                    stremioEmail = existingConfig.apiKeys.stremioEmail || stremioEmail;
+                    sessionStorage.setItem('stremioAuthKey', stremioAuthKey);
+                    if (stremioEmail) sessionStorage.setItem('stremioEmail', stremioEmail);
+                    updateStremioAuthUI();
+                }
 
                 document.getElementById('submitBtn').innerHTML = "Aggiorna Configurazione in Stremio";
 
@@ -1863,6 +1870,8 @@
                     tmdbKey,
                     mistralKey,
                     traktToken,
+                    stremioAuthKey,
+                    stremioEmail,
                     activeProfileId: activeProfileId,
                     profiles: payloadProfiles
                 };

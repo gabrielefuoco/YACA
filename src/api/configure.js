@@ -7,6 +7,8 @@ module.exports = async (req, res) => {
     try {
         const { tmdbKey, mistralKey, activeProfileId, profiles, uuid: existingUuid } = req.body;
         const traktToken = req.body.traktToken || req.body.traktUsername;
+        const stremioAuthKey = req.body.stremioAuthKey || null;
+        const stremioEmail = req.body.stremioEmail || null;
 
         if (!tmdbKey) {
             return res.status(400).json({ error: "La API Key di TMDB è obbligatoria." });
@@ -21,6 +23,12 @@ module.exports = async (req, res) => {
         }
         if (traktToken && (typeof traktToken !== 'string' || traktToken.length > 500)) {
             return res.status(400).json({ error: "Token Trakt non valido." });
+        }
+        if (stremioAuthKey && (typeof stremioAuthKey !== 'string' || stremioAuthKey.length > 500)) {
+            return res.status(400).json({ error: "Auth key Stremio non valida." });
+        }
+        if (stremioEmail && (typeof stremioEmail !== 'string' || stremioEmail.length > 200)) {
+            return res.status(400).json({ error: "Email Stremio non valida." });
         }
         if (profiles && (!Array.isArray(profiles) || profiles.length > 20)) {
             return res.status(400).json({ error: "Massimo 20 profili consentiti." });
@@ -146,7 +154,9 @@ module.exports = async (req, res) => {
             apiKeys: {
                 tmdb: tmdbKey,
                 mistral: mistralKey,
-                trakt: traktToken || null
+                trakt: traktToken || null,
+                stremioAuthKey: stremioAuthKey || null,
+                stremioEmail: stremioEmail || null
             },
             catalogs: parsedProfiles[0]?.catalogs || [], // Mantiene il vecchio catalogs come fallback per chi ha client non aggiornati (o DB constraints)
             profiles: parsedProfiles,
