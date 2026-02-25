@@ -95,7 +95,7 @@ const presets = [
     // =============================================
     // --- CINEMA ASIATICO & K-DRAMA ---
     // =============================================
-    { id: 'preset_kdrama_romance', name: 'K-Drama: Romantici', category: 'Cinema Asiatico & K-Drama', type: 'series', filters: { with_original_language: 'ko', with_genres: '35,10749', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
+    { id: 'preset_kdrama_romance', name: 'K-Drama: Romantici', category: 'Cinema Asiatico & K-Drama', type: 'series', filters: { with_original_language: 'ko', with_genres: '35,18', with_keywords: '9840', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
     { id: 'preset_kdrama_thriller', name: 'K-Drama: Thriller & Mistero', category: 'Cinema Asiatico & K-Drama', type: 'series', filters: { with_original_language: 'ko', with_genres: '80,9648', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
     { id: 'preset_asian_action', name: 'Azione Asiatica (JP, KR, HK)', category: 'Cinema Asiatico & K-Drama', type: 'movie', filters: { with_original_language: 'ja|ko|zh', with_genres: '28', with_keywords: '779,2073', sort_by: 'popularity.desc' } },
     { id: 'preset_cinema_coreano', name: 'Cinema Coreano (Film)', category: 'Cinema Asiatico & K-Drama', type: 'movie', filters: { with_original_language: 'ko', sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },

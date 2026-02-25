@@ -98,11 +98,22 @@ module.exports = async (req, res) => {
                 for (let i = 0; i < validPrompts.length; i++) {
                     const prompt = validPrompts[i];
                     const filters = filterResults[i];
+                    // Detect type from prompt and AI response
+                    let catalogType = 'movie';
+                    const lowerPrompt = prompt.toLowerCase();
+                    if (filters.target === 'kitsu') {
+                        catalogType = 'series';
+                    } else {
+                        const seriesPatterns = ['serie tv', 'serie ', 'series', 'tv show', 'show tv', 'sitcom', 'anime', 'k-drama', 'kdrama', 'docuserie', 'miniserie', 'telefilm'];
+                        if (seriesPatterns.some(kw => lowerPrompt.includes(kw))) {
+                            catalogType = 'series';
+                        }
+                    }
                     parsedCatalogs.push({
                         id: `ai_custom_${uuid.substring(0, 5)}_${Date.now()}_${catIndex}`,
                         name: prompt.substring(0, 30),
                         raw_prompt: prompt,
-                        type: 'movie',
+                        type: catalogType,
                         filters: filters
                     });
                     catIndex++;
