@@ -26,6 +26,13 @@ describe('sanitizeString', () => {
     it('should remove nested HTML tags', () => {
         expect(sanitizeString('<div><img onerror="alert(1)">test</div>')).toBe('test');
     });
+
+    it('should handle multi-character sanitization bypass attempts', () => {
+        // <scr<script>ipt> reforms into <script> after removing inner tag
+        const result = sanitizeString('<scr<script>ipt>alert(1)</scr</script>ipt>');
+        expect(result).not.toContain('<script>');
+        expect(result).not.toContain('<');
+    });
 });
 
 describe('isAllowedUrl', () => {
