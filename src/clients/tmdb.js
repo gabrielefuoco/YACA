@@ -148,6 +148,19 @@ async function fetchTmdbCatalogDirect(client, endpoint, skip, customParams = {},
     }
 }
 
+function mergeCatalogItems(existingItems = [], newItems = []) {
+    const merged = [];
+    const seenIds = new Set();
+
+    for (const item of [...existingItems, ...newItems]) {
+        if (!item || !item.id || seenIds.has(item.id)) continue;
+        seenIds.add(item.id);
+        merged.push(item);
+    }
+
+    return merged;
+}
+
 /**
  * Wrapper con cache globale basata sulle richieste TMDB.
  * Implementa il pattern Stale-While-Revalidate:
@@ -156,24 +169,45 @@ async function fetchTmdbCatalogDirect(client, endpoint, skip, customParams = {},
  * - Cache Hit Scaduta (>24h): ritorna i dati vecchi, rinnova in background.
  */
 async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type = 'movie') {
-    const requestHash = generateRequestHash(endpoint, customParams, skip, type);
+    const normalizedSkip = skip || 0;
+    const requestHash = generateRequestHash(endpoint, customParams, 0, type);
+    const sliceEnd = normalizedSkip + ITEMS_PER_PAGE;
 
     try {
         const cached = await TmdbRequestCache.get(requestHash);
 
         if (cached) {
+            const cachedItems = Array.isArray(cached.stremioData) ? cached.stremioData : [];
+            const cachedSlice = cachedItems.slice(normalizedSkip, sliceEnd);
+
             if (!cached.isStale) {
                 // Scenario B: Cache Hit Fresca — latenza minima
-                return cached.stremioData;
+                if (normalizedSkip === 0) {
+                    return cachedItems;
+                }
+                if (cachedItems.length > normalizedSkip) {
+                    return cachedSlice;
+                }
             }
 
-            // Scenario C: Cache Hit Scaduta — Stale-While-Revalidate
-            // Ritorna dati vecchi all'utente, rinnova in background
-            fetchTmdbCatalogDirect(client, endpoint, skip, customParams, type)
-                .then(results => TmdbRequestCache.set(requestHash, endpoint, results))
-                .catch(e => console.error('Errore rinnovo cache in background:', e.message));
+            if (cached.isStale && cachedItems.length > normalizedSkip) {
+                // Scenario C: Cache Hit Scaduta — Stale-While-Revalidate
+                // Ritorna dati vecchi all'utente, rinnova in background
+                fetchTmdbCatalogDirect(client, endpoint, normalizedSkip, customParams, type)
+                    .then(results => TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(cachedItems, results)))
+                    .catch(e => console.error('Errore rinnovo cache in background:', e.message));
 
-            return cached.stremioData;
+                return normalizedSkip === 0 ? cachedItems : cachedSlice;
+            }
+
+            // Scenario D: cache incompleta per lo skip richiesto.
+            // Recuperiamo solo la nuova pagina e aggiorniamo la lista in cache.
+            const newItems = await fetchTmdbCatalogDirect(client, endpoint, normalizedSkip, customParams, type);
+            const updatedItems = mergeCatalogItems(cachedItems, newItems);
+            TmdbRequestCache.set(requestHash, endpoint, updatedItems)
+                .catch(e => console.error('Errore salvataggio cache:', e.message));
+
+            return normalizedSkip === 0 ? updatedItems : updatedItems.slice(normalizedSkip, sliceEnd);
         }
     } catch (_e) {
         // Cache non disponibile (Supabase down, tabella mancante, ecc.)
@@ -181,13 +215,16 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
     }
 
     // Scenario A: Cache Miss — chiama TMDB e salva in cache
-    const results = await fetchTmdbCatalogDirect(client, endpoint, skip, customParams, type);
+    const results = await fetchTmdbCatalogDirect(client, endpoint, normalizedSkip, customParams, type);
 
-    // Salvataggio in background (fire-and-forget)
-    TmdbRequestCache.set(requestHash, endpoint, results)
-        .catch(e => console.error('Errore salvataggio cache:', e.message));
+    // Salvataggio in background (fire-and-forget) solo per la prima pagina,
+    // così la cache rappresenta una lista progressiva a partire da skip 0.
+    if (normalizedSkip === 0) {
+        TmdbRequestCache.set(requestHash, endpoint, results)
+            .catch(e => console.error('Errore salvataggio cache:', e.message));
+    }
 
-    return results;
+    return normalizedSkip === 0 ? results : results.slice(0, ITEMS_PER_PAGE);
 }
 
 /**
