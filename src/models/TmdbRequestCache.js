@@ -11,7 +11,7 @@ const TmdbRequestCache = {
      * @param {string} requestHash - Hash SHA-256 della richiesta
      * @returns {Promise<{stremioData: Array, isStale: boolean}|null>}
      */
-    async get(requestHash) {
+    async get(requestHash, ttlMs = CACHE_TTL_MS) {
         const supabase = getSupabase();
         if (!supabase) return null;
 
@@ -32,7 +32,7 @@ const TmdbRequestCache = {
             .catch(() => {});
 
         const age = Date.now() - new Date(data.updated_at).getTime();
-        const isStale = age > CACHE_TTL_MS;
+        const isStale = age > ttlMs;
 
         return {
             stremioData: data.stremio_data,

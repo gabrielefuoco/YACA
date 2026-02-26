@@ -94,6 +94,32 @@ describe('TmdbRequestCache', () => {
             expect(result.isStale).toBe(true);
             expect(result.stremioData).toEqual([{ id: 'tt456', name: 'Old Movie' }]);
         });
+
+        it('should respect custom TTL when provided', async () => {
+            const oldDate = new Date(Date.now() - 45 * 60 * 1000).toISOString(); // 45 minutes ago
+            const mockData = {
+                stremio_data: [{ id: 'tt999', name: 'Fast TTL Movie' }],
+                updated_at: oldDate
+            };
+
+            const updateEqMock = jest.fn().mockResolvedValue({});
+            const updateMock = jest.fn().mockReturnValue({ eq: updateEqMock });
+            const selectMock = jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                    single: jest.fn().mockResolvedValue({ data: mockData, error: null })
+                })
+            });
+            getSupabase.mockReturnValue({
+                from: jest.fn().mockReturnValue({
+                    select: selectMock,
+                    update: updateMock
+                })
+            });
+
+            const result = await TmdbRequestCache.get('customttlhash', 30 * 60 * 1000);
+            expect(result).not.toBeNull();
+            expect(result.isStale).toBe(true);
+        });
     });
 
     describe('set', () => {

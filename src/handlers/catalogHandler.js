@@ -4,8 +4,30 @@ const { fetchTraktCatalog } = require('../clients/trakt');
 const { fetchMDBListItems, parseMDBListItems } = require('../utils/mdblist');
 const { routeLiveStremioSearch } = require('../ai/router');
 const UserConfig = require('../models/UserConfig');
+const {
+    CACHE_TTL_MS,
+    FAST_CACHE_TTL_MS,
+    SLOW_CACHE_TTL_MS,
+    FORCED_FAST_CATALOG_IDS,
+    FORCED_FAST_PRESET_IDS,
+    FORCED_SLOW_PRESET_IDS
+} = require('../config');
 
 const STREAMING_PROVIDERS = { "netflix": 8, "amazon": 119, "prime": 119, "disney": 337, "apple": 350 };
+const FORCED_FAST_CATALOGS = new Set(FORCED_FAST_CATALOG_IDS);
+const FORCED_FAST_PRESETS = new Set(FORCED_FAST_PRESET_IDS);
+const FORCED_SLOW_PRESETS = new Set(FORCED_SLOW_PRESET_IDS);
+
+function getCatalogCacheTtlMs(catalogId, profileSettings = {}) {
+    if (FORCED_FAST_CATALOGS.has(catalogId)) return FAST_CACHE_TTL_MS;
+    if (!catalogId.startsWith('yaca_preset_')) return CACHE_TTL_MS;
+
+    const presetId = catalogId.replace('yaca_preset_', '');
+    if (FORCED_FAST_PRESETS.has(presetId)) return FAST_CACHE_TTL_MS;
+    if (FORCED_SLOW_PRESETS.has(presetId)) return SLOW_CACHE_TTL_MS;
+    if (profileSettings.fastPresetRefresh) return FAST_CACHE_TTL_MS;
+    return CACHE_TTL_MS;
+}
 
 /**
  * Mappa i generi. Se type è TV Series, TMDB ha ID diversi rispetto ai film.
@@ -108,7 +130,7 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
 /**
  * Esegue una query complessa determinando la strategia (similar, discovery, search)
  */
-async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, settings = {}) {
+async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, settings = {}, cacheOptions = {}) {
     let results = [];
     const searchType = type === 'series' ? 'tv' : 'movie';
 
@@ -121,19 +143,20 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
                 `/${searchType}/${targetId}/recommendations`,
                 skip,
                 { language: 'it-IT' },
-                type
+                type,
+                cacheOptions
             );
         }
     }
     // === STRATEGIA 2: RICERCA DIRETTA (Titoli esatti) ===
     else if (filters.strategy === "multi_search") {
         const ep = type === 'movie' ? '/search/movie' : '/search/tv';
-        results = await fetchTmdbCatalog(tmdbClient, ep, skip, { query: filters.text_search || filters.keyword }, type);
+        results = await fetchTmdbCatalog(tmdbClient, ep, skip, { query: filters.text_search || filters.keyword }, type, cacheOptions);
     }
     // === STRATEGIA 3: DISCOVERY (Filtri) ===
     else {
         const tmdbParams = await buildDiscoveryParams(filters, tmdbApiKey, type, settings);
-        results = await fetchTmdbCatalog(tmdbClient, `/discover/${searchType}`, skip, tmdbParams, type);
+        results = await fetchTmdbCatalog(tmdbClient, `/discover/${searchType}`, skip, tmdbParams, type, cacheOptions);
     }
 
     return results;
@@ -169,6 +192,7 @@ async function catalogHandler(args, userUuid) {
                 activeProfileSettings = profile.settings;
             }
         }
+        const cacheOptions = { cacheTtlMs: getCatalogCacheTtlMs(id, activeProfileSettings) };
 
         // ==========================================
         // SCENARIO 1: RICERCA VIVA TRAMITE BARRA
@@ -178,7 +202,7 @@ async function catalogHandler(args, userUuid) {
                 if (!mistralKey) {
                     // Fallback a ricerca TMDB nativa se Mistral non è configurato
                     const ep = type === 'movie' ? '/search/movie' : '/search/tv';
-                    results = await fetchTmdbCatalog(tmdbClient, ep, skip, { query: search }, type);
+                    results = await fetchTmdbCatalog(tmdbClient, ep, skip, { query: search }, type, cacheOptions);
                 } else {
                     // Esegue Mistral live per decidere dove instradare e calcolare i filtri avanzati
                     const routing = await routeLiveStremioSearch(search, mistralKey);
@@ -188,7 +212,7 @@ async function catalogHandler(args, userUuid) {
                         results = await fetchKitsuCatalog('/anime', 0, { filter: { text: routing.query } });
                     } else {
                         // Sfrutta il nuovo esecutore per processare i filtri Mistral
-                        results = await executeComplexStrategy(routing.filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
+                        results = await executeComplexStrategy(routing.filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions);
                     }
                 }
             } else if (id === 'yaca_anime_trending') {
@@ -197,7 +221,7 @@ async function catalogHandler(args, userUuid) {
             } else {
                 // Ricerca testuale nativa limitata a TMDB (Fallbacks)
                 const ep = type === 'movie' ? '/search/movie' : '/search/tv';
-                results = await fetchTmdbCatalog(tmdbClient, ep, skip, { query: search }, type);
+                results = await fetchTmdbCatalog(tmdbClient, ep, skip, { query: search }, type, cacheOptions);
             }
 
             return { metas: results };
@@ -208,13 +232,13 @@ async function catalogHandler(args, userUuid) {
         // ==========================================
         if (id === 'yaca_discover_movies') {
             const params = { sort_by: sortBy || 'popularity.desc', 'vote_average.gte': activeProfileSettings.minVoteAverage, 'vote_count.gte': activeProfileSettings.minVoteCount };
-            results = await fetchTmdbCatalog(tmdbClient, '/discover/movie', skip, params, 'movie');
+            results = await fetchTmdbCatalog(tmdbClient, '/discover/movie', skip, params, 'movie', cacheOptions);
             return { metas: results };
         }
 
         if (id === 'yaca_discover_series') {
             const params = { sort_by: sortBy || 'popularity.desc', 'vote_average.gte': activeProfileSettings.minVoteAverage, 'vote_count.gte': activeProfileSettings.minVoteCount };
-            results = await fetchTmdbCatalog(tmdbClient, '/discover/tv', skip, params, 'series');
+            results = await fetchTmdbCatalog(tmdbClient, '/discover/tv', skip, params, 'series', cacheOptions);
             return { metas: results };
         }
 
@@ -320,7 +344,7 @@ async function catalogHandler(args, userUuid) {
             if (!filters.strategy) filters.strategy = 'discovery'; // Retrocompatibilità
             // Applica ordinamento da Stremio se specificato
             if (sortBy) filters.sort_by = sortBy;
-            results = await executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
+            results = await executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions);
             const withGenres = Array.isArray(filters.with_genres)
                 ? filters.with_genres.map(String)
                 : String(filters.with_genres ?? '').split(',');
@@ -331,7 +355,7 @@ async function catalogHandler(args, userUuid) {
             ) {
                 const relaxedFilters = { ...filters };
                 delete relaxedFilters.with_keywords;
-                results = await executeComplexStrategy(relaxedFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
+                results = await executeComplexStrategy(relaxedFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions);
             }
             return { metas: results };
         }

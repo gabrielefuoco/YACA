@@ -129,12 +129,19 @@ module.exports = async (req, res) => {
             }
 
             const profileName = (typeof profile.name === 'string' ? profile.name.trim() : '') || 'Nuovo Profilo';
+            const minVoteAverage = parseFloat(profile.settings?.minVoteAverage);
+            const minVoteCount = parseInt(profile.settings?.minVoteCount, 10);
+            const fastPresetRefresh = Boolean(profile.settings?.fastPresetRefresh);
 
             parsedProfiles.push({
                 id: profile.id || `prof_${Date.now()}_${Math.random().toString(36).substring(7)}`,
                 name: profileName.substring(0, 50),
                 catalogs: parsedCatalogs,
-                settings: profile.settings || { minVoteAverage: 0, minVoteCount: 0 },
+                settings: {
+                    minVoteAverage: Number.isFinite(minVoteAverage) ? minVoteAverage : 0,
+                    minVoteCount: Number.isFinite(minVoteCount) ? minVoteCount : 0,
+                    fastPresetRefresh
+                },
                 raw_ui_state: { // Salva lo stato UI grezzo per ripopolare i form facilmente
                     selectedPresets: profile.selectedPresets || [],
                     prompts: parsedCatalogs.filter(c => c.raw_prompt).map(c => c.raw_prompt)

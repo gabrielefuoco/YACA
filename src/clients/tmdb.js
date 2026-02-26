@@ -1,6 +1,14 @@
 const { createAxiosInstance } = require('../utils/httpClient');
 const LRUCache = require('../utils/LRUCache');
-const { TMDB_ENDPOINT, DEFAULT_LANGUAGE, DEFAULT_REGION, PAGES_PER_REQUEST, ITEMS_PER_PAGE } = require('../config');
+const {
+    TMDB_ENDPOINT,
+    DEFAULT_LANGUAGE,
+    DEFAULT_REGION,
+    PAGES_PER_REQUEST,
+    ITEMS_PER_PAGE,
+    SERIES_META_CACHE_TTL_MS,
+    MOVIE_META_CACHE_TTL_MS
+} = require('../config');
 const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
 const { isMovieReleasedDigitally, isMovieReleasedInRegion } = require('../utils/releaseFilter');
 const { generateRequestHash } = require('../utils/requestHash');
@@ -19,7 +27,8 @@ const createTmdbClient = (apiKey) => createAxiosInstance(TMDB_ENDPOINT, {
 
 const idNameCache = new LRUCache({ max: 1000, ttl: 1000 * 60 * 60 }); // 1 hour TTL
 const imdbIdCache = new LRUCache({ max: 10000, ttl: 1000 * 60 * 60 * 24 * 7 }); // 7 day TTL
-const metaCache = new LRUCache({ max: 2000, ttl: 1000 * 60 * 60 * 12 }); // 12 ore TTL per metadati completi
+const movieMetaCache = new LRUCache({ max: 2000, ttl: MOVIE_META_CACHE_TTL_MS });
+const seriesMetaCache = new LRUCache({ max: 2000, ttl: SERIES_META_CACHE_TTL_MS });
 
 /**
  * Traduce una stringa (es. nome attore o keyword) nel suo ID TMDB effettuando una fetch al volo
@@ -165,16 +174,17 @@ function mergeCatalogItems(existingItems = [], newItems = []) {
  * Wrapper con cache globale basata sulle richieste TMDB.
  * Implementa il pattern Stale-While-Revalidate:
  * - Cache Miss: chiama TMDB, salva in cache, ritorna.
- * - Cache Hit Fresca (<24h): ritorna i dati dalla cache all'istante.
- * - Cache Hit Scaduta (>24h): ritorna i dati vecchi, rinnova in background.
+ * - Cache Hit Fresca (<TTL): ritorna i dati dalla cache all'istante.
+ * - Cache Hit Scaduta (>TTL): ritorna i dati vecchi, rinnova in background.
  */
-async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type = 'movie') {
+async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type = 'movie', options = {}) {
     const normalizedSkip = skip ?? 0;
     const requestHash = generateRequestHash(endpoint, customParams, 0, type);
     const sliceEnd = normalizedSkip + ITEMS_PER_PAGE;
+    const cacheTtlMs = options.cacheTtlMs;
 
     try {
-        const cached = await TmdbRequestCache.get(requestHash);
+        const cached = await TmdbRequestCache.get(requestHash, cacheTtlMs);
 
         if (cached) {
             const cachedItems = Array.isArray(cached.stremioData) ? cached.stremioData : [];
@@ -282,8 +292,9 @@ async function getTmdbMetaDetails(apiKey, id, type) {
     }
 
     const cacheKey = `${type}:${tmdbId}`;
-    if (metaCache.has(cacheKey)) {
-        return metaCache.get(cacheKey);
+    const targetMetaCache = type === 'series' ? seriesMetaCache : movieMetaCache;
+    if (targetMetaCache.has(cacheKey)) {
+        return targetMetaCache.get(cacheKey);
     }
 
     const client = createTmdbClient(apiKey);
@@ -360,7 +371,7 @@ async function getTmdbMetaDetails(apiKey, id, type) {
         }
 
         if (meta) {
-            metaCache.set(cacheKey, meta);
+            targetMetaCache.set(cacheKey, meta);
         }
 
         return meta;

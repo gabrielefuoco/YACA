@@ -42,6 +42,20 @@ describe('fetchTmdbCatalog hybrid pagination cache', () => {
         expect(generateRequestHash).toHaveBeenCalledWith('/discover/movie', {}, 0, 'movie');
     });
 
+    it('passes custom cache TTL to shared cache reads', async () => {
+        const cachedItems = Array.from({ length: 20 }, (_, i) => ({ id: `tmdb:${i + 1}` }));
+        TmdbRequestCache.get.mockResolvedValue({ isStale: false, stremioData: cachedItems });
+
+        const client = {
+            defaults: { params: { api_key: 'key' } },
+            get: jest.fn()
+        };
+
+        await fetchTmdbCatalog(client, '/discover/movie', 0, {}, 'movie', { cacheTtlMs: 30 * 60 * 1000 });
+
+        expect(TmdbRequestCache.get).toHaveBeenCalledWith('shared-hash', 30 * 60 * 1000);
+    });
+
     it('fetches and merges next page when cache does not cover requested skip', async () => {
         const cachedItems = Array.from({ length: 20 }, (_, i) => ({ id: `tmdb:${i + 1}` }));
         TmdbRequestCache.get.mockResolvedValue({ isStale: false, stremioData: cachedItems });
