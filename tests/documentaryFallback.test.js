@@ -34,10 +34,10 @@ describe('catalogHandler documentary fallback', () => {
         jest.clearAllMocks();
     });
 
-    it('retries documentary catalogs without keywords when first query is empty', async () => {
+    it('retries documentary catalogs without keywords when first query is empty even with numeric genre id', async () => {
         UserConfig.findOne.mockResolvedValue({
             apiKeys: { tmdb: 'tmdb_key' },
-            catalogs: [{ id: 'doc_cat', filters: { with_genres: '99', with_keywords: '6075', sort_by: 'popularity.desc' } }]
+            catalogs: [{ id: 'doc_cat', filters: { with_genres: 99, with_keywords: '6075', sort_by: 'popularity.desc' } }]
         });
 
         fetchTmdbCatalog

@@ -323,8 +323,7 @@ async function catalogHandler(args, userUuid) {
             results = await executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
             if (
                 (!results || results.length === 0)
-                && typeof filters.with_genres === 'string'
-                && filters.with_genres.split(',').includes('99')
+                && String(filters.with_genres || '').split(',').includes('99')
                 && filters.with_keywords
             ) {
                 const relaxedFilters = { ...filters };
