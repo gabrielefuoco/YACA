@@ -321,10 +321,12 @@ async function catalogHandler(args, userUuid) {
             // Applica ordinamento da Stremio se specificato
             if (sortBy) filters.sort_by = sortBy;
             results = await executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings);
+            const withGenres = Array.isArray(filters.with_genres)
+                ? filters.with_genres.map(String)
+                : String(filters.with_genres ?? '').split(',');
             if (
                 (!results || results.length === 0)
-                && typeof filters.with_genres === 'string'
-                && filters.with_genres.split(',').includes('99')
+                && withGenres.includes('99')
                 && filters.with_keywords
             ) {
                 const relaxedFilters = { ...filters };
