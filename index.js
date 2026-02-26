@@ -447,7 +447,7 @@ app.get(['/:uuid/meta/:type/:id.json', '/:uuid/:configVersion/meta/:type/:id.jso
 
     try {
         const response = await metaHandler(args, uuid);
-        res.setHeader('Cache-Control', 'max-age=86400, public'); // Cache giornaliera
+        res.setHeader('Cache-Control', type === 'series' ? 'max-age=1800, public' : 'max-age=86400, public');
         res.json(response);
     } catch (err) {
         console.error("Errore Meta Endpoint:", err.message);

@@ -39,7 +39,8 @@ describe('configure route - stremio auth persistence', () => {
                     name: 'Profilo',
                     selectedPresets: [],
                     existingCatalogs: [],
-                    newPrompts: []
+                    newPrompts: [],
+                    settings: { minVoteAverage: 6, minVoteCount: 100, fastPresetRefresh: true }
                 }]
             }
         };
@@ -56,7 +57,12 @@ describe('configure route - stremio auth persistence', () => {
                 tmdb: 'tmdb_key',
                 stremioAuthKey: 'stremio_auth_key',
                 stremioEmail: 'user@example.com'
-            })
+            }),
+            profiles: expect.arrayContaining([
+                expect.objectContaining({
+                    settings: expect.objectContaining({ fastPresetRefresh: true })
+                })
+            ])
         }));
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, uuid: 'u1' }));
     });

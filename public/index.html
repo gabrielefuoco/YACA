@@ -613,6 +613,13 @@
                         </div>
                     </div>
                 </div>
+                <div class="flex items-center justify-between bg-dark-900/40 p-4 rounded-xl border border-dark-700">
+                    <div>
+                        <label for="fastPresetRefresh" class="text-sm font-medium text-white">Refresh rapido preset</label>
+                        <p class="text-xs text-gray-500 mt-1">Aggiorna più spesso i preset dinamici con cache collaborativa BYOK.</p>
+                    </div>
+                    <input type="checkbox" id="fastPresetRefresh" class="h-4 w-4 accent-stremio">
+                </div>
             </div>
 
             <hr class="border-dark-700">
@@ -989,6 +996,7 @@
             if (!ep.settings) ep.settings = {};
             ep.settings.minVoteAverage = parseFloat(document.getElementById('minVoteAverage').value);
             ep.settings.minVoteCount = parseInt(document.getElementById('minVoteCount').value);
+            ep.settings.fastPresetRefresh = document.getElementById('fastPresetRefresh').checked;
         }
 
         // --- PROFILE CARD RENDERING ---
@@ -1287,11 +1295,12 @@
             }
 
             // Render Quality Filters
-            const settings = ep.settings || { minVoteAverage: 5.0, minVoteCount: 100 };
+            const settings = ep.settings || { minVoteAverage: 5.0, minVoteCount: 100, fastPresetRefresh: false };
             document.getElementById('minVoteAverage').value = settings.minVoteAverage;
             document.getElementById('voteAvgVal').textContent = settings.minVoteAverage.toFixed(1);
             document.getElementById('minVoteCount').value = settings.minVoteCount;
             document.getElementById('voteCountVal').textContent = settings.minVoteCount;
+            document.getElementById('fastPresetRefresh').checked = Boolean(settings.fastPresetRefresh);
 
             // Update counter
             updatePresetsCounter();
@@ -1335,7 +1344,7 @@
                 name: 'Nuovo Profilo',
                 raw_ui_state: { selectedPresets: [], newPrompts: [] },
                 existingCatalogs: [],
-                settings: { minVoteAverage: 0, minVoteCount: 0 }
+                settings: { minVoteAverage: 0, minVoteCount: 0, fastPresetRefresh: false }
             });
             editingProfileId = newId;
             renderProfileSelect();
@@ -1573,7 +1582,8 @@
                     profiles.forEach(p => {
                         if (!p.raw_ui_state) p.raw_ui_state = { selectedPresets: [], newPrompts: [] };
                         if (!p.existingCatalogs) p.existingCatalogs = [];
-                        if (!p.settings) p.settings = { minVoteAverage: 0, minVoteCount: 0 };
+                        if (!p.settings) p.settings = { minVoteAverage: 0, minVoteCount: 0, fastPresetRefresh: false };
+                        if (p.settings.fastPresetRefresh === undefined) p.settings.fastPresetRefresh = false;
                     });
 
                     renderProfileSelect();
@@ -1709,7 +1719,8 @@
                             p.raw_ui_state.selectedPresets = (p.catalogs || []).filter(c => c.id.startsWith('yaca_preset_')).map(c => c.id.replace('yaca_preset_', ''));
                             p.raw_ui_state.newPrompts = [];
                         }
-                        if (!p.settings) p.settings = { minVoteAverage: 5.0, minVoteCount: 100 };
+                        if (!p.settings) p.settings = { minVoteAverage: 5.0, minVoteCount: 100, fastPresetRefresh: false };
+                        if (p.settings.fastPresetRefresh === undefined) p.settings.fastPresetRefresh = false;
                     });
                 } else if (existingConfig.catalogs) {
                     // Legacy migration
@@ -1718,7 +1729,7 @@
                     profiles = [{
                         id: 'legacy_default', name: 'Profilo Importato', existingCatalogs: customCats,
                         raw_ui_state: { selectedPresets: presets, newPrompts: [] },
-                        settings: { minVoteAverage: 5.0, minVoteCount: 100 }
+                        settings: { minVoteAverage: 5.0, minVoteCount: 100, fastPresetRefresh: false }
                     }];
                     activeProfileId = 'legacy_default';
                     editingProfileId = 'legacy_default';
@@ -1738,7 +1749,7 @@
                             newPrompts: []
                         },
                         existingCatalogs: [],
-                        settings: { minVoteAverage: 0.0, minVoteCount: 0 }
+                        settings: { minVoteAverage: 0.0, minVoteCount: 0, fastPresetRefresh: false }
                     },
                     {
                         id: 'default_mystery',
@@ -1753,7 +1764,7 @@
                             newPrompts: []
                         },
                         existingCatalogs: [],
-                        settings: { minVoteAverage: 6.0, minVoteCount: 100 }
+                        settings: { minVoteAverage: 6.0, minVoteCount: 100, fastPresetRefresh: false }
                     },
                     {
                         id: 'default_cinema',
@@ -1768,7 +1779,7 @@
                             newPrompts: []
                         },
                         existingCatalogs: [],
-                        settings: { minVoteAverage: 6.0, minVoteCount: 100 }
+                        settings: { minVoteAverage: 6.0, minVoteCount: 100, fastPresetRefresh: false }
                     },
                     {
                         id: 'default_anime',
@@ -1783,7 +1794,7 @@
                             newPrompts: []
                         },
                         existingCatalogs: [],
-                        settings: { minVoteAverage: 0.0, minVoteCount: 0 }
+                        settings: { minVoteAverage: 0.0, minVoteCount: 0, fastPresetRefresh: false }
                     }
                 ];
                 activeProfileId = 'default_main';
@@ -1863,7 +1874,7 @@
                     selectedPresets: p.raw_ui_state.selectedPresets,
                     newPrompts: p.raw_ui_state.newPrompts,
                     existingCatalogs: p.existingCatalogs,
-                    settings: p.settings || { minVoteAverage: 0, minVoteCount: 0 }
+                    settings: p.settings || { minVoteAverage: 0, minVoteCount: 0, fastPresetRefresh: false }
                 }));
 
                 const payload = {
