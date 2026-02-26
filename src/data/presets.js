@@ -23,22 +23,23 @@ const TMDB_NETWORKS = {
     HBO: 49, Netflix: 213, Amazon: 1024, DisneyPlus: 2739, AppleTV: 2552, Sky: 125
 };
 
-const today = new Date();
-const todayStr = today.toISOString().split('T')[0];
+const getPresets = () => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
 
-const dMovies = new Date();
-dMovies.setMonth(dMovies.getMonth() - 2);
-const twoMonthsAgoStr = dMovies.toISOString().split('T')[0];
+    const dMovies = new Date();
+    dMovies.setMonth(dMovies.getMonth() - 2);
+    const twoMonthsAgoStr = dMovies.toISOString().split('T')[0];
 
-const dSeries = new Date();
-dSeries.setMonth(dSeries.getMonth() - 6);
-const sixMonthsAgoStr = dSeries.toISOString().split('T')[0];
+    const dSeries = new Date();
+    dSeries.setMonth(dSeries.getMonth() - 6);
+    const sixMonthsAgoStr = dSeries.toISOString().split('T')[0];
 
-const dWeek = new Date();
-dWeek.setDate(dWeek.getDate() - 14);
-const twoWeeksAgoStr = dWeek.toISOString().split('T')[0];
+    const dWeek = new Date();
+    dWeek.setDate(dWeek.getDate() - 14);
+    const twoWeeksAgoStr = dWeek.toISOString().split('T')[0];
 
-const presets = [
+    return [
     // =============================================
     // --- TOP & TREND (Base) ---
     // =============================================
@@ -240,7 +241,8 @@ const presets = [
     { id: 'mdblist_789', name: 'MDBList: Latest Releases', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } },
     { id: 'mdblist_101', name: 'MDBList: Trending this Week', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } },
     { id: 'mdblist_102', name: 'MDBList: Hidden Gems', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } }
-];
+    ];
+};
 
 const profileTemplates = [
     {
@@ -410,4 +412,15 @@ const profileTemplates = [
     }
 ];
 
-module.exports = { presets, profileTemplates };
+// Sanity check: validate that all preset IDs referenced in profileTemplates exist
+const _validationPresets = getPresets();
+const _presetIdSet = new Set(_validationPresets.map(p => p.id));
+for (const template of profileTemplates) {
+    for (const presetRef of template.presets) {
+        if (!_presetIdSet.has(presetRef)) {
+            console.warn(`[YACA] WARNING: profileTemplate "${template.id}" references unknown preset "${presetRef}"`);
+        }
+    }
+}
+
+module.exports = { getPresets, profileTemplates };

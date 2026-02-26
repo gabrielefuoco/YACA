@@ -90,7 +90,8 @@ describe('MDBList preset routing', () => {
 
 describe('MDBList presets structure', () => {
     it('all MDBList presets should have filters property with mdblist marker', () => {
-        const { presets } = require('../src/data/presets');
+        const { getPresets } = require('../src/data/presets');
+        const presets = getPresets();
         const mdblistPresets = presets.filter(p => p.id.startsWith('mdblist_'));
         expect(mdblistPresets.length).toBeGreaterThan(0);
         for (const preset of mdblistPresets) {

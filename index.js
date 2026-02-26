@@ -10,7 +10,7 @@ const configureRoute = require('./src/api/configure');
 const UserConfig = require('./src/models/UserConfig');
 const { catalogHandler } = require('./src/handlers/catalogHandler');
 const { metaHandler } = require('./src/handlers/metaHandler');
-const presets = require('./src/data/presets');
+const { getPresets, profileTemplates } = require('./src/data/presets');
 const { isValidUUID, parseExtra, sanitizeString, isAllowedUrl } = require('./src/utils/helpers');
 const { blurImage } = require('./src/utils/imageProcessor');
 
@@ -66,7 +66,7 @@ app.get('/health', (req, res) => {
 
 // Endpoint per recuperare i preset disponibili
 app.get('/api/presets', (req, res) => {
-    res.json({ presets: presets.presets, profileTemplates: presets.profileTemplates });
+    res.json({ presets: getPresets(), profileTemplates });
 });
 
 // Endpoint per la sfocatura immagini proxy (usato nei metadati TMDB e Trakt)
