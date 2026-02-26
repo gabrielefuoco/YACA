@@ -56,7 +56,8 @@ describe('config module', () => {
 
 describe('presets module', () => {
     it('should export presets array with required fields', () => {
-        const { presets } = require('../src/data/presets');
+        const { getPresets } = require('../src/data/presets');
+        const presets = getPresets();
         expect(Array.isArray(presets)).toBe(true);
         expect(presets.length).toBeGreaterThan(0);
 
@@ -71,7 +72,8 @@ describe('presets module', () => {
     });
 
     it('should export profile templates with valid preset references', () => {
-        const { presets, profileTemplates } = require('../src/data/presets');
+        const { getPresets, profileTemplates } = require('../src/data/presets');
+        const presets = getPresets();
         expect(Array.isArray(profileTemplates)).toBe(true);
 
         const presetIds = new Set(presets.map(p => p.id));
@@ -86,14 +88,16 @@ describe('presets module', () => {
     });
 
     it('should have unique preset IDs', () => {
-        const { presets } = require('../src/data/presets');
+        const { getPresets } = require('../src/data/presets');
+        const presets = getPresets();
         const ids = presets.map(p => p.id);
         const uniqueIds = new Set(ids);
         expect(uniqueIds.size).toBe(ids.length);
     });
 
     it('should have structured filters with sort_by on most presets', () => {
-        const { presets } = require('../src/data/presets');
+        const { getPresets } = require('../src/data/presets');
+        const presets = getPresets();
         const withSortBy = presets.filter(p => p.filters.sort_by);
         // At least 80% of presets should have sort_by defined
         expect(withSortBy.length / presets.length).toBeGreaterThan(0.8);
@@ -112,5 +116,18 @@ describe('presets module', () => {
             const unique = new Set(template.presets);
             expect(unique.size).toBe(template.presets.length);
         }
+    });
+
+    it('should compute dates dynamically on each call', () => {
+        const { getPresets } = require('../src/data/presets');
+        const presets1 = getPresets();
+        const presets2 = getPresets();
+        // Both calls should return the same structure
+        expect(presets1.length).toBe(presets2.length);
+        // The date-dependent presets should have today's date
+        const newMovies = presets1.find(p => p.id === 'preset_new_movies');
+        expect(newMovies).toBeDefined();
+        const todayStr = new Date().toISOString().split('T')[0];
+        expect(newMovies.filters['primary_release_date.lte']).toBe(todayStr);
     });
 });

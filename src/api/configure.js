@@ -1,8 +1,20 @@
 const { v4: uuidv4 } = require('uuid');
 const UserConfig = require('../models/UserConfig');
 const { generateTmdbFiltersFromPrompt } = require('../ai/router');
-const { presets: presetsList } = require('../data/presets');
+const { getPresets } = require('../data/presets');
 const { isValidUUID, sanitizeString } = require('../utils/helpers');
+
+const LIMITS = {
+    MAX_PROFILES: 20,
+    MAX_EXISTING_CATALOGS: 50,
+    MAX_PRESETS: 50,
+    MAX_AI_PROMPTS: 20,
+    MAX_PROMPT_LENGTH: 500,
+    MAX_KEY_LENGTH: 200,
+    MAX_TOKEN_LENGTH: 500,
+    MAX_PROFILE_NAME_LENGTH: 50,
+    MAX_CATALOG_NAME_LENGTH: 50
+};
 
 module.exports = async (req, res) => {
     try {
@@ -21,22 +33,22 @@ module.exports = async (req, res) => {
         }
 
         // Input validation - limiti ragionevoli
-        if (typeof tmdbKey !== 'string' || tmdbKey.length > 200) {
+        if (typeof tmdbKey !== 'string' || tmdbKey.length > LIMITS.MAX_KEY_LENGTH) {
             return res.status(400).json({ error: "TMDB Key non valida." });
         }
-        if (mistralKey && (typeof mistralKey !== 'string' || mistralKey.length > 200)) {
+        if (mistralKey && (typeof mistralKey !== 'string' || mistralKey.length > LIMITS.MAX_KEY_LENGTH)) {
             return res.status(400).json({ error: "Mistral Key non valida." });
         }
-        if (traktToken && (typeof traktToken !== 'string' || traktToken.length > 500)) {
+        if (traktToken && (typeof traktToken !== 'string' || traktToken.length > LIMITS.MAX_TOKEN_LENGTH)) {
             return res.status(400).json({ error: "Token Trakt non valido." });
         }
-        if (stremioAuthKey && (typeof stremioAuthKey !== 'string' || stremioAuthKey.length > 500)) {
+        if (stremioAuthKey && (typeof stremioAuthKey !== 'string' || stremioAuthKey.length > LIMITS.MAX_TOKEN_LENGTH)) {
             return res.status(400).json({ error: "Auth key Stremio non valida." });
         }
-        if (stremioEmail && (typeof stremioEmail !== 'string' || stremioEmail.length > 200)) {
+        if (stremioEmail && (typeof stremioEmail !== 'string' || stremioEmail.length > LIMITS.MAX_KEY_LENGTH)) {
             return res.status(400).json({ error: "Email Stremio non valida." });
         }
-        if (profiles && (!Array.isArray(profiles) || profiles.length > 20)) {
+        if (profiles && (!Array.isArray(profiles) || profiles.length > LIMITS.MAX_PROFILES)) {
             return res.status(400).json({ error: "Massimo 20 profili consentiti." });
         }
 
@@ -71,19 +83,32 @@ module.exports = async (req, res) => {
             }];
         }
 
+        // Ricalcola i preset con date dinamiche
+        const presetsList = getPresets();
+
         // --- PROCESSING PROFILES ---
         for (const profile of inputProfiles) {
             const parsedCatalogs = [];
 
-            // 1. Aggiungi Cataloghi AI Esistenti (se stiamo modificando)
+            // 1. Aggiungi Cataloghi AI Esistenti (se stiamo modificando) - con validazione
             if (profile.existingCatalogs && Array.isArray(profile.existingCatalogs)) {
-                parsedCatalogs.push(...profile.existingCatalogs.slice(0, 50));
+                const safeCatalogs = profile.existingCatalogs.slice(0, LIMITS.MAX_EXISTING_CATALOGS).map(cat => {
+                    if (!cat || typeof cat !== 'object') return null;
+                    return {
+                        id: String(cat.id || ''),
+                        name: String(cat.name || '').substring(0, LIMITS.MAX_CATALOG_NAME_LENGTH),
+                        type: cat.type === 'series' ? 'series' : 'movie',
+                        filters: (typeof cat.filters === 'object' && cat.filters !== null) ? cat.filters : {},
+                        ...(cat.raw_prompt ? { raw_prompt: String(cat.raw_prompt).substring(0, LIMITS.MAX_PROMPT_LENGTH) } : {})
+                    };
+                }).filter(Boolean);
+                parsedCatalogs.push(...safeCatalogs);
             }
 
             // 2. Aggiungi i Preset Hardcoded (deduplicati)
             if (profile.selectedPresets && Array.isArray(profile.selectedPresets)) {
                 const seenPresets = new Set();
-                for (const presetId of profile.selectedPresets.slice(0, 50)) {
+                for (const presetId of profile.selectedPresets.slice(0, LIMITS.MAX_PRESETS)) {
                     if (typeof presetId !== 'string') continue;
                     if (seenPresets.has(presetId)) continue;
                     seenPresets.add(presetId);
@@ -99,19 +124,31 @@ module.exports = async (req, res) => {
                 }
             }
 
-            // 3. Processa i nuovi prompt usando Mistral (in parallelo)
+            // 3. Processa i nuovi prompt usando Mistral (in parallelo, con resilienza)
             if (profile.newPrompts && Array.isArray(profile.newPrompts)) {
                 const validPrompts = profile.newPrompts
                     .filter(p => typeof p === 'string' && p.trim() !== '')
-                    .map(p => p.trim().substring(0, 500))
-                    .slice(0, 20);
-                const filterResults = await Promise.all(
+                    .map(p => p.trim().substring(0, LIMITS.MAX_PROMPT_LENGTH))
+                    .slice(0, LIMITS.MAX_AI_PROMPTS);
+                const settledResults = await Promise.allSettled(
                     validPrompts.map(prompt => generateTmdbFiltersFromPrompt(prompt, mistralKey))
                 );
 
                 for (let i = 0; i < validPrompts.length; i++) {
                     const prompt = validPrompts[i];
-                    const filters = filterResults[i];
+                    const result = settledResults[i];
+
+                    // Salta i prompt falliti o con risultati non validi
+                    if (result.status !== 'fulfilled') {
+                        console.warn(`Generazione AI fallita per il prompt: "${prompt}"`, result.reason);
+                        continue;
+                    }
+                    const filters = result.value;
+                    if (!filters || typeof filters !== 'object') {
+                        console.warn(`Risposta AI non valida per il prompt: "${prompt}"`);
+                        continue;
+                    }
+
                     // Detect type from prompt and AI response
                     let catalogType = 'movie';
                     const lowerPrompt = prompt.toLowerCase();
@@ -141,7 +178,7 @@ module.exports = async (req, res) => {
 
             parsedProfiles.push({
                 id: profile.id || `prof_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-                name: profileName.substring(0, 50),
+                name: profileName.substring(0, LIMITS.MAX_PROFILE_NAME_LENGTH),
                 catalogs: parsedCatalogs,
                 settings: {
                     minVoteAverage: Number.isFinite(minVoteAverage) ? minVoteAverage : 0,
@@ -161,8 +198,8 @@ module.exports = async (req, res) => {
             ? activeProfileId
             : (parsedProfiles.length > 0 ? parsedProfiles[0].id : null);
 
-        // 4. Salva la configurazione
-        await UserConfig.saveConfig({
+        // 4. Salva la configurazione e ottieni configVersion dal risultato
+        const savedData = await UserConfig.saveConfig({
             uuid,
             apiKeys: {
                 tmdb: tmdbKey,
@@ -176,12 +213,7 @@ module.exports = async (req, res) => {
             activeProfileId: finalActiveProfileId
         });
 
-        // Recupera configVersion per il link di aggiornamento Stremio
-        let configVersion = null;
-        try {
-            const savedConfig = await UserConfig.findOne({ uuid });
-            if (savedConfig) configVersion = savedConfig.configVersion;
-        } catch (_) { /* ignore */ }
+        const configVersion = savedData?.configVersion || null;
 
         res.json({ success: true, uuid, configVersion });
 

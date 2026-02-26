@@ -4,38 +4,38 @@ jest.mock('../src/utils/database', () => ({
 
 const { getSupabase } = require('../src/utils/database');
 const UserConfig = require('../src/models/UserConfig');
-const MISSING_COLUMN_ERROR = "Could not find the 'configVersion' column of 'user_configs' in the schema cache";
 
 describe('UserConfig.saveConfig', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it('retries without configVersion when schema does not have the column', async () => {
-        const upsertMock = jest.fn()
-            .mockResolvedValueOnce({ data: null, error: { message: MISSING_COLUMN_ERROR } })
-            .mockResolvedValueOnce({ data: [{ uuid: 'abc' }], error: null });
+    it('saves config and returns data with configVersion', async () => {
+        const savedRow = { uuid: 'abc', configVersion: 'test123' };
+        const upsertMock = jest.fn().mockReturnValue({
+            select: jest.fn().mockResolvedValue({ data: [savedRow], error: null })
+        });
         getSupabase.mockReturnValue({
             from: jest.fn(() => ({ upsert: upsertMock }))
         });
 
-        await expect(UserConfig.saveConfig({
+        const result = await UserConfig.saveConfig({
             uuid: 'abc',
             apiKeys: {},
             catalogs: [],
             profiles: [],
             activeProfileId: null
-        })).resolves.toEqual([{ uuid: 'abc' }]);
+        });
 
-        expect(upsertMock).toHaveBeenCalledTimes(2);
+        expect(upsertMock).toHaveBeenCalledTimes(1);
         expect(upsertMock.mock.calls[0][0]).toHaveProperty('configVersion');
-        expect(upsertMock.mock.calls[1][0]).not.toHaveProperty('configVersion');
+        expect(result).toEqual(savedRow);
     });
 
-    it('throws when retry without configVersion also fails', async () => {
-        const upsertMock = jest.fn()
-            .mockResolvedValueOnce({ data: null, error: { message: MISSING_COLUMN_ERROR } })
-            .mockResolvedValueOnce({ data: null, error: { message: 'db unavailable' } });
+    it('throws when upsert fails', async () => {
+        const upsertMock = jest.fn().mockReturnValue({
+            select: jest.fn().mockResolvedValue({ data: null, error: { message: 'db unavailable' } })
+        });
         getSupabase.mockReturnValue({
             from: jest.fn(() => ({ upsert: upsertMock }))
         });
@@ -47,5 +47,25 @@ describe('UserConfig.saveConfig', () => {
             profiles: [],
             activeProfileId: null
         })).rejects.toThrow('db unavailable');
+    });
+
+    it('returns row fallback when select returns empty data', async () => {
+        const upsertMock = jest.fn().mockReturnValue({
+            select: jest.fn().mockResolvedValue({ data: [], error: null })
+        });
+        getSupabase.mockReturnValue({
+            from: jest.fn(() => ({ upsert: upsertMock }))
+        });
+
+        const result = await UserConfig.saveConfig({
+            uuid: 'abc',
+            apiKeys: {},
+            catalogs: [],
+            profiles: [],
+            activeProfileId: null
+        });
+
+        expect(result).toHaveProperty('uuid', 'abc');
+        expect(result).toHaveProperty('configVersion');
     });
 });

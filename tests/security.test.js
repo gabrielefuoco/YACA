@@ -120,7 +120,7 @@ describe('configure route - UUID validation', () => {
     }));
 
     jest.mock('../src/data/presets', () => ({
-        presets: []
+        getPresets: () => []
     }));
 
     const configureRoute = require('../src/api/configure');
@@ -169,7 +169,7 @@ describe('configure route - XSS sanitization', () => {
     }));
 
     jest.mock('../src/data/presets', () => ({
-        presets: []
+        getPresets: () => []
     }));
 
     const configureRoute = require('../src/api/configure');
@@ -180,8 +180,7 @@ describe('configure route - XSS sanitization', () => {
     });
 
     it('should sanitize profile names with HTML content', async () => {
-        UserConfig.saveConfig.mockResolvedValue([]);
-        UserConfig.findOne.mockResolvedValue({ uuid: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', configVersion: 'cv1' });
+        UserConfig.saveConfig.mockResolvedValue({ uuid: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', configVersion: 'cv1' });
 
         const req = {
             body: {

@@ -12,7 +12,7 @@ jest.mock('../src/ai/router', () => ({
 }));
 
 jest.mock('../src/data/presets', () => ({
-    presets: []
+    getPresets: () => []
 }));
 
 const configureRoute = require('../src/api/configure');
@@ -26,8 +26,7 @@ describe('configure route - stremio auth persistence', () => {
     });
 
     it('saves stremio auth key and email into apiKeys', async () => {
-        UserConfig.saveConfig.mockResolvedValue([{ uuid: VALID_UUID }]);
-        UserConfig.findOne.mockResolvedValue({ uuid: VALID_UUID, configVersion: 'cv1' });
+        UserConfig.saveConfig.mockResolvedValue({ uuid: VALID_UUID, configVersion: 'cv1' });
 
         const req = {
             body: {
