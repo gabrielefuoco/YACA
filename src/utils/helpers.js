@@ -38,9 +38,10 @@ function isAllowedUrl(url, allowedHosts) {
             return false;
         }
         const hostname = parsed.hostname;
-        // Blocca indirizzi privati/interni
+        // Blocca indirizzi privati/interni (RFC 1918 + link-local + loopback)
         if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' ||
-            hostname.startsWith('10.') || hostname.startsWith('192.168.') || hostname.startsWith('172.') ||
+            hostname.startsWith('10.') || hostname.startsWith('192.168.') ||
+            /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
             hostname === '169.254.169.254' || hostname === '[::1]' || hostname.endsWith('.local')) {
             return false;
         }

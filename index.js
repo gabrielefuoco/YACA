@@ -19,6 +19,8 @@ const app = express();
 const PORT = process.env.PORT || 7000;
 
 // CORS configurabile tramite variabile d'ambiente (default: permissivo per retrocompatibilità con Stremio)
+// NOTA: Stremio client richiede CORS aperto per funzionare. In produzione, impostare
+// CORS_ALLOWED_ORIGINS per limitare le origini consentite (es. "https://miosito.com,https://altro.com")
 const corsOrigins = process.env.CORS_ALLOWED_ORIGINS;
 const corsOptions = corsOrigins
     ? { origin: corsOrigins.split(',').map(o => o.trim()), methods: ['GET', 'POST'] }
@@ -183,15 +185,12 @@ app.post('/api/stremio-addon-update', sensitiveLimiter, async (req, res) => {
         if (!parsed.pathname.endsWith('/manifest.json')) {
             return res.status(400).json({ success: false, error: 'URL manifest non valido' });
         }
-        // Blocca protocolli non-HTTPS e indirizzi privati/interni
+        // Blocca protocolli non-HTTPS
         if (parsed.protocol !== 'https:') {
             return res.status(400).json({ success: false, error: 'Il manifest URL deve usare HTTPS' });
         }
-        // Blocca hostname privati/interni
-        const hostname = parsed.hostname;
-        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' ||
-            hostname.startsWith('10.') || hostname.startsWith('192.168.') || hostname.startsWith('172.') ||
-            hostname === '169.254.169.254' || hostname === '[::1]' || hostname.endsWith('.local')) {
+        // Usa isAllowedUrl per bloccare indirizzi privati/interni (senza restrizione di host)
+        if (!isAllowedUrl(manifestUrl, [])) {
             return res.status(400).json({ success: false, error: 'URL manifest non consentito' });
         }
     } catch (_e) {
