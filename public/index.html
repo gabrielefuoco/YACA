@@ -714,8 +714,17 @@
         let isPresetExpanded = false;
         let isSearchActive = false;
 
-        // Catalog preview cache
+        // Catalog preview cache (limited to 50 entries)
         const previewCache = {};
+        const PREVIEW_CACHE_MAX = 50;
+
+        function setPreviewCache(key, value) {
+            const keys = Object.keys(previewCache);
+            if (keys.length >= PREVIEW_CACHE_MAX) {
+                delete previewCache[keys[0]];
+            }
+            previewCache[key] = value;
+        }
 
         let profiles = [{ id: 'default', name: 'Generale', raw_ui_state: { selectedPresets: [], newPrompts: [] }, existingCatalogs: [] }];
         let activeProfileId = 'default';
@@ -799,14 +808,18 @@
             }
 
             try {
-                const res = await fetch(`/api/preview-catalog?tmdbKey=${encodeURIComponent(tmdbKey)}&presetId=${encodeURIComponent(presetId)}`);
+                const res = await fetch('/api/preview-catalog', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tmdbKey, presetId })
+                });
                 if (!res.ok) {
                     const err = await res.json();
                     row.innerHTML = `<div class="text-xs text-red-400 py-4 px-2">${escapeHtml(err.error || 'Errore nel caricamento')}</div>`;
                     return;
                 }
                 const data = await res.json();
-                previewCache[presetId] = data.items;
+                setPreviewCache(presetId, data.items);
                 renderPreviewPosters(data.items);
             } catch (err) {
                 row.innerHTML = '<div class="text-xs text-red-400 py-4 px-2">Errore di connessione</div>';
@@ -1082,10 +1095,23 @@
                 card.onclick = () => switchEditingProfile(p.id);
                 card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchEditingProfile(p.id); } };
 
-                // Extract emoji from name if present
-                const nameMatch = p.name.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*/u);
-                const emoji = nameMatch ? nameMatch[1] : '📁';
-                const cleanName = nameMatch ? p.name.replace(nameMatch[0], '') : p.name;
+                // Extract emoji from name if present (safe fallback for older browsers)
+                let emoji = '📁';
+                let cleanName = p.name;
+                try {
+                    const nameMatch = p.name.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*/u);
+                    if (nameMatch) {
+                        emoji = nameMatch[1];
+                        cleanName = p.name.replace(nameMatch[0], '');
+                    }
+                } catch (_e) {
+                    // Fallback for browsers without Unicode property escape support
+                    const simpleMatch = p.name.match(/^([\u{1F300}-\u{1F9FF}])\s*/u);
+                    if (simpleMatch) {
+                        emoji = simpleMatch[1];
+                        cleanName = p.name.replace(simpleMatch[0], '');
+                    }
+                }
 
                 card.innerHTML = `
                     <div class="flex items-center gap-2.5 mb-3">

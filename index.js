@@ -70,12 +70,15 @@ app.get('/api/presets', (req, res) => {
 });
 
 // Endpoint per anteprima catalogo: restituisce i primi 20 risultati TMDB con poster
-app.get('/api/preview-catalog', sensitiveLimiter, async (req, res) => {
-    const { tmdbKey, presetId } = req.query;
+const PREVIEW_TIMEOUT_MS = 8000;
+app.post('/api/preview-catalog', sensitiveLimiter, async (req, res) => {
+    const { tmdbKey, presetId } = req.body;
     if (!tmdbKey || !presetId) {
         return res.status(400).json({ error: 'tmdbKey e presetId obbligatori' });
     }
-    const preset = getPresets().find(p => p.id === sanitizeString(presetId));
+    const sanitizedPresetId = sanitizeString(presetId);
+    const sanitizedTmdbKey = sanitizeString(tmdbKey);
+    const preset = getPresets().find(p => p.id === sanitizedPresetId);
     if (!preset) {
         return res.status(404).json({ error: 'Preset non trovato' });
     }
@@ -83,13 +86,13 @@ app.get('/api/preview-catalog', sensitiveLimiter, async (req, res) => {
         const discoverType = preset.type === 'series' ? 'tv' : 'movie';
         const tmdbRes = await axios.get(`https://api.themoviedb.org/3/discover/${discoverType}`, {
             params: {
-                api_key: tmdbKey,
+                api_key: sanitizedTmdbKey,
                 language: 'it-IT',
                 region: 'IT',
                 page: 1,
                 ...preset.filters
             },
-            timeout: 8000
+            timeout: PREVIEW_TIMEOUT_MS
         });
         const items = (tmdbRes.data?.results || []).slice(0, 20).map(item => ({
             id: item.id,
