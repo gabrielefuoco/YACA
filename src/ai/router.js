@@ -119,8 +119,17 @@ const ADVANCED_AI_SYSTEM_PROMPT = `You are a TMDB Query Architect. Your job is t
 // ============================================
 
 /**
- * Pulisce la risposta JSON di Mistral da markdown e fallback
+ * Pulisce la risposta JSON di Mistral da markdown e fallback.
+ * Valida la struttura per difendersi da prompt injection.
  */
+const ALLOWED_AI_FIELDS = new Set([
+    'strategy', 'similar_to', 'text_search', 'genre_ids', 'people_list',
+    'year_from', 'year_to', 'runtime_lte', 'company_name', 'watch_provider',
+    'keyword', 'original_language', 'language', 'target'
+]);
+const ALLOWED_STRATEGIES = new Set(['discovery', 'multi_search', 'similar']);
+const ALLOWED_TARGETS = new Set(['tmdb', 'kitsu', 'trakt']);
+
 function parseMistralResponse(content, originalPrompt) {
     let jsonContent = content;
     const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -128,6 +137,27 @@ function parseMistralResponse(content, originalPrompt) {
 
     try {
         const parsed = JSON.parse(jsonContent);
+
+        // Rimuovi campi non previsti (difesa da prompt injection)
+        for (const key of Object.keys(parsed)) {
+            if (!ALLOWED_AI_FIELDS.has(key)) {
+                delete parsed[key];
+            }
+        }
+
+        // Valida i campi critici
+        if (!ALLOWED_STRATEGIES.has(parsed.strategy)) {
+            parsed.strategy = 'multi_search';
+        }
+        if (parsed.target && !ALLOWED_TARGETS.has(parsed.target)) {
+            parsed.target = 'tmdb';
+        }
+        if (parsed.genre_ids && (!Array.isArray(parsed.genre_ids) || !parsed.genre_ids.every(id => Number.isInteger(id)))) {
+            delete parsed.genre_ids;
+        }
+        if (parsed.people_list && (!Array.isArray(parsed.people_list) || !parsed.people_list.every(p => typeof p === 'string'))) {
+            delete parsed.people_list;
+        }
 
         // Safeguards
         if (parsed.strategy === 'discovery' && !parsed.keyword && !parsed.genre_ids && !parsed.people_list && parsed.text_search) {
