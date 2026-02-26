@@ -169,7 +169,7 @@ function mergeCatalogItems(existingItems = [], newItems = []) {
  * - Cache Hit Scaduta (>24h): ritorna i dati vecchi, rinnova in background.
  */
 async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type = 'movie') {
-    const normalizedSkip = skip || 0;
+    const normalizedSkip = skip ?? 0;
     const requestHash = generateRequestHash(endpoint, customParams, 0, type);
     const sliceEnd = normalizedSkip + ITEMS_PER_PAGE;
 
@@ -224,7 +224,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
             .catch(e => console.error('Errore salvataggio cache:', e.message));
     }
 
-    return normalizedSkip === 0 ? results : results.slice(0, ITEMS_PER_PAGE);
+    return results;
 }
 
 /**
