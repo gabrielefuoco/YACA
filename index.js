@@ -69,6 +69,45 @@ app.get('/api/presets', (req, res) => {
     res.json({ presets: getPresets(), profileTemplates });
 });
 
+// Endpoint per anteprima catalogo: restituisce i primi 20 risultati TMDB con poster
+app.get('/api/preview-catalog', sensitiveLimiter, async (req, res) => {
+    const { tmdbKey, presetId } = req.query;
+    if (!tmdbKey || !presetId) {
+        return res.status(400).json({ error: 'tmdbKey e presetId obbligatori' });
+    }
+    const preset = getPresets().find(p => p.id === sanitizeString(presetId));
+    if (!preset) {
+        return res.status(404).json({ error: 'Preset non trovato' });
+    }
+    try {
+        const discoverType = preset.type === 'series' ? 'tv' : 'movie';
+        const tmdbRes = await axios.get(`https://api.themoviedb.org/3/discover/${discoverType}`, {
+            params: {
+                api_key: tmdbKey,
+                language: 'it-IT',
+                region: 'IT',
+                page: 1,
+                ...preset.filters
+            },
+            timeout: 8000
+        });
+        const items = (tmdbRes.data?.results || []).slice(0, 20).map(item => ({
+            id: item.id,
+            title: item.title || item.name || '',
+            poster: item.poster_path ? `https://image.tmdb.org/t/p/w185${item.poster_path}` : null,
+            vote: item.vote_average || 0,
+            year: (item.release_date || item.first_air_date || '').substring(0, 4)
+        }));
+        res.json({ items });
+    } catch (err) {
+        const status = err.response?.status;
+        if (status === 401) {
+            return res.status(401).json({ error: 'Chiave TMDB non valida' });
+        }
+        return res.status(500).json({ error: 'Errore nel recupero dati da TMDB' });
+    }
+});
+
 // Endpoint per la sfocatura immagini proxy (usato nei metadati TMDB e Trakt)
 // Protetto contro SSRF: accetta solo URL di CDN immagini noti
 const ALLOWED_IMAGE_HOSTS = ['image.tmdb.org', 'media.kitsu.app', 'walter.trakt.tv', 'artworks.thetvdb.com'];

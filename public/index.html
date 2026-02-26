@@ -20,361 +20,336 @@
                         dark: { 900: '#0f0f13', 800: '#1c1c24', 700: '#272732', 600: '#3a3a4a' }
                     },
                     animation: {
-                        'fade-in': 'fadeIn 0.5s ease-out',
-                        'slide-up': 'slideUp 0.3s ease-out'
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'slide-in': 'slideIn 0.3s ease-out'
                     },
                     keyframes: {
-                        fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-                        slideUp: { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { opacity: '0', transform: 'translateY(12px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+                        slideIn: { '0%': { opacity: '0', transform: 'translateX(-8px)' }, '100%': { opacity: '1', transform: 'translateX(0)' } }
                     }
                 }
             }
         }
     </script>
     <style>
-        body {
-            background-color: #0f0f13;
-        }
+        body { background-color: #0f0f13; }
 
         .glass-panel {
-            background: rgba(28, 28, 36, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(28, 28, 36, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
         }
 
-        .preset-card {
+        /* Tab navigation */
+        .nav-tab {
             transition: all 0.2s ease;
-        }
-
-        .preset-card:hover {
-            transform: translateY(-2px);
-        }
-
-        .preset-card.active {
-            border-color: rgba(138, 90, 235, 0.5);
-            background: rgba(138, 90, 235, 0.1);
-            box-shadow: 0 0 20px rgba(138, 90, 235, 0.1);
-        }
-
-        .category-tab {
-            transition: all 0.2s ease;
+            position: relative;
             white-space: nowrap;
         }
-
-        .category-tab.active {
+        .nav-tab.active {
+            color: #8a5aeb;
+            background: rgba(138, 90, 235, 0.08);
+        }
+        .nav-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70%;
+            height: 2px;
             background: #8a5aeb;
-            color: white;
-            border-color: #8a5aeb;
+            border-radius: 1px;
         }
 
-        .preset-scroll::-webkit-scrollbar {
-            height: 6px;
-        }
+        /* Page transitions */
+        .tab-page { display: none; animation: fadeIn 0.3s ease-out; }
+        .tab-page.active { display: block; }
 
-        .preset-scroll::-webkit-scrollbar-track {
-            background: #1c1c24;
-            border-radius: 3px;
-        }
-
-        .preset-scroll::-webkit-scrollbar-thumb {
-            background: #3a3a4a;
-            border-radius: 3px;
-        }
-
-        .profile-card {
-            transition: all 0.2s ease;
-        }
-
-        .profile-card:hover {
-            border-color: rgba(138, 90, 235, 0.3);
-        }
-
-        .profile-card.active-profile {
-            border-color: rgba(34, 197, 94, 0.5);
-            box-shadow: 0 0 20px rgba(34, 197, 94, 0.08);
-        }
-
-        .profile-card.editing {
+        .preset-card { transition: all 0.2s ease; }
+        .preset-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .preset-card.active {
             border-color: rgba(138, 90, 235, 0.5);
+            background: rgba(138, 90, 235, 0.08);
             box-shadow: 0 0 20px rgba(138, 90, 235, 0.08);
         }
 
+        .category-tab { transition: all 0.2s ease; white-space: nowrap; }
+        .category-tab.active { background: #8a5aeb; color: white; border-color: #8a5aeb; }
+
+        .preset-scroll::-webkit-scrollbar, .poster-scroll::-webkit-scrollbar { height: 4px; }
+        .preset-scroll::-webkit-scrollbar-track, .poster-scroll::-webkit-scrollbar-track { background: transparent; }
+        .preset-scroll::-webkit-scrollbar-thumb, .poster-scroll::-webkit-scrollbar-thumb { background: #3a3a4a; border-radius: 2px; }
+
+        .profile-card { transition: all 0.2s ease; }
+        .profile-card:hover { border-color: rgba(138, 90, 235, 0.3); transform: translateY(-1px); }
+        .profile-card.active-profile { border-color: rgba(34, 197, 94, 0.5); box-shadow: 0 0 20px rgba(34, 197, 94, 0.06); }
+        .profile-card.editing { border-color: rgba(138, 90, 235, 0.5); box-shadow: 0 0 20px rgba(138, 90, 235, 0.06); }
+
         .toggle-switch {
-            position: relative;
-            width: 36px;
-            height: 20px;
-            background: #3a3a4a;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background 0.2s;
+            position: relative; width: 36px; height: 20px;
+            background: #3a3a4a; border-radius: 10px;
+            cursor: pointer; transition: background 0.2s;
         }
-
-        .toggle-switch.on {
-            background: #8a5aeb;
-        }
-
+        .toggle-switch.on { background: #8a5aeb; }
         .toggle-switch::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 16px;
-            height: 16px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.2s;
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 16px; height: 16px; background: white;
+            border-radius: 50%; transition: transform 0.2s;
         }
+        .toggle-switch.on::after { transform: translateX(16px); }
 
-        .toggle-switch.on::after {
-            transform: translateX(16px);
-        }
+        .filter-dropdown { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease; opacity: 0; }
+        .filter-dropdown.open { max-height: 300px; opacity: 1; }
 
-        .filter-dropdown {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease, opacity 0.3s ease;
-            opacity: 0;
-        }
+        /* Poster preview row */
+        .poster-item { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .poster-item:hover { transform: scale(1.08); box-shadow: 0 4px 16px rgba(0,0,0,0.5); z-index: 10; }
 
-        .filter-dropdown.open {
-            max-height: 300px;
-            opacity: 1;
-        }
+        /* Custom input styling */
+        input[type="range"] { -webkit-appearance: none; appearance: none; height: 6px; background: #272732; border-radius: 3px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #8a5aeb; cursor: pointer; border: 2px solid #1c1c24; }
 
-        /* Mobile improvements */
         @media (max-width: 640px) {
-            .glass-panel {
-                border-radius: 1rem;
-            }
-
-            .preset-card {
-                padding: 0.625rem;
-            }
-
-            .category-tab {
-                padding: 0.375rem 0.625rem;
-                font-size: 0.6875rem;
-            }
-
-            input[type="range"] {
-                height: 0.5rem;
-            }
-
-            h2.text-lg {
-                font-size: 0.9375rem;
-            }
-
-            /* Ensure buttons have good touch targets */
-            button, a {
-                min-height: 2.25rem;
-            }
+            .glass-panel { border-radius: 1rem; }
+            .preset-card { padding: 0.625rem; }
+            .category-tab { padding: 0.375rem 0.625rem; font-size: 0.6875rem; }
+            button, a { min-height: 2.25rem; }
+            .nav-tab { font-size: 0.7rem; padding: 0.5rem 0.625rem; }
         }
     </style>
 </head>
 
-<body class="text-gray-200 antialiased min-h-screen flex items-center justify-center p-4 sm:p-8">
+<body class="text-gray-200 antialiased min-h-screen flex items-center justify-center p-3 sm:p-6">
 
     <!-- Background Decoration -->
     <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-stremio/20 rounded-full blur-[120px]"></div>
-        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]"></div>
+        <div class="absolute top-[-15%] left-[-10%] w-[35%] h-[35%] bg-stremio/15 rounded-full blur-[150px]"></div>
+        <div class="absolute bottom-[-15%] right-[-10%] w-[35%] h-[35%] bg-blue-600/8 rounded-full blur-[150px]"></div>
     </div>
 
     <!-- Main Container -->
-    <div class="w-full max-w-3xl glass-panel rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
+    <div class="w-full max-w-4xl glass-panel rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
 
         <!-- Header -->
-        <div class="px-4 sm:px-8 py-5 sm:py-6 border-b border-dark-700 bg-dark-800/80">
-            <div class="flex items-center justify-center space-x-3 mb-2">
-                <svg class="w-7 h-7 sm:w-8 sm:h-8 text-stremio" fill="currentColor" viewBox="0 0 24 24">
-                    <path
-                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
+        <div class="px-4 sm:px-8 py-4 sm:py-5 border-b border-dark-700 bg-dark-800/80">
+            <div class="flex items-center justify-center space-x-3 mb-1">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 text-stremio" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
                 </svg>
-                <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">YACA <span
-                        class="text-stremio font-light">Addon</span></h1>
+                <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">YACA <span class="text-stremio font-light">Addon</span></h1>
             </div>
-            <p class="text-center text-gray-400 text-xs sm:text-sm">Il catalogo intelligente definitivo per Stremio.</p>
+            <p class="text-center text-gray-500 text-xs">Il catalogo intelligente definitivo per Stremio</p>
         </div>
 
-        <form id="configForm" class="p-4 sm:p-8 space-y-6 sm:space-y-8">
+        <!-- Tab Navigation -->
+        <div class="border-b border-dark-700 bg-dark-800/40">
+            <nav id="mainNav" class="flex overflow-x-auto preset-scroll px-2 sm:px-4" role="tablist">
+                <button type="button" class="nav-tab active flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200" data-tab="credentials" role="tab">
+                    🔑 Credenziali
+                </button>
+                <button type="button" class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200" data-tab="profiles" role="tab">
+                    👤 Profili
+                </button>
+                <button type="button" class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200" data-tab="presets" role="tab">
+                    📚 Cataloghi
+                </button>
+                <button type="button" class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200" data-tab="creator" role="tab">
+                    🤖 Creatore
+                </button>
+                <button type="button" class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200" data-tab="settings" role="tab">
+                    ⚙️ Impostazioni
+                </button>
+            </nav>
+        </div>
 
-            <!-- Core Settings -->
-            <div class="space-y-4">
-                <h2 class="text-lg font-semibold text-white flex items-center">
-                    <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-stremio">1</span>
-                    Credenziali API
-                </h2>
+        <form id="configForm">
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- TMDB Key -->
-                    <div class="space-y-1">
-                        <label for="tmdbKey" class="block text-sm font-medium text-gray-400">TMDB API Key <span
-                                class="text-red-500">*</span></label>
-                        <input type="password" id="tmdbKey" required
-                            class="w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600"
-                            placeholder="Inserisci la v3 auth key">
+            <!-- ==================== TAB 1: CREDENTIALS ==================== -->
+            <div id="page-credentials" class="tab-page active p-4 sm:p-8 space-y-6 animate-slide-up">
+
+                <!-- API Keys -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-lg bg-stremio/10 flex items-center justify-center text-stremio text-sm">🔑</div>
+                        <div>
+                            <h2 class="text-base font-semibold text-white">Credenziali API</h2>
+                            <p class="text-xs text-gray-500">Chiavi necessarie per il funzionamento dell'addon</p>
+                        </div>
                     </div>
 
-                    <!-- Mistral Key -->
-                    <div class="space-y-1">
-                        <label for="mistralKey" class="block text-sm font-medium text-gray-400">Mistral API Key <span
-                                class="text-gray-500 font-normal text-xs">(Opz. per i Preset)</span></label>
-                        <input type="password" id="mistralKey"
-                            class="w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600"
-                            placeholder="Inserisci la chiave Mistral">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label for="tmdbKey" class="block text-xs font-medium text-gray-400">TMDB API Key <span class="text-red-500">*</span></label>
+                            <input type="password" id="tmdbKey" required
+                                class="w-full px-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600"
+                                placeholder="Inserisci la v3 auth key">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label for="mistralKey" class="block text-xs font-medium text-gray-400">Mistral API Key <span class="text-gray-600 font-normal">(Opzionale)</span></label>
+                            <input type="password" id="mistralKey"
+                                class="w-full px-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600"
+                                placeholder="Solo per cataloghi AI">
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <hr class="border-dark-700">
+                <hr class="border-dark-700/50">
 
-            <!-- Trakt Integration -->
-            <div class="space-y-4">
-                <h2 class="text-lg font-semibold text-white flex items-center">
-                    <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-red-500">2</span>
-                    Integrazione Trakt.tv
-                </h2>
-                <div class="bg-dark-900/50 border border-red-900/30 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div class="flex-1">
-                        <h3 class="font-medium text-white mb-1 text-sm sm:text-base">Sincronizza Liste e Cronologia</h3>
-                        <p class="text-xs text-gray-400">Collega l'account privato per vedere la tua Watchlist e i
-                            Consigliati in Home.</p>
-                    </div>
-                    <div class="w-full sm:w-auto shrink-0">
-                        <button type="button" id="traktLoginBtn"
-                            class="w-full sm:w-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors text-sm font-bold flex items-center justify-center shadow-lg shadow-red-900/20">
-                            Connetti Trakt
-                        </button>
-                        <div id="traktConnectedUI" class="hidden flex-col items-end">
-                            <span class="text-green-500 font-bold text-sm mb-1">✓ Connesso</span>
-                            <button type="button" id="traktLogoutBtn"
-                                class="text-xs text-gray-400 hover:text-red-400 line-through transition-colors">Scollega
-                                Account</button>
+                <!-- Trakt Integration -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-sm">🎬</div>
+                        <div>
+                            <h2 class="text-base font-semibold text-white">Trakt.tv</h2>
+                            <p class="text-xs text-gray-500">Sincronizza Watchlist e Consigliati</p>
                         </div>
-                        <input type="hidden" id="traktToken">
                     </div>
-                </div>
-            </div>
-
-            <hr class="border-dark-700">
-
-            <!-- Stremio Account Integration -->
-            <div class="space-y-4">
-                <h2 class="text-lg font-semibold text-white flex items-center">
-                    <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-blue-400">⚡</span>
-                    Aggiornamento Automatico <span class="text-gray-500 font-normal text-xs ml-2">(Opzionale)</span>
-                </h2>
-                <div class="bg-dark-900/50 border border-blue-900/30 rounded-lg p-4">
-                    <p class="text-xs text-gray-400 mb-3">Accedi con il tuo account Stremio per aggiornare l'addon
-                        automaticamente quando cambi la configurazione, senza dover reinstallare manualmente.</p>
-                    <div id="stremioAuthSection">
-                        <div id="stremioLoginForm" class="space-y-3">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <input type="email" id="stremioEmail" placeholder="Email Stremio"
-                                    class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-blue-500 text-sm placeholder-gray-600">
-                                <input type="password" id="stremioPassword" placeholder="Password Stremio"
-                                    class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-blue-500 text-sm placeholder-gray-600">
-                            </div>
-                            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                                <button type="button" id="stremioLoginBtn"
-                                    class="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors">
-                                    Accedi a Stremio
-                                </button>
-                                <span id="stremioAuthStatus" class="text-xs text-gray-400"></span>
-                            </div>
+                    <div class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div class="flex-1">
+                            <p class="text-xs text-gray-400">Collega il tuo account per vedere Watchlist e Consigliati nella Home di Stremio.</p>
                         </div>
-                        <div id="stremioLoggedIn" class="hidden flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-green-400 text-sm">✅ Connesso come <strong id="stremioUserEmail"
-                                        class="text-white"></strong></span>
-                            </div>
-                            <button type="button" id="stremioLogoutBtn"
-                                class="px-3 py-1 bg-dark-700 hover:bg-dark-600 text-gray-300 text-xs rounded-md transition-colors">
-                                Disconnetti
+                        <div class="w-full sm:w-auto shrink-0">
+                            <button type="button" id="traktLoginBtn"
+                                class="w-full sm:w-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-bold flex items-center justify-center">
+                                Connetti Trakt
                             </button>
+                            <div id="traktConnectedUI" class="hidden flex-col items-end">
+                                <span class="text-green-500 font-bold text-sm mb-1">✓ Connesso</span>
+                                <button type="button" id="traktLogoutBtn"
+                                    class="text-xs text-gray-400 hover:text-red-400 transition-colors">Scollega Account</button>
+                            </div>
+                            <input type="hidden" id="traktToken">
                         </div>
                     </div>
                 </div>
+
+                <hr class="border-dark-700/50">
+
+                <!-- Stremio Account Integration -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-sm">⚡</div>
+                        <div>
+                            <h2 class="text-base font-semibold text-white">Auto-Update Stremio</h2>
+                            <p class="text-xs text-gray-500">Aggiorna automaticamente senza reinstallare</p>
+                        </div>
+                    </div>
+                    <div class="bg-dark-900/40 border border-dark-700 rounded-xl p-4">
+                        <div id="stremioAuthSection">
+                            <div id="stremioLoginForm" class="space-y-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input type="email" id="stremioEmail" placeholder="Email Stremio"
+                                        class="px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-blue-500 text-sm placeholder-gray-600">
+                                    <input type="password" id="stremioPassword" placeholder="Password Stremio"
+                                        class="px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-blue-500 text-sm placeholder-gray-600">
+                                </div>
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                    <button type="button" id="stremioLoginBtn"
+                                        class="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                                        Accedi a Stremio
+                                    </button>
+                                    <span id="stremioAuthStatus" class="text-xs text-gray-400"></span>
+                                </div>
+                            </div>
+                            <div id="stremioLoggedIn" class="hidden flex items-center justify-between">
+                                <span class="text-green-400 text-sm">✅ Connesso come <strong id="stremioUserEmail" class="text-white"></strong></span>
+                                <button type="button" id="stremioLogoutBtn"
+                                    class="px-3 py-1.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-xs rounded-lg transition-colors">Disconnetti</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Next button -->
+                <div class="pt-2 flex justify-end">
+                    <button type="button" class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors" data-next="profiles">
+                        Profili →
+                    </button>
+                </div>
             </div>
 
-            <hr class="border-dark-700">
+            <!-- ==================== TAB 2: PROFILES ==================== -->
+            <div id="page-profiles" class="tab-page p-4 sm:p-8 space-y-6">
 
-            <!-- Profiles Section - Card Layout -->
-            <div class="space-y-4">
-                <h2 class="text-lg font-semibold text-white flex items-center">
-                    <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-purple-400">3</span>
-                    Gestione Profili
-                </h2>
-                <p class="text-sm text-gray-400">Dividi i tuoi cataloghi per tipologia. Cambia in tempo reale cosa
-                    vedere su Stremio scegliendo il profilo Attivo.</p>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-sm">👤</div>
+                    <div>
+                        <h2 class="text-base font-semibold text-white">Gestione Profili</h2>
+                        <p class="text-xs text-gray-500">Organizza i cataloghi in profili separati. Il profilo attivo determina cosa vedi su Stremio.</p>
+                    </div>
+                </div>
 
                 <!-- Profile Cards Grid -->
-                <div id="profileCardsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                <div id="profileCardsContainer" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                     <!-- Populated by JS -->
                 </div>
 
                 <!-- Add Profile Button -->
                 <button type="button" id="newProfileBtn"
-                    class="w-full py-3 px-4 bg-dark-800 border-2 border-dashed border-dark-600 rounded-lg text-sm text-gray-400 hover:border-stremio/50 hover:text-stremio transition-all flex items-center justify-center gap-2">
-                    <span class="text-xl">+</span> Nuovo Profilo
+                    class="w-full py-3 px-4 bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl text-sm text-gray-400 hover:border-stremio/50 hover:text-stremio transition-all flex items-center justify-center gap-2">
+                    <span class="text-lg">+</span> Nuovo Profilo
                 </button>
 
                 <!-- Hidden select for backward compat -->
                 <select id="profileSelect" class="hidden"></select>
 
-                <!-- Profile Editor (shown when a profile is selected) -->
-                <div id="profileEditor"
-                    class="bg-dark-900 border border-dark-700 rounded-lg p-3 sm:p-4 relative overflow-hidden">
+                <!-- Profile Editor -->
+                <div id="profileEditor" class="bg-dark-900/60 border border-dark-700 rounded-xl p-4 relative overflow-hidden">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 relative z-10">
                         <input type="text" id="profileNameInput"
-                            class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-stremio text-sm flex-1 w-full placeholder-gray-500 font-bold shadow-sm"
+                            class="px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-stremio text-sm flex-1 w-full placeholder-gray-500 font-bold"
                             placeholder="Nome Profilo">
                         <button type="button" id="activateProfileBtn"
-                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded transition-colors whitespace-nowrap shadow-sm">Rendi
-                            Attivo</button>
+                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap">Rendi Attivo</button>
                         <button type="button" id="toggleTemplateBtn"
-                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600 shadow-sm">📋
-                            Modelli</button>
+                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600">📋 Modelli</button>
                         <button type="button" id="deleteProfileBtn"
-                            class="w-full sm:w-auto text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 py-2 px-3 rounded transition-colors hidden">Elimina</button>
+                            class="w-full sm:w-auto text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 py-2 px-3 rounded-lg transition-colors hidden">Elimina</button>
                     </div>
                 </div>
 
                 <!-- Template Selector -->
-                <div id="profileTemplateSelector"
-                    class="hidden mt-2 p-4 bg-stremio/10 border border-stremio/30 rounded-lg animate-fade-in shadow-inner">
-                    <p class="text-xs text-gray-300 font-medium mb-3">Scegli un modello rapido per riempire i cataloghi
-                        di questo profilo in un clic:</p>
+                <div id="profileTemplateSelector" class="hidden mt-2 p-4 bg-stremio/5 border border-stremio/20 rounded-xl animate-fade-in">
+                    <p class="text-xs text-gray-300 font-medium mb-3">Scegli un modello rapido:</p>
                     <div id="templateButtons" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <!-- Nav buttons -->
+                <div class="pt-2 flex justify-between">
+                    <button type="button" class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600" data-next="credentials">
+                        ← Credenziali
+                    </button>
+                    <button type="button" class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors" data-next="presets">
+                        Cataloghi →
+                    </button>
                 </div>
             </div>
 
-            <hr class="border-dark-700">
+            <!-- ==================== TAB 3: PRESETS ==================== -->
+            <div id="page-presets" class="tab-page p-4 sm:p-8 space-y-5">
 
-            <!-- Presets Section - Card Viewer with Pagination -->
-            <div class="space-y-4">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-semibold text-white flex items-center">
-                        <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-blue-400">4</span>
-                        Cataloghi Curati (Zero Costi AI)
-                    </h2>
-                    <span id="selectedPresetsCount"
-                        class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2.5 py-1 rounded-full border border-stremio/20">0
-                        selezionati</span>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-sm">📚</div>
+                        <div>
+                            <h2 class="text-base font-semibold text-white">Cataloghi Curati</h2>
+                            <p class="text-xs text-gray-500">Zero costi AI — usa direttamente TMDB</p>
+                        </div>
+                    </div>
+                    <span id="selectedPresetsCount" class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2.5 py-1 rounded-full border border-stremio/20">0 selezionati</span>
                 </div>
-                <p class="text-sm text-gray-400">Questi cataloghi sono pre-impostati e richiamano TMDB in modo nativo.
-                    Non consumano token Mistral.</p>
 
                 <!-- Preset Search -->
                 <div class="relative">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
-                    <input type="text" id="presetSearchInput" placeholder="Cerca preset... (es. horror, nolan, anime)"
-                        class="w-full pl-10 pr-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder-gray-600">
+                    <input type="text" id="presetSearchInput" placeholder="Cerca cataloghi... (es. horror, nolan, anime)"
+                        class="w-full pl-10 pr-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600">
                 </div>
 
                 <!-- Category Tabs (Scrollable) -->
@@ -382,61 +357,79 @@
                     <!-- Populated by JS -->
                 </div>
 
+                <!-- Catalog Preview Row -->
+                <div id="catalogPreviewSection" class="hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span id="previewTitle" class="text-xs font-medium text-gray-400"></span>
+                        <button type="button" id="closePreviewBtn" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">✕ Chiudi</button>
+                    </div>
+                    <div id="catalogPreviewRow" class="flex gap-2 overflow-x-auto pb-2 poster-scroll">
+                        <!-- Poster items populated by JS -->
+                    </div>
+                </div>
+
                 <!-- Preset Cards Container -->
                 <div id="presetsContainer" class="space-y-4">
-                    <div class="text-center text-sm text-gray-500">Caricamento preset...</div>
+                    <div class="text-center text-sm text-gray-500 py-8">Caricamento preset...</div>
                 </div>
 
                 <!-- Pagination Controls -->
                 <div id="presetPagination" class="hidden flex items-center justify-between pt-2">
                     <button type="button" id="presetPrevBtn"
-                        class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded-lg border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         disabled>← Precedente</button>
                     <span id="presetPageInfo" class="text-xs text-gray-500 font-mono"></span>
                     <button type="button" id="presetNextBtn"
-                        class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded-lg border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         disabled>Successivo →</button>
                 </div>
 
                 <!-- Expand/Collapse Toggle -->
                 <button type="button" id="presetExpandBtn"
                     class="hidden w-full py-2 text-xs text-gray-400 hover:text-stremio transition-colors flex items-center justify-center gap-1">
-                    <svg id="expandIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
+                    <svg id="expandIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                     <span id="expandText">Mostra tutti</span>
                 </button>
+
+                <!-- Nav buttons -->
+                <div class="pt-2 flex justify-between">
+                    <button type="button" class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600" data-next="profiles">
+                        ← Profili
+                    </button>
+                    <button type="button" class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors" data-next="creator">
+                        Creatore →
+                    </button>
+                </div>
             </div>
 
-            <hr class="border-dark-700">
+            <!-- ==================== TAB 4: CREATOR ==================== -->
+            <div id="page-creator" class="tab-page p-4 sm:p-8 space-y-6">
 
-            <!-- AI Catalogs & Preset Creator Section -->
-            <div class="space-y-4">
-                <h2 class="text-lg font-semibold text-white flex items-center">
-                    <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-green-400">5</span>
-                    Creatore di Cataloghi
-                </h2>
-                <p class="text-sm text-gray-400">Crea cataloghi personalizzati usando l'AI o manualmente specificando i
-                    parametri TMDB.</p>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-sm">🤖</div>
+                    <div>
+                        <h2 class="text-base font-semibold text-white">Creatore di Cataloghi</h2>
+                        <p class="text-xs text-gray-500">Crea cataloghi con AI o manualmente</p>
+                    </div>
+                </div>
 
                 <!-- Tab switcher: AI / Manual -->
-                <div class="flex bg-dark-900 rounded-lg border border-dark-700 p-1 gap-1">
+                <div class="flex bg-dark-900 rounded-xl border border-dark-700 p-1 gap-1">
                     <button type="button" id="tabAiCatalog"
-                        class="flex-1 text-xs font-medium py-2 px-3 rounded-md bg-green-500/20 text-green-400 border border-green-500/30 transition-colors">
+                        class="flex-1 text-xs font-medium py-2.5 px-3 rounded-lg bg-green-500/15 text-green-400 border border-green-500/20 transition-colors">
                         🤖 Catalogo AI
                     </button>
                     <button type="button" id="tabManualCatalog"
-                        class="flex-1 text-xs font-medium py-2 px-3 rounded-md text-gray-400 hover:text-gray-200 transition-colors">
+                        class="flex-1 text-xs font-medium py-2.5 px-3 rounded-lg text-gray-400 hover:text-gray-200 transition-colors">
                         🔧 Creazione Manuale
                     </button>
                 </div>
 
                 <!-- AI Catalog Tab -->
                 <div id="aiCatalogTab" class="space-y-3">
-                    <p class="text-xs text-gray-500">Descrivi cosa vuoi vedere nella Home di Stremio. L'AI genererà
-                        listini
-                        perfetti per te. (Richiede Mistral Key).</p>
+                    <p class="text-xs text-gray-500">Descrivi cosa vuoi vedere nella Home di Stremio. L'AI genererà listini perfetti per te. (Richiede Mistral Key).</p>
                     <div id="catalogList" class="space-y-3">
                         <div class="catalog-item flex gap-2">
                             <input type="text"
@@ -445,38 +438,35 @@
                         </div>
                     </div>
                     <button type="button" id="addCatalogBtn"
-                        class="w-full py-3 px-4 bg-dark-800 border-2 border-dashed border-dark-600 rounded-lg text-sm text-gray-400 hover:border-green-500/50 hover:text-green-400 transition-all flex items-center justify-center gap-2">
+                        class="w-full py-3 px-4 bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl text-sm text-gray-400 hover:border-green-500/50 hover:text-green-400 transition-all flex items-center justify-center gap-2">
                         <span class="text-xl">+</span> Aggiungi un altro catalogo AI
                     </button>
                 </div>
 
                 <!-- Manual Catalog Tab -->
                 <div id="manualCatalogTab" class="hidden space-y-4">
-                    <p class="text-xs text-gray-500">Specifica manualmente i parametri TMDB per creare un preset
-                        personalizzato.</p>
+                    <p class="text-xs text-gray-500">Specifica manualmente i parametri TMDB per creare un preset personalizzato.</p>
 
-                    <div class="bg-dark-900/60 border border-dark-700 rounded-lg p-4 space-y-4">
-                        <!-- Preset Name -->
-                        <div class="space-y-1">
+                    <div class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 space-y-4">
+                        <div class="space-y-1.5">
                             <label class="block text-xs font-medium text-gray-400">Nome del Catalogo</label>
                             <input type="text" id="manualPresetName" placeholder="Es: I Miei Film Horror Preferiti"
-                                class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                                class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm placeholder-gray-600">
                         </div>
 
-                        <!-- Type -->
                         <div class="grid grid-cols-2 gap-3">
-                            <div class="space-y-1">
+                            <div class="space-y-1.5">
                                 <label class="block text-xs font-medium text-gray-400">Tipo</label>
                                 <select id="manualPresetType"
-                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm text-gray-200">
+                                    class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm text-gray-200">
                                     <option value="movie">Film</option>
                                     <option value="series">Serie TV</option>
                                 </select>
                             </div>
-                            <div class="space-y-1">
+                            <div class="space-y-1.5">
                                 <label class="block text-xs font-medium text-gray-400">Ordinamento</label>
                                 <select id="manualPresetSort"
-                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm text-gray-200">
+                                    class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm text-gray-200">
                                     <option value="popularity.desc">Popolarità ↓</option>
                                     <option value="vote_average.desc">Voto Medio ↓</option>
                                     <option value="primary_release_date.desc">Data di Uscita ↓</option>
@@ -486,190 +476,191 @@
                             </div>
                         </div>
 
-                        <!-- Genres -->
-                        <div class="space-y-1">
-                            <label class="block text-xs font-medium text-gray-400">Generi (ID TMDB, separati da
-                                virgola)</label>
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-medium text-gray-400">Generi (ID TMDB, separati da virgola)</label>
                             <input type="text" id="manualPresetGenres" placeholder="Es: 28,53 (Azione, Thriller)"
-                                class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
-                            <p class="text-[10px] text-gray-600">Film: Azione=28, Avventura=12, Animazione=16,
-                                Commedia=35, Crimine=80, Documentario=99, Dramma=18, Famiglia=10751, Fantasy=14,
-                                Horror=27, Mistero=9648, Romance=10749, Sci-Fi=878, Thriller=53, Guerra=10752</p>
+                                class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                            <p class="text-[10px] text-gray-600">Azione=28, Avventura=12, Animazione=16, Commedia=35, Crimine=80, Documentario=99, Dramma=18, Famiglia=10751, Fantasy=14, Horror=27, Mistero=9648, Romance=10749, Sci-Fi=878, Thriller=53, Guerra=10752</p>
                         </div>
 
-                        <!-- Keywords -->
-                        <div class="space-y-1">
-                            <label class="block text-xs font-medium text-gray-400">Keywords (ID TMDB, separati da
-                                virgola)</label>
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-medium text-gray-400">Keywords (ID TMDB, separati da virgola)</label>
                             <input type="text" id="manualPresetKeywords" placeholder="Es: 210024 (Anime)"
-                                class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                                class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm placeholder-gray-600">
                         </div>
 
-                        <!-- People -->
                         <div class="grid grid-cols-2 gap-3">
-                            <div class="space-y-1">
+                            <div class="space-y-1.5">
                                 <label class="block text-xs font-medium text-gray-400">Cast (ID attore TMDB)</label>
                                 <input type="text" id="manualPresetCast" placeholder="Es: 6193"
-                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                                    class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm placeholder-gray-600">
                             </div>
-                            <div class="space-y-1">
+                            <div class="space-y-1.5">
                                 <label class="block text-xs font-medium text-gray-400">Crew/Regista (ID TMDB)</label>
                                 <input type="text" id="manualPresetCrew" placeholder="Es: 525"
-                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                                    class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm placeholder-gray-600">
                             </div>
                         </div>
 
-                        <!-- Company & Language -->
                         <div class="grid grid-cols-2 gap-3">
-                            <div class="space-y-1">
+                            <div class="space-y-1.5">
                                 <label class="block text-xs font-medium text-gray-400">Studio (ID TMDB)</label>
                                 <input type="text" id="manualPresetCompany" placeholder="Es: 3 (Pixar)"
-                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                                    class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm placeholder-gray-600">
                             </div>
-                            <div class="space-y-1">
+                            <div class="space-y-1.5">
                                 <label class="block text-xs font-medium text-gray-400">Lingua Originale (ISO)</label>
                                 <input type="text" id="manualPresetLang" placeholder="Es: en, ko, ja"
-                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                                    class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm placeholder-gray-600">
                             </div>
                         </div>
 
-                        <!-- Vote Filters -->
                         <div class="grid grid-cols-2 gap-3">
-                            <div class="space-y-1">
+                            <div class="space-y-1.5">
                                 <label class="block text-xs font-medium text-gray-400">Voto Minimo</label>
-                                <input type="number" id="manualPresetVoteAvg" step="0.5" min="0" max="10"
-                                    placeholder="Es: 7.0"
-                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                                <input type="number" id="manualPresetVoteAvg" step="0.5" min="0" max="10" placeholder="Es: 7.0"
+                                    class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm placeholder-gray-600">
                             </div>
-                            <div class="space-y-1">
+                            <div class="space-y-1.5">
                                 <label class="block text-xs font-medium text-gray-400">Voti Minimi</label>
                                 <input type="number" id="manualPresetVoteCount" min="0" placeholder="Es: 100"
-                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm placeholder-gray-600">
+                                    class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm placeholder-gray-600">
                             </div>
                         </div>
 
-                        <!-- Date Range -->
                         <div class="grid grid-cols-2 gap-3">
-                            <div class="space-y-1">
+                            <div class="space-y-1.5">
                                 <label class="block text-xs font-medium text-gray-400">Data Uscita Da</label>
                                 <input type="date" id="manualPresetDateFrom"
-                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm text-gray-200">
+                                    class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm text-gray-200">
                             </div>
-                            <div class="space-y-1">
+                            <div class="space-y-1.5">
                                 <label class="block text-xs font-medium text-gray-400">Data Uscita A</label>
                                 <input type="date" id="manualPresetDateTo"
-                                    class="w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-md outline-none focus:border-green-500 text-sm text-gray-200">
+                                    class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm text-gray-200">
                             </div>
                         </div>
 
-                        <!-- Add Manual Preset Button -->
                         <button type="button" id="addManualPresetBtn"
-                            class="w-full py-3 px-4 bg-green-500/20 border border-green-500/30 rounded-lg text-sm text-green-400 hover:bg-green-500/30 transition-all flex items-center justify-center gap-2 font-medium">
+                            class="w-full py-3 px-4 bg-green-500/15 border border-green-500/20 rounded-xl text-sm text-green-400 hover:bg-green-500/25 transition-all flex items-center justify-center gap-2 font-medium">
                             <span class="text-lg">+</span> Aggiungi Catalogo Manuale al Profilo
                         </button>
                     </div>
                 </div>
-            </div>
 
-            <hr class="border-dark-700">
-
-            <!-- Quality Filters Section -->
-            <div class="space-y-4">
-                <h2 class="text-lg font-semibold text-white flex items-center">
-                    <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-yellow-400">6</span>
-                    Filtri di Qualità (Filtra Spazzatura)
-                </h2>
-                <p class="text-sm text-gray-400">Imposta dei criteri minimi per i risultati di questo profilo. Evita
-                    film sconosciuti o con voti bassi.</p>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-dark-900/40 p-4 rounded-xl border border-dark-700">
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center">
-                            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Voto Medio
-                                Minimo</label>
-                            <span id="voteAvgVal"
-                                class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2 py-0.5 rounded">0.0</span>
-                        </div>
-                        <input type="range" id="minVoteAverage" min="0" max="10" step="0.5" value="0.0"
-                            class="w-full h-1.5 bg-dark-700 rounded-lg appearance-none cursor-pointer accent-stremio">
-                        <div class="flex justify-between text-[10px] text-gray-600 font-medium px-1">
-                            <span>Tutto</span>
-                            <span>Solo Capolavori</span>
-                        </div>
-                    </div>
-
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center">
-                            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Voti Minimi
-                                Ricevuti</label>
-                            <span id="voteCountVal"
-                                class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2 py-0.5 rounded">0</span>
-                        </div>
-                        <input type="range" id="minVoteCount" min="0" max="5000" step="100" value="0"
-                            class="w-full h-1.5 bg-dark-700 rounded-lg appearance-none cursor-pointer accent-stremio">
-                        <div class="flex justify-between text-[10px] text-gray-600 font-medium px-1">
-                            <span>Qualsiasi</span>
-                            <span>Popolari</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-center justify-between bg-dark-900/40 p-4 rounded-xl border border-dark-700">
-                    <div>
-                        <label for="fastPresetRefresh" class="text-sm font-medium text-white">Refresh rapido preset</label>
-                        <p class="text-xs text-gray-500 mt-1">Aggiorna più spesso i preset dinamici con cache collaborativa BYOK.</p>
-                    </div>
-                    <input type="checkbox" id="fastPresetRefresh" class="h-4 w-4 accent-stremio">
-                </div>
-            </div>
-
-            <hr class="border-dark-700">
-
-            <!-- Export/Import Config -->
-            <div class="space-y-4">
-                <h2 class="text-lg font-semibold text-white flex items-center">
-                    <span class="bg-dark-700 p-1.5 rounded-md mr-3 text-cyan-400">7</span>
-                    Backup & Ripristino
-                </h2>
-                <p class="text-sm text-gray-400">Esporta la tua configurazione come file JSON per avere un backup,
-                    oppure importa una configurazione salvata.</p>
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <button type="button" id="exportConfigBtn"
-                        class="flex-1 py-2.5 px-4 bg-dark-800 border border-dark-600 rounded-lg text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors flex items-center justify-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                        </svg>
-                        Esporta Configurazione
+                <!-- Nav buttons -->
+                <div class="pt-2 flex justify-between">
+                    <button type="button" class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600" data-next="presets">
+                        ← Cataloghi
                     </button>
-                    <label
-                        class="flex-1 py-2.5 px-4 bg-dark-800 border border-dark-600 rounded-lg text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors flex items-center justify-center gap-2 cursor-pointer">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                        </svg>
-                        Importa Configurazione
-                        <input type="file" id="importConfigInput" accept=".json" class="hidden">
-                    </label>
+                    <button type="button" class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors" data-next="settings">
+                        Impostazioni →
+                    </button>
                 </div>
             </div>
 
-            <hr class="border-dark-700">
+            <!-- ==================== TAB 5: SETTINGS ==================== -->
+            <div id="page-settings" class="tab-page p-4 sm:p-8 space-y-6">
 
-            <!-- Submit Button -->
-            <div class="pt-4 space-y-4">
-                <div id="statusMsg" class="hidden p-4 rounded-xl text-center font-bold text-sm"></div>
-                <button type="submit" id="submitBtn"
-                    class="w-full flex justify-center items-center py-4 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-stremio hover:bg-stremio-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stremio focus:ring-offset-dark-900 transition-colors">
-                    Genera Link di Installazione
-                </button>
+                <!-- Quality Filters -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center text-sm">🎯</div>
+                        <div>
+                            <h2 class="text-base font-semibold text-white">Filtri di Qualità</h2>
+                            <p class="text-xs text-gray-500">Criteri minimi per filtrare contenuti di bassa qualità</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-dark-900/40 p-5 rounded-xl border border-dark-700">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Voto Medio Minimo</label>
+                                <span id="voteAvgVal" class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2 py-0.5 rounded">0.0</span>
+                            </div>
+                            <input type="range" id="minVoteAverage" min="0" max="10" step="0.5" value="0.0"
+                                class="w-full cursor-pointer">
+                            <div class="flex justify-between text-[10px] text-gray-600 font-medium px-1">
+                                <span>Tutto</span>
+                                <span>Solo Capolavori</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Voti Minimi Ricevuti</label>
+                                <span id="voteCountVal" class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2 py-0.5 rounded">0</span>
+                            </div>
+                            <input type="range" id="minVoteCount" min="0" max="5000" step="100" value="0"
+                                class="w-full cursor-pointer">
+                            <div class="flex justify-between text-[10px] text-gray-600 font-medium px-1">
+                                <span>Qualsiasi</span>
+                                <span>Popolari</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-dark-900/40 p-4 rounded-xl border border-dark-700">
+                        <div>
+                            <label for="fastPresetRefresh" class="text-sm font-medium text-white">Refresh rapido preset</label>
+                            <p class="text-xs text-gray-500 mt-1">Aggiorna più spesso i preset dinamici con cache collaborativa BYOK.</p>
+                        </div>
+                        <input type="checkbox" id="fastPresetRefresh" class="h-4 w-4 accent-stremio">
+                    </div>
+                </div>
+
+                <hr class="border-dark-700/50">
+
+                <!-- Export/Import Config -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-sm">💾</div>
+                        <div>
+                            <h2 class="text-base font-semibold text-white">Backup & Ripristino</h2>
+                            <p class="text-xs text-gray-500">Esporta o importa la configurazione come file JSON</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button type="button" id="exportConfigBtn"
+                            class="flex-1 py-2.5 px-4 bg-dark-800 border border-dark-600 rounded-xl text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            Esporta
+                        </button>
+                        <label class="flex-1 py-2.5 px-4 bg-dark-800 border border-dark-600 rounded-xl text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                            </svg>
+                            Importa
+                            <input type="file" id="importConfigInput" accept=".json" class="hidden">
+                        </label>
+                    </div>
+                </div>
+
+                <hr class="border-dark-700/50">
+
+                <!-- Submit Button -->
+                <div class="space-y-4">
+                    <div id="statusMsg" class="hidden p-4 rounded-xl text-center font-bold text-sm"></div>
+                    <button type="submit" id="submitBtn"
+                        class="w-full flex justify-center items-center py-4 px-4 border border-transparent rounded-xl shadow-lg text-base font-medium text-white bg-stremio hover:bg-stremio-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stremio focus:ring-offset-dark-900 transition-all">
+                        Genera Link di Installazione
+                    </button>
+                </div>
+
+                <!-- Back nav -->
+                <div class="pt-2 flex justify-start">
+                    <button type="button" class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600" data-next="creator">
+                        ← Creatore
+                    </button>
+                </div>
             </div>
         </form>
 
         <!-- Success State (Hidden by default) -->
-        <div id="successBox"
-            class="hidden p-4 sm:p-8 text-center space-y-4 sm:space-y-6 animate-fade-in border-t border-stremio/30 bg-stremio/5">
-            <div
-                class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 text-green-400 mb-2">
+        <div id="successBox" class="hidden p-4 sm:p-8 text-center space-y-4 sm:space-y-6 animate-fade-in border-t border-stremio/30 bg-stremio/5">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 text-green-400 mb-2">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
@@ -678,20 +669,15 @@
                 <h3 class="text-xl font-bold text-white mb-2">Addon Pronto!</h3>
                 <p class="text-gray-400 text-sm">Clicca il pulsante qui sotto per installare YACA su Stremio.</p>
             </div>
-
             <a href="#" id="installLink"
-                class="inline-flex items-center justify-center w-full px-4 sm:px-6 py-3 sm:py-4 border border-transparent text-base sm:text-lg font-bold rounded-lg text-white bg-green-600 hover:bg-green-700 transition-colors shadow-lg shadow-green-900/20">
+                class="inline-flex items-center justify-center w-full px-4 sm:px-6 py-3 sm:py-4 border border-transparent text-base sm:text-lg font-bold rounded-xl text-white bg-green-600 hover:bg-green-700 transition-colors shadow-lg shadow-green-900/20">
                 INSTALLA IN STREMIO
             </a>
-
             <div class="pt-4 border-t border-dark-700">
-                <p class="text-xs text-gray-500 mb-1">Il tuo ID di configurazione (salvalo per modificare le liste in
-                    futuro):</p>
-                <code id="uuidDisplay"
-                    class="px-2 py-1 bg-dark-900 border border-dark-600 rounded text-stremio text-[10px] sm:text-xs font-mono select-all break-all"></code>
+                <p class="text-xs text-gray-500 mb-1">Il tuo ID di configurazione (salvalo per modificare le liste in futuro):</p>
+                <code id="uuidDisplay" class="px-2 py-1 bg-dark-900 border border-dark-600 rounded text-stremio text-[10px] sm:text-xs font-mono select-all break-all"></code>
             </div>
-            <button onclick="window.location.reload()"
-                class="text-xs text-gray-400 hover:text-white underline mt-2">Torna alla configurazione</button>
+            <button onclick="window.location.reload()" class="text-xs text-gray-400 hover:text-white underline mt-2">Torna alla configurazione</button>
         </div>
 
     </div>
@@ -699,7 +685,7 @@
     <!-- Trakt Device Auth Modal -->
     <div id="traktAuthModal"
         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4">
-        <div class="bg-dark-800 p-6 sm:p-8 rounded-xl shadow-2xl max-w-sm w-full text-center border border-dark-600">
+        <div class="bg-dark-800 p-6 sm:p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center border border-dark-600">
             <h3 class="text-lg sm:text-xl font-bold text-white mb-4">Autenticazione Trakt</h3>
             <p class="text-sm text-gray-300 mb-4">1. Vai su <a id="traktAuthUrl" href="#" target="_blank"
                     class="text-red-500 font-bold underline">trakt.tv/activate</a></p>
@@ -707,11 +693,9 @@
             <div id="traktAuthCode"
                 class="text-2xl sm:text-3xl font-mono tracking-widest font-bold text-white bg-dark-900 py-4 rounded-lg mb-6 shadow-inner select-all border border-dark-700">
                 ----</div>
-            <p class="text-xs text-gray-400 mb-6">In attesa di conferma da Trakt... (<span
-                    id="traktAuthCountdown">0</span>s)</p>
+            <p class="text-xs text-gray-400 mb-6">In attesa di conferma da Trakt... (<span id="traktAuthCountdown">0</span>s)</p>
             <button type="button" id="traktAuthCancelBtn"
-                class="px-6 py-2.5 bg-dark-700 hover:bg-dark-600 border border-dark-600 text-white rounded-lg transition-colors text-sm font-medium w-full">Indietro
-                / Annulla</button>
+                class="px-6 py-2.5 bg-dark-700 hover:bg-dark-600 border border-dark-600 text-white rounded-lg transition-colors text-sm font-medium w-full">Indietro / Annulla</button>
         </div>
     </div>
 
@@ -729,6 +713,9 @@
         let currentPresetPage = 0;
         let isPresetExpanded = false;
         let isSearchActive = false;
+
+        // Catalog preview cache
+        const previewCache = {};
 
         let profiles = [{ id: 'default', name: 'Generale', raw_ui_state: { selectedPresets: [], newPrompts: [] }, existingCatalogs: [] }];
         let activeProfileId = 'default';
@@ -771,6 +758,83 @@
             const div = document.createElement('div');
             div.appendChild(document.createTextNode(str));
             return div.innerHTML;
+        }
+
+        // -- TAB NAVIGATION --
+        function switchTab(tabName) {
+            // Hide all pages
+            document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+            // Deactivate all nav tabs
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            // Show target page
+            const page = document.getElementById('page-' + tabName);
+            if (page) page.classList.add('active');
+            // Activate nav tab
+            const tab = document.querySelector(`.nav-tab[data-tab="${tabName}"]`);
+            if (tab) tab.classList.add('active');
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // -- CATALOG PREVIEW --
+        async function showCatalogPreview(presetId, presetName) {
+            const tmdbKey = document.getElementById('tmdbKey').value;
+            if (!tmdbKey) {
+                alert('Inserisci prima la chiave TMDB nella sezione Credenziali per vedere l\'anteprima.');
+                return;
+            }
+
+            const section = document.getElementById('catalogPreviewSection');
+            const row = document.getElementById('catalogPreviewRow');
+            const title = document.getElementById('previewTitle');
+
+            title.textContent = 'Anteprima: ' + presetName;
+            section.classList.remove('hidden');
+            row.innerHTML = '<div class="flex items-center gap-2 py-4 px-2"><div class="w-4 h-4 border-2 border-stremio border-t-transparent rounded-full animate-spin"></div><span class="text-xs text-gray-500">Caricamento...</span></div>';
+
+            // Check cache
+            if (previewCache[presetId]) {
+                renderPreviewPosters(previewCache[presetId]);
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/preview-catalog?tmdbKey=${encodeURIComponent(tmdbKey)}&presetId=${encodeURIComponent(presetId)}`);
+                if (!res.ok) {
+                    const err = await res.json();
+                    row.innerHTML = `<div class="text-xs text-red-400 py-4 px-2">${escapeHtml(err.error || 'Errore nel caricamento')}</div>`;
+                    return;
+                }
+                const data = await res.json();
+                previewCache[presetId] = data.items;
+                renderPreviewPosters(data.items);
+            } catch (err) {
+                row.innerHTML = '<div class="text-xs text-red-400 py-4 px-2">Errore di connessione</div>';
+            }
+        }
+
+        function renderPreviewPosters(items) {
+            const row = document.getElementById('catalogPreviewRow');
+            if (!items || items.length === 0) {
+                row.innerHTML = '<div class="text-xs text-gray-500 py-4 px-2">Nessun risultato trovato</div>';
+                return;
+            }
+            row.innerHTML = items.map(item => `
+                <div class="poster-item shrink-0 w-[90px] sm:w-[100px] group relative">
+                    <div class="aspect-[2/3] rounded-lg overflow-hidden bg-dark-700 border border-dark-600">
+                        ${item.poster
+                            ? `<img src="${escapeHtml(item.poster)}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover" loading="lazy">`
+                            : '<div class="w-full h-full flex items-center justify-center text-gray-600 text-2xl">🎬</div>'}
+                    </div>
+                    <div class="mt-1.5 px-0.5">
+                        <p class="text-[10px] text-gray-300 truncate leading-tight" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</p>
+                        <div class="flex items-center gap-1 mt-0.5">
+                            ${item.vote ? `<span class="text-[9px] text-yellow-500">★ ${item.vote.toFixed(1)}</span>` : ''}
+                            ${item.year ? `<span class="text-[9px] text-gray-600">${item.year}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
 
         // -- STREMIO AUTH LOGIC --
@@ -1009,22 +1073,33 @@
                 const isEditing = p.id === editingProfileId;
                 const presetCount = p.raw_ui_state?.selectedPresets?.length || 0;
                 const catalogCount = (p.existingCatalogs?.length || 0) + (p.raw_ui_state?.newPrompts?.length || 0);
+                const totalCount = presetCount + catalogCount;
 
                 const card = document.createElement('div');
-                card.className = `profile-card cursor-pointer rounded-lg border p-3 transition-all ${isEditing ? 'editing border-stremio/50 bg-stremio/5' : isActive ? 'active-profile border-green-500/30 bg-green-500/5' : 'border-dark-700 bg-dark-900/60 hover:bg-dark-800/80'}`;
+                card.className = `profile-card cursor-pointer rounded-xl border p-3.5 transition-all ${isEditing ? 'editing border-stremio/50 bg-stremio/5' : isActive ? 'active-profile border-green-500/30 bg-green-500/5' : 'border-dark-700 bg-dark-900/60 hover:bg-dark-800/80'}`;
                 card.tabIndex = 0;
                 card.setAttribute('role', 'button');
                 card.onclick = () => switchEditingProfile(p.id);
                 card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchEditingProfile(p.id); } };
 
+                // Extract emoji from name if present
+                const nameMatch = p.name.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*/u);
+                const emoji = nameMatch ? nameMatch[1] : '📁';
+                const cleanName = nameMatch ? p.name.replace(nameMatch[0], '') : p.name;
+
                 card.innerHTML = `
-                    <div class="flex items-start justify-between mb-2">
-                        <span class="text-sm font-bold text-white truncate flex-1" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
-                        ${isActive ? '<span class="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full border border-green-500/30 shrink-0 ml-1">★</span>' : ''}
+                    <div class="flex items-center gap-2.5 mb-3">
+                        <div class="w-9 h-9 rounded-lg ${isActive ? 'bg-green-500/15' : isEditing ? 'bg-stremio/15' : 'bg-dark-700'} flex items-center justify-center text-lg shrink-0">${emoji}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-sm font-bold text-white truncate" title="${escapeHtml(p.name)}">${escapeHtml(cleanName)}</span>
+                                ${isActive ? '<span class="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full border border-green-500/30 shrink-0">Attivo</span>' : ''}
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex gap-2 text-[10px] text-gray-500">
-                        <span class="bg-dark-700 px-1.5 py-0.5 rounded">${presetCount} preset</span>
-                        ${catalogCount > 0 ? `<span class="bg-dark-700 px-1.5 py-0.5 rounded">${catalogCount} AI</span>` : ''}
+                    <div class="flex gap-1.5 text-[10px]">
+                        <span class="bg-dark-700/80 text-gray-400 px-2 py-0.5 rounded-md">${totalCount} cataloghi</span>
+                        ${isEditing ? '<span class="bg-stremio/15 text-stremio px-2 py-0.5 rounded-md">In modifica</span>' : ''}
                     </div>
                 `;
                 container.appendChild(card);
@@ -1113,7 +1188,7 @@
                 card.innerHTML = `
                     <div class="flex items-start gap-3">
                         <!-- Poster/Icon -->
-                        <div class="w-12 h-16 bg-dark-700 rounded-md flex items-center justify-center text-2xl shrink-0 border border-dark-600">
+                        <div class="w-10 h-14 bg-dark-700 rounded-md flex items-center justify-center text-xl shrink-0 border border-dark-600">
                             ${icon}
                         </div>
                         <!-- Info -->
@@ -1124,6 +1199,9 @@
                             </div>
                             <div class="flex items-center gap-2 mt-1">
                                 <span class="text-[10px] ${typeInfo.bg} ${typeInfo.text} px-1.5 py-0.5 rounded ${typeInfo.border} border">${typeInfo.label}</span>
+                                <button type="button" class="preview-btn text-[10px] text-gray-500 hover:text-stremio transition-colors flex items-center gap-0.5" data-preset-id="${preset.id}" data-preset-name="${escapeHtml(preset.name)}" title="Anteprima">
+                                    👁 Anteprima
+                                </button>
                             </div>
                             ${hasCustomFilters ? `
                             <button type="button" class="filter-refine-btn text-[10px] text-gray-500 hover:text-stremio mt-1.5 flex items-center gap-1 transition-colors" data-preset-id="${preset.id}">
@@ -1166,6 +1244,16 @@
                 sel.addEventListener('change', (e) => {
                     // Filter refinement is visual-only since presets are hardcoded
                     // The selected sort override is stored in preset filter state
+                });
+            });
+
+            // Attach preview button listeners
+            presetsContainer.querySelectorAll('.preview-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const presetId = btn.dataset.presetId;
+                    const presetName = btn.dataset.presetName;
+                    showCatalogPreview(presetId, presetName);
                 });
             });
 
@@ -1315,6 +1403,19 @@
         }
 
         // --- DOM SETUP AND BINDINGS ---
+
+        // Tab Navigation
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+        });
+        document.querySelectorAll('.nav-next-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.dataset.next));
+        });
+
+        // Close preview
+        document.getElementById('closePreviewBtn').addEventListener('click', () => {
+            document.getElementById('catalogPreviewSection').classList.add('hidden');
+        });
 
         document.getElementById('profileSelect').addEventListener('change', (e) => switchEditingProfile(e.target.value));
         document.getElementById('profileNameInput').addEventListener('input', (e) => {
