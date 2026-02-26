@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
+const rateLimit = require('express-rate-limit');
 
 const { initSupabase } = require('./src/utils/database');
 const configureRoute = require('./src/api/configure');
@@ -10,16 +11,42 @@ const UserConfig = require('./src/models/UserConfig');
 const { catalogHandler } = require('./src/handlers/catalogHandler');
 const { metaHandler } = require('./src/handlers/metaHandler');
 const presets = require('./src/data/presets');
-const { isValidUUID, parseExtra } = require('./src/utils/helpers');
+const { isValidUUID, parseExtra, sanitizeString, isAllowedUrl } = require('./src/utils/helpers');
 const { blurImage } = require('./src/utils/imageProcessor');
 
 // 1. Inizializza Express
 const app = express();
 const PORT = process.env.PORT || 7000;
 
-app.use(cors());
+// CORS configurabile tramite variabile d'ambiente (default: permissivo per retrocompatibilità con Stremio)
+// NOTA: Stremio client richiede CORS aperto per funzionare. In produzione, impostare
+// CORS_ALLOWED_ORIGINS per limitare le origini consentite (es. "https://miosito.com,https://altro.com")
+const corsOrigins = process.env.CORS_ALLOWED_ORIGINS;
+const corsOptions = corsOrigins
+    ? { origin: corsOrigins.split(',').map(o => o.trim()), methods: ['GET', 'POST'] }
+    : { methods: ['GET', 'POST'] };
+app.use(cors(corsOptions));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '1mb' }));
+
+// Rate limiter globale per tutte le API
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minuti
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Troppe richieste. Riprova tra qualche minuto.' }
+});
+app.use('/api/', globalLimiter);
+
+// Rate limiter più aggressivo per endpoint sensibili
+const sensitiveLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Troppe richieste. Riprova tra qualche minuto.' }
+});
 
 // Inizializza Supabase Client
 const supabaseClient = initSupabase();
@@ -43,10 +70,16 @@ app.get('/api/presets', (req, res) => {
 });
 
 // Endpoint per la sfocatura immagini proxy (usato nei metadati TMDB e Trakt)
+// Protetto contro SSRF: accetta solo URL di CDN immagini noti
+const ALLOWED_IMAGE_HOSTS = ['image.tmdb.org', 'media.kitsu.app', 'walter.trakt.tv', 'artworks.thetvdb.com'];
 app.get('/blur', async (req, res) => {
     const { url } = req.query;
     if (!url) {
         return res.status(400).send('URL mancante');
+    }
+    // Validazione SSRF: accetta solo host di CDN immagini conosciuti
+    if (!isAllowedUrl(url, ALLOWED_IMAGE_HOSTS)) {
+        return res.status(403).send('URL non consentito');
     }
     try {
         const imageBuffer = await blurImage(url);
@@ -64,7 +97,7 @@ app.get('/blur', async (req, res) => {
 });
 
 // Endpoint per validare una TMDB API Key
-app.post('/api/validate-tmdb-key', async (req, res) => {
+app.post('/api/validate-tmdb-key', sensitiveLimiter, async (req, res) => {
     const { tmdbKey } = req.body;
     if (!tmdbKey) {
         return res.status(400).json({ valid: false, error: 'Chiave non fornita' });
@@ -91,9 +124,23 @@ app.post('/api/validate-tmdb-key', async (req, res) => {
 const authAttempts = new Map();
 const AUTH_WINDOW_MS = 15 * 60 * 1000; // 15 minuti
 const AUTH_MAX_ATTEMPTS = 10;
+const AUTH_MAP_MAX_SIZE = 10000; // Limite massimo di IP nella mappa per prevenire DoS
+
+// Pulizia periodica della mappa authAttempts per prevenire memory leak
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, attempts] of authAttempts) {
+        const recentAttempts = attempts.filter(t => now - t < AUTH_WINDOW_MS);
+        if (recentAttempts.length === 0) {
+            authAttempts.delete(ip);
+        } else {
+            authAttempts.set(ip, recentAttempts);
+        }
+    }
+}, 5 * 60 * 1000); // Ogni 5 minuti
 
 // Stremio API: Login con credenziali Stremio per ottenere authKey
-app.post('/api/stremio-auth', async (req, res) => {
+app.post('/api/stremio-auth', sensitiveLimiter, async (req, res) => {
     const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
     const now = Date.now();
 
@@ -103,8 +150,11 @@ app.post('/api/stremio-auth', async (req, res) => {
     if (recentAttempts.length >= AUTH_MAX_ATTEMPTS) {
         return res.status(429).json({ success: false, error: 'Troppi tentativi. Riprova tra qualche minuto.' });
     }
-    recentAttempts.push(now);
-    authAttempts.set(clientIp, recentAttempts);
+    // Limita la dimensione della mappa per prevenire DoS via memory exhaustion
+    if (authAttempts.size < AUTH_MAP_MAX_SIZE || authAttempts.has(clientIp)) {
+        recentAttempts.push(now);
+        authAttempts.set(clientIp, recentAttempts);
+    }
 
     const { email, password } = req.body;
     if (!email || !password) {
@@ -118,23 +168,30 @@ app.post('/api/stremio-auth', async (req, res) => {
         }
         return res.json({ success: false, error: data?.result?.error || 'Credenziali non valide' });
     } catch (err) {
-        const errMsg = err.response?.data?.result?.error || err.message || 'Errore di connessione';
-        return res.json({ success: false, error: errMsg });
+        return res.json({ success: false, error: 'Errore di connessione al servizio di autenticazione.' });
     }
 });
 
 // Stremio API: Aggiorna addon nella collezione dell'utente (senza reinstallare manualmente)
-app.post('/api/stremio-addon-update', async (req, res) => {
+app.post('/api/stremio-addon-update', sensitiveLimiter, async (req, res) => {
     const { authKey, manifestUrl } = req.body;
     if (!authKey || !manifestUrl) {
         return res.status(400).json({ success: false, error: 'authKey e manifestUrl obbligatori' });
     }
 
-    // Validazione SSRF: il manifestUrl deve essere un URL valido che punta al manifest del nostro addon
+    // Validazione SSRF: il manifestUrl deve essere un URL HTTPS valido che punta al manifest del nostro addon
     try {
         const parsed = new URL(manifestUrl);
         if (!parsed.pathname.endsWith('/manifest.json')) {
             return res.status(400).json({ success: false, error: 'URL manifest non valido' });
+        }
+        // Blocca protocolli non-HTTPS
+        if (parsed.protocol !== 'https:') {
+            return res.status(400).json({ success: false, error: 'Il manifest URL deve usare HTTPS' });
+        }
+        // Usa isAllowedUrl per bloccare indirizzi privati/interni (senza restrizione di host)
+        if (!isAllowedUrl(manifestUrl, [])) {
+            return res.status(400).json({ success: false, error: 'URL manifest non consentito' });
         }
     } catch (_e) {
         return res.status(400).json({ success: false, error: 'URL non valido' });
@@ -188,13 +245,21 @@ app.post('/api/stremio-addon-update', async (req, res) => {
         }
         return res.json({ success: false, error: setRes.data?.result?.error || 'Errore aggiornamento collezione' });
     } catch (err) {
-        const errMsg = err.response?.data?.result?.error || err.message || 'Errore di connessione';
-        return res.json({ success: false, error: errMsg });
+        console.error("Errore stremio-addon-update:", err.message);
+        return res.json({ success: false, error: 'Errore di connessione al servizio Stremio.' });
     }
 });
 
 // --- Trakt Device Authentication ---
-app.post('/api/trakt/device/code', async (req, res) => {
+// Rate limiter dedicato per Trakt per proteggere il TRAKT_CLIENT_ID del server
+const traktLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 15,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Troppe richieste Trakt. Riprova tra qualche minuto.' }
+});
+app.post('/api/trakt/device/code', traktLimiter, async (req, res) => {
     const clientId = process.env.TRAKT_CLIENT_ID;
     if (!clientId) return res.status(400).json({ error: 'TRAKT_CLIENT_ID mancante nel server.' });
 
@@ -209,7 +274,7 @@ app.post('/api/trakt/device/code', async (req, res) => {
     }
 });
 
-app.post('/api/trakt/device/token', async (req, res) => {
+app.post('/api/trakt/device/token', traktLimiter, async (req, res) => {
     const { device_code } = req.body;
     const clientId = process.env.TRAKT_CLIENT_ID;
     const clientSecret = process.env.TRAKT_CLIENT_SECRET;
@@ -241,7 +306,7 @@ app.post('/api/trakt/device/token', async (req, res) => {
 });
 
 // 2. Registra endpoint configuration (Frontend Web Web)
-app.post('/api/configure', configureRoute);
+app.post('/api/configure', sensitiveLimiter, configureRoute);
 
 app.get('/api/configure/:uuid', async (req, res) => {
     try {
@@ -252,7 +317,18 @@ app.get('/api/configure/:uuid', async (req, res) => {
         if (!userConfig) {
             return res.status(404).json({ error: "Configurazione non trovata" });
         }
-        return res.json(userConfig);
+        // Redazione delle API keys sensibili: restituisce solo flag booleani
+        const safeConfig = { ...userConfig };
+        if (safeConfig.apiKeys) {
+            safeConfig.apiKeys = {
+                tmdb: safeConfig.apiKeys.tmdb ? true : false,
+                mistral: safeConfig.apiKeys.mistral ? true : false,
+                trakt: safeConfig.apiKeys.trakt ? true : false,
+                stremioAuthKey: safeConfig.apiKeys.stremioAuthKey ? true : false,
+                stremioEmail: safeConfig.apiKeys.stremioEmail || null
+            };
+        }
+        return res.json(safeConfig);
     } catch (err) {
         console.error("Errore recupero config:", err);
         return res.status(500).json({ error: "Errore interno" });
@@ -345,10 +421,11 @@ app.get(['/:uuid/manifest.json', '/:uuid/:configVersion/manifest.json'], async (
         if (activeProfileCatalogs.length > 0) {
             for (const cat of activeProfileCatalogs) {
                 const isPreset = cat.id.startsWith('yaca_preset_');
+                const catName = sanitizeString(cat.name || '');
                 manifest.catalogs.unshift({
                     id: cat.id,
                     type: cat.type || 'movie',
-                    name: isPreset ? cat.name : `AI: ${cat.name}`,
+                    name: isPreset ? catName : `AI: ${catName}`,
                     extra: presetExtra
                 });
             }

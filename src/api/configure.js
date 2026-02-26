@@ -2,6 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 const UserConfig = require('../models/UserConfig');
 const { generateTmdbFiltersFromPrompt } = require('../ai/router');
 const { presets: presetsList } = require('../data/presets');
+const { isValidUUID, sanitizeString } = require('../utils/helpers');
 
 module.exports = async (req, res) => {
     try {
@@ -12,6 +13,11 @@ module.exports = async (req, res) => {
 
         if (!tmdbKey) {
             return res.status(400).json({ error: "La API Key di TMDB è obbligatoria." });
+        }
+
+        // Validazione UUID esistente (se fornito deve essere un UUID valido)
+        if (existingUuid && !isValidUUID(existingUuid)) {
+            return res.status(400).json({ error: "UUID non valido." });
         }
 
         // Input validation - limiti ragionevoli
@@ -119,7 +125,7 @@ module.exports = async (req, res) => {
                     }
                     parsedCatalogs.push({
                         id: `ai_custom_${uuid.substring(0, 5)}_${Date.now()}_${catIndex}`,
-                        name: prompt.substring(0, 30),
+                        name: sanitizeString(prompt.substring(0, 30)),
                         raw_prompt: prompt,
                         type: catalogType,
                         filters: filters
@@ -128,7 +134,7 @@ module.exports = async (req, res) => {
                 }
             }
 
-            const profileName = (typeof profile.name === 'string' ? profile.name.trim() : '') || 'Nuovo Profilo';
+            const profileName = sanitizeString((typeof profile.name === 'string' ? profile.name.trim() : '') || 'Nuovo Profilo');
             const minVoteAverage = parseFloat(profile.settings?.minVoteAverage);
             const minVoteCount = parseInt(profile.settings?.minVoteCount, 10);
             const fastPresetRefresh = Boolean(profile.settings?.fastPresetRefresh);

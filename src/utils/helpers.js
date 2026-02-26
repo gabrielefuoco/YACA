@@ -19,4 +19,47 @@ function parseExtra(extraString) {
     return extra;
 }
 
-module.exports = { isValidUUID, parseExtra };
+/**
+ * Rimuove tag HTML/script e caratteri pericolosi da una stringa per prevenire XSS.
+ * Applica la rimozione dei tag in loop per evitare bypass tramite tag annidati
+ * (es. "<scr<script>ipt>" che dopo un solo passaggio riformerebbe "<script>").
+ */
+function sanitizeString(str) {
+    if (typeof str !== 'string') return '';
+    let result = str;
+    let prev;
+    do {
+        prev = result;
+        result = result.replace(/<[^>]*>/g, '');
+    } while (result !== prev);
+    return result.replace(/[<>"'&]/g, '');
+}
+
+/**
+ * Verifica che un URL punti a un host consentito (protezione SSRF).
+ * Blocca anche indirizzi IP privati/interni.
+ */
+function isAllowedUrl(url, allowedHosts) {
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+            return false;
+        }
+        const hostname = parsed.hostname;
+        // Blocca indirizzi privati/interni (RFC 1918 + link-local + loopback)
+        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' ||
+            hostname.startsWith('10.') || hostname.startsWith('192.168.') ||
+            /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
+            hostname === '169.254.169.254' || hostname === '[::1]' || hostname.endsWith('.local')) {
+            return false;
+        }
+        if (allowedHosts && allowedHosts.length > 0) {
+            return allowedHosts.includes(hostname);
+        }
+        return true;
+    } catch (_e) {
+        return false;
+    }
+}
+
+module.exports = { isValidUUID, parseExtra, sanitizeString, isAllowedUrl };
