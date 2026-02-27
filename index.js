@@ -359,18 +359,7 @@ app.get('/api/configure/:uuid', async (req, res) => {
         if (!userConfig) {
             return res.status(404).json({ error: "Configurazione non trovata" });
         }
-        // Redazione delle API keys sensibili: restituisce solo flag booleani
-        const safeConfig = { ...userConfig };
-        if (safeConfig.apiKeys) {
-            safeConfig.apiKeys = {
-                tmdb: safeConfig.apiKeys.tmdb ? true : false,
-                mistral: safeConfig.apiKeys.mistral ? true : false,
-                trakt: safeConfig.apiKeys.trakt ? true : false,
-                stremioAuthKey: safeConfig.apiKeys.stremioAuthKey ? true : false,
-                stremioEmail: safeConfig.apiKeys.stremioEmail || null
-            };
-        }
-        return res.json(safeConfig);
+        return res.json(userConfig);
     } catch (err) {
         console.error("Errore recupero config:", err);
         return res.status(500).json({ error: "Errore interno" });

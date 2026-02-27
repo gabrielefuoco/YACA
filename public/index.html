@@ -2259,36 +2259,18 @@
 
             // 3. Populate State
             if (existingConfig) {
-                // Handle API keys: actual strings get set, redacted booleans show placeholder
-                const tmdbVal = existingConfig.apiKeys?.tmdb;
-                const tmdbInput = document.getElementById('tmdbKey');
-                if (typeof tmdbVal === 'string' && tmdbVal.length > 4) {
-                    tmdbInput.value = tmdbVal;
-                } else if (tmdbVal === true) {
-                    tmdbInput.value = '__SAVED__';
-                    tmdbInput.type = 'password';
-                    tmdbInput.placeholder = '🔒 Chiave già salvata (lascia per mantenere)';
-                }
-                const mistralVal = existingConfig.apiKeys?.mistral;
-                const mistralInput = document.getElementById('mistralKey');
-                if (typeof mistralVal === 'string' && mistralVal.length > 4) {
-                    mistralInput.value = mistralVal;
-                } else if (mistralVal === true) {
-                    mistralInput.value = '__SAVED__';
-                    mistralInput.type = 'password';
-                    mistralInput.placeholder = '🔒 Chiave già salvata (lascia per mantenere)';
-                }
+                document.getElementById('tmdbKey').value = existingConfig.apiKeys?.tmdb || '';
+                document.getElementById('mistralKey').value = existingConfig.apiKeys?.mistral || '';
 
                 const token = existingConfig.apiKeys?.trakt;
-                if (typeof token === 'string' && token.length > 4) {
+                if (token) {
                     document.getElementById('traktToken').value = token;
                     document.getElementById('traktLoginBtn').classList.add('hidden');
                     document.getElementById('traktConnectedUI').classList.add('flex');
                     document.getElementById('traktConnectedUI').classList.remove('hidden');
                 }
-                const stremioKey = existingConfig.apiKeys?.stremioAuthKey;
-                if (typeof stremioKey === 'string' && stremioKey.length > 4) {
-                    stremioAuthKey = stremioKey;
+                if (existingConfig.apiKeys?.stremioAuthKey) {
+                    stremioAuthKey = existingConfig.apiKeys.stremioAuthKey;
                     stremioEmail = existingConfig.apiKeys.stremioEmail || stremioEmail;
                     sessionStorage.setItem('stremioAuthKey', stremioAuthKey);
                     if (stremioEmail) sessionStorage.setItem('stremioEmail', stremioEmail);
