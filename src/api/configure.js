@@ -195,6 +195,17 @@ module.exports = async (req, res) => {
             const minVoteCount = parseInt(profile.settings?.minVoteCount, 10);
             const fastPresetRefresh = Boolean(profile.settings?.fastPresetRefresh);
 
+            // Apply catalogOrder if provided: reorder parsedCatalogs according to the user-defined order
+            const catalogOrder = Array.isArray(profile.catalogOrder) ? profile.catalogOrder : [];
+            if (catalogOrder.length > 0) {
+                const orderMap = new Map(catalogOrder.map((id, i) => [id, i]));
+                parsedCatalogs.sort((a, b) => {
+                    const aOrd = orderMap.has(a.id) ? orderMap.get(a.id) : Number.MAX_SAFE_INTEGER;
+                    const bOrd = orderMap.has(b.id) ? orderMap.get(b.id) : Number.MAX_SAFE_INTEGER;
+                    return aOrd - bOrd;
+                });
+            }
+
             parsedProfiles.push({
                 id: profile.id || `prof_${Date.now()}_${Math.random().toString(36).substring(7)}`,
                 name: profileName.substring(0, LIMITS.MAX_PROFILE_NAME_LENGTH),
@@ -207,7 +218,8 @@ module.exports = async (req, res) => {
                 raw_ui_state: { // Salva lo stato UI grezzo per ripopolare i form facilmente
                     selectedPresets: profile.selectedPresets || [],
                     presetOverrides: presetOverrides,
-                    prompts: parsedCatalogs.filter(c => c.raw_prompt).map(c => c.raw_prompt)
+                    prompts: parsedCatalogs.filter(c => c.raw_prompt).map(c => c.raw_prompt),
+                    catalogOrder: catalogOrder
                 }
             });
         }

@@ -248,6 +248,32 @@
             border: 2px solid #1c1c24;
         }
 
+        .active-catalog-item {
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+
+        .active-catalog-item .remove-catalog-btn {
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        .active-catalog-item:hover .remove-catalog-btn {
+            opacity: 1;
+        }
+
+        .active-catalogs-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .active-catalogs-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .active-catalogs-list::-webkit-scrollbar-thumb {
+            background: #3a3a4a;
+            border-radius: 2px;
+        }
+
         @media (max-width: 640px) {
             .glass-panel {
                 border-radius: 1rem;
@@ -495,6 +521,24 @@
                     class="hidden mt-2 p-4 bg-stremio/5 border border-stremio/20 rounded-xl animate-fade-in">
                     <p class="text-xs text-gray-300 font-medium mb-3">Scegli un modello rapido:</p>
                     <div id="templateButtons" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <!-- Active Catalogs Panel -->
+                <div class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-7 h-7 rounded-lg bg-stremio/10 flex items-center justify-center text-sm shrink-0">📋</div>
+                            <h3 class="text-sm font-semibold text-white">Cataloghi Attivi</h3>
+                            <span id="activeCatalogsCount" class="text-xs font-mono text-stremio bg-stremio/10 px-2 py-0.5 rounded-full border border-stremio/20">0</span>
+                        </div>
+                        <div id="activeCatalogsStats" class="text-[10px] text-gray-600 font-mono hidden sm:block"></div>
+                    </div>
+                    <div id="activeCatalogsList" class="space-y-1 max-h-64 overflow-y-auto active-catalogs-list">
+                        <!-- Populated by JS -->
+                    </div>
+                    <p id="activeCatalogsEmpty" class="text-xs text-gray-600 text-center py-4 hidden">
+                        Nessun catalogo attivo. Vai su <strong class="text-gray-400">Cataloghi</strong> o <strong class="text-gray-400">Creatore</strong> per aggiungerne.
+                    </p>
                 </div>
 
                 <!-- Nav buttons -->
@@ -949,7 +993,7 @@
             previewCache[key] = value;
         }
 
-        let profiles = [{ id: 'default', name: 'Generale', raw_ui_state: { selectedPresets: [], newPrompts: [], presetOverrides: {} }, existingCatalogs: [] }];
+        let profiles = [{ id: 'default', name: 'Generale', raw_ui_state: { selectedPresets: [], newPrompts: [], presetOverrides: {}, catalogOrder: [] }, existingCatalogs: [] }];
         let activeProfileId = 'default';
         let editingProfileId = 'default';
 
@@ -1442,6 +1486,15 @@
             const remainingExistingIds = Array.from(document.querySelectorAll('.catalog-item-existing')).map(el => el.dataset.id);
             ep.existingCatalogs = ep.existingCatalogs.filter(c => remainingExistingIds.includes(c.id));
 
+            // Sincronizza catalogOrder rimuovendo voci di cataloghi rimossi
+            const remainingIds = new Set([
+                ...ep.existingCatalogs.map(c => c.id),
+                ...(ep.raw_ui_state.selectedPresets || []).map(id => `yaca_preset_${id}`)
+            ]);
+            if (ep.raw_ui_state.catalogOrder) {
+                ep.raw_ui_state.catalogOrder = ep.raw_ui_state.catalogOrder.filter(id => remainingIds.has(id));
+            }
+
             // Salva Nome
             ep.name = document.getElementById('profileNameInput').value.trim() || 'Senza Nome';
 
@@ -1770,13 +1823,165 @@
             const ep = getEditingProfile();
             if (!ep) return;
 
+            const catalogId = `yaca_preset_${presetId}`;
             const idx = ep.raw_ui_state.selectedPresets.indexOf(presetId);
             if (idx >= 0) {
                 ep.raw_ui_state.selectedPresets.splice(idx, 1);
+                // Remove from catalogOrder
+                if (ep.raw_ui_state.catalogOrder) {
+                    ep.raw_ui_state.catalogOrder = ep.raw_ui_state.catalogOrder.filter(id => id !== catalogId);
+                }
             } else {
                 ep.raw_ui_state.selectedPresets.push(presetId);
             }
             renderPresetCards();
+            renderActiveCatalogsList();
+        }
+
+        // --- ACTIVE CATALOGS PANEL ---
+
+        function getActiveCatalogsForProfile(ep) {
+            if (!ep) return [];
+
+            const catalogOrder = ep.raw_ui_state?.catalogOrder || [];
+            const allCatalogs = [];
+            const catalogMap = new Map();
+
+            // Add preset-based catalogs
+            for (const presetId of (ep.raw_ui_state?.selectedPresets || [])) {
+                const preset = availablePresets.find(p => p.id === presetId);
+                if (preset) {
+                    const overrides = ep.raw_ui_state?.presetOverrides?.[presetId] || {};
+                    const displayName = overrides._name || preset.name;
+                    const id = `yaca_preset_${presetId}`;
+                    const item = { id, _presetId: presetId, name: displayName, type: preset.type, source: 'preset', category: preset.category };
+                    allCatalogs.push(item);
+                    catalogMap.set(id, item);
+                }
+            }
+
+            // Add existing catalogs (AI/manual)
+            for (const cat of (ep.existingCatalogs || [])) {
+                const isManual = (cat.raw_prompt || '').startsWith('[Manuale]');
+                const item = { id: cat.id, name: cat.raw_prompt || cat.name, type: cat.type, source: isManual ? 'manual' : 'ai' };
+                allCatalogs.push(item);
+                catalogMap.set(cat.id, item);
+            }
+
+            // Apply catalogOrder
+            if (catalogOrder.length > 0) {
+                const ordered = [];
+                const usedIds = new Set();
+                for (const id of catalogOrder) {
+                    if (catalogMap.has(id)) {
+                        ordered.push(catalogMap.get(id));
+                        usedIds.add(id);
+                    }
+                }
+                // Append any catalogs not in catalogOrder
+                for (const cat of allCatalogs) {
+                    if (!usedIds.has(cat.id)) ordered.push(cat);
+                }
+                return ordered;
+            }
+            return allCatalogs;
+        }
+
+        function renderActiveCatalogsList() {
+            const ep = getEditingProfile();
+            const list = document.getElementById('activeCatalogsList');
+            const emptyMsg = document.getElementById('activeCatalogsEmpty');
+            const countEl = document.getElementById('activeCatalogsCount');
+            const statsEl = document.getElementById('activeCatalogsStats');
+            if (!list || !ep) return;
+
+            const catalogs = getActiveCatalogsForProfile(ep);
+            countEl.textContent = catalogs.length;
+
+            const movieCount = catalogs.filter(c => c.type === 'movie').length;
+            const seriesCount = catalogs.filter(c => c.type === 'series').length;
+            if (statsEl) statsEl.textContent = catalogs.length > 0 ? `🎬 ${movieCount} film · 📺 ${seriesCount} serie` : '';
+
+            if (catalogs.length === 0) {
+                list.innerHTML = '';
+                emptyMsg.classList.remove('hidden');
+                return;
+            }
+            emptyMsg.classList.add('hidden');
+            list.innerHTML = '';
+
+            const SOURCE_STYLES = {
+                preset:  { label: 'Preset',   cls: 'text-stremio bg-stremio/10 border-stremio/20' },
+                ai:      { label: '🤖 AI',     cls: 'text-green-400 bg-green-500/10 border-green-500/20' },
+                manual:  { label: '🔧 Manuale', cls: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' }
+            };
+
+            catalogs.forEach((cat, idx) => {
+                const typeInfo = TYPE_COLORS[cat.type] || TYPE_COLORS['movie'];
+                const srcInfo = SOURCE_STYLES[cat.source] || SOURCE_STYLES.preset;
+                const isFirst = idx === 0;
+                const isLast = idx === catalogs.length - 1;
+
+                const item = document.createElement('div');
+                item.className = 'active-catalog-item flex items-center gap-2 px-2.5 py-2 rounded-lg bg-dark-800/60 border border-dark-700/50 hover:border-dark-600 group';
+                item.dataset.id = cat.id;
+                item.innerHTML = `
+                    <div class="flex flex-col gap-0 shrink-0">
+                        <button type="button" class="move-up-btn text-[9px] text-gray-600 hover:text-gray-200 transition-colors leading-none px-0.5 py-0.5 hover:bg-dark-600 rounded ${isFirst ? 'opacity-20 pointer-events-none' : ''}" data-id="${escapeHtml(cat.id)}" title="Sposta su">▲</button>
+                        <button type="button" class="move-down-btn text-[9px] text-gray-600 hover:text-gray-200 transition-colors leading-none px-0.5 py-0.5 hover:bg-dark-600 rounded ${isLast ? 'opacity-20 pointer-events-none' : ''}" data-id="${escapeHtml(cat.id)}" title="Sposta giù">▼</button>
+                    </div>
+                    <span class="text-[10px] ${typeInfo.bg} ${typeInfo.text} border ${typeInfo.border} px-1.5 py-0.5 rounded shrink-0">${typeInfo.label}</span>
+                    <span class="text-xs text-gray-200 flex-1 truncate font-medium" title="${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</span>
+                    <span class="text-[9px] ${srcInfo.cls} border px-1.5 py-0.5 rounded shrink-0">${srcInfo.label}</span>
+                    <button type="button" class="remove-catalog-btn text-gray-500 hover:text-red-400 transition-all text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/10 shrink-0" data-id="${escapeHtml(cat.id)}" title="Rimuovi">✕</button>
+                `;
+                list.appendChild(item);
+            });
+
+            // Event listeners
+            list.querySelectorAll('.move-up-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => { e.stopPropagation(); moveActiveCatalog(btn.dataset.id, 'up'); });
+            });
+            list.querySelectorAll('.move-down-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => { e.stopPropagation(); moveActiveCatalog(btn.dataset.id, 'down'); });
+            });
+            list.querySelectorAll('.remove-catalog-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => { e.stopPropagation(); removeActiveCatalog(btn.dataset.id); });
+            });
+        }
+
+        function moveActiveCatalog(id, direction) {
+            const ep = getEditingProfile();
+            if (!ep) return;
+            const catalogs = getActiveCatalogsForProfile(ep);
+            const idx = catalogs.findIndex(c => c.id === id);
+            if (idx < 0) return;
+            const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+            if (newIdx < 0 || newIdx >= catalogs.length) return;
+            [catalogs[idx], catalogs[newIdx]] = [catalogs[newIdx], catalogs[idx]];
+            if (!ep.raw_ui_state.catalogOrder) ep.raw_ui_state.catalogOrder = [];
+            ep.raw_ui_state.catalogOrder = catalogs.map(c => c.id);
+            renderActiveCatalogsList();
+        }
+
+        function removeActiveCatalog(id) {
+            const ep = getEditingProfile();
+            if (!ep) return;
+            if (id.startsWith('yaca_preset_')) {
+                const presetId = id.replace('yaca_preset_', '');
+                ep.raw_ui_state.selectedPresets = ep.raw_ui_state.selectedPresets.filter(p => p !== presetId);
+                renderPresetCards();
+            } else {
+                ep.existingCatalogs = ep.existingCatalogs.filter(c => c.id !== id);
+                // Also remove DOM element from creator tab if visible
+                document.querySelectorAll('.catalog-item-existing').forEach(el => {
+                    if (el.dataset.id === id) el.remove();
+                });
+            }
+            if (!ep.raw_ui_state.catalogOrder) ep.raw_ui_state.catalogOrder = [];
+            ep.raw_ui_state.catalogOrder = ep.raw_ui_state.catalogOrder.filter(oid => oid !== id);
+            renderActiveCatalogsList();
+            updatePresetsCounter();
         }
 
         function updatePaginationControls(totalItems, totalPages, currentPage) {
@@ -1864,6 +2069,8 @@
 
             // Update counter
             updatePresetsCounter();
+            // Render active catalogs panel (in profiles tab)
+            renderActiveCatalogsList();
         }
 
         function switchEditingProfile(id) {
@@ -1915,7 +2122,7 @@
             profiles.push({
                 id: newId,
                 name: 'Nuovo Profilo',
-                raw_ui_state: { selectedPresets: [], newPrompts: [], presetOverrides: {} },
+                raw_ui_state: { selectedPresets: [], newPrompts: [], presetOverrides: {}, catalogOrder: [] },
                 existingCatalogs: [],
                 settings: { minVoteAverage: 0, minVoteCount: 0, fastPresetRefresh: false }
             });
@@ -2153,7 +2360,8 @@
 
                     // Ensure raw_ui_state exists
                     profiles.forEach(p => {
-                        if (!p.raw_ui_state) p.raw_ui_state = { selectedPresets: [], newPrompts: [], presetOverrides: {} };
+                        if (!p.raw_ui_state) p.raw_ui_state = { selectedPresets: [], newPrompts: [], presetOverrides: {}, catalogOrder: [] };
+                        if (!p.raw_ui_state.catalogOrder) p.raw_ui_state.catalogOrder = [];
                         if (!p.existingCatalogs) p.existingCatalogs = [];
                         if (!p.settings) p.settings = { minVoteAverage: 0, minVoteCount: 0, fastPresetRefresh: false };
                         if (p.settings.fastPresetRefresh === undefined) p.settings.fastPresetRefresh = false;
@@ -2286,7 +2494,8 @@
 
                     // Ensure raw_ui_state defaults exists
                     profiles.forEach(p => {
-                        if (!p.raw_ui_state) p.raw_ui_state = { selectedPresets: [], newPrompts: [], presetOverrides: {} };
+                        if (!p.raw_ui_state) p.raw_ui_state = { selectedPresets: [], newPrompts: [], presetOverrides: {}, catalogOrder: [] };
+                        if (!p.raw_ui_state.catalogOrder) p.raw_ui_state.catalogOrder = [];
                         if (!p.existingCatalogs) {
                             p.existingCatalogs = (p.catalogs || []).filter(c => !c.id.startsWith('yaca_preset_'));
                             p.raw_ui_state.selectedPresets = (p.catalogs || []).filter(c => c.id.startsWith('yaca_preset_')).map(c => c.id.replace('yaca_preset_', ''));
@@ -2452,6 +2661,7 @@
                     presetOverrides: p.raw_ui_state.presetOverrides || {},
                     newPrompts: p.raw_ui_state.newPrompts,
                     existingCatalogs: p.existingCatalogs,
+                    catalogOrder: p.raw_ui_state.catalogOrder || [],
                     settings: p.settings || { minVoteAverage: 0, minVoteCount: 0, fastPresetRefresh: false }
                 }));
 
