@@ -9,7 +9,7 @@ const {
     SERIES_META_CACHE_TTL_MS,
     MOVIE_META_CACHE_TTL_MS
 } = require('../config');
-const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
+// Rate limiting removed per user request
 const { isMovieReleasedDigitally, isMovieReleasedInRegion } = require('../utils/releaseFilter');
 const { generateRequestHash } = require('../utils/requestHash');
 const TmdbRequestCache = require('../models/TmdbRequestCache');
@@ -134,21 +134,16 @@ async function fetchTmdbCatalogDirect(client, endpoint, skip, customParams = {},
             }
         });
 
-        // Applichiamo filtro di rilascio usando rateLimiter batch per non esplodere
+        // Applichiamo filtro di rilascio e arricchiamo con metadati IMDB
         const apiKey = client.defaults.params.api_key;
 
-        const filteredMetas = await rateLimitedMapFiltered(items, async ({ item, type }) => {
+        const filteredMetas = (await Promise.all(items.map(async ({ item, type }) => {
             if (type === 'movie' && (!customParams.with_original_language || customParams.with_original_language !== 'ko')) {
-                // Esempio: Nascondiamo film non rilasciati in digitale o al di fuori del paese 
-                // (Molto utile per evitare flussi vuoti su Torrentio per film appena usciti in USA)
-                // Se c'è un filtro regionale stretto o se vogliamo solo roba digitale globale:
                 const isReleased = await isMovieReleasedDigitally(item.id, apiKey);
                 if (!isReleased) return null;
             }
-            // Utilizziamo getTmdbMetaDetails per assicurarci di avere l'IMDB ID e metadati ricchi
-            // Fondamentale affinché Torrentio trovi i flussi!
             return await getTmdbMetaDetails(apiKey, `tmdb:${item.id}`, type);
-        }, { batchSize: 10, delayMs: 100 });
+        }))).filter(Boolean);
 
         return filteredMetas;
     } catch (err) {
