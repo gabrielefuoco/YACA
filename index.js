@@ -423,9 +423,6 @@ app.get(['/:uuid/manifest.json', '/:uuid/:configVersion/manifest.json'], async (
             resources: ['catalog', 'meta'],
             types: ['movie', 'series'],
             catalogs: [
-                { id: 'yaca_discover_movies', type: 'movie', name: 'Esplora Film (TMDB)', extra: discoverExtra },
-                { id: 'yaca_discover_series', type: 'series', name: 'Esplora Serie (TMDB)', extra: discoverExtra },
-                { id: 'yaca_anime_trending', type: 'series', name: 'Anime Popolari (Kitsu)', extra: [{ name: 'skip' }] },
                 { id: 'yaca_ai_search', type: 'movie', name: 'Ricerca AI (Film)', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] },
                 { id: 'yaca_ai_search_series', type: 'series', name: 'Ricerca AI (Serie)', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] }
             ],
