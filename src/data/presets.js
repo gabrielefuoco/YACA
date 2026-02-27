@@ -98,7 +98,7 @@ const getPresets = () => {
         // =============================================
         { id: 'preset_kdrama_romance', name: 'K-Drama: Romantici', category: 'Cinema Asiatico & K-Drama', type: 'series', filters: { with_original_language: 'ko', with_genres: '35,18', with_keywords: '9840', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
         { id: 'preset_kdrama_thriller', name: 'K-Drama: Thriller & Mistero', category: 'Cinema Asiatico & K-Drama', type: 'series', filters: { with_original_language: 'ko', with_genres: '80,9648', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_asian_action', name: 'Azione Asiatica (JP, KR, HK)', category: 'Cinema Asiatico & K-Drama', type: 'movie', filters: { with_original_language: 'ja|ko|zh', with_genres: '28', with_keywords: '779,2073', sort_by: 'popularity.desc' } },
+        { id: 'preset_asian_action', name: 'Azione Asiatica (JP, KR, HK)', category: 'Cinema Asiatico & K-Drama', type: 'movie', filters: { with_original_language: 'ja|ko|zh', with_genres: '28', with_keywords: '779|2073|18034|9826', sort_by: 'popularity.desc', 'vote_count.gte': 10 } },
         { id: 'preset_cinema_coreano', name: 'Cinema Coreano (Film)', category: 'Cinema Asiatico & K-Drama', type: 'movie', filters: { with_original_language: 'ko', sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
 
         // =============================================
@@ -206,23 +206,23 @@ const getPresets = () => {
         // =============================================
         // --- ANIME: SOTTOGENERI ---
         // =============================================
-        { id: 'preset_anime_shonen', name: 'Anime: Battle Shōnen', category: 'Anime & Manga', type: 'series', filters: { with_keywords: '210024,11545', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_anime_seinen', name: 'Anime: Seinen (Maturi)', category: 'Anime & Manga', type: 'series', filters: { with_keywords: '210024,33446', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
-        { id: 'preset_anime_shoujo', name: 'Anime: Shōjo (Romantico)', category: 'Anime & Manga', type: 'series', filters: { with_keywords: '210024,209714', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
-        { id: 'preset_anime_slice_of_life', name: 'Anime: Slice of Life', category: 'Anime & Manga', type: 'series', filters: { with_keywords: '210024,282362', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_anime_mecha', name: 'Anime: Mecha & Robot', category: 'Anime & Manga', type: 'series', filters: { with_keywords: '210024,6821', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
-        { id: 'preset_anime_isekai', name: 'Anime: Isekai & Fantasy', category: 'Anime & Manga', type: 'series', filters: { with_keywords: '210024,286460', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_anime_dark', name: 'Anime: Dark & Psicologico', category: 'Anime & Manga', type: 'series', filters: { with_keywords: '210024,818,158536', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
-        { id: 'preset_anime_action', name: 'Anime: Azione & Combattimento', category: 'Anime & Manga', type: 'series', filters: { with_keywords: '210024,11545,18034,41165', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 30 } },
-        { id: 'preset_anime_sports', name: 'Anime: Sport & Competizione', category: 'Anime & Manga', type: 'series', filters: { with_keywords: '210024,6075', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc' } },
+        { id: 'preset_anime_shonen', name: 'Anime: Battle Shōnen', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '11545', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_anime_seinen', name: 'Anime: Seinen (Maturi)', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '33446', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
+        { id: 'preset_anime_shoujo', name: 'Anime: Shōjo (Romantico)', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '209714', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
+        { id: 'preset_anime_slice_of_life', name: 'Anime: Slice of Life', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '282362', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_anime_mecha', name: 'Anime: Mecha & Robot', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '6821', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
+        { id: 'preset_anime_isekai', name: 'Anime: Isekai & Fantasy', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '286460', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_anime_dark', name: 'Anime: Dark & Psicologico', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '818|158536', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
+        { id: 'preset_anime_action', name: 'Anime: Azione & Combattimento', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '11545|18034|41165', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 30 } },
+        { id: 'preset_anime_sports', name: 'Anime: Sport & Competizione', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '6075', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc' } },
 
         // =============================================
         // --- ANIME: DECENNI & FILM ---
         // =============================================
-        { id: 'preset_anime_classic', name: 'Anime Classici (\'80/\'90)', category: 'Anime & Manga', type: 'series', filters: { 'first_air_date.gte': '1980-01-01', 'first_air_date.lte': '1999-12-31', with_keywords: '210024', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_anime_00s', name: 'Anime Anni 2000', category: 'Anime & Manga', type: 'series', filters: { 'first_air_date.gte': '2000-01-01', 'first_air_date.lte': '2009-12-31', with_keywords: '210024', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
-        { id: 'preset_anime_movies_top', name: 'Capolavori Anime (Film)', category: 'Anime & Manga', type: 'movie', filters: { with_keywords: '210024', with_genres: TMDB_GENRES.MOVIE.Animation, sort_by: 'vote_average.desc', 'vote_average.gte': 7.5, 'vote_count.gte': 500 } },
-        { id: 'preset_anime_movies_romance', name: 'Film Anime Romantici', category: 'Anime & Manga', type: 'movie', filters: { with_keywords: '210024', with_genres: `${TMDB_GENRES.MOVIE.Animation},${TMDB_GENRES.MOVIE.Romance}`, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
+        { id: 'preset_anime_classic', name: 'Anime Classici (\'80/\'90)', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', 'first_air_date.gte': '1980-01-01', 'first_air_date.lte': '1999-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_anime_00s', name: 'Anime Anni 2000', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', 'first_air_date.gte': '2000-01-01', 'first_air_date.lte': '2009-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
+        { id: 'preset_anime_movies_top', name: 'Capolavori Anime (Film)', category: 'Anime & Manga', type: 'movie', filters: { with_original_language: 'ja', with_genres: TMDB_GENRES.MOVIE.Animation, sort_by: 'vote_average.desc', 'vote_average.gte': 7.5, 'vote_count.gte': 500 } },
+        { id: 'preset_anime_movies_romance', name: 'Film Anime Romantici', category: 'Anime & Manga', type: 'movie', filters: { with_original_language: 'ja', with_genres: `${TMDB_GENRES.MOVIE.Animation},${TMDB_GENRES.MOVIE.Romance}`, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
 
         // =============================================
         // --- NETWORKS (Serie TV) ---
