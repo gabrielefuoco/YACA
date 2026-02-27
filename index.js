@@ -227,12 +227,13 @@ app.post('/api/stremio-addon-update', sensitiveLimiter, async (req, res) => {
         if (!parsed.pathname.endsWith('/manifest.json')) {
             return res.status(400).json({ success: false, error: 'URL manifest non valido' });
         }
-        // Blocca protocolli non-HTTPS
-        if (parsed.protocol !== 'https:') {
+        const isProd = process.env.NODE_ENV === 'production';
+        // Blocca protocolli non-HTTPS in produzione
+        if (isProd && parsed.protocol !== 'https:') {
             return res.status(400).json({ success: false, error: 'Il manifest URL deve usare HTTPS' });
         }
-        // Usa isAllowedUrl per bloccare indirizzi privati/interni (senza restrizione di host)
-        if (!isAllowedUrl(manifestUrl, [])) {
+        // Usa isAllowedUrl per bloccare indirizzi privati/interni in produzione
+        if (isProd && !isAllowedUrl(manifestUrl, [])) {
             return res.status(400).json({ success: false, error: 'URL manifest non consentito' });
         }
     } catch (_e) {
