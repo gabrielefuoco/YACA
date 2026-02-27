@@ -34,7 +34,9 @@
         }
     </script>
     <style>
-        body { background-color: #0f0f13; }
+        body {
+            background-color: #0f0f13;
+        }
 
         .glass-panel {
             background: rgba(28, 28, 36, 0.8);
@@ -49,10 +51,12 @@
             position: relative;
             white-space: nowrap;
         }
+
         .nav-tab.active {
             color: #8a5aeb;
             background: rgba(138, 90, 235, 0.08);
         }
+
         .nav-tab.active::after {
             content: '';
             position: absolute;
@@ -66,59 +70,207 @@
         }
 
         /* Page transitions */
-        .tab-page { display: none; animation: fadeIn 0.3s ease-out; }
-        .tab-page.active { display: block; }
+        .tab-page {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
 
-        .preset-card { transition: all 0.2s ease; }
-        .preset-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .tab-page.active {
+            display: block;
+        }
+
+        .preset-card {
+            transition: all 0.2s ease;
+        }
+
+        .preset-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
         .preset-card.active {
             border-color: rgba(138, 90, 235, 0.5);
             background: rgba(138, 90, 235, 0.08);
             box-shadow: 0 0 20px rgba(138, 90, 235, 0.08);
         }
 
-        .category-tab { transition: all 0.2s ease; white-space: nowrap; }
-        .category-tab.active { background: #8a5aeb; color: white; border-color: #8a5aeb; }
+        .category-tab {
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
 
-        .preset-scroll::-webkit-scrollbar, .poster-scroll::-webkit-scrollbar { height: 4px; }
-        .preset-scroll::-webkit-scrollbar-track, .poster-scroll::-webkit-scrollbar-track { background: transparent; }
-        .preset-scroll::-webkit-scrollbar-thumb, .poster-scroll::-webkit-scrollbar-thumb { background: #3a3a4a; border-radius: 2px; }
+        .category-tab.active {
+            background: #8a5aeb;
+            color: white;
+            border-color: #8a5aeb;
+        }
 
-        .profile-card { transition: all 0.2s ease; }
-        .profile-card:hover { border-color: rgba(138, 90, 235, 0.3); transform: translateY(-1px); }
-        .profile-card.active-profile { border-color: rgba(34, 197, 94, 0.5); box-shadow: 0 0 20px rgba(34, 197, 94, 0.06); }
-        .profile-card.editing { border-color: rgba(138, 90, 235, 0.5); box-shadow: 0 0 20px rgba(138, 90, 235, 0.06); }
+        .preset-scroll::-webkit-scrollbar,
+        .poster-scroll::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .preset-scroll::-webkit-scrollbar-track,
+        .poster-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .preset-scroll::-webkit-scrollbar-thumb,
+        .poster-scroll::-webkit-scrollbar-thumb {
+            background: #3a3a4a;
+            border-radius: 2px;
+        }
+
+        .profile-card {
+            transition: all 0.2s ease;
+        }
+
+        .profile-card:hover {
+            border-color: rgba(138, 90, 235, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .profile-card.active-profile {
+            border-color: rgba(34, 197, 94, 0.5);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.06);
+        }
+
+        .profile-card.editing {
+            border-color: rgba(138, 90, 235, 0.5);
+            box-shadow: 0 0 20px rgba(138, 90, 235, 0.06);
+        }
 
         .toggle-switch {
-            position: relative; width: 36px; height: 20px;
-            background: #3a3a4a; border-radius: 10px;
-            cursor: pointer; transition: background 0.2s;
+            position: relative;
+            width: 36px;
+            height: 20px;
+            background: #3a3a4a;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
         }
-        .toggle-switch.on { background: #8a5aeb; }
-        .toggle-switch::after {
-            content: ''; position: absolute; top: 2px; left: 2px;
-            width: 16px; height: 16px; background: white;
-            border-radius: 50%; transition: transform 0.2s;
-        }
-        .toggle-switch.on::after { transform: translateX(16px); }
 
-        .filter-dropdown { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease; opacity: 0; }
-        .filter-dropdown.open { max-height: 300px; opacity: 1; }
+        .toggle-switch.on {
+            background: #8a5aeb;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+
+        .toggle-switch.on::after {
+            transform: translateX(16px);
+        }
+
+        .filter-dropdown {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .filter-dropdown.open {
+            max-height: 300px;
+            opacity: 1;
+        }
 
         /* Poster preview row */
-        .poster-item { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .poster-item:hover { transform: scale(1.08); box-shadow: 0 4px 16px rgba(0,0,0,0.5); z-index: 10; }
+        .poster-item {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .poster-item:hover {
+            transform: scale(1.08);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+
+        /* Stremio-style catalog rows */
+        .catalog-row {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .catalog-row:last-child {
+            border-bottom: none;
+        }
+
+        .catalog-row-posters {
+            scroll-behavior: smooth;
+        }
+
+        .catalog-row-posters::-webkit-scrollbar {
+            height: 3px;
+        }
+
+        .catalog-row-posters::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .catalog-row-posters::-webkit-scrollbar-thumb {
+            background: #3a3a4a;
+            border-radius: 2px;
+        }
+
+        .catalog-poster {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .catalog-poster:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+            z-index: 10;
+        }
 
         /* Custom input styling */
-        input[type="range"] { -webkit-appearance: none; appearance: none; height: 6px; background: #272732; border-radius: 3px; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #8a5aeb; cursor: pointer; border: 2px solid #1c1c24; }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: #272732;
+            border-radius: 3px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #8a5aeb;
+            cursor: pointer;
+            border: 2px solid #1c1c24;
+        }
 
         @media (max-width: 640px) {
-            .glass-panel { border-radius: 1rem; }
-            .preset-card { padding: 0.625rem; }
-            .category-tab { padding: 0.375rem 0.625rem; font-size: 0.6875rem; }
-            button, a { min-height: 2.25rem; }
-            .nav-tab { font-size: 0.7rem; padding: 0.5rem 0.625rem; }
+            .glass-panel {
+                border-radius: 1rem;
+            }
+
+            .preset-card {
+                padding: 0.625rem;
+            }
+
+            .category-tab {
+                padding: 0.375rem 0.625rem;
+                font-size: 0.6875rem;
+            }
+
+            button,
+            a {
+                min-height: 2.25rem;
+            }
+
+            .nav-tab {
+                font-size: 0.7rem;
+                padding: 0.5rem 0.625rem;
+            }
         }
     </style>
 </head>
@@ -138,9 +290,11 @@
         <div class="px-4 sm:px-8 py-4 sm:py-5 border-b border-dark-700 bg-dark-800/80">
             <div class="flex items-center justify-center space-x-3 mb-1">
                 <svg class="w-6 h-6 sm:w-7 sm:h-7 text-stremio" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
+                    <path
+                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
                 </svg>
-                <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">YACA <span class="text-stremio font-light">Addon</span></h1>
+                <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">YACA <span
+                        class="text-stremio font-light">Addon</span></h1>
             </div>
             <p class="text-center text-gray-500 text-xs">Il catalogo intelligente definitivo per Stremio</p>
         </div>
@@ -148,19 +302,29 @@
         <!-- Tab Navigation -->
         <div class="border-b border-dark-700 bg-dark-800/40">
             <nav id="mainNav" class="flex overflow-x-auto preset-scroll px-2 sm:px-4" role="tablist">
-                <button type="button" class="nav-tab active flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200" data-tab="credentials" role="tab">
+                <button type="button"
+                    class="nav-tab active flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200"
+                    data-tab="credentials" role="tab">
                     🔑 Credenziali
                 </button>
-                <button type="button" class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200" data-tab="profiles" role="tab">
+                <button type="button"
+                    class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200"
+                    data-tab="profiles" role="tab">
                     👤 Profili
                 </button>
-                <button type="button" class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200" data-tab="presets" role="tab">
+                <button type="button"
+                    class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200"
+                    data-tab="presets" role="tab">
                     📚 Cataloghi
                 </button>
-                <button type="button" class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200" data-tab="creator" role="tab">
+                <button type="button"
+                    class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200"
+                    data-tab="creator" role="tab">
                     🤖 Creatore
                 </button>
-                <button type="button" class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200" data-tab="settings" role="tab">
+                <button type="button"
+                    class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200"
+                    data-tab="settings" role="tab">
                     ⚙️ Impostazioni
                 </button>
             </nav>
@@ -174,7 +338,9 @@
                 <!-- API Keys -->
                 <div class="space-y-4">
                     <div class="flex items-center gap-3 mb-2">
-                        <div class="w-8 h-8 rounded-lg bg-stremio/10 flex items-center justify-center text-stremio text-sm">🔑</div>
+                        <div
+                            class="w-8 h-8 rounded-lg bg-stremio/10 flex items-center justify-center text-stremio text-sm">
+                            🔑</div>
                         <div>
                             <h2 class="text-base font-semibold text-white">Credenziali API</h2>
                             <p class="text-xs text-gray-500">Chiavi necessarie per il funzionamento dell'addon</p>
@@ -183,13 +349,15 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-1.5">
-                            <label for="tmdbKey" class="block text-xs font-medium text-gray-400">TMDB API Key <span class="text-red-500">*</span></label>
+                            <label for="tmdbKey" class="block text-xs font-medium text-gray-400">TMDB API Key <span
+                                    class="text-red-500">*</span></label>
                             <input type="password" id="tmdbKey" required
                                 class="w-full px-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600"
                                 placeholder="Inserisci la v3 auth key">
                         </div>
                         <div class="space-y-1.5">
-                            <label for="mistralKey" class="block text-xs font-medium text-gray-400">Mistral API Key <span class="text-gray-600 font-normal">(Opzionale)</span></label>
+                            <label for="mistralKey" class="block text-xs font-medium text-gray-400">Mistral API Key
+                                <span class="text-gray-600 font-normal">(Opzionale)</span></label>
                             <input type="password" id="mistralKey"
                                 class="w-full px-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600"
                                 placeholder="Solo per cataloghi AI">
@@ -208,9 +376,11 @@
                             <p class="text-xs text-gray-500">Sincronizza Watchlist e Consigliati</p>
                         </div>
                     </div>
-                    <div class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div
+                        class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                         <div class="flex-1">
-                            <p class="text-xs text-gray-400">Collega il tuo account per vedere Watchlist e Consigliati nella Home di Stremio.</p>
+                            <p class="text-xs text-gray-400">Collega il tuo account per vedere Watchlist e Consigliati
+                                nella Home di Stremio.</p>
                         </div>
                         <div class="w-full sm:w-auto shrink-0">
                             <button type="button" id="traktLoginBtn"
@@ -220,7 +390,8 @@
                             <div id="traktConnectedUI" class="hidden flex-col items-end">
                                 <span class="text-green-500 font-bold text-sm mb-1">✓ Connesso</span>
                                 <button type="button" id="traktLogoutBtn"
-                                    class="text-xs text-gray-400 hover:text-red-400 transition-colors">Scollega Account</button>
+                                    class="text-xs text-gray-400 hover:text-red-400 transition-colors">Scollega
+                                    Account</button>
                             </div>
                             <input type="hidden" id="traktToken">
                         </div>
@@ -256,7 +427,8 @@
                                 </div>
                             </div>
                             <div id="stremioLoggedIn" class="hidden flex items-center justify-between">
-                                <span class="text-green-400 text-sm">✅ Connesso come <strong id="stremioUserEmail" class="text-white"></strong></span>
+                                <span class="text-green-400 text-sm">✅ Connesso come <strong id="stremioUserEmail"
+                                        class="text-white"></strong></span>
                                 <button type="button" id="stremioLogoutBtn"
                                     class="px-3 py-1.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-xs rounded-lg transition-colors">Disconnetti</button>
                             </div>
@@ -266,7 +438,9 @@
 
                 <!-- Next button -->
                 <div class="pt-2 flex justify-end">
-                    <button type="button" class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors" data-next="profiles">
+                    <button type="button"
+                        class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors"
+                        data-next="profiles">
                         Profili →
                     </button>
                 </div>
@@ -279,7 +453,8 @@
                     <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-sm">👤</div>
                     <div>
                         <h2 class="text-base font-semibold text-white">Gestione Profili</h2>
-                        <p class="text-xs text-gray-500">Organizza i cataloghi in profili separati. Il profilo attivo determina cosa vedi su Stremio.</p>
+                        <p class="text-xs text-gray-500">Organizza i cataloghi in profili separati. Il profilo attivo
+                            determina cosa vedi su Stremio.</p>
                     </div>
                 </div>
 
@@ -298,32 +473,40 @@
                 <select id="profileSelect" class="hidden"></select>
 
                 <!-- Profile Editor -->
-                <div id="profileEditor" class="bg-dark-900/60 border border-dark-700 rounded-xl p-4 relative overflow-hidden">
+                <div id="profileEditor"
+                    class="bg-dark-900/60 border border-dark-700 rounded-xl p-4 relative overflow-hidden">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 relative z-10">
                         <input type="text" id="profileNameInput"
                             class="px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-stremio text-sm flex-1 w-full placeholder-gray-500 font-bold"
                             placeholder="Nome Profilo">
                         <button type="button" id="activateProfileBtn"
-                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap">Rendi Attivo</button>
+                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap">Rendi
+                            Attivo</button>
                         <button type="button" id="toggleTemplateBtn"
-                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600">📋 Modelli</button>
+                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600">📋
+                            Modelli</button>
                         <button type="button" id="deleteProfileBtn"
                             class="w-full sm:w-auto text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 py-2 px-3 rounded-lg transition-colors hidden">Elimina</button>
                     </div>
                 </div>
 
                 <!-- Template Selector -->
-                <div id="profileTemplateSelector" class="hidden mt-2 p-4 bg-stremio/5 border border-stremio/20 rounded-xl animate-fade-in">
+                <div id="profileTemplateSelector"
+                    class="hidden mt-2 p-4 bg-stremio/5 border border-stremio/20 rounded-xl animate-fade-in">
                     <p class="text-xs text-gray-300 font-medium mb-3">Scegli un modello rapido:</p>
                     <div id="templateButtons" class="flex flex-wrap gap-2"></div>
                 </div>
 
                 <!-- Nav buttons -->
                 <div class="pt-2 flex justify-between">
-                    <button type="button" class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600" data-next="credentials">
+                    <button type="button"
+                        class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600"
+                        data-next="credentials">
                         ← Credenziali
                     </button>
-                    <button type="button" class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors" data-next="presets">
+                    <button type="button"
+                        class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors"
+                        data-next="presets">
                         Cataloghi →
                     </button>
                 </div>
@@ -340,15 +523,20 @@
                             <p class="text-xs text-gray-500">Zero costi AI — usa direttamente TMDB</p>
                         </div>
                     </div>
-                    <span id="selectedPresetsCount" class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2.5 py-1 rounded-full border border-stremio/20">0 selezionati</span>
+                    <span id="selectedPresetsCount"
+                        class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2.5 py-1 rounded-full border border-stremio/20">0
+                        selezionati</span>
                 </div>
 
                 <!-- Preset Search -->
                 <div class="relative">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
-                    <input type="text" id="presetSearchInput" placeholder="Cerca cataloghi... (es. horror, nolan, anime)"
+                    <input type="text" id="presetSearchInput"
+                        placeholder="Cerca cataloghi... (es. horror, nolan, anime)"
                         class="w-full pl-10 pr-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600">
                 </div>
 
@@ -357,19 +545,18 @@
                     <!-- Populated by JS -->
                 </div>
 
-                <!-- Catalog Preview Row -->
+                <!-- Catalog Preview Row (legacy, hidden) -->
                 <div id="catalogPreviewSection" class="hidden">
                     <div class="flex items-center justify-between mb-2">
                         <span id="previewTitle" class="text-xs font-medium text-gray-400"></span>
-                        <button type="button" id="closePreviewBtn" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">✕ Chiudi</button>
+                        <button type="button" id="closePreviewBtn"
+                            class="text-xs text-gray-500 hover:text-gray-300 transition-colors">✕ Chiudi</button>
                     </div>
-                    <div id="catalogPreviewRow" class="flex gap-2 overflow-x-auto pb-2 poster-scroll">
-                        <!-- Poster items populated by JS -->
-                    </div>
+                    <div id="catalogPreviewRow" class="flex gap-2 overflow-x-auto pb-2 poster-scroll"></div>
                 </div>
 
-                <!-- Preset Cards Container -->
-                <div id="presetsContainer" class="space-y-4">
+                <!-- Stremio-style Catalog Rows -->
+                <div id="presetsContainer" class="space-y-1">
                     <div class="text-center text-sm text-gray-500 py-8">Caricamento preset...</div>
                 </div>
 
@@ -387,7 +574,8 @@
                 <!-- Expand/Collapse Toggle -->
                 <button type="button" id="presetExpandBtn"
                     class="hidden w-full py-2 text-xs text-gray-400 hover:text-stremio transition-colors flex items-center justify-center gap-1">
-                    <svg id="expandIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg id="expandIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                     <span id="expandText">Mostra tutti</span>
@@ -395,10 +583,14 @@
 
                 <!-- Nav buttons -->
                 <div class="pt-2 flex justify-between">
-                    <button type="button" class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600" data-next="profiles">
+                    <button type="button"
+                        class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600"
+                        data-next="profiles">
                         ← Profili
                     </button>
-                    <button type="button" class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors" data-next="creator">
+                    <button type="button"
+                        class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors"
+                        data-next="creator">
                         Creatore →
                     </button>
                 </div>
@@ -429,7 +621,8 @@
 
                 <!-- AI Catalog Tab -->
                 <div id="aiCatalogTab" class="space-y-3">
-                    <p class="text-xs text-gray-500">Descrivi cosa vuoi vedere nella Home di Stremio. L'AI genererà listini perfetti per te. (Richiede Mistral Key).</p>
+                    <p class="text-xs text-gray-500">Descrivi cosa vuoi vedere nella Home di Stremio. L'AI genererà
+                        listini perfetti per te. (Richiede Mistral Key).</p>
                     <div id="catalogList" class="space-y-3">
                         <div class="catalog-item flex gap-2">
                             <input type="text"
@@ -445,7 +638,8 @@
 
                 <!-- Manual Catalog Tab -->
                 <div id="manualCatalogTab" class="hidden space-y-4">
-                    <p class="text-xs text-gray-500">Specifica manualmente i parametri TMDB per creare un preset personalizzato.</p>
+                    <p class="text-xs text-gray-500">Specifica manualmente i parametri TMDB per creare un preset
+                        personalizzato.</p>
 
                     <div class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 space-y-4">
                         <div class="space-y-1.5">
@@ -477,14 +671,18 @@
                         </div>
 
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-medium text-gray-400">Generi (ID TMDB, separati da virgola)</label>
+                            <label class="block text-xs font-medium text-gray-400">Generi (ID TMDB, separati da
+                                virgola)</label>
                             <input type="text" id="manualPresetGenres" placeholder="Es: 28,53 (Azione, Thriller)"
                                 class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm placeholder-gray-600">
-                            <p class="text-[10px] text-gray-600">Azione=28, Avventura=12, Animazione=16, Commedia=35, Crimine=80, Documentario=99, Dramma=18, Famiglia=10751, Fantasy=14, Horror=27, Mistero=9648, Romance=10749, Sci-Fi=878, Thriller=53, Guerra=10752</p>
+                            <p class="text-[10px] text-gray-600">Azione=28, Avventura=12, Animazione=16, Commedia=35,
+                                Crimine=80, Documentario=99, Dramma=18, Famiglia=10751, Fantasy=14, Horror=27,
+                                Mistero=9648, Romance=10749, Sci-Fi=878, Thriller=53, Guerra=10752</p>
                         </div>
 
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-medium text-gray-400">Keywords (ID TMDB, separati da virgola)</label>
+                            <label class="block text-xs font-medium text-gray-400">Keywords (ID TMDB, separati da
+                                virgola)</label>
                             <input type="text" id="manualPresetKeywords" placeholder="Es: 210024 (Anime)"
                                 class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm placeholder-gray-600">
                         </div>
@@ -518,7 +716,8 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div class="space-y-1.5">
                                 <label class="block text-xs font-medium text-gray-400">Voto Minimo</label>
-                                <input type="number" id="manualPresetVoteAvg" step="0.5" min="0" max="10" placeholder="Es: 7.0"
+                                <input type="number" id="manualPresetVoteAvg" step="0.5" min="0" max="10"
+                                    placeholder="Es: 7.0"
                                     class="w-full px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-green-500 text-sm placeholder-gray-600">
                             </div>
                             <div class="space-y-1.5">
@@ -550,10 +749,14 @@
 
                 <!-- Nav buttons -->
                 <div class="pt-2 flex justify-between">
-                    <button type="button" class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600" data-next="presets">
+                    <button type="button"
+                        class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600"
+                        data-next="presets">
                         ← Cataloghi
                     </button>
-                    <button type="button" class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors" data-next="settings">
+                    <button type="button"
+                        class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors"
+                        data-next="settings">
                         Impostazioni →
                     </button>
                 </div>
@@ -565,18 +768,22 @@
                 <!-- Quality Filters -->
                 <div class="space-y-4">
                     <div class="flex items-center gap-3 mb-2">
-                        <div class="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center text-sm">🎯</div>
+                        <div class="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center text-sm">🎯
+                        </div>
                         <div>
                             <h2 class="text-base font-semibold text-white">Filtri di Qualità</h2>
                             <p class="text-xs text-gray-500">Criteri minimi per filtrare contenuti di bassa qualità</p>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-dark-900/40 p-5 rounded-xl border border-dark-700">
+                    <div
+                        class="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-dark-900/40 p-5 rounded-xl border border-dark-700">
                         <div class="space-y-3">
                             <div class="flex justify-between items-center">
-                                <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Voto Medio Minimo</label>
-                                <span id="voteAvgVal" class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2 py-0.5 rounded">0.0</span>
+                                <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Voto Medio
+                                    Minimo</label>
+                                <span id="voteAvgVal"
+                                    class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2 py-0.5 rounded">0.0</span>
                             </div>
                             <input type="range" id="minVoteAverage" min="0" max="10" step="0.5" value="0.0"
                                 class="w-full cursor-pointer">
@@ -588,8 +795,10 @@
 
                         <div class="space-y-3">
                             <div class="flex justify-between items-center">
-                                <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Voti Minimi Ricevuti</label>
-                                <span id="voteCountVal" class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2 py-0.5 rounded">0</span>
+                                <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Voti Minimi
+                                    Ricevuti</label>
+                                <span id="voteCountVal"
+                                    class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2 py-0.5 rounded">0</span>
                             </div>
                             <input type="range" id="minVoteCount" min="0" max="5000" step="100" value="0"
                                 class="w-full cursor-pointer">
@@ -602,8 +811,10 @@
 
                     <div class="flex items-center justify-between bg-dark-900/40 p-4 rounded-xl border border-dark-700">
                         <div>
-                            <label for="fastPresetRefresh" class="text-sm font-medium text-white">Refresh rapido preset</label>
-                            <p class="text-xs text-gray-500 mt-1">Aggiorna più spesso i preset dinamici con cache collaborativa BYOK.</p>
+                            <label for="fastPresetRefresh" class="text-sm font-medium text-white">Refresh rapido
+                                preset</label>
+                            <p class="text-xs text-gray-500 mt-1">Aggiorna più spesso i preset dinamici con cache
+                                collaborativa BYOK.</p>
                         </div>
                         <input type="checkbox" id="fastPresetRefresh" class="h-4 w-4 accent-stremio">
                     </div>
@@ -624,13 +835,16 @@
                         <button type="button" id="exportConfigBtn"
                             class="flex-1 py-2.5 px-4 bg-dark-800 border border-dark-600 rounded-xl text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors flex items-center justify-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                             </svg>
                             Esporta
                         </button>
-                        <label class="flex-1 py-2.5 px-4 bg-dark-800 border border-dark-600 rounded-xl text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                        <label
+                            class="flex-1 py-2.5 px-4 bg-dark-800 border border-dark-600 rounded-xl text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors flex items-center justify-center gap-2 cursor-pointer">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                             </svg>
                             Importa
                             <input type="file" id="importConfigInput" accept=".json" class="hidden">
@@ -651,7 +865,9 @@
 
                 <!-- Back nav -->
                 <div class="pt-2 flex justify-start">
-                    <button type="button" class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600" data-next="creator">
+                    <button type="button"
+                        class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600"
+                        data-next="creator">
                         ← Creatore
                     </button>
                 </div>
@@ -659,8 +875,10 @@
         </form>
 
         <!-- Success State (Hidden by default) -->
-        <div id="successBox" class="hidden p-4 sm:p-8 text-center space-y-4 sm:space-y-6 animate-fade-in border-t border-stremio/30 bg-stremio/5">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 text-green-400 mb-2">
+        <div id="successBox"
+            class="hidden p-4 sm:p-8 text-center space-y-4 sm:space-y-6 animate-fade-in border-t border-stremio/30 bg-stremio/5">
+            <div
+                class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 text-green-400 mb-2">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
@@ -674,10 +892,13 @@
                 INSTALLA IN STREMIO
             </a>
             <div class="pt-4 border-t border-dark-700">
-                <p class="text-xs text-gray-500 mb-1">Il tuo ID di configurazione (salvalo per modificare le liste in futuro):</p>
-                <code id="uuidDisplay" class="px-2 py-1 bg-dark-900 border border-dark-600 rounded text-stremio text-[10px] sm:text-xs font-mono select-all break-all"></code>
+                <p class="text-xs text-gray-500 mb-1">Il tuo ID di configurazione (salvalo per modificare le liste in
+                    futuro):</p>
+                <code id="uuidDisplay"
+                    class="px-2 py-1 bg-dark-900 border border-dark-600 rounded text-stremio text-[10px] sm:text-xs font-mono select-all break-all"></code>
             </div>
-            <button onclick="window.location.reload()" class="text-xs text-gray-400 hover:text-white underline mt-2">Torna alla configurazione</button>
+            <button onclick="window.location.reload()"
+                class="text-xs text-gray-400 hover:text-white underline mt-2">Torna alla configurazione</button>
         </div>
 
     </div>
@@ -693,9 +914,11 @@
             <div id="traktAuthCode"
                 class="text-2xl sm:text-3xl font-mono tracking-widest font-bold text-white bg-dark-900 py-4 rounded-lg mb-6 shadow-inner select-all border border-dark-700">
                 ----</div>
-            <p class="text-xs text-gray-400 mb-6">In attesa di conferma da Trakt... (<span id="traktAuthCountdown">0</span>s)</p>
+            <p class="text-xs text-gray-400 mb-6">In attesa di conferma da Trakt... (<span
+                    id="traktAuthCountdown">0</span>s)</p>
             <button type="button" id="traktAuthCancelBtn"
-                class="px-6 py-2.5 bg-dark-700 hover:bg-dark-600 border border-dark-600 text-white rounded-lg transition-colors text-sm font-medium w-full">Indietro / Annulla</button>
+                class="px-6 py-2.5 bg-dark-700 hover:bg-dark-600 border border-dark-600 text-white rounded-lg transition-colors text-sm font-medium w-full">Indietro
+                / Annulla</button>
         </div>
     </div>
 
@@ -716,7 +939,7 @@
 
         // Catalog preview cache (limited to 50 entries)
         const previewCache = {};
-        const PREVIEW_CACHE_MAX = 50;
+        const PREVIEW_CACHE_MAX = 200;
 
         function setPreviewCache(key, value) {
             const keys = Object.keys(previewCache);
@@ -726,7 +949,7 @@
             previewCache[key] = value;
         }
 
-        let profiles = [{ id: 'default', name: 'Generale', raw_ui_state: { selectedPresets: [], newPrompts: [] }, existingCatalogs: [] }];
+        let profiles = [{ id: 'default', name: 'Generale', raw_ui_state: { selectedPresets: [], newPrompts: [], presetOverrides: {} }, existingCatalogs: [] }];
         let activeProfileId = 'default';
         let editingProfileId = 'default';
 
@@ -754,6 +977,64 @@
             'movie': { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20', label: 'Film' },
             'series': { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20', label: 'Serie' }
         };
+
+        // Human-readable TMDB Genre Names
+        const GENRE_NAMES = {
+            28: 'Azione', 12: 'Avventura', 16: 'Animazione', 35: 'Commedia', 80: 'Crimine',
+            99: 'Documentario', 18: 'Dramma', 10751: 'Famiglia', 14: 'Fantasy', 36: 'Storico',
+            27: 'Horror', 10402: 'Musica', 9648: 'Mistero', 10749: 'Romantico', 878: 'Fantascienza',
+            53: 'Thriller', 10752: 'Guerra', 37: 'Western',
+            10759: 'Azione & Avventura', 10762: 'Kids', 10763: 'News', 10764: 'Reality',
+            10765: 'Sci-Fi & Fantasy', 10766: 'Soap', 10767: 'Talk', 10768: 'Guerra & Politica'
+        };
+
+        // Human-readable TMDB Keyword Names
+        const KEYWORD_NAMES = {
+            210024: 'Anime', 9840: 'K-Drama', 978: 'Plot Twist', 33633: 'Mind-Bending',
+            10051: 'Rapina/Heist', 9672: 'Storia Vera', 11800: 'Film Cult',
+            3335: 'Soprannaturale', 9706: 'Fantasma', 6152: 'Haunting',
+            12335: 'Slasher', 12377: 'Zombie', 3133: 'Gore',
+            4564: 'Post-Apocalittico', 285366: 'Apocalisse', 12190: 'Cyberpunk',
+            4565: 'Distopia', 10683: 'Coming of Age', 8596: 'Sitcom',
+            10091: 'Medical Drama', 11094: 'Procedurale', 6270: 'Liceo/High School',
+            4379: 'Viaggio nel Tempo', 10155: 'Legal Drama', 11162: 'Miniserie',
+            470: 'Spia', 3230: 'Spionaggio', 207317: 'Neo-Noir',
+            161176: 'Hard Sci-Fi', 3388: 'Spazio', 5686: 'Disastro',
+            10483: 'Tsunami', 10364: 'Terremoto', 779: 'Arti Marziali', 18034: 'Kung Fu',
+            11545: 'Shōnen', 33446: 'Seinen', 209714: 'Shōjo',
+            282362: 'Slice of Life', 6821: 'Mecha', 286460: 'Isekai',
+            818: 'Psicologico', 158536: 'Dark', 41165: 'Combattimento',
+            6075: 'Sport', 11134: 'Whodunit', 10391: 'Detective',
+            918: 'Politica', 11150: 'Potere', 9715: 'Supereroe', 180734: 'Dark Hero',
+            10084: 'Epico', 302011: 'Storico', 4344: 'Natura/Musica',
+            3801: 'Cosmo', 156434: 'True Crime', 6513: 'Cibo',
+            13013: 'Viaggi', 277353: 'Alta Cucina', 2081: 'Storia',
+            3573: 'Guerre Mondiali', 41666: 'Tecnologia', 233379: 'AI',
+            9716: 'Stand-Up', 10398: 'Mafia', 3149: 'Cartello',
+            2463: 'Gangster', 11024: 'Alta Fantasia', 12554: 'Drago',
+            3205: 'Magia', 2073: 'Arti Marziali', 10053: 'Distopico'
+        };
+
+        // Helper to convert genre/keyword IDs to readable labels
+        function idsToNames(idStr, nameMap) {
+            if (!idStr) return '';
+            return String(idStr).split(',').map(id => {
+                const trimmed = id.trim();
+                return nameMap[trimmed] || trimmed;
+            }).join(', ');
+        }
+
+        function namesToIds(nameStr, nameMap) {
+            if (!nameStr) return '';
+            const reverseMap = {};
+            for (const [id, name] of Object.entries(nameMap)) {
+                reverseMap[name.toLowerCase()] = id;
+            }
+            return nameStr.split(',').map(n => {
+                const trimmed = n.trim();
+                return reverseMap[trimmed.toLowerCase()] || trimmed;
+            }).join(',');
+        }
 
         // Stremio Auth State (per aggiornamento automatico addon)
         let stremioAuthKey = sessionStorage.getItem('stremioAuthKey') || null;
@@ -832,22 +1113,73 @@
                 row.innerHTML = '<div class="text-xs text-gray-500 py-4 px-2">Nessun risultato trovato</div>';
                 return;
             }
-            row.innerHTML = items.map(item => `
-                <div class="poster-item shrink-0 w-[90px] sm:w-[100px] group relative">
-                    <div class="aspect-[2/3] rounded-lg overflow-hidden bg-dark-700 border border-dark-600">
+            row.innerHTML = buildPosterRowHTML(items);
+        }
+
+        function buildPosterRowHTML(items) {
+            if (!items || items.length === 0) return '<div class="text-[10px] text-gray-600 py-2 px-1">Nessun risultato</div>';
+            return items.map(item => `
+                <div class="catalog-poster shrink-0 w-[80px] sm:w-[95px] group relative">
+                    <div class="aspect-[2/3] rounded-lg overflow-hidden bg-dark-700 border border-dark-600/50">
                         ${item.poster
-                            ? `<img src="${escapeHtml(item.poster)}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover" loading="lazy">`
-                            : '<div class="w-full h-full flex items-center justify-center text-gray-600 text-2xl">🎬</div>'}
+                    ? `<img src="${escapeHtml(item.poster)}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover" loading="lazy">`
+                    : '<div class="w-full h-full flex items-center justify-center text-gray-600 text-xl">🎬</div>'}
                     </div>
-                    <div class="mt-1.5 px-0.5">
-                        <p class="text-[10px] text-gray-300 truncate leading-tight" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</p>
+                    <div class="mt-1 px-0.5">
+                        <p class="text-[9px] text-gray-400 truncate leading-tight" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</p>
                         <div class="flex items-center gap-1 mt-0.5">
-                            ${item.vote ? `<span class="text-[9px] text-yellow-500">★ ${item.vote.toFixed(1)}</span>` : ''}
-                            ${item.year ? `<span class="text-[9px] text-gray-600">${item.year}</span>` : ''}
+                            ${item.vote ? `<span class="text-[8px] text-yellow-500">★ ${item.vote.toFixed(1)}</span>` : ''}
+                            ${item.year ? `<span class="text-[8px] text-gray-600">${item.year}</span>` : ''}
                         </div>
                     </div>
                 </div>
             `).join('');
+        }
+
+        // Auto-load previews for all visible catalog rows
+        async function autoLoadRowPreviews(presets) {
+            const tmdbKey = document.getElementById('tmdbKey').value;
+            if (!tmdbKey) {
+                // No key yet — show placeholder
+                presets.forEach(p => {
+                    const container = document.getElementById(`row-posters-${p.id}`);
+                    if (container) container.innerHTML = '<div class="text-[10px] text-gray-600 py-2 px-1">Inserisci TMDB Key per vedere le anteprime</div>';
+                });
+                return;
+            }
+
+            // Load previews in batches of 3 to avoid flooding
+            const BATCH_SIZE = 3;
+            for (let i = 0; i < presets.length; i += BATCH_SIZE) {
+                const batch = presets.slice(i, i + BATCH_SIZE);
+                await Promise.all(batch.map(async (preset) => {
+                    const container = document.getElementById(`row-posters-${preset.id}`);
+                    if (!container) return;
+
+                    // Check cache first
+                    if (previewCache[preset.id]) {
+                        container.innerHTML = buildPosterRowHTML(previewCache[preset.id]);
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch('/api/preview-catalog', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ tmdbKey, presetId: preset.id })
+                        });
+                        if (!res.ok) {
+                            container.innerHTML = '<div class="text-[10px] text-red-400/60 py-2 px-1">Errore</div>';
+                            return;
+                        }
+                        const data = await res.json();
+                        setPreviewCache(preset.id, data.items);
+                        container.innerHTML = buildPosterRowHTML(data.items);
+                    } catch (_err) {
+                        container.innerHTML = '<div class="text-[10px] text-red-400/60 py-2 px-1">Errore di rete</div>';
+                    }
+                }));
+            }
         }
 
         // -- STREMIO AUTH LOGIC --
@@ -1062,6 +1394,42 @@
             const promptsInputs = document.querySelectorAll('.catalog-prompt-new');
             ep.raw_ui_state.newPrompts = Array.from(promptsInputs).map(i => i.value.trim()).filter(v => v !== '');
 
+            // Salva preset overrides dagli editor aperti
+            if (!ep.raw_ui_state.presetOverrides) ep.raw_ui_state.presetOverrides = {};
+            document.querySelectorAll('.preset-editor-panel').forEach(panel => {
+                const pid = panel.dataset.presetId;
+                if (!pid) return;
+                const ov = {};
+                const nameVal = panel.querySelector('.ov-name')?.value?.trim();
+                if (nameVal) ov._name = nameVal;
+                const sortVal = panel.querySelector('.ov-sort')?.value;
+                if (sortVal) ov.sort_by = sortVal;
+                const voteAvg = panel.querySelector('.ov-vote-avg')?.value;
+                if (voteAvg !== '' && voteAvg !== undefined) ov['vote_average.gte'] = parseFloat(voteAvg);
+                const voteCnt = panel.querySelector('.ov-vote-cnt')?.value;
+                if (voteCnt !== '' && voteCnt !== undefined) ov['vote_count.gte'] = parseInt(voteCnt);
+                const genres = panel.querySelector('.ov-genres')?.value?.trim();
+                if (genres) ov.with_genres = namesToIds(genres, GENRE_NAMES);
+                const keywords = panel.querySelector('.ov-keywords')?.value?.trim();
+                if (keywords) ov.with_keywords = namesToIds(keywords, KEYWORD_NAMES);
+                const cast = panel.querySelector('.ov-cast')?.value?.trim();
+                if (cast) ov.with_cast = cast;
+                const crew = panel.querySelector('.ov-crew')?.value?.trim();
+                if (crew) ov.with_crew = crew;
+                const company = panel.querySelector('.ov-company')?.value?.trim();
+                if (company) ov.with_companies = company;
+                const lang = panel.querySelector('.ov-lang')?.value?.trim();
+                if (lang) ov.with_original_language = lang;
+                const dateFrom = panel.querySelector('.ov-date-from')?.value;
+                if (dateFrom) ov['_date_from'] = dateFrom;
+                const dateTo = panel.querySelector('.ov-date-to')?.value;
+                if (dateTo) ov['_date_to'] = dateTo;
+                // Only save if there are actual overrides
+                if (Object.keys(ov).length > 0) {
+                    ep.raw_ui_state.presetOverrides[pid] = ov;
+                }
+            });
+
             // Salva existingCatalogs salvati (quelli rimasti e non cancellati)
             const remainingExistingIds = Array.from(document.querySelectorAll('.catalog-item-existing')).map(el => el.dataset.id);
             ep.existingCatalogs = ep.existingCatalogs.filter(c => remainingExistingIds.includes(c.id));
@@ -1194,57 +1562,54 @@
                 return;
             }
 
-            // Create card grid
-            const grid = document.createElement('div');
-            grid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-3';
+            // Create Stremio-style list rows
+            const list = document.createElement('div');
+            list.className = 'space-y-1';
 
             pageItems.forEach(preset => {
                 const isSelected = ep.raw_ui_state.selectedPresets.includes(preset.id);
                 const typeInfo = getPresetTypeInfo(preset.type);
                 const icon = CATEGORY_ICONS[preset.category] || '📁';
+                const overrides = ep.raw_ui_state.presetOverrides?.[preset.id] || {};
+                const hasOverrides = Object.keys(overrides).length > 0;
 
-                const card = document.createElement('div');
-                card.className = `preset-card rounded-lg border p-3 ${isSelected ? 'active border-stremio/50 bg-stremio/10' : 'border-dark-700 bg-dark-900/60'}`;
-                card.dataset.presetId = preset.id;
+                const row = document.createElement('div');
+                row.className = `catalog-row rounded-xl overflow-hidden ${isSelected ? 'bg-stremio/5 border border-stremio/30' : 'bg-dark-900/40 border border-dark-700/50'}`;
+                row.dataset.presetId = preset.id;
 
-                // Filter summary
-                const filterKeys = preset.filters ? Object.keys(preset.filters) : [];
-                const hasCustomFilters = filterKeys.length > 0;
+                // Merge base filters with overrides for display
+                const mergedFilters = { ...preset.filters, ...overrides };
+                const displayName = overrides._name || preset.name;
 
-                card.innerHTML = `
-                    <div class="flex items-start gap-3">
-                        <!-- Poster/Icon -->
-                        <div class="w-10 h-14 bg-dark-700 rounded-md flex items-center justify-center text-xl shrink-0 border border-dark-600">
-                            ${icon}
+                row.innerHTML = `
+                    <div class="flex items-center justify-between px-3 py-2.5">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="text-base shrink-0">${icon}</span>
+                            <h4 class="text-sm font-semibold text-white truncate" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</h4>
+                            <span class="text-[10px] ${typeInfo.bg} ${typeInfo.text} px-1.5 py-0.5 rounded ${typeInfo.border} border shrink-0">${typeInfo.label}</span>
+                            ${hasOverrides ? '<span class="text-[9px] bg-yellow-500/15 text-yellow-400 px-1.5 py-0.5 rounded border border-yellow-500/20 shrink-0">✏️ Personalizzato</span>' : ''}
                         </div>
-                        <!-- Info -->
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center justify-between gap-2">
-                                <h4 class="text-sm font-medium text-white truncate" title="${escapeHtml(preset.name)}">${escapeHtml(preset.name)}</h4>
-                                <div class="toggle-switch shrink-0 ${isSelected ? 'on' : ''}" data-preset-id="${preset.id}"></div>
-                            </div>
-                            <div class="flex items-center gap-2 mt-1">
-                                <span class="text-[10px] ${typeInfo.bg} ${typeInfo.text} px-1.5 py-0.5 rounded ${typeInfo.border} border">${typeInfo.label}</span>
-                                <button type="button" class="preview-btn text-[10px] text-gray-500 hover:text-stremio transition-colors flex items-center gap-0.5" data-preset-id="${preset.id}" data-preset-name="${escapeHtml(preset.name)}" title="Anteprima">
-                                    👁 Anteprima
-                                </button>
-                            </div>
-                            ${hasCustomFilters ? `
-                            <button type="button" class="filter-refine-btn text-[10px] text-gray-500 hover:text-stremio mt-1.5 flex items-center gap-1 transition-colors" data-preset-id="${preset.id}">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                                Raffina filtri
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="edit-preset-btn text-[10px] text-gray-500 hover:text-stremio transition-colors px-2 py-1 rounded hover:bg-stremio/10" data-preset-id="${preset.id}" title="Modifica filtri">
+                                ✏️ Modifica
                             </button>
-                            <div class="filter-dropdown mt-2" id="filter-${preset.id}">
-                                ${renderFilterDropdown(preset)}
-                            </div>
-                            ` : ''}
+                            <div class="toggle-switch shrink-0 ${isSelected ? 'on' : ''}" data-preset-id="${preset.id}"></div>
                         </div>
                     </div>
+                    <div class="catalog-row-posters flex gap-2 overflow-x-auto px-3 pb-3" id="row-posters-${preset.id}">
+                        <div class="flex items-center gap-2 py-2 px-1">
+                            <div class="w-3 h-3 border-2 border-dark-600 border-t-transparent rounded-full animate-spin"></div>
+                            <span class="text-[10px] text-gray-600">Caricamento...</span>
+                        </div>
+                    </div>
+                    <div class="preset-editor-panel hidden px-3 pb-3 animate-fade-in" data-preset-id="${preset.id}" id="editor-${preset.id}">
+                        ${buildPresetEditorHTML(preset, overrides)}
+                    </div>
                 `;
-                grid.appendChild(card);
+                list.appendChild(row);
             });
 
-            presetsContainer.appendChild(grid);
+            presetsContainer.appendChild(list);
 
             // Attach toggle event listeners
             presetsContainer.querySelectorAll('.toggle-switch').forEach(toggle => {
@@ -1255,39 +1620,112 @@
                 });
             });
 
-            // Attach filter refine event listeners
-            presetsContainer.querySelectorAll('.filter-refine-btn').forEach(btn => {
+            // Attach edit button listeners
+            presetsContainer.querySelectorAll('.edit-preset-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const presetId = btn.dataset.presetId;
-                    const dropdown = document.getElementById(`filter-${presetId}`);
-                    if (dropdown) dropdown.classList.toggle('open');
+                    const editor = document.getElementById(`editor-${presetId}`);
+                    if (editor) {
+                        editor.classList.toggle('hidden');
+                        btn.textContent = editor.classList.contains('hidden') ? '✏️ Modifica' : '✖ Chiudi';
+                    }
                 });
             });
 
-            // Attach filter change listeners
-            presetsContainer.querySelectorAll('.preset-filter-select').forEach(sel => {
-                sel.addEventListener('change', (e) => {
-                    // Filter refinement is visual-only since presets are hardcoded
-                    // The selected sort override is stored in preset filter state
-                });
-            });
-
-            // Attach preview button listeners
-            presetsContainer.querySelectorAll('.preview-btn').forEach(btn => {
+            // Attach reset overrides button listeners
+            presetsContainer.querySelectorAll('.reset-overrides-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const presetId = btn.dataset.presetId;
-                    const presetName = btn.dataset.presetName;
-                    showCatalogPreview(presetId, presetName);
+                    const ep = getEditingProfile();
+                    if (ep && ep.raw_ui_state.presetOverrides) {
+                        delete ep.raw_ui_state.presetOverrides[presetId];
+                    }
+                    renderPresetCards();
                 });
             });
+
+            // Auto-load previews for all visible rows
+            autoLoadRowPreviews(pageItems);
 
             // Update pagination
             updatePaginationControls(totalItems, totalPages, currentPresetPage);
 
             // Update counter
             updatePresetsCounter();
+        }
+
+        function buildPresetEditorHTML(preset, overrides) {
+            const f = { ...preset.filters, ...overrides };
+            const type = preset.type;
+            const dateFromKey = type === 'movie' ? 'primary_release_date.gte' : 'first_air_date.gte';
+            const dateToKey = type === 'movie' ? 'primary_release_date.lte' : 'first_air_date.lte';
+
+            return `
+                <div class="bg-dark-800/80 rounded-lg p-3 space-y-3 border border-dark-600/50">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[11px] font-bold text-gray-300 uppercase tracking-wider">🛠️ Personalizza Filtri</span>
+                        <button type="button" class="reset-overrides-btn text-[10px] text-red-400/60 hover:text-red-400 transition-colors" data-preset-id="${preset.id}">Ripristina Base</button>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-medium">Nome</label>
+                            <input type="text" class="ov-name w-full px-2 py-1.5 bg-dark-900 border border-dark-600 rounded text-xs text-gray-200 outline-none focus:border-stremio placeholder-gray-600" value="${escapeHtml(overrides._name || preset.name)}" placeholder="${escapeHtml(preset.name)}">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-medium">Ordinamento</label>
+                            <select class="ov-sort w-full px-2 py-1.5 bg-dark-900 border border-dark-600 rounded text-xs text-gray-200 outline-none focus:border-stremio">
+                                <option value="popularity.desc" ${(f.sort_by || '') === 'popularity.desc' ? 'selected' : ''}>Popolarità ↓</option>
+                                <option value="vote_average.desc" ${(f.sort_by || '') === 'vote_average.desc' ? 'selected' : ''}>Voto Medio ↓</option>
+                                <option value="primary_release_date.desc" ${(f.sort_by || '') === 'primary_release_date.desc' ? 'selected' : ''}>Data Uscita ↓</option>
+                                <option value="revenue.desc" ${(f.sort_by || '') === 'revenue.desc' ? 'selected' : ''}>Incassi ↓</option>
+                                <option value="vote_count.desc" ${(f.sort_by || '') === 'vote_count.desc' ? 'selected' : ''}>N. Voti ↓</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-medium">Voto Medio Min</label>
+                            <input type="number" class="ov-vote-avg w-full px-2 py-1.5 bg-dark-900 border border-dark-600 rounded text-xs text-gray-200 outline-none focus:border-stremio" step="0.5" min="0" max="10" value="${f['vote_average.gte'] || ''}" placeholder="0.0">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-medium">Voti Minimi</label>
+                            <input type="number" class="ov-vote-cnt w-full px-2 py-1.5 bg-dark-900 border border-dark-600 rounded text-xs text-gray-200 outline-none focus:border-stremio" min="0" value="${f['vote_count.gte'] || ''}" placeholder="0">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-medium">Generi</label>
+                            <input type="text" class="ov-genres w-full px-2 py-1.5 bg-dark-900 border border-dark-600 rounded text-xs text-gray-200 outline-none focus:border-stremio placeholder-gray-600" value="${escapeHtml(idsToNames(f.with_genres, GENRE_NAMES))}" placeholder="Es: Azione, Horror">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-medium">Keywords</label>
+                            <input type="text" class="ov-keywords w-full px-2 py-1.5 bg-dark-900 border border-dark-600 rounded text-xs text-gray-200 outline-none focus:border-stremio placeholder-gray-600" value="${escapeHtml(idsToNames(f.with_keywords, KEYWORD_NAMES))}" placeholder="Es: Anime, Cyberpunk">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-medium">Cast (ID TMDB)</label>
+                            <input type="text" class="ov-cast w-full px-2 py-1.5 bg-dark-900 border border-dark-600 rounded text-xs text-gray-200 outline-none focus:border-stremio placeholder-gray-600" value="${f.with_cast || ''}" placeholder="Es: 6193">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-medium">Crew/Regista (ID)</label>
+                            <input type="text" class="ov-crew w-full px-2 py-1.5 bg-dark-900 border border-dark-600 rounded text-xs text-gray-200 outline-none focus:border-stremio placeholder-gray-600" value="${f.with_crew || ''}" placeholder="Es: 525">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-medium">Studio (ID)</label>
+                            <input type="text" class="ov-company w-full px-2 py-1.5 bg-dark-900 border border-dark-600 rounded text-xs text-gray-200 outline-none focus:border-stremio placeholder-gray-600" value="${f.with_companies || ''}" placeholder="Es: 3 (Pixar)">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-medium">Lingua (ISO)</label>
+                            <input type="text" class="ov-lang w-full px-2 py-1.5 bg-dark-900 border border-dark-600 rounded text-xs text-gray-200 outline-none focus:border-stremio placeholder-gray-600" value="${f.with_original_language || ''}" placeholder="Es: en, ko, ja">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-medium">Data Da</label>
+                            <input type="date" class="ov-date-from w-full px-2 py-1.5 bg-dark-900 border border-dark-600 rounded text-xs text-gray-200 outline-none focus:border-stremio" value="${overrides['_date_from'] || f[dateFromKey] || ''}">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-medium">Data A</label>
+                            <input type="date" class="ov-date-to w-full px-2 py-1.5 bg-dark-900 border border-dark-600 rounded text-xs text-gray-200 outline-none focus:border-stremio" value="${overrides['_date_to'] || f[dateToKey] || ''}">
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         function renderFilterDropdown(preset) {
@@ -1469,7 +1907,7 @@
             profiles.push({
                 id: newId,
                 name: 'Nuovo Profilo',
-                raw_ui_state: { selectedPresets: [], newPrompts: [] },
+                raw_ui_state: { selectedPresets: [], newPrompts: [], presetOverrides: {} },
                 existingCatalogs: [],
                 settings: { minVoteAverage: 0, minVoteCount: 0, fastPresetRefresh: false }
             });
@@ -1707,7 +2145,7 @@
 
                     // Ensure raw_ui_state exists
                     profiles.forEach(p => {
-                        if (!p.raw_ui_state) p.raw_ui_state = { selectedPresets: [], newPrompts: [] };
+                        if (!p.raw_ui_state) p.raw_ui_state = { selectedPresets: [], newPrompts: [], presetOverrides: {} };
                         if (!p.existingCatalogs) p.existingCatalogs = [];
                         if (!p.settings) p.settings = { minVoteAverage: 0, minVoteCount: 0, fastPresetRefresh: false };
                         if (p.settings.fastPresetRefresh === undefined) p.settings.fastPresetRefresh = false;
@@ -1840,7 +2278,7 @@
 
                     // Ensure raw_ui_state defaults exists
                     profiles.forEach(p => {
-                        if (!p.raw_ui_state) p.raw_ui_state = { selectedPresets: [], newPrompts: [] };
+                        if (!p.raw_ui_state) p.raw_ui_state = { selectedPresets: [], newPrompts: [], presetOverrides: {} };
                         if (!p.existingCatalogs) {
                             p.existingCatalogs = (p.catalogs || []).filter(c => !c.id.startsWith('yaca_preset_'));
                             p.raw_ui_state.selectedPresets = (p.catalogs || []).filter(c => c.id.startsWith('yaca_preset_')).map(c => c.id.replace('yaca_preset_', ''));
@@ -1855,7 +2293,7 @@
                     const customCats = existingConfig.catalogs.filter(c => !c.id.startsWith('yaca_preset_'));
                     profiles = [{
                         id: 'legacy_default', name: 'Profilo Importato', existingCatalogs: customCats,
-                        raw_ui_state: { selectedPresets: presets, newPrompts: [] },
+                        raw_ui_state: { selectedPresets: presets, newPrompts: [], presetOverrides: {} },
                         settings: { minVoteAverage: 5.0, minVoteCount: 100, fastPresetRefresh: false }
                     }];
                     activeProfileId = 'legacy_default';
@@ -1873,7 +2311,8 @@
                                 'preset_new_series_eps', 'preset_top_rated_movies', 'preset_top_rated_series',
                                 'preset_oscar_winners', 'preset_hidden_gems', 'preset_pop_anime'
                             ],
-                            newPrompts: []
+                            newPrompts: [],
+                            presetOverrides: {}
                         },
                         existingCatalogs: [],
                         settings: { minVoteAverage: 0.0, minVoteCount: 0, fastPresetRefresh: false }
@@ -1888,7 +2327,8 @@
                                 'preset_nordic_noir', 'preset_british_crime', 'preset_tv_thriller',
                                 'preset_kdrama_thriller'
                             ],
-                            newPrompts: []
+                            newPrompts: [],
+                            presetOverrides: {}
                         },
                         existingCatalogs: [],
                         settings: { minVoteAverage: 6.0, minVoteCount: 100, fastPresetRefresh: false }
@@ -1903,7 +2343,8 @@
                                 'preset_french_cinema', 'preset_cinema_coreano', 'preset_italian_cinema',
                                 'preset_oscar_winners'
                             ],
-                            newPrompts: []
+                            newPrompts: [],
+                            presetOverrides: {}
                         },
                         existingCatalogs: [],
                         settings: { minVoteAverage: 6.0, minVoteCount: 100, fastPresetRefresh: false }
@@ -1918,7 +2359,8 @@
                                 'preset_anime_isekai', 'preset_anime_slice_of_life', 'preset_anime_action',
                                 'preset_anime_movies_top', 'preset_anime_classic', 'preset_ghibli'
                             ],
-                            newPrompts: []
+                            newPrompts: [],
+                            presetOverrides: {}
                         },
                         existingCatalogs: [],
                         settings: { minVoteAverage: 0.0, minVoteCount: 0, fastPresetRefresh: false }
@@ -1999,6 +2441,7 @@
                     id: p.id,
                     name: p.name,
                     selectedPresets: p.raw_ui_state.selectedPresets,
+                    presetOverrides: p.raw_ui_state.presetOverrides || {},
                     newPrompts: p.raw_ui_state.newPrompts,
                     existingCatalogs: p.existingCatalogs,
                     settings: p.settings || { minVoteAverage: 0, minVoteCount: 0, fastPresetRefresh: false }

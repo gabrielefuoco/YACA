@@ -105,7 +105,8 @@ module.exports = async (req, res) => {
                 parsedCatalogs.push(...safeCatalogs);
             }
 
-            // 2. Aggiungi i Preset Hardcoded (deduplicati)
+            // 2. Aggiungi i Preset Hardcoded (deduplicati) con possibili override utente
+            const presetOverrides = (typeof profile.presetOverrides === 'object' && profile.presetOverrides !== null) ? profile.presetOverrides : {};
             if (profile.selectedPresets && Array.isArray(profile.selectedPresets)) {
                 const seenPresets = new Set();
                 for (const presetId of profile.selectedPresets.slice(0, LIMITS.MAX_PRESETS)) {
@@ -114,11 +115,29 @@ module.exports = async (req, res) => {
                     seenPresets.add(presetId);
                     const presetObj = presetsList.find(p => p.id === presetId);
                     if (presetObj) {
+                        // Merge base filters with user overrides
+                        const userOverride = presetOverrides[presetId] || {};
+                        const mergedFilters = { ...presetObj.filters };
+                        // Apply filter overrides (skip internal keys starting with _)
+                        for (const [key, value] of Object.entries(userOverride)) {
+                            if (key.startsWith('_')) continue; // skip _name, _date_from, _date_to
+                            mergedFilters[key] = value;
+                        }
+                        // Handle date overrides
+                        if (userOverride['_date_from']) {
+                            const dateKey = presetObj.type === 'movie' ? 'primary_release_date.gte' : 'first_air_date.gte';
+                            mergedFilters[dateKey] = userOverride['_date_from'];
+                        }
+                        if (userOverride['_date_to']) {
+                            const dateKey = presetObj.type === 'movie' ? 'primary_release_date.lte' : 'first_air_date.lte';
+                            mergedFilters[dateKey] = userOverride['_date_to'];
+                        }
+                        const displayName = (userOverride._name && userOverride._name !== presetObj.name) ? userOverride._name : presetObj.name;
                         parsedCatalogs.push({
                             id: `yaca_preset_${presetId}`,
-                            name: presetObj.name,
+                            name: displayName,
                             type: presetObj.type,
-                            filters: { ...presetObj.filters }
+                            filters: mergedFilters
                         });
                     }
                 }
@@ -187,6 +206,7 @@ module.exports = async (req, res) => {
                 },
                 raw_ui_state: { // Salva lo stato UI grezzo per ripopolare i form facilmente
                     selectedPresets: profile.selectedPresets || [],
+                    presetOverrides: presetOverrides,
                     prompts: parsedCatalogs.filter(c => c.raw_prompt).map(c => c.raw_prompt)
                 }
             });

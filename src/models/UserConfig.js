@@ -32,7 +32,6 @@ const UserConfig = {
             catalogs,
             profiles,
             activeProfileId,
-            configVersion,
             updated_at: new Date()
         };
 
@@ -44,8 +43,10 @@ const UserConfig = {
         if (error) {
             throw new Error(error.message);
         }
-        // Ritorna i dati salvati (incluso configVersion) per evitare query aggiuntive
-        return data?.[0] || { ...row };
+        // Ritorna i dati salvati e assicura che configVersion sia incluso per il frontend
+        const savedRecord = data?.[0] || { ...row };
+        savedRecord.configVersion = configVersion;
+        return savedRecord;
     }
 };
 

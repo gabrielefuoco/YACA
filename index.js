@@ -42,7 +42,7 @@ app.use('/api/', globalLimiter);
 // Rate limiter più aggressivo per endpoint sensibili
 const sensitiveLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 20,
+    max: 120,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Troppe richieste. Riprova tra qualche minuto.' }
@@ -296,7 +296,7 @@ app.post('/api/stremio-addon-update', sensitiveLimiter, async (req, res) => {
 // Rate limiter dedicato per Trakt per proteggere il TRAKT_CLIENT_ID del server
 const traktLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 15,
+    max: 100,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Troppe richieste Trakt. Riprova tra qualche minuto.' }
