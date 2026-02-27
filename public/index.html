@@ -2259,14 +2259,24 @@
 
             // 3. Populate State
             if (existingConfig) {
-                // Only set API keys if they're actual strings (not redacted booleans)
+                // Handle API keys: actual strings get set, redacted booleans show placeholder
                 const tmdbVal = existingConfig.apiKeys?.tmdb;
+                const tmdbInput = document.getElementById('tmdbKey');
                 if (typeof tmdbVal === 'string' && tmdbVal.length > 4) {
-                    document.getElementById('tmdbKey').value = tmdbVal;
+                    tmdbInput.value = tmdbVal;
+                } else if (tmdbVal === true) {
+                    tmdbInput.value = '__SAVED__';
+                    tmdbInput.type = 'password';
+                    tmdbInput.placeholder = '🔒 Chiave già salvata (lascia per mantenere)';
                 }
                 const mistralVal = existingConfig.apiKeys?.mistral;
+                const mistralInput = document.getElementById('mistralKey');
                 if (typeof mistralVal === 'string' && mistralVal.length > 4) {
-                    document.getElementById('mistralKey').value = mistralVal;
+                    mistralInput.value = mistralVal;
+                } else if (mistralVal === true) {
+                    mistralInput.value = '__SAVED__';
+                    mistralInput.type = 'password';
+                    mistralInput.placeholder = '🔒 Chiave già salvata (lascia per mantenere)';
                 }
 
                 const token = existingConfig.apiKeys?.trakt;

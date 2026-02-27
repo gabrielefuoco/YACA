@@ -32,20 +32,44 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: "UUID non valido." });
         }
 
+        // Handle __SAVED__ sentinel: preserve existing keys from DB
+        let resolvedTmdbKey = tmdbKey;
+        let resolvedMistralKey = mistralKey;
+        let resolvedTraktToken = traktToken;
+        let resolvedStremioAuthKey = stremioAuthKey;
+        let resolvedStremioEmail = stremioEmail;
+
+        if (existingUuid && (tmdbKey === '__SAVED__' || mistralKey === '__SAVED__' || traktToken === '__SAVED__' || stremioAuthKey === '__SAVED__')) {
+            const existingConfig = await UserConfig.findOne({ uuid: existingUuid });
+            if (existingConfig && existingConfig.apiKeys) {
+                if (tmdbKey === '__SAVED__') resolvedTmdbKey = existingConfig.apiKeys.tmdb || '';
+                if (mistralKey === '__SAVED__') resolvedMistralKey = existingConfig.apiKeys.mistral || '';
+                if (traktToken === '__SAVED__') resolvedTraktToken = existingConfig.apiKeys.trakt || '';
+                if (stremioAuthKey === '__SAVED__') {
+                    resolvedStremioAuthKey = existingConfig.apiKeys.stremioAuthKey || '';
+                    resolvedStremioEmail = existingConfig.apiKeys.stremioEmail || stremioEmail;
+                }
+            }
+        }
+
+        if (!resolvedTmdbKey || resolvedTmdbKey === '__SAVED__') {
+            return res.status(400).json({ error: "La API Key di TMDB è obbligatoria." });
+        }
+
         // Input validation - limiti ragionevoli
-        if (typeof tmdbKey !== 'string' || tmdbKey.length > LIMITS.MAX_KEY_LENGTH) {
+        if (typeof resolvedTmdbKey !== 'string' || resolvedTmdbKey.length > LIMITS.MAX_KEY_LENGTH) {
             return res.status(400).json({ error: "TMDB Key non valida." });
         }
-        if (mistralKey && (typeof mistralKey !== 'string' || mistralKey.length > LIMITS.MAX_KEY_LENGTH)) {
+        if (resolvedMistralKey && resolvedMistralKey !== '' && (typeof resolvedMistralKey !== 'string' || resolvedMistralKey.length > LIMITS.MAX_KEY_LENGTH)) {
             return res.status(400).json({ error: "Mistral Key non valida." });
         }
-        if (traktToken && (typeof traktToken !== 'string' || traktToken.length > LIMITS.MAX_TOKEN_LENGTH)) {
+        if (resolvedTraktToken && (typeof resolvedTraktToken !== 'string' || resolvedTraktToken.length > LIMITS.MAX_TOKEN_LENGTH)) {
             return res.status(400).json({ error: "Token Trakt non valido." });
         }
-        if (stremioAuthKey && (typeof stremioAuthKey !== 'string' || stremioAuthKey.length > LIMITS.MAX_TOKEN_LENGTH)) {
+        if (resolvedStremioAuthKey && (typeof resolvedStremioAuthKey !== 'string' || resolvedStremioAuthKey.length > LIMITS.MAX_TOKEN_LENGTH)) {
             return res.status(400).json({ error: "Auth key Stremio non valida." });
         }
-        if (stremioEmail && (typeof stremioEmail !== 'string' || stremioEmail.length > LIMITS.MAX_KEY_LENGTH)) {
+        if (resolvedStremioEmail && (typeof resolvedStremioEmail !== 'string' || resolvedStremioEmail.length > LIMITS.MAX_KEY_LENGTH)) {
             return res.status(400).json({ error: "Email Stremio non valida." });
         }
         if (profiles && (!Array.isArray(profiles) || profiles.length > LIMITS.MAX_PROFILES)) {
@@ -66,7 +90,7 @@ module.exports = async (req, res) => {
             if (req.body.prompts.some(pr => pr && pr.trim().length > 0)) needsMistral = true;
         }
 
-        if (needsMistral && !mistralKey) {
+        if (needsMistral && !resolvedMistralKey) {
             return res.status(400).json({ error: "Per i cataloghi IA dinamici serve la chiave API Mistral." });
         }
 
@@ -150,7 +174,7 @@ module.exports = async (req, res) => {
                     .map(p => p.trim().substring(0, LIMITS.MAX_PROMPT_LENGTH))
                     .slice(0, LIMITS.MAX_AI_PROMPTS);
                 const settledResults = await Promise.allSettled(
-                    validPrompts.map(prompt => generateTmdbFiltersFromPrompt(prompt, mistralKey))
+                    validPrompts.map(prompt => generateTmdbFiltersFromPrompt(prompt, resolvedMistralKey))
                 );
 
                 for (let i = 0; i < validPrompts.length; i++) {
@@ -222,11 +246,11 @@ module.exports = async (req, res) => {
         const savedData = await UserConfig.saveConfig({
             uuid,
             apiKeys: {
-                tmdb: tmdbKey,
-                mistral: mistralKey,
-                trakt: traktToken || null,
-                stremioAuthKey: stremioAuthKey || null,
-                stremioEmail: stremioEmail || null
+                tmdb: resolvedTmdbKey,
+                mistral: resolvedMistralKey,
+                trakt: resolvedTraktToken || null,
+                stremioAuthKey: resolvedStremioAuthKey || null,
+                stremioEmail: resolvedStremioEmail || null
             },
             catalogs: parsedProfiles[0]?.catalogs || [], // Mantiene il vecchio catalogs come fallback per chi ha client non aggiornati (o DB constraints)
             profiles: parsedProfiles,
