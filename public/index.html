@@ -1396,30 +1396,36 @@
 
             // Salva preset overrides dagli editor aperti
             if (!ep.raw_ui_state.presetOverrides) ep.raw_ui_state.presetOverrides = {};
-            document.querySelectorAll('.preset-editor-panel').forEach(panel => {
+            document.querySelectorAll('.preset-editor-panel:not(.hidden)').forEach(panel => {
                 const pid = panel.dataset.presetId;
                 if (!pid) return;
+                // Find the base preset to compare against
+                const basePreset = allPresets.find(p => p.id === pid);
+                if (!basePreset) return;
+                const bf = basePreset.filters || {};
                 const ov = {};
                 const nameVal = panel.querySelector('.ov-name')?.value?.trim();
-                if (nameVal) ov._name = nameVal;
+                if (nameVal && nameVal !== basePreset.name) ov._name = nameVal;
                 const sortVal = panel.querySelector('.ov-sort')?.value;
-                if (sortVal) ov.sort_by = sortVal;
+                if (sortVal && sortVal !== (bf.sort_by || 'popularity.desc')) ov.sort_by = sortVal;
                 const voteAvg = panel.querySelector('.ov-vote-avg')?.value;
-                if (voteAvg !== '' && voteAvg !== undefined) ov['vote_average.gte'] = parseFloat(voteAvg);
+                if (voteAvg !== '' && voteAvg !== undefined && parseFloat(voteAvg) !== (bf['vote_average.gte'] || 0)) ov['vote_average.gte'] = parseFloat(voteAvg);
                 const voteCnt = panel.querySelector('.ov-vote-cnt')?.value;
-                if (voteCnt !== '' && voteCnt !== undefined) ov['vote_count.gte'] = parseInt(voteCnt);
+                if (voteCnt !== '' && voteCnt !== undefined && parseInt(voteCnt) !== (bf['vote_count.gte'] || 0)) ov['vote_count.gte'] = parseInt(voteCnt);
                 const genres = panel.querySelector('.ov-genres')?.value?.trim();
-                if (genres) ov.with_genres = namesToIds(genres, GENRE_NAMES);
+                const genreIds = genres ? namesToIds(genres, GENRE_NAMES) : '';
+                if (genreIds && genreIds !== String(bf.with_genres || '')) ov.with_genres = genreIds;
                 const keywords = panel.querySelector('.ov-keywords')?.value?.trim();
-                if (keywords) ov.with_keywords = namesToIds(keywords, KEYWORD_NAMES);
+                const keywordIds = keywords ? namesToIds(keywords, KEYWORD_NAMES) : '';
+                if (keywordIds && keywordIds !== String(bf.with_keywords || '')) ov.with_keywords = keywordIds;
                 const cast = panel.querySelector('.ov-cast')?.value?.trim();
-                if (cast) ov.with_cast = cast;
+                if (cast && cast !== String(bf.with_cast || '')) ov.with_cast = cast;
                 const crew = panel.querySelector('.ov-crew')?.value?.trim();
-                if (crew) ov.with_crew = crew;
+                if (crew && crew !== String(bf.with_crew || '')) ov.with_crew = crew;
                 const company = panel.querySelector('.ov-company')?.value?.trim();
-                if (company) ov.with_companies = company;
+                if (company && company !== String(bf.with_companies || '')) ov.with_companies = company;
                 const lang = panel.querySelector('.ov-lang')?.value?.trim();
-                if (lang) ov.with_original_language = lang;
+                if (lang && lang !== (bf.with_original_language || '')) ov.with_original_language = lang;
                 const dateFrom = panel.querySelector('.ov-date-from')?.value;
                 if (dateFrom) ov['_date_from'] = dateFrom;
                 const dateTo = panel.querySelector('.ov-date-to')?.value;
@@ -1427,6 +1433,8 @@
                 // Only save if there are actual overrides
                 if (Object.keys(ov).length > 0) {
                     ep.raw_ui_state.presetOverrides[pid] = ov;
+                } else {
+                    delete ep.raw_ui_state.presetOverrides[pid];
                 }
             });
 
@@ -2251,18 +2259,26 @@
 
             // 3. Populate State
             if (existingConfig) {
-                document.getElementById('tmdbKey').value = existingConfig.apiKeys?.tmdb || '';
-                document.getElementById('mistralKey').value = existingConfig.apiKeys?.mistral || '';
+                // Only set API keys if they're actual strings (not redacted booleans)
+                const tmdbVal = existingConfig.apiKeys?.tmdb;
+                if (typeof tmdbVal === 'string' && tmdbVal.length > 4) {
+                    document.getElementById('tmdbKey').value = tmdbVal;
+                }
+                const mistralVal = existingConfig.apiKeys?.mistral;
+                if (typeof mistralVal === 'string' && mistralVal.length > 4) {
+                    document.getElementById('mistralKey').value = mistralVal;
+                }
 
                 const token = existingConfig.apiKeys?.trakt;
-                if (token) {
+                if (typeof token === 'string' && token.length > 4) {
                     document.getElementById('traktToken').value = token;
                     document.getElementById('traktLoginBtn').classList.add('hidden');
                     document.getElementById('traktConnectedUI').classList.add('flex');
                     document.getElementById('traktConnectedUI').classList.remove('hidden');
                 }
-                if (existingConfig.apiKeys?.stremioAuthKey) {
-                    stremioAuthKey = existingConfig.apiKeys.stremioAuthKey;
+                const stremioKey = existingConfig.apiKeys?.stremioAuthKey;
+                if (typeof stremioKey === 'string' && stremioKey.length > 4) {
+                    stremioAuthKey = stremioKey;
                     stremioEmail = existingConfig.apiKeys.stremioEmail || stremioEmail;
                     sessionStorage.setItem('stremioAuthKey', stremioAuthKey);
                     if (stremioEmail) sessionStorage.setItem('stremioEmail', stremioEmail);
