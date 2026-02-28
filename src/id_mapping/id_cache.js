@@ -48,4 +48,8 @@ async function translateImdbToTmdb(imdbId, tmdbApiKey) {
     }
 }
 
-module.exports = { translateImdbToTmdb };
+function clearIdCache() {
+    memoryCache.clear();
+}
+
+module.exports = { translateImdbToTmdb, clearIdCache };
