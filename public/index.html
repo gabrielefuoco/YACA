@@ -307,6 +307,38 @@
             }
         }
 
+        /* Dashboard chip buttons */
+        .dash-chip {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .dash-chip.active {
+            background: #8a5aeb;
+            color: white;
+            border-color: #8a5aeb;
+        }
+
+        /* Dashboard content panels */
+        .dash-content {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .dash-content.active {
+            display: block;
+        }
+
+        /* Profile drag styles */
+        .profile-card[draggable="true"] {
+            cursor: grab;
+        }
+        .profile-card[draggable="true"]:active {
+            cursor: grabbing;
+        }
+        .profile-card.drag-over {
+            border-color: rgba(138, 90, 235, 0.6);
+            transform: scale(1.02);
+        }
+
         /* Desktop: larger elements and better use of space */
         @media (min-width: 1280px) {
             .catalog-row-posters {
@@ -496,62 +528,74 @@
             <!-- ==================== TAB 2: UNIFIED DASHBOARD ==================== -->
             <div id="page-dashboard" class="tab-page active p-4 sm:p-8 space-y-6">
 
-                <!-- SECTION: Profiles -->
-                <div id="dashSectionProfiles" class="space-y-4">
-                    <div class="flex items-center gap-3 mb-2">
+                <!-- SECTION: Profile Management -->
+                <div id="dashSectionProfiles" class="space-y-3">
+                    <div class="flex items-center gap-3">
                         <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-sm">👤</div>
-                        <div>
+                        <div class="flex-1">
                             <h2 class="text-base font-semibold text-white">Gestione Profili</h2>
-                            <p class="text-xs text-gray-500">Organizza i cataloghi in profili separati. Il profilo attivo
-                                determina cosa vedi su Stremio.</p>
+                            <p class="text-xs text-gray-500">Organizza i cataloghi in profili separati</p>
                         </div>
+                        <button type="button" id="profileExpandBtn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-600 transition-all">
+                            <svg id="profileExpandIcon" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
                     </div>
 
-                    <!-- Profile Cards Grid -->
-                    <div id="profileCardsContainer" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                    <!-- Profile Cards Row (horizontal, single row) -->
+                    <div id="profileCardsContainer" class="flex overflow-x-auto gap-3 pb-2 preset-scroll">
                         <!-- Populated by JS -->
                     </div>
-
-                    <!-- Add Profile Button -->
-                    <button type="button" id="newProfileBtn"
-                        class="w-full py-3 px-4 bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl text-sm text-gray-400 hover:border-stremio/50 hover:text-stremio transition-all flex items-center justify-center gap-2">
-                        <span class="text-lg">+</span> Nuovo Profilo
-                    </button>
 
                     <!-- Hidden select for backward compat -->
                     <select id="profileSelect" class="hidden"></select>
 
-                    <!-- Profile Editor -->
-                    <div id="profileEditor"
-                        class="bg-dark-900/60 border border-dark-700 rounded-xl p-4 relative overflow-hidden">
-                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 relative z-10">
-                            <input type="text" id="profileNameInput"
-                                class="px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-stremio text-sm flex-1 w-full placeholder-gray-500 font-bold"
-                                placeholder="Nome Profilo">
-                            <button type="button" id="activateProfileBtn"
-                                class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap">Rendi
-                                Attivo</button>
-                            <button type="button" id="toggleTemplateBtn"
-                                class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600">📋
-                                Modelli</button>
-                            <button type="button" id="deleteProfileBtn"
-                                class="w-full sm:w-auto text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 py-2 px-3 rounded-lg transition-colors hidden">Elimina</button>
-                        </div>
-                    </div>
+                    <!-- Expandable Profile Management Area -->
+                    <div id="profileExpandedArea" class="hidden space-y-3 animate-fade-in">
+                        <!-- Add Profile Button -->
+                        <button type="button" id="newProfileBtn"
+                            class="w-full py-3 px-4 bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl text-sm text-gray-400 hover:border-stremio/50 hover:text-stremio transition-all flex items-center justify-center gap-2">
+                            <span class="text-lg">+</span> Nuovo Profilo
+                        </button>
 
-                    <!-- Template Selector -->
-                    <div id="profileTemplateSelector"
-                        class="hidden mt-2 p-4 bg-stremio/5 border border-stremio/20 rounded-xl animate-fade-in">
-                        <p class="text-xs text-gray-300 font-medium mb-3">Scegli un modello rapido:</p>
-                        <div id="templateButtons" class="flex flex-wrap gap-2"></div>
+                        <!-- Profile Editor -->
+                        <div id="profileEditor"
+                            class="bg-dark-900/60 border border-dark-700 rounded-xl p-4 relative overflow-hidden">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 relative z-10">
+                                <input type="text" id="profileNameInput"
+                                    class="px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-stremio text-sm flex-1 w-full placeholder-gray-500 font-bold"
+                                    placeholder="Nome Profilo">
+                                <button type="button" id="activateProfileBtn"
+                                    class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap">Rendi
+                                    Attivo</button>
+                                <button type="button" id="toggleTemplateBtn"
+                                    class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600">📋
+                                    Modelli</button>
+                                <button type="button" id="deleteProfileBtn"
+                                    class="w-full sm:w-auto text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 py-2 px-3 rounded-lg transition-colors hidden">Elimina</button>
+                            </div>
+                        </div>
+
+                        <!-- Template Selector -->
+                        <div id="profileTemplateSelector"
+                            class="hidden p-4 bg-stremio/5 border border-stremio/20 rounded-xl animate-fade-in">
+                            <p class="text-xs text-gray-300 font-medium mb-3">Scegli un modello rapido:</p>
+                            <div id="templateButtons" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+                        </div>
                     </div>
                 </div>
 
-                <hr class="border-dark-700/50">
+                <!-- Chip Buttons -->
+                <div class="flex gap-2 overflow-x-auto pb-1 preset-scroll">
+                    <button type="button" class="dash-chip active px-4 py-2 text-xs font-medium rounded-full border transition-colors flex items-center gap-1.5 shrink-0" data-section="active" onclick="switchDashSection('active')">📋 Cataloghi Attivi</button>
+                    <button type="button" class="dash-chip bg-dark-900 text-gray-400 border-dark-600 px-4 py-2 text-xs font-medium rounded-full border transition-colors flex items-center gap-1.5 shrink-0" data-section="explore" onclick="switchDashSection('explore')">🔍 Esplora</button>
+                    <button type="button" class="dash-chip bg-dark-900 text-gray-400 border-dark-600 px-4 py-2 text-xs font-medium rounded-full border transition-colors flex items-center gap-1.5 shrink-0" data-section="creator" onclick="switchDashSection('creator')">🤖 Creatore</button>
+                </div>
 
-                <!-- SECTION: Active Catalogs (shown below profiles) -->
-                <div id="dashSectionActive" class="space-y-4">
-                    <div class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 space-y-3">
+                <!-- Panel: Active Catalogs -->
+                <div id="dashContentActive" class="dash-content active space-y-4">
+                    <div id="dashSectionActive" class="space-y-4">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2.5">
                                 <div class="w-7 h-7 rounded-lg bg-stremio/10 flex items-center justify-center text-sm shrink-0">📋</div>
@@ -565,98 +609,107 @@
                             <!-- Populated by JS -->
                         </div>
                         <p id="activeCatalogsEmpty" class="text-xs text-gray-600 text-center py-4 hidden">
-                            Nessun catalogo attivo. Usa <strong class="text-gray-400">Esplora</strong> o il <strong class="text-gray-400">Creatore</strong> qui sotto per aggiungerne.
+                            Nessun catalogo attivo. Usa <strong class="text-gray-400">Esplora</strong> o il <strong class="text-gray-400">Creatore</strong> per aggiungerne.
                         </p>
-                    </div>
 
-                    <!-- My Lists (saved AI/custom lists) -->
-                    <div id="myListsSection" class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 space-y-3">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center text-sm shrink-0">⭐</div>
-                            <h3 class="text-sm font-semibold text-white">Le Mie Liste</h3>
+                        <!-- My Lists (saved AI/custom lists) -->
+                        <div id="myListsSection" class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 space-y-3 mt-4">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center text-sm shrink-0">⭐</div>
+                                <h3 class="text-sm font-semibold text-white">Le Mie Liste</h3>
+                            </div>
+                            <div id="myListsContainer" class="space-y-1">
+                                <!-- Populated by JS -->
+                            </div>
+                            <p id="myListsEmpty" class="text-xs text-gray-600 text-center py-3">
+                                Le liste AI salvate appariranno qui. Usa il <strong class="text-gray-400">Creatore</strong> per generarne.
+                            </p>
                         </div>
-                        <div id="myListsContainer" class="space-y-1">
-                            <!-- Populated by JS -->
-                        </div>
-                        <p id="myListsEmpty" class="text-xs text-gray-600 text-center py-3">
-                            Le liste AI salvate appariranno qui. Usa il <strong class="text-gray-400">Creatore</strong> nella sezione Esplora per generarne.
-                        </p>
                     </div>
                 </div>
 
-                <hr class="border-dark-700/50">
-
-                <!-- SECTION: Explore Catalogs -->
-                <div id="dashSectionExplore" class="space-y-5">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-sm">🔍</div>
-                            <div>
-                                <h2 class="text-base font-semibold text-white">Esplora Cataloghi</h2>
-                                <p class="text-xs text-gray-500">Cataloghi curati — Zero costi AI, usa direttamente TMDB</p>
+                <!-- Panel: Explore Catalogs -->
+                <div id="dashContentExplore" class="dash-content space-y-5">
+                    <div id="dashSectionExplore" class="space-y-5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-sm">🔍</div>
+                                <div>
+                                    <h2 class="text-base font-semibold text-white">Esplora Cataloghi</h2>
+                                    <p class="text-xs text-gray-500">Cataloghi curati — Zero costi AI, usa direttamente TMDB</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="selectedPresetsCount"
+                                    class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2.5 py-1 rounded-full border border-stremio/20">0
+                                    selezionati</span>
+                                <button type="button" id="exploreSearchToggleBtn"
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg bg-dark-800 hover:bg-dark-700 border border-dark-600 transition-all"
+                                    title="Mostra/nascondi ricerca">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
-                        <span id="selectedPresetsCount"
-                            class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2.5 py-1 rounded-full border border-stremio/20">0
-                            selezionati</span>
-                    </div>
 
-                    <!-- Preset Search -->
-                    <div class="relative">
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                        <input type="text" id="presetSearchInput"
-                            placeholder="Cerca cataloghi... (es. horror, nolan, anime)"
-                            class="w-full pl-10 pr-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600">
-                    </div>
-
-                    <!-- Category Tabs (Scrollable) -->
-                    <div id="presetFilters" class="flex gap-2 overflow-x-auto pb-2 preset-scroll hidden">
-                        <!-- Populated by JS -->
-                    </div>
-
-                    <!-- Catalog Preview Row (legacy, hidden) -->
-                    <div id="catalogPreviewSection" class="hidden">
-                        <div class="flex items-center justify-between mb-2">
-                            <span id="previewTitle" class="text-xs font-medium text-gray-400"></span>
-                            <button type="button" id="closePreviewBtn"
-                                class="text-xs text-gray-500 hover:text-gray-300 transition-colors">✕ Chiudi</button>
+                        <!-- Collapsible Preset Search -->
+                        <div id="exploreSearchBar" class="hidden relative animate-fade-in">
+                            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            <input type="text" id="presetSearchInput"
+                                placeholder="Cerca cataloghi... (es. horror, nolan, anime)"
+                                class="w-full pl-10 pr-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600">
                         </div>
-                        <div id="catalogPreviewRow" class="flex gap-2 overflow-x-auto pb-2 poster-scroll"></div>
+
+                        <!-- Category Tabs (Scrollable) -->
+                        <div id="presetFilters" class="flex gap-2 overflow-x-auto pb-2 preset-scroll hidden">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <!-- Catalog Preview Row (legacy, hidden) -->
+                        <div id="catalogPreviewSection" class="hidden">
+                            <div class="flex items-center justify-between mb-2">
+                                <span id="previewTitle" class="text-xs font-medium text-gray-400"></span>
+                                <button type="button" id="closePreviewBtn"
+                                    class="text-xs text-gray-500 hover:text-gray-300 transition-colors">✕ Chiudi</button>
+                            </div>
+                            <div id="catalogPreviewRow" class="flex gap-2 overflow-x-auto pb-2 poster-scroll"></div>
+                        </div>
+
+                        <!-- Stremio-style Catalog Rows -->
+                        <div id="presetsContainer" class="space-y-1">
+                            <div class="text-center text-sm text-gray-500 py-8">Caricamento preset...</div>
+                        </div>
+
+                        <!-- Pagination Controls -->
+                        <div id="presetPagination" class="hidden flex items-center justify-between pt-2">
+                            <button type="button" id="presetPrevBtn"
+                                class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded-lg border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                disabled>← Precedente</button>
+                            <span id="presetPageInfo" class="text-xs text-gray-500 font-mono"></span>
+                            <button type="button" id="presetNextBtn"
+                                class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded-lg border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                disabled>Successivo →</button>
+                        </div>
+
+                        <!-- Expand/Collapse Toggle -->
+                        <button type="button" id="presetExpandBtn"
+                            class="hidden w-full py-2 text-xs text-gray-400 hover:text-stremio transition-colors flex items-center justify-center gap-1">
+                            <svg id="expandIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                            <span id="expandText">Mostra tutti</span>
+                        </button>
                     </div>
+                </div>
 
-                    <!-- Stremio-style Catalog Rows -->
-                    <div id="presetsContainer" class="space-y-1">
-                        <div class="text-center text-sm text-gray-500 py-8">Caricamento preset...</div>
-                    </div>
-
-                    <!-- Pagination Controls -->
-                    <div id="presetPagination" class="hidden flex items-center justify-between pt-2">
-                        <button type="button" id="presetPrevBtn"
-                            class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded-lg border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            disabled>← Precedente</button>
-                        <span id="presetPageInfo" class="text-xs text-gray-500 font-mono"></span>
-                        <button type="button" id="presetNextBtn"
-                            class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded-lg border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            disabled>Successivo →</button>
-                    </div>
-
-                    <!-- Expand/Collapse Toggle -->
-                    <button type="button" id="presetExpandBtn"
-                        class="hidden w-full py-2 text-xs text-gray-400 hover:text-stremio transition-colors flex items-center justify-center gap-1">
-                        <svg id="expandIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                        <span id="expandText">Mostra tutti</span>
-                    </button>
-
-                    <hr class="border-dark-700/50 my-4">
-
-                    <!-- Creator Section (integrated in Explore) -->
+                <!-- Panel: Creator -->
+                <div id="dashContentCreator" class="dash-content space-y-4">
                     <div class="flex items-center gap-3 mb-2">
                         <div class="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-sm">🤖</div>
                         <div>
@@ -691,6 +744,11 @@
                         <button type="button" id="addCatalogBtn"
                             class="w-full py-3 px-4 bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl text-sm text-gray-400 hover:border-green-500/50 hover:text-green-400 transition-all flex items-center justify-center gap-2">
                             <span class="text-xl">+</span> Aggiungi un altro catalogo AI
+                        </button>
+                        <!-- Generate AI Preview Button -->
+                        <button type="button" id="generateAiPreviewBtn"
+                            class="w-full py-3 px-4 bg-green-500/15 border border-green-500/20 rounded-xl text-sm text-green-400 hover:bg-green-500/25 transition-all flex items-center justify-center gap-2 font-medium">
+                            🔮 Genera Anteprima
                         </button>
                         <!-- AI Preview Section -->
                         <div id="aiPreviewSection" class="hidden space-y-3 animate-fade-in">
@@ -811,13 +869,25 @@
                                 </div>
                             </div>
 
-                            <button type="button" id="addManualPresetBtn"
-                                class="w-full py-3 px-4 bg-green-500/15 border border-green-500/20 rounded-xl text-sm text-green-400 hover:bg-green-500/25 transition-all flex items-center justify-center gap-2 font-medium">
-                                <span class="text-lg">+</span> Aggiungi Catalogo Manuale al Profilo
+                            <!-- Generate Manual Preview Button -->
+                            <button type="button" id="generateManualPreviewBtn"
+                                class="w-full py-3 px-4 bg-blue-500/15 border border-blue-500/20 rounded-xl text-sm text-blue-400 hover:bg-blue-500/25 transition-all flex items-center justify-center gap-2 font-medium">
+                                🔍 Genera Anteprima
                             </button>
+
+                            <!-- Manual Preview Section -->
+                            <div id="manualPreviewSection" class="hidden space-y-3 animate-fade-in">
+                                <h4 class="text-sm font-semibold text-blue-400">📋 Anteprima Catalogo</h4>
+                                <div id="manualPreviewPosters" class="flex gap-2 overflow-x-auto pb-2 poster-scroll"></div>
+                            </div>
+
                             <button type="button" id="saveManualToMyListsBtn"
+                                class="w-full py-3 px-4 bg-green-500/15 border border-green-500/20 rounded-xl text-sm text-green-400 hover:bg-green-500/25 transition-all flex items-center justify-center gap-2 font-medium">
+                                ⭐ Salva in Le Mie Liste
+                            </button>
+                            <button type="button" id="addManualPresetBtn"
                                 class="w-full py-2.5 px-4 bg-dark-800 border border-dark-600 rounded-xl text-xs text-gray-400 hover:text-green-400 hover:border-green-500/30 transition-all flex items-center justify-center gap-2">
-                                ⭐ Salva anche in Le Mie Liste
+                                <span class="text-lg">+</span> Aggiungi anche al Profilo
                             </button>
                         </div>
                     </div>
@@ -1590,11 +1660,35 @@
                 const totalCount = presetCount + catalogCount;
 
                 const card = document.createElement('div');
-                card.className = `profile-card cursor-pointer rounded-xl border p-3.5 transition-all ${isEditing ? 'editing border-stremio/50 bg-stremio/5' : isActive ? 'active-profile border-green-500/30 bg-green-500/5' : 'border-dark-700 bg-dark-900/60 hover:bg-dark-800/80'}`;
+                card.className = `profile-card cursor-pointer rounded-xl border p-3.5 transition-all shrink-0 min-w-[160px] ${isEditing ? 'editing border-stremio/50 bg-stremio/5' : isActive ? 'active-profile border-green-500/30 bg-green-500/5' : 'border-dark-700 bg-dark-900/60 hover:bg-dark-800/80'}`;
                 card.tabIndex = 0;
                 card.setAttribute('role', 'button');
+                card.setAttribute('draggable', 'true');
                 card.onclick = () => switchEditingProfile(p.id);
                 card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchEditingProfile(p.id); } };
+
+                // Drag-and-drop reorder
+                card.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', p.id);
+                    card.classList.add('opacity-50');
+                });
+                card.addEventListener('dragend', () => card.classList.remove('opacity-50'));
+                card.addEventListener('dragover', (e) => { e.preventDefault(); card.classList.add('drag-over'); });
+                card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+                card.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    card.classList.remove('drag-over');
+                    const draggedId = e.dataTransfer.getData('text/plain');
+                    if (draggedId && draggedId !== p.id) {
+                        const fromIdx = profiles.findIndex(pr => pr.id === draggedId);
+                        const toIdx = profiles.findIndex(pr => pr.id === p.id);
+                        if (fromIdx >= 0 && toIdx >= 0) {
+                            const [moved] = profiles.splice(fromIdx, 1);
+                            profiles.splice(toIdx, 0, moved);
+                            renderProfileCards();
+                        }
+                    }
+                });
 
                 // Extract emoji from name if present (safe fallback for older browsers)
                 let emoji = '📁';
@@ -2392,7 +2486,22 @@
             btn.addEventListener('click', () => switchTab(btn.dataset.next));
         });
 
-        // Dashboard sections are always visible (no pill switching needed)
+        // Dashboard chip switching
+        function switchDashSection(section) {
+            document.querySelectorAll('.dash-chip').forEach(c => {
+                c.classList.remove('active');
+                c.classList.add('bg-dark-900', 'text-gray-400', 'border-dark-600');
+            });
+            document.querySelectorAll('.dash-content').forEach(p => p.classList.remove('active'));
+            const chip = document.querySelector(`.dash-chip[data-section="${section}"]`);
+            if (chip) {
+                chip.classList.add('active');
+                chip.classList.remove('bg-dark-900', 'text-gray-400', 'border-dark-600');
+            }
+            const panel = document.getElementById(`dashContent${section.charAt(0).toUpperCase() + section.slice(1)}`);
+            if (panel) panel.classList.add('active');
+        }
+
         // Render active catalogs and my lists on profile change
         function refreshDashboardSections() {
             renderActiveCatalogsList();
@@ -2403,6 +2512,108 @@
         // Close preview
         document.getElementById('closePreviewBtn').addEventListener('click', () => {
             document.getElementById('catalogPreviewSection').classList.add('hidden');
+        });
+
+        // Profile expand/collapse toggle
+        document.getElementById('profileExpandBtn').addEventListener('click', () => {
+            const area = document.getElementById('profileExpandedArea');
+            const icon = document.getElementById('profileExpandIcon');
+            area.classList.toggle('hidden');
+            icon.style.transform = area.classList.contains('hidden') ? '' : 'rotate(180deg)';
+        });
+
+        // Explore search bar toggle
+        document.getElementById('exploreSearchToggleBtn').addEventListener('click', () => {
+            const bar = document.getElementById('exploreSearchBar');
+            bar.classList.toggle('hidden');
+            if (!bar.classList.contains('hidden')) {
+                document.getElementById('presetSearchInput').focus();
+            }
+        });
+
+        // Generate AI Preview button
+        document.getElementById('generateAiPreviewBtn').addEventListener('click', async () => {
+            const prompts = Array.from(document.querySelectorAll('.catalog-prompt, .catalog-prompt-new'))
+                .map(i => i.value.trim()).filter(v => v !== '');
+            if (prompts.length === 0) { alert('Inserisci almeno un prompt AI.'); return; }
+            const mistralKey = document.getElementById('mistralKey').value.trim();
+            if (!mistralKey) { alert('Inserisci la Mistral API Key nella sezione Credenziali.'); return; }
+            const btn = document.getElementById('generateAiPreviewBtn');
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Generazione in corso...';
+            try {
+                const previewSection = document.getElementById('aiPreviewSection');
+                const postersContainer = document.getElementById('aiPreviewPosters');
+                postersContainer.innerHTML = '<div class="text-xs text-gray-500 py-2">Caricamento anteprima...</div>';
+                previewSection.classList.remove('hidden');
+            } catch (err) {
+                alert('Errore nella generazione: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔮 Genera Anteprima';
+            }
+        });
+
+        // Generate Manual Preview button
+        document.getElementById('generateManualPreviewBtn').addEventListener('click', async () => {
+            const name = document.getElementById('manualPresetName').value.trim();
+            if (!name) { alert('Inserisci un nome per il catalogo.'); return; }
+            const type = document.getElementById('manualPresetType').value;
+            const sortBy = document.getElementById('manualPresetSort').value;
+            const genres = document.getElementById('manualPresetGenres').value.trim();
+            const keywords = document.getElementById('manualPresetKeywords').value.trim();
+            const filters = { sort_by: sortBy };
+            if (genres) filters.with_genres = genres;
+            if (keywords) filters.with_keywords = keywords;
+            const cast = document.getElementById('manualPresetCast').value.trim();
+            const crew = document.getElementById('manualPresetCrew').value.trim();
+            const company = document.getElementById('manualPresetCompany').value.trim();
+            const lang = document.getElementById('manualPresetLang').value.trim();
+            const voteAvg = document.getElementById('manualPresetVoteAvg').value;
+            const voteCount = document.getElementById('manualPresetVoteCount').value;
+            if (cast) filters.with_cast = cast;
+            if (crew) filters.with_crew = crew;
+            if (company) filters.with_companies = company;
+            if (lang) filters.with_original_language = lang;
+            if (voteAvg) filters['vote_average.gte'] = parseFloat(voteAvg);
+            if (voteCount) filters['vote_count.gte'] = parseInt(voteCount);
+
+            const btn = document.getElementById('generateManualPreviewBtn');
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Caricamento...';
+            try {
+                const tmdbKey = document.getElementById('tmdbKey').value.trim();
+                const res = await fetch(`/api/preview-catalog?type=${encodeURIComponent(type)}&filters=${encodeURIComponent(JSON.stringify(filters))}&tmdbKey=${encodeURIComponent(tmdbKey)}`);
+                const previewSection = document.getElementById('manualPreviewSection');
+                const postersContainer = document.getElementById('manualPreviewPosters');
+                if (res.ok) {
+                    const data = await res.json();
+                    postersContainer.innerHTML = '';
+                    if (data.results && data.results.length > 0) {
+                        data.results.slice(0, 20).forEach(item => {
+                            const poster = item.poster_path ? `https://image.tmdb.org/t/p/w154${item.poster_path}` : '';
+                            if (poster) {
+                                const img = document.createElement('img');
+                                img.src = poster;
+                                img.alt = item.title || item.name || '';
+                                img.className = 'w-[70px] h-[105px] rounded-lg object-cover shrink-0 poster-item';
+                                img.title = item.title || item.name || '';
+                                postersContainer.appendChild(img);
+                            }
+                        });
+                    } else {
+                        postersContainer.innerHTML = '<div class="text-xs text-gray-500 py-2">Nessun risultato trovato.</div>';
+                    }
+                } else {
+                    postersContainer.innerHTML = '<div class="text-xs text-red-400 py-2">Errore nel caricamento anteprima.</div>';
+                }
+                previewSection.classList.remove('hidden');
+            } catch (err) {
+                alert('Errore: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔍 Genera Anteprima';
+            }
         });
 
         document.getElementById('profileSelect').addEventListener('change', (e) => switchEditingProfile(e.target.value));
@@ -2780,22 +2991,23 @@
             // Render Templates
             const tplContainer = document.getElementById('templateButtons');
             profileTemplates.forEach(tpl => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-1.5 px-3 rounded-full border border-dark-600 transition-colors';
-                btn.textContent = tpl.name;
-                btn.onclick = () => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'text-left bg-dark-800 hover:bg-dark-700 text-gray-300 p-3 rounded-xl border border-dark-600 hover:border-stremio/30 transition-all space-y-1';
+                card.innerHTML = `
+                    <div class="text-sm font-medium text-white">${escapeHtml(tpl.name)}</div>
+                    <div class="text-[10px] text-gray-500">${tpl.presets ? tpl.presets.length : 0} cataloghi inclusi</div>
+                `;
+                card.onclick = () => {
                     const ep = getEditingProfile();
-                    // Unisci i preset del template con quelli esistenti (deduplicati)
                     const merged = [...new Set([...ep.raw_ui_state.selectedPresets, ...tpl.presets])];
                     ep.raw_ui_state.selectedPresets = merged;
-                    // Cambia nome solo se è quello di default
                     if (ep.name === 'Nuovo Profilo' || ep.name === 'Senza Nome') { ep.name = tpl.name; }
                     renderProfileSelect();
                     renderPresetsAndCatalogs();
                     document.getElementById('profileTemplateSelector').classList.add('hidden');
                 };
-                tplContainer.appendChild(btn);
+                tplContainer.appendChild(card);
             });
 
             // 2. Fetch Existing Config
