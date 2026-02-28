@@ -30,7 +30,7 @@ describe('applyEpisodeBadge logic', () => {
             const badgeText = latest.season && latest.season > 1
                 ? `S${latest.season}E${latest.episode}`
                 : `E${latest.episode}`;
-            meta.poster = `${host}/badge?url=${encodeURIComponent(meta.poster)}&text=${encodeURIComponent(badgeText)}`;
+            meta.poster = `${host}/badge/poster.jpg?url=${encodeURIComponent(meta.poster)}&text=${encodeURIComponent(badgeText)}`;
         }
     }
 
@@ -47,7 +47,7 @@ describe('applyEpisodeBadge logic', () => {
 
         applyEpisodeBadge(metas);
 
-        expect(metas[0].poster).toContain('/badge?url=');
+        expect(metas[0].poster).toContain('/badge/poster.jpg?url=');
         expect(metas[0].poster).toContain('text=E10');
     });
 
@@ -116,7 +116,7 @@ describe('applyEpisodeBadge logic', () => {
 
         applyEpisodeBadge(metas);
 
-        expect(metas[0].poster).toMatch(/^https:\/\/example\.com\/badge\?/);
+        expect(metas[0].poster).toMatch(/^https:\/\/example\.com\/badge\/poster\.jpg\?/);
     });
 });
 
