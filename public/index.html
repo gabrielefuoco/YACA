@@ -261,6 +261,14 @@
             opacity: 1;
         }
 
+        .active-catalog-item[draggable="true"] {
+            cursor: grab;
+        }
+
+        .active-catalog-item[draggable="true"]:active {
+            cursor: grabbing;
+        }
+
         .active-catalogs-list::-webkit-scrollbar {
             width: 4px;
         }
@@ -298,6 +306,27 @@
                 padding: 0.5rem 0.625rem;
             }
         }
+
+        /* Desktop: larger elements and better use of space */
+        @media (min-width: 1280px) {
+            .catalog-poster {
+                width: 110px !important;
+            }
+            .catalog-row-posters {
+                gap: 0.75rem;
+            }
+            .nav-tab {
+                font-size: 0.9375rem;
+                padding: 0.75rem 1.5rem;
+            }
+            .category-tab {
+                font-size: 0.8125rem;
+                padding: 0.5rem 1rem;
+            }
+            .profile-card {
+                padding: 1.25rem;
+            }
+        }
     </style>
 </head>
 
@@ -310,7 +339,7 @@
     </div>
 
     <!-- Main Container -->
-    <div class="w-full max-w-4xl glass-panel rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
+    <div class="w-full max-w-4xl xl:max-w-6xl 2xl:max-w-7xl glass-panel rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
 
         <!-- Header -->
         <div class="px-4 sm:px-8 py-4 sm:py-5 border-b border-dark-700 bg-dark-800/80">
@@ -335,13 +364,8 @@
                 </button>
                 <button type="button"
                     class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200"
-                    data-tab="profiles" role="tab">
-                    👤 Profili
-                </button>
-                <button type="button"
-                    class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200"
-                    data-tab="presets" role="tab">
-                    📚 Cataloghi
+                    data-tab="dashboard" role="tab">
+                    📚 Dashboard
                 </button>
                 <button type="button"
                     class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200"
@@ -466,79 +490,184 @@
                 <div class="pt-2 flex justify-end">
                     <button type="button"
                         class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors"
-                        data-next="profiles">
-                        Profili →
+                        data-next="dashboard">
+                        Dashboard →
                     </button>
                 </div>
             </div>
 
-            <!-- ==================== TAB 2: PROFILES ==================== -->
-            <div id="page-profiles" class="tab-page p-4 sm:p-8 space-y-6">
+            <!-- ==================== TAB 2: UNIFIED DASHBOARD ==================== -->
+            <div id="page-dashboard" class="tab-page p-4 sm:p-8 space-y-6">
 
-                <div class="flex items-center gap-3 mb-2">
-                    <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-sm">👤</div>
-                    <div>
-                        <h2 class="text-base font-semibold text-white">Gestione Profili</h2>
-                        <p class="text-xs text-gray-500">Organizza i cataloghi in profili separati. Il profilo attivo
-                            determina cosa vedi su Stremio.</p>
-                    </div>
+                <!-- Sub-section pills -->
+                <div class="flex bg-dark-900 rounded-xl border border-dark-700 p-1 gap-1">
+                    <button type="button" id="dashPillProfiles"
+                        class="dash-pill flex-1 text-xs font-medium py-2.5 px-3 rounded-lg bg-stremio/15 text-stremio border border-stremio/20 transition-colors">
+                        👤 Profili
+                    </button>
+                    <button type="button" id="dashPillActive"
+                        class="dash-pill flex-1 text-xs font-medium py-2.5 px-3 rounded-lg text-gray-400 hover:text-gray-200 transition-colors">
+                        📋 Cataloghi Attivi
+                    </button>
+                    <button type="button" id="dashPillExplore"
+                        class="dash-pill flex-1 text-xs font-medium py-2.5 px-3 rounded-lg text-gray-400 hover:text-gray-200 transition-colors">
+                        🔍 Esplora
+                    </button>
                 </div>
 
-                <!-- Profile Cards Grid -->
-                <div id="profileCardsContainer" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    <!-- Populated by JS -->
-                </div>
-
-                <!-- Add Profile Button -->
-                <button type="button" id="newProfileBtn"
-                    class="w-full py-3 px-4 bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl text-sm text-gray-400 hover:border-stremio/50 hover:text-stremio transition-all flex items-center justify-center gap-2">
-                    <span class="text-lg">+</span> Nuovo Profilo
-                </button>
-
-                <!-- Hidden select for backward compat -->
-                <select id="profileSelect" class="hidden"></select>
-
-                <!-- Profile Editor -->
-                <div id="profileEditor"
-                    class="bg-dark-900/60 border border-dark-700 rounded-xl p-4 relative overflow-hidden">
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 relative z-10">
-                        <input type="text" id="profileNameInput"
-                            class="px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-stremio text-sm flex-1 w-full placeholder-gray-500 font-bold"
-                            placeholder="Nome Profilo">
-                        <button type="button" id="activateProfileBtn"
-                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap">Rendi
-                            Attivo</button>
-                        <button type="button" id="toggleTemplateBtn"
-                            class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600">📋
-                            Modelli</button>
-                        <button type="button" id="deleteProfileBtn"
-                            class="w-full sm:w-auto text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 py-2 px-3 rounded-lg transition-colors hidden">Elimina</button>
-                    </div>
-                </div>
-
-                <!-- Template Selector -->
-                <div id="profileTemplateSelector"
-                    class="hidden mt-2 p-4 bg-stremio/5 border border-stremio/20 rounded-xl animate-fade-in">
-                    <p class="text-xs text-gray-300 font-medium mb-3">Scegli un modello rapido:</p>
-                    <div id="templateButtons" class="flex flex-wrap gap-2"></div>
-                </div>
-
-                <!-- Active Catalogs Panel -->
-                <div class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-7 h-7 rounded-lg bg-stremio/10 flex items-center justify-center text-sm shrink-0">📋</div>
-                            <h3 class="text-sm font-semibold text-white">Cataloghi Attivi</h3>
-                            <span id="activeCatalogsCount" class="text-xs font-mono text-stremio bg-stremio/10 px-2 py-0.5 rounded-full border border-stremio/20">0</span>
+                <!-- SECTION: Profiles -->
+                <div id="dashSectionProfiles" class="space-y-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-sm">👤</div>
+                        <div>
+                            <h2 class="text-base font-semibold text-white">Gestione Profili</h2>
+                            <p class="text-xs text-gray-500">Organizza i cataloghi in profili separati. Il profilo attivo
+                                determina cosa vedi su Stremio.</p>
                         </div>
-                        <div id="activeCatalogsStats" class="text-[10px] text-gray-600 font-mono hidden sm:block"></div>
                     </div>
-                    <div id="activeCatalogsList" class="space-y-1 max-h-64 overflow-y-auto active-catalogs-list">
+
+                    <!-- Profile Cards Grid -->
+                    <div id="profileCardsContainer" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                         <!-- Populated by JS -->
                     </div>
-                    <p id="activeCatalogsEmpty" class="text-xs text-gray-600 text-center py-4 hidden">
-                        Nessun catalogo attivo. Vai su <strong class="text-gray-400">Cataloghi</strong> o <strong class="text-gray-400">Creatore</strong> per aggiungerne.
-                    </p>
+
+                    <!-- Add Profile Button -->
+                    <button type="button" id="newProfileBtn"
+                        class="w-full py-3 px-4 bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl text-sm text-gray-400 hover:border-stremio/50 hover:text-stremio transition-all flex items-center justify-center gap-2">
+                        <span class="text-lg">+</span> Nuovo Profilo
+                    </button>
+
+                    <!-- Hidden select for backward compat -->
+                    <select id="profileSelect" class="hidden"></select>
+
+                    <!-- Profile Editor -->
+                    <div id="profileEditor"
+                        class="bg-dark-900/60 border border-dark-700 rounded-xl p-4 relative overflow-hidden">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 relative z-10">
+                            <input type="text" id="profileNameInput"
+                                class="px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-stremio text-sm flex-1 w-full placeholder-gray-500 font-bold"
+                                placeholder="Nome Profilo">
+                            <button type="button" id="activateProfileBtn"
+                                class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap">Rendi
+                                Attivo</button>
+                            <button type="button" id="toggleTemplateBtn"
+                                class="w-full sm:w-auto text-xs font-bold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap bg-dark-700 hover:bg-dark-600 text-gray-300 border border-dark-600">📋
+                                Modelli</button>
+                            <button type="button" id="deleteProfileBtn"
+                                class="w-full sm:w-auto text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 py-2 px-3 rounded-lg transition-colors hidden">Elimina</button>
+                        </div>
+                    </div>
+
+                    <!-- Template Selector -->
+                    <div id="profileTemplateSelector"
+                        class="hidden mt-2 p-4 bg-stremio/5 border border-stremio/20 rounded-xl animate-fade-in">
+                        <p class="text-xs text-gray-300 font-medium mb-3">Scegli un modello rapido:</p>
+                        <div id="templateButtons" class="flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+
+                <!-- SECTION: Active Catalogs -->
+                <div id="dashSectionActive" class="hidden space-y-4">
+                    <div class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-7 h-7 rounded-lg bg-stremio/10 flex items-center justify-center text-sm shrink-0">📋</div>
+                                <h3 class="text-sm font-semibold text-white">Cataloghi Attivi</h3>
+                                <span id="activeCatalogsCount" class="text-xs font-mono text-stremio bg-stremio/10 px-2 py-0.5 rounded-full border border-stremio/20">0</span>
+                            </div>
+                            <div id="activeCatalogsStats" class="text-[10px] text-gray-600 font-mono hidden sm:block"></div>
+                        </div>
+                        <p class="text-[10px] text-gray-500">💡 Trascina un catalogo sopra un altro per unirli in un unico catalogo combinato.</p>
+                        <div id="activeCatalogsList" class="space-y-1 max-h-[600px] overflow-y-auto active-catalogs-list">
+                            <!-- Populated by JS -->
+                        </div>
+                        <p id="activeCatalogsEmpty" class="text-xs text-gray-600 text-center py-4 hidden">
+                            Nessun catalogo attivo. Vai su <strong class="text-gray-400">Esplora</strong> o <strong class="text-gray-400">Creatore</strong> per aggiungerne.
+                        </p>
+                    </div>
+
+                    <!-- My Lists (saved AI/custom lists) -->
+                    <div id="myListsSection" class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center text-sm shrink-0">⭐</div>
+                            <h3 class="text-sm font-semibold text-white">Le Mie Liste</h3>
+                        </div>
+                        <div id="myListsContainer" class="space-y-1">
+                            <!-- Populated by JS -->
+                        </div>
+                        <p id="myListsEmpty" class="text-xs text-gray-600 text-center py-3">
+                            Le liste AI salvate appariranno qui. Usa il <strong class="text-gray-400">Creatore</strong> per generarne.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- SECTION: Explore Catalogs -->
+                <div id="dashSectionExplore" class="hidden space-y-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-sm">🔍</div>
+                            <div>
+                                <h2 class="text-base font-semibold text-white">Esplora Cataloghi</h2>
+                                <p class="text-xs text-gray-500">Cataloghi curati — Zero costi AI, usa direttamente TMDB</p>
+                            </div>
+                        </div>
+                        <span id="selectedPresetsCount"
+                            class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2.5 py-1 rounded-full border border-stremio/20">0
+                            selezionati</span>
+                    </div>
+
+                    <!-- Preset Search -->
+                    <div class="relative">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" id="presetSearchInput"
+                            placeholder="Cerca cataloghi... (es. horror, nolan, anime)"
+                            class="w-full pl-10 pr-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600">
+                    </div>
+
+                    <!-- Category Tabs (Scrollable) -->
+                    <div id="presetFilters" class="flex gap-2 overflow-x-auto pb-2 preset-scroll hidden">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- Catalog Preview Row (legacy, hidden) -->
+                    <div id="catalogPreviewSection" class="hidden">
+                        <div class="flex items-center justify-between mb-2">
+                            <span id="previewTitle" class="text-xs font-medium text-gray-400"></span>
+                            <button type="button" id="closePreviewBtn"
+                                class="text-xs text-gray-500 hover:text-gray-300 transition-colors">✕ Chiudi</button>
+                        </div>
+                        <div id="catalogPreviewRow" class="flex gap-2 overflow-x-auto pb-2 poster-scroll"></div>
+                    </div>
+
+                    <!-- Stremio-style Catalog Rows -->
+                    <div id="presetsContainer" class="space-y-1">
+                        <div class="text-center text-sm text-gray-500 py-8">Caricamento preset...</div>
+                    </div>
+
+                    <!-- Pagination Controls -->
+                    <div id="presetPagination" class="hidden flex items-center justify-between pt-2">
+                        <button type="button" id="presetPrevBtn"
+                            class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded-lg border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            disabled>← Precedente</button>
+                        <span id="presetPageInfo" class="text-xs text-gray-500 font-mono"></span>
+                        <button type="button" id="presetNextBtn"
+                            class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded-lg border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            disabled>Successivo →</button>
+                    </div>
+
+                    <!-- Expand/Collapse Toggle -->
+                    <button type="button" id="presetExpandBtn"
+                        class="hidden w-full py-2 text-xs text-gray-400 hover:text-stremio transition-colors flex items-center justify-center gap-1">
+                        <svg id="expandIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                        <span id="expandText">Mostra tutti</span>
+                    </button>
                 </div>
 
                 <!-- Nav buttons -->
@@ -547,90 +676,6 @@
                         class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600"
                         data-next="credentials">
                         ← Credenziali
-                    </button>
-                    <button type="button"
-                        class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors"
-                        data-next="presets">
-                        Cataloghi →
-                    </button>
-                </div>
-            </div>
-
-            <!-- ==================== TAB 3: PRESETS ==================== -->
-            <div id="page-presets" class="tab-page p-4 sm:p-8 space-y-5">
-
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-sm">📚</div>
-                        <div>
-                            <h2 class="text-base font-semibold text-white">Cataloghi Curati</h2>
-                            <p class="text-xs text-gray-500">Zero costi AI — usa direttamente TMDB</p>
-                        </div>
-                    </div>
-                    <span id="selectedPresetsCount"
-                        class="text-xs font-mono font-bold text-stremio bg-stremio/10 px-2.5 py-1 rounded-full border border-stremio/20">0
-                        selezionati</span>
-                </div>
-
-                <!-- Preset Search -->
-                <div class="relative">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                    <input type="text" id="presetSearchInput"
-                        placeholder="Cerca cataloghi... (es. horror, nolan, anime)"
-                        class="w-full pl-10 pr-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600">
-                </div>
-
-                <!-- Category Tabs (Scrollable) -->
-                <div id="presetFilters" class="flex gap-2 overflow-x-auto pb-2 preset-scroll hidden">
-                    <!-- Populated by JS -->
-                </div>
-
-                <!-- Catalog Preview Row (legacy, hidden) -->
-                <div id="catalogPreviewSection" class="hidden">
-                    <div class="flex items-center justify-between mb-2">
-                        <span id="previewTitle" class="text-xs font-medium text-gray-400"></span>
-                        <button type="button" id="closePreviewBtn"
-                            class="text-xs text-gray-500 hover:text-gray-300 transition-colors">✕ Chiudi</button>
-                    </div>
-                    <div id="catalogPreviewRow" class="flex gap-2 overflow-x-auto pb-2 poster-scroll"></div>
-                </div>
-
-                <!-- Stremio-style Catalog Rows -->
-                <div id="presetsContainer" class="space-y-1">
-                    <div class="text-center text-sm text-gray-500 py-8">Caricamento preset...</div>
-                </div>
-
-                <!-- Pagination Controls -->
-                <div id="presetPagination" class="hidden flex items-center justify-between pt-2">
-                    <button type="button" id="presetPrevBtn"
-                        class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded-lg border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        disabled>← Precedente</button>
-                    <span id="presetPageInfo" class="text-xs text-gray-500 font-mono"></span>
-                    <button type="button" id="presetNextBtn"
-                        class="text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 py-2 px-4 rounded-lg border border-dark-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        disabled>Successivo →</button>
-                </div>
-
-                <!-- Expand/Collapse Toggle -->
-                <button type="button" id="presetExpandBtn"
-                    class="hidden w-full py-2 text-xs text-gray-400 hover:text-stremio transition-colors flex items-center justify-center gap-1">
-                    <svg id="expandIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                    <span id="expandText">Mostra tutti</span>
-                </button>
-
-                <!-- Nav buttons -->
-                <div class="pt-2 flex justify-between">
-                    <button type="button"
-                        class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600"
-                        data-next="profiles">
-                        ← Profili
                     </button>
                     <button type="button"
                         class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors"
@@ -678,6 +723,19 @@
                         class="w-full py-3 px-4 bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl text-sm text-gray-400 hover:border-green-500/50 hover:text-green-400 transition-all flex items-center justify-center gap-2">
                         <span class="text-xl">+</span> Aggiungi un altro catalogo AI
                     </button>
+                    <!-- AI Preview Section -->
+                    <div id="aiPreviewSection" class="hidden space-y-3 animate-fade-in">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-green-400">🤖 Anteprima AI</h4>
+                            <div class="flex gap-2">
+                                <button type="button" id="saveAiToMyListsBtn"
+                                    class="text-[10px] bg-green-500/15 text-green-400 border border-green-500/20 px-3 py-1 rounded-lg hover:bg-green-500/25 transition-colors">
+                                    ⭐ Salva in Le Mie Liste
+                                </button>
+                            </div>
+                        </div>
+                        <div id="aiPreviewPosters" class="flex gap-2 overflow-x-auto pb-2 poster-scroll"></div>
+                    </div>
                 </div>
 
                 <!-- Manual Catalog Tab -->
@@ -788,6 +846,10 @@
                             class="w-full py-3 px-4 bg-green-500/15 border border-green-500/20 rounded-xl text-sm text-green-400 hover:bg-green-500/25 transition-all flex items-center justify-center gap-2 font-medium">
                             <span class="text-lg">+</span> Aggiungi Catalogo Manuale al Profilo
                         </button>
+                        <button type="button" id="saveManualToMyListsBtn"
+                            class="w-full py-2.5 px-4 bg-dark-800 border border-dark-600 rounded-xl text-xs text-gray-400 hover:text-green-400 hover:border-green-500/30 transition-all flex items-center justify-center gap-2">
+                            ⭐ Salva anche in Le Mie Liste
+                        </button>
                     </div>
                 </div>
 
@@ -795,8 +857,8 @@
                 <div class="pt-2 flex justify-between">
                     <button type="button"
                         class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600"
-                        data-next="presets">
-                        ← Cataloghi
+                        data-next="dashboard">
+                        ← Dashboard
                     </button>
                     <button type="button"
                         class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors"
@@ -966,6 +1028,41 @@
         </div>
     </div>
 
+    <!-- Merge Catalogs Modal -->
+    <div id="mergeModal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4">
+        <div class="bg-dark-800 p-6 sm:p-8 rounded-2xl shadow-2xl max-w-md w-full border border-dark-600">
+            <h3 class="text-lg font-bold text-white mb-4">🔗 Unisci Cataloghi</h3>
+            <p class="text-xs text-gray-400 mb-4">Stai per unire due cataloghi in uno. Il nuovo catalogo conterrà i contenuti di entrambi.</p>
+            <div id="mergeSummary" class="bg-dark-900/60 border border-dark-700 rounded-lg p-3 mb-4 text-xs text-gray-300 space-y-1"></div>
+            <div class="space-y-3 mb-5">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-gray-400">Nome del catalogo unito</label>
+                    <input type="text" id="mergeNameInput"
+                        class="w-full px-3 py-2.5 bg-dark-900 border border-dark-600 rounded-lg outline-none focus:border-cyan-500 text-sm placeholder-gray-600"
+                        placeholder="Es: Thriller + Noir">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-gray-400">Ordinamento</label>
+                    <select id="mergeSortInput"
+                        class="w-full px-3 py-2.5 bg-dark-900 border border-dark-600 rounded-lg outline-none focus:border-cyan-500 text-sm text-gray-200">
+                        <option value="popularity.desc">Popolarità ↓</option>
+                        <option value="vote_average.desc">Voto Medio ↓</option>
+                        <option value="primary_release_date.desc">Data Uscita ↓</option>
+                        <option value="revenue.desc">Incassi ↓</option>
+                        <option value="vote_count.desc">N. Voti ↓</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" id="mergeCancelBtn"
+                    class="flex-1 px-4 py-2.5 bg-dark-700 hover:bg-dark-600 border border-dark-600 text-gray-300 rounded-lg transition-colors text-sm font-medium">Annulla</button>
+                <button type="button" id="mergeConfirmBtn"
+                    class="flex-1 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors text-sm font-bold">Unisci</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const YACA_VERSION = '1.0.2';
         let currentUuid = new URLSearchParams(window.location.search).get('uuid');
@@ -974,6 +1071,9 @@
         let profileTemplates = [];
         let groupedPresets = {};
         let activeCategory = null;
+
+        // My Lists (saved AI/custom lists reusable across profiles)
+        let myLists = JSON.parse(localStorage.getItem('yaca_my_lists') || '[]');
 
         // Preset pagination state
         const PRESETS_PER_PAGE = 20;
@@ -1163,7 +1263,7 @@
         function buildPosterRowHTML(items) {
             if (!items || items.length === 0) return '<div class="text-[10px] text-gray-600 py-2 px-1">Nessun risultato</div>';
             return items.map(item => `
-                <div class="catalog-poster shrink-0 w-[80px] sm:w-[95px] group relative">
+                <div class="catalog-poster shrink-0 w-[80px] sm:w-[95px] xl:w-[110px] group relative">
                     <div class="aspect-[2/3] rounded-lg overflow-hidden bg-dark-700 border border-dark-600/50">
                         ${item.poster
                     ? `<img src="${escapeHtml(item.poster)}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover" loading="lazy">`
@@ -1913,7 +2013,8 @@
             const SOURCE_STYLES = {
                 preset:  { label: 'Preset',   cls: 'text-stremio bg-stremio/10 border-stremio/20' },
                 ai:      { label: '🤖 AI',     cls: 'text-green-400 bg-green-500/10 border-green-500/20' },
-                manual:  { label: '🔧 Manuale', cls: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' }
+                manual:  { label: '🔧 Manuale', cls: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
+                merged:  { label: '🔗 Unito',   cls: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' }
             };
 
             catalogs.forEach((cat, idx) => {
@@ -1921,20 +2022,46 @@
                 const srcInfo = SOURCE_STYLES[cat.source] || SOURCE_STYLES.preset;
                 const isFirst = idx === 0;
                 const isLast = idx === catalogs.length - 1;
+                // Determine preset ID for poster preview
+                const presetId = cat._presetId || (cat.id.startsWith('yaca_preset_') ? cat.id.replace('yaca_preset_', '') : null);
 
                 const item = document.createElement('div');
-                item.className = 'active-catalog-item flex items-center gap-2 px-2.5 py-2 rounded-lg bg-dark-800/60 border border-dark-700/50 hover:border-dark-600 group';
+                item.className = 'active-catalog-item catalog-row rounded-xl overflow-hidden bg-dark-800/60 border border-dark-700/50 hover:border-dark-600 group';
                 item.dataset.id = cat.id;
+                item.setAttribute('draggable', 'true');
                 item.innerHTML = `
-                    <div class="flex flex-col gap-0 shrink-0">
-                        <button type="button" class="move-up-btn text-[9px] text-gray-600 hover:text-gray-200 transition-colors leading-none px-0.5 py-0.5 hover:bg-dark-600 rounded ${isFirst ? 'opacity-20 pointer-events-none' : ''}" data-id="${escapeHtml(cat.id)}" title="Sposta su">▲</button>
-                        <button type="button" class="move-down-btn text-[9px] text-gray-600 hover:text-gray-200 transition-colors leading-none px-0.5 py-0.5 hover:bg-dark-600 rounded ${isLast ? 'opacity-20 pointer-events-none' : ''}" data-id="${escapeHtml(cat.id)}" title="Sposta giù">▼</button>
+                    <div class="flex items-center gap-2 px-2.5 py-2">
+                        <div class="flex flex-col gap-0 shrink-0">
+                            <button type="button" class="move-up-btn text-[9px] text-gray-600 hover:text-gray-200 transition-colors leading-none px-0.5 py-0.5 hover:bg-dark-600 rounded ${isFirst ? 'opacity-20 pointer-events-none' : ''}" data-id="${escapeHtml(cat.id)}" title="Sposta su">▲</button>
+                            <button type="button" class="move-down-btn text-[9px] text-gray-600 hover:text-gray-200 transition-colors leading-none px-0.5 py-0.5 hover:bg-dark-600 rounded ${isLast ? 'opacity-20 pointer-events-none' : ''}" data-id="${escapeHtml(cat.id)}" title="Sposta giù">▼</button>
+                        </div>
+                        <span class="text-[10px] ${typeInfo.bg} ${typeInfo.text} border ${typeInfo.border} px-1.5 py-0.5 rounded shrink-0">${typeInfo.label}</span>
+                        <span class="text-xs text-gray-200 flex-1 truncate font-medium" title="${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</span>
+                        <span class="text-[9px] ${srcInfo.cls} border px-1.5 py-0.5 rounded shrink-0">${srcInfo.label}</span>
+                        <button type="button" class="remove-catalog-btn text-gray-500 hover:text-red-400 transition-all text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/10 shrink-0" data-id="${escapeHtml(cat.id)}" title="Rimuovi">✕</button>
                     </div>
-                    <span class="text-[10px] ${typeInfo.bg} ${typeInfo.text} border ${typeInfo.border} px-1.5 py-0.5 rounded shrink-0">${typeInfo.label}</span>
-                    <span class="text-xs text-gray-200 flex-1 truncate font-medium" title="${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</span>
-                    <span class="text-[9px] ${srcInfo.cls} border px-1.5 py-0.5 rounded shrink-0">${srcInfo.label}</span>
-                    <button type="button" class="remove-catalog-btn text-gray-500 hover:text-red-400 transition-all text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/10 shrink-0" data-id="${escapeHtml(cat.id)}" title="Rimuovi">✕</button>
+                    ${presetId ? `<div class="catalog-row-posters flex gap-2 overflow-x-auto px-3 pb-2.5" id="active-row-posters-${escapeHtml(presetId)}">
+                        <div class="flex items-center gap-2 py-1 px-1"><div class="w-3 h-3 border-2 border-dark-600 border-t-transparent rounded-full animate-spin"></div><span class="text-[10px] text-gray-600">Caricamento...</span></div>
+                    </div>` : ''}
                 `;
+
+                // Drag-and-drop for merging catalogs
+                item.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', cat.id);
+                    item.classList.add('opacity-50');
+                });
+                item.addEventListener('dragend', () => { item.classList.remove('opacity-50'); });
+                item.addEventListener('dragover', (e) => { e.preventDefault(); item.classList.add('border-cyan-400/60', 'bg-cyan-500/10'); });
+                item.addEventListener('dragleave', () => { item.classList.remove('border-cyan-400/60', 'bg-cyan-500/10'); });
+                item.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    item.classList.remove('border-cyan-400/60', 'bg-cyan-500/10');
+                    const draggedId = e.dataTransfer.getData('text/plain');
+                    if (draggedId && draggedId !== cat.id) {
+                        showMergeDialog(draggedId, cat.id);
+                    }
+                });
+
                 list.appendChild(item);
             });
 
@@ -1948,6 +2075,47 @@
             list.querySelectorAll('.remove-catalog-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => { e.stopPropagation(); removeActiveCatalog(btn.dataset.id); });
             });
+
+            // Auto-load poster previews for preset catalogs in active list
+            autoLoadActiveListPreviews(catalogs);
+        }
+
+        async function autoLoadActiveListPreviews(catalogs) {
+            const tmdbKey = document.getElementById('tmdbKey').value;
+            if (!tmdbKey) return;
+
+            const presetCatalogs = catalogs.filter(c => c._presetId || (c.id.startsWith('yaca_preset_') && !c.id.startsWith('yaca_preset_merged_')));
+            const BATCH_SIZE = 3;
+            for (let i = 0; i < presetCatalogs.length; i += BATCH_SIZE) {
+                const batch = presetCatalogs.slice(i, i + BATCH_SIZE);
+                await Promise.all(batch.map(async (cat) => {
+                    const presetId = cat._presetId || cat.id.replace('yaca_preset_', '');
+                    const container = document.getElementById(`active-row-posters-${presetId}`);
+                    if (!container) return;
+
+                    if (previewCache[presetId]) {
+                        container.innerHTML = buildPosterRowHTML(previewCache[presetId]);
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch('/api/preview-catalog', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ tmdbKey, presetId })
+                        });
+                        if (!res.ok) {
+                            container.innerHTML = '<div class="text-[10px] text-red-400/60 py-1 px-1">Errore</div>';
+                            return;
+                        }
+                        const data = await res.json();
+                        setPreviewCache(presetId, data.items);
+                        container.innerHTML = buildPosterRowHTML(data.items);
+                    } catch (_err) {
+                        container.innerHTML = '<div class="text-[10px] text-red-400/60 py-1 px-1">Errore di rete</div>';
+                    }
+                }));
+            }
         }
 
         function moveActiveCatalog(id, direction) {
@@ -1982,6 +2150,165 @@
             ep.raw_ui_state.catalogOrder = ep.raw_ui_state.catalogOrder.filter(oid => oid !== id);
             renderActiveCatalogsList();
             updatePresetsCounter();
+        }
+
+        // --- MERGE CATALOGS ---
+        let pendingMerge = { sourceId: null, targetId: null };
+
+        function showMergeDialog(sourceId, targetId) {
+            const ep = getEditingProfile();
+            if (!ep) return;
+            const catalogs = getActiveCatalogsForProfile(ep);
+            const source = catalogs.find(c => c.id === sourceId);
+            const target = catalogs.find(c => c.id === targetId);
+            if (!source || !target) return;
+
+            pendingMerge = { sourceId, targetId };
+            const modal = document.getElementById('mergeModal');
+            const summary = document.getElementById('mergeSummary');
+            const nameInput = document.getElementById('mergeNameInput');
+
+            summary.innerHTML = `<div class="flex items-center gap-2"><span class="text-stremio">📋</span> <strong class="text-white">${escapeHtml(source.name)}</strong></div>
+                <div class="text-gray-500 text-center">+ unisci con +</div>
+                <div class="flex items-center gap-2"><span class="text-stremio">📋</span> <strong class="text-white">${escapeHtml(target.name)}</strong></div>`;
+            nameInput.value = `${source.name} + ${target.name}`;
+            modal.classList.remove('hidden');
+        }
+
+        function confirmMerge() {
+            const ep = getEditingProfile();
+            if (!ep || !pendingMerge.sourceId || !pendingMerge.targetId) return;
+
+            const catalogs = getActiveCatalogsForProfile(ep);
+            const source = catalogs.find(c => c.id === pendingMerge.sourceId);
+            const target = catalogs.find(c => c.id === pendingMerge.targetId);
+            if (!source || !target) return;
+
+            const mergeName = document.getElementById('mergeNameInput').value.trim() || `${source.name} + ${target.name}`;
+            const mergeSort = document.getElementById('mergeSortInput').value;
+
+            // Collect preset IDs from both catalogs
+            const sourcePresetIds = [];
+            const targetPresetIds = [];
+            if (source._presetId) sourcePresetIds.push(source._presetId);
+            if (target._presetId) targetPresetIds.push(target._presetId);
+            // If either is already a merged catalog, collect its sub-presets
+            const sourceExisting = ep.existingCatalogs.find(c => c.id === source.id);
+            const targetExisting = ep.existingCatalogs.find(c => c.id === target.id);
+            if (sourceExisting?.mergedPresetIds) sourcePresetIds.push(...sourceExisting.mergedPresetIds);
+            if (targetExisting?.mergedPresetIds) targetPresetIds.push(...targetExisting.mergedPresetIds);
+
+            const allPresetIds = [...new Set([...sourcePresetIds, ...targetPresetIds])];
+
+            // Create merged catalog entry
+            const mergedId = `merged_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+            const mergedType = source.type || target.type || 'movie';
+
+            ep.existingCatalogs.push({
+                id: mergedId,
+                name: mergeName.substring(0, 80),
+                raw_prompt: `[Unito] ${mergeName}`,
+                type: mergedType,
+                source: 'merged',
+                mergedPresetIds: allPresetIds,
+                filters: { sort_by: mergeSort }
+            });
+
+            // Remove the two original catalogs
+            removeActiveCatalog(pendingMerge.sourceId);
+            removeActiveCatalog(pendingMerge.targetId);
+
+            // Close modal
+            document.getElementById('mergeModal').classList.add('hidden');
+            pendingMerge = { sourceId: null, targetId: null };
+            renderActiveCatalogsList();
+            updatePresetsCounter();
+        }
+
+        document.getElementById('mergeCancelBtn').addEventListener('click', () => {
+            document.getElementById('mergeModal').classList.add('hidden');
+            pendingMerge = { sourceId: null, targetId: null };
+        });
+        document.getElementById('mergeConfirmBtn').addEventListener('click', confirmMerge);
+
+        // --- MY LISTS (saved AI/custom lists) ---
+        function saveMyLists() {
+            localStorage.setItem('yaca_my_lists', JSON.stringify(myLists));
+        }
+
+        function addToMyLists(catalog) {
+            const id = `mylist_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+            myLists.push({
+                id,
+                name: catalog.name || catalog.raw_prompt || 'Lista senza nome',
+                type: catalog.type || 'movie',
+                raw_prompt: catalog.raw_prompt || '',
+                filters: catalog.filters || {},
+                createdAt: new Date().toISOString()
+            });
+            saveMyLists();
+            renderMyLists();
+        }
+
+        function removeFromMyLists(id) {
+            myLists = myLists.filter(l => l.id !== id);
+            saveMyLists();
+            renderMyLists();
+        }
+
+        function addMyListToProfile(listId) {
+            const ep = getEditingProfile();
+            if (!ep) return;
+            const list = myLists.find(l => l.id === listId);
+            if (!list) return;
+            // Check if already added
+            if (ep.existingCatalogs.some(c => c.id === listId)) return;
+            ep.existingCatalogs.push({
+                id: listId,
+                name: list.name.substring(0, 50),
+                raw_prompt: list.raw_prompt || `[Lista] ${list.name}`,
+                type: list.type,
+                filters: list.filters
+            });
+            renderActiveCatalogsList();
+            renderMyLists();
+            updatePresetsCounter();
+        }
+
+        function renderMyLists() {
+            const container = document.getElementById('myListsContainer');
+            const emptyMsg = document.getElementById('myListsEmpty');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (myLists.length === 0) {
+                if (emptyMsg) emptyMsg.classList.remove('hidden');
+                return;
+            }
+            if (emptyMsg) emptyMsg.classList.add('hidden');
+
+            const ep = getEditingProfile();
+            myLists.forEach(list => {
+                const typeInfo = TYPE_COLORS[list.type] || TYPE_COLORS['movie'];
+                const isInProfile = ep && ep.existingCatalogs.some(c => c.id === list.id);
+
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-2 px-2.5 py-2 rounded-lg bg-dark-800/60 border border-dark-700/50 hover:border-dark-600';
+                item.innerHTML = `
+                    <span class="text-[10px] ${typeInfo.bg} ${typeInfo.text} border ${typeInfo.border} px-1.5 py-0.5 rounded shrink-0">${typeInfo.label}</span>
+                    <span class="text-xs text-gray-200 flex-1 truncate font-medium" title="${escapeHtml(list.name)}">${escapeHtml(list.name)}</span>
+                    <button type="button" class="mylist-add-btn text-[10px] ${isInProfile ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-stremio bg-stremio/10 border-stremio/20'} border px-2 py-0.5 rounded transition-colors shrink-0" data-id="${escapeHtml(list.id)}">${isInProfile ? '✓ Aggiunto' : '+ Aggiungi'}</button>
+                    <button type="button" class="mylist-remove-btn text-gray-500 hover:text-red-400 transition-all text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/10 shrink-0" data-id="${escapeHtml(list.id)}" title="Elimina">✕</button>
+                `;
+                container.appendChild(item);
+            });
+
+            container.querySelectorAll('.mylist-add-btn').forEach(btn => {
+                btn.addEventListener('click', () => addMyListToProfile(btn.dataset.id));
+            });
+            container.querySelectorAll('.mylist-remove-btn').forEach(btn => {
+                btn.addEventListener('click', () => removeFromMyLists(btn.dataset.id));
+            });
         }
 
         function updatePaginationControls(totalItems, totalPages, currentPage) {
@@ -2071,6 +2398,8 @@
             updatePresetsCounter();
             // Render active catalogs panel (in profiles tab)
             renderActiveCatalogsList();
+            // Render My Lists section
+            renderMyLists();
         }
 
         function switchEditingProfile(id) {
@@ -2089,6 +2418,35 @@
         });
         document.querySelectorAll('.nav-next-btn').forEach(btn => {
             btn.addEventListener('click', () => switchTab(btn.dataset.next));
+        });
+
+        // Dashboard pill switching
+        let activeDashPill = 'profiles';
+        function switchDashPill(pill) {
+            activeDashPill = pill;
+            const pills = { profiles: 'dashPillProfiles', active: 'dashPillActive', explore: 'dashPillExplore' };
+            const sections = { profiles: 'dashSectionProfiles', active: 'dashSectionActive', explore: 'dashSectionExplore' };
+            Object.keys(pills).forEach(key => {
+                const btn = document.getElementById(pills[key]);
+                const sec = document.getElementById(sections[key]);
+                if (key === pill) {
+                    btn.className = 'dash-pill flex-1 text-xs font-medium py-2.5 px-3 rounded-lg bg-stremio/15 text-stremio border border-stremio/20 transition-colors';
+                    sec.classList.remove('hidden');
+                } else {
+                    btn.className = 'dash-pill flex-1 text-xs font-medium py-2.5 px-3 rounded-lg text-gray-400 hover:text-gray-200 transition-colors';
+                    sec.classList.add('hidden');
+                }
+            });
+            if (pill === 'active') renderActiveCatalogsList();
+            if (pill === 'active') renderMyLists();
+            if (pill === 'explore') renderPresetCards();
+        }
+        document.querySelectorAll('.dash-pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.id.replace('dashPill', '').toLowerCase();
+                const pillMap = { profiles: 'profiles', active: 'active', explore: 'explore' };
+                switchDashPill(pillMap[id] || id);
+            });
         });
 
         // Close preview
@@ -2241,6 +2599,32 @@
             }
         });
 
+        // Save manual catalog to My Lists
+        document.getElementById('saveManualToMyListsBtn').addEventListener('click', () => {
+            const name = document.getElementById('manualPresetName').value.trim();
+            if (!name) { alert('Inserisci un nome per il catalogo.'); return; }
+            const type = document.getElementById('manualPresetType').value;
+            const sortBy = document.getElementById('manualPresetSort').value;
+            const filters = { sort_by: sortBy };
+            const genres = document.getElementById('manualPresetGenres').value.trim();
+            const keywords = document.getElementById('manualPresetKeywords').value.trim();
+            if (genres) filters.with_genres = genres;
+            if (keywords) filters.with_keywords = keywords;
+            addToMyLists({ name, type, raw_prompt: `[Manuale] ${name}`, filters });
+            alert('✅ Salvato in "Le Mie Liste"!');
+        });
+
+        // Save AI catalog to My Lists
+        document.getElementById('saveAiToMyListsBtn').addEventListener('click', () => {
+            const prompts = Array.from(document.querySelectorAll('.catalog-prompt, .catalog-prompt-new'))
+                .map(i => i.value.trim()).filter(v => v !== '');
+            if (prompts.length === 0) { alert('Inserisci almeno un prompt AI.'); return; }
+            prompts.forEach(prompt => {
+                addToMyLists({ name: prompt, type: 'movie', raw_prompt: prompt, filters: {} });
+            });
+            alert(`✅ ${prompts.length} lista/e salvata/e in "Le Mie Liste"!`);
+        });
+
         // Preset pagination
         document.getElementById('presetPrevBtn').addEventListener('click', () => {
             if (currentPresetPage > 0) {
@@ -2314,7 +2698,8 @@
                 mistralKey: document.getElementById('mistralKey').value,
                 traktToken: document.getElementById('traktToken').value,
                 profiles: profiles,
-                activeProfileId: activeProfileId
+                activeProfileId: activeProfileId,
+                myLists: myLists
             };
             const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -2366,6 +2751,12 @@
                         if (!p.settings) p.settings = { minVoteAverage: 0, minVoteCount: 0, fastPresetRefresh: false };
                         if (p.settings.fastPresetRefresh === undefined) p.settings.fastPresetRefresh = false;
                     });
+
+                    // Import My Lists if present
+                    if (data.myLists && Array.isArray(data.myLists)) {
+                        myLists = data.myLists;
+                        saveMyLists();
+                    }
 
                     renderProfileSelect();
                     renderPresetsAndCatalogs();
