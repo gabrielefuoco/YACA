@@ -311,7 +311,7 @@ async function getTmdbMetaDetails(apiKey, id, type) {
         const itTitle = data.title || data.name;
         const originalTitle = data.original_title || data.original_name;
         const isItalianOriginal = data.original_language === 'it';
-        const titleNeedsFallback = !isItalianOriginal && itTitle === originalTitle;
+        const titleNeedsFallback = !isItalianOriginal && itTitle && originalTitle && itTitle === originalTitle;
         const overviewNeedsFallback = !data.overview;
 
         if (titleNeedsFallback || overviewNeedsFallback) {

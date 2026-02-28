@@ -148,9 +148,9 @@ app.get('/badge', async (req, res) => {
     if (!isAllowedUrl(url, ALLOWED_IMAGE_HOSTS)) {
         return res.status(403).send('URL non consentito');
     }
-    // Sanitize badge text: max 10 chars, alphanumeric + colon only
+    // Sanitize badge text: max 10 chars, only alphanumeric and colon allowed
     const safeText = sanitizeString(String(text)).slice(0, 10);
-    if (!safeText) {
+    if (!safeText || !/^[A-Za-z0-9:]+$/.test(safeText)) {
         return res.status(400).send('Testo badge non valido');
     }
     try {
@@ -162,7 +162,7 @@ app.get('/badge', async (req, res) => {
         } else {
             return res.status(500).send('Errore elaborazione immagine');
         }
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).send('Errore elaborazione immagine');
     }
 });

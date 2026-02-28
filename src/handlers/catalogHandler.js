@@ -44,7 +44,7 @@ function applyEpisodeBadge(metas) {
 
         const badgeText = latest.season && latest.season > 1
             ? `S${latest.season}E${latest.episode}`
-            : `E${latest.episode}`;
+            : `E${latest.episode || 1}`;
 
         meta.poster = `${host}/badge?url=${encodeURIComponent(meta.poster)}&text=${encodeURIComponent(badgeText)}`;
     }
