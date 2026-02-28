@@ -70,27 +70,66 @@ app.get('/api/presets', (req, res) => {
 });
 
 // Endpoint per anteprima catalogo: restituisce i primi 20 risultati TMDB con poster
+// Supporta sia presetId (cataloghi curati) che filtri custom (creazione manuale)
 const PREVIEW_TIMEOUT_MS = 8000;
 app.post('/api/preview-catalog', sensitiveLimiter, async (req, res) => {
-    const { tmdbKey, presetId } = req.body;
-    if (!tmdbKey || !presetId) {
-        return res.status(400).json({ error: 'tmdbKey e presetId obbligatori' });
+    const { tmdbKey, presetId, filters: customFilters, type: customType } = req.body;
+    if (!tmdbKey) {
+        return res.status(400).json({ error: 'tmdbKey obbligatorio' });
     }
-    const sanitizedPresetId = sanitizeString(presetId);
+    if (!presetId && !customFilters) {
+        return res.status(400).json({ error: 'presetId o filters obbligatori' });
+    }
     const sanitizedTmdbKey = sanitizeString(tmdbKey);
-    const preset = getPresets().find(p => p.id === sanitizedPresetId);
-    if (!preset) {
-        return res.status(404).json({ error: 'Preset non trovato' });
+
+    let discoverType, discoverFilters;
+
+    if (presetId) {
+        // Modalità preset: cerca il preset per ID
+        const sanitizedPresetId = sanitizeString(presetId);
+        const preset = getPresets().find(p => p.id === sanitizedPresetId);
+        if (!preset) {
+            return res.status(404).json({ error: 'Preset non trovato' });
+        }
+        discoverType = preset.type === 'series' ? 'tv' : 'movie';
+        discoverFilters = preset.filters;
+    } else {
+        // Modalità custom: usa filtri forniti direttamente
+        discoverType = customType === 'series' ? 'tv' : 'movie';
+        // Sanitize custom filter keys and values
+        discoverFilters = {};
+        const allowedFilterKeys = [
+            'sort_by', 'with_genres', 'with_keywords', 'with_cast', 'with_crew',
+            'with_companies', 'with_original_language', 'vote_average.gte', 'vote_count.gte',
+            'primary_release_date.gte', 'primary_release_date.lte',
+            'first_air_date.gte', 'first_air_date.lte'
+        ];
+        for (const [key, value] of Object.entries(customFilters)) {
+            if (allowedFilterKeys.includes(key) && value !== undefined && value !== '') {
+                if (typeof value === 'string') {
+                    discoverFilters[key] = sanitizeString(value);
+                } else if (typeof value === 'number') {
+                    // Validate numeric ranges
+                    if (key === 'vote_average.gte') {
+                        discoverFilters[key] = Math.max(0, Math.min(10, Number(value) || 0));
+                    } else if (key === 'vote_count.gte') {
+                        discoverFilters[key] = Math.max(0, Math.floor(Number(value) || 0));
+                    } else {
+                        discoverFilters[key] = Number(value) || 0;
+                    }
+                }
+            }
+        }
     }
+
     try {
-        const discoverType = preset.type === 'series' ? 'tv' : 'movie';
         const tmdbRes = await axios.get(`https://api.themoviedb.org/3/discover/${discoverType}`, {
             params: {
                 api_key: sanitizedTmdbKey,
                 language: 'it-IT',
                 region: 'IT',
                 page: 1,
-                ...preset.filters
+                ...discoverFilters
             },
             timeout: PREVIEW_TIMEOUT_MS
         });

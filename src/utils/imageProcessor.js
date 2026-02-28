@@ -45,7 +45,7 @@ async function addBadgeToImage(imageUrl, badgeText) {
         const margin = Math.round(width * 0.04);
 
         const svgOverlay = `
-        <svg width="${width}" height="${height}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
             <rect x="${width - badgeW - margin}" y="${margin}"
                   width="${badgeW}" height="${badgeH}"
                   rx="${radius}"
@@ -55,7 +55,7 @@ async function addBadgeToImage(imageUrl, badgeText) {
                   text-anchor="middle" font-family="Arial, sans-serif">${badgeText}</text>
         </svg>`;
 
-        return sharp(imageBuffer)
+        return await sharp(imageBuffer)
             .composite([{ input: Buffer.from(svgOverlay), top: 0, left: 0 }])
             .jpeg({ quality: 85 })
             .toBuffer();
