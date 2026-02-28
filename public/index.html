@@ -2573,24 +2573,19 @@
             btn.innerHTML = '⏳ Caricamento...';
             try {
                 const tmdbKey = document.getElementById('tmdbKey').value.trim();
-                const res = await fetch(`/api/preview-catalog?type=${encodeURIComponent(type)}&filters=${encodeURIComponent(JSON.stringify(filters))}&tmdbKey=${encodeURIComponent(tmdbKey)}`);
+                if (!tmdbKey) { alert('Inserisci la chiave TMDB nella sezione Credenziali.'); return; }
+                const res = await fetch('/api/preview-catalog', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tmdbKey, filters, type })
+                });
                 const previewSection = document.getElementById('manualPreviewSection');
                 const postersContainer = document.getElementById('manualPreviewPosters');
                 if (res.ok) {
                     const data = await res.json();
                     postersContainer.innerHTML = '';
-                    if (data.results && data.results.length > 0) {
-                        data.results.slice(0, 20).forEach(item => {
-                            const poster = item.poster_path ? `https://image.tmdb.org/t/p/w154${item.poster_path}` : '';
-                            if (poster) {
-                                const img = document.createElement('img');
-                                img.src = poster;
-                                img.alt = item.title || item.name || '';
-                                img.className = 'w-[70px] h-[105px] rounded-lg object-cover shrink-0 poster-item';
-                                img.title = item.title || item.name || '';
-                                postersContainer.appendChild(img);
-                            }
-                        });
+                    if (data.items && data.items.length > 0) {
+                        postersContainer.innerHTML = buildPosterRowHTML(data.items);
                     } else {
                         postersContainer.innerHTML = '<div class="text-xs text-gray-500 py-2">Nessun risultato trovato.</div>';
                     }
