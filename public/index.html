@@ -2532,26 +2532,16 @@
         });
 
         // Generate AI Preview button
-        document.getElementById('generateAiPreviewBtn').addEventListener('click', async () => {
+        document.getElementById('generateAiPreviewBtn').addEventListener('click', () => {
             const prompts = Array.from(document.querySelectorAll('.catalog-prompt, .catalog-prompt-new'))
                 .map(i => i.value.trim()).filter(v => v !== '');
             if (prompts.length === 0) { alert('Inserisci almeno un prompt AI.'); return; }
             const mistralKey = document.getElementById('mistralKey').value.trim();
             if (!mistralKey) { alert('Inserisci la Mistral API Key nella sezione Credenziali.'); return; }
-            const btn = document.getElementById('generateAiPreviewBtn');
-            btn.disabled = true;
-            btn.innerHTML = '⏳ Generazione in corso...';
-            try {
-                const previewSection = document.getElementById('aiPreviewSection');
-                const postersContainer = document.getElementById('aiPreviewPosters');
-                postersContainer.innerHTML = '<div class="text-xs text-gray-500 py-2">Caricamento anteprima...</div>';
-                previewSection.classList.remove('hidden');
-            } catch (err) {
-                alert('Errore nella generazione: ' + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '🔮 Genera Anteprima';
-            }
+            const previewSection = document.getElementById('aiPreviewSection');
+            const postersContainer = document.getElementById('aiPreviewPosters');
+            postersContainer.innerHTML = '<div class="text-xs text-gray-500 py-2">Anteprima disponibile dopo il salvataggio. Usa "Salva in Le Mie Liste" per generare i cataloghi.</div>';
+            previewSection.classList.remove('hidden');
         });
 
         // Generate Manual Preview button
