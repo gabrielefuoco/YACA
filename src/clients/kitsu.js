@@ -15,8 +15,8 @@ function toStremioMetaItem(kitsuItem) {
     const attrs = kitsuItem.attributes;
     const id = `kitsu:${kitsuItem.id}`;
 
-    // Kitsu fornisce vari titoli (en, en_jp, ja_jp). Scegliamo user-friendly.
-    const title = attrs.titles?.en || attrs.titles?.en_jp || attrs.canonicalTitle || 'Titolo sconosciuto';
+    // Kitsu fornisce vari titoli (en, en_jp, ja_jp, it). Scegliamo user-friendly con priorità italiano.
+    const title = attrs.titles?.it || attrs.titles?.en || attrs.titles?.en_jp || attrs.canonicalTitle || 'Titolo sconosciuto';
     const year = attrs.startDate ? attrs.startDate.split('-')[0] : '';
 
     return {
@@ -73,7 +73,7 @@ async function fetchKitsuEpisodes(kitsuId) {
             const attrs = ep.attributes;
             return {
                 id: `kitsu:${kitsuId}:${attrs.number}`,
-                title: attrs.titles?.en || attrs.titles?.en_jp || `Episodio ${attrs.number}`,
+                title: attrs.titles?.it || attrs.titles?.en || attrs.titles?.en_jp || `Episodio ${attrs.number}`,
                 released: attrs.airdate ? new Date(attrs.airdate).toISOString() : null,
                 season: 1, // Kitsu uses seasons differently, usually mapping to season 1 for Stremio series
                 episode: attrs.number,

@@ -297,7 +297,7 @@ async function getTmdbMetaDetails(apiKey, id, type) {
 
     try {
         const res = await client.get(endpoint, {
-            // Include videos (trailers) and images (for logos)
+            // Include videos (trailers) and images (for logos and posters)
             // also we can append credits for cast and external_ids for IMDB ID (streaming fix)
             // appending release_dates for movies age ratings and content_ratings for series
             params: { append_to_response: 'videos,credits,images,external_ids,release_dates,content_ratings', include_image_language: 'it,en,null' }
@@ -305,6 +305,41 @@ async function getTmdbMetaDetails(apiKey, id, type) {
 
         const data = res.data;
         if (!data) return null;
+
+        // Fallback linguistico: IT → EN → lingua originale
+        // Se overview o titolo mancanti in italiano, proviamo inglese poi originale
+        const itTitle = data.title || data.name;
+        const originalTitle = data.original_title || data.original_name;
+        const isItalianOriginal = data.original_language === 'it';
+        const titleNeedsFallback = !isItalianOriginal && itTitle && originalTitle && itTitle === originalTitle;
+        const overviewNeedsFallback = !data.overview;
+
+        if (titleNeedsFallback || overviewNeedsFallback) {
+            try {
+                const enRes = await client.get(endpoint, { params: { language: 'en-US' } });
+                const enData = enRes.data;
+                if (enData) {
+                    if (overviewNeedsFallback && enData.overview) {
+                        data.overview = enData.overview;
+                    }
+                    if (titleNeedsFallback) {
+                        const enTitle = enData.title || enData.name;
+                        if (enTitle && enTitle !== originalTitle) {
+                            if (data.title !== undefined) data.title = enTitle;
+                            if (data.name !== undefined) data.name = enTitle;
+                        }
+                    }
+                }
+                // Se overview ancora assente, prova lingua originale
+                if (!data.overview && data.original_language) {
+                    const origRes = await client.get(endpoint, { params: { language: data.original_language } });
+                    if (origRes.data?.overview) {
+                        data.overview = origRes.data.overview;
+                    }
+                }
+            } catch (_e) { /* fallback silenzioso */ }
+        }
+
         const meta = toStremioMetaItem(data, type);
         if (!meta) return null;
 
@@ -336,6 +371,17 @@ async function getTmdbMetaDetails(apiKey, id, type) {
                 }
             }
         } catch (_e) { /* fallback silenzioso se fallisce estrazione certification */ }
+
+        // Poster con fallback linguistico: IT → EN → originale (null) → poster_path
+        if (data.images && data.images.posters && data.images.posters.length > 0) {
+            const itPoster = data.images.posters.find(p => p.iso_639_1 === 'it');
+            const enPoster = data.images.posters.find(p => p.iso_639_1 === 'en');
+            const nullPoster = data.images.posters.find(p => !p.iso_639_1);
+            const bestPoster = itPoster || enPoster || nullPoster;
+            if (bestPoster) {
+                meta.poster = `https://image.tmdb.org/t/p/w500${bestPoster.file_path}`;
+            }
+        }
 
         // Troviamo il ClearLogo (il logo col nome del film trasparente)
         if (data.images && data.images.logos && data.images.logos.length > 0) {

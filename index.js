@@ -12,7 +12,7 @@ const { catalogHandler } = require('./src/handlers/catalogHandler');
 const { metaHandler } = require('./src/handlers/metaHandler');
 const { getPresets, profileTemplates } = require('./src/data/presets');
 const { isValidUUID, parseExtra, sanitizeString, isAllowedUrl } = require('./src/utils/helpers');
-const { blurImage } = require('./src/utils/imageProcessor');
+const { blurImage, addBadgeToImage } = require('./src/utils/imageProcessor');
 
 // 1. Inizializza Express
 const app = express();
@@ -134,6 +134,35 @@ app.get('/blur', async (req, res) => {
             return res.status(500).send('Errore elaborazione immagine');
         }
     } catch (err) {
+        return res.status(500).send('Errore elaborazione immagine');
+    }
+});
+
+// Endpoint per aggiungere badge (numero episodio) su poster
+// Protetto contro SSRF: accetta solo URL di CDN immagini noti
+app.get('/badge', async (req, res) => {
+    const { url, text } = req.query;
+    if (!url || !text) {
+        return res.status(400).send('URL e text obbligatori');
+    }
+    if (!isAllowedUrl(url, ALLOWED_IMAGE_HOSTS)) {
+        return res.status(403).send('URL non consentito');
+    }
+    // Sanitize badge text: max 10 chars, only alphanumeric and colon allowed
+    const safeText = sanitizeString(String(text)).slice(0, 10);
+    if (!safeText || !/^[A-Za-z0-9:]+$/.test(safeText)) {
+        return res.status(400).send('Testo badge non valido');
+    }
+    try {
+        const imageBuffer = await addBadgeToImage(url, safeText);
+        if (imageBuffer) {
+            res.set('Content-Type', 'image/jpeg');
+            res.set('Cache-Control', 'public, max-age=604800');
+            return res.send(imageBuffer);
+        } else {
+            return res.status(500).send('Errore elaborazione immagine');
+        }
+    } catch (_err) {
         return res.status(500).send('Errore elaborazione immagine');
     }
 });
