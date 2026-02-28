@@ -423,10 +423,21 @@ async function getTmdbMetaDetails(apiKey, id, type) {
     }
 }
 
+/**
+ * Svuota tutte le cache in memoria del modulo TMDB (idName, imdbId, movieMeta, seriesMeta).
+ */
+function clearAllTmdbCaches() {
+    idNameCache.clear();
+    imdbIdCache.clear();
+    movieMetaCache.clear();
+    seriesMetaCache.clear();
+}
+
 module.exports = {
     createTmdbClient, // Esportato in caso serva passare chiavi specifiche
     fetchTmdbCatalog,
     getTmdbMetaDetails,
     getTmdbIdByName,
-    resolveImdbId
+    resolveImdbId,
+    clearAllTmdbCaches
 };

@@ -968,6 +968,27 @@
 
                 <hr class="border-dark-700/50">
 
+                <!-- Svuota Cache (solo per test) -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-sm">🗑️</div>
+                        <div>
+                            <h2 class="text-base font-semibold text-white">Svuota Cache</h2>
+                            <p class="text-xs text-gray-500">Rimuove tutta la cache globale del sistema (memoria e database)</p>
+                        </div>
+                    </div>
+                    <button type="button" id="clearCacheBtn"
+                        class="w-full py-2.5 px-4 bg-red-900/30 border border-red-700/50 rounded-xl text-sm text-red-300 hover:bg-red-800/40 hover:text-red-200 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Svuota Cache Globale
+                    </button>
+                </div>
+
+                <hr class="border-dark-700/50">
+
                 <!-- Export/Import Config -->
                 <div class="space-y-4">
                     <div class="flex items-center gap-3 mb-2">
@@ -2855,6 +2876,28 @@
             a.download = `yaca-config-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
+        });
+
+        // -- CLEAR CACHE --
+        document.getElementById('clearCacheBtn').addEventListener('click', async () => {
+            if (!confirm('Sei sicuro di voler svuotare tutta la cache del sistema?')) return;
+            const btn = document.getElementById('clearCacheBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg> Svuotamento in corso...';
+            try {
+                const res = await fetch('/api/clear-cache', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                const data = await res.json();
+                if (data.success) {
+                    btn.innerHTML = '✅ Cache svuotata con successo!';
+                    setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 3000);
+                } else {
+                    throw new Error(data.error || 'Errore sconosciuto');
+                }
+            } catch (err) {
+                btn.innerHTML = '❌ Errore: ' + err.message;
+                setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 3000);
+            }
         });
 
         // -- IMPORT CONFIG --

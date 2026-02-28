@@ -65,6 +65,26 @@ const TmdbRequestCache = {
         if (error) {
             console.error('Errore salvataggio tmdb_request_cache:', error.message);
         }
+    },
+
+    /**
+     * Svuota l'intera tabella tmdb_request_cache su Supabase.
+     * @returns {Promise<{deleted: boolean}>}
+     */
+    async clear() {
+        const supabase = getSupabase();
+        if (!supabase) return { deleted: false };
+
+        const { error } = await supabase
+            .from('tmdb_request_cache')
+            .delete()
+            .not('request_hash', 'is', null);
+
+        if (error) {
+            console.error('Errore svuotamento tmdb_request_cache:', error.message);
+            return { deleted: false };
+        }
+        return { deleted: true };
     }
 };
 

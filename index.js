@@ -13,6 +13,9 @@ const { metaHandler } = require('./src/handlers/metaHandler');
 const { getPresets, profileTemplates } = require('./src/data/presets');
 const { isValidUUID, parseExtra, sanitizeString, isAllowedUrl } = require('./src/utils/helpers');
 const { blurImage, addBadgeToImage } = require('./src/utils/imageProcessor');
+const { clearAllTmdbCaches } = require('./src/clients/tmdb');
+const { clearIdCache } = require('./src/id_mapping/id_cache');
+const TmdbRequestCache = require('./src/models/TmdbRequestCache');
 
 // 1. Inizializza Express
 const app = express();
@@ -440,6 +443,19 @@ app.get(['/:uuid/configure', '/:uuid/:configVersion/configure'], (req, res) => {
         return res.status(400).json({ error: "UUID non valido" });
     }
     res.redirect(`/?uuid=${req.params.uuid}`);
+});
+
+// Endpoint per svuotare tutte le cache globali del sistema (solo per test)
+app.post('/api/clear-cache', sensitiveLimiter, async (req, res) => {
+    try {
+        clearAllTmdbCaches();
+        clearIdCache();
+        const dbResult = await TmdbRequestCache.clear();
+        res.json({ success: true, dbCleared: dbResult.deleted });
+    } catch (err) {
+        console.error('Errore svuotamento cache:', err);
+        res.status(500).json({ error: 'Errore durante lo svuotamento della cache.' });
+    }
 });
 
 // Opzioni di ordinamento disponibili in Stremio per i cataloghi TMDB
