@@ -309,9 +309,6 @@
 
         /* Desktop: larger elements and better use of space */
         @media (min-width: 1280px) {
-            .catalog-poster {
-                width: 110px !important;
-            }
             .catalog-row-posters {
                 gap: 0.75rem;
             }
@@ -1065,6 +1062,8 @@
 
     <script>
         const YACA_VERSION = '1.0.2';
+        const PRESET_ID_PREFIX = 'yaca_preset_';
+        const MAX_CATALOG_NAME_LENGTH = 50;
         let currentUuid = new URLSearchParams(window.location.search).get('uuid');
 
         let availablePresets = [];
@@ -2023,7 +2022,7 @@
                 const isFirst = idx === 0;
                 const isLast = idx === catalogs.length - 1;
                 // Determine preset ID for poster preview
-                const presetId = cat._presetId || (cat.id.startsWith('yaca_preset_') ? cat.id.replace('yaca_preset_', '') : null);
+                const presetId = cat._presetId || (cat.id.startsWith(PRESET_ID_PREFIX) ? cat.id.replace(PRESET_ID_PREFIX, '') : null);
 
                 const item = document.createElement('div');
                 item.className = 'active-catalog-item catalog-row rounded-xl overflow-hidden bg-dark-800/60 border border-dark-700/50 hover:border-dark-600 group';
@@ -2084,12 +2083,12 @@
             const tmdbKey = document.getElementById('tmdbKey').value;
             if (!tmdbKey) return;
 
-            const presetCatalogs = catalogs.filter(c => c._presetId || (c.id.startsWith('yaca_preset_') && !c.id.startsWith('yaca_preset_merged_')));
+            const presetCatalogs = catalogs.filter(c => c._presetId || (c.id.startsWith(PRESET_ID_PREFIX) && !c.id.startsWith(PRESET_ID_PREFIX + 'merged_')));
             const BATCH_SIZE = 3;
             for (let i = 0; i < presetCatalogs.length; i += BATCH_SIZE) {
                 const batch = presetCatalogs.slice(i, i + BATCH_SIZE);
                 await Promise.all(batch.map(async (cat) => {
-                    const presetId = cat._presetId || cat.id.replace('yaca_preset_', '');
+                    const presetId = cat._presetId || cat.id.replace(PRESET_ID_PREFIX, '');
                     const container = document.getElementById(`active-row-posters-${presetId}`);
                     if (!container) return;
 
@@ -2201,12 +2200,12 @@
             const allPresetIds = [...new Set([...sourcePresetIds, ...targetPresetIds])];
 
             // Create merged catalog entry
-            const mergedId = `merged_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+            const mergedId = `merged_${(typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).substring(2, 7)}`;
             const mergedType = source.type || target.type || 'movie';
 
             ep.existingCatalogs.push({
                 id: mergedId,
-                name: mergeName.substring(0, 80),
+                name: mergeName.substring(0, MAX_CATALOG_NAME_LENGTH),
                 raw_prompt: `[Unito] ${mergeName}`,
                 type: mergedType,
                 source: 'merged',
@@ -2265,7 +2264,7 @@
             if (ep.existingCatalogs.some(c => c.id === listId)) return;
             ep.existingCatalogs.push({
                 id: listId,
-                name: list.name.substring(0, 50),
+                name: list.name.substring(0, MAX_CATALOG_NAME_LENGTH),
                 raw_prompt: list.raw_prompt || `[Lista] ${list.name}`,
                 type: list.type,
                 filters: list.filters
@@ -2437,8 +2436,7 @@
                     sec.classList.add('hidden');
                 }
             });
-            if (pill === 'active') renderActiveCatalogsList();
-            if (pill === 'active') renderMyLists();
+            if (pill === 'active') { renderActiveCatalogsList(); renderMyLists(); }
             if (pill === 'explore') renderPresetCards();
         }
         document.querySelectorAll('.dash-pill').forEach(btn => {
@@ -2577,7 +2575,7 @@
                 const manualId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
                 ep.existingCatalogs.push({
                     id: `manual_${manualId}`,
-                    name: name.substring(0, 50), // Max 50 chars, matching server-side limit
+                    name: name.substring(0, MAX_CATALOG_NAME_LENGTH), // Max chars, matching server-side limit
                     raw_prompt: `[Manuale] ${name}`,
                     type: type,
                     filters: filters
