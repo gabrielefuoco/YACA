@@ -53,10 +53,16 @@ describe('addBadgeToImage', () => {
     });
 
     it('should generate SVG with xmlns attribute for proper rendering', async () => {
-        // This test verifies the SVG has xmlns by checking the output is valid
         const result = await addBadgeToImage('https://image.tmdb.org/t/p/w500/test.jpg', 'E5');
         expect(result).toBeInstanceOf(Buffer);
         // The output should be different from the input (badge was composited)
         expect(result.length).not.toBe(testImageBuffer.length);
+    });
+
+    it('should include xmlns attribute in SVG overlay', () => {
+        // Directly verify the source code includes xmlns in the SVG
+        const fs = require('fs');
+        const source = fs.readFileSync(require.resolve('../src/utils/imageProcessor.js'), 'utf-8');
+        expect(source).toContain('xmlns="http://www.w3.org/2000/svg"');
     });
 });

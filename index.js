@@ -106,7 +106,18 @@ app.post('/api/preview-catalog', sensitiveLimiter, async (req, res) => {
         ];
         for (const [key, value] of Object.entries(customFilters)) {
             if (allowedFilterKeys.includes(key) && value !== undefined && value !== '') {
-                discoverFilters[key] = typeof value === 'string' ? sanitizeString(value) : value;
+                if (typeof value === 'string') {
+                    discoverFilters[key] = sanitizeString(value);
+                } else if (typeof value === 'number') {
+                    // Validate numeric ranges
+                    if (key === 'vote_average.gte') {
+                        discoverFilters[key] = Math.max(0, Math.min(10, Number(value) || 0));
+                    } else if (key === 'vote_count.gte') {
+                        discoverFilters[key] = Math.max(0, Math.floor(Number(value) || 0));
+                    } else {
+                        discoverFilters[key] = Number(value) || 0;
+                    }
+                }
             }
         }
     }

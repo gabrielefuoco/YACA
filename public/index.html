@@ -2548,6 +2548,8 @@
         document.getElementById('generateManualPreviewBtn').addEventListener('click', async () => {
             const name = document.getElementById('manualPresetName').value.trim();
             if (!name) { alert('Inserisci un nome per il catalogo.'); return; }
+            const tmdbKey = document.getElementById('tmdbKey').value.trim();
+            if (!tmdbKey) { alert('Inserisci la chiave TMDB nella sezione Credenziali.'); return; }
             const type = document.getElementById('manualPresetType').value;
             const sortBy = document.getElementById('manualPresetSort').value;
             const genres = document.getElementById('manualPresetGenres').value.trim();
@@ -2572,8 +2574,6 @@
             btn.disabled = true;
             btn.innerHTML = '⏳ Caricamento...';
             try {
-                const tmdbKey = document.getElementById('tmdbKey').value.trim();
-                if (!tmdbKey) { alert('Inserisci la chiave TMDB nella sezione Credenziali.'); return; }
                 const res = await fetch('/api/preview-catalog', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
