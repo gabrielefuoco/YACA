@@ -18,6 +18,38 @@ const FORCED_FAST_CATALOGS = new Set(FORCED_FAST_CATALOG_IDS);
 const FORCED_FAST_PRESETS = new Set(FORCED_FAST_PRESET_IDS);
 const FORCED_SLOW_PRESETS = new Set(FORCED_SLOW_PRESET_IDS);
 
+// Cataloghi che mostrano episodi recenti (badge numero episodio sul poster)
+const EPISODE_CATALOG_IDS = new Set([
+    'yaca_preset_preset_new_series_eps',
+    'yaca_preset_preset_new_anime_eps'
+]);
+
+/**
+ * Aggiunge il badge con numero episodio ai poster per cataloghi di episodi recenti.
+ * Trova l'ultimo episodio trasmesso e genera l'URL del poster con badge.
+ */
+function applyEpisodeBadge(metas) {
+    const host = process.env.HOST_URL || 'http://localhost:7000';
+    const now = new Date();
+
+    for (const meta of metas) {
+        if (!meta || !meta.poster || !meta.videos || meta.videos.length === 0) continue;
+
+        // Trova l'ultimo episodio già trasmesso
+        const airedEpisodes = meta.videos.filter(v => v.released && new Date(v.released) <= now);
+        if (airedEpisodes.length === 0) continue;
+
+        airedEpisodes.sort((a, b) => new Date(b.released) - new Date(a.released));
+        const latest = airedEpisodes[0];
+
+        const badgeText = latest.season && latest.season > 1
+            ? `S${latest.season}E${latest.episode}`
+            : `E${latest.episode}`;
+
+        meta.poster = `${host}/badge?url=${encodeURIComponent(meta.poster)}&text=${encodeURIComponent(badgeText)}`;
+    }
+}
+
 function getCatalogCacheTtlMs(catalogId, profileSettings = {}) {
     if (FORCED_FAST_CATALOGS.has(catalogId)) return FAST_CACHE_TTL_MS;
     if (!catalogId.startsWith('yaca_preset_')) return CACHE_TTL_MS;
@@ -357,6 +389,12 @@ async function catalogHandler(args, userUuid) {
                 delete relaxedFilters.with_keywords;
                 results = await executeComplexStrategy(relaxedFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions);
             }
+
+            // Badge episodio sui poster per cataloghi di episodi recenti
+            if (EPISODE_CATALOG_IDS.has(id)) {
+                applyEpisodeBadge(results);
+            }
+
             return { metas: results };
         }
 

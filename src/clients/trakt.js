@@ -52,7 +52,7 @@ async function enhanceTraktItem(traktItem, tmdbApiKey) {
     if (tmdbId && enrichKey) {
         try {
             const tmdbenrich = await axios.get(`https://api.themoviedb.org/3/${isMovie ? 'movie' : 'tv'}/${tmdbId}`, {
-                params: { api_key: enrichKey },
+                params: { api_key: enrichKey, language: 'it-IT' },
                 timeout: 5000
             });
             if (tmdbenrich.data.poster_path) {
@@ -64,6 +64,12 @@ async function enhanceTraktItem(traktItem, tmdbApiKey) {
                 // Add blurred background hint for clients that support it
                 const host = process.env.HOST_URL || 'http://localhost:7000';
                 baseMeta.behaviorHints = { ...baseMeta.behaviorHints, backgroundBlur: `${host}/blur?url=${encodeURIComponent(bgUrl)}` };
+            }
+            // Fallback linguistico: se overview Trakt assente, usa TMDB italiano
+            if (!baseMeta.description || baseMeta.description === "Metadati completi al click") {
+                if (tmdbenrich.data.overview) {
+                    baseMeta.description = tmdbenrich.data.overview;
+                }
             }
         } catch (_e) { /* Ignora l'arricchimento se fallisce per rate limit */ }
     }
