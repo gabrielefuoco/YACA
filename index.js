@@ -179,7 +179,7 @@ app.get('/blur', async (req, res) => {
 
 // Endpoint per aggiungere badge (numero episodio) su poster
 // Protetto contro SSRF: accetta solo URL di CDN immagini noti
-app.get('/badge', async (req, res) => {
+app.get('/badge/poster.jpg', async (req, res) => {
     const { url, text } = req.query;
     if (!url || !text) {
         return res.status(400).send('URL e text obbligatori');
