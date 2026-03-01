@@ -1,5 +1,8 @@
 const axios = require("axios");
 const { getTmdbMetaDetails } = require("../clients/tmdb");
+const LRUCache = require("./LRUCache");
+
+const ratingsCache = new LRUCache({ max: 5000, ttl: 1000 * 60 * 60 * 6 }); // 6-hour TTL
 
 /**
  * Recupera gli item di una lista MDBList usando l'API pubblica o la chiave API.
@@ -53,4 +56,40 @@ async function parseMDBListItems(items, type, tmdbApiKey, language) {
     return metas;
 }
 
-module.exports = { fetchMDBListItems, parseMDBListItems };
+/**
+ * Recupera i voti di Rotten Tomatoes e Metacritic da MDBList per un dato IMDB ID.
+ * Restituisce null se non disponibili o in caso di errore.
+ */
+async function fetchMdblistRatings(imdbId, mdblistApiKey) {
+    if (!imdbId || !imdbId.startsWith('tt')) return null;
+
+    const cacheKey = `ratings:${imdbId}`;
+    if (ratingsCache.has(cacheKey)) return ratingsCache.get(cacheKey);
+
+    try {
+        let url = `https://api.mdblist.com/?i=${imdbId}`;
+        if (mdblistApiKey) url += `&apikey=${mdblistApiKey}`;
+
+        const response = await axios.get(url, { timeout: 5000 });
+        const ratingsData = response.data?.ratings;
+        if (!Array.isArray(ratingsData)) return null;
+
+        const find = (source) => ratingsData.find(r => r.source === source);
+        const rtCritic = find('tomatoes');
+        const rtAudience = find('tomatoesaudience');
+        const metacritic = find('metacritic');
+
+        const result = {
+            rtCritic: rtCritic?.value != null ? Math.round(rtCritic.value) : null,
+            rtAudience: rtAudience?.value != null ? Math.round(rtAudience.value) : null,
+            metacritic: metacritic?.value != null ? Math.round(metacritic.value) : null
+        };
+
+        ratingsCache.set(cacheKey, result);
+        return result;
+    } catch (_e) {
+        return null;
+    }
+}
+
+module.exports = { fetchMDBListItems, parseMDBListItems, fetchMdblistRatings };
