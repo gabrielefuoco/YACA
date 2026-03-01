@@ -442,8 +442,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 results = await executeComplexStrategy(relaxedFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions);
             }
 
-            // Badge episodio sui poster per cataloghi di episodi recenti
+            // Badge episodio sui poster per cataloghi di episodi recenti.
+            // Cloniamo gli oggetti per non mutare le versioni in cache.
             if (EPISODE_CATALOG_IDS.has(baseId)) {
+                results = results.map(m => ({ ...m }));
                 applyEpisodeBadge(results, hostUrl);
             }
 

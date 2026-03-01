@@ -22,7 +22,7 @@ const createTmdbClient = (apiKey) => createAxiosInstance(TMDB_ENDPOINT, {
         language: DEFAULT_LANGUAGE,
         region: DEFAULT_REGION
     },
-    timeout: 10000
+    timeout: 20000
 });
 
 const idNameCache = new LRUCache({ max: 1000, ttl: 1000 * 60 * 60 }); // 1 hour TTL

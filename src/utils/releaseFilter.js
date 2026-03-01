@@ -1,13 +1,21 @@
 // src/utils/releaseFilter.js
 
-const { createTmdbClient } = require("../clients/tmdb");
-
 const RELEASE_KEY_PREFIX = 'tmdb-addon|release';
 // In-memory cache fallback if we don't have Redis
 const localCache = new Map();
 const RELEASE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
+// Lazy import to avoid circular dependency with tmdb.js (deferred until first use)
+let _createTmdbClient;
+function getCreateTmdbClient() {
+    if (!_createTmdbClient) {
+        _createTmdbClient = require("../clients/tmdb").createTmdbClient;
+    }
+    return _createTmdbClient;
+}
+
 async function getReleaseDates(movieId, apiKey) {
+    const createTmdbClient = getCreateTmdbClient();
     const cacheKey = `${RELEASE_KEY_PREFIX}:${movieId}`;
 
     if (localCache.has(cacheKey)) {
