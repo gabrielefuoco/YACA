@@ -1059,8 +1059,7 @@
                 INSTALLA IN STREMIO
             </a>
             <div class="pt-4 border-t border-dark-700">
-                <p class="text-xs text-gray-500 mb-1">Il tuo ID di configurazione (salvalo per modificare le liste in
-                    futuro):</p>
+                <p class="text-xs text-gray-500 mb-1">La tua configurazione è stata salvata nell'URL di installazione.</p>
                 <code id="uuidDisplay"
                     class="px-2 py-1 bg-dark-900 border border-dark-600 rounded text-stremio text-[10px] sm:text-xs font-mono select-all break-all"></code>
             </div>
@@ -1128,7 +1127,7 @@
         const YACA_VERSION = '1.0.2';
         const PRESET_ID_PREFIX = 'yaca_preset_';
         const MAX_CATALOG_NAME_LENGTH = 50;
-        let currentUuid = new URLSearchParams(window.location.search).get('uuid');
+        let currentConfigBase64 = new URLSearchParams(window.location.search).get('config');
 
         let availablePresets = [];
         let profileTemplates = [];
@@ -1458,14 +1457,14 @@
             updateStremioAuthUI();
         }
 
-        async function autoUpdateStremioAddon(uuid, configVersion) {
+        async function autoUpdateStremioAddon(configBase64, configVersion) {
             if (!stremioAuthKey) return false;
 
             const portStr = window.location.port ? `:${window.location.port}` : '';
             const baseHttpUrl = `${window.location.protocol}//${window.location.hostname}${portStr}`;
             const manifestUrl = configVersion
-                ? `${baseHttpUrl}/${uuid}/${configVersion}/manifest.json`
-                : `${baseHttpUrl}/${uuid}/manifest.json`;
+                ? `${baseHttpUrl}/${configBase64}/${configVersion}/manifest.json`
+                : `${baseHttpUrl}/${configBase64}/manifest.json`;
 
             try {
                 const res = await fetch('/api/stremio-addon-update', {
@@ -3040,11 +3039,12 @@
 
             // 2. Fetch Existing Config
             let existingConfig = null;
-            if (currentUuid) {
+            if (currentConfigBase64) {
                 try {
-                    const res = await fetch(`/api/configure/${currentUuid}`);
-                    if (res.ok) existingConfig = await res.json();
-                } catch (e) { console.error("Errore caricamento config:", e); }
+                    // Decodifica la configurazione Base64 URL-safe direttamente nel browser
+                    const json = atob(currentConfigBase64.replace(/-/g, '+').replace(/_/g, '/'));
+                    existingConfig = JSON.parse(json);
+                } catch (e) { console.error("Errore decodifica config:", e); }
             }
 
             // 3. Populate State
@@ -3172,7 +3172,7 @@
             renderProfileSelect();
             renderPresetsAndCatalogs();
 
-            if (currentUuid) {
+            if (currentConfigBase64) {
                 document.getElementById('submitBtn').textContent = 'Aggiorna Configurazione';
             }
 
@@ -3228,7 +3228,7 @@
                     statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-red-500/20 text-red-400 block border border-red-500/30";
                     submitBtn.disabled = false;
                     submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-                    submitBtn.innerHTML = currentUuid ? "Aggiorna Configurazione" : "Genera Link di Installazione";
+                    submitBtn.innerHTML = currentConfigBase64 ? "Aggiorna Configurazione" : "Genera Link di Installazione";
                     return;
                 }
 
@@ -3256,8 +3256,6 @@
                     activeProfileId: activeProfileId,
                     profiles: payloadProfiles
                 };
-                if (currentUuid) payload.uuid = currentUuid;
-
                 const response = await fetch('/api/configure', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -3268,14 +3266,14 @@
                     const data = await response.json();
                     const cv = data.configVersion || '';
 
-                    if (currentUuid) {
+                    if (currentConfigBase64) {
                         // UPDATE MODE
                         const portStr = window.location.port ? `:${window.location.port}` : '';
                         const cleanUrl = `${window.location.protocol}//${window.location.hostname}${portStr}`;
                         const baseUrl = cleanUrl.replace('https://', 'stremio://').replace('http://', 'stremio://');
                         const updateLink = cv
-                            ? `${baseUrl}/${data.uuid}/${cv}/manifest.json`
-                            : `${baseUrl}/${data.uuid}/manifest.json`;
+                            ? `${baseUrl}/${data.configBase64}/${cv}/manifest.json`
+                            : `${baseUrl}/${data.configBase64}/manifest.json`;
 
                         // Se connesso a Stremio, aggiorna automaticamente l'addon
                         if (stremioAuthKey) {
@@ -3283,7 +3281,7 @@
                                 <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                 Aggiornamento Stremio...
                             `;
-                            const updated = await autoUpdateStremioAddon(data.uuid, cv);
+                            const updated = await autoUpdateStremioAddon(data.configBase64, cv);
                             if (updated) {
                                 statusMsg.innerHTML = `✅ Addon aggiornato automaticamente in Stremio! Le modifiche saranno visibili al prossimo riavvio dell'app.`;
                                 statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-green-500/20 text-green-400 block border border-green-500/30";
@@ -3311,16 +3309,16 @@
                         const baseUrl = cleanUrl.replace('https://', 'stremio://').replace('http://', 'stremio://');
 
                         const finalLink = cv
-                            ? `${baseUrl}/${data.uuid}/${cv}/manifest.json`
-                            : `${baseUrl}/${data.uuid}/manifest.json`;
+                            ? `${baseUrl}/${data.configBase64}/${cv}/manifest.json`
+                            : `${baseUrl}/${data.configBase64}/manifest.json`;
 
                         link.href = finalLink;
-                        uuidDisplay.textContent = data.uuid;
-                        currentUuid = data.uuid;
+                        uuidDisplay.textContent = 'Configurazione salvata';
+                        currentConfigBase64 = data.configBase64;
 
                         // Se connesso a Stremio, installa automaticamente l'addon
                         if (stremioAuthKey) {
-                            const installed = await autoUpdateStremioAddon(data.uuid, cv);
+                            const installed = await autoUpdateStremioAddon(data.configBase64, cv);
                             if (installed) {
                                 document.getElementById('configForm').classList.add('hidden');
                                 box.classList.remove('hidden');
@@ -3346,14 +3344,14 @@
                     statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-red-500/20 text-red-400 block border border-red-500/30";
                     submitBtn.disabled = false;
                     submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-                    submitBtn.innerHTML = currentUuid ? "Aggiorna Configurazione" : "Genera Link di Installazione";
+                    submitBtn.innerHTML = currentConfigBase64 ? "Aggiorna Configurazione" : "Genera Link di Installazione";
                 }
             } catch (err) {
                 statusMsg.textContent = "❌ Errore connessione: " + err.message;
                 statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-red-500/20 text-red-400 block border border-red-500/30";
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-                submitBtn.innerHTML = currentUuid ? "Aggiorna Configurazione" : "Genera Link di Installazione";
+                submitBtn.innerHTML = currentConfigBase64 ? "Aggiorna Configurazione" : "Genera Link di Installazione";
             }
         });
     </script>
