@@ -105,63 +105,11 @@ describe('AI response validation (prompt injection defense)', () => {
     });
 });
 
-describe('configure route - UUID validation', () => {
-    jest.mock('../src/models/UserConfig', () => ({
-        saveConfig: jest.fn(),
-        findOne: jest.fn()
-    }));
-
-    jest.mock('uuid', () => ({
-        v4: jest.fn(() => 'a1b2c3d4-e5f6-7890-abcd-ef1234567890')
-    }));
-
-    jest.mock('../src/ai/router', () => ({
-        generateTmdbFiltersFromPrompt: jest.fn()
-    }));
-
-    jest.mock('../src/data/presets', () => ({
-        getPresets: () => []
-    }));
-
-    const configureRoute = require('../src/api/configure');
-
-    it('should reject invalid UUID in request body', async () => {
-        const req = {
-            body: {
-                uuid: 'invalid-uuid',
-                tmdbKey: 'some_key',
-                profiles: [{
-                    id: 'p1',
-                    name: 'Test',
-                    selectedPresets: [],
-                    existingCatalogs: [],
-                    newPrompts: []
-                }]
-            }
-        };
-
-        const res = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn()
-        };
-
-        await configureRoute(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-            error: expect.stringContaining('UUID')
-        }));
-    });
-});
-
 describe('configure route - XSS sanitization', () => {
     jest.mock('../src/models/UserConfig', () => ({
-        saveConfig: jest.fn(),
-        findOne: jest.fn()
-    }));
-
-    jest.mock('uuid', () => ({
-        v4: jest.fn(() => 'a1b2c3d4-e5f6-7890-abcd-ef1234567890')
+        buildConfig: jest.fn(),
+        encodeConfig: jest.fn(),
+        decodeConfig: jest.fn()
     }));
 
     jest.mock('../src/ai/router', () => ({
@@ -180,11 +128,10 @@ describe('configure route - XSS sanitization', () => {
     });
 
     it('should sanitize profile names with HTML content', async () => {
-        UserConfig.saveConfig.mockResolvedValue({ uuid: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', configVersion: 'cv1' });
+        UserConfig.buildConfig.mockReturnValue({ config: {}, configBase64: 'abc123', configVersion: 'cv1' });
 
         const req = {
             body: {
-                uuid: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
                 tmdbKey: 'some_key',
                 profiles: [{
                     id: 'p1',
@@ -203,7 +150,7 @@ describe('configure route - XSS sanitization', () => {
 
         await configureRoute(req, res);
 
-        expect(UserConfig.saveConfig).toHaveBeenCalledWith(
+        expect(UserConfig.buildConfig).toHaveBeenCalledWith(
             expect.objectContaining({
                 profiles: expect.arrayContaining([
                     expect.objectContaining({

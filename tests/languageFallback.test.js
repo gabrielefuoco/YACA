@@ -293,9 +293,9 @@ describe('EPISODE_CATALOG_IDS', () => {
 
 // --- Test imageProcessor exports ---
 describe('imageProcessor module', () => {
-    it('should export blurImage and addBadgeToImage functions', () => {
+    it('should export getBlurredImageUrl and addBadgeToImage functions', () => {
         const imageProcessor = require('../src/utils/imageProcessor');
-        expect(typeof imageProcessor.blurImage).toBe('function');
+        expect(typeof imageProcessor.getBlurredImageUrl).toBe('function');
         expect(typeof imageProcessor.addBadgeToImage).toBe('function');
     });
 });

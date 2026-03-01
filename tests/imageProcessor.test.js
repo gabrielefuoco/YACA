@@ -1,5 +1,5 @@
 const sharp = require('sharp');
-const { addBadgeToImage } = require('../src/utils/imageProcessor');
+const { addBadgeToImage, getBlurredImageUrl } = require('../src/utils/imageProcessor');
 
 // Mock axios to avoid network calls
 jest.mock('axios', () => ({
@@ -64,5 +64,19 @@ describe('addBadgeToImage', () => {
         const fs = require('fs');
         const source = fs.readFileSync(require.resolve('../src/utils/imageProcessor.js'), 'utf-8');
         expect(source).toContain('xmlns="http://www.w3.org/2000/svg"');
+    });
+});
+
+describe('getBlurredImageUrl', () => {
+    it('should return a wsrv.nl URL with blur parameter', () => {
+        const url = getBlurredImageUrl('https://image.tmdb.org/t/p/w500/poster.jpg');
+        expect(url).toBe('https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw500%2Fposter.jpg&blur=20');
+    });
+
+    it('should encode the image URL', () => {
+        const url = getBlurredImageUrl('https://example.com/image.jpg?size=large&q=80');
+        expect(url).toContain('wsrv.nl');
+        expect(url).toContain('blur=20');
+        expect(url).toContain(encodeURIComponent('https://example.com/image.jpg?size=large&q=80'));
     });
 });

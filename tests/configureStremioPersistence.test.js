@@ -1,10 +1,7 @@
 jest.mock('../src/models/UserConfig', () => ({
-    saveConfig: jest.fn(),
-    findOne: jest.fn()
-}));
-
-jest.mock('uuid', () => ({
-    v4: jest.fn(() => 'a1b2c3d4-e5f6-7890-abcd-ef1234567890')
+    buildConfig: jest.fn(),
+    encodeConfig: jest.fn(),
+    decodeConfig: jest.fn()
 }));
 
 jest.mock('../src/ai/router', () => ({
@@ -18,19 +15,16 @@ jest.mock('../src/data/presets', () => ({
 const configureRoute = require('../src/api/configure');
 const UserConfig = require('../src/models/UserConfig');
 
-const VALID_UUID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
-
 describe('configure route - stremio auth persistence', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
     it('saves stremio auth key and email into apiKeys', async () => {
-        UserConfig.saveConfig.mockResolvedValue({ uuid: VALID_UUID, configVersion: 'cv1' });
+        UserConfig.buildConfig.mockReturnValue({ config: {}, configBase64: 'abc123base64', configVersion: 'cv1' });
 
         const req = {
             body: {
-                uuid: VALID_UUID,
                 tmdbKey: 'tmdb_key',
                 stremioAuthKey: 'stremio_auth_key',
                 stremioEmail: 'user@example.com',
@@ -53,7 +47,7 @@ describe('configure route - stremio auth persistence', () => {
 
         await configureRoute(req, res);
 
-        expect(UserConfig.saveConfig).toHaveBeenCalledWith(expect.objectContaining({
+        expect(UserConfig.buildConfig).toHaveBeenCalledWith(expect.objectContaining({
             apiKeys: expect.objectContaining({
                 tmdb: 'tmdb_key',
                 stremioAuthKey: 'stremio_auth_key',
@@ -65,6 +59,6 @@ describe('configure route - stremio auth persistence', () => {
                 })
             ])
         }));
-        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, uuid: VALID_UUID }));
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, configBase64: 'abc123base64' }));
     });
 });
