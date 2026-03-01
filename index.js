@@ -207,7 +207,7 @@ app.post('/api/stremio-auth', async (req, res) => {
             return res.json({ success: true, authKey: data.result.authKey, email: data.result.user?.email || email });
         }
         return res.json({ success: false, error: data?.result?.error || 'Credenziali non valide' });
-    } catch (err) {
+    } catch (_err) {
         return res.json({ success: false, error: 'Errore di connessione al servizio di autenticazione.' });
     }
 });
