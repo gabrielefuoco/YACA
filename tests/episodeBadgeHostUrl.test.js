@@ -21,11 +21,6 @@ jest.mock('../src/ai/router', () => ({
     routeLiveStremioSearch: jest.fn()
 }));
 
-jest.mock('../src/models/UserConfig', () => ({
-    findOne: jest.fn()
-}));
-
-const UserConfig = require('../src/models/UserConfig');
 const { fetchTmdbCatalog } = require('../src/clients/tmdb');
 const { catalogHandler } = require('../src/handlers/catalogHandler');
 
@@ -44,23 +39,23 @@ describe('applyEpisodeBadge host URL handling', () => {
         }
     ];
 
+    const userConfig = {
+        apiKeys: { tmdb: 'tmdb_key' },
+        profiles: [{
+            id: 'prof1',
+            catalogs: [{
+                id: 'yaca_preset_preset_new_series_eps',
+                type: 'series',
+                filters: { sort_by: 'popularity.desc' }
+            }],
+            settings: {}
+        }],
+        activeProfileId: 'prof1'
+    };
+
     beforeEach(() => {
         jest.clearAllMocks();
         delete process.env.HOST_URL;
-
-        UserConfig.findOne.mockResolvedValue({
-            apiKeys: { tmdb: 'tmdb_key' },
-            profiles: [{
-                id: 'prof1',
-                catalogs: [{
-                    id: 'yaca_preset_preset_new_series_eps',
-                    type: 'series',
-                    filters: { sort_by: 'popularity.desc' }
-                }],
-                settings: {}
-            }],
-            activeProfileId: 'prof1'
-        });
 
         fetchTmdbCatalog.mockResolvedValue(
             mockMetasWithVideos.map(m => ({ ...m, poster: m.poster, videos: [...m.videos] }))
@@ -72,7 +67,7 @@ describe('applyEpisodeBadge host URL handling', () => {
             type: 'series',
             id: 'yaca_preset_preset_new_series_eps',
             extra: { skip: 0 }
-        }, 'uuid-1', 'https://my-server.com');
+        }, userConfig, 'https://my-server.com');
 
         expect(result.metas[0].poster).toContain('https://my-server.com/badge/poster.jpg');
         expect(result.metas[0].poster).toContain('text=');
@@ -85,7 +80,7 @@ describe('applyEpisodeBadge host URL handling', () => {
             type: 'series',
             id: 'yaca_preset_preset_new_series_eps',
             extra: { skip: 0 }
-        }, 'uuid-1');
+        }, userConfig);
 
         expect(result.metas[0].poster).toContain('https://env-server.com/badge/poster.jpg');
     });
@@ -95,7 +90,7 @@ describe('applyEpisodeBadge host URL handling', () => {
             type: 'series',
             id: 'yaca_preset_preset_new_series_eps',
             extra: { skip: 0 }
-        }, 'uuid-1');
+        }, userConfig);
 
         expect(result.metas[0].poster).toContain('http://localhost:7000/badge/poster.jpg');
     });
@@ -105,7 +100,7 @@ describe('applyEpisodeBadge host URL handling', () => {
             type: 'series',
             id: 'yaca_preset_preset_new_series_eps',
             extra: { skip: 0 }
-        }, 'uuid-1', 'https://my-server.com');
+        }, userConfig, 'https://my-server.com');
 
         const posterUrl = result.metas[0].poster;
         expect(posterUrl).toContain(encodeURIComponent('https://image.tmdb.org/t/p/w500/test.jpg'));
@@ -116,7 +111,7 @@ describe('applyEpisodeBadge host URL handling', () => {
             type: 'series',
             id: 'yaca_preset_preset_new_series_eps',
             extra: { skip: 0 }
-        }, 'uuid-1', 'https://my-server.com');
+        }, userConfig, 'https://my-server.com');
 
         const posterUrl = result.metas[0].poster;
         // Episode 5, season 1 → should be "E5"

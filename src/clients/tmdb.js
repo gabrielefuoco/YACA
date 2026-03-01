@@ -199,7 +199,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
                 // Scenario C: Cache Hit Scaduta — Stale-While-Revalidate
                 // Ritorna dati vecchi all'utente, rinnova in background
                 fetchTmdbCatalogDirect(client, endpoint, normalizedSkip, customParams, type)
-                    .then(results => TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(cachedItems, results)))
+                    .then(results => { TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(cachedItems, results)); })
                     .catch(e => console.error('Errore rinnovo cache in background:', e.message));
 
                 return normalizedSkip === 0 ? cachedItems : cachedSlice;
@@ -209,24 +209,21 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
             // Recuperiamo solo la nuova pagina e aggiorniamo la lista in cache.
             const newItems = await fetchTmdbCatalogDirect(client, endpoint, normalizedSkip, customParams, type);
             const updatedItems = mergeCatalogItems(cachedItems, newItems);
-            TmdbRequestCache.set(requestHash, endpoint, updatedItems)
-                .catch(e => console.error('Errore salvataggio cache:', e.message));
+            TmdbRequestCache.set(requestHash, endpoint, updatedItems);
 
             return normalizedSkip === 0 ? updatedItems : updatedItems.slice(normalizedSkip, sliceEnd);
         }
     } catch (_e) {
-        // Cache non disponibile (Supabase down, tabella mancante, ecc.)
-        // Procediamo con la chiamata diretta a TMDB
+        // Cache non disponibile, procediamo con la chiamata diretta a TMDB
     }
 
     // Scenario A: Cache Miss — chiama TMDB e salva in cache
     const results = await fetchTmdbCatalogDirect(client, endpoint, normalizedSkip, customParams, type);
 
-    // Salvataggio in background (fire-and-forget) solo per la prima pagina,
+    // Salvataggio solo per la prima pagina,
     // così la cache rappresenta una lista progressiva a partire da skip 0.
     if (normalizedSkip === 0) {
-        TmdbRequestCache.set(requestHash, endpoint, results)
-            .catch(e => console.error('Errore salvataggio cache:', e.message));
+        TmdbRequestCache.set(requestHash, endpoint, results);
     }
 
     return results;
@@ -393,8 +390,7 @@ async function getTmdbMetaDetails(apiKey, id, type) {
 
         // Add Blurred Background link
         if (meta.background) {
-            const host = process.env.HOST_URL || 'http://localhost:7000';
-            meta.behaviorHints.backgroundBlur = `${host}/blur?url=${encodeURIComponent(meta.background)}`;
+            meta.behaviorHints.backgroundBlur = `https://wsrv.nl/?url=${encodeURIComponent(meta.background)}&blur=20`;
         }
 
         // Troviamo i trailer (YouTube) e formattiamoli secondo le specifiche Stremio

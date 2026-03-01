@@ -22,7 +22,9 @@ jest.mock('../src/ai/router', () => ({
 }));
 
 jest.mock('../src/models/UserConfig', () => ({
-    findOne: jest.fn()
+    decodeConfig: jest.fn(),
+    encodeConfig: jest.fn(),
+    buildConfig: jest.fn()
 }));
 
 const UserConfig = require('../src/models/UserConfig');
@@ -48,11 +50,11 @@ describe('MDBList preset routing', () => {
     });
 
     it('routes yaca_preset_mdblist_ IDs to MDBList handler', async () => {
-        UserConfig.findOne.mockResolvedValue({
+        const userConfig = {
             apiKeys: { tmdb: 'tmdb_key' },
             profiles: [{ id: 'prof1', catalogs: [{ id: 'yaca_preset_mdblist_456', type: 'series', filters: { mdblist: true } }] }],
             activeProfileId: 'prof1'
-        });
+        };
 
         fetchMDBListItems.mockResolvedValue([]);
         parseMDBListItems.mockResolvedValue([{ id: 'tt1234567', type: 'series', name: 'Test Show' }]);
@@ -61,7 +63,7 @@ describe('MDBList preset routing', () => {
             type: 'series',
             id: 'yaca_preset_mdblist_456',
             extra: { skip: 0 }
-        }, 'uuid-1');
+        }, userConfig);
 
         expect(fetchMDBListItems).toHaveBeenCalledWith('456', null, 'it', 1);
         expect(parseMDBListItems).toHaveBeenCalled();
@@ -69,10 +71,10 @@ describe('MDBList preset routing', () => {
     });
 
     it('routes bare mdblist_ IDs to MDBList handler', async () => {
-        UserConfig.findOne.mockResolvedValue({
+        const userConfig = {
             apiKeys: { tmdb: 'tmdb_key' },
             catalogs: [{ id: 'mdblist_456', type: 'series', filters: { mdblist: true } }]
-        });
+        };
 
         fetchMDBListItems.mockResolvedValue([]);
         parseMDBListItems.mockResolvedValue([{ id: 'tt9999999', type: 'series', name: 'Another Show' }]);
@@ -81,7 +83,7 @@ describe('MDBList preset routing', () => {
             type: 'series',
             id: 'mdblist_456',
             extra: { skip: 0 }
-        }, 'uuid-2');
+        }, userConfig);
 
         expect(fetchMDBListItems).toHaveBeenCalledWith('456', null, 'it', 1);
         expect(result.metas).toEqual([{ id: 'tt9999999', type: 'series', name: 'Another Show' }]);

@@ -1,17 +1,15 @@
 const { getTmdbMetaDetails } = require('../clients/tmdb');
 const { getKitsuMetaDetails } = require('../clients/kitsu');
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
-const UserConfig = require('../models/UserConfig');
 
 /**
  * Gestisce la richiesta di metadati dettagliati quando l'utente clicca su un titolo
  */
-async function metaHandler(args, userUuid) {
+async function metaHandler(args, userConfig) {
     try {
         const { type, id } = args;
 
-        const userConfig = await UserConfig.findOne({ uuid: userUuid });
-        if (!userConfig) throw new Error("Utente non trovato");
+        if (!userConfig) throw new Error("Configurazione utente mancante");
 
         const tmdbApiKey = userConfig.apiKeys?.tmdb;
         if (!tmdbApiKey) throw new Error("TMDB API key mancante");

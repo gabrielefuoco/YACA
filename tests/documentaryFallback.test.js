@@ -22,11 +22,12 @@ jest.mock('../src/ai/router', () => ({
 }));
 
 jest.mock('../src/models/UserConfig', () => ({
-    findOne: jest.fn()
+    decodeConfig: jest.fn(),
+    encodeConfig: jest.fn(),
+    buildConfig: jest.fn()
 }));
 
 const { fetchTmdbCatalog } = require('../src/clients/tmdb');
-const UserConfig = require('../src/models/UserConfig');
 const { catalogHandler } = require('../src/handlers/catalogHandler');
 
 describe('catalogHandler documentary fallback', () => {
@@ -35,10 +36,10 @@ describe('catalogHandler documentary fallback', () => {
     });
 
     it('retries documentary catalogs without keywords when first query is empty even with numeric genre id', async () => {
-        UserConfig.findOne.mockResolvedValue({
+        const userConfig = {
             apiKeys: { tmdb: 'tmdb_key' },
             catalogs: [{ id: 'doc_cat', filters: { with_genres: 99, with_keywords: '6075', sort_by: 'popularity.desc' } }]
-        });
+        };
 
         fetchTmdbCatalog
             .mockResolvedValueOnce([])
@@ -48,7 +49,7 @@ describe('catalogHandler documentary fallback', () => {
             type: 'series',
             id: 'doc_cat',
             extra: { skip: 0 }
-        }, 'uuid-1');
+        }, userConfig);
 
         expect(fetchTmdbCatalog).toHaveBeenCalledTimes(2);
         expect(fetchTmdbCatalog.mock.calls[0][3]).toEqual(expect.objectContaining({ with_keywords: '6075' }));

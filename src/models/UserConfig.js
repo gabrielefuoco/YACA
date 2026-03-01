@@ -1,52 +1,49 @@
-const { getSupabase } = require('../utils/database');
-
-// Questo file funge da "Model" astratto per facilitare il passaggio da Mongoose a Supabase 
-// senza dover stravolgere tutta l'app.
+/**
+ * Stateless UserConfig: codifica/decodifica la configurazione utente in Base64 URL-safe.
+ * Non usa più database — la configurazione è trasportata direttamente nell'URL.
+ */
 
 const UserConfig = {
-    async findOne({ uuid }) {
-        const supabase = getSupabase();
-        if (!supabase) throw new Error("Supabase non disponibile");
-
-        const { data, error } = await supabase
-            .from('user_configs')
-            .select('*')
-            .eq('uuid', uuid)
-            .single();
-
-        if (error || !data) {
+    /**
+     * Decodifica una stringa Base64 URL-safe in un oggetto di configurazione.
+     * @param {string} base64Str - Stringa Base64 URL-safe
+     * @returns {object|null} L'oggetto configurazione, o null se non valido
+     */
+    decodeConfig(base64Str) {
+        try {
+            const json = Buffer.from(base64Str, 'base64url').toString('utf8');
+            const config = JSON.parse(json);
+            if (!config || typeof config !== 'object' || !config.apiKeys) return null;
+            return config;
+        } catch (_e) {
             return null;
         }
-
-        return data; // Ritorna l'oggetto { uuid, apiKeys: {}, catalogs: [] } esattamente come Mongoose
     },
 
-    async saveConfig({ uuid, apiKeys, catalogs, profiles, activeProfileId }) {
-        const supabase = getSupabase();
-        if (!supabase) throw new Error("Supabase non disponibile");
+    /**
+     * Codifica un oggetto di configurazione in Base64 URL-safe.
+     * @param {object} config - L'oggetto configurazione
+     * @returns {string} Stringa Base64 URL-safe
+     */
+    encodeConfig(config) {
+        return Buffer.from(JSON.stringify(config)).toString('base64url');
+    },
 
+    /**
+     * Costruisce e restituisce la configurazione processata (senza salvarla nel DB).
+     * @returns {object} { config, configBase64, configVersion }
+     */
+    buildConfig({ apiKeys, catalogs, profiles, activeProfileId }) {
         const configVersion = Date.now().toString(36);
-        const row = {
-            uuid,
+        const config = {
             apiKeys,
             catalogs,
             profiles,
             activeProfileId,
-            updated_at: new Date()
+            configVersion
         };
-
-        const { data, error } = await supabase
-            .from('user_configs')
-            .upsert(row, { onConflict: 'uuid' })
-            .select();
-
-        if (error) {
-            throw new Error(error.message);
-        }
-        // Ritorna i dati salvati e assicura che configVersion sia incluso per il frontend
-        const savedRecord = data?.[0] || { ...row };
-        savedRecord.configVersion = configVersion;
-        return savedRecord;
+        const configBase64 = UserConfig.encodeConfig(config);
+        return { config, configBase64, configVersion };
     }
 };
 

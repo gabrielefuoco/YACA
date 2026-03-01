@@ -1,4 +1,4 @@
-const { isValidUUID, parseExtra } = require('../src/utils/helpers');
+const { isValidUUID, parseExtra, isValidConfigBase64 } = require('../src/utils/helpers');
 
 describe('isValidUUID', () => {
     it('should accept valid UUIDv4', () => {
@@ -43,5 +43,34 @@ describe('parseExtra', () => {
     it('should skip entries without value', () => {
         expect(parseExtra('search=test&empty=')).toEqual({ search: 'test' });
         expect(parseExtra('novalue&search=test')).toEqual({ search: 'test' });
+    });
+});
+
+describe('isValidConfigBase64', () => {
+    it('should accept a valid config base64 string', () => {
+        const config = { apiKeys: { tmdb: 'key1' }, catalogs: [] };
+        const encoded = Buffer.from(JSON.stringify(config)).toString('base64url');
+        expect(isValidConfigBase64(encoded)).toBe(true);
+    });
+
+    it('should reject base64 without apiKeys', () => {
+        const encoded = Buffer.from(JSON.stringify({ foo: 'bar' })).toString('base64url');
+        expect(isValidConfigBase64(encoded)).toBe(false);
+    });
+
+    it('should reject non-JSON base64', () => {
+        const encoded = Buffer.from('not json').toString('base64url');
+        expect(isValidConfigBase64(encoded)).toBe(false);
+    });
+
+    it('should reject null and empty string', () => {
+        expect(isValidConfigBase64(null)).toBe(false);
+        expect(isValidConfigBase64('')).toBe(false);
+        expect(isValidConfigBase64(undefined)).toBe(false);
+    });
+
+    it('should reject non-string input', () => {
+        expect(isValidConfigBase64(123)).toBe(false);
+        expect(isValidConfigBase64({})).toBe(false);
     });
 });

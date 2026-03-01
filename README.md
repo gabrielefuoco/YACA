@@ -1,45 +1,48 @@
 # YACA (Yet Another Catalog Addon)
 Il catalogo definitivo per Stremio, potenziato dall'intelligenza artificiale di Mistral.
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
 ## Funzionalità
 - **Cataloghi Intelligenti**: Genera cataloghi auto-aggiornanti con prompt testuali. (es. "Commedie romantiche natalizie").
 - **100+ Preset Curati**: Cataloghi pre-configurati per genere, regista, attore, studio, decennio e tematiche.
 - **Profili Multipli**: Organizza i tuoi cataloghi in profili (es. "Film", "Anime", "Serie TV") e passa da uno all'altro.
 - **Integrazione Trakt.tv**: Sincronizza Watchlist e Preferiti dal tuo account Trakt.
 - **Ricerca AI Live**: Cerca dalla barra di Stremio e l'AI interpreta la tua richiesta.
+- **Architettura Stateless**: Nessun database richiesto. La configurazione è codificata nell'URL.
+- **Ottimizzato per Render**: Funziona nel piano gratuito (512MB RAM) senza problemi.
 
-## Setup Cloud Zero-Costi
-Questo addon usa **Supabase** (PostgreSQL) come database cloud persistente gratuito per salvare le tue configurazioni senza doverti preoccupare di Docker o server.
+## Deploy in 1 Click su Render
 
-1. Iscriviti gratis su [Supabase](https://supabase.com).
-2. Crea un nuovo Progetto.
-3. Nel SQL Editor di Supabase, esegui questa query per creare la tabella necessaria:
-```sql
-create table user_configs (
-  uuid uuid primary key,
-  "apiKeys" jsonb not null,
-  catalogs jsonb default '[]',
-  profiles jsonb default '[]',
-  "activeProfileId" text,
-  updated_at timestamp with time zone default timezone('utc'::text, now())
-);
-```
-4. Vai nelle API Settings del tuo progetto Supabase e prendi `URL` e `anon public key`.
-5. Rinomina il file `.env.example` interno del progetto in `.env`.
-6. Compila il `.env` in questo modo:
-```bash
-SUPABASE_URL=https://tuo-id.supabase.co
-SUPABASE_KEY=ey... (chiave anon public)
-PORT=7000
-```
+1. Clicca il pulsante **Deploy to Render** qui sopra.
+2. Configura le variabili d'ambiente opzionali (`HOST_URL`, `TRAKT_CLIENT_ID`, `TRAKT_CLIENT_SECRET`).
+3. Una volta avviato, visita l'URL del tuo servizio per configurare l'addon.
 
-## Avvio Server
+## Setup Locale
+
 ```bash
 npm install
-npm run dev
+npm start
 ```
 
 Visita `http://localhost:7000` nel browser per configurare il tuo addon e ottenere il link personalizzato!
 
-## Aggiornamento
-Se hai già un'installazione esistente, visita `http://localhost:7000/?uuid=TUO-UUID` per modificare la configurazione. Dopo il salvataggio, clicca il link di reinstallazione per aggiornare l'addon in Stremio.
+## Come Funziona
+
+Questo addon è **completamente stateless** — non richiede database. La configurazione utente viene codificata in Base64 e inserita direttamente nell'URL dell'addon:
+
+```
+https://tuo-addon.onrender.com/<STRINGA_BASE64>/manifest.json
+```
+
+Quando modifichi la configurazione, il frontend genera un nuovo URL Base64. Con la funzione "Sincronizza Stremio", l'addon si aggiorna automaticamente nel tuo account senza reinstallazione.
+
+## Variabili d'Ambiente
+
+| Variabile | Obbligatoria | Descrizione |
+|---|---|---|
+| `PORT` | No | Porta del server (default: 7000) |
+| `HOST_URL` | Consigliata | URL pubblico del server (es. `https://tuo-addon.onrender.com`) |
+| `TRAKT_CLIENT_ID` | No | Client ID per integrazione Trakt.tv |
+| `TRAKT_CLIENT_SECRET` | No | Client Secret per integrazione Trakt.tv |
+| `CORS_ALLOWED_ORIGINS` | No | Origini CORS consentite, separate da virgola |

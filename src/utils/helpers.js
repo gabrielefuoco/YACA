@@ -62,4 +62,18 @@ function isAllowedUrl(url, allowedHosts) {
     }
 }
 
-module.exports = { isValidUUID, parseExtra, sanitizeString, isAllowedUrl };
+/**
+ * Verifica che una stringa sia un Base64 URL-safe valido decodificabile in JSON con apiKeys.
+ */
+function isValidConfigBase64(str) {
+    if (!str || typeof str !== 'string') return false;
+    try {
+        const json = Buffer.from(str, 'base64url').toString('utf8');
+        const obj = JSON.parse(json);
+        return obj && typeof obj === 'object' && obj.apiKeys !== undefined;
+    } catch (_e) {
+        return false;
+    }
+}
+
+module.exports = { isValidUUID, parseExtra, sanitizeString, isAllowedUrl, isValidConfigBase64 };
