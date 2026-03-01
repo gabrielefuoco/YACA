@@ -1,168 +1,87 @@
-jest.mock('../src/utils/database', () => ({
-    getSupabase: jest.fn()
-}));
-
 // Mock config to provide CACHE_TTL_MS
 jest.mock('../src/config', () => ({
     CACHE_TTL_MS: 24 * 60 * 60 * 1000
 }));
 
-const { getSupabase } = require('../src/utils/database');
-const TmdbRequestCache = require('../src/models/TmdbRequestCache');
+let TmdbRequestCache;
 
 describe('TmdbRequestCache', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        jest.resetModules();
+        TmdbRequestCache = require('../src/models/TmdbRequestCache');
     });
 
     describe('get', () => {
-        it('should return null when Supabase is not available', async () => {
-            getSupabase.mockReturnValue(null);
-            const result = await TmdbRequestCache.get('somehash');
+        it('should return null on cache miss', () => {
+            const result = TmdbRequestCache.get('missinghash');
             expect(result).toBeNull();
         });
 
-        it('should return null on cache miss', async () => {
-            const selectMock = jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                    single: jest.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } })
-                })
-            });
-            getSupabase.mockReturnValue({
-                from: jest.fn().mockReturnValue({
-                    select: selectMock,
-                    update: jest.fn().mockReturnValue({
-                        eq: jest.fn().mockResolvedValue({})
-                    })
-                })
-            });
+        it('should return fresh data when within TTL', () => {
+            TmdbRequestCache.set('freshhash', '/discover/movie', [{ id: 'tt123', name: 'Test Movie' }]);
 
-            const result = await TmdbRequestCache.get('missinghash');
-            expect(result).toBeNull();
-        });
-
-        it('should return fresh data when within TTL', async () => {
-            const now = new Date().toISOString();
-            const mockData = {
-                stremio_data: [{ id: 'tt123', name: 'Test Movie' }],
-                updated_at: now
-            };
-
-            const updateEqMock = jest.fn().mockResolvedValue({});
-            const updateMock = jest.fn().mockReturnValue({ eq: updateEqMock });
-            const selectMock = jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                    single: jest.fn().mockResolvedValue({ data: mockData, error: null })
-                })
-            });
-            getSupabase.mockReturnValue({
-                from: jest.fn().mockReturnValue({
-                    select: selectMock,
-                    update: updateMock
-                })
-            });
-
-            const result = await TmdbRequestCache.get('freshhash');
+            const result = TmdbRequestCache.get('freshhash');
             expect(result).not.toBeNull();
             expect(result.isStale).toBe(false);
             expect(result.stremioData).toEqual([{ id: 'tt123', name: 'Test Movie' }]);
         });
 
-        it('should return stale data when TTL has expired', async () => {
-            const oldDate = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(); // 25 hours ago
-            const mockData = {
-                stremio_data: [{ id: 'tt456', name: 'Old Movie' }],
-                updated_at: oldDate
-            };
+        it('should return stale data when TTL has expired', () => {
+            TmdbRequestCache.set('stalehash', '/discover/movie', [{ id: 'tt456', name: 'Old Movie' }]);
 
-            const updateEqMock = jest.fn().mockResolvedValue({});
-            const updateMock = jest.fn().mockReturnValue({ eq: updateEqMock });
-            const selectMock = jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                    single: jest.fn().mockResolvedValue({ data: mockData, error: null })
-                })
-            });
-            getSupabase.mockReturnValue({
-                from: jest.fn().mockReturnValue({
-                    select: selectMock,
-                    update: updateMock
-                })
-            });
+            // Advance time by 25 hours to exceed the 24h default TTL
+            jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 25 * 60 * 60 * 1000);
 
-            const result = await TmdbRequestCache.get('stalehash');
+            const result = TmdbRequestCache.get('stalehash');
             expect(result).not.toBeNull();
             expect(result.isStale).toBe(true);
             expect(result.stremioData).toEqual([{ id: 'tt456', name: 'Old Movie' }]);
+
+            Date.now.mockRestore();
         });
 
-        it('should respect custom TTL when provided', async () => {
-            const oldDate = new Date(Date.now() - 45 * 60 * 1000).toISOString(); // 45 minutes ago
-            const mockData = {
-                stremio_data: [{ id: 'tt999', name: 'Fast TTL Movie' }],
-                updated_at: oldDate
-            };
+        it('should respect custom TTL when provided', () => {
+            TmdbRequestCache.set('customttlhash', '/discover/movie', [{ id: 'tt999', name: 'Fast TTL Movie' }]);
 
-            const updateEqMock = jest.fn().mockResolvedValue({});
-            const updateMock = jest.fn().mockReturnValue({ eq: updateEqMock });
-            const selectMock = jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                    single: jest.fn().mockResolvedValue({ data: mockData, error: null })
-                })
-            });
-            getSupabase.mockReturnValue({
-                from: jest.fn().mockReturnValue({
-                    select: selectMock,
-                    update: updateMock
-                })
-            });
+            // Advance time by 45 minutes
+            jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 45 * 60 * 1000);
 
-            const result = await TmdbRequestCache.get('customttlhash', 30 * 60 * 1000);
+            const result = TmdbRequestCache.get('customttlhash', 30 * 60 * 1000);
             expect(result).not.toBeNull();
             expect(result.isStale).toBe(true);
+
+            Date.now.mockRestore();
         });
     });
 
     describe('set', () => {
-        it('should be a no-op when Supabase is not available', async () => {
-            getSupabase.mockReturnValue(null);
-            // Should not throw
-            await TmdbRequestCache.set('hash', '/discover/movie', []);
+        it('should store data and retrieve it', () => {
+            TmdbRequestCache.set('testhash', '/discover/movie', [{ id: 'tt789' }]);
+
+            const result = TmdbRequestCache.get('testhash');
+            expect(result).not.toBeNull();
+            expect(result.stremioData).toEqual([{ id: 'tt789' }]);
+            expect(result.isStale).toBe(false);
         });
 
-        it('should upsert data into tmdb_request_cache', async () => {
-            const upsertMock = jest.fn().mockResolvedValue({ error: null });
-            getSupabase.mockReturnValue({
-                from: jest.fn().mockReturnValue({
-                    upsert: upsertMock
-                })
-            });
+        it('should overwrite existing entry', () => {
+            TmdbRequestCache.set('hash', '/discover/movie', [{ id: 'old' }]);
+            TmdbRequestCache.set('hash', '/discover/movie', [{ id: 'new' }]);
 
-            await TmdbRequestCache.set('testhash', '/discover/movie', [{ id: 'tt789' }]);
-            expect(upsertMock).toHaveBeenCalledTimes(1);
-
-            const upsertArg = upsertMock.mock.calls[0][0];
-            expect(upsertArg.request_hash).toBe('testhash');
-            expect(upsertArg.endpoint).toBe('/discover/movie');
-            expect(upsertArg.stremio_data).toEqual([{ id: 'tt789' }]);
-            expect(upsertArg.updated_at).toBeDefined();
-            expect(upsertArg.last_accessed).toBeDefined();
+            const result = TmdbRequestCache.get('hash');
+            expect(result.stremioData).toEqual([{ id: 'new' }]);
         });
+    });
 
-        it('should log error on upsert failure without throwing', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-            const upsertMock = jest.fn().mockResolvedValue({ error: { message: 'db error' } });
-            getSupabase.mockReturnValue({
-                from: jest.fn().mockReturnValue({
-                    upsert: upsertMock
-                })
-            });
+    describe('clear', () => {
+        it('should clear all entries and return { deleted: true }', () => {
+            TmdbRequestCache.set('a', '/endpoint', [1]);
+            TmdbRequestCache.set('b', '/endpoint', [2]);
 
-            await TmdbRequestCache.set('hash', '/discover/movie', []);
-            expect(consoleSpy).toHaveBeenCalledWith(
-                'Errore salvataggio tmdb_request_cache:',
-                'db error'
-            );
-            consoleSpy.mockRestore();
+            const result = TmdbRequestCache.clear();
+            expect(result).toEqual({ deleted: true });
+            expect(TmdbRequestCache.get('a')).toBeNull();
+            expect(TmdbRequestCache.get('b')).toBeNull();
         });
     });
 });
