@@ -384,17 +384,12 @@
         </div>
 
         <!-- Tab Navigation -->
-        <div class="border-b border-dark-700 bg-dark-800/40">
+        <div id="mainNavContainer" class="border-b border-dark-700 bg-dark-800/40">
             <nav id="mainNav" class="flex overflow-x-auto preset-scroll px-2 sm:px-4" role="tablist">
                 <button type="button"
                     class="nav-tab active flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200"
                     data-tab="dashboard" role="tab">
                     📚 Dashboard
-                </button>
-                <button type="button"
-                    class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200"
-                    data-tab="credentials" role="tab">
-                    🔑 Credenziali
                 </button>
                 <button type="button"
                     class="nav-tab flex-1 sm:flex-none px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-200"
@@ -404,127 +399,110 @@
             </nav>
         </div>
 
-        <form id="configForm">
+        <!-- ==================== LOGIN / ONBOARDING PAGE ==================== -->
+        <div id="page-login" class="hidden p-4 sm:p-8 space-y-6 animate-slide-up">
 
-            <!-- ==================== TAB 1: CREDENTIALS ==================== -->
-            <div id="page-credentials" class="tab-page p-4 sm:p-8 space-y-6 animate-slide-up">
-
-                <!-- API Keys -->
-                <div class="space-y-4">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div
-                            class="w-8 h-8 rounded-lg bg-stremio/10 flex items-center justify-center text-stremio text-sm">
-                            🔑</div>
-                        <div>
-                            <h2 class="text-base font-semibold text-white">Credenziali API</h2>
-                            <p class="text-xs text-gray-500">Chiavi necessarie per il funzionamento dell'addon</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-1.5">
-                            <label for="tmdbKey" class="block text-xs font-medium text-gray-400">TMDB API Key <span
-                                    class="text-red-500">*</span></label>
-                            <input type="password" id="tmdbKey" required
-                                class="w-full px-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600"
-                                placeholder="Inserisci la v3 auth key">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label for="mistralKey" class="block text-xs font-medium text-gray-400">Mistral API Key
-                                <span class="text-gray-600 font-normal">(Opzionale)</span></label>
-                            <input type="password" id="mistralKey"
-                                class="w-full px-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600"
-                                placeholder="Solo per cataloghi AI">
-                        </div>
+            <!-- Micro-tutorial: Cos'è YACA? -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-stremio/10 flex items-center justify-center text-stremio text-sm">✨</div>
+                    <div>
+                        <h2 class="text-base font-semibold text-white">Cos'è YACA?</h2>
+                        <p class="text-xs text-gray-500">Il catalogo intelligente per Stremio</p>
                     </div>
                 </div>
-
-                <hr class="border-dark-700/50">
-
-                <!-- Trakt Integration -->
-                <div class="space-y-4">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-sm">🎬</div>
-                        <div>
-                            <h2 class="text-base font-semibold text-white">Trakt.tv</h2>
-                            <p class="text-xs text-gray-500">Sincronizza Watchlist e Consigliati</p>
-                        </div>
+                <div class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 space-y-3">
+                    <div class="flex items-start gap-3">
+                        <span class="text-lg shrink-0">🤖</span>
+                        <p class="text-sm text-gray-300"><strong class="text-white">Cataloghi AI:</strong> Scrivi cosa vuoi vedere e l'intelligenza artificiale crea il catalogo per te.</p>
                     </div>
-                    <div
-                        class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div class="flex-1">
-                            <p class="text-xs text-gray-400">Collega il tuo account per vedere Watchlist e Consigliati
-                                nella Home di Stremio.</p>
-                        </div>
-                        <div class="w-full sm:w-auto shrink-0">
-                            <button type="button" id="traktLoginBtn"
-                                class="w-full sm:w-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-bold flex items-center justify-center">
-                                Connetti Trakt
-                            </button>
-                            <div id="traktConnectedUI" class="hidden flex-col items-end">
-                                <span class="text-green-500 font-bold text-sm mb-1">✓ Connesso</span>
-                                <button type="button" id="traktLogoutBtn"
-                                    class="text-xs text-gray-400 hover:text-red-400 transition-colors">Scollega
-                                    Account</button>
-                            </div>
-                            <input type="hidden" id="traktToken">
-                            <input type="hidden" id="traktRefreshToken">
-                        </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-lg shrink-0">🎬</span>
+                        <p class="text-sm text-gray-300"><strong class="text-white">Raccomandazioni Trakt:</strong> Suggerimenti basati su cosa guardi davvero.</p>
                     </div>
-                </div>
-
-                <hr class="border-dark-700/50">
-
-                <!-- Stremio Account Integration -->
-                <div class="space-y-4">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-sm">⚡</div>
-                        <div>
-                            <h2 class="text-base font-semibold text-white">Auto-Update Stremio</h2>
-                            <p class="text-xs text-gray-500">Aggiorna automaticamente senza reinstallare</p>
-                        </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-lg shrink-0">🔄</span>
+                        <p class="text-sm text-gray-300"><strong class="text-white">Sempre Aggiornato:</strong> Episodi e film in tendenza aggiornati in tempo reale.</p>
                     </div>
-                    <div class="bg-dark-900/40 border border-dark-700 rounded-xl p-4">
-                        <div id="stremioAuthSection">
-                            <div id="stremioLoginForm" class="space-y-3">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <input type="email" id="stremioEmail" placeholder="Email Stremio"
-                                        class="px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-blue-500 text-sm placeholder-gray-600">
-                                    <input type="password" id="stremioPassword" placeholder="Password Stremio"
-                                        class="px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-blue-500 text-sm placeholder-gray-600">
-                                </div>
-                                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                                    <button type="button" id="stremioLoginBtn"
-                                        class="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
-                                        Accedi a Stremio
-                                    </button>
-                                    <span id="stremioAuthStatus" class="text-xs text-gray-400"></span>
-                                </div>
-                            </div>
-                            <div id="stremioLoggedIn" class="hidden flex items-center justify-between">
-                                <span class="text-green-400 text-sm">✅ Connesso come <strong id="stremioUserEmail"
-                                        class="text-white"></strong></span>
-                                <button type="button" id="stremioLogoutBtn"
-                                    class="px-3 py-1.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-xs rounded-lg transition-colors">Disconnetti</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Nav buttons -->
-                <div class="pt-2 flex justify-between">
-                    <button type="button"
-                        class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600"
-                        data-next="dashboard">
-                        ← Dashboard
-                    </button>
-                    <button type="button"
-                        class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors"
-                        data-next="settings">
-                        Impostazioni →
-                    </button>
                 </div>
             </div>
+
+            <hr class="border-dark-700/50">
+
+            <!-- Step 1: Stremio Login -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-sm">⚡</div>
+                    <div>
+                        <h2 class="text-base font-semibold text-white">Step 1: Login Stremio</h2>
+                        <p class="text-xs text-gray-500">Necessario per aggiornare l'addon automaticamente</p>
+                    </div>
+                    <span id="loginStep1Status" class="hidden text-green-500 text-sm font-bold ml-auto">✓</span>
+                </div>
+                <div id="loginStremioForm" class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input type="email" id="loginStremioEmail" placeholder="Email Stremio"
+                            class="px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-blue-500 text-sm placeholder-gray-600">
+                        <input type="password" id="loginStremioPassword" placeholder="Password Stremio"
+                            class="px-3 py-2.5 bg-dark-800 border border-dark-600 rounded-lg outline-none focus:border-blue-500 text-sm placeholder-gray-600">
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <button type="button" id="loginStremioBtn"
+                            class="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                            Accedi a Stremio
+                        </button>
+                        <span id="loginStremioStatus" class="text-xs text-gray-400"></span>
+                    </div>
+                </div>
+                <div id="loginStremioSuccess" class="hidden bg-green-500/10 border border-green-500/30 rounded-xl p-4">
+                    <span class="text-green-400 text-sm">✅ Connesso come <strong id="loginStremioUserEmail" class="text-white"></strong></span>
+                </div>
+            </div>
+
+            <hr class="border-dark-700/50">
+
+            <!-- Step 2: Trakt -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-sm">🎬</div>
+                    <div>
+                        <h2 class="text-base font-semibold text-white">Step 2: Collega Trakt <span class="text-gray-600 text-xs font-normal">(Opzionale)</span></h2>
+                        <p class="text-xs text-gray-500">Per Watchlist e Raccomandazioni personalizzate</p>
+                    </div>
+                    <span id="loginStep2Status" class="hidden text-green-500 text-sm font-bold ml-auto">✓</span>
+                </div>
+                <div class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 space-y-3">
+                    <p class="text-xs text-gray-400">Non hai Trakt? È un servizio gratuito che traccia i film che guardi. Vai su <a href="https://trakt.tv" target="_blank" class="text-red-400 underline hover:text-red-300">trakt.tv</a>, registrati in 1 minuto e torna qui.</p>
+                    <div id="loginTraktBtnContainer">
+                        <button type="button" id="loginTraktBtn"
+                            class="w-full sm:w-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-bold flex items-center justify-center">
+                            Collega Trakt
+                        </button>
+                    </div>
+                    <div id="loginTraktSuccess" class="hidden flex items-center gap-2">
+                        <span class="text-green-500 font-bold text-sm">✓ Trakt Connesso</span>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-dark-700/50">
+
+            <!-- Generate Config Button -->
+            <div class="space-y-3">
+                <button type="button" id="loginGenerateBtn"
+                    class="w-full py-4 px-4 border border-transparent rounded-xl shadow-lg text-base font-medium text-white bg-stremio hover:bg-stremio-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stremio focus:ring-offset-dark-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled>
+                    🚀 Genera Configurazione e Inizia
+                </button>
+                <p id="loginGenerateHint" class="text-xs text-gray-500 text-center">Completa lo Step 1 per continuare</p>
+            </div>
+        </div>
+
+        <form id="configForm">
+
+            <!-- Hidden inputs for Trakt tokens (used by form) -->
+            <input type="hidden" id="traktToken">
+            <input type="hidden" id="traktRefreshToken">
 
             <!-- ==================== TAB 2: UNIFIED DASHBOARD ==================== -->
             <div id="page-dashboard" class="tab-page active p-4 sm:p-8 space-y-6">
@@ -895,12 +873,7 @@
                 </div>
 
                 <!-- Nav buttons -->
-                <div class="pt-2 flex justify-between">
-                    <button type="button"
-                        class="nav-next-btn px-5 py-2.5 bg-dark-700 hover:bg-dark-600 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-dark-600"
-                        data-next="credentials">
-                        ← Credenziali
-                    </button>
+                <div class="pt-2 flex justify-end">
                     <button type="button"
                         class="nav-next-btn px-6 py-2.5 bg-stremio hover:bg-stremio-hover text-white text-sm font-medium rounded-lg transition-colors"
                         data-next="settings">
@@ -1022,6 +995,81 @@
 
                 <hr class="border-dark-700/50">
 
+                <!-- Account Status -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-sm">👤</div>
+                        <div>
+                            <h2 class="text-base font-semibold text-white">Stato Account</h2>
+                            <p class="text-xs text-gray-500">Le tue connessioni attive</p>
+                        </div>
+                    </div>
+                    <div class="bg-dark-900/40 border border-dark-700 rounded-xl p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm">⚡</span>
+                                <span class="text-xs text-gray-400">Stremio:</span>
+                            </div>
+                            <span id="settingsStremioStatus" class="text-xs text-gray-500">Non connesso</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm">🎬</span>
+                                <span class="text-xs text-gray-400">Trakt:</span>
+                            </div>
+                            <span id="settingsTraktStatus" class="text-xs text-gray-500">Non connesso</span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-dark-700/50">
+
+                <!-- Backup URL Warning -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center text-sm">🔗</div>
+                        <div>
+                            <h2 class="text-base font-semibold text-white">Link di Backup</h2>
+                            <p class="text-xs text-gray-500">Salva questo link per ripristinare i tuoi cataloghi</p>
+                        </div>
+                    </div>
+                    <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 space-y-3">
+                        <p class="text-xs text-yellow-300">⚠️ IMPORTANTE: Salva questo link nei tuoi preferiti! Se disinstalli l'addon da Stremio per sbaglio o cambi dispositivo, ti basterà cliccare questo link per ripristinare tutti i tuoi cataloghi senza dover rifare il login.</p>
+                        <div class="flex gap-2">
+                            <code id="backupUrlDisplay" class="flex-1 px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-[10px] text-stremio font-mono select-all break-all overflow-hidden">Salva la configurazione per generare il link</code>
+                            <button type="button" id="copyBackupUrlBtn"
+                                class="shrink-0 px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-xs text-gray-300 hover:bg-dark-700 hover:text-white transition-colors">
+                                📋 Copia Link
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-dark-700/50">
+
+                <!-- Disconnect Trakt / Full Logout -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-sm">🚪</div>
+                        <div>
+                            <h2 class="text-base font-semibold text-white">Gestione Account</h2>
+                            <p class="text-xs text-gray-500">Disconnetti servizi o esci dall'addon</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button type="button" id="settingsDisconnectTraktBtn"
+                            class="flex-1 py-2.5 px-4 bg-dark-800 border border-dark-600 rounded-xl text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors flex items-center justify-center gap-2">
+                            🎬 Scollega Trakt
+                        </button>
+                        <button type="button" id="settingsFullLogoutBtn"
+                            class="flex-1 py-2.5 px-4 bg-red-900/30 border border-red-700/50 rounded-xl text-sm text-red-300 hover:bg-red-800/40 hover:text-red-200 transition-colors flex items-center justify-center gap-2">
+                            🚪 Logout Completo
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="border-dark-700/50">
+
                 <!-- Submit Button -->
                 <div class="space-y-4">
                     <div id="statusMsg" class="hidden p-4 rounded-xl text-center font-bold text-sm"></div>
@@ -1128,7 +1176,18 @@
         const YACA_VERSION = '1.0.2';
         const PRESET_ID_PREFIX = 'yaca_preset_';
         const MAX_CATALOG_NAME_LENGTH = 50;
-        let currentConfigBase64 = new URLSearchParams(window.location.search).get('config');
+        // SPA Routing: Check URL param first, then localStorage
+        const urlConfigParam = new URLSearchParams(window.location.search).get('config');
+        let currentConfigBase64 = null;
+        if (urlConfigParam) {
+            currentConfigBase64 = urlConfigParam;
+            localStorage.setItem('yaca_config', urlConfigParam);
+            // Clean URL without reloading
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+        } else {
+            currentConfigBase64 = localStorage.getItem('yaca_config');
+        }
 
         let availablePresets = [];
         let profileTemplates = [];
@@ -1275,12 +1334,6 @@
 
         // -- CATALOG PREVIEW --
         async function showCatalogPreview(presetId, presetName) {
-            const tmdbKey = document.getElementById('tmdbKey').value;
-            if (!tmdbKey) {
-                alert('Inserisci prima la chiave TMDB nella sezione Credenziali per vedere l\'anteprima.');
-                return;
-            }
-
             const section = document.getElementById('catalogPreviewSection');
             const row = document.getElementById('catalogPreviewRow');
             const title = document.getElementById('previewTitle');
@@ -1299,7 +1352,7 @@
                 const res = await fetch('/api/preview-catalog', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tmdbKey, presetId })
+                    body: JSON.stringify({ presetId })
                 });
                 if (!res.ok) {
                     const err = await res.json();
@@ -1345,16 +1398,6 @@
 
         // Auto-load previews for all visible catalog rows
         async function autoLoadRowPreviews(presets) {
-            const tmdbKey = document.getElementById('tmdbKey').value;
-            if (!tmdbKey) {
-                // No key yet — show placeholder
-                presets.forEach(p => {
-                    const container = document.getElementById(`row-posters-${p.id}`);
-                    if (container) container.innerHTML = '<div class="text-[10px] text-gray-600 py-2 px-1">Inserisci TMDB Key per vedere le anteprime</div>';
-                });
-                return;
-            }
-
             // Load previews in batches of 3 to avoid flooding
             const BATCH_SIZE = 3;
             for (let i = 0; i < presets.length; i += BATCH_SIZE) {
@@ -1373,7 +1416,7 @@
                         const res = await fetch('/api/preview-catalog', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ tmdbKey, presetId: preset.id })
+                            body: JSON.stringify({ presetId: preset.id })
                         });
                         if (!res.ok) {
                             container.innerHTML = '<div class="text-[10px] text-red-400/60 py-2 px-1">Errore</div>';
@@ -1392,63 +1435,11 @@
         // -- STREMIO AUTH LOGIC --
 
         function updateStremioAuthUI() {
-            const loginForm = document.getElementById('stremioLoginForm');
-            const loggedIn = document.getElementById('stremioLoggedIn');
-            const emailDisplay = document.getElementById('stremioUserEmail');
-
-            if (stremioAuthKey) {
-                loginForm.classList.add('hidden');
-                loggedIn.classList.remove('hidden');
-                emailDisplay.textContent = stremioEmail || 'utente Stremio';
-            } else {
-                loginForm.classList.remove('hidden');
-                loggedIn.classList.add('hidden');
-            }
+            // Settings page account status
+            updateSettingsAccountStatus();
         }
 
-        async function stremioLogin() {
-            const email = document.getElementById('stremioEmail').value.trim();
-            const password = document.getElementById('stremioPassword').value;
-            const statusEl = document.getElementById('stremioAuthStatus');
-            const btn = document.getElementById('stremioLoginBtn');
-
-            if (!email || !password) {
-                statusEl.textContent = '❌ Inserisci email e password';
-                statusEl.className = 'text-xs text-red-400';
-                return;
-            }
-
-            btn.disabled = true;
-            btn.textContent = 'Accesso...';
-            statusEl.textContent = '';
-
-            try {
-                const res = await fetch('/api/stremio-auth', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await res.json();
-
-                if (data.success && data.authKey) {
-                    stremioAuthKey = data.authKey;
-                    stremioEmail = data.email || email;
-                    sessionStorage.setItem('stremioAuthKey', stremioAuthKey);
-                    sessionStorage.setItem('stremioEmail', stremioEmail);
-                    document.getElementById('stremioPassword').value = '';
-                    updateStremioAuthUI();
-                } else {
-                    statusEl.textContent = '❌ ' + (data.error || 'Login fallito');
-                    statusEl.className = 'text-xs text-red-400';
-                }
-            } catch (err) {
-                statusEl.textContent = '❌ Errore di connessione';
-                statusEl.className = 'text-xs text-red-400';
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Accedi a Stremio';
-            }
-        }
+        // stremioLogin moved to loginPageStremioLogin on the login page
 
         function stremioLogout() {
             stremioAuthKey = null;
@@ -1487,17 +1478,23 @@
 
         function updateTraktUI() {
             const token = document.getElementById('traktToken').value;
-            const loginBtn = document.getElementById('traktLoginBtn');
-            const connectedUI = document.getElementById('traktConnectedUI');
-            if (token) {
-                loginBtn.classList.add('hidden');
-                connectedUI.classList.remove('hidden');
-                connectedUI.classList.add('flex', 'flex-col');
-            } else {
-                loginBtn.classList.remove('hidden');
-                connectedUI.classList.add('hidden');
-                connectedUI.classList.remove('flex', 'flex-col');
+            // Update login page trakt status if visible
+            const loginTraktBtn = document.getElementById('loginTraktBtnContainer');
+            const loginTraktSuccess = document.getElementById('loginTraktSuccess');
+            const step2Status = document.getElementById('loginStep2Status');
+            if (loginTraktBtn && loginTraktSuccess) {
+                if (token) {
+                    loginTraktBtn.classList.add('hidden');
+                    loginTraktSuccess.classList.remove('hidden');
+                    if (step2Status) step2Status.classList.remove('hidden');
+                    updateLoginGenerateBtn();
+                } else {
+                    loginTraktBtn.classList.remove('hidden');
+                    loginTraktSuccess.classList.add('hidden');
+                    if (step2Status) step2Status.classList.add('hidden');
+                }
             }
+            updateSettingsAccountStatus();
         }
 
         async function startTraktDeviceAuth() {
@@ -2170,9 +2167,6 @@
         }
 
         async function autoLoadActiveListPreviews(catalogs) {
-            const tmdbKey = document.getElementById('tmdbKey').value;
-            if (!tmdbKey) return;
-
             const presetCatalogs = catalogs.filter(c => c._presetId || (c.id.startsWith(PRESET_ID_PREFIX) && !c.id.startsWith(PRESET_ID_PREFIX + 'merged_')));
             const BATCH_SIZE = 3;
             for (let i = 0; i < presetCatalogs.length; i += BATCH_SIZE) {
@@ -2191,7 +2185,7 @@
                         const res = await fetch('/api/preview-catalog', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ tmdbKey, presetId })
+                            body: JSON.stringify({ presetId })
                         });
                         if (!res.ok) {
                             container.innerHTML = '<div class="text-[10px] text-red-400/60 py-1 px-1">Errore</div>';
@@ -2559,8 +2553,6 @@
             const prompts = Array.from(document.querySelectorAll('.catalog-prompt, .catalog-prompt-new'))
                 .map(i => i.value.trim()).filter(v => v !== '');
             if (prompts.length === 0) { alert('Inserisci almeno un prompt AI.'); return; }
-            const mistralKey = document.getElementById('mistralKey').value.trim();
-            if (!mistralKey) { alert('Inserisci la Mistral API Key nella sezione Credenziali.'); return; }
             const previewSection = document.getElementById('aiPreviewSection');
             const postersContainer = document.getElementById('aiPreviewPosters');
             postersContainer.innerHTML = '<div class="text-xs text-gray-500 py-2">Anteprima disponibile dopo il salvataggio. Usa "Salva in Le Mie Liste" per generare i cataloghi.</div>';
@@ -2571,8 +2563,6 @@
         document.getElementById('generateManualPreviewBtn').addEventListener('click', async () => {
             const name = document.getElementById('manualPresetName').value.trim();
             if (!name) { alert('Inserisci un nome per il catalogo.'); return; }
-            const tmdbKey = document.getElementById('tmdbKey').value.trim();
-            if (!tmdbKey) { alert('Inserisci la chiave TMDB nella sezione Credenziali.'); return; }
             const type = document.getElementById('manualPresetType').value;
             const sortBy = document.getElementById('manualPresetSort').value;
             const genres = document.getElementById('manualPresetGenres').value.trim();
@@ -2600,7 +2590,7 @@
                 const res = await fetch('/api/preview-catalog', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tmdbKey, filters, type })
+                    body: JSON.stringify({ filters, type })
                 });
                 const previewSection = document.getElementById('manualPreviewSection');
                 const postersContainer = document.getElementById('manualPreviewPosters');
@@ -2864,8 +2854,6 @@
             const exportData = {
                 _yaca_version: YACA_VERSION,
                 _exported_at: new Date().toISOString(),
-                tmdbKey: document.getElementById('tmdbKey').value,
-                mistralKey: document.getElementById('mistralKey').value,
                 traktToken: document.getElementById('traktToken').value,
                 traktRefreshToken: document.getElementById('traktRefreshToken').value,
                 profiles: profiles,
@@ -2918,19 +2906,9 @@
                     if (data._yaca_version !== YACA_VERSION) {
                         if (!confirm(`Attenzione: il backup è della versione ${data._yaca_version}, ma YACA è alla versione ${YACA_VERSION}. Continuare comunque?`)) return;
                     }
-                    document.getElementById('tmdbKey').value = data.tmdbKey || '';
-                    document.getElementById('mistralKey').value = data.mistralKey || '';
-
                     if (data.traktToken || data.traktUsername) {
                         document.getElementById('traktToken').value = data.traktToken || data.traktUsername;
                         document.getElementById('traktRefreshToken').value = data.traktRefreshToken || '';
-                        document.getElementById('traktLoginBtn').classList.add('hidden');
-                        document.getElementById('traktConnectedUI').classList.remove('flex-col');
-                        document.getElementById('traktConnectedUI').classList.add('flex', 'flex-col');
-                    } else {
-                        document.getElementById('traktLoginBtn').classList.remove('hidden');
-                        document.getElementById('traktConnectedUI').classList.remove('flex', 'flex-col');
-                        document.getElementById('traktConnectedUI').classList.add('hidden');
                     }
 
                     profiles = data.profiles;
@@ -3054,16 +3032,10 @@
 
             // 3. Populate State
             if (existingConfig) {
-                document.getElementById('tmdbKey').value = existingConfig.apiKeys?.tmdb || '';
-                document.getElementById('mistralKey').value = existingConfig.apiKeys?.mistral || '';
-
                 const token = existingConfig.apiKeys?.trakt;
                 if (token) {
                     document.getElementById('traktToken').value = token;
                     document.getElementById('traktRefreshToken').value = existingConfig.apiKeys?.traktRefreshToken || '';
-                    document.getElementById('traktLoginBtn').classList.add('hidden');
-                    document.getElementById('traktConnectedUI').classList.add('flex');
-                    document.getElementById('traktConnectedUI').classList.remove('hidden');
                 }
                 if (existingConfig.apiKeys?.stremioAuthKey) {
                     stremioAuthKey = existingConfig.apiKeys.stremioAuthKey;
@@ -3182,15 +3154,40 @@
                 document.getElementById('submitBtn').textContent = 'Aggiorna Configurazione';
             }
 
-            // Stremio Auth Event Listeners
-            document.getElementById('stremioLoginBtn').addEventListener('click', stremioLogin);
-            document.getElementById('stremioLogoutBtn').addEventListener('click', stremioLogout);
-            updateStremioAuthUI();
-
-            // Trakt Auth Event Listeners
-            document.getElementById('traktLoginBtn').addEventListener('click', startTraktDeviceAuth);
-            document.getElementById('traktLogoutBtn').addEventListener('click', traktLogout);
+            // Trakt Auth Modal cancel
             document.getElementById('traktAuthCancelBtn').addEventListener('click', cancelTraktAuth);
+
+            // Login Page Event Listeners
+            document.getElementById('loginStremioBtn').addEventListener('click', loginPageStremioLogin);
+            document.getElementById('loginTraktBtn').addEventListener('click', startTraktDeviceAuth);
+            document.getElementById('loginGenerateBtn').addEventListener('click', loginPageGenerate);
+
+            // Settings Page Event Listeners
+            document.getElementById('settingsDisconnectTraktBtn').addEventListener('click', settingsDisconnectTrakt);
+            document.getElementById('settingsFullLogoutBtn').addEventListener('click', settingsFullLogout);
+            document.getElementById('copyBackupUrlBtn').addEventListener('click', copyBackupUrl);
+
+            // SPA Routing: Show login or dashboard
+            if (!currentConfigBase64) {
+                // No config: show login page, hide nav and form
+                document.getElementById('page-login').classList.remove('hidden');
+                document.getElementById('page-login').style.display = '';
+                document.getElementById('mainNavContainer').classList.add('hidden');
+                document.getElementById('mainNavContainer').style.display = 'none';
+                document.getElementById('configForm').classList.add('hidden');
+                document.getElementById('configForm').style.display = 'none';
+                document.getElementById('page-login').classList.add('active');
+            } else {
+                // Config exists: show dashboard
+                document.getElementById('page-login').classList.add('hidden');
+                document.getElementById('page-login').style.display = 'none';
+                document.getElementById('configForm').classList.remove('hidden');
+                document.getElementById('configForm').style.display = '';
+                document.getElementById('mainNavContainer').classList.remove('hidden');
+                document.getElementById('mainNavContainer').style.display = '';
+                updateSettingsAccountStatus();
+                updateBackupUrl();
+            }
         });
 
         // 4. SUBMIT FORM
@@ -3198,17 +3195,8 @@
             e.preventDefault();
             saveUIState();
 
-            const tmdbKey = document.getElementById('tmdbKey').value;
-            const mistralKey = document.getElementById('mistralKey').value;
             const traktToken = document.getElementById('traktToken').value;
             const traktRefreshToken = document.getElementById('traktRefreshToken').value;
-
-            // Validazione
-            const hasNewPrompts = profiles.some(p => p.raw_ui_state.newPrompts.length > 0);
-            if (hasNewPrompts && mistralKey.trim() === '') {
-                alert("Attenzione: Uno o più profili hanno cataloghi IA. Questi richiedono la chiave Mistral.");
-                return;
-            }
 
             const submitBtn = document.getElementById('submitBtn');
             const statusMsg = document.getElementById('statusMsg');
@@ -3216,29 +3204,9 @@
 
             submitBtn.disabled = true;
             submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
-            submitBtn.innerHTML = `
-                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                Verifica chiave TMDB...
-            `;
             statusMsg.classList.add('hidden');
 
             try {
-                // Validate TMDB key first
-                const valRes = await fetch('/api/validate-tmdb-key', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tmdbKey })
-                });
-                const valData = await valRes.json();
-                if (!valData.valid) {
-                    statusMsg.textContent = "❌ " + (valData.error || "Chiave TMDB non valida");
-                    statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-red-500/20 text-red-400 block border border-red-500/30";
-                    submitBtn.disabled = false;
-                    submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-                    submitBtn.innerHTML = currentConfigBase64 ? "Aggiorna Configurazione" : "Genera Link di Installazione";
-                    return;
-                }
-
                 submitBtn.innerHTML = `
                     <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     Salvataggio...
@@ -3255,8 +3223,6 @@
                 }));
 
                 const payload = {
-                    tmdbKey,
-                    mistralKey,
                     traktToken,
                     traktRefreshToken,
                     stremioAuthKey,
@@ -3302,6 +3268,10 @@
                             statusMsg.className = "p-4 rounded-xl text-center font-bold text-sm bg-green-500/20 text-green-400 block border border-green-500/30";
                         }
 
+                        currentConfigBase64 = data.configBase64;
+                        localStorage.setItem('yaca_config', data.configBase64);
+                        updateSettingsAccountStatus();
+                        updateBackupUrl();
                         submitBtn.disabled = false;
                         submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
                         submitBtn.innerHTML = "Aggiorna Configurazione";
@@ -3323,6 +3293,7 @@
                         link.href = finalLink;
                         uuidDisplay.textContent = 'Configurazione salvata';
                         currentConfigBase64 = data.configBase64;
+                        localStorage.setItem('yaca_config', data.configBase64);
 
                         // Se connesso a Stremio, installa automaticamente l'addon
                         if (stremioAuthKey) {
@@ -3362,6 +3333,198 @@
                 submitBtn.innerHTML = currentConfigBase64 ? "Aggiorna Configurazione" : "Genera Link di Installazione";
             }
         });
+        // -- LOGIN PAGE FUNCTIONS --
+
+        async function loginPageStremioLogin() {
+            const email = document.getElementById('loginStremioEmail').value.trim();
+            const password = document.getElementById('loginStremioPassword').value;
+            const statusEl = document.getElementById('loginStremioStatus');
+            const btn = document.getElementById('loginStremioBtn');
+
+            if (!email || !password) {
+                statusEl.textContent = '❌ Inserisci email e password';
+                statusEl.className = 'text-xs text-red-400';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Accesso...';
+            statusEl.textContent = '';
+
+            try {
+                const res = await fetch('/api/stremio-auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (data.success && data.authKey) {
+                    stremioAuthKey = data.authKey;
+                    stremioEmail = data.email || email;
+                    sessionStorage.setItem('stremioAuthKey', stremioAuthKey);
+                    sessionStorage.setItem('stremioEmail', stremioEmail);
+                    // Show success state
+                    document.getElementById('loginStremioForm').classList.add('hidden');
+                    document.getElementById('loginStremioSuccess').classList.remove('hidden');
+                    document.getElementById('loginStremioUserEmail').textContent = stremioEmail;
+                    document.getElementById('loginStep1Status').classList.remove('hidden');
+                    updateLoginGenerateBtn();
+                } else {
+                    statusEl.textContent = '❌ ' + (data.error || 'Login fallito');
+                    statusEl.className = 'text-xs text-red-400';
+                }
+            } catch (err) {
+                statusEl.textContent = '❌ Errore di connessione';
+                statusEl.className = 'text-xs text-red-400';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Accedi a Stremio';
+            }
+        }
+
+        function updateLoginGenerateBtn() {
+            const btn = document.getElementById('loginGenerateBtn');
+            const hint = document.getElementById('loginGenerateHint');
+            if (!btn) return;
+            if (stremioAuthKey) {
+                btn.disabled = false;
+                hint.textContent = document.getElementById('traktToken').value
+                    ? '✅ Stremio e Trakt connessi — pronto!'
+                    : '✅ Stremio connesso — puoi collegare Trakt dopo se vuoi';
+            } else {
+                btn.disabled = true;
+                hint.textContent = 'Completa lo Step 1 per continuare';
+            }
+        }
+
+        async function loginPageGenerate() {
+            if (!stremioAuthKey) return;
+
+            const btn = document.getElementById('loginGenerateBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generazione...';
+
+            const traktToken = document.getElementById('traktToken').value;
+            const traktRefreshToken = document.getElementById('traktRefreshToken').value;
+
+            // Build initial config payload with default profiles
+            const defaultProfiles = [
+                {
+                    id: 'default_main', name: '🏠 Generale',
+                    selectedPresets: ['preset_pop_movies', 'preset_pop_series', 'preset_new_movies', 'preset_new_series', 'preset_new_series_eps', 'preset_top_rated_movies', 'preset_top_rated_series', 'preset_oscar_winners', 'preset_hidden_gems', 'preset_pop_anime'],
+                    presetOverrides: {}, newPrompts: [], existingCatalogs: [], catalogOrder: [],
+                    settings: { minVoteAverage: 0, minVoteCount: 0, fastPresetRefresh: false }
+                }
+            ];
+
+            const payload = {
+                traktToken,
+                traktRefreshToken,
+                stremioAuthKey,
+                stremioEmail,
+                activeProfileId: 'default_main',
+                profiles: defaultProfiles
+            };
+
+            try {
+                const response = await fetch('/api/configure', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentConfigBase64 = data.configBase64;
+                    localStorage.setItem('yaca_config', data.configBase64);
+
+                    // Auto-install in Stremio
+                    const cv = data.configVersion || '';
+                    await autoUpdateStremioAddon(data.configBase64, cv);
+
+                    // Reload to show dashboard
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    alert('❌ Errore: ' + (errorData.error || 'Riprova tra poco'));
+                    btn.disabled = false;
+                    btn.innerHTML = '🚀 Genera Configurazione e Inizia';
+                }
+            } catch (err) {
+                alert('❌ Errore di connessione: ' + err.message);
+                btn.disabled = false;
+                btn.innerHTML = '🚀 Genera Configurazione e Inizia';
+            }
+        }
+
+        // -- SETTINGS PAGE FUNCTIONS --
+
+        function updateSettingsAccountStatus() {
+            const stremioStatus = document.getElementById('settingsStremioStatus');
+            const traktStatus = document.getElementById('settingsTraktStatus');
+            if (stremioStatus) {
+                stremioStatus.textContent = stremioEmail ? '✅ ' + stremioEmail : 'Non connesso';
+                stremioStatus.className = stremioEmail ? 'text-xs text-green-400 font-medium' : 'text-xs text-gray-500';
+            }
+            if (traktStatus) {
+                const hasTrakt = document.getElementById('traktToken').value;
+                traktStatus.textContent = hasTrakt ? '✅ Connesso' : 'Non connesso';
+                traktStatus.className = hasTrakt ? 'text-xs text-green-400 font-medium' : 'text-xs text-gray-500';
+            }
+        }
+
+        function updateBackupUrl() {
+            const display = document.getElementById('backupUrlDisplay');
+            if (!display || !currentConfigBase64) return;
+            const portStr = window.location.port ? ':' + window.location.port : '';
+            const url = window.location.protocol + '//' + window.location.hostname + portStr + '/?config=' + currentConfigBase64;
+            display.textContent = url;
+        }
+
+        function copyBackupUrl() {
+            const display = document.getElementById('backupUrlDisplay');
+            if (!display) return;
+            const text = display.textContent;
+            if (!text || text.startsWith('Salva')) {
+                alert('Salva prima la configurazione per generare il link.');
+                return;
+            }
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copyBackupUrlBtn');
+                const orig = btn.innerHTML;
+                btn.innerHTML = '✅ Copiato!';
+                setTimeout(() => { btn.innerHTML = orig; }, 2000);
+            }).catch(() => {
+                // Fallback for older browsers
+                const range = document.createRange();
+                range.selectNodeContents(display);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+                document.execCommand('copy');
+                sel.removeAllRanges();
+            });
+        }
+
+        function settingsDisconnectTrakt() {
+            if (!confirm('Vuoi scollegare Trakt? I cataloghi Trakt verranno rimossi.')) return;
+            document.getElementById('traktToken').value = '';
+            document.getElementById('traktRefreshToken').value = '';
+            updateTraktUI();
+            updateSettingsAccountStatus();
+        }
+
+        function settingsFullLogout() {
+            if (!confirm('Vuoi uscire completamente? La configurazione locale verrà cancellata.')) return;
+            localStorage.removeItem('yaca_config');
+            localStorage.removeItem('yaca_my_lists');
+            sessionStorage.removeItem('stremioAuthKey');
+            sessionStorage.removeItem('stremioEmail');
+            stremioAuthKey = null;
+            stremioEmail = null;
+            window.location.href = window.location.origin + window.location.pathname;
+        }
     </script>
 </body>
 

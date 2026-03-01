@@ -14,10 +14,16 @@ const { getBlurredImageUrl, addBadgeToImage } = require('./src/utils/imageProces
 const { clearAllTmdbCaches } = require('./src/clients/tmdb');
 const { clearIdCache } = require('./src/id_mapping/id_cache');
 const TmdbRequestCache = require('./src/models/TmdbRequestCache');
+const LRUCache = require('./src/utils/LRUCache');
 
 // 1. Inizializza Express
 const app = express();
 const PORT = process.env.PORT || 7000;
+
+// Cache RAM per badge poster (TTL 14 giorni, max 500 immagini)
+const BADGE_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+const BADGE_CACHE_TTL_SECS = 14 * 24 * 60 * 60; // 1209600
+const badgeImageCache = new LRUCache({ max: 500, ttl: BADGE_CACHE_TTL_MS });
 
 // CORS configurabile tramite variabile d'ambiente (default: permissivo per retrocompatibilità con Stremio)
 const corsOrigins = process.env.CORS_ALLOWED_ORIGINS;
@@ -52,9 +58,10 @@ app.get('/api/presets', (req, res) => {
 // Endpoint per anteprima catalogo: restituisce i primi 20 risultati TMDB con poster
 const PREVIEW_TIMEOUT_MS = 8000;
 app.post('/api/preview-catalog', async (req, res) => {
-    const { tmdbKey, presetId, filters: customFilters, type: customType } = req.body;
+    const { presetId, filters: customFilters, type: customType } = req.body;
+    const tmdbKey = req.body.tmdbKey || process.env.TMDB_API_KEY;
     if (!tmdbKey) {
-        return res.status(400).json({ error: 'tmdbKey obbligatorio' });
+        return res.status(400).json({ error: 'TMDB API key non configurata sul server' });
     }
     if (!presetId && !customFilters) {
         return res.status(400).json({ error: 'presetId o filters obbligatori' });
@@ -156,11 +163,19 @@ app.get('/badge/poster.jpg', async (req, res) => {
     if (!safeText || !/^[A-Za-z0-9:]+$/.test(safeText)) {
         return res.status(400).send('Testo badge non valido');
     }
+    const cacheKey = url + '_' + safeText;
+    const cachedImage = badgeImageCache.get(cacheKey);
+    if (cachedImage) {
+        res.set('Content-Type', 'image/jpeg');
+        res.set('Cache-Control', `public, max-age=${BADGE_CACHE_TTL_SECS}`);
+        return res.send(cachedImage);
+    }
     try {
         const imageBuffer = await addBadgeToImage(url, safeText);
         if (imageBuffer) {
+            badgeImageCache.set(cacheKey, imageBuffer);
             res.set('Content-Type', 'image/jpeg');
-            res.set('Cache-Control', 'public, max-age=31536000');
+            res.set('Cache-Control', `public, max-age=${BADGE_CACHE_TTL_SECS}`);
             return res.send(imageBuffer);
         } else {
             return res.redirect(301, url);
@@ -172,9 +187,9 @@ app.get('/badge/poster.jpg', async (req, res) => {
 
 // Endpoint per validare una TMDB API Key
 app.post('/api/validate-tmdb-key', async (req, res) => {
-    const { tmdbKey } = req.body;
+    const tmdbKey = req.body.tmdbKey || process.env.TMDB_API_KEY;
     if (!tmdbKey) {
-        return res.status(400).json({ valid: false, error: 'Chiave non fornita' });
+        return res.status(400).json({ valid: false, error: 'TMDB API key non configurata sul server' });
     }
     try {
         const testRes = await axios.get('https://api.themoviedb.org/3/configuration', {
@@ -490,7 +505,7 @@ app.get([
     }
 
     const args = { type, id, extra };
-    const hostUrl = process.env.HOST_URL || `${req.protocol}://${req.get('host')}`;
+    const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
 
     try {
         const response = await catalogHandler(args, userConfig, hostUrl);
@@ -524,7 +539,7 @@ app.get(['/:configBase64/meta/:type/:id.json', '/:configBase64/:configVersion/me
 // Avvia il server
 const server = app.listen(PORT, () => {
     console.log(`🚀 YACA Server in esecuzione su http://localhost:${PORT}`);
-    if (!process.env.HOST_URL) {
+    if (!process.env.HOST_URL && !process.env.RENDER_EXTERNAL_URL) {
         console.warn('⚠️ HOST_URL non configurato nel file .env. I poster con badge e le immagini sfocate potrebbero non funzionare su client remoti (Stremio). Imposta HOST_URL=https://tuo-dominio.com nel file .env.');
     }
 });

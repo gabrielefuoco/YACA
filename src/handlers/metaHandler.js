@@ -11,7 +11,7 @@ async function metaHandler(args, userConfig) {
 
         if (!userConfig) throw new Error("Configurazione utente mancante");
 
-        const tmdbApiKey = userConfig.apiKeys?.tmdb;
+        const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
         if (!tmdbApiKey) throw new Error("TMDB API key mancante");
         let meta = null;
 
