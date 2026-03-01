@@ -1,8 +1,7 @@
-const { v4: uuidv4 } = require('uuid');
 const UserConfig = require('../models/UserConfig');
 const { generateTmdbFiltersFromPrompt } = require('../ai/router');
 const { getPresets } = require('../data/presets');
-const { isValidUUID, sanitizeString } = require('../utils/helpers');
+const { sanitizeString } = require('../utils/helpers');
 
 const LIMITS = {
     MAX_PROFILES: 20,
@@ -18,18 +17,13 @@ const LIMITS = {
 
 module.exports = async (req, res) => {
     try {
-        const { tmdbKey, mistralKey, activeProfileId, profiles, uuid: existingUuid } = req.body;
+        const { tmdbKey, mistralKey, activeProfileId, profiles } = req.body;
         const traktToken = req.body.traktToken || req.body.traktUsername;
         const stremioAuthKey = req.body.stremioAuthKey || null;
         const stremioEmail = req.body.stremioEmail || null;
 
         if (!tmdbKey) {
             return res.status(400).json({ error: "La API Key di TMDB è obbligatoria." });
-        }
-
-        // Validazione UUID esistente (se fornito deve essere un UUID valido)
-        if (existingUuid && !isValidUUID(existingUuid)) {
-            return res.status(400).json({ error: "UUID non valido." });
         }
 
         // Input validation - limiti ragionevoli
@@ -52,7 +46,6 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: "Massimo 20 profili consentiti." });
         }
 
-        const uuid = existingUuid || uuidv4();
         const parsedProfiles = [];
         let catIndex = 1;
         let needsMistral = false;
@@ -180,7 +173,7 @@ module.exports = async (req, res) => {
                         }
                     }
                     parsedCatalogs.push({
-                        id: `ai_custom_${uuid.substring(0, 5)}_${Date.now()}_${catIndex}`,
+                        id: `ai_custom_${Date.now()}_${catIndex}`,
                         name: sanitizeString(prompt.substring(0, 30)),
                         raw_prompt: prompt,
                         type: catalogType,
@@ -230,9 +223,8 @@ module.exports = async (req, res) => {
             ? activeProfileId
             : (parsedProfiles.length > 0 ? parsedProfiles[0].id : null);
 
-        // 4. Salva la configurazione e ottieni configVersion dal risultato
-        const savedData = await UserConfig.saveConfig({
-            uuid,
+        // 4. Costruisci la configurazione e codificala in Base64
+        const { configBase64, configVersion } = UserConfig.buildConfig({
             apiKeys: {
                 tmdb: tmdbKey,
                 mistral: mistralKey,
@@ -240,14 +232,12 @@ module.exports = async (req, res) => {
                 stremioAuthKey: stremioAuthKey || null,
                 stremioEmail: stremioEmail || null
             },
-            catalogs: parsedProfiles[0]?.catalogs || [], // Mantiene il vecchio catalogs come fallback per chi ha client non aggiornati (o DB constraints)
+            catalogs: parsedProfiles[0]?.catalogs || [],
             profiles: parsedProfiles,
             activeProfileId: finalActiveProfileId
         });
 
-        const configVersion = savedData?.configVersion || null;
-
-        res.json({ success: true, uuid, configVersion });
+        res.json({ success: true, configBase64, configVersion });
 
     } catch (err) {
         console.error("Errore salvataggio config:", err);

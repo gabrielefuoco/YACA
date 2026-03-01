@@ -3,7 +3,6 @@ const { fetchKitsuCatalog } = require('../clients/kitsu');
 const { fetchTraktCatalog } = require('../clients/trakt');
 const { fetchMDBListItems, parseMDBListItems } = require('../utils/mdblist');
 const { routeLiveStremioSearch } = require('../ai/router');
-const UserConfig = require('../models/UserConfig');
 const {
     CACHE_TTL_MS,
     FAST_CACHE_TTL_MS,
@@ -125,27 +124,31 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
     if (filters.runtime_lte && type === 'movie') tmdbParams['with_runtime.lte'] = filters.runtime_lte;
     if (filters.runtime_gte && type === 'movie') tmdbParams['with_runtime.gte'] = filters.runtime_gte;
 
-    // Risoluzione ID Asincrona: Persone
+    // Risoluzione ID Asincrona: Persone, Keywords, Compagnie — in parallelo
+    const asyncTasks = [];
+
     if (filters.people_list && filters.people_list.length > 0) {
-        const peopleIds = [];
-        for (const name of filters.people_list) {
-            const pid = await getTmdbIdByName(tmdbApiKey, 'person', name);
-            if (pid) peopleIds.push(pid);
-        }
-        if (peopleIds.length > 0) tmdbParams.with_people = peopleIds.join(',');
+        asyncTasks.push(
+            Promise.all(filters.people_list.map(name => getTmdbIdByName(tmdbApiKey, 'person', name)))
+                .then(ids => { const valid = ids.filter(Boolean); if (valid.length > 0) tmdbParams.with_people = valid.join(','); })
+        );
     }
 
-    // Risoluzione ID Asincrona: Keywords
     if (filters.keyword && filters.keyword !== 'kdrama') {
-        const kid = await getTmdbIdByName(tmdbApiKey, 'keyword', filters.keyword);
-        if (kid) tmdbParams.with_keywords = kid;
+        asyncTasks.push(
+            getTmdbIdByName(tmdbApiKey, 'keyword', filters.keyword)
+                .then(kid => { if (kid) tmdbParams.with_keywords = kid; })
+        );
     }
 
-    // Risoluzione ID Asincrona: Compagnie (es. Disney, Ghibli)
     if (filters.company_name) {
-        const cid = await getTmdbIdByName(tmdbApiKey, 'company', filters.company_name);
-        if (cid) tmdbParams.with_companies = cid;
+        asyncTasks.push(
+            getTmdbIdByName(tmdbApiKey, 'company', filters.company_name)
+                .then(cid => { if (cid) tmdbParams.with_companies = cid; })
+        );
     }
+
+    await Promise.all(asyncTasks);
 
     // Provider (Netflix, ecc.)
     if (filters.watch_provider) {
@@ -197,7 +200,7 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
 /**
  * Gestisce la rotta "catalog" inviata da Stremio (es. /catalog/movie/tmdb_discover.json)
  */
-async function catalogHandler(args, userUuid, hostUrl) {
+async function catalogHandler(args, userConfig, hostUrl) {
     try {
         const { type, id, extra } = args;
         const skip = extra.skip || 0;
@@ -206,9 +209,7 @@ async function catalogHandler(args, userUuid, hostUrl) {
 
         let results = [];
 
-        // 1. Recupera la config dell'utente dal Database (ci servono API keys e liste salvate)
-        const userConfig = await UserConfig.findOne({ uuid: userUuid });
-        if (!userConfig) throw new Error("Utente o config non trovata nel DB");
+        if (!userConfig) throw new Error("Configurazione utente mancante");
 
         const tmdbApiKey = userConfig.apiKeys?.tmdb;
         if (!tmdbApiKey) throw new Error("TMDB API key mancante nella configurazione utente");

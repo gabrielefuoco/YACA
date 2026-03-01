@@ -1,31 +1,27 @@
 const sharp = require('sharp');
 const axios = require('axios');
+const LRUCache = require('./LRUCache');
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB limite massimo per immagini scaricate
+const imageCache = new LRUCache({ max: 100 });
 
-async function blurImage(imageUrl) {
-    try {
-        const response = await axios.get(imageUrl, {
-            responseType: 'arraybuffer',
-            timeout: 10000,
-            maxContentLength: MAX_IMAGE_SIZE
-        });
-
-        const processedImageBuffer = await sharp(response.data)
-            .blur(20)
-            .toBuffer();
-
-        return processedImageBuffer;
-    } catch (error) {
-        console.error('Error processing image:', error.message);
-        return null;
-    }
+/**
+ * Genera un URL di sfocatura delegando a wsrv.nl (proxy esterno gratuito).
+ * Non scarica né elabora l'immagine in locale.
+ */
+function getBlurredImageUrl(imageUrl) {
+    return `https://wsrv.nl/?url=${encodeURIComponent(imageUrl)}&blur=20`;
 }
 
 /**
  * Scarica un poster e aggiunge un badge con testo (es. numero episodio) in sovraimpressione.
+ * Usa una cache LRU per proteggere la RAM (max 100 immagini).
  */
 async function addBadgeToImage(imageUrl, badgeText) {
+    const cacheKey = `${imageUrl}:${badgeText}`;
+    const cached = imageCache.get(cacheKey);
+    if (cached) return cached;
+
     try {
         const response = await axios.get(imageUrl, {
             responseType: 'arraybuffer',
@@ -55,14 +51,17 @@ async function addBadgeToImage(imageUrl, badgeText) {
                   text-anchor="middle" font-family="Arial, sans-serif">${badgeText}</text>
         </svg>`;
 
-        return await sharp(imageBuffer)
+        const result = await sharp(imageBuffer)
             .composite([{ input: Buffer.from(svgOverlay), top: 0, left: 0 }])
             .jpeg({ quality: 85 })
             .toBuffer();
+
+        if (result) imageCache.set(cacheKey, result);
+        return result;
     } catch (error) {
         console.error('Error adding badge to image:', error.message);
         return null;
     }
 }
 
-module.exports = { blurImage, addBadgeToImage };
+module.exports = { getBlurredImageUrl, addBadgeToImage };
