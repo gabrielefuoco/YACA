@@ -18,6 +18,7 @@ const LIMITS = {
 module.exports = async (req, res) => {
     try {
         const { activeProfileId, profiles } = req.body;
+        // Server-side env vars take priority; request body keys kept for backward compatibility
         const tmdbKey = process.env.TMDB_API_KEY || req.body.tmdbKey;
         const mistralKey = process.env.MISTRAL_API_KEY || req.body.mistralKey;
         const traktToken = req.body.traktToken || req.body.traktUsername;

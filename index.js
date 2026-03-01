@@ -21,7 +21,9 @@ const app = express();
 const PORT = process.env.PORT || 7000;
 
 // Cache RAM per badge poster (TTL 14 giorni, max 500 immagini)
-const badgeImageCache = new LRUCache({ max: 500, ttl: 14 * 24 * 60 * 60 * 1000 });
+const BADGE_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+const BADGE_CACHE_TTL_SECS = 14 * 24 * 60 * 60; // 1209600
+const badgeImageCache = new LRUCache({ max: 500, ttl: BADGE_CACHE_TTL_MS });
 
 // CORS configurabile tramite variabile d'ambiente (default: permissivo per retrocompatibilità con Stremio)
 const corsOrigins = process.env.CORS_ALLOWED_ORIGINS;
@@ -165,7 +167,7 @@ app.get('/badge/poster.jpg', async (req, res) => {
     const cachedImage = badgeImageCache.get(cacheKey);
     if (cachedImage) {
         res.set('Content-Type', 'image/jpeg');
-        res.set('Cache-Control', 'public, max-age=1209600');
+        res.set('Cache-Control', `public, max-age=${BADGE_CACHE_TTL_SECS}`);
         return res.send(cachedImage);
     }
     try {
@@ -173,7 +175,7 @@ app.get('/badge/poster.jpg', async (req, res) => {
         if (imageBuffer) {
             badgeImageCache.set(cacheKey, imageBuffer);
             res.set('Content-Type', 'image/jpeg');
-            res.set('Cache-Control', 'public, max-age=1209600');
+            res.set('Cache-Control', `public, max-age=${BADGE_CACHE_TTL_SECS}`);
             return res.send(imageBuffer);
         } else {
             return res.redirect(301, url);
