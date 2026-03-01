@@ -245,19 +245,16 @@ const getPresets = () => {
         { id: 'mdblist_102', name: 'MDBList: Hidden Gems', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
 
         // ==========================================
-        // 👤 IL MIO TRAKT & COMMUNITY (Trakt Personale)
+        // 👤 IL MIO TRAKT & COMMUNITY
         // ==========================================
         { id: 'yaca_hybrid_movies', name: '✨ Consigliati Perfetti (Ibrido)', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
         { id: 'yaca_hybrid_series', name: '✨ Consigliati Perfetti (Ibrido)', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} },
-        { id: 'yaca_top_genres_mix', name: '🎲 Il Tuo Mix Esplorativo', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
-        { id: 'trakt_watchlist_movies', name: 'La mia Watchlist', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
-        { id: 'trakt_watchlist_series', name: 'La mia Watchlist', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} },
-        { id: 'trakt_history_movies', name: 'Cronologia Visioni', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
-        { id: 'trakt_history_series', name: 'Cronologia Visioni', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} },
-        { id: 'trakt_recommendations_movies', name: 'Trakt: Suggeriti', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
-        { id: 'trakt_recommendations_series', name: 'Trakt: Suggeriti', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} },
-        { id: 'trakt_ratings_movies', name: 'I miei Voti', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
-        { id: 'trakt_ratings_series', name: 'I miei Voti', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} }
+        { id: 'trakt_watchlist_movies', name: 'Watchlist', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_watchlist_series', name: 'Watchlist', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_history_movies', name: 'Cronologia', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_history_series', name: 'Cronologia', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_ratings_movies', name: 'I Miei Voti', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_ratings_series', name: 'I Miei Voti', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} }
     ];
 };
 

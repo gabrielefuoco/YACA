@@ -644,9 +644,10 @@
                                 class="w-full pl-10 pr-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg focus:ring-2 focus:ring-stremio focus:border-stremio outline-none transition-all text-sm placeholder-gray-600">
                         </div>
 
-                        <!-- Category Tabs (Scrollable) -->
-                        <div id="presetFilters" class="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-2 hidden">
-                            <!-- Populated by JS -->
+                        <!-- Category Selector -->
+                        <div class="mb-4 hidden" id="presetFiltersWrapper">
+                            <select id="presetCategorySelect" class="w-full px-4 py-3 bg-dark-900 border border-dark-600 rounded-xl text-sm font-medium text-white outline-none focus:border-stremio appearance-none shadow-lg">
+                            </select>
                         </div>
 
                         <!-- Catalog Preview Row (legacy, hidden) -->
@@ -3133,11 +3134,12 @@
 
             // Build grouped presets and category tabs
             const presetsContainer = document.getElementById('presetsContainer');
-            const presetFilters = document.getElementById('presetFilters');
+            const presetFiltersWrapper = document.getElementById('presetFiltersWrapper');
+            const selectEl = document.getElementById('presetCategorySelect');
             if (availablePresets.length > 0) {
                 presetsContainer.innerHTML = '';
-                presetFilters.innerHTML = '';
-                presetFilters.classList.remove('hidden');
+                selectEl.innerHTML = '';
+                presetFiltersWrapper.classList.remove('hidden');
 
                 groupedPresets = availablePresets.reduce((acc, current) => {
                     if (!acc[current.category]) acc[current.category] = [];
@@ -3148,27 +3150,20 @@
                 const categories = Object.keys(groupedPresets);
                 activeCategory = categories[0];
 
-                // Render category tabs
+                // Render category select options
                 categories.forEach(cat => {
                     const icon = CATEGORY_ICONS[cat] || '📁';
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = `category-tab px-3 py-2 text-xs font-medium rounded-lg border transition-colors flex items-center justify-center gap-1.5 ${cat === activeCategory ? 'active' : 'bg-dark-900 text-gray-400 border-dark-600 hover:border-dark-500 hover:text-gray-200'}`;
-                    btn.innerHTML = `<span>${icon}</span> ${escapeHtml(cat)}`;
-                    btn.onclick = () => {
-                        activeCategory = cat;
-                        currentPresetPage = 0;
-                        isPresetExpanded = false;
-                        // Update tab styles
-                        presetFilters.querySelectorAll('.category-tab').forEach(t => {
-                            t.classList.remove('active');
-                            t.classList.add('bg-dark-900', 'text-gray-400', 'border-dark-600');
-                        });
-                        btn.classList.add('active');
-                        btn.classList.remove('bg-dark-900', 'text-gray-400', 'border-dark-600');
-                        renderPresetCards();
-                    };
-                    presetFilters.appendChild(btn);
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = `${icon} ${cat}`;
+                    selectEl.appendChild(opt);
+                });
+                selectEl.value = activeCategory;
+                selectEl.addEventListener('change', (e) => {
+                    activeCategory = e.target.value;
+                    currentPresetPage = 0;
+                    isPresetExpanded = false;
+                    renderPresetCards();
                 });
             }
 
@@ -3200,7 +3195,13 @@
             if (currentConfigBase64) {
                 try {
                     // Decodifica la configurazione Base64 URL-safe direttamente nel browser
-                    const json = atob(currentConfigBase64.replace(/-/g, '+').replace(/_/g, '/'));
+                    const base64Str = currentConfigBase64.replace(/-/g, '+').replace(/_/g, '/');
+                    const binString = atob(base64Str);
+                    const bytes = new Uint8Array(binString.length);
+                    for (let i = 0; i < binString.length; i++) {
+                        bytes[i] = binString.charCodeAt(i);
+                    }
+                    const json = new TextDecoder('utf-8').decode(bytes);
                     existingConfig = JSON.parse(json);
                 } catch (e) { console.error("Errore decodifica config:", e); }
             }
