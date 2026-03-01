@@ -351,6 +351,50 @@ async function getTmdbMetaDetails(apiKey, id, type) {
             meta.runtime = `${data.runtime}m`;
         }
 
+        // Registi / Creatori
+        if (type === 'movie' && data.credits?.crew) {
+            const directors = data.credits.crew.filter(c => c.job === 'Director').slice(0, 3);
+            if (directors.length > 0) {
+                meta.director = directors.map(d => d.name);
+            }
+        } else if (type === 'series' && data.created_by?.length > 0) {
+            meta.director = data.created_by.slice(0, 3).map(c => c.name);
+        }
+
+        // Deep Links cliccabili: Regia, Cast, Generi, Saga
+        meta.links = [];
+
+        // Regia
+        const directorNames = meta.director || [];
+        for (const name of directorNames) {
+            meta.links.push({ name, category: 'Regia', url: `stremio:///search?search=${encodeURIComponent(name)}` });
+        }
+
+        // Cast (prime 5 voci)
+        if (data.credits?.cast) {
+            for (const c of data.credits.cast.slice(0, 5)) {
+                meta.links.push({ name: c.name, category: 'Cast', url: `stremio:///search?search=${encodeURIComponent(c.name)}` });
+            }
+        }
+
+        // Generi
+        if (data.genres) {
+            for (const g of data.genres) {
+                meta.links.push({ name: g.name, category: 'Generi', url: `stremio:///search?search=${encodeURIComponent(g.name)}` });
+            }
+        }
+
+        // Saga / Collezione (solo film)
+        if (data.belongs_to_collection) {
+            meta.links.push({
+                name: `🎬 ${data.belongs_to_collection.name}`,
+                category: 'Saga',
+                url: `stremio:///search?search=${encodeURIComponent(data.belongs_to_collection.name)}`
+            });
+        }
+
+        if (meta.links.length === 0) delete meta.links;
+
         // Estrazione Certificazione Età (Age Rating)
         try {
             if (type === 'movie' && data.release_dates?.results) {
@@ -368,6 +412,29 @@ async function getTmdbMetaDetails(apiKey, id, type) {
                 }
             }
         } catch (_e) { /* fallback silenzioso se fallisce estrazione certification */ }
+
+        // Informazioni su Network e Status per le Serie TV
+        if (type === 'series') {
+            try {
+                const infoLines = [];
+                if (data.networks?.length > 0) {
+                    infoLines.push(`📺 Network: ${data.networks.map(n => n.name).join(', ')}`);
+                }
+                if (data.status) {
+                    const isEnded = ['Ended', 'Canceled'].includes(data.status);
+                    const statusEmoji = isEnded ? '🔴' : '🟢';
+                    let statusLine = `${statusEmoji} Status: ${data.status}`;
+                    if (!isEnded && data.next_episode_to_air?.air_date) {
+                        const nextDate = new Date(data.next_episode_to_air.air_date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+                        statusLine += ` (Prossimo ep: ${nextDate})`;
+                    }
+                    infoLines.push(statusLine);
+                }
+                if (infoLines.length > 0) {
+                    meta.description = `${infoLines.join('\n')}\n\n${meta.description || ''}`.trim();
+                }
+            } catch (_e) { /* fallback silenzioso */ }
+        }
 
         // Poster con fallback linguistico: IT → EN → originale (null) → poster_path
         if (data.images && data.images.posters && data.images.posters.length > 0) {
@@ -393,12 +460,13 @@ async function getTmdbMetaDetails(apiKey, id, type) {
             meta.behaviorHints.backgroundBlur = `https://wsrv.nl/?url=${encodeURIComponent(meta.background)}&blur=20`;
         }
 
-        // Troviamo i trailer (YouTube) e formattiamoli secondo le specifiche Stremio
+        // Troviamo i trailer e altri video (YouTube) e formattiamoli secondo le specifiche Stremio
         if (data.videos && data.videos.results) {
-            const trailers = data.videos.results.filter(v => v.site === 'YouTube' && v.type === 'Trailer');
-            if (trailers.length > 0) {
+            const allowedVideoTypes = ['Trailer', 'Featurette', 'Behind the Scenes', 'Clip'];
+            const videos = data.videos.results.filter(v => v.site === 'YouTube' && allowedVideoTypes.includes(v.type));
+            if (videos.length > 0) {
                 // Stremio supports array of { source: "youtubeId", type: "Trailer" }
-                meta.trailers = trailers.map(t => ({ source: t.key, type: t.type }));
+                meta.trailers = videos.map(t => ({ source: t.key, type: t.type }));
             }
         }
 

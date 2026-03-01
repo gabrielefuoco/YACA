@@ -1,6 +1,7 @@
 const { getTmdbMetaDetails } = require('../clients/tmdb');
 const { getKitsuMetaDetails } = require('../clients/kitsu');
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
+const { fetchMdblistRatings } = require('../utils/mdblist');
 
 /**
  * Gestisce la richiesta di metadati dettagliati quando l'utente clicca su un titolo
@@ -47,6 +48,25 @@ async function metaHandler(args, userConfig) {
                 // Per kitsu: e altri ID, forziamo l'ID originale
                 meta.id = id;
             }
+
+            // Arricchimento voti: Rotten Tomatoes e Metacritic da MDBList
+            try {
+                const imdbIdForRatings = meta.id && meta.id.startsWith('tt') ? meta.id : null;
+                if (imdbIdForRatings) {
+                    const mdblistApiKey = userConfig.apiKeys?.mdblist || process.env.MDBLIST_API_KEY || null;
+                    const ratings = await fetchMdblistRatings(imdbIdForRatings, mdblistApiKey);
+                    if (ratings) {
+                        const parts = [];
+                        if (ratings.rtCritic != null) parts.push(`🍅 ${ratings.rtCritic}%`);
+                        if (ratings.rtAudience != null) parts.push(`🍿 ${ratings.rtAudience}%`);
+                        if (ratings.metacritic != null) parts.push(`Ⓜ️ ${ratings.metacritic}`);
+                        if (parts.length > 0) {
+                            meta.description = `${parts.join(' | ')}\n\n${meta.description || ''}`.trim();
+                        }
+                    }
+                }
+            } catch (_e) { /* fallback silenzioso */ }
+
             return { meta };
         }
 
