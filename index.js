@@ -138,7 +138,7 @@ app.get('/blur', (req, res) => {
     }
     const blurredUrl = getBlurredImageUrl(url);
     res.set('Cache-Control', 'public, max-age=604800');
-    return res.redirect(301, blurredUrl);
+    return res.redirect(302, blurredUrl);
 });
 
 // Endpoint per aggiungere badge (numero episodio) su poster

@@ -129,8 +129,11 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
 
     if (filters.people_list && filters.people_list.length > 0) {
         asyncTasks.push(
-            Promise.all(filters.people_list.map(name => getTmdbIdByName(tmdbApiKey, 'person', name)))
-                .then(ids => { const valid = ids.filter(Boolean); if (valid.length > 0) tmdbParams.with_people = valid.join(','); })
+            Promise.allSettled(filters.people_list.map(name => getTmdbIdByName(tmdbApiKey, 'person', name)))
+                .then(results => {
+                    const valid = results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+                    if (valid.length > 0) tmdbParams.with_people = valid.join(',');
+                })
         );
     }
 
