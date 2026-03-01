@@ -350,6 +350,14 @@ async function getTmdbMetaDetails(apiKey, id, type) {
         if (data.runtime) {
             meta.runtime = `${data.runtime}m`;
         }
+        if (type === 'series' && data.episode_run_time?.length > 0) {
+            meta.runtime = `${data.episode_run_time[0]}m`;
+        }
+
+        // Sito ufficiale
+        if (data.homepage) {
+            meta.website = data.homepage;
+        }
 
         // Registi / Creatori
         if (type === 'movie' && data.credits?.crew) {
@@ -395,6 +403,11 @@ async function getTmdbMetaDetails(apiKey, id, type) {
 
         if (meta.links.length === 0) delete meta.links;
 
+        // Tagline
+        if (data.tagline) {
+            meta.description = `"${data.tagline}"\n\n${meta.description || ''}`.trim();
+        }
+
         // Estrazione Certificazione Età (Age Rating)
         try {
             if (type === 'movie' && data.release_dates?.results) {
@@ -419,6 +432,10 @@ async function getTmdbMetaDetails(apiKey, id, type) {
                 const infoLines = [];
                 if (data.networks?.length > 0) {
                     infoLines.push(`📺 Network: ${data.networks.map(n => n.name).join(', ')}`);
+                }
+                if (data.number_of_seasons) {
+                    const episodesPart = data.number_of_episodes ? ` · ${data.number_of_episodes} episodi` : '';
+                    infoLines.push(`🎬 ${data.number_of_seasons} stagion${data.number_of_seasons === 1 ? 'e' : 'i'}${episodesPart}`);
                 }
                 if (data.status) {
                     const isEnded = ['Ended', 'Canceled'].includes(data.status);

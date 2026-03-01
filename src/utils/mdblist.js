@@ -78,8 +78,10 @@ async function fetchMdblistRatings(imdbId, mdblistApiKey) {
         const rtCritic = find('tomatoes');
         const rtAudience = find('tomatoesaudience');
         const metacritic = find('metacritic');
+        const imdb = find('imdb');
 
         const result = {
+            imdb: imdb?.value != null ? parseFloat(imdb.value).toFixed(1) : null,
             rtCritic: rtCritic?.value != null ? Math.round(rtCritic.value) : null,
             rtAudience: rtAudience?.value != null ? Math.round(rtAudience.value) : null,
             metacritic: metacritic?.value != null ? Math.round(metacritic.value) : null
