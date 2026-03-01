@@ -155,7 +155,7 @@ app.post('/api/preview-catalog', sensitiveLimiter, async (req, res) => {
 
 // Endpoint per la sfocatura immagini proxy (usato nei metadati TMDB e Trakt)
 // Protetto contro SSRF: accetta solo URL di CDN immagini noti
-const ALLOWED_IMAGE_HOSTS = ['image.tmdb.org', 'media.kitsu.app', 'walter.trakt.tv', 'artworks.thetvdb.com'];
+const ALLOWED_IMAGE_HOSTS = ['image.tmdb.org', 'media.kitsu.app', 'walter.trakt.tv', 'artworks.thetvdb.com', 'via.placeholder.com'];
 app.get('/blur', async (req, res) => {
     const { url } = req.query;
     if (!url) {
@@ -163,6 +163,7 @@ app.get('/blur', async (req, res) => {
     }
     // Validazione SSRF: accetta solo host di CDN immagini conosciuti
     if (!isAllowedUrl(url, ALLOWED_IMAGE_HOSTS)) {
+        console.warn(`Blur endpoint: URL bloccato dalla protezione SSRF: ${url}`);
         return res.status(403).send('URL non consentito');
     }
     try {
@@ -188,6 +189,7 @@ app.get('/badge/poster.jpg', async (req, res) => {
         return res.status(400).send('URL e text obbligatori');
     }
     if (!isAllowedUrl(url, ALLOWED_IMAGE_HOSTS)) {
+        console.warn(`Badge endpoint: URL bloccato dalla protezione SSRF: ${url}`);
         return res.status(403).send('URL non consentito');
     }
     // Sanitize badge text: max 10 chars, only alphanumeric and colon allowed
@@ -202,10 +204,12 @@ app.get('/badge/poster.jpg', async (req, res) => {
             res.set('Cache-Control', 'public, max-age=604800');
             return res.send(imageBuffer);
         } else {
-            return res.status(500).send('Errore elaborazione immagine');
+            // Fallback: redirect to original poster if badge generation fails
+            return res.redirect(301, url);
         }
     } catch (_err) {
-        return res.status(500).send('Errore elaborazione immagine');
+        // Fallback: redirect to original poster on error
+        return res.redirect(301, url);
     }
 });
 
@@ -615,9 +619,12 @@ app.get([
     }
 
     const args = { type, id, extra };
+    // HOST_URL è raccomandato per deployment in produzione (specialmente dietro reverse proxy).
+    // Il fallback da req è utile solo per sviluppo locale.
+    const hostUrl = process.env.HOST_URL || `${req.protocol}://${req.get('host')}`;
 
     try {
-        const response = await catalogHandler(args, uuid);
+        const response = await catalogHandler(args, uuid, hostUrl);
         res.setHeader('Cache-Control', 'max-age=1800, public'); // Stremio caching
         res.json(response);
     } catch (err) {
@@ -648,6 +655,9 @@ app.get(['/:uuid/meta/:type/:id.json', '/:uuid/:configVersion/meta/:type/:id.jso
 // Avvia il server
 const server = app.listen(PORT, () => {
     console.log(`🚀 YACA Server in esecuzione su http://localhost:${PORT}`);
+    if (!process.env.HOST_URL) {
+        console.warn('⚠️ HOST_URL non configurato nel file .env. I poster con badge e le immagini sfocate potrebbero non funzionare su client remoti (Stremio). Imposta HOST_URL=https://tuo-dominio.com nel file .env.');
+    }
 });
 
 // Graceful shutdown
