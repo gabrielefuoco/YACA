@@ -217,9 +217,8 @@ module.exports = async (req, res) => {
                 },
                 raw_ui_state: { // Salva lo stato UI grezzo per ripopolare i form facilmente
                     selectedPresets: profile.selectedPresets || [],
-                    presetOverrides: presetOverrides,
-                    prompts: parsedCatalogs.filter(c => c.raw_prompt).map(c => c.raw_prompt),
-                    catalogOrder: catalogOrder
+                    presetOverrides: presetOverrides
+                    // prompts e catalogOrder sono omessi: si ricostruiscono da catalogs nel frontend
                 }
             });
         }
@@ -240,7 +239,6 @@ module.exports = async (req, res) => {
                 stremioAuthKey: stremioAuthKey || null,
                 stremioEmail: stremioEmail || null
             },
-            catalogs: parsedProfiles[0]?.catalogs || [],
             profiles: parsedProfiles,
             activeProfileId: finalActiveProfileId
         });
