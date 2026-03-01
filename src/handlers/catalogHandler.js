@@ -3,6 +3,7 @@ const { fetchKitsuCatalog } = require('../clients/kitsu');
 const { fetchTraktCatalog } = require('../clients/trakt');
 const { fetchMDBListItems, parseMDBListItems } = require('../utils/mdblist');
 const { routeLiveStremioSearch } = require('../ai/router');
+const { getHybridCatalog } = require('../engines/hybridRecommendations');
 const {
     CACHE_TTL_MS,
     FAST_CACHE_TTL_MS,
@@ -280,6 +281,17 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
         if (id === 'yaca_anime_trending') {
             results = await fetchKitsuCatalog('/anime', skip, { sort: '-popularityRank' });
+            return { metas: results };
+        }
+
+        // ==========================================
+        // SCENARIO 2.5: CATALOGHI IBRIDI (Hybrid Recommendations)
+        // ==========================================
+        if (id === 'yaca_hybrid_movies' || id === 'yaca_hybrid_series' || id === 'yaca_top_genres_mix') {
+            const traktToken = userConfig.apiKeys?.trakt;
+            if (traktToken) {
+                results = await getHybridCatalog(id, skip, traktToken, tmdbApiKey);
+            }
             return { metas: results };
         }
 
