@@ -3171,13 +3171,20 @@
             if (!currentConfigBase64) {
                 // No config: show login page, hide nav and form
                 document.getElementById('page-login').classList.remove('hidden');
+                document.getElementById('page-login').style.display = '';
                 document.getElementById('mainNavContainer').classList.add('hidden');
+                document.getElementById('mainNavContainer').style.display = 'none';
                 document.getElementById('configForm').classList.add('hidden');
+                document.getElementById('configForm').style.display = 'none';
                 document.getElementById('page-login').classList.add('active');
             } else {
                 // Config exists: show dashboard
                 document.getElementById('page-login').classList.add('hidden');
+                document.getElementById('page-login').style.display = 'none';
                 document.getElementById('configForm').classList.remove('hidden');
+                document.getElementById('configForm').style.display = '';
+                document.getElementById('mainNavContainer').classList.remove('hidden');
+                document.getElementById('mainNavContainer').style.display = '';
                 updateSettingsAccountStatus();
                 updateBackupUrl();
             }
