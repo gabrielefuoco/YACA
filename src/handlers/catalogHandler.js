@@ -304,7 +304,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
         if (baseId === 'yaca_hybrid_popular_movies' && type === 'movie') {
             const [tmdbResults, traktResults] = await Promise.all([
                 fetchTmdbCatalog(tmdbClient, '/discover/movie', skip, { sort_by: 'popularity.desc', 'vote_count.gte': 50 }, type, cacheOptions),
-                fetchTraktCatalog('popular_movies', skip, null, tmdbApiKey).catch(() => [])
+                fetchTraktCatalog('popular_movies', skip, null, tmdbApiKey).catch(err => { console.error('Trakt popular_movies fallback:', err.message); return []; })
             ]);
             const seen = new Set();
             results = [...tmdbResults, ...traktResults].filter(item => {
@@ -317,7 +317,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
         if (baseId === 'yaca_hybrid_popular_series' && type === 'series') {
             const [tmdbResults, traktResults] = await Promise.all([
                 fetchTmdbCatalog(tmdbClient, '/discover/tv', skip, { sort_by: 'popularity.desc', 'vote_count.gte': 50 }, type, cacheOptions),
-                fetchTraktCatalog('popular_shows', skip, null, tmdbApiKey).catch(() => [])
+                fetchTraktCatalog('popular_shows', skip, null, tmdbApiKey).catch(err => { console.error('Trakt popular_shows fallback:', err.message); return []; })
             ]);
             const seen = new Set();
             results = [...tmdbResults, ...traktResults].filter(item => {

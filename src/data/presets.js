@@ -53,8 +53,8 @@ const getPresets = () => {
         { id: 'preset_pop_anime', name: 'Anime Popolari', category: '🔥 Top, Trend & Trakt', type: 'series', filters: { with_keywords: '210024', sort_by: 'popularity.desc', with_genres: TMDB_GENRES.TV.Animation, 'vote_count.gte': 20 } },
         { id: 'preset_new_anime', name: 'Anime: Novità', category: '🔥 Top, Trend & Trakt', type: 'series', filters: { with_keywords: '210024', 'first_air_date.lte': todayStr, 'first_air_date.gte': sixMonthsAgoStr, sort_by: 'popularity.desc', with_genres: TMDB_GENRES.TV.Animation } },
         { id: 'preset_new_anime_eps', name: 'Anime: Simulcast', category: '🔥 Top, Trend & Trakt', type: 'series', filters: { 'air_date.lte': todayStr, 'air_date.gte': twoWeeksAgoStr, with_keywords: '210024', sort_by: 'popularity.desc', with_genres: TMDB_GENRES.TV.Animation } },
-        { id: 'yaca_hybrid_popular_movies', name: '🏆 I Popolari (Ibrido TMDB+Trakt)', category: '🔥 Top, Trend & Trakt', type: 'movie', filters: {} },
-        { id: 'yaca_hybrid_popular_series', name: '🏆 I Popolari (Ibrido TMDB+Trakt)', category: '🔥 Top, Trend & Trakt', type: 'series', filters: {} },
+        { id: 'yaca_hybrid_popular_movies', name: '🏆 I Popolari (Ibrido TMDB+Trakt) - Film', category: '🔥 Top, Trend & Trakt', type: 'movie', filters: {} },
+        { id: 'yaca_hybrid_popular_series', name: '🏆 I Popolari (Ibrido TMDB+Trakt) - Serie', category: '🔥 Top, Trend & Trakt', type: 'series', filters: {} },
 
         // =============================================
         // --- 🎬 CINEMA, REGISTI & AUTORI ---

@@ -1306,6 +1306,10 @@
             return div.innerHTML;
         }
 
+        function toSafeId(id) {
+            return escapeHtml(id).replace(/[^a-zA-Z0-9_-]/g, '_');
+        }
+
         // -- TAB NAVIGATION --
         function switchTab(tabName) {
             // Hide all pages
@@ -2366,7 +2370,7 @@
             myLists.forEach(list => {
                 const typeInfo = TYPE_COLORS[list.type] || TYPE_COLORS['movie'];
                 const isInProfile = ep && ep.existingCatalogs.some(c => c.id === list.id);
-                const safeId = escapeHtml(list.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+                const safeId = toSafeId(list.id);
 
                 const item = document.createElement('div');
                 item.className = 'catalog-row rounded-xl overflow-hidden bg-dark-800/60 border border-dark-700/50 hover:border-dark-600';
@@ -2400,7 +2404,7 @@
             for (let i = 0; i < lists.length; i += BATCH_SIZE) {
                 const batch = lists.slice(i, i + BATCH_SIZE);
                 await Promise.all(batch.map(async (list) => {
-                    const safeId = escapeHtml(list.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+                    const safeId = toSafeId(list.id);
                     const container = document.getElementById(`mylist-posters-${safeId}`);
                     if (!container) return;
 
@@ -3039,7 +3043,7 @@
                 `;
                 card.onclick = () => {
                     const ep = getEditingProfile();
-                    ep.raw_ui_state.selectedPresets = [...tpl.presets];
+                    ep.raw_ui_state.selectedPresets = [...(tpl.presets || [])];
                     ep.name = tpl.name;
                     const nameInput = document.getElementById('profileNameInput');
                     if (nameInput) nameInput.value = tpl.name;
