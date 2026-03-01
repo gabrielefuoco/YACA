@@ -619,6 +619,8 @@ app.get([
     }
 
     const args = { type, id, extra };
+    // HOST_URL è raccomandato per deployment in produzione (specialmente dietro reverse proxy).
+    // Il fallback da req è utile solo per sviluppo locale.
     const hostUrl = process.env.HOST_URL || `${req.protocol}://${req.get('host')}`;
 
     try {
