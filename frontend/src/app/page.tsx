@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { mapBackendProfile, profilesToApiPayload } from '@/lib/utils';
+import { mapBackendProfile, profilesToApiPayload, BackendProfile } from '@/lib/utils';
 import { useConfig } from '@/hooks/useConfig';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfiles } from '@/hooks/useProfiles';
@@ -11,7 +11,7 @@ import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
 import { MyList, StremioAuth, Profile } from '@/types';
-import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
+import { LOCAL_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 import { decodeConfigAsync } from '@/lib/configCodec';
 import { api } from '@/lib/api';
 
@@ -22,10 +22,7 @@ function createDefaultProfiles(): Profile[] {
       id: 'default_main',
       name: '🏠 Generale',
       raw_ui_state: {
-        selectedPresets: [
-          'preset_pop_movies', 'preset_pop_series', 'preset_new_movies', 'preset_new_series',
-          'preset_top_rated_movies', 'preset_top_rated_series', 'preset_pop_anime',
-        ],
+        selectedPresets: [...DEFAULT_PRESET_IDS],
         newPrompts: [],
         presetOverrides: {},
         catalogOrder: [],
@@ -69,7 +66,7 @@ export default function Home() {
         if (cfg.configVersion) setConfigVersion(String(cfg.configVersion));
         if (Array.isArray(cfg.profiles) && cfg.profiles.length > 0) {
           setInitialProfiles(
-            (cfg.profiles as Record<string, unknown>[]).map(mapBackendProfile)
+            (cfg.profiles as BackendProfile[]).map(mapBackendProfile)
           );
         } else {
           setInitialProfiles(createDefaultProfiles());

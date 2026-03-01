@@ -14,6 +14,36 @@ export function generateId(): string {
 }
 
 /**
+ * Shape of a profile as stored in the backend config (UserConfig).
+ * Different from the frontend Profile type - uses `catalogs` instead of
+ * `existingCatalogs`, and different settings field names.
+ */
+export interface BackendProfile {
+  id?: unknown;
+  name?: unknown;
+  catalogs?: BackendCatalog[];
+  settings?: {
+    minVoteAverage?: number;
+    minVoteCount?: number;
+    fastPresetRefresh?: boolean;
+    tmdbKey?: string;
+  };
+  raw_ui_state?: {
+    selectedPresets?: string[];
+    presetOverrides?: Record<string, unknown>;
+    catalogOrder?: string[];
+  };
+}
+
+interface BackendCatalog {
+  id: string;
+  name: string;
+  type: string;
+  filters?: Record<string, unknown>;
+  raw_prompt?: string;
+}
+
+/**
  * Transforms a frontend Profile array to the format the backend configure API expects.
  */
 export function profilesToApiPayload(profiles: Profile[]) {
@@ -37,20 +67,21 @@ export function profilesToApiPayload(profiles: Profile[]) {
  * Maps a backend-stored profile (from UserConfig) to the frontend Profile type.
  * The backend stores processed `catalogs` and uses different settings field names.
  */
-export function mapBackendProfile(backendProfile: Record<string, unknown>): Profile {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const bCatalogs: any[] = Array.isArray(backendProfile.catalogs) ? (backendProfile.catalogs as any[]) : [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawUi: any = (typeof backendProfile.raw_ui_state === 'object' && backendProfile.raw_ui_state !== null)
-    ? backendProfile.raw_ui_state : {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const bSettings: any = (typeof backendProfile.settings === 'object' && backendProfile.settings !== null)
-    ? backendProfile.settings : {};
+export function mapBackendProfile(backendProfile: BackendProfile): Profile {
+  const bCatalogs: BackendCatalog[] = backendProfile.catalogs ?? [];
+  const rawUi = backendProfile.raw_ui_state ?? {};
+  const bSettings = backendProfile.settings ?? {};
 
   // Non-preset catalogs are the "existing" custom/AI/merged catalogs
-  const existingCatalogs = bCatalogs.filter(
-    (c) => !String(c.id || '').startsWith('yaca_preset_')
-  );
+  const existingCatalogs: Profile['existingCatalogs'] = bCatalogs
+    .filter((c) => !c.id.startsWith('yaca_preset_'))
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      type: c.type === 'series' ? 'series' : 'movie',
+      filters: c.filters,
+      raw_prompt: c.raw_prompt,
+    }));
 
   return {
     id: String(backendProfile.id ?? generateId()),
@@ -58,8 +89,7 @@ export function mapBackendProfile(backendProfile: Record<string, unknown>): Prof
     raw_ui_state: {
       selectedPresets: Array.isArray(rawUi.selectedPresets) ? rawUi.selectedPresets : [],
       newPrompts: [],
-      presetOverrides: (typeof rawUi.presetOverrides === 'object' && rawUi.presetOverrides !== null)
-        ? rawUi.presetOverrides : {},
+      presetOverrides: rawUi.presetOverrides ?? {},
       catalogOrder: Array.isArray(rawUi.catalogOrder) ? rawUi.catalogOrder : [],
     },
     existingCatalogs,
@@ -67,7 +97,7 @@ export function mapBackendProfile(backendProfile: Record<string, unknown>): Prof
       voteAverageMin: typeof bSettings.minVoteAverage === 'number' ? bSettings.minVoteAverage : 0,
       voteCountMin: typeof bSettings.minVoteCount === 'number' ? bSettings.minVoteCount : 0,
       fastRefresh: Boolean(bSettings.fastPresetRefresh),
-      tmdbKey: typeof bSettings.tmdbKey === 'string' ? bSettings.tmdbKey : '',
+      tmdbKey: bSettings.tmdbKey ?? '',
     },
   };
 }

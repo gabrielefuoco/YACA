@@ -53,3 +53,14 @@ export const LOCAL_STORAGE_KEYS = {
   TRAKT_TOKEN: 'yaca_trakt_token',
   TRAKT_REFRESH_TOKEN: 'yaca_trakt_refresh_token',
 } as const;
+
+/** Default preset IDs shown in the "Generale" quick-start profile for new users. */
+export const DEFAULT_PRESET_IDS = [
+  'preset_pop_movies',
+  'preset_pop_series',
+  'preset_new_movies',
+  'preset_new_series',
+  'preset_top_rated_movies',
+  'preset_top_rated_series',
+  'preset_pop_anime',
+] as const;

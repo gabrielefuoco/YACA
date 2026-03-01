@@ -11,6 +11,9 @@ export function encodeConfig(config: object): string {
  * - 'c1' prefix (zlib deflate + base64url, used by the server UserConfig)
  * - Standard base64 (legacy format)
  * Returns null if decoding fails.
+ *
+ * Note: The 'c1' format requires the DecompressionStream API (Chrome 80+, Firefox 113+,
+ * Safari 16.4+). This mirrors the same requirement in the original vanilla HTML frontend.
  */
 export async function decodeConfigAsync(base64: string): Promise<object | null> {
   try {
