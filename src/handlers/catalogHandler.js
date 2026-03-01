@@ -214,10 +214,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
         if (!userConfig) throw new Error("Configurazione utente mancante");
 
-        const tmdbApiKey = userConfig.apiKeys?.tmdb;
+        const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
         if (!tmdbApiKey) throw new Error("TMDB API key mancante nella configurazione utente");
 
-        const mistralKey = userConfig.apiKeys?.mistral;
+        const mistralKey = userConfig.apiKeys?.mistral || process.env.MISTRAL_API_KEY;
         const tmdbClient = createTmdbClient(tmdbApiKey);
 
         // Recupera impostazioni del profilo attivo per filtrare spazzatura

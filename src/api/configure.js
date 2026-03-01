@@ -17,14 +17,16 @@ const LIMITS = {
 
 module.exports = async (req, res) => {
     try {
-        const { tmdbKey, mistralKey, activeProfileId, profiles } = req.body;
+        const { activeProfileId, profiles } = req.body;
+        const tmdbKey = process.env.TMDB_API_KEY || req.body.tmdbKey;
+        const mistralKey = process.env.MISTRAL_API_KEY || req.body.mistralKey;
         const traktToken = req.body.traktToken || req.body.traktUsername;
         const traktRefreshToken = req.body.traktRefreshToken || null;
         const stremioAuthKey = req.body.stremioAuthKey || null;
         const stremioEmail = req.body.stremioEmail || null;
 
         if (!tmdbKey) {
-            return res.status(400).json({ error: "La API Key di TMDB è obbligatoria." });
+            return res.status(400).json({ error: "TMDB API key non configurata sul server." });
         }
 
         // Input validation - limiti ragionevoli
@@ -64,7 +66,7 @@ module.exports = async (req, res) => {
         }
 
         if (needsMistral && !mistralKey) {
-            return res.status(400).json({ error: "Per i cataloghi IA dinamici serve la chiave API Mistral." });
+            return res.status(400).json({ error: "Chiave Mistral non configurata sul server. Contattare l'amministratore." });
         }
 
         // --- BACKWARD COMPATIBILITY / DEFAULT PROFILE MAPPING ---
