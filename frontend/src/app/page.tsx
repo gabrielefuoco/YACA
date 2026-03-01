@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { generateId } from '@/lib/utils';
+import { mapBackendProfile, profilesToApiPayload } from '@/lib/utils';
 import { useConfig } from '@/hooks/useConfig';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfiles } from '@/hooks/useProfiles';
@@ -10,10 +10,31 @@ import { TabNav } from '@/components/layout/TabNav';
 import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
-import { AppConfig, MyList, StremioAuth } from '@/types';
+import { MyList, StremioAuth, Profile } from '@/types';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
-import { decodeConfig } from '@/lib/configCodec';
+import { decodeConfigAsync } from '@/lib/configCodec';
 import { api } from '@/lib/api';
+
+// Default profiles for new users (matches the original HTML quick-start profiles)
+function createDefaultProfiles(): Profile[] {
+  return [
+    {
+      id: 'default_main',
+      name: '🏠 Generale',
+      raw_ui_state: {
+        selectedPresets: [
+          'preset_pop_movies', 'preset_pop_series', 'preset_new_movies', 'preset_new_series',
+          'preset_top_rated_movies', 'preset_top_rated_series', 'preset_pop_anime',
+        ],
+        newPrompts: [],
+        presetOverrides: {},
+        catalogOrder: [],
+      },
+      existingCatalogs: [],
+      settings: { voteAverageMin: 0, voteCountMin: 0, fastRefresh: false },
+    },
+  ];
+}
 
 export default function Home() {
   const { configBase64, setConfigBase64, clearConfig, isLoaded } = useConfig();
@@ -31,9 +52,34 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'settings'>('dashboard');
   const [myLists, setMyLists] = useState<MyList[]>([]);
   const [configVersion, setConfigVersion] = useState<string | undefined>();
+  const [initialProfiles, setInitialProfiles] = useState<Profile[] | undefined>(undefined);
+  const [configDecoded, setConfigDecoded] = useState(false);
 
-  // Parse config for profiles
-  const parsedConfig = configBase64 ? (decodeConfig(configBase64) as AppConfig | null) : null;
+  // Async decode config from localStorage/URL
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!configBase64) {
+      setInitialProfiles(createDefaultProfiles());
+      setConfigDecoded(true);
+      return;
+    }
+    decodeConfigAsync(configBase64).then((parsed) => {
+      if (parsed && typeof parsed === 'object') {
+        const cfg = parsed as Record<string, unknown>;
+        if (cfg.configVersion) setConfigVersion(String(cfg.configVersion));
+        if (Array.isArray(cfg.profiles) && cfg.profiles.length > 0) {
+          setInitialProfiles(
+            (cfg.profiles as Record<string, unknown>[]).map(mapBackendProfile)
+          );
+        } else {
+          setInitialProfiles(createDefaultProfiles());
+        }
+      } else {
+        setInitialProfiles(createDefaultProfiles());
+      }
+      setConfigDecoded(true);
+    });
+  }, [isLoaded, configBase64]);
 
   const {
     profiles,
@@ -49,9 +95,9 @@ export default function Home() {
     reorderCatalogs,
     removeCatalog,
     addCatalog,
-  } = useProfiles(parsedConfig?.profiles);
+  } = useProfiles(initialProfiles);
 
-  const { presets, categories, loading: presetsLoading } = usePresets();
+  const { presets, categories } = usePresets();
 
   // Load my lists from localStorage
   useEffect(() => {
@@ -60,13 +106,6 @@ export default function Home() {
       if (raw) setMyLists(JSON.parse(raw));
     } catch {}
   }, []);
-
-  // Extract config version from parsed config
-  useEffect(() => {
-    if (parsedConfig?.configVersion) {
-      setConfigVersion(parsedConfig.configVersion);
-    }
-  }, [parsedConfig?.configVersion]);
 
   const saveMyLists = (lists: MyList[]) => {
     setMyLists(lists);
@@ -93,7 +132,7 @@ export default function Home() {
     // Generate initial config
     try {
       const data = await api.configure({
-        profiles,
+        profiles: profilesToApiPayload(profiles),
         activeProfileId,
         stremioAuthKey: newStremioAuth?.authKey,
         traktToken: newTraktToken,
@@ -112,13 +151,8 @@ export default function Home() {
   const handleLogout = () => {
     logout();
     clearConfig();
-    setProfiles([{
-      id: generateId(),
-      name: 'Profilo Principale',
-      raw_ui_state: { selectedPresets: [], newPrompts: [], presetOverrides: {}, catalogOrder: [] },
-      existingCatalogs: [],
-      settings: {},
-    }]);
+    setInitialProfiles(createDefaultProfiles());
+    setProfiles(createDefaultProfiles());
   };
 
   const handleDisconnectTrakt = () => {
@@ -128,7 +162,7 @@ export default function Home() {
 
   const isLoggedIn = Boolean(configBase64 || stremioAuth);
 
-  if (!isLoaded || !authLoaded) {
+  if (!isLoaded || !authLoaded || !configDecoded) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-[#8a5aeb]" />
@@ -193,4 +227,3 @@ export default function Home() {
     </div>
   );
 }
-

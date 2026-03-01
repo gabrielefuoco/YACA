@@ -13,6 +13,7 @@ import {
   Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Trash2, Download, Upload, RefreshCw
 } from 'lucide-react';
 import { encodeConfig } from '@/lib/configCodec';
+import { profilesToApiPayload } from '@/lib/utils';
 
 interface SettingsPageProps {
   profiles: Profile[];
@@ -74,9 +75,12 @@ export function SettingsPage({
         : p
     );
 
+    // Transform frontend Profile shape to the format the backend configure API expects
+    const apiProfiles = profilesToApiPayload(updatedProfiles);
+
     try {
       const data = await api.configure({
-        profiles: updatedProfiles,
+        profiles: apiProfiles,
         activeProfileId,
         stremioAuthKey,
         traktToken,
@@ -86,13 +90,21 @@ export function SettingsPage({
 
       if (data.configBase64) {
         onConfigSaved(data.configBase64);
-        setInstallUrl(data.installUrl ?? '');
+        // Compute install URL from configBase64 (backend doesn't return installUrl)
+        const host = window.location.host;
+        const cv = data.configVersion;
+        const manifestPath = cv
+          ? `${data.configBase64}/${cv}/manifest.json`
+          : `${data.configBase64}/manifest.json`;
+        const computedInstallUrl = `stremio://${host}/${manifestPath}`;
+        setInstallUrl(computedInstallUrl);
         setSuccess(true);
 
-        // Auto-install if stremio auth available
-        if (stremioAuthKey && data.installUrl) {
+        // Auto-update addon in Stremio if auth available
+        if (stremioAuthKey) {
+          const httpsManifestUrl = `https://${host}/${manifestPath}`;
           try {
-            await api.stremioAddonUpdate(stremioAuthKey, data.installUrl.replace('stremio://', 'https://'));
+            await api.stremioAddonUpdate(stremioAuthKey, httpsManifestUrl);
           } catch {}
         }
       } else {
