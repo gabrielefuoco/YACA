@@ -41,231 +41,223 @@ const getPresets = () => {
 
     return [
         // =============================================
-        // --- TOP & TREND (Base) ---
+        // --- 🔥 TOP, TREND & TRAKT ---
         // =============================================
-        { id: 'preset_pop_movies', name: 'Film Popolari', category: 'Top & Trend', type: 'movie', filters: { sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_pop_series', name: 'Serie TV Popolari', category: 'Top & Trend', type: 'series', filters: { sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_top_rated_movies', name: 'Film Più Votati (All Time)', category: 'Top & Trend', type: 'movie', filters: { sort_by: 'vote_average.desc', 'vote_count.gte': 5000 } },
-        { id: 'preset_top_rated_series', name: 'Serie Più Votate (All Time)', category: 'Top & Trend', type: 'series', filters: { sort_by: 'vote_average.desc', 'vote_count.gte': 2000 } },
-        { id: 'preset_new_movies', name: 'Film: Nuove Uscite', category: 'Top & Trend', type: 'movie', filters: { 'primary_release_date.lte': todayStr, 'primary_release_date.gte': twoMonthsAgoStr, sort_by: 'popularity.desc' } },
-        { id: 'preset_new_series', name: 'Serie TV: Novità', category: 'Top & Trend', type: 'series', filters: { 'first_air_date.lte': todayStr, 'first_air_date.gte': sixMonthsAgoStr, sort_by: 'popularity.desc' } },
-        { id: 'preset_new_series_eps', name: 'Serie: Episodi Recenti', category: 'Top & Trend', type: 'series', filters: { 'air_date.lte': todayStr, 'air_date.gte': twoWeeksAgoStr, sort_by: 'popularity.desc' } },
-        { id: 'preset_pop_anime', name: 'Anime Popolari', category: 'Top & Trend', type: 'series', filters: { with_keywords: '210024', sort_by: 'popularity.desc', with_genres: TMDB_GENRES.TV.Animation, 'vote_count.gte': 20 } },
-        { id: 'preset_new_anime', name: 'Anime: Novità', category: 'Top & Trend', type: 'series', filters: { with_keywords: '210024', 'first_air_date.lte': todayStr, 'first_air_date.gte': sixMonthsAgoStr, sort_by: 'popularity.desc', with_genres: TMDB_GENRES.TV.Animation } },
-        { id: 'preset_new_anime_eps', name: 'Anime: Simulcast', category: 'Top & Trend', type: 'series', filters: { 'air_date.lte': todayStr, 'air_date.gte': twoWeeksAgoStr, with_keywords: '210024', sort_by: 'popularity.desc', with_genres: TMDB_GENRES.TV.Animation } },
+        { id: 'preset_pop_movies', name: 'Film Popolari', category: '🔥 Top, Trend & Trakt', type: 'movie', filters: { sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_pop_series', name: 'Serie TV Popolari', category: '🔥 Top, Trend & Trakt', type: 'series', filters: { sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_top_rated_movies', name: 'Film Più Votati (All Time)', category: '🔥 Top, Trend & Trakt', type: 'movie', filters: { sort_by: 'vote_average.desc', 'vote_count.gte': 5000 } },
+        { id: 'preset_top_rated_series', name: 'Serie Più Votate (All Time)', category: '🔥 Top, Trend & Trakt', type: 'series', filters: { sort_by: 'vote_average.desc', 'vote_count.gte': 2000 } },
+        { id: 'preset_new_movies', name: 'Film: Nuove Uscite', category: '🔥 Top, Trend & Trakt', type: 'movie', filters: { 'primary_release_date.lte': todayStr, 'primary_release_date.gte': twoMonthsAgoStr, sort_by: 'popularity.desc' } },
+        { id: 'preset_new_series', name: 'Serie TV: Novità', category: '🔥 Top, Trend & Trakt', type: 'series', filters: { 'first_air_date.lte': todayStr, 'first_air_date.gte': sixMonthsAgoStr, sort_by: 'popularity.desc' } },
+        { id: 'preset_new_series_eps', name: 'Serie: Episodi Recenti', category: '🔥 Top, Trend & Trakt', type: 'series', filters: { 'air_date.lte': todayStr, 'air_date.gte': twoWeeksAgoStr, sort_by: 'popularity.desc' } },
+        { id: 'preset_pop_anime', name: 'Anime Popolari', category: '🔥 Top, Trend & Trakt', type: 'series', filters: { with_keywords: '210024', sort_by: 'popularity.desc', with_genres: TMDB_GENRES.TV.Animation, 'vote_count.gte': 20 } },
+        { id: 'preset_new_anime', name: 'Anime: Novità', category: '🔥 Top, Trend & Trakt', type: 'series', filters: { with_keywords: '210024', 'first_air_date.lte': todayStr, 'first_air_date.gte': sixMonthsAgoStr, sort_by: 'popularity.desc', with_genres: TMDB_GENRES.TV.Animation } },
+        { id: 'preset_new_anime_eps', name: 'Anime: Simulcast', category: '🔥 Top, Trend & Trakt', type: 'series', filters: { 'air_date.lte': todayStr, 'air_date.gte': twoWeeksAgoStr, with_keywords: '210024', sort_by: 'popularity.desc', with_genres: TMDB_GENRES.TV.Animation } },
+        { id: 'yaca_hybrid_popular_movies', name: '🏆 I Popolari (Ibrido TMDB+Trakt)', category: '🔥 Top, Trend & Trakt', type: 'movie', filters: {} },
+        { id: 'yaca_hybrid_popular_series', name: '🏆 I Popolari (Ibrido TMDB+Trakt)', category: '🔥 Top, Trend & Trakt', type: 'series', filters: {} },
 
         // =============================================
-        // --- GRANDI REGISTI ---
+        // --- 🎬 CINEMA, REGISTI & AUTORI ---
         // =============================================
-        { id: 'preset_nolan', name: 'Regia: Christopher Nolan', category: 'Grandi Registi', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Nolan, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_tarantino', name: 'Regia: Quentin Tarantino', category: 'Grandi Registi', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Tarantino, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_scorsese', name: 'Regia: Martin Scorsese', category: 'Grandi Registi', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Scorsese, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_spielberg', name: 'Regia: Steven Spielberg', category: 'Grandi Registi', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Spielberg, sort_by: 'revenue.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_kubrick', name: 'Regia: Stanley Kubrick', category: 'Grandi Registi', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Kubrick, sort_by: 'vote_average.desc' } },
-        { id: 'preset_villeneuve', name: 'Regia: Denis Villeneuve', category: 'Grandi Registi', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Villeneuve, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_fincher', name: 'Regia: David Fincher', category: 'Grandi Registi', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Fincher, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_burton', name: 'Regia: Tim Burton', category: 'Grandi Registi', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Burton, sort_by: 'popularity.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_wesanderson', name: 'Regia: Wes Anderson', category: 'Grandi Registi', type: 'movie', filters: { with_crew: TMDB_PEOPLE.WesAnderson, sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_lynch', name: 'Regia: David Lynch', category: 'Grandi Registi', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Lynch, sort_by: 'vote_average.desc' } },
-        { id: 'preset_scott', name: 'Regia: Ridley Scott', category: 'Grandi Registi', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Scott, sort_by: 'popularity.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_nolan', name: 'Regia: Christopher Nolan', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Nolan, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_tarantino', name: 'Regia: Quentin Tarantino', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Tarantino, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_scorsese', name: 'Regia: Martin Scorsese', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Scorsese, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_spielberg', name: 'Regia: Steven Spielberg', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Spielberg, sort_by: 'revenue.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_kubrick', name: 'Regia: Stanley Kubrick', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Kubrick, sort_by: 'vote_average.desc' } },
+        { id: 'preset_villeneuve', name: 'Regia: Denis Villeneuve', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Villeneuve, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_fincher', name: 'Regia: David Fincher', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Fincher, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_burton', name: 'Regia: Tim Burton', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Burton, sort_by: 'popularity.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_wesanderson', name: 'Regia: Wes Anderson', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_crew: TMDB_PEOPLE.WesAnderson, sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_lynch', name: 'Regia: David Lynch', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Lynch, sort_by: 'vote_average.desc' } },
+        { id: 'preset_scott', name: 'Regia: Ridley Scott', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_crew: TMDB_PEOPLE.Scott, sort_by: 'popularity.desc', 'vote_count.gte': 100 } },
 
         // =============================================
-        // --- GRANDI ATTORI ---
+        // --- 🎬 CINEMA, REGISTI & AUTORI (Attori) ---
         // =============================================
-        { id: 'preset_actor_dicaprio', name: 'Starring: Leonardo DiCaprio', category: 'Grandi Attori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.DiCaprio, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
-        { id: 'preset_actor_cruise', name: 'Starring: Tom Cruise', category: 'Grandi Attori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.Cruise, sort_by: 'popularity.desc', 'vote_count.gte': 200 } },
-        { id: 'preset_actor_reeves', name: 'Starring: Keanu Reeves', category: 'Grandi Attori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.Reeves, sort_by: 'popularity.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_brad_pitt', name: 'Starring: Brad Pitt', category: 'Grandi Attori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.BradPitt, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
-        { id: 'preset_de_niro', name: 'Starring: Robert De Niro', category: 'Grandi Attori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.DeNiro, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
-        { id: 'preset_johnny_depp', name: 'Starring: Johnny Depp', category: 'Grandi Attori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.JohnnyDepp, sort_by: 'popularity.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_denzel', name: 'Starring: Denzel Washington', category: 'Grandi Attori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.Denzel, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_nicolas_cage', name: 'La Follia di Nicolas Cage', category: 'Grandi Attori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.NicolasCage, sort_by: 'popularity.desc' } },
+        { id: 'preset_actor_dicaprio', name: 'Starring: Leonardo DiCaprio', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.DiCaprio, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
+        { id: 'preset_actor_cruise', name: 'Starring: Tom Cruise', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.Cruise, sort_by: 'popularity.desc', 'vote_count.gte': 200 } },
+        { id: 'preset_actor_reeves', name: 'Starring: Keanu Reeves', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.Reeves, sort_by: 'popularity.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_brad_pitt', name: 'Starring: Brad Pitt', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.BradPitt, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
+        { id: 'preset_de_niro', name: 'Starring: Robert De Niro', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.DeNiro, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
+        { id: 'preset_johnny_depp', name: 'Starring: Johnny Depp', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.JohnnyDepp, sort_by: 'popularity.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_denzel', name: 'Starring: Denzel Washington', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.Denzel, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_nicolas_cage', name: 'La Follia di Nicolas Cage', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_cast: TMDB_PEOPLE.NicolasCage, sort_by: 'popularity.desc' } },
 
         // =============================================
-        // --- STUDIOS & PRODUZIONI ---
+        // --- 🎬 CINEMA, REGISTI & AUTORI (Studios) ---
         // =============================================
-        { id: 'preset_ghibli', name: 'Studio Ghibli', category: 'Studios & Produzioni', type: 'movie', filters: { with_companies: TMDB_COMPANIES.Ghibli, sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_pixar', name: 'Disney Pixar', category: 'Studios & Produzioni', type: 'movie', filters: { with_companies: TMDB_COMPANIES.Pixar, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
-        { id: 'preset_a24', name: 'A24: Cinema Indipendente', category: 'Studios & Produzioni', type: 'movie', filters: { with_companies: TMDB_COMPANIES.A24, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_marvel', name: 'Marvel Cinematic Universe', category: 'Studios & Produzioni', type: 'movie', filters: { with_companies: TMDB_COMPANIES.Marvel, sort_by: 'revenue.desc', 'vote_count.gte': 500 } },
-        { id: 'preset_dc', name: 'DC Comics (Film)', category: 'Studios & Produzioni', type: 'movie', filters: { with_companies: TMDB_COMPANIES.DC, sort_by: 'popularity.desc', 'vote_count.gte': 200 } },
-        { id: 'preset_blumhouse', name: 'Blumhouse Horror', category: 'Studios & Produzioni', type: 'movie', filters: { with_companies: TMDB_COMPANIES.Blumhouse, sort_by: 'popularity.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_dreamworks', name: 'DreamWorks Animation', category: 'Studios & Produzioni', type: 'movie', filters: { with_companies: TMDB_COMPANIES.DreamWorks, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_disney_animation', name: 'Disney Classici & Animazione', category: 'Studios & Produzioni', type: 'movie', filters: { with_companies: TMDB_COMPANIES.Disney, with_genres: TMDB_GENRES.MOVIE.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
+        { id: 'preset_ghibli', name: 'Studio Ghibli', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_companies: TMDB_COMPANIES.Ghibli, sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_pixar', name: 'Disney Pixar', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_companies: TMDB_COMPANIES.Pixar, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
+        { id: 'preset_a24', name: 'A24: Cinema Indipendente', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_companies: TMDB_COMPANIES.A24, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_marvel', name: 'Marvel Cinematic Universe', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_companies: TMDB_COMPANIES.Marvel, sort_by: 'revenue.desc', 'vote_count.gte': 500 } },
+        { id: 'preset_dc', name: 'DC Comics (Film)', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_companies: TMDB_COMPANIES.DC, sort_by: 'popularity.desc', 'vote_count.gte': 200 } },
+        { id: 'preset_blumhouse', name: 'Blumhouse Horror', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_companies: TMDB_COMPANIES.Blumhouse, sort_by: 'popularity.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_dreamworks', name: 'DreamWorks Animation', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_companies: TMDB_COMPANIES.DreamWorks, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_disney_animation', name: 'Disney Classici & Animazione', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_companies: TMDB_COMPANIES.Disney, with_genres: TMDB_GENRES.MOVIE.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
 
         // =============================================
-        // --- CINEMA ASIATICO & K-DRAMA ---
+        // --- 🏮 ANIME & ASIA ---
         // =============================================
-        { id: 'preset_kdrama_romance', name: 'K-Drama: Romantici', category: 'Cinema Asiatico & K-Drama', type: 'series', filters: { with_original_language: 'ko', with_genres: '35,18', with_keywords: '9840', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_kdrama_thriller', name: 'K-Drama: Thriller & Mistero', category: 'Cinema Asiatico & K-Drama', type: 'series', filters: { with_original_language: 'ko', with_genres: '80,9648', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_asian_action', name: 'Azione Asiatica (JP, KR, HK)', category: 'Cinema Asiatico & K-Drama', type: 'movie', filters: { with_original_language: 'ja|ko|zh', with_genres: '28', with_keywords: '779|2073|18034|9826', sort_by: 'popularity.desc', 'vote_count.gte': 10 } },
-        { id: 'preset_cinema_coreano', name: 'Cinema Coreano (Film)', category: 'Cinema Asiatico & K-Drama', type: 'movie', filters: { with_original_language: 'ko', sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
+        { id: 'preset_kdrama_romance', name: 'K-Drama: Romantici', category: '🏮 Anime & Asia', type: 'series', filters: { with_original_language: 'ko', with_genres: '35,18', with_keywords: '9840', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_kdrama_thriller', name: 'K-Drama: Thriller & Mistero', category: '🏮 Anime & Asia', type: 'series', filters: { with_original_language: 'ko', with_genres: '80,9648', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_asian_action', name: 'Azione Asiatica (JP, KR, HK)', category: '🏮 Anime & Asia', type: 'movie', filters: { with_original_language: 'ja|ko|zh', with_genres: '28', with_keywords: '779|2073|18034|9826', sort_by: 'popularity.desc', 'vote_count.gte': 10 } },
+        { id: 'preset_cinema_coreano', name: 'Cinema Coreano (Film)', category: '🏮 Anime & Asia', type: 'movie', filters: { with_original_language: 'ko', sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
 
         // =============================================
-        // --- CINEMA INTERNAZIONALE ---
+        // --- 🎬 CINEMA, REGISTI & AUTORI (Internazionale) ---
         // =============================================
-        { id: 'preset_nordic_noir', name: 'Nordic Noir (Gialli Scandinavi)', category: 'Cinema Internazionale', type: 'series', filters: { with_original_language: 'sv|da|no', with_genres: TMDB_GENRES.TV.Crime, sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_spanish_thriller', name: 'Thriller Spagnoli', category: 'Cinema Internazionale', type: 'movie', filters: { with_original_language: 'es', with_genres: `${TMDB_GENRES.MOVIE.Thriller},${TMDB_GENRES.MOVIE.Mystery}`, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_british_crime', name: 'Gialli & Crime Inglesi (UK)', category: 'Cinema Internazionale', type: 'series', filters: { with_origin_country: 'GB', with_genres: `${TMDB_GENRES.TV.Crime},${TMDB_GENRES.TV.Mystery}`, sort_by: 'popularity.desc', 'vote_count.gte': 30 } },
-        { id: 'preset_bollywood', name: 'Bollywood & Cinema Indiano', category: 'Cinema Internazionale', type: 'movie', filters: { with_original_language: 'hi', with_origin_country: 'IN', sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_french_cinema', name: 'Cinema Francese d\'Autore', category: 'Cinema Internazionale', type: 'movie', filters: { with_original_language: 'fr', sort_by: 'vote_average.desc', 'vote_average.gte': 7.0, 'vote_count.gte': 300 } },
-        { id: 'preset_italian_cinema', name: 'Cinema Italiano', category: 'Cinema Internazionale', type: 'movie', filters: { with_original_language: 'it', sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_german_dark', name: 'Serie Tedesche (Dark & Thriller)', category: 'Cinema Internazionale', type: 'series', filters: { with_original_language: 'de', with_genres: `${TMDB_GENRES.TV.Drama},${TMDB_GENRES.TV.Mystery}`, sort_by: 'popularity.desc', 'vote_count.gte': 30 } },
+        { id: 'preset_nordic_noir', name: 'Nordic Noir (Gialli Scandinavi)', category: '🎬 Cinema, Registi & Autori', type: 'series', filters: { with_original_language: 'sv|da|no', with_genres: TMDB_GENRES.TV.Crime, sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_spanish_thriller', name: 'Thriller Spagnoli', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_original_language: 'es', with_genres: `${TMDB_GENRES.MOVIE.Thriller},${TMDB_GENRES.MOVIE.Mystery}`, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_british_crime', name: 'Gialli & Crime Inglesi (UK)', category: '🎬 Cinema, Registi & Autori', type: 'series', filters: { with_origin_country: 'GB', with_genres: `${TMDB_GENRES.TV.Crime},${TMDB_GENRES.TV.Mystery}`, sort_by: 'popularity.desc', 'vote_count.gte': 30 } },
+        { id: 'preset_bollywood', name: 'Bollywood & Cinema Indiano', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_original_language: 'hi', with_origin_country: 'IN', sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_french_cinema', name: 'Cinema Francese d\'Autore', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_original_language: 'fr', sort_by: 'vote_average.desc', 'vote_average.gte': 7.0, 'vote_count.gte': 300 } },
+        { id: 'preset_italian_cinema', name: 'Cinema Italiano', category: '🎬 Cinema, Registi & Autori', type: 'movie', filters: { with_original_language: 'it', sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_german_dark', name: 'Serie Tedesche (Dark & Thriller)', category: '🎬 Cinema, Registi & Autori', type: 'series', filters: { with_original_language: 'de', with_genres: `${TMDB_GENRES.TV.Drama},${TMDB_GENRES.TV.Mystery}`, sort_by: 'popularity.desc', 'vote_count.gte': 30 } },
 
         // =============================================
-        // --- DECENNI & EPOCHE ---
+        // --- 🎭 GENERI & TEMATICHE (Epoche) ---
         // =============================================
-        { id: 'preset_80s_movies', name: 'Cult Anni \'80', category: 'Decenni & Epoche', type: 'movie', filters: { 'primary_release_date.gte': '1980-01-01', 'primary_release_date.lte': '1989-12-31', sort_by: 'vote_average.desc', 'vote_count.gte': 500 } },
-        { id: 'preset_90s_movies', name: 'Classici Anni \'90', category: 'Decenni & Epoche', type: 'movie', filters: { 'primary_release_date.gte': '1990-01-01', 'primary_release_date.lte': '1999-12-31', sort_by: 'vote_average.desc', 'vote_count.gte': 1000 } },
-        { id: 'preset_00s_movies', name: 'I favolosi Anni 2000', category: 'Decenni & Epoche', type: 'movie', filters: { 'primary_release_date.gte': '2000-01-01', 'primary_release_date.lte': '2009-12-31', sort_by: 'vote_average.desc', 'vote_count.gte': 2000 } },
-        { id: 'preset_oscar_winners', name: 'Grandi Film Premiati', category: 'Decenni & Epoche', type: 'movie', filters: { sort_by: 'vote_average.desc', 'vote_average.gte': 8.0, 'vote_count.gte': 3000 } },
-        { id: 'preset_cult_classics', name: 'Film Cult (Venerati dai fan)', category: 'Decenni & Epoche', type: 'movie', filters: { with_keywords: '11800', sort_by: 'vote_average.desc', 'vote_count.gte': 1000 } },
-        { id: 'preset_blockbusters', name: 'Blockbusters (Campioni d\'Incasso)', category: 'Decenni & Epoche', type: 'movie', filters: { sort_by: 'revenue.desc', 'vote_count.gte': 1000 } },
+        { id: 'preset_80s_movies', name: 'Cult Anni \'80', category: '🎭 Generi & Tematiche', type: 'movie', filters: { 'primary_release_date.gte': '1980-01-01', 'primary_release_date.lte': '1989-12-31', sort_by: 'vote_average.desc', 'vote_count.gte': 500 } },
+        { id: 'preset_90s_movies', name: 'Classici Anni \'90', category: '🎭 Generi & Tematiche', type: 'movie', filters: { 'primary_release_date.gte': '1990-01-01', 'primary_release_date.lte': '1999-12-31', sort_by: 'vote_average.desc', 'vote_count.gte': 1000 } },
+        { id: 'preset_00s_movies', name: 'I favolosi Anni 2000', category: '🎭 Generi & Tematiche', type: 'movie', filters: { 'primary_release_date.gte': '2000-01-01', 'primary_release_date.lte': '2009-12-31', sort_by: 'vote_average.desc', 'vote_count.gte': 2000 } },
+        { id: 'preset_oscar_winners', name: 'Grandi Film Premiati', category: '🎭 Generi & Tematiche', type: 'movie', filters: { sort_by: 'vote_average.desc', 'vote_average.gte': 8.0, 'vote_count.gte': 3000 } },
+        { id: 'preset_cult_classics', name: 'Film Cult (Venerati dai fan)', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_keywords: '11800', sort_by: 'vote_average.desc', 'vote_count.gte': 1000 } },
+        { id: 'preset_blockbusters', name: 'Blockbusters (Campioni d\'Incasso)', category: '🎭 Generi & Tematiche', type: 'movie', filters: { sort_by: 'revenue.desc', 'vote_count.gte': 1000 } },
 
         // =============================================
-        // --- MOOD & TEMATICHE ---
+        // --- 🎭 GENERI & TEMATICHE (Mood) ---
         // =============================================
-        { id: 'preset_mindfuck', name: 'Mindfuck & Plot Twists', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Mystery}|${TMDB_GENRES.MOVIE.Thriller}`, with_keywords: '978|33633', sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_feel_good', name: 'Feel-Good (Umore Leggero)', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: '35,10751', without_genres: '18,27', sort_by: 'vote_average.desc', 'vote_average.gte': 6.5, 'vote_count.gte': 200 } },
-        { id: 'preset_pure_comedy', name: 'Commedia Pura (No Dramma)', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Comedy, without_genres: `${TMDB_GENRES.MOVIE.Drama},${TMDB_GENRES.MOVIE.Romance}`, sort_by: 'popularity.desc', 'vote_count.gte': 200 } },
-        { id: 'preset_horror_all', name: 'Horror: I Migliori', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Horror, sort_by: 'vote_average.desc', 'vote_count.gte': 500, 'vote_average.gte': 6.5 } },
-        { id: 'preset_scary_horror', name: 'Horror Atmosferico & Soprannaturale', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Horror, with_keywords: '3335|9706|6152', sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_slasher_gore', name: 'Slasher, Zombie & Gore', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Horror, with_keywords: '12335|12377|3133', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_whodunit', name: 'Whodunit & Indagini', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: '9648', with_keywords: '11134|10391', sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_apocalypse_survival', name: 'Apocalisse & Sopravvivenza', category: 'Mood & Tematiche', type: 'movie', filters: { with_keywords: '285366|4564|12377', sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_cyberpunk', name: 'Cyberpunk & Futuro Distopico', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.SciFi}|${TMDB_GENRES.MOVIE.Action}`, with_keywords: '12190|4565', sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_sad_romance', name: 'Storie d\'Amore Drammatiche', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Drama},${TMDB_GENRES.MOVIE.Romance}`, sort_by: 'vote_average.desc', 'vote_count.gte': 300, 'vote_average.gte': 7.0 } },
-        { id: 'preset_heist', name: 'Rapine & Colpi Grossi (Heist)', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Crime}|${TMDB_GENRES.MOVIE.Action}`, with_keywords: '10051', sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_true_story', name: 'Basato su Storie Vere', category: 'Mood & Tematiche', type: 'movie', filters: { with_keywords: '9672', sort_by: 'vote_average.desc', 'vote_average.gte': 6.5, 'vote_count.gte': 200 } },
-        { id: 'preset_stand_up', name: 'Stand-Up Comedy', category: 'Mood & Tematiche', type: 'movie', filters: { with_keywords: '9716', with_genres: TMDB_GENRES.MOVIE.Comedy, sort_by: 'popularity.desc' } },
-        { id: 'preset_musical', name: 'Musical & Film Musicali', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Music, with_keywords: '4344', sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_war_movies', name: 'Film di Guerra', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.War, sort_by: 'vote_average.desc', 'vote_count.gte': 500 } },
-        { id: 'preset_western', name: 'Western', category: 'Mood & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Western, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
+        { id: 'preset_mindfuck', name: 'Mindfuck & Plot Twists', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Mystery}|${TMDB_GENRES.MOVIE.Thriller}`, with_keywords: '978|33633', sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_feel_good', name: 'Feel-Good (Umore Leggero)', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: '35,10751', without_genres: '18,27', sort_by: 'vote_average.desc', 'vote_average.gte': 6.5, 'vote_count.gte': 200 } },
+        { id: 'preset_pure_comedy', name: 'Commedia Pura (No Dramma)', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Comedy, without_genres: `${TMDB_GENRES.MOVIE.Drama},${TMDB_GENRES.MOVIE.Romance}`, sort_by: 'popularity.desc', 'vote_count.gte': 200 } },
+        { id: 'preset_horror_all', name: 'Horror: I Migliori', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Horror, sort_by: 'vote_average.desc', 'vote_count.gte': 500, 'vote_average.gte': 6.5 } },
+        { id: 'preset_scary_horror', name: 'Horror Atmosferico & Soprannaturale', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Horror, with_keywords: '3335|9706|6152', sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_slasher_gore', name: 'Slasher, Zombie & Gore', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Horror, with_keywords: '12335|12377|3133', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_whodunit', name: 'Whodunit & Indagini', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: '9648', with_keywords: '11134|10391', sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_apocalypse_survival', name: 'Apocalisse & Sopravvivenza', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_keywords: '285366|4564|12377', sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_cyberpunk', name: 'Cyberpunk & Futuro Distopico', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.SciFi}|${TMDB_GENRES.MOVIE.Action}`, with_keywords: '12190|4565', sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_sad_romance', name: 'Storie d\'Amore Drammatiche', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Drama},${TMDB_GENRES.MOVIE.Romance}`, sort_by: 'vote_average.desc', 'vote_count.gte': 300, 'vote_average.gte': 7.0 } },
+        { id: 'preset_heist', name: 'Rapine & Colpi Grossi (Heist)', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Crime}|${TMDB_GENRES.MOVIE.Action}`, with_keywords: '10051', sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_true_story', name: 'Basato su Storie Vere', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_keywords: '9672', sort_by: 'vote_average.desc', 'vote_average.gte': 6.5, 'vote_count.gte': 200 } },
+        { id: 'preset_stand_up', name: 'Stand-Up Comedy', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_keywords: '9716', with_genres: TMDB_GENRES.MOVIE.Comedy, sort_by: 'popularity.desc' } },
+        { id: 'preset_musical', name: 'Musical & Film Musicali', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Music, with_keywords: '4344', sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_war_movies', name: 'Film di Guerra', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.War, sort_by: 'vote_average.desc', 'vote_count.gte': 500 } },
+        { id: 'preset_western', name: 'Western', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Western, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
 
         // =============================================
-        // --- FILM: SOTTOGENERI ---
+        // --- 🎭 GENERI & TEMATICHE (Sottogeneri) ---
         // =============================================
-        { id: 'preset_epic_historical', name: 'Kolossal & Epopee Storiche', category: 'Film: Sottogeneri', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.History}|${TMDB_GENRES.MOVIE.Action}`, with_keywords: '10084|302011', sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_spy_action', name: 'Spionaggio & Agenti Segreti', category: 'Film: Sottogeneri', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Action}|${TMDB_GENRES.MOVIE.Thriller}`, with_keywords: '470|3230', sort_by: 'revenue.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_neo_noir', name: 'Neo-Noir & Detective Oscuri', category: 'Film: Sottogeneri', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Crime}|${TMDB_GENRES.MOVIE.Mystery}`, with_keywords: '1471|207317', sort_by: 'vote_average.desc', 'vote_average.gte': 6.5, 'vote_count.gte': 100 } },
-        { id: 'preset_space_hard_scifi', name: 'Hard Sci-Fi & Spazio Profondo', category: 'Film: Sottogeneri', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.SciFi, with_keywords: '161176|3388|4379', sort_by: 'vote_average.desc', 'vote_average.gte': 6.5, 'vote_count.gte': 50 } },
-        { id: 'preset_disaster_movies', name: 'Disaster Movies', category: 'Film: Sottogeneri', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Action}|${TMDB_GENRES.MOVIE.SciFi}`, with_keywords: '5686|10483|10364', sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_martial_arts', name: 'Arti Marziali & Kung Fu', category: 'Film: Sottogeneri', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Action, with_keywords: '779|18034', sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_time_travel_movies', name: 'Viaggi nel Tempo (Film)', category: 'Film: Sottogeneri', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.SciFi, with_keywords: '4379', sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
+        { id: 'preset_epic_historical', name: 'Kolossal & Epopee Storiche', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.History}|${TMDB_GENRES.MOVIE.Action}`, with_keywords: '10084|302011', sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_spy_action', name: 'Spionaggio & Agenti Segreti', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Action}|${TMDB_GENRES.MOVIE.Thriller}`, with_keywords: '470|3230', sort_by: 'revenue.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_neo_noir', name: 'Neo-Noir & Detective Oscuri', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Crime}|${TMDB_GENRES.MOVIE.Mystery}`, with_keywords: '1471|207317', sort_by: 'vote_average.desc', 'vote_average.gte': 6.5, 'vote_count.gte': 100 } },
+        { id: 'preset_space_hard_scifi', name: 'Hard Sci-Fi & Spazio Profondo', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.SciFi, with_keywords: '161176|3388|4379', sort_by: 'vote_average.desc', 'vote_average.gte': 6.5, 'vote_count.gte': 50 } },
+        { id: 'preset_disaster_movies', name: 'Disaster Movies', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Action}|${TMDB_GENRES.MOVIE.SciFi}`, with_keywords: '5686|10483|10364', sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_martial_arts', name: 'Arti Marziali & Kung Fu', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Action, with_keywords: '779|18034', sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_time_travel_movies', name: 'Viaggi nel Tempo (Film)', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.SciFi, with_keywords: '4379', sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
 
         // =============================================
-        // --- SERIE TV: TEMATICHE ---
+        // --- 📺 SERIE TV & DOCU (Tematiche) ---
         // =============================================
-        { id: 'preset_tv_mafia', name: 'Mafia, Cartelli & Gangster', category: 'Serie TV: Tematiche', type: 'series', filters: { with_genres: `${TMDB_GENRES.TV.Crime}|${TMDB_GENRES.TV.Drama}`, with_keywords: '10398|3149|2463', sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
-        { id: 'preset_tv_high_fantasy', name: 'High Fantasy (Spade & Draghi)', category: 'Serie TV: Tematiche', type: 'series', filters: { with_genres: TMDB_GENRES.TV.SciFiFantasy, with_keywords: '11024|12554|3205', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_tv_dystopia', name: 'Futuri Distopici', category: 'Serie TV: Tematiche', type: 'series', filters: { with_genres: TMDB_GENRES.TV.SciFiFantasy, with_keywords: '10053|4565', sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_tv_politics', name: 'Intrighi Politici & Potere', category: 'Serie TV: Tematiche', type: 'series', filters: { with_genres: `${TMDB_GENRES.TV.WarPolitics}|${TMDB_GENRES.TV.Drama}`, with_keywords: '918|11150', sort_by: 'vote_average.desc', 'vote_average.gte': 7.0, 'vote_count.gte': 20 } },
-        { id: 'preset_tv_superheroes_dark', name: 'Supereroi (Toni Oscuri)', category: 'Serie TV: Tematiche', type: 'series', filters: { with_genres: `${TMDB_GENRES.TV.ActionAdventure}|${TMDB_GENRES.TV.Crime}`, with_keywords: '9715|180734', sort_by: 'vote_average.desc', 'vote_average.gte': 7.0, 'vote_count.gte': 20 } },
-        { id: 'preset_tv_horror', name: 'Serie Horror & Soprannaturali', category: 'Serie TV: Tematiche', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Drama, with_keywords: '6152|3335', sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_tv_mafia', name: 'Mafia, Cartelli & Gangster', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: `${TMDB_GENRES.TV.Crime}|${TMDB_GENRES.TV.Drama}`, with_keywords: '10398|3149|2463', sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
+        { id: 'preset_tv_high_fantasy', name: 'High Fantasy (Spade & Draghi)', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: TMDB_GENRES.TV.SciFiFantasy, with_keywords: '11024|12554|3205', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_tv_dystopia', name: 'Futuri Distopici', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: TMDB_GENRES.TV.SciFiFantasy, with_keywords: '10053|4565', sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_tv_politics', name: 'Intrighi Politici & Potere', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: `${TMDB_GENRES.TV.WarPolitics}|${TMDB_GENRES.TV.Drama}`, with_keywords: '918|11150', sort_by: 'vote_average.desc', 'vote_average.gte': 7.0, 'vote_count.gte': 20 } },
+        { id: 'preset_tv_superheroes_dark', name: 'Supereroi (Toni Oscuri)', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: `${TMDB_GENRES.TV.ActionAdventure}|${TMDB_GENRES.TV.Crime}`, with_keywords: '9715|180734', sort_by: 'vote_average.desc', 'vote_average.gte': 7.0, 'vote_count.gte': 20 } },
+        { id: 'preset_tv_horror', name: 'Serie Horror & Soprannaturali', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Drama, with_keywords: '6152|3335', sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
 
         // =============================================
-        // --- DOCUMENTARI ---
+        // --- 📺 SERIE TV & DOCU (Documentari) ---
         // =============================================
-        { id: 'preset_nature_docs', name: 'Documentari: Natura e Animali', category: 'Documentari', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Documentary, with_keywords: '818|2964', sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_space_docs', name: 'Documentari: Cosmo e Spazio', category: 'Documentari', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Documentary, with_keywords: '3801', sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
-        { id: 'preset_true_crime', name: 'Docuserie: True Crime', category: 'Documentari', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Documentary, with_keywords: '239806|156434', sort_by: 'popularity.desc', 'vote_count.gte': 10 } },
-        { id: 'preset_sports_docs', name: 'Docuserie: Sport e Atleti', category: 'Documentari', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Documentary, with_keywords: '6075', sort_by: 'popularity.desc' } },
-        { id: 'preset_doc_music_legends', name: 'Leggende della Musica', category: 'Documentari', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Documentary},${TMDB_GENRES.MOVIE.Music}`, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_doc_food_travel', name: 'Cibo, Viaggi & Alta Cucina', category: 'Documentari', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Documentary, with_keywords: '6513|13013|277353', sort_by: 'popularity.desc' } },
-        { id: 'preset_doc_history_war', name: 'Storia & Guerre Mondiali', category: 'Documentari', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Documentary, with_keywords: '2081|3573|12190', sort_by: 'vote_average.desc' } },
-        { id: 'preset_doc_tech_future', name: 'Tecnologia, AI & Futuro', category: 'Documentari', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Documentary, with_keywords: '41666|233379', sort_by: 'popularity.desc' } },
+        { id: 'preset_nature_docs', name: 'Documentari: Natura e Animali', category: '📺 Serie TV & Docu', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Documentary, with_keywords: '818|2964', sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_space_docs', name: 'Documentari: Cosmo e Spazio', category: '📺 Serie TV & Docu', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Documentary, with_keywords: '3801', sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
+        { id: 'preset_true_crime', name: 'Docuserie: True Crime', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Documentary, with_keywords: '239806|156434', sort_by: 'popularity.desc', 'vote_count.gte': 10 } },
+        { id: 'preset_sports_docs', name: 'Docuserie: Sport e Atleti', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Documentary, with_keywords: '6075', sort_by: 'popularity.desc' } },
+        { id: 'preset_doc_music_legends', name: 'Leggende della Musica', category: '📺 Serie TV & Docu', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Documentary},${TMDB_GENRES.MOVIE.Music}`, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_doc_food_travel', name: 'Cibo, Viaggi & Alta Cucina', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Documentary, with_keywords: '6513|13013|277353', sort_by: 'popularity.desc' } },
+        { id: 'preset_doc_history_war', name: 'Storia & Guerre Mondiali', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Documentary, with_keywords: '2081|3573|12190', sort_by: 'vote_average.desc' } },
+        { id: 'preset_doc_tech_future', name: 'Tecnologia, AI & Futuro', category: '📺 Serie TV & Docu', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Documentary, with_keywords: '41666|233379', sort_by: 'popularity.desc' } },
 
         // =============================================
-        // --- FORMATI SPECIALI ---
+        // --- 🎭 GENERI & TEMATICHE (Formati) ---
         // =============================================
-        { id: 'preset_miniseries', name: 'Miniserie (Weekend)', category: 'Formati Speciali', type: 'series', filters: { with_keywords: '11162', sort_by: 'vote_average.desc', 'vote_count.gte': 500 } },
-        { id: 'preset_short_movies', name: 'Film Brevi (< 95 min)', category: 'Formati Speciali', type: 'movie', filters: { 'with_runtime.lte': 95, sort_by: 'vote_average.desc', 'vote_count.gte': 500 } },
-        { id: 'preset_hidden_gems', name: 'Capolavori Nascosti', category: 'Formati Speciali', type: 'movie', filters: { 'vote_average.gte': 7.5, 'vote_count.gte': 100, 'vote_count.lte': 1500, sort_by: 'vote_average.desc' } },
-        { id: 'preset_long_epics', name: 'Film Epici (> 150 min)', category: 'Formati Speciali', type: 'movie', filters: { 'with_runtime.gte': 150, sort_by: 'vote_average.desc', 'vote_count.gte': 500 } },
+        { id: 'preset_miniseries', name: 'Miniserie (Weekend)', category: '🎭 Generi & Tematiche', type: 'series', filters: { with_keywords: '11162', sort_by: 'vote_average.desc', 'vote_count.gte': 500 } },
+        { id: 'preset_short_movies', name: 'Film Brevi (< 95 min)', category: '🎭 Generi & Tematiche', type: 'movie', filters: { 'with_runtime.lte': 95, sort_by: 'vote_average.desc', 'vote_count.gte': 500 } },
+        { id: 'preset_hidden_gems', name: 'Capolavori Nascosti', category: '🎭 Generi & Tematiche', type: 'movie', filters: { 'vote_average.gte': 7.5, 'vote_count.gte': 100, 'vote_count.lte': 1500, sort_by: 'vote_average.desc' } },
+        { id: 'preset_long_epics', name: 'Film Epici (> 150 min)', category: '🎭 Generi & Tematiche', type: 'movie', filters: { 'with_runtime.gte': 150, sort_by: 'vote_average.desc', 'vote_count.gte': 500 } },
 
         // =============================================
-        // --- BAMBINI & FAMIGLIA ---
+        // --- 🎭 GENERI & TEMATICHE (Famiglia) ---
         // =============================================
-        { id: 'preset_kids_cn_nostalgia', name: 'Cartoon Network (\'90/\'00)', category: 'Bambini & Famiglia', type: 'series', filters: { with_networks: '56', 'first_air_date.gte': '1990-01-01', 'first_air_date.lte': '2009-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
-        { id: 'preset_kids_nick_nostalgia', name: 'Nickelodeon (\'90/\'00)', category: 'Bambini & Famiglia', type: 'series', filters: { with_networks: '13', 'first_air_date.gte': '1990-01-01', 'first_air_date.lte': '2009-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
-        { id: 'preset_family_magic_adv', name: 'Avventure Magiche (Live Action)', category: 'Bambini & Famiglia', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Family}|${TMDB_GENRES.MOVIE.Fantasy}`, with_keywords: '11024|3205', sort_by: 'revenue.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_teens_coming_of_age', name: 'Coming of Age', category: 'Bambini & Famiglia', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Drama, with_keywords: '10683', sort_by: 'vote_average.desc', 'vote_average.gte': 7.0, 'vote_count.gte': 200 } },
-        { id: 'preset_family_animation', name: 'Animazione per Tutti', category: 'Bambini & Famiglia', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Animation},${TMDB_GENRES.MOVIE.Family}`, sort_by: 'vote_average.desc', 'vote_count.gte': 500 } },
+        { id: 'preset_kids_cn_nostalgia', name: 'Cartoon Network (\'90/\'00)', category: '🎭 Generi & Tematiche', type: 'series', filters: { with_networks: '56', 'first_air_date.gte': '1990-01-01', 'first_air_date.lte': '2009-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
+        { id: 'preset_kids_nick_nostalgia', name: 'Nickelodeon (\'90/\'00)', category: '🎭 Generi & Tematiche', type: 'series', filters: { with_networks: '13', 'first_air_date.gte': '1990-01-01', 'first_air_date.lte': '2009-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
+        { id: 'preset_family_magic_adv', name: 'Avventure Magiche (Live Action)', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Family}|${TMDB_GENRES.MOVIE.Fantasy}`, with_keywords: '11024|3205', sort_by: 'revenue.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_teens_coming_of_age', name: 'Coming of Age', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: TMDB_GENRES.MOVIE.Drama, with_keywords: '10683', sort_by: 'vote_average.desc', 'vote_average.gte': 7.0, 'vote_count.gte': 200 } },
+        { id: 'preset_family_animation', name: 'Animazione per Tutti', category: '🎭 Generi & Tematiche', type: 'movie', filters: { with_genres: `${TMDB_GENRES.MOVIE.Animation},${TMDB_GENRES.MOVIE.Family}`, sort_by: 'vote_average.desc', 'vote_count.gte': 500 } },
 
         // =============================================
-        // --- SERIE TV ---
+        // --- 📺 SERIE TV & DOCU ---
         // =============================================
-        { id: 'preset_sitcoms', name: 'Sitcom Americane', category: 'Serie TV', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Comedy, with_keywords: '9840|8596', sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_medical_drama', name: 'Medical Drama', category: 'Serie TV', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Drama, with_keywords: '7653|10091', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_crime_procedural', name: 'Procedurali (Crime)', category: 'Serie TV', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Crime, with_keywords: '6470|11094', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_teen_drama', name: 'Teen Drama & Liceo', category: 'Serie TV', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Drama, with_keywords: '6270', sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_time_travel', name: 'Viaggi nel Tempo (Serie)', category: 'Serie TV', type: 'series', filters: { with_genres: TMDB_GENRES.TV.SciFiFantasy, with_keywords: '4379', sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
-        { id: 'preset_legal_drama', name: 'Legal Drama & Tribunali', category: 'Serie TV', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Drama, with_keywords: '7349|10155', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_tv_thriller', name: 'Thriller & Suspense (Serie)', category: 'Serie TV', type: 'series', filters: { with_genres: `${TMDB_GENRES.TV.Drama},${TMDB_GENRES.TV.Mystery}`, sort_by: 'vote_average.desc', 'vote_count.gte': 200, 'vote_average.gte': 7.5 } },
+        { id: 'preset_sitcoms', name: 'Sitcom Americane', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Comedy, with_keywords: '9840|8596', sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_medical_drama', name: 'Medical Drama', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Drama, with_keywords: '7653|10091', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_crime_procedural', name: 'Procedurali (Crime)', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Crime, with_keywords: '6470|11094', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_teen_drama', name: 'Teen Drama & Liceo', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Drama, with_keywords: '6270', sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_time_travel', name: 'Viaggi nel Tempo (Serie)', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: TMDB_GENRES.TV.SciFiFantasy, with_keywords: '4379', sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
+        { id: 'preset_legal_drama', name: 'Legal Drama & Tribunali', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: TMDB_GENRES.TV.Drama, with_keywords: '7349|10155', sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_tv_thriller', name: 'Thriller & Suspense (Serie)', category: '📺 Serie TV & Docu', type: 'series', filters: { with_genres: `${TMDB_GENRES.TV.Drama},${TMDB_GENRES.TV.Mystery}`, sort_by: 'vote_average.desc', 'vote_count.gte': 200, 'vote_average.gte': 7.5 } },
 
         // =============================================
-        // --- ANIME: SOTTOGENERI ---
+        // --- 🏮 ANIME & ASIA (Sottogeneri) ---
         // =============================================
-        { id: 'preset_anime_shonen', name: 'Anime: Battle Shōnen', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '11545', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_anime_seinen', name: 'Anime: Seinen (Maturi)', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '33446', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
-        { id: 'preset_anime_shoujo', name: 'Anime: Shōjo (Romantico)', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '209714', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
-        { id: 'preset_anime_slice_of_life', name: 'Anime: Slice of Life', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '282362', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_anime_mecha', name: 'Anime: Mecha & Robot', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '6821', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
-        { id: 'preset_anime_isekai', name: 'Anime: Isekai & Fantasy', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '286460', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_anime_dark', name: 'Anime: Dark & Psicologico', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '818|158536', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
-        { id: 'preset_anime_action', name: 'Anime: Azione & Combattimento', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '11545|18034|41165', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 30 } },
-        { id: 'preset_anime_sports', name: 'Anime: Sport & Competizione', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', with_keywords: '6075', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc' } },
+        { id: 'preset_anime_shonen', name: 'Anime: Battle Shōnen', category: '🏮 Anime & Asia', type: 'series', filters: { with_original_language: 'ja', with_keywords: '11545', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_anime_seinen', name: 'Anime: Seinen (Maturi)', category: '🏮 Anime & Asia', type: 'series', filters: { with_original_language: 'ja', with_keywords: '33446', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
+        { id: 'preset_anime_shoujo', name: 'Anime: Shōjo (Romantico)', category: '🏮 Anime & Asia', type: 'series', filters: { with_original_language: 'ja', with_keywords: '209714', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
+        { id: 'preset_anime_slice_of_life', name: 'Anime: Slice of Life', category: '🏮 Anime & Asia', type: 'series', filters: { with_original_language: 'ja', with_keywords: '282362', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_anime_mecha', name: 'Anime: Mecha & Robot', category: '🏮 Anime & Asia', type: 'series', filters: { with_original_language: 'ja', with_keywords: '6821', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc' } },
+        { id: 'preset_anime_isekai', name: 'Anime: Isekai & Fantasy', category: '🏮 Anime & Asia', type: 'series', filters: { with_original_language: 'ja', with_keywords: '286460', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_anime_dark', name: 'Anime: Dark & Psicologico', category: '🏮 Anime & Asia', type: 'series', filters: { with_original_language: 'ja', with_keywords: '818|158536', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
+        { id: 'preset_anime_action', name: 'Anime: Azione & Combattimento', category: '🏮 Anime & Asia', type: 'series', filters: { with_original_language: 'ja', with_keywords: '11545|18034|41165', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 30 } },
+        { id: 'preset_anime_sports', name: 'Anime: Sport & Competizione', category: '🏮 Anime & Asia', type: 'series', filters: { with_original_language: 'ja', with_keywords: '6075', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc' } },
 
         // =============================================
-        // --- ANIME: DECENNI & FILM ---
+        // --- 🏮 ANIME & ASIA (Classici & Film) ---
         // =============================================
-        { id: 'preset_anime_classic', name: 'Anime Classici (\'80/\'90)', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', 'first_air_date.gte': '1980-01-01', 'first_air_date.lte': '1999-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
-        { id: 'preset_anime_00s', name: 'Anime Anni 2000', category: 'Anime & Manga', type: 'series', filters: { with_original_language: 'ja', 'first_air_date.gte': '2000-01-01', 'first_air_date.lte': '2009-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
-        { id: 'preset_anime_movies_top', name: 'Capolavori Anime (Film)', category: 'Anime & Manga', type: 'movie', filters: { with_original_language: 'ja', with_genres: TMDB_GENRES.MOVIE.Animation, sort_by: 'vote_average.desc', 'vote_average.gte': 7.5, 'vote_count.gte': 500 } },
-        { id: 'preset_anime_movies_romance', name: 'Film Anime Romantici', category: 'Anime & Manga', type: 'movie', filters: { with_original_language: 'ja', with_genres: `${TMDB_GENRES.MOVIE.Animation},${TMDB_GENRES.MOVIE.Romance}`, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
+        { id: 'preset_anime_classic', name: 'Anime Classici (\'80/\'90)', category: '🏮 Anime & Asia', type: 'series', filters: { with_original_language: 'ja', 'first_air_date.gte': '1980-01-01', 'first_air_date.lte': '1999-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 20 } },
+        { id: 'preset_anime_00s', name: 'Anime Anni 2000', category: '🏮 Anime & Asia', type: 'series', filters: { with_original_language: 'ja', 'first_air_date.gte': '2000-01-01', 'first_air_date.lte': '2009-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 30 } },
+        { id: 'preset_anime_movies_top', name: 'Capolavori Anime (Film)', category: '🏮 Anime & Asia', type: 'movie', filters: { with_original_language: 'ja', with_genres: TMDB_GENRES.MOVIE.Animation, sort_by: 'vote_average.desc', 'vote_average.gte': 7.5, 'vote_count.gte': 500 } },
+        { id: 'preset_anime_movies_romance', name: 'Film Anime Romantici', category: '🏮 Anime & Asia', type: 'movie', filters: { with_original_language: 'ja', with_genres: `${TMDB_GENRES.MOVIE.Animation},${TMDB_GENRES.MOVIE.Romance}`, sort_by: 'vote_average.desc', 'vote_count.gte': 200 } },
 
         // =============================================
-        // --- NETWORKS (Serie TV) ---
+        // --- 📺 SERIE TV & DOCU (Networks) ---
         // =============================================
-        { id: 'preset_hbo', name: 'Produzione HBO', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.HBO, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_netflix', name: 'Originali Netflix', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.Netflix, sort_by: 'popularity.desc', 'vote_count.gte': 100 } },
-        { id: 'preset_amazon', name: 'Amazon Prime Video', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.Amazon, sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_disney_plus', name: 'Disney+', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.DisneyPlus, sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
-        { id: 'preset_apple_tv', name: 'Apple TV+', category: 'Serie TV', type: 'series', filters: { with_networks: TMDB_NETWORKS.AppleTV, sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_hbo', name: 'Produzione HBO', category: '📺 Serie TV & Docu', type: 'series', filters: { with_networks: TMDB_NETWORKS.HBO, sort_by: 'vote_average.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_netflix', name: 'Originali Netflix', category: '📺 Serie TV & Docu', type: 'series', filters: { with_networks: TMDB_NETWORKS.Netflix, sort_by: 'popularity.desc', 'vote_count.gte': 100 } },
+        { id: 'preset_amazon', name: 'Amazon Prime Video', category: '📺 Serie TV & Docu', type: 'series', filters: { with_networks: TMDB_NETWORKS.Amazon, sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_disney_plus', name: 'Disney+', category: '📺 Serie TV & Docu', type: 'series', filters: { with_networks: TMDB_NETWORKS.DisneyPlus, sort_by: 'popularity.desc', 'vote_count.gte': 50 } },
+        { id: 'preset_apple_tv', name: 'Apple TV+', category: '📺 Serie TV & Docu', type: 'series', filters: { with_networks: TMDB_NETWORKS.AppleTV, sort_by: 'vote_average.desc', 'vote_count.gte': 50 } },
 
         // =============================================
-        // --- MDBLIST (Liste Curate dalla Community) ---
+        // --- 👤 IL MIO TRAKT & COMMUNITY (MDBList) ---
         // =============================================
-        { id: 'mdblist_123', name: 'MDBList: Top 100 Movies (All Time)', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } },
-        { id: 'mdblist_456', name: 'MDBList: Top 100 Shows (All Time)', category: 'Community Lists (MDB)', type: 'series', filters: { mdblist: true } },
-        { id: 'mdblist_789', name: 'MDBList: Latest Releases', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } },
-        { id: 'mdblist_101', name: 'MDBList: Trending this Week', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } },
-        { id: 'mdblist_102', name: 'MDBList: Hidden Gems', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } },
-
-        // ==========================================
-        // 🎬 TRAKT PERSONALE (Richiede Login)
-        // ==========================================
-        { id: 'yaca_hybrid_movies', name: '✨ Consigliati Perfetti (Ibrido)', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
-        { id: 'yaca_hybrid_series', name: '✨ Consigliati Perfetti (Ibrido)', type: 'series', category: '🎬 Trakt Personale', filters: {} },
-        { id: 'yaca_top_genres_mix', name: '🎲 Il Tuo Mix Esplorativo', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
-        { id: 'trakt_watchlist_movies', name: 'La mia Watchlist', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
-        { id: 'trakt_watchlist_series', name: 'La mia Watchlist', type: 'series', category: '🎬 Trakt Personale', filters: {} },
-        { id: 'trakt_history_movies', name: 'Cronologia Visioni', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
-        { id: 'trakt_history_series', name: 'Cronologia Visioni', type: 'series', category: '🎬 Trakt Personale', filters: {} },
-        { id: 'trakt_recommendations_movies', name: 'Trakt: Suggeriti', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
-        { id: 'trakt_recommendations_series', name: 'Trakt: Suggeriti', type: 'series', category: '🎬 Trakt Personale', filters: {} },
-        { id: 'trakt_ratings_movies', name: 'I miei Voti', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
-        { id: 'trakt_ratings_series', name: 'I miei Voti', type: 'series', category: '🎬 Trakt Personale', filters: {} },
-        { id: 'trakt_favorites_movies', name: 'I miei Preferiti', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
-        { id: 'trakt_favorites_series', name: 'I miei Preferiti', type: 'series', category: '🎬 Trakt Personale', filters: {} },
+        { id: 'mdblist_123', name: 'MDBList: Top 100 Movies (All Time)', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
+        { id: 'mdblist_456', name: 'MDBList: Top 100 Shows (All Time)', category: '👤 Il Mio Trakt & Community', type: 'series', filters: { mdblist: true } },
+        { id: 'mdblist_789', name: 'MDBList: Latest Releases', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
+        { id: 'mdblist_101', name: 'MDBList: Trending this Week', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
+        { id: 'mdblist_102', name: 'MDBList: Hidden Gems', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
 
         // ==========================================
-        // 🌍 TRAKT GLOBALE (Senza Login)
+        // 👤 IL MIO TRAKT & COMMUNITY (Trakt Personale)
         // ==========================================
-        { id: 'trakt_trending_movies', name: 'Tendenze Trakt', type: 'movie', category: '🌍 Trakt Globale', filters: {} },
-        { id: 'trakt_trending_series', name: 'Tendenze Trakt', type: 'series', category: '🌍 Trakt Globale', filters: {} },
-        { id: 'trakt_popular_movies', name: 'I Più Popolari su Trakt', type: 'movie', category: '🌍 Trakt Globale', filters: {} },
-        { id: 'trakt_popular_series', name: 'I Più Popolari su Trakt', type: 'series', category: '🌍 Trakt Globale', filters: {} }
+        { id: 'yaca_hybrid_movies', name: '✨ Consigliati Perfetti (Ibrido)', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'yaca_hybrid_series', name: '✨ Consigliati Perfetti (Ibrido)', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'yaca_top_genres_mix', name: '🎲 Il Tuo Mix Esplorativo', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_watchlist_movies', name: 'La mia Watchlist', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_watchlist_series', name: 'La mia Watchlist', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_history_movies', name: 'Cronologia Visioni', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_history_series', name: 'Cronologia Visioni', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_recommendations_movies', name: 'Trakt: Suggeriti', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_recommendations_series', name: 'Trakt: Suggeriti', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_ratings_movies', name: 'I miei Voti', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_ratings_series', name: 'I miei Voti', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} }
     ];
 };
 

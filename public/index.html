@@ -584,7 +584,7 @@
                             <div id="activeCatalogsStats" class="text-[10px] text-gray-600 font-mono hidden sm:block"></div>
                         </div>
                         <p class="text-[10px] text-gray-500">💡 Trascina un catalogo sopra un altro per unirli in un unico catalogo combinato.</p>
-                        <div id="activeCatalogsList" class="space-y-1 max-h-[600px] overflow-y-auto active-catalogs-list">
+                        <div id="activeCatalogsList" class="space-y-1 active-catalogs-list">
                             <!-- Populated by JS -->
                         </div>
                         <p id="activeCatalogsEmpty" class="text-xs text-gray-600 text-center py-4 hidden">
@@ -645,7 +645,7 @@
                         </div>
 
                         <!-- Category Tabs (Scrollable) -->
-                        <div id="presetFilters" class="flex gap-2 overflow-x-auto pb-2 preset-scroll hidden">
+                        <div id="presetFilters" class="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-2 hidden">
                             <!-- Populated by JS -->
                         </div>
 
@@ -1221,24 +1221,12 @@
 
         // Poster icon mapping for categories
         const CATEGORY_ICONS = {
-            'Top & Trend': '🔥',
-            'Grandi Registi': '🎬',
-            'Grandi Attori': '⭐',
-            'Studios & Produzioni': '🏢',
-            'Cinema Asiatico & K-Drama': '🌸',
-            'Cinema Internazionale': '🌍',
-            'Decenni & Epoche': '📼',
-            'Mood & Tematiche': '🎭',
-            'Film: Sottogeneri': '🎥',
-            'Serie TV: Tematiche': '📺',
-            'Serie TV': '📺',
-            'Documentari': '🔬',
-            'Formati Speciali': '💎',
-            'Bambini & Famiglia': '👨‍👩‍👧‍👦',
-            'Anime & Manga': '🏮',
-            'Community Lists (MDB)': '📋',
-            '🎬 Trakt Personale': '👤',
-            '🌍 Trakt Globale': '🌐'
+            '🔥 Top, Trend & Trakt': '🔥',
+            '🎭 Generi & Tematiche': '🎭',
+            '🎬 Cinema, Registi & Autori': '🎬',
+            '📺 Serie TV & Docu': '📺',
+            '🏮 Anime & Asia': '🏮',
+            '👤 Il Mio Trakt & Community': '👤'
         };
 
         const TYPE_COLORS = {
@@ -2118,18 +2106,20 @@
                 item.dataset.id = cat.id;
                 item.setAttribute('draggable', 'true');
                 item.innerHTML = `
-                    <div class="flex items-center gap-2 px-2.5 py-2">
-                        <div class="flex flex-col gap-0 shrink-0">
-                            <button type="button" class="move-up-btn text-[9px] text-gray-600 hover:text-gray-200 transition-colors leading-none px-0.5 py-0.5 hover:bg-dark-600 rounded ${isFirst ? 'opacity-20 pointer-events-none' : ''}" data-id="${escapeHtml(cat.id)}" title="Sposta su">▲</button>
-                            <button type="button" class="move-down-btn text-[9px] text-gray-600 hover:text-gray-200 transition-colors leading-none px-0.5 py-0.5 hover:bg-dark-600 rounded ${isLast ? 'opacity-20 pointer-events-none' : ''}" data-id="${escapeHtml(cat.id)}" title="Sposta giù">▼</button>
+                    <div class="flex items-center justify-between px-3 py-2.5">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="flex flex-col gap-0 shrink-0">
+                                <button type="button" class="move-up-btn text-[9px] text-gray-600 hover:text-gray-200 transition-colors leading-none px-0.5 py-0.5 hover:bg-dark-600 rounded ${isFirst ? 'opacity-20 pointer-events-none' : ''}" data-id="${escapeHtml(cat.id)}" title="Sposta su">▲</button>
+                                <button type="button" class="move-down-btn text-[9px] text-gray-600 hover:text-gray-200 transition-colors leading-none px-0.5 py-0.5 hover:bg-dark-600 rounded ${isLast ? 'opacity-20 pointer-events-none' : ''}" data-id="${escapeHtml(cat.id)}" title="Sposta giù">▼</button>
+                            </div>
+                            <span class="text-[10px] ${typeInfo.bg} ${typeInfo.text} border ${typeInfo.border} px-1.5 py-0.5 rounded shrink-0">${typeInfo.label}</span>
+                            <h4 class="text-sm font-semibold text-white truncate" title="${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</h4>
+                            <span class="text-[9px] ${srcInfo.cls} border px-1.5 py-0.5 rounded shrink-0">${srcInfo.label}</span>
                         </div>
-                        <span class="text-[10px] ${typeInfo.bg} ${typeInfo.text} border ${typeInfo.border} px-1.5 py-0.5 rounded shrink-0">${typeInfo.label}</span>
-                        <span class="text-xs text-gray-200 flex-1 truncate font-medium" title="${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</span>
-                        <span class="text-[9px] ${srcInfo.cls} border px-1.5 py-0.5 rounded shrink-0">${srcInfo.label}</span>
-                        <button type="button" class="remove-catalog-btn text-gray-500 hover:text-red-400 transition-all text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/10 shrink-0" data-id="${escapeHtml(cat.id)}" title="Rimuovi">✕</button>
+                        <button type="button" class="remove-catalog-btn text-[10px] text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-2 py-1 rounded transition-colors shrink-0" data-id="${escapeHtml(cat.id)}" title="Rimuovi">🗑️ Rimuovi</button>
                     </div>
-                    ${presetId ? `<div class="catalog-row-posters flex gap-2 overflow-x-auto px-3 pb-2.5" id="active-row-posters-${escapeHtml(presetId)}">
-                        <div class="flex items-center gap-2 py-1 px-1"><div class="w-3 h-3 border-2 border-dark-600 border-t-transparent rounded-full animate-spin"></div><span class="text-[10px] text-gray-600">Caricamento...</span></div>
+                    ${presetId ? `<div class="catalog-row-posters flex gap-2 overflow-x-auto px-3 pb-3" id="active-row-posters-${escapeHtml(presetId)}">
+                        <div class="flex items-center gap-2 py-2 px-1"><div class="w-3 h-3 border-2 border-dark-600 border-t-transparent rounded-full animate-spin"></div><span class="text-[10px] text-gray-600">Caricamento...</span></div>
                     </div>` : ''}
                 `;
 
@@ -2376,14 +2366,20 @@
             myLists.forEach(list => {
                 const typeInfo = TYPE_COLORS[list.type] || TYPE_COLORS['movie'];
                 const isInProfile = ep && ep.existingCatalogs.some(c => c.id === list.id);
+                const safeId = escapeHtml(list.id).replace(/[^a-zA-Z0-9_-]/g, '_');
 
                 const item = document.createElement('div');
-                item.className = 'flex items-center gap-2 px-2.5 py-2 rounded-lg bg-dark-800/60 border border-dark-700/50 hover:border-dark-600';
+                item.className = 'catalog-row rounded-xl overflow-hidden bg-dark-800/60 border border-dark-700/50 hover:border-dark-600';
                 item.innerHTML = `
-                    <span class="text-[10px] ${typeInfo.bg} ${typeInfo.text} border ${typeInfo.border} px-1.5 py-0.5 rounded shrink-0">${typeInfo.label}</span>
-                    <span class="text-xs text-gray-200 flex-1 truncate font-medium" title="${escapeHtml(list.name)}">${escapeHtml(list.name)}</span>
-                    <button type="button" class="mylist-add-btn text-[10px] ${isInProfile ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-stremio bg-stremio/10 border-stremio/20'} border px-2 py-0.5 rounded transition-colors shrink-0" data-id="${escapeHtml(list.id)}">${isInProfile ? '✓ Aggiunto' : '+ Aggiungi'}</button>
-                    <button type="button" class="mylist-remove-btn text-gray-500 hover:text-red-400 transition-all text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/10 shrink-0" data-id="${escapeHtml(list.id)}" title="Elimina">✕</button>
+                    <div class="flex items-center gap-2 px-2.5 py-2">
+                        <span class="text-[10px] ${typeInfo.bg} ${typeInfo.text} border ${typeInfo.border} px-1.5 py-0.5 rounded shrink-0">${typeInfo.label}</span>
+                        <span class="text-xs text-gray-200 flex-1 truncate font-medium" title="${escapeHtml(list.name)}">${escapeHtml(list.name)}</span>
+                        <button type="button" class="mylist-add-btn text-[10px] ${isInProfile ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-stremio bg-stremio/10 border-stremio/20'} border px-2 py-0.5 rounded transition-colors shrink-0" data-id="${escapeHtml(list.id)}">${isInProfile ? '✓ Aggiunto' : '+ Aggiungi'}</button>
+                        <button type="button" class="mylist-remove-btn text-gray-500 hover:text-red-400 transition-all text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/10 shrink-0" data-id="${escapeHtml(list.id)}" title="Elimina">✕</button>
+                    </div>
+                    <div class="catalog-row-posters flex gap-2 overflow-x-auto px-3 pb-3" id="mylist-posters-${safeId}">
+                        <div class="flex items-center gap-2 py-2 px-1"><div class="w-3 h-3 border-2 border-dark-600 border-t-transparent rounded-full animate-spin"></div><span class="text-[10px] text-gray-600">Caricamento...</span></div>
+                    </div>
                 `;
                 container.appendChild(item);
             });
@@ -2394,6 +2390,37 @@
             container.querySelectorAll('.mylist-remove-btn').forEach(btn => {
                 btn.addEventListener('click', () => removeFromMyLists(btn.dataset.id));
             });
+
+            // Auto-load poster previews for saved lists
+            autoLoadMyListPreviews(myLists);
+        }
+
+        async function autoLoadMyListPreviews(lists) {
+            const BATCH_SIZE = 3;
+            for (let i = 0; i < lists.length; i += BATCH_SIZE) {
+                const batch = lists.slice(i, i + BATCH_SIZE);
+                await Promise.all(batch.map(async (list) => {
+                    const safeId = escapeHtml(list.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+                    const container = document.getElementById(`mylist-posters-${safeId}`);
+                    if (!container) return;
+
+                    try {
+                        const res = await fetch('/api/preview-catalog', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ filters: list.filters, type: list.type })
+                        });
+                        if (!res.ok) {
+                            container.innerHTML = '<div class="text-[10px] text-red-400/60 py-1 px-1">Errore</div>';
+                            return;
+                        }
+                        const data = await res.json();
+                        container.innerHTML = buildPosterRowHTML(data.items);
+                    } catch (_err) {
+                        container.innerHTML = '<div class="text-[10px] text-red-400/60 py-1 px-1">Errore di rete</div>';
+                    }
+                }));
+            }
         }
 
         function updatePaginationControls(totalItems, totalPages, currentPage) {
@@ -2981,7 +3008,7 @@
                     const icon = CATEGORY_ICONS[cat] || '📁';
                     const btn = document.createElement('button');
                     btn.type = 'button';
-                    btn.className = `category-tab px-3 py-1.5 text-xs font-medium rounded-full border transition-colors flex items-center gap-1.5 shrink-0 ${cat === activeCategory ? 'active' : 'bg-dark-900 text-gray-400 border-dark-600 hover:border-dark-500 hover:text-gray-200'}`;
+                    btn.className = `category-tab px-3 py-2 text-xs font-medium rounded-lg border transition-colors flex items-center justify-center gap-1.5 ${cat === activeCategory ? 'active' : 'bg-dark-900 text-gray-400 border-dark-600 hover:border-dark-500 hover:text-gray-200'}`;
                     btn.innerHTML = `<span>${icon}</span> ${escapeHtml(cat)}`;
                     btn.onclick = () => {
                         activeCategory = cat;
@@ -3012,9 +3039,10 @@
                 `;
                 card.onclick = () => {
                     const ep = getEditingProfile();
-                    const merged = [...new Set([...ep.raw_ui_state.selectedPresets, ...tpl.presets])];
-                    ep.raw_ui_state.selectedPresets = merged;
-                    if (ep.name === 'Nuovo Profilo' || ep.name === 'Senza Nome') { ep.name = tpl.name; }
+                    ep.raw_ui_state.selectedPresets = [...tpl.presets];
+                    ep.name = tpl.name;
+                    const nameInput = document.getElementById('profileNameInput');
+                    if (nameInput) nameInput.value = tpl.name;
                     renderProfileSelect();
                     renderPresetsAndCatalogs();
                     document.getElementById('profileTemplateSelector').classList.add('hidden');

@@ -20,8 +20,8 @@ const FORCED_SLOW_PRESETS = new Set(FORCED_SLOW_PRESET_IDS);
 
 // Cataloghi che mostrano episodi recenti (badge numero episodio sul poster)
 const EPISODE_CATALOG_IDS = new Set([
-    'yaca_preset_preset_new_series_eps',
-    'yaca_preset_preset_new_anime_eps'
+    'preset_new_series_eps',
+    'preset_new_anime_eps'
 ]);
 
 /**
@@ -299,6 +299,36 @@ async function catalogHandler(args, userConfig, hostUrl) {
         }
 
         // ==========================================
+        // SCENARIO 2.6: IBRIDO POPOLARI (TMDB + Trakt fusi e deduplicati)
+        // ==========================================
+        if (baseId === 'yaca_hybrid_popular_movies' && type === 'movie') {
+            const [tmdbResults, traktResults] = await Promise.all([
+                fetchTmdbCatalog(tmdbClient, '/discover/movie', skip, { sort_by: 'popularity.desc', 'vote_count.gte': 50 }, type, cacheOptions),
+                fetchTraktCatalog('popular_movies', skip, null, tmdbApiKey).catch(() => [])
+            ]);
+            const seen = new Set();
+            results = [...tmdbResults, ...traktResults].filter(item => {
+                if (seen.has(item.id)) return false;
+                seen.add(item.id);
+                return true;
+            });
+            return { metas: results };
+        }
+        if (baseId === 'yaca_hybrid_popular_series' && type === 'series') {
+            const [tmdbResults, traktResults] = await Promise.all([
+                fetchTmdbCatalog(tmdbClient, '/discover/tv', skip, { sort_by: 'popularity.desc', 'vote_count.gte': 50 }, type, cacheOptions),
+                fetchTraktCatalog('popular_shows', skip, null, tmdbApiKey).catch(() => [])
+            ]);
+            const seen = new Set();
+            results = [...tmdbResults, ...traktResults].filter(item => {
+                if (seen.has(item.id)) return false;
+                seen.add(item.id);
+                return true;
+            });
+            return { metas: results };
+        }
+
+        // ==========================================
         // SCENARIO 3: CATALOGHI TRAKT
         // ==========================================
         const traktUname = userConfig.apiKeys?.trakt;
@@ -413,7 +443,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
 
             // Badge episodio sui poster per cataloghi di episodi recenti
-            if (EPISODE_CATALOG_IDS.has(id)) {
+            if (EPISODE_CATALOG_IDS.has(baseId)) {
                 applyEpisodeBadge(results, hostUrl);
             }
 
