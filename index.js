@@ -364,6 +364,38 @@ app.post('/api/clear-cache', async (req, res) => {
     }
 });
 
+// Endpoint per pre-caricare la cache dei cataloghi più usati (es. ping da UptimeRobot)
+app.get('/api/cron/warmup', async (req, res) => {
+    // Rispondi subito per non far andare in timeout UptimeRobot
+    res.status(200).json({ status: 'Warmup avviato in background' });
+
+    if (!process.env.TMDB_API_KEY) {
+        console.warn('⚠️  Warmup saltato: TMDB_API_KEY non configurata.');
+        return;
+    }
+
+    const dummyConfig = { apiKeys: { tmdb: process.env.TMDB_API_KEY } };
+    const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:7000';
+
+    const catalogsToWarm = [
+        { type: 'movie',  id: 'yaca_discover_movies',          extra: { skip: 0 } },
+        { type: 'series', id: 'yaca_discover_series',          extra: { skip: 0 } },
+        { type: 'series', id: 'yaca_anime_trending',           extra: { skip: 0 } },
+        { type: 'movie',  id: 'yaca_preset_preset_new_movies', extra: { skip: 0 } },
+    ];
+
+    console.log('🔥 Avvio Pre-Warming della cache tramite UptimeRobot...');
+
+    for (const args of catalogsToWarm) {
+        try {
+            await catalogHandler(args, dummyConfig, hostUrl);
+            console.log(`✅ Cache scaldata per: ${args.id}`);
+        } catch (e) {
+            console.error(`❌ Errore warmup ${args.id}:`, e.message);
+        }
+    }
+});
+
 // Opzioni di ordinamento disponibili in Stremio per i cataloghi TMDB
 const SORT_OPTIONS = ['Popolarità', 'Voto Medio', 'Data di Uscita', 'Incassi'];
 const SORT_MAP = {
