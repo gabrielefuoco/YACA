@@ -1137,37 +1137,54 @@
         </div>
     </div>
 
-    <!-- Merge Catalogs Modal -->
+    <!-- Merge Catalogs Modal (Smart Merge) -->
     <div id="mergeModal"
         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4">
-        <div class="bg-dark-800 p-6 sm:p-8 rounded-2xl shadow-2xl max-w-md w-full border border-dark-600">
-            <h3 class="text-lg font-bold text-white mb-4">🔗 Unisci Cataloghi</h3>
-            <p class="text-xs text-gray-400 mb-4">Stai per unire due cataloghi in uno. Il nuovo catalogo conterrà i contenuti di entrambi.</p>
+        <div class="bg-dark-800 p-6 sm:p-8 rounded-2xl shadow-2xl max-w-lg w-full border border-dark-600 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-lg font-bold text-white mb-2">🧪 Smart Merge</h3>
+            <p class="text-xs text-gray-400 mb-4">Unisci due cataloghi combinando i loro filtri TMDB. Scegli come fondere i contenuti.</p>
             <div id="mergeSummary" class="bg-dark-900/60 border border-dark-700 rounded-lg p-3 mb-4 text-xs text-gray-300 space-y-1"></div>
-            <div class="space-y-3 mb-5">
+            <!-- Merge Mode Selector -->
+            <div class="space-y-2 mb-4">
+                <label class="block text-xs font-medium text-gray-400">Modalità di fusione</label>
+                <label class="flex items-start gap-3 p-3 bg-dark-900/60 border border-dark-700 rounded-lg cursor-pointer hover:border-cyan-500/40 transition-colors has-[:checked]:border-cyan-500/60 has-[:checked]:bg-cyan-500/5">
+                    <input type="radio" name="mergeMode" value="or" checked class="mt-0.5 accent-cyan-500">
+                    <div>
+                        <div class="text-sm font-semibold text-white">🔀 Mix Varietà (OR)</div>
+                        <div class="text-[11px] text-gray-400 mt-0.5">Crea un listone misto con un po' del primo e un po' del secondo.</div>
+                    </div>
+                </label>
+                <label class="flex items-start gap-3 p-3 bg-dark-900/60 border border-dark-700 rounded-lg cursor-pointer hover:border-cyan-500/40 transition-colors has-[:checked]:border-cyan-500/60 has-[:checked]:bg-cyan-500/5">
+                    <input type="radio" name="mergeMode" value="and" class="mt-0.5 accent-cyan-500">
+                    <div>
+                        <div class="text-sm font-semibold text-white">🎯 Match Perfetto (AND)</div>
+                        <div class="text-[11px] text-gray-400 mt-0.5">Trova solo i contenuti che appartengono contemporaneamente a entrambe le categorie.</div>
+                    </div>
+                </label>
+            </div>
+            <div class="space-y-3 mb-4">
                 <div class="space-y-1.5">
                     <label class="block text-xs font-medium text-gray-400">Nome del catalogo unito</label>
                     <input type="text" id="mergeNameInput"
                         class="w-full px-3 py-2.5 bg-dark-900 border border-dark-600 rounded-lg outline-none focus:border-cyan-500 text-sm placeholder-gray-600"
                         placeholder="Es: Thriller + Noir">
                 </div>
-                <div class="space-y-1.5">
-                    <label class="block text-xs font-medium text-gray-400">Ordinamento</label>
-                    <select id="mergeSortInput"
-                        class="w-full px-3 py-2.5 bg-dark-900 border border-dark-600 rounded-lg outline-none focus:border-cyan-500 text-sm text-gray-200">
-                        <option value="popularity.desc">Popolarità ↓</option>
-                        <option value="vote_average.desc">Voto Medio ↓</option>
-                        <option value="primary_release_date.desc">Data Uscita ↓</option>
-                        <option value="revenue.desc">Incassi ↓</option>
-                        <option value="vote_count.desc">N. Voti ↓</option>
-                    </select>
+            </div>
+            <!-- Live Preview -->
+            <div class="mb-4">
+                <button type="button" id="mergePreviewBtn"
+                    class="w-full px-4 py-2 bg-dark-700 hover:bg-dark-600 border border-dark-600 text-gray-300 rounded-lg transition-colors text-xs font-medium flex items-center justify-center gap-2">
+                    <span>👁️ Genera Anteprima</span>
+                </button>
+                <div id="mergePreviewContainer" class="mt-3 hidden">
+                    <div id="mergePreviewContent" class="flex gap-2 overflow-x-auto pb-2"></div>
                 </div>
             </div>
             <div class="flex gap-3">
                 <button type="button" id="mergeCancelBtn"
                     class="flex-1 px-4 py-2.5 bg-dark-700 hover:bg-dark-600 border border-dark-600 text-gray-300 rounded-lg transition-colors text-sm font-medium">Annulla</button>
                 <button type="button" id="mergeConfirmBtn"
-                    class="flex-1 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors text-sm font-bold">Unisci</button>
+                    class="flex-1 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors text-sm font-bold">Salva Fusione</button>
             </div>
         </div>
     </div>
@@ -2231,8 +2248,87 @@
             updatePresetsCounter();
         }
 
-        // --- MERGE CATALOGS ---
+        // --- SMART MERGE CATALOGS ---
         let pendingMerge = { sourceId: null, targetId: null };
+
+        /**
+         * Extracts pure TMDB filters from a catalog entry.
+         * For presets: base filters + user overrides.
+         * For manual/AI/merged catalogs: copies existing filters.
+         */
+        function extractCatalogFilters(catalogId) {
+            const ep = getEditingProfile();
+            if (!ep) return {};
+
+            // Check if it's a preset catalog
+            const presetId = catalogId.startsWith(PRESET_ID_PREFIX)
+                ? catalogId.replace(PRESET_ID_PREFIX, '')
+                : null;
+
+            if (presetId) {
+                const preset = availablePresets.find(p => p.id === presetId);
+                if (!preset) return {};
+                const baseFilters = { ...preset.filters };
+                const overrides = ep.raw_ui_state?.presetOverrides?.[presetId] || {};
+                for (const [key, value] of Object.entries(overrides)) {
+                    if (key.startsWith('_')) continue;
+                    baseFilters[key] = value;
+                }
+                if (overrides['_date_from']) {
+                    const dateKey = preset.type === 'movie' ? 'primary_release_date.gte' : 'first_air_date.gte';
+                    baseFilters[dateKey] = overrides['_date_from'];
+                }
+                if (overrides['_date_to']) {
+                    const dateKey = preset.type === 'movie' ? 'primary_release_date.lte' : 'first_air_date.lte';
+                    baseFilters[dateKey] = overrides['_date_to'];
+                }
+                return baseFilters;
+            }
+
+            // Manual / AI / already-merged catalog
+            const existing = ep.existingCatalogs.find(c => c.id === catalogId);
+            if (existing && existing.filters) return { ...existing.filters };
+
+            return {};
+        }
+
+        /**
+         * Smart Merge algorithm: fuses two filter objects based on mode (OR / AND).
+         * - OR mode uses pipe '|' separator (TMDB OR logic).
+         * - AND mode uses comma ',' separator (TMDB AND logic).
+         */
+        function smartMergeFilters(filtersA, filtersB, mode) {
+            const sep = mode === 'and' ? ',' : '|';
+            const merged = { ...filtersA };
+
+            // Merge with_genres
+            const genresA = String(filtersA.with_genres || '').split(/[,|]/).map(s => s.trim()).filter(Boolean);
+            const genresB = String(filtersB.with_genres || '').split(/[,|]/).map(s => s.trim()).filter(Boolean);
+            const allGenres = [...new Set([...genresA, ...genresB])];
+            if (allGenres.length > 0) {
+                merged.with_genres = allGenres.join(sep);
+            }
+
+            // Merge with_keywords
+            const kwA = String(filtersA.with_keywords || '').split(/[,|]/).map(s => s.trim()).filter(Boolean);
+            const kwB = String(filtersB.with_keywords || '').split(/[,|]/).map(s => s.trim()).filter(Boolean);
+            const allKw = [...new Set([...kwA, ...kwB])];
+            if (allKw.length > 0) {
+                merged.with_keywords = allKw.join(sep);
+            }
+
+            // Resolve sort_by: A takes priority, fallback to B, then default
+            merged.sort_by = filtersA.sort_by || filtersB.sort_by || 'popularity.desc';
+
+            // Carry over other filter fields from B that A doesn't have
+            for (const key of Object.keys(filtersB)) {
+                if (merged[key] === undefined || merged[key] === '') {
+                    merged[key] = filtersB[key];
+                }
+            }
+
+            return merged;
+        }
 
         function showMergeDialog(sourceId, targetId) {
             const ep = getEditingProfile();
@@ -2247,12 +2343,70 @@
             const summary = document.getElementById('mergeSummary');
             const nameInput = document.getElementById('mergeNameInput');
 
-            summary.innerHTML = `<div class="flex items-center gap-2"><span class="text-stremio">📋</span> <strong class="text-white">${escapeHtml(source.name)}</strong></div>
-                <div class="text-gray-500 text-center">+ unisci con +</div>
-                <div class="flex items-center gap-2"><span class="text-stremio">📋</span> <strong class="text-white">${escapeHtml(target.name)}</strong></div>`;
+            summary.innerHTML = `<div class="flex items-center gap-2"><span class="text-cyan-400 font-bold">[A]</span> <strong class="text-white">${escapeHtml(source.name)}</strong></div>
+                <div class="text-gray-500 text-center text-lg">+</div>
+                <div class="flex items-center gap-2"><span class="text-cyan-400 font-bold">[B]</span> <strong class="text-white">${escapeHtml(target.name)}</strong></div>`;
             nameInput.value = `${source.name} + ${target.name}`;
+
+            // Reset preview area & mode
+            document.getElementById('mergePreviewContainer').classList.add('hidden');
+            document.getElementById('mergePreviewContent').innerHTML = '';
+            document.querySelector('input[name="mergeMode"][value="or"]').checked = true;
+
             modal.classList.remove('hidden');
         }
+
+        function getMergeMode() {
+            const checked = document.querySelector('input[name="mergeMode"]:checked');
+            return checked ? checked.value : 'or';
+        }
+
+        function computeCurrentMergedFilters() {
+            if (!pendingMerge.sourceId || !pendingMerge.targetId) return null;
+            const filtersA = extractCatalogFilters(pendingMerge.sourceId);
+            const filtersB = extractCatalogFilters(pendingMerge.targetId);
+            return smartMergeFilters(filtersA, filtersB, getMergeMode());
+        }
+
+        function getMergedType() {
+            const ep = getEditingProfile();
+            if (!ep) return 'movie';
+            const catalogs = getActiveCatalogsForProfile(ep);
+            const source = catalogs.find(c => c.id === pendingMerge.sourceId);
+            const target = catalogs.find(c => c.id === pendingMerge.targetId);
+            return source?.type || target?.type || 'movie';
+        }
+
+        // Live Preview
+        document.getElementById('mergePreviewBtn').addEventListener('click', async () => {
+            const merged = computeCurrentMergedFilters();
+            if (!merged) return;
+
+            const container = document.getElementById('mergePreviewContainer');
+            const content = document.getElementById('mergePreviewContent');
+            container.classList.remove('hidden');
+            content.innerHTML = '<div class="flex items-center gap-2 py-3 px-1"><div class="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div><span class="text-xs text-gray-400">Caricamento anteprima...</span></div>';
+
+            try {
+                const res = await fetch('/api/preview-catalog', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filters: merged, type: getMergedType() })
+                });
+                if (!res.ok) {
+                    content.innerHTML = '<div class="text-xs text-red-400 py-2 px-1">Errore nel caricamento dell\'anteprima.</div>';
+                    return;
+                }
+                const data = await res.json();
+                if (!data.items || data.items.length === 0) {
+                    content.innerHTML = '<div class="text-xs text-yellow-400 py-2 px-1">⚠️ Nessun risultato. La modalità Match Perfetto potrebbe essere troppo restrittiva. Prova con Mix Varietà.</div>';
+                } else {
+                    content.innerHTML = buildPosterRowHTML(data.items);
+                }
+            } catch (_err) {
+                content.innerHTML = '<div class="text-xs text-red-400 py-2 px-1">Errore di rete.</div>';
+            }
+        });
 
         function confirmMerge() {
             const ep = getEditingProfile();
@@ -2264,24 +2418,12 @@
             if (!source || !target) return;
 
             const mergeName = document.getElementById('mergeNameInput').value.trim() || `${source.name} + ${target.name}`;
-            const mergeSort = document.getElementById('mergeSortInput').value;
+            const mergedFilters = computeCurrentMergedFilters();
+            if (!mergedFilters) return;
 
-            // Collect preset IDs from both catalogs
-            const sourcePresetIds = [];
-            const targetPresetIds = [];
-            if (source._presetId) sourcePresetIds.push(source._presetId);
-            if (target._presetId) targetPresetIds.push(target._presetId);
-            // If either is already a merged catalog, collect its sub-presets
-            const sourceExisting = ep.existingCatalogs.find(c => c.id === source.id);
-            const targetExisting = ep.existingCatalogs.find(c => c.id === target.id);
-            if (sourceExisting?.mergedPresetIds) sourcePresetIds.push(...sourceExisting.mergedPresetIds);
-            if (targetExisting?.mergedPresetIds) targetPresetIds.push(...targetExisting.mergedPresetIds);
-
-            const allPresetIds = [...new Set([...sourcePresetIds, ...targetPresetIds])];
-
-            // Create merged catalog entry
+            // Create merged catalog entry with computed filters
             const mergedId = `merged_${(typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).substring(2, 7)}`;
-            const mergedType = source.type || target.type || 'movie';
+            const mergedType = getMergedType();
 
             ep.existingCatalogs.push({
                 id: mergedId,
@@ -2289,8 +2431,7 @@
                 raw_prompt: `[Unito] ${mergeName}`,
                 type: mergedType,
                 source: 'merged',
-                mergedPresetIds: allPresetIds,
-                filters: { sort_by: mergeSort }
+                filters: mergedFilters
             });
 
             // Remove the two original catalogs
