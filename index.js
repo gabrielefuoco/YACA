@@ -15,6 +15,7 @@ const { clearAllTmdbCaches } = require('./src/clients/tmdb');
 const { clearIdCache } = require('./src/id_mapping/id_cache');
 const TmdbRequestCache = require('./src/models/TmdbRequestCache');
 const LRUCache = require('./src/utils/LRUCache');
+const { rateLimitedMap } = require('./src/utils/rateLimiter');
 
 // 1. Inizializza Express
 const app = express();
@@ -365,6 +366,10 @@ app.post('/api/clear-cache', async (req, res) => {
 });
 
 // Endpoint per pre-caricare la cache dei cataloghi più usati (es. ping da UptimeRobot)
+// Rate limited a 1 richiesta ogni 2 secondi (~30/min) per non bombardare TMDB
+const WARMUP_BATCH_SIZE = 1;
+const WARMUP_DELAY_MS = 2000;
+
 app.get('/api/cron/warmup', async (req, res) => {
     // Rispondi subito per non far andare in timeout UptimeRobot
     res.status(200).json({ status: 'Warmup avviato in background' });
@@ -377,23 +382,38 @@ app.get('/api/cron/warmup', async (req, res) => {
     const dummyConfig = { apiKeys: { tmdb: process.env.TMDB_API_KEY } };
     const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:7000';
 
-    const catalogsToWarm = [
-        { type: 'movie',  id: 'yaca_discover_movies',          extra: { skip: 0 } },
-        { type: 'series', id: 'yaca_discover_series',          extra: { skip: 0 } },
-        { type: 'series', id: 'yaca_anime_trending',           extra: { skip: 0 } },
-        { type: 'movie',  id: 'yaca_preset_preset_new_movies', extra: { skip: 0 } },
+    // Cataloghi base con handler dedicati
+    const baseCatalogs = [
+        { type: 'movie',  id: 'yaca_discover_movies', extra: { skip: 0 } },
+        { type: 'series', id: 'yaca_discover_series', extra: { skip: 0 } },
+        { type: 'series', id: 'yaca_anime_trending',  extra: { skip: 0 } },
     ];
 
-    console.log('🔥 Avvio Pre-Warming della cache tramite UptimeRobot...');
+    // Tutti i preset configurati (aggiornati dinamicamente con date correnti)
+    const presetCatalogs = getPresets().map(preset => ({
+        type: preset.type,
+        id: `yaca_preset_${preset.id}`,
+        extra: { skip: 0 }
+    }));
 
-    for (const args of catalogsToWarm) {
-        try {
-            await catalogHandler(args, dummyConfig, hostUrl);
-            console.log(`✅ Cache scaldata per: ${args.id}`);
-        } catch (e) {
-            console.error(`❌ Errore warmup ${args.id}:`, e.message);
-        }
-    }
+    const allCatalogs = [...baseCatalogs, ...presetCatalogs];
+
+    console.log(`🔥 Avvio Pre-Warming di ${allCatalogs.length} cataloghi (rate limit: 1 ogni ${WARMUP_DELAY_MS}ms)...`);
+
+    await rateLimitedMap(
+        allCatalogs,
+        async (args) => {
+            try {
+                await catalogHandler(args, dummyConfig, hostUrl);
+                console.log(`✅ Cache scaldata per: ${args.id}`);
+            } catch (e) {
+                console.error(`❌ Errore warmup ${args.id}:`, e.message);
+            }
+        },
+        { batchSize: WARMUP_BATCH_SIZE, delayMs: WARMUP_DELAY_MS }
+    );
+
+    console.log(`✅ Pre-Warming completato per ${allCatalogs.length} cataloghi.`);
 });
 
 // Opzioni di ordinamento disponibili in Stremio per i cataloghi TMDB
