@@ -231,6 +231,9 @@ async function catalogHandler(args, userConfig, hostUrl) {
         }
         const cacheOptions = { cacheTtlMs: getCatalogCacheTtlMs(id, activeProfileSettings) };
 
+        // Pulisce l'ID nel caso arrivi come Preset dalla Dashboard
+        const baseId = id.startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : id;
+
         // ==========================================
         // SCENARIO 1: RICERCA VIVA TRAMITE BARRA
         // ==========================================
@@ -287,10 +290,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
         // ==========================================
         // SCENARIO 2.5: CATALOGHI IBRIDI (Hybrid Recommendations)
         // ==========================================
-        if (id === 'yaca_hybrid_movies' || id === 'yaca_hybrid_series' || id === 'yaca_top_genres_mix') {
+        if (baseId === 'yaca_hybrid_movies' || baseId === 'yaca_hybrid_series' || baseId === 'yaca_top_genres_mix') {
             const traktToken = userConfig.apiKeys?.trakt;
             if (traktToken) {
-                results = await getHybridCatalog(id, skip, traktToken, tmdbApiKey);
+                results = await getHybridCatalog(baseId, skip, traktToken, tmdbApiKey);
             }
             return { metas: results };
         }
@@ -303,59 +306,59 @@ async function catalogHandler(args, userConfig, hostUrl) {
         const refreshContext = (userConfig.apiKeys?.traktRefreshToken && hostUrl)
             ? { userConfig, hostUrl } : null;
 
-        if (id === 'trakt_watchlist_movies' && type === 'movie') {
+        if (baseId === 'trakt_watchlist_movies' && type === 'movie') {
             results = await fetchTraktCatalog('watchlist_movies', skip, traktUname, tmdbApiKey, refreshContext);
             return { metas: results };
         }
-        if (id === 'trakt_watchlist_series' && type === 'series') {
+        if (baseId === 'trakt_watchlist_series' && type === 'series') {
             results = await fetchTraktCatalog('watchlist_shows', skip, traktUname, tmdbApiKey, refreshContext);
             return { metas: results };
         }
-        if (id === 'trakt_recommendations_movies' && type === 'movie') {
+        if (baseId === 'trakt_recommendations_movies' && type === 'movie') {
             results = await fetchTraktCatalog('recommendations_movies', skip, traktUname, tmdbApiKey, refreshContext);
             return { metas: results };
         }
-        if (id === 'trakt_recommendations_series' && type === 'series') {
+        if (baseId === 'trakt_recommendations_series' && type === 'series') {
             results = await fetchTraktCatalog('recommendations_shows', skip, traktUname, tmdbApiKey, refreshContext);
             return { metas: results };
         }
-        if (id === 'trakt_history_movies' && type === 'movie') {
+        if (baseId === 'trakt_history_movies' && type === 'movie') {
             results = await fetchTraktCatalog('history_movies', skip, traktUname, tmdbApiKey, refreshContext);
             return { metas: results };
         }
-        if (id === 'trakt_history_series' && type === 'series') {
+        if (baseId === 'trakt_history_series' && type === 'series') {
             results = await fetchTraktCatalog('history_shows', skip, traktUname, tmdbApiKey, refreshContext);
             return { metas: results };
         }
-        if (id === 'trakt_ratings_movies' && type === 'movie') {
+        if (baseId === 'trakt_ratings_movies' && type === 'movie') {
             results = await fetchTraktCatalog('ratings_movies', skip, traktUname, tmdbApiKey, refreshContext);
             return { metas: results };
         }
-        if (id === 'trakt_ratings_series' && type === 'series') {
+        if (baseId === 'trakt_ratings_series' && type === 'series') {
             results = await fetchTraktCatalog('ratings_shows', skip, traktUname, tmdbApiKey, refreshContext);
             return { metas: results };
         }
-        if (id === 'trakt_trending_movies' && type === 'movie') {
+        if (baseId === 'trakt_trending_movies' && type === 'movie') {
             results = await fetchTraktCatalog('trending_movies', skip, null, tmdbApiKey);
             return { metas: results };
         }
-        if (id === 'trakt_trending_series' && type === 'series') {
+        if (baseId === 'trakt_trending_series' && type === 'series') {
             results = await fetchTraktCatalog('trending_shows', skip, null, tmdbApiKey);
             return { metas: results };
         }
-        if (id === 'trakt_popular_movies' && type === 'movie') {
+        if (baseId === 'trakt_popular_movies' && type === 'movie') {
             results = await fetchTraktCatalog('popular_movies', skip, null, tmdbApiKey);
             return { metas: results };
         }
-        if (id === 'trakt_popular_series' && type === 'series') {
+        if (baseId === 'trakt_popular_series' && type === 'series') {
             results = await fetchTraktCatalog('popular_shows', skip, null, tmdbApiKey);
             return { metas: results };
         }
-        if (id === 'trakt_favorites_movies' && type === 'movie') {
+        if (baseId === 'trakt_favorites_movies' && type === 'movie') {
             results = await fetchTraktCatalog('favorites', skip, traktUname, tmdbApiKey, refreshContext);
             return { metas: results.filter(r => r.type === 'movie') };
         }
-        if (id === 'trakt_favorites_series' && type === 'series') {
+        if (baseId === 'trakt_favorites_series' && type === 'series') {
             results = await fetchTraktCatalog('favorites', skip, traktUname, tmdbApiKey, refreshContext);
             return { metas: results.filter(r => r.type === 'series') };
         }

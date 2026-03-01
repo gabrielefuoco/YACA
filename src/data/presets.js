@@ -240,7 +240,32 @@ const getPresets = () => {
         { id: 'mdblist_456', name: 'MDBList: Top 100 Shows (All Time)', category: 'Community Lists (MDB)', type: 'series', filters: { mdblist: true } },
         { id: 'mdblist_789', name: 'MDBList: Latest Releases', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } },
         { id: 'mdblist_101', name: 'MDBList: Trending this Week', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } },
-        { id: 'mdblist_102', name: 'MDBList: Hidden Gems', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } }
+        { id: 'mdblist_102', name: 'MDBList: Hidden Gems', category: 'Community Lists (MDB)', type: 'movie', filters: { mdblist: true } },
+
+        // ==========================================
+        // 🎬 TRAKT PERSONALE (Richiede Login)
+        // ==========================================
+        { id: 'yaca_hybrid_movies', name: '✨ Consigliati Perfetti (Ibrido)', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
+        { id: 'yaca_hybrid_series', name: '✨ Consigliati Perfetti (Ibrido)', type: 'series', category: '🎬 Trakt Personale', filters: {} },
+        { id: 'yaca_top_genres_mix', name: '🎲 Il Tuo Mix Esplorativo', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
+        { id: 'trakt_watchlist_movies', name: 'La mia Watchlist', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
+        { id: 'trakt_watchlist_series', name: 'La mia Watchlist', type: 'series', category: '🎬 Trakt Personale', filters: {} },
+        { id: 'trakt_history_movies', name: 'Cronologia Visioni', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
+        { id: 'trakt_history_series', name: 'Cronologia Visioni', type: 'series', category: '🎬 Trakt Personale', filters: {} },
+        { id: 'trakt_recommendations_movies', name: 'Trakt: Suggeriti', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
+        { id: 'trakt_recommendations_series', name: 'Trakt: Suggeriti', type: 'series', category: '🎬 Trakt Personale', filters: {} },
+        { id: 'trakt_ratings_movies', name: 'I miei Voti', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
+        { id: 'trakt_ratings_series', name: 'I miei Voti', type: 'series', category: '🎬 Trakt Personale', filters: {} },
+        { id: 'trakt_favorites_movies', name: 'I miei Preferiti', type: 'movie', category: '🎬 Trakt Personale', filters: {} },
+        { id: 'trakt_favorites_series', name: 'I miei Preferiti', type: 'series', category: '🎬 Trakt Personale', filters: {} },
+
+        // ==========================================
+        // 🌍 TRAKT GLOBALE (Senza Login)
+        // ==========================================
+        { id: 'trakt_trending_movies', name: 'Tendenze Trakt', type: 'movie', category: '🌍 Trakt Globale', filters: {} },
+        { id: 'trakt_trending_series', name: 'Tendenze Trakt', type: 'series', category: '🌍 Trakt Globale', filters: {} },
+        { id: 'trakt_popular_movies', name: 'I Più Popolari su Trakt', type: 'movie', category: '🌍 Trakt Globale', filters: {} },
+        { id: 'trakt_popular_series', name: 'I Più Popolari su Trakt', type: 'series', category: '🌍 Trakt Globale', filters: {} }
     ];
 };
 

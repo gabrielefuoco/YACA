@@ -438,28 +438,6 @@ app.get(['/:configBase64/manifest.json', '/:configBase64/:configVersion/manifest
             }
         }
 
-        if (userConfig.apiKeys && userConfig.apiKeys.trakt) {
-            manifest.catalogs.unshift(
-                { id: 'yaca_hybrid_movies', type: 'movie', name: 'Trakt Consigliati: Film', extra: [{ name: 'skip' }] },
-                { id: 'yaca_hybrid_series', type: 'series', name: 'Trakt Consigliati: Serie', extra: [{ name: 'skip' }] },
-                { id: 'yaca_top_genres_mix', type: 'movie', name: 'Il Tuo Mix: Esplorazione', extra: [{ name: 'skip' }] },
-                { id: 'trakt_recommendations_movies', type: 'movie', name: 'Trakt Consigliati', extra: [{ name: 'skip' }] },
-                { id: 'trakt_recommendations_series', type: 'series', name: 'Trakt Consigliati', extra: [{ name: 'skip' }] },
-                { id: 'trakt_watchlist_movies', type: 'movie', name: 'Trakt Watchlist', extra: [{ name: 'skip' }] },
-                { id: 'trakt_watchlist_series', type: 'series', name: 'Trakt Watchlist', extra: [{ name: 'skip' }] },
-                { id: 'trakt_history_movies', type: 'movie', name: 'Trakt Cronologia', extra: [{ name: 'skip' }] },
-                { id: 'trakt_history_series', type: 'series', name: 'Trakt Cronologia', extra: [{ name: 'skip' }] },
-                { id: 'trakt_ratings_movies', type: 'movie', name: 'Trakt Valutazioni', extra: [{ name: 'skip' }] },
-                { id: 'trakt_ratings_series', type: 'series', name: 'Trakt Valutazioni', extra: [{ name: 'skip' }] },
-                { id: 'trakt_favorites_movies', type: 'movie', name: 'Trakt Preferiti', extra: [{ name: 'skip' }] },
-                { id: 'trakt_favorites_series', type: 'series', name: 'Trakt Preferiti', extra: [{ name: 'skip' }] },
-                { id: 'trakt_trending_movies', type: 'movie', name: 'Trakt Tendenze', extra: [{ name: 'skip' }] },
-                { id: 'trakt_trending_series', type: 'series', name: 'Trakt Tendenze', extra: [{ name: 'skip' }] },
-                { id: 'trakt_popular_movies', type: 'movie', name: 'Trakt Popolari', extra: [{ name: 'skip' }] },
-                { id: 'trakt_popular_series', type: 'series', name: 'Trakt Popolari', extra: [{ name: 'skip' }] }
-            );
-        }
-
         return res.json(manifest);
     } catch (err) {
         console.error("Manifest Error:", err);
