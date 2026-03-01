@@ -32,6 +32,7 @@ const corsOptions = corsOrigins
     ? { origin: corsOrigins.split(',').map(o => o.trim()), methods: ['GET', 'POST'] }
     : { methods: ['GET', 'POST'] };
 app.use(cors(corsOptions));
+app.use(express.static(path.join(__dirname, 'frontend', 'out')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '1mb' }));
 

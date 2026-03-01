@@ -3,7 +3,7 @@ services:
     name: yaca-addon
     runtime: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install && cd frontend && npm install && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
