@@ -3194,15 +3194,27 @@
             let existingConfig = null;
             if (currentConfigBase64) {
                 try {
-                    // Decodifica la configurazione Base64 URL-safe direttamente nel browser
-                    const base64Str = currentConfigBase64.replace(/-/g, '+').replace(/_/g, '/');
-                    const binString = atob(base64Str);
-                    const bytes = new Uint8Array(binString.length);
-                    for (let i = 0; i < binString.length; i++) {
-                        bytes[i] = binString.charCodeAt(i);
+                    // Decodifica la configurazione Base64 URL-safe direttamente nel browser.
+                    // Supporta il formato compresso con prefisso 'c1' (deflate) e il formato legacy.
+                    if (currentConfigBase64.startsWith('c1')) {
+                        const b64 = currentConfigBase64.slice(2).replace(/-/g, '+').replace(/_/g, '/');
+                        const binString = atob(b64);
+                        const bytes = Uint8Array.from(binString, m => m.charCodeAt(0));
+                        const ds = new DecompressionStream('deflate');
+                        const writer = ds.writable.getWriter();
+                        writer.write(bytes);
+                        writer.close();
+                        const arrayBuffer = await new Response(ds.readable).arrayBuffer();
+                        existingConfig = JSON.parse(new TextDecoder().decode(arrayBuffer));
+                    } else {
+                        const base64Str = currentConfigBase64.replace(/-/g, '+').replace(/_/g, '/');
+                        const binString = atob(base64Str);
+                        const bytes = new Uint8Array(binString.length);
+                        for (let i = 0; i < binString.length; i++) {
+                            bytes[i] = binString.charCodeAt(i);
+                        }
+                        existingConfig = JSON.parse(new TextDecoder('utf-8').decode(bytes));
                     }
-                    const json = new TextDecoder('utf-8').decode(bytes);
-                    existingConfig = JSON.parse(json);
                 } catch (e) { console.error("Errore decodifica config:", e); }
             }
 
@@ -3230,12 +3242,15 @@
 
                     // Ensure raw_ui_state defaults exists
                     profiles.forEach(p => {
-                        if (!p.raw_ui_state) p.raw_ui_state = { selectedPresets: [], newPrompts: [], presetOverrides: {}, catalogOrder: [] };
-                        if (!p.raw_ui_state.catalogOrder) p.raw_ui_state.catalogOrder = [];
+                        if (!p.raw_ui_state) p.raw_ui_state = { selectedPresets: [], newPrompts: [], presetOverrides: {} };
                         if (!p.existingCatalogs) {
                             p.existingCatalogs = (p.catalogs || []).filter(c => !c.id.startsWith('yaca_preset_'));
                             p.raw_ui_state.selectedPresets = (p.catalogs || []).filter(c => c.id.startsWith('yaca_preset_')).map(c => c.id.replace('yaca_preset_', ''));
                             p.raw_ui_state.newPrompts = [];
+                        }
+                        // Reconstruct catalogOrder from catalog positions if not saved
+                        if (!p.raw_ui_state.catalogOrder || p.raw_ui_state.catalogOrder.length === 0) {
+                            p.raw_ui_state.catalogOrder = (p.catalogs || []).map(c => c.id);
                         }
                         if (!p.settings) p.settings = { minVoteAverage: 5.0, minVoteCount: 100, fastPresetRefresh: false };
                         if (p.settings.fastPresetRefresh === undefined) p.settings.fastPresetRefresh = false;
