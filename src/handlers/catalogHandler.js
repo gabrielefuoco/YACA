@@ -28,8 +28,8 @@ const EPISODE_CATALOG_IDS = new Set([
  * Aggiunge il badge con numero episodio ai poster per cataloghi di episodi recenti.
  * Trova l'ultimo episodio trasmesso e genera l'URL del poster con badge.
  */
-function applyEpisodeBadge(metas) {
-    const host = process.env.HOST_URL || 'http://localhost:7000';
+function applyEpisodeBadge(metas, hostUrl) {
+    const host = hostUrl || process.env.HOST_URL || 'http://localhost:7000';
     const now = new Date();
 
     for (const meta of metas) {
@@ -197,7 +197,7 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
 /**
  * Gestisce la rotta "catalog" inviata da Stremio (es. /catalog/movie/tmdb_discover.json)
  */
-async function catalogHandler(args, userUuid) {
+async function catalogHandler(args, userUuid, hostUrl) {
     try {
         const { type, id, extra } = args;
         const skip = extra.skip || 0;
@@ -392,7 +392,7 @@ async function catalogHandler(args, userUuid) {
 
             // Badge episodio sui poster per cataloghi di episodi recenti
             if (EPISODE_CATALOG_IDS.has(id)) {
-                applyEpisodeBadge(results);
+                applyEpisodeBadge(results, hostUrl);
             }
 
             return { metas: results };
