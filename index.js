@@ -440,6 +440,9 @@ app.get(['/:configBase64/manifest.json', '/:configBase64/:configVersion/manifest
 
         if (userConfig.apiKeys && userConfig.apiKeys.trakt) {
             manifest.catalogs.unshift(
+                { id: 'yaca_hybrid_movies', type: 'movie', name: 'Trakt Consigliati: Film', extra: [{ name: 'skip' }] },
+                { id: 'yaca_hybrid_series', type: 'series', name: 'Trakt Consigliati: Serie', extra: [{ name: 'skip' }] },
+                { id: 'yaca_top_genres_mix', type: 'movie', name: 'Il Tuo Mix: Esplorazione', extra: [{ name: 'skip' }] },
                 { id: 'trakt_recommendations_movies', type: 'movie', name: 'Trakt Consigliati', extra: [{ name: 'skip' }] },
                 { id: 'trakt_recommendations_series', type: 'series', name: 'Trakt Consigliati', extra: [{ name: 'skip' }] },
                 { id: 'trakt_watchlist_movies', type: 'movie', name: 'Trakt Watchlist', extra: [{ name: 'skip' }] },
