@@ -57,9 +57,11 @@ async function metaHandler(args, userConfig) {
                     const ratings = await fetchMdblistRatings(imdbIdForRatings, mdblistApiKey);
                     if (ratings) {
                         const parts = [];
+                        if (meta.imdbRating) parts.push(`⭐ ${meta.imdbRating} TMDB`);
+                        if (ratings.imdb != null) parts.push(`IMDb ${ratings.imdb}`);
                         if (ratings.rtCritic != null) parts.push(`🍅 ${ratings.rtCritic}%`);
                         if (ratings.rtAudience != null) parts.push(`🍿 ${ratings.rtAudience}%`);
-                        if (ratings.metacritic != null) parts.push(`Ⓜ️ ${ratings.metacritic}`);
+                        if (ratings.metacritic != null) parts.push(`Ⓜ️ ${ratings.metacritic}/100`);
                         if (parts.length > 0) {
                             meta.description = `${parts.join(' | ')}\n\n${meta.description || ''}`.trim();
                         }
