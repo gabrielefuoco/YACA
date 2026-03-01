@@ -298,7 +298,7 @@ async function fetchTraktCatalog(endpoint, skip = 0, traktToken = null, tmdbApiK
                     newTokens.access_token,
                     newTokens.refresh_token,
                     refreshContext.hostUrl
-                ).catch(syncErr => console.error('Trakt auto-refresh sync error:', syncErr.message));
+                ).catch(syncErr => console.error(`Trakt auto-refresh sync error (${endpoint}):`, syncErr.message));
 
                 // Riprova la richiesta con il nuovo token
                 try {
