@@ -19,6 +19,7 @@ module.exports = async (req, res) => {
     try {
         const { tmdbKey, mistralKey, activeProfileId, profiles } = req.body;
         const traktToken = req.body.traktToken || req.body.traktUsername;
+        const traktRefreshToken = req.body.traktRefreshToken || null;
         const stremioAuthKey = req.body.stremioAuthKey || null;
         const stremioEmail = req.body.stremioEmail || null;
 
@@ -35,6 +36,9 @@ module.exports = async (req, res) => {
         }
         if (traktToken && (typeof traktToken !== 'string' || traktToken.length > LIMITS.MAX_TOKEN_LENGTH)) {
             return res.status(400).json({ error: "Token Trakt non valido." });
+        }
+        if (traktRefreshToken && (typeof traktRefreshToken !== 'string' || traktRefreshToken.length > LIMITS.MAX_TOKEN_LENGTH)) {
+            return res.status(400).json({ error: "Refresh Token Trakt non valido." });
         }
         if (stremioAuthKey && (typeof stremioAuthKey !== 'string' || stremioAuthKey.length > LIMITS.MAX_TOKEN_LENGTH)) {
             return res.status(400).json({ error: "Auth key Stremio non valida." });
@@ -229,6 +233,7 @@ module.exports = async (req, res) => {
                 tmdb: tmdbKey,
                 mistral: mistralKey,
                 trakt: traktToken || null,
+                traktRefreshToken: traktRefreshToken || null,
                 stremioAuthKey: stremioAuthKey || null,
                 stremioEmail: stremioEmail || null
             },

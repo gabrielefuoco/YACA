@@ -468,6 +468,7 @@
                                     Account</button>
                             </div>
                             <input type="hidden" id="traktToken">
+                            <input type="hidden" id="traktRefreshToken">
                         </div>
                     </div>
                 </div>
@@ -1546,6 +1547,7 @@
                             clearInterval(countdownTimer);
                             traktPollInterval = null;
                             document.getElementById('traktToken').value = tokenData.access_token;
+                            document.getElementById('traktRefreshToken').value = tokenData.refresh_token || '';
                             modal.classList.add('hidden');
                             updateTraktUI();
                         } else if (tokenData.error) {
@@ -1584,6 +1586,7 @@
 
         function traktLogout() {
             document.getElementById('traktToken').value = '';
+            document.getElementById('traktRefreshToken').value = '';
             updateTraktUI();
         }
 
@@ -2864,6 +2867,7 @@
                 tmdbKey: document.getElementById('tmdbKey').value,
                 mistralKey: document.getElementById('mistralKey').value,
                 traktToken: document.getElementById('traktToken').value,
+                traktRefreshToken: document.getElementById('traktRefreshToken').value,
                 profiles: profiles,
                 activeProfileId: activeProfileId,
                 myLists: myLists
@@ -2919,6 +2923,7 @@
 
                     if (data.traktToken || data.traktUsername) {
                         document.getElementById('traktToken').value = data.traktToken || data.traktUsername;
+                        document.getElementById('traktRefreshToken').value = data.traktRefreshToken || '';
                         document.getElementById('traktLoginBtn').classList.add('hidden');
                         document.getElementById('traktConnectedUI').classList.remove('flex-col');
                         document.getElementById('traktConnectedUI').classList.add('flex', 'flex-col');
@@ -3055,6 +3060,7 @@
                 const token = existingConfig.apiKeys?.trakt;
                 if (token) {
                     document.getElementById('traktToken').value = token;
+                    document.getElementById('traktRefreshToken').value = existingConfig.apiKeys?.traktRefreshToken || '';
                     document.getElementById('traktLoginBtn').classList.add('hidden');
                     document.getElementById('traktConnectedUI').classList.add('flex');
                     document.getElementById('traktConnectedUI').classList.remove('hidden');
@@ -3195,6 +3201,7 @@
             const tmdbKey = document.getElementById('tmdbKey').value;
             const mistralKey = document.getElementById('mistralKey').value;
             const traktToken = document.getElementById('traktToken').value;
+            const traktRefreshToken = document.getElementById('traktRefreshToken').value;
 
             // Validazione
             const hasNewPrompts = profiles.some(p => p.raw_ui_state.newPrompts.length > 0);
@@ -3251,6 +3258,7 @@
                     tmdbKey,
                     mistralKey,
                     traktToken,
+                    traktRefreshToken,
                     stremioAuthKey,
                     stremioEmail,
                     activeProfileId: activeProfileId,
