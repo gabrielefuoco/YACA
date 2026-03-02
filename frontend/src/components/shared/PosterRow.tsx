@@ -14,6 +14,12 @@ export function PosterRow({ presetId, filters, type }: PosterRowProps) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const requestKey = JSON.stringify({ presetId, filters, type });
+
+  useEffect(() => {
+    setItems([]);
+    setLoaded(false);
+  }, [requestKey]);
 
   useEffect(() => {
     if (loaded) return;
@@ -39,16 +45,16 @@ export function PosterRow({ presetId, filters, type }: PosterRowProps) {
   }, [presetId, filters, type, loaded]);
 
   return (
-    <div ref={ref} className="mt-2">
+    <div ref={ref} className="mt-2 w-full max-w-full overflow-hidden">
       {loading && (
-        <div className="flex gap-2 overflow-hidden">
+        <div className="flex max-w-full gap-2 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-32 w-[86px] shrink-0 animate-pulse rounded-lg bg-white/[0.06]" />
           ))}
         </div>
       )}
       {!loading && items.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+        <div className="flex max-w-full gap-2 overflow-x-auto pb-1 scrollbar-thin">
           {items.map((item) => (
             <div key={item.id} className="group relative shrink-0 cursor-pointer">
               {item.poster ? (

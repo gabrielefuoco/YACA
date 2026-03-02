@@ -10,21 +10,24 @@ import { PosterRow } from '@/components/shared/PosterRow';
 import { Catalog, MyList } from '@/types';
 import { GENRE_NAMES, KEYWORD_NAMES, SORT_OPTIONS, LANGUAGES } from '@/lib/constants';
 import { Loader2, Wand2, Save, Plus, Trash2 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface CreatorPanelProps {
   onSaveList: (list: MyList) => void;
   onAddCatalog: (catalog: Catalog) => void;
-  onAddPrompts: (prompts: string[]) => void;
 }
 
 import { generateId } from '@/lib/utils';
 
-export function CreatorPanel({ onSaveList, onAddCatalog, onAddPrompts }: CreatorPanelProps) {
+export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
   // AI tab state
   const [prompts, setPrompts] = useState<string[]>(['']);
   const [aiType, setAiType] = useState<'movie' | 'series'>('movie');
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiPreviewKey, setAiPreviewKey] = useState<string | null>(null);
+  const [aiPreviewFilters, setAiPreviewFilters] = useState<Record<string, unknown> | null>(null);
+  const [aiPreviewType, setAiPreviewType] = useState<'movie' | 'series'>(aiType);
+  const [aiCatalogName, setAiCatalogName] = useState<string>('');
+  const [aiRawPrompt, setAiRawPrompt] = useState<string>('');
   const [aiSaved, setAiSaved] = useState(false);
 
   // Manual tab state
@@ -54,23 +57,37 @@ export function CreatorPanel({ onSaveList, onAddCatalog, onAddPrompts }: Creator
     if (!validPrompts.length) return;
     setAiLoading(true);
     try {
-      const key = `ai_${Date.now()}`;
-      setAiPreviewKey(key);
+      const prompt = validPrompts[0].trim();
+      const result = await api.aiPreviewCatalog({ prompt, type: aiType });
+      if (result?.filters && typeof result.filters === 'object') {
+        setAiPreviewFilters(result.filters);
+        setAiPreviewType(result.type === 'series' ? 'series' : 'movie');
+        setAiCatalogName(result.name || prompt.slice(0, 30));
+        setAiRawPrompt(prompt);
+      }
     } catch {}
     setAiLoading(false);
   };
 
   const handleAiSave = () => {
-    const validPrompts = prompts.filter((p) => p.trim());
-    if (!validPrompts.length) return;
-    // Add prompts to the profile's newPrompts so they are sent to the backend
-    // and processed by Mistral AI when the user saves the configuration
-    onAddPrompts(validPrompts.map((p) => p.trim()));
+    if (!aiPreviewFilters) return;
+    const catalog: Catalog = {
+      id: generateId(),
+      name: aiCatalogName || 'Catalogo AI',
+      raw_prompt: aiRawPrompt,
+      type: aiPreviewType,
+      source: 'ai',
+      filters: aiPreviewFilters,
+      emoji: '🤖',
+    };
+    onAddCatalog(catalog);
     setAiSaved(true);
     setTimeout(() => setAiSaved(false), 3000);
     // Reset prompt fields
     setPrompts(['']);
-    setAiPreviewKey(null);
+    setAiPreviewFilters(null);
+    setAiRawPrompt('');
+    setAiCatalogName('');
   };
 
   const buildManualFilters = () => ({
@@ -163,10 +180,10 @@ export function CreatorPanel({ onSaveList, onAddCatalog, onAddPrompts }: Creator
             </Button>
           </div>
 
-          {aiPreviewKey && (
+          {aiPreviewFilters && (
             <PosterRow
-              filters={{ prompts: prompts.filter((p) => p.trim()), type: aiType }}
-              type={aiType}
+              filters={aiPreviewFilters}
+              type={aiPreviewType}
             />
           )}
 
@@ -175,16 +192,14 @@ export function CreatorPanel({ onSaveList, onAddCatalog, onAddPrompts }: Creator
               {aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wand2 className="h-4 w-4 mr-2" />}
               Genera Anteprima
             </Button>
-            <Button variant="outline" onClick={handleAiSave} disabled={aiSaved}>
+            <Button variant="outline" onClick={handleAiSave} disabled={aiSaved || !aiPreviewFilters}>
               <Save className="h-4 w-4 mr-2" />
               {aiSaved ? '✅ Aggiunto!' : 'Aggiungi al Profilo'}
             </Button>
           </div>
 
           {aiSaved && (
-            <p className="text-xs text-emerald-400">
-              Prompt aggiunti! Vai su Impostazioni e clicca &quot;Genera Link di Installazione&quot; per processarli con l&apos;AI.
-            </p>
+            <p className="text-xs text-emerald-400">Catalogo AI aggiunto al profilo.</p>
           )}
         </TabsContent>
 

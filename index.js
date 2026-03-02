@@ -6,8 +6,9 @@ const axios = require('axios');
 
 const configureRoute = require('./src/api/configure');
 const UserConfig = require('./src/models/UserConfig');
-const { catalogHandler } = require('./src/handlers/catalogHandler');
+const { catalogHandler, buildDiscoveryParams } = require('./src/handlers/catalogHandler');
 const { metaHandler } = require('./src/handlers/metaHandler');
+const { generateTmdbFiltersFromPrompt } = require('./src/ai/router');
 const { getPresets, profileTemplates } = require('./src/data/presets');
 const { parseExtra, sanitizeString, isAllowedUrl } = require('./src/utils/helpers');
 const { getBlurredImageUrl, addBadgeToImage } = require('./src/utils/imageProcessor');
@@ -61,17 +62,18 @@ app.get('/api/presets', (req, res) => {
 // Endpoint per anteprima catalogo: restituisce i primi 20 risultati TMDB con poster
 const PREVIEW_TIMEOUT_MS = 8000;
 app.post('/api/preview-catalog', async (req, res) => {
-    const { presetId, filters: customFilters, type: customType } = req.body;
+    const { presetId, filters: customFilters, type: customType, prompt } = req.body;
     const tmdbKey = req.body.tmdbKey || process.env.TMDB_API_KEY;
+    const mistralKey = req.body.mistralKey || process.env.MISTRAL_API_KEY;
     if (!tmdbKey) {
         return res.status(400).json({ error: 'TMDB API key non configurata sul server' });
     }
-    if (!presetId && !customFilters) {
-        return res.status(400).json({ error: 'presetId o filters obbligatori' });
+    if (!presetId && !customFilters && !prompt) {
+        return res.status(400).json({ error: 'presetId, filters o prompt obbligatori' });
     }
     const sanitizedTmdbKey = sanitizeString(tmdbKey);
 
-    let discoverType, discoverFilters;
+    let discoverType, discoverFilters, strategy;
 
     if (presetId) {
         const sanitizedPresetId = sanitizeString(presetId);
@@ -81,9 +83,23 @@ app.post('/api/preview-catalog', async (req, res) => {
         }
         discoverType = preset.type === 'series' ? 'tv' : 'movie';
         discoverFilters = preset.filters;
+        strategy = 'discovery';
+    } else if (prompt) {
+        const sanitizedPrompt = sanitizeString(String(prompt)).substring(0, 500);
+        if (!sanitizedPrompt) {
+            return res.status(400).json({ error: 'Prompt non valido' });
+        }
+        const aiFilters = await generateTmdbFiltersFromPrompt(sanitizedPrompt, mistralKey);
+        const aiType = customType === 'series' || aiFilters.target === 'kitsu' ? 'series' : 'movie';
+        discoverType = aiType === 'series' ? 'tv' : 'movie';
+        strategy = aiFilters.strategy || 'discovery';
+        discoverFilters = strategy === 'discovery'
+            ? await buildDiscoveryParams(aiFilters, sanitizedTmdbKey, aiType)
+            : aiFilters;
     } else {
         discoverType = customType === 'series' ? 'tv' : 'movie';
         discoverFilters = {};
+        strategy = 'discovery';
         const allowedFilterKeys = [
             'sort_by', 'with_genres', 'with_keywords', 'with_cast', 'with_crew',
             'with_companies', 'with_original_language', 'vote_average.gte', 'vote_count.gte',
@@ -108,16 +124,54 @@ app.post('/api/preview-catalog', async (req, res) => {
     }
 
     try {
-        const tmdbRes = await axios.get(`https://api.themoviedb.org/3/discover/${discoverType}`, {
-            params: {
-                api_key: sanitizedTmdbKey,
-                language: 'it-IT',
-                region: 'IT',
-                page: 1,
-                ...discoverFilters
-            },
-            timeout: PREVIEW_TIMEOUT_MS
-        });
+        let tmdbRes;
+        if (strategy === 'multi_search') {
+            tmdbRes = await axios.get(`https://api.themoviedb.org/3/search/${discoverType}`, {
+                params: {
+                    api_key: sanitizedTmdbKey,
+                    language: 'it-IT',
+                    region: 'IT',
+                    page: 1,
+                    query: sanitizeString(discoverFilters.text_search || discoverFilters.keyword || '')
+                },
+                timeout: PREVIEW_TIMEOUT_MS
+            });
+        } else if (strategy === 'similar' && discoverFilters.similar_to) {
+            const searchRes = await axios.get(`https://api.themoviedb.org/3/search/${discoverType}`, {
+                params: {
+                    api_key: sanitizedTmdbKey,
+                    language: 'it-IT',
+                    region: 'IT',
+                    page: 1,
+                    query: sanitizeString(discoverFilters.similar_to)
+                },
+                timeout: PREVIEW_TIMEOUT_MS
+            });
+            const targetId = searchRes.data?.results?.[0]?.id;
+            if (targetId) {
+                tmdbRes = await axios.get(`https://api.themoviedb.org/3/${discoverType}/${targetId}/recommendations`, {
+                    params: {
+                        api_key: sanitizedTmdbKey,
+                        language: 'it-IT',
+                        page: 1
+                    },
+                    timeout: PREVIEW_TIMEOUT_MS
+                });
+            } else {
+                tmdbRes = { data: { results: [] } };
+            }
+        } else {
+            tmdbRes = await axios.get(`https://api.themoviedb.org/3/discover/${discoverType}`, {
+                params: {
+                    api_key: sanitizedTmdbKey,
+                    language: 'it-IT',
+                    region: 'IT',
+                    page: 1,
+                    ...discoverFilters
+                },
+                timeout: PREVIEW_TIMEOUT_MS
+            });
+        }
         const items = (tmdbRes.data?.results || []).slice(0, 20).map(item => ({
             id: item.id,
             title: item.title || item.name || '',
@@ -125,7 +179,12 @@ app.post('/api/preview-catalog', async (req, res) => {
             vote: item.vote_average || 0,
             year: (item.release_date || item.first_air_date || '').substring(0, 4)
         }));
-        res.json({ items });
+        res.json({
+            items,
+            filters: discoverFilters,
+            type: discoverType === 'tv' ? 'series' : 'movie',
+            name: prompt ? sanitizeString(String(prompt)).substring(0, 30) : null
+        });
     } catch (err) {
         const status = err.response?.status;
         if (status === 401) {

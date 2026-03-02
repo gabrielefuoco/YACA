@@ -89,12 +89,19 @@ export function useProfiles(initialProfiles?: Profile[]) {
         prev.map((p) => {
           if (p.id !== profileId) return p;
           const selected = p.raw_ui_state.selectedPresets;
-          const newSelected = selected.includes(presetId)
+          const isRemoving = selected.includes(presetId);
+          const newSelected = isRemoving
             ? selected.filter((id) => id !== presetId)
             : [...selected, presetId];
+          const currentOrder = p.raw_ui_state.catalogOrder ?? [];
+          const newOrder = isRemoving
+            ? currentOrder.filter((id) => id !== presetId)
+            : currentOrder.includes(presetId)
+              ? currentOrder
+              : [...currentOrder, presetId];
           return {
             ...p,
-            raw_ui_state: { ...p.raw_ui_state, selectedPresets: newSelected },
+            raw_ui_state: { ...p.raw_ui_state, selectedPresets: newSelected, catalogOrder: newOrder },
           };
         })
       );
@@ -106,7 +113,18 @@ export function useProfiles(initialProfiles?: Profile[]) {
     setProfiles((prev) =>
       prev.map((p) => {
         if (p.id !== profileId) return p;
-        return { ...p, existingCatalogs: catalogs };
+        const existingIds = new Set(p.existingCatalogs.map((c) => c.id));
+        const existingCatalogMap = new Map(p.existingCatalogs.map((c) => [c.id, c]));
+        const reorderedExisting = catalogs
+          .filter((c) => existingIds.has(c.id))
+          .map((c) => existingCatalogMap.get(c.id))
+          .filter((c): c is Catalog => Boolean(c));
+        const untouchedExisting = p.existingCatalogs.filter((c) => !reorderedExisting.some((r) => r.id === c.id));
+        return {
+          ...p,
+          existingCatalogs: [...reorderedExisting, ...untouchedExisting],
+          raw_ui_state: { ...p.raw_ui_state, catalogOrder: catalogs.map((c) => c.id) },
+        };
       })
     );
   }, []);
@@ -122,7 +140,11 @@ export function useProfiles(initialProfiles?: Profile[]) {
         return {
           ...p,
           existingCatalogs: newCatalogs,
-          raw_ui_state: { ...p.raw_ui_state, selectedPresets: newSelectedPresets },
+          raw_ui_state: {
+            ...p.raw_ui_state,
+            selectedPresets: newSelectedPresets,
+            catalogOrder: (p.raw_ui_state.catalogOrder ?? []).filter((id) => id !== catalogId),
+          },
         };
       })
     );
@@ -133,20 +155,14 @@ export function useProfiles(initialProfiles?: Profile[]) {
       prev.map((p) => {
         if (p.id !== profileId) return p;
         if (p.existingCatalogs.some((c) => c.id === catalog.id)) return p;
-        return { ...p, existingCatalogs: [...p.existingCatalogs, catalog] };
-      })
-    );
-  }, []);
-
-  const addPrompts = useCallback((profileId: string, prompts: string[]) => {
-    setProfiles((prev) =>
-      prev.map((p) => {
-        if (p.id !== profileId) return p;
         return {
           ...p,
+          existingCatalogs: [...p.existingCatalogs, catalog],
           raw_ui_state: {
             ...p.raw_ui_state,
-            newPrompts: [...(p.raw_ui_state?.newPrompts ?? []), ...prompts],
+            catalogOrder: (p.raw_ui_state.catalogOrder ?? []).includes(catalog.id)
+              ? p.raw_ui_state.catalogOrder
+              : [...(p.raw_ui_state.catalogOrder ?? []), catalog.id],
           },
         };
       })
@@ -169,6 +185,5 @@ export function useProfiles(initialProfiles?: Profile[]) {
     reorderCatalogs,
     removeCatalog,
     addCatalog,
-    addPrompts,
   };
 }
