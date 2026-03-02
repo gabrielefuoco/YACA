@@ -28,7 +28,7 @@ async function fetchMDBListItems(listId, apiKey, language, page = 1) {
 /**
  * Analizza e formatta gli item MDBList recuperando metadati estesi da TMDB in lotti (rate-limited).
  */
-async function parseMDBListItems(items, type, tmdbApiKey, language) {
+async function parseMDBListItems(items, type, tmdbApiKey, _language) {
     const filteredItemsByType = items
         .filter(item => {
             if (type === "series") return item.mediatype === "show";
@@ -81,10 +81,10 @@ async function fetchMdblistRatings(imdbId, mdblistApiKey) {
         const imdb = find('imdb');
 
         const result = {
-            imdb: imdb?.value != null ? parseFloat(imdb.value).toFixed(1) : null,
-            rtCritic: rtCritic?.value != null ? Math.round(rtCritic.value) : null,
-            rtAudience: rtAudience?.value != null ? Math.round(rtAudience.value) : null,
-            metacritic: metacritic?.value != null ? Math.round(metacritic.value) : null
+            imdb: imdb?.value !== null && imdb?.value !== undefined ? parseFloat(imdb.value).toFixed(1) : null,
+            rtCritic: rtCritic?.value !== null && rtCritic?.value !== undefined ? Math.round(rtCritic.value) : null,
+            rtAudience: rtAudience?.value !== null && rtAudience?.value !== undefined ? Math.round(rtAudience.value) : null,
+            metacritic: metacritic?.value !== null && metacritic?.value !== undefined ? Math.round(metacritic.value) : null
         };
 
         ratingsCache.set(cacheKey, result);

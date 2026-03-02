@@ -16,6 +16,7 @@ const { clearIdCache } = require('./src/id_mapping/id_cache');
 const TmdbRequestCache = require('./src/models/TmdbRequestCache');
 const LRUCache = require('./src/utils/LRUCache');
 const { rateLimitedMap } = require('./src/utils/rateLimiter');
+const { updateStremioAddonCollection } = require('./src/utils/stremioAddonSync');
 
 // 1. Inizializza Express
 const app = express();
@@ -253,46 +254,11 @@ app.post('/api/stremio-addon-update', async (req, res) => {
     }
 
     try {
-        const getRes = await axios.post('https://api.strem.io/api/addonCollectionGet', {
-            type: 'AddonCollectionGet',
-            authKey,
-            update: true,
-            addFromURL: []
-        }, { timeout: 10000 });
-
-        const addons = getRes.data?.result?.addons;
-        if (!addons || !Array.isArray(addons)) {
-            return res.json({ success: false, error: 'Impossibile recuperare la collezione addon' });
-        }
-
-        const addonId = 'org.stremio.yaca.catalog';
-        const existingIdx = addons.findIndex(a => a.manifest?.id === addonId);
-
-        const manifestRes = await axios.get(manifestUrl, { timeout: 10000 });
-        const manifest = manifestRes.data;
-
-        if (existingIdx !== -1) {
-            addons[existingIdx].transportUrl = manifestUrl;
-            addons[existingIdx].manifest = manifest;
-        } else {
-            addons.push({
-                transportUrl: manifestUrl,
-                transportName: 'http',
-                manifest: manifest,
-                flags: { official: false, protected: false }
-            });
-        }
-
-        const setRes = await axios.post('https://api.strem.io/api/addonCollectionSet', {
-            type: 'AddonCollectionSet',
-            authKey,
-            addons
-        }, { timeout: 10000 });
-
-        if (setRes.data?.result?.success) {
+        const result = await updateStremioAddonCollection(authKey, manifestUrl);
+        if (result.success) {
             return res.json({ success: true });
         }
-        return res.json({ success: false, error: setRes.data?.result?.error || 'Errore aggiornamento collezione' });
+        return res.json({ success: false, error: result.error });
     } catch (err) {
         console.error("Errore stremio-addon-update:", err.message);
         return res.json({ success: false, error: 'Errore di connessione al servizio Stremio.' });

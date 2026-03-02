@@ -10,7 +10,7 @@ const {
     MOVIE_META_CACHE_TTL_MS
 } = require('../config');
 // Rate limiting removed per user request
-const { isMovieReleasedDigitally, isMovieReleasedInRegion } = require('../utils/releaseFilter');
+const { isMovieReleasedDigitally } = require('../utils/releaseFilter');
 const { generateRequestHash } = require('../utils/requestHash');
 const TmdbRequestCache = require('../models/TmdbRequestCache');
 
@@ -116,7 +116,7 @@ async function fetchTmdbCatalogDirect(client, endpoint, skip, customParams = {},
 
     try {
         const results = await Promise.allSettled(promises);
-        let items = [];
+        const items = [];
 
         // Uniamo e deduplichiamo
         const seenIds = new Set();

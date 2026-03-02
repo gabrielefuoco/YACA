@@ -1,6 +1,7 @@
 const { createAxiosInstance } = require('../utils/httpClient');
-const axios = require('axios'); // still needed for raw TMDB enrich requests if we don't want proxy there, but let's use it
+const axios = require('axios');
 const UserConfig = require('../models/UserConfig');
+const { updateStremioAddonCollection } = require('../utils/stremioAddonSync');
 
 const traktClient = createAxiosInstance('https://api.trakt.tv', {
     headers: {
@@ -64,51 +65,12 @@ async function syncTraktTokensToStremio(userConfig, newAccessToken, newRefreshTo
 
         const manifestUrl = `${hostUrl}/${newConfigBase64}/manifest.json`;
 
-        // Recupera la collezione addon dell'utente
-        const getRes = await axios.post('https://api.strem.io/api/addonCollectionGet', {
-            type: 'AddonCollectionGet',
-            authKey: stremioAuthKey,
-            update: true,
-            addFromURL: []
-        }, { timeout: 10000 });
+        const result = await updateStremioAddonCollection(stremioAuthKey, manifestUrl);
 
-        const addons = getRes.data?.result?.addons;
-        if (!addons || !Array.isArray(addons)) {
-            console.error('Trakt auto-refresh: impossibile recuperare collezione addon Stremio.');
-            return newAccessToken;
-        }
-
-        const addonId = 'org.stremio.yaca.catalog';
-        const existingIdx = addons.findIndex(a => a.manifest?.id === addonId);
-
-        // Recupera il manifest aggiornato
-        const manifestRes = await axios.get(manifestUrl, { timeout: 10000 });
-        const manifest = manifestRes.data;
-
-        if (existingIdx !== -1) {
-            addons[existingIdx].transportUrl = manifestUrl;
-            addons[existingIdx].manifest = manifest;
-        } else {
-            // Addon non trovato nella collezione, lo aggiungiamo
-            addons.push({
-                transportUrl: manifestUrl,
-                transportName: 'http',
-                manifest: manifest,
-                flags: { official: false, protected: false }
-            });
-        }
-
-        // Aggiorna la collezione su Stremio
-        const setRes = await axios.post('https://api.strem.io/api/addonCollectionSet', {
-            type: 'AddonCollectionSet',
-            authKey: stremioAuthKey,
-            addons
-        }, { timeout: 10000 });
-
-        if (setRes.data?.result?.success) {
+        if (result.success) {
             console.log('Trakt auto-refresh: token aggiornati e sincronizzati con Stremio.');
         } else {
-            console.warn('Trakt auto-refresh: aggiornamento Stremio fallito:', setRes.data?.result?.error);
+            console.warn('Trakt auto-refresh: aggiornamento Stremio fallito:', result.error);
         }
 
         return newAccessToken;
