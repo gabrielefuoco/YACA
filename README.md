@@ -86,7 +86,7 @@ Visita `http://localhost:7000` nel browser per configurare il tuo addon e ottene
 
 Questo addon è **completamente stateless** — non richiede database. La configurazione utente viene codificata in Base64 e inserita direttamente nell'URL dell'addon:
 
-Plaintext
+
 
 ```
 [https://tuo-addon.onrender.com/](https://tuo-addon.onrender.com/)<STRINGA_BASE64>/manifest.json
