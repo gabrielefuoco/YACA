@@ -149,7 +149,9 @@ export default function Home() {
           const httpsManifestUrl = `https://${host}/${manifestPath}`;
           try {
             await api.stremioAddonUpdate(newStremioAuth.authKey, httpsManifestUrl);
-          } catch {}
+          } catch (e) {
+            console.warn('Auto-install addon failed:', e);
+          }
         }
       }
     } catch {}

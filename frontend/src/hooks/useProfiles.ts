@@ -146,7 +146,7 @@ export function useProfiles(initialProfiles?: Profile[]) {
           ...p,
           raw_ui_state: {
             ...p.raw_ui_state,
-            newPrompts: [...p.raw_ui_state.newPrompts, ...prompts],
+            newPrompts: [...(p.raw_ui_state?.newPrompts ?? []), ...prompts],
           },
         };
       })
