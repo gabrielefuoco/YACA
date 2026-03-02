@@ -92,6 +92,7 @@ export default function Home() {
     reorderCatalogs,
     removeCatalog,
     addCatalog,
+    addPrompts,
   } = useProfiles(initialProfiles);
 
   const { presets, profileTemplates, categories } = usePresets();
@@ -137,6 +138,19 @@ export default function Home() {
       });
       if (data.configBase64) {
         setConfigBase64(data.configBase64);
+
+        // Auto-install addon in Stremio
+        if (newStremioAuth?.authKey) {
+          const host = window.location.host;
+          const cv = data.configVersion || '';
+          const manifestPath = cv
+            ? `${data.configBase64}/${cv}/manifest.json`
+            : `${data.configBase64}/manifest.json`;
+          const httpsManifestUrl = `https://${host}/${manifestPath}`;
+          try {
+            await api.stremioAddonUpdate(newStremioAuth.authKey, httpsManifestUrl);
+          } catch {}
+        }
       }
     } catch {}
   };
@@ -198,6 +212,7 @@ export default function Home() {
                   onReorderCatalogs={reorderCatalogs}
                   onRemoveCatalog={removeCatalog}
                   onAddCatalog={addCatalog}
+                  onAddPrompts={addPrompts}
                   onSaveMyList={handleSaveMyList}
                   onRemoveMyList={handleRemoveMyList}
                 />

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Profile, Catalog } from '@/types';
 
 import { generateId } from '@/lib/utils';
@@ -35,6 +35,21 @@ export function useProfiles(initialProfiles?: Profile[]) {
   const [editingProfileId, setEditingProfileId] = useState<string>(
     initialProfiles?.[0]?.id ?? profiles[0]?.id ?? ''
   );
+
+  // Sync when initialProfiles changes (e.g. after async config decode or save)
+  const initialRef = useRef(initialProfiles);
+  useEffect(() => {
+    if (initialProfiles && initialProfiles.length > 0 && initialProfiles !== initialRef.current) {
+      initialRef.current = initialProfiles;
+      setProfiles(initialProfiles);
+      setActiveProfileId((prev) =>
+        initialProfiles.some((p) => p.id === prev) ? prev : initialProfiles[0].id
+      );
+      setEditingProfileId((prev) =>
+        initialProfiles.some((p) => p.id === prev) ? prev : initialProfiles[0].id
+      );
+    }
+  }, [initialProfiles]);
 
   const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0];
   const editingProfile = profiles.find((p) => p.id === editingProfileId) ?? profiles[0];
@@ -123,6 +138,21 @@ export function useProfiles(initialProfiles?: Profile[]) {
     );
   }, []);
 
+  const addPrompts = useCallback((profileId: string, prompts: string[]) => {
+    setProfiles((prev) =>
+      prev.map((p) => {
+        if (p.id !== profileId) return p;
+        return {
+          ...p,
+          raw_ui_state: {
+            ...p.raw_ui_state,
+            newPrompts: [...p.raw_ui_state.newPrompts, ...prompts],
+          },
+        };
+      })
+    );
+  }, []);
+
   return {
     profiles,
     setProfiles,
@@ -139,5 +169,6 @@ export function useProfiles(initialProfiles?: Profile[]) {
     reorderCatalogs,
     removeCatalog,
     addCatalog,
+    addPrompts,
   };
 }

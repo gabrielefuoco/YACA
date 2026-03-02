@@ -161,7 +161,7 @@ export function ProfileManager({
               <p className="text-sm font-medium text-white truncate max-w-[100px]">{profile.name}</p>
             )}
             <p className="text-xs text-white/40 mt-0.5">
-              {profile.existingCatalogs.length} cataloghi
+              {profile.existingCatalogs.length + profile.raw_ui_state.selectedPresets.length} cataloghi
             </p>
             <div className="mt-2 flex gap-1">
               <button
