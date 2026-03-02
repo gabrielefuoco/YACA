@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
@@ -21,11 +21,20 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
+  const countdownRef = useRef(countdown);
+  countdownRef.current = countdown;
+
+  const onSuccessRef = useRef(onSuccess);
+  onSuccessRef.current = onSuccess;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
     setLoading(true);
     setError('');
     setSuccess(false);
+    setPolling(false);
     api
       .traktDeviceCode()
       .then((data) => {
@@ -41,90 +50,133 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
 
   // Countdown timer
   useEffect(() => {
-    if (!polling || countdown <= 0) return;
-    const timer = setInterval(() => setCountdown((c) => c - 1), 1000);
+    if (!polling) return;
+    const timer = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
     return () => clearInterval(timer);
-  }, [polling, countdown]);
+  }, [polling]);
 
-  // Polling for token
+  // Polling for token — uses refs so it doesn't restart on countdown/callback changes
   useEffect(() => {
-    if (!polling || !deviceCode || countdown <= 0) return;
+    if (!polling || !deviceCode) return;
     const interval = setInterval(async () => {
+      if (countdownRef.current <= 0) {
+        clearInterval(interval);
+        return;
+      }
       try {
         const data = await api.traktDeviceToken(deviceCode);
         if (data.access_token) {
           setSuccess(true);
           setPolling(false);
-          onSuccess(data.access_token, data.refresh_token ?? '');
-          setTimeout(onClose, 1500);
+          onSuccessRef.current(data.access_token, data.refresh_token ?? '');
+          setTimeout(() => onCloseRef.current(), 1500);
         }
       } catch {}
     }, 5000);
     return () => clearInterval(interval);
-  }, [polling, deviceCode, countdown, onSuccess, onClose]);
+  }, [polling, deviceCode]);
 
   const mins = Math.floor(countdown / 60);
   const secs = countdown % 60;
+  const progress = countdown > 0 ? (countdown / 600) * 100 : 0;
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>🎬 Connetti Trakt</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20 text-red-400">🎬</span>
+            Connetti Trakt
+          </DialogTitle>
           <DialogDescription>
             Autorizza YACA ad accedere al tuo account Trakt
           </DialogDescription>
         </DialogHeader>
 
         {loading && (
-          <div className="flex justify-center py-8">
+          <div className="flex flex-col items-center py-8 gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-[#8a5aeb]" />
+            <p className="text-sm text-white/50">Connessione a Trakt...</p>
           </div>
         )}
 
         {success && (
           <div className="flex flex-col items-center py-8 gap-3">
-            <CheckCircle2 className="h-12 w-12 text-emerald-400" />
-            <p className="text-white font-medium">Trakt connesso con successo!</p>
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
+              <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+            </div>
+            <p className="text-white font-semibold text-lg">Trakt connesso!</p>
+            <p className="text-sm text-white/50">Reindirizzamento in corso...</p>
           </div>
         )}
 
         {!loading && !success && userCode && (
-          <div className="space-y-4">
-            <div className="rounded-lg bg-white/5 border border-white/10 p-4 text-center">
-              <p className="text-xs text-white/50 mb-2">Il tuo codice di attivazione</p>
-              <p className="text-3xl font-mono font-bold tracking-widest text-[#8a5aeb]">{userCode}</p>
-              <p className="text-xs text-white/40 mt-2">
-                Scade in {mins}:{secs.toString().padStart(2, '0')}
-              </p>
+          <div className="space-y-5">
+            <div className="relative rounded-xl bg-gradient-to-br from-[#8a5aeb]/10 to-red-500/10 border border-white/10 p-6 text-center overflow-hidden">
+              <p className="text-xs text-white/50 mb-3 uppercase tracking-wider font-medium">Il tuo codice di attivazione</p>
+              <p className="text-4xl font-mono font-bold tracking-[0.3em] text-[#8a5aeb]">{userCode}</p>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <div className="h-1.5 flex-1 max-w-[200px] rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[#8a5aeb] to-red-400 transition-all duration-1000"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <span className="text-xs text-white/40 font-mono tabular-nums">
+                  {mins}:{secs.toString().padStart(2, '0')}
+                </span>
+              </div>
             </div>
 
-            <ol className="space-y-2 text-sm text-white/70">
-              <li>1. Vai su <strong className="text-white">{verificationUrl}</strong></li>
-              <li>2. Inserisci il codice sopra</li>
-              <li>3. Autorizza YACA su Trakt</li>
-            </ol>
+            <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+              <ol className="space-y-3 text-sm text-white/70">
+                <li className="flex gap-3 items-start">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#8a5aeb]/20 text-xs font-bold text-[#8a5aeb]">1</span>
+                  <span>Vai su <strong className="text-white">{verificationUrl}</strong></span>
+                </li>
+                <li className="flex gap-3 items-start">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#8a5aeb]/20 text-xs font-bold text-[#8a5aeb]">2</span>
+                  <span>Inserisci il codice sopra</span>
+                </li>
+                <li className="flex gap-3 items-start">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#8a5aeb]/20 text-xs font-bold text-[#8a5aeb]">3</span>
+                  <span>Autorizza YACA su Trakt</span>
+                </li>
+              </ol>
+            </div>
 
             <a href={verificationUrl} target="_blank" rel="noopener noreferrer">
-              <Button className="w-full" variant="outline">
+              <Button className="w-full bg-red-500/20 border-red-500/30 text-red-300 hover:bg-red-500/30" variant="outline">
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Apri Trakt.tv
               </Button>
             </a>
 
             {polling && (
-              <div className="flex items-center justify-center gap-2 text-xs text-white/40">
-                <Loader2 className="h-3 w-3 animate-spin" />
+              <div className="flex items-center justify-center gap-2 text-xs text-white/50 py-1">
+                <Loader2 className="h-3 w-3 animate-spin text-[#8a5aeb]" />
                 In attesa di autorizzazione...
               </div>
             )}
 
-            {error && <p className="text-xs text-red-400 text-center">{error}</p>}
+            {error && (
+              <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3">
+                <p className="text-xs text-red-400 text-center">{error}</p>
+              </div>
+            )}
           </div>
         )}
 
         <div className="flex justify-end">
-          <Button variant="ghost" onClick={onClose}>Annulla</Button>
+          <Button variant="ghost" onClick={onClose} className="text-white/50 hover:text-white">Annulla</Button>
         </div>
       </DialogContent>
     </Dialog>

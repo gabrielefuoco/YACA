@@ -10,7 +10,7 @@ import { TabNav } from '@/components/layout/TabNav';
 import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
-import { MyList, StremioAuth, Profile } from '@/types';
+import { MyList, StremioAuth, Profile, ProfileTemplate } from '@/types';
 import { LOCAL_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 import { decodeConfigAsync } from '@/lib/configCodec';
 import { api } from '@/lib/api';
@@ -94,7 +94,7 @@ export default function Home() {
     addCatalog,
   } = useProfiles(initialProfiles);
 
-  const { presets, categories } = usePresets();
+  const { presets, profileTemplates, categories } = usePresets();
 
   // Load my lists from localStorage
   useEffect(() => {
@@ -171,7 +171,7 @@ export default function Home() {
     <div className="min-h-screen py-6 px-4">
       <div className="mx-auto w-full max-w-4xl xl:max-w-5xl">
         {/* Glass panel */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm shadow-2xl p-4 sm:p-6">
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl shadow-2xl shadow-black/20 p-4 sm:p-6">
           <Header />
 
           {!isLoggedIn ? (
@@ -187,6 +187,7 @@ export default function Home() {
                   activeProfileId={activeProfileId}
                   presets={presets}
                   categories={categories}
+                  profileTemplates={profileTemplates}
                   myLists={myLists}
                   onSelectEditing={setEditingProfileId}
                   onSetActive={setActiveProfileId}
