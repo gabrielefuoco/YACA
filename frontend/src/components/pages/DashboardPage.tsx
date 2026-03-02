@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Profile, Preset, Catalog, MyList } from '@/types';
+import { Profile, Preset, Catalog, MyList, ProfileTemplate } from '@/types';
 import { ProfileManager } from '@/components/dashboard/ProfileManager';
 import { ActiveCatalogsPanel } from '@/components/dashboard/ActiveCatalogsPanel';
 import { ExplorePanel } from '@/components/dashboard/ExplorePanel';
@@ -16,6 +16,7 @@ interface DashboardPageProps {
   activeProfileId: string;
   presets: Preset[];
   categories: string[];
+  profileTemplates: ProfileTemplate[];
   myLists: MyList[];
   onSelectEditing: (id: string) => void;
   onSetActive: (id: string) => void;
@@ -36,6 +37,7 @@ export function DashboardPage({
   activeProfileId,
   presets,
   categories,
+  profileTemplates,
   myLists,
   onSelectEditing,
   onSetActive,
@@ -70,21 +72,31 @@ export function DashboardPage({
     emoji: '📝',
   }));
 
+  const handleApplyTemplate = (template: ProfileTemplate) => {
+    // Apply all presets from template to editing profile
+    const currentPresets = editingProfile?.raw_ui_state.selectedPresets ?? [];
+    for (const presetId of template.presets) {
+      if (!currentPresets.includes(presetId)) {
+        onTogglePreset(editingProfileId, presetId);
+      }
+    }
+  };
+
   return (
     <div className="space-y-5">
       {/* Profile manager (collapsible) */}
-      <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
         <button
           onClick={() => setProfilesExpanded(!profilesExpanded)}
-          className="w-full flex items-center justify-between text-left"
+          className="w-full flex items-center justify-between text-left group"
         >
-          <span className="text-sm font-semibold text-white/70 uppercase tracking-wider">
-            Gestione Profili
+          <span className="text-sm font-semibold text-white/70 uppercase tracking-wider group-hover:text-white/90 transition-colors">
+            👤 Gestione Profili
           </span>
           {profilesExpanded ? (
-            <ChevronUp className="h-4 w-4 text-white/40" />
+            <ChevronUp className="h-4 w-4 text-white/40 group-hover:text-white/60 transition-colors" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-white/40" />
+            <ChevronDown className="h-4 w-4 text-white/40 group-hover:text-white/60 transition-colors" />
           )}
         </button>
 
@@ -94,27 +106,29 @@ export function DashboardPage({
               profiles={profiles}
               editingProfileId={editingProfileId}
               activeProfileId={activeProfileId}
+              profileTemplates={profileTemplates}
               onSelectEditing={onSelectEditing}
               onSetActive={onSetActive}
               onAdd={onAddProfile}
               onRemove={onRemoveProfile}
               onRename={onRenameProfile}
+              onApplyTemplate={handleApplyTemplate}
             />
           </div>
         )}
       </div>
 
       {/* Section chip tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
             className={cn(
-              'flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all',
+              'flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium transition-all shrink-0',
               activeTab === id
-                ? 'bg-[#8a5aeb] text-white shadow-lg shadow-[#8a5aeb]/20'
-                : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
+                ? 'bg-gradient-to-r from-[#8a5aeb] to-[#6d3fd4] text-white shadow-lg shadow-[#8a5aeb]/25'
+                : 'bg-white/[0.06] text-white/60 hover:bg-white/[0.12] hover:text-white border border-white/[0.06]'
             )}
           >
             <Icon className="h-4 w-4" />
@@ -124,7 +138,7 @@ export function DashboardPage({
       </div>
 
       {/* Panel content */}
-      <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
         {activeTab === 'active' && editingProfile && (
           <ActiveCatalogsPanel
             profile={editingProfile}

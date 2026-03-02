@@ -83,10 +83,10 @@ export function ActiveCatalogsPanel({
       </div>
 
       {catalogs.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/10 p-8 text-center">
-          <Layers className="mx-auto h-8 w-8 text-white/20 mb-3" />
-          <p className="text-sm text-white/40">Nessun catalogo attivo</p>
-          <p className="text-xs text-white/20 mt-1">Aggiungi cataloghi dalla sezione Esplora</p>
+        <div className="rounded-xl border border-dashed border-white/[0.08] p-10 text-center">
+          <Layers className="mx-auto h-10 w-10 text-white/15 mb-3" />
+          <p className="text-sm text-white/40 font-medium">Nessun catalogo attivo</p>
+          <p className="text-xs text-white/20 mt-1.5">Aggiungi cataloghi dalla sezione Esplora</p>
         </div>
       ) : (
         <div className="space-y-2">

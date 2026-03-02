@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { TypeBadge } from '@/components/shared/TypeBadge';
 import { PosterRow } from '@/components/shared/PosterRow';
-import { Check, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { Check, Search } from 'lucide-react';
 
 interface ExplorePanelProps {
   presets: Preset[];
@@ -19,7 +19,6 @@ interface ExplorePanelProps {
 export function ExplorePanel({ presets, categories, profile, onTogglePreset }: ExplorePanelProps) {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Tutti');
-  const [expandedPreset, setExpandedPreset] = useState<string | null>(null);
   const [showSearch, setShowSearch] = useState(false);
 
   const selectedPresets = profile.raw_ui_state.selectedPresets;
@@ -47,10 +46,10 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                 selectedCategory === cat
-                  ? 'bg-[#8a5aeb] text-white'
-                  : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
+                  ? 'bg-gradient-to-r from-[#8a5aeb] to-[#6d3fd4] text-white shadow-md shadow-[#8a5aeb]/20'
+                  : 'bg-white/[0.06] text-white/60 hover:bg-white/[0.12] hover:text-white border border-white/[0.06]'
               }`}
             >
               {cat}
@@ -76,7 +75,7 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
         />
       )}
 
-      {/* Preset grid */}
+      {/* Preset grid — always shows posters */}
       <div className="grid gap-3">
         {filtered.length === 0 && (
           <div className="py-8 text-center text-sm text-white/40">
@@ -85,38 +84,32 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
         )}
         {filtered.map((preset) => {
           const isSelected = selectedPresets.includes(preset.id);
-          const isExpanded = expandedPreset === preset.id;
 
           return (
-            <Card key={preset.id} className="p-3 hover:border-white/20 transition-colors">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl shrink-0 mt-0.5">{preset.emoji ?? '📋'}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="text-sm font-medium text-white truncate">{preset.name}</h4>
-                    <TypeBadge type={preset.type as 'movie' | 'series' | 'both'} />
-                    {preset.category && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        {preset.category}
-                      </Badge>
+            <Card key={preset.id} className="p-0 overflow-hidden hover:border-white/20 transition-all group">
+              <div className="p-3 pb-0">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl shrink-0 mt-0.5">{preset.emoji ?? '📋'}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="text-sm font-medium text-white truncate">{preset.name}</h4>
+                      <TypeBadge type={preset.type as 'movie' | 'series' | 'both'} />
+                      {preset.category && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          {preset.category}
+                        </Badge>
+                      )}
+                    </div>
+                    {preset.description && (
+                      <p className="text-xs text-white/40 mb-1 line-clamp-2">{preset.description}</p>
                     )}
                   </div>
-                  {preset.description && (
-                    <p className="text-xs text-white/40 mb-2 line-clamp-2">{preset.description}</p>
-                  )}
 
-                  {/* Expanded poster row */}
-                  {isExpanded && (
-                    <PosterRow presetId={preset.id} type={preset.type} />
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-2 shrink-0">
                   <Button
                     size="sm"
                     variant={isSelected ? 'secondary' : 'default'}
                     onClick={() => onTogglePreset(preset.id)}
-                    className="h-7 text-xs"
+                    className="h-7 text-xs shrink-0"
                   >
                     {isSelected ? (
                       <>
@@ -127,19 +120,12 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
                       'Aggiungi'
                     )}
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setExpandedPreset(isExpanded ? null : preset.id)}
-                    className="h-7 text-xs"
-                  >
-                    {isExpanded ? (
-                      <ChevronUp className="h-3 w-3" />
-                    ) : (
-                      <ChevronDown className="h-3 w-3" />
-                    )}
-                  </Button>
                 </div>
+              </div>
+
+              {/* Always-visible poster row */}
+              <div className="px-3 pb-3">
+                <PosterRow presetId={preset.id} type={preset.type} />
               </div>
             </Card>
           );

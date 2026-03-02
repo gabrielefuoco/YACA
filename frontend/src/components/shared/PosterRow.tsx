@@ -43,7 +43,7 @@ export function PosterRow({ presetId, filters, type }: PosterRowProps) {
       {loading && (
         <div className="flex gap-2 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-28 w-20 shrink-0 animate-pulse rounded-md bg-white/10" />
+            <div key={i} className="h-32 w-[86px] shrink-0 animate-pulse rounded-lg bg-white/[0.06]" />
           ))}
         </div>
       )}
@@ -56,15 +56,15 @@ export function PosterRow({ presetId, filters, type }: PosterRowProps) {
                 <img
                   src={item.poster}
                   alt={item.title}
-                  className="h-28 w-20 rounded-md object-cover transition-transform group-hover:scale-105"
+                  className="h-32 w-[86px] rounded-lg object-cover transition-transform duration-200 group-hover:scale-105 shadow-md shadow-black/30"
                 />
               ) : (
-                <div className="flex h-28 w-20 items-center justify-center rounded-md bg-white/10 text-xs text-white/40">
+                <div className="flex h-32 w-[86px] items-center justify-center rounded-lg bg-white/[0.06] text-xs text-white/40 border border-white/[0.06]">
                   {item.title.slice(0, 2)}
                 </div>
               )}
-              <div className="absolute inset-0 flex flex-col justify-end rounded-md bg-gradient-to-t from-black/70 to-transparent p-1 opacity-0 transition-opacity group-hover:opacity-100">
-                <p className="text-[10px] font-medium text-white line-clamp-2">{item.title}</p>
+              <div className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black/80 via-black/20 to-transparent p-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                <p className="text-[10px] font-medium text-white line-clamp-2 leading-tight">{item.title}</p>
                 {item.year && <p className="text-[10px] text-white/60">{item.year}</p>}
               </div>
             </div>
@@ -72,7 +72,7 @@ export function PosterRow({ presetId, filters, type }: PosterRowProps) {
         </div>
       )}
       {!loading && loaded && items.length === 0 && (
-        <p className="text-xs text-white/40 py-2">Nessun risultato</p>
+        <p className="text-xs text-white/30 py-2 italic">Nessun risultato</p>
       )}
     </div>
   );
