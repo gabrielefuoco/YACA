@@ -41,4 +41,4 @@ function createAxiosInstance(baseURL, additionalConfig = {}) {
     return axios.create(config);
 }
 
-module.exports = { createAxiosInstance, PROXY_CONFIG };
+module.exports = { createAxiosInstance };

@@ -1,5 +1,4 @@
 const UserConfig = require('../src/models/UserConfig');
-const zlib = require('zlib');
 
 describe('UserConfig.encodeConfig / decodeConfig', () => {
     it('round-trips a config object through encode and decode', () => {

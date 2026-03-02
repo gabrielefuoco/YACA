@@ -27,7 +27,6 @@ jest.mock('../src/models/UserConfig', () => ({
     buildConfig: jest.fn()
 }));
 
-const UserConfig = require('../src/models/UserConfig');
 const { fetchMDBListItems, parseMDBListItems } = require('../src/utils/mdblist');
 const { catalogHandler } = require('../src/handlers/catalogHandler');
 
