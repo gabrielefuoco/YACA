@@ -12,7 +12,6 @@ async function post(url: string, body?: object) {
 export const api = {
   getPresets: () => fetch('/api/presets').then((r) => r.json()),
   previewCatalog: (body: object) => post('/api/preview-catalog', body),
-  aiPreviewCatalog: (body: object) => post('/api/preview-catalog', body),
   configure: (body: object) => post('/api/configure', body),
   stremioAuth: (email: string, password: string) =>
     post('/api/stremio-auth', { email, password }),

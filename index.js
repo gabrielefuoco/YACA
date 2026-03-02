@@ -61,6 +61,8 @@ app.get('/api/presets', (req, res) => {
 
 // Endpoint per anteprima catalogo: restituisce i primi 20 risultati TMDB con poster
 const PREVIEW_TIMEOUT_MS = 8000;
+const MAX_PROMPT_LENGTH = 500;
+const MAX_PREVIEW_CATALOG_NAME_LENGTH = 30;
 app.post('/api/preview-catalog', async (req, res) => {
     const { presetId, filters: customFilters, type: customType, prompt } = req.body;
     const tmdbKey = req.body.tmdbKey || process.env.TMDB_API_KEY;
@@ -74,6 +76,7 @@ app.post('/api/preview-catalog', async (req, res) => {
     const sanitizedTmdbKey = sanitizeString(tmdbKey);
 
     let discoverType, discoverFilters, strategy;
+    let sanitizedPrompt = null;
 
     if (presetId) {
         const sanitizedPresetId = sanitizeString(presetId);
@@ -85,7 +88,7 @@ app.post('/api/preview-catalog', async (req, res) => {
         discoverFilters = preset.filters;
         strategy = 'discovery';
     } else if (prompt) {
-        const sanitizedPrompt = sanitizeString(String(prompt)).substring(0, 500);
+        sanitizedPrompt = sanitizeString(String(prompt)).substring(0, MAX_PROMPT_LENGTH);
         if (!sanitizedPrompt) {
             return res.status(400).json({ error: 'Prompt non valido' });
         }
@@ -183,7 +186,7 @@ app.post('/api/preview-catalog', async (req, res) => {
             items,
             filters: discoverFilters,
             type: discoverType === 'tv' ? 'series' : 'movie',
-            name: prompt ? sanitizeString(String(prompt)).substring(0, 30) : null
+            name: sanitizedPrompt ? sanitizedPrompt.substring(0, MAX_PREVIEW_CATALOG_NAME_LENGTH) : null
         });
     } catch (err) {
         const status = err.response?.status;

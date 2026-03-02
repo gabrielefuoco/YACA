@@ -11,6 +11,7 @@ import { Catalog, MyList } from '@/types';
 import { GENRE_NAMES, KEYWORD_NAMES, SORT_OPTIONS, LANGUAGES } from '@/lib/constants';
 import { Loader2, Wand2, Save, Plus, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
+const MAX_AI_CATALOG_NAME_LENGTH = 30;
 
 interface CreatorPanelProps {
   onSaveList: (list: MyList) => void;
@@ -58,11 +59,11 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
     setAiLoading(true);
     try {
       const prompt = validPrompts[0].trim();
-      const result = await api.aiPreviewCatalog({ prompt, type: aiType });
+      const result = await api.previewCatalog({ prompt, type: aiType });
       if (result?.filters && typeof result.filters === 'object') {
         setAiPreviewFilters(result.filters);
         setAiPreviewType(result.type === 'series' ? 'series' : 'movie');
-        setAiCatalogName(result.name || prompt.slice(0, 30));
+        setAiCatalogName(result.name || prompt.slice(0, MAX_AI_CATALOG_NAME_LENGTH));
         setAiRawPrompt(prompt);
       }
     } catch {}

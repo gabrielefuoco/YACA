@@ -45,8 +45,8 @@ export function ActiveCatalogsPanel({
   const allCatalogs = [...profile.existingCatalogs, ...presetCatalogs];
   const orderMap = new Map((profile.raw_ui_state.catalogOrder ?? []).map((id, i) => [id, i]));
   const catalogs = [...allCatalogs].sort((a, b) => {
-    const aOrder = orderMap.has(a.id) ? (orderMap.get(a.id) as number) : Number.MAX_SAFE_INTEGER;
-    const bOrder = orderMap.has(b.id) ? (orderMap.get(b.id) as number) : Number.MAX_SAFE_INTEGER;
+    const aOrder = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+    const bOrder = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
     return aOrder - bOrder;
   });
 
