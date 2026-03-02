@@ -105,6 +105,18 @@ export function ActiveCatalogsPanel({
         </div>
       )}
 
+      {/* Pending AI prompts */}
+      {profile.raw_ui_state.newPrompts.length > 0 && (
+        <div className="rounded-lg border border-[#8a5aeb]/20 bg-[#8a5aeb]/5 p-3">
+          <p className="text-xs font-medium text-[#8a5aeb] mb-1.5">
+            🤖 {profile.raw_ui_state.newPrompts.length} prompt AI in attesa
+          </p>
+          <p className="text-[11px] text-white/40">
+            Vai su Impostazioni → &quot;Genera Link di Installazione&quot; per processarli
+          </p>
+        </div>
+      )}
+
       {/* My Lists */}
       {myLists.length > 0 && (
         <div className="pt-4 border-t border-white/10">
