@@ -460,4 +460,4 @@ async function catalogHandler(args, userConfig, hostUrl) {
     }
 }
 
-module.exports = { catalogHandler };
+module.exports = { catalogHandler, buildDiscoveryParams };

@@ -92,7 +92,6 @@ export default function Home() {
     reorderCatalogs,
     removeCatalog,
     addCatalog,
-    addPrompts,
   } = useProfiles(initialProfiles);
 
   const { presets, profileTemplates, categories } = usePresets();
@@ -214,7 +213,6 @@ export default function Home() {
                   onReorderCatalogs={reorderCatalogs}
                   onRemoveCatalog={removeCatalog}
                   onAddCatalog={addCatalog}
-                  onAddPrompts={addPrompts}
                   onSaveMyList={handleSaveMyList}
                   onRemoveMyList={handleRemoveMyList}
                 />

@@ -27,7 +27,6 @@ interface DashboardPageProps {
   onReorderCatalogs: (profileId: string, catalogs: Catalog[]) => void;
   onRemoveCatalog: (profileId: string, catalogId: string) => void;
   onAddCatalog: (profileId: string, catalog: Catalog) => void;
-  onAddPrompts: (profileId: string, prompts: string[]) => void;
   onSaveMyList: (list: MyList) => void;
   onRemoveMyList: (id: string) => void;
 }
@@ -49,7 +48,6 @@ export function DashboardPage({
   onReorderCatalogs,
   onRemoveCatalog,
   onAddCatalog,
-  onAddPrompts,
   onSaveMyList,
   onRemoveMyList,
 }: DashboardPageProps) {
@@ -147,6 +145,7 @@ export function DashboardPage({
             onReorder={(catalogs) => onReorderCatalogs(editingProfileId, catalogs)}
             onRemove={(id) => onRemoveCatalog(editingProfileId, id)}
             onMerge={(catalog) => onAddCatalog(editingProfileId, catalog)}
+            presets={presets}
             myLists={myListCatalogs}
             onRemoveMyList={onRemoveMyList}
           />
@@ -165,7 +164,6 @@ export function DashboardPage({
           <CreatorPanel
             onSaveList={onSaveMyList}
             onAddCatalog={(catalog) => onAddCatalog(editingProfileId, catalog)}
-            onAddPrompts={(prompts) => onAddPrompts(editingProfileId, prompts)}
           />
         )}
       </div>

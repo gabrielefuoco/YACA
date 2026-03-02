@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Profile, Catalog } from '@/types';
+import { Profile, Catalog, Preset } from '@/types';
 import { CatalogItem } from '@/components/shared/CatalogItem';
 import { MergeModal } from '@/components/modals/MergeModal';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ interface ActiveCatalogsPanelProps {
   onReorder: (catalogs: Catalog[]) => void;
   onRemove: (catalogId: string) => void;
   onMerge: (catalog: Catalog) => void;
+  presets: Preset[];
   myLists: Catalog[];
   onRemoveMyList: (id: string) => void;
 }
@@ -20,6 +21,7 @@ export function ActiveCatalogsPanel({
   onReorder,
   onRemove,
   onMerge,
+  presets,
   myLists,
   onRemoveMyList,
 }: ActiveCatalogsPanelProps) {
@@ -28,7 +30,25 @@ export function ActiveCatalogsPanel({
   const [mergeTarget, setMergeTarget] = useState<Catalog | null>(null);
   const [showMergeModal, setShowMergeModal] = useState(false);
 
-  const catalogs = profile.existingCatalogs;
+  const presetMap = new Map(presets.map((preset) => [preset.id, preset]));
+  const presetCatalogs: Catalog[] = profile.raw_ui_state.selectedPresets
+    .map((presetId) => presetMap.get(presetId))
+    .filter((preset): preset is Preset => Boolean(preset))
+    .map((preset) => ({
+      id: preset.id,
+      name: preset.name,
+      type: preset.type === 'series' ? 'series' : 'movie',
+      source: 'preset',
+      filters: preset.filters,
+      emoji: preset.emoji,
+    }));
+  const allCatalogs = [...profile.existingCatalogs, ...presetCatalogs];
+  const orderMap = new Map((profile.raw_ui_state.catalogOrder ?? []).map((id, i) => [id, i]));
+  const catalogs = [...allCatalogs].sort((a, b) => {
+    const aOrder = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+    const bOrder = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+    return aOrder - bOrder;
+  });
 
   const handleDragStart = (index: number) => {
     setDragIndex(index);
@@ -102,18 +122,6 @@ export function ActiveCatalogsPanel({
               onDragEnd={() => setDragIndex(null)}
             />
           ))}
-        </div>
-      )}
-
-      {/* Pending AI prompts */}
-      {profile.raw_ui_state.newPrompts.length > 0 && (
-        <div className="rounded-lg border border-[#8a5aeb]/20 bg-[#8a5aeb]/5 p-3">
-          <p className="text-xs font-medium text-[#8a5aeb] mb-1.5">
-            🤖 {profile.raw_ui_state.newPrompts.length} prompt AI in attesa
-          </p>
-          <p className="text-[11px] text-white/40">
-            Vai su Impostazioni → &quot;Genera Link di Installazione&quot; per processarli
-          </p>
         </div>
       )}
 

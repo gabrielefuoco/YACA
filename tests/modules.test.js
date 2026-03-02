@@ -28,9 +28,10 @@ describe('parseMistralResponse', () => {
 });
 
 describe('catalogHandler module', () => {
-    it('should export catalogHandler function', () => {
-        const { catalogHandler } = require('../src/handlers/catalogHandler');
+    it('should export catalogHandler and buildDiscoveryParams functions', () => {
+        const { catalogHandler, buildDiscoveryParams } = require('../src/handlers/catalogHandler');
         expect(typeof catalogHandler).toBe('function');
+        expect(typeof buildDiscoveryParams).toBe('function');
     });
 });
 

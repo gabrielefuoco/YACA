@@ -86,13 +86,13 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
           const isSelected = selectedPresets.includes(preset.id);
 
           return (
-            <Card key={preset.id} className="p-0 overflow-hidden hover:border-white/20 transition-all group">
+            <Card key={preset.id} className="max-w-full p-0 overflow-hidden hover:border-white/20 transition-all group">
               <div className="p-3 pb-0">
-                <div className="flex items-start gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                   <span className="text-2xl shrink-0 mt-0.5">{preset.emoji ?? '📋'}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="text-sm font-medium text-white truncate">{preset.name}</h4>
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <h4 className="min-w-0 flex-1 truncate text-sm font-medium text-white">{preset.name}</h4>
                       <TypeBadge type={preset.type as 'movie' | 'series' | 'both'} />
                       {preset.category && (
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
@@ -109,7 +109,7 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
                     size="sm"
                     variant={isSelected ? 'secondary' : 'default'}
                     onClick={() => onTogglePreset(preset.id)}
-                    className="h-7 text-xs shrink-0"
+                    className="h-7 w-full text-xs sm:w-auto shrink-0"
                   >
                     {isSelected ? (
                       <>
@@ -124,7 +124,7 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
               </div>
 
               {/* Always-visible poster row */}
-              <div className="px-3 pb-3">
+              <div className="max-w-full overflow-hidden px-3 pb-3">
                 <PosterRow presetId={preset.id} type={preset.type} />
               </div>
             </Card>
