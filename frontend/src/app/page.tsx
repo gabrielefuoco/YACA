@@ -67,9 +67,16 @@ export default function Home() {
         const cfg = parsed as Record<string, unknown>;
         if (cfg.configVersion) setConfigVersion(String(cfg.configVersion));
         if (Array.isArray(cfg.profiles) && cfg.profiles.length > 0) {
-          setInitialProfiles(
-            (cfg.profiles as BackendProfile[]).map(mapBackendProfile)
-          );
+          const mappedProfiles = (cfg.profiles as BackendProfile[]).map(mapBackendProfile);
+          setInitialProfiles(mappedProfiles);
+          // Restore activeProfileId from config if present and valid
+          if (cfg.activeProfileId && typeof cfg.activeProfileId === 'string') {
+            const profileExists = mappedProfiles.some(p => p.id === cfg.activeProfileId);
+            if (profileExists) {
+              // Store it temporarily to be set after useProfiles initializes
+              sessionStorage.setItem('pendingActiveProfileId', cfg.activeProfileId as string);
+            }
+          }
         } else {
           setInitialProfiles(createDefaultProfiles());
         }
@@ -103,6 +110,15 @@ export default function Home() {
   } = useProfiles(initialProfiles);
 
   const { presets, profileTemplates, categories } = usePresets();
+
+  // Restore activeProfileId from decoded config if it was stored temporarily
+  useEffect(() => {
+    const pendingId = sessionStorage.getItem('pendingActiveProfileId');
+    if (pendingId && profiles.some(p => p.id === pendingId)) {
+      setActiveProfileId(pendingId);
+      sessionStorage.removeItem('pendingActiveProfileId');
+    }
+  }, [profiles, setActiveProfileId]);
 
   // Auto-configure when stremio is logged in but no config/userId is stored yet
   useEffect(() => {
