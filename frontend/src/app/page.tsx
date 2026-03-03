@@ -78,7 +78,7 @@ export default function Home() {
                 sessionStorage.setItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID, cfg.activeProfileId);
               } catch (err) {
                 // Silently fail if sessionStorage is unavailable (e.g., private browsing)
-                console.warn('Could not store pending activeProfileId:', err);
+                console.warn('Failed to store pending activeProfileId in sessionStorage. Active profile may not be restored correctly:', err);
               }
             }
           }
@@ -126,7 +126,7 @@ export default function Home() {
       }
     } catch (err) {
       // Silently fail if sessionStorage is unavailable (e.g., private browsing)
-      console.warn('Could not restore pending activeProfileId:', err);
+      console.warn('Failed to restore pending activeProfileId from sessionStorage. Active profile will not be restored:', err);
     }
   }, [profiles, setActiveProfileId]);
 
