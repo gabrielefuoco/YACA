@@ -11,7 +11,7 @@ import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
 import { MyList, StremioAuth, Profile } from '@/types';
-import { LOCAL_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
+import { LOCAL_STORAGE_KEYS, SESSION_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 import { decodeConfigAsync } from '@/lib/configCodec';
 import { api } from '@/lib/api';
 
@@ -74,7 +74,7 @@ export default function Home() {
             const profileExists = mappedProfiles.some(p => p.id === cfg.activeProfileId);
             if (profileExists) {
               // Store it temporarily to be set after useProfiles initializes
-              sessionStorage.setItem('pendingActiveProfileId', cfg.activeProfileId as string);
+              sessionStorage.setItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID, cfg.activeProfileId);
             }
           }
         } else {
@@ -113,10 +113,10 @@ export default function Home() {
 
   // Restore activeProfileId from decoded config if it was stored temporarily
   useEffect(() => {
-    const pendingId = sessionStorage.getItem('pendingActiveProfileId');
+    const pendingId = sessionStorage.getItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID);
     if (pendingId && profiles.some(p => p.id === pendingId)) {
       setActiveProfileId(pendingId);
-      sessionStorage.removeItem('pendingActiveProfileId');
+      sessionStorage.removeItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID);
     }
   }, [profiles, setActiveProfileId]);
 
