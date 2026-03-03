@@ -65,6 +65,7 @@ export const LOCAL_STORAGE_KEYS = {
   STREMIO_AUTH: 'yaca_stremio_auth',
   TRAKT_TOKEN: 'yaca_trakt_token',
   TRAKT_REFRESH_TOKEN: 'yaca_trakt_refresh_token',
+  USER_ID: 'yaca_user_id',
 } as const;
 
 /** Default preset IDs shown in the "Generale" quick-start profile for new users. */
