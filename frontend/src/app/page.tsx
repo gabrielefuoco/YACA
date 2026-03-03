@@ -74,7 +74,12 @@ export default function Home() {
             const profileExists = mappedProfiles.some(p => p.id === cfg.activeProfileId);
             if (profileExists) {
               // Store it temporarily to be set after useProfiles initializes
-              sessionStorage.setItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID, cfg.activeProfileId);
+              try {
+                sessionStorage.setItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID, cfg.activeProfileId);
+              } catch (err) {
+                // Silently fail if sessionStorage is unavailable (e.g., private browsing)
+                console.warn('Could not store pending activeProfileId:', err);
+              }
             }
           }
         } else {
@@ -113,10 +118,15 @@ export default function Home() {
 
   // Restore activeProfileId from decoded config if it was stored temporarily
   useEffect(() => {
-    const pendingId = sessionStorage.getItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID);
-    if (pendingId && profiles.some(p => p.id === pendingId)) {
-      setActiveProfileId(pendingId);
-      sessionStorage.removeItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID);
+    try {
+      const pendingId = sessionStorage.getItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID);
+      if (pendingId && profiles.some(p => p.id === pendingId)) {
+        setActiveProfileId(pendingId);
+        sessionStorage.removeItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID);
+      }
+    } catch (err) {
+      // Silently fail if sessionStorage is unavailable (e.g., private browsing)
+      console.warn('Could not restore pending activeProfileId:', err);
     }
   }, [profiles, setActiveProfileId]);
 
