@@ -28,6 +28,16 @@ module.exports = {
     // Cache Hybrid Recommendations (4 ore)
     RECOMMENDATIONS_CACHE_TTL_MS: 4 * 60 * 60 * 1000,
 
+    // Deep Enrichment Settings (Fase 9)
+    ENRICHMENT_BUDGET: 5,        // Max items to enrich per request
+    ENRICHMENT_CHUNK_SIZE: 1,    // Items per background batch
+    ENRICHMENT_DELAY_MS: 400,    // Delay between background calls
+
+    // Refined TTLs for Deep Cache
+    MOVIE_DETAILS_TTL_MS: 7 * 24 * 60 * 60 * 1000,      // 7 days
+    SERIES_FINISHED_TTL_MS: 7 * 24 * 60 * 60 * 1000,  // 7 days
+    SERIES_ONGOING_TTL_MS: 30 * 60 * 1000,             // 30 minutes
+
     FORCED_FAST_CATALOG_IDS: ['yaca_anime_trending'],
     FORCED_FAST_PRESET_IDS: ['preset_new_movies', 'preset_new_series', 'preset_new_series_eps', 'preset_new_anime', 'preset_new_anime_eps', 'preset_pop_anime'],
     FORCED_SLOW_PRESET_IDS: ['preset_top_rated_movies', 'preset_top_rated_series', 'preset_80s_movies', 'preset_90s_movies', 'preset_00s_movies', 'preset_oscar_winners', 'preset_blockbusters']

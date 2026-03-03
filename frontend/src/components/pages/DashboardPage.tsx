@@ -138,7 +138,7 @@ export function DashboardPage({
       </div>
 
       {/* Panel content */}
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+      <div className="pt-2">
         {activeTab === 'active' && editingProfile && (
           <ActiveCatalogsPanel
             profile={editingProfile}

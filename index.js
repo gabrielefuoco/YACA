@@ -18,6 +18,13 @@ const TmdbRequestCache = require('./src/models/TmdbRequestCache');
 const LRUCache = require('./src/utils/LRUCache');
 const { rateLimitedMap } = require('./src/utils/rateLimiter');
 const { updateStremioAddonCollection } = require('./src/utils/stremioAddonSync');
+const connectDB = require('./src/db/connection');
+const User = require('./src/db/models/User');
+const BadgeImage = require('./src/db/models/BadgeImage');
+const { syncIncrementalRecommendations } = require('./src/engines/hybridRecommendations');
+
+// Connessione MongoDB
+connectDB();
 
 // 1. Inizializza Express
 const app = express();
@@ -39,10 +46,30 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '1mb' }));
 
 /**
- * Middleware helper: decodifica la configurazione Base64 dall'URL.
+ * Helper per risolvere la configurazione utente (Stateful o Stateless).
+ * @param {string} userHandle - userId (MongoDB) o configBase64 (Stateless)
+ * @returns {Promise<object|null>} Configurazione utente normalizzata
  */
-function decodeConfigParam(configBase64) {
-    return UserConfig.decodeConfig(configBase64);
+async function resolveUserConfig(userHandle) {
+    if (!userHandle) return null;
+
+    // 1. Tenta come userId (Stateful)
+    // Gli userId generati da nanoid(10) sono corti, le configBase64 sono solitamente > 100 char.
+    if (userHandle.length < 50) {
+        const user = await UserConfig.getUser(userHandle);
+        if (user) {
+            return {
+                userId: user.userId,
+                apiKeys: user.apiKeys,
+                profiles: user.profiles,
+                activeProfileId: user.config?.activeProfileId,
+                configVersion: user.config?.configVersion
+            };
+        }
+    }
+
+    // 2. Tenta come configBase64 (Stateless)
+    return UserConfig.decodeConfig(userHandle);
 }
 
 // Health check endpoint per monitoring e deployment platforms
@@ -228,17 +255,37 @@ app.get('/badge/poster.jpg', async (req, res) => {
     if (!safeText || !/^[A-Za-z0-9:]+$/.test(safeText)) {
         return res.status(400).send('Testo badge non valido');
     }
+
     const cacheKey = url + '_' + safeText;
+
+    // 1. L1 Cache (Memory)
     const cachedImage = badgeImageCache.get(cacheKey);
     if (cachedImage) {
         res.set('Content-Type', 'image/jpeg');
         res.set('Cache-Control', `public, max-age=${BADGE_CACHE_TTL_SECS}`);
         return res.send(cachedImage);
     }
+
     try {
+        // 2. L2 Cache (MongoDB)
+        const dbImage = await BadgeImage.findOne({ key: cacheKey });
+        if (dbImage) {
+            badgeImageCache.set(cacheKey, dbImage.imageData);
+            res.set('Content-Type', 'image/jpeg');
+            res.set('Cache-Control', `public, max-age=${BADGE_CACHE_TTL_SECS}`);
+            return res.send(dbImage.imageData);
+        }
+
+        // 3. Generation
         const imageBuffer = await addBadgeToImage(url, safeText);
         if (imageBuffer) {
             badgeImageCache.set(cacheKey, imageBuffer);
+
+            // Async save to DB to not block response
+            const expiresAt = new Date(Date.now() + BADGE_CACHE_TTL_MS);
+            BadgeImage.create({ key: cacheKey, imageData: imageBuffer, expiresAt })
+                .catch(err => console.error('Errore persistenza badge DB:', err.message));
+
             res.set('Content-Type', 'image/jpeg');
             res.set('Cache-Control', `public, max-age=${BADGE_CACHE_TTL_SECS}`);
             return res.send(imageBuffer);
@@ -247,6 +294,53 @@ app.get('/badge/poster.jpg', async (req, res) => {
         }
     } catch (_err) {
         return res.redirect(301, url);
+    }
+});
+
+// TMDB Proxy Search endpoints per Autocomplete
+app.get('/api/tmdb/search/keyword', async (req, res) => {
+    const query = req.query.query;
+    const tmdbKey = process.env.TMDB_API_KEY;
+    if (!tmdbKey) return res.status(500).json({ error: 'TMDB_API_KEY non configurata sul server' });
+    if (!query) return res.json({ results: [] });
+
+    try {
+        const response = await axios.get('https://api.themoviedb.org/3/search/keyword', {
+            params: {
+                api_key: sanitizeString(tmdbKey),
+                query: sanitizeString(query),
+                page: 1
+            },
+            timeout: 5000
+        });
+        return res.json({ results: response.data.results || [] });
+    } catch (err) {
+        console.error('Errore search keyword:', err.message);
+        return res.status(500).json({ error: 'Errore durante la ricerca delle keyword' });
+    }
+});
+
+app.get('/api/tmdb/search/person', async (req, res) => {
+    const query = req.query.query;
+    const tmdbKey = process.env.TMDB_API_KEY;
+    if (!tmdbKey) return res.status(500).json({ error: 'TMDB_API_KEY non configurata sul server' });
+    if (!query) return res.json({ results: [] });
+
+    try {
+        const response = await axios.get('https://api.themoviedb.org/3/search/person', {
+            params: {
+                api_key: sanitizeString(tmdbKey),
+                query: sanitizeString(query),
+                language: 'it-IT',
+                page: 1,
+                include_adult: false
+            },
+            timeout: 5000
+        });
+        return res.json({ results: response.data.results || [] });
+    } catch (err) {
+        console.error('Errore search person:', err.message);
+        return res.status(500).json({ error: 'Errore durante la ricerca delle persone' });
     }
 });
 
@@ -384,10 +478,14 @@ app.get(['/:configBase64/configure', '/:configBase64/:configVersion/configure'],
 // Endpoint per svuotare tutte le cache globali del sistema (solo per test)
 app.post('/api/clear-cache', async (req, res) => {
     try {
-        clearAllTmdbCaches();
-        clearIdCache();
-        const cacheResult = TmdbRequestCache.clear();
-        res.json({ success: true, dbCleared: cacheResult.deleted });
+        await clearAllTmdbCaches();
+        await clearIdCache();
+        await TmdbRequestCache.clear();
+
+        badgeImageCache.clear();
+        await BadgeImage.deleteMany({});
+
+        res.json({ success: true, message: 'Tutte le cache (RAM e DB) sono state svuotate.' });
     } catch (err) {
         console.error('Errore svuotamento cache:', err);
         res.status(500).json({ error: 'Errore durante lo svuotamento della cache.' });
@@ -413,9 +511,9 @@ app.get('/api/cron/warmup', async (req, res) => {
 
     // Cataloghi base con handler dedicati
     const baseCatalogs = [
-        { type: 'movie',  id: 'yaca_discover_movies', extra: { skip: 0 } },
+        { type: 'movie', id: 'yaca_discover_movies', extra: { skip: 0 } },
         { type: 'series', id: 'yaca_discover_series', extra: { skip: 0 } },
-        { type: 'series', id: 'yaca_anime_trending',  extra: { skip: 0 } },
+        { type: 'series', id: 'yaca_anime_trending', extra: { skip: 0 } },
     ];
 
     // Tutti i preset configurati (aggiornati dinamicamente con date correnti)
@@ -442,7 +540,31 @@ app.get('/api/cron/warmup', async (req, res) => {
         { batchSize: WARMUP_BATCH_SIZE, delayMs: WARMUP_DELAY_MS }
     );
 
-    console.log(`✅ Pre-Warming completato per ${allCatalogs.length} cataloghi.`);
+    // Warmup Fase 2: Raccomandazioni Ibride per Utenti Registrati
+    console.log("🔥 Avvio Warmup Raccomandazioni Ibride per utenti registrati...");
+    try {
+        const users = await User.find({ 'apiKeys.trakt': { $exists: true, $ne: null } });
+        console.log(`[Warmup] Trovati ${users.length} utenti con Trakt. Inizio sync...`);
+
+        // Eseguiamo in batch per non saturare le API
+        await rateLimitedMap(
+            users,
+            async (user) => {
+                const traktToken = user.apiKeys.trakt;
+                const tmdbApiKey = user.apiKeys.tmdb || process.env.TMDB_API_KEY;
+                if (!traktToken || !tmdbApiKey) return;
+
+                await syncIncrementalRecommendations(user.userId, 'movie', traktToken, tmdbApiKey);
+                await syncIncrementalRecommendations(user.userId, 'series', traktToken, tmdbApiKey);
+                console.log(`✅ Recs sincronizzate per utente: ${user.userId}`);
+            },
+            { batchSize: 1, delayMs: 1000 } // Molto conservativo per Trakt
+        );
+    } catch (err) {
+        console.error("❌ Errore durante il warmup delle raccomandazioni:", err.message);
+    }
+
+    console.log(`✅ Pre-Warming completato per ${allCatalogs.length} cataloghi e raccomandazioni utenti.`);
 });
 
 // Opzioni di ordinamento disponibili in Stremio per i cataloghi TMDB
@@ -464,9 +586,9 @@ function getSortByValue(genreExtra, type) {
 
 const presetExtra = [{ name: 'genre', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
 
-// 3. Endpoint dinamico per il Manifest di Stremio (Base64 config nell'URL)
-app.get(['/:configBase64/manifest.json', '/:configBase64/:configVersion/manifest.json'], async (req, res) => {
-    const userConfig = decodeConfigParam(req.params.configBase64);
+// 3. Endpoint dinamico per il Manifest di Stremio
+app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.json'], async (req, res) => {
+    const userConfig = await resolveUserConfig(req.params.userHandle);
     if (!userConfig) {
         return res.status(400).json({ error: "Configurazione non valida" });
     }
@@ -484,6 +606,7 @@ app.get(['/:configBase64/manifest.json', '/:configBase64/:configVersion/manifest
             resources: ['catalog', 'meta'],
             types: ['movie', 'series'],
             catalogs: [
+                { id: 'yaca_search_history', type: 'movie', name: 'Cronologia Ricerche', extra: [{ name: 'skip' }] },
                 { id: 'yaca_ai_search', type: 'movie', name: 'Ricerca AI (Film)', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] },
                 { id: 'yaca_ai_search_series', type: 'series', name: 'Ricerca AI (Serie)', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] }
             ],
@@ -493,7 +616,7 @@ app.get(['/:configBase64/manifest.json', '/:configBase64/:configVersion/manifest
                 configurationRequired: false
             },
             contactEmail: 'yaca.addon@proton.me',
-            configurationURL: `${req.protocol}://${req.get('host')}/${req.params.configBase64}/configure`
+            configurationURL: `${req.protocol}://${req.get('host')}/${req.params.userHandle}/configure`
         };
 
         let activeProfileCatalogs = [];
@@ -546,14 +669,14 @@ app.get('/manifest.json', (req, res) => {
     res.json(manifest);
 });
 
-// 4. Endpoint per i Cataloghi Stremio (Base64 config)
+// 4. Endpoint per i Cataloghi Stremio
 app.get([
-    '/:configBase64/catalog/:type/:id.json',
-    '/:configBase64/catalog/:type/:id/:extra.json',
-    '/:configBase64/:configVersion/catalog/:type/:id.json',
-    '/:configBase64/:configVersion/catalog/:type/:id/:extra.json'
+    '/:userHandle/catalog/:type/:id.json',
+    '/:userHandle/catalog/:type/:id/:extra.json',
+    '/:userHandle/:configVersion/catalog/:type/:id.json',
+    '/:userHandle/:configVersion/catalog/:type/:id/:extra.json'
 ], async (req, res) => {
-    const userConfig = decodeConfigParam(req.params.configBase64);
+    const userConfig = await resolveUserConfig(req.params.userHandle);
     if (!userConfig) {
         return res.status(400).json({ metas: [] });
     }
@@ -579,9 +702,9 @@ app.get([
     }
 });
 
-// 5. Endpoint per i Metadati Stremio (Base64 config)
-app.get(['/:configBase64/meta/:type/:id.json', '/:configBase64/:configVersion/meta/:type/:id.json'], async (req, res) => {
-    const userConfig = decodeConfigParam(req.params.configBase64);
+// 5. Endpoint per i Metadati Stremio
+app.get(['/:userHandle/meta/:type/:id.json', '/:userHandle/:configVersion/meta/:type/:id.json'], async (req, res) => {
+    const userConfig = await resolveUserConfig(req.params.userHandle);
     if (!userConfig) {
         return res.status(400).json({ meta: null });
     }
@@ -609,8 +732,15 @@ const server = app.listen(PORT, () => {
 // Graceful shutdown
 const shutdown = (signal) => {
     console.log(`\n${signal} ricevuto. Spegnimento in corso...`);
-    server.close(() => {
+    server.close(async () => {
         console.log('Server chiuso correttamente.');
+        try {
+            const mongoose = require('mongoose');
+            await mongoose.disconnect();
+            console.log('MongoDB disconnesso.');
+        } catch (err) {
+            console.error('Errore durante la disconnessione di MongoDB:', err.message);
+        }
         process.exit(0);
     });
     setTimeout(() => {
@@ -621,3 +751,11 @@ const shutdown = (signal) => {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});

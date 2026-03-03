@@ -109,7 +109,7 @@ export function ActiveCatalogsPanel({
           <p className="text-xs text-white/20 mt-1.5">Aggiungi cataloghi dalla sezione Esplora</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="grid gap-8">
           {catalogs.map((catalog, index) => (
             <CatalogItem
               key={catalog.id}
@@ -131,7 +131,7 @@ export function ActiveCatalogsPanel({
           <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-3">
             Le Mie Liste ({myLists.length})
           </h3>
-          <div className="space-y-2">
+          <div className="grid gap-8">
             {myLists.map((catalog) => (
               <CatalogItem
                 key={catalog.id}

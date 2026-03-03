@@ -1,8 +1,16 @@
+export interface Pillar {
+  type: 'genre' | 'keyword' | 'country';
+  id: string;
+  name: string;
+}
+
 export interface ProfileSettings {
   voteAverageMin?: number;
   voteCountMin?: number;
   fastRefresh?: boolean;
   tmdbKey?: string;
+  manualPillars?: Pillar[];
+  suggestedPillars?: Pillar[];
 }
 
 export interface Catalog {

@@ -1,8 +1,12 @@
 const { createTmdbClient } = require('../clients/tmdb');
-const LRUCache = require('../utils/LRUCache');
+const CacheManager = require('../cache/CacheManager');
 
-// Cache limitata in memoria per evitare di chiamare /find troppe volte per gli stessi ID
-const memoryCache = new LRUCache({ max: 5000, ttl: 1000 * 60 * 60 * 24 }); // 24 hour TTL
+// Cache limitata per evitare di chiamare /find troppe volte per gli stessi ID
+const memoryCache = new CacheManager('imdb_to_tmdb', {
+    ramMax: 5000,
+    ramTtlMs: 1000 * 60 * 60 * 24, // 24h RAM
+    mongoTtlMs: 1000 * 60 * 60 * 24 * 7 // 7d MongoDB
+});
 
 /**
  * Traduce un imdb_id (es. tt1234567) in un tmdb_id usando l'API TMDB /find
@@ -13,8 +17,9 @@ async function translateImdbToTmdb(imdbId, tmdbApiKey) {
         return null;
     }
 
-    if (memoryCache.has(imdbId)) {
-        return memoryCache.get(imdbId);
+    const cached = await memoryCache.get(imdbId);
+    if (cached) {
+        return cached;
     }
 
     try {
@@ -37,7 +42,7 @@ async function translateImdbToTmdb(imdbId, tmdbApiKey) {
 
         if (tmdbId) {
             const result = { id: `tmdb:${tmdbId}`, type };
-            memoryCache.set(imdbId, result);
+            await memoryCache.set(imdbId, result);
             return result;
         }
 
@@ -48,8 +53,8 @@ async function translateImdbToTmdb(imdbId, tmdbApiKey) {
     }
 }
 
-function clearIdCache() {
-    memoryCache.clear();
+async function clearIdCache() {
+    await memoryCache.clear();
 }
 
 module.exports = { translateImdbToTmdb, clearIdCache };

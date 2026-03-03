@@ -1,4 +1,5 @@
 export const GENRE_NAMES: Record<string, string> = {
+  // Movie Genres
   '28': 'Azione',
   '12': 'Avventura',
   '16': 'Animazione',
@@ -8,14 +9,26 @@ export const GENRE_NAMES: Record<string, string> = {
   '18': 'Dramma',
   '10751': 'Famiglia',
   '14': 'Fantasy',
+  '36': 'Storia',
   '27': 'Horror',
+  '10402': 'Musica',
   '9648': 'Mistero',
   '10749': 'Romance',
   '878': 'Fantascienza',
+  '10770': 'Film TV',
   '53': 'Thriller',
   '10752': 'Guerra',
+  '37': 'Western',
+  // TV-Specific Genres
+  '10759': 'Action & Adventure',
+  '10762': 'Kids',
+  '10763': 'News',
+  '10764': 'Reality',
+  '10765': 'Sci-Fi & Fantasy',
+  '10766': 'Soap',
+  '10767': 'Talk',
+  '10768': 'War & Politics'
 };
-
 export const KEYWORD_NAMES: Record<string, string> = {
   '210024': 'Anime',
   '158436': 'Marvel',

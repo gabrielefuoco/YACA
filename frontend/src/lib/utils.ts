@@ -59,6 +59,9 @@ export function profilesToApiPayload(profiles: Profile[]) {
       minVoteAverage: p.settings?.voteAverageMin ?? 0,
       minVoteCount: p.settings?.voteCountMin ?? 0,
       fastPresetRefresh: p.settings?.fastRefresh ?? false,
+      tmdbKey: p.settings?.tmdbKey,
+      manualPillars: p.settings?.manualPillars ?? [],
+      suggestedPillars: p.settings?.suggestedPillars ?? [],
     },
   }));
 }
@@ -67,7 +70,7 @@ export function profilesToApiPayload(profiles: Profile[]) {
  * Maps a backend-stored profile (from UserConfig) to the frontend Profile type.
  * The backend stores processed `catalogs` and uses different settings field names.
  */
-export function mapBackendProfile(backendProfile: BackendProfile): Profile {
+export function mapBackendProfile(backendProfile: BackendProfile & { settings?: any }): Profile {
   const bCatalogs: BackendCatalog[] = backendProfile.catalogs ?? [];
   const rawUi = backendProfile.raw_ui_state ?? {};
   const bSettings = backendProfile.settings ?? {};
@@ -98,6 +101,8 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
       voteCountMin: typeof bSettings.minVoteCount === 'number' ? bSettings.minVoteCount : 0,
       fastRefresh: Boolean(bSettings.fastPresetRefresh),
       tmdbKey: bSettings.tmdbKey ?? '',
+      manualPillars: Array.isArray(bSettings.manualPillars) ? bSettings.manualPillars : [],
+      suggestedPillars: Array.isArray(bSettings.suggestedPillars) ? bSettings.suggestedPillars : [],
     },
   };
 }

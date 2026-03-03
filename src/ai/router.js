@@ -81,9 +81,9 @@ const ADVANCED_AI_SYSTEM_PROMPT = `You are a TMDB Query Architect. Your job is t
 }
 
 // 4. Discovery: Keyword + Lingua (Nicchia)
-- Query: "Film coreani di zombie recenti" -> { 
+- Query: "Film coreani di zombie samurai" -> { 
     "strategy": "discovery", 
-    "keyword": "zombie", 
+    "keyword": "zombie,samurai", 
     "genre_ids": [27], 
     "original_language": "ko", 
     "year_from": "2020" 
@@ -108,7 +108,7 @@ const ADVANCED_AI_SYSTEM_PROMPT = `You are a TMDB Query Architect. Your job is t
   "runtime_lte": 120 | null, 
   "company_name": "string" | null,
   "watch_provider": "netflix" | "amazon" | "disney" | "apple" | null,
-  "keyword": "string" | null,
+  "keyword": "string" (descriptive nouns separated by comma) | null,
   "original_language": "en" | "it" | "ja" | "ko" | null,
   "language": "it-IT" | "en-US" | "es-ES" | "fr-FR" | null,
   "target": "tmdb" | "kitsu" | "trakt"

@@ -7,14 +7,15 @@ interface PosterRowProps {
   presetId?: string;
   filters?: Record<string, unknown>;
   type?: string;
+  prompt?: string;
 }
 
-export function PosterRow({ presetId, filters, type }: PosterRowProps) {
+export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
   const [items, setItems] = useState<PosterItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const requestKey = JSON.stringify({ presetId, filters, type });
+  const requestKey = JSON.stringify({ presetId, filters, type, prompt });
 
   useEffect(() => {
     setItems([]);
@@ -28,9 +29,9 @@ export function PosterRow({ presetId, filters, type }: PosterRowProps) {
         if (entries[0].isIntersecting) {
           setLoading(true);
           api
-            .previewCatalog({ presetId, filters, type })
+            .previewCatalog({ presetId, filters, type, prompt })
             .then((data) => setItems(data.items ?? []))
-            .catch(() => {})
+            .catch(() => { })
             .finally(() => {
               setLoading(false);
               setLoaded(true);
@@ -42,7 +43,7 @@ export function PosterRow({ presetId, filters, type }: PosterRowProps) {
     );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
-  }, [presetId, filters, type, loaded]);
+  }, [presetId, filters, type, prompt, loaded]);
 
   return (
     <div ref={ref} className="mt-2 w-full max-w-full overflow-hidden">
@@ -54,24 +55,24 @@ export function PosterRow({ presetId, filters, type }: PosterRowProps) {
         </div>
       )}
       {!loading && items.length > 0 && (
-        <div className="flex max-w-full gap-2 overflow-x-auto pb-1 scrollbar-thin">
+        <div className="flex max-w-full gap-2 overflow-x-auto pb-2 hide-scrollbar">
           {items.map((item) => (
-            <div key={item.id} className="group relative shrink-0 cursor-pointer">
+            <div key={item.id} className="group/poster relative shrink-0 cursor-pointer">
               {item.poster ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={item.poster}
                   alt={item.title}
-                  className="h-32 w-[86px] rounded-lg object-cover transition-transform duration-200 group-hover:scale-105 shadow-md shadow-black/30"
+                  className="h-[147px] w-[99px] rounded-lg object-cover transition-transform duration-200 group-hover/poster:scale-105 shadow-md shadow-black/30"
                 />
               ) : (
-                <div className="flex h-32 w-[86px] items-center justify-center rounded-lg bg-white/[0.06] text-xs text-white/40 border border-white/[0.06]">
+                <div className="flex h-[147px] w-[99px] items-center justify-center rounded-lg bg-white/[0.06] text-xs text-white/40 border border-white/[0.06]">
                   {item.title.slice(0, 2)}
                 </div>
               )}
-              <div className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black/80 via-black/20 to-transparent p-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                <p className="text-[10px] font-medium text-white line-clamp-2 leading-tight">{item.title}</p>
-                {item.year && <p className="text-[10px] text-white/60">{item.year}</p>}
+              <div className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black/80 via-black/20 to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover/poster:opacity-100">
+                <p className="text-[11px] font-medium text-white line-clamp-2 leading-tight">{item.title}</p>
+                {item.year && <p className="text-[11px] text-white/60">{item.year}</p>}
               </div>
             </div>
           ))}

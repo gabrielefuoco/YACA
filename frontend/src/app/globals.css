@@ -46,3 +46,12 @@ button, a, input, select {
   transition-duration: 150ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Utilità per nascondere le scrollbar sui listati orizzontali in stile Netflix */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE e Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari e Opera */
+}

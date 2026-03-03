@@ -23,4 +23,8 @@ export const api = {
   traktDeviceToken: (device_code: string) =>
     post('/api/trakt/device/token', { device_code }),
   clearCache: () => post('/api/clear-cache'),
+  searchTmdbKeywords: (query: string) =>
+    fetch(`/api/tmdb/search/keyword?query=${encodeURIComponent(query)}`).then(r => r.json()),
+  searchTmdbPeople: (query: string) =>
+    fetch(`/api/tmdb/search/person?query=${encodeURIComponent(query)}`).then(r => r.json()),
 };

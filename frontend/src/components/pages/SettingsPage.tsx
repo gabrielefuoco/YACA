@@ -10,10 +10,11 @@ import { Separator } from '@/components/ui/separator';
 import { api } from '@/lib/api';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
 import {
-  Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Trash2, Download, Upload, RefreshCw
+  Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Trash2, Download, Upload, RefreshCw, X, Plus
 } from 'lucide-react';
 import { encodeConfig } from '@/lib/configCodec';
 import { profilesToApiPayload } from '@/lib/utils';
+import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 
 interface SettingsPageProps {
   profiles: Profile[];
@@ -48,6 +49,8 @@ export function SettingsPage({
   const [voteAvgMin, setVoteAvgMin] = useState(settings.voteAverageMin ?? 0);
   const [voteCountMin, setVoteCountMin] = useState(settings.voteCountMin ?? 0);
   const [fastRefresh, setFastRefresh] = useState(settings.fastRefresh ?? false);
+  const [manualPillars, setManualPillars] = useState(settings.manualPillars ?? []);
+  const [suggestedPillars, setSuggestedPillars] = useState(settings.suggestedPillars ?? []);
   const [tmdbKey, setTmdbKey] = useState(settings.tmdbKey ?? '');
   const [loading, setLoading] = useState(false);
   const [cacheLoading, setCacheLoading] = useState(false);
@@ -63,7 +66,7 @@ export function SettingsPage({
 
     // Update active profile settings
     onUpdateProfile(activeProfileId, {
-      settings: { voteAverageMin: voteAvgMin, voteCountMin, fastRefresh, tmdbKey },
+      settings: { voteAverageMin: voteAvgMin, voteCountMin, fastRefresh, tmdbKey, manualPillars, suggestedPillars },
     });
 
     // Wait a tick for state to update
@@ -71,7 +74,7 @@ export function SettingsPage({
 
     const updatedProfiles = profiles.map((p) =>
       p.id === activeProfileId
-        ? { ...p, settings: { voteAverageMin: voteAvgMin, voteCountMin, fastRefresh, tmdbKey } }
+        ? { ...p, settings: { voteAverageMin: voteAvgMin, voteCountMin, fastRefresh, tmdbKey, manualPillars, suggestedPillars } }
         : p
     );
 
@@ -105,7 +108,7 @@ export function SettingsPage({
           const httpsManifestUrl = `https://${host}/${manifestPath}`;
           try {
             await api.stremioAddonUpdate(stremioAuthKey, httpsManifestUrl);
-          } catch {}
+          } catch { }
         }
       } else {
         setError(data.error ?? 'Errore nella generazione della configurazione');
@@ -120,7 +123,7 @@ export function SettingsPage({
     setCacheLoading(true);
     try {
       await api.clearCache();
-    } catch {}
+    } catch { }
     setCacheLoading(false);
   };
 
@@ -160,7 +163,7 @@ export function SettingsPage({
         try {
           localStorage.setItem(LOCAL_STORAGE_KEYS.CONFIG, content.trim());
           window.location.reload();
-        } catch {}
+        } catch { }
       };
       reader.readAsText(file);
     };
@@ -169,6 +172,66 @@ export function SettingsPage({
 
   return (
     <div className="space-y-6">
+      {/* Profilo Pillars */}
+      <section className="rounded-xl border border-[#8a5aeb]/30 bg-[#8a5aeb]/5 p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-[#8a5aeb] uppercase tracking-wider flex items-center justify-between">
+          <span>🏛️ Pilastri del Profilo</span>
+        </h3>
+        <p className="text-xs text-white/50">
+          I pilastri sono vincoli tematici fortissimi (es. genere o parola chiave). Affinano esplicitamente le tue raccomandazioni "Signature" ma riducono i risultati visualizzati.
+        </p>
+
+        {manualPillars.length > 2 && (
+          <div className="rounded border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-400">
+            ⚠️ <strong>Attenzione:</strong> Hai configurato molti pilastri. Se i cataloghi risultano troppo corti o vuoti, riduci i pilastri. (N.B. In assenza di risultati, il sistema proverà una ricerca di fallback senza pilastri).
+          </div>
+        )}
+
+        <div>
+          <Label className="mb-2 block text-white/70">Pilastri Attivi</Label>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {manualPillars.length === 0 && <p className="text-xs text-white/30 italic">Nessun pilastro configurato.</p>}
+            {manualPillars.map(p => (
+              <span key={p.id} className="inline-flex items-center gap-1 rounded bg-[#8a5aeb] text-white px-2 py-1 text-xs font-medium">
+                {p.type === 'genre' ? '🎭' : p.type === 'country' ? '🌍' : '🔑'} {p.name}
+                <button onClick={() => setManualPillars(prev => prev.filter(x => x.id !== p.id))} className="ml-1 text-white/70 hover:text-white">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+
+          <AutocompleteSearch
+            placeholder="Cerca una parola chiave per aggiungerla ai tuoi pilastri..."
+            searchFn={api.searchTmdbKeywords}
+            onSelect={(item) => {
+              if (!manualPillars.find(k => String(k.id) === String(item.id))) {
+                setManualPillars(prev => [...prev, { type: 'keyword', id: String(item.id), name: item.name }]);
+              }
+            }}
+          />
+        </div>
+
+        {suggestedPillars.length > 0 && suggestedPillars.filter(sp => !manualPillars.find(mp => String(mp.id) === String(sp.id))).length > 0 && (
+          <div className="mt-4 pt-4 border-t border-[#8a5aeb]/20">
+            <Label className="mb-2 block text-[#8a5aeb]">Raccomandati per te</Label>
+            <div className="flex flex-wrap gap-2">
+              {suggestedPillars.filter(sp => !manualPillars.find(mp => String(mp.id) === String(sp.id))).map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => setManualPillars(prev => [...prev, p])}
+                  className="inline-flex items-center gap-1 rounded border border-[#8a5aeb]/40 bg-[#8a5aeb]/10 text-[#8a5aeb] px-2 py-1 text-xs font-medium hover:bg-[#8a5aeb]/20 transition-colors"
+                >
+                  <Plus className="h-3 w-3" />
+                  {p.type === 'genre' ? '🎭' : p.type === 'country' ? '🌍' : '🔑'} {p.name}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-white/30 mt-2">Deduciti in base al tuo storico di visione e ai preset scelti.</p>
+          </div>
+        )}
+      </section>
+
       {/* Quality filters */}
       <section className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-4">
         <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider">

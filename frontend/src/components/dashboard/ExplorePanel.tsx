@@ -46,11 +46,10 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                selectedCategory === cat
-                  ? 'bg-gradient-to-r from-[#8a5aeb] to-[#6d3fd4] text-white shadow-md shadow-[#8a5aeb]/20'
-                  : 'bg-white/[0.06] text-white/60 hover:bg-white/[0.12] hover:text-white border border-white/[0.06]'
-              }`}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${selectedCategory === cat
+                ? 'bg-gradient-to-r from-[#8a5aeb] to-[#6d3fd4] text-white shadow-md shadow-[#8a5aeb]/20'
+                : 'bg-white/[0.06] text-white/60 hover:bg-white/[0.12] hover:text-white border border-white/[0.06]'
+                }`}
             >
               {cat}
             </button>
@@ -76,7 +75,7 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
       )}
 
       {/* Preset grid — always shows posters */}
-      <div className="grid gap-3">
+      <div className="grid gap-8">
         {filtered.length === 0 && (
           <div className="py-8 text-center text-sm text-white/40">
             Nessun catalogo trovato
@@ -86,22 +85,19 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
           const isSelected = selectedPresets.includes(preset.id);
 
           return (
-            <Card key={preset.id} className="max-w-full p-0 overflow-hidden hover:border-white/20 transition-all group">
-              <div className="p-3 pb-0">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-                  <span className="text-2xl shrink-0 mt-0.5">{preset.emoji ?? '📋'}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="mb-1 flex flex-wrap items-center gap-2">
-                      <h4 className="min-w-0 flex-1 truncate text-sm font-medium text-white">{preset.name}</h4>
+            <div key={preset.id} className="w-full min-w-0 p-0 flex flex-col group">
+              <div className="pb-2 px-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="text-xl shrink-0 leading-none">{preset.emoji ?? '📋'}</span>
+                    <h4 className="flex-1 truncate text-sm font-medium text-white">{preset.name}</h4>
+                    <div className="shrink-0">
                       <TypeBadge type={preset.type as 'movie' | 'series' | 'both'} />
-                      {preset.category && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          {preset.category}
-                        </Badge>
-                      )}
                     </div>
-                    {preset.description && (
-                      <p className="text-xs text-white/40 mb-1 line-clamp-2">{preset.description}</p>
+                    {preset.category && (
+                      <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] px-1.5 py-0 shrink-0">
+                        {preset.category}
+                      </Badge>
                     )}
                   </div>
 
@@ -109,7 +105,7 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
                     size="sm"
                     variant={isSelected ? 'secondary' : 'default'}
                     onClick={() => onTogglePreset(preset.id)}
-                    className="h-7 w-full text-xs sm:w-auto shrink-0"
+                    className="h-7 px-2.5 sm:px-3 text-[11px] sm:text-xs shrink-0 ml-auto"
                   >
                     {isSelected ? (
                       <>
@@ -121,13 +117,16 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
                     )}
                   </Button>
                 </div>
+                {preset.description && (
+                  <p className="text-xs text-white/40 mt-1 line-clamp-1 ml-7">{preset.description}</p>
+                )}
               </div>
 
               {/* Always-visible poster row */}
-              <div className="max-w-full overflow-hidden px-3 pb-3">
+              <div className="w-full min-w-0 overflow-hidden">
                 <PosterRow presetId={preset.id} type={preset.type} />
               </div>
-            </Card>
+            </div>
           );
         })}
       </div>

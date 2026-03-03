@@ -1,5 +1,4 @@
 const { createAxiosInstance } = require('../utils/httpClient');
-const LRUCache = require('../utils/LRUCache');
 const {
     TMDB_ENDPOINT,
     DEFAULT_LANGUAGE,
@@ -7,12 +6,17 @@ const {
     PAGES_PER_REQUEST,
     ITEMS_PER_PAGE,
     SERIES_META_CACHE_TTL_MS,
-    MOVIE_META_CACHE_TTL_MS
+    MOVIE_META_CACHE_TTL_MS,
+    MOVIE_DETAILS_TTL_MS,
+    SERIES_FINISHED_TTL_MS,
+    SERIES_ONGOING_TTL_MS
 } = require('../config');
 // Rate limiting removed per user request
 const { isMovieReleasedDigitally } = require('../utils/releaseFilter');
 const { generateRequestHash } = require('../utils/requestHash');
 const TmdbRequestCache = require('../models/TmdbRequestCache');
+
+const CacheManager = require('../cache/CacheManager');
 
 // Helper interno per costruire oggetti request TMDB
 const createTmdbClient = (apiKey) => createAxiosInstance(TMDB_ENDPOINT, {
@@ -25,10 +29,10 @@ const createTmdbClient = (apiKey) => createAxiosInstance(TMDB_ENDPOINT, {
     timeout: 20000
 });
 
-const idNameCache = new LRUCache({ max: 1000, ttl: 1000 * 60 * 60 }); // 1 hour TTL
-const imdbIdCache = new LRUCache({ max: 10000, ttl: 1000 * 60 * 60 * 24 * 7 }); // 7 day TTL
-const movieMetaCache = new LRUCache({ max: 2000, ttl: MOVIE_META_CACHE_TTL_MS });
-const seriesMetaCache = new LRUCache({ max: 2000, ttl: SERIES_META_CACHE_TTL_MS });
+const idNameCache = new CacheManager('tmdb_id_name', { ramMax: 1000, ramTtlMs: 1000 * 60 * 60, mongoTtlMs: 1000 * 60 * 60 });
+const imdbIdCache = new CacheManager('tmdb_imdb_id', { ramMax: 10000, ramTtlMs: 1000 * 60 * 60 * 24 * 7, mongoTtlMs: 1000 * 60 * 60 * 24 * 7 });
+const movieMetaCache = new CacheManager('tmdb_movie_meta', { ramMax: 2000, ramTtlMs: MOVIE_META_CACHE_TTL_MS, mongoTtlMs: MOVIE_META_CACHE_TTL_MS });
+const seriesMetaCache = new CacheManager('tmdb_series_meta', { ramMax: 2000, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS });
 
 /**
  * Traduce una stringa (es. nome attore o keyword) nel suo ID TMDB effettuando una fetch al volo
@@ -36,13 +40,14 @@ const seriesMetaCache = new LRUCache({ max: 2000, ttl: SERIES_META_CACHE_TTL_MS 
 async function getTmdbIdByName(apiKey, endpoint, query) {
     if (!query) return null;
     const cacheKey = `${endpoint}:${query.toLowerCase()}`;
-    if (idNameCache.has(cacheKey)) return idNameCache.get(cacheKey);
+    const cached = await idNameCache.get(cacheKey);
+    if (cached) return cached;
 
     try {
         const client = createTmdbClient(apiKey);
         const res = await client.get(`/search/${endpoint}`, { params: { query } });
         const id = res.data?.results?.[0]?.id || null;
-        if (id) idNameCache.set(cacheKey, id);
+        if (id) await idNameCache.set(cacheKey, id);
         return id;
     } catch (e) {
         console.error(`Errore getTmdbIdByName (${endpoint} - ${query}):`, e.message);
@@ -56,14 +61,15 @@ async function getTmdbIdByName(apiKey, endpoint, query) {
  */
 async function resolveImdbId(tmdbId, type, apiKey) {
     const cacheKey = `imdb:${type}:${tmdbId}`;
-    if (imdbIdCache.has(cacheKey)) return imdbIdCache.get(cacheKey);
+    const cached = await imdbIdCache.get(cacheKey);
+    if (cached) return cached;
 
     try {
         const client = createTmdbClient(apiKey);
         const searchType = type === 'movie' ? 'movie' : 'tv';
         const res = await client.get(`/${searchType}/${tmdbId}/external_ids`);
         const imdbId = res.data?.imdb_id || null;
-        if (imdbId) imdbIdCache.set(cacheKey, imdbId);
+        if (imdbId) await imdbIdCache.set(cacheKey, imdbId);
         return imdbId;
     } catch (_e) {
         return null;
@@ -90,6 +96,8 @@ function toStremioMetaItem(tmdbItem, type) {
         description: tmdbItem.overview,
         releaseInfo: year,
         imdbRating: tmdbItem.vote_average ? parseFloat(tmdbItem.vote_average).toFixed(1) : null,
+        genre_ids: tmdbItem.genre_ids || (tmdbItem.genres ? tmdbItem.genres.map(g => g.id) : []),
+        keywords: tmdbItem.keywords || null,
         behaviorHints: type === 'movie'
             ? { defaultVideoId: id }
             : { hasScheduledVideos: true }
@@ -209,7 +217,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
             // Recuperiamo solo la nuova pagina e aggiorniamo la lista in cache.
             const newItems = await fetchTmdbCatalogDirect(client, endpoint, normalizedSkip, customParams, type);
             const updatedItems = mergeCatalogItems(cachedItems, newItems);
-            TmdbRequestCache.set(requestHash, endpoint, updatedItems);
+            await TmdbRequestCache.set(requestHash, endpoint, updatedItems);
 
             return normalizedSkip === 0 ? updatedItems : updatedItems.slice(normalizedSkip, sliceEnd);
         }
@@ -223,7 +231,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
     // Salvataggio solo per la prima pagina,
     // così la cache rappresenta una lista progressiva a partire da skip 0.
     if (normalizedSkip === 0) {
-        TmdbRequestCache.set(requestHash, endpoint, results);
+        await TmdbRequestCache.set(requestHash, endpoint, results);
     }
 
     return results;
@@ -285,8 +293,9 @@ async function getTmdbMetaDetails(apiKey, id, type) {
 
     const cacheKey = `${type}:${tmdbId}`;
     const targetMetaCache = type === 'series' ? seriesMetaCache : movieMetaCache;
-    if (targetMetaCache.has(cacheKey)) {
-        return targetMetaCache.get(cacheKey);
+    const cached = await targetMetaCache.get(cacheKey);
+    if (cached) {
+        return cached;
     }
 
     const client = createTmdbClient(apiKey);
@@ -294,10 +303,7 @@ async function getTmdbMetaDetails(apiKey, id, type) {
 
     try {
         const res = await client.get(endpoint, {
-            // Include videos (trailers) and images (for logos and posters)
-            // also we can append credits for cast and external_ids for IMDB ID (streaming fix)
-            // appending release_dates for movies age ratings and content_ratings for series
-            params: { append_to_response: 'videos,credits,images,external_ids,release_dates,content_ratings', include_image_language: 'it,en,null' }
+            params: { append_to_response: 'videos,credits,images,external_ids,release_dates,content_ratings,keywords', include_image_language: 'it,en,null' }
         });
 
         const data = res.data;
@@ -493,7 +499,7 @@ async function getTmdbMetaDetails(apiKey, id, type) {
         }
 
         if (meta) {
-            targetMetaCache.set(cacheKey, meta);
+            await targetMetaCache.set(cacheKey, meta);
         }
 
         return meta;
@@ -504,20 +510,65 @@ async function getTmdbMetaDetails(apiKey, id, type) {
     }
 }
 
+const tmdbDetailsCache = new CacheManager('tmdb_details_raw', { ramMax: 1000, ramTtlMs: 24 * 60 * 60 * 1000, mongoTtlMs: MOVIE_DETAILS_TTL_MS });
+
 /**
- * Svuota tutte le cache in memoria del modulo TMDB (idName, imdbId, movieMeta, seriesMeta).
+ * Ottiene i dettagli grezzi di un contenuto TMDB (inclusi credits e keywords)
+ * per l'elaborazione del profilo di gusto.
  */
-function clearAllTmdbCaches() {
-    idNameCache.clear();
-    imdbIdCache.clear();
-    movieMetaCache.clear();
-    seriesMetaCache.clear();
+async function getTmdbMovieDetails(apiKey, id, type = 'movie') {
+    const tmdbId = id.toString().replace('tmdb:', '').trim();
+    if (!/^\d+$/.test(tmdbId)) return null;
+
+    const cacheKey = `${type}:${tmdbId}`;
+    const cached = await tmdbDetailsCache.get(cacheKey);
+    if (cached) return cached;
+
+    const client = createTmdbClient(apiKey);
+    const endpoint = type === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
+
+    try {
+        const res = await client.get(endpoint, {
+            params: { append_to_response: 'credits,keywords' }
+        });
+
+        const data = res.data;
+        if (data) {
+            // Calcola TTL dinamico per Serie TV
+            let ttl = MOVIE_DETAILS_TTL_MS;
+            if (type === 'tv') {
+                const status = data.status; // Returning Series, Ended, Canceled, etc.
+                const isFinished = status === 'Ended' || status === 'Canceled';
+                ttl = isFinished ? SERIES_FINISHED_TTL_MS : SERIES_ONGOING_TTL_MS;
+            }
+
+            await tmdbDetailsCache.set(cacheKey, data, ttl);
+        }
+        return data;
+    } catch (err) {
+        console.error(`Errore getTmdbMovieDetails (${type} - ${tmdbId}):`, err.message);
+        return null;
+    }
+}
+
+/**
+ * Svuota tutte le cache in memoria del modulo TMDB (idName, imdbId, movieMeta, seriesMeta, details).
+ */
+async function clearAllTmdbCaches() {
+    await Promise.all([
+        idNameCache.clear(),
+        imdbIdCache.clear(),
+        movieMetaCache.clear(),
+        seriesMetaCache.clear(),
+        tmdbDetailsCache.clear()
+    ]);
 }
 
 module.exports = {
     createTmdbClient, // Esportato in caso serva passare chiavi specifiche
     fetchTmdbCatalog,
     getTmdbMetaDetails,
+    getTmdbMovieDetails,
     getTmdbIdByName,
     resolveImdbId,
     clearAllTmdbCaches

@@ -8,9 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { PosterRow } from '@/components/shared/PosterRow';
 import { Catalog, MyList } from '@/types';
-import { GENRE_NAMES, KEYWORD_NAMES, SORT_OPTIONS, LANGUAGES } from '@/lib/constants';
-import { Loader2, Wand2, Save, Plus, Trash2 } from 'lucide-react';
+import { GENRE_NAMES, SORT_OPTIONS, LANGUAGES } from '@/lib/constants';
+import { Loader2, Wand2, Save, Plus, Trash2, Settings2, X } from 'lucide-react';
 import { api } from '@/lib/api';
+import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
+import { generateId } from '@/lib/utils';
+
 const MAX_AI_CATALOG_NAME_LENGTH = 30;
 
 interface CreatorPanelProps {
@@ -18,9 +21,14 @@ interface CreatorPanelProps {
   onAddCatalog: (catalog: Catalog) => void;
 }
 
-import { generateId } from '@/lib/utils';
+interface SelectedItem {
+  id: string;
+  name: string;
+}
 
 export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
+  const [activeTab, setActiveTab] = useState<string>('ai');
+
   // AI tab state
   const [prompts, setPrompts] = useState<string[]>(['']);
   const [aiType, setAiType] = useState<'movie' | 'series'>('movie');
@@ -37,7 +45,9 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
   const [sortBy, setSortBy] = useState('popularity.desc');
   const [language, setLanguage] = useState('');
   const [genres, setGenres] = useState<string[]>([]);
-  const [keywords, setKeywords] = useState<string[]>([]);
+  const [keywords, setKeywords] = useState<SelectedItem[]>([]);
+  const [cast, setCast] = useState<SelectedItem[]>([]);
+  const [crew, setCrew] = useState<SelectedItem[]>([]);
   const [voteMin, setVoteMin] = useState(0);
   const [yearFrom, setYearFrom] = useState('');
   const [yearTo, setYearTo] = useState('');
@@ -50,8 +60,12 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
 
   const toggleGenre = (id: string) =>
     setGenres((g) => (g.includes(id) ? g.filter((x) => x !== id) : [...g, id]));
-  const toggleKeyword = (id: string) =>
-    setKeywords((k) => (k.includes(id) ? k.filter((x) => x !== id) : [...k, id]));
+  const toggleKeyword = (item: SelectedItem) =>
+    setKeywords((k) => (k.find(x => x.id === item.id) ? k.filter((x) => x.id !== item.id) : [...k, item]));
+  const toggleCast = (item: SelectedItem) =>
+    setCast((k) => (k.find(x => x.id === item.id) ? k.filter((x) => x.id !== item.id) : [...k, item]));
+  const toggleCrew = (item: SelectedItem) =>
+    setCrew((k) => (k.find(x => x.id === item.id) ? k.filter((x) => x.id !== item.id) : [...k, item]));
 
   const handleAiPreview = async () => {
     const validPrompts = prompts.filter((p) => p.trim());
@@ -66,7 +80,7 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
         setAiCatalogName(result.name || prompt.slice(0, MAX_AI_CATALOG_NAME_LENGTH));
         setAiRawPrompt(prompt);
       }
-    } catch {}
+    } catch { }
     setAiLoading(false);
   };
 
@@ -84,7 +98,6 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
     onAddCatalog(catalog);
     setAiSaved(true);
     setTimeout(() => setAiSaved(false), 3000);
-    // Reset prompt fields
     setPrompts(['']);
     setAiPreviewFilters(null);
     setAiRawPrompt('');
@@ -95,7 +108,9 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
     sort_by: sortBy,
     ...(language && { with_original_language: language }),
     ...(genres.length && { with_genres: genres.join(',') }),
-    ...(keywords.length && { with_keywords: keywords.join(',') }),
+    ...(keywords.length && { with_keywords: keywords.map(k => k.id).join(',') }),
+    ...(cast.length && { with_cast: cast.map(c => c.id).join(',') }),
+    ...(crew.length && { with_crew: crew.map(c => c.id).join(',') }),
     ...(voteMin > 0 && { 'vote_average.gte': voteMin }),
     ...(yearFrom && { 'primary_release_date.gte': `${yearFrom}-01-01` }),
     ...(yearTo && { 'primary_release_date.lte': `${yearTo}-12-31` }),
@@ -120,9 +135,66 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
     onAddCatalog(catalog);
   };
 
+  const handleEditManually = () => {
+    if (!aiPreviewFilters) return;
+
+    setManualName(aiCatalogName);
+    setManualType(aiPreviewType);
+
+    setSortBy((aiPreviewFilters.sort_by as string) || 'popularity.desc');
+    setLanguage((aiPreviewFilters.with_original_language as string) || '');
+
+    const parseList = (val: unknown) => {
+      if (!val) return [];
+      return String(val).replace(/\|/g, ',').split(',').map(s => s.trim()).filter(Boolean);
+    };
+
+    setGenres(parseList(aiPreviewFilters.with_genres));
+
+    // Convert flat AI IDs to pill objects
+    const mapToPills = (val: unknown, prefix: string) => parseList(val).map(id => ({ id, name: `${prefix}: ${id}` }));
+
+    setKeywords(mapToPills(aiPreviewFilters.with_keywords, 'Keyword'));
+    setCast(mapToPills(aiPreviewFilters.with_cast, 'Cast'));
+    setCrew(mapToPills(aiPreviewFilters.with_crew, 'Crew'));
+
+    const voteGte = aiPreviewFilters['vote_average.gte'];
+    setVoteMin(Number(voteGte) || 0);
+
+    const dateGte = aiPreviewFilters['primary_release_date.gte'] as string;
+    if (dateGte) {
+      setYearFrom(dateGte.substring(0, 4));
+    } else {
+      setYearFrom('');
+    }
+
+    const dateLte = aiPreviewFilters['primary_release_date.lte'] as string;
+    if (dateLte) {
+      setYearTo(dateLte.substring(0, 4));
+    } else {
+      setYearTo('');
+    }
+
+    setManualPreviewFilters(aiPreviewFilters);
+    setActiveTab('manual');
+  };
+
+  const renderPills = (items: SelectedItem[], onRemove: (item: SelectedItem) => void) => (
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      {items.map(item => (
+        <span key={item.id} className="inline-flex items-center gap-1 rounded-full bg-[#8a5aeb]/20 text-[#8a5aeb] px-2.5 py-1 text-xs font-medium border border-[#8a5aeb]/30">
+          {item.name}
+          <button onClick={() => onRemove(item)} className="text-[#8a5aeb]/70 hover:text-[#8a5aeb] ml-0.5">
+            <X className="h-3 w-3" />
+          </button>
+        </span>
+      ))}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="ai">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full">
           <TabsTrigger value="ai" className="flex-1">
             <Wand2 className="h-4 w-4 mr-2" />
@@ -143,11 +215,10 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
                 <button
                   key={t}
                   onClick={() => setAiType(t)}
-                  className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-colors ${
-                    aiType === t
-                      ? 'border-[#8a5aeb] bg-[#8a5aeb]/20 text-[#8a5aeb]'
-                      : 'border-white/10 bg-white/5 text-white/50 hover:text-white'
-                  }`}
+                  className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-colors ${aiType === t
+                    ? 'border-[#8a5aeb] bg-[#8a5aeb]/20 text-[#8a5aeb]'
+                    : 'border-white/10 bg-white/5 text-white/50 hover:text-white'
+                    }`}
                 >
                   {t === 'movie' ? '🎬 Film' : '📺 Serie'}
                 </button>
@@ -193,7 +264,13 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
               {aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wand2 className="h-4 w-4 mr-2" />}
               Genera Anteprima
             </Button>
-            <Button variant="outline" onClick={handleAiSave} disabled={aiSaved || !aiPreviewFilters}>
+            {aiPreviewFilters && (
+              <Button onClick={handleEditManually} variant="secondary" className="flex-1">
+                <Settings2 className="h-4 w-4 mr-2" />
+                Modifica Manualmente
+              </Button>
+            )}
+            <Button variant="outline" onClick={handleAiSave} disabled={aiSaved || !aiPreviewFilters} className={aiPreviewFilters ? "flex-1" : ""}>
               <Save className="h-4 w-4 mr-2" />
               {aiSaved ? '✅ Aggiunto!' : 'Aggiungi al Profilo'}
             </Button>
@@ -205,7 +282,8 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
         </TabsContent>
 
         {/* Manual Tab */}
-        <TabsContent value="manual" className="space-y-4 mt-4">
+        <TabsContent value="manual" className="space-y-6 mt-4">
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="manual-name">Nome catalogo</Label>
@@ -224,11 +302,10 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
                   <button
                     key={t}
                     onClick={() => setManualType(t)}
-                    className={`flex-1 rounded-md border py-1.5 text-xs font-medium transition-colors ${
-                      manualType === t
-                        ? 'border-[#8a5aeb] bg-[#8a5aeb]/20 text-[#8a5aeb]'
-                        : 'border-white/10 bg-white/5 text-white/50'
-                    }`}
+                    className={`flex-1 rounded-md border py-1.5 text-xs font-medium transition-colors ${manualType === t
+                      ? 'border-[#8a5aeb] bg-[#8a5aeb]/20 text-[#8a5aeb]'
+                      : 'border-white/10 bg-white/5 text-white/50'
+                      }`}
                   >
                     {t === 'movie' ? 'Film' : 'Serie'}
                   </button>
@@ -237,116 +314,143 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Ordina per</Label>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SORT_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Lingua originale</Label>
-              <Select value={language || '__any'} onValueChange={(v) => setLanguage(v === '__any' ? '' : v)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Qualsiasi" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LANGUAGES.map((l) => (
-                    <SelectItem key={l.value || '__any'} value={l.value || '__any'}>{l.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <details className="group border border-white/10 rounded-lg p-3 [&_summary::-webkit-details-marker]:hidden" open>
+            <summary className="flex cursor-pointer items-center justify-between font-medium text-white select-none">
+              Filtri di Base
+              <span className="transition group-open:rotate-180">
+                <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+              </span>
+            </summary>
+            <div className="mt-4 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Ordina per</Label>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SORT_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Lingua originale</Label>
+                  <Select value={language || '__any'} onValueChange={(v) => setLanguage(v === '__any' ? '' : v)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Qualsiasi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGES.map((l) => (
+                        <SelectItem key={l.value || '__any'} value={l.value || '__any'}>{l.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-          {/* Genres */}
-          <div>
-            <Label className="mb-2 block">Generi</Label>
-            <div className="flex flex-wrap gap-1.5">
+              <div>
+                <Label className="mb-2 block">Voto minimo: {voteMin > 0 ? voteMin.toFixed(1) : 'Qualsiasi'}</Label>
+                <div className="px-2">
+                  <Slider min={0} max={9} step={0.5} value={[voteMin]} onValueChange={([v]) => setVoteMin(v)} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="year-from">Anno da</Label>
+                  <Input
+                    id="year-from"
+                    value={yearFrom}
+                    onChange={(e) => setYearFrom(e.target.value)}
+                    placeholder="es. 2000"
+                    className="mt-1"
+                    type="number"
+                    min="1900"
+                    max="2099"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="year-to">Anno a</Label>
+                  <Input
+                    id="year-to"
+                    value={yearTo}
+                    onChange={(e) => setYearTo(e.target.value)}
+                    placeholder="es. 2024"
+                    className="mt-1"
+                    type="number"
+                    min="1900"
+                    max="2099"
+                  />
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <details className="group border border-white/10 rounded-lg p-3 [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer items-center justify-between font-medium text-white select-none">
+              Generi
+              <span className="transition group-open:rotate-180">
+                <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+              </span>
+            </summary>
+            <div className="mt-3 flex flex-wrap gap-1.5">
               {Object.entries(GENRE_NAMES).map(([id, name]) => (
                 <button
                   key={id}
                   onClick={() => toggleGenre(id)}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                    genres.includes(id)
-                      ? 'bg-[#8a5aeb] text-white'
-                      : 'bg-white/10 text-white/60 hover:bg-white/20'
-                  }`}
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${genres.includes(id)
+                    ? 'bg-[#8a5aeb] text-white'
+                    : 'bg-white/10 text-white/60 hover:bg-white/20'
+                    }`}
                 >
                   {name}
                 </button>
               ))}
             </div>
-          </div>
+          </details>
 
-          {/* Keywords */}
-          <div>
-            <Label className="mb-2 block">Parole chiave</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {Object.entries(KEYWORD_NAMES).map(([id, name]) => (
-                <button
-                  key={id}
-                  onClick={() => toggleKeyword(id)}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                    keywords.includes(id)
-                      ? 'bg-[#8a5aeb] text-white'
-                      : 'bg-white/10 text-white/60 hover:bg-white/20'
-                  }`}
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-          </div>
+          <details className="group border border-white/10 rounded-lg p-3 [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer items-center justify-between font-medium text-white select-none">
+              Parole Chiave & Staff (Ricerca)
+              <span className="transition group-open:rotate-180">
+                <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+              </span>
+            </summary>
+            <div className="mt-4 space-y-5">
+              <div>
+                <Label className="mb-2 block">Parole Chiave</Label>
+                <AutocompleteSearch
+                  placeholder="Cerca parole chiave su TMDB..."
+                  searchFn={api.searchTmdbKeywords}
+                  onSelect={(item) => !keywords.find(k => k.id === item.id) && toggleKeyword(item)}
+                />
+                {keywords.length > 0 && renderPills(keywords, toggleKeyword)}
+              </div>
 
-          {/* Vote min */}
-          <div>
-            <Label className="mb-2 block">Voto minimo: {voteMin > 0 ? voteMin.toFixed(1) : 'Qualsiasi'}</Label>
-            <Slider
-              min={0}
-              max={9}
-              step={0.5}
-              value={[voteMin]}
-              onValueChange={([v]) => setVoteMin(v)}
-            />
-          </div>
+              <div>
+                <Label className="mb-2 block">Attori (Cast)</Label>
+                <AutocompleteSearch
+                  placeholder="Cerca un attore..."
+                  searchFn={api.searchTmdbPeople}
+                  onSelect={(item) => !cast.find(k => k.id === item.id) && toggleCast(item)}
+                />
+                {cast.length > 0 && renderPills(cast, toggleCast)}
+              </div>
 
-          {/* Year range */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="year-from">Anno da</Label>
-              <Input
-                id="year-from"
-                value={yearFrom}
-                onChange={(e) => setYearFrom(e.target.value)}
-                placeholder="es. 2000"
-                className="mt-1"
-                type="number"
-                min="1900"
-                max="2099"
-              />
+              <div>
+                <Label className="mb-2 block">Registi / Crew</Label>
+                <AutocompleteSearch
+                  placeholder="Cerca regista o membro dello staff..."
+                  searchFn={api.searchTmdbPeople}
+                  onSelect={(item) => !crew.find(k => k.id === item.id) && toggleCrew(item)}
+                />
+                {crew.length > 0 && renderPills(crew, toggleCrew)}
+              </div>
             </div>
-            <div>
-              <Label htmlFor="year-to">Anno a</Label>
-              <Input
-                id="year-to"
-                value={yearTo}
-                onChange={(e) => setYearTo(e.target.value)}
-                placeholder="es. 2024"
-                className="mt-1"
-                type="number"
-                min="1900"
-                max="2099"
-              />
-            </div>
-          </div>
+          </details>
 
           {/* Preview */}
           {manualPreviewFilters && !manualLoading && (
@@ -358,7 +462,7 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
               {manualLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Anteprima
             </Button>
-            <Button onClick={handleManualSave}>
+            <Button onClick={handleManualSave} className="flex-1">
               <Save className="h-4 w-4 mr-2" />
               Salva e Aggiungi
             </Button>

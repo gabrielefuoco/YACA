@@ -41,42 +41,31 @@ async function refreshTraktTokens(refreshToken) {
 }
 
 /**
- * Aggiorna l'URL dell'addon nell'account Stremio dell'utente con i nuovi token.
- * @param {object} userConfig - La configurazione utente corrente (decodificata)
+ * Aggiorna i token Trakt nel database MongoDB dell'utente.
+ * @param {string} userId - ID univoco dell'utente
  * @param {string} newAccessToken - Il nuovo access token Trakt
  * @param {string} newRefreshToken - Il nuovo refresh token Trakt
- * @param {string} hostUrl - L'URL base del server
- * @returns {Promise<string|null>} Il nuovo access token se aggiornato, null se fallito
+ * @returns {Promise<boolean>} Vero se aggiornato correttamente
  */
-async function syncTraktTokensToStremio(userConfig, newAccessToken, newRefreshToken, hostUrl) {
-    const stremioAuthKey = userConfig.apiKeys?.stremioAuthKey;
-    if (!stremioAuthKey) {
-        console.warn('Trakt auto-refresh: stremioAuthKey mancante, impossibile aggiornare Stremio.');
-        return newAccessToken; // Token rigenerato ma non sincronizzato su Stremio
-    }
+async function syncTraktTokensToDb(userId, newAccessToken, newRefreshToken) {
+    if (!userId) return false;
 
     try {
-        // Costruisce il nuovo payload con i token aggiornati
-        const updatedConfig = JSON.parse(JSON.stringify(userConfig));
-        updatedConfig.apiKeys.trakt = newAccessToken;
-        updatedConfig.apiKeys.traktRefreshToken = newRefreshToken;
-        updatedConfig.configVersion = Date.now().toString(36);
-        const newConfigBase64 = UserConfig.encodeConfig(updatedConfig);
-
-        const manifestUrl = `${hostUrl}/${newConfigBase64}/manifest.json`;
-
-        const result = await updateStremioAddonCollection(stremioAuthKey, manifestUrl);
-
-        if (result.success) {
-            console.log('Trakt auto-refresh: token aggiornati e sincronizzati con Stremio.');
-        } else {
-            console.warn('Trakt auto-refresh: aggiornamento Stremio fallito:', result.error);
-        }
-
-        return newAccessToken;
+        const User = require('../db/models/User');
+        await User.findOneAndUpdate(
+            { userId },
+            {
+                $set: {
+                    'apiKeys.trakt': newAccessToken,
+                    'apiKeys.traktRefreshToken': newRefreshToken
+                }
+            }
+        );
+        console.log(`Trakt auto-refresh: token aggiornati nel DB per l'utente ${userId}.`);
+        return true;
     } catch (err) {
-        console.error('Trakt auto-refresh: errore sincronizzazione Stremio:', err.message);
-        return newAccessToken; // Token rigenerato ma sincronizzazione fallita
+        console.error(`Trakt auto-refresh: errore salvataggio nel DB per ${userId}:`, err.message);
+        return false;
     }
 }
 
@@ -254,13 +243,14 @@ async function fetchTraktCatalog(endpoint, skip = 0, traktToken = null, tmdbApiK
             const newTokens = await refreshTraktTokens(refreshContext.userConfig.apiKeys.traktRefreshToken);
 
             if (newTokens) {
-                // Sincronizza i nuovi token su Stremio (in background, non bloccante per la risposta)
-                syncTraktTokensToStremio(
-                    refreshContext.userConfig,
-                    newTokens.access_token,
-                    newTokens.refresh_token,
-                    refreshContext.hostUrl
-                ).catch(syncErr => console.error(`Trakt auto-refresh sync error (${endpoint}):`, syncErr.message));
+                // Sincronizza i nuovi token su MongoDB se l'utente è stateful
+                if (refreshContext?.userConfig?.userId) {
+                    syncTraktTokensToDb(
+                        refreshContext.userConfig.userId,
+                        newTokens.access_token,
+                        newTokens.refresh_token
+                    ).catch(dbErr => console.error(`Trakt auto-refresh DB error (${endpoint}):`, dbErr.message));
+                }
 
                 // Riprova la richiesta con il nuovo token
                 try {
@@ -305,4 +295,4 @@ async function deduplicateAndEnrich(results, tmdbApiKey) {
     return enrichedItems.filter(i => i !== null);
 }
 
-module.exports = { fetchTraktCatalog, refreshTraktTokens, syncTraktTokensToStremio };
+module.exports = { fetchTraktCatalog, refreshTraktTokens, syncTraktTokensToDb };
