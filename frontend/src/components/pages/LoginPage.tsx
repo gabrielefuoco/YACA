@@ -13,13 +13,14 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onComplete }: LoginPageProps) {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [stremioAuth, setStremioAuth] = useState<StremioAuth | null>(null);
   const [traktToken, setTraktToken] = useState<string | null>(null);
   const [traktRefreshToken, setTraktRefreshToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [configuring, setConfiguring] = useState(false);
   const [error, setError] = useState('');
   const [traktModalOpen, setTraktModalOpen] = useState(false);
 
@@ -44,26 +45,36 @@ export function LoginPage({ onComplete }: LoginPageProps) {
     setLoading(false);
   };
 
+  const handleComplete = (tkn: string | null = null, refresh: string | null = null) => {
+    setConfiguring(true);
+    onComplete(stremioAuth, tkn, refresh);
+  };
+
   const handleSkipTrakt = () => {
-    setStep(3);
+    handleComplete();
   };
 
   const handleTraktSuccess = (token: string, refresh: string) => {
     setTraktToken(token);
     setTraktRefreshToken(refresh);
     setTraktModalOpen(false);
-    setStep(3);
+    handleComplete(token, refresh);
   };
 
-  const handleGenerate = () => {
-    onComplete(stremioAuth, traktToken, traktRefreshToken);
-  };
+  if (configuring) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-[#8a5aeb]" />
+        <p className="text-sm text-white/50">Configurazione in corso…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Step indicators */}
       <div className="flex items-center gap-2">
-        {[1, 2, 3].map((s) => (
+        {[1, 2].map((s) => (
           <div key={s} className="flex items-center gap-2">
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
@@ -76,11 +87,11 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             >
               {step > s ? <CheckCircle2 className="h-4 w-4" /> : s}
             </div>
-            {s < 3 && <div className={`h-px w-8 transition-colors ${step > s ? 'bg-emerald-500' : 'bg-white/[0.08]'}`} />}
+            {s < 2 && <div className={`h-px w-8 transition-colors ${step > s ? 'bg-emerald-500' : 'bg-white/[0.08]'}`} />}
           </div>
         ))}
         <span className="ml-3 text-xs text-white/40 font-medium">
-          {step === 1 ? 'Account Stremio' : step === 2 ? 'Connetti Trakt' : 'Genera Config'}
+          {step === 1 ? 'Account Stremio' : 'Connetti Trakt'}
         </span>
       </div>
 
@@ -180,44 +191,11 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3">
               <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
               <p className="text-sm text-emerald-400 font-medium">Trakt connesso!</p>
-              <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={handleSkipTrakt}>
+              <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => handleComplete(traktToken, traktRefreshToken)}>
                 Continua <ChevronRight className="h-3 w-3 ml-1" />
               </Button>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Step 3: Generate */}
-      {step === 3 && (
-        <div className="space-y-4">
-          <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Riepilogo configurazione</h3>
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-2.5">
-                <span className={`h-2.5 w-2.5 rounded-full ${stremioAuth ? 'bg-emerald-400 shadow-lg shadow-emerald-400/30' : 'bg-white/15'}`} />
-                <div>
-                  <p className="text-xs text-white/40">Stremio</p>
-                  <p className="text-sm text-white font-medium">
-                    {stremioAuth ? stremioAuth.email : 'Non connesso'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-2.5">
-                <span className={`h-2.5 w-2.5 rounded-full ${traktToken ? 'bg-emerald-400 shadow-lg shadow-emerald-400/30' : 'bg-white/15'}`} />
-                <div>
-                  <p className="text-xs text-white/40">Trakt</p>
-                  <p className="text-sm text-white font-medium">
-                    {traktToken ? 'Connesso' : 'Non connesso'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <Button className="w-full bg-gradient-to-r from-[#8a5aeb] to-[#6d3fd4] hover:from-[#7a4adb] hover:to-[#5d2fc4] shadow-lg shadow-[#8a5aeb]/20" size="lg" onClick={handleGenerate}>
-            🚀 Genera Configurazione
-          </Button>
         </div>
       )}
 

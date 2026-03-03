@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { mapBackendProfile, profilesToApiPayload, BackendProfile } from '@/lib/utils';
 import { useConfig } from '@/hooks/useConfig';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,7 +10,7 @@ import { TabNav } from '@/components/layout/TabNav';
 import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
-import { MyList, StremioAuth, Profile, ProfileTemplate } from '@/types';
+import { MyList, StremioAuth, Profile } from '@/types';
 import { LOCAL_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 import { decodeConfigAsync } from '@/lib/configCodec';
 import { api } from '@/lib/api';
@@ -51,6 +51,8 @@ export default function Home() {
   const [configVersion, setConfigVersion] = useState<string | undefined>();
   const [initialProfiles, setInitialProfiles] = useState<Profile[] | undefined>(undefined);
   const [configDecoded, setConfigDecoded] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const autoConfigCalledRef = useRef(false);
 
   // Async decode config from localStorage/URL
   useEffect(() => {
@@ -78,6 +80,12 @@ export default function Home() {
     });
   }, [isLoaded, configBase64]);
 
+  // Restore userId from localStorage on mount
+  useEffect(() => {
+    const storedUserId = localStorage.getItem(LOCAL_STORAGE_KEYS.USER_ID);
+    if (storedUserId) setUserId(storedUserId);
+  }, []);
+
   const {
     profiles,
     setProfiles,
@@ -95,6 +103,36 @@ export default function Home() {
   } = useProfiles(initialProfiles);
 
   const { presets, profileTemplates, categories } = usePresets();
+
+  // Auto-configure when stremio is logged in but no config/userId is stored yet
+  useEffect(() => {
+    if (!isLoaded || !authLoaded || !configDecoded) return;
+    if (autoConfigCalledRef.current) return;
+    if (stremioAuth && !configBase64 && !userId) {
+      autoConfigCalledRef.current = true;
+      api.configure({
+        profiles: profilesToApiPayload(profiles),
+        activeProfileId,
+        stremioAuthKey: stremioAuth.authKey,
+        traktToken: traktToken ?? undefined,
+        traktRefreshToken: traktRefreshToken ?? undefined,
+      }).then((data) => {
+        if (data.configBase64) {
+          setConfigBase64(data.configBase64);
+        }
+        if (data.userId) {
+          setUserId(data.userId);
+          localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
+        }
+        if (data.userId && stremioAuth?.authKey) {
+          const host = window.location.host;
+          const httpsManifestUrl = `https://${host}/${data.userId}/manifest.json`;
+          api.stremioAddonUpdate(stremioAuth.authKey, httpsManifestUrl).catch(() => {});
+        }
+      }).catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, authLoaded, configDecoded, stremioAuth, configBase64, userId]);
 
   // Load my lists from localStorage
   useEffect(() => {
@@ -137,15 +175,15 @@ export default function Home() {
       });
       if (data.configBase64) {
         setConfigBase64(data.configBase64);
+      }
+      if (data.userId) {
+        setUserId(data.userId);
+        localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
 
-        // Auto-install addon in Stremio
+        // Auto-install addon in Stremio using short userId URL
         if (newStremioAuth?.authKey) {
           const host = window.location.host;
-          const cv = data.configVersion || '';
-          const manifestPath = cv
-            ? `${data.configBase64}/${cv}/manifest.json`
-            : `${data.configBase64}/manifest.json`;
-          const httpsManifestUrl = `https://${host}/${manifestPath}`;
+          const httpsManifestUrl = `https://${host}/${data.userId}/manifest.json`;
           try {
             await api.stremioAddonUpdate(newStremioAuth.authKey, httpsManifestUrl);
           } catch (e) {
@@ -156,13 +194,19 @@ export default function Home() {
     } catch {}
   };
 
-  const handleConfigSaved = (base64: string) => {
+  const handleConfigSaved = (base64: string, newUserId?: string) => {
     setConfigBase64(base64);
+    if (newUserId) {
+      setUserId(newUserId);
+      localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, newUserId);
+    }
   };
 
   const handleLogout = () => {
     logout();
     clearConfig();
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.USER_ID);
+    setUserId(null);
     setInitialProfiles(createDefaultProfiles());
     setProfiles(createDefaultProfiles());
   };
@@ -215,6 +259,7 @@ export default function Home() {
                   onAddCatalog={addCatalog}
                   onSaveMyList={handleSaveMyList}
                   onRemoveMyList={handleRemoveMyList}
+                  onUpdateProfile={updateProfile}
                 />
               )}
 
@@ -227,6 +272,7 @@ export default function Home() {
                   traktToken={traktToken}
                   traktRefreshToken={traktRefreshToken}
                   configVersion={configVersion}
+                  userId={userId ?? undefined}
                   onUpdateProfile={updateProfile}
                   onLogout={handleLogout}
                   onDisconnectTrakt={handleDisconnectTrakt}

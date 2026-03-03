@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Profile, ProfileTemplate } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Check, Pencil, Trash2, X, BookTemplate, Sparkles } from 'lucide-react';
+import { Plus, Check, Pencil, Trash2, X, BookTemplate, Sparkles, User } from 'lucide-react';
 
 interface ProfileManagerProps {
   profiles: Profile[];
@@ -57,9 +57,16 @@ export function ProfileManager({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider">Profili</h3>
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#8a5aeb]/20">
+            <User className="h-4 w-4 text-[#8a5aeb]" />
+          </div>
+          <h2 className="text-base font-semibold text-white">Profili</h2>
+          <span className="text-xs text-white/40 bg-white/[0.06] rounded-full px-2 py-0.5">{profiles.length}</span>
+        </div>
         <div className="flex gap-1">
           <Button
             variant="ghost"
@@ -130,77 +137,102 @@ export function ProfileManager({
         </div>
       )}
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {profiles.map((profile) => (
-          <div
-            key={profile.id}
-            onClick={() => onSelectEditing(profile.id)}
-            className={`relative shrink-0 cursor-pointer rounded-xl border px-4 py-3 min-w-[130px] transition-all ${
-              editingProfileId === profile.id
-                ? 'border-[#8a5aeb] bg-gradient-to-br from-[#8a5aeb]/15 to-[#8a5aeb]/5 shadow-lg shadow-[#8a5aeb]/10'
-                : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]'
-            }`}
-          >
-            {activeProfileId === profile.id && (
-              <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
-              </span>
-            )}
-            {renamingId === profile.id ? (
-              <Input
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && commitRename()}
-                onBlur={commitRename}
-                className="h-6 text-xs p-1"
-                autoFocus
-                onClick={(e) => e.stopPropagation()}
-              />
-            ) : (
-              <p className="text-sm font-medium text-white truncate max-w-[100px]">{profile.name}</p>
-            )}
-            <p className="text-xs text-white/40 mt-0.5">
-              {profile.existingCatalogs.length + profile.raw_ui_state.selectedPresets.length} cataloghi
-            </p>
-            <div className="mt-2 flex gap-1">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSetActive(profile.id);
-                }}
-                title="Imposta attivo"
-                className={`rounded p-0.5 text-xs transition-colors ${
-                  activeProfileId === profile.id
-                    ? 'text-emerald-400'
-                    : 'text-white/30 hover:text-emerald-400'
-                }`}
-              >
-                <Check className="h-3 w-3" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  startRename(profile.id, profile.name);
-                }}
-                className="rounded p-0.5 text-white/30 hover:text-white/60 transition-colors"
-              >
-                <Pencil className="h-3 w-3" />
-              </button>
-              {profiles.length > 1 && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemove(profile.id);
-                  }}
-                  className="rounded p-0.5 text-white/30 hover:text-red-400 transition-colors"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
+      {/* Profile cards – larger, more prominent */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {profiles.map((profile) => {
+          const isEditing = editingProfileId === profile.id;
+          const isActive = activeProfileId === profile.id;
+          const catalogCount = profile.existingCatalogs.length + profile.raw_ui_state.selectedPresets.length;
+          const keywordCount = profile.settings?.manualPillars?.length ?? 0;
+
+          return (
+            <div
+              key={profile.id}
+              onClick={() => onSelectEditing(profile.id)}
+              className={`relative cursor-pointer rounded-xl border p-4 transition-all ${
+                isEditing
+                  ? 'border-[#8a5aeb] bg-gradient-to-br from-[#8a5aeb]/20 to-[#8a5aeb]/5 shadow-lg shadow-[#8a5aeb]/15 ring-1 ring-[#8a5aeb]/30'
+                  : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]'
+              }`}
+            >
+              {/* Active indicator */}
+              {isActive && (
+                <span className="absolute top-2.5 right-2.5 flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                </span>
               )}
+
+              {/* Profile avatar */}
+              <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-full text-lg ${
+                isEditing ? 'bg-[#8a5aeb]/30' : 'bg-white/[0.06]'
+              }`}>
+                {profile.name.startsWith('🏠') ? '🏠' :
+                 profile.name.startsWith('🎬') ? '🎬' :
+                 profile.name.startsWith('📺') ? '📺' :
+                 profile.name.startsWith('🎭') ? '🎭' :
+                 profile.name.charAt(0).toUpperCase()}
+              </div>
+
+              {renamingId === profile.id ? (
+                <Input
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && commitRename()}
+                  onBlur={commitRename}
+                  className="h-6 text-xs p-1 mb-1"
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <p className="text-sm font-semibold text-white truncate mb-1">{profile.name}</p>
+              )}
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] text-white/40">
+                  {catalogCount} catalog{catalogCount !== 1 ? 'ghi' : 'o'}
+                </span>
+                {keywordCount > 0 && (
+                  <span className="text-[11px] text-[#8a5aeb]/80 bg-[#8a5aeb]/10 rounded-full px-1.5 py-0.5">
+                    {keywordCount} 🔑
+                  </span>
+                )}
+              </div>
+
+              {/* Actions row */}
+              <div className="mt-3 flex items-center gap-1 border-t border-white/[0.06] pt-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onSetActive(profile.id); }}
+                  title={isActive ? 'Profilo attivo' : 'Imposta come attivo'}
+                  className={`flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+                    isActive
+                      ? 'bg-emerald-500/15 text-emerald-400'
+                      : 'text-white/30 hover:text-emerald-400 hover:bg-emerald-500/10'
+                  }`}
+                >
+                  <Check className="h-3 w-3" />
+                  {isActive ? 'Attivo' : 'Attiva'}
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); startRename(profile.id, profile.name); }}
+                  className="rounded-md p-1 text-white/30 hover:text-white/60 transition-colors"
+                  title="Rinomina"
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
+                {profiles.length > 1 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onRemove(profile.id); }}
+                    className="rounded-md p-1 text-white/30 hover:text-red-400 transition-colors ml-auto"
+                    title="Elimina profilo"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
