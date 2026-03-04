@@ -9,7 +9,7 @@ const TasteProfile = require('../db/models/TasteProfile');
 const UserActivity = require('../db/models/UserActivity');
 const ProfileScorer = require('../profile/ProfileScorer');
 const CacheEntry = require('../db/models/CacheEntry');
-const presetsList = require('../data/presets');
+const { getPresets } = require('../data/presets');
 const {
     CACHE_TTL_MS,
     FAST_CACHE_TTL_MS,
@@ -487,6 +487,9 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
         // Pulisce l'ID nel caso arrivi come Preset dalla Dashboard
         const baseId = id.startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : id;
+
+        // Carica i preset con date dinamiche (ricalcolate ad ogni richiesta)
+        const presetsList = getPresets();
 
         // ==========================================
         // SCENARIO -1: YACA PROFILES
