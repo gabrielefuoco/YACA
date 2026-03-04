@@ -37,11 +37,13 @@ export function useProfiles(initialProfiles?: Profile[]) {
   );
 
   // Sync when initialProfiles changes (e.g. after async config decode or save)
-  const initialRef = useRef(initialProfiles);
   useEffect(() => {
-    if (initialProfiles && initialProfiles.length > 0 && initialProfiles !== initialRef.current) {
-      initialRef.current = initialProfiles;
-      setProfiles(initialProfiles);
+    if (initialProfiles && initialProfiles.length > 0) {
+      setProfiles((current) => {
+        // Only update if reference or length changed to avoid loop
+        if (current === initialProfiles) return current;
+        return initialProfiles;
+      });
       setActiveProfileId((prev) =>
         initialProfiles.some((p) => p.id === prev) ? prev : initialProfiles[0].id
       );

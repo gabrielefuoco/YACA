@@ -220,7 +220,8 @@ module.exports = async (req, res) => {
                 mistral: mistralKey,
                 trakt: traktToken || null,
                 traktRefreshToken: traktRefreshToken || null,
-                mdblist: mdblistKey || null
+                mdblist: mdblistKey || null,
+                stremio: stremioAuthKey || null
             },
             config: {
                 activeProfileId: finalActiveProfileId,
@@ -234,18 +235,10 @@ module.exports = async (req, res) => {
         const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
         const manifestUrl = `${hostUrl}/${userDoc.userId}/manifest.json`;
 
-        // 6. Costruisci compatibilità Base64 per la dashboard locale
-        const configBase64 = UserConfig.encodeConfig({
-            apiKeys: userDoc.apiKeys,
-            profiles: userDoc.profiles,
-            activeProfileId: userDoc.config.activeProfileId
-        });
-
         res.json({
             success: true,
             userId: userDoc.userId,
             manifestUrl,
-            configBase64,
             configVersion
         });
 

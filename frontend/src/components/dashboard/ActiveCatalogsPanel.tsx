@@ -73,8 +73,7 @@ export function ActiveCatalogsPanel({
 
   const handleDragOverWithMerge = (
     e: React.DragEvent,
-    targetIndex: number,
-    targetCatalog: Catalog
+    targetIndex: number
   ) => {
     e.preventDefault();
     if (dragIndex !== null && dragIndex !== targetIndex && e.shiftKey) {
@@ -117,7 +116,7 @@ export function ActiveCatalogsPanel({
               isDragging={dragIndex === index}
               onRemove={() => onRemove(catalog.id)}
               onDragStart={() => handleDragStart(index)}
-              onDragOver={(e) => handleDragOverWithMerge(e, index, catalog)}
+              onDragOver={(e) => handleDragOverWithMerge(e, index)}
               onDrop={(e) => handleDropWithMerge(e, index, catalog)}
               onDragEnd={() => setDragIndex(null)}
             />

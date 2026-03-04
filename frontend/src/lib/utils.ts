@@ -27,6 +27,8 @@ export interface BackendProfile {
     minVoteCount?: number;
     fastPresetRefresh?: boolean;
     tmdbKey?: string;
+    manualPillars?: unknown[];
+    suggestedPillars?: unknown[];
   };
   raw_ui_state?: {
     selectedPresets?: string[];
@@ -70,7 +72,7 @@ export function profilesToApiPayload(profiles: Profile[]) {
  * Maps a backend-stored profile (from UserConfig) to the frontend Profile type.
  * The backend stores processed `catalogs` and uses different settings field names.
  */
-export function mapBackendProfile(backendProfile: BackendProfile & { settings?: any }): Profile {
+export function mapBackendProfile(backendProfile: BackendProfile): Profile {
   const bCatalogs: BackendCatalog[] = backendProfile.catalogs ?? [];
   const rawUi = backendProfile.raw_ui_state ?? {};
   const bSettings = backendProfile.settings ?? {};
@@ -101,8 +103,8 @@ export function mapBackendProfile(backendProfile: BackendProfile & { settings?: 
       voteCountMin: typeof bSettings.minVoteCount === 'number' ? bSettings.minVoteCount : 0,
       fastRefresh: Boolean(bSettings.fastPresetRefresh),
       tmdbKey: bSettings.tmdbKey ?? '',
-      manualPillars: Array.isArray(bSettings.manualPillars) ? bSettings.manualPillars : [],
-      suggestedPillars: Array.isArray(bSettings.suggestedPillars) ? bSettings.suggestedPillars : [],
+      manualPillars: Array.isArray(bSettings.manualPillars) ? bSettings.manualPillars as import('@/types').Pillar[] : [],
+      suggestedPillars: Array.isArray(bSettings.suggestedPillars) ? bSettings.suggestedPillars as import('@/types').Pillar[] : [],
     },
   };
 }

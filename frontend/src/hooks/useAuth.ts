@@ -13,7 +13,7 @@ export function useAuth() {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.STREMIO_AUTH);
       if (raw) setStremioAuthState(JSON.parse(raw));
-    } catch {}
+    } catch { }
     setTraktTokenState(localStorage.getItem(LOCAL_STORAGE_KEYS.TRAKT_TOKEN));
     setTraktRefreshTokenState(localStorage.getItem(LOCAL_STORAGE_KEYS.TRAKT_REFRESH_TOKEN));
     setIsLoaded(true);
@@ -50,7 +50,6 @@ export function useAuth() {
     setStremioAuth(null);
     setTraktToken(null);
     setTraktRefreshToken(null);
-    localStorage.removeItem(LOCAL_STORAGE_KEYS.CONFIG);
   };
 
   return {

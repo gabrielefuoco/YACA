@@ -12,6 +12,7 @@ const { generateTmdbFiltersFromPrompt } = require('./src/ai/router');
 const { getPresets, profileTemplates } = require('./src/data/presets');
 const { parseExtra, sanitizeString, isAllowedUrl } = require('./src/utils/helpers');
 const { getBlurredImageUrl, addBadgeToImage } = require('./src/utils/imageProcessor');
+const { streamHandler } = require('./src/handlers/streamHandler');
 const { clearAllTmdbCaches } = require('./src/clients/tmdb');
 const { clearIdCache } = require('./src/id_mapping/id_cache');
 const TmdbRequestCache = require('./src/models/TmdbRequestCache');
@@ -46,30 +47,25 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '1mb' }));
 
 /**
- * Helper per risolvere la configurazione utente (Stateful o Stateless).
- * @param {string} userHandle - userId (MongoDB) o configBase64 (Stateless)
+ * Helper per risolvere la configurazione utente (Stateful).
+ * @param {string} userId - userId (MongoDB)
  * @returns {Promise<object|null>} Configurazione utente normalizzata
  */
-async function resolveUserConfig(userHandle) {
-    if (!userHandle) return null;
+async function resolveUserConfig(userId) {
+    if (!userId) return null;
 
-    // 1. Tenta come userId (Stateful)
-    // Gli userId generati da nanoid(10) sono corti, le configBase64 sono solitamente > 100 char.
-    if (userHandle.length < 50) {
-        const user = await UserConfig.getUser(userHandle);
-        if (user) {
-            return {
-                userId: user.userId,
-                apiKeys: user.apiKeys,
-                profiles: user.profiles,
-                activeProfileId: user.config?.activeProfileId,
-                configVersion: user.config?.configVersion
-            };
-        }
+    const user = await UserConfig.getUser(userId);
+    if (user) {
+        return {
+            userId: user.userId,
+            apiKeys: user.apiKeys,
+            profiles: user.profiles,
+            activeProfileId: user.config?.activeProfileId,
+            configVersion: user.config?.configVersion
+        };
     }
 
-    // 2. Tenta come configBase64 (Stateless)
-    return UserConfig.decodeConfig(userHandle);
+    return null;
 }
 
 // Health check endpoint per monitoring e deployment platforms
@@ -470,9 +466,25 @@ app.post('/api/trakt/device/token', async (req, res) => {
 // 2. Registra endpoint configuration (Frontend Web)
 app.post('/api/configure', configureRoute);
 
-// Redirect per configurazione da URL Base64
-app.get(['/:configBase64/configure', '/:configBase64/:configVersion/configure'], (req, res) => {
-    res.redirect(`/?config=${encodeURIComponent(req.params.configBase64)}`);
+// Endpoint per recuperare i profili dell'utente tramite userId (Sostituisce il decode Base64 frontend)
+app.get('/api/user/:userId', async (req, res) => {
+    const { userId } = req.params;
+    if (!userId) return res.status(400).json({ error: 'userId parameter is required' });
+
+    try {
+        const userConfig = await resolveUserConfig(userId);
+        if (!userConfig) {
+            return res.status(404).json({ error: 'Utente non trovato' });
+        }
+        res.json({
+            profiles: userConfig.profiles || [],
+            activeProfileId: userConfig.activeProfileId,
+            configVersion: userConfig.configVersion
+        });
+    } catch (err) {
+        console.error('Errore durante il recupero dell\'utente:', err.message);
+        res.status(500).json({ error: 'Errore interno del server' });
+    }
 });
 
 // Endpoint per svuotare tutte le cache globali del sistema (solo per test)
@@ -603,14 +615,19 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
             name: 'YACA (Yet Another Catalog Addon)',
             description: 'Catalogo Intelligente Potenziato da AI',
             logo: `${req.protocol}://${req.get('host')}/logo.png`,
-            resources: ['catalog', 'meta'],
+            resources: [
+                'catalog',
+                'meta',
+                { name: 'stream', types: ['movie', 'series', 'other'], idPrefixes: ['yaca-profile-'] }
+            ],
             types: ['movie', 'series'],
             catalogs: [
+                { id: 'yaca-profiles', type: 'other', name: '👥 Cambia Profilo' },
                 { id: 'yaca_search_history', type: 'movie', name: 'Cronologia Ricerche', extra: [{ name: 'skip' }] },
                 { id: 'yaca_ai_search', type: 'movie', name: 'Ricerca AI (Film)', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] },
                 { id: 'yaca_ai_search_series', type: 'series', name: 'Ricerca AI (Serie)', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] }
             ],
-            idPrefixes: ['tt', 'tmdb:', 'kitsu:'],
+            idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'yaca-profile-'],
             behaviorHints: {
                 configurable: true,
                 configurationRequired: false
@@ -718,6 +735,65 @@ app.get(['/:userHandle/meta/:type/:id.json', '/:userHandle/:configVersion/meta/:
     } catch (err) {
         console.error("Errore Meta Endpoint:", err.message);
         res.json({ meta: null });
+    }
+});
+
+// 6. Endpoint per i flussi Stream (usato per i profili)
+app.get(['/:userHandle/stream/:type/:id.json', '/:userHandle/:configVersion/stream/:type/:id.json'], async (req, res) => {
+    const userConfig = await resolveUserConfig(req.params.userHandle);
+    if (!userConfig) {
+        return res.status(400).json({ streams: [] });
+    }
+    const { type, id } = req.params;
+    const configVersion = req.params.configVersion || '';
+    const args = { type, id };
+    const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+
+    try {
+        const response = await streamHandler(args, userConfig, hostUrl, configVersion);
+        res.setHeader('Cache-Control', 'no-cache, no-store');
+        res.json(response);
+    } catch (err) {
+        console.error("Errore Stream Endpoint:", err.message);
+        res.json({ streams: [] });
+    }
+});
+
+// 7. Magic Endpoint: Cambio Profilo on-the-fly tramite stream video
+app.get('/api/users/:userId/switch-profile/:profileId', async (req, res) => {
+    const { userId, profileId } = req.params;
+
+    try {
+        const userConfig = await resolveUserConfig(userId);
+        if (!userConfig) return res.status(404).send('User not found');
+
+        const profileExists = userConfig.profiles && userConfig.profiles.some(p => p.id === profileId);
+        if (!profileExists) return res.status(400).send('Profile not found');
+
+        await UserConfig.saveUser({
+            userId,
+            config: {
+                activeProfileId: profileId,
+                configVersion: Date.now().toString(36)
+            }
+        });
+
+        const stremioAuthKey = userConfig.apiKeys?.stremio;
+        if (stremioAuthKey) {
+            const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+            const manifestUrl = `${hostUrl}/${userId}/manifest.json`;
+            // Sync fire-and-forget
+            updateStremioAddonCollection(stremioAuthKey, manifestUrl)
+                .then(r => console.log(`[Profile Switch] Sync Stremio completato per utente ${userId}: ${r.success}`))
+                .catch(e => console.error(`[Profile Switch] Errore sync Stremio utente ${userId}:`, e));
+        } else {
+            console.log(`[Profile Switch] Nessuna authKey Stremio salvata per ${userId}. Sync saltata.`);
+        }
+
+        res.redirect('/assets/profile_updated.mp4');
+    } catch (err) {
+        console.error(`Errore switch profile per user ${userId}:`, err.message);
+        res.status(500).send('Internal validation error');
     }
 });
 

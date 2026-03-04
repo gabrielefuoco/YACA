@@ -17,7 +17,8 @@ const userSchema = new mongoose.Schema({
         trakt: String, // Access Token
         traktRefreshToken: String,
         mistral: String,
-        mdblist: String
+        mdblist: String,
+        stremio: String
     },
     // Configurazioni globali dell'Addon
     config: {

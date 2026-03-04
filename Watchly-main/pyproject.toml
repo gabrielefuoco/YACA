@@ -1,0 +1,50 @@
+[project]
+dynamic = ["version"]
+name = "watchly"
+description = "Personalized movie and series recommendations based on your library"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "apscheduler>=3.11.1",
+    "async-lru>=2.0.5",
+    "cachetools>=6.2.2",
+    "cryptography>=46.0.3",
+    "deep-translator>=1.11.4",
+    "fastapi>=0.104.1",
+    "google-genai>=1.54.0",
+    "httpx[http2]>=0.25.2",
+    "loguru>=0.7.2",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "pydantic-core>=2.41.5",
+    "redis>=5.0.1",
+    "tomli>=2.3.0",
+    "uvicorn[standard]>=0.24.0",
+    "jinja2>=3.1.6",
+    "pre-commit>=4.4.0",
+]
+
+[tool.setuptools.dynamic]
+version = { attr = "app.core.version.__version__" }
+
+[dependency-groups]
+dev = [
+    "black>=25.11.0",
+    "flake9>=3.8.3.post2",
+    "pre-commit>=4.4.0",
+]
+
+[project.scripts]
+app = "app.core.app:app"
+
+
+# ==== black ====
+[tool.black]
+line-length = 120
+target-version = ['py312']
+
+
+# ==== isort ====
+[tool.isort]
+profile = "black"
+line_length = 120

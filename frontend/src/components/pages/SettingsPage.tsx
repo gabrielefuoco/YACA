@@ -12,7 +12,6 @@ import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
 import {
   Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Download, Upload, RefreshCw
 } from 'lucide-react';
-import { encodeConfig } from '@/lib/configCodec';
 import { profilesToApiPayload } from '@/lib/utils';
 
 interface SettingsPageProps {
@@ -27,7 +26,7 @@ interface SettingsPageProps {
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
   onLogout: () => void;
   onDisconnectTrakt: () => void;
-  onConfigSaved: (base64: string, userId?: string) => void;
+  onConfigSaved: (userId?: string) => void;
 }
 
 export function SettingsPage({
@@ -83,15 +82,15 @@ export function SettingsPage({
     const updatedProfiles = profiles.map((p) =>
       p.id === activeProfileId
         ? {
-            ...p,
-            settings: {
-              ...p.settings,
-              voteAverageMin: voteAvgMin,
-              voteCountMin,
-              fastRefresh,
-              tmdbKey,
-            },
-          }
+          ...p,
+          settings: {
+            ...p.settings,
+            voteAverageMin: voteAvgMin,
+            voteCountMin,
+            fastRefresh,
+            tmdbKey,
+          },
+        }
         : p
     );
 
@@ -108,26 +107,16 @@ export function SettingsPage({
         configVersion,
       });
 
-      if (data.configBase64) {
-        onConfigSaved(data.configBase64, data.userId ?? undefined);
-        // Use short userId-based install URL (preferred) or fall back to configBase64
+      if (data.userId) {
+        onConfigSaved(data.userId);
         const host = window.location.host;
-        const urlUserId = data.userId ?? userId;
-        const computedInstallUrl = urlUserId
-          ? `stremio://${host}/${urlUserId}/manifest.json`
-          : (() => {
-              const cv = data.configVersion;
-              const manifestPath = cv
-                ? `${data.configBase64}/${cv}/manifest.json`
-                : `${data.configBase64}/manifest.json`;
-              return `stremio://${host}/${manifestPath}`;
-            })();
+        const computedInstallUrl = `stremio://${host}/${data.userId}/manifest.json`;
         setInstallUrl(computedInstallUrl);
         setSuccess(true);
 
         // Auto-update addon in Stremio if auth available
-        if (stremioAuthKey && (data.userId ?? userId)) {
-          const httpsManifestUrl = `https://${host}/${data.userId ?? userId}/manifest.json`;
+        if (stremioAuthKey) {
+          const httpsManifestUrl = `https://${host}/${data.userId}/manifest.json`;
           try {
             await api.stremioAddonUpdate(stremioAuthKey, httpsManifestUrl);
           } catch { }
@@ -163,11 +152,11 @@ export function SettingsPage({
       traktToken: traktToken ?? undefined,
       traktRefreshToken: traktRefreshToken ?? undefined,
     };
-    const blob = new Blob([encodeConfig(config)], { type: 'text/plain' });
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'yaca-backup.txt';
+    a.download = 'yaca-backup.json';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -175,16 +164,31 @@ export function SettingsPage({
   const handleImport = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.txt,.json';
+    input.accept = '.json';
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         const content = reader.result as string;
         try {
-          localStorage.setItem(LOCAL_STORAGE_KEYS.CONFIG, content.trim());
-          window.location.reload();
+          const parsed = JSON.parse(content);
+          if (parsed.profiles) {
+            // Re-upload imported profiles to DB
+            const apiProfiles = profilesToApiPayload(parsed.profiles);
+            const data = await api.configure({
+              profiles: apiProfiles,
+              activeProfileId: parsed.activeProfileId,
+              stremioAuthKey: parsed.stremioAuthKey,
+              traktToken: parsed.traktToken,
+              traktRefreshToken: parsed.traktRefreshToken,
+              configVersion,
+            });
+            if (data.userId) {
+              localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
+              window.location.reload();
+            }
+          }
         } catch { }
       };
       reader.readAsText(file);

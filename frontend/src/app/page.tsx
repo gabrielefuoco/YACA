@@ -12,7 +12,6 @@ import { DashboardPage } from '@/components/pages/DashboardPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
 import { MyList, StremioAuth, Profile } from '@/types';
 import { LOCAL_STORAGE_KEYS, SESSION_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
-import { decodeConfigAsync } from '@/lib/configCodec';
 import { api } from '@/lib/api';
 
 // Default profiles for new users (matches the original HTML quick-start profiles)
@@ -34,7 +33,7 @@ function createDefaultProfiles(): Profile[] {
 }
 
 export default function Home() {
-  const { configBase64, setConfigBase64, clearConfig, isLoaded } = useConfig();
+  const { isLoaded } = useConfig();
   const {
     stremioAuth,
     traktToken,
@@ -50,53 +49,53 @@ export default function Home() {
   const [myLists, setMyLists] = useState<MyList[]>([]);
   const [configVersion, setConfigVersion] = useState<string | undefined>();
   const [initialProfiles, setInitialProfiles] = useState<Profile[] | undefined>(undefined);
-  const [configDecoded, setConfigDecoded] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [configDecoded, setConfigDecoded] = useState(false);
   const autoConfigCalledRef = useRef(false);
 
-  // Async decode config from localStorage/URL
+  // Async load user config from API
   useEffect(() => {
     if (!isLoaded) return;
-    if (!configBase64) {
+
+    const storedUserId = localStorage.getItem(LOCAL_STORAGE_KEYS.USER_ID);
+    if (!storedUserId) {
       setInitialProfiles(createDefaultProfiles());
       setConfigDecoded(true);
       return;
     }
-    decodeConfigAsync(configBase64).then((parsed) => {
-      if (parsed && typeof parsed === 'object') {
-        const cfg = parsed as Record<string, unknown>;
-        if (cfg.configVersion) setConfigVersion(String(cfg.configVersion));
-        if (Array.isArray(cfg.profiles) && cfg.profiles.length > 0) {
-          const mappedProfiles = (cfg.profiles as BackendProfile[]).map(mapBackendProfile);
+
+    setUserId(storedUserId);
+
+    fetch(`/api/user/${storedUserId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.profiles) && data.profiles.length > 0) {
+          const mappedProfiles = (data.profiles as BackendProfile[]).map(mapBackendProfile);
           setInitialProfiles(mappedProfiles);
-          // Restore activeProfileId from config if present and valid
-          if (cfg.activeProfileId && typeof cfg.activeProfileId === 'string') {
-            const profileExists = mappedProfiles.some(p => p.id === cfg.activeProfileId);
+          if (data.configVersion) setConfigVersion(String(data.configVersion));
+
+          if (data.activeProfileId && typeof data.activeProfileId === 'string') {
+            const profileExists = mappedProfiles.some(p => p.id === data.activeProfileId);
             if (profileExists) {
-              // Store it temporarily to be set after useProfiles initializes
               try {
-                sessionStorage.setItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID, cfg.activeProfileId);
+                sessionStorage.setItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID, data.activeProfileId);
               } catch (err) {
-                // Silently fail if sessionStorage is unavailable (e.g., private browsing)
-                console.warn('Failed to store pending activeProfileId in sessionStorage. Active profile may not be restored correctly:', err);
+                console.warn('Failed to store pending activeProfileId:', err);
               }
             }
           }
         } else {
           setInitialProfiles(createDefaultProfiles());
         }
-      } else {
+      })
+      .catch((err) => {
+        console.error("Error loading user profile from DB:", err);
         setInitialProfiles(createDefaultProfiles());
-      }
-      setConfigDecoded(true);
-    });
-  }, [isLoaded, configBase64]);
-
-  // Restore userId from localStorage on mount
-  useEffect(() => {
-    const storedUserId = localStorage.getItem(LOCAL_STORAGE_KEYS.USER_ID);
-    if (storedUserId) setUserId(storedUserId);
-  }, []);
+      })
+      .finally(() => {
+        setConfigDecoded(true);
+      });
+  }, [isLoaded]);
 
   const {
     profiles,
@@ -134,7 +133,7 @@ export default function Home() {
   useEffect(() => {
     if (!isLoaded || !authLoaded || !configDecoded) return;
     if (autoConfigCalledRef.current) return;
-    if (stremioAuth && !configBase64 && !userId) {
+    if (stremioAuth && !userId) {
       autoConfigCalledRef.current = true;
       api.configure({
         profiles: profilesToApiPayload(profiles),
@@ -143,9 +142,6 @@ export default function Home() {
         traktToken: traktToken ?? undefined,
         traktRefreshToken: traktRefreshToken ?? undefined,
       }).then((data) => {
-        if (data.configBase64) {
-          setConfigBase64(data.configBase64);
-        }
         if (data.userId) {
           setUserId(data.userId);
           localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
@@ -153,19 +149,19 @@ export default function Home() {
         if (data.userId && stremioAuth?.authKey) {
           const host = window.location.host;
           const httpsManifestUrl = `https://${host}/${data.userId}/manifest.json`;
-          api.stremioAddonUpdate(stremioAuth.authKey, httpsManifestUrl).catch(() => {});
+          api.stremioAddonUpdate(stremioAuth.authKey, httpsManifestUrl).catch(() => { });
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, authLoaded, configDecoded, stremioAuth, configBase64, userId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, authLoaded, configDecoded, stremioAuth, userId]);
 
   // Load my lists from localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.MY_LISTS);
       if (raw) setMyLists(JSON.parse(raw));
-    } catch {}
+    } catch { }
   }, []);
 
   const saveMyLists = (lists: MyList[]) => {
@@ -199,9 +195,6 @@ export default function Home() {
         traktToken: newTraktToken,
         traktRefreshToken: newTraktRefreshToken,
       });
-      if (data.configBase64) {
-        setConfigBase64(data.configBase64);
-      }
       if (data.userId) {
         setUserId(data.userId);
         localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
@@ -217,11 +210,10 @@ export default function Home() {
           }
         }
       }
-    } catch {}
+    } catch { }
   };
 
-  const handleConfigSaved = (base64: string, newUserId?: string) => {
-    setConfigBase64(base64);
+  const handleConfigSaved = (newUserId?: string) => {
     if (newUserId) {
       setUserId(newUserId);
       localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, newUserId);
@@ -230,7 +222,6 @@ export default function Home() {
 
   const handleLogout = () => {
     logout();
-    clearConfig();
     localStorage.removeItem(LOCAL_STORAGE_KEYS.USER_ID);
     setUserId(null);
     setInitialProfiles(createDefaultProfiles());
@@ -242,7 +233,7 @@ export default function Home() {
     setTraktRefreshToken(null);
   };
 
-  const isLoggedIn = Boolean(configBase64 || stremioAuth);
+  const isLoggedIn = Boolean(userId || stremioAuth);
 
   if (!isLoaded || !authLoaded || !configDecoded) {
     return (

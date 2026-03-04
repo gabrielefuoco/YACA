@@ -489,6 +489,27 @@ async function catalogHandler(args, userConfig, hostUrl) {
         const baseId = id.startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : id;
 
         // ==========================================
+        // SCENARIO -1: YACA PROFILES
+        // ==========================================
+        if (id === 'yaca-profiles') {
+            if (!userConfig.profiles || userConfig.profiles.length === 0) {
+                return { metas: [] };
+            }
+            const profilesMeta = userConfig.profiles.map(p => {
+                const isActive = p.id === userConfig.activeProfileId;
+                const displayName = isActive ? `✅ ${p.name}` : p.name;
+                return {
+                    id: `yaca-profile-${p.id}`,
+                    type: args.type || 'other',
+                    name: displayName,
+                    poster: `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random&color=fff&size=512`,
+                    description: isActive ? 'Profilo attualmente attivo' : 'Seleziona per impostare come Profilo Attivo'
+                };
+            });
+            return { metas: profilesMeta };
+        }
+
+        // ==========================================
         // SCENARIO 0: CRONOLOGIA RICERCHE (New)
         // ==========================================
         if (baseId === 'yaca_search_history') {

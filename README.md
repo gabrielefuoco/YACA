@@ -76,8 +76,11 @@ Necessarie **solo** se vuoi sincronizzare la Watchlist, i preferiti, i consiglia
 ## Setup Locale
 
 ```bash
-npm install
-npm start
+npm ci
+cd frontend
+npm ci
+cd ..
+npm run build
 ````
 
 Visita `http://localhost:7000` nel browser per configurare il tuo addon e ottenere il link personalizzato!
