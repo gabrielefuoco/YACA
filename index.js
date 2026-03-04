@@ -533,7 +533,8 @@ app.get('/api/cron/warmup', async (req, res) => {
         return;
     }
 
-    const dummyConfig = { apiKeys: { tmdb: process.env.TMDB_API_KEY } };
+    const mdblistApiKey = process.env.MDBLIST_API_KEY || null;
+    const dummyConfig = { apiKeys: { tmdb: process.env.TMDB_API_KEY, mdblist: mdblistApiKey } };
     const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:7000';
 
     // Cataloghi base con handler dedicati
@@ -544,7 +545,12 @@ app.get('/api/cron/warmup', async (req, res) => {
     ];
 
     // Tutti i preset configurati (aggiornati dinamicamente con date correnti)
-    const presetCatalogs = getPresets().map(preset => ({
+    const presetsForWarmup = getPresets().filter(preset => mdblistApiKey || !preset.id.startsWith('mdblist_'));
+    if (!mdblistApiKey) {
+        console.warn('⚠️  MDBLIST_API_KEY non configurata: warmup preset MDBList saltato.');
+    }
+
+    const presetCatalogs = presetsForWarmup.map(preset => ({
         type: preset.type,
         id: `yaca_preset_${preset.id}`,
         extra: { skip: 0 }
