@@ -55,7 +55,7 @@ class CacheManager {
             await CacheEntry.findOneAndUpdate(
                 { namespace: this.namespace, key: key },
                 { value: value, expiresAt: expiresAt },
-                { upsert: true, new: true }
+                { upsert: true, returnDocument: 'after' }
             );
         } catch (error) {
             console.error(`[CacheManager:${this.namespace}] L2 set error:`, error.message);

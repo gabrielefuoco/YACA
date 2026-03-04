@@ -170,7 +170,7 @@ module.exports = async (req, res) => {
                                 filters: filters,
                                 rawPrompt: prompt
                             },
-                            { upsert: true, new: true }
+                            { upsert: true, returnDocument: 'after' }
                         );
                     } catch (err) {
                         console.error("Errore salvataggio UserList per prompt AI:", err.message);
