@@ -283,8 +283,25 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         .map(r => r.value);
 }
 
+/**
+ * Sincronizzazione incrementale profilo utente da history Trakt.
+ */
+async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context = 'global') {
+    if (!userId || !traktToken || !tmdbApiKey) return false;
+    try {
+        const traktType = mediaType === 'movie' ? 'movies' : 'shows';
+        const history = await fetchRecentHistory(traktToken, traktType, 20);
+        await ProfileBuilder.syncUserHistory(userId, context, history, tmdbApiKey);
+        return true;
+    } catch (err) {
+        console.error(`[Hybrid] syncIncrementalRecommendations failed for ${userId}/${context}:`, err.message);
+        return false;
+    }
+}
+
 module.exports = {
     getHybridCatalog,
+    syncIncrementalRecommendations,
     fetchRecentHistory,
     catalogCache
 };

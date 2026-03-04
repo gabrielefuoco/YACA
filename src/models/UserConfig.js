@@ -38,7 +38,7 @@ const UserConfig = {
             const updatedUser = await User.findOneAndUpdate(
                 { userId },
                 { ...userData, userId },
-                { new: true, upsert: true, setDefaultsOnInsert: true }
+                { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
             );
             return updatedUser;
         } catch (err) {
