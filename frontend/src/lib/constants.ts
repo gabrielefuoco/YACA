@@ -68,6 +68,10 @@ export const LOCAL_STORAGE_KEYS = {
   USER_ID: 'yaca_user_id',
 } as const;
 
+export const SESSION_STORAGE_KEYS = {
+  PENDING_ACTIVE_PROFILE_ID: 'yaca_pending_active_profile_id',
+} as const;
+
 /** Default preset IDs shown in the "Generale" quick-start profile for new users. */
 export const DEFAULT_PRESET_IDS = [
   'preset_pop_movies',

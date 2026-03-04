@@ -11,7 +11,7 @@ import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
 import { MyList, StremioAuth, Profile } from '@/types';
-import { LOCAL_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
+import { LOCAL_STORAGE_KEYS, SESSION_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 import { decodeConfigAsync } from '@/lib/configCodec';
 import { api } from '@/lib/api';
 
@@ -67,9 +67,21 @@ export default function Home() {
         const cfg = parsed as Record<string, unknown>;
         if (cfg.configVersion) setConfigVersion(String(cfg.configVersion));
         if (Array.isArray(cfg.profiles) && cfg.profiles.length > 0) {
-          setInitialProfiles(
-            (cfg.profiles as BackendProfile[]).map(mapBackendProfile)
-          );
+          const mappedProfiles = (cfg.profiles as BackendProfile[]).map(mapBackendProfile);
+          setInitialProfiles(mappedProfiles);
+          // Restore activeProfileId from config if present and valid
+          if (cfg.activeProfileId && typeof cfg.activeProfileId === 'string') {
+            const profileExists = mappedProfiles.some(p => p.id === cfg.activeProfileId);
+            if (profileExists) {
+              // Store it temporarily to be set after useProfiles initializes
+              try {
+                sessionStorage.setItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID, cfg.activeProfileId);
+              } catch (err) {
+                // Silently fail if sessionStorage is unavailable (e.g., private browsing)
+                console.warn('Failed to store pending activeProfileId in sessionStorage. Active profile may not be restored correctly:', err);
+              }
+            }
+          }
         } else {
           setInitialProfiles(createDefaultProfiles());
         }
@@ -103,6 +115,20 @@ export default function Home() {
   } = useProfiles(initialProfiles);
 
   const { presets, profileTemplates, categories } = usePresets();
+
+  // Restore activeProfileId from decoded config if it was stored temporarily
+  useEffect(() => {
+    try {
+      const pendingId = sessionStorage.getItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID);
+      if (pendingId && profiles.some(p => p.id === pendingId)) {
+        setActiveProfileId(pendingId);
+        sessionStorage.removeItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID);
+      }
+    } catch (err) {
+      // Silently fail if sessionStorage is unavailable (e.g., private browsing)
+      console.warn('Failed to restore pending activeProfileId from sessionStorage. Active profile will not be restored:', err);
+    }
+  }, [profiles, setActiveProfileId]);
 
   // Auto-configure when stremio is logged in but no config/userId is stored yet
   useEffect(() => {
