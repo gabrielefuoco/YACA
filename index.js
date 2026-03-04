@@ -78,6 +78,20 @@ app.get('/health', (req, res) => {
 });
 
 // Endpoint per recuperare i preset disponibili
+// 2. API per il frontend (configurazione)
+app.get('/api/user/:userId', async (req, res) => {
+    try {
+        const user = await UserConfig.getUser(req.params.userId);
+        if (!user) {
+            return res.status(404).json({ error: "Utente non trovato" });
+        }
+        res.json(user);
+    } catch (err) {
+        console.error("Errore fetch utente:", err);
+        res.status(500).json({ error: "Errore interno" });
+    }
+});
+
 app.get('/api/presets', (req, res) => {
     res.json({ presets: getPresets(), profileTemplates });
 });
@@ -247,8 +261,9 @@ app.get('/badge/poster.jpg', async (req, res) => {
         console.warn(`Badge endpoint: URL bloccato dalla protezione SSRF: ${url}`);
         return res.status(403).send('URL non consentito');
     }
-    const safeText = sanitizeString(String(text)).slice(0, 10);
-    if (!safeText || !/^[A-Za-z0-9:]+$/.test(safeText)) {
+    const safeText = sanitizeString(String(text)).slice(0, 20);
+    // Permetti lettere (incluse accentate), numeri, spazi, due punti e parentesi
+    if (!safeText || !/^[\p{L}\p{N}\s:()]+$/u.test(safeText)) {
         return res.status(400).send('Testo badge non valido');
     }
 
@@ -811,6 +826,11 @@ app.post('/api/stremio-addon-update', async (req, res) => {
         console.error("Errore aggiornamento Stremio:", err);
         res.status(500).json({ error: "Errore durante la sincronizzazione con Stremio" });
     }
+});
+
+// Catch-all route per gestire il routing lato client di Next.js
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend', 'out', 'index.html'));
 });
 
 // Avvia il server

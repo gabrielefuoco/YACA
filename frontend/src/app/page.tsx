@@ -57,17 +57,36 @@ export default function Home() {
   useEffect(() => {
     if (!isLoaded) return;
 
-    const storedUserId = localStorage.getItem(LOCAL_STORAGE_KEYS.USER_ID);
+    // Try to get userId from the URL path first (e.g., /ExVSfh84z8/configure)
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    // userId is usually the first part if it's not "configure"
+    let urlUserId = pathParts.length > 0 && pathParts[0] !== 'configure' ? pathParts[0] : null;
+
+    // If it's a versioned URL (e.g., /ExVSfh84z8/v1/configure)
+    if (urlUserId && pathParts.length > 2 && pathParts[2] === 'configure') {
+      urlUserId = pathParts[0];
+    }
+
+    const storedUserId = urlUserId || localStorage.getItem(LOCAL_STORAGE_KEYS.USER_ID);
+
     if (!storedUserId) {
       setInitialProfiles(createDefaultProfiles());
       setConfigDecoded(true);
       return;
     }
 
-    setUserId(storedUserId);
+    if (urlUserId) {
+      setUserId(urlUserId);
+      localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, urlUserId);
+    } else {
+      setUserId(storedUserId);
+    }
 
     fetch(`/api/user/${storedUserId}`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("User not found");
+        return res.json();
+      })
       .then(data => {
         if (data && Array.isArray(data.profiles) && data.profiles.length > 0) {
           const mappedProfiles = (data.profiles as BackendProfile[]).map(mapBackendProfile);
