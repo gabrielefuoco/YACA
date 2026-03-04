@@ -203,7 +203,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
                 }
             }
 
-            if (cached.isStale && cachedItems.length > normalizedSkip) {
+            if (cached.isStale && cachedItems.length > normalizedSkip && normalizedSkip === 0) {
                 // Scenario C: Cache Hit Scaduta — Stale-While-Revalidate
                 // Ritorna dati vecchi all'utente, rinnova in background
                 fetchTmdbCatalogDirect(client, endpoint, normalizedSkip, customParams, type)

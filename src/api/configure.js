@@ -185,6 +185,20 @@ module.exports = async (req, res) => {
                 }
             }
 
+            const requestedOrder = Array.isArray(profile.catalogOrder) ? profile.catalogOrder.map(String) : [];
+            if (requestedOrder.length > 0 && parsedCatalogs.length > 1) {
+                const orderMap = new Map(requestedOrder.map((catalogId, index) => [catalogId, index]));
+                const normalizeCatalogId = (catalogId) => {
+                    const strId = String(catalogId || '');
+                    return strId.startsWith('yaca_preset_') ? strId.replace('yaca_preset_', '') : strId;
+                };
+                parsedCatalogs.sort((a, b) => {
+                    const aOrder = orderMap.get(normalizeCatalogId(a.id)) ?? Number.MAX_SAFE_INTEGER;
+                    const bOrder = orderMap.get(normalizeCatalogId(b.id)) ?? Number.MAX_SAFE_INTEGER;
+                    return aOrder - bOrder;
+                });
+            }
+
             const profileName = sanitizeString((typeof profile.name === 'string' ? profile.name.trim() : '') || 'Nuovo Profilo');
             const minVoteAverage = parseFloat(profile.settings?.minVoteAverage);
             const minVoteCount = parseInt(profile.settings?.minVoteCount, 10);
@@ -239,7 +253,7 @@ module.exports = async (req, res) => {
 
         // 5. Costruisci URL Manifest Stateful
         const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
-        const manifestUrl = `${hostUrl}/${userDoc.userId}/manifest.json`;
+        const manifestUrl = `${hostUrl}/${userDoc.userId}/${configVersion}/manifest.json`;
 
         res.json({
             success: true,
