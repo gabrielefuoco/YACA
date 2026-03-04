@@ -196,6 +196,12 @@ module.exports = async (req, res) => {
                 id: profile.id || `prof_${Date.now()}_${Math.random().toString(36).substring(7)}`,
                 name: profileName.substring(0, LIMITS.MAX_PROFILE_NAME_LENGTH),
                 catalogs: parsedCatalogs,
+                raw_ui_state: {
+                    selectedPresets: profile.selectedPresets || [],
+                    presetOverrides: profile.presetOverrides || {},
+                    catalogOrder: profile.catalogOrder || [],
+                    newPrompts: profile.newPrompts || []
+                },
                 settings: {
                     minVoteAverage: Number.isFinite(minVoteAverage) ? minVoteAverage : 0,
                     minVoteCount: Number.isFinite(minVoteCount) ? minVoteCount : 0,

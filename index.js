@@ -620,7 +620,7 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
                 'meta',
                 { name: 'stream', types: ['movie', 'series', 'other'], idPrefixes: ['yaca-profile-'] }
             ],
-            types: ['movie', 'series'],
+            types: ['movie', 'series', 'other'],
             catalogs: [
                 { id: 'yaca-profiles', type: 'other', name: '👥 Cambia Profilo' },
                 { id: 'yaca_search_history', type: 'movie', name: 'Cronologia Ricerche', extra: [{ name: 'skip' }] },
@@ -794,6 +794,22 @@ app.get('/api/users/:userId/switch-profile/:profileId', async (req, res) => {
     } catch (err) {
         console.error(`Errore switch profile per user ${userId}:`, err.message);
         res.status(500).send('Internal validation error');
+    }
+});
+
+// 8. Auto-Sync Backend Route (usata dalla Web UI)
+app.post('/api/stremio-addon-update', async (req, res) => {
+    const { authKey, manifestUrl } = req.body;
+    if (!authKey || !manifestUrl) {
+        return res.status(400).json({ error: "Missing parameters" });
+    }
+
+    try {
+        const result = await updateStremioAddonCollection(authKey, manifestUrl);
+        res.json(result);
+    } catch (err) {
+        console.error("Errore aggiornamento Stremio:", err);
+        res.status(500).json({ error: "Errore durante la sincronizzazione con Stremio" });
     }
 });
 

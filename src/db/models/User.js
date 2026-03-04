@@ -49,7 +49,8 @@ const userSchema = new mongoose.Schema({
             id: String, // Riferimento a UserList.listId o yaca_preset_*
             name: String,
             type: { type: String, enum: ['movie', 'series'] }
-        }]
+        }],
+        raw_ui_state: { type: mongoose.Schema.Types.Mixed }
     }]
 }, {
     timestamps: true

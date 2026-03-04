@@ -149,11 +149,10 @@ export function ProfileManager({
             <div
               key={profile.id}
               onClick={() => onSelectEditing(profile.id)}
-              className={`relative cursor-pointer rounded-xl border p-4 transition-all ${
-                isEditing
+              className={`relative cursor-pointer rounded-xl border p-4 transition-all ${isEditing
                   ? 'border-[#8a5aeb] bg-gradient-to-br from-[#8a5aeb]/20 to-[#8a5aeb]/5 shadow-lg shadow-[#8a5aeb]/15 ring-1 ring-[#8a5aeb]/30'
                   : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]'
-              }`}
+                }`}
             >
               {/* Active indicator */}
               {isActive && (
@@ -164,14 +163,13 @@ export function ProfileManager({
               )}
 
               {/* Profile avatar */}
-              <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-full text-lg ${
-                isEditing ? 'bg-[#8a5aeb]/30' : 'bg-white/[0.06]'
-              }`}>
+              <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-full text-lg ${isEditing ? 'bg-[#8a5aeb]/30' : 'bg-white/[0.06]'
+                }`}>
                 {profile.name.startsWith('🏠') ? '🏠' :
-                 profile.name.startsWith('🎬') ? '🎬' :
-                 profile.name.startsWith('📺') ? '📺' :
-                 profile.name.startsWith('🎭') ? '🎭' :
-                 profile.name.charAt(0).toUpperCase()}
+                  profile.name.startsWith('🎬') ? '🎬' :
+                    profile.name.startsWith('📺') ? '📺' :
+                      profile.name.startsWith('🎭') ? '🎭' :
+                        profile.name.charAt(0).toUpperCase()}
               </div>
 
               {renamingId === profile.id ? (
@@ -190,7 +188,7 @@ export function ProfileManager({
 
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[11px] text-white/40">
-                  {catalogCount} catalog{catalogCount !== 1 ? 'ghi' : 'o'}
+                  {catalogCount} catalog{catalogCount !== 1 ? 'hi' : 'o'}
                 </span>
                 {keywordCount > 0 && (
                   <span className="text-[11px] text-[#8a5aeb]/80 bg-[#8a5aeb]/10 rounded-full px-1.5 py-0.5">
@@ -204,11 +202,10 @@ export function ProfileManager({
                 <button
                   onClick={(e) => { e.stopPropagation(); onSetActive(profile.id); }}
                   title={isActive ? 'Profilo attivo' : 'Imposta come attivo'}
-                  className={`flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
-                    isActive
+                  className={`flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${isActive
                       ? 'bg-emerald-500/15 text-emerald-400'
                       : 'text-white/30 hover:text-emerald-400 hover:bg-emerald-500/10'
-                  }`}
+                    }`}
                 >
                   <Check className="h-3 w-3" />
                   {isActive ? 'Attivo' : 'Attiva'}

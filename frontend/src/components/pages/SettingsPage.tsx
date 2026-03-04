@@ -446,7 +446,7 @@ export function SettingsPage({
         ) : (
           '🔗 '
         )}
-        Genera Link di Installazione
+        Salva Configurazione
       </Button>
     </div>
   );
