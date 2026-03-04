@@ -113,9 +113,10 @@ async function fetchTmdbCatalogDirect(client, endpoint, skip, customParams = {},
     const startPage = Math.floor((skip || 0) / ITEMS_PER_PAGE) + 1;
     const promises = [];
 
-    // Fetcha N pagine simultaneamente per popolare Stremio più fluidamente (solo se skip è 0 per velocità iniziale)
-    // Se skip > 0 carichiamo una pagina alla volta per evitare salti o duplicati
-    const pagesToFetch = (skip === 0) ? PAGES_PER_REQUEST : 1;
+    // Fetcha sempre N pagine simultaneamente per garantire abbastanza risultati anche dopo il filtro
+    // isMovieReleasedDigitally. In caso di skip > 0, i nuovi item vengono aggiunti alla cache e
+    // il chiamante restituisce solo la finestra richiesta (slice), evitando duplicati tramite mergeCatalogItems.
+    const pagesToFetch = PAGES_PER_REQUEST;
 
     for (let i = 0; i < pagesToFetch; i++) {
         const pageParams = { ...customParams, page: startPage + i };

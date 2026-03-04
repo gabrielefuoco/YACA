@@ -107,7 +107,7 @@ describe('fetchTmdbCatalog hybrid pagination cache', () => {
 
         expect(result).toHaveLength(20);
         expect(result[0]).toEqual(expect.objectContaining({ id: expect.any(String) }));
-        expect(client.get).toHaveBeenCalledTimes(1);
+        expect(client.get).toHaveBeenCalledTimes(3);
         expect(TmdbRequestCache.set).toHaveBeenCalledWith(
             'shared-hash',
             '/discover/movie',
@@ -133,7 +133,7 @@ describe('fetchTmdbCatalog hybrid pagination cache', () => {
 
         const result = await fetchTmdbCatalog(client, '/discover/movie', 20, {}, 'movie');
 
-        expect(client.get).toHaveBeenCalledTimes(1);
+        expect(client.get).toHaveBeenCalledTimes(3);
         expect(result).toHaveLength(20);
         expect(result[0]).toEqual(expect.objectContaining({ id: 'tmdb:21' }));
     });
