@@ -44,4 +44,57 @@ describe('Mongoose findOneAndUpdate options', () => {
             expect.objectContaining({ upsert: true, returnDocument: 'after' })
         );
     });
+
+    it('uses returnDocument: after in configure user list upsert', async () => {
+        jest.resetModules();
+
+        const userListFindOneAndUpdate = jest.fn().mockResolvedValueOnce({});
+        const buildConfig = jest.fn().mockReturnValue({
+            config: {},
+            configBase64: 'abc123',
+            configVersion: 'v1'
+        });
+        const saveUser = jest.fn().mockResolvedValueOnce({ userId: 'generated_user_id' });
+        const generateTmdbFiltersFromPrompt = jest.fn().mockResolvedValueOnce({ target: 'tmdb' });
+
+        jest.doMock('../src/db/models/UserList', () => ({
+            findOneAndUpdate: userListFindOneAndUpdate
+        }));
+        jest.doMock('../src/models/UserConfig', () => ({
+            buildConfig,
+            saveUser
+        }));
+        jest.doMock('../src/ai/router', () => ({
+            generateTmdbFiltersFromPrompt
+        }));
+        jest.doMock('../src/data/presets', () => ({
+            getPresets: () => []
+        }));
+
+        const configureRoute = require('../src/api/configure');
+        const req = {
+            get: jest.fn(() => 'localhost:7000'),
+            body: {
+                tmdbKey: 'tmdb_key',
+                mistralKey: 'mistral_key',
+                activeProfileId: 'p1',
+                profiles: [{
+                    id: 'p1',
+                    name: 'Profilo',
+                    selectedPresets: [],
+                    existingCatalogs: [],
+                    newPrompts: ['film sci-fi'],
+                    settings: {}
+                }]
+            }
+        };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await configureRoute(req, res);
+
+        expect(userListFindOneAndUpdate).toHaveBeenCalled();
+        expect(userListFindOneAndUpdate.mock.calls[0][2]).toEqual(
+            expect.objectContaining({ upsert: true, returnDocument: 'after' })
+        );
+    });
 });
