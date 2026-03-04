@@ -829,7 +829,7 @@ app.post('/api/stremio-addon-update', async (req, res) => {
 });
 
 // Catch-all route per gestire il routing lato client di Next.js
-app.get('*', (req, res) => {
+app.get('/{*path}', (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', 'out', 'index.html'));
 });
 
