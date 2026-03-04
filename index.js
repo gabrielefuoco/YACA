@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
+const rateLimit = require('express-rate-limit');
 
 const configureRoute = require('./src/api/configure');
 const UserConfig = require('./src/models/UserConfig');
@@ -35,6 +36,12 @@ const PORT = process.env.PORT || 7000;
 const BADGE_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 const BADGE_CACHE_TTL_SECS = 14 * 24 * 60 * 60; // 1209600
 const badgeImageCache = new LRUCache({ max: 500, ttl: BADGE_CACHE_TTL_MS });
+const badgeLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 120,
+    standardHeaders: true,
+    legacyHeaders: false
+});
 
 // CORS configurabile tramite variabile d'ambiente (default: permissivo per retrocompatibilità con Stremio)
 const corsOrigins = process.env.CORS_ALLOWED_ORIGINS;
@@ -252,7 +259,7 @@ app.get('/blur', (req, res) => {
 
 // Endpoint per aggiungere badge (numero episodio) su poster
 // Protetto contro SSRF: accetta solo URL di CDN immagini noti
-app.get('/badge/poster.jpg', async (req, res) => {
+app.get('/badge/poster.jpg', badgeLimiter, async (req, res) => {
     const { url, text } = req.query;
     if (!url || !text) {
         return res.status(400).send('URL e text obbligatori');
@@ -294,7 +301,11 @@ app.get('/badge/poster.jpg', async (req, res) => {
 
             // Async save to DB to not block response
             const expiresAt = new Date(Date.now() + BADGE_CACHE_TTL_MS);
-            BadgeImage.create({ key: cacheKey, imageData: imageBuffer, expiresAt })
+            BadgeImage.findOneAndUpdate(
+                { key: cacheKey },
+                { imageData: imageBuffer, expiresAt },
+                { upsert: true }
+            )
                 .catch(err => console.error('Errore persistenza badge DB:', err.message));
 
             res.set('Content-Type', 'image/jpeg');
@@ -671,7 +682,7 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
             for (const cat of activeProfileCatalogs) {
                 const isPreset = cat.id.startsWith('yaca_preset_');
                 const catName = sanitizeString(cat.name || '');
-                manifest.catalogs.unshift({
+                manifest.catalogs.push({
                     id: cat.id,
                     type: cat.type || 'movie',
                     name: isPreset ? catName : `AI: ${catName}`,
@@ -791,18 +802,19 @@ app.get('/api/users/:userId/switch-profile/:profileId', async (req, res) => {
         const profileExists = userConfig.profiles && userConfig.profiles.some(p => p.id === profileId);
         if (!profileExists) return res.status(400).send('Profile not found');
 
+        const newConfigVersion = Date.now().toString(36);
         await UserConfig.saveUser({
             userId,
             config: {
                 activeProfileId: profileId,
-                configVersion: Date.now().toString(36)
+                configVersion: newConfigVersion
             }
         });
 
         const stremioAuthKey = userConfig.apiKeys?.stremio;
         if (stremioAuthKey) {
             const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
-            const manifestUrl = `${hostUrl}/${userId}/manifest.json`;
+            const manifestUrl = `${hostUrl}/${userId}/${newConfigVersion}/manifest.json`;
             // Sync fire-and-forget
             updateStremioAddonCollection(stremioAuthKey, manifestUrl)
                 .then(r => console.log(`[Profile Switch] Sync Stremio completato per utente ${userId}: ${r.success}`))

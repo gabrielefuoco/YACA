@@ -165,9 +165,13 @@ export default function Home() {
           setUserId(data.userId);
           localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
         }
+        if (data.configVersion) setConfigVersion(String(data.configVersion));
         if (data.userId && stremioAuth?.authKey) {
           const host = window.location.host;
-          const httpsManifestUrl = `https://${host}/${data.userId}/manifest.json`;
+          const manifestPath = data.configVersion
+            ? `/${data.userId}/${data.configVersion}/manifest.json`
+            : `/${data.userId}/manifest.json`;
+          const httpsManifestUrl = `https://${host}${manifestPath}`;
           api.stremioAddonUpdate(stremioAuth.authKey, httpsManifestUrl).catch(() => { });
         }
       }).catch(() => { });
@@ -210,6 +214,7 @@ export default function Home() {
       const data = await api.configure({
         profiles: profilesToApiPayload(profiles),
         activeProfileId,
+        userId: userId ?? undefined,
         stremioAuthKey: newStremioAuth?.authKey,
         traktToken: newTraktToken,
         traktRefreshToken: newTraktRefreshToken,
@@ -217,11 +222,15 @@ export default function Home() {
       if (data.userId) {
         setUserId(data.userId);
         localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
+        if (data.configVersion) setConfigVersion(String(data.configVersion));
 
         // Auto-install addon in Stremio using short userId URL
         if (newStremioAuth?.authKey) {
           const host = window.location.host;
-          const httpsManifestUrl = `https://${host}/${data.userId}/manifest.json`;
+          const manifestPath = data.configVersion
+            ? `/${data.userId}/${data.configVersion}/manifest.json`
+            : `/${data.userId}/manifest.json`;
+          const httpsManifestUrl = `https://${host}${manifestPath}`;
           try {
             await api.stremioAddonUpdate(newStremioAuth.authKey, httpsManifestUrl);
           } catch (e) {

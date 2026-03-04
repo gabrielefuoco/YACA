@@ -101,6 +101,7 @@ export function SettingsPage({
       const data = await api.configure({
         profiles: apiProfiles,
         activeProfileId,
+        userId,
         stremioAuthKey,
         traktToken,
         traktRefreshToken,
@@ -110,13 +111,16 @@ export function SettingsPage({
       if (data.userId) {
         onConfigSaved(data.userId);
         const host = window.location.host;
-        const computedInstallUrl = `stremio://${host}/${data.userId}/manifest.json`;
+        const manifestPath = data.configVersion
+          ? `/${data.userId}/${data.configVersion}/manifest.json`
+          : `/${data.userId}/manifest.json`;
+        const computedInstallUrl = `stremio://${host}${manifestPath}`;
         setInstallUrl(computedInstallUrl);
         setSuccess(true);
 
         // Auto-update addon in Stremio if auth available
         if (stremioAuthKey) {
-          const httpsManifestUrl = `https://${host}/${data.userId}/manifest.json`;
+          const httpsManifestUrl = `https://${host}${manifestPath}`;
           try {
             await api.stremioAddonUpdate(stremioAuthKey, httpsManifestUrl);
           } catch { }
@@ -179,6 +183,7 @@ export function SettingsPage({
             const data = await api.configure({
               profiles: apiProfiles,
               activeProfileId: parsed.activeProfileId,
+              userId,
               stremioAuthKey: parsed.stremioAuthKey,
               traktToken: parsed.traktToken,
               traktRefreshToken: parsed.traktRefreshToken,
@@ -212,7 +217,7 @@ export function SettingsPage({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleCopy(`stremio://${typeof window !== 'undefined' ? window.location.host : ''}/${userId}/manifest.json`)}
+              onClick={() => handleCopy(`stremio://${typeof window !== 'undefined' ? window.location.host : ''}${configVersion ? `/${userId}/${configVersion}/manifest.json` : `/${userId}/manifest.json`}`)}
               className="flex-1 text-xs"
             >
               {copied ? (
@@ -224,7 +229,7 @@ export function SettingsPage({
             </Button>
             <Button
               size="sm"
-              onClick={() => window.open(`stremio://${window.location.host}/${userId}/manifest.json`, '_blank')}
+              onClick={() => window.open(`stremio://${window.location.host}${configVersion ? `/${userId}/${configVersion}/manifest.json` : `/${userId}/manifest.json`}`, '_blank')}
               className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700"
             >
               <ExternalLink className="h-3.5 w-3.5 mr-1" />
