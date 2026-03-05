@@ -33,17 +33,25 @@ const TmdbRequestCache = {
      * @param {number} nextPage
      */
     async set(requestHash, endpoint, stremioData, nextPage = 1) {
-        // Read existing entry to not overwrite nextPage with undefined if not provided
-        if (nextPage === 1) {
+        let updatedAt = Date.now();
+
+        // Se stiamo aggiungendo pagine (nextPage > 1), cerchiamo di preservare 
+        // la data di creazione originale per non resettare il TTL del catalogo intero
+        if (nextPage > 1 || nextPage === -1) { // -1 as a flag if needed
             const existing = await cacheManager.get(requestHash);
-            if (existing && existing.nextPage) {
-                nextPage = existing.nextPage;
+            if (existing) {
+                if (nextPage === 1 || nextPage === -1) {
+                    // logic to keep nextPage it if not provided
+                    nextPage = nextPage === -1 ? existing.nextPage : nextPage;
+                }
+                updatedAt = existing.updatedAt || updatedAt;
             }
         }
+
         await cacheManager.set(requestHash, {
             stremioData,
             nextPage,
-            updatedAt: Date.now()
+            updatedAt
         });
     },
 

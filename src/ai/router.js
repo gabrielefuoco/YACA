@@ -26,6 +26,11 @@ const ADVANCED_AI_SYSTEM_PROMPT = `You are a TMDB Query Architect. Your job is t
    - EXAMPLES: "Matrix", "Breaking Bad", "Stranger Things", "Il Padrino".
 
 ### PARAMETER EXTRACTION RULES:
+- **LOGIC OPERATORS**:
+   - Use **pipe ('|')** for **OR** logic (e.g., "romance|comedy" means either one).
+   - Use **comma (',')** for **AND** logic (e.g., "zombie,samurai" means both must be present).
+   - APPLY this to genre_ids and keyword fields.
+
 - **KEYWORDS**: You MUST map specific Italian concepts to these EXACT English keywords. Do NOT invent new ones.
    - "natalizia", "natale" -> "christmas"
    - "balene" -> "whale"

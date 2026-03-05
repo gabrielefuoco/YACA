@@ -209,7 +209,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
                 // Rinnova in background a partire dalla pagina 1 (o dalla pagina 1 a X, a seconda di how many pages to fetch)
                 // Qui assumiamo che rinnoviamo la prima richiesta massiva (PAGES_PER_REQUEST pagine)
                 fetchTmdbCatalogDirect(client, endpoint, 1, customParams, type, PAGES_PER_REQUEST)
-                    .then(({ items: results, nextPageFetched }) => { TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(cachedItems, results), nextPageFetched); })
+                    .then(({ items: results, nextPageFetched }) => { TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(results, cachedItems), nextPageFetched); })
                     .catch(e => console.error('Errore rinnovo cache in background:', e.message));
 
                 return normalizedSkip === 0 ? cachedItems : cachedSlice;
