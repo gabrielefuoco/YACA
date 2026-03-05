@@ -12,7 +12,7 @@ const TmdbRequestCache = {
     /**
      * @param {string} requestHash
      * @param {number} ttlMs - staleness threshold in ms
-     * @returns {Promise<{ stremioData: Array, isStale: boolean } | null>}
+     * @returns {Promise<{ stremioData: Array, isStale: boolean, nextPage: number } | null>}
      */
     async get(requestHash, ttlMs = CACHE_TTL_MS) {
         const entry = await cacheManager.get(requestHash);
@@ -21,6 +21,7 @@ const TmdbRequestCache = {
         const age = Date.now() - entry.updatedAt;
         return {
             stremioData: entry.stremioData,
+            nextPage: entry.nextPage || 1,
             isStale: age > ttlMs
         };
     },
@@ -29,10 +30,19 @@ const TmdbRequestCache = {
      * @param {string} requestHash
      * @param {string} endpoint - kept for interface compatibility
      * @param {Array}  stremioData
+     * @param {number} nextPage
      */
-    async set(requestHash, endpoint, stremioData) {
+    async set(requestHash, endpoint, stremioData, nextPage = 1) {
+        // Read existing entry to not overwrite nextPage with undefined if not provided
+        if (nextPage === 1) {
+            const existing = await cacheManager.get(requestHash);
+            if (existing && existing.nextPage) {
+                nextPage = existing.nextPage;
+            }
+        }
         await cacheManager.set(requestHash, {
             stremioData,
+            nextPage,
             updatedAt: Date.now()
         });
     },

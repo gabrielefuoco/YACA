@@ -109,14 +109,8 @@ function toStremioMetaItem(tmdbItem, type) {
  * di parallelizzare le pagine TMDB per riempire lo skip di Stremio.
  * Questa è la funzione interna senza cache.
  */
-async function fetchTmdbCatalogDirect(client, endpoint, skip, customParams = {}, type = 'movie') {
-    const startPage = Math.floor((skip || 0) / ITEMS_PER_PAGE) + 1;
+async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customParams = {}, type = 'movie', pagesToFetch = 1) {
     const promises = [];
-
-    // Fetcha sempre N pagine simultaneamente per garantire abbastanza risultati anche dopo il filtro
-    // isMovieReleasedDigitally. In caso di skip > 0, i nuovi item vengono aggiunti alla cache e
-    // il chiamante restituisce solo la finestra richiesta (slice), evitando duplicati tramite mergeCatalogItems.
-    const pagesToFetch = PAGES_PER_REQUEST;
 
     for (let i = 0; i < pagesToFetch; i++) {
         const pageParams = { ...customParams, page: startPage + i };
@@ -154,10 +148,10 @@ async function fetchTmdbCatalogDirect(client, endpoint, skip, customParams = {},
             return await getTmdbMetaDetails(apiKey, `tmdb:${item.id}`, type);
         }))).filter(Boolean);
 
-        return filteredMetas;
+        return { items: filteredMetas, nextPageFetched: startPage + pagesToFetch };
     } catch (err) {
         console.error(`Errore fetchTmdbCatalog ${endpoint}:`, err.message);
-        return [];
+        return { items: [], nextPageFetched: startPage };
     }
 }
 
@@ -192,6 +186,9 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
 
         if (cached) {
             const cachedItems = Array.isArray(cached.stremioData) ? cached.stremioData : [];
+            // Slice items for the given skip. We slice MORE items than ITEMS_PER_PAGE to support `hideWatched` pagination loops.
+            const fetchSize = (normalizedSkip === 0) ? (PAGES_PER_REQUEST * ITEMS_PER_PAGE) : ITEMS_PER_PAGE;
+            const sliceEnd = normalizedSkip + fetchSize;
             const cachedSlice = cachedItems.slice(normalizedSkip, sliceEnd);
 
             if (!cached.isStale) {
@@ -199,40 +196,53 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
                 if (normalizedSkip === 0) {
                     return cachedItems;
                 }
-                if (cachedItems.length > normalizedSkip) {
+                // Check if we have enough items in cache for the requested slice
+                if (cachedItems.length >= sliceEnd || cachedItems.length === cached.total_results) {
+                    // console.log(`[TMDB Cache] Hit Fresca. Returning ${cachedSlice.length} items (skip: ${normalizedSkip}, end: ${sliceEnd})`);
                     return cachedSlice;
                 }
+                // If not enough items, fallback to fetching
             }
 
-            if (cached.isStale && cachedItems.length > normalizedSkip && normalizedSkip === 0) {
+            if (cached.isStale && (cachedItems.length >= sliceEnd || cachedItems.length === cached.total_results)) {
                 // Scenario C: Cache Hit Scaduta — Stale-While-Revalidate
-                // Ritorna dati vecchi all'utente, rinnova in background
-                fetchTmdbCatalogDirect(client, endpoint, normalizedSkip, customParams, type)
-                    .then(results => { TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(cachedItems, results)); })
+                // Rinnova in background a partire dalla pagina 1 (o dalla pagina 1 a X, a seconda di how many pages to fetch)
+                // Qui assumiamo che rinnoviamo la prima richiesta massiva (PAGES_PER_REQUEST pagine)
+                fetchTmdbCatalogDirect(client, endpoint, 1, customParams, type, PAGES_PER_REQUEST)
+                    .then(({ items: results, nextPageFetched }) => { TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(cachedItems, results), nextPageFetched); })
                     .catch(e => console.error('Errore rinnovo cache in background:', e.message));
 
                 return normalizedSkip === 0 ? cachedItems : cachedSlice;
             }
 
             // Scenario D: cache incompleta per lo skip richiesto.
-            // Recuperiamo solo la nuova pagina e aggiorniamo la lista in cache.
-            const newItems = await fetchTmdbCatalogDirect(client, endpoint, normalizedSkip, customParams, type);
+            // Recuperiamo solo la nuova pagina (a partire dal nextPage salvato in cache) e aggiorniamo la lista.
+            const { items: newItems, nextPageFetched } = await fetchTmdbCatalogDirect(client, endpoint, cached.nextPage, customParams, type, 1);
             const updatedItems = mergeCatalogItems(cachedItems, newItems);
-            await TmdbRequestCache.set(requestHash, endpoint, updatedItems);
+            await TmdbRequestCache.set(requestHash, endpoint, updatedItems, nextPageFetched);
 
-            return normalizedSkip === 0 ? updatedItems : updatedItems.slice(normalizedSkip, sliceEnd);
+            return normalizedSkip === 0 ? updatedItems : updatedItems.slice(normalizedSkip, normalizedSkip + fetchSize);
         }
     } catch (_e) {
-        // Cache non disponibile, procediamo con la chiamata diretta a TMDB
+        // Cache non disponibile, o cache throwato, procediamo
     }
 
     // Scenario A: Cache Miss — chiama TMDB e salva in cache
-    const results = await fetchTmdbCatalogDirect(client, endpoint, normalizedSkip, customParams, type);
+    const pagesToFetch = (normalizedSkip === 0) ? PAGES_PER_REQUEST : 1;
+    let startPage = 1;
+
+    // Se stiamo richiedendo skip > 0 ma la cache non esiste (spartita per TTL o riavvio container)
+    // Non abbiamo idea di quale startPage accurata usare. Facciamo il fallback best-effort.
+    if (normalizedSkip > 0) {
+        startPage = Math.floor(normalizedSkip / ITEMS_PER_PAGE) + 1;
+    }
+
+    const { items: results, nextPageFetched } = await fetchTmdbCatalogDirect(client, endpoint, startPage, customParams, type, pagesToFetch);
 
     // Salvataggio solo per la prima pagina,
     // così la cache rappresenta una lista progressiva a partire da skip 0.
     if (normalizedSkip === 0) {
-        await TmdbRequestCache.set(requestHash, endpoint, results);
+        await TmdbRequestCache.set(requestHash, endpoint, results, nextPageFetched);
     }
 
     return results;
