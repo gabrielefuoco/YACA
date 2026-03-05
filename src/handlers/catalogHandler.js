@@ -598,17 +598,18 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
             let currentSkip = skip;
             let combinedResults = [];
-            let depth = 0;
-            const MAX_DEPTH = 3;
 
-            while (combinedResults.length < 20 && depth < MAX_DEPTH) {
-                let pageResults = await executeCombinedSearch(search, userConfig, type, currentSkip, activeProfileSettings, cacheOptions);
+            const parallelPages = (userConfig?.config?.hideWatched) ? 3 : 1;
+            const promises = [];
+            for (let i = 0; i < parallelPages; i++) {
+                promises.push(executeCombinedSearch(search, userConfig, type, currentSkip + (i * 20), activeProfileSettings, cacheOptions));
+            }
+
+            const pagesResults = await Promise.all(promises);
+            for (let pageResults of pagesResults) {
                 pageResults = await filterWatchedItems(pageResults, userConfig);
                 combinedResults.push(...pageResults);
-
-                if (pageResults.length === 0 || !userConfig?.config?.hideWatched) break;
-                currentSkip += 20;
-                depth++;
+                if (combinedResults.length >= 20) break;
             }
             results = combinedResults.slice(0, 40);
             return { metas: results };
@@ -625,24 +626,24 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
             let currentSkip = skip;
             let combinedResults = [];
-            let depth = 0;
-            const MAX_DEPTH = 3;
 
-            while (combinedResults.length < 20 && depth < MAX_DEPTH) {
-                const params = {
-                    sort_by: sortBy || 'popularity.desc',
-                    'vote_average.gte': activeProfileSettings.minVoteAverage,
-                    'vote_count.gte': activeProfileSettings.minVoteCount
-                };
-                let pageResults = await fetchTmdbCatalog(tmdbClient, endpoint, currentSkip, params, contentType, cacheOptions);
+            const params = {
+                sort_by: sortBy || 'popularity.desc',
+                'vote_average.gte': activeProfileSettings.minVoteAverage,
+                'vote_count.gte': activeProfileSettings.minVoteCount
+            };
 
-                // Filtro "Hide Watched"
+            const parallelPages = (userConfig?.config?.hideWatched) ? 3 : 1;
+            const promises = [];
+            for (let i = 0; i < parallelPages; i++) {
+                promises.push(fetchTmdbCatalog(tmdbClient, endpoint, currentSkip + (i * 20), params, contentType, cacheOptions));
+            }
+
+            const pagesResults = await Promise.all(promises);
+            for (let pageResults of pagesResults) {
                 pageResults = await filterWatchedItems(pageResults, userConfig);
                 combinedResults.push(...pageResults);
-
-                if (pageResults.length === 0 || !userConfig?.config?.hideWatched) break;
-                currentSkip += 20;
-                depth++;
+                if (combinedResults.length >= 20) break;
             }
 
             results = combinedResults.slice(0, 40);
@@ -671,22 +672,20 @@ async function catalogHandler(args, userConfig, hostUrl) {
             const traktToken = userConfig.apiKeys?.trakt;
             let currentSkip = skip;
             let combinedResults = [];
-            let depth = 0;
-            const MAX_DEPTH = 3;
 
-            while (combinedResults.length < 20 && depth < MAX_DEPTH) {
-                let pageResults = [];
-                if (traktToken) {
-                    pageResults = await getHybridCatalog(baseId, currentSkip, traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId);
+            if (traktToken) {
+                const parallelPages = (userConfig?.config?.hideWatched) ? 3 : 1;
+                const promises = [];
+                for (let i = 0; i < parallelPages; i++) {
+                    promises.push(getHybridCatalog(baseId, currentSkip + (i * 20), traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId));
                 }
 
-                // Filtro "Hide Watched"
-                pageResults = await filterWatchedItems(pageResults, userConfig);
-                combinedResults.push(...pageResults);
-
-                if (pageResults.length === 0 || !userConfig?.config?.hideWatched) break;
-                currentSkip += 20;
-                depth++;
+                const pagesResults = await Promise.all(promises);
+                for (let pageResults of pagesResults) {
+                    pageResults = await filterWatchedItems(pageResults, userConfig);
+                    combinedResults.push(...pageResults);
+                    if (combinedResults.length >= 20) break;
+                }
             }
             results = combinedResults.slice(0, 40);
             enrichResultsWithDeepMetadata(results, tmdbApiKey, type);

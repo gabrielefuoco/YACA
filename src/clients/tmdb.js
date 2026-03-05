@@ -77,16 +77,158 @@ async function resolveImdbId(tmdbId, type, apiKey) {
 }
 
 /**
+ * Converte ISO 3166-1 alpha-2 in emoji bandiera
+ */
+function getCountryEmoji(countryCode) {
+    if (!countryCode) return '';
+    return countryCode
+        .toUpperCase()
+        .replace(/./g, char => String.fromCodePoint(char.charCodeAt(0) + 127397));
+}
+
+/**
+ * Formatta una descrizione ricca in stile "Technical Card" per Stremio
+ */
+function formatRichDescription(data, type, ratings = {}) {
+    const lines = [];
+    const separator = '━━━━━━━━━━━━━━━━━━━━━━━';
+
+    // 1. Banner dei Voti
+    const scoreParts = [];
+    if (data.vote_average) scoreParts.push(`⭐ ${parseFloat(data.vote_average).toFixed(1)} TMDB`);
+    if (ratings.imdb) scoreParts.push(`🆔 IMDb ${ratings.imdb}`);
+    if (ratings.rtCritic) scoreParts.push(`🍅 ${ratings.rtCritic}%`);
+    if (ratings.rtAudience) scoreParts.push(`🍿 ${ratings.rtAudience}%`);
+    if (ratings.metacritic) scoreParts.push(`Ⓜ️ ${ratings.metacritic}/100`);
+
+    if (scoreParts.length > 0) {
+        lines.push(separator);
+        lines.push(scoreParts.join(' | '));
+        lines.push(separator);
+    }
+
+    // 2. Tagline
+    if (data.tagline) {
+        lines.push(`"${data.tagline}"`);
+        lines.push('');
+    }
+
+    // 3. Trama
+    if (data.overview) {
+        lines.push('📜 TRAMA');
+        lines.push(data.overview);
+        lines.push('');
+    }
+
+    // 4. Info Tecniche
+    lines.push('ℹ️ INFO TECNICHE');
+    const technicalInfo = [];
+
+    // Status e Next Episode per serie
+    if (type === 'series' && data.status) {
+        const isEnded = ['Ended', 'Canceled'].includes(data.status);
+        const statusEmoji = isEnded ? '🔴' : '🟢';
+        let statusLine = `${statusEmoji} Status: ${data.status}`;
+        if (!isEnded && data.next_episode_to_air?.air_date) {
+            const nextDate = new Date(data.next_episode_to_air.air_date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
+            statusLine += ` (Prossimo: ${nextDate})`;
+        }
+        technicalInfo.push(statusLine);
+    }
+
+    // Network / Studio
+    if (type === 'series' && data.networks?.length > 0) {
+        technicalInfo.push(`📺 Network: ${data.networks.map(n => n.name).join(', ')}`);
+    } else if (type === 'movie' && data.production_companies?.length > 0) {
+        technicalInfo.push(`🏢 Studio: ${data.production_companies.slice(0, 2).map(c => c.name).join(', ')}`);
+    }
+
+    // Origine e Lingua
+    if (data.production_countries?.length > 0) {
+        const country = data.production_countries[0];
+        const flag = getCountryEmoji(country.iso_3166_1);
+        technicalInfo.push(`🌍 Origine: ${country.name} ${flag}`);
+    }
+
+    // Rating e Runtime
+    let runtime = metaRuntime(data, type);
+    let certification = data.certification; // Passata via l'oggetto data se calcolata fuori
+    const certPart = certification ? `[${certification}]` : '';
+    const runtimePart = runtime ? `⏳ ${runtime}` : '';
+    if (certPart || runtimePart) {
+        technicalInfo.push(`🔞 Rating: ${certPart} ${runtimePart}`.trim().replace('  ', ' · '));
+    }
+
+    if (technicalInfo.length > 0) {
+        lines.push(technicalInfo.join('\n'));
+        lines.push('');
+    }
+
+    // 5. Cast e Regia (Testuale, oltre ai link nativi)
+    if (data.credits) {
+        lines.push('👥 CAST & REGIA');
+        if (type === 'movie' && data.credits.crew) {
+            const directors = data.credits.crew.filter(c => c.job === 'Director').slice(0, 2);
+            if (directors.length > 0) lines.push(`🎬 Regia: ${directors.map(d => d.name).join(', ')}`);
+        } else if (type === 'series' && data.created_by?.length > 0) {
+            lines.push(`🎬 Creato da: ${data.created_by.slice(0, 2).map(c => c.name).join(', ')}`);
+        }
+        if (data.credits.cast?.length > 0) {
+            lines.push(`🎭 Cast: ${data.credits.cast.slice(0, 5).map(c => c.name).join(', ')}...`);
+        }
+        lines.push('');
+    }
+
+    // 6. Saga e Dati Finanziari (solo film)
+    if (type === 'movie' && (data.belongs_to_collection || data.budget)) {
+        const curiosities = [];
+        if (data.belongs_to_collection) curiosities.push(`🎬 Saga: ${data.belongs_to_collection.name}`);
+        if (data.budget) {
+            const budget = data.budget > 0 ? `$${(data.budget / 1000000).toFixed(0)}M` : 'N/A';
+            const revenue = data.revenue > 0 ? `$${(data.revenue / 1000000).toFixed(0)}M` : 'N/A';
+            curiosities.push(`💰 Budget: ${budget} · Incasso: ${revenue}`);
+        }
+        if (curiosities.length > 0) {
+            lines.push('💎 DETTAGLI');
+            lines.push(curiosities.join('\n'));
+            lines.push('');
+        }
+    }
+
+    // 7. Tags (Hashtags)
+    if (data.keywords?.keywords?.length > 0 || data.keywords?.results?.length > 0) {
+        const kwList = type === 'movie' ? data.keywords.keywords : data.keywords.results;
+        const tags = kwList.slice(0, 8).map(k => `#${k.name.replace(/\s+/g, '')}`);
+        if (tags.length > 0) {
+            lines.push('🔗 TAGS');
+            lines.push(tags.join(' '));
+        }
+    }
+
+    lines.push(separator);
+
+    return lines.join('\n').trim();
+}
+
+/**
+ * Helper per calcolare il runtime in formato stringa
+ */
+function metaRuntime(data, type) {
+    if (type === 'movie' && data.runtime) return `${data.runtime}m`;
+    if (type === 'series' && data.episode_run_time?.length > 0) return `${data.episode_run_time[0]}m`;
+    return null;
+}
+
+/**
  * Trasforma il risultato raw di TMDB nel formato Stremio Meta Preview.
  */
 function toStremioMetaItem(tmdbItem, type) {
     if (!tmdbItem) return null;
 
-    // Se abbiamo l'IMDB ID (grazie a external_ids) lo esponiamo, altrimenti fallback a tmdb:
     const id = (tmdbItem.external_ids && tmdbItem.external_ids.imdb_id) ? tmdbItem.external_ids.imdb_id : `tmdb:${tmdbItem.id}`;
     const year = tmdbItem.release_date ? tmdbItem.release_date.split('-')[0] : (tmdbItem.first_air_date ? tmdbItem.first_air_date.split('-')[0] : '');
 
-    return {
+    const meta = {
         id,
         type: type === 'movie' ? 'movie' : 'series',
         name: tmdbItem.title || tmdbItem.name || 'Titolo sconosciuto',
@@ -97,11 +239,75 @@ function toStremioMetaItem(tmdbItem, type) {
         releaseInfo: year,
         imdbRating: tmdbItem.vote_average ? parseFloat(tmdbItem.vote_average).toFixed(1) : null,
         genre_ids: tmdbItem.genre_ids || (tmdbItem.genres ? tmdbItem.genres.map(g => g.id) : []),
-        keywords: tmdbItem.keywords || null,
         behaviorHints: type === 'movie'
             ? { defaultVideoId: id }
             : { hasScheduledVideos: true }
     };
+
+    // Deep Links nativi
+    meta.links = [];
+
+    // Generi
+    if (tmdbItem.genres) {
+        for (const g of tmdbItem.genres) {
+            meta.links.push({ name: g.name, category: 'Generi', url: `stremio:///search?search=${encodeURIComponent(g.name)}` });
+        }
+    }
+
+    // Regia / Creatori
+    if (type === 'movie' && tmdbItem.credits?.crew) {
+        const directors = tmdbItem.credits.crew.filter(c => c.job === 'Director').slice(0, 3);
+        for (const d of directors) {
+            meta.links.push({ name: d.name, category: 'Regia', url: `stremio:///search?search=${encodeURIComponent(d.name)}` });
+        }
+    } else if (type === 'series' && tmdbItem.created_by?.length > 0) {
+        for (const c of tmdbItem.created_by.slice(0, 3)) {
+            meta.links.push({ name: c.name, category: 'Creato da', url: `stremio:///search?search=${encodeURIComponent(c.name)}` });
+        }
+    }
+
+    // Cast (primi 5)
+    if (tmdbItem.credits?.cast) {
+        for (const c of tmdbItem.credits.cast.slice(0, 5)) {
+            meta.links.push({ name: c.name, category: 'Cast', url: `stremio:///search?search=${encodeURIComponent(c.name)}` });
+        }
+    }
+
+    // Keywords (Temi)
+    const kwList = type === 'movie' ? tmdbItem.keywords?.keywords : tmdbItem.keywords?.results;
+    if (kwList && kwList.length > 0) {
+        for (const k of kwList.slice(0, 5)) {
+            meta.links.push({ name: k.name, category: 'Tema', url: `stremio:///search?search=${encodeURIComponent(k.name)}` });
+        }
+    }
+
+    // Saga
+    if (tmdbItem.belongs_to_collection) {
+        meta.links.push({ name: tmdbItem.belongs_to_collection.name, category: 'Saga', url: `stremio:///search?search=${encodeURIComponent(tmdbItem.belongs_to_collection.name)}` });
+    }
+
+    // Network
+    if (type === 'series' && tmdbItem.networks) {
+        for (const n of tmdbItem.networks) {
+            meta.links.push({ name: n.name, category: 'Network', url: `stremio:///search?search=${encodeURIComponent(n.name)}` });
+        }
+    }
+
+    if (meta.links.length === 0) delete meta.links;
+
+    // Logo
+    if (tmdbItem.images && tmdbItem.images.logos && tmdbItem.images.logos.length > 0) {
+        const itLogo = tmdbItem.images.logos.find(l => l.iso_639_1 === 'it');
+        const targetLogo = itLogo || tmdbItem.images.logos[0];
+        meta.logo = `https://image.tmdb.org/t/p/w500${targetLogo.file_path}`;
+    }
+
+    // Background Blur
+    if (meta.background) {
+        meta.behaviorHints.backgroundBlur = `https://wsrv.nl/?url=${encodeURIComponent(meta.background)}&blur=20`;
+    }
+
+    return meta;
 }
 
 /**
@@ -192,16 +398,26 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
             const cachedSlice = cachedItems.slice(normalizedSkip, sliceEnd);
 
             if (!cached.isStale) {
+                // Background prefetching: if we are near the end of cached items, fetch next pages
+                if (normalizedSkip > 0 && cachedItems.length < sliceEnd + (ITEMS_PER_PAGE * 2) && cachedItems.length < cached.total_results) {
+                    const startPage = cached.nextPage || (Math.floor(cachedItems.length / ITEMS_PER_PAGE) + 1);
+                    fetchTmdbCatalogDirect(client, endpoint, startPage, customParams, type, 2)
+                        .then(({ items: newItems, nextPageFetched }) => {
+                            if (newItems.length > 0) {
+                                TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(cachedItems, newItems), nextPageFetched);
+                            }
+                        })
+                        .catch(e => console.error('[Prefetch] Error:', e.message));
+                }
+
                 // Scenario B: Cache Hit Fresca — latenza minima
                 if (normalizedSkip === 0) {
                     return cachedItems;
                 }
                 // Check if we have enough items in cache for the requested slice
                 if (cachedItems.length >= sliceEnd || cachedItems.length === cached.total_results) {
-                    // console.log(`[TMDB Cache] Hit Fresca. Returning ${cachedSlice.length} items (skip: ${normalizedSkip}, end: ${sliceEnd})`);
                     return cachedSlice;
                 }
-                // If not enough items, fallback to fetching
             }
 
             if (cached.isStale && (cachedItems.length >= sliceEnd || cachedItems.length === cached.total_results)) {
@@ -255,10 +471,11 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId) {
     try {
         const promises = [];
         // TMDB Seasons are 1-indexed. Sometimes there is Season 0 (Specials).
-        // For performance, we fetch up to the most recent 5 seasons if a show is huge.
-        const startSeason = totalSeasons > 5 ? totalSeasons - 4 : 1;
+        // Fetch all seasons, with a reasonable safety limit (e.g., 50)
+        const startSeason = 1;
+        const maxSeasonsToFetch = Math.min(totalSeasons, 50);
 
-        for (let i = startSeason; i <= totalSeasons; i++) {
+        for (let i = startSeason; i <= maxSeasonsToFetch; i++) {
             promises.push(client.get(`/tv/${tmdbId}/season/${i}`));
         }
 
@@ -293,232 +510,137 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId) {
 /**
  * Ottiene i dettagli completi per il Meta Handler di Stremio
  */
-async function getTmdbMetaDetails(apiKey, id, type) {
+async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
     const tmdbId = id.replace('tmdb:', '').trim();
 
-    // Validate tmdbId is a number to prevent path injection
     if (!/^\d+$/.test(tmdbId)) {
         console.error(`ID TMDB non valido: ${tmdbId}`);
         return null;
     }
 
-    const cacheKey = `${type}:${tmdbId}`;
-    const targetMetaCache = type === 'series' ? seriesMetaCache : movieMetaCache;
-    const cached = await targetMetaCache.get(cacheKey);
-    if (cached) {
-        return cached;
-    }
+    const cacheKey = `full:${type}:${tmdbId}`;
+    const cachedData = await tmdbDetailsCache.get(cacheKey);
+    let data = cachedData;
 
     const client = createTmdbClient(apiKey);
     const endpoint = type === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
 
-    try {
-        const res = await client.get(endpoint, {
-            params: { append_to_response: 'videos,credits,images,external_ids,release_dates,content_ratings,keywords', include_image_language: 'it,en,null' }
-        });
-
-        const data = res.data;
-        if (!data) return null;
-
-        // Fallback linguistico: IT → EN → lingua originale
-        // Se overview o titolo mancanti in italiano, proviamo inglese poi originale
-        const itTitle = data.title || data.name;
-        const originalTitle = data.original_title || data.original_name;
-        const isItalianOriginal = data.original_language === 'it';
-        const titleNeedsFallback = !isItalianOriginal && itTitle && originalTitle && itTitle === originalTitle;
-        const overviewNeedsFallback = !data.overview;
-
-        if (titleNeedsFallback || overviewNeedsFallback) {
-            try {
-                const enRes = await client.get(endpoint, { params: { language: 'en-US' } });
-                const enData = enRes.data;
-                if (enData) {
-                    if (overviewNeedsFallback && enData.overview) {
-                        data.overview = enData.overview;
-                    }
-                    if (titleNeedsFallback) {
-                        const enTitle = enData.title || enData.name;
-                        if (enTitle && enTitle !== originalTitle) {
-                            if (data.title !== undefined) data.title = enTitle;
-                            if (data.name !== undefined) data.name = enTitle;
-                        }
-                    }
-                }
-                // Se overview ancora assente, prova lingua originale
-                if (!data.overview && data.original_language) {
-                    const origRes = await client.get(endpoint, { params: { language: data.original_language } });
-                    if (origRes.data?.overview) {
-                        data.overview = origRes.data.overview;
-                    }
-                }
-            } catch (_e) { /* fallback silenzioso */ }
-        }
-
-        const meta = toStremioMetaItem(data, type);
-        if (!meta) return null;
-
-        // Aggiungiamo metadati avanzati
-        if (data.credits && data.credits.cast) {
-            meta.cast = data.credits.cast.slice(0, 10).map(c => c.name);
-        }
-        if (data.genres) {
-            meta.genres = data.genres.map(g => g.name);
-        }
-        if (data.runtime) {
-            meta.runtime = `${data.runtime}m`;
-        }
-        if (type === 'series' && data.episode_run_time?.length > 0) {
-            meta.runtime = `${data.episode_run_time[0]}m`;
-        }
-
-        // Sito ufficiale
-        if (data.homepage) {
-            meta.website = data.homepage;
-        }
-
-        // Registi / Creatori
-        if (type === 'movie' && data.credits?.crew) {
-            const directors = data.credits.crew.filter(c => c.job === 'Director').slice(0, 3);
-            if (directors.length > 0) {
-                meta.director = directors.map(d => d.name);
-            }
-        } else if (type === 'series' && data.created_by?.length > 0) {
-            meta.director = data.created_by.slice(0, 3).map(c => c.name);
-        }
-
-        // Deep Links cliccabili: Regia, Cast, Generi, Saga
-        meta.links = [];
-
-        // Regia
-        const directorNames = meta.director || [];
-        for (const name of directorNames) {
-            meta.links.push({ name, category: 'Regia', url: `stremio:///search?search=${encodeURIComponent(name)}` });
-        }
-
-        // Cast (prime 5 voci)
-        if (data.credits?.cast) {
-            for (const c of data.credits.cast.slice(0, 5)) {
-                meta.links.push({ name: c.name, category: 'Cast', url: `stremio:///search?search=${encodeURIComponent(c.name)}` });
-            }
-        }
-
-        // Generi
-        if (data.genres) {
-            for (const g of data.genres) {
-                meta.links.push({ name: g.name, category: 'Generi', url: `stremio:///search?search=${encodeURIComponent(g.name)}` });
-            }
-        }
-
-        // Saga / Collezione (solo film)
-        if (data.belongs_to_collection) {
-            meta.links.push({
-                name: `🎬 ${data.belongs_to_collection.name}`,
-                category: 'Saga',
-                url: `stremio:///search?search=${encodeURIComponent(data.belongs_to_collection.name)}`
-            });
-        }
-
-        if (meta.links.length === 0) delete meta.links;
-
-        // Tagline
-        if (data.tagline) {
-            meta.description = `"${data.tagline}"\n\n${meta.description || ''}`.trim();
-        }
-
-        // Estrazione Certificazione Età (Age Rating)
+    if (!data) {
         try {
-            if (type === 'movie' && data.release_dates?.results) {
-                // Cerchiamo preferibilmente in US o primo disponibile
-                const releaseData = data.release_dates.results.find(r => r.iso_3166_1 === 'US') || data.release_dates.results[0];
-                if (releaseData?.release_dates?.[0]?.certification) {
-                    const cert = releaseData.release_dates[0].certification;
-                    if (cert) meta.description = `[${cert}] ${meta.description}`; // Stremio visualizza bene le label testuali nel body
+            const res = await client.get(endpoint, {
+                params: {
+                    append_to_response: 'videos,credits,images,external_ids,release_dates,content_ratings,keywords',
+                    include_image_language: 'it,en,null'
                 }
-            } else if (type === 'series' && data.content_ratings?.results) {
-                const ratingData = data.content_ratings.results.find(r => r.iso_3166_1 === 'US') || data.content_ratings.results[0];
-                if (ratingData?.rating) {
-                    const cert = ratingData.rating;
-                    if (cert) meta.description = `[${cert}] ${meta.description}`;
-                }
+            });
+            data = res.data;
+            if (data) {
+                // Cache raw data
+                await tmdbDetailsCache.set(cacheKey, data);
             }
-        } catch (_e) { /* fallback silenzioso se fallisce estrazione certification */ }
-
-        // Informazioni su Network e Status per le Serie TV
-        if (type === 'series') {
-            try {
-                const infoLines = [];
-                if (data.networks?.length > 0) {
-                    infoLines.push(`📺 Network: ${data.networks.map(n => n.name).join(', ')}`);
-                }
-                if (data.number_of_seasons) {
-                    const episodesPart = data.number_of_episodes ? ` · ${data.number_of_episodes} episodi` : '';
-                    infoLines.push(`🎬 ${data.number_of_seasons} stagion${data.number_of_seasons === 1 ? 'e' : 'i'}${episodesPart}`);
-                }
-                if (data.status) {
-                    const isEnded = ['Ended', 'Canceled'].includes(data.status);
-                    const statusEmoji = isEnded ? '🔴' : '🟢';
-                    let statusLine = `${statusEmoji} Status: ${data.status}`;
-                    if (!isEnded && data.next_episode_to_air?.air_date) {
-                        const nextDate = new Date(data.next_episode_to_air.air_date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
-                        statusLine += ` (Prossimo ep: ${nextDate})`;
-                    }
-                    infoLines.push(statusLine);
-                }
-                if (infoLines.length > 0) {
-                    meta.description = `${infoLines.join('\n')}\n\n${meta.description || ''}`.trim();
-                }
-            } catch (_e) { /* fallback silenzioso */ }
+        } catch (err) {
+            console.error("Errore TMDB Meta Fetch:", err.message);
+            return null;
         }
-
-        // Poster con fallback linguistico: IT → EN → originale (null) → poster_path
-        if (data.images && data.images.posters && data.images.posters.length > 0) {
-            const itPoster = data.images.posters.find(p => p.iso_639_1 === 'it');
-            const enPoster = data.images.posters.find(p => p.iso_639_1 === 'en');
-            const nullPoster = data.images.posters.find(p => !p.iso_639_1);
-            const bestPoster = itPoster || enPoster || nullPoster;
-            if (bestPoster) {
-                meta.poster = `https://image.tmdb.org/t/p/w500${bestPoster.file_path}`;
-            }
-        }
-
-        // Troviamo il ClearLogo (il logo col nome del film trasparente)
-        if (data.images && data.images.logos && data.images.logos.length > 0) {
-            // Preferiamo quello in italiano, se non c'è prendiamo il primo disponibile (in genere inglese)
-            const itLogo = data.images.logos.find(l => l.iso_639_1 === 'it');
-            const targetLogo = itLogo || data.images.logos[0];
-            meta.logo = `https://image.tmdb.org/t/p/w500${targetLogo.file_path}`;
-        }
-
-        // Add Blurred Background link
-        if (meta.background) {
-            meta.behaviorHints.backgroundBlur = `https://wsrv.nl/?url=${encodeURIComponent(meta.background)}&blur=20`;
-        }
-
-        // Troviamo i trailer e altri video (YouTube) e formattiamoli secondo le specifiche Stremio
-        if (data.videos && data.videos.results) {
-            const allowedVideoTypes = ['Trailer', 'Featurette', 'Behind the Scenes', 'Clip'];
-            const videos = data.videos.results.filter(v => v.site === 'YouTube' && allowedVideoTypes.includes(v.type));
-            if (videos.length > 0) {
-                // Stremio supports array of { source: "youtubeId", type: "Trailer" }
-                meta.trailers = videos.map(t => ({ source: t.key, type: t.type }));
-            }
-        }
-
-        // Se è una serie TV, scarica gli episodi per popolare la griglia in Stremio
-        if (type === 'series' && data.number_of_seasons) {
-            meta.videos = await fetchTmdbEpisodes(client, tmdbId, data.number_of_seasons, meta.id.startsWith('tt') ? meta.id : null);
-        }
-
-        if (meta) {
-            await targetMetaCache.set(cacheKey, meta);
-        }
-
-        return meta;
-
-    } catch (err) {
-        console.error("Errore TMDB Meta:", err.message);
-        return null;
     }
+
+    if (!data) return null;
+
+    // Fallback linguistico: IT → EN → lingua originale
+    // Se overview o titolo mancanti in italiano, proviamo inglese poi originale
+    const itTitle = data.title || data.name;
+    const originalTitle = data.original_title || data.original_name;
+    const isItalianOriginal = data.original_language === 'it';
+
+    // Un titolo ha bisogno di fallback se non è italiano originale e quello "tradotto" è uguale all'originale (spesso TMDB non ha la traduzione)
+    const titleNeedsFallback = !isItalianOriginal && itTitle && originalTitle && itTitle === originalTitle;
+
+    // Una overview ha bisogno di fallback se è mancante, troppo breve o contiene placeholder comuni
+    const isCleanOverview = (txt) => txt && txt.trim().length > 10 && !txt.includes("Non abbiamo ancora una descrizione in italiano");
+    const overviewNeedsFallback = !isCleanOverview(data.overview);
+
+    if (titleNeedsFallback || overviewNeedsFallback) {
+        try {
+            const enRes = await client.get(endpoint, { params: { language: 'en-US' } });
+            const enData = enRes.data;
+            if (enData) {
+                if (overviewNeedsFallback && enData.overview) {
+                    data.overview = enData.overview;
+                }
+                if (titleNeedsFallback) {
+                    const enTitle = enData.title || enData.name;
+                    if (enTitle && enTitle !== originalTitle) {
+                        if (data.title !== undefined) data.title = enTitle;
+                        if (data.name !== undefined) data.name = enTitle;
+                    }
+                }
+            }
+            // Se overview ancora assente, prova lingua originale
+            if (!data.overview && data.original_language) {
+                const origRes = await client.get(endpoint, { params: { language: data.original_language } });
+                if (origRes.data?.overview) {
+                    data.overview = origRes.data.overview;
+                }
+            }
+        } catch (_e) { /* fallback silenzioso */ }
+    }
+
+    // Estrazione Certificazione Età (Age Rating)
+    let certification = null;
+    try {
+        if (type === 'movie' && data.release_dates?.results) {
+            const releaseData = data.release_dates.results.find(r => r.iso_3166_1 === 'US') || data.release_dates.results[0];
+            certification = releaseData?.release_dates?.[0]?.certification;
+        } else if (type === 'series' && data.content_ratings?.results) {
+            const ratingData = data.content_ratings.results.find(r => r.iso_3166_1 === 'US') || data.content_ratings.results[0];
+            certification = ratingData?.rating;
+        }
+    } catch (_e) { /* ignore */ }
+    data.certification = certification;
+
+    const meta = toStremioMetaItem(data, type);
+    if (!meta) return null;
+
+    // Se abbiamo il voto IMDb reale (da MDBList/externalRatings), usiamolo per il campo nativo
+    if (externalRatings.imdb) {
+        meta.imdbRating = externalRatings.imdb.toString();
+    }
+
+    // Costruiamo la descrizione ricca (Technical Card)
+    meta.description = formatRichDescription(data, type, externalRatings);
+
+    // Aggiungiamo metadati avanzati nativi (per compatibilità con vari client)
+    if (data.credits && data.credits.cast) {
+        meta.cast = data.credits.cast.slice(0, 15).map(c => c.name);
+    }
+    if (data.genres) {
+        meta.genres = data.genres.map(g => g.name);
+    }
+
+    meta.runtime = metaRuntime(data, type);
+
+    // Sito ufficiale
+    if (data.homepage) {
+        meta.website = data.homepage;
+    }
+
+    // Registi / Sceneggiatori / Creatori (Nativi)
+    if (type === 'movie' && data.credits?.crew) {
+        const directors = data.credits.crew.filter(c => c.job === 'Director').map(d => d.name);
+        const writers = data.credits.crew.filter(c => ['Writer', 'Screenplay', 'Author'].includes(c.job)).map(w => w.name);
+        if (directors.length > 0) meta.director = directors;
+        if (writers.length > 0) meta.writer = writers;
+    } else if (type === 'series' && data.created_by?.length > 0) {
+        meta.director = data.created_by.map(c => c.name);
+    }
+
+    // Se è una serie TV, scarica gli episodi per popolare la griglia in Stremio
+    if (type === 'series' && data.number_of_seasons) {
+        meta.videos = await fetchTmdbEpisodes(client, tmdbId, data.number_of_seasons, meta.id.startsWith('tt') ? meta.id : null);
+    }
+
+
+    return meta;
 }
 
 const tmdbDetailsCache = new CacheManager('tmdb_details_raw', { ramMax: 1000, ramTtlMs: 24 * 60 * 60 * 1000, mongoTtlMs: MOVIE_DETAILS_TTL_MS });

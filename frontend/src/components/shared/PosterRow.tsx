@@ -51,7 +51,7 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
       {loading && (
         <div className="flex max-w-full gap-2 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-[192px] w-[128px] shrink-0 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800/40" />
+            <div key={i} className="h-[225px] w-[150px] shrink-0 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800/40" />
           ))}
         </div>
       )}
@@ -64,10 +64,10 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
                 <img
                   src={item.poster}
                   alt={item.title}
-                  className="h-[192px] w-[128px] rounded-lg object-cover transition-transform duration-200 group-hover/poster:scale-105 shadow-md shadow-black/30"
+                  className="h-[225px] w-[150px] rounded-lg object-cover transition-transform duration-200 group-hover/poster:scale-105 shadow-md shadow-black/30"
                 />
               ) : (
-                <div className="flex h-[192px] w-[128px] items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/40 text-xs text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700/50">
+                <div className="flex h-[225px] w-[150px] items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/40 text-xs text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700/50">
                   {item.title.slice(0, 2)}
                 </div>
               )}

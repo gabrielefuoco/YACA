@@ -50,53 +50,39 @@ async function metaHandler(args, userConfig) {
             meta = await getKitsuMetaDetails(id);
         }
 
-        // Caso 2: È un ID di TMDB (Film o Serie già mappati dai nostri cataloghi custom)
-        else if (id.startsWith('tmdb:')) {
-            meta = await getTmdbMetaDetails(tmdbApiKey, id, type);
+        let ratings = {};
+        const imdbIdForRatings = id.startsWith('tt') ? id : (meta?.id?.startsWith('tt') ? meta.id : null);
+
+        if (imdbIdForRatings) {
+            try {
+                const mdblistApiKey = userConfig.apiKeys?.mdblist || process.env.MDBLIST_API_KEY || null;
+                const fetchedRatings = await fetchMdblistRatings(imdbIdForRatings, mdblistApiKey);
+                if (fetchedRatings) ratings = fetchedRatings;
+            } catch (_e) { /* ignore */ }
         }
 
-        // Caso 3: È un ID standard IMDB di Stremio (es. aprendo dalla home nativa)
-        else if (id.startsWith('tt')) {
-            // Dobbiamo tradurlo in TMDB
-            const tmdbMap = await translateImdbToTmdb(id, tmdbApiKey);
-            if (tmdbMap) {
-                meta = await getTmdbMetaDetails(tmdbApiKey, tmdbMap.id, tmdbMap.type);
+        // Se abbiamo caricato i dati da TMDB, dobbiamo assicurarci che la descrizione 
+        // rifletta i voti appena scaricati (se getTmdbMetaDetails non li aveva)
+        if (id.startsWith('tmdb:') || id.startsWith('tt')) {
+            // Ricarichiamo o aggiorniamo i dettagli passando i voti per la Technical Card
+            // getTmdbMetaDetails userà i dati in cache se disponibili, ma ricalcolerà la descrizione
+            // se passiamo externalRatings diversi.
+            const tmdbId = id.startsWith('tmdb:') ? id : (await translateImdbToTmdb(id, tmdbApiKey))?.id;
+            if (tmdbId) {
+                meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, ratings);
             }
         }
 
         if (meta) {
             // Per richieste con tmdb: ID, manteniamo l'IMDB ID risolto per compatibilità streaming
-            // toStremioMetaItem preferisce già gli IMDB ID quando external_ids è disponibile
             if (id.startsWith('tmdb:') && meta.id && meta.id.startsWith('tt')) {
-                // meta.id contiene l'IMDB ID risolto, teniamolo per Torrentio & co.
-                // defaultVideoId va impostato solo per i film (per le serie si usa la lista episodi)
                 if (meta.behaviorHints && type === 'movie') {
                     meta.behaviorHints.defaultVideoId = meta.id;
                 }
-            } else {
-                // Per kitsu: e altri ID, forziamo l'ID originale
+            } else if (!id.startsWith('tmdb:')) {
+                // Per kitsu: e altri ID (non tradotti), forziamo l'ID originale
                 meta.id = id;
             }
-
-            // Arricchimento voti: Rotten Tomatoes e Metacritic da MDBList
-            try {
-                const imdbIdForRatings = meta.id && meta.id.startsWith('tt') ? meta.id : null;
-                if (imdbIdForRatings) {
-                    const mdblistApiKey = userConfig.apiKeys?.mdblist || process.env.MDBLIST_API_KEY || null;
-                    const ratings = await fetchMdblistRatings(imdbIdForRatings, mdblistApiKey);
-                    if (ratings) {
-                        const parts = [];
-                        if (meta.imdbRating) parts.push(`⭐ ${meta.imdbRating} TMDB`);
-                        if (ratings.imdb !== null && ratings.imdb !== undefined) parts.push(`IMDb ${ratings.imdb}`);
-                        if (ratings.rtCritic !== null && ratings.rtCritic !== undefined) parts.push(`🍅 ${ratings.rtCritic}%`);
-                        if (ratings.rtAudience !== null && ratings.rtAudience !== undefined) parts.push(`🍿 ${ratings.rtAudience}%`);
-                        if (ratings.metacritic !== null && ratings.metacritic !== undefined) parts.push(`Ⓜ️ ${ratings.metacritic}/100`);
-                        if (parts.length > 0) {
-                            meta.description = `${parts.join(' | ')}\n\n${meta.description || ''}`.trim();
-                        }
-                    }
-                }
-            } catch (_e) { /* fallback silenzioso */ }
 
             return { meta };
         }
