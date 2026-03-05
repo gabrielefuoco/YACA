@@ -795,7 +795,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
         // ==========================================
         // SCENARIO 4: CATALOGHI MDBLIST
         // ==========================================
-        if (id.startsWith('mdblist_') || id.startsWith('yaca_preset_mdblist_')) {
+        if (id && (id.startsWith('mdblist_') || id.startsWith('yaca_preset_mdblist_'))) {
             const listId = id.replace('yaca_preset_mdblist_', '').replace('mdblist_', '');
             const mdblistKey = userConfig.apiKeys?.mdblist || null;
 
@@ -830,7 +830,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 // ==========================================
                 // FASE 9.1: CATALOGHI FUSI (MERGED)
                 // ==========================================
-                if (catalogMeta.source === 'merged' || catalogMeta.sourceType === 'merged' || filters.merge) {
+                if (catalogMeta?.source === 'merged' || catalogMeta?.sourceType === 'merged' || filters.merge) {
                     const mergeConfig = filters.merge || { catalogs: catalogMeta.mergedFrom || [] };
                     const sourceIds = mergeConfig.catalogs;
                     const sourceFilters = mergeConfig.sourceFilters || [];

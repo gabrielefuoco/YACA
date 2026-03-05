@@ -109,12 +109,6 @@ export function ProfileManager({
               </div>
               <div className="text-center w-full">
                 <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate w-full">{profile.name}</p>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onSetActive(profile.id); }}
-                  className="mt-2 px-3 py-1 bg-slate-200 dark:bg-slate-700 hover:bg-primary hover:text-white text-[10px] font-bold rounded-lg transition-all"
-                >
-                  ATTIVA
-                </button>
               </div>
             </div>
           );

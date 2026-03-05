@@ -31,12 +31,18 @@ const UserConfig = {
         try {
             let userId = userData.userId;
             const stremioKey = userData.apiKeys?.stremio;
-            if (!userId && stremioKey) {
+
+            // ALWAYS check for existing user by stremio key first,
+            // even if a userId was provided. This prevents duplicate accounts
+            // when the frontend sends a new nanoid but an account with
+            // that stremio key already exists.
+            if (stremioKey) {
                 const existingUser = await User.findOne({ 'apiKeys.stremio': stremioKey }).select('userId').lean();
                 if (existingUser?.userId) {
                     userId = existingUser.userId;
                 }
             }
+
             if (!userId) {
                 // Genera un ID corto ed elegante (es. "xK9L2p")
                 userId = nanoid(10);

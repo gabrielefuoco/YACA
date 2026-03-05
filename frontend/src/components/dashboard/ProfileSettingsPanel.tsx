@@ -71,26 +71,30 @@ export function ProfileSettingsPanel({
             <div className="p-6 flex flex-col gap-8 bg-slate-100 dark:bg-transparent">
                 {/* Modelli Suggeriti Section */}
                 {profileTemplates.length > 0 && (
-                    <div className="flex flex-col gap-4">
-                        <div className="flex items-center justify-between cursor-pointer group">
-                            <div className="flex items-center gap-3 text-primary">
+                    <details className="group border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/40 rounded-xl p-4 shadow-sm [&_summary::-webkit-details-marker]:hidden">
+                        <summary className="flex cursor-pointer items-center justify-between font-bold text-sm select-none">
+                            <div className="flex items-center gap-2 text-primary">
                                 <span className="material-symbols-outlined">auto_awesome</span>
-                                <p className="text-sm font-black uppercase tracking-widest">Modelli Suggeriti</p>
+                                <span className="text-sm font-black uppercase tracking-widest">Modelli Suggeriti</span>
+                                <span className="text-xs font-normal normal-case text-slate-400 ml-1">({profileTemplates.length})</span>
                             </div>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
+                            <span className="transition group-open:rotate-180 text-slate-400">
+                                <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="20"><path d="M6 9l6 6 6-6"></path></svg>
+                            </span>
+                        </summary>
+                        <div className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                             {profileTemplates.map((tpl) => (
                                 <div
                                     key={tpl.id}
                                     onClick={() => onApplyTemplate(tpl)}
-                                    className="p-4 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary transition-all cursor-pointer flex-1 min-w-[200px]"
+                                    className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:border-primary transition-all cursor-pointer"
                                 >
-                                    <p className="text-slate-900 dark:text-slate-100 font-bold text-sm">{tpl.name}</p>
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">{tpl.description}</p>
+                                    <p className="text-slate-900 dark:text-slate-100 font-bold text-xs truncate">{tpl.name}</p>
+                                    <p className="text-slate-500 dark:text-slate-400 text-[10px] mt-0.5 line-clamp-2">{tpl.description}</p>
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </details>
                 )}
 
                 {/* Parole Chiave Section */}

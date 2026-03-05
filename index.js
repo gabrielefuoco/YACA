@@ -141,9 +141,13 @@ app.post('/api/preview-catalog', async (req, res) => {
         const aiType = customType === 'series' || aiFilters.target === 'kitsu' ? 'series' : 'movie';
         discoverType = aiType === 'series' ? 'tv' : 'movie';
         strategy = aiFilters.strategy || 'discovery';
+        // Preserve original AI keyword text before buildDiscoveryParams resolves them to IDs
+        const originalAiKeywords = aiFilters.keyword || null;
         discoverFilters = strategy === 'discovery'
             ? await buildDiscoveryParams(aiFilters, sanitizedTmdbKey, aiType)
             : aiFilters;
+        // Attach original keyword names for frontend display
+        if (originalAiKeywords) discoverFilters._keywordNames = originalAiKeywords;
     } else {
         discoverType = customType === 'series' ? 'tv' : 'movie';
         discoverFilters = {};

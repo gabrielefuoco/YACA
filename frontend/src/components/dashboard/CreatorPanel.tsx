@@ -79,7 +79,16 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
         setSortBy((f.sort_by as string) || 'popularity.desc');
         setLanguage((f.with_original_language as string) || '');
         setGenres(parseList(f.with_genres));
-        setKeywords(mapToPills(f.with_keywords, 'Keyword'));
+
+        // Use original AI keyword names if available, otherwise fall back to IDs
+        const keywordNames = f._keywordNames as string | undefined;
+        if (keywordNames) {
+          const names = keywordNames.replace(/\|/g, ',').split(',').map(s => s.trim()).filter(Boolean);
+          const ids = parseList(f.with_keywords);
+          setKeywords(names.map((name, i) => ({ id: ids[i] || name, name })));
+        } else {
+          setKeywords(mapToPills(f.with_keywords, 'Keyword'));
+        }
         setCast(mapToPills(f.with_cast, 'Cast'));
         setCrew(mapToPills(f.with_crew, 'Crew'));
 
