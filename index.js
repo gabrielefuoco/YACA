@@ -442,6 +442,30 @@ app.post('/api/stremio-auth', async (req, res) => {
     }
 });
 
+// Check if user already exists in DB by stremio authKey (skip Trakt for returning users)
+app.post('/api/check-user', async (req, res) => {
+    const { authKey } = req.body;
+    if (!authKey || typeof authKey !== 'string') {
+        return res.status(400).json({ exists: false, error: 'authKey obbligatorio' });
+    }
+    try {
+        const existingUser = await User.findOne({ 'apiKeys.stremio': authKey }).lean();
+        if (existingUser?.userId) {
+            return res.json({
+                exists: true,
+                userId: existingUser.userId,
+                traktToken: existingUser.apiKeys?.trakt || null,
+                traktRefreshToken: existingUser.apiKeys?.traktRefresh || null,
+                configVersion: existingUser.config?.configVersion || null,
+            });
+        }
+        return res.json({ exists: false });
+    } catch (err) {
+        console.error('Errore check-user:', err.message);
+        return res.status(500).json({ exists: false, error: 'Errore interno' });
+    }
+});
+
 // Stremio API: Aggiorna addon nella collezione dell'utente (senza reinstallare manualmente)
 app.post('/api/stremio-addon-update', async (req, res) => {
     const { authKey, manifestUrl } = req.body;

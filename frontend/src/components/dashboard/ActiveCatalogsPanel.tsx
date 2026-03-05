@@ -123,7 +123,7 @@ export function ActiveCatalogsPanel({
     }
     setHoverMergeIndex(null);
 
-    if ((e.shiftKey || hoverMergeIndex === targetIndex) && dragIndex !== null && dragIndex !== targetIndex) {
+    if (e.shiftKey && dragIndex !== null && dragIndex !== targetIndex) {
       handleMergeDrop(targetCatalog, catalogs[dragIndex]);
     } else {
       handleDrop(targetIndex);

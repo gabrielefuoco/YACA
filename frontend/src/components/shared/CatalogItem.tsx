@@ -1,5 +1,6 @@
 'use client';
 import { Catalog } from '@/types';
+import { PosterRow } from '@/components/shared/PosterRow';
 
 interface CatalogItemProps {
   catalog: Catalog;
@@ -72,6 +73,10 @@ export function CatalogItem({
       <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-4 relative z-10">
         {catalog.raw_prompt || 'Catalogo basato su filtri e preferenze per risultati personalizzati.'}
       </p>
+
+      <div className="-mx-2 mb-4 relative z-10">
+        <PosterRow presetId={catalog.source === 'preset' ? catalog.id : undefined} type={catalog.type} filters={catalog.filters} prompt={catalog.raw_prompt} />
+      </div>
 
       <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between relative z-10">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">

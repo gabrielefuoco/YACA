@@ -833,15 +833,30 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 if (catalogMeta.source === 'merged' || catalogMeta.sourceType === 'merged' || filters.merge) {
                     const mergeConfig = filters.merge || { catalogs: catalogMeta.mergedFrom || [] };
                     const sourceIds = mergeConfig.catalogs;
+                    const sourceFilters = mergeConfig.sourceFilters || [];
+                    const sourceTypes = mergeConfig.sourceTypes || [];
                     const strategy = mergeConfig.strategy || 'popularity'; // 'popularity' or 'mixed'
 
                     if (sourceIds && sourceIds.length >= 2) {
-                        // Fetch sources (recursively calling catalogHandler for each source)
                         const fetchLimit = skip + 40;
-                        const [resA, resB] = await Promise.all([
-                            catalogHandler({ type, id: sourceIds[0], extra: { ...extra, skip: 0, limit: fetchLimit } }, userConfig, hostUrl),
-                            catalogHandler({ type, id: sourceIds[1], extra: { ...extra, skip: 0, limit: fetchLimit } }, userConfig, hostUrl)
-                        ]);
+
+                        // If sourceFilters are provided (from frontend preview/merged catalogs), use them directly
+                        // Otherwise fall back to recursive catalogHandler resolution (preset/DB IDs)
+                        const fetchSource = async (idx) => {
+                            if (sourceFilters[idx] && typeof sourceFilters[idx] === 'object' && !sourceFilters[idx].merge) {
+                                // Direct filter execution - no need for recursive ID resolution
+                                const srcType = sourceTypes[idx] || type;
+                                const searchType = srcType === 'series' ? 'tv' : 'movie';
+                                const srcFilters = { ...sourceFilters[idx] };
+                                if (!srcFilters.strategy) srcFilters.strategy = 'discovery';
+                                const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, 0, activeProfileSettings, cacheOptions);
+                                return { metas: items.slice(0, fetchLimit) };
+                            }
+                            // Fallback: recursive catalogHandler (for preset/DB IDs)
+                            return catalogHandler({ type, id: sourceIds[idx], extra: { ...extra, skip: 0, limit: fetchLimit } }, userConfig, hostUrl);
+                        };
+
+                        const [resA, resB] = await Promise.all([fetchSource(0), fetchSource(1)]);
 
                         const listA = Array.isArray(resA?.metas) ? resA.metas : [];
                         const listB = Array.isArray(resB?.metas) ? resB.metas : [];

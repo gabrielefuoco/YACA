@@ -34,7 +34,27 @@ export function LoginPage({ onComplete }: LoginPageProps) {
     try {
       const data = await api.stremioAuth(email, password);
       if (data.success && data.authKey) {
-        setStremioAuth({ authKey: data.authKey, email: data.email ?? email });
+        const auth: StremioAuth = { authKey: data.authKey, email: data.email ?? email };
+        setStremioAuth(auth);
+
+        // Check if user already exists in DB — skip Trakt step if so
+        try {
+          const checkResult = await api.checkUser(data.authKey);
+          if (checkResult.exists) {
+            // Returning user: skip Trakt auth, complete login directly
+            setConfiguring(true);
+            onComplete(
+              auth,
+              checkResult.traktToken || null,
+              checkResult.traktRefreshToken || null
+            );
+            setLoading(false);
+            return;
+          }
+        } catch {
+          // If check fails, fall through to Trakt step
+        }
+
         setStep(2);
       } else {
         setError(data.error ?? 'Credenziali non valide');
@@ -77,13 +97,12 @@ export function LoginPage({ onComplete }: LoginPageProps) {
         {[1, 2].map((s) => (
           <div key={s} className="flex items-center gap-2">
             <div
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
-                step > s
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${step > s
                   ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
                   : step === s
-                  ? 'bg-gradient-to-br from-[#8a5aeb] to-[#6d3fd4] text-white shadow-lg shadow-[#8a5aeb]/25'
-                  : 'bg-white/[0.06] text-white/30 border border-white/[0.06]'
-              }`}
+                    ? 'bg-gradient-to-br from-[#8a5aeb] to-[#6d3fd4] text-white shadow-lg shadow-[#8a5aeb]/25'
+                    : 'bg-white/[0.06] text-white/30 border border-white/[0.06]'
+                }`}
             >
               {step > s ? <CheckCircle2 className="h-4 w-4" /> : s}
             </div>

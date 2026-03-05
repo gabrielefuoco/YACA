@@ -78,12 +78,12 @@ export function ProfileSettingsPanel({
                                 <p className="text-sm font-black uppercase tracking-widest">Modelli Suggeriti</p>
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            {profileTemplates.slice(0, 3).map((tpl) => (
+                        <div className="flex flex-wrap gap-3">
+                            {profileTemplates.map((tpl) => (
                                 <div
                                     key={tpl.id}
                                     onClick={() => onApplyTemplate(tpl)}
-                                    className="p-4 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary transition-all cursor-pointer"
+                                    className="p-4 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary transition-all cursor-pointer flex-1 min-w-[200px]"
                                 >
                                     <p className="text-slate-900 dark:text-slate-100 font-bold text-sm">{tpl.name}</p>
                                     <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">{tpl.description}</p>
@@ -101,7 +101,7 @@ export function ProfileSettingsPanel({
                     </div>
                     <div className="flex flex-col gap-3">
                         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            Vincola le raccomandazioni del profilo <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold"><span className="material-symbols-outlined text-[10px]">home</span> {profile.name}</span> a temi specifici. Troppi vincoli possono ridurre i risultati.
+                            Vincola le raccomandazioni del profilo <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold"><span className="material-symbols-outlined text-[10px]">home</span> {profile.name}</span> a temi specifici. Troppi vincoli possono ridurre i risultati.
                         </p>
 
                         <div className="flex flex-wrap gap-2 mb-1">

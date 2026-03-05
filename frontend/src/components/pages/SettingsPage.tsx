@@ -5,12 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { api } from '@/lib/api';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
 import {
-  Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Download, Upload, RefreshCw
+  Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Download, Upload, RefreshCw, Save, Rocket
 } from 'lucide-react';
 import { profilesToApiPayload } from '@/lib/utils';
 
@@ -46,8 +45,6 @@ export function SettingsPage({
   const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0];
   const settings = activeProfile?.settings ?? {};
 
-  const [voteAvgMin, setVoteAvgMin] = useState(settings.voteAverageMin ?? 0);
-  const [voteCountMin, setVoteCountMin] = useState(settings.voteCountMin ?? 0);
   const [fastRefresh, setFastRefresh] = useState(settings.fastRefresh ?? false);
   const [tmdbKey, setTmdbKey] = useState(settings.tmdbKey ?? '');
   const [loading, setLoading] = useState(false);
@@ -62,13 +59,10 @@ export function SettingsPage({
     setError('');
     setSuccess(false);
 
-    // Update active profile settings (preserve pillars from current profile state)
     const currentPillars = activeProfile?.settings?.manualPillars ?? [];
     const currentSuggestedPillars = activeProfile?.settings?.suggestedPillars ?? [];
     onUpdateProfile(activeProfileId, {
       settings: {
-        voteAverageMin: voteAvgMin,
-        voteCountMin,
         fastRefresh,
         tmdbKey,
         manualPillars: currentPillars,
@@ -76,7 +70,6 @@ export function SettingsPage({
       },
     });
 
-    // Wait a tick for state to update
     await new Promise((r) => setTimeout(r, 50));
 
     const updatedProfiles = profiles.map((p) =>
@@ -85,8 +78,6 @@ export function SettingsPage({
           ...p,
           settings: {
             ...p.settings,
-            voteAverageMin: voteAvgMin,
-            voteCountMin,
             fastRefresh,
             tmdbKey,
           },
@@ -94,7 +85,6 @@ export function SettingsPage({
         : p
     );
 
-    // Transform frontend Profile shape to the format the backend configure API expects
     const apiProfiles = profilesToApiPayload(updatedProfiles);
 
     try {
@@ -118,7 +108,6 @@ export function SettingsPage({
         setInstallUrl(computedInstallUrl);
         setSuccess(true);
 
-        // Auto-update addon in Stremio if auth available
         if (stremioAuthKey) {
           const httpsManifestUrl = `https://${host}${manifestPath}`;
           try {
@@ -178,7 +167,6 @@ export function SettingsPage({
         try {
           const parsed = JSON.parse(content);
           if (parsed.profiles) {
-            // Re-upload imported profiles to DB
             const apiProfiles = profilesToApiPayload(parsed.profiles);
             const data = await api.configure({
               profiles: apiProfiles,
@@ -201,94 +189,150 @@ export function SettingsPage({
     input.click();
   };
 
+  const manifestUrl = userId
+    ? `stremio://${typeof window !== 'undefined' ? window.location.host : ''}${configVersion ? `/${userId}/${configVersion}/manifest.json` : `/${userId}/manifest.json`}`
+    : '';
+
   return (
     <div className="space-y-6">
-      {/* Quick install if userId is already known */}
-      {userId && (
-        <section className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-emerald-400">Addon configurato</p>
-              <p className="text-xs text-white/40">Usa il link qui sotto per installare o reinstallare</p>
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* HERO SECTION: Salva, Aggiorna, Installa & Backup                  */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <section className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 space-y-5 shadow-lg shadow-primary/5">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
+            <Rocket className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Salva & Installa</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Salva la configurazione, installa l&apos;addon su Stremio e gestisci i backup</p>
+          </div>
+        </div>
+
+        {/* Save Button */}
+        <Button
+          className="w-full py-3 bg-primary text-white hover:brightness-110 font-bold text-sm shadow-md shadow-primary/20"
+          size="lg"
+          onClick={handleSave}
+          disabled={loading}
+        >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
+          Salva Configurazione & Aggiorna Addon
+        </Button>
+
+        {/* Error */}
+        {error && (
+          <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-3">
+            <p className="text-sm text-rose-400">{error}</p>
+          </div>
+        )}
+
+        {/* Success state */}
+        {success && installUrl && (
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+              <p className="text-sm font-bold text-emerald-500">Configurazione salvata con successo!</p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleCopy(installUrl)}
+                className="flex-1 text-xs"
+              >
+                {copied ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5 mr-1" />
+                )}
+                {copied ? 'Copiato!' : 'Copia link'}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => window.open(installUrl, '_blank')}
+                className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                Installa su Stremio
+              </Button>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleCopy(`stremio://${typeof window !== 'undefined' ? window.location.host : ''}${configVersion ? `/${userId}/${configVersion}/manifest.json` : `/${userId}/manifest.json`}`)}
-              className="flex-1 text-xs"
-            >
-              {copied ? (
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-400" />
-              ) : (
-                <Copy className="h-3.5 w-3.5 mr-1" />
-              )}
-              {copied ? 'Copiato!' : 'Copia link'}
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => window.open(`stremio://${window.location.host}${configVersion ? `/${userId}/${configVersion}/manifest.json` : `/${userId}/manifest.json`}`, '_blank')}
-              className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700"
-            >
-              <ExternalLink className="h-3.5 w-3.5 mr-1" />
-              Installa su Stremio
-            </Button>
-          </div>
-        </section>
-      )}
+        )}
 
-      {/* Quality filters */}
-      <section className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider">
-          🎯 Filtri di Qualità
-        </h3>
-
-        <div className="space-y-3">
-          <div>
-            <Label className="mb-2 block">
-              Voto medio minimo: {voteAvgMin > 0 ? voteAvgMin.toFixed(1) : 'Disabilitato'}
-            </Label>
-            <Slider
-              min={0}
-              max={9}
-              step={0.5}
-              value={[voteAvgMin]}
-              onValueChange={([v]) => setVoteAvgMin(v)}
-            />
+        {/* Quick install link (if already configured) */}
+        {userId && !success && (
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-emerald-500">Addon già configurato</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Reinstalla o copia il link per aggiornare</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleCopy(manifestUrl)}
+                className="flex-1 text-xs"
+              >
+                {copied ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5 mr-1" />
+                )}
+                {copied ? 'Copiato!' : 'Copia link'}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => window.open(manifestUrl, '_blank')}
+                className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                Installa su Stremio
+              </Button>
+            </div>
           </div>
+        )}
 
-          <div>
-            <Label className="mb-2 block">
-              Numero voti minimo: {voteCountMin > 0 ? voteCountMin.toLocaleString() : 'Disabilitato'}
-            </Label>
-            <Slider
-              min={0}
-              max={5000}
-              step={100}
-              value={[voteCountMin]}
-              onValueChange={([v]) => setVoteCountMin(v)}
-            />
-          </div>
+        <Separator className="bg-slate-200 dark:bg-slate-700/50" />
+
+        {/* Backup & Import */}
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={handleExport} className="flex-1 font-medium">
+            <Download className="h-4 w-4 mr-2" />
+            Esporta Backup
+          </Button>
+          <Button variant="outline" onClick={handleImport} className="flex-1 font-medium">
+            <Upload className="h-4 w-4 mr-2" />
+            Importa Backup
+          </Button>
         </div>
       </section>
 
-      {/* Cache settings */}
-      <section className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider">
-          ⚡ Cache & Performance
-        </h3>
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* Cache & Performance                                                */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/40 p-5 space-y-4">
+        <div className="flex items-center gap-2 text-primary">
+          <span className="material-symbols-outlined text-lg">bolt</span>
+          <h3 className="text-sm font-black uppercase tracking-widest">Cache & Performance</h3>
+        </div>
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-white">Refresh rapido</p>
-            <p className="text-xs text-white/40">Aggiorna i cataloghi più frequentemente</p>
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Refresh rapido</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Aggiorna i cataloghi più frequentemente</p>
           </div>
           <Switch checked={fastRefresh} onCheckedChange={setFastRefresh} />
         </div>
 
-        <Separator />
+        <Separator className="bg-slate-200 dark:bg-slate-700/50" />
 
         <Button
           variant="outline"
@@ -305,55 +349,61 @@ export function SettingsPage({
         </Button>
       </section>
 
-      {/* TMDB API Key */}
-      <section className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider">
-          🔑 API Key TMDB (opzionale)
-        </h3>
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* TMDB API Key                                                       */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/40 p-5 space-y-3">
+        <div className="flex items-center gap-2 text-primary">
+          <span className="material-symbols-outlined text-lg">key</span>
+          <h3 className="text-sm font-black uppercase tracking-widest">API Key TMDB (opzionale)</h3>
+        </div>
         <div>
-          <Label htmlFor="tmdb-key">Chiave API TMDB personalizzata</Label>
+          <Label htmlFor="tmdb-key" className="text-slate-900 dark:text-slate-100">Chiave API TMDB personalizzata</Label>
           <Input
             id="tmdb-key"
             value={tmdbKey}
             onChange={(e) => setTmdbKey(e.target.value)}
             placeholder="La tua API key TMDB..."
-            className="mt-1"
+            className="mt-1 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
             type="password"
           />
-          <p className="mt-1 text-xs text-white/40">
+          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
             Usa una chiave API TMDB personale per limiti più alti
           </p>
         </div>
       </section>
 
-      {/* Account status */}
-      <section className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider">
-          👤 Account
-        </h3>
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* Account                                                            */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/40 p-5 space-y-4">
+        <div className="flex items-center gap-2 text-primary">
+          <span className="material-symbols-outlined text-lg">person</span>
+          <h3 className="text-sm font-black uppercase tracking-widest">Account</h3>
+        </div>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
+          <div className="flex items-center justify-between rounded-lg bg-slate-50 dark:bg-slate-800 px-4 py-3 border border-slate-200 dark:border-slate-700/50">
             <div>
-              <p className="text-xs text-white/40">Stremio</p>
-              <p className="text-sm text-white">
+              <p className="text-xs text-slate-500 dark:text-slate-400">Stremio</p>
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                 {stremioEmail ?? 'Non connesso'}
               </p>
             </div>
             {stremioEmail && (
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
             )}
           </div>
 
-          <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
+          <div className="flex items-center justify-between rounded-lg bg-slate-50 dark:bg-slate-800 px-4 py-3 border border-slate-200 dark:border-slate-700/50">
             <div>
-              <p className="text-xs text-white/40">Trakt</p>
-              <p className="text-sm text-white">
+              <p className="text-xs text-slate-500 dark:text-slate-400">Trakt</p>
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                 {traktToken ? 'Connesso' : 'Non connesso'}
               </p>
             </div>
             {traktToken ? (
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
             ) : null}
           </div>
         </div>
@@ -380,79 +430,6 @@ export function SettingsPage({
           </Button>
         </div>
       </section>
-
-      {/* Backup */}
-      <section className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider">
-          💾 Backup & Ripristino
-        </h3>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport} className="flex-1">
-            <Download className="h-4 w-4 mr-2" />
-            Esporta
-          </Button>
-          <Button variant="outline" onClick={handleImport} className="flex-1">
-            <Upload className="h-4 w-4 mr-2" />
-            Importa
-          </Button>
-        </div>
-      </section>
-
-      {/* Error */}
-      {error && (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3">
-          <p className="text-sm text-red-400">{error}</p>
-        </div>
-      )}
-
-      {/* Success state */}
-      {success && installUrl && (
-        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-            <p className="text-sm font-medium text-emerald-400">Configurazione salvata!</p>
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleCopy(installUrl)}
-              className="flex-1 text-xs"
-            >
-              {copied ? (
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-400" />
-              ) : (
-                <Copy className="h-3.5 w-3.5 mr-1" />
-              )}
-              {copied ? 'Copiato!' : 'Copia link'}
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => window.open(installUrl, '_blank')}
-              className="flex-1 text-xs"
-            >
-              <ExternalLink className="h-3.5 w-3.5 mr-1" />
-              Installa su Stremio
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Save button */}
-      <Button
-        className="w-full"
-        size="lg"
-        onClick={handleSave}
-        disabled={loading}
-      >
-        {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-        ) : (
-          '🔗 '
-        )}
-        Salva Configurazione
-      </Button>
     </div>
   );
 }

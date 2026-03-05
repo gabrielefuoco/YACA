@@ -30,7 +30,12 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
     try {
       const data = await api.previewCatalog({
         filters: {
-          merge: { catalogs: [catalogA.id, catalogB.id], strategy },
+          merge: {
+            catalogs: [catalogA.id, catalogB.id],
+            sourceFilters: [catalogA.filters, catalogB.filters],
+            sourceTypes: [catalogA.type, catalogB.type],
+            strategy,
+          },
         },
         type: catalogA.type,
       });
@@ -68,7 +73,12 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
       type: catalogA.type,
       source: 'merged',
       filters: {
-        merge: { catalogs: [catalogA.id, catalogB.id], strategy },
+        merge: {
+          catalogs: [catalogA.id, catalogB.id],
+          sourceFilters: [catalogA.filters, catalogB.filters],
+          sourceTypes: [catalogA.type, catalogB.type],
+          strategy,
+        },
       },
     };
     onConfirm(merged);
