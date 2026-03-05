@@ -29,6 +29,8 @@ export function ActiveCatalogsPanel({
   const [mergeSource, setMergeSource] = useState<Catalog | null>(null);
   const [mergeTarget, setMergeTarget] = useState<Catalog | null>(null);
   const [showMergeModal, setShowMergeModal] = useState(false);
+  const [hoverMergeIndex, setHoverMergeIndex] = useState<number | null>(null);
+  const [hoverTimer, setHoverTimer] = useState<NodeJS.Timeout | null>(null);
 
   const presetMap = new Map(presets.map((preset) => [preset.id, preset]));
   const presetCatalogs: Catalog[] = profile.raw_ui_state.selectedPresets
@@ -73,16 +75,56 @@ export function ActiveCatalogsPanel({
 
   const handleDragOverWithMerge = (
     e: React.DragEvent,
-    targetIndex: number
+    targetIndex: number,
+    targetCatalog: Catalog
   ) => {
     e.preventDefault();
-    if (dragIndex !== null && dragIndex !== targetIndex && e.shiftKey) {
+
+    // Normal reorder if not holding over
+    if (dragIndex === null || dragIndex === targetIndex) {
+      if (hoverTimer) {
+        clearTimeout(hoverTimer);
+        setHoverTimer(null);
+      }
+      setHoverMergeIndex(null);
+      return;
+    }
+
+    // Hover-to-merge logic
+    if (hoverMergeIndex !== targetIndex) {
+      if (hoverTimer) clearTimeout(hoverTimer);
+
+      setHoverMergeIndex(targetIndex);
+      const timer = setTimeout(() => {
+        handleMergeDrop(targetCatalog, catalogs[dragIndex]);
+        setHoverMergeIndex(null);
+        setHoverTimer(null);
+      }, 1000); // 1 second hold to merge
+
+      setHoverTimer(timer);
+    }
+
+    if (e.shiftKey) {
       e.dataTransfer.dropEffect = 'copy';
     }
   };
 
+  const handleDragLeave = () => {
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
+      setHoverTimer(null);
+    }
+    setHoverMergeIndex(null);
+  };
+
   const handleDropWithMerge = (e: React.DragEvent, targetIndex: number, targetCatalog: Catalog) => {
-    if (e.shiftKey && dragIndex !== null && dragIndex !== targetIndex) {
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
+      setHoverTimer(null);
+    }
+    setHoverMergeIndex(null);
+
+    if ((e.shiftKey || hoverMergeIndex === targetIndex) && dragIndex !== null && dragIndex !== targetIndex) {
       handleMergeDrop(targetCatalog, catalogs[dragIndex]);
     } else {
       handleDrop(targetIndex);
@@ -114,11 +156,16 @@ export function ActiveCatalogsPanel({
               key={catalog.id}
               catalog={catalog}
               isDragging={dragIndex === index}
+              isMergeTarget={hoverMergeIndex === index}
               onRemove={() => onRemove(catalog.id)}
               onDragStart={() => handleDragStart(index)}
-              onDragOver={(e) => handleDragOverWithMerge(e, index)}
+              onDragOver={(e) => handleDragOverWithMerge(e, index, catalog)}
+              onDragLeave={handleDragLeave}
               onDrop={(e) => handleDropWithMerge(e, index, catalog)}
-              onDragEnd={() => setDragIndex(null)}
+              onDragEnd={() => {
+                setDragIndex(null);
+                handleDragLeave();
+              }}
             />
           ))}
         </div>
@@ -131,11 +178,20 @@ export function ActiveCatalogsPanel({
             Le Mie Liste ({myLists.length})
           </h3>
           <div className="grid gap-8">
-            {myLists.map((catalog) => (
+            {myLists.map((catalog, index) => (
               <CatalogItem
                 key={catalog.id}
                 catalog={catalog}
                 onRemove={() => onRemoveMyList(catalog.id)}
+                isMergeTarget={hoverMergeIndex === index + 1000} // Offset for myLists
+                onDragStart={() => setDragIndex(index + 1000)}
+                onDragOver={(e) => handleDragOverWithMerge(e, index + 1000, catalog)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDropWithMerge(e, index + 1000, catalog)}
+                onDragEnd={() => {
+                  setDragIndex(null);
+                  handleDragLeave();
+                }}
               />
             ))}
           </div>

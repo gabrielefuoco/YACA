@@ -27,4 +27,6 @@ export const api = {
     fetch(`/api/tmdb/search/keyword?query=${encodeURIComponent(query)}`).then(r => r.json()),
   searchTmdbPeople: (query: string) =>
     fetch(`/api/tmdb/search/person?query=${encodeURIComponent(query)}`).then(r => r.json()),
+  generateMergedName: (nameA: string, nameB: string) =>
+    post('/api/ai/generate-merged-name', { nameA, nameB }),
 };

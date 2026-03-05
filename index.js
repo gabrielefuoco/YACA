@@ -24,6 +24,7 @@ const connectDB = require('./src/db/connection');
 const User = require('./src/db/models/User');
 const BadgeImage = require('./src/db/models/BadgeImage');
 const { syncIncrementalRecommendations } = require('./src/engines/hybridRecommendations');
+const { generateMergedName } = require('./src/api/mergeRoutes');
 
 // Connessione MongoDB
 connectDB();
@@ -491,6 +492,7 @@ app.post('/api/trakt/device/token', async (req, res) => {
 
 // 2. Registra endpoint configuration (Frontend Web)
 app.post('/api/configure', configureRoute);
+app.post('/api/ai/generate-merged-name', generateMergedName);
 
 // Endpoint per recuperare i profili dell'utente tramite userId (Sostituisce il decode Base64 frontend)
 app.get('/api/user/:userId', async (req, res) => {

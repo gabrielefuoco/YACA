@@ -320,7 +320,31 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
         }
     }
 
+    // Metadati originali per supporto interleave
+    const originalResults = results;
     return results;
+}
+
+/**
+ * Interseca due liste di risultati alternandoli (interleaving).
+ * Deduplica per ID.
+ */
+function interleaveResults(listA, listB, skip, limit) {
+    const combined = [];
+    const maxLen = Math.max(listA.length, listB.length);
+    const seen = new Set();
+
+    for (let i = 0; i < maxLen; i++) {
+        if (listA[i] && !seen.has(listA[i].id)) {
+            combined.push(listA[i]);
+            seen.add(listA[i].id);
+        }
+        if (listB[i] && !seen.has(listB[i].id)) {
+            combined.push(listB[i]);
+            seen.add(listB[i].id);
+        }
+    }
+    return combined.slice(skip, skip + limit);
 }
 
 /**
@@ -784,23 +808,6 @@ async function catalogHandler(args, userConfig, hostUrl) {
             return { metas: results };
         }
 
-        // ==========================================
-        // SCENARIO 5: CATALOGHI CUSTOM AI / PRESET
-        // ==========================================
-        // Cerchiamo il catalogo prima nel profilo attivo
-        let catalogMeta = null;
-        if (userConfig.profiles && userConfig.activeProfileId) {
-            const profile = userConfig.profiles.find(p => p.id === userConfig.activeProfileId);
-            if (profile && profile.catalogs) {
-                catalogMeta = profile.catalogs.find(c => c.id === id);
-            }
-        }
-
-        // Se non trovato nel profilo, cerchiamo nel fallback globale (retrocompatibilità)
-        if (!catalogMeta && userConfig.catalogs) {
-            catalogMeta = userConfig.catalogs.find(c => c.id === id);
-        }
-
         if (catalogMeta) {
             let filters = catalogMeta.filters;
 
@@ -820,6 +827,40 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
 
             if (filters) {
+                // ==========================================
+                // FASE 9.1: CATALOGHI FUSI (MERGED)
+                // ==========================================
+                if (catalogMeta.source === 'merged' || catalogMeta.sourceType === 'merged' || filters.merge) {
+                    const mergeConfig = filters.merge || { catalogs: catalogMeta.mergedFrom || [] };
+                    const sourceIds = mergeConfig.catalogs;
+                    const strategy = mergeConfig.strategy || 'popularity'; // 'popularity' or 'mixed'
+
+                    if (sourceIds && sourceIds.length >= 2) {
+                        // Fetch sources (recursively calling catalogHandler for each source)
+                        const fetchLimit = skip + 40;
+                        const [resA, resB] = await Promise.all([
+                            catalogHandler({ type, id: sourceIds[0], extra: { ...extra, skip: 0, limit: fetchLimit } }, userConfig, hostUrl),
+                            catalogHandler({ type, id: sourceIds[1], extra: { ...extra, skip: 0, limit: fetchLimit } }, userConfig, hostUrl)
+                        ]);
+
+                        const listA = resA.metas || [];
+                        const listB = resB.metas || [];
+
+                        if (strategy === 'mixed') {
+                            results = interleaveResults(listA, listB, skip, 20);
+                        } else {
+                            // Popularity: combine, deduplicate, and sort
+                            const combined = [...listA, ...listB];
+                            const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
+                            results = unique
+                                .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+                                .slice(skip, skip + 20);
+                        }
+
+                        return { metas: results };
+                    }
+                }
+
                 // Crea una copia per evitare mutazioni sull'oggetto originale
                 const finalFilters = { ...filters };
                 if (!finalFilters.strategy) finalFilters.strategy = 'discovery';
