@@ -515,6 +515,12 @@ async function catalogHandler(args, userConfig, hostUrl) {
         // Carica i preset con date dinamiche (ricalcolate ad ogni richiesta)
         const presetsList = getPresets();
 
+        // Risoluzione metadati catalogo (Preset o Lista Utente)
+        let catalogMeta = presetsList.find(p => p.id === baseId);
+        if (!catalogMeta && (id.length === 21 || id.length === 24)) { // Lunghezza tipica nanoid o ObjectId
+            catalogMeta = await UserList.findOne({ listId: id }).lean();
+        }
+
         // ==========================================
         // SCENARIO -1: YACA PROFILES
         // ==========================================
@@ -810,21 +816,6 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
         if (catalogMeta) {
             let filters = catalogMeta.filters;
-
-            // Se non ci sono filtri incorporati, cerchiamo esternamente (Stato Attivo / UserList)
-            if (!filters) {
-                if (id.startsWith('yaca_preset_')) {
-                    const presetId = id.replace('yaca_preset_', '');
-                    const presetDef = presetsList.find(p => p.id === presetId);
-                    filters = presetDef ? presetDef.filters : null;
-                } else {
-                    // Cerca in MongoDB UserList
-                    const listDoc = await UserList.findOne({ listId: id }).lean();
-                    if (listDoc) {
-                        filters = listDoc.filters;
-                    }
-                }
-            }
 
             if (filters) {
                 // ==========================================
