@@ -30,6 +30,13 @@ const UserConfig = {
     async saveUser(userData) {
         try {
             let userId = userData.userId;
+            const stremioKey = userData.apiKeys?.stremio;
+            if (!userId && stremioKey) {
+                const existingUser = await User.findOne({ 'apiKeys.stremio': stremioKey }).select('userId').lean();
+                if (existingUser?.userId) {
+                    userId = existingUser.userId;
+                }
+            }
             if (!userId) {
                 // Genera un ID corto ed elegante (es. "xK9L2p")
                 userId = nanoid(10);

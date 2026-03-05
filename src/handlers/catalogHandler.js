@@ -329,19 +329,21 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
  * Interseca due liste di risultati alternandoli (interleaving).
  * Deduplica per ID.
  */
-function interleaveResults(listA, listB, skip, limit) {
+function interleaveResults(listA = [], listB = [], skip, limit) {
+    const safeListA = Array.isArray(listA) ? listA : [];
+    const safeListB = Array.isArray(listB) ? listB : [];
     const combined = [];
-    const maxLen = Math.max(listA.length, listB.length);
+    const maxLen = Math.max(safeListA.length, safeListB.length);
     const seen = new Set();
 
     for (let i = 0; i < maxLen; i++) {
-        if (listA[i] && !seen.has(listA[i].id)) {
-            combined.push(listA[i]);
-            seen.add(listA[i].id);
+        if (safeListA[i] && !seen.has(safeListA[i].id)) {
+            combined.push(safeListA[i]);
+            seen.add(safeListA[i].id);
         }
-        if (listB[i] && !seen.has(listB[i].id)) {
-            combined.push(listB[i]);
-            seen.add(listB[i].id);
+        if (safeListB[i] && !seen.has(safeListB[i].id)) {
+            combined.push(safeListB[i]);
+            seen.add(safeListB[i].id);
         }
     }
     return combined.slice(skip, skip + limit);
@@ -518,7 +520,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
         // Risoluzione metadati catalogo (Preset o Lista Utente)
         let catalogMeta = presetsList.find(p => p.id === baseId);
-        if (!catalogMeta && (id.length === 21 || id.length === 24)) { // Lunghezza tipica nanoid o ObjectId
+        if (!catalogMeta && (id?.length === 21 || id?.length === 24)) { // Lunghezza tipica nanoid o ObjectId
             catalogMeta = await UserList.findOne({ listId: id }).lean();
         }
 
@@ -835,8 +837,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
                             catalogHandler({ type, id: sourceIds[1], extra: { ...extra, skip: 0, limit: fetchLimit } }, userConfig, hostUrl)
                         ]);
 
-                        const listA = resA.metas || [];
-                        const listB = resB.metas || [];
+                        const listA = Array.isArray(resA?.metas) ? resA.metas : [];
+                        const listB = Array.isArray(resB?.metas) ? resB.metas : [];
 
                         if (strategy === 'mixed') {
                             results = interleaveResults(listA, listB, skip, 20);
@@ -942,4 +944,4 @@ async function catalogHandler(args, userConfig, hostUrl) {
     }
 }
 
-module.exports = { catalogHandler, buildDiscoveryParams };
+module.exports = { catalogHandler, buildDiscoveryParams, interleaveResults };
