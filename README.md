@@ -6,15 +6,20 @@ Il catalogo definitivo per Stremio, potenziato da Trakt.tv e dall'intelligenza a
 ## Funzionalità
 - **Cataloghi Intelligenti**: Genera cataloghi auto-aggiornanti con prompt testuali (es. "Commedie romantiche natalizie").
 - **100+ Preset Curati**: Cataloghi pre-configurati per genere, regista, attore, studio, decennio e tematiche.
-- **Profili Multipli Stateful**: Organizza i tuoi cataloghi in profili (es. "Film", "Anime", "Serie TV") persistiti su database.
-- **Sincronizzazione Addon**: Aggiorna automaticamente l'addon nella tua collezione Stremio senza reinstallazioni manuali.
-- **Integrazione Trakt.tv**: Sincronizza Watchlist e Preferiti con supporto al nuovo **Device Auth Flow**.
+- **Profili Multipli & Profile DNA**: Organizza cataloghi in profili (es. "Anime", "Serie TV"). Ogni profilo ha un **DNA** unico (generi e keyword) che filtra e dà priorità ai suggerimenti in base al contesto.
+- **Stremio Deep Sync**: Sincronizzazione profonda di **Libreria, Cronologia, Like e Love** direttamente dal tuo account Stremio al tuo Taste Profile globale.
+- **Two-Way Trakt Sync**: I Like/Love di Stremio vengono inviati a Trakt come rating (10/8), mantenendo i due ecosistemi perfettamente allineati.
+- **Taste Profile Pesato**: Un motore di raccomandazione che pesa le tue azioni (Love x4, Like x3, Watch x2) per suggerimenti estremamente precisi.
+- **Sincronizzazione Background**: Throttling intelligente (ogni 8h ± 2h) gestito automaticamente tramite cron jobs.
+- **Integrazione Trakt.tv**: Supporto completo a Watchlist, Preferiti e Raccomandazioni tramite Device Auth Flow.
 - **Ricerca AI Live**: Cerca dalla barra di Stremio e l'AI interpreta la tua richiesta.
-- **Badge Episodi**: Visualizza il numero dell'episodio direttamente sul poster nei cataloghi "In Corso".
+- **Badge Episodi**: Visualizza il numero dell&apos;episodio direttamente sul poster nei cataloghi "In Corso".
 - **Ottimizzato per Render**: Funziona nel piano gratuito (512MB RAM) con gestione intelligente della cache.
 
 ## Architettura
-YACA è evoluto da un modello stateless a un'architettura **Stateful**. Utilizza **MongoDB** per salvare le configurazioni utente, i profili e le preferenze, garantendo che i tuoi cataloghi siano sempre accessibili e aggiornati su tutti i tuoi dispositivi senza dover gestire stringhe Base64 infinite.
+YACA utilizza un'architettura **Stateful** basata su **MongoDB**. Il cuore del sistema è il **Taste Profile** globale dell'utente, alimentato continuamente da Stremio e Trakt. Sopra questo profilo, ogni **Profilo** YACA applica un **DNA** (filtro contestuale) per estrarre solo i contenuti rilevanti (es. un profilo "Horror" isolerà solo i segnali horror dal tuo gusto globale).
+
+Per maggiori dettagli tecnici sulle Signature, la logica di scoring e il Deep Sync, consulta la [Documentazione Architetturale](file:///c:/Users/gabri/APP/catalogo/docs/ARCHITECTURE.md).
 
 ---
 

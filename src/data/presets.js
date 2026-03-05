@@ -228,11 +228,11 @@ const getPresets = () => {
         // =============================================
         // --- 👤 IL MIO TRAKT & COMMUNITY (MDBList) ---
         // =============================================
-        { id: 'mdblist_123', name: 'MDBList: Top 100 Movies (All Time)', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
-        { id: 'mdblist_456', name: 'MDBList: Top 100 Shows (All Time)', category: '👤 Il Mio Trakt & Community', type: 'series', filters: { mdblist: true } },
-        { id: 'mdblist_789', name: 'MDBList: Latest Releases', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
-        { id: 'mdblist_101', name: 'MDBList: Trending this Week', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
-        { id: 'mdblist_102', name: 'MDBList: Hidden Gems', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
+        { id: 'mdblist_123', name: 'MDBList: Top 100 Film (Sempre)', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
+        { id: 'mdblist_456', name: 'MDBList: Top 100 Serie (Sempre)', category: '👤 Il Mio Trakt & Community', type: 'series', filters: { mdblist: true } },
+        { id: 'mdblist_789', name: 'MDBList: Ultime Uscite', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
+        { id: 'mdblist_101', name: 'MDBList: In Tendenza (Settimana)', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
+        { id: 'mdblist_102', name: 'MDBList: Gemme Nascoste', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
 
         // ==========================================
         // 👤 IL MIO TRAKT & COMMUNITY
@@ -248,7 +248,9 @@ const getPresets = () => {
         { id: 'trakt_history_movies', name: 'Cronologia', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
         { id: 'trakt_history_series', name: 'Cronologia', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} },
         { id: 'trakt_ratings_movies', name: 'I Miei Voti', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
-        { id: 'trakt_ratings_series', name: 'I Miei Voti', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} }
+        { id: 'trakt_ratings_series', name: 'I Miei Voti', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_favorites_movies', name: 'I Miei Preferiti (Movies)', type: 'movie', category: '👤 Il Mio Trakt & Community', filters: {} },
+        { id: 'trakt_favorites_series', name: 'I Miei Preferiti (Series)', type: 'series', category: '👤 Il Mio Trakt & Community', filters: {} }
     ];
 };
 

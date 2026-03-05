@@ -27,8 +27,8 @@ export interface BackendProfile {
     minVoteCount?: number;
     fastPresetRefresh?: boolean;
     tmdbKey?: string;
-    manualPillars?: unknown[];
-    suggestedPillars?: unknown[];
+    manualDNA?: unknown[];
+    suggestedDNA?: unknown[];
   };
   raw_ui_state?: {
     selectedPresets?: string[];
@@ -62,8 +62,8 @@ export function profilesToApiPayload(profiles: Profile[]) {
       minVoteCount: p.settings?.voteCountMin ?? 0,
       fastPresetRefresh: p.settings?.fastRefresh ?? false,
       tmdbKey: p.settings?.tmdbKey,
-      manualPillars: p.settings?.manualPillars ?? [],
-      suggestedPillars: p.settings?.suggestedPillars ?? [],
+      manualDNA: p.settings?.manualDNA ?? [],
+      suggestedDNA: p.settings?.suggestedDNA ?? [],
     },
   }));
 }
@@ -103,8 +103,8 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
       voteCountMin: typeof bSettings.minVoteCount === 'number' ? bSettings.minVoteCount : 0,
       fastRefresh: Boolean(bSettings.fastPresetRefresh),
       tmdbKey: bSettings.tmdbKey ?? '',
-      manualPillars: Array.isArray(bSettings.manualPillars) ? bSettings.manualPillars as import('@/types').Pillar[] : [],
-      suggestedPillars: Array.isArray(bSettings.suggestedPillars) ? bSettings.suggestedPillars as import('@/types').Pillar[] : [],
+      manualDNA: Array.isArray(bSettings.manualDNA) ? bSettings.manualDNA as import('@/types').DNAItem[] : [],
+      suggestedDNA: Array.isArray(bSettings.suggestedDNA) ? bSettings.suggestedDNA as import('@/types').DNAItem[] : [],
     },
   };
 }

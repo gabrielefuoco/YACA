@@ -2,6 +2,10 @@ const { getTmdbMetaDetails } = require('../clients/tmdb');
 const { getKitsuMetaDetails } = require('../clients/kitsu');
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const { fetchMdblistRatings } = require('../utils/mdblist');
+const CacheManager = require('../cache/CacheManager');
+
+// Cache per l'oggetto meta finale combinato (TMDB + MDBList)
+const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 200, ramTtlMs: 3600000 });
 
 /**
  * Gestisce la richiesta di metadati dettagliati quando l'utente clicca su un titolo
@@ -50,28 +54,34 @@ async function metaHandler(args, userConfig) {
             meta = await getKitsuMetaDetails(id);
         }
 
-        let ratings = {};
-        const imdbIdForRatings = id.startsWith('tt') ? id : (meta?.id?.startsWith('tt') ? meta.id : null);
-
-        if (imdbIdForRatings) {
-            try {
-                const mdblistApiKey = userConfig.apiKeys?.mdblist || process.env.MDBLIST_API_KEY || null;
-                const fetchedRatings = await fetchMdblistRatings(imdbIdForRatings, mdblistApiKey);
-                if (fetchedRatings) ratings = fetchedRatings;
-            } catch (_e) { /* ignore */ }
-        }
-
-        // Se abbiamo caricato i dati da TMDB, dobbiamo assicurarci che la descrizione 
-        // rifletta i voti appena scaricati (se getTmdbMetaDetails non li aveva)
+        // Parallel Fetch: TMDB + MDBList
         if (id.startsWith('tmdb:') || id.startsWith('tt')) {
-            // Ricarichiamo o aggiorniamo i dettagli passando i voti per la Technical Card
-            // getTmdbMetaDetails userà i dati in cache se disponibili, ma ricalcolerà la descrizione
-            // se passiamo externalRatings diversi.
-            const tmdbId = id.startsWith('tmdb:') ? id : (await translateImdbToTmdb(id, tmdbApiKey))?.id;
+            const tmdbIdResult = id.startsWith('tmdb:') ? { id: id.replace('tmdb:', '') } : await translateImdbToTmdb(id, tmdbApiKey);
+            const tmdbId = tmdbIdResult?.id;
+            const imdbIdForRatings = id.startsWith('tt') ? id : (tmdbIdResult?.imdb_id || null);
+
             if (tmdbId) {
-                meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, ratings);
+                const mdblistApiKey = userConfig.apiKeys?.mdblist || process.env.MDBLIST_API_KEY || null;
+                const cacheKey = `meta_${tmdbId}_${type}_${imdbIdForRatings}_${Boolean(mdblistApiKey)}`;
+
+                const cachedMeta = await finalMetaCache.get(cacheKey);
+                if (cachedMeta) {
+                    meta = cachedMeta;
+                } else {
+                    // Eseguiamo in parallelo
+                    const [tmdbMeta, ratings] = await Promise.all([
+                        getTmdbMetaDetails(tmdbApiKey, tmdbId, type),
+                        imdbIdForRatings ? fetchMdblistRatings(imdbIdForRatings, mdblistApiKey).catch(() => ({})) : Promise.resolve({})
+                    ]);
+
+                    meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, ratings || {});
+                    if (meta) {
+                        await finalMetaCache.set(cacheKey, meta);
+                    }
+                }
             }
         }
+
 
         if (meta) {
             // Per richieste con tmdb: ID, manteniamo l'IMDB ID risolto per compatibilità streaming

@@ -749,15 +749,14 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 'trakt_history_series': 'history_shows',
                 'trakt_ratings_movies': 'ratings_movies',
                 'trakt_ratings_series': 'ratings_shows',
-                'trakt_trending_movies': 'trending_movies',
-                'trakt_trending_series': 'trending_shows',
-                'trakt_popular_movies': 'popular_movies',
-                'trakt_popular_series': 'popular_shows'
+                'trakt_popular_shows': 'popular_shows',
+                'trakt_favorites_movies': 'favorites_movies',
+                'trakt_favorites_series': 'favorites_shows'
             };
 
             const traktEp = traktTypeMap[baseId];
             if (traktEp) {
-                const needsAuth = baseId.includes('watchlist') || baseId.includes('recommendations') || baseId.includes('history') || baseId.includes('ratings');
+                const needsAuth = baseId.includes('watchlist') || baseId.includes('recommendations') || baseId.includes('history') || baseId.includes('ratings') || baseId.includes('favorites');
                 const finalTraktUname = needsAuth ? traktUname : null;
 
                 let currentSkip = skip;
@@ -782,14 +781,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 return { metas: results };
             }
         }
-        if (baseId === 'trakt_favorites_movies' && type === 'movie') {
-            results = await fetchTraktCatalog('favorites', skip, traktUname, tmdbApiKey, refreshContext);
-            return { metas: results.filter(r => r.type === 'movie') };
-        }
-        if (baseId === 'trakt_favorites_series' && type === 'series') {
-            results = await fetchTraktCatalog('favorites', skip, traktUname, tmdbApiKey, refreshContext);
-            return { metas: results.filter(r => r.type === 'series') };
-        }
+
 
         // ==========================================
         // SCENARIO 4: CATALOGHI MDBLIST

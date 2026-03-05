@@ -18,21 +18,45 @@ const TmdbRequestCache = require('../models/TmdbRequestCache');
 
 const CacheManager = require('../cache/CacheManager');
 
-// Helper interno per costruire oggetti request TMDB
-const createTmdbClient = (apiKey) => createAxiosInstance(TMDB_ENDPOINT, {
-    baseURL: TMDB_ENDPOINT,
-    params: {
-        api_key: apiKey,
-        language: DEFAULT_LANGUAGE,
-        region: DEFAULT_REGION
-    },
-    timeout: 20000
-});
+const TMDB_MIRRORS = [
+    TMDB_ENDPOINT,
+    'https://tmdb.org/3',
+    'https://api.tmdb.org/3'
+];
+let currentMirrorIdx = 0;
+
+// Helper interno per costruire oggetti request TMDB con failover
+const createTmdbClient = (apiKey) => {
+    const client = createAxiosInstance(TMDB_ENDPOINT, {
+        baseURL: TMDB_MIRRORS[currentMirrorIdx],
+        params: {
+            api_key: apiKey,
+            language: DEFAULT_LANGUAGE,
+            region: DEFAULT_REGION
+        },
+        timeout: 20000
+    });
+
+    client.interceptors.response.use(res => res, async (err) => {
+        if (err.code === 'ECONNABORTED' || (err.response && err.response.status >= 500)) {
+            console.warn(`TMDB mirror ${TMDB_MIRRORS[currentMirrorIdx]} failed, switching...`);
+            currentMirrorIdx = (currentMirrorIdx + 1) % TMDB_MIRRORS.length;
+            err.config.baseURL = TMDB_MIRRORS[currentMirrorIdx];
+            err.config.url = err.config.url.replace(/^(https?:\/\/[^\/]+)/, TMDB_MIRRORS[currentMirrorIdx]);
+            const axios = require('axios');
+            return axios.request(err.config);
+        }
+        return Promise.reject(err);
+    });
+
+    return client;
+};
 
 const idNameCache = new CacheManager('tmdb_id_name', { ramMax: 1000, ramTtlMs: 1000 * 60 * 60, mongoTtlMs: 1000 * 60 * 60 });
 const imdbIdCache = new CacheManager('tmdb_imdb_id', { ramMax: 10000, ramTtlMs: 1000 * 60 * 60 * 24 * 7, mongoTtlMs: 1000 * 60 * 60 * 24 * 7 });
 const movieMetaCache = new CacheManager('tmdb_movie_meta', { ramMax: 2000, ramTtlMs: MOVIE_META_CACHE_TTL_MS, mongoTtlMs: MOVIE_META_CACHE_TTL_MS });
 const seriesMetaCache = new CacheManager('tmdb_series_meta', { ramMax: 2000, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS });
+const tvEpisodesCache = new CacheManager('tmdb_episodes', { ramMax: 2000, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS });
 
 /**
  * Traduce una stringa (es. nome attore o keyword) nel suo ID TMDB effettuando una fetch al volo
@@ -91,7 +115,7 @@ function getCountryEmoji(countryCode) {
  */
 function formatRichDescription(data, type, ratings = {}) {
     const lines = [];
-    const separator = '━━━━━━━━━━━━━━━━━━━━━━━';
+    const separator = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
 
     // 1. Banner dei Voti
     const scoreParts = [];
@@ -105,6 +129,7 @@ function formatRichDescription(data, type, ratings = {}) {
         lines.push(separator);
         lines.push(scoreParts.join(' | '));
         lines.push(separator);
+        lines.push('');
     }
 
     // 2. Tagline
@@ -117,6 +142,7 @@ function formatRichDescription(data, type, ratings = {}) {
     if (data.overview) {
         lines.push('📜 TRAMA');
         lines.push(data.overview);
+        lines.push('');
         lines.push('');
     }
 
@@ -152,7 +178,7 @@ function formatRichDescription(data, type, ratings = {}) {
 
     // Rating e Runtime
     let runtime = metaRuntime(data, type);
-    let certification = data.certification; // Passata via l'oggetto data se calcolata fuori
+    let certification = data.certification;
     const certPart = certification ? `[${certification}]` : '';
     const runtimePart = runtime ? `⏳ ${runtime}` : '';
     if (certPart || runtimePart) {
@@ -162,24 +188,10 @@ function formatRichDescription(data, type, ratings = {}) {
     if (technicalInfo.length > 0) {
         lines.push(technicalInfo.join('\n'));
         lines.push('');
-    }
-
-    // 5. Cast e Regia (Testuale, oltre ai link nativi)
-    if (data.credits) {
-        lines.push('👥 CAST & REGIA');
-        if (type === 'movie' && data.credits.crew) {
-            const directors = data.credits.crew.filter(c => c.job === 'Director').slice(0, 2);
-            if (directors.length > 0) lines.push(`🎬 Regia: ${directors.map(d => d.name).join(', ')}`);
-        } else if (type === 'series' && data.created_by?.length > 0) {
-            lines.push(`🎬 Creato da: ${data.created_by.slice(0, 2).map(c => c.name).join(', ')}`);
-        }
-        if (data.credits.cast?.length > 0) {
-            lines.push(`🎭 Cast: ${data.credits.cast.slice(0, 5).map(c => c.name).join(', ')}...`);
-        }
         lines.push('');
     }
 
-    // 6. Saga e Dati Finanziari (solo film)
+    // 5. Saga e Dati Finanziari (solo film)
     if (type === 'movie' && (data.belongs_to_collection || data.budget)) {
         const curiosities = [];
         if (data.belongs_to_collection) curiosities.push(`🎬 Saga: ${data.belongs_to_collection.name}`);
@@ -192,16 +204,19 @@ function formatRichDescription(data, type, ratings = {}) {
             lines.push('💎 DETTAGLI');
             lines.push(curiosities.join('\n'));
             lines.push('');
+            lines.push('');
         }
     }
 
-    // 7. Tags (Hashtags)
+    // 6. Tags (Hashtags)
     if (data.keywords?.keywords?.length > 0 || data.keywords?.results?.length > 0) {
         const kwList = type === 'movie' ? data.keywords.keywords : data.keywords.results;
         const tags = kwList.slice(0, 8).map(k => `#${k.name.replace(/\s+/g, '')}`);
         if (tags.length > 0) {
             lines.push('🔗 TAGS');
             lines.push(tags.join(' '));
+            lines.push('');
+            lines.push('');
         }
     }
 
@@ -209,6 +224,7 @@ function formatRichDescription(data, type, ratings = {}) {
 
     return lines.join('\n').trim();
 }
+
 
 /**
  * Helper per calcolare il runtime in formato stringa
@@ -225,13 +241,34 @@ function metaRuntime(data, type) {
 function toStremioMetaItem(tmdbItem, type) {
     if (!tmdbItem) return null;
 
-    const id = (tmdbItem.external_ids && tmdbItem.external_ids.imdb_id) ? tmdbItem.external_ids.imdb_id : `tmdb:${tmdbItem.id}`;
-    const year = tmdbItem.release_date ? tmdbItem.release_date.split('-')[0] : (tmdbItem.first_air_date ? tmdbItem.first_air_date.split('-')[0] : '');
+    const imdbId = (tmdbItem.external_ids && tmdbItem.external_ids.imdb_id) ? tmdbItem.external_ids.imdb_id : null;
+    const id = imdbId || `tmdb:${tmdbItem.id}`;
+
+    // Anno e Range Anni per Serie
+    let year = tmdbItem.release_date ? tmdbItem.release_date.split('-')[0] : (tmdbItem.first_air_date ? tmdbItem.first_air_date.split('-')[0] : '');
+    if (type === 'tv' && tmdbItem.status === 'Ended' && tmdbItem.last_air_date) {
+        const endYear = tmdbItem.last_air_date.split('-')[0];
+        if (endYear && endYear !== year) year = `${year}-${endYear}`;
+    }
+
+    // Rilevamento "Al Cinema" (Theatrical)
+    let isTheatrical = false;
+    if (type === 'movie' && tmdbItem.release_dates?.results) {
+        const itReleases = tmdbItem.release_dates.results.find(r => r.iso_3166_1 === 'IT');
+        if (itReleases) {
+            // Type 3 = Theatrical, Type 2 = Limited
+            isTheatrical = itReleases.release_dates.some(rd => rd.type === 3);
+        }
+    }
+
+    const name = tmdbItem.title || tmdbItem.name || 'Titolo sconosciuto';
+    const prefixedName = isTheatrical ? `🏷️ AL CINEMA ${name}` : name;
 
     const meta = {
         id,
+        imdb_id: imdbId, // Native flag for badges
         type: type === 'movie' ? 'movie' : 'series',
-        name: tmdbItem.title || tmdbItem.name || 'Titolo sconosciuto',
+        name: prefixedName,
         poster: tmdbItem.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbItem.poster_path}` : null,
         background: tmdbItem.backdrop_path ? `https://image.tmdb.org/t/p/original${tmdbItem.backdrop_path}` : null,
         posterShape: 'poster',
@@ -244,8 +281,32 @@ function toStremioMetaItem(tmdbItem, type) {
             : { hasScheduledVideos: true }
     };
 
+    // Campi Nativi per Link di Ricerca su Stremio
+    if (tmdbItem.genres) {
+        meta.genres = tmdbItem.genres.map(g => g.name);
+    }
+
+    if (tmdbItem.credits?.cast) {
+        meta.cast = tmdbItem.credits.cast.filter(c => c.known_for_department === 'Acting').slice(0, 5).map(c => c.name);
+    }
+
+    if (type === 'movie' && tmdbItem.credits?.crew) {
+        meta.director = tmdbItem.credits.crew.filter(c => c.job === 'Director').slice(0, 3).map(d => d.name);
+    } else if (type === 'series' && tmdbItem.created_by?.length > 0) {
+        meta.writer = tmdbItem.created_by.slice(0, 3).map(c => c.name);
+    }
+
+
     // Deep Links nativi
     meta.links = [];
+
+    // Trailer e Stream info nativa
+    if (tmdbItem.videos?.results) {
+        const trailers = tmdbItem.videos.results
+            .filter(v => v.site === 'YouTube' && v.type === 'Trailer')
+            .map(v => ({ source: v.key, type: 'Trailer' }));
+        if (trailers.length > 0) meta.trailers = trailers;
+    }
 
     // Generi
     if (tmdbItem.genres) {
@@ -468,6 +529,10 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
  * Recupera le stagioni e gli episodi per una Serie TV da TMDB
  */
 async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId) {
+    const cacheKey = `eps:${tmdbId}`;
+    const cached = await tvEpisodesCache.get(cacheKey);
+    if (cached) return cached;
+
     try {
         const promises = [];
         // TMDB Seasons are 1-indexed. Sometimes there is Season 0 (Specials).
@@ -499,6 +564,10 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId) {
                 });
             }
         });
+
+        if (videos.length > 0) {
+            await tvEpisodesCache.set(cacheKey, videos);
+        }
 
         return videos;
     } catch (e) {
@@ -565,7 +634,18 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
             const enData = enRes.data;
             if (enData) {
                 if (overviewNeedsFallback && enData.overview) {
-                    data.overview = enData.overview;
+                    // Tenta traduzione con Lingva API
+                    try {
+                        const axios = require('axios');
+                        const transRes = await axios.get(`https://lingva.ml/api/v1/en/it/${encodeURIComponent(enData.overview)}`, { timeout: 4000 });
+                        if (transRes.data && transRes.data.translation) {
+                            data.overview = transRes.data.translation;
+                        } else {
+                            data.overview = enData.overview;
+                        }
+                    } catch (e) {
+                        data.overview = enData.overview;
+                    }
                 }
                 if (titleNeedsFallback) {
                     const enTitle = enData.title || enData.name;

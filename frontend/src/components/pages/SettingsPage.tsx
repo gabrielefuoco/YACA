@@ -59,14 +59,14 @@ export function SettingsPage({
     setError('');
     setSuccess(false);
 
-    const currentPillars = activeProfile?.settings?.manualPillars ?? [];
-    const currentSuggestedPillars = activeProfile?.settings?.suggestedPillars ?? [];
+    const currentDNA = activeProfile?.settings?.manualDNA ?? [];
+    const currentSuggestedDNA = activeProfile?.settings?.suggestedDNA ?? [];
     onUpdateProfile(activeProfileId, {
       settings: {
         fastRefresh,
         tmdbKey,
-        manualPillars: currentPillars,
-        suggestedPillars: currentSuggestedPillars,
+        manualDNA: currentDNA,
+        suggestedDNA: currentSuggestedDNA,
       },
     });
 

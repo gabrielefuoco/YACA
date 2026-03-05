@@ -2,12 +2,15 @@ const LRUCache = require('../utils/LRUCache');
 const CacheEntry = require('../db/models/CacheEntry');
 
 class CacheManager {
+    static instances = [];
+
     constructor(namespace, { ramMax = 500, ramTtlMs = 300000, mongoTtlMs = 86400000 } = {}) {
         this.namespace = namespace;
         this.mongoTtlMs = mongoTtlMs;
 
         // L1 Cache: In-memory RAM (LRU)
         this.l1 = new LRUCache({ max: ramMax, ttl: ramTtlMs });
+        CacheManager.instances.push(this);
     }
 
     /**
@@ -84,6 +87,30 @@ class CacheManager {
         } catch (error) {
             console.error(`[CacheManager:${this.namespace}] L2 clear error:`, error.message);
         }
+    }
+
+    /**
+     * Recupera le statistiche di utilizzo per questo namespace
+     */
+    async getStats() {
+        try {
+            const l1Count = this.l1.size;
+            const l2Count = await CacheEntry.countDocuments({ namespace: this.namespace });
+            return {
+                namespace: this.namespace,
+                l1Count,
+                l2Count
+            };
+        } catch (e) {
+            return { namespace: this.namespace, l1Count: this.l1.size, l2Count: 'error' };
+        }
+    }
+
+    /**
+     * Recupera le statistiche di tutte le istanze CacheManager attive.
+     */
+    static async getAllStats() {
+        return Promise.all(CacheManager.instances.map(instance => instance.getStats()));
     }
 }
 

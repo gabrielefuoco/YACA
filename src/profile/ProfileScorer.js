@@ -8,15 +8,31 @@ class ProfileScorer {
     /**
      * Calcola l'affinità di un contenuto TMDB con il profilo di gusto dell'utente.
      * @param {Object} tmdbData Dati grezzi TMDB (arricchiti con credits e keywords)
-     * @param {Object} profile Documento Mongoose TasteProfile
-     * @param {Object} overrides Opzionali { tmdbWeight, traktWeight }
+     * @param {Object} profile Documento Mongoose TasteProfile (GLOBAL)
+     * @param {Object} context Opzionali { dnaFilters (User.profiles.settings), tmdbWeight, traktWeight }
      * @returns {Number} Score da 0.0 a 10.0
      */
-    static calculateItemMatch(tmdbData, profile, overrides = {}) {
+    static calculateItemMatch(tmdbData, profile, context = {}) {
         if (!tmdbData || !profile) return 0;
 
-        const tmdbWeight = overrides.tmdbWeight ?? profile.tmdbWeight ?? 1.0;
-        const traktWeight = overrides.traktWeight ?? profile.traktWeight ?? 1.0;
+        const tmdbWeight = context.tmdbWeight ?? profile.tmdbWeight ?? 1.0;
+        const traktWeight = context.traktWeight ?? profile.traktWeight ?? 1.0;
+        const dnaFilters = context.dnaFilters; // Array di {type, id, name}
+
+        // --- 0. Controllo DNA (Filtro Contextuale) ---
+        let dnaMultiplier = 1.0;
+        if (dnaFilters && dnaFilters.length > 0) {
+            const genreIds = tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id.toString()) : []);
+            const keywordsItems = tmdbData.keywords?.keywords || tmdbData.keywords?.results || [];
+
+            const hasGenreMatch = dnaFilters.some(f => f.type === 'genre' && genreIds.includes(f.id));
+            const hasKeywordMatch = dnaFilters.some(f => f.type === 'keyword' && keywordsItems.some(k => k.id.toString() === f.id));
+
+            if (!hasGenreMatch && !hasKeywordMatch) {
+                // Se non c'è match col DNA, penalizziamo pesantemente (es. 90% in meno)
+                dnaMultiplier = 0.1;
+            }
+        }
 
         let thematicScore = 0;
         let authorialScore = 0;
@@ -77,7 +93,7 @@ class ProfileScorer {
         const totalWeight = tmdbWeight + traktWeight;
         if (totalWeight === 0) return 0;
 
-        const normalizedScore = ((profileMatch * traktWeight) + (qualityScore * tmdbWeight)) / totalWeight;
+        const normalizedScore = (((profileMatch * traktWeight) + (qualityScore * tmdbWeight)) / totalWeight) * dnaMultiplier;
 
         return Math.min(Math.max(normalizedScore, 0), 10);
     }

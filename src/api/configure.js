@@ -203,8 +203,14 @@ module.exports = async (req, res) => {
             const minVoteAverage = parseFloat(profile.settings?.minVoteAverage);
             const minVoteCount = parseInt(profile.settings?.minVoteCount, 10);
             const fastPresetRefresh = Boolean(profile.settings?.fastPresetRefresh);
-            const manualPillars = Array.isArray(profile.settings?.manualPillars) ? profile.settings.manualPillars : [];
-            const suggestedPillars = Array.isArray(profile.settings?.suggestedPillars) ? profile.settings.suggestedPillars : [];
+            const manualDNA = Array.isArray(profile.settings?.manualDNA) ? profile.settings.manualDNA : [];
+            const suggestedDNA = Array.isArray(profile.settings?.suggestedDNA) ? profile.settings.suggestedDNA : [];
+
+            // Se suggestedDNA è vuoto e manualDNA è vuoto, proviamo a recuperare quelli vecchi per compatibilità di migrazione (opzionale)
+            // userProfile.settings = { ... }
+            if (manualDNA.length === 0 && Array.isArray(profile.settings?.manualPillars)) {
+                // manualDNA.push(...profile.settings.manualPillars);
+            }
 
             parsedProfiles.push({
                 id: profile.id || `prof_${Date.now()}_${Math.random().toString(36).substring(7)}`,
@@ -220,8 +226,8 @@ module.exports = async (req, res) => {
                     minVoteAverage: Number.isFinite(minVoteAverage) ? minVoteAverage : 0,
                     minVoteCount: Number.isFinite(minVoteCount) ? minVoteCount : 0,
                     fastPresetRefresh,
-                    manualPillars,
-                    suggestedPillars
+                    manualDNA,
+                    suggestedDNA
                 }
             });
         }

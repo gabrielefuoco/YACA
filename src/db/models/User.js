@@ -24,7 +24,9 @@ const userSchema = new mongoose.Schema({
     config: {
         activeProfileId: String,
         hideWatched: { type: Boolean, default: false },
-        configVersion: { type: String, default: '1.0.0' }
+        configVersion: { type: String, default: '1.0.0' },
+        lastStremioSync: { type: Date },
+        nextSyncInterval: { type: Number, default: 8 * 60 * 60 * 1000 } // Default 8h
     },
     // Profili disponibili (UI Dashboard)
     profiles: [{
@@ -34,12 +36,12 @@ const userSchema = new mongoose.Schema({
             minVoteAverage: { type: Number, default: 0 },
             minVoteCount: { type: Number, default: 0 },
             fastPresetRefresh: { type: Boolean, default: false },
-            manualPillars: [{
+            manualDNA: [{
                 type: { type: String, enum: ['genre', 'keyword', 'country'] },
                 id: String,
                 name: String
             }],
-            suggestedPillars: [{
+            suggestedDNA: [{
                 type: { type: String, enum: ['genre', 'keyword', 'country'] },
                 id: String,
                 name: String

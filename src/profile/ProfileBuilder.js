@@ -136,15 +136,70 @@ class ProfileBuilder {
         }
 
         await profile.save();
-        await this.inferPillarsFromProfile(profile);
+
+        // Se il contesto non è globale, proviamo a inferire i DNA
+        if (profile.context !== 'global') {
+            await this.inferDNAFromProfile(profile);
+        }
+        return profile;
+    }
+
+    /**
+     * Sincronizza i dati da Stremio (Likes, Loves, Library) con il profilo globale.
+     * @param {String} owner Email o ID utente
+     * @param {Object} stremioData { liked, loved, library }
+     * @param {String} apiKey Chiave API TMDB
+     */
+    static async syncStremioData(owner, stremioData, apiKey) {
+        if (!stremioData) return;
+
+        // Stremio alimenta SEMPRE il profilo globale
+        let profile = await TasteProfile.findOne({ owner, context: 'global' });
+        if (!profile) {
+            profile = new TasteProfile({ owner, context: 'global' });
+        }
+
+        const allItems = [
+            ...stremioData.loved.map(item => ({ item, weight: 4.0 })),
+            ...stremioData.liked.map(item => ({ item, weight: 3.0 })),
+            ...stremioData.library.map(item => {
+                const isWatched = item.state?.watched && (item.state?.overallProgress >= 0.9);
+                return { item, weight: isWatched ? 2.0 : 1.0 };
+            })
+        ];
+
+        // Processa in batch
+        const batchSize = 5;
+        for (let i = 0; i < allItems.length; i += batchSize) {
+            const batch = allItems.slice(i, i + batchSize);
+            await Promise.all(batch.map(async ({ item, weight }) => {
+                const id = item.id || item._id; // Stremio usa id o _id
+                const type = item.type === 'series' ? 'tv' : 'movie';
+
+                // Evita duplicati se già processato con peso simile
+                if (profile.processedTraktIds.includes(id.toString())) return;
+
+                try {
+                    const details = await tmdb.getTmdbMovieDetails(apiKey, id, type);
+                    if (details) {
+                        this.processItem(profile, details, weight);
+                        profile.processedTraktIds.push(id.toString());
+                    }
+                } catch (e) {
+                    console.error(`[ProfileBuilder] Errore processamento item Stremio ${id}:`, e.message);
+                }
+            }));
+        }
+
+        await profile.save();
         return profile;
     }
     /**
-     * Deduces new pillars based on the dominant score values in the profile.
-     * Updates the User document's suggestedPillars if a new pillar is found.
+     * Deduces new DNA based on the dominant score values in the profile.
+     * Updates the User document's suggestedDNA if a new DNA is found.
      * @param {Object} profile Il documento TasteProfile
      */
-    static async inferPillarsFromProfile(profile) {
+    static async inferDNAFromProfile(profile) {
         if (!profile || profile.context === 'global') return;
 
         try {
@@ -155,11 +210,11 @@ class ProfileBuilder {
             const userProfile = userDoc.profiles?.find(p => p.id === profile.context);
             if (!userProfile) return;
 
-            const suggested = userProfile.settings?.suggestedPillars || [];
-            const manual = userProfile.settings?.manualPillars || [];
-            const existingPillarIds = new Set([...suggested.map(p => p.id), ...manual.map(p => p.id)]);
+            const suggested = userProfile.settings?.suggestedDNA || [];
+            const manual = userProfile.settings?.manualDNA || [];
+            const existingDNAIds = new Set([...suggested.map(p => p.id), ...manual.map(p => p.id)]);
 
-            let newPillarsFound = false;
+            let newDNAFound = false;
 
             // Logica di threshold per considerare un asse come "Pilastro"
             const MIN_SCORE_THRESHOLD = 50;
@@ -178,22 +233,22 @@ class ProfileBuilder {
 
                 // Rilevamento: il punteggio deve superare una soglia, 
                 // e (se c'è un secondo elemento) deve essere almeno il doppio del secondo
-                let isPillar = topScore >= MIN_SCORE_THRESHOLD;
-                if (isPillar && sorted.length > 1) {
+                let isDNA = topScore >= MIN_SCORE_THRESHOLD;
+                if (isDNA && sorted.length > 1) {
                     const secondScore = sorted[1][1];
                     if (topScore < secondScore * 2) {
-                        isPillar = false; // Non è "sproporzionatamente" più alto
+                        isDNA = false; // Non è "sproporzionatamente" più alto
                     }
                 }
 
-                if (isPillar && !existingPillarIds.has(topId)) {
+                if (isDNA && !existingDNAIds.has(topId)) {
                     suggested.push({
                         type,
                         id: topId,
                         name: nameResolver ? nameResolver(topId) : topId
                     });
-                    existingPillarIds.add(topId);
-                    newPillarsFound = true;
+                    existingDNAIds.add(topId);
+                    newDNAFound = true;
                 }
             };
 
@@ -203,15 +258,15 @@ class ProfileBuilder {
             analyzeScores(profile.keywordScores, 'keyword', (id) => `Keyword ${id}`);
             analyzeScores(profile.countryScores, 'country', (id) => id);
 
-            if (newPillarsFound) {
+            if (newDNAFound) {
                 if (!userProfile.settings) userProfile.settings = {};
-                userProfile.settings.suggestedPillars = suggested;
+                userProfile.settings.suggestedDNA = suggested;
                 await userDoc.save();
-                console.log(`💡 Nuovi pilastri suggeriti inferiti per l'utente ${profile.owner}, profilo ${profile.context}`);
+                console.log(`💡 Nuovi DNA suggeriti inferiti per l'utente ${profile.owner}, profilo ${profile.context}`);
             }
 
         } catch (e) {
-            console.error("Errore durante l'inferenza dei pilastri:", e.message);
+            console.error("Errore durante l'inferenza del DNA:", e.message);
         }
     }
 }

@@ -18,13 +18,14 @@ const { clearAllTmdbCaches } = require('./src/clients/tmdb');
 const { clearIdCache } = require('./src/id_mapping/id_cache');
 const TmdbRequestCache = require('./src/models/TmdbRequestCache');
 const LRUCache = require('./src/utils/LRUCache');
-const { rateLimitedMap } = require('./src/utils/rateLimiter');
 const { updateStremioAddonCollection } = require('./src/utils/stremioAddonSync');
+const { syncAllStremioData } = require('./src/utils/stremioSync');
 const connectDB = require('./src/db/connection');
 const User = require('./src/db/models/User');
 const BadgeImage = require('./src/db/models/BadgeImage');
 const { syncIncrementalRecommendations } = require('./src/engines/hybridRecommendations');
 const { generateMergedName } = require('./src/api/mergeRoutes');
+const CacheManager = require('./src/cache/CacheManager');
 
 // Connessione MongoDB
 connectDB();
@@ -576,6 +577,32 @@ app.get('/api/user/:userId', async (req, res) => {
     }
 });
 
+// Endpoint per estrarre le statistiche di tutte le cache
+app.get('/api/cache/stats', async (req, res) => {
+    try {
+        const stats = await CacheManager.getAllStats();
+
+        // Aggiungiamo statistiche delle cache escluse dal manager
+        stats.push({
+            namespace: 'badge_image_cache',
+            l1Count: badgeImageCache.size,
+            l2Count: await BadgeImage.countDocuments()
+        });
+
+        const reqCacheCount = await TmdbRequestCache.countDocuments();
+        stats.push({
+            namespace: 'tmdb_request_cache',
+            l1Count: 'N/A', // solo Mongo
+            l2Count: reqCacheCount
+        });
+
+        res.json({ success: true, stats });
+    } catch (err) {
+        console.error('Errore stats cache:', err);
+        res.status(500).json({ error: 'Errore durante il recupero delle statistiche.' });
+    }
+});
+
 // Endpoint per svuotare tutte le cache globali del sistema (solo per test)
 app.post('/api/clear-cache', async (req, res) => {
     try {
@@ -671,7 +698,36 @@ app.get('/api/cron/warmup', async (req, res) => {
         console.error("❌ Errore durante il warmup delle raccomandazioni:", err.message);
     }
 
-    console.log(`✅ Pre-Warming completato per ${allCatalogs.length} cataloghi e raccomandazioni utenti.`);
+    // Warmup Fase 3: Stremio & Trakt Sync (Throttled & Randomized)
+    console.log("🔥 Avvio Sync Dati Stremio/Trakt per utenti registrati...");
+    try {
+        const users = await User.find({ 'apiKeys.stremio': { $exists: true, $ne: null } });
+        const now = new Date();
+
+        await rateLimitedMap(
+            users,
+            async (user) => {
+                const lastSync = user.config?.lastStremioSync;
+                const interval = user.config?.nextSyncInterval || (8 * 60 * 60 * 1000);
+
+                const isDue = !lastSync || (now - new Date(lastSync) >= interval);
+
+                if (isDue) {
+                    console.log(`[CronSync] Esecuzione sync per utente: ${user.userId}`);
+                    const authKey = user.apiKeys.stremio;
+                    await syncAllStremioData(user.userId, authKey);
+                } else {
+                    const remaining = Math.round((interval - (now - new Date(lastSync))) / (60 * 1000));
+                    console.log(`[CronSync] Sync saltato per ${user.userId} (prossimo tra ~${remaining} min)`);
+                }
+            },
+            { batchSize: 1, delayMs: 2000 }
+        );
+    } catch (err) {
+        console.error("❌ Errore durante il sync Stremio:", err.message);
+    }
+
+    console.log(`✅ Pre-Warming completato per ${allCatalogs.length} cataloghi e sync dati utenti.`);
 });
 
 // Opzioni di ordinamento disponibili in Stremio per i cataloghi TMDB
@@ -707,7 +763,7 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
         const manifest = {
             id: 'org.stremio.yaca.catalog',
             version: dynamicVersion,
-            name: 'YACA (Yet Another Catalog Addon)',
+            name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
             description: 'Catalogo Intelligente Potenziato da AI',
             logo: `${req.protocol}://${req.get('host')}/logo.png`,
             resources: [
@@ -766,7 +822,7 @@ app.get('/manifest.json', (req, res) => {
     const manifest = {
         id: 'org.stremio.yaca.catalog',
         version: '1.0.2',
-        name: 'YACA (Yet Another Catalog Addon)',
+        name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
         description: 'Catalogo Intelligente Potenziato da AI - Configurazione Richiesta',
         logo: `${req.protocol}://${req.get('host')}/logo.png`,
         contactEmail: 'yaca.addon@proton.me',

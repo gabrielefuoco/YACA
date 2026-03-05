@@ -204,6 +204,14 @@ async function executeTraktRequest(endpoint, page, traktToken) {
         const res = await traktClient.get(`/recommendations/shows`, { ...authConfig, params: { limit: 20, page } });
         results = res.data.map(s => ({ type: 'show', show: s }));
     }
+    else if (endpoint === 'favorites_movies' && traktToken) {
+        const res = await traktClient.get(`/users/me/favorites/movies`, { ...authConfig, params: { limit: 20, page } });
+        results = res.data.map(m => ({ type: 'movie', movie: m }));
+    }
+    else if (endpoint === 'favorites_shows' && traktToken) {
+        const res = await traktClient.get(`/users/me/favorites/shows`, { ...authConfig, params: { limit: 20, page } });
+        results = res.data.map(s => ({ type: 'show', show: s }));
+    }
     else if (endpoint === 'favorites' && traktToken) {
         const res = await traktClient.get(`/users/me/lists/favorites/items`, { ...authConfig, params: { limit: 20, page } });
         results = res.data;
@@ -295,4 +303,44 @@ async function deduplicateAndEnrich(results, tmdbApiKey) {
     return enrichedItems.filter(i => i !== null);
 }
 
-module.exports = { fetchTraktCatalog, refreshTraktTokens, syncTraktTokensToDb };
+/**
+ * Sincronizza i rating su Trakt.
+ * @param {string} token - OAuth Token
+ * @param {Array} ratings - Array di oggetti rating [{rating: 10, movie: {ids: {imdb: "..."}}}]
+ */
+async function syncTraktRatings(token, ratings) {
+    if (!token || !ratings.length) return;
+    try {
+        await traktClient.post('/sync/ratings', ratings, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        console.log(`[TraktClient] Pushed ${ratings.length} ratings to Trakt.`);
+    } catch (err) {
+        console.error('[TraktClient] Error syncing ratings:', err.response?.data || err.message);
+    }
+}
+
+/**
+ * Sincronizza la cronologia su Trakt.
+ * @param {string} token - OAuth Token
+ * @param {Array} history - Array di oggetti history [{movie: {ids: {imdb: "..."}}}]
+ */
+async function syncTraktHistory(token, history) {
+    if (!token || !history.length) return;
+    try {
+        await traktClient.post('/sync/history', history, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        console.log(`[TraktClient] Pushed ${history.length} history items to Trakt.`);
+    } catch (err) {
+        console.error('[TraktClient] Error syncing history:', err.response?.data || err.message);
+    }
+}
+
+module.exports = {
+    fetchTraktCatalog,
+    refreshTraktTokens,
+    syncTraktTokensToDb,
+    syncTraktRatings,
+    syncTraktHistory
+};

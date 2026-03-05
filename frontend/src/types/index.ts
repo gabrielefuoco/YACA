@@ -1,4 +1,4 @@
-export interface Pillar {
+export interface DNAItem {
   type: 'genre' | 'keyword' | 'country';
   id: string;
   name: string;
@@ -9,8 +9,8 @@ export interface ProfileSettings {
   voteCountMin?: number;
   fastRefresh?: boolean;
   tmdbKey?: string;
-  manualPillars?: Pillar[];
-  suggestedPillars?: Pillar[];
+  manualDNA?: DNAItem[];
+  suggestedDNA?: DNAItem[];
 }
 
 export interface Catalog {

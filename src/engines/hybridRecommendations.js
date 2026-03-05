@@ -31,13 +31,13 @@ async function fetchRecentHistory(traktToken, mediaType, limit = 10) {
     }
 }
 
-function extractPillarParams(manualPillars = []) {
+function extractDNAParams(manualDNA = []) {
     const params = {};
-    if (!manualPillars.length) return params;
+    if (!manualDNA.length) return params;
 
-    const genres = manualPillars.filter(p => p.type === 'genre').map(p => p.id);
-    const keywords = manualPillars.filter(p => p.type === 'keyword').map(p => p.id);
-    const countries = manualPillars.filter(p => p.type === 'country').map(p => p.id);
+    const genres = manualDNA.filter(p => p.type === 'genre').map(p => p.id);
+    const keywords = manualDNA.filter(p => p.type === 'keyword').map(p => p.id);
+    const countries = manualDNA.filter(p => p.type === 'country').map(p => p.id);
 
     if (genres.length) params.with_genres = genres.join(',');
     if (keywords.length) params.with_keywords = keywords.join(',');
@@ -47,7 +47,7 @@ function extractPillarParams(manualPillars = []) {
 }
 
 /**
- * 🔱 Signature: The Core (Top Genre + Top Keyword + Pillars. Cascade esatta -> broad)
+ * 🔱 Signature: The Core (Top Genre + Top Keyword + DNA. Cascade esatta -> broad)
  */
 async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
     const [profile, user] = await Promise.all([
@@ -58,8 +58,8 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
-    const pillars = settings.manualPillars || [];
-    const pillarParams = extractPillarParams(pillars);
+    const dna = settings.manualDNA || [];
+    const dnaParams = extractDNAParams(dna);
 
     const topGenres = [...profile.genreScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
     const topKeywords = [...profile.keywordScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
@@ -82,24 +82,24 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
         } catch (e) { }
     };
 
-    // Cascade 1: Super Exact (Top Genre + Top Keyword + Pillars)
+    // Cascade 1: Super Exact (Top Genre + Top Keyword + DNA)
     if (topGenres.length && topKeywords.length) {
         await fetchAndAdd({
-            ...pillarParams,
-            with_genres: topGenres[0] + (pillarParams.with_genres ? ',' + pillarParams.with_genres : ''),
-            with_keywords: topKeywords[0] + (pillarParams.with_keywords ? ',' + pillarParams.with_keywords : '')
+            ...dnaParams,
+            with_genres: topGenres[0] + (dnaParams.with_genres ? ',' + dnaParams.with_genres : ''),
+            with_keywords: topKeywords[0] + (dnaParams.with_keywords ? ',' + dnaParams.with_keywords : '')
         });
     }
 
-    // Cascade 2: Any Top 3 Genre + Any Top 3 Keyword + Pillars
+    // Cascade 2: Any Top 3 Genre + Any Top 3 Keyword + DNA
     if (results.length < 20) {
         const promises = [];
         for (let g of topGenres) {
             for (let k of topKeywords) {
                 promises.push(fetchAndAdd({
-                    ...pillarParams,
-                    with_genres: g + (pillarParams.with_genres ? ',' + pillarParams.with_genres : ''),
-                    with_keywords: k + (pillarParams.with_keywords ? ',' + pillarParams.with_keywords : '')
+                    ...dnaParams,
+                    with_genres: g + (dnaParams.with_genres ? ',' + dnaParams.with_genres : ''),
+                    with_keywords: k + (dnaParams.with_keywords ? ',' + dnaParams.with_keywords : '')
                 }));
             }
         }
@@ -117,7 +117,7 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
 }
 
 /**
- * 🌀 Signature: The Blend (Mix di gusti + Fallback Pillars)
+ * 🌀 Signature: The Blend (Mix di gusti + Fallback DNA)
  */
 async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
     const [profile, user] = await Promise.all([
@@ -128,8 +128,8 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
-    const pillars = settings.manualPillars || [];
-    let pillarParams = extractPillarParams(pillars);
+    const dna = settings.manualDNA || [];
+    let dnaParams = extractDNAParams(dna);
 
     const topGenres = [...profile.genreScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => e[0]);
 
@@ -145,8 +145,8 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
 
     let results = [];
     const queries = topGenres.map(g => ({
-        ...pillarParams,
-        with_genres: g + (pillarParams.with_genres ? ',' + pillarParams.with_genres : '')
+        ...dnaParams,
+        with_genres: g + (dnaParams.with_genres ? ',' + dnaParams.with_genres : '')
     }));
 
     let allResults = await Promise.allSettled(queries.map(q => fetchBatch(q)));
@@ -159,10 +159,10 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
     });
 
     // FALLBACK ZERO RESULTS ALGORITHM
-    if (results.length === 0 && pillars.length > 0) {
-        console.warn(`[Fallback] Zero Blend results per ${userId}/${context}. Disattivo i pillars.`);
-        const queriesNoPillar = topGenres.map(g => ({ with_genres: g }));
-        allResults = await Promise.allSettled(queriesNoPillar.map(q => fetchBatch(q)));
+    if (results.length === 0 && dna.length > 0) {
+        console.warn(`[Fallback] Zero Blend results per ${userId}/${context}. Disattivo il DNA.`);
+        const queriesNoDNA = topGenres.map(g => ({ with_genres: g }));
+        allResults = await Promise.allSettled(queriesNoDNA.map(q => fetchBatch(q)));
         allResults.forEach(r => {
             if (r.status === 'fulfilled') {
                 r.value.forEach(item => {
@@ -183,7 +183,7 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
 }
 
 /**
- * ⭐ Signature: Rising Star (Popular + Pillars + Trakt Watchlist/History Influence)
+ * ⭐ Signature: Rising Star (Popular + DNA + Trakt Watchlist/History Influence)
  */
 async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, mediaType) {
     const [profile, user] = await Promise.all([
@@ -194,8 +194,8 @@ async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, media
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
-    const pillars = settings.manualPillars || [];
-    const pillarParams = extractPillarParams(pillars);
+    const dna = settings.manualDNA || [];
+    const dnaParams = extractDNAParams(dna);
 
     const history = await fetchRecentHistory(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 5);
     const traktRecs = [];
@@ -213,9 +213,9 @@ async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, media
         });
     }
 
-    // Discover Popolari resinosi + Pillars
+    // Discover Popolari resinosi + DNA
     const searchRes = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
-        params: { ...pillarParams, api_key: tmdbApiKey, 'vote_average.gte': 7, sort_by: 'popularity.desc' },
+        params: { ...dnaParams, api_key: tmdbApiKey, 'vote_average.gte': 7, sort_by: 'popularity.desc' },
         timeout: 5000
     }).catch(() => ({ data: { results: [] } }));
 

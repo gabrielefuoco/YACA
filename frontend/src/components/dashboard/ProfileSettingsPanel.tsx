@@ -1,8 +1,8 @@
 'use client';
-import { Profile, ProfileTemplate, Pillar } from '@/types';
+import { Profile, ProfileTemplate, DNAItem } from '@/types';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { api } from '@/lib/api';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, BrainCircuit } from 'lucide-react';
 
 interface ProfileSettingsPanelProps {
     profile: Profile;
@@ -25,22 +25,37 @@ export function ProfileSettingsPanel({
     isActive,
     startRename
 }: ProfileSettingsPanelProps) {
-    const profileKeywords: Pillar[] = profile?.settings?.manualPillars ?? [];
-    const suggestedKeywords: Pillar[] = profile?.settings?.suggestedPillars ?? [];
+    const profileDNA: DNAItem[] = profile?.settings?.manualDNA ?? [];
+    const suggestedDNA: DNAItem[] = profile?.settings?.suggestedDNA ?? [];
 
-    const handleAddPillar = (pillar: Pillar) => {
-        if (profileKeywords.find((p) => String(p.id) === String(pillar.id))) return;
-        const newPillars = [...profileKeywords, pillar];
+    const handleAddDNA = (item: DNAItem) => {
+        if (profileDNA.find((p) => String(p.id) === String(item.id))) return;
+        const newDNA = [...profileDNA, item];
         onUpdateProfile(profile.id, {
-            settings: { ...profile.settings, manualPillars: newPillars },
+            settings: { ...profile.settings, manualDNA: newDNA },
         });
     };
 
-    const handleRemovePillar = (pillarId: string) => {
-        const newPillars = profileKeywords.filter((p) => String(p.id) !== String(pillarId));
+    const handleRemoveDNA = (id: string) => {
+        const newDNA = profileDNA.filter((p) => String(p.id) !== String(id));
         onUpdateProfile(profile.id, {
-            settings: { ...profile.settings, manualPillars: newPillars },
+            settings: { ...profile.settings, manualDNA: newDNA },
         });
+    };
+
+    const handleApplyTemplate = (template: ProfileTemplate) => {
+        const hasExistingDNA = profileDNA.length > 0;
+        if (hasExistingDNA) {
+            const confirm = window.confirm(
+                `Stai applicando il modello "${template.name}".\n\nVuoi che YACA aggiorni automaticamente il "Profile DNA" (generi e temi) basandosi sui nuovi preset?`
+            );
+            if (confirm) {
+                // We'll let the backend handle the DNA inference if possible, 
+                // but for now we just apply the template.
+                // In a more advanced version, we'd trigger a DNA rebuild.
+            }
+        }
+        onApplyTemplate(template);
     };
 
     return (
@@ -86,7 +101,7 @@ export function ProfileSettingsPanel({
                             {profileTemplates.map((tpl) => (
                                 <div
                                     key={tpl.id}
-                                    onClick={() => onApplyTemplate(tpl)}
+                                    onClick={() => handleApplyTemplate(tpl)}
                                     className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:border-primary transition-all cursor-pointer"
                                 >
                                     <p className="text-slate-900 dark:text-slate-100 font-bold text-xs truncate">{tpl.name}</p>
@@ -97,26 +112,27 @@ export function ProfileSettingsPanel({
                     </details>
                 )}
 
-                {/* Parole Chiave Section */}
+                {/* Profile DNA Section */}
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-3 text-primary">
-                        <span className="material-symbols-outlined">key</span>
-                        <p className="text-sm font-black uppercase tracking-widest">Parole Chiave</p>
+                        <BrainCircuit className="h-5 w-5" />
+                        <p className="text-sm font-black uppercase tracking-widest">Profile DNA</p>
                     </div>
                     <div className="flex flex-col gap-3">
                         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            Vincola le raccomandazioni del profilo <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold"><span className="material-symbols-outlined text-[10px]">home</span> {profile.name}</span> a temi specifici. Troppi vincoli possono ridurre i risultati.
+                            Definisce l&apos;impronta del profilo <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold"><span className="material-symbols-outlined text-[10px]">home</span> {profile.name}</span>.
+                            Questi temi e generi vengono usati per filtrare e dare priorità ai contenuti suggeriti.
                         </p>
 
                         <div className="flex flex-wrap gap-2 mb-1">
-                            {profileKeywords.map((p) => (
+                            {profileDNA.map((p) => (
                                 <span
                                     key={p.id}
                                     className="inline-flex items-center gap-1 rounded bg-primary/20 text-primary px-3 py-1.5 text-xs font-bold"
                                 >
-                                    {p.type === 'genre' ? '🎭 ' : p.type === 'country' ? '🌍 ' : ''} {p.name}
+                                    {p.type === 'genre' ? '🎭 ' : p.type === 'country' ? '🌍 ' : '🏷️ '} {p.name}
                                     <button
-                                        onClick={() => handleRemovePillar(String(p.id))}
+                                        onClick={() => handleRemoveDNA(String(p.id))}
                                         className="ml-1 text-primary hover:text-primary/70 transition-colors"
                                     >
                                         <X className="h-3 w-3" />
@@ -129,23 +145,23 @@ export function ProfileSettingsPanel({
                             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none">search</span>
                             <div className="w-full relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white dark:[&_input]:bg-slate-800 [&_input]:border-slate-200 dark:[&_input]:border-slate-700 [&_input]:rounded-lg [&_input]:text-sm">
                                 <AutocompleteSearch
-                                    placeholder="Aggiungi interessi (es. Anime, Sci-Fi...)"
+                                    placeholder="Personalizza DNA (es. Anime, Sci-Fi...)"
                                     searchFn={api.searchTmdbKeywords}
-                                    onSelect={(item) => handleAddPillar({ type: 'keyword', id: String(item.id), name: item.name })}
+                                    onSelect={(item) => handleAddDNA({ type: 'keyword', id: String(item.id), name: item.name })}
                                 />
                             </div>
                         </div>
 
-                        {suggestedKeywords.filter((sp) => !profileKeywords.find((mp) => String(mp.id) === String(sp.id))).length > 0 && (
+                        {suggestedDNA.filter((sp) => !profileDNA.find((mp) => String(mp.id) === String(sp.id))).length > 0 && (
                             <div className="pt-2">
-                                <p className="text-[11px] text-slate-400 mb-2">Suggeriti per te</p>
+                                <p className="text-[11px] text-slate-400 mb-2">Suggeriti dal tuo DNA Globale</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {suggestedKeywords
-                                        .filter((sp) => !profileKeywords.find((mp) => String(mp.id) === String(sp.id)))
+                                    {suggestedDNA
+                                        .filter((sp) => !profileDNA.find((mp) => String(mp.id) === String(sp.id)))
                                         .map((p) => (
                                             <button
                                                 key={p.id}
-                                                onClick={() => handleAddPillar(p)}
+                                                onClick={() => handleAddDNA(p)}
                                                 className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-3 py-1 text-[11px] font-medium hover:border-primary transition-colors"
                                             >
                                                 <Plus className="h-3 w-3" />
