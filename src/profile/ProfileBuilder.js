@@ -1,5 +1,18 @@
 const TasteProfile = require('../db/models/TasteProfile');
 const tmdb = require('../clients/tmdb');
+const { BINGE_SESSION_GAP_MS, BINGE_MULTIPLIER } = require('../config');
+
+/**
+ * Applies logarithmic time-decay accumulation so that repeated scores give
+ * diminishing returns, preventing the profile from going "flat".
+ * Formula: new = current + increment / (1 + ln(1 + current))
+ * @param {Number} current Existing score
+ * @param {Number} increment New increment to add
+ * @returns {Number} Updated score with time-decay
+ */
+function addWithDecay(current, increment) {
+    return current + increment / (1 + Math.log(1 + Math.abs(current)));
+}
 
 class ProfileBuilder {
     /**
@@ -11,7 +24,7 @@ class ProfileBuilder {
     static processItem(profile, tmdbData, weight = 1.0) {
         if (!tmdbData) return;
 
-        // 1. Generi (+1.0 primo, +0.6 secondo, +0.3 restanti)
+        // 1. Generi (+1.0 primo, +0.6 secondo, +0.3 restanti) — with logarithmic decay
         if (tmdbData.genres && tmdbData.genres.length > 0) {
             tmdbData.genres.forEach((g, index) => {
                 const genreId = g.id.toString();
@@ -20,65 +33,65 @@ class ProfileBuilder {
                 else if (index === 1) score = 0.6;
 
                 const current = profile.genreScores.get(genreId) || 0;
-                profile.genreScores.set(genreId, current + (score * weight));
+                profile.genreScores.set(genreId, addWithDecay(current, score * weight));
             });
         }
 
-        // 2. Keywords (+1.0 ciascuna)
+        // 2. Keywords (+1.0 ciascuna) — with logarithmic decay
         const keywords = tmdbData.keywords?.keywords || tmdbData.keywords?.results || [];
         keywords.forEach(kw => {
             const kwId = kw.id.toString();
             const current = profile.keywordScores.get(kwId) || 0;
-            profile.keywordScores.set(kwId, current + (1.0 * weight));
+            profile.keywordScores.set(kwId, addWithDecay(current, 1.0 * weight));
         });
 
-        // 3. Registi (+1.0 ciascuno)
+        // 3. Registi (+1.0 ciascuno) — with logarithmic decay
         if (tmdbData.credits && tmdbData.credits.crew) {
             const directors = tmdbData.credits.crew.filter(c => c.job === 'Director');
             directors.forEach(d => {
                 const directorId = d.id.toString();
                 const current = profile.directorScores.get(directorId) || 0;
-                profile.directorScores.set(directorId, current + (1.0 * weight));
+                profile.directorScores.set(directorId, addWithDecay(current, 1.0 * weight));
             });
         }
 
-        // 4. Attori (+1.0 primi 3)
+        // 4. Attori (+1.0 primi 3) — with logarithmic decay
         if (tmdbData.credits && tmdbData.credits.cast) {
             tmdbData.credits.cast.slice(0, 3).forEach(a => {
                 const actorId = a.id.toString();
                 const current = profile.actorScores.get(actorId) || 0;
-                profile.actorScores.set(actorId, current + (1.0 * weight));
+                profile.actorScores.set(actorId, addWithDecay(current, 1.0 * weight));
             });
         }
 
-        // 5. Studios (+1.0 ciascuna production company)
+        // 5. Studios (+1.0 ciascuna production company) — with logarithmic decay
         if (tmdbData.production_companies) {
             tmdbData.production_companies.forEach(s => {
                 const studioId = s.id.toString();
                 const current = profile.studioScores.get(studioId) || 0;
-                profile.studioScores.set(studioId, current + (1.0 * weight));
+                profile.studioScores.set(studioId, addWithDecay(current, 1.0 * weight));
             });
         }
 
-        // 6. Era (+1.0 per decade)
+        // 6. Era (+1.0 per decade) — with logarithmic decay
         const releaseDate = tmdbData.release_date || tmdbData.first_air_date;
         if (releaseDate) {
             const year = new Date(releaseDate).getFullYear();
             if (!isNaN(year)) {
                 const decade = `${Math.floor(year / 10) * 10}s`;
                 const current = profile.eraScores.get(decade) || 0;
-                profile.eraScores.set(decade, current + (1.0 * weight));
+                profile.eraScores.set(decade, addWithDecay(current, 1.0 * weight));
             }
         }
 
-        // 7. Paese (+1.0 ciascuno)
+        // 7. Paese (+1.0 ciascuno) — with logarithmic decay
         const countries = tmdbData.origin_country || (tmdbData.production_countries ? tmdbData.production_countries.map(c => c.iso_3166_1) : []);
         countries.forEach(c => {
             const current = profile.countryScores.get(c) || 0;
-            profile.countryScores.set(c, current + (1.0 * weight));
+            profile.countryScores.set(c, addWithDecay(current, 1.0 * weight));
         });
 
-        // 8. Runtime (+1.0)
+        // 8. Runtime (+1.0) — with logarithmic decay
         const runtime = tmdbData.runtime || (tmdbData.episode_run_time ? tmdbData.episode_run_time[0] : null);
         if (runtime) {
             let category = "medium";
@@ -86,7 +99,7 @@ class ProfileBuilder {
             else if (runtime > 150) category = "long";
 
             const current = profile.runtimeScores.get(category) || 0;
-            profile.runtimeScores.set(category, current + (1.0 * weight));
+            profile.runtimeScores.set(category, addWithDecay(current, 1.0 * weight));
         }
 
         profile.lastUpdated = new Date();
@@ -113,6 +126,42 @@ class ProfileBuilder {
 
         if (newItems.length === 0) return profile;
 
+        // Binge-watching detection: sort items by watched_at, group by session
+        // A session is a group of items watched within BINGE_SESSION_GAP_MS of each other
+        const itemsWithTime = newItems.map(item => ({
+            item,
+            watchedAt: item.watched_at ? new Date(item.watched_at).getTime() : 0
+        })).sort((a, b) => a.watchedAt - b.watchedAt);
+
+        // Group into sessions by looking at consecutive gaps
+        const sessions = [];
+        if (itemsWithTime.length > 0) {
+        let currentSession = [itemsWithTime[0]];
+        for (let i = 1; i < itemsWithTime.length; i++) {
+            const prev = itemsWithTime[i - 1];
+            const curr = itemsWithTime[i];
+            const gap = Math.abs(curr.watchedAt - prev.watchedAt);
+            if (gap <= BINGE_SESSION_GAP_MS) {
+                currentSession.push(curr);
+            } else {
+                sessions.push(currentSession);
+                currentSession = [curr];
+            }
+        }
+        sessions.push(currentSession);
+        }
+
+        // Determine frequency multiplier: session with >= 3 items in one day counts as binge
+        const sessionMultiplierMap = new Map();
+        for (const session of sessions) {
+            const isBinge = session.length >= 3;
+            const multiplier = isBinge ? BINGE_MULTIPLIER : 1.0;
+            for (const { item } of session) {
+                const tmdbId = item.movie?.ids?.tmdb || item.show?.ids?.tmdb;
+                if (tmdbId) sessionMultiplierMap.set(tmdbId, multiplier);
+            }
+        }
+
         // Processa in batch per non saturare TMDB
         const batchSize = 5;
         for (let i = 0; i < newItems.length; i += batchSize) {
@@ -124,7 +173,8 @@ class ProfileBuilder {
                 try {
                     const details = await tmdb.getTmdbMovieDetails(apiKey, tmdbId, type);
                     if (details) {
-                        this.processItem(profile, details);
+                        const bingeMultiplier = sessionMultiplierMap.get(tmdbId) || 1.0;
+                        this.processItem(profile, details, bingeMultiplier);
                         profile.processedTraktIds.push(tmdbId.toString());
                     }
                 } catch (e) {

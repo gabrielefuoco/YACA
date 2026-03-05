@@ -7,8 +7,10 @@ const ProfileBuilder = require('../profile/ProfileBuilder');
 const ProfileScorer = require('../profile/ProfileScorer');
 const tmdb = require('../clients/tmdb');
 
-// Cache per i cataloghi finali generati (RAM L1)
+// Cache per i cataloghi finali generati (RAM Livello 3)
 const catalogCache = new LRUCache({ max: 100, ttl: RECOMMENDATIONS_CACHE_TTL_MS });
+// Alias per compatibilità con i test
+const recommendationsCache = catalogCache;
 
 /**
  * Recupera l'ultima history da Trakt (limitata per performance).
@@ -31,6 +33,116 @@ async function fetchRecentHistory(traktToken, mediaType, limit = 10) {
     }
 }
 
+/**
+ * Recupera le raccomandazioni grezze di Trakt per l'utente corrente.
+ * @param {String} traktToken Token OAuth Trakt
+ * @param {String} mediaType 'movies' o 'shows'
+ * @param {Number} limit Numero massimo di risultati
+ * @returns {Array} Array di oggetti Trakt (con ids.tmdb)
+ */
+async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40) {
+    if (!traktToken || !process.env.TRAKT_CLIENT_ID) return [];
+    try {
+        const res = await axios.get(`https://api.trakt.tv/recommendations/${mediaType}`, {
+            headers: {
+                'trakt-api-version': '2',
+                'trakt-api-key': process.env.TRAKT_CLIENT_ID,
+                'Authorization': `Bearer ${traktToken}`
+            },
+            params: { limit, page: 1 },
+            timeout: 10000
+        });
+        return res.data || [];
+    } catch (_e) {
+        return [];
+    }
+}
+
+/**
+ * Estrae i top N generi dal profilo (per punteggio decrescente).
+ * @param {Object} profile Documento TasteProfile
+ * @param {Number} n Numero di generi da estrarre (default 5)
+ * @returns {Array} Array di ID genere (stringhe)
+ */
+function computeTopGenres(profile, n = 5) {
+    if (!profile || !profile.genreScores) return [];
+    return [...profile.genreScores.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, n)
+        .map(e => e[0]);
+}
+
+/**
+ * Per ogni seed TMDB ID, recupera i film "simili" e conta quante volte ogni film appare.
+ * @param {Array} seedTmdbIds Array di ID TMDB (numeri o stringhe)
+ * @param {String} tmdbApiKey Chiave API TMDB
+ * @param {String} mediaType 'movie' o 'tv'
+ * @returns {Map} Map<tmdbId, appearanceCount>
+ */
+async function fetchTmdbSimilarCounts(seedTmdbIds, tmdbApiKey, mediaType = 'movie') {
+    const types = mediaType === 'movie' ? 'movie' : 'tv';
+    const counts = new Map();
+
+    if (!seedTmdbIds || seedTmdbIds.length === 0) return counts;
+
+    const promises = seedTmdbIds.map(id =>
+        axios.get(`https://api.themoviedb.org/3/${types}/${id}/recommendations`, {
+            params: { api_key: tmdbApiKey },
+            timeout: 5000
+        }).catch(() => null)
+    );
+
+    const results = await Promise.allSettled(promises);
+    results.forEach(r => {
+        if (r.status === 'fulfilled' && r.value?.data?.results) {
+            for (const item of r.value.data.results) {
+                counts.set(item.id, (counts.get(item.id) || 0) + 1);
+            }
+        }
+    });
+
+    return counts;
+}
+
+/**
+ * Calcola il punteggio ibrido per un elemento candidato.
+ * Combina: punteggio posizione Trakt + bonus TMDB per sovrapposizioni + boost di genere.
+ *
+ * @param {Object} item Oggetto con { tmdbId, position? }
+ * @param {Map} tmdbCounts Map<tmdbId, count> — quante volte appare nei "simili"
+ * @param {Array} topGenres Array dei top genre IDs dell'utente (max 3 considerati)
+ * @param {Array} itemGenres Array dei genre IDs dell'item
+ * @returns {Number} Punteggio ibrido
+ */
+function calculateHybridScore(item, tmdbCounts, topGenres, itemGenres) {
+    let score = 0;
+
+    // 1. Posizione Trakt (50 - position)
+    if (item.position != null) {
+        score += Math.max(0, 50 - item.position);
+    }
+
+    // 2. Bonus TMDB per sovrapposizioni: floor(100 / 2^(count-1))
+    const count = tmdbCounts.get(item.tmdbId) || 0;
+    if (count > 0) {
+        score += Math.floor(100 / Math.pow(2, count - 1));
+    }
+
+    // 3. Boost di genere: top1=+30, top2=+15, top3=+5
+    // Normalize to strings for consistent comparison regardless of input type
+    const topGenresNorm = topGenres.map(String);
+    const itemGenresNorm = itemGenres.map(String);
+    const genreBoosts = [30, 15, 5];
+    const limit = Math.min(topGenresNorm.length, genreBoosts.length);
+    for (let i = 0; i < limit; i++) {
+        if (itemGenresNorm.includes(topGenresNorm[i])) {
+            score += genreBoosts[i];
+        }
+    }
+
+    return score;
+}
+
 function extractDNAParams(manualDNA = []) {
     const params = {};
     if (!manualDNA.length) return params;
@@ -39,9 +151,10 @@ function extractDNAParams(manualDNA = []) {
     const keywords = manualDNA.filter(p => p.type === 'keyword').map(p => p.id);
     const countries = manualDNA.filter(p => p.type === 'country').map(p => p.id);
 
-    if (genres.length) params.with_genres = genres.join(',');
-    if (keywords.length) params.with_keywords = keywords.join(',');
-    if (countries.length) params.with_origin_country = countries.join(',');
+    // Phase 2.1: Use OR (|) instead of AND (,) for broader results
+    if (genres.length) params.with_genres = genres.join('|');
+    if (keywords.length) params.with_keywords = keywords.join('|');
+    if (countries.length) params.with_origin_country = countries.join('|');
 
     return params;
 }
@@ -61,7 +174,7 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
     const dna = settings.manualDNA || [];
     const dnaParams = extractDNAParams(dna);
 
-    const topGenres = [...profile.genreScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
+    const topGenres = computeTopGenres(profile, 3);
     const topKeywords = [...profile.keywordScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
 
     let results = [];
@@ -82,28 +195,21 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
         } catch (e) { }
     };
 
-    // Cascade 1: Super Exact (Top Genre + Top Keyword + DNA)
+    // Phase 2.1: Use OR (|) for broad results — top genres OR top keywords
     if (topGenres.length && topKeywords.length) {
         await fetchAndAdd({
             ...dnaParams,
-            with_genres: topGenres[0] + (dnaParams.with_genres ? ',' + dnaParams.with_genres : ''),
-            with_keywords: topKeywords[0] + (dnaParams.with_keywords ? ',' + dnaParams.with_keywords : '')
+            with_genres: topGenres.join('|'),
+            with_keywords: topKeywords.join('|')
         });
     }
 
-    // Cascade 2: Any Top 3 Genre + Any Top 3 Keyword + DNA
-    if (results.length < 20) {
-        const promises = [];
-        for (let g of topGenres) {
-            for (let k of topKeywords) {
-                promises.push(fetchAndAdd({
-                    ...dnaParams,
-                    with_genres: g + (dnaParams.with_genres ? ',' + dnaParams.with_genres : ''),
-                    with_keywords: k + (dnaParams.with_keywords ? ',' + dnaParams.with_keywords : '')
-                }));
-            }
-        }
-        await Promise.allSettled(promises);
+    // Cascade 2: Any Top 3 Genre + Any Top 3 Keyword + DNA (OR logic)
+    if (results.length < 20 && (topGenres.length || topKeywords.length)) {
+        const broadParams = { ...dnaParams };
+        if (topGenres.length) broadParams.with_genres = topGenres.join('|');
+        if (topKeywords.length) broadParams.with_keywords = topKeywords.join('|');
+        await fetchAndAdd(broadParams);
     }
 
     // Final score
@@ -131,7 +237,7 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
     const dna = settings.manualDNA || [];
     let dnaParams = extractDNAParams(dna);
 
-    const topGenres = [...profile.genreScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => e[0]);
+    const topGenres = computeTopGenres(profile, 5);
 
     const fetchBatch = async (params) => {
         try {
@@ -144,12 +250,10 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
     };
 
     let results = [];
-    const queries = topGenres.map(g => ({
-        ...dnaParams,
-        with_genres: g + (dnaParams.with_genres ? ',' + dnaParams.with_genres : '')
-    }));
-
-    let allResults = await Promise.allSettled(queries.map(q => fetchBatch(q)));
+    // Phase 2.1: Use OR (|) — one broad query with all top genres
+    const genreOrString = topGenres.join('|');
+    const broadQuery = genreOrString ? { ...dnaParams, with_genres: genreOrString } : { ...dnaParams };
+    let allResults = await Promise.allSettled([fetchBatch(broadQuery)]);
     allResults.forEach(r => {
         if (r.status === 'fulfilled') {
             r.value.forEach(item => {
@@ -161,8 +265,8 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
     // FALLBACK ZERO RESULTS ALGORITHM
     if (results.length === 0 && dna.length > 0) {
         console.warn(`[Fallback] Zero Blend results per ${userId}/${context}. Disattivo il DNA.`);
-        const queriesNoDNA = topGenres.map(g => ({ with_genres: g }));
-        allResults = await Promise.allSettled(queriesNoDNA.map(q => fetchBatch(q)));
+        const fallbackQuery = genreOrString ? { with_genres: genreOrString } : {};
+        allResults = await Promise.allSettled([fetchBatch(fallbackQuery)]);
         allResults.forEach(r => {
             if (r.status === 'fulfilled') {
                 r.value.forEach(item => {
@@ -213,7 +317,7 @@ async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, media
         });
     }
 
-    // Discover Popolari resinosi + DNA
+    // Discover Popolari + DNA (Phase 2.1: OR logic)
     const searchRes = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
         params: { ...dnaParams, api_key: tmdbApiKey, 'vote_average.gte': 7, sort_by: 'popularity.desc' },
         timeout: 5000
@@ -232,6 +336,261 @@ async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, media
 }
 
 /**
+ * 🎯 Hero Catalog 1: True Blend ("Scelti per Te")
+ * Unisce Top Popolari + Discovery basin (OR genres/keywords) + Simili a 5 titoli amati.
+ * Il ProfileScorer riordina il pool e il DNA penalizza i titoli fuori tema.
+ */
+async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) {
+    const [profile, user] = await Promise.all([
+        TasteProfile.findOne({ owner: userId, context }),
+        User.findOne({ userId })
+    ]);
+    if (!profile) return [];
+
+    const types = mediaType === 'movie' ? 'movie' : 'tv';
+    const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
+    const dna = settings.manualDNA || [];
+    const dnaParams = extractDNAParams(dna);
+    const dnaFilters = [...(settings.manualDNA || []), ...(settings.suggestedDNA || [])];
+
+    const topGenres = computeTopGenres(profile, 5);
+    const topKeywords = [...profile.keywordScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => e[0]);
+
+    const existingIds = new Set();
+    let pool = [];
+
+    const addResults = (items) => {
+        for (const item of (items || [])) {
+            if (item && !existingIds.has(item.id)) {
+                pool.push(item);
+                existingIds.add(item.id);
+            }
+        }
+    };
+
+    const fetchDiscover = async (params) => {
+        try {
+            const res = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
+                params: { ...params, api_key: tmdbApiKey, sort_by: 'popularity.desc' },
+                timeout: 5000
+            });
+            return res.data?.results || [];
+        } catch (_e) { return []; }
+    };
+
+    // Source 1: Top Popular (no genre filter)
+    addResults(await fetchDiscover({ ...dnaParams, sort_by: 'popularity.desc' }));
+
+    // Source 2: Discovery basin — OR on top genres + top keywords (Phase 2.1)
+    const discoveryParams = { ...dnaParams };
+    if (topGenres.length) discoveryParams.with_genres = topGenres.join('|');
+    if (topKeywords.length) discoveryParams.with_keywords = topKeywords.join('|');
+    addResults(await fetchDiscover(discoveryParams));
+
+    // Source 3: Simili a 5 titoli amati casuali dal profilo
+    const lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 5);
+    if (lovedIds.length > 0) {
+        const similarResults = await Promise.allSettled(lovedIds.map(id =>
+            axios.get(`https://api.themoviedb.org/3/${types}/${id}/recommendations`, {
+                params: { api_key: tmdbApiKey },
+                timeout: 5000
+            }).catch(() => null)
+        ));
+        similarResults.forEach(r => {
+            if (r.status === 'fulfilled' && r.value?.data?.results) {
+                addResults(r.value.data.results);
+            }
+        });
+    }
+
+    // Score and filter with ProfileScorer (DNA acts as bouncer)
+    const scored = await Promise.all(pool.map(async (item) => {
+        const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
+        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters });
+        return { data: item, score };
+    }));
+
+    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => String(i.data.id));
+}
+
+/**
+ * 🕸️ Hero Catalog 2: Super-Seed Network ("La Rete dei tuoi Preferiti")
+ * Legge dal DB: Trakt Recs (peso +3), Loved (peso +2), Liked (peso +1).
+ * Chiede TMDB /similar per ogni seed, somma i pesi (stacking).
+ */
+async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
+    const [profile, user] = await Promise.all([
+        TasteProfile.findOne({ owner: userId, context }),
+        User.findOne({ userId })
+    ]);
+    if (!profile) return [];
+
+    const types = mediaType === 'movie' ? 'movie' : 'tv';
+    const profileSettings = user?.profiles?.find(p => p.id === context)?.settings || {};
+    const dnaFilters = [...(profileSettings.manualDNA || []), ...(profileSettings.suggestedDNA || [])];
+
+    const topGenres = computeTopGenres(profile, 3);
+
+    // Gather seeds with weights
+    const lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 20).map(id => ({ id: String(id), weight: 2 }));
+    const likedIds = (user?.profiles?.find(p => p.id === context)?.liked || []).slice(0, 15).map(id => ({ id: String(id), weight: 1 }));
+
+    // Trakt recs: weight +3
+    const traktRaw = await fetchTraktRecommendationsRaw(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 10);
+    const traktIds = traktRaw
+        .map(item => ({ id: String(item.movie?.ids?.tmdb || item.show?.ids?.tmdb), weight: 3 }))
+        .filter(s => s.id && s.id !== 'undefined');
+
+    const allSeeds = [...traktIds, ...lovedIds, ...likedIds];
+    if (allSeeds.length === 0) {
+        // Fallback to signature core
+        return buildSignatureCore(userId, context, tmdbApiKey, mediaType);
+    }
+
+    // Fetch similar for all seeds, accumulate weighted counts
+    const weightedCounts = new Map(); // tmdbId -> weighted score
+    const seedTmdbIds = allSeeds.map(s => s.id);
+
+    const similarPromises = allSeeds.map(seed =>
+        axios.get(`https://api.themoviedb.org/3/${types}/${seed.id}/recommendations`, {
+            params: { api_key: tmdbApiKey },
+            timeout: 5000
+        }).then(res => ({ results: res.data?.results || [], weight: seed.weight }))
+          .catch(() => ({ results: [], weight: seed.weight }))
+    );
+
+    const allSimilar = await Promise.allSettled(similarPromises);
+    const itemData = new Map(); // tmdbId -> raw item data
+
+    allSimilar.forEach(r => {
+        if (r.status === 'fulfilled') {
+            const { results, weight } = r.value;
+            for (const item of results) {
+                const existing = weightedCounts.get(item.id) || 0;
+                weightedCounts.set(item.id, existing + weight);
+                if (!itemData.has(item.id)) itemData.set(item.id, item);
+            }
+        }
+    });
+
+    // Build items with hybrid score
+    const candidates = [];
+    for (const [tmdbId, weightedScore] of weightedCounts.entries()) {
+        const rawItem = itemData.get(tmdbId);
+        if (!rawItem) continue;
+        const itemGenres = rawItem.genre_ids || [];
+        const hybridScore = calculateHybridScore(
+            { tmdbId, position: null },
+            new Map([[tmdbId, weightedScore]]),
+            topGenres,
+            itemGenres
+        );
+        candidates.push({ data: rawItem, hybridScore });
+    }
+
+    candidates.sort((a, b) => b.hybridScore - a.hybridScore);
+
+    // Apply ProfileScorer with DNA filtering
+    const scored = await Promise.all(candidates.slice(0, 80).map(async ({ data }) => {
+        const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, data.id, types);
+        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters });
+        return { data, score };
+    }));
+
+    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => String(i.data.id));
+}
+
+/**
+ * 💎 Hero Catalog 3: Hidden Gems ("Gemme Nascoste" / Anti-Trash)
+ * Cerca titoli affini al profilo con bassa popolarità ma qualità certificata.
+ * Applica: minVotes>=100, minAvg>=7.2, Bayesian rating, esclude cortometraggi.
+ */
+async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
+    const [profile, user] = await Promise.all([
+        TasteProfile.findOne({ owner: userId, context }),
+        User.findOne({ userId })
+    ]);
+    if (!profile) return [];
+
+    const types = mediaType === 'movie' ? 'movie' : 'tv';
+    const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
+    const dna = settings.manualDNA || [];
+    const dnaParams = extractDNAParams(dna);
+    const dnaFilters = [...(settings.manualDNA || []), ...(settings.suggestedDNA || [])];
+
+    const topGenres = computeTopGenres(profile, 3);
+
+    // Quality cage: low popularity, high quality
+    const params = {
+        ...dnaParams,
+        sort_by: 'vote_average.desc',
+        'vote_count.gte': 100,
+        'vote_average.gte': 7.2,
+        'popularity.lte': 20,  // Low popularity threshold
+        api_key: tmdbApiKey
+    };
+
+    if (topGenres.length) params.with_genres = topGenres.join('|');
+    if (types === 'movie') params['with_runtime.gte'] = 60; // Exclude short films
+
+    let results = [];
+    try {
+        const res = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
+            params,
+            timeout: 5000
+        });
+        results = res.data?.results || [];
+    } catch (_e) { }
+
+    // Apply ProfileScorer with DNA filter
+    const scored = await Promise.all(results.map(async (item) => {
+        const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
+        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters });
+        return { data: item, score };
+    }));
+
+    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => String(i.data.id));
+}
+
+/**
+ * 🌐 Hero Catalog 4: Trakt Filtered ("Suggeriti dalla Community")
+ * Legge le raccomandazioni Trakt dal DB, le passa attraverso il ProfileScorer.
+ */
+async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
+    const [profile, user] = await Promise.all([
+        TasteProfile.findOne({ owner: userId, context }),
+        User.findOne({ userId })
+    ]);
+    if (!profile) return [];
+
+    const types = mediaType === 'movie' ? 'movie' : 'tv';
+    const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
+    const dnaFilters = [...(settings.manualDNA || []), ...(settings.suggestedDNA || [])];
+
+    // Fetch Trakt recommendations
+    const traktRaw = await fetchTraktRecommendationsRaw(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 40);
+    const traktTmdbIds = traktRaw
+        .map(item => item.movie?.ids?.tmdb || item.show?.ids?.tmdb)
+        .filter(Boolean);
+
+    if (traktTmdbIds.length === 0) return [];
+
+    // Enrich and score with ProfileScorer
+    const scored = await Promise.all(traktTmdbIds.map(async (id) => {
+        const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, id, types);
+        if (!details) return null;
+        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters });
+        return { data: details, score };
+    }));
+
+    return scored
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 100)
+        .map(i => String(i.data.id));
+}
+
+/**
  * Endpoint principale: gestisce la richiesta di un catalogo ibrido profilato.
  */
 async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId, activeProfileId = 'global') {
@@ -247,25 +606,40 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
             console.log(`[Hybrid] Sincronizzazione profilo per ${userId} (${context})...`);
             const history = await fetchRecentHistory(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 20);
             await ProfileBuilder.syncUserHistory(userId, context, history, tmdbApiKey);
-            catalogCache.delete(cacheKey); // Invalida cache per forzare ricalcolo al prossimo giro
+            catalogCache.delete(cacheKey); // Invalida cache per forzare ricalcolo
         }
     }).catch(err => console.error("Errore check stale profile:", err.message));
 
     let recommendationIds = catalogCache.get(cacheKey);
 
     if (!recommendationIds) {
-        const HYBRID_IDS = new Set(['yaca_signature_core_movies', 'yaca_signature_core_series', 'yaca_hybrid_movies', 'yaca_hybrid_series', 'yaca_top_genres_mix']);
+        // Hero Catalog IDs (Phase 4)
+        const TRUE_BLEND_IDS = new Set(['yaca_true_blend_movies', 'yaca_true_blend_series', 'yaca_top_genres_mix']);
+        const SEED_NETWORK_IDS = new Set(['yaca_seed_network_movies', 'yaca_seed_network_series']);
+        const HIDDEN_GEMS_IDS = new Set(['yaca_hidden_gems_movies', 'yaca_hidden_gems_series']);
+        const TRAKT_FILTERED_IDS = new Set(['yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series']);
+
+        // Legacy catalog IDs (backward compatibility)
+        const HYBRID_IDS = new Set(['yaca_signature_core_movies', 'yaca_signature_core_series', 'yaca_hybrid_movies', 'yaca_hybrid_series']);
         const DISCOVERY_IDS = new Set(['yaca_signature_blend_movies', 'yaca_signature_blend_series', 'yaca_discovery_movies', 'yaca_discovery_series']);
         const TOP20_IDS = new Set(['yaca_signature_star_movies', 'yaca_signature_star_series', 'yaca_top20_movies', 'yaca_top20_series']);
 
-        if (HYBRID_IDS.has(catalogId)) {
+        if (TRUE_BLEND_IDS.has(catalogId)) {
+            recommendationIds = await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType);
+        } else if (SEED_NETWORK_IDS.has(catalogId)) {
+            recommendationIds = await buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType);
+        } else if (HIDDEN_GEMS_IDS.has(catalogId)) {
+            recommendationIds = await buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType);
+        } else if (TRAKT_FILTERED_IDS.has(catalogId)) {
+            recommendationIds = await buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType);
+        } else if (HYBRID_IDS.has(catalogId)) {
             recommendationIds = await buildSignatureCore(userId, context, tmdbApiKey, mediaType);
         } else if (DISCOVERY_IDS.has(catalogId)) {
             recommendationIds = await buildSignatureBlend(userId, context, tmdbApiKey, mediaType);
         } else if (TOP20_IDS.has(catalogId)) {
             recommendationIds = await buildSignatureStar(userId, context, traktToken, tmdbApiKey, mediaType);
         } else {
-            recommendationIds = await buildSignatureCore(userId, context, tmdbApiKey, mediaType);
+            recommendationIds = await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType);
         }
         catalogCache.set(cacheKey, recommendationIds);
     }
@@ -303,5 +677,12 @@ module.exports = {
     getHybridCatalog,
     syncIncrementalRecommendations,
     fetchRecentHistory,
-    catalogCache
+    fetchTraktRecommendationsRaw,
+    fetchTmdbSimilarCounts,
+    calculateHybridScore,
+    computeTopGenres,
+    buildHybridCatalog,
+    buildTopGenresMixCatalog,
+    catalogCache,
+    recommendationsCache
 };
