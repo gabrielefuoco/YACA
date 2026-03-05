@@ -335,16 +335,22 @@ function interleaveResults(listA = [], listB = [], skip, limit) {
     const combined = [];
     const maxLen = Math.max(safeListA.length, safeListB.length);
     const seen = new Set();
+    const appendIfNotSeen = (item) => {
+        if (!item) return;
+        const itemId = item.id;
+        if (itemId === undefined || itemId === null) {
+            combined.push(item);
+            return;
+        }
+        if (!seen.has(itemId)) {
+            combined.push(item);
+            seen.add(itemId);
+        }
+    };
 
     for (let i = 0; i < maxLen; i++) {
-        if (safeListA[i] && !seen.has(safeListA[i].id)) {
-            combined.push(safeListA[i]);
-            seen.add(safeListA[i].id);
-        }
-        if (safeListB[i] && !seen.has(safeListB[i].id)) {
-            combined.push(safeListB[i]);
-            seen.add(safeListB[i].id);
-        }
+        appendIfNotSeen(safeListA[i]);
+        appendIfNotSeen(safeListB[i]);
     }
     return combined.slice(skip, skip + limit);
 }

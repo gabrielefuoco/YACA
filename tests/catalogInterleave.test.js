@@ -9,4 +9,9 @@ describe('catalogHandler interleaveResults', () => {
         expect(interleaveResults(null, [{ id: 'b1' }], 0, 20)).toEqual([{ id: 'b1' }]);
         expect(interleaveResults([{ id: 'a1' }], null, 0, 20)).toEqual([{ id: 'a1' }]);
     });
+
+    it('does not collapse items that have no id', () => {
+        const merged = interleaveResults([{ name: 'a' }], [{ name: 'b' }], 0, 20);
+        expect(merged).toEqual([{ name: 'a' }, { name: 'b' }]);
+    });
 });
