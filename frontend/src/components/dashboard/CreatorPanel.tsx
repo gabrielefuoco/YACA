@@ -17,7 +17,6 @@ import { generateId } from '@/lib/utils';
 const MAX_AI_CATALOG_NAME_LENGTH = 30;
 
 interface CreatorPanelProps {
-  onSaveList: (list: MyList) => void;
   onAddCatalog: (catalog: Catalog) => void;
 }
 
@@ -26,7 +25,7 @@ interface SelectedItem {
   name: string;
 }
 
-export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
+export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
   const [activeTab, setActiveTab] = useState<string>('ai');
 
   // AI tab state
@@ -182,9 +181,9 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
   const renderPills = (items: SelectedItem[], onRemove: (item: SelectedItem) => void) => (
     <div className="flex flex-wrap gap-1.5 mt-2">
       {items.map(item => (
-        <span key={item.id} className="inline-flex items-center gap-1 rounded-full bg-[#8a5aeb]/20 text-[#8a5aeb] px-2.5 py-1 text-xs font-medium border border-[#8a5aeb]/30">
+        <span key={item.id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-bold border border-primary/20">
           {item.name}
-          <button onClick={() => onRemove(item)} className="text-[#8a5aeb]/70 hover:text-[#8a5aeb] ml-0.5">
+          <button onClick={() => onRemove(item)} className="text-primary/70 hover:text-primary ml-0.5 transition-colors">
             <X className="h-3 w-3" />
           </button>
         </span>
@@ -209,15 +208,15 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
         {/* AI Tab */}
         <TabsContent value="ai" className="space-y-4 mt-4">
           <div>
-            <Label className="mb-2 block">Tipo</Label>
+            <Label className="mb-2 block text-slate-900 dark:text-slate-100 font-bold">Tipo</Label>
             <div className="flex gap-2">
               {(['movie', 'series'] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setAiType(t)}
-                  className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-colors ${aiType === t
-                    ? 'border-[#8a5aeb] bg-[#8a5aeb]/20 text-[#8a5aeb]'
-                    : 'border-white/10 bg-white/5 text-white/50 hover:text-white'
+                  className={`flex-1 rounded-lg border py-2 text-sm font-bold transition-colors shadow-sm ${aiType === t
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 hover:text-primary hover:border-primary/50'
                     }`}
                 >
                   {t === 'movie' ? '🎬 Film' : '📺 Serie'}
@@ -227,7 +226,7 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
           </div>
 
           <div className="space-y-2">
-            <Label>Descrivi il catalogo che vuoi creare</Label>
+            <Label className="block text-slate-900 dark:text-slate-100 font-bold">Descrivi il catalogo che vuoi creare</Label>
             {prompts.map((prompt, i) => (
               <div key={i} className="flex gap-2">
                 <Input
@@ -284,9 +283,9 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
         {/* Manual Tab */}
         <TabsContent value="manual" className="space-y-6 mt-4">
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="manual-name">Nome catalogo</Label>
+              <Label htmlFor="manual-name" className="text-slate-900 dark:text-slate-100 font-bold">Nome catalogo</Label>
               <Input
                 id="manual-name"
                 value={manualName}
@@ -296,15 +295,15 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
               />
             </div>
             <div>
-              <Label>Tipo</Label>
+              <Label className="text-slate-900 dark:text-slate-100 font-bold">Tipo</Label>
               <div className="flex gap-2 mt-1">
                 {(['movie', 'series'] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setManualType(t)}
-                    className={`flex-1 rounded-md border py-1.5 text-xs font-medium transition-colors ${manualType === t
-                      ? 'border-[#8a5aeb] bg-[#8a5aeb]/20 text-[#8a5aeb]'
-                      : 'border-white/10 bg-white/5 text-white/50'
+                    className={`flex-1 rounded-md border py-1.5 text-xs font-bold transition-colors ${manualType === t
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 hover:text-primary hover:border-primary/50'
                       }`}
                   >
                     {t === 'movie' ? 'Film' : 'Serie'}
@@ -314,8 +313,8 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
             </div>
           </div>
 
-          <details className="group border border-white/10 rounded-lg p-3 [&_summary::-webkit-details-marker]:hidden" open>
-            <summary className="flex cursor-pointer items-center justify-between font-medium text-white select-none">
+          <details className="group border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm [&_summary::-webkit-details-marker]:hidden" open>
+            <summary className="flex cursor-pointer items-center justify-between font-bold text-slate-900 dark:text-slate-100 select-none">
               Filtri di Base
               <span className="transition group-open:rotate-180">
                 <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
@@ -389,21 +388,21 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
             </div>
           </details>
 
-          <details className="group border border-white/10 rounded-lg p-3 [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex cursor-pointer items-center justify-between font-medium text-white select-none">
+          <details className="group border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer items-center justify-between font-bold text-slate-900 dark:text-slate-100 select-none">
               Generi
               <span className="transition group-open:rotate-180">
                 <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
               </span>
             </summary>
-            <div className="mt-3 flex flex-wrap gap-1.5">
+            <div className="mt-4 flex flex-wrap gap-2">
               {Object.entries(GENRE_NAMES).map(([id, name]) => (
                 <button
                   key={id}
                   onClick={() => toggleGenre(id)}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${genres.includes(id)
-                    ? 'bg-[#8a5aeb] text-white'
-                    : 'bg-white/10 text-white/60 hover:bg-white/20'
+                  className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors shadow-sm ${genres.includes(id)
+                    ? 'bg-primary text-white shadow-primary/20'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                     }`}
                 >
                   {name}
@@ -412,8 +411,8 @@ export function CreatorPanel({ onSaveList, onAddCatalog }: CreatorPanelProps) {
             </div>
           </details>
 
-          <details className="group border border-white/10 rounded-lg p-3 [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex cursor-pointer items-center justify-between font-medium text-white select-none">
+          <details className="group border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer items-center justify-between font-bold text-slate-900 dark:text-slate-100 select-none">
               Parole Chiave & Staff (Ricerca)
               <span className="transition group-open:rotate-180">
                 <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>

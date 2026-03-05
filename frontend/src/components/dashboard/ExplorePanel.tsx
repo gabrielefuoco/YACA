@@ -1,7 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { Preset, Profile } from '@/types';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -46,9 +45,9 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${selectedCategory === cat
-                ? 'bg-gradient-to-r from-[#8a5aeb] to-[#6d3fd4] text-white shadow-md shadow-[#8a5aeb]/20'
-                : 'bg-white/[0.06] text-white/60 hover:bg-white/[0.12] hover:text-white border border-white/[0.06]'
+              className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-all ${selectedCategory === cat
+                ? 'bg-primary text-white shadow-md shadow-primary/20'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors border border-slate-200 dark:border-slate-700'
                 }`}
             >
               {cat}
@@ -58,7 +57,7 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 shrink-0"
+          className="h-8 w-8 shrink-0 text-slate-500 hover:text-primary"
           onClick={() => setShowSearch(!showSearch)}
         >
           <Search className="h-4 w-4" />
@@ -71,13 +70,14 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cerca cataloghi..."
           autoFocus
+          className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
         />
       )}
 
       {/* Preset grid — always shows posters */}
       <div className="grid gap-8">
         {filtered.length === 0 && (
-          <div className="py-8 text-center text-sm text-white/40">
+          <div className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
             Nessun catalogo trovato
           </div>
         )}
@@ -85,17 +85,17 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
           const isSelected = selectedPresets.includes(preset.id);
 
           return (
-            <div key={preset.id} className="w-full min-w-0 p-0 flex flex-col group">
-              <div className="pb-2 px-2">
+            <div key={preset.id} className="w-full min-w-0 p-0 flex flex-col group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm overflow-hidden">
+              <div className="flex flex-col p-4 bg-slate-50 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-700/50 relative z-10">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className="text-xl shrink-0 leading-none">{preset.emoji ?? '📋'}</span>
-                    <h4 className="flex-1 truncate text-sm font-medium text-white">{preset.name}</h4>
+                    <h4 className="flex-1 truncate text-sm font-bold text-slate-900 dark:text-slate-100">{preset.name}</h4>
                     <div className="shrink-0">
                       <TypeBadge type={preset.type as 'movie' | 'series' | 'both'} />
                     </div>
                     {preset.category && (
-                      <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] px-1.5 py-0 shrink-0">
+                      <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] px-1.5 py-0 shrink-0 bg-primary/10 text-primary hover:bg-primary/20 border-0">
                         {preset.category}
                       </Badge>
                     )}
@@ -105,11 +105,12 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
                     size="sm"
                     variant={isSelected ? 'secondary' : 'default'}
                     onClick={() => onTogglePreset(preset.id)}
-                    className="h-7 px-2.5 sm:px-3 text-[11px] sm:text-xs shrink-0 ml-auto"
+                    className={`h-8 px-3 text-xs shrink-0 ml-auto font-bold ${isSelected ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20' : 'bg-primary text-white hover:brightness-110'
+                      }`}
                   >
                     {isSelected ? (
                       <>
-                        <Check className="h-3 w-3 mr-1" />
+                        <Check className="h-3.5 w-3.5 mr-1" />
                         Aggiunto
                       </>
                     ) : (
@@ -118,12 +119,12 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
                   </Button>
                 </div>
                 {preset.description && (
-                  <p className="text-xs text-white/40 mt-1 line-clamp-1 ml-7">{preset.description}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 line-clamp-2">{preset.description}</p>
                 )}
               </div>
 
               {/* Always-visible poster row */}
-              <div className="w-full min-w-0 overflow-hidden">
+              <div className="w-full min-w-0 overflow-hidden bg-white dark:bg-slate-800 p-2">
                 <PosterRow presetId={preset.id} type={preset.type} />
               </div>
             </div>

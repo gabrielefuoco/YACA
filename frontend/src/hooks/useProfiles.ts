@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Profile, Catalog } from '@/types';
 
 import { generateId } from '@/lib/utils';
@@ -39,6 +39,7 @@ export function useProfiles(initialProfiles?: Profile[]) {
   // Sync when initialProfiles changes (e.g. after async config decode or save)
   useEffect(() => {
     if (initialProfiles && initialProfiles.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setProfiles((current) => {
         // Only update if reference or length changed to avoid loop
         if (current === initialProfiles) return current;

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
@@ -22,15 +22,18 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
   const [error, setError] = useState('');
 
   const countdownRef = useRef(countdown);
-  countdownRef.current = countdown;
-
   const onSuccessRef = useRef(onSuccess);
-  onSuccessRef.current = onSuccess;
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    countdownRef.current = countdown;
+    onSuccessRef.current = onSuccess;
+    onCloseRef.current = onClose;
+  }, [countdown, onSuccess, onClose]);
 
   useEffect(() => {
     if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError('');
     setSuccess(false);
@@ -79,7 +82,7 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
           onSuccessRef.current(data.access_token, data.refresh_token ?? '');
           setTimeout(() => onCloseRef.current(), 1500);
         }
-      } catch {}
+      } catch { }
     }, 5000);
     return () => clearInterval(interval);
   }, [polling, deviceCode]);

@@ -1,5 +1,4 @@
 'use client';
-import { LayoutDashboard, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TabNavProps {
@@ -9,27 +8,27 @@ interface TabNavProps {
 
 export function TabNav({ activeTab, onTabChange }: TabNavProps) {
   const tabs = [
-    { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'settings' as const, label: 'Impostazioni', icon: Settings },
+    { id: 'dashboard' as const, label: 'Dashboard' },
+    { id: 'settings' as const, label: 'Impostazioni' },
   ];
 
   return (
-    <nav className="flex gap-1 border-b border-white/[0.06] mb-6">
-      {tabs.map(({ id, label, icon: Icon }) => (
+    <nav className="flex items-center gap-6">
+      {tabs.map(({ id, label }) => (
         <button
           key={id}
           onClick={() => onTabChange(id)}
           className={cn(
-            'flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all border-b-2 -mb-px',
+            'text-sm transition-colors flex items-center px-4 py-1.5',
             activeTab === id
-              ? 'border-[#8a5aeb] text-white'
-              : 'border-transparent text-white/40 hover:text-white/70 hover:border-white/10'
+              ? 'bg-primary text-white font-bold leading-normal rounded-full shadow-md'
+              : 'text-slate-600 dark:text-slate-400 font-medium leading-normal hover:text-primary'
           )}
         >
-          <Icon className="h-4 w-4" />
           {label}
         </button>
       ))}
     </nav>
   );
 }
+

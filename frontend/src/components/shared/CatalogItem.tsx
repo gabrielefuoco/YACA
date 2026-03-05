@@ -1,9 +1,5 @@
 'use client';
 import { Catalog } from '@/types';
-import { TypeBadge } from './TypeBadge';
-import { Button } from '@/components/ui/button';
-import { GripVertical, X } from 'lucide-react';
-import { PosterRow } from './PosterRow';
 
 interface CatalogItemProps {
   catalog: Catalog;
@@ -29,6 +25,12 @@ export function CatalogItem({
   onDrop,
   onDragEnd,
 }: CatalogItemProps) {
+  const isPreset = catalog.source === 'preset';
+  const filterCount = catalog.filters ? Object.keys(catalog.filters).length : 0;
+
+  const sourceLabel = isPreset ? 'Preset' : (catalog.source === 'mylist' ? 'My List' : 'Creato');
+  const sourceIcon = isPreset ? 'auto_awesome' : (catalog.source === 'mylist' ? 'list' : 'auto_fix');
+
   return (
     <div
       draggable
@@ -37,39 +39,48 @@ export function CatalogItem({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
-      className={`flex flex-col w-full min-w-0 transition-all duration-300 group/item ${isDragging ? 'opacity-50 scale-95' : ''
+      className={`group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 transition-all p-5 cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50 scale-95' : ''
         } ${isMergeTarget
-          ? 'scale-105 ring-4 ring-[#8a5aeb] ring-offset-4 ring-offset-black bg-[#8a5aeb]/20 z-10 animate-pulse shadow-[0_0_20px_rgba(138,90,235,0.4)]'
+          ? 'scale-105 ring-4 ring-primary ring-offset-4 ring-offset-background-light dark:ring-offset-background-dark bg-primary/10 z-10 animate-pulse'
           : ''
         }`}
     >
-      <div className="flex items-center gap-3 px-2 pb-2 w-full">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <GripVertical className="h-4 w-4 text-white/20 cursor-grab shrink-0 hover:text-white/40 transition-colors" />
-          <span className="text-xl shrink-0 leading-none">{catalog.emoji ?? '📋'}</span>
-          <span className="text-sm font-medium text-white truncate">{catalog.name}</span>
-          <div className="shrink-0">
-            <TypeBadge type={catalog.type as any} />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none"></div>
+
+      <div className="flex items-start justify-between mb-4 relative z-10">
+        <div className="flex gap-4 items-center">
+          <div className="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shadow-inner">
+            <span className="text-2xl">{catalog.emoji ?? '📋'}</span>
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg leading-tight line-clamp-1">{catalog.name}</h3>
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+              <span className="material-symbols-outlined text-[10px]">{sourceIcon}</span> {sourceLabel}
+            </span>
           </div>
         </div>
         {onRemove && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 shrink-0 text-white/30 hover:text-red-400 hover:bg-red-400/10"
+          <button
             onClick={onRemove}
+            className="text-slate-400 hover:text-rose-500 transition-colors p-2 -mr-2 -mt-2"
           >
-            <X className="h-3.5 w-3.5" />
-          </Button>
+            <span className="material-symbols-outlined text-[20px]">delete</span>
+          </button>
         )}
       </div>
-      <div className="max-w-full overflow-hidden">
-        <PosterRow
-          presetId={catalog.source === 'preset' ? catalog.id : undefined}
-          filters={catalog.filters}
-          type={catalog.type}
-          prompt={catalog.raw_prompt}
-        />
+
+      <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-4 relative z-10">
+        {catalog.raw_prompt || 'Catalogo basato su filtri e preferenze per risultati personalizzati.'}
+      </p>
+
+      <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <span className="material-symbols-outlined text-sm">{catalog.type === 'movie' ? 'movie' : 'tv'}</span>
+          {filterCount} Filtr{filterCount !== 1 ? 'i' : 'o'}
+        </div>
+        <button className="flex items-center gap-1 text-xs font-bold text-primary hover:text-primary/70 transition-colors">
+          Personalizza <span className="material-symbols-outlined text-sm">arrow_forward</span>
+        </button>
       </div>
     </div>
   );

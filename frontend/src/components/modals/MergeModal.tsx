@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,16 +24,8 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
   const [namingLoading, setNamingLoading] = useState(false);
   const [previewItems, setPreviewItems] = useState<Array<{ id: string; title: string; poster?: string }>>([]);
 
-  // Auto-preview when strategy changes
-  useEffect(() => {
-    if (open && catalogA && catalogB) {
-      handlePreview();
-    }
-  }, [strategy, open]);
-
-  if (!catalogA || !catalogB) return null;
-
-  const handlePreview = async () => {
+  const handlePreview = useCallback(async () => {
+    if (!catalogA || !catalogB) return;
     setLoading(true);
     try {
       const data = await api.previewCatalog({
@@ -45,7 +37,17 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
       setPreviewItems(data.items ?? []);
     } catch { }
     setLoading(false);
-  };
+  }, [catalogA, catalogB, strategy]);
+
+  // Auto-preview when strategy changes
+  useEffect(() => {
+    if (open && catalogA && catalogB) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      handlePreview();
+    }
+  }, [strategy, open, catalogA, catalogB, handlePreview]);
+
+  if (!catalogA || !catalogB) return null;
 
   const handleAiNaming = async () => {
     if (!catalogA || !catalogB) return;
@@ -123,8 +125,8 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
               <button
                 onClick={() => setStrategy('mixed')}
                 className={`flex flex-col items-start p-4 rounded-xl border transition-all relative overflow-hidden group ${strategy === 'mixed'
-                    ? 'border-[#8a5aeb] bg-[#8a5aeb]/10 text-white'
-                    : 'border-white/5 bg-white/[0.02] text-white/50 hover:bg-white/[0.05] hover:text-white'
+                  ? 'border-[#8a5aeb] bg-[#8a5aeb]/10 text-white'
+                  : 'border-white/5 bg-white/[0.02] text-white/50 hover:bg-white/[0.05] hover:text-white'
                   }`}
               >
                 <div className={`mb-2 p-1.5 rounded-lg ${strategy === 'mixed' ? 'bg-[#8a5aeb] text-white' : 'bg-white/10 text-white/40 group-hover:bg-white/20'}`}>
@@ -138,8 +140,8 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
               <button
                 onClick={() => setStrategy('popularity')}
                 className={`flex flex-col items-start p-4 rounded-xl border transition-all relative overflow-hidden group ${strategy === 'popularity'
-                    ? 'border-[#8a5aeb] bg-[#8a5aeb]/10 text-white'
-                    : 'border-white/5 bg-white/[0.02] text-white/50 hover:bg-white/[0.05] hover:text-white'
+                  ? 'border-[#8a5aeb] bg-[#8a5aeb]/10 text-white'
+                  : 'border-white/5 bg-white/[0.02] text-white/50 hover:bg-white/[0.05] hover:text-white'
                   }`}
               >
                 <div className={`mb-2 p-1.5 rounded-lg ${strategy === 'popularity' ? 'bg-[#8a5aeb] text-white' : 'bg-white/10 text-white/40 group-hover:bg-white/20'}`}>

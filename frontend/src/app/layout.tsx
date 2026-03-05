@@ -13,16 +13,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="it" className="dark">
-      <body className="antialiased min-h-screen bg-[#0a0a0f] text-white">
-        {/* Background blobs */}
-        <div className="fixed top-0 left-0 w-[700px] h-[700px] -translate-x-1/3 -translate-y-1/3 rounded-full bg-[#8a5aeb]/8 blur-[120px] pointer-events-none" />
-        <div className="fixed bottom-0 right-0 w-[700px] h-[700px] translate-x-1/3 translate-y-1/3 rounded-full bg-blue-600/6 blur-[120px] pointer-events-none" />
-        <div className="fixed top-1/2 left-1/2 w-[400px] h-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#8a5aeb]/4 blur-[100px] pointer-events-none" />
-        <div className="relative z-10">
-          {children}
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
+      </head>
+      <body className="antialiased font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+          <div className="layout-container flex h-full grow flex-col">
+            {children}
+          </div>
         </div>
       </body>
     </html>
   );
 }
-

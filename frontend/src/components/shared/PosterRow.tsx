@@ -18,6 +18,7 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
   const requestKey = JSON.stringify({ presetId, filters, type, prompt });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setItems([]);
     setLoaded(false);
   }, [requestKey]);
@@ -50,7 +51,7 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
       {loading && (
         <div className="flex max-w-full gap-2 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-32 w-[86px] shrink-0 animate-pulse rounded-lg bg-white/[0.06]" />
+            <div key={i} className="h-32 w-[86px] shrink-0 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800/40" />
           ))}
         </div>
       )}
@@ -66,7 +67,7 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
                   className="h-[147px] w-[99px] rounded-lg object-cover transition-transform duration-200 group-hover/poster:scale-105 shadow-md shadow-black/30"
                 />
               ) : (
-                <div className="flex h-[147px] w-[99px] items-center justify-center rounded-lg bg-white/[0.06] text-xs text-white/40 border border-white/[0.06]">
+                <div className="flex h-[147px] w-[99px] items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/40 text-xs text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700/50">
                   {item.title.slice(0, 2)}
                 </div>
               )}
@@ -79,7 +80,7 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
         </div>
       )}
       {!loading && loaded && items.length === 0 && (
-        <p className="text-xs text-white/30 py-2 italic">Nessun risultato</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 py-4 text-center italic">Nessun risultato</p>
       )}
     </div>
   );

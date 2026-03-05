@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Profile, Catalog, Preset } from '@/types';
 import { CatalogItem } from '@/components/shared/CatalogItem';
 import { MergeModal } from '@/components/modals/MergeModal';
-import { Button } from '@/components/ui/button';
 import { Layers } from 'lucide-react';
 
 interface ActiveCatalogsPanelProps {
@@ -135,22 +134,22 @@ export function ActiveCatalogsPanel({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider">
-          Cataloghi Attivi ({catalogs.length})
+        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+          I tuoi Cataloghi ({catalogs.length})
         </h3>
         {catalogs.length > 1 && (
-          <p className="text-xs text-white/30">Shift + trascina per unire</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Trascina per riordinare &bull; Shift + trascina per unire</p>
         )}
       </div>
 
       {catalogs.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/[0.08] p-10 text-center">
-          <Layers className="mx-auto h-10 w-10 text-white/15 mb-3" />
-          <p className="text-sm text-white/40 font-medium">Nessun catalogo attivo</p>
-          <p className="text-xs text-white/20 mt-1.5">Aggiungi cataloghi dalla sezione Esplora</p>
+        <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700/50 p-12 text-center bg-slate-50 dark:bg-slate-800/20">
+          <Layers className="mx-auto h-12 w-12 text-slate-400 dark:text-slate-500 mb-4" />
+          <p className="text-base font-bold text-slate-900 dark:text-slate-100">Nessun catalogo attivo</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Aggiungi cataloghi dalla sezione Esplora o creane uno nuovo.</p>
         </div>
       ) : (
-        <div className="grid gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
           {catalogs.map((catalog, index) => (
             <CatalogItem
               key={catalog.id}
@@ -173,11 +172,11 @@ export function ActiveCatalogsPanel({
 
       {/* My Lists */}
       {myLists.length > 0 && (
-        <div className="pt-4 border-t border-white/10">
-          <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-3">
+        <div className="pt-8 border-t border-slate-200 dark:border-slate-700/50">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">
             Le Mie Liste ({myLists.length})
           </h3>
-          <div className="grid gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
             {myLists.map((catalog, index) => (
               <CatalogItem
                 key={catalog.id}

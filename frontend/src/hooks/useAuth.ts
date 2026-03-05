@@ -12,6 +12,7 @@ export function useAuth() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.STREMIO_AUTH);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (raw) setStremioAuthState(JSON.parse(raw));
     } catch { }
     setTraktTokenState(localStorage.getItem(LOCAL_STORAGE_KEYS.TRAKT_TOKEN));

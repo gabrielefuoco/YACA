@@ -272,17 +272,19 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen py-6 px-4">
-      <div className="mx-auto w-full max-w-4xl xl:max-w-5xl">
-        {/* Glass panel */}
-        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl shadow-2xl shadow-black/20 p-4 sm:p-6">
-          <Header />
+    <>
+      <Header>
+        {isLoggedIn && (
+          <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+        )}
+      </Header>
 
+      <main className="flex flex-1 justify-center py-8">
+        <div className="layout-content-container flex flex-col w-full max-w-[1200px] px-6 md:px-10 gap-8">
           {!isLoggedIn ? (
             <LoginPage onComplete={handleLoginComplete} />
           ) : (
             <>
-              <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
               {activeTab === 'dashboard' && (
                 <DashboardPage
@@ -327,7 +329,7 @@ export default function Home() {
             </>
           )}
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }
