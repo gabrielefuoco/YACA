@@ -329,20 +329,28 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
  * Interseca due liste di risultati alternandoli (interleaving).
  * Deduplica per ID.
  */
-function interleaveResults(listA, listB, skip, limit) {
+function interleaveResults(listA = [], listB = [], skip, limit) {
+    const safeListA = Array.isArray(listA) ? listA : [];
+    const safeListB = Array.isArray(listB) ? listB : [];
     const combined = [];
-    const maxLen = Math.max(listA.length, listB.length);
+    const maxLen = Math.max(safeListA.length, safeListB.length);
     const seen = new Set();
+    const appendIfNotSeen = (item) => {
+        if (!item) return;
+        const itemId = item.id;
+        if (itemId === undefined || itemId === null) {
+            combined.push(item);
+            return;
+        }
+        if (!seen.has(itemId)) {
+            combined.push(item);
+            seen.add(itemId);
+        }
+    };
 
     for (let i = 0; i < maxLen; i++) {
-        if (listA[i] && !seen.has(listA[i].id)) {
-            combined.push(listA[i]);
-            seen.add(listA[i].id);
-        }
-        if (listB[i] && !seen.has(listB[i].id)) {
-            combined.push(listB[i]);
-            seen.add(listB[i].id);
-        }
+        appendIfNotSeen(safeListA[i]);
+        appendIfNotSeen(safeListB[i]);
     }
     return combined.slice(skip, skip + limit);
 }
@@ -518,7 +526,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
         // Risoluzione metadati catalogo (Preset o Lista Utente)
         let catalogMeta = presetsList.find(p => p.id === baseId);
-        if (!catalogMeta && (id.length === 21 || id.length === 24)) { // Lunghezza tipica nanoid o ObjectId
+        if (!catalogMeta && (id?.length === 21 || id?.length === 24)) { // Lunghezza tipica nanoid o ObjectId
             catalogMeta = await UserList.findOne({ listId: id }).lean();
         }
 
@@ -835,8 +843,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
                             catalogHandler({ type, id: sourceIds[1], extra: { ...extra, skip: 0, limit: fetchLimit } }, userConfig, hostUrl)
                         ]);
 
-                        const listA = resA.metas || [];
-                        const listB = resB.metas || [];
+                        const listA = Array.isArray(resA?.metas) ? resA.metas : [];
+                        const listB = Array.isArray(resB?.metas) ? resB.metas : [];
 
                         if (strategy === 'mixed') {
                             results = interleaveResults(listA, listB, skip, 20);
@@ -942,4 +950,4 @@ async function catalogHandler(args, userConfig, hostUrl) {
     }
 }
 
-module.exports = { catalogHandler, buildDiscoveryParams };
+module.exports = { catalogHandler, buildDiscoveryParams, interleaveResults };

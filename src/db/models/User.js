@@ -56,6 +56,8 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
+userSchema.index({ 'apiKeys.stremio': 1 }, { unique: true, sparse: true });
+
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
