@@ -171,6 +171,39 @@ app.post('/api/preview-catalog', async (req, res) => {
         }
     }
 
+    // Caso speciale: MERGE catalog preview
+    if (customFilters?.merge) {
+        try {
+            const previewData = await catalogHandler(
+                {
+                    type: customType || 'movie',
+                    id: null,
+                    filters: customFilters,
+                    extra: { skip: 0 }
+                },
+                { apiKeys: { tmdb: sanitizedTmdbKey, mistral: mistralKey } },
+                `${req.protocol}://${req.get('host')}`
+            );
+
+            const items = (previewData.metas || []).slice(0, 20).map(item => ({
+                id: item.id,
+                title: item.name || '',
+                poster: item.poster || null,
+                vote: item.vote_average || item.imdbRating || 0,
+                year: item.releaseInfo || ''
+            }));
+
+            return res.json({
+                items,
+                filters: customFilters,
+                type: customType || 'movie'
+            });
+        } catch (err) {
+            console.error("Errore preview merge:", err);
+            return res.status(500).json({ error: 'Errore nel generare anteprima merge' });
+        }
+    }
+
     try {
         let tmdbRes;
         if (strategy === 'multi_search') {

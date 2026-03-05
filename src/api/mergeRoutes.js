@@ -17,7 +17,7 @@ async function generateMergedName(req, res) {
 
     try {
         const client = new Mistral({ apiKey: mistralKey });
-        const prompt = `Sei un esperto di cinema. Crea un nome creativo e accattivante (max 3 parole) che unisca i temi di: "${nameA}" e "${nameB}". Rispondi solo con il nome, senza introduzioni o virgolette.`;
+        const prompt = `Sei un appassionato di cinema e anime. Suggerisci un nome semplice e naturale (max 3 parole) per una lista che contiene sia "${nameA}" che "${nameB}". Evita toni troppo epici o commerciali. Rispondi solo con il nome, senza introduzioni o virgolette.`;
 
         const response = await client.chat.complete({
             model: "mistral-small-latest",

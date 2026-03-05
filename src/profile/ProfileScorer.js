@@ -82,58 +82,6 @@ class ProfileScorer {
         return Math.min(Math.max(normalizedScore, 0), 10);
     }
 
-
-    /**
-     * Applica il filtro Diversity Cap a una lista di item TMDB.
-     * @param {Array} items Lista di oggetti { data: tmdbData, score: Number }
-     * @param {Object} options { genreCap: 0.5, studioCap: 3 }
-     * @returns {Array} Lista riordinata
-     */
-    static applyDiversityCaps(items, options = { genreCap: 0.5, studioCap: 3, directorCap: 3 }) {
-        const sorted = [...items].sort((a, b) => b.score - a.score);
-        const result = [];
-        const overflow = [];
-
-        const genreCounts = {};
-        const studioCounts = {};
-        const directorCounts = {};
-
-        const pageSize = 20; // Analizziamo per "pagine" virtuali
-
-        sorted.forEach((item, index) => {
-            const data = item.data;
-            let skip = false;
-
-            // Genre Cap (supporta sia genres:[{id}] che genre_ids:[int])
-            const primaryGenre = data.genres?.[0]?.id || data.genre_ids?.[0];
-            if (primaryGenre) {
-                genreCounts[primaryGenre] = (genreCounts[primaryGenre] || 0) + 1;
-                if (genreCounts[primaryGenre] > (pageSize * options.genreCap)) skip = true;
-            }
-
-            // Studio Cap
-            if (data.production_companies && data.production_companies.length > 0) {
-                data.production_companies.forEach(s => {
-                    studioCounts[s.id] = (studioCounts[s.id] || 0) + 1;
-                    if (studioCounts[s.id] > options.studioCap) skip = true;
-                });
-            }
-
-            // Director Cap
-            if (data.credits && data.credits.crew) {
-                const director = data.credits.crew.find(c => c.job === 'Director');
-                if (director) {
-                    directorCounts[director.id] = (directorCounts[director.id] || 0) + 1;
-                    if (directorCounts[director.id] > options.directorCap) skip = true;
-                }
-            }
-
-            if (skip) overflow.push(item);
-            else result.push(item);
-        });
-
-        return [...result, ...overflow];
-    }
 }
 
 module.exports = ProfileScorer;

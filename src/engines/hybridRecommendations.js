@@ -178,7 +178,7 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
         return { data: item, score };
     }));
 
-    const final = ProfileScorer.applyDiversityCaps(scored);
+    const final = scored.sort((a, b) => b.score - a.score);
     return final.slice(0, 60).map(i => String(i.data.id));
 }
 

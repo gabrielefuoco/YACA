@@ -483,19 +483,20 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
  */
 async function catalogHandler(args, userConfig, hostUrl) {
     try {
-        const { type, id, extra } = args;
+        const { type, id, extra, filters: directFilters } = args;
         const skip = extra.skip || 0;
         const search = extra.search || null;
         const sortBy = extra.sortBy || null;
 
         let results = [];
 
-        if (!userConfig) throw new Error("Configurazione utente mancante");
+        // Preview mode: minimal userConfig if missing
+        const effectiveUserConfig = userConfig || { apiKeys: { tmdb: process.env.TMDB_API_KEY, mistral: process.env.MISTRAL_API_KEY } };
 
-        const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
-        if (!tmdbApiKey) throw new Error("TMDB API key mancante nella configurazione utente");
+        const tmdbApiKey = effectiveUserConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
+        if (!tmdbApiKey) throw new Error("TMDB API key mancante");
 
-        const mistralKey = userConfig.apiKeys?.mistral || process.env.MISTRAL_API_KEY;
+        const mistralKey = effectiveUserConfig.apiKeys?.mistral || process.env.MISTRAL_API_KEY;
         const tmdbClient = createTmdbClient(tmdbApiKey);
 
         // Recupera impostazioni del profilo attivo
@@ -507,10 +508,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 activeProfileSettings = profileDoc.settings;
             }
         }
-        const cacheOptions = { cacheTtlMs: getCatalogCacheTtlMs(id, activeProfileSettings) };
+        const cacheOptions = { cacheTtlMs: getCatalogCacheTtlMs(id || 'preview', activeProfileSettings) };
 
         // Pulisce l'ID nel caso arrivi come Preset dalla Dashboard
-        const baseId = id.startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : id;
+        const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
 
         // Carica i preset con date dinamiche (ricalcolate ad ogni richiesta)
         const presetsList = getPresets();
@@ -814,8 +815,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
             return { metas: results };
         }
 
-        if (catalogMeta) {
-            let filters = catalogMeta.filters;
+        if (catalogMeta || directFilters) {
+            let filters = directFilters || catalogMeta.filters;
 
             if (filters) {
                 // ==========================================

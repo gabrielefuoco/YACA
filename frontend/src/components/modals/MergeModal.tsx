@@ -1,14 +1,13 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Catalog } from '@/types';
 import { TypeBadge } from '@/components/shared/TypeBadge';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, Wand2, RotateCcw, Check } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Badge } from '@/components/ui/badge';
 
 interface MergeModalProps {
   open: boolean;
@@ -24,6 +23,13 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
   const [loading, setLoading] = useState(false);
   const [namingLoading, setNamingLoading] = useState(false);
   const [previewItems, setPreviewItems] = useState<Array<{ id: string; title: string; poster?: string }>>([]);
+
+  // Auto-preview when strategy changes
+  useEffect(() => {
+    if (open && catalogA && catalogB) {
+      handlePreview();
+    }
+  }, [strategy, open]);
 
   if (!catalogA || !catalogB) return null;
 
@@ -69,124 +75,156 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl bg-[#0a0a0b] border-white/10 shadow-2xl">
         <DialogHeader>
-          <DialogTitle>🔀 Smart Merge</DialogTitle>
-          <DialogDescription>Unisci due cataloghi in uno solo</DialogDescription>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="p-2 bg-[#8a5aeb]/20 rounded-lg text-[#8a5aeb]">
+              <Wand2 className="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-xl font-bold text-white">Smart Merge</DialogTitle>
+              <DialogDescription className="text-white/50 text-sm">
+                Crea una lista intelligente unendo due cataloghi
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Catalogs summary */}
-          <div className="grid grid-cols-2 gap-2">
-            {[catalogA, catalogB].map((cat) => (
-              <div key={cat.id} className="rounded-lg border border-white/10 bg-white/5 p-3">
-                <p className="text-xs text-white/40 mb-1">Catalogo</p>
-                <div className="flex items-center gap-2">
-                  <span>{cat.emoji ?? '📋'}</span>
-                  <span className="text-sm font-medium text-white truncate">{cat.name}</span>
-                </div>
-                <div className="mt-1">
-                  <TypeBadge type={cat.type} />
-                </div>
+        <div className="grid gap-6 py-4">
+          {/* Catalogs comparison */}
+          <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/5 relative">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">{catalogA.emoji ?? '📋'}</span>
+                <span className="text-sm font-semibold text-white truncate">{catalogA.name}</span>
               </div>
-            ))}
+              <TypeBadge type={catalogA.type} />
+            </div>
+
+            <div className="flex flex-col items-center justify-center px-2">
+              <div className="w-8 h-8 rounded-full bg-[#8a5aeb] flex items-center justify-center text-white font-bold shadow-lg shadow-[#8a5aeb]/20">
+                +
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-0 text-right">
+              <div className="flex items-center gap-2 justify-end mb-1">
+                <span className="text-sm font-semibold text-white truncate">{catalogB.name}</span>
+                <span className="text-lg">{catalogB.emoji ?? '📋'}</span>
+              </div>
+              <TypeBadge type={catalogB.type} />
+            </div>
           </div>
 
-          {/* Strategy selector */}
-          <div>
-            <Label className="mb-2 block text-xs text-white/50">Ordinamento della lista</Label>
-            <div className="grid grid-cols-2 gap-2">
+          {/* Strategy configuration */}
+          <div className="space-y-3">
+            <Label className="text-xs uppercase tracking-wider text-white/40 font-bold ml-1">Strategia di Unione</Label>
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setStrategy('mixed')}
-                className={`flex flex-col items-center justify-center rounded-xl border p-4 transition-all ${strategy === 'mixed'
-                    ? 'border-[#8a5aeb] bg-[#8a5aeb]/20 text-[#8a5aeb] ring-1 ring-[#8a5aeb]'
-                    : 'border-white/5 bg-white/[0.03] text-white/40 hover:bg-white/[0.05] hover:text-white'
+                className={`flex flex-col items-start p-4 rounded-xl border transition-all relative overflow-hidden group ${strategy === 'mixed'
+                    ? 'border-[#8a5aeb] bg-[#8a5aeb]/10 text-white'
+                    : 'border-white/5 bg-white/[0.02] text-white/50 hover:bg-white/[0.05] hover:text-white'
                   }`}
               >
-                <div className="text-xl mb-1">🔀</div>
-                <span className="text-sm font-semibold">Misto</span>
-                <span className="text-[10px] opacity-60">Alternato 1 a 1</span>
+                <div className={`mb-2 p-1.5 rounded-lg ${strategy === 'mixed' ? 'bg-[#8a5aeb] text-white' : 'bg-white/10 text-white/40 group-hover:bg-white/20'}`}>
+                  <RotateCcw className="h-4 w-4" />
+                </div>
+                <span className="text-sm font-bold">Misto</span>
+                <span className="text-[11px] opacity-60 leading-tight mt-1">Alterna i titoli delle due liste (1 a 1)</span>
+                {strategy === 'mixed' && <div className="absolute top-3 right-3"><Check className="h-4 w-4 text-[#8a5aeb]" /></div>}
               </button>
 
               <button
                 onClick={() => setStrategy('popularity')}
-                className={`flex flex-col items-center justify-center rounded-xl border p-4 transition-all ${strategy === 'popularity'
-                    ? 'border-[#8a5aeb] bg-[#8a5aeb]/20 text-[#8a5aeb] ring-1 ring-[#8a5aeb]'
-                    : 'border-white/5 bg-white/[0.03] text-white/40 hover:bg-white/[0.05] hover:text-white'
+                className={`flex flex-col items-start p-4 rounded-xl border transition-all relative overflow-hidden group ${strategy === 'popularity'
+                    ? 'border-[#8a5aeb] bg-[#8a5aeb]/10 text-white'
+                    : 'border-white/5 bg-white/[0.02] text-white/50 hover:bg-white/[0.05] hover:text-white'
                   }`}
               >
-                <div className="text-xl mb-1">🔥</div>
-                <span className="text-sm font-semibold">Popolare</span>
-                <span className="text-[10px] opacity-60">I più votati</span>
+                <div className={`mb-2 p-1.5 rounded-lg ${strategy === 'popularity' ? 'bg-[#8a5aeb] text-white' : 'bg-white/10 text-white/40 group-hover:bg-white/20'}`}>
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <span className="text-sm font-bold">Popolarità</span>
+                <span className="text-[11px] opacity-60 leading-tight mt-1">Ordina per voto e popolarità globale</span>
+                {strategy === 'popularity' && <div className="absolute top-3 right-3"><Check className="h-4 w-4 text-[#8a5aeb]" /></div>}
               </button>
             </div>
           </div>
 
-          {/* Name input */}
-          <div>
-            <Label htmlFor="merge-name">Nome del nuovo catalogo</Label>
-            <div className="flex gap-2 mt-1">
-              <div className="relative flex-1">
-                <Input
-                  id="merge-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={`${catalogA.name} + ${catalogB.name}`}
-                  className="pr-10"
-                />
-                <button
-                  onClick={handleAiNaming}
-                  disabled={namingLoading}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-[#8a5aeb] transition-colors disabled:opacity-50"
-                  title="Genera nome con AI"
-                >
-                  {namingLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0 text-white/40 hover:text-white"
-                onClick={() => setName(`${catalogA.name} + ${catalogB.name}`)}
-                title="Ripristina nome predefinito"
+          {/* Name customization */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between ml-1">
+              <Label htmlFor="merge-name" className="text-xs uppercase tracking-wider text-white/40 font-bold">Nome della Lista</Label>
+              <button
+                onClick={handleAiNaming}
+                disabled={namingLoading}
+                className="flex items-center gap-1.5 text-[11px] text-[#8a5aeb] font-bold hover:brightness-125 transition-all disabled:opacity-50"
               >
-                ↺
-              </Button>
+                {namingLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                GENERA CON AI
+              </button>
+            </div>
+            <div className="relative group">
+              <Input
+                id="merge-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={`${catalogA.name} + ${catalogB.name}`}
+                className="bg-white/[0.03] border-white/10 focus:border-[#8a5aeb] h-11 px-4 text-sm rounded-xl"
+              />
             </div>
           </div>
 
-          {/* Preview */}
-          {previewItems.length > 0 && (
-            <div>
-              <p className="text-xs text-white/50 mb-2">{previewItems.length} risultati</p>
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {previewItems.slice(0, 8).map((item) => (
-                  item.poster ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img key={item.id} src={item.poster} alt={item.title} className="h-20 w-14 shrink-0 rounded object-cover" />
-                  ) : (
-                    <div key={item.id} className="h-20 w-14 shrink-0 rounded bg-white/10 flex items-center justify-center text-xs text-white/40">
-                      {item.title.slice(0, 2)}
+          {/* Preview Section */}
+          <div className="space-y-3">
+            <Label className="text-xs uppercase tracking-wider text-white/40 font-bold ml-1">Anteprima Risultati</Label>
+            <div className="relative min-h-[140px] rounded-xl bg-black/40 border border-white/5 p-4 overflow-hidden">
+              {loading ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-10 transition-opacity">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#8a5aeb]" />
+                    <span className="text-[10px] text-white/50 uppercase tracking-widest">Sincronizzazione...</span>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                {previewItems.length > 0 ? (
+                  previewItems.slice(0, 10).map((item) => (
+                    <div key={item.id} className="flex-shrink-0 group/poster">
+                      <div className="relative h-36 w-24 rounded-lg overflow-hidden border border-white/10 group-hover/poster:border-[#8a5aeb]/50 transition-all">
+                        {item.poster ? (
+                          <img src={item.poster} alt={item.title} className="h-full w-full object-cover group-hover/poster:scale-110 transition-transform duration-500" />
+                        ) : (
+                          <div className="h-full w-full bg-white/5 flex items-center justify-center text-[10px] text-white/20 p-2 text-center font-medium">
+                            {item.title}
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/poster:opacity-100 transition-opacity" />
+                      </div>
                     </div>
-                  )
-                ))}
+                  ))
+                ) : (
+                  <div className="w-full flex flex-col items-center justify-center py-8 text-white/20">
+                    <p className="text-sm italic">Nessun titolo trovato</p>
+                  </div>
+                )}
               </div>
             </div>
-          )}
-
-          <Button variant="outline" onClick={handlePreview} disabled={loading} className="w-full">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Anteprima
-          </Button>
+          </div>
         </div>
 
-        <DialogFooter className="gap-2">
-          <Button variant="ghost" onClick={onClose}>Annulla</Button>
-          <Button onClick={handleConfirm}>✅ Conferma Merge</Button>
+        <DialogFooter className="gap-3 sm:gap-0 mt-2 pt-4 border-t border-white/5">
+          <Button variant="ghost" onClick={onClose} className="hover:bg-white/5 text-white/70">
+            Annulla
+          </Button>
+          <Button
+            onClick={handleConfirm}
+            className="bg-[#8a5aeb] hover:bg-[#7a49db] text-white px-8 font-bold rounded-xl shadow-lg shadow-[#8a5aeb]/20"
+          >
+            Crea Lista Unita
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
