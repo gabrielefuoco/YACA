@@ -4,6 +4,8 @@ import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { api } from '@/lib/api';
 import { X, BrainCircuit } from 'lucide-react';
 
+const TEMPLATE_DNA_REFRESH_DELAY_MS = 600;
+
 interface ProfileSettingsPanelProps {
     profile: Profile;
     profileTemplates: ProfileTemplate[];
@@ -61,7 +63,7 @@ export function ProfileSettingsPanel({
         onApplyTemplate(template);
         setTimeout(() => {
             window.location.reload();
-        }, 600);
+        }, TEMPLATE_DNA_REFRESH_DELAY_MS);
     };
 
     return (

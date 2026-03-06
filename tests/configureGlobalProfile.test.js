@@ -13,7 +13,8 @@ jest.mock('../src/ai/router', () => ({
 jest.mock('../src/data/presets', () => ({
     getPresets: () => [
         { id: 'preset_thriller', filters: { with_keywords: '111', with_genres: '53' } },
-        { id: 'preset_docs', filters: { with_keywords: '222', with_genres: '99' } }
+        { id: 'preset_docs', filters: { with_keywords: '222', with_genres: '99' } },
+        { id: 'preset_mix', filters: { with_keywords: '111|333', with_genres: '53|18' } }
     ]
 }));
 
@@ -120,5 +121,37 @@ describe('configure route global profile safeguards', () => {
         expect(profile.settings.suggestedDNA).toEqual([
             { id: '222', type: 'keyword', name: 'Keyword 222' }
         ]);
+    });
+
+    it('deduplicates suggestedDNA across multiple active presets', async () => {
+        const req = {
+            protocol: 'http',
+            get: jest.fn(() => 'localhost:7000'),
+            body: {
+                activeProfileId: 'p1',
+                profiles: [{
+                    id: 'p1',
+                    name: 'Profilo',
+                    selectedPresets: ['preset_thriller', 'preset_mix'],
+                    existingCatalogs: [],
+                    newPrompts: [],
+                    settings: { manualDNA: [] }
+                }]
+            }
+        };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await configureRoute(req, res);
+
+        const payload = UserConfig.saveUser.mock.calls[0][0];
+        const profile = payload.profiles.find((p) => p.id === 'p1');
+        expect(profile.settings.suggestedDNA).toEqual(expect.arrayContaining([
+            { id: '53', type: 'genre', name: 'Genre 53' },
+            { id: '18', type: 'genre', name: 'Genre 18' },
+            { id: '111', type: 'keyword', name: 'Keyword 111' },
+            { id: '333', type: 'keyword', name: 'Keyword 333' }
+        ]));
+        expect(profile.settings.suggestedDNA.filter((item) => item.type === 'genre' && item.id === '53')).toHaveLength(1);
+        expect(profile.settings.suggestedDNA.filter((item) => item.type === 'keyword' && item.id === '111')).toHaveLength(1);
     });
 });
