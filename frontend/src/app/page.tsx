@@ -203,18 +203,25 @@ export default function Home() {
   const handleLoginComplete = async (
     newStremioAuth: StremioAuth | null,
     newTraktToken: string | null,
-    newTraktRefreshToken: string | null
+    newTraktRefreshToken: string | null,
+    existingUserId?: string
   ) => {
     if (newStremioAuth) setStremioAuth(newStremioAuth);
     if (newTraktToken) setTraktToken(newTraktToken);
     if (newTraktRefreshToken) setTraktRefreshToken(newTraktRefreshToken);
+
+    // If an existing userId was returned from check-user, set it immediately
+    if (existingUserId) {
+      setUserId(existingUserId);
+      localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, existingUserId);
+    }
 
     // Generate initial config
     try {
       const data = await api.configure({
         profiles: profilesToApiPayload(profiles),
         activeProfileId,
-        userId: userId ?? undefined,
+        userId: existingUserId || (userId ?? undefined),
         stremioAuthKey: newStremioAuth?.authKey,
         traktToken: newTraktToken,
         traktRefreshToken: newTraktRefreshToken,
@@ -295,10 +302,18 @@ export default function Home() {
 
   const handleLogout = () => {
     logout();
-    localStorage.removeItem(LOCAL_STORAGE_KEYS.USER_ID);
+    // Aggressively clear all YACA-related localStorage and sessionStorage keys
+    Object.values(LOCAL_STORAGE_KEYS).forEach((key) => {
+      localStorage.removeItem(key);
+    });
+    Object.values(SESSION_STORAGE_KEYS).forEach((key) => {
+      sessionStorage.removeItem(key);
+    });
     setUserId(null);
     setInitialProfiles(createDefaultProfiles());
     setProfiles(createDefaultProfiles());
+    // Force a full page reload to reset all React state
+    window.location.reload();
   };
 
   const handleDisconnectTrakt = () => {

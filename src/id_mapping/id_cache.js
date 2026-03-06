@@ -3,7 +3,7 @@ const CacheManager = require('../cache/CacheManager');
 
 // Cache limitata per evitare di chiamare /find troppe volte per gli stessi ID
 const memoryCache = new CacheManager('imdb_to_tmdb', {
-    ramMax: 5000,
+    ramMax: 50,
     ramTtlMs: 1000 * 60 * 60 * 24, // 24h RAM
     mongoTtlMs: 1000 * 60 * 60 * 24 * 7 // 7d MongoDB
 });

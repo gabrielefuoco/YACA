@@ -37,7 +37,7 @@ const PORT = process.env.PORT || 7000;
 // Cache RAM per badge poster (TTL 14 giorni, max 500 immagini)
 const BADGE_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 const BADGE_CACHE_TTL_SECS = 14 * 24 * 60 * 60; // 1209600
-const badgeImageCache = new LRUCache({ max: 500, ttl: BADGE_CACHE_TTL_MS });
+const badgeImageCache = new LRUCache({ max: 50, ttl: BADGE_CACHE_TTL_MS });
 const badgeLimiter = rateLimit({
     windowMs: 60 * 1000,
     limit: 120,

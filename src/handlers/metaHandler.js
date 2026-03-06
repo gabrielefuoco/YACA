@@ -5,7 +5,7 @@ const { fetchMdblistRatings } = require('../utils/mdblist');
 const CacheManager = require('../cache/CacheManager');
 
 // Cache per l'oggetto meta finale combinato (TMDB + MDBList)
-const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 200, ramTtlMs: 3600000 });
+const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 50, ramTtlMs: 3600000 });
 
 /**
  * Gestisce la richiesta di metadati dettagliati quando l'utente clicca su un titolo

@@ -23,6 +23,22 @@ function splitOrIds(value) {
     return String(value).split(/[|,]/).map(v => v.trim()).filter(Boolean);
 }
 
+const GENRE_NAMES = {
+    '28': 'Azione', '12': 'Avventura', '16': 'Animazione', '35': 'Commedia',
+    '80': 'Crimine', '99': 'Documentario', '18': 'Dramma', '10751': 'Famiglia',
+    '14': 'Fantasy', '36': 'Storia', '27': 'Horror', '10402': 'Musica',
+    '9648': 'Mistero', '10749': 'Romance', '878': 'Fantascienza',
+    '10770': 'Film TV', '53': 'Thriller', '10752': 'Guerra', '37': 'Western',
+    '10759': 'Action & Adventure', '10762': 'Kids', '10763': 'News',
+    '10764': 'Reality', '10765': 'Sci-Fi & Fantasy', '10766': 'Soap',
+    '10767': 'Talk', '10768': 'War & Politics'
+};
+
+const KEYWORD_NAMES = {
+    '210024': 'Anime', '158436': 'Marvel', '9715': 'Supereroi',
+    '4344': 'Spazio', '10683': 'Sopravvivenza', '256735': 'Graphic Novel'
+};
+
 function buildSuggestedDNAFromPresets(selectedPresets = [], presetsList = []) {
     const genreCounts = new Map();
     const keywordCounts = new Map();
@@ -34,7 +50,13 @@ function buildSuggestedDNAFromPresets(selectedPresets = [], presetsList = []) {
         for (const gid of splitOrIds(preset.filters.with_genres)) {
             genreCounts.set(gid, (genreCounts.get(gid) || 0) + 1);
         }
+        for (const gid of splitOrIds(preset.filters.genre_ids)) {
+            genreCounts.set(gid, (genreCounts.get(gid) || 0) + 1);
+        }
         for (const kid of splitOrIds(preset.filters.with_keywords)) {
+            keywordCounts.set(kid, (keywordCounts.get(kid) || 0) + 1);
+        }
+        for (const kid of splitOrIds(preset.filters.keyword)) {
             keywordCounts.set(kid, (keywordCounts.get(kid) || 0) + 1);
         }
     }
@@ -42,12 +64,12 @@ function buildSuggestedDNAFromPresets(selectedPresets = [], presetsList = []) {
     const topGenres = Array.from(genreCounts.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 8)
-        .map(([id]) => ({ id: String(id), type: 'genre', name: `Genre ${id}` }));
+        .map(([id]) => ({ id: String(id), type: 'genre', name: GENRE_NAMES[String(id)] || `Genre ${id}` }));
 
     const topKeywords = Array.from(keywordCounts.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 8)
-        .map(([id]) => ({ id: String(id), type: 'keyword', name: `Keyword ${id}` }));
+        .map(([id]) => ({ id: String(id), type: 'keyword', name: KEYWORD_NAMES[String(id)] || `Keyword ${id}` }));
 
     return [...topGenres, ...topKeywords];
 }
