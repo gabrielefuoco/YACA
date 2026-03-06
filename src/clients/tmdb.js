@@ -503,22 +503,52 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
             // AGGRESSIVE SWR: Return cached data immediately if we have it
             const hasEnoughItems = cachedItems.length >= sliceEnd || cachedItems.length === rawCached.total_results || rawCached.nextPage === -1;
 
-            if (isStale || !hasEnoughItems) {
-                // Trigger revalidation in background
+            // Detect when cache exists but has nothing for the requested skip range
+            // and we know the next TMDB page to fetch.
+            const needsSyncExtension = !hasEnoughItems && cachedSlice.length === 0
+                && cachedItems.length > 0 && rawCached.nextPage > 0;
+
+            if ((isStale || !hasEnoughItems) && !needsSyncExtension) {
+                // Background SWR: only when we can return data immediately
                 const startPage = !hasEnoughItems ? rawCached.nextPage : 1;
                 const pagesToFetch = !hasEnoughItems ? 1 : PAGES_PER_REQUEST;
 
-                fetchTmdbCatalogDirect(client, endpoint, startPage, customParams, type, pagesToFetch)
-                    .then(({ items: newItems, nextPageFetched }) => {
-                        const updatedItems = startPage === 1 ? newItems : mergeCatalogItems(cachedItems, newItems);
-                        saveTmdbCatalogCache(requestHash, updatedItems, nextPageFetched, options);
-                    })
-                    .catch(e => console.error('[SWR Revalidate] Error:', e.message));
+                if (startPage > 0) {
+                    fetchTmdbCatalogDirect(client, endpoint, startPage, customParams, type, pagesToFetch)
+                        .then(({ items: newItems, nextPageFetched }) => {
+                            const updatedItems = startPage === 1 ? newItems : mergeCatalogItems(cachedItems, newItems);
+                            saveTmdbCatalogCache(requestHash, updatedItems, nextPageFetched, options);
+                        })
+                        .catch(e => console.error('[SWR Revalidate] Error:', e.message));
+                }
             }
 
-            if (cachedItems.length > 0) {
-                return normalizedSkip === 0 ? cachedItems : cachedSlice;
+            // Return from cache if we have items for this range
+            if (normalizedSkip === 0 && cachedItems.length > 0) {
+                return cachedItems;
             }
+            if (cachedSlice.length > 0) {
+                return cachedSlice;
+            }
+
+            // Synchronous extension: cache exists but doesn't cover the requested
+            // skip range — fetch the next page, merge into cache, and return the slice.
+            if (needsSyncExtension) {
+                const { items: newItems, nextPageFetched } = await fetchTmdbCatalogDirect(
+                    client, endpoint, rawCached.nextPage, customParams, type, 1
+                );
+                const updatedItems = mergeCatalogItems(cachedItems, newItems);
+                await saveTmdbCatalogCache(requestHash, updatedItems, nextPageFetched, options);
+                return updatedItems.slice(normalizedSkip, sliceEnd);
+            }
+
+            // Catalog exhausted: hasEnoughItems is true (total_results or nextPage===-1)
+            // but the slice is empty — no more items at this offset.
+            if (hasEnoughItems) {
+                return [];
+            }
+
+            // Cache incomplete with unknown nextPage — fall through to fresh fetch
         }
     } catch (_e) {
         // Cache non disponibile, o cache throwato, procediamo

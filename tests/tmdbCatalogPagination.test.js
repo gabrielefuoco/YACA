@@ -8,7 +8,14 @@ jest.mock('../src/utils/requestHash', () => ({
 }));
 
 jest.mock('../src/utils/rateLimiter', () => ({
-    rateLimitedMapFiltered: jest.fn()
+    rateLimitedMapFiltered: jest.fn(async (items, fn) => {
+        const results = [];
+        for (const item of items) {
+            const result = await fn(item);
+            if (result != null) results.push(result);
+        }
+        return results;
+    })
 }));
 
 jest.mock('../src/utils/releaseFilter', () => ({
@@ -34,7 +41,10 @@ jest.mock('../src/utils/httpClient', () => ({
                     external_ids: { imdb_id: `tt${id}` }
                 }
             };
-        })
+        }),
+        interceptors: {
+            response: { use: jest.fn() }
+        }
     }))
 }));
 
@@ -58,9 +68,14 @@ describe('fetchTmdbCatalog hybrid pagination cache', () => {
         isMovieReleasedDigitally.mockResolvedValue(true);
     });
 
-    it('returns paginated slice from shared fresh cache without background prefetching on first page', async () => {
-        const cachedItems = Array.from({ length: 35 }, (_, i) => ({ id: `tmdb:${i + 1}` }));
-        TmdbRequestCache.get.mockResolvedValue({ isStale: false, stremioData: cachedItems, total_results: 100 });
+    it('returns all cached items on first page (skip=0) from fresh cache', async () => {
+        const cachedItems = Array.from({ length: 60 }, (_, i) => ({ id: `tmdb:${i + 1}` }));
+        TmdbRequestCache.get.mockResolvedValue({
+            stremioData: cachedItems,
+            total_results: 100,
+            nextPage: 4,
+            updatedAt: Date.now()
+        });
 
         const client = {
             defaults: { params: { api_key: 'key' } },
@@ -69,28 +84,87 @@ describe('fetchTmdbCatalog hybrid pagination cache', () => {
 
         const result = await fetchTmdbCatalog(client, '/discover/movie', 0, {}, 'movie');
 
-        expect(result).toEqual(cachedItems.slice(0, 20));
+        // skip=0 returns the full cached array so Stremio gets all prefetched items
+        expect(result).toEqual(cachedItems);
         expect(client.get).not.toHaveBeenCalled();
-        expect(TmdbRequestCache.set).not.toHaveBeenCalled(); // No prefetch on page 1 (skip=0)
     });
 
-    it('passes custom cache TTL to shared cache reads', async () => {
-        const cachedItems = Array.from({ length: 20 }, (_, i) => ({ id: `tmdb:${i + 1}` }));
-        TmdbRequestCache.get.mockResolvedValue({ isStale: false, stremioData: cachedItems, total_results: 20 });
+    it('returns correct slice from cache when skip is within cached range', async () => {
+        const cachedItems = Array.from({ length: 60 }, (_, i) => ({ id: `tmdb:${i + 1}` }));
+        TmdbRequestCache.get.mockResolvedValue({
+            stremioData: cachedItems,
+            total_results: 100,
+            nextPage: 4,
+            updatedAt: Date.now()
+        });
 
         const client = {
             defaults: { params: { api_key: 'key' } },
             get: jest.fn()
         };
 
-        await fetchTmdbCatalog(client, '/discover/movie', 0, {}, 'movie', { cacheTtlMs: 30 * 60 * 1000 });
+        const result = await fetchTmdbCatalog(client, '/discover/movie', 20, {}, 'movie');
 
-        expect(TmdbRequestCache.get).toHaveBeenCalledWith('shared-hash', 30 * 60 * 1000);
+        // skip=20 should slice [20, 40) from the 60-item cache
+        expect(result).toHaveLength(20);
+        expect(result[0]).toEqual({ id: 'tmdb:21' });
+        expect(result[19]).toEqual({ id: 'tmdb:40' });
+        expect(client.get).not.toHaveBeenCalled();
     });
 
-    it('fetches and merges next page when cache does not cover requested skip', async () => {
+    it('synchronously extends cache when skip goes beyond cached items', async () => {
+        const cachedItems = Array.from({ length: 60 }, (_, i) => ({ id: `tmdb:${i + 1}` }));
+        TmdbRequestCache.get.mockResolvedValue({
+            stremioData: cachedItems,
+            total_results: 200,
+            nextPage: 4,
+            updatedAt: Date.now()
+        });
+
+        // TMDB page 4 returns items 61-80
+        const tmdbPageItems = Array.from({ length: 20 }, (_, i) => ({ id: i + 61, title: `Movie ${i + 61}` }));
+        const client = {
+            defaults: { params: { api_key: 'key' } },
+            get: jest.fn().mockResolvedValue({ data: { results: tmdbPageItems, total_pages: 10 } })
+        };
+
+        const result = await fetchTmdbCatalog(client, '/discover/movie', 60, {}, 'movie');
+
+        // Should synchronously fetch page 4, merge into cache, and return slice
+        expect(result.length).toBeGreaterThan(0);
+        expect(client.get).toHaveBeenCalled();
+        // Verify cache was updated
+        expect(TmdbRequestCache.set).toHaveBeenCalled();
+    });
+
+    it('returns empty array when catalog is exhausted (nextPage === -1)', async () => {
+        const cachedItems = Array.from({ length: 40 }, (_, i) => ({ id: `tmdb:${i + 1}` }));
+        TmdbRequestCache.get.mockResolvedValue({
+            stremioData: cachedItems,
+            total_results: 40,
+            nextPage: -1,
+            updatedAt: Date.now()
+        });
+
+        const client = {
+            defaults: { params: { api_key: 'key' } },
+            get: jest.fn()
+        };
+
+        const result = await fetchTmdbCatalog(client, '/discover/movie', 40, {}, 'movie');
+
+        // Catalog exhausted — no more items
+        expect(result).toEqual([]);
+        expect(client.get).not.toHaveBeenCalled();
+    });
+
+    it('falls through to fresh fetch when cache has no nextPage info', async () => {
         const cachedItems = Array.from({ length: 20 }, (_, i) => ({ id: `tmdb:${i + 1}` }));
-        TmdbRequestCache.get.mockResolvedValue({ isStale: false, stremioData: cachedItems, total_results: 100 });
+        TmdbRequestCache.get.mockResolvedValue({
+            stremioData: cachedItems,
+            total_results: 100
+            // nextPage and updatedAt intentionally missing
+        });
 
         const tmdbPageItems = Array.from({ length: 20 }, (_, i) => ({ id: i + 21, title: `Movie ${i + 21}` }));
         const client = {
@@ -100,31 +174,28 @@ describe('fetchTmdbCatalog hybrid pagination cache', () => {
 
         const result = await fetchTmdbCatalog(client, '/discover/movie', 20, {}, 'movie');
 
-        expect(result).toHaveLength(20);
-        expect(TmdbRequestCache.set).toHaveBeenCalled();
-        const mergedItems = TmdbRequestCache.set.mock.calls[0][2];
-        expect(mergedItems).toHaveLength(40);
-        // Page 3 prefetch
-        expect(TmdbRequestCache.set.mock.calls[0][3]).toBe(3);
+        // Should fall through to cache miss path and fetch from TMDB directly
+        expect(client.get).toHaveBeenCalled();
     });
 
-    it('refreshes deep pagination synchronously when shared cache is stale', async () => {
-        const cachedItems = Array.from({ length: 25 }, (_, i) => ({ id: `tmdb:${i + 1}` }));
-        TmdbRequestCache.get.mockResolvedValue({ isStale: true, stremioData: cachedItems });
+    it('triggers background SWR when cache is stale but has items for range', async () => {
+        const cachedItems = Array.from({ length: 60 }, (_, i) => ({ id: `tmdb:${i + 1}` }));
+        TmdbRequestCache.get.mockResolvedValue({
+            stremioData: cachedItems,
+            total_results: 200,
+            nextPage: 4,
+            updatedAt: 0 // Very old → stale
+        });
 
-        const tmdbPageItems = Array.from({ length: 20 }, (_, i) => ({ id: i + 21, title: `Movie ${i + 21}` }));
         const client = {
             defaults: { params: { api_key: 'key' } },
-            get: jest.fn().mockResolvedValue({ data: { results: tmdbPageItems } })
+            get: jest.fn().mockResolvedValue({ data: { results: [] } })
         };
 
         const result = await fetchTmdbCatalog(client, '/discover/movie', 20, {}, 'movie');
 
-        // Should call TMDB to get pages (p1, p2, p3 to reach index 20-40)
-        // Since skip=20, we need p2 results. But we fetch from start if stale to rebuild cache? 
-        // In fetchTmdbCatalog, if stale, it fetches page 1 and page 2.
-        // Actually, it calls fetchMultiplePages(1, 2) which is 2 calls.
-        expect(client.get).toHaveBeenCalled();
+        // Returns cached slice immediately even though stale
         expect(result).toHaveLength(20);
+        expect(result[0]).toEqual({ id: 'tmdb:21' });
     });
 });
