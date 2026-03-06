@@ -1,36 +1,37 @@
 // Bayesian Weighted Rating parameters (Phase 1.3)
 const BAYESIAN_MIN_VOTES = 300;  // m: minimum votes threshold
 const BAYESIAN_MEAN_VOTE = 6.5;  // C: mean vote across the catalogue
+const ACTIVE_PROFILE_WEIGHT = 0.8;
+const GLOBAL_PROFILE_WEIGHT = 0.2;
 
 class ProfileScorer {
-    /**
-     * Calcola l'affinità di un contenuto TMDB con il profilo di gusto dell'utente.
-     * @param {Object} tmdbData Dati grezzi TMDB (arricchiti con credits e keywords)
-     * @param {Object} profile Documento Mongoose TasteProfile (GLOBAL)
-     * @param {Object} context Opzionali { dnaFilters (User.profiles.settings), tmdbWeight, traktWeight }
-     * @returns {Number} Score da 0.0 a 10.0
-     */
-    static calculateItemMatch(tmdbData, profile, context = {}) {
+    static normalizeDnaId(value) {
+        return String(value ?? '').replace(/^tmdb:/i, '').trim();
+    }
+
+    static computeDnaMultiplier(tmdbData, dnaFilters = []) {
+        if (!Array.isArray(dnaFilters) || dnaFilters.length === 0) return 1.0;
+
+        const genreIds = (tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id) : []))
+            .map((id) => this.normalizeDnaId(id));
+        const keywordItems = tmdbData.keywords?.keywords || tmdbData.keywords?.results || [];
+        const keywordIds = keywordItems.map((k) => this.normalizeDnaId(k.id));
+
+        const hasGenreMatch = dnaFilters.some(
+            (f) => f.type === 'genre' && genreIds.includes(this.normalizeDnaId(f.id))
+        );
+        const hasKeywordMatch = dnaFilters.some(
+            (f) => f.type === 'keyword' && keywordIds.includes(this.normalizeDnaId(f.id))
+        );
+
+        return hasGenreMatch || hasKeywordMatch ? 1.0 : 0.1;
+    }
+
+    static calculateBaseItemMatch(tmdbData, profile, context = {}) {
         if (!tmdbData || !profile) return 0;
 
         const tmdbWeight = context.tmdbWeight ?? profile.tmdbWeight ?? 1.0;
         const traktWeight = context.traktWeight ?? profile.traktWeight ?? 1.0;
-        const dnaFilters = context.dnaFilters; // Array di {type, id, name}
-
-        // --- 0. Controllo DNA (Filtro Contextuale) ---
-        let dnaMultiplier = 1.0;
-        if (dnaFilters && dnaFilters.length > 0) {
-            const genreIds = tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id.toString()) : []);
-            const keywordsItems = tmdbData.keywords?.keywords || tmdbData.keywords?.results || [];
-
-            const hasGenreMatch = dnaFilters.some(f => f.type === 'genre' && genreIds.includes(f.id));
-            const hasKeywordMatch = dnaFilters.some(f => f.type === 'keyword' && keywordsItems.some(k => k.id.toString() === f.id));
-
-            if (!hasGenreMatch && !hasKeywordMatch) {
-                // Se non c'è match col DNA, penalizziamo pesantemente (90% di penalità)
-                dnaMultiplier = 0.1;
-            }
-        }
 
         let thematicScore = 0;
         let authorialScore = 0;
@@ -99,9 +100,31 @@ class ProfileScorer {
         const totalWeight = tmdbWeight + traktWeight;
         if (totalWeight === 0) return 0;
 
-        const normalizedScore = (((profileMatch * traktWeight) + (bayesianScore * tmdbWeight)) / totalWeight) * dnaMultiplier;
-
+        const normalizedScore = ((profileMatch * traktWeight) + (bayesianScore * tmdbWeight)) / totalWeight;
         return Math.min(Math.max(normalizedScore + epsilon, 0), 10);
+    }
+
+    /**
+     * Calcola l'affinità di un contenuto TMDB con il profilo di gusto dell'utente.
+     * @param {Object} tmdbData Dati grezzi TMDB (arricchiti con credits e keywords)
+     * @param {Object} profile Documento Mongoose TasteProfile (GLOBAL)
+     * @param {Object} context Opzionali { dnaFilters (User.profiles.settings), tmdbWeight, traktWeight }
+     * @returns {Number} Score da 0.0 a 10.0
+     */
+    static calculateItemMatch(tmdbData, profile, context = {}) {
+        if (!tmdbData || !profile) return 0;
+
+        const dnaMultiplier = this.computeDnaMultiplier(tmdbData, context.dnaFilters);
+        const profileScore = this.calculateBaseItemMatch(tmdbData, profile, context);
+        const globalProfile = context.globalProfile;
+
+        if (globalProfile) {
+            const globalScore = this.calculateBaseItemMatch(tmdbData, globalProfile, context);
+            const finalScore = ((profileScore * ACTIVE_PROFILE_WEIGHT) + (globalScore * GLOBAL_PROFILE_WEIGHT)) * dnaMultiplier;
+            return Math.min(Math.max(finalScore, 0), 10);
+        }
+
+        return Math.min(Math.max(profileScore * dnaMultiplier, 0), 10);
     }
 
     /**

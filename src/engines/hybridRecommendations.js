@@ -12,6 +12,15 @@ const catalogCache = new LRUCache({ max: 100, ttl: RECOMMENDATIONS_CACHE_TTL_MS 
 // Alias per compatibilità con i test
 const recommendationsCache = catalogCache;
 
+function normalizeContentId(id) {
+    return String(id ?? '').replace(/^tmdb:/i, '').trim();
+}
+
+function getDnaFilters(user, context) {
+    const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
+    return [...(settings.manualDNA || []), ...(settings.suggestedDNA || [])];
+}
+
 /**
  * Recupera l'ultima history da Trakt (limitata per performance).
  */
@@ -118,7 +127,7 @@ function calculateHybridScore(item, tmdbCounts, topGenres, itemGenres) {
     let score = 0;
 
     // 1. Posizione Trakt (50 - position)
-    if (item.position != null) {
+    if (item.position !== null && item.position !== undefined) {
         score += Math.max(0, 50 - item.position);
     }
 
@@ -163,15 +172,17 @@ function extractDNAParams(manualDNA = []) {
  * 🔱 Signature: The Core (Top Genre + Top Keyword + DNA. Cascade esatta -> broad)
  */
 async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
-    const [profile, user] = await Promise.all([
+    const [profile, user, globalProfile] = await Promise.all([
         TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId })
+        User.findOne({ userId }),
+        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
     ]);
     if (!profile) return [];
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
     const dna = settings.manualDNA || [];
+    const dnaFilters = getDnaFilters(user, context);
     const dnaParams = extractDNAParams(dna);
 
     const topGenres = computeTopGenres(profile, 3);
@@ -187,12 +198,15 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
                 timeout: 5000
             });
             for (const item of (res.data?.results || [])) {
-                if (!existingIds.has(item.id)) {
+                const normalizedItemId = normalizeContentId(item.id);
+                if (!existingIds.has(normalizedItemId)) {
                     results.push(item);
-                    existingIds.add(item.id);
+                    existingIds.add(normalizedItemId);
                 }
             }
-        } catch (e) { }
+        } catch (err) {
+            console.debug(`[Hybrid] discover fetch failed in buildSignatureCore (${types}):`, err.message);
+        }
     };
 
     // Phase 2.1: Use OR (|) for broad results — top genres OR top keywords
@@ -215,7 +229,7 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
     // Final score
     const scored = await Promise.all(results.map(async (item) => {
         const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-        const score = ProfileScorer.calculateItemMatch(details, profile);
+        const score = ProfileScorer.calculateItemMatch(details, profile, { globalProfile, dnaFilters });
         return { data: item, score };
     }));
 
@@ -226,15 +240,17 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
  * 🌀 Signature: The Blend (Mix di gusti + Fallback DNA)
  */
 async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
-    const [profile, user] = await Promise.all([
+    const [profile, user, globalProfile] = await Promise.all([
         TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId })
+        User.findOne({ userId }),
+        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
     ]);
     if (!profile) return [];
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
     const dna = settings.manualDNA || [];
+    const dnaFilters = getDnaFilters(user, context);
     let dnaParams = extractDNAParams(dna);
 
     const topGenres = computeTopGenres(profile, 5);
@@ -257,7 +273,8 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
     allResults.forEach(r => {
         if (r.status === 'fulfilled') {
             r.value.forEach(item => {
-                if (!results.find(x => x.id === item.id)) results.push(item);
+                const normalizedItemId = normalizeContentId(item.id);
+                if (!results.find(x => normalizeContentId(x.id) === normalizedItemId)) results.push(item);
             });
         }
     });
@@ -270,7 +287,8 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
         allResults.forEach(r => {
             if (r.status === 'fulfilled') {
                 r.value.forEach(item => {
-                    if (!results.find(x => x.id === item.id)) results.push(item);
+                    const normalizedItemId = normalizeContentId(item.id);
+                    if (!results.find(x => normalizeContentId(x.id) === normalizedItemId)) results.push(item);
                 });
             }
         });
@@ -278,7 +296,7 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
 
     const scored = await Promise.all(results.map(async (item) => {
         const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-        const score = ProfileScorer.calculateItemMatch(details, profile);
+        const score = ProfileScorer.calculateItemMatch(details, profile, { globalProfile, dnaFilters });
         return { data: item, score };
     }));
 
@@ -290,15 +308,17 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
  * ⭐ Signature: Rising Star (Popular + DNA + Trakt Watchlist/History Influence)
  */
 async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, mediaType) {
-    const [profile, user] = await Promise.all([
+    const [profile, user, globalProfile] = await Promise.all([
         TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId })
+        User.findOne({ userId }),
+        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
     ]);
     if (!profile) return [];
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
     const dna = settings.manualDNA || [];
+    const dnaFilters = getDnaFilters(user, context);
     const dnaParams = extractDNAParams(dna);
 
     const history = await fetchRecentHistory(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 5);
@@ -324,11 +344,11 @@ async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, media
     }).catch(() => ({ data: { results: [] } }));
 
     let combined = [...(searchRes?.data?.results || []), ...traktRecs];
-    const uniquePool = [...new Map(combined.map(item => [item.id, item])).values()];
+    const uniquePool = [...new Map(combined.map(item => [normalizeContentId(item.id), item])).values()];
 
     const scored = await Promise.all(uniquePool.slice(0, 50).map(async (item) => {
         const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-        const score = ProfileScorer.calculateItemMatch(details, profile);
+        const score = ProfileScorer.calculateItemMatch(details, profile, { globalProfile, dnaFilters });
         return { data: item, score };
     }));
 
@@ -341,9 +361,10 @@ async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, media
  * Il ProfileScorer riordina il pool e il DNA penalizza i titoli fuori tema.
  */
 async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) {
-    const [profile, user] = await Promise.all([
+    const [profile, user, globalProfile] = await Promise.all([
         TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId })
+        User.findOne({ userId }),
+        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
     ]);
     if (!profile) return [];
 
@@ -351,7 +372,7 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
     const dna = settings.manualDNA || [];
     const dnaParams = extractDNAParams(dna);
-    const dnaFilters = [...(settings.manualDNA || []), ...(settings.suggestedDNA || [])];
+    const dnaFilters = getDnaFilters(user, context);
 
     const topGenres = computeTopGenres(profile, 5);
     const topKeywords = [...profile.keywordScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => e[0]);
@@ -361,9 +382,10 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
 
     const addResults = (items) => {
         for (const item of (items || [])) {
-            if (item && !existingIds.has(item.id)) {
+            const normalizedItemId = normalizeContentId(item?.id);
+            if (item && !existingIds.has(normalizedItemId)) {
                 pool.push(item);
-                existingIds.add(item.id);
+                existingIds.add(normalizedItemId);
             }
         }
     };
@@ -406,7 +428,7 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     // Score and filter with ProfileScorer (DNA acts as bouncer)
     const scored = await Promise.all(pool.map(async (item) => {
         const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters });
+        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
         return { data: item, score };
     }));
 
@@ -419,15 +441,15 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
  * Chiede TMDB /similar per ogni seed, somma i pesi (stacking).
  */
 async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
-    const [profile, user] = await Promise.all([
+    const [profile, user, globalProfile] = await Promise.all([
         TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId })
+        User.findOne({ userId }),
+        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
     ]);
     if (!profile) return [];
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const profileSettings = user?.profiles?.find(p => p.id === context)?.settings || {};
-    const dnaFilters = [...(profileSettings.manualDNA || []), ...(profileSettings.suggestedDNA || [])];
+    const dnaFilters = getDnaFilters(user, context);
 
     const topGenres = computeTopGenres(profile, 3);
 
@@ -493,7 +515,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     // Apply ProfileScorer with DNA filtering
     const scored = await Promise.all(candidates.slice(0, 80).map(async ({ data }) => {
         const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, data.id, types);
-        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters });
+        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
         return { data, score };
     }));
 
@@ -506,9 +528,10 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
  * Applica: minVotes>=100, minAvg>=7.2, Bayesian rating, esclude cortometraggi.
  */
 async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
-    const [profile, user] = await Promise.all([
+    const [profile, user, globalProfile] = await Promise.all([
         TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId })
+        User.findOne({ userId }),
+        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
     ]);
     if (!profile) return [];
 
@@ -516,7 +539,7 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
     const dna = settings.manualDNA || [];
     const dnaParams = extractDNAParams(dna);
-    const dnaFilters = [...(settings.manualDNA || []), ...(settings.suggestedDNA || [])];
+    const dnaFilters = getDnaFilters(user, context);
 
     const topGenres = computeTopGenres(profile, 3);
 
@@ -533,19 +556,19 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     if (topGenres.length) params.with_genres = topGenres.join('|');
     if (types === 'movie') params['with_runtime.gte'] = 60; // Exclude short films
 
-    let results = [];
-    try {
-        const res = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
-            params,
-            timeout: 5000
+    const results = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
+        params,
+        timeout: 5000
+    }).then((res) => res.data?.results || [])
+        .catch((err) => {
+            console.debug(`[Hybrid] discover fetch failed in buildHiddenGemsCatalog (${types}):`, err.message);
+            return [];
         });
-        results = res.data?.results || [];
-    } catch (_e) { }
 
     // Apply ProfileScorer with DNA filter
     const scored = await Promise.all(results.map(async (item) => {
         const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters });
+        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
         return { data: item, score };
     }));
 
@@ -557,15 +580,15 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
  * Legge le raccomandazioni Trakt dal DB, le passa attraverso il ProfileScorer.
  */
 async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
-    const [profile, user] = await Promise.all([
+    const [profile, user, globalProfile] = await Promise.all([
         TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId })
+        User.findOne({ userId }),
+        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
     ]);
     if (!profile) return [];
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
-    const dnaFilters = [...(settings.manualDNA || []), ...(settings.suggestedDNA || [])];
+    const dnaFilters = getDnaFilters(user, context);
 
     // Fetch Trakt recommendations
     const traktRaw = await fetchTraktRecommendationsRaw(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 40);
@@ -579,7 +602,7 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
     const scored = await Promise.all(traktTmdbIds.map(async (id) => {
         const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, id, types);
         if (!details) return null;
-        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters });
+        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
         return { data: details, score };
     }));
 

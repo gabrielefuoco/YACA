@@ -29,6 +29,7 @@ interface DashboardPageProps {
   onSaveMyList: (list: MyList) => void;
   onRemoveMyList: (id: string) => void;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
+  onTemplateApplied?: (profileId: string, selectedPresets: string[]) => Promise<void> | void;
 }
 
 export function DashboardPage({
@@ -51,17 +52,29 @@ export function DashboardPage({
   onSaveMyList,
   onRemoveMyList,
   onUpdateProfile,
+  onTemplateApplied,
 }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('active');
   const editingProfile = profiles.find((p) => p.id === editingProfileId) ?? profiles[0];
 
-  const handleApplyTemplate = (template: ProfileTemplate) => {
+  const handleApplyTemplate = async (template: ProfileTemplate) => {
     const currentPresets = editingProfile?.raw_ui_state.selectedPresets ?? [];
+    const mergedPresets = Array.from(new Set([...currentPresets, ...template.presets]));
+    const currentOrder = editingProfile?.raw_ui_state.catalogOrder ?? [];
+    const mergedOrder = [...currentOrder];
     for (const presetId of template.presets) {
-      if (!currentPresets.includes(presetId)) {
-        onTogglePreset(editingProfileId, presetId);
+      if (!mergedOrder.includes(presetId)) {
+        mergedOrder.push(presetId);
       }
     }
+    onUpdateProfile(editingProfileId, {
+      raw_ui_state: {
+        ...editingProfile.raw_ui_state,
+        selectedPresets: mergedPresets,
+        catalogOrder: mergedOrder,
+      },
+    });
+    await onTemplateApplied?.(editingProfileId, mergedPresets);
   };
 
   const myListCatalogs: Catalog[] = myLists.map((l) => ({
@@ -108,6 +121,7 @@ export function DashboardPage({
           onRemove={onRemoveProfile}
           isActive={editingProfileId === activeProfileId}
           startRename={() => {
+            if (editingProfile.id === 'global') return;
             const newName = window.prompt('Nuovo nome per il profilo:', editingProfile.name);
             if (newName && newName.trim()) {
               onRenameProfile(editingProfile.id, newName.trim());

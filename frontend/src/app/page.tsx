@@ -18,7 +18,7 @@ import { api } from '@/lib/api';
 function createDefaultProfiles(): Profile[] {
   return [
     {
-      id: 'default_main',
+      id: 'global',
       name: '🏠 Generale',
       raw_ui_state: {
         selectedPresets: [...DEFAULT_PRESET_IDS],
@@ -248,6 +248,51 @@ export default function Home() {
     }
   };
 
+  const handleTemplateApplied = async (profileId: string, selectedPresets: string[]) => {
+    const nextProfiles = profiles.map((p) =>
+      p.id === profileId
+        ? {
+          ...p,
+          raw_ui_state: {
+            ...p.raw_ui_state,
+            selectedPresets,
+          },
+        }
+        : p
+    );
+
+    try {
+      const data = await api.configure({
+        profiles: profilesToApiPayload(nextProfiles),
+        activeProfileId,
+        userId: userId ?? undefined,
+        stremioAuthKey: stremioAuth?.authKey,
+        traktToken: traktToken ?? undefined,
+        traktRefreshToken: traktRefreshToken ?? undefined,
+      });
+
+      const resolvedUserId = data.userId || userId;
+      if (!resolvedUserId) return;
+      if (data.userId) {
+        setUserId(data.userId);
+        localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
+      }
+      if (data.configVersion) {
+        setConfigVersion(String(data.configVersion));
+      }
+
+      const response = await fetch(`/api/user/${resolvedUserId}`);
+      if (!response.ok) return;
+      const freshUser = await response.json();
+      if (Array.isArray(freshUser.profiles) && freshUser.profiles.length > 0) {
+        const mappedProfiles = (freshUser.profiles as BackendProfile[]).map(mapBackendProfile);
+        setProfiles(mappedProfiles);
+      }
+    } catch (err) {
+      console.warn('Template apply sync failed:', err);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     localStorage.removeItem(LOCAL_STORAGE_KEYS.USER_ID);
@@ -307,6 +352,7 @@ export default function Home() {
                   onSaveMyList={handleSaveMyList}
                   onRemoveMyList={handleRemoveMyList}
                   onUpdateProfile={updateProfile}
+                  onTemplateApplied={handleTemplateApplied}
                 />
               )}
 

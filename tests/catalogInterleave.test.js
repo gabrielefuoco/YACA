@@ -14,4 +14,14 @@ describe('catalogHandler interleaveResults', () => {
         const merged = interleaveResults([{ name: 'a' }], [{ name: 'b' }], 0, 20);
         expect(merged).toEqual([{ name: 'a' }, { name: 'b' }]);
     });
+
+    it('deduplicates ids even when one is prefixed with tmdb:', () => {
+        const merged = interleaveResults(
+            [{ id: 12345, name: 'A' }],
+            [{ id: 'tmdb:12345', name: 'B' }],
+            0,
+            20
+        );
+        expect(merged).toEqual([{ id: 12345, name: 'A' }]);
+    });
 });

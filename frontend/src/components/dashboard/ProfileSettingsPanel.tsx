@@ -27,8 +27,10 @@ export function ProfileSettingsPanel({
 }: ProfileSettingsPanelProps) {
     const profileDNA: DNAItem[] = profile?.settings?.manualDNA ?? [];
     const suggestedDNA: DNAItem[] = profile?.settings?.suggestedDNA ?? [];
+    const isGlobalProfile = profile.id === 'global';
 
     const handleAddDNA = (item: DNAItem) => {
+        if (isGlobalProfile) return;
         if (profileDNA.find((p) => String(p.id) === String(item.id))) return;
         const newDNA = [...profileDNA, item];
         onUpdateProfile(profile.id, {
@@ -37,6 +39,7 @@ export function ProfileSettingsPanel({
     };
 
     const handleRemoveDNA = (id: string) => {
+        if (isGlobalProfile) return;
         const newDNA = profileDNA.filter((p) => String(p.id) !== String(id));
         onUpdateProfile(profile.id, {
             settings: { ...profile.settings, manualDNA: newDNA },
@@ -72,14 +75,18 @@ export function ProfileSettingsPanel({
                             <span>Attiva Profilo</span>
                         </button>
                     )}
-                    <button onClick={startRename} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-primary/20 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all">
-                        <span className="material-symbols-outlined text-sm">edit</span>
-                        <span>Rinomina</span>
-                    </button>
-                    <button onClick={() => onRemove(profile.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 text-xs font-bold transition-all">
-                        <span className="material-symbols-outlined text-sm">delete</span>
-                        <span>Elimina</span>
-                    </button>
+                    {!isGlobalProfile && (
+                        <>
+                            <button onClick={startRename} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-primary/20 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all">
+                                <span className="material-symbols-outlined text-sm">edit</span>
+                                <span>Rinomina</span>
+                            </button>
+                            <button onClick={() => onRemove(profile.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 text-xs font-bold transition-all">
+                                <span className="material-symbols-outlined text-sm">delete</span>
+                                <span>Elimina</span>
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -143,43 +150,45 @@ export function ProfileSettingsPanel({
                             )}
                         </div>
 
-                        <div className="rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 p-4">
-                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">Forza Gusti (DNA Manuale)</p>
-                            <div className="flex flex-wrap gap-2 mb-3">
-                                {profileDNA.map((p) => (
-                                    <span
-                                        key={`${p.type}-${p.id}`}
-                                        className="inline-flex items-center gap-1 rounded bg-primary/20 text-primary px-3 py-1.5 text-xs font-bold"
-                                    >
-                                        {p.type === 'genre' ? '🎭 ' : p.type === 'country' ? '🌍 ' : '🏷️ '} {p.name}
-                                        <button
-                                            onClick={() => handleRemoveDNA(String(p.id))}
-                                            className="ml-1 text-primary hover:text-primary/70 transition-colors"
+                        {!isGlobalProfile && (
+                            <div className="rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 p-4">
+                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">Forza Gusti (DNA Manuale)</p>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {profileDNA.map((p) => (
+                                        <span
+                                            key={`${p.type}-${p.id}`}
+                                            className="inline-flex items-center gap-1 rounded bg-primary/20 text-primary px-3 py-1.5 text-xs font-bold"
                                         >
-                                            <X className="h-3 w-3" />
-                                        </button>
-                                    </span>
-                                ))}
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-black dark:text-white">
-                                <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white dark:[&_input]:bg-slate-800 [&_input]:border-slate-200 dark:[&_input]:border-slate-700 [&_input]:rounded-lg [&_input]:text-sm">
-                                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none">movie</span>
-                                    <AutocompleteSearch
-                                        placeholder="Aggiungi genere (es. Thriller)"
-                                        searchFn={api.searchTmdbGenres}
-                                        onSelect={(item) => handleAddDNA({ type: 'genre', id: String(item.id), name: item.name })}
-                                    />
+                                            {p.type === 'genre' ? '🎭 ' : p.type === 'country' ? '🌍 ' : '🏷️ '} {p.name}
+                                            <button
+                                                onClick={() => handleRemoveDNA(String(p.id))}
+                                                className="ml-1 text-primary hover:text-primary/70 transition-colors"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </span>
+                                    ))}
                                 </div>
-                                <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white dark:[&_input]:bg-slate-800 [&_input]:border-slate-200 dark:[&_input]:border-slate-700 [&_input]:rounded-lg [&_input]:text-sm">
-                                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none">tag</span>
-                                    <AutocompleteSearch
-                                        placeholder="Aggiungi keyword (es. Cyberpunk)"
-                                        searchFn={api.searchTmdbKeywords}
-                                        onSelect={(item) => handleAddDNA({ type: 'keyword', id: String(item.id), name: item.name })}
-                                    />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-black dark:text-white">
+                                    <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white dark:[&_input]:bg-slate-800 [&_input]:border-slate-200 dark:[&_input]:border-slate-700 [&_input]:rounded-lg [&_input]:text-sm">
+                                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none">movie</span>
+                                        <AutocompleteSearch
+                                            placeholder="Aggiungi genere (es. Thriller)"
+                                            searchFn={api.searchTmdbGenres}
+                                            onSelect={(item) => handleAddDNA({ type: 'genre', id: String(item.id), name: item.name })}
+                                        />
+                                    </div>
+                                    <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white dark:[&_input]:bg-slate-800 [&_input]:border-slate-200 dark:[&_input]:border-slate-700 [&_input]:rounded-lg [&_input]:text-sm">
+                                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none">tag</span>
+                                        <AutocompleteSearch
+                                            placeholder="Aggiungi keyword (es. Cyberpunk)"
+                                            searchFn={api.searchTmdbKeywords}
+                                            onSelect={(item) => handleAddDNA({ type: 'keyword', id: String(item.id), name: item.name })}
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
