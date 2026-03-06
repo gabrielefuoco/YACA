@@ -1,3 +1,4 @@
+const axios = require('axios');
 const { createAxiosInstance } = require('../utils/httpClient');
 const LRUCache = require('../utils/LRUCache');
 const { RECOMMENDATIONS_CACHE_TTL_MS, ITEMS_PER_PAGE } = require('../config');

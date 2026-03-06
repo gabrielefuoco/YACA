@@ -39,6 +39,7 @@ connectDB();
 
 // 1. Inizializza Express
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 7000;
 
 // Cache RAM per badge poster (TTL 14 giorni, max 500 immagini)
