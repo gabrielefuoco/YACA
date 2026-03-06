@@ -11,7 +11,7 @@ const {
     SERIES_FINISHED_TTL_MS,
     SERIES_ONGOING_TTL_MS
 } = require('../config');
-// Rate limiting removed per user request
+const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
 const { isMovieReleasedDigitally } = require('../utils/releaseFilter');
 const { generateRequestHash } = require('../utils/requestHash');
 const TmdbRequestCache = require('../models/TmdbRequestCache');
@@ -407,13 +407,13 @@ async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customPar
         // Applichiamo filtro di rilascio e arricchiamo con metadati IMDB
         const apiKey = client.defaults.params.api_key;
 
-        const filteredMetas = (await Promise.all(items.map(async ({ item, type }) => {
+        const filteredMetas = await rateLimitedMapFiltered(items, async ({ item, type }) => {
             if (type === 'movie' && (!customParams.with_original_language || customParams.with_original_language !== 'ko')) {
                 const isReleased = await isMovieReleasedDigitally(item.id, apiKey);
                 if (!isReleased) return null;
             }
             return await getTmdbMetaDetails(apiKey, `tmdb:${item.id}`, type);
-        }))).filter(Boolean);
+        }, { batchSize: 10, delayMs: 200 });
 
         return { items: filteredMetas, nextPageFetched: startPage + pagesToFetch };
     } catch (err) {
