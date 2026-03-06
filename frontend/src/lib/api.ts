@@ -25,6 +25,8 @@ export const api = {
   clearCache: () => post('/api/clear-cache'),
   searchTmdbKeywords: (query: string) =>
     fetch(`/api/tmdb/search/keyword?query=${encodeURIComponent(query)}`).then(r => r.json()),
+  searchTmdbGenres: (query: string) =>
+    fetch(`/api/tmdb/search/genre?query=${encodeURIComponent(query)}`).then(r => r.json()),
   searchTmdbPeople: (query: string) =>
     fetch(`/api/tmdb/search/person?query=${encodeURIComponent(query)}`).then(r => r.json()),
   generateMergedName: (nameA: string, nameB: string) =>

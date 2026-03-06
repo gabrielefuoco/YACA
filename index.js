@@ -405,6 +405,34 @@ app.get('/api/tmdb/search/person', async (req, res) => {
     }
 });
 
+app.get('/api/tmdb/search/genre', async (req, res) => {
+    const query = String(req.query.query || '').trim().toLowerCase();
+    const tmdbKey = process.env.TMDB_API_KEY;
+    if (!tmdbKey) return res.status(500).json({ error: 'TMDB_API_KEY non configurata sul server' });
+    if (!query) return res.json({ results: [] });
+
+    try {
+        const [movieGenresRes, tvGenresRes] = await Promise.all([
+            axios.get('https://api.themoviedb.org/3/genre/movie/list', {
+                params: { api_key: sanitizeString(tmdbKey), language: 'it-IT' },
+                timeout: 5000
+            }),
+            axios.get('https://api.themoviedb.org/3/genre/tv/list', {
+                params: { api_key: sanitizeString(tmdbKey), language: 'it-IT' },
+                timeout: 5000
+            })
+        ]);
+
+        const merged = [...(movieGenresRes.data?.genres || []), ...(tvGenresRes.data?.genres || [])];
+        const dedupedById = Array.from(new Map(merged.map(genre => [String(genre.id), genre])).values());
+        const filtered = dedupedById.filter((genre) => String(genre.name || '').toLowerCase().includes(query));
+        return res.json({ results: filtered });
+    } catch (err) {
+        console.error('Errore search genre:', err.message);
+        return res.status(500).json({ error: 'Errore durante la ricerca dei generi' });
+    }
+});
+
 // Endpoint per validare una TMDB API Key
 app.post('/api/validate-tmdb-key', async (req, res) => {
     const tmdbKey = req.body.tmdbKey || process.env.TMDB_API_KEY;
@@ -774,14 +802,21 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
             types: ['movie', 'series', 'other'],
             catalogs: [
                 { id: 'yaca-profiles', type: 'other', name: '👥 Cambia Profilo' },
-                { id: 'yaca_search_history', type: 'movie', name: 'Cronologia Ricerche', extra: [{ name: 'skip' }] },
-                { id: 'yaca_ai_search', type: 'movie', name: 'Ricerca AI (Film)', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] },
-                { id: 'yaca_ai_search_series', type: 'series', name: 'Ricerca AI (Serie)', extra: [{ name: 'search', isRequired: true }, { name: 'skip' }] },
+                // Standard Catalogs (Film)
+                { id: 'yaca_preset_preset_new_movies', type: 'movie', name: '🆕 Nuove Uscite', extra: presetExtra },
+                { id: 'yaca_preset_preset_pop_movies', type: 'movie', name: '🔥 Film Popolari', extra: presetExtra },
+                { id: 'yaca_preset_preset_top_rated_movies', type: 'movie', name: '🏆 Film Più Votati', extra: presetExtra },
+                { id: 'yaca_discover_movies', type: 'movie', name: '🎬 Esplora Film', extra: [{ name: 'skip' }] },
                 // Hero Catalogs (Phase 4) — Film
                 { id: 'yaca_true_blend_movies', type: 'movie', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
                 { id: 'yaca_seed_network_movies', type: 'movie', name: '🕸️ La Rete dei tuoi Preferiti', extra: [{ name: 'skip' }] },
                 { id: 'yaca_hidden_gems_movies', type: 'movie', name: '💎 Gemme Nascoste', extra: [{ name: 'skip' }] },
                 { id: 'yaca_trakt_filtered_movies', type: 'movie', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
+                // Standard Catalogs (Serie TV)
+                { id: 'yaca_preset_preset_new_series', type: 'series', name: '🆕 Nuove Serie TV', extra: presetExtra },
+                { id: 'yaca_preset_preset_pop_series', type: 'series', name: '🔥 Serie TV Popolari', extra: presetExtra },
+                { id: 'yaca_preset_preset_top_rated_series', type: 'series', name: '🏆 Serie Più Votate', extra: presetExtra },
+                { id: 'yaca_discover_series', type: 'series', name: '📺 Esplora Serie TV', extra: [{ name: 'skip' }] },
                 // Hero Catalogs (Phase 4) — Serie TV
                 { id: 'yaca_true_blend_series', type: 'series', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
                 { id: 'yaca_seed_network_series', type: 'series', name: '🕸️ La Rete dei tuoi Preferiti', extra: [{ name: 'skip' }] },
@@ -796,29 +831,6 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
             contactEmail: 'yaca.addon@proton.me',
             configurationURL: `${req.protocol}://${req.get('host')}/${req.params.userHandle}/configure`
         };
-
-        let activeProfileCatalogs = [];
-        if (userConfig.profiles && userConfig.activeProfileId) {
-            const profile = userConfig.profiles.find(p => p.id === userConfig.activeProfileId);
-            if (profile && profile.catalogs) {
-                activeProfileCatalogs = profile.catalogs;
-            }
-        } else if (userConfig.catalogs) {
-            activeProfileCatalogs = userConfig.catalogs;
-        }
-
-        if (activeProfileCatalogs.length > 0) {
-            for (const cat of activeProfileCatalogs) {
-                const isPreset = cat.id.startsWith('yaca_preset_');
-                const catName = sanitizeString(cat.name || '');
-                manifest.catalogs.push({
-                    id: cat.id,
-                    type: cat.type || 'movie',
-                    name: isPreset ? catName : `AI: ${catName}`,
-                    extra: presetExtra
-                });
-            }
-        }
 
         return res.json(manifest);
     } catch (err) {

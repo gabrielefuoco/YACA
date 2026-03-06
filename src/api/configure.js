@@ -17,6 +17,41 @@ const LIMITS = {
     MAX_CATALOG_NAME_LENGTH: 50
 };
 
+function splitOrIds(value) {
+    if (Array.isArray(value)) return value.map(String).map(v => v.trim()).filter(Boolean);
+    if (value === null || value === undefined) return [];
+    return String(value).split(/[|,]/).map(v => v.trim()).filter(Boolean);
+}
+
+function buildSuggestedDNAFromPresets(selectedPresets = [], presetsList = []) {
+    const genreCounts = new Map();
+    const keywordCounts = new Map();
+
+    for (const presetId of selectedPresets) {
+        const preset = presetsList.find(p => p.id === presetId);
+        if (!preset?.filters || typeof preset.filters !== 'object') continue;
+
+        for (const gid of splitOrIds(preset.filters.with_genres)) {
+            genreCounts.set(gid, (genreCounts.get(gid) || 0) + 1);
+        }
+        for (const kid of splitOrIds(preset.filters.with_keywords)) {
+            keywordCounts.set(kid, (keywordCounts.get(kid) || 0) + 1);
+        }
+    }
+
+    const topGenres = Array.from(genreCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([id]) => ({ id: String(id), type: 'genre', name: `Genre ${id}` }));
+
+    const topKeywords = Array.from(keywordCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([id]) => ({ id: String(id), type: 'keyword', name: `Keyword ${id}` }));
+
+    return [...topGenres, ...topKeywords];
+}
+
 module.exports = async (req, res) => {
     try {
         const { activeProfileId, profiles, userId: existingUserId } = req.body;
@@ -204,7 +239,15 @@ module.exports = async (req, res) => {
             const minVoteCount = parseInt(profile.settings?.minVoteCount, 10);
             const fastPresetRefresh = Boolean(profile.settings?.fastPresetRefresh);
             const manualDNA = Array.isArray(profile.settings?.manualDNA) ? profile.settings.manualDNA : [];
-            const suggestedDNA = Array.isArray(profile.settings?.suggestedDNA) ? profile.settings.suggestedDNA : [];
+            const requestedSuggestedDNA = Array.isArray(profile.settings?.suggestedDNA) ? profile.settings.suggestedDNA : [];
+            const seededSuggestedDNA = buildSuggestedDNAFromPresets(profile.selectedPresets || [], presetsList);
+            const suggestedDNA = [...requestedSuggestedDNA, ...seededSuggestedDNA].reduce((acc, item) => {
+                if (!item || !item.id || !item.type || !item.name) return acc;
+                if (manualDNA.some((m) => String(m.id) === String(item.id) && m.type === item.type)) return acc;
+                if (acc.some((existing) => String(existing.id) === String(item.id) && existing.type === item.type)) return acc;
+                acc.push({ id: String(item.id), type: item.type, name: String(item.name) });
+                return acc;
+            }, []);
 
             // Se suggestedDNA è vuoto e manualDNA è vuoto, proviamo a recuperare quelli vecchi per compatibilità di migrazione (opzionale)
             // userProfile.settings = { ... }
@@ -273,3 +316,5 @@ module.exports = async (req, res) => {
         res.status(500).json({ error: "Errore interno durante il salvataggio. Riprova." });
     }
 };
+
+module.exports.buildSuggestedDNAFromPresets = buildSuggestedDNAFromPresets;
