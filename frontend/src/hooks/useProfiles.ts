@@ -4,6 +4,27 @@ import { Profile, Catalog } from '@/types';
 
 import { generateId } from '@/lib/utils';
 
+function createGlobalProfile(): Profile {
+  return {
+    id: 'global',
+    name: '🏠 Generale',
+    raw_ui_state: {
+      selectedPresets: [],
+      newPrompts: [],
+      presetOverrides: {},
+      catalogOrder: [],
+    },
+    existingCatalogs: [],
+    settings: {
+      voteAverageMin: 0,
+      voteCountMin: 0,
+      fastRefresh: false,
+      manualDNA: [],
+      suggestedDNA: [],
+    },
+  };
+}
+
 function createDefaultProfile(name: string = 'Profilo Principale'): Profile {
   return {
     id: generateId(),
@@ -27,7 +48,7 @@ export function useProfiles(initialProfiles?: Profile[]) {
   const [profiles, setProfiles] = useState<Profile[]>(
     initialProfiles && initialProfiles.length > 0
       ? initialProfiles
-      : [createDefaultProfile()]
+      : [createGlobalProfile()]
   );
   const [activeProfileId, setActiveProfileId] = useState<string>(
     initialProfiles?.[0]?.id ?? profiles[0]?.id ?? ''
@@ -58,7 +79,23 @@ export function useProfiles(initialProfiles?: Profile[]) {
   const editingProfile = profiles.find((p) => p.id === editingProfileId) ?? profiles[0];
 
   const updateProfile = useCallback((id: string, updates: Partial<Profile>) => {
-    setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+    setProfiles((prev) =>
+      prev.map((p) => {
+        if (p.id !== id) return p;
+        if (p.id === 'global') {
+          const sanitizedSettings = updates.settings
+            ? { ...updates.settings, manualDNA: [] }
+            : undefined;
+          return {
+            ...p,
+            ...updates,
+            name: p.name,
+            settings: sanitizedSettings ? { ...p.settings, ...sanitizedSettings } : p.settings,
+          };
+        }
+        return { ...p, ...updates };
+      })
+    );
   }, []);
 
   const addProfile = useCallback((name: string) => {
@@ -70,9 +107,10 @@ export function useProfiles(initialProfiles?: Profile[]) {
 
   const removeProfile = useCallback(
     (id: string) => {
+      if (id === 'global') return;
       setProfiles((prev) => {
         const remaining = prev.filter((p) => p.id !== id);
-        const result = remaining.length === 0 ? [createDefaultProfile()] : remaining;
+        const result = remaining.length === 0 ? [createGlobalProfile()] : remaining;
         // Update editing/active IDs if the removed profile was selected
         if (editingProfileId === id) {
           setEditingProfileId(result[0]?.id ?? '');

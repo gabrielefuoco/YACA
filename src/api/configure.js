@@ -52,6 +52,25 @@ function buildSuggestedDNAFromPresets(selectedPresets = [], presetsList = []) {
     return [...topGenres, ...topKeywords];
 }
 
+function createGlobalProfileInput() {
+    return {
+        id: 'global',
+        name: 'Generale',
+        selectedPresets: [],
+        existingCatalogs: [],
+        newPrompts: [],
+        presetOverrides: {},
+        catalogOrder: [],
+        settings: {
+            minVoteAverage: 0,
+            minVoteCount: 0,
+            fastPresetRefresh: false,
+            manualDNA: [],
+            suggestedDNA: []
+        }
+    };
+}
+
 module.exports = async (req, res) => {
     try {
         const { activeProfileId, profiles, userId: existingUserId } = req.body;
@@ -113,12 +132,17 @@ module.exports = async (req, res) => {
         if (!profiles || profiles.length === 0) {
             // Retrocompatibilità con i vecchi payload 
             inputProfiles = [{
-                id: 'default',
+                id: 'global',
                 name: 'Generale',
                 selectedPresets: req.body.selectedPresets || [],
                 existingCatalogs: [],
                 newPrompts: req.body.prompts || []
             }];
+        }
+
+        const hasGlobalProfile = inputProfiles.some((p) => p && p.id === 'global');
+        if (!hasGlobalProfile) {
+            inputProfiles = [createGlobalProfileInput(), ...inputProfiles];
         }
 
         // Ricalcola i preset con date dinamiche
@@ -128,6 +152,7 @@ module.exports = async (req, res) => {
 
         // --- PROCESSING PROFILES ---
         for (const profile of inputProfiles) {
+            const isGlobalProfile = profile.id === 'global';
             const parsedCatalogs = [];
 
             // 1. Aggiungi Cataloghi AI Esistenti (se stiamo modificando) - con validazione
@@ -234,11 +259,13 @@ module.exports = async (req, res) => {
                 });
             }
 
-            const profileName = sanitizeString((typeof profile.name === 'string' ? profile.name.trim() : '') || 'Nuovo Profilo');
+            const profileName = isGlobalProfile
+                ? 'Generale'
+                : sanitizeString((typeof profile.name === 'string' ? profile.name.trim() : '') || 'Nuovo Profilo');
             const minVoteAverage = parseFloat(profile.settings?.minVoteAverage);
             const minVoteCount = parseInt(profile.settings?.minVoteCount, 10);
             const fastPresetRefresh = Boolean(profile.settings?.fastPresetRefresh);
-            const manualDNA = Array.isArray(profile.settings?.manualDNA) ? profile.settings.manualDNA : [];
+            const manualDNA = isGlobalProfile ? [] : (Array.isArray(profile.settings?.manualDNA) ? profile.settings.manualDNA : []);
             const requestedSuggestedDNA = Array.isArray(profile.settings?.suggestedDNA) ? profile.settings.suggestedDNA : [];
             const seededSuggestedDNA = buildSuggestedDNAFromPresets(profile.selectedPresets || [], presetsList);
             const suggestedDNA = [...requestedSuggestedDNA, ...seededSuggestedDNA].reduce((acc, item) => {
@@ -256,7 +283,7 @@ module.exports = async (req, res) => {
             }
 
             parsedProfiles.push({
-                id: profile.id || `prof_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+                id: isGlobalProfile ? 'global' : (profile.id || `prof_${Date.now()}_${Math.random().toString(36).substring(7)}`),
                 name: profileName.substring(0, LIMITS.MAX_PROFILE_NAME_LENGTH),
                 catalogs: parsedCatalogs,
                 raw_ui_state: {
@@ -277,7 +304,7 @@ module.exports = async (req, res) => {
 
         const finalActiveProfileId = (activeProfileId && parsedProfiles.some(p => p.id === activeProfileId))
             ? activeProfileId
-            : (parsedProfiles.length > 0 ? parsedProfiles[0].id : null);
+            : (parsedProfiles.some((p) => p.id === 'global') ? 'global' : (parsedProfiles.length > 0 ? parsedProfiles[0].id : null));
 
         const configVersion = Date.now().toString(36);
 

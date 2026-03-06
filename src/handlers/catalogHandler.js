@@ -34,6 +34,15 @@ const EPISODE_CATALOG_IDS = new Set([
     'preset_new_anime_eps'
 ]);
 
+function normalizeContentId(id) {
+    return String(id ?? '').replace(/^tmdb:/i, '').trim();
+}
+
+function buildDnaFiltersForProfile(userConfig, profileId) {
+    const profileSettings = userConfig?.profiles?.find((p) => p.id === profileId)?.settings || {};
+    return [...(profileSettings.manualDNA || []), ...(profileSettings.suggestedDNA || [])];
+}
+
 /**
  * Aggiunge il badge con numero episodio ai poster per cataloghi di episodi recenti.
  * Trova l'ultimo episodio trasmesso e genera l'URL del poster con badge.
@@ -116,13 +125,13 @@ async function filterWatchedItems(metas, userConfig) {
     const watchedIds = new Set([
         ...(profile.processedTraktIds || []),
         ...(profile.processedStremioIds || [])
-    ]);
+    ].map(normalizeContentId));
 
     if (watchedIds.size === 0) return metas;
 
     return metas.filter(item => {
         // Estraiamo l'ID TMDB puro (es. 'tmdb:123' -> '123')
-        const rawId = item.id.toString().replace('tmdb:', '').trim();
+        const rawId = normalizeContentId(item.id);
         return !watchedIds.has(rawId);
     });
 }
@@ -311,11 +320,12 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
             if (changed) {
                 const extraResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
                 // Unione e deduplicazione manuale per ID
-                const existingIds = new Set(results.map(r => r.id));
+                const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
                 for (const item of extraResults) {
-                    if (!existingIds.has(item.id)) {
+                    const normalizedItemId = normalizeContentId(item.id);
+                    if (!existingIds.has(normalizedItemId)) {
                         results.push(item);
-                        existingIds.add(item.id);
+                        existingIds.add(normalizedItemId);
                     }
                 }
             }
@@ -324,11 +334,12 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
             if (results.length < 20 && relaxedParams.with_keywords) {
                 delete relaxedParams.with_keywords;
                 const broadResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
-                const existingIds = new Set(results.map(r => r.id));
+                const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
                 for (const item of broadResults) {
-                    if (!existingIds.has(item.id)) {
+                    const normalizedItemId = normalizeContentId(item.id);
+                    if (!existingIds.has(normalizedItemId)) {
                         results.push(item);
-                        existingIds.add(item.id);
+                        existingIds.add(normalizedItemId);
                     }
                 }
             }
@@ -352,11 +363,11 @@ function interleaveResults(listA = [], listB = [], skip, limit) {
     const seen = new Set();
     const appendIfNotSeen = (item) => {
         if (!item) return;
-        const itemId = item.id;
-        if (itemId === undefined || itemId === null) {
+        if (item.id === undefined || item.id === null) {
             combined.push(item);
             return;
         }
+        const itemId = normalizeContentId(item.id);
         if (!seen.has(itemId)) {
             combined.push(item);
             seen.add(itemId);
@@ -414,8 +425,16 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     const userId = userConfig.userId;
     const profileId = userConfig.activeProfileId;
 
-    // Recupera il profilo per lo scoring finale
-    const profileDoc = userId ? await TasteProfile.findOne({ owner: userId, context: profileId || 'global' }) : null;
+    const activeContext = profileId || 'global';
+    let profileDoc = null;
+    let globalProfileDoc = null;
+    if (userId) {
+        [profileDoc, globalProfileDoc] = await Promise.all([
+            TasteProfile.findOne({ owner: userId, context: activeContext }),
+            activeContext === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
+        ]);
+    }
+    const dnaFilters = buildDnaFiltersForProfile(userConfig, activeContext);
 
     const tasks = [
         // 1. Simple Search (Priorità Max)
@@ -469,14 +488,15 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     const mergedMap = new Map();
     for (const item of flatResults) {
         if (!item || !item.id) continue;
-        if (mergedMap.has(item.id)) {
-            const existing = mergedMap.get(item.id);
+        const normalizedItemId = normalizeContentId(item.id);
+        if (mergedMap.has(normalizedItemId)) {
+            const existing = mergedMap.get(normalizedItemId);
             existing.weight += item.weight;
             if (!existing.sources.includes(item.source)) {
                 existing.sources.push(item.source);
             }
         } else {
-            mergedMap.set(item.id, { ...item, sources: [item.source] });
+            mergedMap.set(normalizedItemId, { ...item, sources: [item.source] });
         }
     }
 
@@ -486,7 +506,10 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     if (profileDoc) {
         for (const item of finalItems) {
             // Se non abbiamo i dati raw (estesi), usiamo quelli disponibili per lo scoring
-            const affinity = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profileDoc);
+            const affinity = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profileDoc, {
+                globalProfile: globalProfileDoc,
+                dnaFilters
+            });
             item.affinity = affinity;
             item.finalScore = (item.weight * 2) + affinity;
         }
@@ -525,8 +548,15 @@ async function catalogHandler(args, userConfig, hostUrl) {
         // Recupera impostazioni del profilo attivo
         let activeProfileSettings = { minVoteAverage: 0, minVoteCount: 0 };
         let profileDoc = null;
+        let globalProfileDoc = null;
+        const activeDnaFilters = buildDnaFiltersForProfile(userConfig, userConfig?.activeProfileId);
         if (userConfig.profiles && userConfig.activeProfileId) {
-            profileDoc = await TasteProfile.findOne({ owner: userConfig.userId, context: userConfig.activeProfileId });
+            [profileDoc, globalProfileDoc] = await Promise.all([
+                TasteProfile.findOne({ owner: userConfig.userId, context: userConfig.activeProfileId }),
+                userConfig.activeProfileId === 'global'
+                    ? Promise.resolve(null)
+                    : TasteProfile.findOne({ owner: userConfig.userId, context: 'global' })
+            ]);
             if (profileDoc && profileDoc.settings) {
                 activeProfileSettings = profileDoc.settings;
             }
@@ -585,8 +615,9 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 // Deduplica e applica ranking profilo
                 const seen = new Set();
                 results = results.filter(item => {
-                    if (seen.has(item.id)) return false;
-                    seen.add(item.id);
+                    const normalizedItemId = normalizeContentId(item.id);
+                    if (seen.has(normalizedItemId)) return false;
+                    seen.add(normalizedItemId);
                     return true;
                 });
 
@@ -738,8 +769,9 @@ async function catalogHandler(args, userConfig, hostUrl) {
             for (const [tmdbResults, traktResults] of pagesResults) {
                 const seen = new Set();
                 let merged = [...tmdbResults, ...traktResults].filter(item => {
-                    if (seen.has(item.id)) return false;
-                    seen.add(item.id);
+                    const normalizedItemId = normalizeContentId(item.id);
+                    if (seen.has(normalizedItemId)) return false;
+                    seen.add(normalizedItemId);
                     return true;
                 });
 
@@ -884,7 +916,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                         } else {
                             // Popularity: combine, deduplicate, and sort
                             const combined = [...listA, ...listB];
-                            const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
+                            const unique = Array.from(new Map(combined.map(item => [normalizeContentId(item.id), item])).values());
                             results = unique
                                 .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
                                 .slice(skip, skip + 20);
@@ -954,7 +986,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     }
 
                     for (const item of results) {
-                        const affinity = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profileDoc);
+                        const affinity = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profileDoc, {
+                            globalProfile: globalProfileDoc,
+                            dnaFilters: activeDnaFilters
+                        });
                         item.affinity = affinity;
 
                         // Formula: (Voto TMDB * Peso TMDB) + (Affinity * Peso Trakt)

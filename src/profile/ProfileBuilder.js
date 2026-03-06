@@ -117,6 +117,14 @@ class ProfileBuilder {
         if (!profile) {
             profile = new TasteProfile({ owner, context });
         }
+        const shouldMirrorToGlobal = context && context !== 'global';
+        let globalProfile = null;
+        if (shouldMirrorToGlobal) {
+            globalProfile = await TasteProfile.findOne({ owner, context: 'global' });
+            if (!globalProfile) {
+                globalProfile = new TasteProfile({ owner, context: 'global' });
+            }
+        }
 
         // Filtra solo quelli non ancora processati
         const newItems = traktHistory.filter(item => {
@@ -176,6 +184,10 @@ class ProfileBuilder {
                         const bingeMultiplier = sessionMultiplierMap.get(tmdbId) || 1.0;
                         this.processItem(profile, details, bingeMultiplier);
                         profile.processedTraktIds.push(tmdbId.toString());
+                        if (globalProfile && !globalProfile.processedTraktIds.includes(tmdbId.toString())) {
+                            this.processItem(globalProfile, details, bingeMultiplier * 0.2);
+                            globalProfile.processedTraktIds.push(tmdbId.toString());
+                        }
                     }
                 } catch (e) {
                     console.error(`Errore processamento item ${tmdbId}:`, e.message);
@@ -186,8 +198,14 @@ class ProfileBuilder {
         }
 
         await profile.save();
+        if (globalProfile) {
+            await globalProfile.save();
+        }
 
         await this.inferDNAFromProfile(profile);
+        if (globalProfile) {
+            await this.inferDNAFromProfile(globalProfile);
+        }
         return profile;
     }
 
@@ -248,15 +266,14 @@ class ProfileBuilder {
      */
     static async inferDNAFromProfile(profile) {
         if (!profile) return;
+        if (profile.context === 'global') return;
 
         try {
             const User = require('../db/models/User');
             const userDoc = await User.findOne({ userId: profile.owner });
             if (!userDoc) return;
 
-            const targetProfiles = profile.context === 'global'
-                ? (Array.isArray(userDoc.profiles) ? userDoc.profiles : [])
-                : (Array.isArray(userDoc.profiles) ? userDoc.profiles.filter(p => p.id === profile.context) : []);
+            const targetProfiles = Array.isArray(userDoc.profiles) ? userDoc.profiles.filter(p => p.id === profile.context) : [];
             if (targetProfiles.length === 0) return;
 
             // Logica di threshold per considerare un asse come "Pilastro"
