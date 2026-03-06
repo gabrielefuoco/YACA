@@ -1,6 +1,7 @@
 const TasteProfile = require('../db/models/TasteProfile');
 const tmdb = require('../clients/tmdb');
 const { BINGE_SESSION_GAP_MS, BINGE_MULTIPLIER } = require('../config');
+const GLOBAL_PROFILE_MIRROR_RATIO = 0.2;
 
 /**
  * Applies logarithmic time-decay accumulation so that repeated scores give
@@ -185,7 +186,7 @@ class ProfileBuilder {
                         this.processItem(profile, details, bingeMultiplier);
                         profile.processedTraktIds.push(tmdbId.toString());
                         if (globalProfile && !globalProfile.processedTraktIds.includes(tmdbId.toString())) {
-                            this.processItem(globalProfile, details, bingeMultiplier * 0.2);
+                            this.processItem(globalProfile, details, bingeMultiplier * GLOBAL_PROFILE_MIRROR_RATIO);
                             globalProfile.processedTraktIds.push(tmdbId.toString());
                         }
                     }

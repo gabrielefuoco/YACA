@@ -1,6 +1,8 @@
 // Bayesian Weighted Rating parameters (Phase 1.3)
 const BAYESIAN_MIN_VOTES = 300;  // m: minimum votes threshold
 const BAYESIAN_MEAN_VOTE = 6.5;  // C: mean vote across the catalogue
+const ACTIVE_PROFILE_WEIGHT = 0.8;
+const GLOBAL_PROFILE_WEIGHT = 0.2;
 
 class ProfileScorer {
     static normalizeDnaId(value) {
@@ -118,7 +120,7 @@ class ProfileScorer {
 
         if (globalProfile) {
             const globalScore = this.calculateBaseItemMatch(tmdbData, globalProfile, context);
-            const finalScore = ((profileScore * 0.8) + (globalScore * 0.2)) * dnaMultiplier;
+            const finalScore = ((profileScore * ACTIVE_PROFILE_WEIGHT) + (globalScore * GLOBAL_PROFILE_WEIGHT)) * dnaMultiplier;
             return Math.min(Math.max(finalScore, 0), 10);
         }
 

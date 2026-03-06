@@ -204,7 +204,9 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
                     existingIds.add(normalizedItemId);
                 }
             }
-        } catch (_e) { return; }
+        } catch (err) {
+            console.debug(`[Hybrid] discover fetch failed in buildSignatureCore (${types}):`, err.message);
+        }
     };
 
     // Phase 2.1: Use OR (|) for broad results — top genres OR top keywords
@@ -558,7 +560,10 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
         params,
         timeout: 5000
     }).then((res) => res.data?.results || [])
-        .catch(() => []);
+        .catch((err) => {
+            console.debug(`[Hybrid] discover fetch failed in buildHiddenGemsCatalog (${types}):`, err.message);
+            return [];
+        });
 
     // Apply ProfileScorer with DNA filter
     const scored = await Promise.all(results.map(async (item) => {
