@@ -52,7 +52,7 @@ const UserConfig = {
             // Anti-overwrite: if user exists and incoming profiles are empty,
             // preserve existing profiles and Trakt tokens from the database.
             if (existingUser) {
-                if (!userData.profiles || userData.profiles.length === 0) {
+                if (!userData.profiles?.length) {
                     if (Array.isArray(existingUser.profiles) && existingUser.profiles.length > 0) {
                         userData.profiles = existingUser.profiles;
                     }
