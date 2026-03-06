@@ -26,6 +26,7 @@ const BadgeImage = require('./src/db/models/BadgeImage');
 const { syncIncrementalRecommendations } = require('./src/engines/hybridRecommendations');
 const { generateMergedName } = require('./src/api/mergeRoutes');
 const CacheManager = require('./src/cache/CacheManager');
+const { rateLimitedMap } = require('./src/utils/rateLimiter');
 
 // Connessione MongoDB
 connectDB();
