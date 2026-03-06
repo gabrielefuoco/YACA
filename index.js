@@ -498,6 +498,8 @@ app.post('/api/check-user', async (req, res) => {
                 traktToken: existingUser.apiKeys?.trakt || null,
                 traktRefreshToken: existingUser.apiKeys?.traktRefresh || null,
                 configVersion: existingUser.config?.configVersion || null,
+                profiles: existingUser.profiles || [],
+                activeProfileId: existingUser.config?.activeProfileId || 'global'
             });
         }
         return res.json({ exists: false });

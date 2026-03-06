@@ -114,17 +114,21 @@ class ProfileBuilder {
      * @param {String} apiKey Chiave API TMDB
      */
     static async syncUserHistory(owner, context, traktHistory, apiKey) {
-        let profile = await TasteProfile.findOne({ owner, context });
-        if (!profile) {
-            profile = new TasteProfile({ owner, context });
-        }
+        // Use findOneAndUpdate with upsert to avoid race conditions creating duplicate profiles
+        let profile = await TasteProfile.findOneAndUpdate(
+            { owner, context },
+            { $setOnInsert: { processedTraktIds: [] } },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
         const shouldMirrorToGlobal = context && context !== 'global';
         let globalProfile = null;
         if (shouldMirrorToGlobal) {
-            globalProfile = await TasteProfile.findOne({ owner, context: 'global' });
-            if (!globalProfile) {
-                globalProfile = new TasteProfile({ owner, context: 'global' });
-            }
+            globalProfile = await TasteProfile.findOneAndUpdate(
+                { owner, context: 'global' },
+                { $setOnInsert: { processedTraktIds: [] } },
+                { upsert: true, new: true, setDefaultsOnInsert: true }
+            );
         }
 
         // Filtra solo quelli non ancora processati
@@ -145,19 +149,19 @@ class ProfileBuilder {
         // Group into sessions by looking at consecutive gaps
         const sessions = [];
         if (itemsWithTime.length > 0) {
-        let currentSession = [itemsWithTime[0]];
-        for (let i = 1; i < itemsWithTime.length; i++) {
-            const prev = itemsWithTime[i - 1];
-            const curr = itemsWithTime[i];
-            const gap = Math.abs(curr.watchedAt - prev.watchedAt);
-            if (gap <= BINGE_SESSION_GAP_MS) {
-                currentSession.push(curr);
-            } else {
-                sessions.push(currentSession);
-                currentSession = [curr];
+            let currentSession = [itemsWithTime[0]];
+            for (let i = 1; i < itemsWithTime.length; i++) {
+                const prev = itemsWithTime[i - 1];
+                const curr = itemsWithTime[i];
+                const gap = Math.abs(curr.watchedAt - prev.watchedAt);
+                if (gap <= BINGE_SESSION_GAP_MS) {
+                    currentSession.push(curr);
+                } else {
+                    sessions.push(currentSession);
+                    currentSession = [curr];
+                }
             }
-        }
-        sessions.push(currentSession);
+            sessions.push(currentSession);
         }
 
         // Determine frequency multiplier: session with >= 3 items in one day counts as binge
@@ -219,11 +223,12 @@ class ProfileBuilder {
     static async syncStremioData(owner, stremioData, apiKey) {
         if (!stremioData) return;
 
-        // Stremio alimenta SEMPRE il profilo globale
-        let profile = await TasteProfile.findOne({ owner, context: 'global' });
-        if (!profile) {
-            profile = new TasteProfile({ owner, context: 'global' });
-        }
+        // Use findOneAndUpdate with upsert to avoid race conditions
+        let profile = await TasteProfile.findOneAndUpdate(
+            { owner, context: 'global' },
+            { $setOnInsert: { processedTraktIds: [] } },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
 
         const allItems = [
             ...stremioData.loved.map(item => ({ item, weight: 4.0 })),

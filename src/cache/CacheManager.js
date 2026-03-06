@@ -63,7 +63,7 @@ class CacheManager {
 
         // 2. L2 (MongoDB)
         try {
-            await mongoose.model('CacheEntry').findOneAndUpdate(
+            await CacheEntry.findOneAndUpdate(
                 { key, namespace: this.namespace },
                 {
                     value,

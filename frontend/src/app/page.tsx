@@ -206,11 +206,26 @@ export default function Home() {
     newStremioAuth: StremioAuth | null,
     newTraktToken: string | null,
     newTraktRefreshToken: string | null,
-    existingUserId?: string
+    existingUserId?: string,
+    existingProfiles?: any[],
+    existingActiveProfileId?: string
   ) => {
     if (newStremioAuth) setStremioAuth(newStremioAuth);
     if (newTraktToken) setTraktToken(newTraktToken);
     if (newTraktRefreshToken) setTraktRefreshToken(newTraktRefreshToken);
+
+    let activeProfiles = profiles;
+
+    // If existing profiles are returned (returning user), restore them immediately
+    if (existingProfiles && Array.isArray(existingProfiles) && existingProfiles.length > 0) {
+      const mapped = existingProfiles.map(mapBackendProfile);
+      setProfiles(mapped);
+      activeProfiles = mapped; // Use these for the configure call below
+
+      if (existingActiveProfileId) {
+        setActiveProfileId(existingActiveProfileId);
+      }
+    }
 
     // If an existing userId was returned from check-user, set it immediately
     if (existingUserId) {
@@ -221,8 +236,8 @@ export default function Home() {
     // Generate initial config
     try {
       const data = await api.configure({
-        profiles: profilesToApiPayload(profiles),
-        activeProfileId,
+        profiles: profilesToApiPayload(activeProfiles),
+        activeProfileId: existingActiveProfileId || activeProfileId,
         userId: existingUserId || (userId ?? undefined),
         stremioAuthKey: newStremioAuth?.authKey,
         email: newStremioAuth?.email,

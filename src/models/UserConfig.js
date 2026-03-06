@@ -29,56 +29,75 @@ const UserConfig = {
      */
     async saveUser(userData) {
         try {
-            let userId = userData.userId;
             const stremioKey = userData.apiKeys?.stremio;
             const email = userData.email;
+            let targetUserId = userData.userId;
 
-            // 1. RECONCILIATION: Check by email first (stable identity)
-            // 2. Fallback: Check by stremio key (session identity)
+            // 1. RECONCILIATION: Find existing user
             let existingUser = null;
             if (email) {
-                existingUser = await User.findOne({ email }).lean();
+                existingUser = await User.findOne({ email });
             }
             if (!existingUser && stremioKey) {
-                existingUser = await User.findOne({ 'apiKeys.stremio': stremioKey }).lean();
+                existingUser = await User.findOne({ 'apiKeys.stremio': stremioKey });
             }
 
-            if (existingUser?.userId) {
-                userId = existingUser.userId;
-            }
-
-            if (!userId) {
-                // Genera un ID corto ed elegante (es. "xK9L2p")
-                userId = nanoid(10);
-            }
-
-            // Anti-overwrite: if user exists and incoming profiles are empty,
-            // preserve existing profiles and Trakt tokens from the database.
+            // If we found an existing user, we MUST use their ID
             if (existingUser) {
-                if (!userData.profiles?.length) {
-                    if (Array.isArray(existingUser.profiles) && existingUser.profiles.length > 0) {
-                        userData.profiles = existingUser.profiles;
-                    }
+                targetUserId = existingUser.userId;
+            }
+
+            // If still no userId, generate a new one
+            if (!targetUserId) {
+                targetUserId = nanoid(10);
+            }
+
+            // 2. DATA PRESERVATION & MERGING
+            if (existingUser) {
+                // Preserve profiles if incoming are empty
+                if (!userData.profiles?.length && existingUser.profiles?.length) {
+                    userData.profiles = existingUser.profiles;
                 }
+
+                // Merge API Keys: preserve existing if incoming are null/missing
+                const mergedApiKeys = {
+                    ...existingUser.apiKeys?.toObject?.() || existingUser.apiKeys,
+                    ...userData.apiKeys
+                };
+
+                // Specific check for Trakt: if incoming is missing, preserve existing
                 if (!userData.apiKeys?.trakt && existingUser.apiKeys?.trakt) {
-                    userData.apiKeys.trakt = existingUser.apiKeys.trakt;
+                    mergedApiKeys.trakt = existingUser.apiKeys.trakt;
                 }
                 if (!userData.apiKeys?.traktRefreshToken && existingUser.apiKeys?.traktRefreshToken) {
-                    userData.apiKeys.traktRefreshToken = existingUser.apiKeys.traktRefreshToken;
+                    mergedApiKeys.traktRefreshToken = existingUser.apiKeys.traktRefreshToken;
                 }
-                // Preserve Stremio Password
                 if (!userData.apiKeys?.stremioPass && existingUser.apiKeys?.stremioPass) {
-                    userData.apiKeys.stremioPass = existingUser.apiKeys.stremioPass;
+                    mergedApiKeys.stremioPass = existingUser.apiKeys.stremioPass;
                 }
+
+                userData.apiKeys = mergedApiKeys;
+
                 // Preserve Email
                 if (!userData.email && existingUser.email) {
                     userData.email = existingUser.email;
                 }
+
+                // Preserve Config
+                userData.config = {
+                    ...existingUser.config?.toObject?.() || existingUser.config,
+                    ...userData.config
+                };
             }
 
+            // Ensure userId is the one we decided on
+            userData.userId = targetUserId;
+
+            // 3. FINAL SAVE
+            // We use findOneAndUpdate with the stable targetUserId
             const updatedUser = await User.findOneAndUpdate(
-                { userId },
-                { ...userData, userId },
+                { userId: targetUserId },
+                { $set: userData },
                 { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
             );
             return updatedUser;

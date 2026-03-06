@@ -9,7 +9,14 @@ import { StremioAuth } from '@/types';
 import { Loader2, CheckCircle2, ChevronRight, Tv2, Film } from 'lucide-react';
 
 interface LoginPageProps {
-  onComplete: (stremioAuth: StremioAuth | null, traktToken: string | null, traktRefreshToken: string | null, existingUserId?: string) => void;
+  onComplete: (
+    stremioAuth: StremioAuth | null,
+    traktToken: string | null,
+    traktRefreshToken: string | null,
+    existingUserId?: string,
+    existingProfiles?: any[],
+    existingActiveProfileId?: string
+  ) => void;
 }
 
 export function LoginPage({ onComplete }: LoginPageProps) {
@@ -51,7 +58,9 @@ export function LoginPage({ onComplete }: LoginPageProps) {
               auth,
               checkResult.traktToken || null,
               checkResult.traktRefreshToken || null,
-              checkResult.userId || undefined
+              checkResult.userId || undefined,
+              checkResult.profiles || undefined,
+              checkResult.activeProfileId || undefined
             );
             setLoading(false);
             return;
