@@ -1,7 +1,9 @@
-const axios = require('axios');
+const { createAxiosInstance } = require('./httpClient');
 
 const ADDON_ID = 'org.stremio.yaca.catalog';
 const STREMIO_TIMEOUT = 10000;
+
+const stremioClient = createAxiosInstance('https://api.strem.io');
 
 /**
  * Aggiorna o aggiunge l'addon YACA nella collezione Stremio dell'utente.
@@ -12,7 +14,7 @@ const STREMIO_TIMEOUT = 10000;
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 async function updateStremioAddonCollection(authKey, manifestUrl) {
-    const getRes = await axios.post('https://api.strem.io/api/addonCollectionGet', {
+    const getRes = await stremioClient.post('/api/addonCollectionGet', {
         type: 'AddonCollectionGet',
         authKey,
         update: true,
@@ -26,7 +28,7 @@ async function updateStremioAddonCollection(authKey, manifestUrl) {
 
     const existingIdx = addons.findIndex(a => a.manifest?.id === ADDON_ID);
 
-    const manifestRes = await axios.get(manifestUrl, { timeout: STREMIO_TIMEOUT });
+    const manifestRes = await stremioClient.get(manifestUrl, { timeout: STREMIO_TIMEOUT });
     const manifest = manifestRes.data;
 
     if (existingIdx !== -1) {
@@ -41,7 +43,7 @@ async function updateStremioAddonCollection(authKey, manifestUrl) {
         });
     }
 
-    const setRes = await axios.post('https://api.strem.io/api/addonCollectionSet', {
+    const setRes = await stremioClient.post('/api/addonCollectionSet', {
         type: 'AddonCollectionSet',
         authKey,
         addons

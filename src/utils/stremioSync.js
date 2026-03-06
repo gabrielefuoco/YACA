@@ -1,11 +1,12 @@
-const axios = require('axios');
+const { createAxiosInstance } = require('./httpClient');
 const User = require('../db/models/User');
 const { fetchTraktCatalog } = require('../clients/trakt'); // We'll need to extend trakt client for POST
 
-const STREMIO_AUTH_URL = 'https://api.strem.io/api';
-const LIKES_KEY_URL = 'https://likes.stremio.com/getAddonKey';
 const LIKES_ADDON_URL = 'https://likes.stremio.com/addons/liked/movies-shows';
 const LOVED_ADDON_URL = 'https://loved.stremio.com/addons/loved/movies-shows';
+
+const stremioClient = createAxiosInstance('https://api.strem.io');
+const stremioLikesClient = createAxiosInstance('https://likes.stremio.com');
 
 /**
  * Fetches data from Stremio (Likes, Loves, Library) and syncs to Global Taste Profile.
@@ -16,7 +17,7 @@ async function syncAllStremioData(userId, authKey) {
         console.log(`[StremioSync] Starting full sync for user ${userId}...`);
 
         // 1. Get Addon Key for Deep Sync
-        const addonKeyRes = await axios.get(`${LIKES_KEY_URL}?key=${authKey}`);
+        const addonKeyRes = await stremioLikesClient.get(`/getAddonKey?key=${authKey}`);
         const addonKey = addonKeyRes.data;
         if (!addonKey) throw new Error('Failed to retrieve Stremio AddonKey');
 
@@ -57,7 +58,7 @@ async function syncAllStremioData(userId, authKey) {
 async function fetchStremioCatalog(baseUrl, addonKey, type, catalogId) {
     try {
         const url = `${baseUrl}/user=${addonKey}/catalog/${type}/${catalogId}.json`;
-        const res = await axios.get(url, { timeout: 10000 });
+        const res = await stremioLikesClient.get(url, { timeout: 10000 });
         return res.data?.metas || [];
     } catch (err) {
         console.warn(`[StremioSync] Failed to fetch catalog ${catalogId}:`, err.message);
@@ -67,7 +68,7 @@ async function fetchStremioCatalog(baseUrl, addonKey, type, catalogId) {
 
 async function fetchStremioLibrary(authKey) {
     try {
-        const res = await axios.post(`${STREMIO_AUTH_URL}/datastoreGet`, {
+        const res = await stremioClient.post('/api/datastoreGet', {
             type: 'DatastoreGet',
             authKey,
             collection: 'libraryItem'

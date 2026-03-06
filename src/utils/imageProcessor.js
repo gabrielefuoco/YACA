@@ -1,4 +1,6 @@
-const axios = require('axios');
+const { createAxiosInstance } = require('./httpClient');
+
+const imageClient = createAxiosInstance('');
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB limite massimo per immagini scaricate
 const IMAGEKIT_ID = process.env.IMAGEKIT_ID || 'yaca_placeholder'; // User should provide this
@@ -43,7 +45,7 @@ async function addBadgeToImage(imageUrl, badgeText) {
         // Se non abbiamo ImageKitID, restituiamo null per fallimento (index.js farà redirect a URL originale)
         if (ikUrl === imageUrl) return null;
 
-        const response = await axios.get(ikUrl, {
+        const response = await imageClient.get(ikUrl, {
             responseType: 'arraybuffer',
             timeout: 15000,
             maxContentLength: MAX_IMAGE_SIZE
