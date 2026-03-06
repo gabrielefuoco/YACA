@@ -24,6 +24,7 @@ jest.mock('nanoid', () => ({
 
 const { buildDiscoveryParams } = require('../src/handlers/catalogHandler');
 const configureHandler = require('../src/api/configure');
+const { buildSuggestedDNAFromPresets } = configureHandler;
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 const User = require('../src/db/models/User');
 const config = require('../src/config');
@@ -55,7 +56,7 @@ describe('YACA 2.1 - cold start suggested DNA seeding', () => {
         const { getPresets } = require('../src/data/presets');
         const presets = getPresets();
 
-        const seeded = configureHandler.buildSuggestedDNAFromPresets(
+        const seeded = buildSuggestedDNAFromPresets(
             ['preset_kdrama_romance', 'preset_kdrama_thriller'],
             presets
         );

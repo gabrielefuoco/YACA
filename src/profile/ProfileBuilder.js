@@ -263,7 +263,7 @@ class ProfileBuilder {
             const MIN_SCORE_THRESHOLD = 50;
 
             // Helper function per analizzare una mappa di score
-            const analyzeScores = (scoreMap, type, existingDNAIds, suggested, nameResolver = null) => {
+            const analyzeScores = (scoreMap, type, existingDNAIds, targetSuggestedDNA, nameResolver = null) => {
                 if (!scoreMap || scoreMap.size === 0) return;
 
                 // Ordina per score decrescente
@@ -285,7 +285,7 @@ class ProfileBuilder {
                 }
 
                 if (isDNA && !existingDNAIds.has(topId)) {
-                    suggested.push({
+                    targetSuggestedDNA.push({
                         type,
                         id: topId,
                         name: nameResolver ? nameResolver(topId) : topId
