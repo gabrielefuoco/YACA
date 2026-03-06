@@ -266,15 +266,16 @@ module.exports = async (req, res) => {
             const minVoteCount = parseInt(profile.settings?.minVoteCount, 10);
             const fastPresetRefresh = Boolean(profile.settings?.fastPresetRefresh);
             const manualDNA = isGlobalProfile ? [] : (Array.isArray(profile.settings?.manualDNA) ? profile.settings.manualDNA : []);
-            const requestedSuggestedDNA = Array.isArray(profile.settings?.suggestedDNA) ? profile.settings.suggestedDNA : [];
-            const seededSuggestedDNA = buildSuggestedDNAFromPresets(profile.selectedPresets || [], presetsList);
-            const suggestedDNA = [...requestedSuggestedDNA, ...seededSuggestedDNA].reduce((acc, item) => {
-                if (!item || !item.id || !item.type || !item.name) return acc;
-                if (manualDNA.some((m) => String(m.id) === String(item.id) && m.type === item.type)) return acc;
-                if (acc.some((existing) => String(existing.id) === String(item.id) && existing.type === item.type)) return acc;
-                acc.push({ id: String(item.id), type: item.type, name: String(item.name) });
-                return acc;
-            }, []);
+            const suggestedDNA = isGlobalProfile ? [] : buildSuggestedDNAFromPresets(profile.selectedPresets || [], presetsList)
+                .filter((item) => {
+                    if (!item || !item.id || !item.type || !item.name) return false;
+                    return !manualDNA.some((m) => String(m.id) === String(item.id) && m.type === item.type);
+                })
+                .reduce((acc, item) => {
+                    if (acc.some((existing) => String(existing.id) === String(item.id) && existing.type === item.type)) return acc;
+                    acc.push({ id: String(item.id), type: item.type, name: String(item.name) });
+                    return acc;
+                }, []);
 
             // Se suggestedDNA è vuoto e manualDNA è vuoto, proviamo a recuperare quelli vecchi per compatibilità di migrazione (opzionale)
             // userProfile.settings = { ... }

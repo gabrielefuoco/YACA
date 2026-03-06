@@ -4,10 +4,12 @@ import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { api } from '@/lib/api';
 import { X, BrainCircuit } from 'lucide-react';
 
+const TEMPLATE_DNA_REFRESH_DELAY_MS = 600; // allow backend save + profile refetch path before refreshing DNA badges
+
 interface ProfileSettingsPanelProps {
     profile: Profile;
     profileTemplates: ProfileTemplate[];
-    onApplyTemplate: (template: ProfileTemplate) => void;
+    onApplyTemplate: (template: ProfileTemplate) => void | Promise<void>;
     onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
     onSetActive: (id: string) => void;
     onRemove: (id: string) => void;
@@ -46,7 +48,7 @@ export function ProfileSettingsPanel({
         });
     };
 
-    const handleApplyTemplate = (template: ProfileTemplate) => {
+    const handleApplyTemplate = async (template: ProfileTemplate) => {
         const hasExistingDNA = profileDNA.length > 0;
         if (hasExistingDNA) {
             const confirm = window.confirm(
@@ -58,7 +60,10 @@ export function ProfileSettingsPanel({
                 // In a more advanced version, we'd trigger a DNA rebuild.
             }
         }
-        onApplyTemplate(template);
+        await onApplyTemplate(template);
+        setTimeout(() => {
+            window.location.reload();
+        }, TEMPLATE_DNA_REFRESH_DELAY_MS);
     };
 
     return (
