@@ -31,8 +31,9 @@ const TmdbRequestCache = {
      * @param {string} endpoint - kept for interface compatibility
      * @param {Array}  stremioData
      * @param {number} nextPage
+     * @param {object} options - (Opzionale) { useRam: boolean }
      */
-    async set(requestHash, endpoint, stremioData, nextPage = 1) {
+    async set(requestHash, endpoint, stremioData, nextPage = 1, options = {}) {
         let updatedAt = Date.now();
 
         // Se stiamo aggiungendo pagine (nextPage > 1), cerchiamo di preservare 
@@ -52,7 +53,7 @@ const TmdbRequestCache = {
             stremioData,
             nextPage,
             updatedAt
-        });
+        }, null, options);
     },
 
     /**

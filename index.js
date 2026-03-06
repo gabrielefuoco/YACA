@@ -478,12 +478,19 @@ app.post('/api/stremio-auth', async (req, res) => {
 
 // Check if user already exists in DB by stremio authKey (skip Trakt for returning users)
 app.post('/api/check-user', async (req, res) => {
-    const { authKey } = req.body;
-    if (!authKey || typeof authKey !== 'string') {
-        return res.status(400).json({ exists: false, error: 'authKey obbligatorio' });
+    const { authKey, email } = req.body;
+    if (!authKey && !email) {
+        return res.status(400).json({ exists: false, error: 'authKey o email obbligatorio' });
     }
     try {
-        const existingUser = await User.findOne({ 'apiKeys.stremio': authKey }).lean();
+        let existingUser = null;
+        if (email) {
+            existingUser = await User.findOne({ email }).lean();
+        }
+        if (!existingUser && authKey) {
+            existingUser = await User.findOne({ 'apiKeys.stremio': authKey }).lean();
+        }
+
         if (existingUser?.userId) {
             return res.json({
                 exists: true,
@@ -694,7 +701,7 @@ app.get('/api/cron/warmup', async (req, res) => {
         allCatalogs,
         async (args) => {
             try {
-                await catalogHandler(args, dummyConfig, hostUrl);
+                await catalogHandler({ ...args, useRam: false }, dummyConfig, hostUrl);
                 console.log(`✅ Cache scaldata per: ${args.id}`);
             } catch (e) {
                 console.error(`❌ Errore warmup ${args.id}:`, e.message);

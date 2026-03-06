@@ -529,7 +529,7 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
  */
 async function catalogHandler(args, userConfig, hostUrl) {
     try {
-        const { type, id, extra, filters: directFilters } = args;
+        const { type, id, extra, filters: directFilters, useRam } = args;
         const skip = extra.skip || 0;
         const search = extra.search || null;
         const sortBy = extra.sortBy || null;
@@ -561,7 +561,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 activeProfileSettings = profileDoc.settings;
             }
         }
-        const cacheOptions = { cacheTtlMs: getCatalogCacheTtlMs(id || 'preview', activeProfileSettings) };
+        const cacheOptions = {
+            cacheTtlMs: getCatalogCacheTtlMs(id || 'preview', activeProfileSettings),
+            useRam: useRam !== undefined ? useRam : true
+        };
 
         // Pulisce l'ID nel caso arrivi come Preset dalla Dashboard
         const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');

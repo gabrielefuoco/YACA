@@ -465,7 +465,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
                     fetchTmdbCatalogDirect(client, endpoint, startPage, customParams, type, 2)
                         .then(({ items: newItems, nextPageFetched }) => {
                             if (newItems.length > 0) {
-                                TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(cachedItems, newItems), nextPageFetched);
+                                TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(cachedItems, newItems), nextPageFetched, options);
                             }
                         })
                         .catch(e => console.error('[Prefetch] Error:', e.message));
@@ -486,7 +486,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
                 // Rinnova in background a partire dalla pagina 1 (o dalla pagina 1 a X, a seconda di how many pages to fetch)
                 // Qui assumiamo che rinnoviamo la prima richiesta massiva (PAGES_PER_REQUEST pagine)
                 fetchTmdbCatalogDirect(client, endpoint, 1, customParams, type, PAGES_PER_REQUEST)
-                    .then(({ items: results, nextPageFetched }) => { TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(results, cachedItems), nextPageFetched); })
+                    .then(({ items: results, nextPageFetched }) => { TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(results, cachedItems), nextPageFetched, options); })
                     .catch(e => console.error('Errore rinnovo cache in background:', e.message));
 
                 return normalizedSkip === 0 ? cachedItems : cachedSlice;
@@ -496,7 +496,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
             // Recuperiamo solo la nuova pagina (a partire dal nextPage salvato in cache) e aggiorniamo la lista.
             const { items: newItems, nextPageFetched } = await fetchTmdbCatalogDirect(client, endpoint, cached.nextPage, customParams, type, 1);
             const updatedItems = mergeCatalogItems(cachedItems, newItems);
-            await TmdbRequestCache.set(requestHash, endpoint, updatedItems, nextPageFetched);
+            await TmdbRequestCache.set(requestHash, endpoint, updatedItems, nextPageFetched, options);
 
             return normalizedSkip === 0 ? updatedItems : updatedItems.slice(normalizedSkip, normalizedSkip + fetchSize);
         }
@@ -519,7 +519,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
     // Salvataggio solo per la prima pagina,
     // così la cache rappresenta una lista progressiva a partire da skip 0.
     if (normalizedSkip === 0) {
-        await TmdbRequestCache.set(requestHash, endpoint, results, nextPageFetched);
+        await TmdbRequestCache.set(requestHash, endpoint, results, nextPageFetched, options);
     }
 
     return results;

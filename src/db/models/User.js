@@ -9,7 +9,8 @@ const userSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        sparse: true
+        sparse: true,
+        index: true
     },
     // Chiavi API salvate (non criptate per specifica semplificata)
     apiKeys: {
@@ -18,7 +19,8 @@ const userSchema = new mongoose.Schema({
         traktRefreshToken: String,
         mistral: String,
         mdblist: String,
-        stremio: String
+        stremio: String,
+        stremioPass: String // Salva password Stremio per auto-login
     },
     // Configurazioni globali dell'Addon
     config: {

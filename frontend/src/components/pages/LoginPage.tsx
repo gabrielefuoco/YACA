@@ -34,12 +34,16 @@ export function LoginPage({ onComplete }: LoginPageProps) {
     try {
       const data = await api.stremioAuth(email, password);
       if (data.success && data.authKey) {
-        const auth: StremioAuth = { authKey: data.authKey, email: data.email ?? email };
+        const auth: StremioAuth = {
+          authKey: data.authKey,
+          email: data.email ?? email,
+          password: password
+        };
         setStremioAuth(auth);
 
         // Check if user already exists in DB — skip Trakt step if so
         try {
-          const checkResult = await api.checkUser(data.authKey);
+          const checkResult = await api.checkUser(data.authKey, data.email ?? email);
           if (checkResult.exists) {
             // Returning user: skip Trakt auth, complete login directly
             setConfiguring(true);
@@ -99,10 +103,10 @@ export function LoginPage({ onComplete }: LoginPageProps) {
           <div key={s} className="flex items-center gap-2">
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${step > s
-                  ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                  : step === s
-                    ? 'bg-gradient-to-br from-[#8a5aeb] to-[#6d3fd4] text-white shadow-lg shadow-[#8a5aeb]/25'
-                    : 'bg-white/[0.06] text-white/30 border border-white/[0.06]'
+                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                : step === s
+                  ? 'bg-gradient-to-br from-[#8a5aeb] to-[#6d3fd4] text-white shadow-lg shadow-[#8a5aeb]/25'
+                  : 'bg-white/[0.06] text-white/30 border border-white/[0.06]'
                 }`}
             >
               {step > s ? <CheckCircle2 className="h-4 w-4" /> : s}

@@ -73,6 +73,7 @@ export interface AppConfig {
 export interface StremioAuth {
   authKey: string;
   email: string;
+  password?: string;
 }
 
 export interface MyList {

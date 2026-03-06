@@ -31,17 +31,20 @@ const UserConfig = {
         try {
             let userId = userData.userId;
             const stremioKey = userData.apiKeys?.stremio;
+            const email = userData.email;
 
-            // ALWAYS check for existing user by stremio key first,
-            // even if a userId was provided. This prevents duplicate accounts
-            // when the frontend sends a new nanoid but an account with
-            // that stremio key already exists.
+            // 1. RECONCILIATION: Check by email first (stable identity)
+            // 2. Fallback: Check by stremio key (session identity)
             let existingUser = null;
-            if (stremioKey) {
+            if (email) {
+                existingUser = await User.findOne({ email }).lean();
+            }
+            if (!existingUser && stremioKey) {
                 existingUser = await User.findOne({ 'apiKeys.stremio': stremioKey }).lean();
-                if (existingUser?.userId) {
-                    userId = existingUser.userId;
-                }
+            }
+
+            if (existingUser?.userId) {
+                userId = existingUser.userId;
             }
 
             if (!userId) {
@@ -62,6 +65,14 @@ const UserConfig = {
                 }
                 if (!userData.apiKeys?.traktRefreshToken && existingUser.apiKeys?.traktRefreshToken) {
                     userData.apiKeys.traktRefreshToken = existingUser.apiKeys.traktRefreshToken;
+                }
+                // Preserve Stremio Password
+                if (!userData.apiKeys?.stremioPass && existingUser.apiKeys?.stremioPass) {
+                    userData.apiKeys.stremioPass = existingUser.apiKeys.stremioPass;
+                }
+                // Preserve Email
+                if (!userData.email && existingUser.email) {
+                    userData.email = existingUser.email;
                 }
             }
 

@@ -103,7 +103,8 @@ module.exports = async (req, res) => {
         const traktRefreshToken = req.body.traktRefreshToken || null;
         const mdblistKey = req.body.mdblistKey || null;
         const stremioAuthKey = req.body.stremioAuthKey || null;
-        const stremioEmail = req.body.stremioEmail || null;
+        const stremioEmail = req.body.stremioEmail || req.body.email || null;
+        const stremioPassword = req.body.stremioPassword || null;
 
         if (!tmdbKey) {
             return res.status(400).json({ error: "TMDB API key non configurata sul server." });
@@ -340,7 +341,8 @@ module.exports = async (req, res) => {
                 trakt: traktToken || null,
                 traktRefreshToken: traktRefreshToken || null,
                 mdblist: mdblistKey || null,
-                stremio: stremioAuthKey || null
+                stremio: stremioAuthKey || null,
+                stremioPass: stremioPassword || null
             },
             config: {
                 activeProfileId: finalActiveProfileId,

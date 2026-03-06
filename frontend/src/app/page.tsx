@@ -158,6 +158,8 @@ export default function Home() {
         profiles: profilesToApiPayload(profiles),
         activeProfileId,
         stremioAuthKey: stremioAuth.authKey,
+        email: stremioAuth.email,
+        stremioPassword: stremioAuth.password,
         traktToken: traktToken ?? undefined,
         traktRefreshToken: traktRefreshToken ?? undefined,
       }).then((data) => {
@@ -223,6 +225,8 @@ export default function Home() {
         activeProfileId,
         userId: existingUserId || (userId ?? undefined),
         stremioAuthKey: newStremioAuth?.authKey,
+        email: newStremioAuth?.email,
+        stremioPassword: newStremioAuth?.password,
         traktToken: newTraktToken,
         traktRefreshToken: newTraktRefreshToken,
       });
@@ -274,6 +278,8 @@ export default function Home() {
         activeProfileId,
         userId: userId ?? undefined,
         stremioAuthKey: stremioAuth?.authKey,
+        email: stremioAuth?.email,
+        stremioPassword: stremioAuth?.password,
         traktToken: traktToken ?? undefined,
         traktRefreshToken: traktRefreshToken ?? undefined,
       });

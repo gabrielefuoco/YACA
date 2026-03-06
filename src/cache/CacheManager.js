@@ -44,24 +44,35 @@ class CacheManager {
     }
 
     /**
-     * Salva un valore in cache (sia L1 che L2).
+     * Salva un valore sia in L1 (RAM) che in L2 (MongoDB)
+     * @param {string} key 
+     * @param {any} value 
+     * @param {number} ttlMs - (Opzionale) TTL specifico in ms
+     * @param {object} options - (Opzionale) { useRam: boolean }
      */
-    async set(key, value, customTtlMs = null) {
-        const ttl = customTtlMs || this.mongoTtlMs;
-        const expiresAt = new Date(Date.now() + ttl);
+    async set(key, value, ttlMs = null, options = { useRam: true }) {
+        if (!key) return;
 
-        // 1. Salva in L1
-        this.l1.set(key, value);
+        const effectiveTtl = ttlMs || this.mongoTtlMs;
+        const useRam = options.useRam !== false;
 
-        // 2. Salva in L2 MongoDB (Upsert)
+        // 1. L1 (RAM) - Opzionale per risparmio memoria (es. pre-warming)
+        if (useRam) {
+            this.l1.set(key, value, ttlMs || this.ramTtlMs);
+        }
+
+        // 2. L2 (MongoDB)
         try {
-            await CacheEntry.findOneAndUpdate(
-                { namespace: this.namespace, key: key },
-                { value: value, expiresAt: expiresAt },
-                { upsert: true, returnDocument: 'after' }
+            await mongoose.model('CacheEntry').findOneAndUpdate(
+                { key, namespace: this.namespace },
+                {
+                    value,
+                    expiresAt: new Date(Date.now() + effectiveTtl)
+                },
+                { upsert: true, new: true }
             );
-        } catch (error) {
-            console.error(`[CacheManager:${this.namespace}] L2 set error:`, error.message);
+        } catch (err) {
+            console.error(`[CacheManager:${this.namespace}] Errore set MongoDB:`, err.message);
         }
     }
 
