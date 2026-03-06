@@ -1,0 +1,107 @@
+jest.mock('../src/db/models/User', () => ({
+    findOne: jest.fn()
+}));
+jest.mock('../src/clients/trakt', () => ({
+    fetchTraktCatalog: jest.fn()
+}));
+jest.mock('../src/utils/mdblist', () => ({
+    fetchMDBListItems: jest.fn(),
+    parseMDBListItems: jest.fn()
+}));
+jest.mock('../src/clients/tmdb', () => ({
+    fetchTmdbCatalog: jest.fn(),
+    createTmdbClient: jest.fn(),
+    getTmdbIdByName: jest.fn(),
+    getTmdbMovieDetails: jest.fn()
+}));
+jest.mock('../src/models/UserConfig', () => ({
+    saveUser: jest.fn(),
+    getUser: jest.fn()
+}));
+jest.mock('nanoid', () => ({
+    nanoid: () => 'mocked-id'
+}));
+
+const { buildDiscoveryParams } = require('../src/handlers/catalogHandler');
+const configureHandler = require('../src/api/configure');
+const ProfileBuilder = require('../src/profile/ProfileBuilder');
+const User = require('../src/db/models/User');
+const config = require('../src/config');
+
+describe('YACA 2.1 - Inclusive OR discovery params', () => {
+    it('normalizes with_genres and with_keywords separators to pipes', async () => {
+        const params = await buildDiscoveryParams({
+            with_genres: '35,18',
+            with_keywords: '9840,123|456',
+            sort_by: 'popularity.desc'
+        }, 'tmdb-key', 'movie', {});
+
+        expect(params.with_genres).toBe('35|18');
+        expect(params.with_keywords).toBe('9840|123|456');
+    });
+
+    it('builds mapped TV genres using OR pipes', async () => {
+        const params = await buildDiscoveryParams({
+            genre_ids: [28, 18]
+        }, 'tmdb-key', 'series', {});
+
+        expect(params.with_genres).toContain('|');
+        expect(params.with_genres.split('|')).toEqual(expect.arrayContaining(['10759', '18']));
+    });
+});
+
+describe('YACA 2.1 - cold start suggested DNA seeding', () => {
+    it('extracts suggested DNA from selected preset filters', () => {
+        const { getPresets } = require('../src/data/presets');
+        const presets = getPresets();
+
+        const seeded = configureHandler.buildSuggestedDNAFromPresets(
+            ['preset_kdrama_romance', 'preset_kdrama_thriller'],
+            presets
+        );
+
+        expect(seeded.some((item) => item.type === 'genre' && item.id === '35')).toBe(true);
+        expect(seeded.some((item) => item.type === 'genre' && item.id === '18')).toBe(true);
+        expect(seeded.some((item) => item.type === 'keyword' && item.id === '9840')).toBe(true);
+    });
+});
+
+describe('YACA 2.1 - global profile DNA inference', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('propagates inferred DNA from global context to user profiles', async () => {
+        const userDoc = {
+            profiles: [
+                { id: 'p1', settings: { manualDNA: [], suggestedDNA: [] } },
+                { id: 'p2', settings: { manualDNA: [], suggestedDNA: [] } }
+            ],
+            save: jest.fn().mockResolvedValue(undefined)
+        };
+        User.findOne.mockResolvedValue(userDoc);
+
+        await ProfileBuilder.inferDNAFromProfile({
+            owner: 'user_1',
+            context: 'global',
+            genreScores: new Map([['28', 80]]),
+            keywordScores: new Map(),
+            countryScores: new Map()
+        });
+
+        expect(userDoc.save).toHaveBeenCalled();
+        expect(userDoc.profiles[0].settings.suggestedDNA).toEqual(
+            expect.arrayContaining([expect.objectContaining({ type: 'genre', id: '28' })])
+        );
+        expect(userDoc.profiles[1].settings.suggestedDNA).toEqual(
+            expect.arrayContaining([expect.objectContaining({ type: 'genre', id: '28' })])
+        );
+    });
+});
+
+describe('YACA 2.1 - enrichment tuning', () => {
+    it('uses expanded enrichment budget and safe delay', () => {
+        expect(config.ENRICHMENT_BUDGET).toBe(18);
+        expect(config.ENRICHMENT_DELAY_MS).toBe(600);
+    });
+});

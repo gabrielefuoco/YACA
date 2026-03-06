@@ -29,9 +29,9 @@ module.exports = {
     RECOMMENDATIONS_CACHE_TTL_MS: 4 * 60 * 60 * 1000,
 
     // Deep Enrichment Settings (Fase 9)
-    ENRICHMENT_BUDGET: 5,        // Max items to enrich per request
+    ENRICHMENT_BUDGET: 18,       // Max items to enrich per request
     ENRICHMENT_CHUNK_SIZE: 1,    // Items per background batch
-    ENRICHMENT_DELAY_MS: 400,    // Delay between background calls
+    ENRICHMENT_DELAY_MS: 600,    // Delay between background calls
 
     // Refined TTLs for Deep Cache
     MOVIE_DETAILS_TTL_MS: 7 * 24 * 60 * 60 * 1000,      // 7 days

@@ -187,10 +187,7 @@ class ProfileBuilder {
 
         await profile.save();
 
-        // Se il contesto non è globale, proviamo a inferire i DNA
-        if (profile.context !== 'global') {
-            await this.inferDNAFromProfile(profile);
-        }
+        await this.inferDNAFromProfile(profile);
         return profile;
     }
 
@@ -250,27 +247,23 @@ class ProfileBuilder {
      * @param {Object} profile Il documento TasteProfile
      */
     static async inferDNAFromProfile(profile) {
-        if (!profile || profile.context === 'global') return;
+        if (!profile) return;
 
         try {
             const User = require('../db/models/User');
             const userDoc = await User.findOne({ userId: profile.owner });
             if (!userDoc) return;
 
-            const userProfile = userDoc.profiles?.find(p => p.id === profile.context);
-            if (!userProfile) return;
-
-            const suggested = userProfile.settings?.suggestedDNA || [];
-            const manual = userProfile.settings?.manualDNA || [];
-            const existingDNAIds = new Set([...suggested.map(p => p.id), ...manual.map(p => p.id)]);
-
-            let newDNAFound = false;
+            const targetProfiles = profile.context === 'global'
+                ? (Array.isArray(userDoc.profiles) ? userDoc.profiles : [])
+                : (Array.isArray(userDoc.profiles) ? userDoc.profiles.filter(p => p.id === profile.context) : []);
+            if (targetProfiles.length === 0) return;
 
             // Logica di threshold per considerare un asse come "Pilastro"
             const MIN_SCORE_THRESHOLD = 50;
 
             // Helper function per analizzare una mappa di score
-            const analyzeScores = (scoreMap, type, nameResolver = null) => {
+            const analyzeScores = (scoreMap, type, existingDNAIds, suggested, nameResolver = null) => {
                 if (!scoreMap || scoreMap.size === 0) return;
 
                 // Ordina per score decrescente
@@ -298,21 +291,32 @@ class ProfileBuilder {
                         name: nameResolver ? nameResolver(topId) : topId
                     });
                     existingDNAIds.add(topId);
-                    newDNAFound = true;
                 }
             };
 
-            // Mapping molto basico per i nomi in questa fase di inferenza background
-            // Il frontend o il DB dovrebbero avere nomi migliori, qui usiamo l'ID o deduzioni logiche se necessario
-            analyzeScores(profile.genreScores, 'genre', (id) => `Genre ${id}`);
-            analyzeScores(profile.keywordScores, 'keyword', (id) => `Keyword ${id}`);
-            analyzeScores(profile.countryScores, 'country', (id) => id);
+            let hasUpdates = false;
+            for (const userProfile of targetProfiles) {
+                const suggested = userProfile.settings?.suggestedDNA || [];
+                const manual = userProfile.settings?.manualDNA || [];
+                const existingDNAIds = new Set([...suggested.map(p => p.id), ...manual.map(p => p.id)]);
+                const beforeCount = suggested.length;
 
-            if (newDNAFound) {
-                if (!userProfile.settings) userProfile.settings = {};
-                userProfile.settings.suggestedDNA = suggested;
+                // Mapping molto basico per i nomi in questa fase di inferenza background
+                // Il frontend o il DB dovrebbero avere nomi migliori, qui usiamo l'ID o deduzioni logiche se necessario
+                analyzeScores(profile.genreScores, 'genre', existingDNAIds, suggested, (id) => `Genre ${id}`);
+                analyzeScores(profile.keywordScores, 'keyword', existingDNAIds, suggested, (id) => `Keyword ${id}`);
+                analyzeScores(profile.countryScores, 'country', existingDNAIds, suggested, (id) => id);
+
+                if (suggested.length > beforeCount) {
+                    if (!userProfile.settings) userProfile.settings = {};
+                    userProfile.settings.suggestedDNA = suggested;
+                    hasUpdates = true;
+                }
+            }
+
+            if (hasUpdates) {
                 await userDoc.save();
-                console.log(`💡 Nuovi DNA suggeriti inferiti per l'utente ${profile.owner}, profilo ${profile.context}`);
+                console.log(`💡 Nuovi DNA suggeriti inferiti per l'utente ${profile.owner}, contesto ${profile.context}`);
             }
 
         } catch (e) {

@@ -14,6 +14,7 @@ const {
     CACHE_TTL_MS,
     FAST_CACHE_TTL_MS,
     SLOW_CACHE_TTL_MS,
+    PAGES_PER_REQUEST,
     FORCED_FAST_CATALOG_IDS,
     FORCED_FAST_PRESET_IDS,
     FORCED_SLOW_PRESET_IDS,
@@ -143,7 +144,7 @@ function getCatalogCacheTtlMs(catalogId, profileSettings = {}) {
  */
 function resolveGenreIds(genreIdsArray, type) {
     if (!genreIdsArray || genreIdsArray.length === 0) return '';
-    if (type === 'movie') return genreIdsArray.join(',');
+    if (type === 'movie') return genreIdsArray.join('|');
 
     const MOVIE_TO_TV_MAP = {
         28: 10759, 12: 10759, 16: 16, 35: 35, 80: 80, 99: 99, 18: 18,
@@ -152,7 +153,7 @@ function resolveGenreIds(genreIdsArray, type) {
     };
 
     const mapped = genreIdsArray.map(id => MOVIE_TO_TV_MAP[id]).filter(id => id !== undefined);
-    return [...new Set(mapped)].join(',');
+    return [...new Set(mapped)].join('|');
 }
 
 /**
@@ -186,6 +187,20 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
     delete tmdbParams.watch_provider;
     delete tmdbParams.original_language;
     delete tmdbParams.target;
+
+    if (tmdbParams.with_genres !== undefined && tmdbParams.with_genres !== null) {
+        const normalizedGenres = Array.isArray(tmdbParams.with_genres)
+            ? tmdbParams.with_genres.map(String)
+            : String(tmdbParams.with_genres).split(/[|,]/).map(g => g.trim()).filter(Boolean);
+        if (normalizedGenres.length > 0) tmdbParams.with_genres = [...new Set(normalizedGenres)].join('|');
+    }
+
+    if (tmdbParams.with_keywords !== undefined && tmdbParams.with_keywords !== null) {
+        const normalizedKeywords = Array.isArray(tmdbParams.with_keywords)
+            ? tmdbParams.with_keywords.map(String)
+            : String(tmdbParams.with_keywords).split(/[|,]/).map(k => k.trim()).filter(Boolean);
+        if (normalizedKeywords.length > 0) tmdbParams.with_keywords = [...new Set(normalizedKeywords)].join('|');
+    }
 
     if (filters.genre_ids?.length) {
         const finalGenres = resolveGenreIds(filters.genre_ids, type);
@@ -707,16 +722,20 @@ async function catalogHandler(args, userConfig, hostUrl) {
             const traktEp = isMovie ? 'popular_movies' : 'popular_shows';
             const contentType = isMovie ? 'movie' : 'series';
 
-            let currentSkip = skip;
             let combinedResults = [];
-            let depth = 0;
-            const MAX_DEPTH = 3;
+            const MAX_DEPTH = Math.max(PAGES_PER_REQUEST, 3);
+            const pageSkips = (userConfig?.config?.hideWatched)
+                ? Array.from({ length: MAX_DEPTH }, (_, i) => skip + (i * 20))
+                : [skip];
 
-            while (combinedResults.length < 20 && depth < MAX_DEPTH) {
-                const [tmdbResults, traktResults] = await Promise.all([
-                    fetchTmdbCatalog(tmdbClient, tmdbEp, currentSkip, { sort_by: 'popularity.desc', 'vote_count.gte': 50 }, contentType, cacheOptions),
-                    fetchTraktCatalog(traktEp, currentSkip, null, tmdbApiKey).catch(() => [])
-                ]);
+            const pagesResults = await Promise.all(pageSkips.map((pageSkip) =>
+                Promise.all([
+                    fetchTmdbCatalog(tmdbClient, tmdbEp, pageSkip, { sort_by: 'popularity.desc', 'vote_count.gte': 50 }, contentType, cacheOptions),
+                    fetchTraktCatalog(traktEp, pageSkip, null, tmdbApiKey).catch(() => [])
+                ])
+            ));
+
+            for (const [tmdbResults, traktResults] of pagesResults) {
                 const seen = new Set();
                 let merged = [...tmdbResults, ...traktResults].filter(item => {
                     if (seen.has(item.id)) return false;
@@ -728,9 +747,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 merged = await filterWatchedItems(merged, userConfig);
                 combinedResults.push(...merged);
 
-                if (merged.length === 0 || !userConfig?.config?.hideWatched) break;
-                currentSkip += 20;
-                depth++;
+                if (combinedResults.length >= 20 || merged.length === 0 || !userConfig?.config?.hideWatched) break;
             }
             results = combinedResults.slice(0, 40);
             enrichResultsWithDeepMetadata(results, tmdbApiKey, contentType);
@@ -765,19 +782,21 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 const needsAuth = baseId.includes('watchlist') || baseId.includes('recommendations') || baseId.includes('history') || baseId.includes('ratings') || baseId.includes('favorites');
                 const finalTraktUname = needsAuth ? traktUname : null;
 
-                let currentSkip = skip;
                 let combinedResults = [];
-                let depth = 0;
-                const MAX_DEPTH = 3;
+                const MAX_DEPTH = Math.max(PAGES_PER_REQUEST, 3);
+                const pageSkips = (userConfig?.config?.hideWatched)
+                    ? Array.from({ length: MAX_DEPTH }, (_, i) => skip + (i * 20))
+                    : [skip];
 
-                while (combinedResults.length < 20 && depth < MAX_DEPTH) {
-                    let pageResults = await fetchTraktCatalog(traktEp, currentSkip, finalTraktUname, tmdbApiKey, refreshContext);
+                const fetchedPages = await Promise.all(
+                    pageSkips.map(pageSkip => fetchTraktCatalog(traktEp, pageSkip, finalTraktUname, tmdbApiKey, refreshContext))
+                );
+
+                for (let pageResults of fetchedPages) {
                     pageResults = await filterWatchedItems(pageResults, userConfig);
                     combinedResults.push(...pageResults);
 
-                    if (pageResults.length === 0 || !userConfig?.config?.hideWatched) break;
-                    currentSkip += 20;
-                    depth++;
+                    if (combinedResults.length >= 20 || pageResults.length === 0 || !userConfig?.config?.hideWatched) break;
                 }
 
                 results = combinedResults.slice(0, 40);
@@ -796,23 +815,25 @@ async function catalogHandler(args, userConfig, hostUrl) {
             const listId = id.replace('yaca_preset_mdblist_', '').replace('mdblist_', '');
             const mdblistKey = userConfig.apiKeys?.mdblist || null;
 
-            let currentSkip = skip;
             let combinedResults = [];
-            let depth = 0;
-            const MAX_DEPTH = 3;
+            const MAX_DEPTH = Math.max(PAGES_PER_REQUEST, 3);
+            const pageSkips = (userConfig?.config?.hideWatched)
+                ? Array.from({ length: MAX_DEPTH }, (_, i) => skip + (i * 20))
+                : [skip];
 
-            while (combinedResults.length < 20 && depth < MAX_DEPTH) {
-                const page = Math.floor(currentSkip / 20) + 1;
+            const parsedPages = await Promise.all(pageSkips.map(async (pageSkip) => {
+                const page = Math.floor(pageSkip / 20) + 1;
                 const items = await fetchMDBListItems(listId, mdblistKey, 'it', page);
-                let pageResults = await parseMDBListItems(items, type, tmdbApiKey, 'it-IT');
+                return parseMDBListItems(items, type, tmdbApiKey, 'it-IT');
+            }));
+
+            for (let pageResults of parsedPages) {
 
                 // Filtro "Hide Watched"
                 pageResults = await filterWatchedItems(pageResults, userConfig);
                 combinedResults.push(...pageResults);
 
-                if (pageResults.length === 0 || !userConfig?.config?.hideWatched) break;
-                currentSkip += 20;
-                depth++;
+                if (combinedResults.length >= 20 || pageResults.length === 0 || !userConfig?.config?.hideWatched) break;
             }
 
             results = combinedResults.slice(0, 40);
@@ -885,26 +906,26 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 // ==========================================
                 if (userConfig?.config?.hideWatched) {
                     let filtered = await filterWatchedItems(results, userConfig);
-                    let currentSkip = skip + 20;
-                    let depth = 0;
-                    const MAX_DEPTH = 3;
+                    const MAX_DEPTH = Math.max(PAGES_PER_REQUEST, 3);
+                    const nextSkips = Array.from({ length: MAX_DEPTH }, (_, i) => skip + 20 + (i * 20));
+                    const nextPages = await Promise.all(
+                        nextSkips.map((nextSkip) =>
+                            executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, nextSkip, activeProfileSettings, cacheOptions)
+                        )
+                    );
 
-                    while (filtered.length < 20 && depth < MAX_DEPTH) {
-                        const nextPage = await executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, currentSkip, activeProfileSettings, cacheOptions);
+                    for (const nextPage of nextPages) {
                         if (!nextPage || nextPage.length === 0) break;
-
                         const nextFiltered = await filterWatchedItems(nextPage, userConfig);
                         filtered.push(...nextFiltered);
-
-                        currentSkip += 20;
-                        depth++;
+                        if (filtered.length >= 20) break;
                     }
                     results = filtered;
                 }
 
                 const withGenres = Array.isArray(finalFilters.with_genres)
                     ? finalFilters.with_genres.map(String)
-                    : String(finalFilters.with_genres ?? '').split(',');
+                    : String(finalFilters.with_genres ?? '').split(/[|,]/);
 
                 if ((!results || results.length === 0) && withGenres.includes('99') && finalFilters.with_keywords) {
                     const relaxedFilters = { ...finalFilters };
