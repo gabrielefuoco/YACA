@@ -709,6 +709,11 @@ app.get('/api/cron/warmup', async (req, res) => {
                 console.log(`✅ Cache scaldata per: ${args.id}`);
             } catch (e) {
                 console.error(`❌ Errore warmup ${args.id}:`, e.message);
+            } finally {
+                if (global.gc) {
+                    global.gc();
+                    console.log(`🧹 RAM liberata forzatamente dopo: ${args.id}`);
+                }
             }
         },
         { batchSize: WARMUP_BATCH_SIZE, delayMs: WARMUP_DELAY_MS }
