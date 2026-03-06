@@ -836,11 +836,11 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
         ];
 
         // Add User Presets
-        if (profile && profile.presets && Array.isArray(profile.presets)) {
-            profile.presets.forEach(p => {
+        if (profile && profile.catalogs && Array.isArray(profile.catalogs)) {
+            profile.catalogs.forEach(p => {
                 if (p.isActive !== false) {
                     catalogs.push({
-                        id: `yaca_preset_${p.id}`,
+                        id: p.id,
                         type: p.type === 'series' ? 'series' : 'movie',
                         name: p.name,
                         extra: presetExtra

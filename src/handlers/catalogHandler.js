@@ -575,7 +575,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
         // Risoluzione metadati catalogo (Preset o Lista Utente)
         let catalogMeta = presetsList.find(p => p.id === baseId);
-        if (!catalogMeta && (id?.length === 21 || id?.length === 24)) { // Lunghezza tipica nanoid o ObjectId
+        if (!catalogMeta) {
+            // Se non è un preset hardcoded, cerchiamo nelle liste personalizzate dell'utente (AI o manuali)
             catalogMeta = await UserList.findOne({ listId: id }).lean();
         }
 
