@@ -44,10 +44,15 @@ function createDefaultProfile(name: string = 'Profilo Principale'): Profile {
   };
 }
 
+function ensureGlobalProfile(list: Profile[]): Profile[] {
+  if (list.some((p) => p.id === 'global')) return list;
+  return [createGlobalProfile(), ...list];
+}
+
 export function useProfiles(initialProfiles?: Profile[]) {
   const [profiles, setProfiles] = useState<Profile[]>(
     initialProfiles && initialProfiles.length > 0
-      ? initialProfiles
+      ? ensureGlobalProfile(initialProfiles)
       : [createGlobalProfile()]
   );
   const [activeProfileId, setActiveProfileId] = useState<string>(
@@ -60,17 +65,18 @@ export function useProfiles(initialProfiles?: Profile[]) {
   // Sync when initialProfiles changes (e.g. after async config decode or save)
   useEffect(() => {
     if (initialProfiles && initialProfiles.length > 0) {
+      const safe = ensureGlobalProfile(initialProfiles);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setProfiles((current) => {
         // Only update if reference or length changed to avoid loop
-        if (current === initialProfiles) return current;
-        return initialProfiles;
+        if (current === safe) return current;
+        return safe;
       });
       setActiveProfileId((prev) =>
-        initialProfiles.some((p) => p.id === prev) ? prev : initialProfiles[0].id
+        safe.some((p) => p.id === prev) ? prev : safe[0].id
       );
       setEditingProfileId((prev) =>
-        initialProfiles.some((p) => p.id === prev) ? prev : initialProfiles[0].id
+        safe.some((p) => p.id === prev) ? prev : safe[0].id
       );
     }
   }, [initialProfiles]);

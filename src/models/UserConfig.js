@@ -36,8 +36,9 @@ const UserConfig = {
             // even if a userId was provided. This prevents duplicate accounts
             // when the frontend sends a new nanoid but an account with
             // that stremio key already exists.
+            let existingUser = null;
             if (stremioKey) {
-                const existingUser = await User.findOne({ 'apiKeys.stremio': stremioKey }).select('userId').lean();
+                existingUser = await User.findOne({ 'apiKeys.stremio': stremioKey }).lean();
                 if (existingUser?.userId) {
                     userId = existingUser.userId;
                 }
@@ -46,6 +47,22 @@ const UserConfig = {
             if (!userId) {
                 // Genera un ID corto ed elegante (es. "xK9L2p")
                 userId = nanoid(10);
+            }
+
+            // Anti-overwrite: if user exists and incoming profiles are empty,
+            // preserve existing profiles and Trakt tokens from the database.
+            if (existingUser) {
+                if (!userData.profiles?.length) {
+                    if (Array.isArray(existingUser.profiles) && existingUser.profiles.length > 0) {
+                        userData.profiles = existingUser.profiles;
+                    }
+                }
+                if (!userData.apiKeys?.trakt && existingUser.apiKeys?.trakt) {
+                    userData.apiKeys.trakt = existingUser.apiKeys.trakt;
+                }
+                if (!userData.apiKeys?.traktRefreshToken && existingUser.apiKeys?.traktRefreshToken) {
+                    userData.apiKeys.traktRefreshToken = existingUser.apiKeys.traktRefreshToken;
+                }
             }
 
             const updatedUser = await User.findOneAndUpdate(

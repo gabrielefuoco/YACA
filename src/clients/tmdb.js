@@ -52,11 +52,11 @@ const createTmdbClient = (apiKey) => {
     return client;
 };
 
-const idNameCache = new CacheManager('tmdb_id_name', { ramMax: 1000, ramTtlMs: 1000 * 60 * 60, mongoTtlMs: 1000 * 60 * 60 });
-const imdbIdCache = new CacheManager('tmdb_imdb_id', { ramMax: 10000, ramTtlMs: 1000 * 60 * 60 * 24 * 7, mongoTtlMs: 1000 * 60 * 60 * 24 * 7 });
-const movieMetaCache = new CacheManager('tmdb_movie_meta', { ramMax: 2000, ramTtlMs: MOVIE_META_CACHE_TTL_MS, mongoTtlMs: MOVIE_META_CACHE_TTL_MS });
-const seriesMetaCache = new CacheManager('tmdb_series_meta', { ramMax: 2000, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS });
-const tvEpisodesCache = new CacheManager('tmdb_episodes', { ramMax: 2000, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS });
+const idNameCache = new CacheManager('tmdb_id_name', { ramMax: 50, ramTtlMs: 1000 * 60 * 60, mongoTtlMs: 1000 * 60 * 60 });
+const imdbIdCache = new CacheManager('tmdb_imdb_id', { ramMax: 50, ramTtlMs: 1000 * 60 * 60 * 24 * 7, mongoTtlMs: 1000 * 60 * 60 * 24 * 7 });
+const movieMetaCache = new CacheManager('tmdb_movie_meta', { ramMax: 50, ramTtlMs: MOVIE_META_CACHE_TTL_MS, mongoTtlMs: MOVIE_META_CACHE_TTL_MS });
+const seriesMetaCache = new CacheManager('tmdb_series_meta', { ramMax: 50, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS });
+const tvEpisodesCache = new CacheManager('tmdb_episodes', { ramMax: 50, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS });
 
 /**
  * Traduce una stringa (es. nome attore o keyword) nel suo ID TMDB effettuando una fetch al volo
@@ -723,7 +723,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
     return meta;
 }
 
-const tmdbDetailsCache = new CacheManager('tmdb_details_raw', { ramMax: 1000, ramTtlMs: 24 * 60 * 60 * 1000, mongoTtlMs: MOVIE_DETAILS_TTL_MS });
+const tmdbDetailsCache = new CacheManager('tmdb_details_raw', { ramMax: 50, ramTtlMs: 24 * 60 * 60 * 1000, mongoTtlMs: MOVIE_DETAILS_TTL_MS });
 
 /**
  * Ottiene i dettagli grezzi di un contenuto TMDB (inclusi credits e keywords)

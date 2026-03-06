@@ -4,7 +4,7 @@ const CacheEntry = require('../db/models/CacheEntry');
 class CacheManager {
     static instances = [];
 
-    constructor(namespace, { ramMax = 500, ramTtlMs = 300000, mongoTtlMs = 86400000 } = {}) {
+    constructor(namespace, { ramMax = 50, ramTtlMs = 300000, mongoTtlMs = 86400000 } = {}) {
         this.namespace = namespace;
         this.mongoTtlMs = mongoTtlMs;
 

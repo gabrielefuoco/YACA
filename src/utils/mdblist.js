@@ -3,7 +3,7 @@ const { getTmdbMetaDetails } = require("../clients/tmdb");
 const CacheManager = require("../cache/CacheManager");
 
 const ratingsCache = new CacheManager('mdblist_ratings', {
-    ramMax: 5000,
+    ramMax: 50,
     ramTtlMs: 1000 * 60 * 60 * 6, // 6h RAM
     mongoTtlMs: 1000 * 60 * 60 * 24 // 24h MongoDB
 });

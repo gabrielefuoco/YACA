@@ -8,6 +8,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=400
       - key: HOST_URL
         sync: false
       - key: TRAKT_CLIENT_ID
