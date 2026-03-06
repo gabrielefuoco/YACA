@@ -1,4 +1,5 @@
 const { fetchTmdbCatalog, createTmdbClient, getTmdbIdByName, getTmdbMovieDetails } = require('../clients/tmdb');
+const { rateLimitedMap } = require('../utils/rateLimiter');
 const { fetchKitsuCatalog } = require('../clients/kitsu');
 const { fetchTraktCatalog } = require('../clients/trakt');
 const { fetchMDBListItems, parseMDBListItems } = require('../utils/mdblist');
@@ -649,12 +650,11 @@ async function catalogHandler(args, userConfig, hostUrl) {
             let combinedResults = [];
 
             const parallelPages = (userConfig?.config?.hideWatched) ? 3 : 1;
-            const promises = [];
-            for (let i = 0; i < parallelPages; i++) {
-                promises.push(executeCombinedSearch(search, userConfig, type, currentSkip + (i * 20), activeProfileSettings, cacheOptions));
-            }
-
-            const pagesResults = await Promise.all(promises);
+            const pagesResults = await rateLimitedMap(
+                Array.from({ length: parallelPages }, (_, i) => i),
+                (i) => executeCombinedSearch(search, userConfig, type, currentSkip + (i * 20), activeProfileSettings, cacheOptions),
+                { batchSize: 3, delayMs: 50 }
+            );
             for (let pageResults of pagesResults) {
                 pageResults = await filterWatchedItems(pageResults, userConfig);
                 combinedResults.push(...pageResults);
@@ -683,12 +683,11 @@ async function catalogHandler(args, userConfig, hostUrl) {
             };
 
             const parallelPages = (userConfig?.config?.hideWatched) ? 3 : 1;
-            const promises = [];
-            for (let i = 0; i < parallelPages; i++) {
-                promises.push(fetchTmdbCatalog(tmdbClient, endpoint, currentSkip + (i * 20), params, contentType, cacheOptions));
-            }
-
-            const pagesResults = await Promise.all(promises);
+            const pagesResults = await rateLimitedMap(
+                Array.from({ length: parallelPages }, (_, i) => i),
+                (i) => fetchTmdbCatalog(tmdbClient, endpoint, currentSkip + (i * 20), params, contentType, cacheOptions),
+                { batchSize: 3, delayMs: 50 }
+            );
             for (let pageResults of pagesResults) {
                 pageResults = await filterWatchedItems(pageResults, userConfig);
                 combinedResults.push(...pageResults);
@@ -943,10 +942,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     let filtered = await filterWatchedItems(results, userConfig);
                     const MAX_DEPTH = Math.max(PAGES_PER_REQUEST, 3);
                     const nextSkips = Array.from({ length: MAX_DEPTH }, (_, i) => skip + 20 + (i * 20));
-                    const nextPages = await Promise.all(
-                        nextSkips.map((nextSkip) =>
-                            executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, nextSkip, activeProfileSettings, cacheOptions)
-                        )
+                    const nextPages = await rateLimitedMap(
+                        nextSkips,
+                        (nextSkip) => executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, nextSkip, activeProfileSettings, cacheOptions),
+                        { batchSize: 2, delayMs: 50 }
                     );
 
                     for (const nextPage of nextPages) {

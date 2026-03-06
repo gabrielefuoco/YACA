@@ -4,7 +4,7 @@ const CacheEntry = require('../db/models/CacheEntry');
 class CacheManager {
     static instances = [];
 
-    constructor(namespace, { ramMax = 50, ramTtlMs = 300000, mongoTtlMs = 86400000 } = {}) {
+    constructor(namespace, { ramMax = 20, ramTtlMs = 300000, mongoTtlMs = 86400000 } = {}) {
         this.namespace = namespace;
         this.mongoTtlMs = mongoTtlMs;
 
@@ -69,7 +69,7 @@ class CacheManager {
                     value,
                     expiresAt: new Date(Date.now() + effectiveTtl)
                 },
-                { upsert: true, new: true }
+                { upsert: true, returnDocument: 'after' }
             );
         } catch (err) {
             console.error(`[CacheManager:${this.namespace}] Errore set MongoDB:`, err.message);

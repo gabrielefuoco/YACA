@@ -59,7 +59,8 @@ async function syncTraktTokensToDb(userId, newAccessToken, newRefreshToken) {
                     'apiKeys.trakt': newAccessToken,
                     'apiKeys.traktRefreshToken': newRefreshToken
                 }
-            }
+            },
+            { returnDocument: 'after' }
         );
         console.log(`Trakt auto-refresh: token aggiornati nel DB per l'utente ${userId}.`);
         return true;

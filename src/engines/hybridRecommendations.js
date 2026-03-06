@@ -6,9 +6,10 @@ const User = require('../db/models/User');
 const ProfileBuilder = require('../profile/ProfileBuilder');
 const ProfileScorer = require('../profile/ProfileScorer');
 const tmdb = require('../clients/tmdb');
+const { rateLimitedMap } = require('../utils/rateLimiter');
 
 // Cache per i cataloghi finali generati (RAM Livello 3)
-const catalogCache = new LRUCache({ max: 100, ttl: RECOMMENDATIONS_CACHE_TTL_MS });
+const catalogCache = new LRUCache({ max: 20, ttl: RECOMMENDATIONS_CACHE_TTL_MS });
 // Alias per compatibilità con i test
 const recommendationsCache = catalogCache;
 
@@ -94,17 +95,18 @@ async function fetchTmdbSimilarCounts(seedTmdbIds, tmdbApiKey, mediaType = 'movi
 
     if (!seedTmdbIds || seedTmdbIds.length === 0) return counts;
 
-    const promises = seedTmdbIds.map(id =>
-        axios.get(`https://api.themoviedb.org/3/${types}/${id}/recommendations`, {
+    const results = await rateLimitedMap(
+        seedTmdbIds,
+        (id) => axios.get(`https://api.themoviedb.org/3/${types}/${id}/recommendations`, {
             params: { api_key: tmdbApiKey },
             timeout: 5000
-        }).catch(() => null)
+        }).catch(() => null),
+        { batchSize: 5, delayMs: 50 }
     );
 
-    const results = await Promise.allSettled(promises);
-    results.forEach(r => {
-        if (r.status === 'fulfilled' && r.value?.data?.results) {
-            for (const item of r.value.data.results) {
+    results.forEach(res => {
+        if (res && res.data?.results) {
+            for (const item of res.data.results) {
                 counts.set(item.id, (counts.get(item.id) || 0) + 1);
             }
         }
@@ -227,11 +229,15 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
     }
 
     // Final score
-    const scored = await Promise.all(results.map(async (item) => {
-        const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-        const score = ProfileScorer.calculateItemMatch(details, profile, { globalProfile, dnaFilters });
-        return { data: item, score };
-    }));
+    const scored = await rateLimitedMap(
+        results,
+        async (item) => {
+            const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
+            const score = ProfileScorer.calculateItemMatch(details, profile, { globalProfile, dnaFilters });
+            return { data: item, score };
+        },
+        { batchSize: 5, delayMs: 50 }
+    );
 
     return scored.sort((a, b) => b.score - a.score).map(i => String(i.data.id));
 }
@@ -294,11 +300,15 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
         });
     }
 
-    const scored = await Promise.all(results.map(async (item) => {
-        const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-        const score = ProfileScorer.calculateItemMatch(details, profile, { globalProfile, dnaFilters });
-        return { data: item, score };
-    }));
+    const scored = await rateLimitedMap(
+        results,
+        async (item) => {
+            const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
+            const score = ProfileScorer.calculateItemMatch(details, profile, { globalProfile, dnaFilters });
+            return { data: item, score };
+        },
+        { batchSize: 5, delayMs: 50 }
+    );
 
     const final = scored.sort((a, b) => b.score - a.score);
     return final.slice(0, 60).map(i => String(i.data.id));
@@ -324,16 +334,19 @@ async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, media
     const history = await fetchRecentHistory(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 5);
     const traktRecs = [];
     if (history.length > 0) {
-        const promises = history.slice(0, 3).map(item => {
-            const id = item.movie?.ids?.tmdb || item.show?.ids?.tmdb;
-            return axios.get(`https://api.themoviedb.org/3/${types}/${id}/recommendations`, {
-                params: { api_key: tmdbApiKey },
-                timeout: 5000
-            }).catch(() => null);
-        });
-        const results = await Promise.allSettled(promises);
-        results.forEach(r => {
-            if (r.status === 'fulfilled' && r.value?.data?.results) traktRecs.push(...r.value.data.results);
+        const results = await rateLimitedMap(
+            history.slice(0, 3),
+            (item) => {
+                const id = item.movie?.ids?.tmdb || item.show?.ids?.tmdb;
+                return axios.get(`https://api.themoviedb.org/3/${types}/${id}/recommendations`, {
+                    params: { api_key: tmdbApiKey },
+                    timeout: 5000
+                }).catch(() => null);
+            },
+            { batchSize: 5, delayMs: 50 }
+        );
+        results.forEach(res => {
+            if (res && res.data?.results) traktRecs.push(...res.data.results);
         });
     }
 
@@ -346,11 +359,15 @@ async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, media
     let combined = [...(searchRes?.data?.results || []), ...traktRecs];
     const uniquePool = [...new Map(combined.map(item => [normalizeContentId(item.id), item])).values()];
 
-    const scored = await Promise.all(uniquePool.slice(0, 50).map(async (item) => {
-        const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-        const score = ProfileScorer.calculateItemMatch(details, profile, { globalProfile, dnaFilters });
-        return { data: item, score };
-    }));
+    const scored = await rateLimitedMap(
+        uniquePool.slice(0, 50),
+        async (item) => {
+            const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
+            const score = ProfileScorer.calculateItemMatch(details, profile, { globalProfile, dnaFilters });
+            return { data: item, score };
+        },
+        { batchSize: 5, delayMs: 50 }
+    );
 
     return scored.sort((a, b) => b.score - a.score).slice(0, 20).map(i => String(i.data.id));
 }
@@ -412,25 +429,31 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     // Source 3: Simili a 5 titoli amati casuali dal profilo
     const lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 5);
     if (lovedIds.length > 0) {
-        const similarResults = await Promise.allSettled(lovedIds.map(id =>
-            axios.get(`https://api.themoviedb.org/3/${types}/${id}/recommendations`, {
+        const similarResults = await rateLimitedMap(
+            lovedIds,
+            (id) => axios.get(`https://api.themoviedb.org/3/${types}/${id}/recommendations`, {
                 params: { api_key: tmdbApiKey },
                 timeout: 5000
-            }).catch(() => null)
-        ));
-        similarResults.forEach(r => {
-            if (r.status === 'fulfilled' && r.value?.data?.results) {
-                addResults(r.value.data.results);
+            }).catch(() => null),
+            { batchSize: 5, delayMs: 50 }
+        );
+        similarResults.forEach(res => {
+            if (res && res.data?.results) {
+                addResults(res.data.results);
             }
         });
     }
 
     // Score and filter with ProfileScorer (DNA acts as bouncer)
-    const scored = await Promise.all(pool.map(async (item) => {
-        const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
-        return { data: item, score };
-    }));
+    const scored = await rateLimitedMap(
+        pool.slice(0, 100),
+        async (item) => {
+            const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
+            const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
+            return { data: item, score };
+        },
+        { batchSize: 5, delayMs: 50 }
+    );
 
     return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => String(i.data.id));
 }
@@ -473,20 +496,20 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const weightedCounts = new Map(); // tmdbId -> weighted score
     const seedTmdbIds = allSeeds.map(s => s.id);
 
-    const similarPromises = allSeeds.map(seed =>
-        axios.get(`https://api.themoviedb.org/3/${types}/${seed.id}/recommendations`, {
+    const allSimilar = await rateLimitedMap(
+        allSeeds,
+        (seed) => axios.get(`https://api.themoviedb.org/3/${types}/${seed.id}/recommendations`, {
             params: { api_key: tmdbApiKey },
             timeout: 5000
         }).then(res => ({ results: res.data?.results || [], weight: seed.weight }))
-          .catch(() => ({ results: [], weight: seed.weight }))
+            .catch(() => ({ results: [], weight: seed.weight })),
+        { batchSize: 5, delayMs: 50 }
     );
-
-    const allSimilar = await Promise.allSettled(similarPromises);
     const itemData = new Map(); // tmdbId -> raw item data
 
-    allSimilar.forEach(r => {
-        if (r.status === 'fulfilled') {
-            const { results, weight } = r.value;
+    allSimilar.forEach(res => {
+        if (res) {
+            const { results, weight } = res;
             for (const item of results) {
                 const existing = weightedCounts.get(item.id) || 0;
                 weightedCounts.set(item.id, existing + weight);
@@ -513,11 +536,15 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     candidates.sort((a, b) => b.hybridScore - a.hybridScore);
 
     // Apply ProfileScorer with DNA filtering
-    const scored = await Promise.all(candidates.slice(0, 80).map(async ({ data }) => {
-        const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, data.id, types);
-        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
-        return { data, score };
-    }));
+    const scored = await rateLimitedMap(
+        candidates.slice(0, 80),
+        async ({ data }) => {
+            const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, data.id, types);
+            const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
+            return { data, score };
+        },
+        { batchSize: 5, delayMs: 50 }
+    );
 
     return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => String(i.data.id));
 }
@@ -566,11 +593,15 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
         });
 
     // Apply ProfileScorer with DNA filter
-    const scored = await Promise.all(results.map(async (item) => {
-        const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
-        return { data: item, score };
-    }));
+    const scored = await rateLimitedMap(
+        results.slice(0, 70),
+        async (item) => {
+            const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
+            const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
+            return { data: item, score };
+        },
+        { batchSize: 5, delayMs: 50 }
+    );
 
     return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => String(i.data.id));
 }
@@ -599,12 +630,16 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
     if (traktTmdbIds.length === 0) return [];
 
     // Enrich and score with ProfileScorer
-    const scored = await Promise.all(traktTmdbIds.map(async (id) => {
-        const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, id, types);
-        if (!details) return null;
-        const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
-        return { data: details, score };
-    }));
+    const scored = await rateLimitedMap(
+        traktTmdbIds.slice(0, 40),
+        async (id) => {
+            const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, id, types);
+            if (!details) return null;
+            const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
+            return { data: details, score };
+        },
+        { batchSize: 5, delayMs: 50 }
+    );
 
     return scored
         .filter(Boolean)
@@ -670,14 +705,13 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     const pageIds = recommendationIds.slice(skip, skip + ITEMS_PER_PAGE);
     if (pageIds.length === 0) return [];
 
-    const enrichPromises = pageIds.map(async (tmdbId) => {
-        return await tmdb.getTmdbMetaDetails(tmdbApiKey, `tmdb:${tmdbId}`, mediaType);
-    });
+    const results = await rateLimitedMap(
+        pageIds,
+        (tmdbId) => tmdb.getTmdbMetaDetails(tmdbApiKey, `tmdb:${tmdbId}`, mediaType),
+        { batchSize: 5, delayMs: 50 }
+    );
 
-    const results = await Promise.allSettled(enrichPromises);
-    return results
-        .filter(r => r.status === 'fulfilled' && r.value)
-        .map(r => r.value);
+    return results.filter(Boolean);
 }
 
 /**

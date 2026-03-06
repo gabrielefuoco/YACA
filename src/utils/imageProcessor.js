@@ -1,67 +1,59 @@
-const sharp = require('sharp');
 const axios = require('axios');
-const LRUCache = require('./LRUCache');
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB limite massimo per immagini scaricate
-const imageCache = new LRUCache({ max: 100 });
+const IMAGEKIT_ID = process.env.IMAGEKIT_ID || 'yaca_placeholder'; // User should provide this
 
 /**
  * Genera un URL di sfocatura delegando a wsrv.nl (proxy esterno gratuito).
- * Non scarica né elabora l'immagine in locale.
  */
 function getBlurredImageUrl(imageUrl) {
     return `https://wsrv.nl/?url=${encodeURIComponent(imageUrl)}&blur=20`;
 }
 
 /**
- * Scarica un poster e aggiunge un badge con testo (es. numero episodio) in sovraimpressione.
- * Usa una cache LRU per proteggere la RAM (max 100 immagini).
+ * Costruisce l'URL ImageKit per aggiungere un badge di testo.
+ * Usa le trasformazioni di ImageKit per evitare l'uso di Sharp e RAM locale.
+ * Documentazione: https://docs.imagekit.io/features/image-transformations/overlay
+ */
+function getImageKitUrl(imageUrl, text) {
+    if (!IMAGEKIT_ID || IMAGEKIT_ID === 'yaca_placeholder') {
+        return imageUrl; // Fallback se non configurato
+    }
+
+    // Encoding speciale per ImageKit (testo nell'URL)
+    const safeText = encodeURIComponent(text).replace(/,/g, '%2C');
+
+    // Configura i parametri dell'overlay
+    // ot: testo, otc: colore bianco, ots: dimensione font, otbg: sfondo nero semitrasparente
+    // otp: posizione (top_right), oty/otx: offset
+    const transformations = `tr:ot-${safeText},otc-FFFFFF,ots-35,otbg-00000080,otp-top_right,otx-10,oty-10`;
+
+    // ImageKit richiede l'URL originale come parte del path o query
+    return `https://ik.imagekit.io/${IMAGEKIT_ID}/${transformations}/${imageUrl}`;
+}
+
+/**
+ * Scarica un poster con badge elaborato da ImageKit.
+ * Offload totale della trasformazione a ImageKit per risparmiare RAM.
  */
 async function addBadgeToImage(imageUrl, badgeText) {
-    const cacheKey = `${imageUrl}:${badgeText}`;
-    const cached = imageCache.get(cacheKey);
-    if (cached) return cached;
-
     try {
-        const response = await axios.get(imageUrl, {
+        const ikUrl = getImageKitUrl(imageUrl, badgeText);
+
+        // Se non abbiamo ImageKitID, restituiamo null per fallimento (index.js farà redirect a URL originale)
+        if (ikUrl === imageUrl) return null;
+
+        const response = await axios.get(ikUrl, {
             responseType: 'arraybuffer',
-            timeout: 10000,
+            timeout: 15000,
             maxContentLength: MAX_IMAGE_SIZE
         });
 
-        const imageBuffer = Buffer.from(response.data);
-        const metadata = await sharp(imageBuffer).metadata();
-        const width = metadata.width || 500;
-        const height = metadata.height || 750;
-
-        const badgeW = Math.round(width * 0.28);
-        const badgeH = Math.round(badgeW * 0.6);
-        const fontSize = Math.round(badgeH * 0.55);
-        const radius = Math.round(badgeH * 0.2);
-        const margin = Math.round(width * 0.04);
-
-        const svgOverlay = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-            <rect x="${width - badgeW - margin}" y="${margin}"
-                  width="${badgeW}" height="${badgeH}"
-                  rx="${radius}"
-                  fill="rgba(0,0,0,0.75)" stroke="white" stroke-width="2"/>
-            <text x="${width - badgeW / 2 - margin}" y="${margin + badgeH / 2 + fontSize / 3}"
-                  font-size="${fontSize}" font-weight="bold" fill="white"
-                  text-anchor="middle" font-family="Arial, sans-serif">${badgeText}</text>
-        </svg>`;
-
-        const result = await sharp(imageBuffer)
-            .composite([{ input: Buffer.from(svgOverlay), top: 0, left: 0 }])
-            .jpeg({ quality: 85 })
-            .toBuffer();
-
-        if (result) imageCache.set(cacheKey, result);
-        return result;
+        return Buffer.from(response.data);
     } catch (error) {
-        console.error('Error adding badge to image:', error.message);
+        console.error('Error fetching image from ImageKit:', error.message);
         return null;
     }
 }
 
-module.exports = { getBlurredImageUrl, addBadgeToImage };
+module.exports = { getBlurredImageUrl, addBadgeToImage, getImageKitUrl };

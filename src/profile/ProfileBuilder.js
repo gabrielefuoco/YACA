@@ -118,7 +118,7 @@ class ProfileBuilder {
         let profile = await TasteProfile.findOneAndUpdate(
             { owner, context },
             { $setOnInsert: { processedTraktIds: [] } },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
         );
 
         const shouldMirrorToGlobal = context && context !== 'global';
@@ -127,7 +127,7 @@ class ProfileBuilder {
             globalProfile = await TasteProfile.findOneAndUpdate(
                 { owner, context: 'global' },
                 { $setOnInsert: { processedTraktIds: [] } },
-                { upsert: true, new: true, setDefaultsOnInsert: true }
+                { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
             );
         }
 
@@ -227,7 +227,7 @@ class ProfileBuilder {
         let profile = await TasteProfile.findOneAndUpdate(
             { owner, context: 'global' },
             { $setOnInsert: { processedTraktIds: [] } },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
         );
 
         const allItems = [

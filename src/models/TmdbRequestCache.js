@@ -3,7 +3,7 @@ const { CACHE_TTL_MS } = require('../config');
 
 // L2 TTL: 24 ore (86400000 ms) per i cataloghi TMDB
 const cacheManager = new CacheManager('tmdb_catalog', {
-    ramMax: 50,
+    ramMax: 15,
     ramTtlMs: 300000,
     mongoTtlMs: 86400000
 });

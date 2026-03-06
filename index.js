@@ -38,7 +38,7 @@ const PORT = process.env.PORT || 7000;
 // Cache RAM per badge poster (TTL 14 giorni, max 500 immagini)
 const BADGE_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 const BADGE_CACHE_TTL_SECS = 14 * 24 * 60 * 60; // 1209600
-const badgeImageCache = new LRUCache({ max: 50, ttl: BADGE_CACHE_TTL_MS });
+const badgeImageCache = new LRUCache({ max: 15, ttl: BADGE_CACHE_TTL_MS });
 const badgeLimiter = rateLimit({
     windowMs: 60 * 1000,
     limit: 120,
@@ -341,10 +341,11 @@ app.get('/badge/poster.jpg', badgeLimiter, async (req, res) => {
 
             // Async save to DB to not block response
             const expiresAt = new Date(Date.now() + BADGE_CACHE_TTL_MS);
+
             BadgeImage.findOneAndUpdate(
                 { key: cacheKey },
                 { imageData: imageBuffer, expiresAt },
-                { upsert: true }
+                { upsert: true, returnDocument: 'after' }
             )
                 .catch(err => console.error('Errore persistenza badge DB:', err.message));
 

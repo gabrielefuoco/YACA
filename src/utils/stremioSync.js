@@ -116,7 +116,8 @@ async function updateSyncTimestamp(userId) {
                 'config.lastStremioSync': new Date(),
                 'config.nextSyncInterval': nextSyncInterval
             }
-        }
+        },
+        { returnDocument: 'after' }
     );
 }
 
