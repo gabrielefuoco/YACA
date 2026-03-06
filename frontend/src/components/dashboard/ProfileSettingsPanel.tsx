@@ -59,6 +59,9 @@ export function ProfileSettingsPanel({
             }
         }
         onApplyTemplate(template);
+        setTimeout(() => {
+            window.location.reload();
+        }, 600);
     };
 
     return (
