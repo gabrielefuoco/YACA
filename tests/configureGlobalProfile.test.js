@@ -121,6 +121,7 @@ describe('configure route global profile safeguards', () => {
         expect(profile.settings.suggestedDNA).toEqual([
             { id: '222', type: 'keyword', name: 'Keyword 222' }
         ]);
+        expect(profile.settings.suggestedDNA.some((item) => item.type === 'genre' && item.id === '99')).toBe(false);
     });
 
     it('deduplicates suggestedDNA across multiple active presets', async () => {
@@ -151,7 +152,6 @@ describe('configure route global profile safeguards', () => {
             { id: '111', type: 'keyword', name: 'Keyword 111' },
             { id: '333', type: 'keyword', name: 'Keyword 333' }
         ]));
-        expect(profile.settings.suggestedDNA.filter((item) => item.type === 'genre' && item.id === '53')).toHaveLength(1);
-        expect(profile.settings.suggestedDNA.filter((item) => item.type === 'keyword' && item.id === '111')).toHaveLength(1);
+        expect(profile.settings.suggestedDNA).toHaveLength(4);
     });
 });
