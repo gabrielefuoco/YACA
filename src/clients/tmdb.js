@@ -21,6 +21,13 @@ const CacheManager = require('../cache/CacheManager');
 
 const lingvaClient = createAxiosInstance('https://lingva.ml');
 
+// Costanti di trimming per ridurre il peso dei payload TMDB in cache (anti-OOM / anti-16MB BSON)
+const MAX_CAST_SIZE = 10;
+const MAX_CREW_SIZE = 5;
+const MAX_IMAGES_PER_TYPE = 3;
+const MAX_TRAILERS = 3;
+const KEY_CREW_ROLES = ['Director', 'Writer', 'Screenplay', 'Author', 'Creator'];
+
 const TMDB_MIRRORS = [
     TMDB_ENDPOINT,
     'https://tmdb.org/3',
@@ -414,7 +421,22 @@ async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customPar
                 const isReleased = await isMovieReleasedDigitally(item.id, apiKey);
                 if (!isReleased) return null;
             }
-            return await getTmdbMetaDetails(apiKey, `tmdb:${item.id}`, type);
+            const meta = await getTmdbMetaDetails(apiKey, `tmdb:${item.id}`, type);
+            // Fase 2: alleggerimento episodi per il catalogo (griglia).
+            // Conserva solo l'episodio trasmesso più recente; la cache episodi completa
+            // viene usata dalla rotta /meta/... tramite fetchTmdbEpisodes (invariata).
+            if (meta && Array.isArray(meta.videos)) {
+                const now = new Date();
+                const aired = meta.videos
+                    .filter(v => v.released && new Date(v.released) <= now)
+                    .sort((a, b) => new Date(b.released) - new Date(a.released));
+                if (aired.length > 0) {
+                    meta.videos = [aired[0]];
+                } else {
+                    delete meta.videos;
+                }
+            }
+            return meta;
         }, { batchSize: 10, delayMs: 200 });
 
         return { items: filteredMetas, nextPageFetched: startPage + pagesToFetch };
@@ -602,7 +624,27 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
             });
             data = res.data;
             if (data) {
-                // Cache raw data
+                // Trimming: riduce il payload prima di metterlo in cache (anti-OOM / anti-16MB BSON)
+                if (data.credits) {
+                    if (Array.isArray(data.credits.cast)) {
+                        data.credits.cast = data.credits.cast.slice(0, MAX_CAST_SIZE);
+                    }
+                    if (Array.isArray(data.credits.crew)) {
+                        data.credits.crew = data.credits.crew
+                            .filter(c => KEY_CREW_ROLES.includes(c.job))
+                            .slice(0, MAX_CREW_SIZE);
+                    }
+                }
+                if (data.images) {
+                    if (Array.isArray(data.images.logos)) data.images.logos = data.images.logos.slice(0, MAX_IMAGES_PER_TYPE);
+                    if (Array.isArray(data.images.backdrops)) data.images.backdrops = data.images.backdrops.slice(0, MAX_IMAGES_PER_TYPE);
+                    if (Array.isArray(data.images.posters)) data.images.posters = data.images.posters.slice(0, MAX_IMAGES_PER_TYPE);
+                }
+                if (data.videos?.results) {
+                    data.videos.results = data.videos.results
+                        .filter(v => v.site === 'YouTube' && v.type === 'Trailer')
+                        .slice(0, MAX_TRAILERS);
+                }
                 await tmdbDetailsCache.set(cacheKey, data);
             }
         } catch (err) {
@@ -744,6 +786,19 @@ async function getTmdbMovieDetails(apiKey, id, type = 'movie') {
 
         const data = res.data;
         if (data) {
+            // Trimming: riduce il payload prima di metterlo in cache (anti-OOM / anti-16MB BSON)
+            if (data.credits) {
+                if (Array.isArray(data.credits.cast)) {
+                    data.credits.cast = data.credits.cast.slice(0, MAX_CAST_SIZE);
+                }
+                if (Array.isArray(data.credits.crew)) {
+                    data.credits.crew = data.credits.crew
+                        .filter(c => KEY_CREW_ROLES.includes(c.job))
+                        .slice(0, MAX_CREW_SIZE);
+                }
+            }
+            // keywords lasciate intatte (fondamentali per l'algoritmo di raccomandazione)
+
             // Calcola TTL dinamico per Serie TV
             let ttl = MOVIE_DETAILS_TTL_MS;
             if (type === 'tv') {
