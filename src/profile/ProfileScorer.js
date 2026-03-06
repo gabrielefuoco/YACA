@@ -1,10 +1,8 @@
+// Bayesian Weighted Rating parameters (Phase 1.3)
+const BAYESIAN_MIN_VOTES = 300;  // m: minimum votes threshold
+const BAYESIAN_MEAN_VOTE = 6.5;  // C: mean vote across the catalogue
+
 class ProfileScorer {
-    /**
-     * Calcola l'affinità di un contenuto TMDB con il profilo di gusto dell'utente.
-     * @param {Object} tmdbData Dati grezzi TMDB (arricchiti con credits e keywords)
-     * @param {Object} profile Documento Mongoose TasteProfile
-     * @returns {Number} Score da 0.0 a 10.0
-     */
     /**
      * Calcola l'affinità di un contenuto TMDB con il profilo di gusto dell'utente.
      * @param {Object} tmdbData Dati grezzi TMDB (arricchiti con credits e keywords)
@@ -29,7 +27,7 @@ class ProfileScorer {
             const hasKeywordMatch = dnaFilters.some(f => f.type === 'keyword' && keywordsItems.some(k => k.id.toString() === f.id));
 
             if (!hasGenreMatch && !hasKeywordMatch) {
-                // Se non c'è match col DNA, penalizziamo pesantemente (es. 90% in meno)
+                // Se non c'è match col DNA, penalizziamo pesantemente (90% di penalità)
                 dnaMultiplier = 0.1;
             }
         }
@@ -37,7 +35,7 @@ class ProfileScorer {
         let thematicScore = 0;
         let authorialScore = 0;
 
-        // --- 1. Assi Tematici ---
+        // --- 1. Assi Tematici (Phase 1.2: worth 90% of affinity score) ---
         // Generi
         const genreIds = tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id) : []);
         genreIds.forEach(gid => {
@@ -58,7 +56,7 @@ class ProfileScorer {
             });
         }
 
-        // --- 2. Assi Autoriali ---
+        // --- 2. Assi Autoriali (Phase 1.2: worth 10% as precision bonus) ---
         // Registi
         if (tmdbData.credits && tmdbData.credits.crew) {
             const directors = tmdbData.credits.crew.filter(c => c.job === 'Director');
@@ -80,24 +78,65 @@ class ProfileScorer {
             });
         }
 
-        // --- 3. Normalizzazione e Pesatura ---
-        const profileMatch = (thematicScore * 0.4) + (authorialScore * 0.6);
+        // --- 3. Phase 1.2: Rebalanced weighting (Thematic 90%, Authorial 10%) ---
+        const profileMatch = (thematicScore * 0.9) + (authorialScore * 0.1);
 
-        // Qualità TMDB (0.0 - 10.0)
+        // --- Phase 1.3: Bayesian Weighted Rating (IMDb formula) ---
+        // WR = ((v/(v+m)) * R) + ((m/(v+m)) * C)
         const voteAvg = tmdbData.vote_average || 0;
         const voteCount = tmdbData.vote_count || 0;
-        const confidence = Math.min(voteCount / 200, 1.0);
-        const qualityScore = voteAvg * confidence;
+        const m = BAYESIAN_MIN_VOTES;
+        const C = BAYESIAN_MEAN_VOTE;
+        const bayesianScore = ((voteCount / (voteCount + m)) * voteAvg) + ((m / (voteCount + m)) * C);
 
-        // Formula Finale Bilanciata dai Pesi
+        // --- Phase 1.4: Epsilon Tracker (deterministic daily rotation) ---
+        const tmdbId = tmdbData.id || 0;
+        // Use start of UTC day to ensure epsilon stays constant throughout the day
+        const dayOfYear = Math.floor(new Date().setUTCHours(0, 0, 0, 0) / (1000 * 60 * 60 * 24));
+        const epsilon = ((tmdbId * dayOfYear) % 1000) * 0.000001;
+
+        // --- 4. Formula Finale Bilanciata dai Pesi ---
         const totalWeight = tmdbWeight + traktWeight;
         if (totalWeight === 0) return 0;
 
-        const normalizedScore = (((profileMatch * traktWeight) + (qualityScore * tmdbWeight)) / totalWeight) * dnaMultiplier;
+        const normalizedScore = (((profileMatch * traktWeight) + (bayesianScore * tmdbWeight)) / totalWeight) * dnaMultiplier;
 
-        return Math.min(Math.max(normalizedScore, 0), 10);
+        return Math.min(Math.max(normalizedScore + epsilon, 0), 10);
     }
 
+    /**
+     * Applica cap di diversità ai risultati per evitare che un singolo genere/regista domini.
+     * @param {Array} items Array di oggetti con proprietà id, genres, directors
+     * @param {Object} caps Limiti massimi per categoria { genre: 10, director: 3 }
+     * @returns {Array} Array filtrato con diversità garantita
+     */
+    static applyDiversityCaps(items, caps = { genre: 10, director: 3 }) {
+        if (!items || items.length === 0) return items;
+
+        const genreCounts = new Map();
+        const directorCounts = new Map();
+        const result = [];
+
+        for (const item of items) {
+            const genres = item.genre_ids || (item.genres ? item.genres.map(g => g.id) : []);
+            const directors = (item.credits?.crew || [])
+                .filter(c => c.job === 'Director')
+                .map(c => c.id);
+
+            // Check genre cap
+            const genreBlocked = genres.some(gid => (genreCounts.get(gid) || 0) >= caps.genre);
+            // Check director cap
+            const dirBlocked = directors.some(did => (directorCounts.get(did) || 0) >= caps.director);
+
+            if (genreBlocked || dirBlocked) continue;
+
+            genres.forEach(gid => genreCounts.set(gid, (genreCounts.get(gid) || 0) + 1));
+            directors.forEach(did => directorCounts.set(did, (directorCounts.get(did) || 0) + 1));
+            result.push(item);
+        }
+
+        return result;
+    }
 }
 
 module.exports = ProfileScorer;

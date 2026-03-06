@@ -38,6 +38,23 @@ module.exports = {
     SERIES_FINISHED_TTL_MS: 7 * 24 * 60 * 60 * 1000,  // 7 days
     SERIES_ONGOING_TTL_MS: 30 * 60 * 1000,             // 30 minutes
 
+    // Phase 3 Level 2: Scoring & Presentation Cache TTLs
+    SCORING_DATA_TTL_MS: 14 * 24 * 60 * 60 * 1000,        // 14 days (genres, keywords, cast)
+    MOVIE_PRESENTATION_TTL_MS: 14 * 24 * 60 * 60 * 1000,  // 14 days base TTL for movies
+    MOVIE_PRESENTATION_SWR_MS: 7 * 24 * 60 * 60 * 1000,   // 7 days SWR window for movies
+    SERIES_FINISHED_PRESENTATION_TTL_MS: 7 * 24 * 60 * 60 * 1000, // 7 days for ended/cancelled series
+    SERIES_FINISHED_PRESENTATION_SWR_MS: 24 * 60 * 60 * 1000,     // 1 day SWR for ended series
+    SERIES_ONGOING_PRESENTATION_TTL_MS: 12 * 60 * 60 * 1000,      // 12 hours for ongoing series
+    SERIES_ONGOING_PRESENTATION_SWR_MS: 30 * 60 * 1000,            // 30 min SWR for ongoing series
+
+    // Bayesian Weighted Rating parameters (IMDb formula)
+    BAYESIAN_MIN_VOTES: 300,   // m: minimum votes required to be listed
+    BAYESIAN_MEAN_VOTE: 6.5,   // C: mean vote across all items
+
+    // Binge-watching detection threshold (max gap in ms between episodes in the same session)
+    BINGE_SESSION_GAP_MS: 24 * 60 * 60 * 1000, // 24 hours
+    BINGE_MULTIPLIER: 1.5,  // multiplier applied when binge is detected
+
     FORCED_FAST_CATALOG_IDS: ['yaca_anime_trending'],
     FORCED_FAST_PRESET_IDS: ['preset_new_movies', 'preset_new_series', 'preset_new_series_eps', 'preset_new_anime', 'preset_new_anime_eps', 'preset_pop_anime'],
     FORCED_SLOW_PRESET_IDS: ['preset_top_rated_movies', 'preset_top_rated_series', 'preset_80s_movies', 'preset_90s_movies', 'preset_00s_movies', 'preset_oscar_winners', 'preset_blockbusters']
