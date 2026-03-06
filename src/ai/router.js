@@ -204,16 +204,19 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, isBackground = 
     }
     try {
         // 1. Check Cache
-        const cached = await AICache.get(prompt);
-        if (cached) {
-            console.log(`[AICache] Hit per: "${prompt}" (Stale: ${cached.isStale})`);
+        const cacheKey = prompt.toLowerCase().trim();
+        const rawCached = await AICache.get(cacheKey);
+        if (rawCached) {
+            const age = Date.now() - (rawCached.updatedAt || 0);
+            const isStale = age > 1000 * 60 * 10; // 10 minutes SWR
+            console.log(`[AICache] Hit per: "${prompt}" (Stale: ${isStale})`);
 
-            if (cached.isStale) {
+            if (isStale) {
                 // Background refresh
                 generateTmdbFiltersFromPrompt(prompt, mistralKey, true).catch(() => { });
             }
 
-            return cached.filters;
+            return rawCached.filters || rawCached;
         }
 
         const client = new Mistral({ apiKey: mistralKey, timeout: 25000 });
@@ -236,7 +239,7 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, isBackground = 
         const parsed = parseMistralResponse(rawJson, prompt);
 
         // 2. Set Cache
-        await AICache.set(prompt, parsed);
+        await AICache.set(cacheKey, { filters: parsed, updatedAt: Date.now() });
 
         return parsed;
     } catch (err) {

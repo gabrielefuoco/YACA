@@ -1,4 +1,4 @@
-const axios = require('axios');
+const { createAxiosInstance } = require('../utils/httpClient');
 const LRUCache = require('../utils/LRUCache');
 const { RECOMMENDATIONS_CACHE_TTL_MS, ITEMS_PER_PAGE } = require('../config');
 const TasteProfile = require('../db/models/TasteProfile');
@@ -8,6 +8,8 @@ const ProfileScorer = require('../profile/ProfileScorer');
 const tmdb = require('../clients/tmdb');
 const { rateLimitedMap } = require('../utils/rateLimiter');
 const RecommendationCache = require('../models/RecommendationCache');
+
+const traktApiClient = createAxiosInstance('https://api.trakt.tv');
 
 // Cache per i cataloghi finali generati (RAM Livello 3)
 const catalogCache = new LRUCache({ max: 20, ttl: RECOMMENDATIONS_CACHE_TTL_MS });
@@ -29,7 +31,7 @@ function getDnaFilters(user, context) {
 async function fetchRecentHistory(traktToken, mediaType, limit = 10) {
     if (!traktToken || !process.env.TRAKT_CLIENT_ID) return [];
     try {
-        const res = await axios.get(`https://api.trakt.tv/users/me/history/${mediaType}`, {
+        const res = await traktApiClient.get(`/users/me/history/${mediaType}`, {
             headers: {
                 'trakt-api-version': '2',
                 'trakt-api-key': process.env.TRAKT_CLIENT_ID,
@@ -54,7 +56,7 @@ async function fetchRecentHistory(traktToken, mediaType, limit = 10) {
 async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40) {
     if (!traktToken || !process.env.TRAKT_CLIENT_ID) return [];
     try {
-        const res = await axios.get(`https://api.trakt.tv/recommendations/${mediaType}`, {
+        const res = await traktApiClient.get(`/recommendations/${mediaType}`, {
             headers: {
                 'trakt-api-version': '2',
                 'trakt-api-key': process.env.TRAKT_CLIENT_ID,
@@ -701,7 +703,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
             ids = await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType);
         }
 
-        await RecommendationCache.set(cacheKey, ids);
+        await RecommendationCache.set(cacheKey, { ids, updatedAt: Date.now() });
         catalogCache.set(cacheKey, ids);
         return ids;
     };
@@ -717,7 +719,8 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
             catalogCache.set(cacheKey, recommendationIds);
 
             // AGGRESSIVE SWR: If stale, revalidate in background
-            if (cachedEntry.isStale) {
+            const age = Date.now() - (cachedEntry.updatedAt || 0);
+            if (age > 1000 * 60 * 60 * 4) { // 4h staleness threshold for background refresh
                 console.log(`[Hybrid-SWR] Revalidando catalogo ${catalogId} in background...`);
                 buildRecommendIds().catch(e => console.error('[Hybrid-SWR] Error:', e.message));
             }

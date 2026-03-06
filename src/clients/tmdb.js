@@ -9,7 +9,8 @@ const {
     MOVIE_META_CACHE_TTL_MS,
     MOVIE_DETAILS_TTL_MS,
     SERIES_FINISHED_TTL_MS,
-    SERIES_ONGOING_TTL_MS
+    SERIES_ONGOING_TTL_MS,
+    CACHE_TTL_MS
 } = require('../config');
 const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
 const { isMovieReleasedDigitally } = require('../utils/releaseFilter');
@@ -17,6 +18,8 @@ const { generateRequestHash } = require('../utils/requestHash');
 const TmdbRequestCache = require('../models/TmdbRequestCache');
 
 const CacheManager = require('../cache/CacheManager');
+
+const lingvaClient = createAxiosInstance('https://lingva.ml');
 
 const TMDB_MIRRORS = [
     TMDB_ENDPOINT,
@@ -43,8 +46,7 @@ const createTmdbClient = (apiKey) => {
             currentMirrorIdx = (currentMirrorIdx + 1) % TMDB_MIRRORS.length;
             err.config.baseURL = TMDB_MIRRORS[currentMirrorIdx];
             err.config.url = err.config.url.replace(/^(https?:\/\/[^\/]+)/, TMDB_MIRRORS[currentMirrorIdx]);
-            const axios = require('axios');
-            return axios.request(err.config);
+            return client.request(err.config);
         }
         return Promise.reject(err);
     });
@@ -436,6 +438,24 @@ function mergeCatalogItems(existingItems = [], newItems = []) {
 }
 
 /**
+ * Helper: saves data to TmdbRequestCache, preserving the original updatedAt timestamp
+ * when appending new pages (nextPage > 1) to avoid resetting the staleness clock.
+ */
+async function saveTmdbCatalogCache(requestHash, stremioData, nextPage, options = {}) {
+    let updatedAt = Date.now();
+
+    if (nextPage > 1 || nextPage === -1) {
+        const existing = await TmdbRequestCache.get(requestHash);
+        if (existing) {
+            if (nextPage === -1) nextPage = existing.nextPage;
+            updatedAt = existing.updatedAt || updatedAt;
+        }
+    }
+
+    await TmdbRequestCache.set(requestHash, { stremioData, nextPage, updatedAt }, null, options);
+}
+
+/**
  * Wrapper con cache globale basata sulle richieste TMDB.
  * Implementa il pattern Stale-While-Revalidate:
  * - Cache Miss: chiama TMDB, salva in cache, ritorna.
@@ -445,30 +465,31 @@ function mergeCatalogItems(existingItems = [], newItems = []) {
 async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type = 'movie', options = {}) {
     const normalizedSkip = skip ?? 0;
     const requestHash = generateRequestHash(endpoint, customParams, 0, type);
-    const sliceEnd = normalizedSkip + ITEMS_PER_PAGE;
-    const cacheTtlMs = options.cacheTtlMs;
+    const cacheTtlMs = options.cacheTtlMs || CACHE_TTL_MS;
 
     try {
-        const cached = await TmdbRequestCache.get(requestHash, cacheTtlMs);
+        const rawCached = await TmdbRequestCache.get(requestHash);
 
-        if (cached) {
-            const cachedItems = Array.isArray(cached.stremioData) ? cached.stremioData : [];
+        if (rawCached) {
+            const cachedItems = Array.isArray(rawCached.stremioData) ? rawCached.stremioData : [];
+            const age = Date.now() - (rawCached.updatedAt || 0);
+            const isStale = age > cacheTtlMs;
             const fetchSize = (normalizedSkip === 0) ? (PAGES_PER_REQUEST * ITEMS_PER_PAGE) : ITEMS_PER_PAGE;
             const sliceEnd = normalizedSkip + fetchSize;
             const cachedSlice = cachedItems.slice(normalizedSkip, sliceEnd);
 
             // AGGRESSIVE SWR: Return cached data immediately if we have it
-            const hasEnoughItems = cachedItems.length >= sliceEnd || cachedItems.length === cached.total_results || cached.nextPage === -1;
+            const hasEnoughItems = cachedItems.length >= sliceEnd || cachedItems.length === rawCached.total_results || rawCached.nextPage === -1;
 
-            if (cached.isStale || !hasEnoughItems) {
+            if (isStale || !hasEnoughItems) {
                 // Trigger revalidation in background
-                const startPage = !hasEnoughItems ? cached.nextPage : 1;
+                const startPage = !hasEnoughItems ? rawCached.nextPage : 1;
                 const pagesToFetch = !hasEnoughItems ? 1 : PAGES_PER_REQUEST;
 
                 fetchTmdbCatalogDirect(client, endpoint, startPage, customParams, type, pagesToFetch)
                     .then(({ items: newItems, nextPageFetched }) => {
                         const updatedItems = startPage === 1 ? newItems : mergeCatalogItems(cachedItems, newItems);
-                        TmdbRequestCache.set(requestHash, endpoint, updatedItems, nextPageFetched, options);
+                        saveTmdbCatalogCache(requestHash, updatedItems, nextPageFetched, options);
                     })
                     .catch(e => console.error('[SWR Revalidate] Error:', e.message));
             }
@@ -496,7 +517,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
     // Salvataggio solo per la prima pagina,
     // così la cache rappresenta una lista progressiva a partire da skip 0.
     if (normalizedSkip === 0) {
-        await TmdbRequestCache.set(requestHash, endpoint, results, nextPageFetched, options);
+        await saveTmdbCatalogCache(requestHash, results, nextPageFetched, options);
     }
 
     return results;
@@ -613,8 +634,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
                 if (overviewNeedsFallback && enData.overview) {
                     // Tenta traduzione con Lingva API
                     try {
-                        const axios = require('axios');
-                        const transRes = await axios.get(`https://lingva.ml/api/v1/en/it/${encodeURIComponent(enData.overview)}`, { timeout: 4000 });
+                        const transRes = await lingvaClient.get(`/api/v1/en/it/${encodeURIComponent(enData.overview)}`, { timeout: 4000 });
                         if (transRes.data && transRes.data.translation) {
                             data.overview = transRes.data.translation;
                         } else {

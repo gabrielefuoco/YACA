@@ -1,5 +1,4 @@
 const { createAxiosInstance } = require('../utils/httpClient');
-const axios = require('axios');
 const UserConfig = require('../models/UserConfig');
 const { updateStremioAddonCollection } = require('../utils/stremioAddonSync');
 
@@ -10,6 +9,8 @@ const traktClient = createAxiosInstance('https://api.trakt.tv', {
         'trakt-api-key': process.env.TRAKT_CLIENT_ID
     }
 });
+
+const tmdbEnrichClient = createAxiosInstance('https://api.themoviedb.org/3');
 
 /**
  * Rigenera i token Trakt usando il refresh_token.
@@ -22,7 +23,7 @@ async function refreshTraktTokens(refreshToken) {
     if (!clientId || !clientSecret || !refreshToken) return null;
 
     try {
-        const res = await axios.post('https://api.trakt.tv/oauth/token', {
+        const res = await traktClient.post('/oauth/token', {
             refresh_token: refreshToken,
             client_id: clientId,
             client_secret: clientSecret,
@@ -112,7 +113,7 @@ async function enhanceTraktItem(traktItem, tmdbApiKey) {
     const enrichKey = tmdbApiKey || process.env.TMDB_API_KEY;
     if (tmdbId && enrichKey) {
         try {
-            const tmdbenrich = await axios.get(`https://api.themoviedb.org/3/${isMovie ? 'movie' : 'tv'}/${tmdbId}`, {
+            const tmdbenrich = await tmdbEnrichClient.get(`/${isMovie ? 'movie' : 'tv'}/${tmdbId}`, {
                 params: { api_key: enrichKey, language: 'it-IT' },
                 timeout: 5000
             });

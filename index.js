@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const axios = require('axios');
+const { createAxiosInstance } = require('./src/utils/httpClient');
 const rateLimit = require('express-rate-limit');
 
 const configureRoute = require('./src/api/configure');
@@ -29,6 +29,10 @@ const CacheManager = require('./src/cache/CacheManager');
 const { rateLimitedMap } = require('./src/utils/rateLimiter');
 const RecommendationCache = require('./src/models/RecommendationCache');
 const AICache = require('./src/models/AICache');
+
+const tmdbClient = createAxiosInstance('https://api.themoviedb.org/3');
+const stremioClient = createAxiosInstance('https://api.strem.io');
+const traktClient = createAxiosInstance('https://api.trakt.tv');
 
 // Connessione MongoDB
 connectDB();
@@ -215,7 +219,7 @@ app.post('/api/preview-catalog', async (req, res) => {
     try {
         let tmdbRes;
         if (strategy === 'multi_search') {
-            tmdbRes = await axios.get(`https://api.themoviedb.org/3/search/${discoverType}`, {
+            tmdbRes = await tmdbClient.get(`/search/${discoverType}`, {
                 params: {
                     api_key: sanitizedTmdbKey,
                     language: 'it-IT',
@@ -226,7 +230,7 @@ app.post('/api/preview-catalog', async (req, res) => {
                 timeout: PREVIEW_TIMEOUT_MS
             });
         } else if (strategy === 'similar' && discoverFilters.similar_to) {
-            const searchRes = await axios.get(`https://api.themoviedb.org/3/search/${discoverType}`, {
+            const searchRes = await tmdbClient.get(`/search/${discoverType}`, {
                 params: {
                     api_key: sanitizedTmdbKey,
                     language: 'it-IT',
@@ -238,7 +242,7 @@ app.post('/api/preview-catalog', async (req, res) => {
             });
             const targetId = searchRes.data?.results?.[0]?.id;
             if (targetId) {
-                tmdbRes = await axios.get(`https://api.themoviedb.org/3/${discoverType}/${targetId}/recommendations`, {
+                tmdbRes = await tmdbClient.get(`/${discoverType}/${targetId}/recommendations`, {
                     params: {
                         api_key: sanitizedTmdbKey,
                         language: 'it-IT',
@@ -250,7 +254,7 @@ app.post('/api/preview-catalog', async (req, res) => {
                 tmdbRes = { data: { results: [] } };
             }
         } else {
-            tmdbRes = await axios.get(`https://api.themoviedb.org/3/discover/${discoverType}`, {
+            tmdbRes = await tmdbClient.get(`/discover/${discoverType}`, {
                 params: {
                     api_key: sanitizedTmdbKey,
                     language: 'it-IT',
@@ -370,7 +374,7 @@ app.get('/api/tmdb/search/keyword', async (req, res) => {
     if (!query) return res.json({ results: [] });
 
     try {
-        const response = await axios.get('https://api.themoviedb.org/3/search/keyword', {
+        const response = await tmdbClient.get('/search/keyword', {
             params: {
                 api_key: sanitizeString(tmdbKey),
                 query: sanitizeString(query),
@@ -392,7 +396,7 @@ app.get('/api/tmdb/search/person', async (req, res) => {
     if (!query) return res.json({ results: [] });
 
     try {
-        const response = await axios.get('https://api.themoviedb.org/3/search/person', {
+        const response = await tmdbClient.get('/search/person', {
             params: {
                 api_key: sanitizeString(tmdbKey),
                 query: sanitizeString(query),
@@ -417,11 +421,11 @@ app.get('/api/tmdb/search/genre', async (req, res) => {
 
     try {
         const [movieGenresRes, tvGenresRes] = await Promise.all([
-            axios.get('https://api.themoviedb.org/3/genre/movie/list', {
+            tmdbClient.get('/genre/movie/list', {
                 params: { api_key: sanitizeString(tmdbKey), language: 'it-IT' },
                 timeout: 5000
             }),
-            axios.get('https://api.themoviedb.org/3/genre/tv/list', {
+            tmdbClient.get('/genre/tv/list', {
                 params: { api_key: sanitizeString(tmdbKey), language: 'it-IT' },
                 timeout: 5000
             })
@@ -444,7 +448,7 @@ app.post('/api/validate-tmdb-key', async (req, res) => {
         return res.status(400).json({ valid: false, error: 'TMDB API key non configurata sul server' });
     }
     try {
-        const testRes = await axios.get('https://api.themoviedb.org/3/configuration', {
+        const testRes = await tmdbClient.get('/configuration', {
             params: { api_key: tmdbKey },
             timeout: 5000
         });
@@ -468,7 +472,7 @@ app.post('/api/stremio-auth', async (req, res) => {
         return res.status(400).json({ success: false, error: 'Email e password obbligatorie' });
     }
     try {
-        const stremioRes = await axios.post('https://api.strem.io/api/login', { email, password }, { timeout: 10000 });
+        const stremioRes = await stremioClient.post('/api/login', { email, password }, { timeout: 10000 });
         const data = stremioRes.data;
         if (data && data.result && data.result.authKey) {
             return res.json({ success: true, authKey: data.result.authKey, email: data.result.user?.email || email });
@@ -553,7 +557,7 @@ app.post('/api/trakt/device/code', async (req, res) => {
     if (!clientId) return res.status(400).json({ error: 'TRAKT_CLIENT_ID mancante nel server.' });
 
     try {
-        const response = await axios.post('https://api.trakt.tv/oauth/device/code', {
+        const response = await traktClient.post('/oauth/device/code', {
             client_id: clientId
         }, { headers: { 'Content-Type': 'application/json' } });
         return res.json(response.data);
@@ -572,7 +576,7 @@ app.post('/api/trakt/device/token', async (req, res) => {
     if (!clientId || !clientSecret) return res.status(400).json({ error: 'TRAKT_CLIENT_SECRET o ID mancanti nel server (.env). Contattare l`amministratore.' });
 
     try {
-        const response = await axios.post('https://api.trakt.tv/oauth/device/token', {
+        const response = await traktClient.post('/oauth/device/token', {
             code: device_code,
             client_id: clientId,
             client_secret: clientSecret
@@ -628,13 +632,6 @@ app.get('/api/cache/stats', async (req, res) => {
             namespace: 'badge_image_cache',
             l1Count: badgeImageCache.size,
             l2Count: await BadgeImage.countDocuments()
-        });
-
-        const reqCacheCount = await TmdbRequestCache.countDocuments();
-        stats.push({
-            namespace: 'tmdb_request_cache',
-            l1Count: 'N/A', // solo Mongo
-            l2Count: reqCacheCount
         });
 
         res.json({ success: true, stats });

@@ -1,10 +1,7 @@
-const axios = require('axios');
+const { createAxiosInstance } = require('../utils/httpClient');
 const { KITSU_ENDPOINT, ITEMS_PER_PAGE } = require('../config');
 
-const kitsuClient = axios.create({
-    baseURL: KITSU_ENDPOINT,
-    timeout: 10000
-});
+const kitsuClient = createAxiosInstance(KITSU_ENDPOINT);
 
 /**
  * Trasforma il risultato raw di Kitsu nel formato Stremio Meta Preview.

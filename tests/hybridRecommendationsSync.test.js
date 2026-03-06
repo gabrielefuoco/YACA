@@ -1,5 +1,9 @@
-jest.mock('axios', () => ({
-    get: jest.fn()
+const mockTraktGet = jest.fn();
+
+jest.mock('../src/utils/httpClient', () => ({
+    createAxiosInstance: jest.fn(() => ({
+        get: mockTraktGet
+    }))
 }));
 
 jest.mock('../src/db/models/TasteProfile', () => ({
@@ -24,7 +28,6 @@ jest.mock('../src/clients/tmdb', () => ({
     getTmdbMetaDetails: jest.fn()
 }));
 
-const axios = require('axios');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 const { syncIncrementalRecommendations } = require('../src/engines/hybridRecommendations');
 
@@ -42,13 +45,13 @@ describe('syncIncrementalRecommendations', () => {
 
     it('syncs movie history via ProfileBuilder', async () => {
         const history = [{ movie: { ids: { tmdb: 123 } } }];
-        axios.get.mockResolvedValueOnce({ data: history });
+        mockTraktGet.mockResolvedValueOnce({ data: history });
         ProfileBuilder.syncUserHistory.mockResolvedValueOnce({});
 
         const result = await syncIncrementalRecommendations('u1', 'movie', 'trakt_token', 'tmdb_key');
 
         expect(result).toBe(true);
-        expect(axios.get).toHaveBeenCalledWith(
+        expect(mockTraktGet).toHaveBeenCalledWith(
             expect.stringContaining('/history/movies'),
             expect.any(Object)
         );

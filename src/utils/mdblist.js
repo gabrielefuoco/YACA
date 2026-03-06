@@ -1,6 +1,8 @@
-const axios = require("axios");
+const { createAxiosInstance } = require('../utils/httpClient');
 const { getTmdbMetaDetails } = require("../clients/tmdb");
 const CacheManager = require("../cache/CacheManager");
+
+const mdblistClient = createAxiosInstance('https://api.mdblist.com');
 
 const ratingsCache = new CacheManager('mdblist_ratings', {
     ramMax: 50,
@@ -14,10 +16,10 @@ const ratingsCache = new CacheManager('mdblist_ratings', {
 async function fetchMDBListItems(listId, apiKey, language, page = 1) {
     const offset = (page * 20) - 20;
     try {
-        let url = `https://api.mdblist.com/lists/${listId}/items?language=${language}&limit=20&offset=${offset}&append_to_response=genre,poster`;
+        let url = `/lists/${listId}/items?language=${language}&limit=20&offset=${offset}&append_to_response=genre,poster`;
         if (apiKey) url += `&apikey=${apiKey}`;
 
-        const response = await axios.get(url);
+        const response = await mdblistClient.get(url);
         return [
             ...(response.data.movies || []),
             ...(response.data.shows || [])
@@ -68,10 +70,10 @@ async function fetchMdblistRatings(imdbId, mdblistApiKey) {
     if (cached) return cached;
 
     try {
-        let url = `https://api.mdblist.com/?i=${imdbId}`;
+        let url = `/?i=${imdbId}`;
         if (mdblistApiKey) url += `&apikey=${mdblistApiKey}`;
 
-        const response = await axios.get(url, { timeout: 5000 });
+        const response = await mdblistClient.get(url, { timeout: 5000 });
         const data = response.data;
         if (!data || !data.ratings) return null;
 
