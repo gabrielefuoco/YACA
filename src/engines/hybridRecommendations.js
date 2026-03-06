@@ -7,6 +7,7 @@ const ProfileBuilder = require('../profile/ProfileBuilder');
 const ProfileScorer = require('../profile/ProfileScorer');
 const tmdb = require('../clients/tmdb');
 const { rateLimitedMap } = require('../utils/rateLimiter');
+const RecommendationCache = require('../models/RecommendationCache');
 
 // Cache per i cataloghi finali generati (RAM Livello 3)
 const catalogCache = new LRUCache({ max: 20, ttl: RECOMMENDATIONS_CACHE_TTL_MS });
@@ -664,42 +665,68 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
             console.log(`[Hybrid] Sincronizzazione profilo per ${userId} (${context})...`);
             const history = await fetchRecentHistory(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 20);
             await ProfileBuilder.syncUserHistory(userId, context, history, tmdbApiKey);
-            catalogCache.delete(cacheKey); // Invalida cache per forzare ricalcolo
+            catalogCache.delete(cacheKey); // Invalida RAM
         }
     }).catch(err => console.error("Errore check stale profile:", err.message));
 
-    let recommendationIds = catalogCache.get(cacheKey);
-
-    if (!recommendationIds) {
+    // Helper to build IDs from scratch
+    const buildRecommendIds = async () => {
         // Hero Catalog IDs (Phase 4)
         const TRUE_BLEND_IDS = new Set(['yaca_true_blend_movies', 'yaca_true_blend_series', 'yaca_top_genres_mix']);
         const SEED_NETWORK_IDS = new Set(['yaca_seed_network_movies', 'yaca_seed_network_series']);
         const HIDDEN_GEMS_IDS = new Set(['yaca_hidden_gems_movies', 'yaca_hidden_gems_series']);
         const TRAKT_FILTERED_IDS = new Set(['yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series']);
 
-        // Legacy catalog IDs (backward compatibility)
+        // Legacy catalog IDs
         const HYBRID_IDS = new Set(['yaca_signature_core_movies', 'yaca_signature_core_series', 'yaca_hybrid_movies', 'yaca_hybrid_series']);
         const DISCOVERY_IDS = new Set(['yaca_signature_blend_movies', 'yaca_signature_blend_series', 'yaca_discovery_movies', 'yaca_discovery_series']);
         const TOP20_IDS = new Set(['yaca_signature_star_movies', 'yaca_signature_star_series', 'yaca_top20_movies', 'yaca_top20_series']);
 
+        let ids = [];
         if (TRUE_BLEND_IDS.has(catalogId)) {
-            recommendationIds = await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType);
+            ids = await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType);
         } else if (SEED_NETWORK_IDS.has(catalogId)) {
-            recommendationIds = await buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType);
+            ids = await buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType);
         } else if (HIDDEN_GEMS_IDS.has(catalogId)) {
-            recommendationIds = await buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType);
+            ids = await buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType);
         } else if (TRAKT_FILTERED_IDS.has(catalogId)) {
-            recommendationIds = await buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType);
+            ids = await buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType);
         } else if (HYBRID_IDS.has(catalogId)) {
-            recommendationIds = await buildSignatureCore(userId, context, tmdbApiKey, mediaType);
+            ids = await buildSignatureCore(userId, context, tmdbApiKey, mediaType);
         } else if (DISCOVERY_IDS.has(catalogId)) {
-            recommendationIds = await buildSignatureBlend(userId, context, tmdbApiKey, mediaType);
+            ids = await buildSignatureBlend(userId, context, tmdbApiKey, mediaType);
         } else if (TOP20_IDS.has(catalogId)) {
-            recommendationIds = await buildSignatureStar(userId, context, traktToken, tmdbApiKey, mediaType);
+            ids = await buildSignatureStar(userId, context, traktToken, tmdbApiKey, mediaType);
         } else {
-            recommendationIds = await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType);
+            ids = await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType);
         }
-        catalogCache.set(cacheKey, recommendationIds);
+
+        await RecommendationCache.set(cacheKey, ids);
+        catalogCache.set(cacheKey, ids);
+        return ids;
+    };
+
+    // 1. Try RAM (L1/L3)
+    let recommendationIds = catalogCache.get(cacheKey);
+
+    // 2. Try L2 (Persistent)
+    if (!recommendationIds) {
+        const cachedEntry = await RecommendationCache.get(cacheKey);
+        if (cachedEntry) {
+            recommendationIds = cachedEntry.ids;
+            catalogCache.set(cacheKey, recommendationIds);
+
+            // AGGRESSIVE SWR: If stale, revalidate in background
+            if (cachedEntry.isStale) {
+                console.log(`[Hybrid-SWR] Revalidando catalogo ${catalogId} in background...`);
+                buildRecommendIds().catch(e => console.error('[Hybrid-SWR] Error:', e.message));
+            }
+        }
+    }
+
+    // 3. Fallback: Build from scratch
+    if (!recommendationIds) {
+        recommendationIds = await buildRecommendIds();
     }
 
     const pageIds = recommendationIds.slice(skip, skip + ITEMS_PER_PAGE);

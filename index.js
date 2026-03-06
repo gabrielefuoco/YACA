@@ -27,6 +27,8 @@ const { syncIncrementalRecommendations } = require('./src/engines/hybridRecommen
 const { generateMergedName } = require('./src/api/mergeRoutes');
 const CacheManager = require('./src/cache/CacheManager');
 const { rateLimitedMap } = require('./src/utils/rateLimiter');
+const RecommendationCache = require('./src/models/RecommendationCache');
+const AICache = require('./src/models/AICache');
 
 // Connessione MongoDB
 connectDB();
@@ -648,6 +650,8 @@ app.post('/api/clear-cache', async (req, res) => {
         await clearAllTmdbCaches();
         await clearIdCache();
         await TmdbRequestCache.clear();
+        await RecommendationCache.clear();
+        await AICache.clear();
 
         badgeImageCache.clear();
         await BadgeImage.deleteMany({});
@@ -727,9 +731,25 @@ app.get('/api/cron/warmup', async (req, res) => {
                 const tmdbApiKey = user.apiKeys.tmdb || process.env.TMDB_API_KEY;
                 if (!traktToken || !tmdbApiKey) return;
 
+                // 1. Sync Profile (DNA/History)
                 await syncIncrementalRecommendations(user.userId, 'movie', traktToken, tmdbApiKey);
                 await syncIncrementalRecommendations(user.userId, 'series', traktToken, tmdbApiKey);
-                console.log(`✅ Recs sincronizzate per utente: ${user.userId}`);
+
+                // 2. Warmup Hero Catalogs (trigger background build for cache L2)
+                const heroCatalogIds = [
+                    'yaca_true_blend_movies', 'yaca_true_blend_series',
+                    'yaca_seed_network_movies', 'yaca_seed_network_series',
+                    'yaca_hidden_gems_movies', 'yaca_hidden_gems_series',
+                    'yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series'
+                ];
+
+                const { getHybridCatalog } = require('./src/engines/hybridRecommendations');
+                for (const catId of heroCatalogIds) {
+                    await getHybridCatalog(catId, 0, traktToken, tmdbApiKey, user.userId, user.config?.activeProfileId || 'global')
+                        .catch(e => console.error(`[Warmup-Hero] Error ${catId} for ${user.userId}:`, e.message));
+                }
+
+                console.log(`✅ Recs & Hero Catalogs sincronizzati per utente: ${user.userId}`);
             },
             { batchSize: 1, delayMs: 1000 } // Molto conservativo per Trakt
         );
@@ -799,6 +819,36 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
         const cv = userConfig.configVersion;
         const dynamicVersion = cv ? `1.0.2+${cv}` : '1.0.2';
 
+        const activeProfileId = userConfig.activeProfileId || 'global';
+        const profile = userConfig.profiles?.find(p => p.id === activeProfileId) || (userConfig.profiles?.[0]);
+
+        const catalogs = [
+            { id: 'yaca-profiles', type: 'other', name: '👥 Cambia Profilo' },
+            // Hero Catalogs (Personalized)
+            { id: 'yaca_true_blend_movies', type: 'movie', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
+            { id: 'yaca_true_blend_series', type: 'series', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
+            { id: 'yaca_seed_network_movies', type: 'movie', name: '🕸️ La Rete dei tuoi Preferiti', extra: [{ name: 'skip' }] },
+            { id: 'yaca_seed_network_series', type: 'series', name: '🕸️ La Rete dei tuoi Preferiti', extra: [{ name: 'skip' }] },
+            { id: 'yaca_hidden_gems_movies', type: 'movie', name: '💎 Gemme Nascoste', extra: [{ name: 'skip' }] },
+            { id: 'yaca_hidden_gems_series', type: 'series', name: '💎 Gemme Nascoste', extra: [{ name: 'skip' }] },
+            { id: 'yaca_trakt_filtered_movies', type: 'movie', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
+            { id: 'yaca_trakt_filtered_series', type: 'series', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
+        ];
+
+        // Add User Presets
+        if (profile && profile.presets && Array.isArray(profile.presets)) {
+            profile.presets.forEach(p => {
+                if (p.isActive !== false) {
+                    catalogs.push({
+                        id: `yaca_preset_${p.id}`,
+                        type: p.type === 'series' ? 'series' : 'movie',
+                        name: p.name,
+                        extra: presetExtra
+                    });
+                }
+            });
+        }
+
         const manifest = {
             id: 'org.stremio.yaca.catalog',
             version: dynamicVersion,
@@ -811,29 +861,7 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
                 { name: 'stream', types: ['movie', 'series', 'other'], idPrefixes: ['yaca-profile-'] }
             ],
             types: ['movie', 'series', 'other'],
-            catalogs: [
-                { id: 'yaca-profiles', type: 'other', name: '👥 Cambia Profilo' },
-                // Standard Catalogs (Film)
-                { id: 'yaca_preset_preset_new_movies', type: 'movie', name: '🆕 Nuove Uscite', extra: presetExtra },
-                { id: 'yaca_preset_preset_pop_movies', type: 'movie', name: '🔥 Film Popolari', extra: presetExtra },
-                { id: 'yaca_preset_preset_top_rated_movies', type: 'movie', name: '🏆 Film Più Votati', extra: presetExtra },
-                { id: 'yaca_discover_movies', type: 'movie', name: '🎬 Esplora Film', extra: [{ name: 'skip' }] },
-                // Hero Catalogs (Phase 4) — Film
-                { id: 'yaca_true_blend_movies', type: 'movie', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
-                { id: 'yaca_seed_network_movies', type: 'movie', name: '🕸️ La Rete dei tuoi Preferiti', extra: [{ name: 'skip' }] },
-                { id: 'yaca_hidden_gems_movies', type: 'movie', name: '💎 Gemme Nascoste', extra: [{ name: 'skip' }] },
-                { id: 'yaca_trakt_filtered_movies', type: 'movie', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
-                // Standard Catalogs (Serie TV)
-                { id: 'yaca_preset_preset_new_series', type: 'series', name: '🆕 Nuove Serie TV', extra: presetExtra },
-                { id: 'yaca_preset_preset_pop_series', type: 'series', name: '🔥 Serie TV Popolari', extra: presetExtra },
-                { id: 'yaca_preset_preset_top_rated_series', type: 'series', name: '🏆 Serie Più Votate', extra: presetExtra },
-                { id: 'yaca_discover_series', type: 'series', name: '📺 Esplora Serie TV', extra: [{ name: 'skip' }] },
-                // Hero Catalogs (Phase 4) — Serie TV
-                { id: 'yaca_true_blend_series', type: 'series', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
-                { id: 'yaca_seed_network_series', type: 'series', name: '🕸️ La Rete dei tuoi Preferiti', extra: [{ name: 'skip' }] },
-                { id: 'yaca_hidden_gems_series', type: 'series', name: '💎 Gemme Nascoste', extra: [{ name: 'skip' }] },
-                { id: 'yaca_trakt_filtered_series', type: 'series', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] }
-            ],
+            catalogs: catalogs,
             idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'yaca-profile-'],
             behaviorHints: {
                 configurable: true,

@@ -352,6 +352,28 @@ module.exports = async (req, res) => {
             email: stremioEmail
         });
 
+        // 4.1. CLEANUP: Delete UserLists (AI/Manual) no longer referenced by any profile
+        try {
+            const allReferencedIds = new Set();
+            for (const profile of parsedProfiles) {
+                if (profile.catalogs) {
+                    for (const cat of profile.catalogs) {
+                        if (cat.id) allReferencedIds.add(String(cat.id));
+                    }
+                }
+            }
+
+            // Only cleanup lists that are purely dynamic/transient (AI prompt or manual filter)
+            // AND belong to this user AND are not in use by any profile
+            await UserList.deleteMany({
+                owner: finalUserId,
+                sourceType: { $in: ['ai_prompt', 'manual_filter'] },
+                listId: { $nin: Array.from(allReferencedIds) }
+            });
+        } catch (cleanupErr) {
+            console.warn("[Cleanup] Error deleting unreferenced UserLists:", cleanupErr.message);
+        }
+
         // 5. Costruisci URL Manifest Stateful
         const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
         const manifestUrl = `${hostUrl}/${userDoc.userId}/${configVersion}/manifest.json`;

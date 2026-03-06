@@ -1,4 +1,5 @@
 const { Mistral } = require('@mistralai/mistralai');
+const AICache = require('../models/AICache');
 
 // ============================================
 // SYSTEM PROMPTS
@@ -197,11 +198,24 @@ function parseMistralResponse(content, originalPrompt) {
  * @param {string} mistralKey La chiave mistral dell'utente
  * @returns Object (Filtri JSON intelligenti)
  */
-async function generateTmdbFiltersFromPrompt(prompt, mistralKey) {
+async function generateTmdbFiltersFromPrompt(prompt, mistralKey, isBackground = false) {
     if (!mistralKey) {
         return { strategy: "multi_search", text_search: prompt, target: "tmdb" };
     }
     try {
+        // 1. Check Cache
+        const cached = await AICache.get(prompt);
+        if (cached) {
+            console.log(`[AICache] Hit per: "${prompt}" (Stale: ${cached.isStale})`);
+
+            if (cached.isStale) {
+                // Background refresh
+                generateTmdbFiltersFromPrompt(prompt, mistralKey, true).catch(() => { });
+            }
+
+            return cached.filters;
+        }
+
         const client = new Mistral({ apiKey: mistralKey, timeout: 25000 });
 
         const response = await client.chat.complete({
@@ -219,7 +233,12 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey) {
             console.error("Risposta Mistral vuota o malformata");
             return { strategy: "multi_search", text_search: prompt, target: "tmdb" };
         }
-        return parseMistralResponse(rawJson, prompt);
+        const parsed = parseMistralResponse(rawJson, prompt);
+
+        // 2. Set Cache
+        await AICache.set(prompt, parsed);
+
+        return parsed;
     } catch (err) {
         console.error("Errore Fallback in AI (ritorno parametri base):", err.message);
         return { strategy: "discovery", sort_by: "popularity.desc", target: "tmdb" };

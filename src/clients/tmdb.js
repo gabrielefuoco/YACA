@@ -453,52 +453,29 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
 
         if (cached) {
             const cachedItems = Array.isArray(cached.stremioData) ? cached.stremioData : [];
-            // Slice items for the given skip. We slice MORE items than ITEMS_PER_PAGE to support `hideWatched` pagination loops.
             const fetchSize = (normalizedSkip === 0) ? (PAGES_PER_REQUEST * ITEMS_PER_PAGE) : ITEMS_PER_PAGE;
             const sliceEnd = normalizedSkip + fetchSize;
             const cachedSlice = cachedItems.slice(normalizedSkip, sliceEnd);
 
-            if (!cached.isStale) {
-                // Background prefetching: if we are near the end of cached items, fetch next pages
-                if (normalizedSkip > 0 && cachedItems.length < sliceEnd + (ITEMS_PER_PAGE * 2) && cachedItems.length < cached.total_results) {
-                    const startPage = cached.nextPage || (Math.floor(cachedItems.length / ITEMS_PER_PAGE) + 1);
-                    fetchTmdbCatalogDirect(client, endpoint, startPage, customParams, type, 2)
-                        .then(({ items: newItems, nextPageFetched }) => {
-                            if (newItems.length > 0) {
-                                TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(cachedItems, newItems), nextPageFetched, options);
-                            }
-                        })
-                        .catch(e => console.error('[Prefetch] Error:', e.message));
-                }
+            // AGGRESSIVE SWR: Return cached data immediately if we have it
+            const hasEnoughItems = cachedItems.length >= sliceEnd || cachedItems.length === cached.total_results || cached.nextPage === -1;
 
-                // Scenario B: Cache Hit Fresca — latenza minima
-                if (normalizedSkip === 0) {
-                    return cachedItems;
-                }
-                // Check if we have enough items in cache for the requested slice
-                if (cachedItems.length >= sliceEnd || cachedItems.length === cached.total_results) {
-                    return cachedSlice;
-                }
+            if (cached.isStale || !hasEnoughItems) {
+                // Trigger revalidation in background
+                const startPage = !hasEnoughItems ? cached.nextPage : 1;
+                const pagesToFetch = !hasEnoughItems ? 1 : PAGES_PER_REQUEST;
+
+                fetchTmdbCatalogDirect(client, endpoint, startPage, customParams, type, pagesToFetch)
+                    .then(({ items: newItems, nextPageFetched }) => {
+                        const updatedItems = startPage === 1 ? newItems : mergeCatalogItems(cachedItems, newItems);
+                        TmdbRequestCache.set(requestHash, endpoint, updatedItems, nextPageFetched, options);
+                    })
+                    .catch(e => console.error('[SWR Revalidate] Error:', e.message));
             }
 
-            if (cached.isStale && (cachedItems.length >= sliceEnd || cachedItems.length === cached.total_results)) {
-                // Scenario C: Cache Hit Scaduta — Stale-While-Revalidate
-                // Rinnova in background a partire dalla pagina 1 (o dalla pagina 1 a X, a seconda di how many pages to fetch)
-                // Qui assumiamo che rinnoviamo la prima richiesta massiva (PAGES_PER_REQUEST pagine)
-                fetchTmdbCatalogDirect(client, endpoint, 1, customParams, type, PAGES_PER_REQUEST)
-                    .then(({ items: results, nextPageFetched }) => { TmdbRequestCache.set(requestHash, endpoint, mergeCatalogItems(results, cachedItems), nextPageFetched, options); })
-                    .catch(e => console.error('Errore rinnovo cache in background:', e.message));
-
+            if (cachedItems.length > 0) {
                 return normalizedSkip === 0 ? cachedItems : cachedSlice;
             }
-
-            // Scenario D: cache incompleta per lo skip richiesto.
-            // Recuperiamo solo la nuova pagina (a partire dal nextPage salvato in cache) e aggiorniamo la lista.
-            const { items: newItems, nextPageFetched } = await fetchTmdbCatalogDirect(client, endpoint, cached.nextPage, customParams, type, 1);
-            const updatedItems = mergeCatalogItems(cachedItems, newItems);
-            await TmdbRequestCache.set(requestHash, endpoint, updatedItems, nextPageFetched, options);
-
-            return normalizedSkip === 0 ? updatedItems : updatedItems.slice(normalizedSkip, normalizedSkip + fetchSize);
         }
     } catch (_e) {
         // Cache non disponibile, o cache throwato, procediamo
