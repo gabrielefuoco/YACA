@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log
+frontend/node_modules
+frontend/.next
+frontend/out
+.git
+.env
+*.md
+Dockerfile
+.dockerignore
+.github
+tests
+docs
+eslint.config.js
+package-lock.json
+frontend/package-lock.json

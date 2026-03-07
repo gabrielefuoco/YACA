@@ -1,7 +1,11 @@
-const { createAxiosInstance } = require('../utils/httpClient');
+const { kitsuClient } = require('../utils/httpClient');
 const { KITSU_ENDPOINT, ITEMS_PER_PAGE } = require('../config');
+const CacheManager = require('../cache/CacheManager');
 
-const kitsuClient = createAxiosInstance(KITSU_ENDPOINT);
+// Cache per Kitsu
+const kitsuMetaCache = new CacheManager('kitsu_meta', { ramMax: 50, ramTtlMs: 3600000 });
+const kitsuMappingCache = new CacheManager('kitsu_mapping', { ramMax: 50, ramTtlMs: 3600000 * 24 }); // 24 ore per il mapping
+const kitsuEpisodesCache = new CacheManager('kitsu_episodes', { ramMax: 50, ramTtlMs: 3600000 * 12 });
 
 /**
  * Trasforma il risultato raw di Kitsu nel formato Stremio Meta Preview.
@@ -59,25 +63,34 @@ async function fetchKitsuCatalog(endpoint, skip = 0, customParams = {}) {
  * Recupera l'elenco degli episodi per un Anime e li formatta per Stremio
  */
 async function fetchKitsuEpisodes(kitsuId) {
+    const cacheKey = `eps:${kitsuId}`;
+    const cached = await kitsuEpisodesCache.get(cacheKey);
+    if (cached) return cached;
+
     try {
         const res = await kitsuClient.get(`/anime/${kitsuId}/episodes`, {
-            params: { 'page[limit]': 200 } // Kitsu usually has max 20, up to 200 episodes. Pagination might be needed for very long anime, simplified here.
+            params: { 'page[limit]': 200 }
         });
 
         if (!res.data || !res.data.data) return [];
 
-        return res.data.data.map(ep => {
+        const episodes = res.data.data.map(ep => {
             const attrs = ep.attributes;
             return {
                 id: `kitsu:${kitsuId}:${attrs.number}`,
                 title: attrs.titles?.it || attrs.titles?.en || attrs.titles?.en_jp || `Episodio ${attrs.number}`,
                 released: attrs.airdate ? new Date(attrs.airdate).toISOString() : null,
-                season: 1, // Kitsu uses seasons differently, usually mapping to season 1 for Stremio series
+                season: 1,
                 episode: attrs.number,
                 overview: attrs.synopsis || '',
                 thumbnail: attrs.thumbnail ? attrs.thumbnail.original : null
             };
         });
+
+        if (episodes.length > 0) {
+            await kitsuEpisodesCache.set(cacheKey, episodes);
+        }
+        return episodes;
     } catch (e) {
         console.error("Errore fetchKitsuEpisodes:", e.message);
         return [];
@@ -90,11 +103,13 @@ async function fetchKitsuEpisodes(kitsuId) {
 async function getKitsuMetaDetails(id) {
     const kitsuId = id.replace('kitsu:', '').trim();
 
-    // Validate kitsuId is a number
     if (!/^\d+$/.test(kitsuId)) {
         console.error(`ID Kitsu non valido: ${kitsuId}`);
         return null;
     }
+
+    const cached = await kitsuMetaCache.get(kitsuId);
+    if (cached) return cached;
 
     try {
         const res = await kitsuClient.get(`/anime/${kitsuId}`);
@@ -108,8 +123,9 @@ async function getKitsuMetaDetails(id) {
             }
             if (item.attributes.subtype !== 'movie') {
                 meta.videos = await fetchKitsuEpisodes(kitsuId);
-                meta.type = 'series'; // Force Stremio to render it as a series to show the episodes grid
+                meta.type = 'series';
             }
+            await kitsuMetaCache.set(kitsuId, meta);
         }
         return meta;
     } catch (err) {
@@ -118,7 +134,37 @@ async function getKitsuMetaDetails(id) {
     }
 }
 
+/**
+ * Risolve un ID Kitsu partendo da un ID TMDB usando l'endpoint mappings.
+ */
+async function getKitsuIdFromTmdbId(tmdbId, type = 'series') {
+    const cacheKey = `tmdb_mapping:${tmdbId}`;
+    const cached = await kitsuMappingCache.get(cacheKey);
+    if (cached) return cached;
+
+    try {
+        const site = type === 'movie' ? 'themoviedb/movie' : 'themoviedb/tv';
+        const res = await kitsuClient.get('/mappings', {
+            params: {
+                'filter[externalSite]': site,
+                'filter[externalId]': tmdbId
+            }
+        });
+
+        const kitsuId = res.data?.data?.[0]?.relationships?.item?.data?.id;
+        if (kitsuId) {
+            await kitsuMappingCache.set(cacheKey, kitsuId);
+            return kitsuId;
+        }
+    } catch (e) {
+        console.error(`Errore mapping Kitsu per TMDB ${tmdbId}:`, e.message);
+    }
+    return null;
+}
+
 module.exports = {
     fetchKitsuCatalog,
-    getKitsuMetaDetails
+    getKitsuMetaDetails,
+    getKitsuIdFromTmdbId,
+    fetchKitsuEpisodes
 };

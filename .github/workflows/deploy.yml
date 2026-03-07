@@ -1,0 +1,23 @@
+name: Deploy to Hugging Face Spaces
+
+on:
+  push:
+    branches: [main]
+  # Permette il trigger manuale dalla tab Actions
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Push to Hugging Face
+        uses: huggingface/github-action@v2
+        with:
+          factory_auth_token: ${{ secrets.HF_TOKEN }}
+          hf_repo_id: Gabriele-fuoco/YACA
+          repo_type: space

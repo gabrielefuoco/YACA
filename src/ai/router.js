@@ -177,10 +177,11 @@ function parseMistralResponse(content, originalPrompt) {
             }
         }
 
-        // Determina il target primario a meno che non sia esplicito l'anime
+        // Determina il target primario: preferiamo TMDB per avere i poster italiani.
+        // Kitsu viene usato solo se l'utente lo chiede esplicitamente nel prompt.
         if (!parsed.target) {
-            const isAnime = originalPrompt.toLowerCase().includes('anime') || originalPrompt.toLowerCase().includes('manga');
-            parsed.target = isAnime ? 'kitsu' : 'tmdb';
+            const isExplicitKitsu = originalPrompt.toLowerCase().includes('kitsu');
+            parsed.target = isExplicitKitsu ? 'kitsu' : 'tmdb';
         }
 
         return parsed;

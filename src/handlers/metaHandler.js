@@ -1,5 +1,5 @@
 const { getTmdbMetaDetails } = require('../clients/tmdb');
-const { getKitsuMetaDetails } = require('../clients/kitsu');
+const { getKitsuMetaDetails, getKitsuIdFromTmdbId, fetchKitsuEpisodes } = require('../clients/kitsu');
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const { fetchMdblistRatings } = require('../utils/mdblist');
 const CacheManager = require('../cache/CacheManager');
@@ -76,6 +76,21 @@ async function metaHandler(args, userConfig) {
 
                     meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, ratings || {});
                     if (meta) {
+                        // Logica Ibrida Anime: Se è un anime (Genere Animation + keyword Anime), arricchisci con Kitsu
+                        const isAnimation = meta.genre_ids?.includes(16);
+                        const isAnime = isAnimation && (meta.name?.toLowerCase().includes('anime') || (meta.genres && meta.genres.some(g => g.toLowerCase().includes('animation'))));
+
+                        if (isAnime && type === 'series') {
+                            const kitsuId = await getKitsuIdFromTmdbId(tmdbId, 'series');
+                            if (kitsuId) {
+                                console.log(`[HybridAnime] Trovato mapping Kitsu ${kitsuId} per TMDB ${tmdbId}. Carico episodi...`);
+                                const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
+                                if (kitsuEpisodes && kitsuEpisodes.length > 0) {
+                                    meta.videos = kitsuEpisodes;
+                                    // Mantieni l'id originale TMDB per compatibilità Stremio ma usa i video Kitsu
+                                }
+                            }
+                        }
                         await finalMetaCache.set(cacheKey, meta);
                     }
                 }

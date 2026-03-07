@@ -35,14 +35,14 @@ module.exports = {
 
     // Refined TTLs for Deep Cache
     MOVIE_DETAILS_TTL_MS: 7 * 24 * 60 * 60 * 1000,      // 7 days
-    SERIES_FINISHED_TTL_MS: 7 * 24 * 60 * 60 * 1000,  // 7 days
+    SERIES_FINISHED_TTL_MS: 24 * 60 * 60 * 1000,      // 1 day (aggressivo per nuove stagioni)
     SERIES_ONGOING_TTL_MS: 30 * 60 * 1000,             // 30 minutes
 
     // Phase 3 Level 2: Scoring & Presentation Cache TTLs
     SCORING_DATA_TTL_MS: 14 * 24 * 60 * 60 * 1000,        // 14 days (genres, keywords, cast)
     MOVIE_PRESENTATION_TTL_MS: 14 * 24 * 60 * 60 * 1000,  // 14 days base TTL for movies
     MOVIE_PRESENTATION_SWR_MS: 7 * 24 * 60 * 60 * 1000,   // 7 days SWR window for movies
-    SERIES_FINISHED_PRESENTATION_TTL_MS: 7 * 24 * 60 * 60 * 1000, // 7 days for ended/cancelled series
+    SERIES_FINISHED_PRESENTATION_TTL_MS: 24 * 60 * 60 * 1000,     // 1 day
     SERIES_FINISHED_PRESENTATION_SWR_MS: 24 * 60 * 60 * 1000,     // 1 day SWR for ended series
     SERIES_ONGOING_PRESENTATION_TTL_MS: 12 * 60 * 60 * 1000,      // 12 hours for ongoing series
     SERIES_ONGOING_PRESENTATION_SWR_MS: 30 * 60 * 1000,            // 30 min SWR for ongoing series
