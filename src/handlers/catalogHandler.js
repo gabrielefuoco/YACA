@@ -522,6 +522,7 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     // Fase 9: Enrichment Progressivo in background (non blocca la risposta)
     enrichResultsWithDeepMetadata(finalItems, tmdbApiKey, type);
 
+    // Ritorna una pagina intera basata sullo skip richiesto
     return finalItems.slice(skip, skip + 40);
 }
 
@@ -626,11 +627,9 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     return true;
                 });
 
-                if (profileDoc) {
-                    results.sort((a, b) => (b.affinity || 0) - (a.affinity || 0));
-                }
             }
-            return { metas: results.slice(skip, skip + 40) };
+            // Applica la paginazione corretta sulla history locale
+            return { metas: results.slice(skip, skip + 20) };
         }
 
         // ==========================================
@@ -831,10 +830,11 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     pageResults = await filterWatchedItems(pageResults, userConfig);
                     combinedResults.push(...pageResults);
 
+                    // Se abbiamo abbastanza risultati per riempire la pagina Stremio, ci fermiamo
                     if (combinedResults.length >= 20 || pageResults.length === 0 || !userConfig?.config?.hideWatched) break;
                 }
 
-                results = combinedResults.slice(0, 40);
+                results = combinedResults.slice(0, 60); // Restituiamo un buffer generoso
                 if (!baseId.includes('ratings')) {
                     enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
                 }
@@ -863,7 +863,6 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }));
 
             for (let pageResults of parsedPages) {
-
                 // Filtro "Hide Watched"
                 pageResults = await filterWatchedItems(pageResults, userConfig);
                 combinedResults.push(...pageResults);
@@ -871,7 +870,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 if (combinedResults.length >= 20 || pageResults.length === 0 || !userConfig?.config?.hideWatched) break;
             }
 
-            results = combinedResults.slice(0, 40);
+            results = combinedResults.slice(0, 60);
             enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
             return { metas: results };
         }
@@ -891,15 +890,13 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     const strategy = mergeConfig.strategy || 'popularity'; // 'popularity' or 'mixed'
 
                     if (sourceIds && sourceIds.length >= 2) {
-                        const fetchLimit = skip + 40;
+                        // Phase 4 Merge strategy: fetch enough items from each source to satisfy skip
+                        const fetchLimit = skip + 60;
 
-                        // If sourceFilters are provided (from frontend preview/merged catalogs), use them directly
-                        // Otherwise fall back to recursive catalogHandler resolution (preset/DB IDs)
                         const fetchSource = async (idx) => {
                             if (sourceFilters[idx] && typeof sourceFilters[idx] === 'object' && !sourceFilters[idx].merge) {
                                 // Direct filter execution - no need for recursive ID resolution
                                 const srcType = sourceTypes[idx] || type;
-                                const searchType = srcType === 'series' ? 'tv' : 'movie';
                                 const srcFilters = { ...sourceFilters[idx] };
                                 if (!srcFilters.strategy) srcFilters.strategy = 'discovery';
                                 const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, 0, activeProfileSettings, cacheOptions);
@@ -928,89 +925,92 @@ async function catalogHandler(args, userConfig, hostUrl) {
                         return { metas: results };
                     }
                 }
-
-                // Crea una copia per evitare mutazioni sull'oggetto originale
-                const finalFilters = { ...filters };
-                if (!finalFilters.strategy) finalFilters.strategy = 'discovery';
-                if (sortBy) finalFilters.sort_by = sortBy;
-
-                results = await executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions);
-
-                // ==========================================
-                // FASE 10: HIDE WATCHED (WITH FILL)
-                // ==========================================
-                if (userConfig?.config?.hideWatched) {
-                    let filtered = await filterWatchedItems(results, userConfig);
-                    const MAX_DEPTH = Math.max(PAGES_PER_REQUEST, 3);
-                    const nextSkips = Array.from({ length: MAX_DEPTH }, (_, i) => skip + 20 + (i * 20));
-                    const nextPages = await rateLimitedMap(
-                        nextSkips,
-                        (nextSkip) => executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, nextSkip, activeProfileSettings, cacheOptions),
-                        { batchSize: 2, delayMs: 50 }
-                    );
-
-                    for (const nextPage of nextPages) {
-                        if (!nextPage || nextPage.length === 0) break;
-                        const nextFiltered = await filterWatchedItems(nextPage, userConfig);
-                        filtered.push(...nextFiltered);
-                        if (filtered.length >= 20) break;
-                    }
-                    results = filtered;
-                }
-
-                const withGenres = Array.isArray(finalFilters.with_genres)
-                    ? finalFilters.with_genres.map(String)
-                    : String(finalFilters.with_genres ?? '').split(/[|,]/);
-
-                if ((!results || results.length === 0) && withGenres.includes('99') && finalFilters.with_keywords) {
-                    const relaxedFilters = { ...finalFilters };
-                    delete relaxedFilters.with_keywords;
-                    results = await executeComplexStrategy(relaxedFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions);
-                }
-
-                // Badge episodio
-                if (EPISODE_CATALOG_IDS.has(baseId)) {
-                    results = results.map(m => ({ ...m }));
-                    applyEpisodeBadge(results, hostUrl);
-                }
-
-                // ==========================================
-                // PERSONALIZZAZIONE FINALE (RANKING)
-                // ==========================================
-                if (profileDoc && results.length > 0) {
-                    // Cerca pesi specifici del preset se presenti
-                    let presetWeights = { tmdb: 1.0, trakt: 1.0 };
-                    if (id.startsWith('yaca_preset_')) {
-                        const presetId = id.replace('yaca_preset_', '');
-                        const presetDef = presetsList.find(p => p.id === presetId);
-                        if (presetDef && presetDef.weights) {
-                            presetWeights = presetDef.weights;
-                        }
-                    }
-
-                    for (const item of results) {
-                        const affinity = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profileDoc, {
-                            globalProfile: globalProfileDoc,
-                            dnaFilters: activeDnaFilters
-                        });
-                        item.affinity = affinity;
-
-                        // Formula: (Voto TMDB * Peso TMDB) + (Affinity * Peso Trakt)
-                        const tmdbScore = parseFloat(item.imdbRating || 0);
-                        item.finalScore = (tmdbScore * presetWeights.tmdb) + (affinity * 10 * presetWeights.trakt);
-                    }
-
-                    // Ordina per score finale (solo se non è una lista ordinata esplicitamente dall'utente come "newest")
-                    if (!sortBy || sortBy === 'popularity.desc') {
-                        results.sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0));
-                    }
-                }
-
-                // Fase 9: Enrichment Progressivo in background (non blocca la risposta)
-                enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
-
-                return { metas: results };
             }
+
+            // Crea una copia per evitare mutazioni sull'oggetto originale
+            const finalFilters = { ...filters };
+            if (!finalFilters.strategy) finalFilters.strategy = 'discovery';
+            if (sortBy) finalFilters.sort_by = sortBy;
+
+            results = await executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions);
+
+            // ==========================================
+            // FASE 10: HIDE WATCHED (WITH PROGRESSIVE FILL)
+            // ==========================================
+            if (userConfig?.config?.hideWatched) {
+                let filtered = await filterWatchedItems(results, userConfig);
+                let currentPool = [...filtered];
+
+                // Se abbiamo meno di 20 elementi, proviamo a pescare le pagine successive finché non ne abbiamo abbastanza
+                // o finché non raggiungiamo un limite di sicurezza (MAX_FETCH_PAGES)
+                if (currentPool.length < 20 && results.length > 0) {
+                    const MAX_FETCH_PAGES = 4;
+                    for (let i = 1; i <= MAX_FETCH_PAGES; i++) {
+                        const nextSkip = skip + (i * 20);
+                        const nextPageResults = await executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, nextSkip, activeProfileSettings, cacheOptions);
+                        if (!nextPageResults || nextPageResults.length === 0) break;
+
+                        const filteredNext = await filterWatchedItems(nextPageResults, userConfig);
+                        currentPool.push(...filteredNext);
+
+                        if (currentPool.length >= 20) break;
+                    }
+                }
+                results = currentPool.slice(0, 40);
+            }
+
+            const withGenres = Array.isArray(finalFilters.with_genres)
+                ? finalFilters.with_genres.map(String)
+                : String(finalFilters.with_genres ?? '').split(/[|,]/);
+
+            if ((!results || results.length === 0) && withGenres.includes('99') && finalFilters.with_keywords) {
+                const relaxedFilters = { ...finalFilters };
+                delete relaxedFilters.with_keywords;
+                results = await executeComplexStrategy(relaxedFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions);
+            }
+
+            // Badge episodio
+            if (EPISODE_CATALOG_IDS.has(baseId)) {
+                results = results.map(m => ({ ...m }));
+                applyEpisodeBadge(results, hostUrl);
+            }
+
+            // ==========================================
+            // PERSONALIZZAZIONE FINALE (RANKING)
+            // ==========================================
+            if (profileDoc && results.length > 0) {
+                // Cerca pesi specifici del preset se presenti
+                let presetWeights = { tmdb: 1.0, trakt: 1.0 };
+                if (id.startsWith('yaca_preset_')) {
+                    const presetId = id.replace('yaca_preset_', '');
+                    const presetDef = presetsList.find(p => p.id === presetId);
+                    if (presetDef && presetDef.weights) {
+                        presetWeights = presetDef.weights;
+                    }
+                }
+
+                for (const item of results) {
+                    const affinity = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profileDoc, {
+                        globalProfile: globalProfileDoc,
+                        dnaFilters: activeDnaFilters
+                    });
+                    item.affinity = affinity;
+
+                    // Formula: (Voto TMDB * Peso TMDB) + (Affinity * Peso Trakt)
+                    const tmdbScore = parseFloat(item.imdbRating || 0);
+                    item.finalScore = (tmdbScore * presetWeights.tmdb) + (affinity * 10 * presetWeights.trakt);
+                }
+
+                // Ordina per score finale (solo se non è una lista ordinata esplicitamente dall'utente come "newest")
+                if (!sortBy || sortBy === 'popularity.desc') {
+                    results.sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0));
+                }
+            }
+
+            // Fase 9: Enrichment Progressivo in background (non blocca la risposta)
+            enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
+
+            return { metas: results };
         }
 
         return { metas: [] };

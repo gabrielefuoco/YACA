@@ -913,9 +913,15 @@ app.get([
         return res.status(400).json({ metas: [] });
     }
     const { type, id, extra: extraStr } = req.params;
-    const extra = parseExtra(extraStr);
+    let extra = parseExtra(extraStr);
+
+    // Merge query params (e.g. ?skip=20) into extra
+    if (req.query) {
+        extra = { ...extra, ...req.query };
+    }
 
     if (extra.skip) extra.skip = parseInt(extra.skip, 10) || 0;
+    else extra.skip = 0;
 
     if (extra.genre) {
         extra.sortBy = getSortByValue(extra.genre, type);
