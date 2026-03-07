@@ -87,9 +87,9 @@ function computeTopGenres(profile, n = 5) {
 }
 
 async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60) {
-    const types = mediaType === 'movie' ? 'movie' : 'tv';
+    const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
     try {
-        const res = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
+        const res = await axios.get(`https://api.themoviedb.org/3/discover/${tmdbType}`, {
             params: {
                 api_key: tmdbApiKey,
                 sort_by: 'popularity.desc',
@@ -101,7 +101,8 @@ async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60) {
             .map(item => normalizeContentId(item.id))
             .filter(Boolean)
             .slice(0, limit);
-    } catch (_e) {
+    } catch (err) {
+        console.warn(`[Hybrid] Popular fallback failed for ${mediaType}:`, err.message);
         return [];
     }
 }
