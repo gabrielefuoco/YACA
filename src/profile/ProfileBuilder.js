@@ -1,5 +1,6 @@
 const TasteProfile = require('../db/models/TasteProfile');
 const tmdb = require('../clients/tmdb');
+const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const { BINGE_SESSION_GAP_MS, BINGE_MULTIPLIER } = require('../config');
 const GLOBAL_PROFILE_MIRROR_RATIO = 0.2;
 
@@ -133,7 +134,7 @@ class ProfileBuilder {
 
         // Filtra solo quelli non ancora processati
         const newItems = traktHistory.filter(item => {
-            const id = item.movie?.ids?.tmdb || item.show?.ids?.tmdb;
+            const id = item.movie?.ids?.tmdb || item.show?.ids?.tmdb || item.movie?.ids?.imdb || item.show?.ids?.imdb;
             return id && !profile.processedTraktIds.includes(id.toString());
         });
 
@@ -170,8 +171,8 @@ class ProfileBuilder {
             const isBinge = session.length >= 3;
             const multiplier = isBinge ? BINGE_MULTIPLIER : 1.0;
             for (const { item } of session) {
-                const tmdbId = item.movie?.ids?.tmdb || item.show?.ids?.tmdb;
-                if (tmdbId) sessionMultiplierMap.set(tmdbId, multiplier);
+                const id = item.movie?.ids?.tmdb || item.show?.ids?.tmdb || item.movie?.ids?.imdb || item.show?.ids?.imdb;
+                if (id) sessionMultiplierMap.set(id.toString(), multiplier);
             }
         }
 
@@ -180,18 +181,22 @@ class ProfileBuilder {
         for (let i = 0; i < newItems.length; i += batchSize) {
             const batch = newItems.slice(i, i + batchSize);
             const promises = batch.map(async (item) => {
-                const tmdbId = item.movie?.ids?.tmdb || item.show?.ids?.tmdb;
+                const tmdbIdRaw = item.movie?.ids?.tmdb || item.show?.ids?.tmdb;
+                const imdbId = item.movie?.ids?.imdb || item.show?.ids?.imdb;
+                const tmdbId = tmdbIdRaw || (imdbId ? (await translateImdbToTmdb(imdbId, apiKey))?.id : null);
+                const processedId = tmdbIdRaw || imdbId || tmdbId;
                 const type = item.movie ? 'movie' : 'tv';
+                if (!tmdbId || !processedId) return;
 
                 try {
                     const details = await tmdb.getTmdbMovieDetails(apiKey, tmdbId, type);
                     if (details) {
-                        const bingeMultiplier = sessionMultiplierMap.get(tmdbId) || 1.0;
+                        const bingeMultiplier = sessionMultiplierMap.get(processedId.toString()) || 1.0;
                         this.processItem(profile, details, bingeMultiplier);
-                        profile.processedTraktIds.push(tmdbId.toString());
-                        if (globalProfile && !globalProfile.processedTraktIds.includes(tmdbId.toString())) {
+                        profile.processedTraktIds.push(processedId.toString());
+                        if (globalProfile && !globalProfile.processedTraktIds.includes(processedId.toString())) {
                             this.processItem(globalProfile, details, bingeMultiplier * GLOBAL_PROFILE_MIRROR_RATIO);
-                            globalProfile.processedTraktIds.push(tmdbId.toString());
+                            globalProfile.processedTraktIds.push(processedId.toString());
                         }
                     }
                 } catch (e) {

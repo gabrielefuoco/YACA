@@ -47,6 +47,24 @@ async function fetchRecentHistory(traktToken, mediaType, limit = 10) {
     }
 }
 
+async function fetchRecentRatings(traktToken, mediaType, limit = 40) {
+    if (!traktToken || !process.env.TRAKT_CLIENT_ID) return [];
+    try {
+        const res = await traktApiClient.get(`/users/me/ratings/${mediaType}`, {
+            headers: {
+                'trakt-api-version': '2',
+                'trakt-api-key': process.env.TRAKT_CLIENT_ID,
+                'Authorization': `Bearer ${traktToken}`
+            },
+            params: { limit, page: 1 },
+            timeout: 10000
+        });
+        return res.data || [];
+    } catch (_e) {
+        return [];
+    }
+}
+
 /**
  * Recupera le raccomandazioni grezze di Trakt per l'utente corrente.
  * @param {String} traktToken Token OAuth Trakt
@@ -687,8 +705,12 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         const isStale = !profile || (now - profile.lastUpdated) > (1000 * 60 * 60 * 12); // 12 ore
         if (isStale) {
             console.log(`[Hybrid] Sincronizzazione profilo per ${userId} (${context})...`);
-            const history = await fetchRecentHistory(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 20);
-            await ProfileBuilder.syncUserHistory(userId, context, history, tmdbApiKey);
+            const traktType = mediaType === 'movie' ? 'movies' : 'shows';
+            const [history, ratings] = await Promise.all([
+                fetchRecentHistory(traktToken, traktType, 40),
+                fetchRecentRatings(traktToken, traktType, 40)
+            ]);
+            await ProfileBuilder.syncUserHistory(userId, context, [...history, ...ratings], tmdbApiKey);
             catalogCache.delete(cacheKey); // Invalida RAM
         }
     }).catch(err => console.error("Errore check stale profile:", err.message));
@@ -781,8 +803,11 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
     if (!userId || !traktToken || !tmdbApiKey) return false;
     try {
         const traktType = mediaType === 'movie' ? 'movies' : 'shows';
-        const history = await fetchRecentHistory(traktToken, traktType, 20);
-        await ProfileBuilder.syncUserHistory(userId, context, history, tmdbApiKey);
+        const [history, ratings] = await Promise.all([
+            fetchRecentHistory(traktToken, traktType, 40),
+            fetchRecentRatings(traktToken, traktType, 40)
+        ]);
+        await ProfileBuilder.syncUserHistory(userId, context, [...history, ...ratings], tmdbApiKey);
         return true;
     } catch (err) {
         console.error(`[Hybrid] syncIncrementalRecommendations failed for ${userId}/${context}:`, err.message);
@@ -794,6 +819,7 @@ module.exports = {
     getHybridCatalog,
     syncIncrementalRecommendations,
     fetchRecentHistory,
+    fetchRecentRatings,
     fetchTraktRecommendationsRaw,
     fetchTmdbSimilarCounts,
     calculateHybridScore,

@@ -45,7 +45,10 @@ describe('syncIncrementalRecommendations', () => {
 
     it('syncs movie history via ProfileBuilder', async () => {
         const history = [{ movie: { ids: { tmdb: 123 } } }];
-        mockTraktGet.mockResolvedValueOnce({ data: history });
+        const ratings = [{ movie: { ids: { tmdb: 456 } }, rating: 9 }];
+        mockTraktGet
+            .mockResolvedValueOnce({ data: history })
+            .mockResolvedValueOnce({ data: ratings });
         ProfileBuilder.syncUserHistory.mockResolvedValueOnce({});
 
         const result = await syncIncrementalRecommendations('u1', 'movie', 'trakt_token', 'tmdb_key');
@@ -55,7 +58,11 @@ describe('syncIncrementalRecommendations', () => {
             expect.stringContaining('/history/movies'),
             expect.any(Object)
         );
-        expect(ProfileBuilder.syncUserHistory).toHaveBeenCalledWith('u1', 'global', history, 'tmdb_key');
+        expect(mockTraktGet).toHaveBeenCalledWith(
+            expect.stringContaining('/ratings/movies'),
+            expect.any(Object)
+        );
+        expect(ProfileBuilder.syncUserHistory).toHaveBeenCalledWith('u1', 'global', [...history, ...ratings], 'tmdb_key');
     });
 
     it('returns false when required params are missing', async () => {

@@ -1,9 +1,14 @@
 jest.mock('../src/db/models/TasteProfile', () => ({
-    findOne: jest.fn()
+    findOne: jest.fn(),
+    findOneAndUpdate: jest.fn()
 }));
 
 jest.mock('../src/clients/tmdb', () => ({
     getTmdbMovieDetails: jest.fn()
+}));
+
+jest.mock('../src/id_mapping/id_cache', () => ({
+    translateImdbToTmdb: jest.fn()
 }));
 
 jest.mock('../src/db/models/User', () => ({
@@ -13,6 +18,7 @@ jest.mock('../src/db/models/User', () => ({
 const TasteProfile = require('../src/db/models/TasteProfile');
 const tmdb = require('../src/clients/tmdb');
 const User = require('../src/db/models/User');
+const { translateImdbToTmdb } = require('../src/id_mapping/id_cache');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 
 function createTasteProfile(context) {
@@ -45,6 +51,9 @@ describe('ProfileBuilder core taste bias', () => {
         TasteProfile.findOne
             .mockResolvedValueOnce(nicheProfile)
             .mockResolvedValueOnce(globalProfile);
+        TasteProfile.findOneAndUpdate
+            .mockResolvedValueOnce(nicheProfile)
+            .mockResolvedValueOnce(globalProfile);
 
         tmdb.getTmdbMovieDetails.mockResolvedValue({
             id: 100,
@@ -75,5 +84,31 @@ describe('ProfileBuilder core taste bias', () => {
         const globalProfile = createTasteProfile('global');
         await ProfileBuilder.inferDNAFromProfile(globalProfile);
         expect(User.findOne).toHaveBeenCalled();
+    });
+
+    it('processes imdb-only trakt items by translating to tmdb', async () => {
+        const profile = createTasteProfile('global');
+        TasteProfile.findOneAndUpdate.mockResolvedValueOnce(profile);
+        translateImdbToTmdb.mockResolvedValueOnce({ id: 'tmdb:777', type: 'movie' });
+        tmdb.getTmdbMovieDetails.mockResolvedValueOnce({
+            id: 777,
+            genres: [{ id: 18 }],
+            keywords: { results: [] },
+            credits: { crew: [], cast: [] },
+            production_companies: [],
+            runtime: 100,
+            release_date: '2010-01-01'
+        });
+
+        await ProfileBuilder.syncUserHistory(
+            'user_1',
+            'global',
+            [{ movie: { ids: { imdb: 'tt1234567' } }, watched_at: '2026-01-01T00:00:00Z' }],
+            'tmdb_key'
+        );
+
+        expect(translateImdbToTmdb).toHaveBeenCalledWith('tt1234567', 'tmdb_key');
+        expect(tmdb.getTmdbMovieDetails).toHaveBeenCalledWith('tmdb_key', 'tmdb:777', 'movie');
+        expect(profile.processedTraktIds).toContain('tt1234567');
     });
 });
