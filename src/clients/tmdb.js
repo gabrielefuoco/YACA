@@ -596,7 +596,7 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
     const { value: cached, status } = await tvEpisodesCache.getWithStatus(cacheKey);
     if (status === 'fresh') return cached;
 
-    const doFetch = async () => {
+    const fetchAllSeasonEpisodes = async () => {
         const promises = [];
         // TMDB Seasons are 1-indexed. Sometimes there is Season 0 (Specials).
         // Fetch all seasons, with a reasonable safety limit (e.g., 50)
@@ -673,12 +673,12 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
     };
 
     if (status === 'stale') {
-        doFetch().catch(e => console.error('[SWR] Episode revalidation error:', e.message));
+        fetchAllSeasonEpisodes().catch(e => console.error('[SWR] Episode revalidation error:', e.message));
         return cached;
     }
 
     try {
-        return await doFetch();
+        return await fetchAllSeasonEpisodes();
     } catch (e) {
         console.error("Errore fetchTmdbEpisodes:", e.message);
         return [];

@@ -167,7 +167,7 @@ describe('Issue fixes integration', () => {
         });
     });
 
-    describe('formatRichDescription separator removal (Issue #2)', () => {
+    describe('formatRichDescription separator removal (Issue #3)', () => {
         it('should not contain separator line characters', () => {
             const { formatRichDescription } = require('../src/clients/tmdb');
             const data = createBaseTmdbData();
