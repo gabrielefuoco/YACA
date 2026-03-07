@@ -86,6 +86,26 @@ function computeTopGenres(profile, n = 5) {
         .map(e => e[0]);
 }
 
+async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60) {
+    const types = mediaType === 'movie' ? 'movie' : 'tv';
+    try {
+        const res = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
+            params: {
+                api_key: tmdbApiKey,
+                sort_by: 'popularity.desc',
+                'vote_count.gte': 50
+            },
+            timeout: 5000
+        });
+        return (res.data?.results || [])
+            .map(item => normalizeContentId(item.id))
+            .filter(Boolean)
+            .slice(0, limit);
+    } catch (_e) {
+        return [];
+    }
+}
+
 /**
  * Per ogni seed TMDB ID, recupera i film "simili" e conta quante volte ogni film appare.
  * @param {Array} seedTmdbIds Array di ID TMDB (numeri o stringhe)
@@ -733,6 +753,14 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         recommendationIds = await buildRecommendIds();
     }
 
+    if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {
+        recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType);
+        if (recommendationIds.length > 0) {
+            await RecommendationCache.set(cacheKey, { ids: recommendationIds, updatedAt: Date.now() });
+            catalogCache.set(cacheKey, recommendationIds);
+        }
+    }
+
     const pageIds = recommendationIds.slice(skip, skip + ITEMS_PER_PAGE);
     if (pageIds.length === 0) return [];
 
@@ -769,6 +797,7 @@ module.exports = {
     fetchTmdbSimilarCounts,
     calculateHybridScore,
     computeTopGenres,
+    fetchPopularFallbackIds,
     buildHybridCatalog,
     buildTopGenresMixCatalog,
     catalogCache,

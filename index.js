@@ -815,6 +815,7 @@ function getSortByValue(genreExtra, type) {
 }
 
 const presetExtra = [{ name: 'genre', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
+const searchExtra = [{ name: 'search', isRequired: true }];
 
 // 3. Endpoint dinamico per il Manifest di Stremio
 app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.json'], async (req, res) => {
@@ -832,6 +833,8 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
 
         const catalogs = [
             { id: 'yaca-profiles', type: 'other', name: '👥 Cambia Profilo' },
+            { id: 'yaca_search_movies', type: 'movie', name: '🔎 Cerca Film', extra: searchExtra },
+            { id: 'yaca_search_series', type: 'series', name: '🔎 Cerca Serie TV', extra: searchExtra },
             // Hero Catalogs (Personalized)
             { id: 'yaca_true_blend_movies', type: 'movie', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
             { id: 'yaca_true_blend_series', type: 'series', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },

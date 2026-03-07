@@ -696,7 +696,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
         return null;
     }
 
-    const cacheKey = `full:${type}:${tmdbId}`;
+    const cacheKey = `full:v2:${type}:${tmdbId}`;
     const { value: cachedData, status: cacheStatus } = await tmdbDetailsCache.getWithStatus(cacheKey);
     let data = cachedData;
 
