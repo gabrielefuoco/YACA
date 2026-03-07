@@ -178,6 +178,29 @@ describe('fetchTmdbCatalog per-page cache', () => {
         expect(result[0]).toHaveProperty('poster');
     });
 
+    it('disables Fast-Pass for deep pages when disableLightMode option is enabled', async () => {
+        TmdbRequestCache.getWithStatus.mockResolvedValue({
+            value: undefined,
+            status: 'miss'
+        });
+
+        const tmdbItems = Array.from({ length: 20 }, (_, i) => ({
+            id: i + 21, title: `Movie ${i + 21}`, name: null,
+            poster_path: '/poster.jpg', backdrop_path: '/bg.jpg',
+            overview: 'overview', vote_average: 7.5, release_date: '2020-01-01'
+        }));
+        const client = {
+            defaults: { params: { api_key: 'key' } },
+            get: jest.fn().mockResolvedValue({ data: { results: tmdbItems } })
+        };
+
+        const result = await fetchTmdbCatalog(client, '/discover/movie', 20, {}, 'movie', { disableLightMode: true });
+
+        expect(result.length).toBeGreaterThan(0);
+        expect(result[0]).toHaveProperty('behaviorHints');
+        expect(result[0]).toHaveProperty('genre_ids');
+    });
+
     it('per-page cache key includes page number', async () => {
         TmdbRequestCache.getWithStatus.mockResolvedValue({
             value: undefined,

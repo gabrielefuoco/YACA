@@ -1,6 +1,6 @@
 const { fetchTmdbCatalog, createTmdbClient, getTmdbIdByName, getTmdbMovieDetails } = require('../clients/tmdb');
 const { rateLimitedMap } = require('../utils/rateLimiter');
-const { fetchKitsuCatalog } = require('../clients/kitsu');
+const { fetchKitsuCatalog, fetchKitsuEpisodes } = require('../clients/kitsu');
 const { fetchTraktCatalog } = require('../clients/trakt');
 const { fetchMDBListItems, parseMDBListItems } = require('../utils/mdblist');
 const { routeLiveStremioSearch } = require('../ai/router');
@@ -32,7 +32,10 @@ const FORCED_SLOW_PRESETS = new Set(FORCED_SLOW_PRESET_IDS);
 // Cataloghi che mostrano episodi recenti (badge numero episodio sul poster)
 const EPISODE_CATALOG_IDS = new Set([
     'preset_new_series_eps',
-    'preset_new_anime_eps'
+    'preset_new_anime_eps',
+    'yaca_anime_trending',
+    'yaca_discover_series',
+    'yaca_trakt_filtered_series'
 ]);
 
 function normalizeContentId(id) {
@@ -68,6 +71,19 @@ function applyEpisodeBadge(metas, hostUrl) {
 
         meta.poster = `${host}/badge/poster.jpg?url=${encodeURIComponent(meta.poster)}&text=${encodeURIComponent(badgeText)}`;
     }
+}
+
+function finalizeCatalog(results, id, type, hostUrl) {
+    if (!Array.isArray(results)) return { metas: [] };
+
+    const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
+    if (type === 'series' && EPISODE_CATALOG_IDS.has(baseId)) {
+        const clonedResults = results.map(m => ({ ...m }));
+        applyEpisodeBadge(clonedResults, hostUrl);
+        return { metas: clonedResults };
+    }
+
+    return { metas: results };
 }
 
 /**
@@ -575,6 +591,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
         // Pulisce l'ID nel caso arrivi come Preset dalla Dashboard
         const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
+        const tmdbFetchOptions = {
+            ...cacheOptions,
+            disableLightMode: type === 'series' && EPISODE_CATALOG_IDS.has(baseId)
+        };
 
         // Carica i preset con date dinamiche (ricalcolate ad ogni richiesta)
         const presetsList = getPresets();
@@ -618,7 +638,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
             if (lastActivities.length > 0) {
                 const searchTasks = lastActivities.map(act =>
-                    executeCombinedSearch(act.value, userConfig, type, 0, activeProfileSettings, cacheOptions)
+                    executeCombinedSearch(act.value, userConfig, type, 0, activeProfileSettings, tmdbFetchOptions)
                 );
                 const searchResults = await Promise.all(searchTasks);
                 results = searchResults.flat();
@@ -657,7 +677,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             const parallelPages = (userConfig?.config?.hideWatched) ? 3 : 1;
             const pagesResults = await rateLimitedMap(
                 Array.from({ length: parallelPages }, (_, i) => i),
-                (i) => executeCombinedSearch(search, userConfig, type, currentSkip + (i * 20), activeProfileSettings, cacheOptions),
+                (i) => executeCombinedSearch(search, userConfig, type, currentSkip + (i * 20), activeProfileSettings, tmdbFetchOptions),
                 { batchSize: 3, delayMs: 50 }
             );
             for (let pageResults of pagesResults) {
@@ -666,7 +686,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 if (combinedResults.length >= 20) break;
             }
             results = combinedResults.slice(0, 20);
-            return { metas: results };
+            return finalizeCatalog(results, id, type, hostUrl);
         }
 
         // ==========================================
@@ -690,7 +710,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             const parallelPages = (userConfig?.config?.hideWatched) ? 3 : 1;
             const pagesResults = await rateLimitedMap(
                 Array.from({ length: parallelPages }, (_, i) => i),
-                (i) => fetchTmdbCatalog(tmdbClient, endpoint, currentSkip + (i * 20), params, contentType, cacheOptions),
+                (i) => fetchTmdbCatalog(tmdbClient, endpoint, currentSkip + (i * 20), params, contentType, tmdbFetchOptions),
                 { batchSize: 3, delayMs: 50 }
             );
             for (let pageResults of pagesResults) {
@@ -701,12 +721,22 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
             results = combinedResults.slice(0, 40);
             enrichResultsWithDeepMetadata(results, tmdbApiKey, contentType);
-            return { metas: results };
+            return finalizeCatalog(results, id, type, hostUrl);
         }
 
         if (id === 'yaca_anime_trending') {
             results = await fetchKitsuCatalog('/anime', skip, { sort: '-popularityRank' });
-            return { metas: results };
+            await rateLimitedMap(
+                results,
+                async (item) => {
+                    const kitsuId = item?.id?.replace('kitsu:', '');
+                    if (!kitsuId) return;
+                    const episodes = await fetchKitsuEpisodes(kitsuId);
+                    item.videos = episodes || [];
+                },
+                { batchSize: 3, delayMs: 100 }
+            );
+            return finalizeCatalog(results, id, 'series', hostUrl);
         }
 
         // ==========================================
@@ -746,7 +776,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
             results = combinedResults.slice(0, 20);
             enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
-            return { metas: results };
+            return finalizeCatalog(results, id, type, hostUrl);
         }
 
         // ==========================================
@@ -766,7 +796,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
             const pagesResults = await Promise.all(pageSkips.map((pageSkip) =>
                 Promise.all([
-                    fetchTmdbCatalog(tmdbClient, tmdbEp, pageSkip, { sort_by: 'popularity.desc', 'vote_count.gte': 50 }, contentType, cacheOptions),
+                    fetchTmdbCatalog(tmdbClient, tmdbEp, pageSkip, { sort_by: 'popularity.desc', 'vote_count.gte': 50 }, contentType, tmdbFetchOptions),
                     fetchTraktCatalog(traktEp, pageSkip, null, tmdbApiKey).catch(() => [])
                 ])
             ));
@@ -788,7 +818,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
             results = combinedResults.slice(0, 40);
             enrichResultsWithDeepMetadata(results, tmdbApiKey, contentType);
-            return { metas: results };
+            return finalizeCatalog(results, id, type, hostUrl);
         }
 
         // ==========================================
@@ -841,7 +871,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 if (!baseId.includes('ratings')) {
                     enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
                 }
-                return { metas: results };
+                return finalizeCatalog(results, id, type, hostUrl);
             }
         }
 
@@ -875,7 +905,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
             results = combinedResults.slice(0, 20);
             enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
-            return { metas: results };
+            return finalizeCatalog(results, id, type, hostUrl);
         }
 
         if (catalogMeta || directFilters) {
@@ -902,7 +932,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                                 const srcType = sourceTypes[idx] || type;
                                 const srcFilters = { ...sourceFilters[idx] };
                                 if (!srcFilters.strategy) srcFilters.strategy = 'discovery';
-                                const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, 0, activeProfileSettings, cacheOptions);
+                                const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, 0, activeProfileSettings, tmdbFetchOptions);
                                 return { metas: items.slice(0, fetchLimit) };
                             }
                             // Recursive catalogHandler (for preset/DB IDs) - Pass correct skip
@@ -925,7 +955,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                                 .slice(skip, skip + 20);
                         }
 
-                        return { metas: results };
+                        return finalizeCatalog(results, id, type, hostUrl);
                     }
                 }
             }
@@ -935,7 +965,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             if (!finalFilters.strategy) finalFilters.strategy = 'discovery';
             if (sortBy) finalFilters.sort_by = sortBy;
 
-            results = await executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions);
+            results = await executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, tmdbFetchOptions);
 
             // ==========================================
             // FASE 10: HIDE WATCHED (WITH PROGRESSIVE FILL)
@@ -950,7 +980,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     const MAX_FETCH_PAGES = 4;
                     for (let i = 1; i <= MAX_FETCH_PAGES; i++) {
                         const nextSkip = skip + (i * 20);
-                        const nextPageResults = await executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, nextSkip, activeProfileSettings, cacheOptions);
+                        const nextPageResults = await executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, nextSkip, activeProfileSettings, tmdbFetchOptions);
                         if (!nextPageResults || nextPageResults.length === 0) break;
 
                         const filteredNext = await filterWatchedItems(nextPageResults, userConfig);
@@ -969,13 +999,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             if ((!results || results.length === 0) && withGenres.includes('99') && finalFilters.with_keywords) {
                 const relaxedFilters = { ...finalFilters };
                 delete relaxedFilters.with_keywords;
-                results = await executeComplexStrategy(relaxedFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions);
-            }
-
-            // Badge episodio
-            if (EPISODE_CATALOG_IDS.has(baseId)) {
-                results = results.map(m => ({ ...m }));
-                applyEpisodeBadge(results, hostUrl);
+                results = await executeComplexStrategy(relaxedFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, tmdbFetchOptions);
             }
 
             // ==========================================
@@ -1013,7 +1037,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             // Fase 9: Enrichment Progressivo in background (non blocca la risposta)
             enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
 
-            return { metas: results };
+            return finalizeCatalog(results, id, type, hostUrl);
         }
 
         return { metas: [] };
