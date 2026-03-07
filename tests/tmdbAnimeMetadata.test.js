@@ -6,6 +6,7 @@ jest.mock('../src/utils/httpClient', () => ({
 
 jest.mock('../src/models/TmdbRequestCache', () => ({
     get: jest.fn(),
+    getWithStatus: jest.fn().mockResolvedValue({ value: undefined, status: 'miss' }),
     set: jest.fn()
 }));
 

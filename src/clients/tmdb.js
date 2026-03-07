@@ -491,19 +491,6 @@ async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customPar
     }
 }
 
-function mergeCatalogItems(existingItems = [], newItems = []) {
-    const merged = [];
-    const seenIds = new Set();
-
-    for (const item of [...existingItems, ...newItems]) {
-        if (!item || !item.id || seenIds.has(item.id)) continue;
-        seenIds.add(item.id);
-        merged.push(item);
-    }
-
-    return merged;
-}
-
 /**
  * Generates a per-page cache key for isolated page caching.
  * Format: <baseHash>:page:<pageNum>
@@ -578,12 +565,11 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
     // ─── Cache Miss: fetch from TMDB ───
     // For page 1 (skip=0), prefetch PAGES_PER_REQUEST pages for the first 3 pages cache
     const isFirstPage = pageNum === 1;
-    const tmdbStartPage = (pageNum - 1) * 1 + 1; // 1 TMDB page per Stremio page
+    const tmdbStartPage = pageNum; // 1 TMDB page per Stremio page
     const pagesToFetch = isFirstPage ? PAGES_PER_REQUEST : 1;
 
     // Fast-Pass: deep pages on total cache miss skip enrichment
-    const isDeepPage = pageNum > 1;
-    const lightMode = isDeepPage;
+    const lightMode = !isFirstPage;
 
     const { items: results, nextPageFetched } = await fetchTmdbCatalogDirect(
         client, endpoint, tmdbStartPage, customParams, type, pagesToFetch, { lightMode }

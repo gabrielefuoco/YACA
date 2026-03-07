@@ -32,6 +32,8 @@ async function preWarmRedisFromMongo() {
             if (!matchesPage) continue;
 
             // Build the envelope that CacheManager expects: { v: value, t: storedAtMs }
+            // Intentionally use Date.now() so the L1 SWR clock starts fresh after reboot,
+            // giving users a full fresh window before background revalidation kicks in.
             const envelope = { v: entry.value, t: Date.now() };
             const redisKey = `tmdb_catalog:${entry.key}`;
 

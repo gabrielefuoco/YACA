@@ -106,6 +106,7 @@ describe('fetchTmdbCatalog per-page cache', () => {
         // skip=20 → page 2 → returns cached page 2 items
         expect(result).toHaveLength(20);
         expect(result[0]).toEqual({ id: 'tmdb:21' });
+        expect(result[19]).toEqual({ id: 'tmdb:40' });
         expect(client.get).not.toHaveBeenCalled();
     });
 
