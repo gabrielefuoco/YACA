@@ -559,7 +559,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
     const pagesToFetch = isFirstPage ? PAGES_PER_REQUEST : 1;
 
     // Fast-Pass: deep pages on total cache miss skip enrichment
-    const lightMode = !isFirstPage;
+    const lightMode = !isFirstPage && !options.disableLightMode;
 
     const { items: results, nextPageFetched } = await fetchTmdbCatalogDirect(
         client, endpoint, tmdbStartPage, customParams, type, pagesToFetch, { lightMode }
