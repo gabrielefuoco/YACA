@@ -46,6 +46,7 @@ jest.mock('../src/db/models/CacheEntry', () => ({
 
 jest.mock('../src/models/TmdbRequestCache', () => ({
     get: jest.fn().mockResolvedValue(null),
+    getWithStatus: jest.fn().mockResolvedValue({ value: null, status: 'miss' }),
     set: jest.fn().mockResolvedValue(null)
 }));
 

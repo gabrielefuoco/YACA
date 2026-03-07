@@ -6,6 +6,7 @@ jest.mock('../src/utils/httpClient', () => ({
 
 jest.mock('../src/models/TmdbRequestCache', () => ({
     get: jest.fn(),
+    getWithStatus: jest.fn().mockResolvedValue({ value: undefined, status: 'miss' }),
     set: jest.fn()
 }));
 
@@ -21,6 +22,7 @@ jest.mock('../src/utils/requestHash', () => ({
 jest.mock('../src/cache/CacheManager', () => {
     return jest.fn().mockImplementation(() => ({
         get: jest.fn().mockResolvedValue(undefined),
+        getWithStatus: jest.fn().mockResolvedValue({ value: undefined, status: 'miss' }),
         set: jest.fn().mockResolvedValue(undefined),
         delete: jest.fn().mockResolvedValue(undefined),
         clear: jest.fn().mockResolvedValue(undefined)
