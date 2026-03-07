@@ -610,16 +610,14 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
         }
 
         const results = await Promise.allSettled(promises);
-        const videos = [];
 
-        const appendEpisodesFromSeason = (seasonData, fallbackMaps = {}) => {
-            if (!seasonData?.episodes) return;
+        const buildEpisodesFromSeason = (seasonData, fallbackMaps = {}) => {
+            if (!seasonData?.episodes) return [];
             const enOverviewByEpisode = fallbackMaps.enOverviewByEpisode || new Map();
             const originalOverviewByEpisode = fallbackMaps.originalOverviewByEpisode || new Map();
-            seasonData.episodes.forEach(ep => {
+            return seasonData.episodes.map(ep => {
                 const fallbackOverview = enOverviewByEpisode.get(ep.episode_number) || originalOverviewByEpisode.get(ep.episode_number) || '';
-                videos.push({
-                    // Usa IMDB ID se disponibile, essenziale per Torrentio!
+                return {
                     id: imdbId ? `${imdbId}:${ep.season_number}:${ep.episode_number}` : `tmdb:${tmdbId}:${ep.season_number}:${ep.episode_number}`,
                     title: ep.name || `Episodio ${ep.episode_number}`,
                     released: ep.air_date ? new Date(ep.air_date).toISOString() : null,
@@ -627,17 +625,16 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
                     episode: ep.episode_number,
                     overview: ep.overview || fallbackOverview,
                     thumbnail: ep.still_path ? `https://image.tmdb.org/t/p/w500${ep.still_path}` : null
-                });
+                };
             });
         };
 
-        for (const res of results) {
+        const seasonVideoChunks = await Promise.all(results.map(async (res) => {
             if (res.status === 'fulfilled' && res.value?.data?.episodes) {
                 const seasonData = res.value.data;
-                const hasMissingOverview = seasonData.episodes.some(ep => !ep.overview || !ep.overview.trim());
+                const hasMissingOverview = seasonData.episodes.some(ep => !ep.overview?.trim());
                 if (!hasMissingOverview) {
-                    appendEpisodesFromSeason(seasonData);
-                    continue;
+                    return buildEpisodesFromSeason(seasonData);
                 }
 
                 const seasonNumber = seasonData.season_number;
@@ -661,12 +658,14 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
                         if (ep?.overview?.trim()) originalOverviewByEpisode.set(ep.episode_number, ep.overview);
                     }
 
-                    appendEpisodesFromSeason(seasonData, { enOverviewByEpisode, originalOverviewByEpisode });
+                    return buildEpisodesFromSeason(seasonData, { enOverviewByEpisode, originalOverviewByEpisode });
                 } catch (_e) {
-                    appendEpisodesFromSeason(seasonData);
+                    return buildEpisodesFromSeason(seasonData);
                 }
             }
-        }
+            return [];
+        }));
+        const videos = seasonVideoChunks.flat();
 
         if (videos.length > 0) {
             await tvEpisodesCache.set(cacheKey, videos);
@@ -751,7 +750,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
     const isCleanOverview = (txt) => txt && txt.trim().length > 10 && !txt.includes("Non abbiamo ancora una descrizione in italiano");
     const overviewNeedsFallback = !isCleanOverview(data.overview);
 
-    if (titleNeedsFallback || overviewNeedsFallback || (data.images?.posters?.length > 0 && !data.poster_path)) {
+    if (titleNeedsFallback || overviewNeedsFallback) {
         try {
             const [enRes, origRes] = await Promise.all([
                 client.get(endpoint, {
@@ -810,7 +809,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
 
             // Alcune risposte localizzate possono non includere poster_path pur avendo immagini disponibili.
             if (!data.poster_path) {
-                data.poster_path = enData?.poster_path || origData?.poster_path || data.poster_path || null;
+                data.poster_path = enData?.poster_path || origData?.poster_path || null;
             }
 
             if (!data.images?.posters?.length) {
