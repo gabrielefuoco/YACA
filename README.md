@@ -10,7 +10,7 @@ pinned: false
 # YACA (Yet Another Catalog Addon)
 Il catalogo definitivo per Stremio, potenziato da Trakt.tv e dall'intelligenza artificiale di Mistral.
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+[![Deploy to Hugging Face](https://huggingface.co/datasets/huggingface/badges/resolve/main/deploy-to-spaces-lg.svg)](https://huggingface.co/spaces/Gabriele-fuoco/YACA?duplicate=true)
 
 ## Funzionalità
 - **Cataloghi Intelligenti**: Genera cataloghi auto-aggiornanti con prompt testuali (es. "Commedie romantiche natalizie").
@@ -23,30 +23,28 @@ Il catalogo definitivo per Stremio, potenziato da Trakt.tv e dall'intelligenza a
 - **Integrazione Trakt.tv**: Supporto completo a Watchlist, Preferiti e Raccomandazioni tramite Device Auth Flow.
 - **Ricerca AI Live**: Cerca dalla barra di Stremio e l'AI interpreta la tua richiesta.
 - **Badge Episodi**: Visualizza il numero dell&apos;episodio direttamente sul poster nei cataloghi "In Corso".
-- **Ottimizzato per Render**: Funziona nel piano gratuito (512MB RAM) con gestione intelligente della cache.
+- **Ottimizzato per Hugging Face**: Funziona su Spaces (Docker) con gestione intelligente della cache.
 
 ## Architettura
-YACA utilizza un'architettura **Stateful** basata su **MongoDB**. Il cuore del sistema è il **Taste Profile** globale dell'utente, alimentato continuamente da Stremio e Trakt. Sopra questo profilo, ogni **Profilo** YACA applica un **DNA** (filtro contestuale) per estrarre solo i contenuti rilevanti (es. un profilo "Horror" isolerà solo i segnali horror dal tuo gusto globale).
-
-Per maggiori dettagli tecnici sulle Signature, la logica di scoring e il Deep Sync, consulta la [Documentazione Architetturale](file:///c:/Users/gabri/APP/catalogo/docs/ARCHITECTURE.md).
+YACA utilizza un'architettura **Stateful** basata su **MongoDB**. Il cuore del sistema è il **Taste Profile** globale dell'utente, alimentato continuamente da Stremio e Trakt. Sopra questo profilo, ogni **Profilo** YACA applica un **DNA** (filtro contestuale) per estrarre solo i contenuti rilevanti.
 
 ---
 
-## Deploy in 1 Click su Render
+## 🚀 Deploy su Hugging Face Spaces
 
-1. Clicca il pulsante **Deploy to Render** qui sopra.
-2. Inserisci un nome per il tuo servizio.
-3. Configura le variabili d'ambiente nella sezione *Environment* (vedi la guida alle API Keys qui sotto).
-4. Una volta avviato, visita l'URL del tuo servizio (es. `https://tuo-addon.onrender.com`) per configurare l'addon.
+1. Clicca il pulsante **Deploy to Spaces** qui sopra.
+2. Inserisci il tuo **HF_TOKEN** (con permessi di scrittura) e le altre API Key.
+3. Lo spazio si avvierà automaticamente usando il `Dockerfile` incluso.
+4. Una volta avviato, visita l'URL del tuo spazio (es. `https://gabriele-fuoco-yaca.hf.space`) per configurare l'addon.
 
 ---
 
-## ⏰ Mantenere l'Addon Sempre Attivo e Veloce
+## ⏰ Mantenere l'Addon Sempre Attivo (Keep-Alive)
 
-I servizi gratuiti di Render vanno in sospensione (sleep) dopo 15 minuti di inattività. Suggeriamo di usare **UptimeRobot** per mantenere l'addon "sveglio" e permettere il pre-caricamento della cache (warmup):
+I servizi gratuiti di Hugging Face vanno in sospensione (sleep) dopo un periodo di inattività. Usa **UptimeRobot** per mantenerlo attivo:
 1. Crea un monitor **HTTP(s)** su [UptimeRobot](https://uptimerobot.com/).
-2. URL: `https://tuo-addon.onrender.com/api/cron/warmup`.
-3. Intervallo: **14 minuti**.
+2. URL: `https://gabriele-fuoco-yaca.hf.space/api/cron/warmup`.
+3. Intervallo: **10 minuti** (consigliato) o **14 minuti**.
 
 ---
 
@@ -104,8 +102,8 @@ Visita `http://localhost:7000` nel browser.
 |`MONGODB_URI`|Sì|Connessione a MongoDB|
 |`TMDB_API_KEY`|Sì*|API Key globale TMDB|
 |`MISTRAL_API_KEY`|No*|API Key di Mistral per funzioni AI|
-|`HOST_URL`|Sì|URL pubblico del server (senza slash finale)|
-|`PORT`|No|Porta del server (default: 7000)|
+|`HOST_URL`|Sì|URL pubblico del server (es. `https://gabriele-fuoco-yaca.hf.space`)|
+|`PORT`|No|Porta del server (Hugging Face usa 7860)|
 |`TRAKT_CLIENT_ID`|No|Client ID per Trakt.tv|
 |`TRAKT_CLIENT_SECRET`|No|Client Secret per Trakt.tv|
 |`CORS_ALLOWED_ORIGINS`|No|Origini CORS consentite (es. `*`)|
