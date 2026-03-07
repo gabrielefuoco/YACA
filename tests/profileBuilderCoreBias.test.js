@@ -71,9 +71,9 @@ describe('ProfileBuilder core taste bias', () => {
         expect(globalGenreScore).toBeLessThan(nicheGenreScore);
     });
 
-    it('does not infer suggestedDNA for global context', async () => {
+    it('infers suggestedDNA for global context', async () => {
         const globalProfile = createTasteProfile('global');
         await ProfileBuilder.inferDNAFromProfile(globalProfile);
-        expect(User.findOne).not.toHaveBeenCalled();
+        expect(User.findOne).toHaveBeenCalled();
     });
 });

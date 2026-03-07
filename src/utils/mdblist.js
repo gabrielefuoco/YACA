@@ -66,8 +66,8 @@ async function fetchMdblistRatings(imdbId, mdblistApiKey) {
     if (!imdbId || !imdbId.startsWith('tt')) return null;
 
     const cacheKey = `ratings:${imdbId}`;
-    const cached = await ratingsCache.get(cacheKey);
-    if (cached) return cached;
+    const { value: cached, status: cacheStatus } = await ratingsCache.getWithStatus(cacheKey);
+    if (cacheStatus !== 'miss') return cached;
 
     try {
         let url = `/?i=${imdbId}`;

@@ -64,8 +64,8 @@ async function fetchKitsuCatalog(endpoint, skip = 0, customParams = {}) {
  */
 async function fetchKitsuEpisodes(kitsuId) {
     const cacheKey = `eps:${kitsuId}`;
-    const cached = await kitsuEpisodesCache.get(cacheKey);
-    if (cached) return cached;
+    const { value: cached, status: cacheStatus } = await kitsuEpisodesCache.getWithStatus(cacheKey);
+    if (cacheStatus !== 'miss') return cached;
 
     try {
         const res = await kitsuClient.get(`/anime/${kitsuId}/episodes`, {
@@ -108,8 +108,8 @@ async function getKitsuMetaDetails(id) {
         return null;
     }
 
-    const cached = await kitsuMetaCache.get(kitsuId);
-    if (cached) return cached;
+    const { value: cached, status: cacheStatus } = await kitsuMetaCache.getWithStatus(kitsuId);
+    if (cacheStatus !== 'miss') return cached;
 
     try {
         const res = await kitsuClient.get(`/anime/${kitsuId}`);
@@ -139,8 +139,8 @@ async function getKitsuMetaDetails(id) {
  */
 async function getKitsuIdFromTmdbId(tmdbId, type = 'series') {
     const cacheKey = `tmdb_mapping:${tmdbId}`;
-    const cached = await kitsuMappingCache.get(cacheKey);
-    if (cached) return cached;
+    const { value: cached, status: cacheStatus } = await kitsuMappingCache.getWithStatus(cacheKey);
+    if (cacheStatus !== 'miss') return cached;
 
     try {
         const site = type === 'movie' ? 'themoviedb/movie' : 'themoviedb/tv';

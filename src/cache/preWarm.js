@@ -19,18 +19,16 @@ async function preWarmRedisFromMongo() {
     const pagesLoaded = [];
 
     try {
-        // Find all tmdb_catalog entries whose keys end with :page:1 or :page:2
-        const pagePatterns = PREWARM_PAGES.map(p => `:page:${p}`);
+        // Use MongoDB $regex to filter pages server-side instead of loading all entries
+        const regexPattern = new RegExp(`:page:(${PREWARM_PAGES.join('|')})$`);
 
         const entries = await CacheEntry.find({
             namespace: 'tmdb_catalog',
+            key: { $regex: regexPattern },
             expiresAt: { $gt: new Date() }
         }).lean();
 
         for (const entry of entries) {
-            const matchesPage = pagePatterns.some(pat => entry.key.endsWith(pat));
-            if (!matchesPage) continue;
-
             // Build the envelope that CacheManager expects: { v: value, t: storedAtMs }
             // Intentionally use Date.now() so the L1 SWR clock starts fresh after reboot,
             // giving users a full fresh window before background revalidation kicks in.

@@ -81,8 +81,8 @@ const tvEpisodesCache = new CacheManager('tmdb_episodes', { ramMax: 50, ramTtlMs
 async function getTmdbIdByName(apiKey, endpoint, query) {
     if (!query) return null;
     const cacheKey = `${endpoint}:${query.toLowerCase()}`;
-    const cached = await idNameCache.get(cacheKey);
-    if (cached) return cached;
+    const { value: cached, status: cacheStatus } = await idNameCache.getWithStatus(cacheKey);
+    if (cacheStatus !== 'miss') return cached;
 
     try {
         const client = createTmdbClient(apiKey);
@@ -102,8 +102,8 @@ async function getTmdbIdByName(apiKey, endpoint, query) {
  */
 async function resolveImdbId(tmdbId, type, apiKey) {
     const cacheKey = `imdb:${type}:${tmdbId}`;
-    const cached = await imdbIdCache.get(cacheKey);
-    if (cached) return cached;
+    const { value: cached, status: cacheStatus } = await imdbIdCache.getWithStatus(cacheKey);
+    if (cacheStatus !== 'miss') return cached;
 
     try {
         const client = createTmdbClient(apiKey);
@@ -132,7 +132,6 @@ function getCountryEmoji(countryCode) {
  */
 function formatRichDescription(data, type, ratings = {}) {
     const lines = [];
-    const separator = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
 
     // 1. Banner dei Voti
     const scoreParts = [];
@@ -143,9 +142,7 @@ function formatRichDescription(data, type, ratings = {}) {
     if (ratings.metacritic) scoreParts.push(`Ⓜ️ ${ratings.metacritic}/100`);
 
     if (scoreParts.length > 0) {
-        lines.push(separator);
         lines.push(scoreParts.join(' | '));
-        lines.push(separator);
         lines.push('');
     }
 
@@ -159,7 +156,6 @@ function formatRichDescription(data, type, ratings = {}) {
     if (data.overview) {
         lines.push('📜 TRAMA');
         lines.push(data.overview);
-        lines.push('');
         lines.push('');
     }
 
@@ -205,7 +201,6 @@ function formatRichDescription(data, type, ratings = {}) {
     if (technicalInfo.length > 0) {
         lines.push(technicalInfo.join('\n'));
         lines.push('');
-        lines.push('');
     }
 
     // 5. Saga e Dati Finanziari (solo film)
@@ -221,7 +216,6 @@ function formatRichDescription(data, type, ratings = {}) {
             lines.push('💎 DETTAGLI');
             lines.push(curiosities.join('\n'));
             lines.push('');
-            lines.push('');
         }
     }
 
@@ -232,12 +226,8 @@ function formatRichDescription(data, type, ratings = {}) {
         if (tags.length > 0) {
             lines.push('🔗 TAGS');
             lines.push(tags.join(' '));
-            lines.push('');
-            lines.push('');
         }
     }
-
-    lines.push(separator);
 
     return lines.join('\n').trim();
 }
@@ -293,14 +283,14 @@ function toStremioMetaItem(tmdbItem, type) {
     }
 
     const name = tmdbItem.title || tmdbItem.name || 'Titolo sconosciuto';
-    const prefixedName = isTheatrical ? `🏷️ AL CINEMA ${name}` : name;
     const posterPath = pickPosterPath(tmdbItem);
 
     const meta = {
         id,
         imdb_id: imdbId, // Native flag for badges
         type: type === 'movie' ? 'movie' : 'series',
-        name: prefixedName,
+        name: name,
+        inTheaters: isTheatrical,
         poster: posterPath ? `https://image.tmdb.org/t/p/w500${posterPath}` : null,
         background: tmdbItem.backdrop_path ? `https://image.tmdb.org/t/p/original${tmdbItem.backdrop_path}` : null,
         posterShape: 'poster',
@@ -343,7 +333,7 @@ function toStremioMetaItem(tmdbItem, type) {
     // Generi
     if (tmdbItem.genres) {
         for (const g of tmdbItem.genres) {
-            meta.links.push({ name: g.name, category: 'Generi', url: `stremio:///search?search=${encodeURIComponent(g.name)}` });
+            meta.links.push({ name: g.name, category: 'Generi', url: `stremio://search?search=${encodeURIComponent(g.name)}` });
         }
     }
 
@@ -351,18 +341,18 @@ function toStremioMetaItem(tmdbItem, type) {
     if (type === 'movie' && tmdbItem.credits?.crew) {
         const directors = tmdbItem.credits.crew.filter(c => c.job === 'Director').slice(0, 3);
         for (const d of directors) {
-            meta.links.push({ name: d.name, category: 'Regia', url: `stremio:///search?search=${encodeURIComponent(d.name)}` });
+            meta.links.push({ name: d.name, category: 'Regia', url: `stremio://search?search=${encodeURIComponent(d.name)}` });
         }
     } else if (type === 'series' && tmdbItem.created_by?.length > 0) {
         for (const c of tmdbItem.created_by.slice(0, 3)) {
-            meta.links.push({ name: c.name, category: 'Creato da', url: `stremio:///search?search=${encodeURIComponent(c.name)}` });
+            meta.links.push({ name: c.name, category: 'Creato da', url: `stremio://search?search=${encodeURIComponent(c.name)}` });
         }
     }
 
     // Cast (primi 5)
     if (tmdbItem.credits?.cast) {
         for (const c of tmdbItem.credits.cast.slice(0, 5)) {
-            meta.links.push({ name: c.name, category: 'Cast', url: `stremio:///search?search=${encodeURIComponent(c.name)}` });
+            meta.links.push({ name: c.name, category: 'Cast', url: `stremio://search?search=${encodeURIComponent(c.name)}` });
         }
     }
 
@@ -370,19 +360,19 @@ function toStremioMetaItem(tmdbItem, type) {
     const kwList = type === 'movie' ? tmdbItem.keywords?.keywords : tmdbItem.keywords?.results;
     if (kwList && kwList.length > 0) {
         for (const k of kwList.slice(0, 5)) {
-            meta.links.push({ name: k.name, category: 'Tema', url: `stremio:///search?search=${encodeURIComponent(k.name)}` });
+            meta.links.push({ name: k.name, category: 'Tema', url: `stremio://search?search=${encodeURIComponent(k.name)}` });
         }
     }
 
     // Saga
     if (tmdbItem.belongs_to_collection) {
-        meta.links.push({ name: tmdbItem.belongs_to_collection.name, category: 'Saga', url: `stremio:///search?search=${encodeURIComponent(tmdbItem.belongs_to_collection.name)}` });
+        meta.links.push({ name: tmdbItem.belongs_to_collection.name, category: 'Saga', url: `stremio://search?search=${encodeURIComponent(tmdbItem.belongs_to_collection.name)}` });
     }
 
     // Network
     if (type === 'series' && tmdbItem.networks) {
         for (const n of tmdbItem.networks) {
-            meta.links.push({ name: n.name, category: 'Network', url: `stremio:///search?search=${encodeURIComponent(n.name)}` });
+            meta.links.push({ name: n.name, category: 'Network', url: `stremio://search?search=${encodeURIComponent(n.name)}` });
         }
     }
 
@@ -603,10 +593,10 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
  */
 async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalLanguage = null) {
     const cacheKey = `eps:${tmdbId}`;
-    const cached = await tvEpisodesCache.get(cacheKey);
-    if (cached) return cached;
+    const { value: cached, status } = await tvEpisodesCache.getWithStatus(cacheKey);
+    if (status === 'fresh') return cached;
 
-    try {
+    const fetchAllSeasonEpisodes = async () => {
         const promises = [];
         // TMDB Seasons are 1-indexed. Sometimes there is Season 0 (Specials).
         // Fetch all seasons, with a reasonable safety limit (e.g., 50)
@@ -680,6 +670,15 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
         }
 
         return videos;
+    };
+
+    if (status === 'stale') {
+        fetchAllSeasonEpisodes().catch(e => console.error('[SWR] Episode revalidation error:', e.message));
+        return cached;
+    }
+
+    try {
+        return await fetchAllSeasonEpisodes();
     } catch (e) {
         console.error("Errore fetchTmdbEpisodes:", e.message);
         return [];
@@ -698,13 +697,13 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
     }
 
     const cacheKey = `full:${type}:${tmdbId}`;
-    const cachedData = await tmdbDetailsCache.get(cacheKey);
+    const { value: cachedData, status: cacheStatus } = await tmdbDetailsCache.getWithStatus(cacheKey);
     let data = cachedData;
 
     const client = createTmdbClient(apiKey);
     const endpoint = type === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
 
-    if (!data) {
+    if (cacheStatus === 'miss') {
         try {
             const res = await client.get(endpoint, {
                 params: {
@@ -905,8 +904,8 @@ async function getTmdbMovieDetails(apiKey, id, type = 'movie') {
     if (!/^\d+$/.test(tmdbId)) return null;
 
     const cacheKey = `${type}:${tmdbId}`;
-    const cached = await tmdbDetailsCache.get(cacheKey);
-    if (cached) return cached;
+    const { value: cached, status: cacheStatus } = await tmdbDetailsCache.getWithStatus(cacheKey);
+    if (cacheStatus !== 'miss') return cached;
 
     const client = createTmdbClient(apiKey);
     const endpoint = type === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
@@ -968,5 +967,7 @@ module.exports = {
     getTmdbMovieDetails,
     getTmdbIdByName,
     resolveImdbId,
-    clearAllTmdbCaches
+    clearAllTmdbCaches,
+    toStremioMetaItem,
+    formatRichDescription
 };

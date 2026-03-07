@@ -49,7 +49,7 @@ function buildDnaFiltersForProfile(userConfig, profileId) {
  * Trova l'ultimo episodio trasmesso e genera l'URL del poster con badge.
  */
 function applyEpisodeBadge(metas, hostUrl) {
-    const host = hostUrl || process.env.HOST_URL || 'http://localhost:7000';
+    const host = hostUrl || process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:7000';
     const now = new Date();
 
     for (const meta of metas) {
