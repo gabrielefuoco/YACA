@@ -272,7 +272,6 @@ class ProfileBuilder {
      */
     static async inferDNAFromProfile(profile) {
         if (!profile) return;
-        if (profile.context === 'global') return;
 
         try {
             const User = require('../db/models/User');
