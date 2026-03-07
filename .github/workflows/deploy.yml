@@ -1,24 +1,18 @@
-name: Deploy to Hugging Face Spaces
-
+name: Sync to Hugging Face Hub
 on:
   push:
     branches: [main]
-  # Permette il trigger manuale dalla tab Actions
   workflow_dispatch:
 
 jobs:
-  deploy:
+  sync-to-hub:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
           lfs: true
-
-      - name: Push to Hugging Face
-        uses: huggingface/hub-sync@v1
-        with:
-          branch: main
-          repo_id: Gabriele-fuoco/YACA
-          repo_type: space
-          access_token: ${{ secrets.HF_TOKEN }}
+      - name: Push to hub
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: git push --force https://Gabriele-fuoco:$HF_TOKEN@huggingface.co/spaces/Gabriele-fuoco/YACA main
