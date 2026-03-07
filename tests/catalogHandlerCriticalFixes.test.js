@@ -64,6 +64,8 @@ const { getPresets } = require('../src/data/presets');
 const { catalogHandler } = require('../src/handlers/catalogHandler');
 
 describe('catalogHandler critical recommendation/search fixes', () => {
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
     beforeEach(() => {
         jest.clearAllMocks();
     });
@@ -139,7 +141,7 @@ describe('catalogHandler critical recommendation/search fixes', () => {
     });
 
     it('enriches anime simulcast with episodes and applies episode badge', async () => {
-        const pastDate = new Date(Date.now() - 86400000).toISOString();
+        const pastDate = new Date(Date.now() - MS_PER_DAY).toISOString();
         fetchKitsuCatalog.mockResolvedValue([
             {
                 id: 'kitsu:42',
@@ -172,7 +174,7 @@ describe('catalogHandler critical recommendation/search fixes', () => {
     });
 
     it('applies episode badge on merged early return via finalizeCatalog', async () => {
-        const pastDate = new Date(Date.now() - 86400000).toISOString();
+        const pastDate = new Date(Date.now() - MS_PER_DAY).toISOString();
         getPresets.mockReturnValue([
             {
                 id: 'preset_new_series_eps',

@@ -710,10 +710,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             const parallelPages = (userConfig?.config?.hideWatched) ? 3 : 1;
             const pagesResults = await rateLimitedMap(
                 Array.from({ length: parallelPages }, (_, i) => i),
-                (i) => fetchTmdbCatalog(tmdbClient, endpoint, currentSkip + (i * 20), params, contentType, {
-                    ...tmdbFetchOptions,
-                    disableLightMode: contentType === 'series' && EPISODE_CATALOG_IDS.has(baseId)
-                }),
+                (i) => fetchTmdbCatalog(tmdbClient, endpoint, currentSkip + (i * 20), params, contentType, tmdbFetchOptions),
                 { batchSize: 3, delayMs: 50 }
             );
             for (let pageResults of pagesResults) {
@@ -799,10 +796,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
             const pagesResults = await Promise.all(pageSkips.map((pageSkip) =>
                 Promise.all([
-                    fetchTmdbCatalog(tmdbClient, tmdbEp, pageSkip, { sort_by: 'popularity.desc', 'vote_count.gte': 50 }, contentType, {
-                        ...tmdbFetchOptions,
-                        disableLightMode: contentType === 'series' && EPISODE_CATALOG_IDS.has(baseId)
-                    }),
+                    fetchTmdbCatalog(tmdbClient, tmdbEp, pageSkip, { sort_by: 'popularity.desc', 'vote_count.gte': 50 }, contentType, tmdbFetchOptions),
                     fetchTraktCatalog(traktEp, pageSkip, null, tmdbApiKey).catch(() => [])
                 ])
             ));
