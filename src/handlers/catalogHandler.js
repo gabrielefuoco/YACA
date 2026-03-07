@@ -471,14 +471,19 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
 
         // 3. AI Search + Query Injection
         (async () => {
-            if (!mistralKey) return [];
-            const routing = await routeLiveStremioSearch(search, mistralKey);
-            if (routing.target === 'kitsu' && type === 'series') return [];
+            try {
+                if (!mistralKey) return [];
+                const routing = await routeLiveStremioSearch(search, mistralKey);
+                if (routing.target === 'kitsu' && type === 'series') return [];
 
-            // Injection!
-            const mergedFilters = await injectProfilePreferences(routing.filters, userId, profileId);
-            const items = await executeComplexStrategy(mergedFilters, tmdbClient, tmdbApiKey, type, 0, activeProfileSettings, cacheOptions);
-            return items.map(r => ({ ...r, weight: 0.8, source: 'ai' }));
+                // Injection!
+                const mergedFilters = await injectProfilePreferences(routing.filters, userId, profileId);
+                const items = await executeComplexStrategy(mergedFilters, tmdbClient, tmdbApiKey, type, 0, activeProfileSettings, cacheOptions);
+                return items.map(r => ({ ...r, weight: 0.8, source: 'ai' }));
+            } catch (e) {
+                console.error("Errore AI Search (Mistral down):", e.message);
+                return [];
+            }
         })()
     ];
 
@@ -727,19 +732,17 @@ async function catalogHandler(args, userConfig, hostUrl) {
             let currentSkip = skip;
             let combinedResults = [];
 
-            if (traktToken) {
-                const parallelPages = (userConfig?.config?.hideWatched) ? 3 : 1;
-                const promises = [];
-                for (let i = 0; i < parallelPages; i++) {
-                    promises.push(getHybridCatalog(baseId, currentSkip + (i * 20), traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId));
-                }
+            const parallelPages = (userConfig?.config?.hideWatched) ? 3 : 1;
+            const promises = [];
+            for (let i = 0; i < parallelPages; i++) {
+                promises.push(getHybridCatalog(baseId, currentSkip + (i * 20), traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId));
+            }
 
-                const pagesResults = await Promise.all(promises);
-                for (let pageResults of pagesResults) {
-                    pageResults = await filterWatchedItems(pageResults, userConfig);
-                    combinedResults.push(...pageResults);
-                    if (combinedResults.length >= 20) break;
-                }
+            const pagesResults = await Promise.all(promises);
+            for (let pageResults of pagesResults) {
+                pageResults = await filterWatchedItems(pageResults, userConfig);
+                combinedResults.push(...pageResults);
+                if (combinedResults.length >= 20) break;
             }
             results = combinedResults.slice(0, 20);
             enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
