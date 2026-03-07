@@ -967,5 +967,7 @@ module.exports = {
     getTmdbMovieDetails,
     getTmdbIdByName,
     resolveImdbId,
-    clearAllTmdbCaches
+    clearAllTmdbCaches,
+    toStremioMetaItem,
+    formatRichDescription
 };
