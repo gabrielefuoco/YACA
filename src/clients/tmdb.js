@@ -244,6 +244,20 @@ function metaRuntime(data, type) {
     return null;
 }
 
+function pickPosterPath(tmdbItem) {
+    const posters = tmdbItem?.images?.posters;
+    if (!Array.isArray(posters) || posters.length === 0) {
+        return tmdbItem.poster_path || null;
+    }
+
+    const itPoster = posters.find(p => p.iso_639_1 === 'it');
+    const enPoster = posters.find(p => p.iso_639_1 === 'en');
+    const nullPoster = posters.find(p => !p.iso_639_1);
+    const preferredPoster = itPoster || enPoster || nullPoster || posters[0];
+
+    return preferredPoster?.file_path || tmdbItem.poster_path || null;
+}
+
 /**
  * Trasforma il risultato raw di TMDB nel formato Stremio Meta Preview.
  */
@@ -272,13 +286,14 @@ function toStremioMetaItem(tmdbItem, type) {
 
     const name = tmdbItem.title || tmdbItem.name || 'Titolo sconosciuto';
     const prefixedName = isTheatrical ? `🏷️ AL CINEMA ${name}` : name;
+    const posterPath = pickPosterPath(tmdbItem);
 
     const meta = {
         id,
         imdb_id: imdbId, // Native flag for badges
         type: type === 'movie' ? 'movie' : 'series',
         name: prefixedName,
-        poster: tmdbItem.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbItem.poster_path}` : null,
+        poster: posterPath ? `https://image.tmdb.org/t/p/w500${posterPath}` : null,
         background: tmdbItem.backdrop_path ? `https://image.tmdb.org/t/p/original${tmdbItem.backdrop_path}` : null,
         posterShape: 'poster',
         description: tmdbItem.overview,
@@ -578,7 +593,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
 /**
  * Recupera le stagioni e gli episodi per una Serie TV da TMDB
  */
-async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId) {
+async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalLanguage = null) {
     const cacheKey = `eps:${tmdbId}`;
     const cached = await tvEpisodesCache.get(cacheKey);
     if (cached) return cached;
@@ -595,25 +610,62 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId) {
         }
 
         const results = await Promise.allSettled(promises);
-        const videos = [];
 
-        results.forEach(res => {
+        const buildEpisodesFromSeason = (seasonData, fallbackMaps = {}) => {
+            if (!seasonData?.episodes) return [];
+            const enOverviewByEpisode = fallbackMaps.enOverviewByEpisode || new Map();
+            const originalOverviewByEpisode = fallbackMaps.originalOverviewByEpisode || new Map();
+            return seasonData.episodes.map(ep => {
+                const fallbackOverview = enOverviewByEpisode.get(ep.episode_number) || originalOverviewByEpisode.get(ep.episode_number) || '';
+                return {
+                    id: imdbId ? `${imdbId}:${ep.season_number}:${ep.episode_number}` : `tmdb:${tmdbId}:${ep.season_number}:${ep.episode_number}`,
+                    title: ep.name || `Episodio ${ep.episode_number}`,
+                    released: ep.air_date ? new Date(ep.air_date).toISOString() : null,
+                    season: ep.season_number,
+                    episode: ep.episode_number,
+                    overview: ep.overview || fallbackOverview,
+                    thumbnail: ep.still_path ? `https://image.tmdb.org/t/p/w500${ep.still_path}` : null
+                };
+            });
+        };
+
+        const seasonVideoChunks = await Promise.all(results.map(async (res) => {
             if (res.status === 'fulfilled' && res.value?.data?.episodes) {
                 const seasonData = res.value.data;
-                seasonData.episodes.forEach(ep => {
-                    videos.push({
-                        // Usa IMDB ID se disponibile, essenziale per Torrentio!
-                        id: imdbId ? `${imdbId}:${ep.season_number}:${ep.episode_number}` : `tmdb:${tmdbId}:${ep.season_number}:${ep.episode_number}`,
-                        title: ep.name || `Episodio ${ep.episode_number}`,
-                        released: ep.air_date ? new Date(ep.air_date).toISOString() : null,
-                        season: ep.season_number,
-                        episode: ep.episode_number,
-                        overview: ep.overview || '',
-                        thumbnail: ep.still_path ? `https://image.tmdb.org/t/p/w500${ep.still_path}` : null
-                    });
-                });
+                const hasMissingOverview = seasonData.episodes.some(ep => !ep.overview?.trim());
+                if (!hasMissingOverview) {
+                    return buildEpisodesFromSeason(seasonData);
+                }
+
+                const seasonNumber = seasonData.season_number;
+                const fallbackRequests = [client.get(`/tv/${tmdbId}/season/${seasonNumber}`, { params: { language: 'en-US' } })];
+                if (originalLanguage && originalLanguage !== 'it' && originalLanguage !== 'en') {
+                    fallbackRequests.push(client.get(`/tv/${tmdbId}/season/${seasonNumber}`, { params: { language: originalLanguage } }));
+                }
+
+                try {
+                    const fallbackResults = await Promise.allSettled(fallbackRequests);
+                    const enOverviewByEpisode = new Map();
+                    const originalOverviewByEpisode = new Map();
+
+                    const enEpisodes = fallbackResults[0]?.status === 'fulfilled' ? fallbackResults[0].value?.data?.episodes : [];
+                    for (const ep of enEpisodes || []) {
+                        if (ep?.overview?.trim()) enOverviewByEpisode.set(ep.episode_number, ep.overview);
+                    }
+
+                    const origEpisodes = fallbackResults[1]?.status === 'fulfilled' ? fallbackResults[1].value?.data?.episodes : [];
+                    for (const ep of origEpisodes || []) {
+                        if (ep?.overview?.trim()) originalOverviewByEpisode.set(ep.episode_number, ep.overview);
+                    }
+
+                    return buildEpisodesFromSeason(seasonData, { enOverviewByEpisode, originalOverviewByEpisode });
+                } catch (_e) {
+                    return buildEpisodesFromSeason(seasonData);
+                }
             }
-        });
+            return [];
+        }));
+        const videos = seasonVideoChunks.flat();
 
         if (videos.length > 0) {
             await tvEpisodesCache.set(cacheKey, videos);
@@ -685,8 +737,8 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
 
     if (!data) return null;
 
-    // Fallback linguistico: IT → EN → lingua originale
-    // Se overview o titolo mancanti in italiano, proviamo inglese poi originale
+    // Fallback linguistico: priorità ai metadati reali (IT → EN → lingua originale),
+    // con traduzione solo come ultima spiaggia.
     const itTitle = data.title || data.name;
     const originalTitle = data.original_title || data.original_name;
     const isItalianOriginal = data.original_language === 'it';
@@ -700,22 +752,28 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
 
     if (titleNeedsFallback || overviewNeedsFallback) {
         try {
-            const enRes = await client.get(endpoint, { params: { language: 'en-US' } });
-            const enData = enRes.data;
-            if (enData) {
-                if (overviewNeedsFallback && enData.overview) {
-                    // Tenta traduzione con Lingva API
-                    try {
-                        const transRes = await lingvaClient.get(`/api/v1/en/it/${encodeURIComponent(enData.overview)}`, { timeout: 4000 });
-                        if (transRes.data && transRes.data.translation) {
-                            data.overview = transRes.data.translation;
-                        } else {
-                            data.overview = enData.overview;
-                        }
-                    } catch (e) {
-                        data.overview = enData.overview;
+            const [enRes, origRes] = await Promise.all([
+                client.get(endpoint, {
+                    params: {
+                        language: 'en-US',
+                        append_to_response: 'images',
+                        include_image_language: 'it,en,null'
                     }
-                }
+                }).catch(() => null),
+                (data.original_language && data.original_language !== 'it' && data.original_language !== 'en')
+                    ? client.get(endpoint, {
+                        params: {
+                            language: data.original_language,
+                            append_to_response: 'images',
+                            include_image_language: 'it,en,null'
+                        }
+                    }).catch(() => null)
+                    : Promise.resolve(null)
+            ]);
+
+            const enData = enRes?.data;
+            const origData = origRes?.data;
+            if (enData) {
                 if (titleNeedsFallback) {
                     const enTitle = enData.title || enData.name;
                     if (enTitle && enTitle !== originalTitle) {
@@ -724,11 +782,41 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
                     }
                 }
             }
-            // Se overview ancora assente, prova lingua originale
-            if (!data.overview && data.original_language) {
-                const origRes = await client.get(endpoint, { params: { language: data.original_language } });
-                if (origRes.data?.overview) {
-                    data.overview = origRes.data.overview;
+
+            if (overviewNeedsFallback) {
+                const enOverview = enData?.overview || '';
+                const originalOverview = origData?.overview || '';
+
+                if (isCleanOverview(enOverview)) {
+                    data.overview = enOverview;
+                } else if (isCleanOverview(originalOverview)) {
+                    data.overview = originalOverview;
+                } else if (enOverview) {
+                    try {
+                        const transRes = await lingvaClient.get(`/api/v1/en/it/${encodeURIComponent(enOverview)}`, { timeout: 4000 });
+                        if (transRes.data?.translation) {
+                            data.overview = transRes.data.translation;
+                        } else {
+                            data.overview = enOverview;
+                        }
+                    } catch (_e) {
+                        data.overview = enOverview;
+                    }
+                } else if (originalOverview) {
+                    data.overview = originalOverview;
+                }
+            }
+
+            // Alcune risposte localizzate possono non includere poster_path pur avendo immagini disponibili.
+            if (!data.poster_path) {
+                data.poster_path = enData?.poster_path || origData?.poster_path || null;
+            }
+
+            if (!data.images?.posters?.length) {
+                const postersFromFallback = enData?.images?.posters || origData?.images?.posters || [];
+                if (postersFromFallback.length > 0) {
+                    data.images = data.images || {};
+                    data.images.posters = postersFromFallback;
                 }
             }
         } catch (_e) { /* fallback silenzioso */ }
@@ -785,7 +873,13 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
 
     // Se è una serie TV, scarica gli episodi per popolare la griglia in Stremio
     if (type === 'series' && data.number_of_seasons) {
-        meta.videos = await fetchTmdbEpisodes(client, tmdbId, data.number_of_seasons, meta.id.startsWith('tt') ? meta.id : null);
+        meta.videos = await fetchTmdbEpisodes(
+            client,
+            tmdbId,
+            data.number_of_seasons,
+            meta.id.startsWith('tt') ? meta.id : null,
+            data.original_language || null
+        );
     }
 
 
