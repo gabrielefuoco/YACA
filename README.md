@@ -1,3 +1,12 @@
+---
+title: YACA
+emoji: 🚀
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
 # YACA (Yet Another Catalog Addon)
 Il catalogo definitivo per Stremio, potenziato da Trakt.tv e dall'intelligenza artificiale di Mistral.
 
