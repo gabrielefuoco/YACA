@@ -501,8 +501,10 @@ async function saveTmdbCatalogCache(requestHash, stremioData, nextPage, options 
  */
 async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type = 'movie', options = {}) {
     const normalizedSkip = skip ?? 0;
-    const requestHash = generateRequestHash(endpoint, customParams, 0, type);
+    const requestHash = generateRequestHash(endpoint, customParams, 0, type); // Hash always based on offset 0 to share cache
     const cacheTtlMs = options.cacheTtlMs || CACHE_TTL_MS;
+    const fetchSize = ITEMS_PER_PAGE; // Always return 20 items to Stremio
+    const sliceEnd = normalizedSkip + fetchSize;
 
     try {
         const rawCached = await TmdbRequestCache.get(requestHash);
@@ -511,8 +513,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
             const cachedItems = Array.isArray(rawCached.stremioData) ? rawCached.stremioData : [];
             const age = Date.now() - (rawCached.updatedAt || 0);
             const isStale = age > cacheTtlMs;
-            const fetchSize = (normalizedSkip === 0) ? (PAGES_PER_REQUEST * ITEMS_PER_PAGE) : ITEMS_PER_PAGE;
-            const sliceEnd = normalizedSkip + fetchSize;
+
             const cachedSlice = cachedItems.slice(normalizedSkip, sliceEnd);
 
             // AGGRESSIVE SWR: Return cached data immediately if we have it
@@ -538,10 +539,7 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
                 }
             }
 
-            // Return from cache if we have items for this range
-            if (normalizedSkip === 0 && cachedItems.length > 0) {
-                return cachedItems;
-            }
+            // Return from cache (only the requested slice!)
             if (cachedSlice.length > 0) {
                 return cachedSlice;
             }
@@ -557,37 +555,32 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
                 return updatedItems.slice(normalizedSkip, sliceEnd);
             }
 
-            // Catalog exhausted: hasEnoughItems is true (total_results or nextPage===-1)
-            // but the slice is empty — no more items at this offset.
+            // Catalog exhausted
             if (hasEnoughItems) {
                 return [];
             }
-
-            // Cache incomplete with unknown nextPage — fall through to fresh fetch
         }
     } catch (_e) {
-        // Cache non disponibile, o cache throwato, procediamo
+        // Fall through
     }
 
-    // Scenario A: Cache Miss — chiama TMDB e salva in cache
+    // Scenario A: Cache Miss or skipped range
+    // Calculate which page we need if skip > 0
+    const startPage = Math.floor(normalizedSkip / ITEMS_PER_PAGE) + 1;
     const pagesToFetch = (normalizedSkip === 0) ? PAGES_PER_REQUEST : 1;
-    let startPage = 1;
-
-    // Se stiamo richiedendo skip > 0 ma la cache non esiste (spartita per TTL o riavvio container)
-    // Non abbiamo idea di quale startPage accurata usare. Facciamo il fallback best-effort.
-    if (normalizedSkip > 0) {
-        startPage = Math.floor(normalizedSkip / ITEMS_PER_PAGE) + 1;
-    }
 
     const { items: results, nextPageFetched } = await fetchTmdbCatalogDirect(client, endpoint, startPage, customParams, type, pagesToFetch);
 
-    // Salvataggio solo per la prima pagina,
-    // così la cache rappresenta una lista progressiva a partire da skip 0.
+    // Save to cache if we started from 0 (standard case) or if we want to build a partial cache
     if (normalizedSkip === 0) {
         await saveTmdbCatalogCache(requestHash, results, nextPageFetched, options);
+        return results.slice(0, fetchSize); // Return only 20
     }
 
-    return results;
+    // If skip > 0 and no cache, we return only the fetched page results
+    // properly sliced if skip wasn't a perfect multiple of 20 (though it usually is)
+    const localSliceStart = normalizedSkip % ITEMS_PER_PAGE;
+    return results.slice(localSliceStart, localSliceStart + fetchSize);
 }
 
 /**

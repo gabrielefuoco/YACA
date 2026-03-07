@@ -89,7 +89,7 @@ async function resolveUserConfig(userId) {
 app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
-        version: '1.0.2',
+        version: '1.0.4',
         uptime: Math.floor(process.uptime())
     });
 });
@@ -885,7 +885,7 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
 app.get('/manifest.json', (req, res) => {
     const manifest = {
         id: 'org.stremio.yaca.catalog',
-        version: '1.0.3',
+        version: '1.0.4',
         name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
         description: 'Catalogo Intelligente Potenziato da AI - Configurazione Richiesta',
         logo: `${req.protocol}://${req.get('host')}/logo.png`,

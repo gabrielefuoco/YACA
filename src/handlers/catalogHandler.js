@@ -523,7 +523,7 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     enrichResultsWithDeepMetadata(finalItems, tmdbApiKey, type);
 
     // Ritorna una pagina intera basata sullo skip richiesto
-    return finalItems.slice(skip, skip + 40);
+    return finalItems.slice(skip, skip + 20);
 }
 
 /**
@@ -660,7 +660,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 combinedResults.push(...pageResults);
                 if (combinedResults.length >= 20) break;
             }
-            results = combinedResults.slice(0, 40);
+            results = combinedResults.slice(0, 20);
             return { metas: results };
         }
 
@@ -741,7 +741,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     if (combinedResults.length >= 20) break;
                 }
             }
-            results = combinedResults.slice(0, 40);
+            results = combinedResults.slice(0, 20);
             enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
             return { metas: results };
         }
@@ -834,7 +834,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     if (combinedResults.length >= 20 || pageResults.length === 0 || !userConfig?.config?.hideWatched) break;
                 }
 
-                results = combinedResults.slice(0, 60); // Restituiamo un buffer generoso
+                results = combinedResults.slice(0, 20); // Restituiamo esattamente una pagina
                 if (!baseId.includes('ratings')) {
                     enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
                 }
@@ -870,7 +870,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 if (combinedResults.length >= 20 || pageResults.length === 0 || !userConfig?.config?.hideWatched) break;
             }
 
-            results = combinedResults.slice(0, 60);
+            results = combinedResults.slice(0, 20);
             enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
             return { metas: results };
         }
@@ -902,8 +902,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
                                 const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, 0, activeProfileSettings, cacheOptions);
                                 return { metas: items.slice(0, fetchLimit) };
                             }
-                            // Fallback: recursive catalogHandler (for preset/DB IDs)
-                            return catalogHandler({ type, id: sourceIds[idx], extra: { ...extra, skip: 0, limit: fetchLimit } }, userConfig, hostUrl);
+                            // Recursive catalogHandler (for preset/DB IDs) - Pass correct skip
+                            return catalogHandler({ type, id: sourceIds[idx], extra: { ...extra, skip: skip, limit: fetchLimit } }, userConfig, hostUrl);
                         };
 
                         const [resA, resB] = await Promise.all([fetchSource(0), fetchSource(1)]);
@@ -956,7 +956,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                         if (currentPool.length >= 20) break;
                     }
                 }
-                results = currentPool.slice(0, 40);
+                results = currentPool.slice(0, 20);
             }
 
             const withGenres = Array.isArray(finalFilters.with_genres)
