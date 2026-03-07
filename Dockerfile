@@ -1,5 +1,6 @@
 # --- Stage 1: Build Frontend ---
 FROM node:20-slim AS frontend-builder
+LABEL version="1.0.3"
 WORKDIR /app/frontend
 
 # Copia i file di configurazione del frontend

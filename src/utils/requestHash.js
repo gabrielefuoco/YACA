@@ -12,8 +12,8 @@ const crypto = require('crypto');
  * @returns {string} Hash SHA-256 esadecimale
  */
 function generateRequestHash(endpoint, params, skip, type) {
-    // Costruiamo l'oggetto normalizzato
-    const normalized = { endpoint, type, skip: skip || 0 };
+    // Costruiamo l'oggetto normalizzato. Aggiungiamo 'v' per invalidare la cache se necessario.
+    const normalized = { endpoint, type, skip: skip || 0, v: "1.0.3" };
 
     // Copia tutti i parametri, escludendo api_key (la cache è condivisa tra utenti)
     if (params && typeof params === 'object') {

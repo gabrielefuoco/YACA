@@ -885,7 +885,7 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
 app.get('/manifest.json', (req, res) => {
     const manifest = {
         id: 'org.stremio.yaca.catalog',
-        version: '1.0.2',
+        version: '1.0.3',
         name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
         description: 'Catalogo Intelligente Potenziato da AI - Configurazione Richiesta',
         logo: `${req.protocol}://${req.get('host')}/logo.png`,
@@ -932,7 +932,7 @@ app.get([
 
     try {
         const response = await catalogHandler(args, userConfig, hostUrl);
-        res.setHeader('Cache-Control', 'max-age=1800, public');
+        res.setHeader('Cache-Control', 'max-age=60, public');
         res.json(response);
     } catch (err) {
         console.error("Errore Catalog Endpoint:", err.message);
