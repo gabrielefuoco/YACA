@@ -1,29 +1,133 @@
 const LRUCache = require('../utils/LRUCache');
 const CacheEntry = require('../db/models/CacheEntry');
+const { getRedisClient, isRedisAvailable } = require('./redisClient');
 
 class CacheManager {
     static instances = [];
 
-    constructor(namespace, { ramMax = 20, ramTtlMs = 300000, mongoTtlMs = 86400000 } = {}) {
+    /**
+     * @param {string} namespace
+     * @param {object} opts
+     * @param {number} opts.ramMax      - Max items in LRU fallback (used when Redis unavailable)
+     * @param {number} opts.ramTtlMs    - L1 TTL in ms (Redis key expiry)
+     * @param {number} opts.mongoTtlMs  - L2 TTL in ms (MongoDB expiration)
+     * @param {number} opts.swrMs       - Stale-While-Revalidate window in ms (0 = disabled)
+     */
+    constructor(namespace, { ramMax = 20, ramTtlMs = 300000, mongoTtlMs = 86400000, swrMs = 0 } = {}) {
         this.namespace = namespace;
+        this.ramTtlMs = ramTtlMs;
         this.mongoTtlMs = mongoTtlMs;
+        this.swrMs = swrMs;
 
-        // L1 Cache: In-memory RAM (LRU)
-        this.l1 = new LRUCache({ max: ramMax, ttl: ramTtlMs });
+        // LRU fallback when Redis is unavailable (e.g. local dev)
+        this.lruFallback = new LRUCache({ max: ramMax, ttl: ramTtlMs + swrMs });
         CacheManager.instances.push(this);
     }
 
+    /** Build the namespaced Redis key */
+    _redisKey(key) {
+        return `${this.namespace}:${key}`;
+    }
+
+    // ─── L1 helpers (Redis with LRU fallback) ───
+
+    async _l1Get(key) {
+        if (isRedisAvailable()) {
+            try {
+                const raw = await getRedisClient().get(this._redisKey(key));
+                if (raw !== null) return JSON.parse(raw);
+            } catch (err) {
+                console.error(`[CacheManager:${this.namespace}] Redis get error:`, err.message);
+            }
+        }
+        // LRU fallback
+        return this.lruFallback.get(key);
+    }
+
+    async _l1Set(key, envelope, ttlMs) {
+        if (isRedisAvailable()) {
+            try {
+                const rKey = this._redisKey(key);
+                const ttlSec = Math.ceil(ttlMs / 1000);
+                await getRedisClient().set(rKey, JSON.stringify(envelope), 'EX', ttlSec);
+            } catch (err) {
+                console.error(`[CacheManager:${this.namespace}] Redis set error:`, err.message);
+            }
+        }
+        // Always write to LRU fallback as well
+        this.lruFallback.set(key, envelope);
+    }
+
+    async _l1Delete(key) {
+        if (isRedisAvailable()) {
+            try { await getRedisClient().del(this._redisKey(key)); } catch (_) { /* noop */ }
+        }
+        this.lruFallback.delete(key);
+    }
+
+    async _l1Clear() {
+        if (isRedisAvailable()) {
+            try {
+                const redis = getRedisClient();
+                const pattern = `${this.namespace}:*`;
+                let cursor = '0';
+                do {
+                    const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 200);
+                    cursor = nextCursor;
+                    if (keys.length > 0) await redis.del(...keys);
+                } while (cursor !== '0');
+            } catch (err) {
+                console.error(`[CacheManager:${this.namespace}] Redis clear error:`, err.message);
+            }
+        }
+        this.lruFallback.clear();
+    }
+
+    async _l1Size() {
+        if (isRedisAvailable()) {
+            try {
+                const redis = getRedisClient();
+                let count = 0;
+                let cursor = '0';
+                do {
+                    const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', `${this.namespace}:*`, 'COUNT', 200);
+                    cursor = nextCursor;
+                    count += keys.length;
+                } while (cursor !== '0');
+                return count;
+            } catch (_) { /* fall through */ }
+        }
+        return this.lruFallback.size;
+    }
+
+    // ─── Public API ───
+
     /**
-     * Recupera un valore dalla cache (L1 poi L2).
+     * Retrieves a value from cache (L1 → L2).
+     * Returns { value, status } where status is 'fresh' | 'stale' | 'miss'.
+     * For backward compat, bare `get()` returns the raw value (fresh or stale).
      */
-    async get(key) {
-        // 1. Check L1 RAM
-        const cachedL1 = this.l1.get(key);
-        if (cachedL1 !== undefined) {
-            return cachedL1;
+    async getWithStatus(key) {
+        // 1. Check L1 (Redis / LRU)
+        const envelope = await this._l1Get(key);
+        if (envelope !== undefined && envelope !== null) {
+            // Envelope format: { v: <value>, t: <storedAtMs> }
+            if (envelope && typeof envelope === 'object' && 't' in envelope && 'v' in envelope) {
+                const age = Date.now() - envelope.t;
+                if (age <= this.ramTtlMs) {
+                    return { value: envelope.v, status: 'fresh' };
+                }
+                if (this.swrMs > 0 && age <= this.ramTtlMs + this.swrMs) {
+                    return { value: envelope.v, status: 'stale' };
+                }
+                // Beyond SWR window — treat as miss, but we can still use L2
+            } else {
+                // Legacy format (plain value without envelope) — treat as fresh
+                return { value: envelope, status: 'fresh' };
+            }
         }
 
-        // 2. Check L2 MongoDB
+        // 2. Check L2 (MongoDB)
         try {
             const entry = await CacheEntry.findOne({
                 namespace: this.namespace,
@@ -32,23 +136,34 @@ class CacheManager {
             });
 
             if (entry) {
-                // Promuovi in L1
-                this.l1.set(key, entry.value);
-                return entry.value;
+                // Promote to L1 with current timestamp
+                const freshEnvelope = { v: entry.value, t: Date.now() };
+                const l1Ttl = this.ramTtlMs + this.swrMs;
+                await this._l1Set(key, freshEnvelope, l1Ttl);
+                return { value: entry.value, status: 'fresh' };
             }
         } catch (error) {
             console.error(`[CacheManager:${this.namespace}] L2 get error:`, error.message);
         }
 
-        return undefined;
+        return { value: undefined, status: 'miss' };
     }
 
     /**
-     * Salva un valore sia in L1 (RAM) che in L2 (MongoDB)
-     * @param {string} key 
-     * @param {any} value 
-     * @param {number} ttlMs - (Opzionale) TTL specifico in ms
-     * @param {object} options - (Opzionale) { useRam: boolean }
+     * Backward-compatible get: returns value or undefined.
+     * Stale data is still returned (SWR consumer should use getWithStatus for revalidation).
+     */
+    async get(key) {
+        const { value } = await this.getWithStatus(key);
+        return value;
+    }
+
+    /**
+     * Saves a value to both L1 (Redis) and L2 (MongoDB).
+     * @param {string} key
+     * @param {any} value
+     * @param {number} ttlMs - Optional override for L2 TTL
+     * @param {object} options - { useRam: boolean }
      */
     async set(key, value, ttlMs = null, options = { useRam: true }) {
         if (!key) return;
@@ -56,9 +171,11 @@ class CacheManager {
         const effectiveTtl = ttlMs || this.mongoTtlMs;
         const useRam = options.useRam !== false;
 
-        // 1. L1 (RAM) - Opzionale per risparmio memoria (es. pre-warming)
+        // 1. L1 (Redis / LRU)
         if (useRam) {
-            this.l1.set(key, value, ttlMs || this.ramTtlMs);
+            const envelope = { v: value, t: Date.now() };
+            const l1Ttl = this.ramTtlMs + this.swrMs;
+            await this._l1Set(key, envelope, l1Ttl);
         }
 
         // 2. L2 (MongoDB)
@@ -77,10 +194,10 @@ class CacheManager {
     }
 
     /**
-     * Rimuove un elemento da entrambi i livelli.
+     * Remove from both L1 and L2.
      */
     async delete(key) {
-        this.l1.delete(key);
+        await this._l1Delete(key);
         try {
             await CacheEntry.deleteOne({ namespace: this.namespace, key: key });
         } catch (error) {
@@ -89,10 +206,10 @@ class CacheManager {
     }
 
     /**
-     * Pulisce l'intero namespace.
+     * Clear entire namespace from L1 and L2.
      */
     async clear() {
-        this.l1.clear();
+        await this._l1Clear();
         try {
             await CacheEntry.deleteMany({ namespace: this.namespace });
         } catch (error) {
@@ -101,11 +218,11 @@ class CacheManager {
     }
 
     /**
-     * Recupera le statistiche di utilizzo per questo namespace
+     * Usage statistics for this namespace.
      */
     async getStats() {
         try {
-            const l1Count = this.l1.size;
+            const l1Count = await this._l1Size();
             const l2Count = await CacheEntry.countDocuments({ namespace: this.namespace });
             return {
                 namespace: this.namespace,
@@ -113,12 +230,12 @@ class CacheManager {
                 l2Count
             };
         } catch (e) {
-            return { namespace: this.namespace, l1Count: this.l1.size, l2Count: 'error' };
+            return { namespace: this.namespace, l1Count: this.lruFallback.size, l2Count: 'error' };
         }
     }
 
     /**
-     * Recupera le statistiche di tutte le istanze CacheManager attive.
+     * Aggregate stats across all active CacheManager instances.
      */
     static async getAllStats() {
         return Promise.all(CacheManager.instances.map(instance => instance.getStats()));

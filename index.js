@@ -29,13 +29,18 @@ const CacheManager = require('./src/cache/CacheManager');
 const { rateLimitedMap } = require('./src/utils/rateLimiter');
 const RecommendationCache = require('./src/models/RecommendationCache');
 const AICache = require('./src/models/AICache');
+const { disconnectRedis } = require('./src/cache/redisClient');
+const { preWarmRedisFromMongo } = require('./src/cache/preWarm');
 
 const tmdbClient = createAxiosInstance('https://api.themoviedb.org/3');
 const stremioClient = createAxiosInstance('https://api.strem.io');
 const traktClient = createAxiosInstance('https://api.trakt.tv');
 
 // Connessione MongoDB
-connectDB();
+connectDB().then(() => {
+    // Pre-warm Redis from MongoDB after DB connection is established
+    preWarmRedisFromMongo().catch(err => console.error('[Boot] PreWarm error:', err.message));
+});
 
 // 1. Inizializza Express
 const app = express();
@@ -1054,11 +1059,12 @@ const shutdown = (signal) => {
     server.close(async () => {
         console.log('Server chiuso correttamente.');
         try {
+            await disconnectRedis();
             const mongoose = require('mongoose');
             await mongoose.disconnect();
             console.log('MongoDB disconnesso.');
         } catch (err) {
-            console.error('Errore durante la disconnessione di MongoDB:', err.message);
+            console.error('Errore durante la disconnessione:', err.message);
         }
         process.exit(0);
     });

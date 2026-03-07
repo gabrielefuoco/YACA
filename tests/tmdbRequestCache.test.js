@@ -14,8 +14,14 @@ describe('TmdbRequestCache', () => {
     it('should expose standard CacheManager methods', () => {
         const TmdbRequestCache = require('../src/models/TmdbRequestCache');
         expect(typeof TmdbRequestCache.get).toBe('function');
+        expect(typeof TmdbRequestCache.getWithStatus).toBe('function');
         expect(typeof TmdbRequestCache.set).toBe('function');
         expect(typeof TmdbRequestCache.clear).toBe('function');
         expect(typeof TmdbRequestCache.delete).toBe('function');
+    });
+
+    it('should have swrMs configured', () => {
+        const TmdbRequestCache = require('../src/models/TmdbRequestCache');
+        expect(TmdbRequestCache.swrMs).toBeGreaterThan(0);
     });
 });

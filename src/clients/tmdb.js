@@ -6,11 +6,19 @@ const {
     PAGES_PER_REQUEST,
     ITEMS_PER_PAGE,
     SERIES_META_CACHE_TTL_MS,
+    SERIES_META_SWR_MS,
     MOVIE_META_CACHE_TTL_MS,
+    MOVIE_META_SWR_MS,
     MOVIE_DETAILS_TTL_MS,
     SERIES_FINISHED_TTL_MS,
     SERIES_ONGOING_TTL_MS,
-    CACHE_TTL_MS
+    CACHE_TTL_MS,
+    FAST_CATALOG_PAGE1_L2_TTL_MS,
+    FAST_CATALOG_PAGE1_SWR_MS,
+    FAST_CATALOG_DEEP_L2_TTL_MS,
+    FAST_CATALOG_DEEP_SWR_MS,
+    SLOW_CATALOG_L2_TTL_MS,
+    SLOW_CATALOG_SWR_MS
 } = require('../config');
 const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
 const { isMovieReleasedDigitally } = require('../utils/releaseFilter');
@@ -63,9 +71,9 @@ const createTmdbClient = (apiKey) => {
 
 const idNameCache = new CacheManager('tmdb_id_name', { ramMax: 50, ramTtlMs: 1000 * 60 * 60, mongoTtlMs: 1000 * 60 * 60 });
 const imdbIdCache = new CacheManager('tmdb_imdb_id', { ramMax: 50, ramTtlMs: 1000 * 60 * 60 * 24 * 7, mongoTtlMs: 1000 * 60 * 60 * 24 * 7 });
-const movieMetaCache = new CacheManager('tmdb_movie_meta', { ramMax: 50, ramTtlMs: MOVIE_META_CACHE_TTL_MS, mongoTtlMs: MOVIE_META_CACHE_TTL_MS });
-const seriesMetaCache = new CacheManager('tmdb_series_meta', { ramMax: 50, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS });
-const tvEpisodesCache = new CacheManager('tmdb_episodes', { ramMax: 50, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS });
+const movieMetaCache = new CacheManager('tmdb_movie_meta', { ramMax: 50, ramTtlMs: MOVIE_META_CACHE_TTL_MS, mongoTtlMs: MOVIE_META_CACHE_TTL_MS, swrMs: MOVIE_META_SWR_MS });
+const seriesMetaCache = new CacheManager('tmdb_series_meta', { ramMax: 50, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS, swrMs: SERIES_META_SWR_MS });
+const tvEpisodesCache = new CacheManager('tmdb_episodes', { ramMax: 50, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS, swrMs: SERIES_META_SWR_MS });
 
 /**
  * Traduce una stringa (es. nome attore o keyword) nel suo ID TMDB effettuando una fetch al volo
@@ -399,8 +407,10 @@ function toStremioMetaItem(tmdbItem, type) {
  * Recupera un listato dinamico (discover) o una query di ricerca e si preoccupa
  * di parallelizzare le pagine TMDB per riempire lo skip di Stremio.
  * Questa è la funzione interna senza cache.
+ *
+ * @param {boolean} opts.lightMode - When true, skips deep enrichment (Fast-Pass for deep pages)
  */
-async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customParams = {}, type = 'movie', pagesToFetch = 1) {
+async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customParams = {}, type = 'movie', pagesToFetch = 1, opts = {}) {
     const promises = [];
 
     for (let i = 0; i < pagesToFetch; i++) {
@@ -427,6 +437,26 @@ async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customPar
                 console.error(`Errore in una sub-query TMDB (${endpoint}):`, res.reason?.message);
             }
         });
+
+        // Fast-Pass: skip deep enrichment for deep pages (cache miss on scroll)
+        if (opts.lightMode) {
+            const apiKey = client.defaults.params.api_key;
+            const lightMetas = items.map(({ item, type: t }) => {
+                const mediaType = t === 'series' ? 'tv' : 'movie';
+                return {
+                    id: `tmdb:${item.id}`,
+                    type: t === 'series' ? 'series' : 'movie',
+                    name: item.title || item.name || 'Unknown',
+                    poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
+                    posterShape: 'poster',
+                    background: item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null,
+                    description: item.overview || '',
+                    releaseInfo: (item.release_date || item.first_air_date || '').substring(0, 4),
+                    imdbRating: item.vote_average ? item.vote_average.toFixed(1) : undefined
+                };
+            });
+            return { items: lightMetas, nextPageFetched: startPage + pagesToFetch };
+        }
 
         // Applichiamo filtro di rilascio e arricchiamo con metadati IMDB
         const apiKey = client.defaults.params.api_key;
@@ -475,112 +505,111 @@ function mergeCatalogItems(existingItems = [], newItems = []) {
 }
 
 /**
- * Helper: saves data to TmdbRequestCache, preserving the original updatedAt timestamp
- * when appending new pages (nextPage > 1) to avoid resetting the staleness clock.
+ * Generates a per-page cache key for isolated page caching.
+ * Format: <baseHash>:page:<pageNum>
  */
-async function saveTmdbCatalogCache(requestHash, stremioData, nextPage, options = {}) {
-    let updatedAt = Date.now();
-
-    if (nextPage > 1 || nextPage === -1) {
-        const existing = await TmdbRequestCache.get(requestHash);
-        if (existing) {
-            if (nextPage === -1) nextPage = existing.nextPage;
-            updatedAt = existing.updatedAt || updatedAt;
-        }
-    }
-
-    await TmdbRequestCache.set(requestHash, { stremioData, nextPage, updatedAt }, null, options);
+function getPageCacheKey(endpoint, customParams, type, pageNum) {
+    const baseHash = generateRequestHash(endpoint, customParams, 0, type);
+    return `${baseHash}:page:${pageNum}`;
 }
 
 /**
- * Wrapper con cache globale basata sulle richieste TMDB.
- * Implementa il pattern Stale-While-Revalidate:
- * - Cache Miss: chiama TMDB, salva in cache, ritorna.
- * - Cache Hit Fresca (<TTL): ritorna i dati dalla cache all'istante.
- * - Cache Hit Scaduta (>TTL): ritorna i dati vecchi, rinnova in background.
+ * Determines the appropriate L2 TTL for a catalog page based on catalog speed tier.
+ */
+function getPageCacheTtl(pageNum, options = {}) {
+    const tier = options.catalogTier || 'default';
+    if (tier === 'fast') {
+        return pageNum === 1 ? FAST_CATALOG_PAGE1_L2_TTL_MS : FAST_CATALOG_DEEP_L2_TTL_MS;
+    }
+    if (tier === 'slow') {
+        return SLOW_CATALOG_L2_TTL_MS;
+    }
+    // default — use provided cacheTtlMs or fallback
+    return options.cacheTtlMs || CACHE_TTL_MS;
+}
+
+/**
+ * Wrapper with per-page cache keys and SWR via CacheManager.
+ *
+ * Each Stremio "page" (skip / ITEMS_PER_PAGE + 1) gets its own isolated cache key
+ * in both Redis (L1) and MongoDB (L2). SWR is handled by CacheManager.getWithStatus().
+ *
+ * - Cache Hit Fresh: return instantly.
+ * - Cache Hit Stale (SWR window): return stale data, revalidate in background.
+ * - Cache Miss L1, Hit L2: CacheManager promotes to L1 automatically.
+ * - Total Cache Miss: fetch from TMDB.
+ *   - Page 1: full enrichment.
+ *   - Deep pages (>1) on total miss: Fast-Pass (light mode, no enrichment).
  */
 async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type = 'movie', options = {}) {
     const normalizedSkip = skip ?? 0;
-    const requestHash = generateRequestHash(endpoint, customParams, 0, type); // Hash always based on offset 0 to share cache
-    const cacheTtlMs = options.cacheTtlMs || CACHE_TTL_MS;
-    const fetchSize = ITEMS_PER_PAGE; // Always return 20 items to Stremio
-    const sliceEnd = normalizedSkip + fetchSize;
+    const fetchSize = ITEMS_PER_PAGE;
+    // Stremio page number (1-based)
+    const pageNum = Math.floor(normalizedSkip / fetchSize) + 1;
+    const cacheKey = getPageCacheKey(endpoint, customParams, type, pageNum);
+    const cacheTtl = getPageCacheTtl(pageNum, options);
 
     try {
-        const rawCached = await TmdbRequestCache.get(requestHash);
+        const { value: cached, status } = await TmdbRequestCache.getWithStatus(cacheKey);
 
-        if (rawCached) {
-            const cachedItems = Array.isArray(rawCached.stremioData) ? rawCached.stremioData : [];
-            const age = Date.now() - (rawCached.updatedAt || 0);
-            const isStale = age > cacheTtlMs;
+        if (cached && status !== 'miss') {
+            const cachedItems = Array.isArray(cached.stremioData) ? cached.stremioData : [];
 
-            const cachedSlice = cachedItems.slice(normalizedSkip, sliceEnd);
-
-            // AGGRESSIVE SWR: Return cached data immediately if we have it
-            const hasEnoughItems = cachedItems.length >= sliceEnd || cachedItems.length === rawCached.total_results || rawCached.nextPage === -1;
-
-            // Detect when cache exists but has nothing for the requested skip range
-            // and we know the next TMDB page to fetch.
-            const needsSyncExtension = !hasEnoughItems && cachedSlice.length === 0
-                && cachedItems.length > 0 && rawCached.nextPage > 0;
-
-            if ((isStale || !hasEnoughItems) && !needsSyncExtension) {
-                // Background SWR: only when we can return data immediately
-                const startPage = !hasEnoughItems ? rawCached.nextPage : 1;
-                const pagesToFetch = !hasEnoughItems ? 1 : PAGES_PER_REQUEST;
-
-                if (startPage > 0) {
-                    fetchTmdbCatalogDirect(client, endpoint, startPage, customParams, type, pagesToFetch)
-                        .then(({ items: newItems, nextPageFetched }) => {
-                            const updatedItems = startPage === 1 ? newItems : mergeCatalogItems(cachedItems, newItems);
-                            saveTmdbCatalogCache(requestHash, updatedItems, nextPageFetched, options);
-                        })
-                        .catch(e => console.error('[SWR Revalidate] Error:', e.message));
-                }
+            // SWR: if stale, trigger background revalidation
+            if (status === 'stale') {
+                const tmdbStartPage = (pageNum - 1) * (fetchSize / ITEMS_PER_PAGE) + 1;
+                fetchTmdbCatalogDirect(client, endpoint, tmdbStartPage, customParams, type, 1)
+                    .then(({ items: newItems }) => {
+                        if (newItems.length > 0) {
+                            TmdbRequestCache.set(cacheKey, { stremioData: newItems }, cacheTtl, options);
+                        }
+                    })
+                    .catch(e => console.error('[SWR Revalidate] Error:', e.message));
             }
 
-            // Return from cache (only the requested slice!)
-            if (cachedSlice.length > 0) {
-                return cachedSlice;
-            }
-
-            // Synchronous extension: cache exists but doesn't cover the requested
-            // skip range — fetch the next page, merge into cache, and return the slice.
-            if (needsSyncExtension) {
-                const { items: newItems, nextPageFetched } = await fetchTmdbCatalogDirect(
-                    client, endpoint, rawCached.nextPage, customParams, type, 1
-                );
-                const updatedItems = mergeCatalogItems(cachedItems, newItems);
-                await saveTmdbCatalogCache(requestHash, updatedItems, nextPageFetched, options);
-                return updatedItems.slice(normalizedSkip, sliceEnd);
-            }
-
-            // Catalog exhausted
-            if (hasEnoughItems) {
-                return [];
+            if (cachedItems.length > 0) {
+                return cachedItems.slice(0, fetchSize);
             }
         }
     } catch (_e) {
-        // Fall through
+        // Fall through to fresh fetch
     }
 
-    // Scenario A: Cache Miss or skipped range
-    // Calculate which page we need if skip > 0
-    const startPage = Math.floor(normalizedSkip / ITEMS_PER_PAGE) + 1;
-    const pagesToFetch = (normalizedSkip === 0) ? PAGES_PER_REQUEST : 1;
+    // ─── Cache Miss: fetch from TMDB ───
+    // For page 1 (skip=0), prefetch PAGES_PER_REQUEST pages for the first 3 pages cache
+    const isFirstPage = pageNum === 1;
+    const tmdbStartPage = (pageNum - 1) * 1 + 1; // 1 TMDB page per Stremio page
+    const pagesToFetch = isFirstPage ? PAGES_PER_REQUEST : 1;
 
-    const { items: results, nextPageFetched } = await fetchTmdbCatalogDirect(client, endpoint, startPage, customParams, type, pagesToFetch);
+    // Fast-Pass: deep pages on total cache miss skip enrichment
+    const isDeepPage = pageNum > 1;
+    const lightMode = isDeepPage;
 
-    // Save to cache if we started from 0 (standard case) or if we want to build a partial cache
-    if (normalizedSkip === 0) {
-        await saveTmdbCatalogCache(requestHash, results, nextPageFetched, options);
-        return results.slice(0, fetchSize); // Return only 20
+    const { items: results, nextPageFetched } = await fetchTmdbCatalogDirect(
+        client, endpoint, tmdbStartPage, customParams, type, pagesToFetch, { lightMode }
+    );
+
+    // Save results per-page
+    if (isFirstPage && results.length > 0) {
+        // Split prefetched results into per-page cache entries
+        for (let p = 0; p < PAGES_PER_REQUEST; p++) {
+            const pageSlice = results.slice(p * ITEMS_PER_PAGE, (p + 1) * ITEMS_PER_PAGE);
+            if (pageSlice.length > 0) {
+                const pageKey = getPageCacheKey(endpoint, customParams, type, p + 1);
+                const pageTtl = getPageCacheTtl(p + 1, options);
+                TmdbRequestCache.set(pageKey, { stremioData: pageSlice }, pageTtl, options)
+                    .catch(e => console.error('[Cache Save] Error:', e.message));
+            }
+        }
+        return results.slice(0, fetchSize);
     }
 
-    // If skip > 0 and no cache, we return only the fetched page results
-    // properly sliced if skip wasn't a perfect multiple of 20 (though it usually is)
-    const localSliceStart = normalizedSkip % ITEMS_PER_PAGE;
-    return results.slice(localSliceStart, localSliceStart + fetchSize);
+    if (results.length > 0) {
+        TmdbRequestCache.set(cacheKey, { stremioData: results }, cacheTtl, options)
+            .catch(e => console.error('[Cache Save] Error:', e.message));
+    }
+
+    return results.slice(0, fetchSize);
 }
 
 /**
