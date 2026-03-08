@@ -10,7 +10,7 @@ pinned: false
 # YACA (Yet Another Catalog Addon)
 Il catalogo definitivo per Stremio, potenziato da Trakt.tv e dall'intelligenza artificiale di Mistral.
 
-[![Deploy to Hugging Face](https://huggingface.co/datasets/huggingface/badges/resolve/main/deploy-to-spaces-lg.svg)](https://huggingface.co/spaces/Gabriele-fuoco/YACA?duplicate=true)
+[Deploy to Hugging Face Spaces](https://huggingface.co/spaces/Gabriele-fuoco/YACA?duplicate=true)
 
 ## Funzionalità
 - **Cataloghi Intelligenti**: Genera cataloghi auto-aggiornanti con prompt testuali (es. "Commedie romantiche natalizie").
@@ -32,7 +32,7 @@ YACA utilizza un'architettura **Stateful** basata su **MongoDB**. Il cuore del s
 
 ## 🚀 Deploy su Hugging Face Spaces
 
-1. Clicca il pulsante **Deploy to Spaces** qui sopra.
+1. Clicca il link **Deploy to Hugging Face Spaces** qui sopra.
 2. Inserisci il tuo **HF_TOKEN** (con permessi di scrittura) e le altre API Key.
 3. Lo spazio si avvierà automaticamente usando il `Dockerfile` incluso.
 4. Una volta avviato, visita l'URL del tuo spazio (es. `https://gabriele-fuoco-yaca.hf.space`) per configurare l'addon.
