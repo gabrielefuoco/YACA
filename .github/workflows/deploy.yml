@@ -11,30 +11,39 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: false # We don't want LFS, we want to skip binaries
+          lfs: false
 
-      - name: Force Push to Hugging Face
+      - name: Prepare and Push to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           set -e
 
-          # Configure Git identity
-          git config --global user.name "GitHub Action"
-          git config --global user.email "actions@github.com"
+          echo "Pulizia dei file non necessari per la produzione..."
+          rm -f frontend/lint_output.json || true
 
-          # Configure network options to reduce Hugging Face push disconnects:
-          # - high postBuffer helps with large packfiles
-          # - HTTP/1.1 avoids intermittent transport/proxy issues seen with HTTP/2
-          git config --global http.postBuffer 1048576000
-          git config --global http.version HTTP/1.1
+          rm -rf .git
+          git init
+          git checkout -b main
 
-          # Add/update the remote with embedded token authentication
-          git remote add hf "https://Gabriele-fuoco:${HF_TOKEN}@huggingface.co/spaces/Gabriele-fuoco/YACA" || git remote set-url hf "https://Gabriele-fuoco:${HF_TOKEN}@huggingface.co/spaces/Gabriele-fuoco/YACA"
+          git config user.name "GitHub Action"
+          git config user.email "actions@github.com"
 
-          echo "Starting force push to Hugging Face..."
+          echo "Configurazione di Git LFS per immagini e video..."
+          git lfs install
+          git lfs track "*.mp4"
+          git lfs track "*.png"
+          git lfs track "*.jpg"
+          git lfs track "*.jpeg"
 
-          # Assumption: GitHub main is the only source of truth for this Space.
-          # Run direct force push (overwrites HF with GitHub content)
-          # -c protocol.version=0 prevents "acknowledgments" errors
-          git -c protocol.version=0 push -f hf main || { echo "Force push to Hugging Face failed. Check HF_TOKEN and remote connectivity."; exit 1; }
+          echo "Creazione del pacchetto di deploy..."
+          git add .gitattributes
+          git add .
+          git commit -m "🚀 Auto-deploy from GitHub Actions"
+
+          git remote add hf "https://Gabriele-fuoco:${HF_TOKEN}@huggingface.co/spaces/Gabriele-fuoco/YACA"
+          git config http.postBuffer 1048576000
+          git config http.version HTTP/1.1
+
+          echo "Inviando codice e file multimediali LFS a Hugging Face..."
+          git -c protocol.version=0 push -f hf main
