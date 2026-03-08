@@ -26,12 +26,11 @@ jobs:
           # Push incrementale verso Hugging Face mantenendo la cronologia
           git remote add hf https://huggingface.co/spaces/Gabriele-fuoco/YACA || git remote set-url hf https://huggingface.co/spaces/Gabriele-fuoco/YACA
           HF_AUTH="$(printf 'Gabriele-fuoco:%s' "$HF_TOKEN" | base64 | tr -d '\n')"
-          git config --global http.https://huggingface.co/.extraheader "authorization: Basic $HF_AUTH"
 
           # Se il push viene rifiutato per non-fast-forward, riallineiamo e riproviamo
-          if ! git push hf main; then
+          if ! git -c http.https://huggingface.co/.extraheader="authorization: Basic $HF_AUTH" push hf main; then
             echo "Initial push rejected, syncing with Hugging Face remote history..."
-            git fetch hf main
-            git merge --no-edit -X ours FETCH_HEAD
-            git push hf main || { echo "Push to Hugging Face failed after remote merge. Verify remote history and rerun."; exit 1; }
+            git -c http.https://huggingface.co/.extraheader="authorization: Basic $HF_AUTH" fetch hf main
+            git merge --no-edit FETCH_HEAD || { echo "Automatic merge with Hugging Face history failed. Resolve conflicts manually and rerun."; exit 1; }
+            git -c http.https://huggingface.co/.extraheader="authorization: Basic $HF_AUTH" push hf main || { echo "Push to Hugging Face failed after remote merge. Verify remote history and rerun."; exit 1; }
           fi
