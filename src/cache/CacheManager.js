@@ -13,7 +13,7 @@ class CacheManager {
      * @param {number} opts.mongoTtlMs  - L2 TTL in ms (MongoDB expiration)
      * @param {number} opts.swrMs       - Stale-While-Revalidate window in ms (0 = disabled)
      */
-    constructor(namespace, { ramMax = 20, ramTtlMs = 300000, mongoTtlMs = 86400000, swrMs = 0 } = {}) {
+    constructor(namespace, { ramMax = 1000, ramTtlMs = 300000, mongoTtlMs = 86400000, swrMs = 0 } = {}) {
         this.namespace = namespace;
         this.ramTtlMs = ramTtlMs;
         this.mongoTtlMs = mongoTtlMs;
