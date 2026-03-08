@@ -20,17 +20,8 @@ jobs:
           # Configuriamo l'identità Git
           git config --global user.name "GitHub Action"
           git config --global user.email "actions@github.com"
-          
-          # Rimuoviamo la vecchia cronologia Git che contiene i file binari pesanti
-          rm -rf .git
-          
-          # Inizializziamo un nuovo repository pulito
-          git init
-          git checkout -b main
-          
-          # Aggiungiamo solo i file non ignorati dal .gitignore aggiornato
-          git add .
-          git commit -m "Deploy clean version: $(date +'%Y-%m-%d %H:%M:%S')"
-          
-          # Push forzato verso Hugging Face (solo i file correnti)
-          git push --force https://Gabriele-fuoco:$HF_TOKEN@huggingface.co/spaces/Gabriele-fuoco/YACA main
+
+          # Push incrementale verso Hugging Face mantenendo la cronologia
+          git remote add hf https://huggingface.co/spaces/Gabriele-fuoco/YACA || git remote set-url hf https://huggingface.co/spaces/Gabriele-fuoco/YACA
+          HF_AUTH="$(printf 'Gabriele-fuoco:%s' "$HF_TOKEN" | base64 | tr -d '\n')"
+          git -c http.https://huggingface.co/.extraheader="authorization: Basic $HF_AUTH" push hf main || { echo "Push to Hugging Face failed. Verify remote history and rerun."; exit 1; }
