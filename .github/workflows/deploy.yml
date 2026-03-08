@@ -19,17 +19,20 @@ jobs:
         run: |
           set -e
 
-          # Configuriamo l'identità Git
+          # Configure Git identity
           git config --global user.name "GitHub Action"
           git config --global user.email "actions@github.com"
 
-          # Push incrementale verso Hugging Face mantenendo la cronologia
-          git remote add hf https://huggingface.co/spaces/Gabriele-fuoco/YACA || git remote set-url hf https://huggingface.co/spaces/Gabriele-fuoco/YACA
-          HF_AUTH="$(printf 'Gabriele-fuoco:%s' "$HF_TOKEN" | base64 | tr -d '\n')"
+          # Increase Git buffer size to prevent hang-ups on large fetches
+          git config --global http.postBuffer 524288000
+
+          # Use the token directly in the remote URL for reliable authentication
+          git remote add hf "https://Gabriele-fuoco:${HF_TOKEN}@huggingface.co/spaces/Gabriele-fuoco/YACA" || git remote set-url hf "https://Gabriele-fuoco:${HF_TOKEN}@huggingface.co/spaces/Gabriele-fuoco/YACA"
+
           hf_git() {
-            # Hugging Face Git HTTP è più stabile con protocol.version=0 durante fetch/push autenticati
-            git -c protocol.version=0 -c http.https://huggingface.co/.extraheader="authorization: Basic $HF_AUTH" "$@"
+            git "$@"
           }
+
           retry_hf_git() {
             local attempt=1
             local max_attempts=3
@@ -57,8 +60,8 @@ jobs:
           fi
 
           if [ "$ls_remote_status" -eq 0 ]; then
-            retry_hf_git fetch hf refs/heads/main:refs/remotes/hf/main || { echo "Unable to fetch Hugging Face main branch. Verify remote connectivity and HF_TOKEN permissions."; exit 1; }
-            git merge --no-edit hf/main || { echo "Automatic merge with Hugging Face history failed. Resolve conflicts manually and rerun."; exit 1; }
+            retry_hf_git fetch hf refs/heads/main:refs/remotes/hf/main || { echo "Unable to fetch Hugging Face main branch."; exit 1; }
+            git merge --no-edit hf/main || { echo "Automatic merge failed."; exit 1; }
           elif [ "$ls_remote_status" -eq 2 ]; then
             echo "Hugging Face main branch does not exist yet. Proceeding with initial push."
           else
@@ -66,10 +69,10 @@ jobs:
             exit 1
           fi
 
-          # Se nel frattempo arriva un nuovo commit remoto tra fetch e push, riallineiamo e riproviamo
+          # Push
           if ! retry_hf_git push hf main; then
-            echo "Initial push rejected, syncing with Hugging Face remote history..."
-            retry_hf_git fetch hf refs/heads/main:refs/remotes/hf/main || { echo "Unable to fetch Hugging Face main branch after rejected push. Verify remote history and permissions."; exit 1; }
-            git merge --no-edit hf/main || { echo "Automatic merge with Hugging Face history failed. Resolve conflicts manually and rerun."; exit 1; }
-            retry_hf_git push hf main || { echo "Push to Hugging Face failed after remote merge. Verify remote history and rerun."; exit 1; }
+            echo "Initial push rejected, syncing..."
+            retry_hf_git fetch hf refs/heads/main:refs/remotes/hf/main || { echo "Unable to fetch Hugging Face main branch."; exit 1; }
+            git merge --no-edit hf/main || { echo "Automatic merge failed."; exit 1; }
+            retry_hf_git push hf main || { echo "Push failed."; exit 1; }
           fi
