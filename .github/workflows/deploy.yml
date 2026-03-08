@@ -72,7 +72,7 @@ jobs:
           # Push
           if ! retry_hf_git push hf main; then
             echo "Initial push rejected, syncing..."
-            retry_hf_git fetch hf refs/heads/main:refs/remotes/hf/main
-            git merge --no-edit hf/main
+            retry_hf_git fetch hf refs/heads/main:refs/remotes/hf/main || { echo "Unable to fetch Hugging Face main branch."; exit 1; }
+            git merge --no-edit hf/main || { echo "Automatic merge failed."; exit 1; }
             retry_hf_git push hf main || { echo "Push failed."; exit 1; }
           fi
