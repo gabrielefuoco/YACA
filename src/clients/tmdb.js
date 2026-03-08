@@ -690,6 +690,7 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
             }
             return [];
         }, { batchSize: 3, delayMs: 200 });
+        // rateLimitedMap returns null for failed items, filter them out before flattening
         const videos = seasonVideoChunks.filter(Boolean).flat();
 
         if (videos.length > 0) {
