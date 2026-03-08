@@ -1,6 +1,6 @@
 #!/bin/sh
 # Start Redis in background, then launch the Node.js application.
-# Configurato per ambienti non-root (es. Hugging Face Spaces)
+# Configured for non-root environments (e.g., Hugging Face Spaces)
 
 echo "🔧 Starting Redis server..."
 redis-server --dir /tmp --maxmemory 2048mb --maxmemory-policy allkeys-lru --save "" --appendonly no &

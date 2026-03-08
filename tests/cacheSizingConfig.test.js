@@ -4,11 +4,20 @@ describe('Cache sizing configuration', () => {
         jest.clearAllMocks();
     });
 
-    it('uses 1000 items as default RAM fallback size in CacheManager', () => {
-        const CacheManager = require('../src/cache/CacheManager');
-        const cache = new CacheManager('default_size_namespace');
+    it('uses 1000 items as default ramMax parameter in CacheManager', () => {
+        const lruConstructor = jest.fn().mockImplementation(() => ({
+            get: jest.fn(),
+            set: jest.fn(),
+            delete: jest.fn(),
+            clear: jest.fn(),
+            size: 0
+        }));
+        jest.doMock('../src/utils/LRUCache', () => lruConstructor);
 
-        expect(cache.lruFallback.max).toBe(1000);
+        const CacheManager = require('../src/cache/CacheManager');
+        new CacheManager('default_size_namespace');
+
+        expect(lruConstructor).toHaveBeenCalledWith(expect.objectContaining({ max: 1000 }));
     });
 
     it('configures final_meta_cache with 2000 RAM entries', () => {
