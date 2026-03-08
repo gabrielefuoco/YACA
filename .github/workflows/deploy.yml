@@ -27,6 +27,7 @@ jobs:
           git remote add hf https://huggingface.co/spaces/Gabriele-fuoco/YACA || git remote set-url hf https://huggingface.co/spaces/Gabriele-fuoco/YACA
           HF_AUTH="$(printf 'Gabriele-fuoco:%s' "$HF_TOKEN" | base64 | tr -d '\n')"
           hf_git() {
+            # Hugging Face Git HTTP è più stabile con protocol.version=0 durante fetch/push autenticati
             git -c protocol.version=0 -c http.https://huggingface.co/.extraheader="authorization: Basic $HF_AUTH" "$@"
           }
 
