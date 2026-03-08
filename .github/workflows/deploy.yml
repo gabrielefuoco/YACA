@@ -46,4 +46,4 @@ jobs:
           git config http.version HTTP/1.1
 
           echo "Inviando codice e file multimediali LFS a Hugging Face..."
-          git -c protocol.version=0 push -f hf main
+          git -c protocol.version=0 push -f hf main || { echo "Force push to Hugging Face failed. Check HF_TOKEN and remote connectivity."; exit 1; }
