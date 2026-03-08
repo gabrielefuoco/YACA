@@ -30,11 +30,29 @@ jobs:
             # Hugging Face Git HTTP è più stabile con protocol.version=0 durante fetch/push autenticati
             git -c protocol.version=0 -c http.https://huggingface.co/.extraheader="authorization: Basic $HF_AUTH" "$@"
           }
+          retry_hf_git() {
+            local attempt=1
+            local max_attempts=3
+            while ! hf_git "$@"; do
+              if [ "$attempt" -ge "$max_attempts" ]; then
+                return 1
+              fi
+              echo "Command failed (attempt $attempt/$max_attempts): git $*"
+              attempt=$((attempt + 1))
+              sleep 2
+            done
+          }
 
-          # Se il push viene rifiutato per non-fast-forward, riallineiamo e riproviamo
-          if ! hf_git push hf main; then
-            echo "Initial push rejected, syncing with Hugging Face remote history..."
-            hf_git fetch hf main:refs/remotes/hf/main
+          # Aggiorniamo prima la storia locale con quella remota (se presente)
+          if retry_hf_git ls-remote --exit-code --heads hf main >/dev/null; then
+            retry_hf_git fetch hf refs/heads/main:refs/remotes/hf/main || { echo "Unable to fetch Hugging Face main branch. Verify remote connectivity and HF_TOKEN permissions."; exit 1; }
             git merge --no-edit hf/main || { echo "Automatic merge with Hugging Face history failed. Resolve conflicts manually and rerun."; exit 1; }
-            hf_git push hf main || { echo "Push to Hugging Face failed after remote merge. Verify remote history and rerun."; exit 1; }
+          fi
+
+          # Se il push viene ancora rifiutato per non-fast-forward, riallineiamo e riproviamo
+          if ! retry_hf_git push hf main; then
+            echo "Initial push rejected, syncing with Hugging Face remote history..."
+            retry_hf_git fetch hf refs/heads/main:refs/remotes/hf/main || { echo "Unable to fetch Hugging Face main branch after rejected push. Verify remote history and permissions."; exit 1; }
+            git merge --no-edit hf/main || { echo "Automatic merge with Hugging Face history failed. Resolve conflicts manually and rerun."; exit 1; }
+            retry_hf_git push hf main || { echo "Push to Hugging Face failed after remote merge. Verify remote history and rerun."; exit 1; }
           fi
