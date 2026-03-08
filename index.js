@@ -632,6 +632,7 @@ app.get('/api/user/:userId', async (req, res) => {
 app.get('/api/cache/stats', async (req, res) => {
     try {
         const stats = await CacheManager.getAllStats();
+        const { isRedisAvailable } = require('./src/cache/redisClient');
 
         // Aggiungiamo statistiche delle cache escluse dal manager
         stats.push({
@@ -640,29 +641,51 @@ app.get('/api/cache/stats', async (req, res) => {
             l2Count: await BadgeImage.countDocuments()
         });
 
-        res.json({ success: true, stats });
+        res.json({
+            success: true,
+            redisAvailable: isRedisAvailable(),
+            stats
+        });
     } catch (err) {
         console.error('Errore stats cache:', err);
         res.status(500).json({ error: 'Errore durante il recupero delle statistiche.' });
     }
 });
 
-// Endpoint per svuotare tutte le cache globali del sistema (solo per test)
-app.post('/api/clear-cache', async (req, res) => {
+// Endpoint per svuotare una specifica categoria o tutte (più flessibile)
+app.post('/api/cache/clear', async (req, res) => {
+    const { namespace } = req.body;
     try {
-        await clearAllTmdbCaches();
-        await clearIdCache();
-        await TmdbRequestCache.clear();
-        await RecommendationCache.clear();
-        await AICache.clear();
+        if (!namespace || namespace === 'all') {
+            // Svuota TUTTO
+            await clearAllTmdbCaches();
+            await clearIdCache();
+            await TmdbRequestCache.clear();
+            await RecommendationCache.clear();
+            await AICache.clear();
+            badgeImageCache.clear();
+            await BadgeImage.deleteMany({});
+            return res.json({ success: true, message: 'Tutte le cache svuotate.' });
+        }
 
-        badgeImageCache.clear();
-        await BadgeImage.deleteMany({});
+        // Cerca l'istanza CacheManager specifica
+        const instance = CacheManager.instances.find(i => i.namespace === namespace);
+        if (instance) {
+            await instance.clear();
+            return res.json({ success: true, message: `Cache ${namespace} svuotata.` });
+        }
 
-        res.json({ success: true, message: 'Tutte le cache (RAM e DB) sono state svuotate.' });
+        // Caso speciale: badge_image_cache
+        if (namespace === 'badge_image_cache') {
+            badgeImageCache.clear();
+            await BadgeImage.deleteMany({});
+            return res.json({ success: true, message: 'Cache badge immagini svuotata.' });
+        }
+
+        return res.status(404).json({ error: 'Categoria cache non trovata.' });
     } catch (err) {
-        console.error('Errore svuotamento cache:', err);
-        res.status(500).json({ error: 'Errore durante lo svuotamento della cache.' });
+        console.error(`Errore svuotamento cache ${namespace}:`, err);
+        res.status(500).json({ error: 'Errore durante lo svuotamento.' });
     }
 });
 

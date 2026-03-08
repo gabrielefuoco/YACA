@@ -49,14 +49,29 @@ function buildDnaFiltersForProfile(userConfig, profileId) {
 
 /**
  * Aggiunge il badge con numero episodio ai poster per cataloghi di episodi recenti.
- * Trova l'ultimo episodio trasmesso e genera l'URL del poster con badge.
+ * Se mancano i dati degli episodi, triggera un caricamento in background.
  */
-function applyEpisodeBadge(metas, hostUrl) {
+async function applyEpisodeBadge(metas, hostUrl, tmdbApiKey) {
     const host = hostUrl || process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:7000';
     const now = new Date();
 
     for (const meta of metas) {
-        if (!meta || !meta.poster || !meta.videos || meta.videos.length === 0) continue;
+        if (!meta || !meta.poster) continue;
+
+        // Se mancano i video e siamo su TMDB, triggeriamo enrichment asincrono (per la prossima volta)
+        if ((!meta.videos || meta.videos.length === 0) && meta.id?.startsWith('tmdb:')) {
+            const tmdbId = meta.id.replace('tmdb:', '');
+            // Enrichment in background (non await)
+            getTmdbMovieDetails(tmdbApiKey, tmdbId, 'tv').then(details => {
+                if (details && details.last_episode_to_air) {
+                    // La cache details è ora popolata, la prossima richiesta troverà i dati
+                    console.log(`[BadgeBackground] Metadati arricchiti per ${tmdbId} (last ep: ${details.last_episode_to_air.episode_number})`);
+                }
+            }).catch(() => { });
+            continue;
+        }
+
+        if (!meta.videos || meta.videos.length === 0) continue;
 
         // Trova l'ultimo episodio già trasmesso
         const airedEpisodes = meta.videos.filter(v => v.released && new Date(v.released) <= now);
@@ -83,13 +98,15 @@ function applyEpisodeBadge(metas, hostUrl) {
     }
 }
 
-function finalizeCatalog(results, id, type, hostUrl) {
+async function finalizeCatalog(results, id, type, hostUrl, userConfig) {
     if (!Array.isArray(results)) return { metas: [] };
 
+    const tmdbApiKey = userConfig?.apiKeys?.tmdb || process.env.TMDB_API_KEY;
     const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
+
     if (type === 'series' && EPISODE_CATALOG_IDS.has(baseId)) {
         const clonedResults = results.map(m => ({ ...m }));
-        applyEpisodeBadge(clonedResults, hostUrl);
+        await applyEpisodeBadge(clonedResults, hostUrl, tmdbApiKey);
         return { metas: clonedResults };
     }
 
@@ -786,7 +803,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
             results = combinedResults.slice(0, 20);
             enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
-            return finalizeCatalog(results, id, type, hostUrl);
+            return await finalizeCatalog(results, id, type, hostUrl, userConfig);
         }
 
         // ==========================================
@@ -828,7 +845,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
             results = combinedResults.slice(0, 40);
             enrichResultsWithDeepMetadata(results, tmdbApiKey, contentType);
-            return finalizeCatalog(results, id, type, hostUrl);
+            return await finalizeCatalog(results, id, type, hostUrl, userConfig);
         }
 
         // ==========================================
@@ -881,7 +898,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 if (!baseId.includes('ratings')) {
                     enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
                 }
-                return finalizeCatalog(results, id, type, hostUrl);
+                return await finalizeCatalog(results, id, type, hostUrl, userConfig);
             }
         }
 
@@ -915,7 +932,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
             results = combinedResults.slice(0, 20);
             enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
-            return finalizeCatalog(results, id, type, hostUrl);
+            return await finalizeCatalog(results, id, type, hostUrl, userConfig);
         }
 
         if (catalogMeta || directFilters) {
@@ -965,7 +982,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                                 .slice(skip, skip + 20);
                         }
 
-                        return finalizeCatalog(results, id, type, hostUrl);
+                        return await finalizeCatalog(results, id, type, hostUrl, userConfig);
                     }
                 }
             }
@@ -1045,9 +1062,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
 
             // Fase 9: Enrichment Progressivo in background (non blocca la risposta)
-            enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
-
-            return finalizeCatalog(results, id, type, hostUrl);
+            return await finalizeCatalog(results, id, type, hostUrl, userConfig);
         }
 
         return { metas: [] };

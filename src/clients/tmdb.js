@@ -303,6 +303,17 @@ function toStremioMetaItem(tmdbItem, type) {
             : { hasScheduledVideos: true }
     };
 
+    // Sintetizza l'ultimo episodio per i badge se disponibile (Series)
+    if (type === 'tv' && tmdbItem.last_episode_to_air) {
+        const last = tmdbItem.last_episode_to_air;
+        meta.videos = [{
+            id: imdbId ? `${imdbId}:${last.season_number}:${last.episode_number}` : `tmdb:${tmdbItem.id}:${last.season_number}:${last.episode_number}`,
+            season: last.season_number,
+            episode: last.episode_number,
+            released: last.air_date ? new Date(last.air_date).toISOString() : null
+        }];
+    }
+
     // Campi Nativi per Link di Ricerca su Stremio
     if (tmdbItem.genres) {
         meta.genres = tmdbItem.genres.map(g => g.name);

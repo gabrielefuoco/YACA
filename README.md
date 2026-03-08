@@ -7,8 +7,24 @@ sdk: docker
 pinned: false
 ---
 
-# YACA (Yet Another Catalog Addon)
-Il catalogo definitivo per Stremio, potenziato da Trakt.tv e dall'intelligenza artificiale di Mistral.
+# YACA 🇮🇹 (Yet Another Catalog Addon)
+
+YACA è un addon per Stremio che porta la potenza dell'intelligenza artificiale e la personalizzazione estrema nel tuo mediacenter preferito.
+
+## 📖 Documentazione Completa
+
+Abbiamo creato una documentazione dettagliata per ogni aspetto del progetto. **Inizia da qui:**
+
+👉 **[INDICE DELLA DOCUMENTAZIONE](/docs/INDEX.md)**
+
+### Quick Links:
+- [🚀 Guida al Deployment](/docs/DEPLOYMENT_OPS.md)
+- [🧬 Algoritmi di Scoring](/docs/ALGORITHMS.md)
+- [🤖 Motore AI (Mistral)](/docs/AI_ENGINE.md)
+- [🖥️ Architettura Frontend](/docs/FRONTEND.md)
+- [Logica Cataloghi](/docs/CATALOG_LOGIC.md): Lifecycle delle richieste, Merging e Interleaving.
+- [Internals Stremio](/docs/STREMIO_INTERNALS.md): Workaround per i profili e mapping Anime ibrido.
+- [Integrazioni](/docs/INTEGRATIONS.md): Sync Stremio/Trakt, ImageKit, MDBList e Failover.
 
 [Deploy to Hugging Face Spaces](https://huggingface.co/spaces/Gabriele-fuoco/YACA?duplicate=true)
 

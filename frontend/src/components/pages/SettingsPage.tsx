@@ -9,9 +9,10 @@ import { Separator } from '@/components/ui/separator';
 import { api } from '@/lib/api';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
 import {
-  Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Download, Upload, RefreshCw, Save, Rocket
+  Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Download, Upload, RefreshCw, Save, Rocket, Server
 } from 'lucide-react';
 import { profilesToApiPayload } from '@/lib/utils';
+import Link from 'next/link';
 
 interface SettingsPageProps {
   profiles: Profile[];
@@ -347,6 +348,20 @@ export function SettingsPage({
           )}
           Svuota Cache
         </Button>
+
+        <div className="pt-2">
+          <Link
+            href="/admin/cache"
+            className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-primary/20 bg-primary/5 text-primary text-xs font-bold hover:bg-primary/10 transition-all"
+          >
+            <Server className="h-3.5 w-3.5" />
+            Gestione Avanzata Cache (Admin)
+            <ExternalLink className="h-3 w-3 opacity-50" />
+          </Link>
+          <p className="mt-2 text-[10px] text-center text-slate-500">
+            Visualizza statistiche dettagliate per Redis e MongoDB
+          </p>
+        </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}

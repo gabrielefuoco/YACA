@@ -29,12 +29,13 @@ function getImageKitUrl(imageUrl, text) {
      * MASTER HACK (Premium Look):
      * 1. tr:w-500 -> Blocca il canvas a 500px (standard TMDB) per permettere il clipping precisio.
      * 2. bg-00000080 -> Sfondo nero semi-trasparente (50% alpha).
-     * 3. lx-160 -> Inizia il badge a 160px. Abbiamo un margine di ~340px per il testo.
+     * 3. oa-top_right -> Ancora il badge all'angolo in alto a destra.
      * 4. r-50 -> Arrotondamento (pillola).
-     * 5. pa-15_350_15_30 -> Padding DX di 350px spinge l'estremità arrotondata fuori dai 500px.
+     * 5. pa-15_350_15_35 -> Padding DX di 350px spinge l'estremità arrotondata fuori dai 500px.
      *    Questo crea il bordo squadrato a filo con il margine destro dell'immagine.
+     *    Il badge si espande naturalmente verso sinistra in base al testo.
      */
-    const transformations = `tr:w-500,l-text,ie-${b64},fs-45,co-FFFFFF,bg-00000080,pa-15_350_15_35,r-50,lx-160,ly-0,l-end`;
+    const transformations = `tr:w-500,l-text,ie-${b64},fs-45,co-FFFFFF,bg-00000080,pa-15_350_15_35,r-50,oa-top_right,lx-0,ly-0,l-end`;
 
     return `https://ik.imagekit.io/${IMAGEKIT_ID}/${transformations}/${imageUrl}`;
 }
