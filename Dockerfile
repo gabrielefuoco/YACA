@@ -16,7 +16,7 @@ FROM node:20-slim AS runner
 WORKDIR /app
 
 # Install Redis server
-RUN apt-get update && apt-get install -y --no-install-recommends redis-server && \
+RUN apt-get update && apt-get install -y --no-install-recommends redis-server redis-tools && \
     rm -rf /var/lib/apt/lists/*
 
 # Imposta NODE_ENV a production
