@@ -65,9 +65,19 @@ function applyEpisodeBadge(metas, hostUrl) {
         airedEpisodes.sort((a, b) => new Date(b.released) - new Date(a.released));
         const latest = airedEpisodes[0];
 
-        const badgeText = latest.season && latest.season > 1
-            ? `S${latest.season}E${latest.episode}`
-            : `E${latest.episode || 1}`;
+        // LOGICA FORMATTAZIONE (Richiesta Utente):
+        // 1. Se numerazione assoluta (Anime Kitsu) o Stagione 1 -> "Ep [num]"
+        // 2. Altrimenti -> "S [num] Ep [num]"
+        const isKitsu = meta.id && (meta.id.startsWith('kitsu:') || meta.id.includes(':absolute:'));
+        const season = latest.season || 0;
+        const episode = latest.episode || 1;
+
+        let badgeText;
+        if (isKitsu || season <= 1) {
+            badgeText = `Ep ${episode}`;
+        } else {
+            badgeText = `S ${season} Ep ${episode}`;
+        }
 
         meta.poster = `${host}/badge/poster.jpg?url=${encodeURIComponent(meta.poster)}&text=${encodeURIComponent(badgeText)}`;
     }
