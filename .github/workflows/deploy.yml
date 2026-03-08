@@ -30,7 +30,7 @@ jobs:
           git remote add hf "https://Gabriele-fuoco:${HF_TOKEN}@huggingface.co/spaces/Gabriele-fuoco/YACA" || git remote set-url hf "https://Gabriele-fuoco:${HF_TOKEN}@huggingface.co/spaces/Gabriele-fuoco/YACA"
 
           hf_git() {
-            git "$@"
+            git -c protocol.version=0 "$@"
           }
 
           retry_hf_git() {
