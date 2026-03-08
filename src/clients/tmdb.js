@@ -653,7 +653,8 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
             });
         };
 
-        const seasonVideoChunks = await Promise.all(results.map(async (res) => {
+        // Rate-limit the fallback overview requests to avoid TMDB 429 errors
+        const seasonVideoChunks = await rateLimitedMap(results, async (res) => {
             if (res && !res.error && res.data?.episodes) {
                 const seasonData = res.data;
                 const hasMissingOverview = seasonData.episodes.some(ep => !ep.overview?.trim());
@@ -688,8 +689,8 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
                 }
             }
             return [];
-        }));
-        const videos = seasonVideoChunks.flat();
+        }, { batchSize: 3, delayMs: 200 });
+        const videos = seasonVideoChunks.filter(Boolean).flat();
 
         if (videos.length > 0) {
             await tvEpisodesCache.set(cacheKey, videos);
@@ -907,6 +908,12 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
         if (writers.length > 0) meta.writer = writers;
     } else if (type === 'series' && data.created_by?.length > 0) {
         meta.director = data.created_by.map(c => c.name);
+    }
+
+    // Attach full (unsliced) keyword names for downstream detection (e.g. anime check in metaHandler)
+    const rawKwList = type === 'movie' ? data.keywords?.keywords : data.keywords?.results;
+    if (rawKwList && rawKwList.length > 0) {
+        meta._keywordNames = rawKwList.map(k => k.name.toLowerCase());
     }
 
     // Se è una serie TV, scarica gli episodi per popolare la griglia in Stremio

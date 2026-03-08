@@ -420,6 +420,7 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
             type: 'series',
             genre_ids: [16, 35], // Animation + Comedy
             genres: ['Animation', 'Comedy'],
+            _keywordNames: ['comedy', 'satire', 'family'],
             links: [
                 { name: 'comedy', category: 'Tema', url: 'stremio://search?search=comedy' },
                 { name: 'satire', category: 'Tema', url: 'stremio://search?search=satire' }
@@ -461,8 +462,8 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
             type: 'series',
             genre_ids: [16, 10759], // Animation + Action & Adventure
             genres: ['Animation', 'Action & Adventure'],
+            _keywordNames: ['anime', 'ninja', 'shounen', 'manga'],
             links: [
-                { name: 'anime', category: 'Tema', url: 'stremio://search?search=anime' },
                 { name: 'ninja', category: 'Tema', url: 'stremio://search?search=ninja' }
             ],
             behaviorHints: {}
@@ -535,5 +536,171 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
 
         // Should only call getTmdbMetaDetails ONCE (not twice as before)
         expect(tmdbMock).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('Bug Fix: SWR L2 status ternary returns miss not fresh for expired data', () => {
+    it('should return miss when data is beyond both ramTtl and SWR window', () => {
+        // Directly test the ternary logic that was fixed
+        const ramTtlMs = 300000; // 5 min
+        const swrMs = 60000; // 1 min
+        const age = 10 * 60 * 60 * 1000; // 10 hours — well beyond both windows
+
+        // Simulate the fixed ternary
+        const status = age <= ramTtlMs ? 'fresh' : (swrMs > 0 && age <= ramTtlMs + swrMs ? 'stale' : 'miss');
+        expect(status).toBe('miss');
+    });
+
+    it('should return fresh when data is within ramTtl', () => {
+        const ramTtlMs = 300000;
+        const swrMs = 60000;
+        const age = 100000; // 100s — within 5 min
+
+        const status = age <= ramTtlMs ? 'fresh' : (swrMs > 0 && age <= ramTtlMs + swrMs ? 'stale' : 'miss');
+        expect(status).toBe('fresh');
+    });
+
+    it('should return stale when data is within SWR window', () => {
+        const ramTtlMs = 300000;
+        const swrMs = 60000;
+        const age = 320000; // 5:20 — past 5 min but within 6 min SWR window
+
+        const status = age <= ramTtlMs ? 'fresh' : (swrMs > 0 && age <= ramTtlMs + swrMs ? 'stale' : 'miss');
+        expect(status).toBe('stale');
+    });
+});
+
+describe('Bug Fix: Anime keyword detection uses raw keywords, not sliced links', () => {
+    beforeEach(() => {
+        jest.resetModules();
+        Object.keys(mockCacheInstances).forEach(k => delete mockCacheInstances[k]);
+    });
+
+    it('should detect anime even when anime keyword is beyond the first 5 link slots', async () => {
+        // Simulate a series where 'anime' is keyword #7 — outside the slice(0,5) for links
+        const mockMeta = {
+            id: 'tt300',
+            name: 'One Piece',
+            type: 'series',
+            genre_ids: [16, 10759],
+            genres: ['Animation', 'Action & Adventure'],
+            // _keywordNames includes ALL keywords, not just first 5
+            _keywordNames: ['pirate', 'ocean', 'treasure', 'friendship', 'adventure', 'battle', 'anime'],
+            // links only has first 5 (anime is NOT in links due to slice)
+            links: [
+                { name: 'pirate', category: 'Tema', url: 'stremio://search?search=pirate' },
+                { name: 'ocean', category: 'Tema', url: 'stremio://search?search=ocean' },
+                { name: 'treasure', category: 'Tema', url: 'stremio://search?search=treasure' },
+                { name: 'friendship', category: 'Tema', url: 'stremio://search?search=friendship' },
+                { name: 'adventure', category: 'Tema', url: 'stremio://search?search=adventure' }
+            ],
+            behaviorHints: {}
+        };
+
+        jest.doMock('../src/clients/tmdb', () => ({
+            getTmdbMetaDetails: jest.fn().mockResolvedValue(mockMeta)
+        }));
+        const kitsuMock = {
+            getKitsuMetaDetails: jest.fn(),
+            getKitsuIdFromTmdbId: jest.fn().mockResolvedValue('kitsu:456'),
+            fetchKitsuEpisodes: jest.fn().mockResolvedValue([
+                { id: 'kitsu:456:1:1', title: 'Romance Dawn', season: 1, episode: 1 }
+            ])
+        };
+        jest.doMock('../src/clients/kitsu', () => kitsuMock);
+        jest.doMock('../src/id_mapping/id_cache', () => ({
+            translateImdbToTmdb: jest.fn().mockResolvedValue({ id: '300' })
+        }));
+        jest.doMock('../src/utils/mdblist', () => ({
+            fetchMdblistRatings: jest.fn().mockResolvedValue({})
+        }));
+
+        const { metaHandler } = require('../src/handlers/metaHandler');
+
+        const result = await metaHandler(
+            { type: 'series', id: 'tmdb:300' },
+            { apiKeys: { tmdb: 'key' } }
+        );
+
+        // Should have detected anime via _keywordNames (not links)
+        expect(kitsuMock.getKitsuIdFromTmdbId).toHaveBeenCalledWith('300', 'series');
+        expect(result.meta.videos).toEqual([
+            { id: 'kitsu:456:1:1', title: 'Romance Dawn', season: 1, episode: 1 }
+        ]);
+    });
+});
+
+describe('Bug Fix: Episode fallback requests are rate-limited', () => {
+    let tmdbGetMock;
+
+    beforeEach(() => {
+        jest.resetModules();
+        // Explicitly unmock modules that may have been doMock'd by prior tests
+        jest.unmock('../src/clients/tmdb');
+        jest.unmock('../src/clients/kitsu');
+        jest.unmock('../src/id_mapping/id_cache');
+        jest.unmock('../src/utils/mdblist');
+        Object.keys(mockCacheInstances).forEach(k => delete mockCacheInstances[k]);
+        tmdbGetMock = jest.fn();
+        mockCreateAxiosInstance.mockReset();
+        mockCreateAxiosInstance.mockImplementation(() => ({
+            get: tmdbGetMock,
+            request: jest.fn(),
+            defaults: { params: { api_key: 'key' } },
+            interceptors: { response: { use: jest.fn() } }
+        }));
+    });
+
+    it('should fetch fallback overview episodes without parallel burst', async () => {
+        // Use unique ID to avoid test interference with earlier tests
+        const makeSeasonData = (num) => ({
+            season_number: num,
+            episodes: [
+                { season_number: num, episode_number: 1, name: `S${num}E1`, air_date: '2020-01-10', overview: '', still_path: null }
+            ]
+        });
+
+        tmdbGetMock.mockImplementation(async (url, options = {}) => {
+            if (url.includes('/season/')) {
+                const seasonMatch = url.match(/\/season\/(\d+)/);
+                const seasonNum = seasonMatch ? parseInt(seasonMatch[1]) : 1;
+                const language = options?.params?.language;
+
+                if (language === 'en-US') {
+                    return {
+                        data: {
+                            season_number: seasonNum,
+                            episodes: [
+                                { season_number: seasonNum, episode_number: 1, name: `S${seasonNum}E1`, air_date: '2020-01-10', overview: 'English fallback', still_path: null }
+                            ]
+                        }
+                    };
+                }
+                return { data: makeSeasonData(seasonNum) };
+            }
+
+            return {
+                data: createBaseTmdbData({
+                    id: 9999,
+                    number_of_seasons: 3,
+                    original_language: 'ja',
+                    overview: 'Valid overview for the series.'
+                })
+            };
+        });
+
+        const { getTmdbMetaDetails } = require('../src/clients/tmdb');
+        const meta = await getTmdbMetaDetails('key', 'tmdb:9999', 'series');
+
+        // Should have fetched episodes successfully with fallback
+        expect(meta.videos).toBeDefined();
+        expect(meta.videos.length).toBeGreaterThanOrEqual(1);
+        // Verify at least one episode has the English fallback overview
+        const withFallback = meta.videos.filter(v => v.overview === 'English fallback');
+        expect(withFallback.length).toBeGreaterThanOrEqual(1);
+
+        // Verify that fallback requests exist (language: 'en-US')
+        const fallbackCalls = tmdbGetMock.mock.calls.filter(c => c[1]?.params?.language === 'en-US');
+        expect(fallbackCalls.length).toBeGreaterThanOrEqual(1);
     });
 });

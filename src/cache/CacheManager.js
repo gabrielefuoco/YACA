@@ -142,7 +142,7 @@ class CacheManager {
                 const l1Ttl = this.ramTtlMs + this.swrMs;
                 await this._l1Set(key, freshEnvelope, l1Ttl);
                 const age = Date.now() - originalTimestamp;
-                const status = age <= this.ramTtlMs ? 'fresh' : (this.swrMs > 0 && age <= this.ramTtlMs + this.swrMs ? 'stale' : 'fresh');
+                const status = age <= this.ramTtlMs ? 'fresh' : (this.swrMs > 0 && age <= this.ramTtlMs + this.swrMs ? 'stale' : 'miss');
                 return { value: entry.value, status };
             }
         } catch (error) {

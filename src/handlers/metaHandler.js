@@ -90,7 +90,7 @@ async function metaHandler(args, userConfig) {
                         if (meta) {
                             // Logica Ibrida Anime: usa keyword 'anime' da TMDB per distinguere dai cartoni occidentali
                             const isAnimation = meta.genre_ids?.includes(16);
-                            const hasAnimeKeyword = meta.links && meta.links.some(l => l.category === 'Tema' && l.name.toLowerCase().includes('anime'));
+                            const hasAnimeKeyword = Array.isArray(meta._keywordNames) && meta._keywordNames.some(k => k.includes('anime'));
                             const isAnime = isAnimation && hasAnimeKeyword;
 
                             if (isAnime && type === 'series') {
