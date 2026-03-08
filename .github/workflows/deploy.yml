@@ -13,66 +13,25 @@ jobs:
           fetch-depth: 0
           lfs: false # We don't want LFS, we want to skip binaries
 
-      - name: Clean and Push to Hugging Face
+      - name: Force Push to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           set -e
 
-          # Configure Git identity
+          # Configuriamo l'identità Git
           git config --global user.name "GitHub Action"
           git config --global user.email "actions@github.com"
 
-          # Increase Git buffer size to prevent hang-ups on large fetches
-          git config --global http.postBuffer 524288000
+          # Configurazioni per prevenire disconnessioni in fase di push
+          git config --global http.postBuffer 1048576000
+          git config --global http.version HTTP/1.1
 
-          # Use the token directly in the remote URL for reliable authentication
+          # Aggiungiamo il remote con il token integrato
           git remote add hf "https://Gabriele-fuoco:${HF_TOKEN}@huggingface.co/spaces/Gabriele-fuoco/YACA" || git remote set-url hf "https://Gabriele-fuoco:${HF_TOKEN}@huggingface.co/spaces/Gabriele-fuoco/YACA"
 
-          hf_git() {
-            git -c protocol.version=0 "$@"
-          }
+          echo "Avvio il push forzato verso Hugging Face..."
 
-          retry_hf_git() {
-            local attempt=1
-            local max_attempts=3
-            local exit_code=0
-            while true; do
-              hf_git "$@"
-              exit_code=$?
-              if [ "$exit_code" -eq 0 ]; then
-                return 0
-              fi
-              if [ "$attempt" -ge "$max_attempts" ]; then
-                return "$exit_code"
-              fi
-              echo "Command failed (attempt $attempt/$max_attempts): git $*"
-              attempt=$((attempt + 1))
-              sleep 2
-            done
-          }
-
-          # Aggiorniamo prima la storia locale con quella remota (se presente)
-          if retry_hf_git ls-remote --exit-code --heads hf main >/dev/null; then
-            ls_remote_status=0
-          else
-            ls_remote_status=$?
-          fi
-
-          if [ "$ls_remote_status" -eq 0 ]; then
-            retry_hf_git fetch hf refs/heads/main:refs/remotes/hf/main || { echo "Unable to fetch Hugging Face main branch."; exit 1; }
-            git merge --no-edit hf/main || { echo "Automatic merge failed."; exit 1; }
-          elif [ "$ls_remote_status" -eq 2 ]; then
-            echo "Hugging Face main branch does not exist yet. Proceeding with initial push."
-          else
-            echo "Unable to check Hugging Face main branch. Verify remote connectivity and HF_TOKEN permissions."
-            exit 1
-          fi
-
-          # Push
-          if ! retry_hf_git push hf main; then
-            echo "Initial push rejected, syncing..."
-            retry_hf_git fetch hf refs/heads/main:refs/remotes/hf/main || { echo "Unable to fetch Hugging Face main branch."; exit 1; }
-            git merge --no-edit hf/main || { echo "Automatic merge failed."; exit 1; }
-            retry_hf_git push hf main || { echo "Push failed."; exit 1; }
-          fi
+          # Eseguiamo un force push diretto (sovrascrive HF con il contenuto di GitHub)
+          # -c protocol.version=0 previene gli errori "acknowledgments"
+          git -c protocol.version=0 push -f hf main
