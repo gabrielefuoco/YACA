@@ -833,7 +833,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
                         const truncatedOverview = enOverview.length > MAX_LINGVA_TEXT_LEN
                             ? enOverview.substring(0, MAX_LINGVA_TEXT_LEN) + '...'
                             : enOverview;
-                        const transRes = await lingvaClient.get(`/api/v1/en/it/${encodeURIComponent(truncatedOverview)}`, { timeout: 4000 });
+                        const transRes = await lingvaClient.get(`/api/v1/en/it/${encodeURIComponent(truncatedOverview)}`, { timeout: 2000 });
                         if (transRes.data?.translation) {
                             data.overview = transRes.data.translation;
                         } else {

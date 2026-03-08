@@ -704,3 +704,43 @@ describe('Bug Fix: Episode fallback requests are rate-limited', () => {
         expect(fallbackCalls.length).toBeGreaterThanOrEqual(1);
     });
 });
+
+describe('Bug Fix: Trakt TMDB enrichment uses rate-limited batching', () => {
+    beforeEach(() => {
+        jest.resetModules();
+        jest.unmock('../src/clients/tmdb');
+        jest.unmock('../src/clients/kitsu');
+        jest.unmock('../src/id_mapping/id_cache');
+        jest.unmock('../src/utils/mdblist');
+        Object.keys(mockCacheInstances).forEach(k => delete mockCacheInstances[k]);
+    });
+
+    it('should import rateLimitedMapFiltered in trakt.js', () => {
+        // Verify the trakt module uses rateLimitedMapFiltered instead of Promise.all
+        const traktSource = require('fs').readFileSync(
+            require('path').join(__dirname, '../src/clients/trakt.js'), 'utf-8'
+        );
+        expect(traktSource).toContain('rateLimitedMapFiltered');
+        expect(traktSource).not.toMatch(/Promise\.all\(.*dedupedResults\.map/);
+    });
+
+    it('should import rateLimitedMapFiltered from rateLimiter', () => {
+        const traktSource = require('fs').readFileSync(
+            require('path').join(__dirname, '../src/clients/trakt.js'), 'utf-8'
+        );
+        expect(traktSource).toContain("require('../utils/rateLimiter')");
+    });
+});
+
+describe('Bug Fix: Lingva timeout reduced to 2000ms', () => {
+    it('should use a timeout of 2000ms for Lingva translation requests', () => {
+        const tmdbSource = require('fs').readFileSync(
+            require('path').join(__dirname, '../src/clients/tmdb.js'), 'utf-8'
+        );
+        // The Lingva call should use timeout: 2000, not 4000
+        const lingvaCallMatch = tmdbSource.match(/lingvaClient\.get\([^;]+\)/s);
+        expect(lingvaCallMatch).toBeTruthy();
+        expect(lingvaCallMatch[0]).toContain('timeout: 2000');
+        expect(lingvaCallMatch[0]).not.toContain('timeout: 4000');
+    });
+});
