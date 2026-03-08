@@ -33,9 +33,15 @@ jobs:
           retry_hf_git() {
             local attempt=1
             local max_attempts=3
-            while ! hf_git "$@"; do
+            local exit_code=0
+            while true; do
+              hf_git "$@"
+              exit_code=$?
+              if [ "$exit_code" -eq 0 ]; then
+                return 0
+              fi
               if [ "$attempt" -ge "$max_attempts" ]; then
-                return 1
+                return "$exit_code"
               fi
               echo "Command failed (attempt $attempt/$max_attempts): git $*"
               attempt=$((attempt + 1))
@@ -47,6 +53,11 @@ jobs:
           if retry_hf_git ls-remote --exit-code --heads hf main >/dev/null; then
             retry_hf_git fetch hf refs/heads/main:refs/remotes/hf/main || { echo "Unable to fetch Hugging Face main branch. Verify remote connectivity and HF_TOKEN permissions."; exit 1; }
             git merge --no-edit hf/main || { echo "Automatic merge with Hugging Face history failed. Resolve conflicts manually and rerun."; exit 1; }
+          elif [ "$?" -eq 2 ]; then
+            echo "Hugging Face main branch does not exist yet. Proceeding with initial push."
+          else
+            echo "Unable to check Hugging Face main branch. Verify remote connectivity and HF_TOKEN permissions."
+            exit 1
           fi
 
           # Se il push viene ancora rifiutato per non-fast-forward, riallineiamo e riproviamo
