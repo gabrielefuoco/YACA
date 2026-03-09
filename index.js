@@ -17,12 +17,10 @@ const { streamHandler } = require('./src/handlers/streamHandler');
 const { clearAllTmdbCaches } = require('./src/clients/tmdb');
 const { clearIdCache } = require('./src/id_mapping/id_cache');
 const TmdbRequestCache = require('./src/models/TmdbRequestCache');
-const LRUCache = require('./src/utils/LRUCache');
 const { updateStremioAddonCollection } = require('./src/utils/stremioAddonSync');
 const { syncAllStremioData } = require('./src/utils/stremioSync');
 const connectDB = require('./src/db/connection');
 const User = require('./src/db/models/User');
-const BadgeImage = require('./src/db/models/BadgeImage');
 const { syncIncrementalRecommendations } = require('./src/engines/hybridRecommendations');
 const { generateMergedName } = require('./src/api/mergeRoutes');
 const CacheManager = require('./src/cache/CacheManager');
@@ -47,10 +45,7 @@ const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 7000;
 
-// Cache RAM per badge poster (TTL 14 giorni, max 500 immagini)
-const BADGE_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 const BADGE_CACHE_TTL_SECS = 14 * 24 * 60 * 60; // 1209600
-const badgeImageCache = new LRUCache({ max: 15, ttl: BADGE_CACHE_TTL_MS });
 const badgeLimiter = rateLimit({
     windowMs: 60 * 1000,
     limit: 120,
@@ -600,13 +595,6 @@ app.get('/api/cache/stats', async (req, res) => {
         const stats = await CacheManager.getAllStats();
         const { isRedisAvailable } = require('./src/cache/redisClient');
 
-        // Aggiungiamo statistiche delle cache escluse dal manager
-        stats.push({
-            namespace: 'badge_image_cache',
-            l1Count: badgeImageCache.size,
-            l2Count: await BadgeImage.countDocuments()
-        });
-
         res.json({
             success: true,
             redisAvailable: isRedisAvailable(),
@@ -629,8 +617,6 @@ app.post('/api/cache/clear', async (req, res) => {
             await TmdbRequestCache.clear();
             await RecommendationCache.clear();
             await AICache.clear();
-            badgeImageCache.clear();
-            await BadgeImage.deleteMany({});
             return res.json({ success: true, message: 'Tutte le cache svuotate.' });
         }
 
@@ -639,13 +625,6 @@ app.post('/api/cache/clear', async (req, res) => {
         if (instance) {
             await instance.clear();
             return res.json({ success: true, message: `Cache ${namespace} svuotata.` });
-        }
-
-        // Caso speciale: badge_image_cache
-        if (namespace === 'badge_image_cache') {
-            badgeImageCache.clear();
-            await BadgeImage.deleteMany({});
-            return res.json({ success: true, message: 'Cache badge immagini svuotata.' });
         }
 
         return res.status(404).json({ error: 'Categoria cache non trovata.' });

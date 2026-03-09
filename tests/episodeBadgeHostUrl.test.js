@@ -1,7 +1,8 @@
 jest.mock('../src/clients/tmdb', () => ({
     fetchTmdbCatalog: jest.fn(),
     createTmdbClient: jest.fn(() => ({})),
-    getTmdbIdByName: jest.fn()
+    getTmdbIdByName: jest.fn(),
+    getTmdbMovieDetails: jest.fn().mockResolvedValue(null)
 }));
 
 jest.mock('../src/clients/kitsu', () => ({
@@ -51,6 +52,7 @@ jest.mock('../src/utils/imageProcessor', () => ({
 }));
 
 const { fetchTmdbCatalog } = require('../src/clients/tmdb');
+const { getTmdbMovieDetails } = require('../src/clients/tmdb');
 const { getPresets } = require('../src/data/presets');
 const { catalogHandler } = require('../src/handlers/catalogHandler');
 
@@ -149,6 +151,53 @@ describe('applyEpisodeBadge host URL handling', () => {
 
         const posterUrl = result.metas[0].poster;
         expect(posterUrl).toContain(encodeURIComponent('Ep 5'));
+    });
+
+    it('should hydrate TMDB details cache and use next episode badge text when videos are absent', async () => {
+        fetchTmdbCatalog.mockResolvedValueOnce([
+            {
+                id: 'tmdb:99',
+                type: 'series',
+                name: 'Cached Series',
+                poster: 'https://image.tmdb.org/t/p/w500/cached.jpg'
+            }
+        ]);
+        getTmdbMovieDetails.mockResolvedValueOnce({
+            status: 'Returning Series',
+            next_episode_to_air: { season_number: 2, episode_number: 3 }
+        });
+
+        const result = await catalogHandler({
+            type: 'series',
+            id: 'yaca_preset_preset_new_series_eps',
+            extra: { skip: 0 }
+        }, userConfig, 'https://my-server.com');
+
+        expect(getTmdbMovieDetails).toHaveBeenCalledWith('tmdb_key', '99', 'tv', { cacheOnly: true });
+        expect(result.metas[0].poster).toContain(encodeURIComponent('S2 E3'));
+    });
+
+    it('should render a completed-series badge when TMDB marks the show as ended', async () => {
+        fetchTmdbCatalog.mockResolvedValueOnce([
+            {
+                id: 'tmdb:100',
+                type: 'series',
+                name: 'Ended Series',
+                poster: 'https://image.tmdb.org/t/p/w500/ended.jpg'
+            }
+        ]);
+        getTmdbMovieDetails.mockResolvedValueOnce({
+            status: 'Ended',
+            last_episode_to_air: { season_number: 4, episode_number: 10 }
+        });
+
+        const result = await catalogHandler({
+            type: 'series',
+            id: 'yaca_preset_preset_new_series_eps',
+            extra: { skip: 0 }
+        }, userConfig, 'https://my-server.com');
+
+        expect(result.metas[0].poster).toContain(encodeURIComponent('Conclusa'));
     });
 
     afterEach(() => {

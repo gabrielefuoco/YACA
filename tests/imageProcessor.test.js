@@ -14,6 +14,7 @@ describe('addBadgeToImage', () => {
         expect(typeof result).toBe('string');
         expect(result).toContain('ik.imagekit.io');
         expect(result).toContain('test_ik_id');
+        expect(result).toContain('?tr=');
     });
 
     it('should return null when IMAGEKIT_ID is not configured', () => {
@@ -31,7 +32,16 @@ describe('addBadgeToImage', () => {
         const result = freshAdd('https://image.tmdb.org/t/p/w500/test.jpg', 'S2E10');
         expect(typeof result).toBe('string');
         expect(result).toContain('l-text');
-        expect(result).toContain('ie-');
+        expect(result).toContain('i-S2E10');
+    });
+
+    it('should encode the original poster URL as base64 in the ImageKit path', () => {
+        process.env.IMAGEKIT_ID = 'test_ik_id';
+        jest.resetModules();
+        const { addBadgeToImage: freshAdd } = require('../src/utils/imageProcessor');
+        const sourceUrl = 'https://image.tmdb.org/t/p/w500/test.jpg';
+        const result = freshAdd(sourceUrl, 'Conclusa');
+        expect(result).toContain(encodeURIComponent(Buffer.from(sourceUrl).toString('base64')));
     });
 });
 

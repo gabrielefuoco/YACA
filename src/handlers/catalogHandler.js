@@ -45,68 +45,78 @@ function buildDnaFiltersForProfile(userConfig, profileId) {
     return [...(profileSettings.manualDNA || []), ...(profileSettings.suggestedDNA || [])];
 }
 
-/**
- * Aggiunge il badge con numero episodio ai poster per cataloghi di episodi recenti.
- * Se mancano i dati degli episodi, triggera un caricamento in background.
- */
-async function applyEpisodeBadge(metas, tmdbApiKey) {
-    const now = new Date();
+async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
+    if (!tmdbApiKey || !Array.isArray(metas) || metas.length === 0) return;
 
-    for (const meta of metas) {
-        if (!meta || !meta.poster) continue;
+    await Promise.all(
+        metas.slice(0, 60).map(async (item) => {
+            if (!item?.id || item.rawTMDB || !item.id.startsWith('tmdb:')) return;
 
-        // Se mancano i video e siamo su TMDB, triggeriamo enrichment asincrono (per la prossima volta)
-        if ((!meta.videos || meta.videos.length === 0) && meta.id?.startsWith('tmdb:')) {
-            const tmdbId = meta.id.replace('tmdb:', '');
-            // Enrichment in background (non await)
-            getTmdbMovieDetails(tmdbApiKey, tmdbId, 'tv').then(details => {
-                if (details && details.last_episode_to_air) {
-                    // La cache details è ora popolata, la prossima richiesta troverà i dati
-                    console.log(`[BadgeBackground] Metadati arricchiti per ${tmdbId} (last ep: ${details.last_episode_to_air.episode_number})`);
+            try {
+                const tmdbId = normalizeContentId(item.id);
+                const cachedDetails = await getTmdbMovieDetails(tmdbApiKey, tmdbId, 'tv', { cacheOnly: true });
+                if (cachedDetails) {
+                    item.rawTMDB = cachedDetails;
+                    return;
                 }
-            }).catch(() => { });
-            continue;
-        }
 
-        if (!meta.videos || meta.videos.length === 0) continue;
-
-        // Trova l'ultimo episodio già trasmesso
-        const airedEpisodes = meta.videos.filter(v => v.released && new Date(v.released) <= now);
-        if (airedEpisodes.length === 0) continue;
-
-        airedEpisodes.sort((a, b) => new Date(b.released) - new Date(a.released));
-        const latest = airedEpisodes[0];
-
-        // LOGICA FORMATTAZIONE (Richiesta Utente):
-        // 1. Se numerazione assoluta (Anime Kitsu) o Stagione 1 -> "Ep [num]"
-        // 2. Altrimenti -> "S [num] Ep [num]"
-        const isKitsu = meta.id && (meta.id.startsWith('kitsu:') || meta.id.includes(':absolute:'));
-        const season = latest.season || 0;
-        const episode = latest.episode || 1;
-
-        let badgeText;
-        if (isKitsu || season <= 1) {
-            badgeText = `Ep ${episode}`;
-        } else {
-            badgeText = `S ${season} Ep ${episode}`;
-        }
-
-        const badgedPoster = addBadgeToImage(meta.poster, badgeText);
-        if (badgedPoster) {
-            meta.poster = badgedPoster;
-        }
-        // Se ImageKit non è configurato, manteniamo il poster originale senza interrompere il catalogo.
-    }
+                getTmdbMovieDetails(tmdbApiKey, tmdbId, 'tv').catch(() => { });
+            } catch (_err) {
+                // Il recupero badge è best-effort: in caso di errore manteniamo il poster originale.
+            }
+        })
+    );
 }
 
-function sanitizeCatalogMeta(item) {
+function getEpisodeBadgeText(item) {
+    if (!item?.poster) return null;
+
+    if (item.rawTMDB && (item.type === 'series' || item.type === 'anime')) {
+        const nextEp = item.rawTMDB.next_episode_to_air;
+        const lastEp = item.rawTMDB.last_episode_to_air;
+        const isEnded = item.rawTMDB.status === 'Ended' || item.rawTMDB.status === 'Canceled';
+
+        if (nextEp?.episode_number) {
+            return `S${nextEp.season_number || 1} E${nextEp.episode_number}`;
+        }
+
+        if (lastEp?.episode_number && !isEnded) {
+            return `S${lastEp.season_number || 1} E${lastEp.episode_number}`;
+        }
+
+        if (isEnded) {
+            return 'Conclusa';
+        }
+    }
+
+    if (!Array.isArray(item.videos) || item.videos.length === 0) return null;
+
+    const now = new Date();
+    const airedEpisodes = item.videos.filter(v => v.released && new Date(v.released) <= now);
+    if (airedEpisodes.length === 0) return null;
+
+    airedEpisodes.sort((a, b) => new Date(b.released) - new Date(a.released));
+    const latest = airedEpisodes[0];
+    const isKitsu = item.id && (item.id.startsWith('kitsu:') || item.id.includes(':absolute:'));
+    const season = latest.season || 0;
+    const episode = latest.episode || 1;
+
+    return (isKitsu || season <= 1)
+        ? `Ep ${episode}`
+        : `S ${season} Ep ${episode}`;
+}
+
+function sanitizeCatalogMeta(item, shouldApplyEpisodeBadge = false) {
     if (!item) return item;
+
+    const badgeText = shouldApplyEpisodeBadge ? getEpisodeBadgeText(item) : null;
+    const poster = badgeText ? (addBadgeToImage(item.poster, badgeText) || item.poster) : item.poster;
 
     return {
         id: item.id,
         type: item.type,
         name: item.name,
-        poster: item.poster,
+        poster,
         posterShape: item.posterShape || 'poster',
         background: item.background,
         description: item.description,
@@ -122,15 +132,15 @@ async function finalizeCatalog(results, id, type, hostUrl, userConfig) {
 
     const tmdbApiKey = userConfig?.apiKeys?.tmdb || process.env.TMDB_API_KEY;
     const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
-    const finalResults = type === 'series' && EPISODE_CATALOG_IDS.has(baseId)
-        ? results.map(m => ({ ...m }))
-        : results;
+    const shouldApplyEpisodeBadge = type === 'series' && EPISODE_CATALOG_IDS.has(baseId);
 
-    if (finalResults !== results) {
-        await applyEpisodeBadge(finalResults, tmdbApiKey);
+    if (shouldApplyEpisodeBadge) {
+        await hydrateEpisodeBadgesFromCache(results, tmdbApiKey);
     }
 
-    return { metas: finalResults.map(sanitizeCatalogMeta) };
+    return {
+        metas: results.map(item => sanitizeCatalogMeta(item, shouldApplyEpisodeBadge))
+    };
 }
 
 async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
