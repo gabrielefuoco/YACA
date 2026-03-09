@@ -1,4 +1,5 @@
 const { addBadgeToImage, getBlurredImageUrl, getImageKitUrl } = require('../src/utils/imageProcessor');
+const encodeBadgeText = (text) => Buffer.from(text).toString('base64').replace(/=/g, '%3D');
 
 describe('addBadgeToImage', () => {
     // Save and restore env
@@ -9,11 +10,12 @@ describe('addBadgeToImage', () => {
         process.env.IMAGEKIT_ID = 'test_ik_id';
         // Force re-require to pick up env change
         jest.resetModules();
-        const { addBadgeToImage: freshAdd } = require('../src/utils/imageProcessor');
-        const result = freshAdd('https://image.tmdb.org/t/p/w500/test.jpg', 'E5');
+        const { getImageKitUrl: freshGetUrl } = require('../src/utils/imageProcessor');
+        const result = freshGetUrl('https://image.tmdb.org/t/p/w500/test.jpg', null);
         expect(typeof result).toBe('string');
         expect(result).toContain('ik.imagekit.io');
         expect(result).toContain('test_ik_id');
+        expect(result).toContain('?tr=');
     });
 
     it('should return null when IMAGEKIT_ID is not configured', () => {
@@ -24,6 +26,14 @@ describe('addBadgeToImage', () => {
         expect(result).toBeNull();
     });
 
+    it('should return null without throwing when poster URL is null', () => {
+        process.env.IMAGEKIT_ID = 'test_ik_id';
+        jest.resetModules();
+        const { addBadgeToImage: freshAdd } = require('../src/utils/imageProcessor');
+        expect(() => freshAdd(null, 'E1')).not.toThrow();
+        expect(freshAdd(null, 'E1')).toBeNull();
+    });
+
     it('should embed badge text in ImageKit URL', () => {
         process.env.IMAGEKIT_ID = 'test_ik_id';
         jest.resetModules();
@@ -31,7 +41,26 @@ describe('addBadgeToImage', () => {
         const result = freshAdd('https://image.tmdb.org/t/p/w500/test.jpg', 'S2E10');
         expect(typeof result).toBe('string');
         expect(result).toContain('l-text');
-        expect(result).toContain('ie-');
+        expect(result).toContain(`ie-${encodeBadgeText('S2E10')}`);
+    });
+
+    it('should encode the original poster URL as base64 in the ImageKit path', () => {
+        process.env.IMAGEKIT_ID = 'test_ik_id';
+        jest.resetModules();
+        const { addBadgeToImage: freshAdd } = require('../src/utils/imageProcessor');
+        const sourceUrl = 'https://image.tmdb.org/t/p/w500/test.jpg';
+        const result = freshAdd(sourceUrl, 'Conclusa');
+        expect(result).toContain(encodeURIComponent(Buffer.from(sourceUrl).toString('base64')));
+        expect(result).toContain(`ie-${encodeBadgeText('Conclusa')}`);
+    });
+
+    it('should use the explicit ImageKit ID override when provided', () => {
+        process.env.IMAGEKIT_ID = 'env_ik_id';
+        jest.resetModules();
+        const { getImageKitUrl: freshGetUrl } = require('../src/utils/imageProcessor');
+        const result = freshGetUrl('https://image.tmdb.org/t/p/w500/test.jpg', null, 'override_ik_id');
+        expect(result).toContain('override_ik_id');
+        expect(result).not.toContain('env_ik_id');
     });
 });
 
@@ -42,6 +71,16 @@ describe('getImageKitUrl', () => {
         const { getImageKitUrl: freshGetUrl } = require('../src/utils/imageProcessor');
         const url = freshGetUrl('https://example.com/poster.jpg', 'E5');
         expect(url).toBe('https://example.com/poster.jpg');
+    });
+
+    it('should generate a plain optimized ImageKit URL when badge text is absent', () => {
+        process.env.IMAGEKIT_ID = 'test_ik_id';
+        jest.resetModules();
+        const { getImageKitUrl: freshGetUrl } = require('../src/utils/imageProcessor');
+        const url = freshGetUrl('https://example.com/poster.jpg', null);
+        expect(url).toContain('https://ik.imagekit.io/test_ik_id/');
+        expect(url).toContain('?tr=w-300,h-450');
+        expect(url).not.toContain('l-text');
     });
 });
 

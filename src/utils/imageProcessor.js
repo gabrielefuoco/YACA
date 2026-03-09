@@ -1,4 +1,8 @@
-const IMAGEKIT_ID = process.env.IMAGEKIT_ID || 'yaca_placeholder'; // User should provide this
+const DEFAULT_IMAGEKIT_ID = process.env.IMAGEKIT_ID || 'yaca_placeholder';
+
+function resolveImageKitId(imageKitId) {
+    return imageKitId || DEFAULT_IMAGEKIT_ID;
+}
 
 /**
  * Genera un URL di sfocatura delegando a wsrv.nl (proxy esterno gratuito).
@@ -8,31 +12,27 @@ function getBlurredImageUrl(imageUrl) {
 }
 
 /**
- * Costruisce l'URL ImageKit per aggiungere un badge di testo.
- * Usa il Layer API (l-text) con un "Master Hack" per ottenere il look asimmetrico.
- * Rounding a sx (r-50), Squadrato a dx (masking tramite padding off-canvas).
+ * Costruisce un URL ImageKit stateless per un poster remoto.
+ * Il poster sorgente viene codificato nell'URL e ImageKit applica resize/ottimizzazione.
+ * Se è presente un badge, viene aggiunta anche la trasformazione del testo.
  */
-function getImageKitUrl(imageUrl, text) {
-    if (!IMAGEKIT_ID || IMAGEKIT_ID === 'yaca_placeholder') {
+function getImageKitUrl(imageUrl, text, imageKitId) {
+    const resolvedImageKitId = resolveImageKitId(imageKitId);
+    if (
+        !resolvedImageKitId ||
+        resolvedImageKitId === 'yaca_placeholder' ||
+        typeof imageUrl !== 'string' ||
+        imageUrl.length === 0
+    ) {
         return imageUrl;
     }
 
-    // Encoding Base64 richiesto dal parametro 'ie' di ImageKit
-    const b64 = Buffer.from(text).toString('base64').replace(/=/g, '%3D');
-
-    /**
-     * MASTER HACK (Premium Look):
-     * 1. tr:w-500 -> Blocca il canvas a 500px (standard TMDB) per permettere il clipping precisio.
-     * 2. bg-00000080 -> Sfondo nero semi-trasparente (50% alpha).
-     * 3. oa-top_right -> Ancora il badge all'angolo in alto a destra.
-     * 4. r-50 -> Arrotondamento (pillola).
-     * 5. pa-15_350_15_35 -> Padding DX di 350px spinge l'estremità arrotondata fuori dai 500px.
-     *    Questo crea il bordo squadrato a filo con il margine destro dell'immagine.
-     *    Il badge si espande naturalmente verso sinistra in base al testo.
-     */
-    const transformations = `tr:w-500,l-text,ie-${b64},fs-45,co-FFFFFF,bg-00000080,pa-15_350_15_35,r-50,oa-top_right,lx-0,ly-0,l-end`;
-
-    return `https://ik.imagekit.io/${IMAGEKIT_ID}/${transformations}/${imageUrl}`;
+    const encodedSource = encodeURIComponent(Buffer.from(imageUrl).toString('base64'));
+    const hasBadgeText = typeof text === 'string' && text.length > 0;
+    const transformations = hasBadgeText
+        ? `tr=w-300,h-450,l-text,ie-${Buffer.from(text).toString('base64').replace(/=/g, '%3D')},co-FFFFFF,bg-000000,pa-10,br-10`
+        : 'tr=w-300,h-450';
+    return `https://ik.imagekit.io/${resolvedImageKitId}/${encodedSource}?${transformations}`;
 }
 
 /**
@@ -41,10 +41,12 @@ function getImageKitUrl(imageUrl, text) {
  * Il client (Smart TV, browser) scaricherà l'immagine dalla CDN globale,
  * azzerando il consumo di banda del server YACA.
  *
- * @returns {string|null} URL ImageKit con badge, oppure null se ImageKit non è configurato
+ * @returns {string|null} URL ImageKit con badge, oppure null se il badge non è valido o ImageKit non è configurato
  */
-function addBadgeToImage(imageUrl, badgeText) {
-    const ikUrl = getImageKitUrl(imageUrl, badgeText);
+function addBadgeToImage(imageUrl, badgeText, imageKitId) {
+    if (typeof badgeText !== 'string' || badgeText.length === 0) return null;
+
+    const ikUrl = getImageKitUrl(imageUrl, badgeText, imageKitId);
 
     // Se non abbiamo ImageKitID, restituiamo null (il chiamante farà fallback all'URL originale)
     if (ikUrl === imageUrl) return null;

@@ -1,7 +1,8 @@
 jest.mock('../src/clients/tmdb', () => ({
     fetchTmdbCatalog: jest.fn(),
     createTmdbClient: jest.fn(() => ({})),
-    getTmdbIdByName: jest.fn()
+    getTmdbIdByName: jest.fn(),
+    getTmdbMovieDetails: jest.fn().mockResolvedValue(null)
 }));
 
 jest.mock('../src/clients/kitsu', () => ({
@@ -47,11 +48,18 @@ jest.mock('../src/data/presets', () => ({
 }));
 
 jest.mock('../src/utils/imageProcessor', () => ({
-    addBadgeToImage: jest.fn((url, text) => `https://ik.imagekit.io/test-id/badge/${encodeURIComponent(text)}/${encodeURIComponent(url)}`)
+    getImageKitUrl: jest.fn((url, text, imageKitId = 'test-id') => {
+        if (!url) return url;
+        return text
+            ? `https://ik.imagekit.io/${imageKitId}/badge/${encodeURIComponent(text)}/${encodeURIComponent(url)}?tr=w-300,h-450,l-text`
+            : `https://ik.imagekit.io/${imageKitId}/plain/${encodeURIComponent(url)}?tr=w-300,h-450`;
+    })
 }));
 
 const { fetchTmdbCatalog } = require('../src/clients/tmdb');
+const { getTmdbMovieDetails } = require('../src/clients/tmdb');
 const { getPresets } = require('../src/data/presets');
+const { getImageKitUrl } = require('../src/utils/imageProcessor');
 const { catalogHandler } = require('../src/handlers/catalogHandler');
 
 describe('applyEpisodeBadge host URL handling', () => {
@@ -149,6 +157,166 @@ describe('applyEpisodeBadge host URL handling', () => {
 
         const posterUrl = result.metas[0].poster;
         expect(posterUrl).toContain(encodeURIComponent('Ep 5'));
+    });
+
+    it('should hydrate TMDB details cache and use next episode badge text when videos are absent', async () => {
+        fetchTmdbCatalog.mockResolvedValueOnce([
+            {
+                id: 'tmdb:99',
+                type: 'series',
+                name: 'Cached Series',
+                poster: 'https://image.tmdb.org/t/p/w500/cached.jpg'
+            }
+        ]);
+        getTmdbMovieDetails.mockResolvedValueOnce({
+            status: 'Returning Series',
+            next_episode_to_air: { season_number: 2, episode_number: 3 }
+        });
+
+        const result = await catalogHandler({
+            type: 'series',
+            id: 'yaca_preset_preset_new_series_eps',
+            extra: { skip: 0 }
+        }, userConfig, 'https://my-server.com');
+
+        expect(getTmdbMovieDetails).toHaveBeenCalledWith('tmdb_key', '99', 'tv', { cacheOnly: true });
+        expect(result.metas[0].poster).toContain(encodeURIComponent('S2 E3'));
+    });
+
+    it('should optimize completed-series posters without adding a badge', async () => {
+        fetchTmdbCatalog.mockResolvedValueOnce([
+            {
+                id: 'tmdb:100',
+                type: 'series',
+                name: 'Ended Series',
+                poster: 'https://image.tmdb.org/t/p/w500/ended.jpg'
+            }
+        ]);
+        getTmdbMovieDetails.mockResolvedValueOnce({
+            status: 'Ended',
+            last_episode_to_air: { season_number: 4, episode_number: 10 }
+        });
+
+        const result = await catalogHandler({
+            type: 'series',
+            id: 'yaca_preset_preset_new_series_eps',
+            extra: { skip: 0 }
+        }, userConfig, 'https://my-server.com');
+
+        expect(result.metas[0].poster).toContain('https://ik.imagekit.io/test-id/plain/');
+        expect(result.metas[0].poster).toContain('?tr=w-300,h-450');
+    });
+
+    it('should trigger a background TMDB warmup when cache hydration misses', async () => {
+        fetchTmdbCatalog.mockResolvedValueOnce([
+            {
+                id: 'tmdb:101',
+                type: 'series',
+                name: 'Missed Cache Series',
+                poster: 'https://image.tmdb.org/t/p/w500/miss.jpg'
+            }
+        ]);
+        getTmdbMovieDetails
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce({
+                status: 'Returning Series',
+                last_episode_to_air: { season_number: 1, episode_number: 8 }
+            });
+
+        await catalogHandler({
+            type: 'series',
+            id: 'yaca_preset_preset_new_series_eps',
+            extra: { skip: 0 }
+        }, userConfig, 'https://my-server.com');
+
+        expect(getTmdbMovieDetails).toHaveBeenNthCalledWith(1, 'tmdb_key', '101', 'tv', { cacheOnly: true });
+        expect(getTmdbMovieDetails).toHaveBeenNthCalledWith(2, 'tmdb_key', '101', 'tv');
+    });
+
+    it('should keep the original poster when a badgeable item has no poster', async () => {
+        fetchTmdbCatalog.mockResolvedValueOnce([
+            {
+                id: 'tmdb:102',
+                type: 'series',
+                name: 'Posterless Series',
+                poster: null
+            }
+        ]);
+        getTmdbMovieDetails.mockResolvedValueOnce({
+            status: 'Returning Series',
+            next_episode_to_air: { season_number: 1, episode_number: 2 }
+        });
+
+        const result = await catalogHandler({
+            type: 'series',
+            id: 'yaca_preset_preset_new_series_eps',
+            extra: { skip: 0 }
+        }, userConfig, 'https://my-server.com');
+
+        expect(result.metas[0].poster).toBeNull();
+    });
+
+    it('should pass the ImageKit ID from user config to poster generation', async () => {
+        const customUserConfig = {
+            ...userConfig,
+            apiKeys: {
+                ...userConfig.apiKeys,
+                imagekit: 'user_imagekit_id'
+            }
+        };
+
+        await catalogHandler({
+            type: 'series',
+            id: 'yaca_preset_preset_new_series_eps',
+            extra: { skip: 0 }
+        }, customUserConfig, 'https://my-server.com');
+
+        expect(getImageKitUrl).toHaveBeenCalledWith(
+            'https://image.tmdb.org/t/p/w500/test.jpg',
+            'Ep 5',
+            'user_imagekit_id'
+        );
+    });
+
+    it('should optimize plain posters through ImageKit even without badge text', async () => {
+        getPresets.mockReturnValueOnce([
+            { id: 'preset_popular_movies', filters: { sort_by: 'popularity.desc' } }
+        ]);
+        fetchTmdbCatalog.mockResolvedValueOnce([
+            {
+                id: 'tmdb:103',
+                type: 'movie',
+                name: 'Movie Poster',
+                poster: 'https://image.tmdb.org/t/p/w500/movie.jpg'
+            }
+        ]);
+
+        const movieUserConfig = {
+            ...userConfig,
+            profiles: [{
+                id: 'prof1',
+                catalogs: [{
+                    id: 'yaca_preset_preset_popular_movies',
+                    type: 'movie',
+                    filters: { sort_by: 'popularity.desc' }
+                }],
+                settings: {}
+            }]
+        };
+
+        const result = await catalogHandler({
+            type: 'movie',
+            id: 'yaca_preset_preset_popular_movies',
+            extra: { skip: 0 }
+        }, movieUserConfig, 'https://my-server.com');
+
+        expect(result.metas[0].poster).toContain('https://ik.imagekit.io/test-id/plain/');
+        expect(result.metas[0].poster).toContain('?tr=w-300,h-450');
+        expect(getImageKitUrl).toHaveBeenCalledWith(
+            'https://image.tmdb.org/t/p/w500/movie.jpg',
+            null,
+            undefined
+        );
     });
 
     afterEach(() => {
