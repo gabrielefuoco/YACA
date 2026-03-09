@@ -175,9 +175,9 @@ describe('catalogHandler critical recommendation/search fixes', () => {
         }, userConfig, 'https://host.test');
 
         expect(fetchKitsuEpisodes).toHaveBeenCalledWith('42');
-        expect(result.metas[0].videos).toHaveLength(1);
         expect(result.metas[0].poster).toContain('https://ik.imagekit.io/mock-id/badge/');
         expect(result.metas[0].poster).toContain(encodeURIComponent('Ep 12'));
+        expect(result.metas[0].videos).toBeUndefined();
     });
 
     it('applies episode badge on merged early return via finalizeCatalog', async () => {
@@ -263,7 +263,7 @@ describe('catalogHandler critical recommendation/search fixes', () => {
             profiles: [{ id: 'prof1', settings: {} }]
         };
 
-        await catalogHandler({
+        const result = await catalogHandler({
             type: 'movie',
             id: 'yaca_preset_preset_cache_hydration',
             extra: { skip: 0 }
@@ -278,6 +278,25 @@ describe('catalogHandler critical recommendation/search fixes', () => {
             profileDoc,
             expect.any(Object)
         );
+        expect(result.metas[0]).toEqual({
+            id: 'tmdb:55',
+            type: 'movie',
+            name: 'Light Item',
+            poster: undefined,
+            posterShape: 'poster',
+            background: undefined,
+            description: undefined,
+            releaseInfo: undefined,
+            imdbRating: '7.1',
+            genres: undefined,
+            behaviorHints: undefined
+        });
+        expect(result.metas[0].rawTMDB).toBeUndefined();
+        expect(result.metas[0].cast).toBeUndefined();
+        expect(result.metas[0].keywords).toBeUndefined();
+        expect(result.metas[0].weight).toBeUndefined();
+        expect(result.metas[0].affinity).toBeUndefined();
+        expect(result.metas[0].finalScore).toBeUndefined();
     });
 
     it('keeps scoring with light mode item when cache hydration misses', async () => {

@@ -99,19 +99,38 @@ async function applyEpisodeBadge(metas, tmdbApiKey) {
     }
 }
 
+function sanitizeCatalogMeta(item) {
+    if (!item) return item;
+
+    return {
+        id: item.id,
+        type: item.type,
+        name: item.name,
+        poster: item.poster,
+        posterShape: item.posterShape || 'poster',
+        background: item.background,
+        description: item.description,
+        releaseInfo: item.releaseInfo,
+        imdbRating: item.imdbRating,
+        genres: item.genres,
+        behaviorHints: item.behaviorHints
+    };
+}
+
 async function finalizeCatalog(results, id, type, hostUrl, userConfig) {
     if (!Array.isArray(results)) return { metas: [] };
 
     const tmdbApiKey = userConfig?.apiKeys?.tmdb || process.env.TMDB_API_KEY;
     const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
+    const finalResults = type === 'series' && EPISODE_CATALOG_IDS.has(baseId)
+        ? results.map(m => ({ ...m }))
+        : results;
 
-    if (type === 'series' && EPISODE_CATALOG_IDS.has(baseId)) {
-        const clonedResults = results.map(m => ({ ...m }));
-        await applyEpisodeBadge(clonedResults, tmdbApiKey);
-        return { metas: clonedResults };
+    if (finalResults !== results) {
+        await applyEpisodeBadge(finalResults, tmdbApiKey);
     }
 
-    return { metas: results };
+    return { metas: finalResults.map(sanitizeCatalogMeta) };
 }
 
 async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
