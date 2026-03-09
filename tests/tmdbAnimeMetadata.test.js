@@ -103,6 +103,30 @@ describe('TMDB anime metadata fallbacks', () => {
         expect(meta.poster).toBe('https://image.tmdb.org/t/p/w500/en_poster.jpg');
     });
 
+    it('keeps Italian and English posters when localized images would otherwise be trimmed out', async () => {
+        tmdbGetMock.mockImplementation(async () => ({
+            data: createBaseTmdbData({
+                poster_path: '/jp_default.jpg',
+                images: {
+                    logos: [],
+                    backdrops: [],
+                    posters: [
+                        { iso_639_1: 'ja', file_path: '/jp_1.jpg' },
+                        { iso_639_1: 'ja', file_path: '/jp_2.jpg' },
+                        { iso_639_1: 'ja', file_path: '/jp_3.jpg' },
+                        { iso_639_1: 'it', file_path: '/it_poster.jpg' },
+                        { iso_639_1: 'en', file_path: '/en_poster.jpg' }
+                    ]
+                }
+            })
+        }));
+
+        const { getTmdbMetaDetails } = require('../src/clients/tmdb');
+        const meta = await getTmdbMetaDetails('key', 'tmdb:100', 'movie');
+
+        expect(meta.poster).toBe('https://image.tmdb.org/t/p/w500/it_poster.jpg');
+    });
+
     it('uses clean EN overview as real metadata without forcing Lingva translation', async () => {
         tmdbGetMock.mockImplementation(async (_url, options = {}) => {
             const language = options.params?.language;
@@ -231,5 +255,72 @@ describe('TMDB anime metadata fallbacks', () => {
 
         expect(meta.videos).toHaveLength(1);
         expect(meta.videos[0].overview).toBe('Episode overview in EN');
+    });
+
+    it('fetches TMDB episodes for anime series and translates fallback episode overviews to Italian', async () => {
+        lingvaGetMock.mockResolvedValue({ data: { translation: 'Trama episodio tradotta in italiano' } });
+        tmdbGetMock.mockImplementation(async (url, options = {}) => {
+            const language = options.params?.language;
+            const appendParam = options.params?.append_to_response || '';
+
+            if (url === '/tv/100') {
+                if (appendParam.includes('season/')) {
+                    const baseData = createBaseTmdbData({
+                        overview: 'Descrizione base',
+                        number_of_seasons: 1,
+                        genres: [{ id: 16, name: 'Animation' }],
+                        keywords: { results: [{ id: 1, name: 'anime' }], keywords: [] }
+                    });
+                    baseData['season/1'] = {
+                        season_number: 1,
+                        episodes: [
+                            { season_number: 1, episode_number: 1, name: 'Episode 1', air_date: '2020-01-10', overview: '', still_path: null }
+                        ]
+                    };
+                    return { data: baseData };
+                }
+
+                return {
+                    data: createBaseTmdbData({
+                        overview: 'Descrizione base',
+                        number_of_seasons: 1,
+                        genres: [{ id: 16, name: 'Animation' }],
+                        keywords: { results: [{ id: 1, name: 'anime' }], keywords: [] }
+                    })
+                };
+            }
+
+            if (url === '/tv/100/season/1' && language === 'en-US') {
+                return {
+                    data: {
+                        season_number: 1,
+                        episodes: [
+                            { season_number: 1, episode_number: 1, name: 'Episode 1', air_date: '2020-01-10', overview: 'Episode overview in EN', still_path: null }
+                        ]
+                    }
+                };
+            }
+
+            if (url === '/tv/100/season/1' && language === 'ja') {
+                return {
+                    data: {
+                        season_number: 1,
+                        episodes: [
+                            { season_number: 1, episode_number: 1, name: 'Episode 1', air_date: '2020-01-10', overview: '日本語の概要', still_path: null }
+                        ]
+                    }
+                };
+            }
+
+            return { data: createBaseTmdbData() };
+        });
+
+        const { getTmdbMetaDetails } = require('../src/clients/tmdb');
+        const meta = await getTmdbMetaDetails('key', 'tmdb:100', 'series');
+
+        expect(meta._isAnime).toBe(true);
+        expect(meta.videos).toHaveLength(1);
+        expect(meta.videos[0].id).toBe('tt100:1:1');
+        expect(meta.videos[0].overview).toBe('Trama episodio tradotta in italiano');
     });
 });
