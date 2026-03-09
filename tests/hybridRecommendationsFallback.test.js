@@ -97,6 +97,8 @@ describe('hybrid recommendations popular fallback', () => {
         );
         expect(metas).toHaveLength(2);
         expect(metas[0].id).toBe('tmdb:101');
+        expect(tmdbClient.getTmdbMovieDetails).toHaveBeenNthCalledWith(1, 'tmdb_key', '101', 'movie', { cacheOnly: true });
+        expect(tmdbClient.getTmdbMovieDetails).toHaveBeenNthCalledWith(2, 'tmdb_key', '102', 'movie', { cacheOnly: true });
     });
 
     it('falls back to live TMDB endpoint when details are not cached', async () => {

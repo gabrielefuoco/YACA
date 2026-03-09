@@ -279,4 +279,41 @@ describe('catalogHandler critical recommendation/search fixes', () => {
             expect.any(Object)
         );
     });
+
+    it('keeps scoring with light mode item when cache hydration misses', async () => {
+        const profileDoc = { settings: {}, genreScores: new Map() };
+        TasteProfile.findOne
+            .mockResolvedValueOnce(profileDoc)
+            .mockResolvedValueOnce(null);
+        getPresets.mockReturnValue([
+            {
+                id: 'preset_cache_miss',
+                filters: { sort_by: 'popularity.desc' }
+            }
+        ]);
+        fetchTmdbCatalog.mockResolvedValueOnce([
+            { id: 'tmdb:77', type: 'movie', name: 'Fallback Light Item', imdbRating: '6.5' }
+        ]);
+        getTmdbMovieDetails.mockResolvedValueOnce(null);
+
+        const userConfig = {
+            userId: 'user_1',
+            activeProfileId: 'prof1',
+            apiKeys: { tmdb: 'tmdb_key' },
+            profiles: [{ id: 'prof1', settings: {} }]
+        };
+
+        await catalogHandler({
+            type: 'movie',
+            id: 'yaca_preset_preset_cache_miss',
+            extra: { skip: 0 }
+        }, userConfig, 'https://host.test');
+
+        expect(getTmdbMovieDetails).toHaveBeenCalledWith('tmdb_key', '77', 'movie', { cacheOnly: true });
+        expect(ProfileScorer.calculateItemMatch).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'tmdb:77', name: 'Fallback Light Item' }),
+            profileDoc,
+            expect.any(Object)
+        );
+    });
 });

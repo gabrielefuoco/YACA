@@ -95,6 +95,7 @@ async function applyEpisodeBadge(metas, tmdbApiKey) {
         if (badgedPoster) {
             meta.poster = badgedPoster;
         }
+        // Se ImageKit non è configurato, manteniamo il poster originale senza interrompere il catalogo.
     }
 }
 
@@ -128,7 +129,9 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
                 item.rawTMDB = cachedDetails;
                 item.keywords = cachedDetails.keywords?.keywords || cachedDetails.keywords?.results || [];
                 item.cast = cachedDetails.credits?.cast || [];
-            } catch (_err) { }
+            } catch (_err) {
+                // Il recupero cache è best-effort: in caso di errore si continua con i dati Light Mode.
+            }
         })
     );
 }
