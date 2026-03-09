@@ -487,7 +487,7 @@ async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customPar
                 enrichQueue(hotQueue)
                     .then(() => {
                         if (coldQueue.length > 0) return enrichQueue(coldQueue);
-                        return null;
+                        return;
                     })
                     .catch(() => { });
             });

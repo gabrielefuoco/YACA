@@ -17,7 +17,7 @@ describe('redis startup retry strategy', () => {
             };
         }));
 
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => { });
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
         const { getRedisClient } = require('../src/cache/redisClient');
         getRedisClient();
         await Promise.resolve();
