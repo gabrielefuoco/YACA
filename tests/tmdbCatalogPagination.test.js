@@ -9,6 +9,14 @@ jest.mock('../src/utils/requestHash', () => ({
 }));
 
 jest.mock('../src/utils/rateLimiter', () => ({
+    rateLimitedMap: jest.fn(async (items, fn) => {
+        const results = [];
+        for (const item of items) {
+            const result = await fn(item);
+            results.push(result);
+        }
+        return results;
+    }),
     rateLimitedMapFiltered: jest.fn(async (items, fn) => {
         const results = [];
         for (const item of items) {
@@ -178,7 +186,7 @@ describe('fetchTmdbCatalog per-page cache', () => {
         expect(result[0]).toHaveProperty('poster');
     });
 
-    it('disables Fast-Pass for deep pages when disableLightMode option is enabled', async () => {
+    it('returns Light Mode items with genre_ids for deep pages even when disableLightMode is enabled', async () => {
         TmdbRequestCache.getWithStatus.mockResolvedValue({
             value: undefined,
             status: 'miss'
@@ -187,7 +195,8 @@ describe('fetchTmdbCatalog per-page cache', () => {
         const tmdbItems = Array.from({ length: 20 }, (_, i) => ({
             id: i + 21, title: `Movie ${i + 21}`, name: null,
             poster_path: '/poster.jpg', backdrop_path: '/bg.jpg',
-            overview: 'overview', vote_average: 7.5, release_date: '2020-01-01'
+            overview: 'overview', vote_average: 7.5, release_date: '2020-01-01',
+            genre_ids: [28, 12]
         }));
         const client = {
             defaults: { params: { api_key: 'key' } },
@@ -197,8 +206,9 @@ describe('fetchTmdbCatalog per-page cache', () => {
         const result = await fetchTmdbCatalog(client, '/discover/movie', 20, {}, 'movie', { disableLightMode: true });
 
         expect(result.length).toBeGreaterThan(0);
-        expect(result[0]).toHaveProperty('behaviorHints');
+        // Light Mode items always include genre_ids for scoring
         expect(result[0]).toHaveProperty('genre_ids');
+        expect(result[0].genre_ids).toEqual([28, 12]);
     });
 
     it('per-page cache key includes page number', async () => {

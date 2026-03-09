@@ -297,7 +297,17 @@ describe('Bug Fix: Episode fetch uses rate-limited batching', () => {
             ]
         };
 
-        tmdbGetMock.mockImplementation(async (url) => {
+        tmdbGetMock.mockImplementation(async (url, config) => {
+            // append_to_response batch call: /tv/{id} with append_to_response=season/1
+            const appendParam = config?.params?.append_to_response || '';
+            if (url.match(/\/tv\/\d+$/) && appendParam.includes('season/')) {
+                return {
+                    data: {
+                        ...createBaseTmdbData({ number_of_seasons: 1, overview: 'Valid overview for the series.' }),
+                        'season/1': seasonData
+                    }
+                };
+            }
             if (url.includes('/season/')) {
                 return { data: seasonData };
             }
@@ -673,6 +683,23 @@ describe('Bug Fix: Episode fallback requests are rate-limited', () => {
         });
 
         tmdbGetMock.mockImplementation(async (url, options = {}) => {
+            const appendParam = options?.params?.append_to_response || '';
+            // append_to_response batch call for episodes
+            if (url.match(/\/tv\/\d+$/) && appendParam.includes('season/')) {
+                const responseData = createBaseTmdbData({
+                    id: 9999,
+                    number_of_seasons: 3,
+                    original_language: 'ja',
+                    overview: 'Valid overview for the series.'
+                });
+                // Add season data for each requested season
+                const seasonParts = appendParam.split(',').filter(p => p.startsWith('season/'));
+                for (const part of seasonParts) {
+                    const num = parseInt(part.replace('season/', ''));
+                    responseData[part] = makeSeasonData(num);
+                }
+                return { data: responseData };
+            }
             if (url.includes('/season/')) {
                 const seasonMatch = url.match(/\/season\/(\d+)/);
                 const seasonNum = seasonMatch ? parseInt(seasonMatch[1]) : 1;
@@ -744,15 +771,16 @@ describe('Bug Fix: Trakt TMDB enrichment uses rate-limited batching', () => {
     });
 });
 
-describe('Bug Fix: Lingva timeout reduced to 2000ms', () => {
-    it('should use a timeout of 2000ms for Lingva translation requests', () => {
+describe('Bug Fix: Lingva timeout reduced to 1500ms', () => {
+    it('should use a timeout of 1500ms for Lingva translation requests', () => {
         const tmdbSource = require('fs').readFileSync(
             require('path').join(__dirname, '../src/clients/tmdb.js'), 'utf-8'
         );
-        // The Lingva call should use timeout: 2000, not 4000
+        // The Lingva call should use timeout: 1500, not 2000 or 4000
         const lingvaCallMatch = tmdbSource.match(/lingvaClient\.get\([^;]+\)/s);
         expect(lingvaCallMatch).toBeTruthy();
-        expect(lingvaCallMatch[0]).toContain('timeout: 2000');
+        expect(lingvaCallMatch[0]).toContain('timeout: 1500');
         expect(lingvaCallMatch[0]).not.toContain('timeout: 4000');
+        expect(lingvaCallMatch[0]).not.toContain('timeout: 2000');
     });
 });
