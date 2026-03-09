@@ -310,7 +310,8 @@ app.get('/blur', (req, res) => {
 });
 
 // Endpoint per aggiungere badge (numero episodio) su poster
-// Protetto contro SSRF: accetta solo URL di CDN immagini noti
+// Zero bandwidth: genera l'URL CDN ImageKit e fa redirect 302.
+// Il client (Smart TV, browser) scarica l'immagine direttamente dai server CDN globali di ImageKit.
 app.get('/badge/poster.jpg', badgeLimiter, async (req, res) => {
     const { url, text } = req.query;
     if (!url || !text) {
@@ -326,48 +327,13 @@ app.get('/badge/poster.jpg', badgeLimiter, async (req, res) => {
         return res.status(400).send('Testo badge non valido');
     }
 
-    const cacheKey = url + '_' + safeText;
-
-    // 1. L1 Cache (Memory)
-    const cachedImage = badgeImageCache.get(cacheKey);
-    if (cachedImage) {
-        res.set('Content-Type', 'image/jpeg');
+    // addBadgeToImage now returns a CDN URL (string) instead of downloading the image
+    const badgeUrl = addBadgeToImage(url, safeText);
+    if (badgeUrl) {
         res.set('Cache-Control', `public, max-age=${BADGE_CACHE_TTL_SECS}`);
-        return res.send(cachedImage);
-    }
-
-    try {
-        // 2. L2 Cache (MongoDB)
-        const dbImage = await BadgeImage.findOne({ key: cacheKey });
-        if (dbImage) {
-            badgeImageCache.set(cacheKey, dbImage.imageData);
-            res.set('Content-Type', 'image/jpeg');
-            res.set('Cache-Control', `public, max-age=${BADGE_CACHE_TTL_SECS}`);
-            return res.send(dbImage.imageData);
-        }
-
-        // 3. Generation
-        const imageBuffer = await addBadgeToImage(url, safeText);
-        if (imageBuffer) {
-            badgeImageCache.set(cacheKey, imageBuffer);
-
-            // Async save to DB to not block response
-            const expiresAt = new Date(Date.now() + BADGE_CACHE_TTL_MS);
-
-            BadgeImage.findOneAndUpdate(
-                { key: cacheKey },
-                { imageData: imageBuffer, expiresAt },
-                { upsert: true, returnDocument: 'after' }
-            )
-                .catch(err => console.error('Errore persistenza badge DB:', err.message));
-
-            res.set('Content-Type', 'image/jpeg');
-            res.set('Cache-Control', `public, max-age=${BADGE_CACHE_TTL_SECS}`);
-            return res.send(imageBuffer);
-        } else {
-            return res.redirect(301, url);
-        }
-    } catch (_err) {
+        return res.redirect(302, badgeUrl);
+    } else {
+        // ImageKit not configured — redirect to the original poster URL
         return res.redirect(301, url);
     }
 });

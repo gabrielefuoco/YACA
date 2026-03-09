@@ -169,8 +169,20 @@ describe('TMDB anime metadata fallbacks', () => {
     it('fills missing episode overviews from EN season metadata', async () => {
         tmdbGetMock.mockImplementation(async (url, options = {}) => {
             const language = options.params?.language;
+            const appendParam = options.params?.append_to_response || '';
 
             if (url === '/tv/100') {
+                // append_to_response batch call for episodes
+                if (appendParam.includes('season/')) {
+                    const baseData = createBaseTmdbData({ overview: '', number_of_seasons: 1 });
+                    baseData['season/1'] = {
+                        season_number: 1,
+                        episodes: [
+                            { season_number: 1, episode_number: 1, name: 'Episode 1', air_date: '2020-01-10', overview: '', still_path: null }
+                        ]
+                    };
+                    return { data: baseData };
+                }
                 if (language === 'en-US') {
                     return { data: createBaseTmdbData({ overview: 'English overview for series', number_of_seasons: 1 }) };
                 }

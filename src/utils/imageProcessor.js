@@ -1,8 +1,3 @@
-const { createAxiosInstance } = require('./httpClient');
-
-const imageClient = createAxiosInstance('');
-
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB limite massimo per immagini scaricate
 const IMAGEKIT_ID = process.env.IMAGEKIT_ID || 'yaca_placeholder'; // User should provide this
 
 /**
@@ -41,27 +36,20 @@ function getImageKitUrl(imageUrl, text) {
 }
 
 /**
- * Scarica un poster con badge elaborato da ImageKit.
- * Offload totale della trasformazione a ImageKit per risparmiare RAM.
+ * Genera l'URL CDN ImageKit per un poster con badge di testo.
+ * Non scarica l'immagine: restituisce direttamente l'URL di ImageKit.
+ * Il client (Smart TV, browser) scaricherà l'immagine dalla CDN globale,
+ * azzerando il consumo di banda del server YACA.
+ *
+ * @returns {string|null} URL ImageKit con badge, oppure null se ImageKit non è configurato
  */
-async function addBadgeToImage(imageUrl, badgeText) {
-    try {
-        const ikUrl = getImageKitUrl(imageUrl, badgeText);
+function addBadgeToImage(imageUrl, badgeText) {
+    const ikUrl = getImageKitUrl(imageUrl, badgeText);
 
-        // Se non abbiamo ImageKitID, restituiamo null per fallimento (index.js farà redirect a URL originale)
-        if (ikUrl === imageUrl) return null;
+    // Se non abbiamo ImageKitID, restituiamo null (il chiamante farà fallback all'URL originale)
+    if (ikUrl === imageUrl) return null;
 
-        const response = await imageClient.get(ikUrl, {
-            responseType: 'arraybuffer',
-            timeout: 15000,
-            maxContentLength: MAX_IMAGE_SIZE
-        });
-
-        return Buffer.from(response.data);
-    } catch (error) {
-        console.error('Error fetching image from ImageKit:', error.message);
-        return null;
-    }
+    return ikUrl;
 }
 
 module.exports = { getBlurredImageUrl, addBadgeToImage, getImageKitUrl };

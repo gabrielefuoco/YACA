@@ -20,8 +20,7 @@ const {
     SLOW_CATALOG_L2_TTL_MS,
     SLOW_CATALOG_SWR_MS
 } = require('../config');
-const { rateLimitedMap, rateLimitedMapFiltered } = require('../utils/rateLimiter');
-const { isMovieReleasedDigitally } = require('../utils/releaseFilter');
+const { rateLimitedMap } = require('../utils/rateLimiter');
 const { generateRequestHash } = require('../utils/requestHash');
 const TmdbRequestCache = require('../models/TmdbRequestCache');
 
@@ -417,7 +416,9 @@ function toStremioMetaItem(tmdbItem, type) {
  * di parallelizzare le pagine TMDB per riempire lo skip di Stremio.
  * Questa è la funzione interna senza cache.
  *
- * @param {boolean} opts.lightMode - When true, skips deep enrichment (Fast-Pass for deep pages)
+ * Tutte le pagine restituiscono "Light Mode" (ID, nome, poster, background, descrizione,
+ * releaseInfo, imdbRating, genre_ids) per azzerare la latenza.
+ * L'arricchimento completo avviene in background per le pagine principali.
  */
 async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customParams = {}, type = 'movie', pagesToFetch = 1, opts = {}) {
     const promises = [];
@@ -447,53 +448,37 @@ async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customPar
             }
         });
 
-        // Fast-Pass: skip deep enrichment for deep pages (cache miss on scroll)
-        if (opts.lightMode) {
+        // Light Mode: restituisce immediatamente metadati base (ID, nome, poster, genre_ids).
+        // Nessuna chiamata TMDB details, nessuna latenza.
+        const lightMetas = items.map(({ item, type: t }) => ({
+            id: `tmdb:${item.id}`,
+            type: t === 'series' ? 'series' : 'movie',
+            name: item.title || item.name || 'Unknown',
+            poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
+            posterShape: 'poster',
+            background: item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null,
+            description: item.overview || '',
+            releaseInfo: (item.release_date || item.first_air_date || '').substring(0, 4),
+            imdbRating: item.vote_average ? item.vote_average.toFixed(1) : undefined,
+            genre_ids: item.genre_ids || []
+        }));
+
+        // Background Sync Worker: scarica in background i metadati completi per le pagine
+        // iniziali (non bloccante). Alla visita successiva i titoli avranno dati ricchi in cache.
+        // opts.lightMode è impostato dal chiamante per deep scroll pages dove l'enrichment
+        // in background non è necessario (l'utente sta solo scorrendo velocemente).
+        if (!opts.lightMode && items.length > 0) {
             const apiKey = client.defaults.params.api_key;
-            const lightMetas = items.map(({ item, type: t }) => {
-                const mediaType = t === 'series' ? 'tv' : 'movie';
-                return {
-                    id: `tmdb:${item.id}`,
-                    type: t === 'series' ? 'series' : 'movie',
-                    name: item.title || item.name || 'Unknown',
-                    poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
-                    posterShape: 'poster',
-                    background: item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null,
-                    description: item.overview || '',
-                    releaseInfo: (item.release_date || item.first_air_date || '').substring(0, 4),
-                    imdbRating: item.vote_average ? item.vote_average.toFixed(1) : undefined
-                };
+            setImmediate(() => {
+                rateLimitedMap(items, async ({ item, type: t }) => {
+                    try {
+                        await getTmdbMovieDetails(apiKey, item.id.toString(), t === 'series' ? 'tv' : 'movie');
+                    } catch (_e) { /* background enrichment failure is non-blocking */ }
+                }, { batchSize: 1, delayMs: 600 }).catch(() => {});
             });
-            return { items: lightMetas, nextPageFetched: startPage + pagesToFetch };
         }
 
-        // Applichiamo filtro di rilascio e arricchiamo con metadati IMDB
-        const apiKey = client.defaults.params.api_key;
-
-        const filteredMetas = await rateLimitedMapFiltered(items, async ({ item, type }) => {
-            if (type === 'movie' && (!customParams.with_original_language || customParams.with_original_language !== 'ko')) {
-                const isReleased = await isMovieReleasedDigitally(item.id, apiKey);
-                if (!isReleased) return null;
-            }
-            const meta = await getTmdbMetaDetails(apiKey, `tmdb:${item.id}`, type);
-            // Fase 2: alleggerimento episodi per il catalogo (griglia).
-            // Conserva solo l'episodio trasmesso più recente; la cache episodi completa
-            // viene usata dalla rotta /meta/... tramite fetchTmdbEpisodes (invariata).
-            if (meta && Array.isArray(meta.videos)) {
-                const now = new Date();
-                const aired = meta.videos
-                    .filter(v => v.released && new Date(v.released) <= now)
-                    .sort((a, b) => new Date(b.released) - new Date(a.released));
-                if (aired.length > 0) {
-                    meta.videos = [aired[0]];
-                } else {
-                    delete meta.videos;
-                }
-            }
-            return meta;
-        }, { batchSize: 10, delayMs: 200 });
-
-        return { items: filteredMetas, nextPageFetched: startPage + pagesToFetch };
+        return { items: lightMetas, nextPageFetched: startPage + pagesToFetch };
     } catch (err) {
         console.error(`Errore fetchTmdbCatalog ${endpoint}:`, err.message);
         return { items: [], nextPageFetched: startPage };
@@ -608,7 +593,9 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
 }
 
 /**
- * Recupera le stagioni e gli episodi per una Serie TV da TMDB
+ * Recupera le stagioni e gli episodi per una Serie TV da TMDB.
+ * Usa append_to_response per raggruppare fino a 20 stagioni per chiamata HTTP,
+ * riducendo drasticamente il numero di richieste (es. 30 stagioni → 2 chiamate).
  */
 async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalLanguage = null) {
     const cacheKey = `eps:${tmdbId}`;
@@ -616,24 +603,46 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
     if (status === 'fresh') return cached;
 
     const fetchAllSeasonEpisodes = async () => {
-        // TMDB Seasons are 1-indexed. Sometimes there is Season 0 (Specials).
-        // Fetch all seasons, with a reasonable safety limit (e.g., 50)
         const startSeason = 1;
         const maxSeasonsToFetch = Math.min(totalSeasons, 50);
+        const APPEND_BATCH_SIZE = 20; // TMDB limit for append_to_response
 
         const seasonNumbers = [];
         for (let i = startSeason; i <= maxSeasonsToFetch; i++) {
             seasonNumbers.push(i);
         }
 
-        // Use rate-limited batching to avoid TMDB 429 rate limits
-        const results = await rateLimitedMap(seasonNumbers, async (seasonNum) => {
+        // Group seasons into batches of 20 for append_to_response
+        const seasonBatches = [];
+        for (let i = 0; i < seasonNumbers.length; i += APPEND_BATCH_SIZE) {
+            seasonBatches.push(seasonNumbers.slice(i, i + APPEND_BATCH_SIZE));
+        }
+
+        // Fetch all season batches using append_to_response (rate-limited)
+        const batchResults = await rateLimitedMap(seasonBatches, async (batch) => {
             try {
-                return await client.get(`/tv/${tmdbId}/season/${seasonNum}`);
+                const appendValue = batch.map(n => `season/${n}`).join(',');
+                const res = await client.get(`/tv/${tmdbId}`, {
+                    params: { append_to_response: appendValue }
+                });
+                return res.data;
             } catch (e) {
-                return { error: e };
+                console.error(`[Episodes] append_to_response batch failed for tv/${tmdbId}:`, e.message);
+                return null;
             }
-        }, { batchSize: 5, delayMs: 200 });
+        }, { batchSize: 2, delayMs: 200 });
+
+        // Extract season data from batch responses
+        const seasonDataMap = new Map();
+        for (const data of batchResults) {
+            if (!data) continue;
+            for (const sn of seasonNumbers) {
+                const key = `season/${sn}`;
+                if (data[key] && data[key].episodes) {
+                    seasonDataMap.set(sn, data[key]);
+                }
+            }
+        }
 
         const buildEpisodesFromSeason = (seasonData, fallbackMaps = {}) => {
             if (!seasonData?.episodes) return [];
@@ -653,44 +662,40 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
             });
         };
 
-        // Rate-limit the fallback overview requests to avoid TMDB 429 errors
-        const seasonVideoChunks = await rateLimitedMap(results, async (res) => {
-            if (res && !res.error && res.data?.episodes) {
-                const seasonData = res.data;
-                const hasMissingOverview = seasonData.episodes.some(ep => !ep.overview?.trim());
-                if (!hasMissingOverview) {
-                    return buildEpisodesFromSeason(seasonData);
-                }
-
-                const seasonNumber = seasonData.season_number;
-                const fallbackRequests = [client.get(`/tv/${tmdbId}/season/${seasonNumber}`, { params: { language: 'en-US' } })];
-                if (originalLanguage && originalLanguage !== 'it' && originalLanguage !== 'en') {
-                    fallbackRequests.push(client.get(`/tv/${tmdbId}/season/${seasonNumber}`, { params: { language: originalLanguage } }));
-                }
-
-                try {
-                    const fallbackResults = await Promise.allSettled(fallbackRequests);
-                    const enOverviewByEpisode = new Map();
-                    const originalOverviewByEpisode = new Map();
-
-                    const enEpisodes = fallbackResults[0]?.status === 'fulfilled' ? fallbackResults[0].value?.data?.episodes : [];
-                    for (const ep of enEpisodes || []) {
-                        if (ep?.overview?.trim()) enOverviewByEpisode.set(ep.episode_number, ep.overview);
-                    }
-
-                    const origEpisodes = fallbackResults[1]?.status === 'fulfilled' ? fallbackResults[1].value?.data?.episodes : [];
-                    for (const ep of origEpisodes || []) {
-                        if (ep?.overview?.trim()) originalOverviewByEpisode.set(ep.episode_number, ep.overview);
-                    }
-
-                    return buildEpisodesFromSeason(seasonData, { enOverviewByEpisode, originalOverviewByEpisode });
-                } catch (_e) {
-                    return buildEpisodesFromSeason(seasonData);
-                }
+        // Process seasons: build episodes with overview fallback where needed
+        const allSeasonEntries = Array.from(seasonDataMap.entries());
+        const seasonVideoChunks = await rateLimitedMap(allSeasonEntries, async ([seasonNumber, seasonData]) => {
+            const hasMissingOverview = seasonData.episodes.some(ep => !ep.overview?.trim());
+            if (!hasMissingOverview) {
+                return buildEpisodesFromSeason(seasonData);
             }
-            return [];
+
+            const fallbackRequests = [client.get(`/tv/${tmdbId}/season/${seasonNumber}`, { params: { language: 'en-US' } })];
+            if (originalLanguage && originalLanguage !== 'it' && originalLanguage !== 'en') {
+                fallbackRequests.push(client.get(`/tv/${tmdbId}/season/${seasonNumber}`, { params: { language: originalLanguage } }));
+            }
+
+            try {
+                const fallbackResults = await Promise.allSettled(fallbackRequests);
+                const enOverviewByEpisode = new Map();
+                const originalOverviewByEpisode = new Map();
+
+                const enEpisodes = fallbackResults[0]?.status === 'fulfilled' ? fallbackResults[0].value?.data?.episodes : [];
+                for (const ep of enEpisodes || []) {
+                    if (ep?.overview?.trim()) enOverviewByEpisode.set(ep.episode_number, ep.overview);
+                }
+
+                const origEpisodes = fallbackResults[1]?.status === 'fulfilled' ? fallbackResults[1].value?.data?.episodes : [];
+                for (const ep of origEpisodes || []) {
+                    if (ep?.overview?.trim()) originalOverviewByEpisode.set(ep.episode_number, ep.overview);
+                }
+
+                return buildEpisodesFromSeason(seasonData, { enOverviewByEpisode, originalOverviewByEpisode });
+            } catch (_e) {
+                return buildEpisodesFromSeason(seasonData);
+            }
         }, { batchSize: 3, delayMs: 200 });
-        // rateLimitedMap returns null for failed items, filter them out before flattening
+
         const videos = seasonVideoChunks.filter(Boolean).flat();
 
         if (videos.length > 0) {
@@ -833,7 +838,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
                         const truncatedOverview = enOverview.length > MAX_LINGVA_TEXT_LEN
                             ? enOverview.substring(0, MAX_LINGVA_TEXT_LEN) + '...'
                             : enOverview;
-                        const transRes = await lingvaClient.get(`/api/v1/en/it/${encodeURIComponent(truncatedOverview)}`, { timeout: 2000 });
+                        const transRes = await lingvaClient.get(`/api/v1/en/it/${encodeURIComponent(truncatedOverview)}`, { timeout: 1500 });
                         if (transRes.data?.translation) {
                             data.overview = transRes.data.translation;
                         } else {
