@@ -109,6 +109,10 @@ function sanitizeCatalogMeta(item, shouldApplyEpisodeBadge = false, imageKitId) 
     if (!item) return item;
 
     const badgeText = shouldApplyEpisodeBadge ? getEpisodeBadgeText(item) : null;
+
+    // In catalogHandler, item.poster is already a full TMDB URL (e.g., https://image.tmdb.org/t/p/w342/...)
+    // because it comes from fetchTmdbCatalog. 
+    // ImageKit expects the full path after the ID.
     const poster = (typeof item.poster === 'string' && item.poster.length > 0)
         ? getImageKitUrl(item.poster, badgeText, imageKitId)
         : item.poster;

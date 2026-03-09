@@ -27,12 +27,25 @@ function getImageKitUrl(imageUrl, text, imageKitId) {
         return imageUrl;
     }
 
-    const encodedSource = encodeURIComponent(Buffer.from(imageUrl).toString('base64'));
-    const hasBadgeText = typeof text === 'string' && text.length > 0;
-    const transformations = hasBadgeText
-        ? `tr=w-300,h-450,l-text,ie-${Buffer.from(text).toString('base64').replace(/=/g, '%3D')},co-FFFFFF,bg-000000,pa-10,br-10`
-        : 'tr=w-300,h-450';
-    return `https://ik.imagekit.io/${resolvedImageKitId}/${encodedSource}?${transformations}`;
+    const cleanId = resolvedImageKitId.replace(/\/+$/, '');
+
+    let transformations = 'tr:w-300,h-450';
+    if (typeof text === 'string' && text.length > 0) {
+        // Use URL-safe Base64 for the text overlay content
+        const b64 = Buffer.from(text).toString('base64')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+        // Using r instead of radius, and manual positioning (lx-N10 = 10px from right)
+        // Mandatory l-end to close the layer correctly
+        // bg-00000066 = Black with 40% transparency (Balanced Look)
+        transformations += `,l-text,ie-${b64},co-FFFFFF,bg-00000066,pa-10,r-10,lx-N10,ly-10,l-end`;
+    }
+
+    // Append source URL as part of the path (as per user's "hooking" description)
+    // IMPORTANT for iyr3i5hd3: Use the full protocol (https://) without replacement.
+    const cleanSource = imageUrl.replace(/^\/+/, '');
+    return `https://ik.imagekit.io/${cleanId}/${transformations}/${cleanSource}`;
 }
 
 /**

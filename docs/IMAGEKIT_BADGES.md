@@ -1,48 +1,51 @@
-# ImageKit Badge Implementation Guide
+# ImageKit Badge Implementation Guide (ID iyr3i5hd3)
 
-This document explains the technical implementation of episode badges on posters using ImageKit's Layer API (`l-text`). It covers the "Master Hack" developed to achieve asymmetrical corner rounding (rounded left, square right) and absolute positioning.
+Questa guida documenta l'integrazione di ImageKit per generare badge dinamici (es. numeri di episodio) sulle locandine TMDB, ottimizzata per l'account `iyr3i5hd3`.
 
-## Core Logic: The "Master Hack"
+## Logica di Implementazione
 
-ImageKit transformations (`r` for rounding) normally apply to all four corners of a layer. To achieve a **rounded-left, square-right** look flush to the image edge, we use a combination of canvas locking and off-canvas masking.
+Per garantire massima compatibilità ed evitare errori "Invalid Transformation", utilizziamo una sintassi "blindata" basata su coordinate relative e chiusura esplicita dei layer.
 
-### 1. Canvas Locking (`tr:w-500`)
-We force the ImageKit canvas to 500px width.
-- **Why**: TMDB `w500` posters are precisely 500px wide. Locking the canvas ensures that `lx` (X-offset) and `pa` (padding) calculations are absolute and reliable. Without this, large padding can cause the canvas to expand, creating white bars.
+### 1. Proxying tramite Path
+Invece di usare parametri query, passiamo l'URL sorgente (TMDB) come parte del percorso URL di ImageKit.
+- **Formato**: `https://ik.imagekit.io/<ID>/tr:<TRANSFORMATIONS>/https://image.tmdb.org/...`
+- **Nota**: È fondamentale mantenere il protocollo `https://` completo per questo specifico account.
 
-### 2. Masking with Massive Padding (`pa-right-350`)
-We apply a standard pill-shape rounding (`r-50`) but hide the right half.
-- **How**: By setting a very large right padding (e.g., `350px`), the right edge of the badge background is pushed well beyond the 500px canvas limit.
-- **Result**: The right rounding happens "off-canvas" (is clipped), while the left rounding remains visible, creating a perfectly square edge at the image boundary.
+### 2. Posizionamento Relativo (`lx-N10`)
+Invece di affidarci al posizionamento automatico (`fo-top_right`), utilizziamo coordinate manuali relative al bordo destro.
+- **lx-N10**: Posiziona il layer a 10 pixel dal bordo destro (N = Negative offset from right).
+- **Vantaggio**: Il badge rimane perfettamente allineato a destra indipendentemente dalla lunghezza del testo ("Ep 1" vs "S10 Ep 22").
 
-### 3. Fixed Offset Positioning (`lx-160`)
-Instead of `oa-top_right` (which proved unreliable for remote origins like TMDB), we use a fixed `lx` offset.
-- **lx-160**: The badge background starts at 160px.
-- **Visible Text Area**: Effectively starts at `lx + padding-left` (160 + 35 = 195px) and ends at 500px. This provides ~300px of space, which is enough for long strings like "S 12 Ep 123".
+### 3. Trasparenza Bilanciata (`bg-00000066`)
+La trasparenza è ottenuta aggiungendo il canale Alpha (in esadecimale) al colore di sfondo.
+- **Canale 66**: Corrisponde a circa il **40% di opacità** (60% trasparente).
+- **Perché**: È la "via di mezzo" perfetta che garantisce leggibilità senza essere troppo scura o troppo evanescente.
 
-## Parameter Breakdown
+## Parametri Utilizzati
 
-| Parameter | Value | Meaning |
+| Parametro | Valore | Significato |
 | :--- | :--- | :--- |
-| `ie` | Base64 | The text content (must be Base64 encoded). |
-| `fs` | 45 | Font Size. 45-50px provides good readability on `w500` posters. |
-| `co` | FFFFFF | White text color. |
-| `bg` | 00000080 | **50% Semi-transparent Black**. Provides a premium, modern look. |
-| `pa` | 15_350_15_35 | `top_right_bottom_left`. Large right padding is key for the square edge. |
-| `r` | 50 | Corner radius. |
-| `lx` | 160 | X-coordinate for the layer start. |
-| `ly` | 0 | Y-coordinate (0 = flush to top). |
+| `l-text` | - | Inizia un layer di testo. |
+| `ie` | Base64 | Contenuto del testo (es. `UzEgRTU` = "S1 E5"). |
+| `co` | FFFFFF | Colore del testo (Bianco). |
+| `bg` | 00000066 | Sfondo nero con **40% alpha**. |
+| `pa` | 10 | Padding interno (10px). |
+| `r` | 10 | Bordi arrotondati (10px). |
+| `lx` | N10 | 10px dal bordo **destro**. |
+| `ly` | 10 | 10px dal bordo **superiore**. |
+| `l-end` | - | **Chiusura obbligatoria** del layer (evita errori "Invalid"). |
 
-## Integration in YACA
+## Codice di Riferimento
 
-### `src/utils/imageProcessor.js`
-Contains the `getImageKitUrl` function which generates the final transformation string. It uses `Buffer.from(text).toString('base64')` to ensure special characters (like spaces) don't break the URL.
+La logica principale risiede in `src/utils/imageProcessor.js`:
 
-### `src/handlers/catalogHandler.js`
-Implements the user-defined text rules:
-- **Rule**: If `season <= 1` or it's an absolute-numbered catalog (Kitsu/Anime) -> `Ep 12`.
-- **Rule**: Otherwise -> `S 2 Ep 5`.
+```javascript
+const b64 = Buffer.from(text).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+transformations += `,l-text,ie-${b64},co-FFFFFF,bg-00000066,pa-10,r-10,lx-N10,ly-10,l-end`;
+```
 
-## Limitations & Best Practices
-- **TMDB Mirrors**: TMDB does not block ImageKit, but ensure you use live `w500` URLs. `w185` or `original` would require different `lx` and `pa` offsets.
-- **Performance**: This method offloads all rendering to ImageKit CDN, protecting the server from OOM issues common with local `Sharp` processing.
+## Verifica
+Per testare la generazione degli URL senza avviare il server:
+```bash
+node tests/verifyImageKit.js
+```

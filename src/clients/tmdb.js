@@ -474,7 +474,7 @@ async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customPar
                     try {
                         await getTmdbMovieDetails(apiKey, item.id.toString(), t === 'series' ? 'tv' : 'movie');
                     } catch (_e) { /* background enrichment failure is non-blocking */ }
-                }, { batchSize: 1, delayMs: 600 }).catch(() => {});
+                }, { batchSize: 1, delayMs: 600 }).catch(() => { });
             });
         }
 
