@@ -1,4 +1,8 @@
-const IMAGEKIT_ID = process.env.IMAGEKIT_ID || 'yaca_placeholder';
+const DEFAULT_IMAGEKIT_ID = process.env.IMAGEKIT_ID || 'yaca_placeholder';
+
+function resolveImageKitId(imageKitId) {
+    return imageKitId || process.env.IMAGEKIT_ID || DEFAULT_IMAGEKIT_ID;
+}
 
 /**
  * Genera un URL di sfocatura delegando a wsrv.nl (proxy esterno gratuito).
@@ -11,15 +15,23 @@ function getBlurredImageUrl(imageUrl) {
  * Costruisce un URL ImageKit stateless per un poster remoto.
  * Il poster sorgente viene codificato nell'URL e il badge è applicato via trasformazioni CDN.
  */
-function getImageKitUrl(imageUrl, text) {
-    if (!IMAGEKIT_ID || IMAGEKIT_ID === 'yaca_placeholder' || !imageUrl || !text) {
+function getImageKitUrl(imageUrl, text, imageKitId) {
+    const resolvedImageKitId = resolveImageKitId(imageKitId);
+    if (
+        !resolvedImageKitId ||
+        resolvedImageKitId === 'yaca_placeholder' ||
+        typeof imageUrl !== 'string' ||
+        imageUrl.length === 0 ||
+        typeof text !== 'string' ||
+        text.length === 0
+    ) {
         return imageUrl;
     }
 
     const encodedSource = encodeURIComponent(Buffer.from(imageUrl).toString('base64'));
     const encodedText = Buffer.from(text).toString('base64').replace(/=/g, '%3D');
     const transformations = `tr=l-text,ie-${encodedText},co-FFFFFF,bg-000000,pa-10,br-10`;
-    return `https://ik.imagekit.io/${IMAGEKIT_ID}/${encodedSource}?${transformations}`;
+    return `https://ik.imagekit.io/${resolvedImageKitId}/${encodedSource}?${transformations}`;
 }
 
 /**
@@ -30,8 +42,8 @@ function getImageKitUrl(imageUrl, text) {
  *
  * @returns {string|null} URL ImageKit con badge, oppure null se ImageKit non è configurato
  */
-function addBadgeToImage(imageUrl, badgeText) {
-    const ikUrl = getImageKitUrl(imageUrl, badgeText);
+function addBadgeToImage(imageUrl, badgeText, imageKitId) {
+    const ikUrl = getImageKitUrl(imageUrl, badgeText, imageKitId);
 
     // Se non abbiamo ImageKitID, restituiamo null (il chiamante farà fallback all'URL originale)
     if (ikUrl === imageUrl) return null;

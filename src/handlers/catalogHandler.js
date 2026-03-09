@@ -109,11 +109,11 @@ function getEpisodeBadgeText(item) {
         : `S ${season} Ep ${episode}`;
 }
 
-function sanitizeCatalogMeta(item, shouldApplyEpisodeBadge = false) {
+function sanitizeCatalogMeta(item, shouldApplyEpisodeBadge = false, imageKitId) {
     if (!item) return item;
 
     const badgeText = shouldApplyEpisodeBadge ? getEpisodeBadgeText(item) : null;
-    const poster = badgeText ? (addBadgeToImage(item.poster, badgeText) || item.poster) : item.poster;
+    const poster = badgeText ? (addBadgeToImage(item.poster, badgeText, imageKitId) || item.poster) : item.poster;
 
     return {
         id: item.id,
@@ -134,6 +134,7 @@ async function finalizeCatalog(results, id, type, hostUrl, userConfig) {
     if (!Array.isArray(results)) return { metas: [] };
 
     const tmdbApiKey = userConfig?.apiKeys?.tmdb || process.env.TMDB_API_KEY;
+    const imageKitId = userConfig?.apiKeys?.imagekit || process.env.IMAGEKIT_ID;
     const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
     const shouldApplyEpisodeBadge = type === 'series' && EPISODE_CATALOG_IDS.has(baseId);
 
@@ -142,7 +143,7 @@ async function finalizeCatalog(results, id, type, hostUrl, userConfig) {
     }
 
     return {
-        metas: results.map(item => sanitizeCatalogMeta(item, shouldApplyEpisodeBadge))
+        metas: results.map(item => sanitizeCatalogMeta(item, shouldApplyEpisodeBadge, imageKitId))
     };
 }
 

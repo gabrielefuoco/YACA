@@ -26,6 +26,14 @@ describe('addBadgeToImage', () => {
         expect(result).toBeNull();
     });
 
+    it('should return null without throwing when poster URL is null', () => {
+        process.env.IMAGEKIT_ID = 'test_ik_id';
+        jest.resetModules();
+        const { addBadgeToImage: freshAdd } = require('../src/utils/imageProcessor');
+        expect(() => freshAdd(null, 'E1')).not.toThrow();
+        expect(freshAdd(null, 'E1')).toBeNull();
+    });
+
     it('should embed badge text in ImageKit URL', () => {
         process.env.IMAGEKIT_ID = 'test_ik_id';
         jest.resetModules();
@@ -44,6 +52,15 @@ describe('addBadgeToImage', () => {
         const result = freshAdd(sourceUrl, 'Conclusa');
         expect(result).toContain(encodeURIComponent(Buffer.from(sourceUrl).toString('base64')));
         expect(result).toContain(`ie-${encodeBadgeText('Conclusa')}`);
+    });
+
+    it('should use the explicit ImageKit ID override when provided', () => {
+        process.env.IMAGEKIT_ID = 'env_ik_id';
+        jest.resetModules();
+        const { addBadgeToImage: freshAdd } = require('../src/utils/imageProcessor');
+        const result = freshAdd('https://image.tmdb.org/t/p/w500/test.jpg', 'E5', 'override_ik_id');
+        expect(result).toContain('override_ik_id');
+        expect(result).not.toContain('env_ik_id');
     });
 });
 

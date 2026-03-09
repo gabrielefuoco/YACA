@@ -54,6 +54,7 @@ jest.mock('../src/utils/imageProcessor', () => ({
 const { fetchTmdbCatalog } = require('../src/clients/tmdb');
 const { getTmdbMovieDetails } = require('../src/clients/tmdb');
 const { getPresets } = require('../src/data/presets');
+const { addBadgeToImage } = require('../src/utils/imageProcessor');
 const { catalogHandler } = require('../src/handlers/catalogHandler');
 
 describe('applyEpisodeBadge host URL handling', () => {
@@ -224,6 +225,52 @@ describe('applyEpisodeBadge host URL handling', () => {
 
         expect(getTmdbMovieDetails).toHaveBeenNthCalledWith(1, 'tmdb_key', '101', 'tv', { cacheOnly: true });
         expect(getTmdbMovieDetails).toHaveBeenNthCalledWith(2, 'tmdb_key', '101', 'tv');
+    });
+
+    it('should keep the original poster when a badgeable item has no poster', async () => {
+        fetchTmdbCatalog.mockResolvedValueOnce([
+            {
+                id: 'tmdb:102',
+                type: 'series',
+                name: 'Posterless Series',
+                poster: null
+            }
+        ]);
+        getTmdbMovieDetails.mockResolvedValueOnce({
+            status: 'Returning Series',
+            next_episode_to_air: { season_number: 1, episode_number: 2 }
+        });
+
+        const result = await catalogHandler({
+            type: 'series',
+            id: 'yaca_preset_preset_new_series_eps',
+            extra: { skip: 0 }
+        }, userConfig, 'https://my-server.com');
+
+        expect(result.metas[0].poster).toBeNull();
+        expect(addBadgeToImage).not.toHaveBeenCalledWith(null, expect.any(String), expect.anything());
+    });
+
+    it('should pass the ImageKit ID from user config to badge generation', async () => {
+        const customUserConfig = {
+            ...userConfig,
+            apiKeys: {
+                ...userConfig.apiKeys,
+                imagekit: 'user_imagekit_id'
+            }
+        };
+
+        await catalogHandler({
+            type: 'series',
+            id: 'yaca_preset_preset_new_series_eps',
+            extra: { skip: 0 }
+        }, customUserConfig, 'https://my-server.com');
+
+        expect(addBadgeToImage).toHaveBeenCalledWith(
+            'https://image.tmdb.org/t/p/w500/test.jpg',
+            'Ep 5',
+            'user_imagekit_id'
+        );
     });
 
     afterEach(() => {
