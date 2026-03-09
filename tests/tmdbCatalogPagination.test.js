@@ -186,7 +186,7 @@ describe('fetchTmdbCatalog per-page cache', () => {
         expect(result[0]).toHaveProperty('poster');
     });
 
-    it('returns Light Mode items with genre_ids for deep pages even when disableLightMode is enabled', async () => {
+    it('returns Light Mode items with genre_ids for all pages including when disableLightMode is set', async () => {
         TmdbRequestCache.getWithStatus.mockResolvedValue({
             value: undefined,
             status: 'miss'

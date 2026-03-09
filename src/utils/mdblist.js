@@ -32,9 +32,9 @@ async function fetchMDBListItems(listId, apiKey, language, page = 1) {
 }
 
 /**
- * Analizza e formatta gli item MDBList in Light Mode (solo ID, nome, poster).
+ * Analizza e formatta gli item MDBList in Light Mode.
  * Non chiama getTmdbMetaDetails per evitare il collo di bottiglia N+1.
- * I dati base sono già inclusi nell'endpoint MDBList (con append_to_response=genre,poster).
+ * Restituisce: id, type, name, poster, description, releaseInfo, imdbRating, genre_ids.
  */
 async function parseMDBListItems(items, type, _tmdbApiKey, _language) {
     return items

@@ -416,8 +416,9 @@ function toStremioMetaItem(tmdbItem, type) {
  * di parallelizzare le pagine TMDB per riempire lo skip di Stremio.
  * Questa è la funzione interna senza cache.
  *
- * Tutte le pagine restituiscono "Light Mode" (solo ID, Titolo, Locandina, genre_ids)
- * per azzerare la latenza. L'arricchimento completo avviene in background.
+ * Tutte le pagine restituiscono "Light Mode" (ID, nome, poster, background, descrizione,
+ * releaseInfo, imdbRating, genre_ids) per azzerare la latenza.
+ * L'arricchimento completo avviene in background per le pagine principali.
  */
 async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customParams = {}, type = 'movie', pagesToFetch = 1, opts = {}) {
     const promises = [];
@@ -464,6 +465,8 @@ async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customPar
 
         // Background Sync Worker: scarica in background i metadati completi per le pagine
         // iniziali (non bloccante). Alla visita successiva i titoli avranno dati ricchi in cache.
+        // opts.lightMode è impostato dal chiamante per deep scroll pages dove l'enrichment
+        // in background non è necessario (l'utente sta solo scorrendo velocemente).
         if (!opts.lightMode && items.length > 0) {
             const apiKey = client.defaults.params.api_key;
             setImmediate(() => {

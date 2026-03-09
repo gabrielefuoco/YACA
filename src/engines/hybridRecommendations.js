@@ -821,8 +821,8 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     setImmediate(() => {
         rateLimitedMap(pageIds, async (tmdbId) => {
             try {
-                const types = mediaType === 'movie' ? 'movie' : 'tv';
-                await tmdb.getTmdbMovieDetails(tmdbApiKey, tmdbId.toString(), types);
+                const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
+                await tmdb.getTmdbMovieDetails(tmdbApiKey, tmdbId.toString(), tmdbType);
             } catch (_e) { /* background enrichment failure is non-blocking */ }
         }, { batchSize: 1, delayMs: 600 }).catch(() => {});
     });
