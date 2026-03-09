@@ -17,7 +17,8 @@ function getImageKitUrl(imageUrl, text) {
     }
 
     const encodedSource = encodeURIComponent(Buffer.from(imageUrl).toString('base64'));
-    const transformations = `tr=l-text,i-${encodeURIComponent(text)},co-FFFFFF,bg-000000,pa-10,br-10`;
+    const encodedText = Buffer.from(text).toString('base64').replace(/=/g, '%3D');
+    const transformations = `tr=l-text,ie-${encodedText},co-FFFFFF,bg-000000,pa-10,br-10`;
     return `https://ik.imagekit.io/${IMAGEKIT_ID}/${encodedSource}?${transformations}`;
 }
 

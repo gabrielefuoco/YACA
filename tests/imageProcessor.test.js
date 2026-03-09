@@ -1,4 +1,5 @@
 const { addBadgeToImage, getBlurredImageUrl, getImageKitUrl } = require('../src/utils/imageProcessor');
+const encodeBadgeText = (text) => Buffer.from(text).toString('base64').replace(/=/g, '%3D');
 
 describe('addBadgeToImage', () => {
     // Save and restore env
@@ -32,7 +33,7 @@ describe('addBadgeToImage', () => {
         const result = freshAdd('https://image.tmdb.org/t/p/w500/test.jpg', 'S2E10');
         expect(typeof result).toBe('string');
         expect(result).toContain('l-text');
-        expect(result).toContain('i-S2E10');
+        expect(result).toContain(`ie-${encodeBadgeText('S2E10')}`);
     });
 
     it('should encode the original poster URL as base64 in the ImageKit path', () => {
@@ -42,6 +43,7 @@ describe('addBadgeToImage', () => {
         const sourceUrl = 'https://image.tmdb.org/t/p/w500/test.jpg';
         const result = freshAdd(sourceUrl, 'Conclusa');
         expect(result).toContain(encodeURIComponent(Buffer.from(sourceUrl).toString('base64')));
+        expect(result).toContain(`ie-${encodeBadgeText('Conclusa')}`);
     });
 });
 

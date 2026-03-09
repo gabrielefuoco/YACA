@@ -200,6 +200,32 @@ describe('applyEpisodeBadge host URL handling', () => {
         expect(result.metas[0].poster).toContain(encodeURIComponent('Conclusa'));
     });
 
+    it('should trigger a background TMDB warmup when cache hydration misses', async () => {
+        fetchTmdbCatalog.mockResolvedValueOnce([
+            {
+                id: 'tmdb:101',
+                type: 'series',
+                name: 'Missed Cache Series',
+                poster: 'https://image.tmdb.org/t/p/w500/miss.jpg'
+            }
+        ]);
+        getTmdbMovieDetails
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce({
+                status: 'Returning Series',
+                last_episode_to_air: { season_number: 1, episode_number: 8 }
+            });
+
+        await catalogHandler({
+            type: 'series',
+            id: 'yaca_preset_preset_new_series_eps',
+            extra: { skip: 0 }
+        }, userConfig, 'https://my-server.com');
+
+        expect(getTmdbMovieDetails).toHaveBeenNthCalledWith(1, 'tmdb_key', '101', 'tv', { cacheOnly: true });
+        expect(getTmdbMovieDetails).toHaveBeenNthCalledWith(2, 'tmdb_key', '101', 'tv');
+    });
+
     afterEach(() => {
         delete process.env.HOST_URL;
     });

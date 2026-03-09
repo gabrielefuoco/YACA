@@ -26,6 +26,7 @@ const STREAMING_PROVIDERS = { "netflix": 8, "amazon": 119, "prime": 119, "disney
 const FORCED_FAST_CATALOGS = new Set(FORCED_FAST_CATALOG_IDS);
 const FORCED_FAST_PRESETS = new Set(FORCED_FAST_PRESET_IDS);
 const FORCED_SLOW_PRESETS = new Set(FORCED_SLOW_PRESET_IDS);
+const MAX_BADGE_CACHE_HYDRATION_ITEMS = 60;
 
 // Cataloghi che mostrano episodi recenti (badge numero episodio sul poster)
 const EPISODE_CATALOG_IDS = new Set([
@@ -49,7 +50,7 @@ async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
     if (!tmdbApiKey || !Array.isArray(metas) || metas.length === 0) return;
 
     await Promise.all(
-        metas.slice(0, 60).map(async (item) => {
+        metas.slice(0, MAX_BADGE_CACHE_HYDRATION_ITEMS).map(async (item) => {
             if (!item?.id || item.rawTMDB || !item.id.startsWith('tmdb:')) return;
 
             try {
@@ -60,7 +61,9 @@ async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
                     return;
                 }
 
-                getTmdbMovieDetails(tmdbApiKey, tmdbId, 'tv').catch(() => { });
+                getTmdbMovieDetails(tmdbApiKey, tmdbId, 'tv').catch((err) => {
+                    console.debug(`[BadgeBackground] Cache warmup fallita per ${tmdbId}: ${err?.message || 'Unknown error'}`);
+                });
             } catch (_err) {
                 // Il recupero badge è best-effort: in caso di errore manteniamo il poster originale.
             }
