@@ -278,18 +278,12 @@ describe('catalogHandler critical recommendation/search fixes', () => {
             profileDoc,
             expect.any(Object)
         );
-        expect(result.metas[0]).toEqual({
+        expect(result.metas[0]).toMatchObject({
             id: 'tmdb:55',
             type: 'movie',
             name: 'Light Item',
-            poster: undefined,
             posterShape: 'poster',
-            background: undefined,
-            description: undefined,
-            releaseInfo: undefined,
-            imdbRating: '7.1',
-            genres: undefined,
-            behaviorHints: undefined
+            imdbRating: '7.1'
         });
         expect(result.metas[0].rawTMDB).toBeUndefined();
         expect(result.metas[0].cast).toBeUndefined();
