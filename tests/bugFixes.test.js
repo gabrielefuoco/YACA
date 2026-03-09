@@ -413,13 +413,14 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
     });
 
     it('should not classify western animation as anime', async () => {
-        // Simpsons-like: Animation genre but no anime keyword
+        // Simpsons-like: Animation genre but no anime keyword — _isAnime is false
         const mockMeta = {
             id: 'tt100',
             name: 'The Simpsons',
             type: 'series',
             genre_ids: [16, 35], // Animation + Comedy
             genres: ['Animation', 'Comedy'],
+            _isAnime: false,
             _keywordNames: ['comedy', 'satire', 'family'],
             links: [
                 { name: 'comedy', category: 'Tema', url: 'stremio://search?search=comedy' },
@@ -453,6 +454,9 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
 
         // Should NOT have tried to look up Kitsu ID
         expect(kitsuMock.getKitsuIdFromTmdbId).not.toHaveBeenCalled();
+        // Internal properties should be cleaned before sending to Stremio
+        expect(result.meta._keywordNames).toBeUndefined();
+        expect(result.meta._isAnime).toBeUndefined();
     });
 
     it('should classify actual anime with anime keyword', async () => {
@@ -462,6 +466,7 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
             type: 'series',
             genre_ids: [16, 10759], // Animation + Action & Adventure
             genres: ['Animation', 'Action & Adventure'],
+            _isAnime: true,
             _keywordNames: ['anime', 'ninja', 'shounen', 'manga'],
             links: [
                 { name: 'ninja', category: 'Tema', url: 'stremio://search?search=ninja' }
@@ -500,6 +505,9 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
         expect(result.meta.videos).toEqual([
             { id: 'kitsu:123:1:1', title: 'Episode 1', season: 1, episode: 1 }
         ]);
+        // Internal properties should be cleaned before sending to Stremio
+        expect(result.meta._keywordNames).toBeUndefined();
+        expect(result.meta._isAnime).toBeUndefined();
     });
 
     it('should not make duplicate getTmdbMetaDetails calls', async () => {
@@ -577,13 +585,14 @@ describe('Bug Fix: Anime keyword detection uses raw keywords, not sliced links',
     });
 
     it('should detect anime even when anime keyword is beyond the first 5 link slots', async () => {
-        // Simulate a series where 'anime' is keyword #7 — outside the slice(0,5) for links
+        // Simulate a series where 'anime' is keyword #7 — _isAnime is detected early in getTmdbMetaDetails
         const mockMeta = {
             id: 'tt300',
             name: 'One Piece',
             type: 'series',
             genre_ids: [16, 10759],
             genres: ['Animation', 'Action & Adventure'],
+            _isAnime: true,
             // _keywordNames includes ALL keywords, not just first 5
             _keywordNames: ['pirate', 'ocean', 'treasure', 'friendship', 'adventure', 'battle', 'anime'],
             // links only has first 5 (anime is NOT in links due to slice)
@@ -622,11 +631,14 @@ describe('Bug Fix: Anime keyword detection uses raw keywords, not sliced links',
             { apiKeys: { tmdb: 'key' } }
         );
 
-        // Should have detected anime via _keywordNames (not links)
+        // Should have detected anime via _isAnime flag (set by getTmdbMetaDetails)
         expect(kitsuMock.getKitsuIdFromTmdbId).toHaveBeenCalledWith('300', 'series');
         expect(result.meta.videos).toEqual([
             { id: 'kitsu:456:1:1', title: 'Romance Dawn', season: 1, episode: 1 }
         ]);
+        // Internal properties should be cleaned before sending to Stremio
+        expect(result.meta._keywordNames).toBeUndefined();
+        expect(result.meta._isAnime).toBeUndefined();
     });
 });
 

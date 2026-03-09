@@ -917,8 +917,15 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
         meta._keywordNames = rawKwList.map(k => k.name.toLowerCase());
     }
 
+    // Early anime detection: skip expensive TMDB episode fetching for anime series
+    const isAnimation = data.genres && data.genres.some(g => g.id === 16);
+    const hasAnimeKeyword = rawKwList && rawKwList.some(k => k.name.toLowerCase().includes('anime'));
+    const isAnime = isAnimation && hasAnimeKeyword;
+    meta._isAnime = isAnime;
+
     // Se è una serie TV, scarica gli episodi per popolare la griglia in Stremio
-    if (type === 'series' && data.number_of_seasons) {
+    // Skip episode fetching for anime — metaHandler will use Kitsu episodes instead
+    if (type === 'series' && data.number_of_seasons && !isAnime) {
         meta.videos = await fetchTmdbEpisodes(
             client,
             tmdbId,

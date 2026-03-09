@@ -77,7 +77,21 @@ async function metaHandler(args, userConfig) {
                             try {
                                 const bgRatings = imdbIdForRatings ? await fetchMdblistRatings(imdbIdForRatings, mdblistApiKey).catch(() => ({})) : {};
                                 const bgMeta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, bgRatings || {});
-                                if (bgMeta) await finalMetaCache.set(cacheKey, bgMeta);
+                                if (bgMeta) {
+                                    // Anime series: fetch Kitsu episodes in background too
+                                    if (bgMeta._isAnime && type === 'series') {
+                                        const kitsuId = await getKitsuIdFromTmdbId(tmdbId, 'series');
+                                        if (kitsuId) {
+                                            const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
+                                            if (kitsuEpisodes && kitsuEpisodes.length > 0) {
+                                                bgMeta.videos = kitsuEpisodes;
+                                            }
+                                        }
+                                    }
+                                    delete bgMeta._keywordNames;
+                                    delete bgMeta._isAnime;
+                                    await finalMetaCache.set(cacheKey, bgMeta);
+                                }
                             } catch (_e) { /* silent background revalidation */ }
                         })();
                     } else {
@@ -88,22 +102,22 @@ async function metaHandler(args, userConfig) {
 
                         meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, ratings || {});
                         if (meta) {
-                            // Logica Ibrida Anime: usa keyword 'anime' da TMDB per distinguere dai cartoni occidentali
-                            const isAnimation = meta.genre_ids?.includes(16);
-                            const hasAnimeKeyword = Array.isArray(meta._keywordNames) && meta._keywordNames.some(k => k.includes('anime'));
-                            const isAnime = isAnimation && hasAnimeKeyword;
-
-                            if (isAnime && type === 'series') {
+                            // Anime series: fetch Kitsu episodes (TMDB episodes were skipped)
+                            if (meta._isAnime && type === 'series') {
                                 const kitsuId = await getKitsuIdFromTmdbId(tmdbId, 'series');
                                 if (kitsuId) {
                                     console.log(`[HybridAnime] Trovato mapping Kitsu ${kitsuId} per TMDB ${tmdbId}. Carico episodi...`);
                                     const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
                                     if (kitsuEpisodes && kitsuEpisodes.length > 0) {
                                         meta.videos = kitsuEpisodes;
-                                        // Mantieni l'id originale TMDB per compatibilità Stremio ma usa i video Kitsu
                                     }
                                 }
                             }
+
+                            // Clean internal properties before caching/sending to Stremio
+                            delete meta._keywordNames;
+                            delete meta._isAnime;
+
                             await finalMetaCache.set(cacheKey, meta);
                         }
                     }
