@@ -787,11 +787,45 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     const pageIds = recommendationIds.slice(skip, skip + ITEMS_PER_PAGE);
     if (pageIds.length === 0) return [];
 
+    // Light Mode: fetch basic metadata from TMDB (no heavy details/credits/keywords).
+    // Uses simple /movie/{id} or /tv/{id} endpoint instead of getTmdbMetaDetails.
+    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
     const results = await rateLimitedMap(
         pageIds,
-        (tmdbId) => tmdb.getTmdbMetaDetails(tmdbApiKey, `tmdb:${tmdbId}`, mediaType),
+        async (tmdbId) => {
+            try {
+                const endpoint = mediaType === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
+                const res = await tmdbClient.get(endpoint);
+                const item = res.data;
+                if (!item) return null;
+                return {
+                    id: `tmdb:${tmdbId}`,
+                    type: mediaType === 'movie' ? 'movie' : 'series',
+                    name: item.title || item.name || 'Unknown',
+                    poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
+                    posterShape: 'poster',
+                    background: item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null,
+                    description: item.overview || '',
+                    releaseInfo: (item.release_date || item.first_air_date || '').substring(0, 4),
+                    imdbRating: item.vote_average ? item.vote_average.toFixed(1) : undefined,
+                    genre_ids: item.genre_ids || (item.genres ? item.genres.map(g => g.id) : [])
+                };
+            } catch (_e) {
+                return null;
+            }
+        },
         { batchSize: 5, delayMs: 50 }
     );
+
+    // Background Sync: scarica metadati completi per la cache (non bloccante)
+    setImmediate(() => {
+        rateLimitedMap(pageIds, async (tmdbId) => {
+            try {
+                const types = mediaType === 'movie' ? 'movie' : 'tv';
+                await tmdb.getTmdbMovieDetails(tmdbApiKey, tmdbId.toString(), types);
+            } catch (_e) { /* background enrichment failure is non-blocking */ }
+        }, { batchSize: 1, delayMs: 600 }).catch(() => {});
+    });
 
     return results.filter(Boolean);
 }

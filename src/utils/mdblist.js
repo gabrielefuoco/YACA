@@ -1,5 +1,4 @@
 const { createAxiosInstance } = require('../utils/httpClient');
-const { getTmdbMetaDetails } = require("../clients/tmdb");
 const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
 const CacheManager = require("../cache/CacheManager");
 
@@ -33,31 +32,28 @@ async function fetchMDBListItems(listId, apiKey, language, page = 1) {
 }
 
 /**
- * Analizza e formatta gli item MDBList recuperando metadati estesi da TMDB in lotti (rate-limited).
+ * Analizza e formatta gli item MDBList in Light Mode (solo ID, nome, poster).
+ * Non chiama getTmdbMetaDetails per evitare il collo di bottiglia N+1.
+ * I dati base sono già inclusi nell'endpoint MDBList (con append_to_response=genre,poster).
  */
-async function parseMDBListItems(items, type, tmdbApiKey, _language) {
-    const filteredItemsByType = items
+async function parseMDBListItems(items, type, _tmdbApiKey, _language) {
+    return items
         .filter(item => {
             if (type === "series") return item.mediatype === "show";
             if (type === "movie") return item.mediatype === "movie";
             return false;
         })
         .map(item => ({
-            id: item.tmdbid ? `tmdb:${item.tmdbid}` : `tmdb:${item.id}`,
-            type: type
+            id: item.imdbid ? item.imdbid : (item.tmdbid ? `tmdb:${item.tmdbid}` : `tmdb:${item.id}`),
+            type: type,
+            name: item.title || 'Titolo sconosciuto',
+            poster: item.poster ? `https://image.tmdb.org/t/p/w342${item.poster}` : null,
+            posterShape: 'poster',
+            description: item.description || item.plot || '',
+            releaseInfo: item.year ? item.year.toString() : '',
+            imdbRating: item.imdbrating ? parseFloat(item.imdbrating).toFixed(1) : undefined,
+            genre_ids: item.genre_ids || []
         }));
-
-    // Use rate-limited parallel processing instead of sequential loop
-    const metas = await rateLimitedMapFiltered(filteredItemsByType, async (item) => {
-        try {
-            return await getTmdbMetaDetails(tmdbApiKey, item.id, item.type);
-        } catch (err) {
-            console.error(`Error fetching TMDB meta for MDBList item ${item.id}:`, err.message);
-            return null;
-        }
-    }, { batchSize: 5, delayMs: 200 });
-
-    return metas;
 }
 
 /**
