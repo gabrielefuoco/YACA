@@ -5,6 +5,7 @@ const { fetchTraktCatalog } = require('../clients/trakt');
 const { fetchMDBListItems, parseMDBListItems } = require('../utils/mdblist');
 const { routeLiveStremioSearch } = require('../ai/router');
 const { getHybridCatalog } = require('../engines/hybridRecommendations');
+const { addBadgeToImage } = require('../utils/imageProcessor');
 const UserList = require('../db/models/UserList');
 const TasteProfile = require('../db/models/TasteProfile');
 const UserActivity = require('../db/models/UserActivity');
@@ -18,10 +19,7 @@ const {
     PAGES_PER_REQUEST,
     FORCED_FAST_CATALOG_IDS,
     FORCED_FAST_PRESET_IDS,
-    FORCED_SLOW_PRESET_IDS,
-    ENRICHMENT_BUDGET,
-    ENRICHMENT_CHUNK_SIZE,
-    ENRICHMENT_DELAY_MS
+    FORCED_SLOW_PRESET_IDS
 } = require('../config');
 
 const STREAMING_PROVIDERS = { "netflix": 8, "amazon": 119, "prime": 119, "disney": 337, "apple": 350 };
@@ -51,8 +49,7 @@ function buildDnaFiltersForProfile(userConfig, profileId) {
  * Aggiunge il badge con numero episodio ai poster per cataloghi di episodi recenti.
  * Se mancano i dati degli episodi, triggera un caricamento in background.
  */
-async function applyEpisodeBadge(metas, hostUrl, tmdbApiKey) {
-    const host = hostUrl || process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:7000';
+async function applyEpisodeBadge(metas, tmdbApiKey) {
     const now = new Date();
 
     for (const meta of metas) {
@@ -94,7 +91,11 @@ async function applyEpisodeBadge(metas, hostUrl, tmdbApiKey) {
             badgeText = `S ${season} Ep ${episode}`;
         }
 
-        meta.poster = `${host}/badge/poster.jpg?url=${encodeURIComponent(meta.poster)}&text=${encodeURIComponent(badgeText)}`;
+        const badgedPoster = addBadgeToImage(meta.poster, badgeText);
+        if (badgedPoster) {
+            meta.poster = badgedPoster;
+        }
+        // Se ImageKit non è configurato, manteniamo il poster originale senza interrompere il catalogo.
     }
 }
 
@@ -106,48 +107,33 @@ async function finalizeCatalog(results, id, type, hostUrl, userConfig) {
 
     if (type === 'series' && EPISODE_CATALOG_IDS.has(baseId)) {
         const clonedResults = results.map(m => ({ ...m }));
-        await applyEpisodeBadge(clonedResults, hostUrl, tmdbApiKey);
+        await applyEpisodeBadge(clonedResults, tmdbApiKey);
         return { metas: clonedResults };
     }
 
     return { metas: results };
 }
 
-/**
- * Funzione di "Enrichment" progressivo (Fase 9).
- * Scarica asincronamente i dettagli TMDB per i primi X elementi della pagina se mancano in cache.
- */
-async function enrichResultsWithDeepMetadata(metas, tmdbApiKey, type) {
-    if (!metas || metas.length === 0 || !tmdbApiKey) return;
+async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
+    if (!tmdbApiKey || !Array.isArray(metas) || metas.length === 0) return;
 
-    // Prendiamo solo i primi 40-60 (quelli che influenzano il sorting della prima pagina)
-    const candidates = metas.slice(0, 60);
-    let budget = ENRICHMENT_BUDGET;
-
-    for (const item of candidates) {
-        if (budget <= 0) break;
-
-        // Se l'item non ha già i dettagli (keywords/cast), proviamo a scaricarli
-        // getTmdbMovieDetails controlla internamente la cache MongoDB (L2)
-        if (!item.keywords || !item.cast) {
-            const tmdbId = item.id.toString().replace('tmdb:', '').trim();
-
-            // Usiamo un piccolo delay per non bloccare l'event loop e per distanziare le chiamate API
-            await new Promise(resolve => setTimeout(resolve, ENRICHMENT_DELAY_MS));
-
+    const tmdbType = type === 'series' ? 'tv' : 'movie';
+    await Promise.all(
+        metas.slice(0, 60).map(async (item) => {
+            if (!item || !item.id || item.rawTMDB || (item.cast && item.keywords)) return;
             try {
-                const details = await getTmdbMovieDetails(tmdbApiKey, tmdbId, type === 'series' ? 'tv' : 'movie');
-                if (details) {
-                    // Update dell'oggetto in memoria (per la prossima iterazione dello scorer)
-                    item.keywords = details.keywords?.keywords || details.keywords?.results || [];
-                    item.cast = details.credits?.cast || [];
-                    budget--;
-                }
-            } catch (err) {
-                console.error(`[Enrichment] Errore per ${tmdbId}:`, err.message);
+                const tmdbId = normalizeContentId(item.id);
+                const cachedDetails = await getTmdbMovieDetails(tmdbApiKey, tmdbId, tmdbType, { cacheOnly: true });
+                if (!cachedDetails) return;
+
+                item.rawTMDB = cachedDetails;
+                item.keywords = cachedDetails.keywords?.keywords || cachedDetails.keywords?.results || [];
+                item.cast = cachedDetails.credits?.cast || [];
+            } catch (_err) {
+                // Il recupero cache è best-effort: in caso di errore si continua con i dati Light Mode.
             }
-        }
-    }
+        })
+    );
 }
 
 /**
@@ -553,6 +539,7 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
 
     // Re-ranking tramite ProfileScorer se il profilo esiste
     if (profileDoc) {
+        await hydrateResultsFromLocalDetailsCache(finalItems, tmdbApiKey, type);
         for (const item of finalItems) {
             // Se non abbiamo i dati raw (estesi), usiamo quelli disponibili per lo scoring
             const affinity = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profileDoc, {
@@ -566,9 +553,6 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     } else {
         finalItems.sort((a, b) => b.weight - a.weight);
     }
-
-    // Fase 9: Enrichment Progressivo in background (non blocca la risposta)
-    enrichResultsWithDeepMetadata(finalItems, tmdbApiKey, type);
 
     // Ritorna una pagina intera basata sullo skip richiesto
     return finalItems.slice(skip, skip + 20);
@@ -747,7 +731,6 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
 
             results = combinedResults.slice(0, 40);
-            enrichResultsWithDeepMetadata(results, tmdbApiKey, contentType);
             return finalizeCatalog(results, id, type, hostUrl);
         }
 
@@ -802,7 +785,6 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 if (combinedResults.length >= 20) break;
             }
             results = combinedResults.slice(0, 20);
-            enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
             return await finalizeCatalog(results, id, type, hostUrl, userConfig);
         }
 
@@ -844,7 +826,6 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 if (combinedResults.length >= 20 || merged.length === 0 || !userConfig?.config?.hideWatched) break;
             }
             results = combinedResults.slice(0, 40);
-            enrichResultsWithDeepMetadata(results, tmdbApiKey, contentType);
             return await finalizeCatalog(results, id, type, hostUrl, userConfig);
         }
 
@@ -895,9 +876,6 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 }
 
                 results = combinedResults.slice(0, 20); // Restituiamo esattamente una pagina
-                if (!baseId.includes('ratings')) {
-                    enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
-                }
                 return await finalizeCatalog(results, id, type, hostUrl, userConfig);
             }
         }
@@ -931,7 +909,6 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
 
             results = combinedResults.slice(0, 20);
-            enrichResultsWithDeepMetadata(results, tmdbApiKey, type);
             return await finalizeCatalog(results, id, type, hostUrl, userConfig);
         }
 
@@ -1033,6 +1010,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             // PERSONALIZZAZIONE FINALE (RANKING)
             // ==========================================
             if (profileDoc && results.length > 0) {
+                await hydrateResultsFromLocalDetailsCache(results, tmdbApiKey, type);
                 // Cerca pesi specifici del preset se presenti
                 let presetWeights = { tmdb: 1.0, trakt: 1.0 };
                 if (id.startsWith('yaca_preset_')) {
