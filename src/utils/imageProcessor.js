@@ -1,7 +1,7 @@
 const DEFAULT_IMAGEKIT_ID = process.env.IMAGEKIT_ID || 'yaca_placeholder';
 
 function resolveImageKitId(imageKitId) {
-    return imageKitId || process.env.IMAGEKIT_ID || DEFAULT_IMAGEKIT_ID;
+    return imageKitId || DEFAULT_IMAGEKIT_ID;
 }
 
 /**

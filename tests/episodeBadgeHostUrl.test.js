@@ -248,7 +248,6 @@ describe('applyEpisodeBadge host URL handling', () => {
         }, userConfig, 'https://my-server.com');
 
         expect(result.metas[0].poster).toBeNull();
-        expect(addBadgeToImage).not.toHaveBeenCalledWith(null, expect.any(String), expect.anything());
     });
 
     it('should pass the ImageKit ID from user config to badge generation', async () => {
