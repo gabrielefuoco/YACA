@@ -24,7 +24,9 @@ jest.mock('../src/ai/router', () => ({
 }));
 
 jest.mock('../src/utils/imageProcessor', () => ({
-    addBadgeToImage: jest.fn((url, text) => `https://ik.imagekit.io/mock-id/badge/${encodeURIComponent(text)}/${encodeURIComponent(url)}`)
+    getImageKitUrl: jest.fn((url, text) => text
+        ? `https://ik.imagekit.io/mock-id/badge/${encodeURIComponent(text)}/${encodeURIComponent(url)}`
+        : `https://ik.imagekit.io/mock-id/plain/${encodeURIComponent(url)}`)
 }));
 
 jest.mock('../src/engines/hybridRecommendations', () => ({

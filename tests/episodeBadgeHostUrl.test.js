@@ -48,13 +48,18 @@ jest.mock('../src/data/presets', () => ({
 }));
 
 jest.mock('../src/utils/imageProcessor', () => ({
-    addBadgeToImage: jest.fn((url, text) => `https://ik.imagekit.io/test-id/badge/${encodeURIComponent(text)}/${encodeURIComponent(url)}`)
+    getImageKitUrl: jest.fn((url, text, imageKitId = 'test-id') => {
+        if (!url) return url;
+        return text
+            ? `https://ik.imagekit.io/${imageKitId}/badge/${encodeURIComponent(text)}/${encodeURIComponent(url)}?tr=w-300,h-450,l-text`
+            : `https://ik.imagekit.io/${imageKitId}/plain/${encodeURIComponent(url)}?tr=w-300,h-450`;
+    })
 }));
 
 const { fetchTmdbCatalog } = require('../src/clients/tmdb');
 const { getTmdbMovieDetails } = require('../src/clients/tmdb');
 const { getPresets } = require('../src/data/presets');
-const { addBadgeToImage } = require('../src/utils/imageProcessor');
+const { getImageKitUrl } = require('../src/utils/imageProcessor');
 const { catalogHandler } = require('../src/handlers/catalogHandler');
 
 describe('applyEpisodeBadge host URL handling', () => {
@@ -178,7 +183,7 @@ describe('applyEpisodeBadge host URL handling', () => {
         expect(result.metas[0].poster).toContain(encodeURIComponent('S2 E3'));
     });
 
-    it('should render a completed-series badge when TMDB marks the show as ended', async () => {
+    it('should optimize completed-series posters without adding a badge', async () => {
         fetchTmdbCatalog.mockResolvedValueOnce([
             {
                 id: 'tmdb:100',
@@ -198,7 +203,8 @@ describe('applyEpisodeBadge host URL handling', () => {
             extra: { skip: 0 }
         }, userConfig, 'https://my-server.com');
 
-        expect(result.metas[0].poster).toContain(encodeURIComponent('Conclusa'));
+        expect(result.metas[0].poster).toContain('https://ik.imagekit.io/test-id/plain/');
+        expect(result.metas[0].poster).toContain('?tr=w-300,h-450');
     });
 
     it('should trigger a background TMDB warmup when cache hydration misses', async () => {
@@ -250,7 +256,7 @@ describe('applyEpisodeBadge host URL handling', () => {
         expect(result.metas[0].poster).toBeNull();
     });
 
-    it('should pass the ImageKit ID from user config to badge generation', async () => {
+    it('should pass the ImageKit ID from user config to poster generation', async () => {
         const customUserConfig = {
             ...userConfig,
             apiKeys: {
@@ -265,10 +271,51 @@ describe('applyEpisodeBadge host URL handling', () => {
             extra: { skip: 0 }
         }, customUserConfig, 'https://my-server.com');
 
-        expect(addBadgeToImage).toHaveBeenCalledWith(
+        expect(getImageKitUrl).toHaveBeenCalledWith(
             'https://image.tmdb.org/t/p/w500/test.jpg',
             'Ep 5',
             'user_imagekit_id'
+        );
+    });
+
+    it('should optimize plain posters through ImageKit even without badge text', async () => {
+        getPresets.mockReturnValueOnce([
+            { id: 'preset_popular_movies', filters: { sort_by: 'popularity.desc' } }
+        ]);
+        fetchTmdbCatalog.mockResolvedValueOnce([
+            {
+                id: 'tmdb:103',
+                type: 'movie',
+                name: 'Movie Poster',
+                poster: 'https://image.tmdb.org/t/p/w500/movie.jpg'
+            }
+        ]);
+
+        const movieUserConfig = {
+            ...userConfig,
+            profiles: [{
+                id: 'prof1',
+                catalogs: [{
+                    id: 'yaca_preset_preset_popular_movies',
+                    type: 'movie',
+                    filters: { sort_by: 'popularity.desc' }
+                }],
+                settings: {}
+            }]
+        };
+
+        const result = await catalogHandler({
+            type: 'movie',
+            id: 'yaca_preset_preset_popular_movies',
+            extra: { skip: 0 }
+        }, movieUserConfig, 'https://my-server.com');
+
+        expect(result.metas[0].poster).toContain('https://ik.imagekit.io/test-id/plain/');
+        expect(result.metas[0].poster).toContain('?tr=w-300,h-450');
+        expect(getImageKitUrl).toHaveBeenCalledWith(
+            'https://image.tmdb.org/t/p/w500/movie.jpg',
+            null,
+            undefined
         );
     });
 

@@ -10,8 +10,8 @@ describe('addBadgeToImage', () => {
         process.env.IMAGEKIT_ID = 'test_ik_id';
         // Force re-require to pick up env change
         jest.resetModules();
-        const { addBadgeToImage: freshAdd } = require('../src/utils/imageProcessor');
-        const result = freshAdd('https://image.tmdb.org/t/p/w500/test.jpg', 'E5');
+        const { getImageKitUrl: freshGetUrl } = require('../src/utils/imageProcessor');
+        const result = freshGetUrl('https://image.tmdb.org/t/p/w500/test.jpg', null);
         expect(typeof result).toBe('string');
         expect(result).toContain('ik.imagekit.io');
         expect(result).toContain('test_ik_id');
@@ -57,8 +57,8 @@ describe('addBadgeToImage', () => {
     it('should use the explicit ImageKit ID override when provided', () => {
         process.env.IMAGEKIT_ID = 'env_ik_id';
         jest.resetModules();
-        const { addBadgeToImage: freshAdd } = require('../src/utils/imageProcessor');
-        const result = freshAdd('https://image.tmdb.org/t/p/w500/test.jpg', 'E5', 'override_ik_id');
+        const { getImageKitUrl: freshGetUrl } = require('../src/utils/imageProcessor');
+        const result = freshGetUrl('https://image.tmdb.org/t/p/w500/test.jpg', null, 'override_ik_id');
         expect(result).toContain('override_ik_id');
         expect(result).not.toContain('env_ik_id');
     });
@@ -71,6 +71,16 @@ describe('getImageKitUrl', () => {
         const { getImageKitUrl: freshGetUrl } = require('../src/utils/imageProcessor');
         const url = freshGetUrl('https://example.com/poster.jpg', 'E5');
         expect(url).toBe('https://example.com/poster.jpg');
+    });
+
+    it('should generate a plain optimized ImageKit URL when badge text is absent', () => {
+        process.env.IMAGEKIT_ID = 'test_ik_id';
+        jest.resetModules();
+        const { getImageKitUrl: freshGetUrl } = require('../src/utils/imageProcessor');
+        const url = freshGetUrl('https://example.com/poster.jpg', null);
+        expect(url).toContain('https://ik.imagekit.io/test_ik_id/');
+        expect(url).toContain('?tr=w-300,h-450');
+        expect(url).not.toContain('l-text');
     });
 });
 

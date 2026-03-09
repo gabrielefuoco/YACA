@@ -5,7 +5,7 @@ const { fetchTraktCatalog } = require('../clients/trakt');
 const { fetchMDBListItems, parseMDBListItems } = require('../utils/mdblist');
 const { routeLiveStremioSearch } = require('../ai/router');
 const { getHybridCatalog } = require('../engines/hybridRecommendations');
-const { addBadgeToImage } = require('../utils/imageProcessor');
+const { getImageKitUrl } = require('../utils/imageProcessor');
 const UserList = require('../db/models/UserList');
 const TasteProfile = require('../db/models/TasteProfile');
 const UserActivity = require('../db/models/UserActivity');
@@ -86,10 +86,6 @@ function getEpisodeBadgeText(item) {
         if (lastEp?.episode_number && !isEnded) {
             return `S${lastEp.season_number || 1} E${lastEp.episode_number}`;
         }
-
-        if (isEnded) {
-            return 'Conclusa';
-        }
     }
 
     if (!Array.isArray(item.videos) || item.videos.length === 0) return null;
@@ -113,7 +109,9 @@ function sanitizeCatalogMeta(item, shouldApplyEpisodeBadge = false, imageKitId) 
     if (!item) return item;
 
     const badgeText = shouldApplyEpisodeBadge ? getEpisodeBadgeText(item) : null;
-    const poster = badgeText ? (addBadgeToImage(item.poster, badgeText, imageKitId) || item.poster) : item.poster;
+    const poster = (typeof item.poster === 'string' && item.poster.length > 0)
+        ? getImageKitUrl(item.poster, badgeText, imageKitId)
+        : item.poster;
 
     return {
         id: item.id,
