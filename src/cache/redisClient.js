@@ -15,8 +15,8 @@ function getRedisClient() {
     redisClient = new Redis(redisUrl, {
         maxRetriesPerRequest: 1,
         retryStrategy(times) {
-            if (times > 3) return null; // stop retrying
-            return Math.min(times * 200, 2000);
+            if (times > 15) return null; // stop retrying
+            return Math.min(times * 500, 2000);
         },
         lazyConnect: true,
         enableOfflineQueue: false

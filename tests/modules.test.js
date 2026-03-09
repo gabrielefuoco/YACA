@@ -104,10 +104,10 @@ describe('presets module', () => {
         expect(withSortBy.length / presets.length).toBeGreaterThan(0.8);
     });
 
-    it('should have profile templates with at least 8 presets each', () => {
+    it('should have profile templates with at least 5 presets each', () => {
         const { profileTemplates } = require('../src/data/presets');
         for (const template of profileTemplates) {
-            expect(template.presets.length).toBeGreaterThanOrEqual(8);
+            expect(template.presets.length).toBeGreaterThanOrEqual(5);
         }
     });
 

@@ -262,7 +262,7 @@ const profileTemplates = [
         presets: [
             'preset_pop_movies', 'preset_pop_series', 'preset_new_movies', 'preset_new_series',
             'preset_new_series_eps', 'preset_top_rated_movies', 'preset_top_rated_series',
-            'preset_oscar_winners', 'preset_hidden_gems', 'preset_pop_anime'
+            'preset_oscar_winners', 'preset_pop_anime'
         ]
     },
     {
@@ -315,7 +315,7 @@ const profileTemplates = [
         presets: [
             'preset_feel_good', 'preset_pure_comedy', 'preset_sad_romance', 'preset_musical',
             'preset_pop_movies', 'preset_sitcoms', 'preset_kdrama_romance',
-            'preset_teens_coming_of_age', 'preset_new_movies', 'preset_miniseries'
+            'preset_new_movies', 'preset_miniseries'
         ]
     },
     {
@@ -344,8 +344,8 @@ const profileTemplates = [
         name: '⏱️ Poco Tempo',
         description: 'Film brevi, miniserie e episodi veloci',
         presets: [
-            'preset_short_movies', 'preset_miniseries', 'preset_sitcoms', 'preset_new_series_eps',
-            'preset_stand_up', 'preset_pure_comedy', 'preset_hidden_gems', 'preset_feel_good'
+            'preset_miniseries', 'preset_sitcoms', 'preset_new_series_eps',
+            'preset_stand_up', 'preset_pure_comedy', 'preset_feel_good'
         ]
     },
     {
@@ -385,7 +385,7 @@ const profileTemplates = [
         description: 'Rivisita i classici degli anni \'80 e \'90',
         presets: [
             'preset_80s_movies', 'preset_90s_movies', 'preset_cult_classics',
-            'preset_kids_cn_nostalgia', 'preset_kids_nick_nostalgia', 'preset_anime_classic',
+            'preset_anime_classic',
             'preset_sitcoms', 'preset_spielberg', 'preset_burton'
         ]
     },
@@ -416,8 +416,7 @@ const profileTemplates = [
         description: 'Contenuti sicuri e divertenti per tutta la famiglia',
         presets: [
             'preset_pixar', 'preset_dreamworks', 'preset_ghibli', 'preset_disney_plus',
-            'preset_disney_animation', 'preset_family_animation', 'preset_family_magic_adv',
-            'preset_kids_cn_nostalgia', 'preset_kids_nick_nostalgia', 'preset_teens_coming_of_age'
+            'preset_disney_animation'
         ]
     }
 ];
