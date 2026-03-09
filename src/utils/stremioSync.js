@@ -38,8 +38,8 @@ async function syncAllStremioData(userId, authKey) {
 
         // 3. Update Global Taste Profile via ProfileBuilder
         const ProfileBuilder = require('../profile/ProfileBuilder');
-        const builder = new ProfileBuilder(userId);
-        await builder.syncStremioData(stremioData);
+        const user = await User.findOne({ userId });
+        await ProfileBuilder.syncStremioData(userId, stremioData, user?.apiKeys?.tmdb);
 
         // 4. Push to Trakt (Two-Way Sync)
         await pushToTrakt(userId, stremioData);

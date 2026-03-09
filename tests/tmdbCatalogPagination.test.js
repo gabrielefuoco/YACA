@@ -70,6 +70,7 @@ jest.mock('../src/cache/CacheManager', () => {
 const TmdbRequestCache = require('../src/models/TmdbRequestCache');
 const { generateRequestHash } = require('../src/utils/requestHash');
 const { isMovieReleasedDigitally } = require('../src/utils/releaseFilter');
+const { rateLimitedMap } = require('../src/utils/rateLimiter');
 const { fetchTmdbCatalog } = require('../src/clients/tmdb');
 
 describe('fetchTmdbCatalog per-page cache', () => {
@@ -228,5 +229,42 @@ describe('fetchTmdbCatalog per-page cache', () => {
         // skip=40 → page 3 → cache key should be hash:page:3
         const calledKey = TmdbRequestCache.getWithStatus.mock.calls[0][0];
         expect(calledKey).toContain(':page:3');
+    });
+
+    it('prioritizes current page items in background enrichment before prefetched pages', async () => {
+        TmdbRequestCache.getWithStatus.mockResolvedValue({
+            value: undefined,
+            status: 'miss'
+        });
+
+        const immediateSpy = jest.spyOn(global, 'setImmediate').mockImplementation((cb) => cb());
+        const mkItem = (id) => ({
+            id,
+            title: `Movie ${id}`,
+            poster_path: '/poster.jpg',
+            backdrop_path: '/bg.jpg',
+            overview: 'overview',
+            vote_average: 7.5,
+            release_date: '2020-01-01'
+        });
+        const page1 = Array.from({ length: 20 }, (_, i) => mkItem(i + 1));
+        const page2 = Array.from({ length: 20 }, (_, i) => mkItem(i + 21));
+        const page3 = Array.from({ length: 20 }, (_, i) => mkItem(i + 41));
+        const client = {
+            defaults: { params: { api_key: 'key' } },
+            get: jest
+                .fn()
+                .mockResolvedValueOnce({ data: { results: page1 } })
+                .mockResolvedValueOnce({ data: { results: page2 } })
+                .mockResolvedValueOnce({ data: { results: page3 } })
+        };
+
+        await fetchTmdbCatalog(client, '/discover/movie', 0, {}, 'movie');
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const queueSizes = rateLimitedMap.mock.calls.map(call => call[0].length);
+        expect(queueSizes[0]).toBe(20);
+        expect(queueSizes).toContain(40);
+        immediateSpy.mockRestore();
     });
 });

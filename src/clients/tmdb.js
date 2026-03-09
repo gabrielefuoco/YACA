@@ -435,12 +435,20 @@ async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customPar
         // Uniamo e deduplichiamo
         const seenIds = new Set();
 
-        results.forEach(res => {
+        const hotQueue = [];
+        const coldQueue = [];
+        results.forEach((res, pageIndex) => {
             if (res.status === 'fulfilled' && res.value?.data?.results) {
                 for (const item of res.value.data.results) {
                     if (!seenIds.has(item.id)) {
                         seenIds.add(item.id);
-                        items.push({ item, type });
+                        const queueItem = { item, type };
+                        items.push(queueItem);
+                        if (pageIndex === 0) {
+                            hotQueue.push(queueItem);
+                        } else {
+                            coldQueue.push(queueItem);
+                        }
                     }
                 }
             } else if (res.status === 'rejected') {
@@ -470,11 +478,18 @@ async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customPar
         if (!opts.lightMode && items.length > 0) {
             const apiKey = client.defaults.params.api_key;
             setImmediate(() => {
-                rateLimitedMap(items, async ({ item, type: t }) => {
+                const enrichQueue = (queue) => rateLimitedMap(queue, async ({ item, type: t }) => {
                     try {
                         await getTmdbMovieDetails(apiKey, item.id.toString(), t === 'series' ? 'tv' : 'movie');
                     } catch (_e) { /* background enrichment failure is non-blocking */ }
-                }, { batchSize: 1, delayMs: 600 }).catch(() => { });
+                }, { batchSize: 1, delayMs: 600 });
+
+                enrichQueue(hotQueue)
+                    .then(() => {
+                        if (coldQueue.length > 0) return enrichQueue(coldQueue);
+                        return null;
+                    })
+                    .catch(() => { });
             });
         }
 
