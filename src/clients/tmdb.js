@@ -20,7 +20,7 @@ const {
     SLOW_CATALOG_L2_TTL_MS,
     SLOW_CATALOG_SWR_MS
 } = require('../config');
-const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
+const { rateLimitedMap, rateLimitedMapFiltered } = require('../utils/rateLimiter');
 const { isMovieReleasedDigitally } = require('../utils/releaseFilter');
 const { generateRequestHash } = require('../utils/requestHash');
 const TmdbRequestCache = require('../models/TmdbRequestCache');
@@ -42,6 +42,7 @@ const TMDB_MIRRORS = [
     'https://api.tmdb.org/3'
 ];
 let currentMirrorIdx = 0;
+const MAX_MIRROR_RETRIES = TMDB_MIRRORS.length;
 
 // Helper interno per costruire oggetti request TMDB con failover
 const createTmdbClient = (apiKey) => {
@@ -57,10 +58,15 @@ const createTmdbClient = (apiKey) => {
 
     client.interceptors.response.use(res => res, async (err) => {
         if (err.code === 'ECONNABORTED' || (err.response && err.response.status >= 500)) {
+            const retryCount = err.config._mirrorRetryCount || 0;
+            if (retryCount >= MAX_MIRROR_RETRIES) {
+                return Promise.reject(err);
+            }
             console.warn(`TMDB mirror ${TMDB_MIRRORS[currentMirrorIdx]} failed, switching...`);
             currentMirrorIdx = (currentMirrorIdx + 1) % TMDB_MIRRORS.length;
             err.config.baseURL = TMDB_MIRRORS[currentMirrorIdx];
             err.config.url = err.config.url.replace(/^(https?:\/\/[^\/]+)/, TMDB_MIRRORS[currentMirrorIdx]);
+            err.config._mirrorRetryCount = retryCount + 1;
             return client.request(err.config);
         }
         return Promise.reject(err);
@@ -69,11 +75,11 @@ const createTmdbClient = (apiKey) => {
     return client;
 };
 
-const idNameCache = new CacheManager('tmdb_id_name', { ramMax: 50, ramTtlMs: 1000 * 60 * 60, mongoTtlMs: 1000 * 60 * 60 });
-const imdbIdCache = new CacheManager('tmdb_imdb_id', { ramMax: 50, ramTtlMs: 1000 * 60 * 60 * 24 * 7, mongoTtlMs: 1000 * 60 * 60 * 24 * 7 });
-const movieMetaCache = new CacheManager('tmdb_movie_meta', { ramMax: 50, ramTtlMs: MOVIE_META_CACHE_TTL_MS, mongoTtlMs: MOVIE_META_CACHE_TTL_MS, swrMs: MOVIE_META_SWR_MS });
-const seriesMetaCache = new CacheManager('tmdb_series_meta', { ramMax: 50, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS, swrMs: SERIES_META_SWR_MS });
-const tvEpisodesCache = new CacheManager('tmdb_episodes', { ramMax: 50, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS, swrMs: SERIES_META_SWR_MS });
+const idNameCache = new CacheManager('tmdb_id_name', { ramMax: 500, ramTtlMs: 1000 * 60 * 60, mongoTtlMs: 1000 * 60 * 60 });
+const imdbIdCache = new CacheManager('tmdb_imdb_id', { ramMax: 500, ramTtlMs: 1000 * 60 * 60 * 24 * 7, mongoTtlMs: 1000 * 60 * 60 * 24 * 7 });
+const movieMetaCache = new CacheManager('tmdb_movie_meta', { ramMax: 500, ramTtlMs: MOVIE_META_CACHE_TTL_MS, mongoTtlMs: MOVIE_META_CACHE_TTL_MS, swrMs: MOVIE_META_SWR_MS });
+const seriesMetaCache = new CacheManager('tmdb_series_meta', { ramMax: 500, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS, swrMs: SERIES_META_SWR_MS });
+const tvEpisodesCache = new CacheManager('tmdb_episodes', { ramMax: 500, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS, swrMs: SERIES_META_SWR_MS });
 
 /**
  * Traduce una stringa (es. nome attore o keyword) nel suo ID TMDB effettuando una fetch al volo
@@ -88,7 +94,8 @@ async function getTmdbIdByName(apiKey, endpoint, query) {
         const client = createTmdbClient(apiKey);
         const res = await client.get(`/search/${endpoint}`, { params: { query } });
         const id = res.data?.results?.[0]?.id || null;
-        if (id) await idNameCache.set(cacheKey, id);
+        // Cache both positive and negative results to avoid repeated lookups
+        await idNameCache.set(cacheKey, id);
         return id;
     } catch (e) {
         console.error(`Errore getTmdbIdByName (${endpoint} - ${query}):`, e.message);
@@ -110,7 +117,8 @@ async function resolveImdbId(tmdbId, type, apiKey) {
         const searchType = type === 'movie' ? 'movie' : 'tv';
         const res = await client.get(`/${searchType}/${tmdbId}/external_ids`);
         const imdbId = res.data?.imdb_id || null;
-        if (imdbId) await imdbIdCache.set(cacheKey, imdbId);
+        // Cache both positive and negative results to avoid repeated lookups
+        await imdbIdCache.set(cacheKey, imdbId);
         return imdbId;
     } catch (_e) {
         return null;
@@ -608,17 +616,24 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
     if (status === 'fresh') return cached;
 
     const fetchAllSeasonEpisodes = async () => {
-        const promises = [];
         // TMDB Seasons are 1-indexed. Sometimes there is Season 0 (Specials).
         // Fetch all seasons, with a reasonable safety limit (e.g., 50)
         const startSeason = 1;
         const maxSeasonsToFetch = Math.min(totalSeasons, 50);
 
+        const seasonNumbers = [];
         for (let i = startSeason; i <= maxSeasonsToFetch; i++) {
-            promises.push(client.get(`/tv/${tmdbId}/season/${i}`));
+            seasonNumbers.push(i);
         }
 
-        const results = await Promise.allSettled(promises);
+        // Use rate-limited batching to avoid TMDB 429 rate limits
+        const results = await rateLimitedMap(seasonNumbers, async (seasonNum) => {
+            try {
+                return await client.get(`/tv/${tmdbId}/season/${seasonNum}`);
+            } catch (e) {
+                return { error: e };
+            }
+        }, { batchSize: 5, delayMs: 200 });
 
         const buildEpisodesFromSeason = (seasonData, fallbackMaps = {}) => {
             if (!seasonData?.episodes) return [];
@@ -638,9 +653,10 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
             });
         };
 
-        const seasonVideoChunks = await Promise.all(results.map(async (res) => {
-            if (res.status === 'fulfilled' && res.value?.data?.episodes) {
-                const seasonData = res.value.data;
+        // Rate-limit the fallback overview requests to avoid TMDB 429 errors
+        const seasonVideoChunks = await rateLimitedMap(results, async (res) => {
+            if (res && !res.error && res.data?.episodes) {
+                const seasonData = res.data;
                 const hasMissingOverview = seasonData.episodes.some(ep => !ep.overview?.trim());
                 if (!hasMissingOverview) {
                     return buildEpisodesFromSeason(seasonData);
@@ -673,8 +689,9 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
                 }
             }
             return [];
-        }));
-        const videos = seasonVideoChunks.flat();
+        }, { batchSize: 3, delayMs: 200 });
+        // rateLimitedMap returns null for failed items, filter them out before flattening
+        const videos = seasonVideoChunks.filter(Boolean).flat();
 
         if (videos.length > 0) {
             await tvEpisodesCache.set(cacheKey, videos);
@@ -811,7 +828,12 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
                     data.overview = originalOverview;
                 } else if (enOverview) {
                     try {
-                        const transRes = await lingvaClient.get(`/api/v1/en/it/${encodeURIComponent(enOverview)}`, { timeout: 4000 });
+                        // Truncate to avoid 414 URI Too Long (max ~1500 chars for safe URL length)
+                        const MAX_LINGVA_TEXT_LEN = 1500;
+                        const truncatedOverview = enOverview.length > MAX_LINGVA_TEXT_LEN
+                            ? enOverview.substring(0, MAX_LINGVA_TEXT_LEN) + '...'
+                            : enOverview;
+                        const transRes = await lingvaClient.get(`/api/v1/en/it/${encodeURIComponent(truncatedOverview)}`, { timeout: 2000 });
                         if (transRes.data?.translation) {
                             data.overview = transRes.data.translation;
                         } else {
@@ -866,7 +888,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
 
     // Aggiungiamo metadati avanzati nativi (per compatibilità con vari client)
     if (data.credits && data.credits.cast) {
-        meta.cast = data.credits.cast.slice(0, 15).map(c => c.name);
+        meta.cast = data.credits.cast.slice(0, MAX_CAST_SIZE).map(c => c.name);
     }
     if (data.genres) {
         meta.genres = data.genres.map(g => g.name);
@@ -889,8 +911,21 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
         meta.director = data.created_by.map(c => c.name);
     }
 
+    // Attach full (unsliced) keyword names for downstream detection (e.g. anime check in metaHandler)
+    const rawKwList = type === 'movie' ? data.keywords?.keywords : data.keywords?.results;
+    if (rawKwList && rawKwList.length > 0) {
+        meta._keywordNames = rawKwList.map(k => k.name.toLowerCase());
+    }
+
+    // Early anime detection: skip expensive TMDB episode fetching for anime series
+    const isAnimation = data.genres && data.genres.some(g => g.id === 16);
+    const hasAnimeKeyword = rawKwList && rawKwList.some(k => k.name.toLowerCase().includes('anime'));
+    const isAnime = isAnimation && hasAnimeKeyword;
+    meta._isAnime = isAnime;
+
     // Se è una serie TV, scarica gli episodi per popolare la griglia in Stremio
-    if (type === 'series' && data.number_of_seasons) {
+    // Skip episode fetching for anime — metaHandler will use Kitsu episodes instead
+    if (type === 'series' && data.number_of_seasons && !isAnime) {
         meta.videos = await fetchTmdbEpisodes(
             client,
             tmdbId,
@@ -904,7 +939,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
     return meta;
 }
 
-const tmdbDetailsCache = new CacheManager('tmdb_details_raw', { ramMax: 50, ramTtlMs: 24 * 60 * 60 * 1000, mongoTtlMs: MOVIE_DETAILS_TTL_MS });
+const tmdbDetailsCache = new CacheManager('tmdb_details_raw', { ramMax: 500, ramTtlMs: 24 * 60 * 60 * 1000, mongoTtlMs: MOVIE_DETAILS_TTL_MS });
 
 /**
  * Ottiene i dettagli grezzi di un contenuto TMDB (inclusi credits e keywords)

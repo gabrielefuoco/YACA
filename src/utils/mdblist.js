@@ -1,13 +1,15 @@
 const { createAxiosInstance } = require('../utils/httpClient');
 const { getTmdbMetaDetails } = require("../clients/tmdb");
+const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
 const CacheManager = require("../cache/CacheManager");
 
 const mdblistClient = createAxiosInstance('https://api.mdblist.com');
 
 const ratingsCache = new CacheManager('mdblist_ratings', {
-    ramMax: 50,
+    ramMax: 500,
     ramTtlMs: 1000 * 60 * 60 * 6, // 6h RAM
-    mongoTtlMs: 1000 * 60 * 60 * 24 // 24h MongoDB
+    mongoTtlMs: 1000 * 60 * 60 * 24, // 24h MongoDB
+    swrMs: 1000 * 60 * 60 // 1h SWR window
 });
 
 /**
@@ -45,16 +47,15 @@ async function parseMDBListItems(items, type, tmdbApiKey, _language) {
             type: type
         }));
 
-    const metas = [];
-
-    for (const item of filteredItemsByType) {
+    // Use rate-limited parallel processing instead of sequential loop
+    const metas = await rateLimitedMapFiltered(filteredItemsByType, async (item) => {
         try {
-            const result = await getTmdbMetaDetails(tmdbApiKey, item.id, item.type);
-            if (result) metas.push(result);
+            return await getTmdbMetaDetails(tmdbApiKey, item.id, item.type);
         } catch (err) {
             console.error(`Error fetching TMDB meta for MDBList item ${item.id}:`, err.message);
+            return null;
         }
-    }
+    }, { batchSize: 5, delayMs: 200 });
 
     return metas;
 }
@@ -67,7 +68,38 @@ async function fetchMdblistRatings(imdbId, mdblistApiKey) {
 
     const cacheKey = `ratings:${imdbId}`;
     const { value: cached, status: cacheStatus } = await ratingsCache.getWithStatus(cacheKey);
-    if (cacheStatus !== 'miss') return cached;
+    if (cacheStatus === 'fresh') return cached;
+
+    // If stale, return cached data and trigger background revalidation
+    if (cacheStatus === 'stale') {
+        // Fire-and-forget background revalidation
+        (async () => {
+            try {
+                let url = `/?i=${imdbId}`;
+                if (mdblistApiKey) url += `&apikey=${mdblistApiKey}`;
+                const response = await mdblistClient.get(url, { timeout: 5000 });
+                const data = response.data;
+                if (!data || !data.ratings) {
+                    await ratingsCache.set(cacheKey, null);
+                    return;
+                }
+                const ratingsData = data.ratings;
+                const find = (source) => ratingsData.find(r => r.source === source);
+                const rtCritic = find('tomatoes');
+                const rtAudience = find('tomatoesaudience');
+                const metacritic = find('metacritic');
+                const imdbRating = find('imdb');
+                const result = {
+                    imdb: imdbRating?.value !== null && imdbRating?.value !== undefined ? parseFloat(imdbRating.value).toFixed(1) : null,
+                    rtCritic: rtCritic?.value !== null && rtCritic?.value !== undefined ? Math.round(rtCritic.value) : null,
+                    rtAudience: rtAudience?.value !== null && rtAudience?.value !== undefined ? Math.round(rtAudience.value) : null,
+                    metacritic: metacritic?.value !== null && metacritic?.value !== undefined ? Math.round(metacritic.value) : null
+                };
+                await ratingsCache.set(cacheKey, result);
+            } catch (_e) { /* silent background revalidation */ }
+        })();
+        return cached;
+    }
 
     try {
         let url = `/?i=${imdbId}`;
@@ -75,7 +107,11 @@ async function fetchMdblistRatings(imdbId, mdblistApiKey) {
 
         const response = await mdblistClient.get(url, { timeout: 5000 });
         const data = response.data;
-        if (!data || !data.ratings) return null;
+        if (!data || !data.ratings) {
+            // Cache negative results to avoid repeated lookups for titles without ratings
+            await ratingsCache.set(cacheKey, null);
+            return null;
+        }
 
         const ratingsData = data.ratings;
         const find = (source) => ratingsData.find(r => r.source === source);

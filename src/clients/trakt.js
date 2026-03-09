@@ -1,4 +1,5 @@
 const { createAxiosInstance } = require('../utils/httpClient');
+const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
 const UserConfig = require('../models/UserConfig');
 const { updateStremioAddonCollection } = require('../utils/stremioAddonSync');
 
@@ -301,8 +302,9 @@ async function deduplicateAndEnrich(results, tmdbApiKey) {
         return true;
     });
 
-    const enrichedItems = await Promise.all(dedupedResults.map(r => enhanceTraktItem(r, tmdbApiKey)));
-    return enrichedItems.filter(i => i !== null);
+    // Use rate-limited batching to avoid TMDB 429 rate limits
+    const enrichedItems = await rateLimitedMapFiltered(dedupedResults, r => enhanceTraktItem(r, tmdbApiKey), { batchSize: 5, delayMs: 200 });
+    return enrichedItems;
 }
 
 /**

@@ -5,7 +5,7 @@ const { fetchMdblistRatings } = require('../utils/mdblist');
 const CacheManager = require('../cache/CacheManager');
 
 // Cache per l'oggetto meta finale combinato (TMDB + MDBList)
-const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 2000, ramTtlMs: 3600000 });
+const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 2000, ramTtlMs: 3600000, swrMs: 600000 });
 
 /**
  * Gestisce la richiesta di metadati dettagliati quando l'utente clicca su un titolo
@@ -64,34 +64,62 @@ async function metaHandler(args, userConfig) {
                 const mdblistApiKey = userConfig.apiKeys?.mdblist || process.env.MDBLIST_API_KEY || null;
                 const cacheKey = `meta_${tmdbId}_${type}_${imdbIdForRatings}_${Boolean(mdblistApiKey)}`;
 
-                const cachedMeta = await finalMetaCache.get(cacheKey);
-                if (cachedMeta) {
+                // Use getWithStatus for SWR support
+                const { value: cachedMeta, status: cacheStatus } = await finalMetaCache.getWithStatus(cacheKey);
+                if (cacheStatus === 'fresh') {
                     meta = cachedMeta;
                 } else {
-                    // Eseguiamo in parallelo
-                    const [tmdbMeta, ratings] = await Promise.all([
-                        getTmdbMetaDetails(tmdbApiKey, tmdbId, type),
-                        imdbIdForRatings ? fetchMdblistRatings(imdbIdForRatings, mdblistApiKey).catch(() => ({})) : Promise.resolve({})
-                    ]);
+                    // If stale, return cached data and trigger background revalidation
+                    if (cacheStatus === 'stale' && cachedMeta) {
+                        meta = cachedMeta;
+                        // Fire-and-forget background revalidation
+                        (async () => {
+                            try {
+                                const bgRatings = imdbIdForRatings ? await fetchMdblistRatings(imdbIdForRatings, mdblistApiKey).catch(() => ({})) : {};
+                                const bgMeta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, bgRatings || {});
+                                if (bgMeta) {
+                                    // Anime series: fetch Kitsu episodes in background too
+                                    if (bgMeta._isAnime && type === 'series') {
+                                        const kitsuId = await getKitsuIdFromTmdbId(tmdbId, 'series');
+                                        if (kitsuId) {
+                                            const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
+                                            if (kitsuEpisodes && kitsuEpisodes.length > 0) {
+                                                bgMeta.videos = kitsuEpisodes;
+                                            }
+                                        }
+                                    }
+                                    delete bgMeta._keywordNames;
+                                    delete bgMeta._isAnime;
+                                    await finalMetaCache.set(cacheKey, bgMeta);
+                                }
+                            } catch (_e) { /* silent background revalidation */ }
+                        })();
+                    } else {
+                        // Cache miss: fetch ratings first, then TMDB meta with ratings in one call
+                        const ratings = imdbIdForRatings
+                            ? await fetchMdblistRatings(imdbIdForRatings, mdblistApiKey).catch(() => ({}))
+                            : {};
 
-                    meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, ratings || {});
-                    if (meta) {
-                        // Logica Ibrida Anime: Se è un anime (Genere Animation + keyword Anime), arricchisci con Kitsu
-                        const isAnimation = meta.genre_ids?.includes(16);
-                        const isAnime = isAnimation && (meta.name?.toLowerCase().includes('anime') || (meta.genres && meta.genres.some(g => g.toLowerCase().includes('animation'))));
-
-                        if (isAnime && type === 'series') {
-                            const kitsuId = await getKitsuIdFromTmdbId(tmdbId, 'series');
-                            if (kitsuId) {
-                                console.log(`[HybridAnime] Trovato mapping Kitsu ${kitsuId} per TMDB ${tmdbId}. Carico episodi...`);
-                                const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
-                                if (kitsuEpisodes && kitsuEpisodes.length > 0) {
-                                    meta.videos = kitsuEpisodes;
-                                    // Mantieni l'id originale TMDB per compatibilità Stremio ma usa i video Kitsu
+                        meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, ratings || {});
+                        if (meta) {
+                            // Anime series: fetch Kitsu episodes (TMDB episodes were skipped)
+                            if (meta._isAnime && type === 'series') {
+                                const kitsuId = await getKitsuIdFromTmdbId(tmdbId, 'series');
+                                if (kitsuId) {
+                                    console.log(`[HybridAnime] Trovato mapping Kitsu ${kitsuId} per TMDB ${tmdbId}. Carico episodi...`);
+                                    const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
+                                    if (kitsuEpisodes && kitsuEpisodes.length > 0) {
+                                        meta.videos = kitsuEpisodes;
+                                    }
                                 }
                             }
+
+                            // Clean internal properties before caching/sending to Stremio
+                            delete meta._keywordNames;
+                            delete meta._isAnime;
+
+                            await finalMetaCache.set(cacheKey, meta);
                         }
-                        await finalMetaCache.set(cacheKey, meta);
                     }
                 }
             }

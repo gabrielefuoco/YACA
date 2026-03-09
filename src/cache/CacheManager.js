@@ -136,11 +136,14 @@ class CacheManager {
             });
 
             if (entry) {
-                // Promote to L1 with current timestamp
-                const freshEnvelope = { v: entry.value, t: Date.now() };
+                // Promote to L1 preserving the original storage timestamp
+                const originalTimestamp = entry.updatedAt ? new Date(entry.updatedAt).getTime() : Date.now();
+                const freshEnvelope = { v: entry.value, t: originalTimestamp };
                 const l1Ttl = this.ramTtlMs + this.swrMs;
                 await this._l1Set(key, freshEnvelope, l1Ttl);
-                return { value: entry.value, status: 'fresh' };
+                const age = Date.now() - originalTimestamp;
+                const status = age <= this.ramTtlMs ? 'fresh' : (this.swrMs > 0 && age <= this.ramTtlMs + this.swrMs ? 'stale' : 'miss');
+                return { value: entry.value, status };
             }
         } catch (error) {
             console.error(`[CacheManager:${this.namespace}] L2 get error:`, error.message);
