@@ -950,13 +950,15 @@ const tmdbDetailsCache = new CacheManager('tmdb_details_raw', { ramMax: 500, ram
  * Ottiene i dettagli grezzi di un contenuto TMDB (inclusi credits e keywords)
  * per l'elaborazione del profilo di gusto.
  */
-async function getTmdbMovieDetails(apiKey, id, type = 'movie') {
+async function getTmdbMovieDetails(apiKey, id, type = 'movie', options = {}) {
+    const cacheOnly = typeof options === 'boolean' ? options : Boolean(options?.cacheOnly);
     const tmdbId = id.toString().replace('tmdb:', '').trim();
     if (!/^\d+$/.test(tmdbId)) return null;
 
     const cacheKey = `${type}:${tmdbId}`;
     const { value: cached, status: cacheStatus } = await tmdbDetailsCache.getWithStatus(cacheKey);
     if (cacheStatus !== 'miss') return cached;
+    if (cacheOnly) return null;
 
     const client = createTmdbClient(apiKey);
     const endpoint = type === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;

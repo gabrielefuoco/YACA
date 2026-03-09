@@ -21,7 +21,37 @@ jest.mock('../src/ai/router', () => ({
     routeLiveStremioSearch: jest.fn()
 }));
 
+jest.mock('../src/db/models/UserList', () => ({
+    findOne: jest.fn(() => ({ lean: jest.fn().mockResolvedValue(null) }))
+}));
+
+jest.mock('../src/db/models/TasteProfile', () => ({
+    findOne: jest.fn().mockResolvedValue(null)
+}));
+
+jest.mock('../src/db/models/UserActivity', () => ({
+    create: jest.fn().mockResolvedValue(null),
+    find: jest.fn(() => ({ sort: jest.fn(() => ({ limit: jest.fn().mockResolvedValue([]) })) }))
+}));
+
+jest.mock('../src/profile/ProfileScorer', () => ({
+    calculateItemMatch: jest.fn(() => 0)
+}));
+
+jest.mock('../src/db/models/CacheEntry', () => ({
+    find: jest.fn(() => ({ limit: jest.fn(() => ({ lean: jest.fn().mockResolvedValue([]) })) }))
+}));
+
+jest.mock('../src/data/presets', () => ({
+    getPresets: jest.fn(() => [])
+}));
+
+jest.mock('../src/utils/imageProcessor', () => ({
+    addBadgeToImage: jest.fn((url, text) => `https://ik.imagekit.io/test-id/badge/${encodeURIComponent(text)}/${encodeURIComponent(url)}`)
+}));
+
 const { fetchTmdbCatalog } = require('../src/clients/tmdb');
+const { getPresets } = require('../src/data/presets');
 const { catalogHandler } = require('../src/handlers/catalogHandler');
 
 describe('applyEpisodeBadge host URL handling', () => {
@@ -56,24 +86,27 @@ describe('applyEpisodeBadge host URL handling', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         delete process.env.HOST_URL;
+        getPresets.mockReturnValue([
+            { id: 'preset_new_series_eps', filters: { sort_by: 'popularity.desc' } }
+        ]);
 
         fetchTmdbCatalog.mockResolvedValue(
             mockMetasWithVideos.map(m => ({ ...m, poster: m.poster, videos: [...m.videos] }))
         );
     });
 
-    it('should use hostUrl parameter for badge poster URL', async () => {
+    it('should generate direct ImageKit URL for badge poster', async () => {
         const result = await catalogHandler({
             type: 'series',
             id: 'yaca_preset_preset_new_series_eps',
             extra: { skip: 0 }
         }, userConfig, 'https://my-server.com');
 
-        expect(result.metas[0].poster).toContain('https://my-server.com/badge/poster.jpg');
-        expect(result.metas[0].poster).toContain('text=');
+        expect(result.metas[0].poster).toContain('https://ik.imagekit.io/test-id/badge/');
+        expect(result.metas[0].poster).not.toContain('/badge/poster.jpg');
     });
 
-    it('should fall back to HOST_URL env var when hostUrl not passed', async () => {
+    it('should not depend on HOST_URL env var for badge URL generation', async () => {
         process.env.HOST_URL = 'https://env-server.com';
 
         const result = await catalogHandler({
@@ -82,20 +115,21 @@ describe('applyEpisodeBadge host URL handling', () => {
             extra: { skip: 0 }
         }, userConfig);
 
-        expect(result.metas[0].poster).toContain('https://env-server.com/badge/poster.jpg');
+        expect(result.metas[0].poster).toContain('https://ik.imagekit.io/test-id/badge/');
     });
 
-    it('should fall back to localhost when neither hostUrl nor HOST_URL is set', async () => {
+    it('should not fall back to localhost badge proxy URL', async () => {
         const result = await catalogHandler({
             type: 'series',
             id: 'yaca_preset_preset_new_series_eps',
             extra: { skip: 0 }
         }, userConfig);
 
-        expect(result.metas[0].poster).toContain('http://localhost:7000/badge/poster.jpg');
+        expect(result.metas[0].poster).toContain('https://ik.imagekit.io/test-id/badge/');
+        expect(result.metas[0].poster).not.toContain('http://localhost:7000/badge/poster.jpg');
     });
 
-    it('should include encoded original poster URL in badge URL', async () => {
+    it('should include encoded original poster URL in direct ImageKit URL', async () => {
         const result = await catalogHandler({
             type: 'series',
             id: 'yaca_preset_preset_new_series_eps',
@@ -114,8 +148,7 @@ describe('applyEpisodeBadge host URL handling', () => {
         }, userConfig, 'https://my-server.com');
 
         const posterUrl = result.metas[0].poster;
-        // Episode 5, season 1 → should be "E5"
-        expect(posterUrl).toContain('text=E5');
+        expect(posterUrl).toContain(encodeURIComponent('Ep 5'));
     });
 
     afterEach(() => {

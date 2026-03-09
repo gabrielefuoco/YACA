@@ -23,6 +23,10 @@ jest.mock('../src/ai/router', () => ({
     routeLiveStremioSearch: jest.fn()
 }));
 
+jest.mock('../src/utils/imageProcessor', () => ({
+    addBadgeToImage: jest.fn((url, text) => `https://ik.imagekit.io/mock-id/badge/${encodeURIComponent(text)}/${encodeURIComponent(url)}`)
+}));
+
 jest.mock('../src/engines/hybridRecommendations', () => ({
     getHybridCatalog: jest.fn()
 }));
@@ -61,6 +65,9 @@ const { fetchKitsuCatalog, fetchKitsuEpisodes } = require('../src/clients/kitsu'
 const { routeLiveStremioSearch } = require('../src/ai/router');
 const { getHybridCatalog } = require('../src/engines/hybridRecommendations');
 const { getPresets } = require('../src/data/presets');
+const TasteProfile = require('../src/db/models/TasteProfile');
+const ProfileScorer = require('../src/profile/ProfileScorer');
+const { getTmdbMovieDetails } = require('../src/clients/tmdb');
 const { catalogHandler } = require('../src/handlers/catalogHandler');
 
 describe('catalogHandler critical recommendation/search fixes', () => {
@@ -169,8 +176,8 @@ describe('catalogHandler critical recommendation/search fixes', () => {
 
         expect(fetchKitsuEpisodes).toHaveBeenCalledWith('42');
         expect(result.metas[0].videos).toHaveLength(1);
-        expect(result.metas[0].poster).toContain('https://host.test/badge/poster.jpg');
-        expect(result.metas[0].poster).toContain('text=E12');
+        expect(result.metas[0].poster).toContain('https://ik.imagekit.io/mock-id/badge/');
+        expect(result.metas[0].poster).toContain(encodeURIComponent('Ep 12'));
     });
 
     it('applies episode badge on merged early return via finalizeCatalog', async () => {
@@ -224,7 +231,52 @@ describe('catalogHandler critical recommendation/search fixes', () => {
         }, userConfig, 'https://host.test');
 
         expect(result.metas).toHaveLength(2);
-        expect(result.metas[0].poster).toContain('https://host.test/badge/poster.jpg');
-        expect(result.metas[1].poster).toContain('https://host.test/badge/poster.jpg');
+        expect(result.metas[0].poster).toContain('https://ik.imagekit.io/mock-id/badge/');
+        expect(result.metas[1].poster).toContain('https://ik.imagekit.io/mock-id/badge/');
+    });
+
+    it('hydrates light mode items from local cache before ProfileScorer ranking', async () => {
+        const profileDoc = { settings: {}, genreScores: new Map() };
+        TasteProfile.findOne
+            .mockResolvedValueOnce(profileDoc)
+            .mockResolvedValueOnce(null);
+        getPresets.mockReturnValue([
+            {
+                id: 'preset_cache_hydration',
+                filters: { sort_by: 'popularity.desc' }
+            }
+        ]);
+        fetchTmdbCatalog.mockResolvedValueOnce([
+            { id: 'tmdb:55', type: 'movie', name: 'Light Item', imdbRating: '7.1' }
+        ]);
+        getTmdbMovieDetails.mockResolvedValueOnce({
+            id: 55,
+            title: 'Hydrated Item',
+            credits: { cast: [{ name: 'Actor One' }] },
+            keywords: { keywords: [{ id: 1, name: 'mystery' }] }
+        });
+
+        const userConfig = {
+            userId: 'user_1',
+            activeProfileId: 'prof1',
+            apiKeys: { tmdb: 'tmdb_key' },
+            profiles: [{ id: 'prof1', settings: {} }]
+        };
+
+        await catalogHandler({
+            type: 'movie',
+            id: 'yaca_preset_preset_cache_hydration',
+            extra: { skip: 0 }
+        }, userConfig, 'https://host.test');
+
+        expect(getTmdbMovieDetails).toHaveBeenCalledWith('tmdb_key', '55', 'movie', { cacheOnly: true });
+        expect(ProfileScorer.calculateItemMatch).toHaveBeenCalledWith(
+            expect.objectContaining({
+                credits: expect.objectContaining({ cast: expect.any(Array) }),
+                keywords: expect.objectContaining({ keywords: expect.any(Array) })
+            }),
+            profileDoc,
+            expect.any(Object)
+        );
     });
 });

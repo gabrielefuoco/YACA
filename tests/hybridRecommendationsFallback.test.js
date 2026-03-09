@@ -29,7 +29,10 @@ jest.mock('../src/profile/ProfileScorer', () => ({
 
 jest.mock('../src/clients/tmdb', () => ({
     getTmdbMovieDetails: jest.fn().mockResolvedValue(null),
-    getTmdbMetaDetails: jest.fn()
+    getTmdbMetaDetails: jest.fn(),
+    createTmdbClient: jest.fn(() => ({
+        get: jest.fn()
+    }))
 }));
 
 jest.mock('../src/models/RecommendationCache', () => ({
@@ -39,11 +42,12 @@ jest.mock('../src/models/RecommendationCache', () => ({
 
 const TasteProfile = require('../src/db/models/TasteProfile');
 const tmdbClient = require('../src/clients/tmdb');
-const { getHybridCatalog } = require('../src/engines/hybridRecommendations');
+const { getHybridCatalog, recommendationsCache } = require('../src/engines/hybridRecommendations');
 
 describe('hybrid recommendations popular fallback', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        recommendationsCache.clear();
     });
 
     it('returns popular items when personalized recommendation ids are empty', async () => {
@@ -60,9 +64,21 @@ describe('hybrid recommendations popular fallback', () => {
             }
         });
 
-        tmdbClient.getTmdbMetaDetails
-            .mockResolvedValueOnce({ id: 'tmdb:101', name: 'Popular A' })
-            .mockResolvedValueOnce({ id: 'tmdb:102', name: 'Popular B' });
+        tmdbClient.getTmdbMovieDetails
+            .mockResolvedValueOnce({
+                id: 101,
+                title: 'Popular A',
+                poster_path: '/a.jpg',
+                vote_average: 7.2,
+                genre_ids: [28]
+            })
+            .mockResolvedValueOnce({
+                id: 102,
+                title: 'Popular B',
+                poster_path: '/b.jpg',
+                vote_average: 7.1,
+                genre_ids: [35]
+            });
 
         const metas = await getHybridCatalog(
             'yaca_signature_blend_movies',
@@ -81,5 +97,41 @@ describe('hybrid recommendations popular fallback', () => {
         );
         expect(metas).toHaveLength(2);
         expect(metas[0].id).toBe('tmdb:101');
+    });
+
+    it('falls back to live TMDB endpoint when details are not cached', async () => {
+        TasteProfile.findOne
+            .mockResolvedValueOnce({ lastUpdated: new Date() })
+            .mockResolvedValue(null);
+
+        axios.get.mockResolvedValue({
+            data: {
+                results: [{ id: 201 }]
+            }
+        });
+
+        tmdbClient.getTmdbMovieDetails.mockResolvedValueOnce(null);
+        const tmdbGet = jest.fn().mockResolvedValue({
+            data: {
+                id: 201,
+                title: 'Live Item',
+                poster_path: '/live.jpg',
+                vote_average: 8
+            }
+        });
+        tmdbClient.createTmdbClient.mockReturnValueOnce({ get: tmdbGet });
+
+        const metas = await getHybridCatalog(
+            'yaca_signature_blend_movies',
+            0,
+            null,
+            'tmdb_key',
+            'user_1',
+            'global'
+        );
+
+        expect(tmdbGet).toHaveBeenCalledWith('/movie/201');
+        expect(metas).toHaveLength(1);
+        expect(metas[0].id).toBe('tmdb:201');
     });
 });

@@ -787,19 +787,26 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     const pageIds = recommendationIds.slice(skip, skip + ITEMS_PER_PAGE);
     if (pageIds.length === 0) return [];
 
-    // Light Mode: fetch basic metadata from TMDB (no heavy details/credits/keywords).
-    // Uses simple /movie/{id} or /tv/{id} endpoint instead of getTmdbMetaDetails.
-    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+    // Light Mode: cache-first from local details cache, TMDB fallback only on miss.
+    let tmdbClient;
     const results = await rateLimitedMap(
         pageIds,
         async (tmdbId) => {
             try {
-                const endpoint = mediaType === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
-                const res = await tmdbClient.get(endpoint);
-                const item = res.data;
+                const normalizedId = normalizeContentId(tmdbId);
+                const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
+                let item = await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType, { cacheOnly: true });
+
+                if (!item) {
+                    if (!tmdbClient) tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+                    const endpoint = mediaType === 'movie' ? `/movie/${normalizedId}` : `/tv/${normalizedId}`;
+                    const res = await tmdbClient.get(endpoint);
+                    item = res.data;
+                }
+
                 if (!item) return null;
                 return {
-                    id: `tmdb:${tmdbId}`,
+                    id: `tmdb:${normalizedId}`,
                     type: mediaType === 'movie' ? 'movie' : 'series',
                     name: item.title || item.name || 'Unknown',
                     poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
