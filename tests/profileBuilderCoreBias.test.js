@@ -1,6 +1,7 @@
 jest.mock('../src/db/models/TasteProfile', () => ({
     findOne: jest.fn(),
-    findOneAndUpdate: jest.fn()
+    findOneAndUpdate: jest.fn(),
+    updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
 }));
 
 jest.mock('../src/clients/tmdb', () => ({
@@ -12,7 +13,8 @@ jest.mock('../src/id_mapping/id_cache', () => ({
 }));
 
 jest.mock('../src/db/models/User', () => ({
-    findOne: jest.fn()
+    findOne: jest.fn(),
+    findOneAndUpdate: jest.fn().mockResolvedValue({ acknowledged: true })
 }));
 
 const TasteProfile = require('../src/db/models/TasteProfile');
@@ -34,6 +36,7 @@ function createTasteProfile(context) {
         countryScores: new Map(),
         runtimeScores: new Map(),
         processedTraktIds: [],
+        processedStremioIds: [],
         save: jest.fn().mockResolvedValue(undefined)
     };
 }
@@ -80,10 +83,36 @@ describe('ProfileBuilder core taste bias', () => {
         expect(globalGenreScore).toBeLessThan(nicheGenreScore);
     });
 
-    it('infers suggestedDNA for global context', async () => {
+    it('stages inferred DNA into pending suggestions for the matching profile', async () => {
         const globalProfile = createTasteProfile('global');
+        globalProfile.genreScores.set('16', 120);
+        globalProfile.keywordScores.set('210024', 80);
+        User.findOne.mockResolvedValue({
+            userId: 'user_1',
+            profiles: [{
+                id: 'global',
+                settings: {
+                    manualDNA: [],
+                    suggestedDNA: [],
+                    pendingDNASuggestions: []
+                }
+            }]
+        });
+
         await ProfileBuilder.inferDNAFromProfile(globalProfile);
+
         expect(User.findOne).toHaveBeenCalled();
+        expect(User.findOneAndUpdate).toHaveBeenCalledWith(
+            { userId: 'user_1', 'profiles.id': 'global' },
+            {
+                $set: {
+                    'profiles.$.settings.pendingDNASuggestions': expect.arrayContaining([
+                        expect.objectContaining({ type: 'genre', id: '16' }),
+                        expect.objectContaining({ type: 'keyword', id: '210024' })
+                    ])
+                }
+            }
+        );
     });
 
     it('processes imdb-only trakt items by translating to tmdb', async () => {
@@ -110,5 +139,32 @@ describe('ProfileBuilder core taste bias', () => {
         expect(translateImdbToTmdb).toHaveBeenCalledWith('tt1234567', 'tmdb_key');
         expect(tmdb.getTmdbMovieDetails).toHaveBeenCalledWith('tmdb_key', 'tmdb:777', 'movie');
         expect(profile.processedTraktIds).toContain('tt1234567');
+    });
+
+    it('stores trakt ids atomically after saving the profile document', async () => {
+        const profile = createTasteProfile('global');
+        TasteProfile.findOneAndUpdate.mockResolvedValueOnce(profile);
+        tmdb.getTmdbMovieDetails.mockResolvedValueOnce({
+            id: 888,
+            genres: [{ id: 18 }],
+            keywords: { results: [] },
+            credits: { crew: [], cast: [] },
+            production_companies: [],
+            runtime: 100,
+            release_date: '2010-01-01'
+        });
+
+        await ProfileBuilder.syncUserHistory(
+            'user_1',
+            'global',
+            [{ movie: { ids: { tmdb: 888 } }, watched_at: '2026-01-01T00:00:00Z' }],
+            'tmdb_key'
+        );
+
+        expect(profile.save).toHaveBeenCalled();
+        expect(TasteProfile.updateOne).toHaveBeenCalledWith(
+            { owner: 'user_1', context: 'global' },
+            { $addToSet: { processedTraktIds: { $each: ['888'] } } }
+        );
     });
 });

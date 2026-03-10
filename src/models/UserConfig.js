@@ -57,6 +57,24 @@ const UserConfig = {
                 // Preserve profiles if incoming are empty
                 if (!userData.profiles?.length && existingUser.profiles?.length) {
                     userData.profiles = existingUser.profiles;
+                } else if (Array.isArray(userData.profiles) && existingUser.profiles?.length) {
+                    const existingProfiles = new Map(
+                        existingUser.profiles.map((profile) => [profile.id, profile.toObject?.() || profile])
+                    );
+                    userData.profiles = userData.profiles.map((profile) => {
+                        const existingProfile = existingProfiles.get(profile.id);
+                        const existingPending = existingProfile?.settings?.pendingDNASuggestions;
+                        if (!existingPending || existingPending.length === 0 || profile?.settings?.pendingDNASuggestions !== undefined) {
+                            return profile;
+                        }
+                        return {
+                            ...profile,
+                            settings: {
+                                ...(profile.settings || {}),
+                                pendingDNASuggestions: existingPending.map((item) => ({ ...item }))
+                            }
+                        };
+                    });
                 }
 
                 // Merge API Keys: preserve existing if incoming are null/missing

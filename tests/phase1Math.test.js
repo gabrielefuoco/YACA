@@ -1,3 +1,5 @@
+jest.mock('nanoid', () => ({ nanoid: jest.fn(() => 'mock-id') }));
+
 // Tests for YACA 2.0 Phase 1 mathematical improvements
 
 describe('Phase 1.1 - Time-decay logarithmic accumulation', () => {
@@ -137,13 +139,13 @@ describe('Phase 1.3 - Bayesian Weighted Rating (IMDb formula)', () => {
 
         // With 0 votes, Bayesian score = C = 6.5 (weighted by tmdbWeight=1, traktWeight=0)
         // normalizedScore = (0 * 0 + 6.5 * 1) / 1 = 6.5
-        // Plus tiny epsilon. So score should be very close to 6.5
+        // Senza epsilon il punteggio deve rimanere centrato sulla media bayesiana 6.5
         expect(score).toBeGreaterThan(6.4);
         expect(score).toBeLessThan(6.6);
     });
 });
 
-describe('Phase 1.4 - Epsilon Tracker (daily rotation)', () => {
+describe('Phase 1.4 - Stable scoring without epsilon tracker', () => {
     const ProfileScorer = require('../src/profile/ProfileScorer');
 
     const makeProfile = () => ({
@@ -155,7 +157,7 @@ describe('Phase 1.4 - Epsilon Tracker (daily rotation)', () => {
         traktWeight: 1.0
     });
 
-    it('different TMDB IDs should produce different epsilon values on the same day', () => {
+    it('identical items should keep the same score even when TMDB ids differ', () => {
         const profile = makeProfile();
 
         // Two identical items except for ID
@@ -165,22 +167,18 @@ describe('Phase 1.4 - Epsilon Tracker (daily rotation)', () => {
         const score1 = ProfileScorer.calculateItemMatch(item1, profile);
         const score2 = ProfileScorer.calculateItemMatch(item2, profile);
 
-        // Scores should differ due to epsilon (very small but non-zero difference)
-        // They should be very close but not identical
-        expect(Math.abs(score1 - score2)).toBeLessThan(0.01); // epsilon is tiny
+        expect(score1).toBeCloseTo(score2, 10);
     });
 
-    it('epsilon should be a very small value (< 0.001)', () => {
+    it('scores remain deterministic for repeated calls on the same item', () => {
         const profile = makeProfile();
 
         const item = { id: 12345, genre_ids: [], vote_average: 7.0, vote_count: 1000, credits: {} };
-        const itemNoId = { id: 0, genre_ids: [], vote_average: 7.0, vote_count: 1000, credits: {} };
 
-        const scoreWithId = ProfileScorer.calculateItemMatch(item, profile);
-        const scoreNoId = ProfileScorer.calculateItemMatch(itemNoId, profile);
+        const firstScore = ProfileScorer.calculateItemMatch(item, profile);
+        const secondScore = ProfileScorer.calculateItemMatch(item, profile);
 
-        // The difference from epsilon should be tiny
-        expect(Math.abs(scoreWithId - scoreNoId)).toBeLessThan(0.001);
+        expect(firstScore).toBeCloseTo(secondScore, 10);
     });
 });
 

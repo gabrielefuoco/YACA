@@ -88,7 +88,8 @@ function createGlobalProfileInput() {
             minVoteCount: 0,
             fastPresetRefresh: false,
             manualDNA: [],
-            suggestedDNA: []
+            suggestedDNA: [],
+            pendingDNASuggestions: []
         }
     };
 }
@@ -321,7 +322,10 @@ module.exports = async (req, res) => {
                     minVoteCount: Number.isFinite(minVoteCount) ? minVoteCount : 0,
                     fastPresetRefresh,
                     manualDNA,
-                    suggestedDNA
+                    suggestedDNA,
+                    pendingDNASuggestions: Array.isArray(profile.settings?.pendingDNASuggestions)
+                        ? profile.settings.pendingDNASuggestions
+                        : []
                 }
             });
         }

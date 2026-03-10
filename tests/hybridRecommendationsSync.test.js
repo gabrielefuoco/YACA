@@ -1,11 +1,5 @@
 const mockTraktGet = jest.fn();
 
-jest.mock('../src/utils/httpClient', () => ({
-    createAxiosInstance: jest.fn(() => ({
-        get: mockTraktGet
-    }))
-}));
-
 jest.mock('../src/db/models/TasteProfile', () => ({
     findOne: jest.fn()
 }));
@@ -26,6 +20,12 @@ jest.mock('../src/profile/ProfileScorer', () => ({
 jest.mock('../src/clients/tmdb', () => ({
     getTmdbMovieDetails: jest.fn(),
     getTmdbMetaDetails: jest.fn()
+}));
+
+jest.mock('../src/clients/trakt', () => ({
+    traktClient: {
+        get: mockTraktGet
+    }
 }));
 
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
@@ -69,5 +69,25 @@ describe('syncIncrementalRecommendations', () => {
         const result = await syncIncrementalRecommendations('u1', 'movie', null, 'tmdb_key');
         expect(result).toBe(false);
         expect(ProfileBuilder.syncUserHistory).not.toHaveBeenCalled();
+    });
+
+    it('skips duplicate background syncs while the same profile lock is active', async () => {
+        const history = [{ movie: { ids: { tmdb: 123 } } }];
+        let releaseHistory;
+        mockTraktGet
+            .mockImplementationOnce(() => new Promise((resolve) => {
+                releaseHistory = () => resolve({ data: history });
+            }))
+            .mockResolvedValueOnce({ data: [] });
+
+        const firstRun = syncIncrementalRecommendations('u1', 'movie', 'trakt_token', 'tmdb_key', 'ctx');
+        await Promise.resolve();
+        const secondRun = await syncIncrementalRecommendations('u1', 'movie', 'trakt_token', 'tmdb_key', 'ctx');
+
+        releaseHistory();
+        await firstRun;
+
+        expect(secondRun).toBe(false);
+        expect(ProfileBuilder.syncUserHistory).toHaveBeenCalledTimes(1);
     });
 });

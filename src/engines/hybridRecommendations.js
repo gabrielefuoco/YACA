@@ -10,6 +10,7 @@ const { hybridRecommendationsCache } = require('../cache/cacheInstances');
 const { getProfileDnaFilters } = require('../utils/helpers');
 const { rateLimitedMap } = require('../utils/rateLimiter');
 const { generateDiscoveryQueries } = require('../ai/querySynthesizer');
+const activeSyncLocks = new Set();
 
 function normalizeContentId(id) {
     return String(id ?? '').replace(/^tmdb:/i, '').trim();
@@ -66,7 +67,7 @@ async function fetchTmdbResults(tmdbClient, endpoint, params = {}, errorLabel = 
 async function fetchRecentHistory(traktToken, mediaType, limit = 10) {
     if (!traktToken || !process.env.TRAKT_CLIENT_ID) return [];
     try {
-        const res = await traktApiClient.get(`/users/me/history/${mediaType}`, {
+        const res = await traktClient.get(`/users/me/history/${mediaType}`, {
             headers: {
                 'trakt-api-version': '2',
                 'trakt-api-key': process.env.TRAKT_CLIENT_ID,
@@ -84,7 +85,7 @@ async function fetchRecentHistory(traktToken, mediaType, limit = 10) {
 async function fetchRecentRatings(traktToken, mediaType, limit = 40) {
     if (!traktToken || !process.env.TRAKT_CLIENT_ID) return [];
     try {
-        const res = await traktApiClient.get(`/users/me/ratings/${mediaType}`, {
+        const res = await traktClient.get(`/users/me/ratings/${mediaType}`, {
             headers: {
                 'trakt-api-version': '2',
                 'trakt-api-key': process.env.TRAKT_CLIENT_ID,
@@ -109,7 +110,7 @@ async function fetchRecentRatings(traktToken, mediaType, limit = 40) {
 async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40) {
     if (!traktToken || !process.env.TRAKT_CLIENT_ID) return [];
     try {
-        const res = await traktApiClient.get(`/recommendations/${mediaType}`, {
+        const res = await traktClient.get(`/recommendations/${mediaType}`, {
             headers: {
                 'trakt-api-version': '2',
                 'trakt-api-key': process.env.TRAKT_CLIENT_ID,
@@ -482,9 +483,10 @@ async function twoTierScore(pool, profile, options) {
             id: item.id,
             genre_ids: item.genre_ids || [],
             vote_average: item.vote_average || 0,
-            vote_count: item.vote_count || 0
+            vote_count: item.vote_count || 0,
+            keywords: item.keywords || []
         };
-        const lightScore = ProfileScorer.calculateLightScore(lightData, profile);
+        const lightScore = ProfileScorer.calculateLightScore(lightData, profile, options);
         return { data: item, lightScore };
     });
 
@@ -837,7 +839,7 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     }
 
     // Two-Tier Scoring: Light → taglio → Deep
-    const scored = await twoTierScore(pool, profile, { tmdbApiKey, types, dnaFilters, globalProfile });
+    const scored = await twoTierScore(pool, profile, { tmdbApiKey, types, dnaFilters, globalProfile, catalogContext: 'hidden_gems' });
 
     return scored.slice(0, 100).map(i => String(i.data.id));
 }
@@ -894,13 +896,10 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         const isStale = !profile || (now - profile.lastUpdated) > (1000 * 60 * 60 * 12); // 12 ore
         if (isStale) {
             console.log(`[Hybrid] Sincronizzazione profilo per ${userId} (${context})...`);
-            const traktType = mediaType === 'movie' ? 'movies' : 'shows';
-            const [history, ratings] = await Promise.all([
-                fetchRecentHistory(traktToken, traktType, 40),
-                fetchRecentRatings(traktToken, traktType, 40)
-            ]);
-            await ProfileBuilder.syncUserHistory(userId, context, [...history, ...ratings], tmdbApiKey);
-            await hybridRecommendationsCache.delete(cacheKey);
+            const synced = await syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context);
+            if (synced) {
+                await hybridRecommendationsCache.delete(cacheKey);
+            }
         }
     }).catch(err => console.error("Errore check stale profile:", err.message));
 
@@ -917,7 +916,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         const DISCOVERY_IDS = new Set(['yaca_signature_blend_movies', 'yaca_signature_blend_series', 'yaca_discovery_movies', 'yaca_discovery_series']);
         const TOP20_IDS = new Set(['yaca_signature_star_movies', 'yaca_signature_star_series', 'yaca_top20_movies', 'yaca_top20_series']);
 
-        let ids = [];
+        let ids;
         if (TRUE_BLEND_IDS.has(catalogId)) {
             ids = await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType);
         } else if (SEED_NETWORK_IDS.has(catalogId)) {
@@ -1002,7 +1001,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     );
 
     // Background Sync: scarica metadati completi per la cache (non bloccante)
-    setImmediate(() => {
+    global.setImmediate(() => {
         rateLimitedMap(pageIds, async (tmdbId) => {
             try {
                 const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
@@ -1019,6 +1018,11 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
  */
 async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context = 'global') {
     if (!userId || !traktToken || !tmdbApiKey) return false;
+    const lockKey = `sync_lock:${userId}:${context}`;
+    if (activeSyncLocks.has(lockKey)) {
+        return false;
+    }
+    activeSyncLocks.add(lockKey);
     try {
         const traktType = mediaType === 'movie' ? 'movies' : 'shows';
         const [history, ratings] = await Promise.all([
@@ -1030,6 +1034,8 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
     } catch (err) {
         console.error(`[Hybrid] syncIncrementalRecommendations failed for ${userId}/${context}:`, err.message);
         return false;
+    } finally {
+        activeSyncLocks.delete(lockKey);
     }
 }
 

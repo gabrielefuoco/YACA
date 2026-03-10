@@ -58,6 +58,10 @@ jest.mock('../src/db/models/CacheEntry', () => ({
     find: jest.fn(() => ({ limit: jest.fn(() => ({ lean: jest.fn().mockResolvedValue([]) })) }))
 }));
 
+jest.mock('../src/db/models/TmdbScoringData', () => ({
+    find: jest.fn(() => ({ lean: jest.fn().mockResolvedValue([]) }))
+}));
+
 jest.mock('../src/data/presets', () => ({
     getPresets: jest.fn(() => [])
 }));
@@ -68,6 +72,7 @@ const { routeLiveStremioSearch } = require('../src/ai/router');
 const { getHybridCatalog } = require('../src/engines/hybridRecommendations');
 const { getPresets } = require('../src/data/presets');
 const TasteProfile = require('../src/db/models/TasteProfile');
+const TmdbScoringData = require('../src/db/models/TmdbScoringData');
 const ProfileScorer = require('../src/profile/ProfileScorer');
 const { getTmdbMovieDetails } = require('../src/clients/tmdb');
 const { catalogHandler } = require('../src/handlers/catalogHandler');
@@ -77,6 +82,7 @@ describe('catalogHandler critical recommendation/search fixes', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        TmdbScoringData.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
     });
 
     it('executes hybrid catalogs even when trakt token is missing', async () => {
@@ -235,6 +241,82 @@ describe('catalogHandler critical recommendation/search fixes', () => {
         expect(result.metas).toHaveLength(2);
         expect(result.metas[0].poster).toContain('https://ik.imagekit.io/mock-id/badge/');
         expect(result.metas[1].poster).toContain('https://ik.imagekit.io/mock-id/badge/');
+    });
+
+    it('merges popularity catalogs horizontally at the requested skip and reranks only the current page', async () => {
+        const profileDoc = {
+            settings: {},
+            genreScores: new Map([['18', 20]]),
+            keywordScores: new Map(),
+            directorScores: new Map(),
+            actorScores: new Map(),
+            tmdbWeight: 1,
+            traktWeight: 1
+        };
+        TasteProfile.findOne
+            .mockResolvedValueOnce(profileDoc)
+            .mockResolvedValueOnce(null);
+        getPresets.mockReturnValue([
+            {
+                id: 'preset_merged_popularity',
+                source: 'merged',
+                filters: {
+                    merge: {
+                        catalogs: ['source_a', 'source_b'],
+                        sourceFilters: [
+                            { strategy: 'discovery', sort_by: 'popularity.desc' },
+                            { strategy: 'discovery', sort_by: 'popularity.desc' }
+                        ],
+                        sourceTypes: ['movie', 'movie'],
+                        strategy: 'popularity'
+                    }
+                }
+            }
+        ]);
+        fetchTmdbCatalog
+            .mockResolvedValueOnce([
+                { id: 'tmdb:100', type: 'movie', name: 'A', popularity: 100, genre_ids: [18] },
+                { id: 'tmdb:101', type: 'movie', name: 'B', popularity: 90, genre_ids: [28] }
+            ])
+            .mockResolvedValueOnce([
+                { id: 'tmdb:102', type: 'movie', name: 'C', popularity: 95, genre_ids: [18] },
+                { id: 'tmdb:101', type: 'movie', name: 'B duplicate', popularity: 90, genre_ids: [28] }
+            ]);
+        ProfileScorer.calculateItemMatch
+            .mockReturnValueOnce(1)
+            .mockReturnValueOnce(10)
+            .mockReturnValueOnce(2);
+
+        const result = await catalogHandler({
+            type: 'movie',
+            id: 'yaca_preset_preset_merged_popularity',
+            extra: { skip: 20 }
+        }, {
+            userId: 'user_1',
+            activeProfileId: 'prof1',
+            apiKeys: { tmdb: 'tmdb_key' },
+            profiles: [{ id: 'prof1', settings: {} }]
+        }, 'https://host.test');
+
+        expect(fetchTmdbCatalog).toHaveBeenNthCalledWith(
+            1,
+            expect.any(Object),
+            '/discover/movie',
+            20,
+            expect.any(Object),
+            'movie',
+            expect.any(Object)
+        );
+        expect(fetchTmdbCatalog).toHaveBeenNthCalledWith(
+            2,
+            expect.any(Object),
+            '/discover/movie',
+            20,
+            expect.any(Object),
+            'movie',
+            expect.any(Object)
+        );
+        expect(result.metas.map(item => item.id)).toEqual(['tmdb:102', 'tmdb:101', 'tmdb:100']);
     });
 
     it('hydrates light mode items from local cache before ProfileScorer ranking', async () => {

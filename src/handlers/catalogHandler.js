@@ -486,6 +486,31 @@ function interleaveResults(listA = [], listB = [], skip, limit) {
     return combined.slice(skip, skip + limit);
 }
 
+async function rerankMergedPage(results, profileDoc, globalProfileDoc, tmdbApiKey, type, dnaFilters = []) {
+    if (!profileDoc || !Array.isArray(results) || results.length === 0) return results;
+
+    await hydrateResultsFromLocalDetailsCache(results, tmdbApiKey, type);
+    return [...results]
+        .map((item, index) => {
+            const affinity = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profileDoc, {
+                globalProfile: globalProfileDoc,
+                dnaFilters
+            });
+            return {
+                item,
+                affinity,
+                finalScore: affinity + ((item.popularity || 0) / 1000),
+                index
+            };
+        })
+        .sort((a, b) => {
+            if (b.finalScore !== a.finalScore) return b.finalScore - a.finalScore;
+            if ((b.item.popularity || 0) !== (a.item.popularity || 0)) return (b.item.popularity || 0) - (a.item.popularity || 0);
+            return a.index - b.index;
+        })
+        .map(entry => entry.item);
+}
+
 /**
  * Arricchisce i filtri con le preferenze del profilo utente (Automatic Query Injection).
  */
@@ -978,9 +1003,6 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     const strategy = mergeConfig.strategy || 'popularity'; // 'popularity' or 'mixed'
 
                     if (sourceIds && sourceIds.length >= 2) {
-                        // Phase 4 Merge strategy: fetch enough items from each source to satisfy skip
-                        const fetchLimit = skip + 60;
-
                         const fetchSource = async (idx) => {
                             if (sourceFilters[idx] && typeof sourceFilters[idx] === 'object' && !sourceFilters[idx].merge) {
                                 // Direct filter execution - no need for recursive ID resolution
@@ -988,10 +1010,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
                                 const srcFilters = { ...sourceFilters[idx] };
                                 if (!srcFilters.strategy) srcFilters.strategy = 'discovery';
                                 const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, skip, activeProfileSettings, tmdbFetchOptions);
-                                return { metas: items.slice(0, fetchLimit) };
+                                return { metas: items.slice(0, 20) };
                             }
                             // Recursive catalogHandler (for preset/DB IDs) - Pass correct skip
-                            return catalogHandler({ type, id: sourceIds[idx], extra: { ...extra, skip: skip, limit: fetchLimit } }, userConfig, hostUrl);
+                            return catalogHandler({ type, id: sourceIds[idx], extra: { ...extra, skip, limit: 20 } }, userConfig, hostUrl);
                         };
 
                         const [resA, resB] = await Promise.all([fetchSource(0), fetchSource(1)]);
@@ -1004,12 +1026,13 @@ async function catalogHandler(args, userConfig, hostUrl) {
                             // quindi non ripetiamo lo skip qui — slice(0, 20) per la pagina corretta.
                             results = interleaveResults(listA, listB, 0, 20);
                         } else {
-                            // Popularity: combine, deduplicate, and sort
+                            // Popularity: horizontal page fetch, merge on the fly, dedupe, sort by TMDB popularity, then rerank the current page.
                             const combined = [...listA, ...listB];
                             const unique = Array.from(new Map(combined.map(item => [normalizeContentId(item.id), item])).values());
-                            results = unique
+                            const pageResults = unique
                                 .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
                                 .slice(0, 20);
+                            results = await rerankMergedPage(pageResults, profileDoc, globalProfileDoc, tmdbApiKey, type, activeDnaFilters);
                         }
 
                         return await finalizeCatalog(results, id, type, hostUrl, userConfig);

@@ -4,6 +4,10 @@ const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const { BINGE_SESSION_GAP_MS, BINGE_MULTIPLIER } = require('../config');
 const GLOBAL_PROFILE_MIRROR_RATIO = 0.2;
 
+function mergeProcessedIds(existingIds = [], newIds = []) {
+    return Array.from(new Set([...(existingIds || []), ...(newIds || [])].map(id => id?.toString()).filter(Boolean)));
+}
+
 /**
  * Applies logarithmic time-decay accumulation so that repeated scores give
  * diminishing returns, preventing the profile from going "flat".
@@ -118,7 +122,7 @@ class ProfileBuilder {
         // Use findOneAndUpdate with upsert to avoid race conditions creating duplicate profiles
         let profile = await TasteProfile.findOneAndUpdate(
             { owner, context },
-            { $setOnInsert: { processedTraktIds: [] } },
+            { $setOnInsert: { processedTraktIds: [], processedStremioIds: [] } },
             { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
         );
 
@@ -127,15 +131,18 @@ class ProfileBuilder {
         if (shouldMirrorToGlobal) {
             globalProfile = await TasteProfile.findOneAndUpdate(
                 { owner, context: 'global' },
-                { $setOnInsert: { processedTraktIds: [] } },
+                { $setOnInsert: { processedTraktIds: [], processedStremioIds: [] } },
                 { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
             );
         }
 
         // Filtra solo quelli non ancora processati
+        const seenProcessedIds = new Set((profile.processedTraktIds || []).map(id => id.toString()));
         const newItems = traktHistory.filter(item => {
             const id = item.movie?.ids?.tmdb || item.show?.ids?.tmdb || item.movie?.ids?.imdb || item.show?.ids?.imdb;
-            return id && !profile.processedTraktIds.includes(id.toString());
+            if (!id || seenProcessedIds.has(id.toString())) return false;
+            seenProcessedIds.add(id.toString());
+            return true;
         });
 
         if (newItems.length === 0) return profile;
@@ -178,6 +185,8 @@ class ProfileBuilder {
 
         // Processa in batch per non saturare TMDB
         const batchSize = 5;
+        const processedProfileIds = [];
+        const processedGlobalIds = [];
         for (let i = 0; i < newItems.length; i += batchSize) {
             const batch = newItems.slice(i, i + batchSize);
             const promises = batch.map(async (item) => {
@@ -193,10 +202,10 @@ class ProfileBuilder {
                     if (details) {
                         const bingeMultiplier = sessionMultiplierMap.get(processedId.toString()) || 1.0;
                         this.processItem(profile, details, bingeMultiplier);
-                        profile.processedTraktIds.push(processedId.toString());
+                        processedProfileIds.push(processedId.toString());
                         if (globalProfile && !globalProfile.processedTraktIds.includes(processedId.toString())) {
                             this.processItem(globalProfile, details, bingeMultiplier * GLOBAL_PROFILE_MIRROR_RATIO);
-                            globalProfile.processedTraktIds.push(processedId.toString());
+                            processedGlobalIds.push(processedId.toString());
                         }
                     }
                 } catch (e) {
@@ -208,8 +217,22 @@ class ProfileBuilder {
         }
 
         await profile.save();
+        if (processedProfileIds.length > 0) {
+            await TasteProfile.updateOne(
+                { owner, context },
+                { $addToSet: { processedTraktIds: { $each: processedProfileIds } } }
+            );
+            profile.processedTraktIds = mergeProcessedIds(profile.processedTraktIds, processedProfileIds);
+        }
         if (globalProfile) {
             await globalProfile.save();
+            if (processedGlobalIds.length > 0) {
+                await TasteProfile.updateOne(
+                    { owner, context: 'global' },
+                    { $addToSet: { processedTraktIds: { $each: processedGlobalIds } } }
+                );
+                globalProfile.processedTraktIds = mergeProcessedIds(globalProfile.processedTraktIds, processedGlobalIds);
+            }
         }
 
         await this.inferDNAFromProfile(profile);
@@ -231,7 +254,7 @@ class ProfileBuilder {
         // Use findOneAndUpdate with upsert to avoid race conditions
         let profile = await TasteProfile.findOneAndUpdate(
             { owner, context: 'global' },
-            { $setOnInsert: { processedTraktIds: [] } },
+            { $setOnInsert: { processedTraktIds: [], processedStremioIds: [] } },
             { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
         );
 
@@ -246,6 +269,8 @@ class ProfileBuilder {
 
         // Processa in batch
         const batchSize = 5;
+        const existingStremioIds = new Set((profile.processedStremioIds || []).map(id => id.toString()));
+        const processedStremioIds = [];
         for (let i = 0; i < allItems.length; i += batchSize) {
             const batch = allItems.slice(i, i + batchSize);
             await Promise.all(batch.map(async ({ item, weight }) => {
@@ -253,13 +278,14 @@ class ProfileBuilder {
                 const type = item.type === 'series' ? 'tv' : 'movie';
 
                 // Evita duplicati se già processato con peso simile
-                if (profile.processedTraktIds.includes(id.toString())) return;
+                if (!id || existingStremioIds.has(id.toString())) return;
+                existingStremioIds.add(id.toString());
 
                 try {
                     const details = await tmdb.getTmdbMovieDetails(apiKey, id, type);
                     if (details) {
                         this.processItem(profile, details, weight);
-                        profile.processedTraktIds.push(id.toString());
+                        processedStremioIds.push(id.toString());
                     }
                 } catch (e) {
                     console.error(`[ProfileBuilder] Errore processamento item Stremio ${id}:`, e.message);
@@ -268,11 +294,18 @@ class ProfileBuilder {
         }
 
         await profile.save();
+        if (processedStremioIds.length > 0) {
+            await TasteProfile.updateOne(
+                { owner, context: 'global' },
+                { $addToSet: { processedStremioIds: { $each: processedStremioIds } } }
+            );
+            profile.processedStremioIds = mergeProcessedIds(profile.processedStremioIds, processedStremioIds);
+        }
         return profile;
     }
     /**
      * Deduces new DNA based on the dominant score values in the profile.
-     * Updates the User document's suggestedDNA if a new DNA is found.
+     * Stores new DNA suggestions in a pending staging area without mutating active DNA.
      * @param {Object} profile Il documento TasteProfile
      */
     static async inferDNAFromProfile(profile) {
@@ -283,8 +316,8 @@ class ProfileBuilder {
             const userDoc = await User.findOne({ userId: profile.owner });
             if (!userDoc) return;
 
-            const targetProfiles = Array.isArray(userDoc.profiles) ? userDoc.profiles.filter(p => p.id === profile.context) : [];
-            if (targetProfiles.length === 0) return;
+            const userProfile = Array.isArray(userDoc.profiles) ? userDoc.profiles.find(p => p.id === profile.context) : null;
+            if (!userProfile) return;
 
             // Logica di threshold per considerare un asse come "Pilastro"
             const MIN_SCORE_THRESHOLD = 50;
@@ -321,29 +354,28 @@ class ProfileBuilder {
                 }
             };
 
-            let hasUpdates = false;
-            for (const userProfile of targetProfiles) {
-                const suggested = userProfile.settings?.suggestedDNA || [];
-                const manual = userProfile.settings?.manualDNA || [];
-                const existingDNAIds = new Set([...suggested.map(p => p.id), ...manual.map(p => p.id)]);
-                const beforeCount = suggested.length;
+            const suggested = userProfile.settings?.suggestedDNA || [];
+            const manual = userProfile.settings?.manualDNA || [];
+            const pending = userProfile.settings?.pendingDNASuggestions || [];
+            const existingDNAIds = new Set([
+                ...suggested.map(p => p.id),
+                ...manual.map(p => p.id),
+                ...pending.map(p => p.id)
+            ]);
+            const nextPending = [...pending];
 
-                // Mapping molto basico per i nomi in questa fase di inferenza background
-                // Il frontend o il DB dovrebbero avere nomi migliori, qui usiamo l'ID o deduzioni logiche se necessario
-                analyzeScores(profile.genreScores, 'genre', existingDNAIds, suggested, (id) => `Genre ${id}`);
-                analyzeScores(profile.keywordScores, 'keyword', existingDNAIds, suggested, (id) => `Keyword ${id}`);
-                analyzeScores(profile.countryScores, 'country', existingDNAIds, suggested, (id) => id);
+            // Mapping molto basico per i nomi in questa fase di inferenza background
+            // Il frontend o il DB dovrebbero avere nomi migliori, qui usiamo l'ID o deduzioni logiche se necessario
+            analyzeScores(profile.genreScores, 'genre', existingDNAIds, nextPending, (id) => `Genre ${id}`);
+            analyzeScores(profile.keywordScores, 'keyword', existingDNAIds, nextPending, (id) => `Keyword ${id}`);
+            analyzeScores(profile.countryScores, 'country', existingDNAIds, nextPending, (id) => id);
 
-                if (suggested.length > beforeCount) {
-                    if (!userProfile.settings) userProfile.settings = {};
-                    userProfile.settings.suggestedDNA = suggested;
-                    hasUpdates = true;
-                }
-            }
-
-            if (hasUpdates) {
-                await userDoc.save();
-                console.log(`💡 Nuovi DNA suggeriti inferiti per l'utente ${profile.owner}, contesto ${profile.context}`);
+            if (nextPending.length > pending.length) {
+                await User.findOneAndUpdate(
+                    { userId: profile.owner, 'profiles.id': profile.context },
+                    { $set: { 'profiles.$.settings.pendingDNASuggestions': nextPending } }
+                );
+                console.log(`💡 Nuovi DNA in pending per l'utente ${profile.owner}, contesto ${profile.context}`);
             }
 
         } catch (e) {

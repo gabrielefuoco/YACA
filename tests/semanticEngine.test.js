@@ -71,6 +71,20 @@ describe('ProfileScorer.calculateLightScore', () => {
         const score = ProfileScorer.calculateLightScore(lightData, profile);
         expect(score).toBeGreaterThanOrEqual(0);
     });
+
+    it('should favor low-but-real vote counts for hidden gems and penalize near-empty vote counts', () => {
+        const profile = makeProfile({ '99': 4.0 });
+        const hiddenGem = { id: 6, genre_ids: [99], vote_average: 7.5, vote_count: 120 };
+        const mainstream = { id: 7, genre_ids: [99], vote_average: 7.5, vote_count: 5000 };
+        const amateur = { id: 8, genre_ids: [99], vote_average: 9.5, vote_count: 5 };
+
+        const hiddenGemScore = ProfileScorer.calculateLightScore(hiddenGem, profile, { catalogContext: 'hidden_gems' });
+        const mainstreamScore = ProfileScorer.calculateLightScore(mainstream, profile, { catalogContext: 'hidden_gems' });
+        const amateurScore = ProfileScorer.calculateLightScore(amateur, profile, { catalogContext: 'hidden_gems' });
+
+        expect(hiddenGemScore).toBeGreaterThan(mainstreamScore);
+        expect(amateurScore).toBeLessThan(hiddenGemScore);
+    });
 });
 
 // ============================================
