@@ -30,7 +30,7 @@ const User = require('../src/db/models/User');
 const config = require('../src/config');
 
 describe('YACA 2.1 - Inclusive OR discovery params', () => {
-    it('normalizes with_genres and with_keywords separators to pipes', async () => {
+    it('normalizes with_genres separators to pipes and preserves with_keywords separator logic', async () => {
         const params = await buildDiscoveryParams({
             with_genres: '35,18',
             with_keywords: '9840,123|456',
@@ -38,7 +38,10 @@ describe('YACA 2.1 - Inclusive OR discovery params', () => {
         }, 'tmdb-key', 'movie', {});
 
         expect(params.with_genres).toBe('35|18');
-        expect(params.with_keywords).toBe('9840|123|456');
+        // When with_keywords contains pipe (|), split by pipe preserving comma groups:
+        // '9840,123|456' → split by | → ['9840,123', '456'] → join by | → '9840,123|456'
+        // TMDB interprets this as (9840 AND 123) OR 456
+        expect(params.with_keywords).toBe('9840,123|456');
     });
 
     it('builds mapped TV genres using OR pipes', async () => {

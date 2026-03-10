@@ -153,12 +153,48 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
     if (!tmdbApiKey || !Array.isArray(metas) || metas.length === 0) return;
 
     const tmdbType = type === 'series' ? 'tv' : 'movie';
+    const itemsToHydrate = metas.slice(0, 60).filter(item => item && item.id && !item.rawTMDB && !(item.cast && item.keywords));
+    if (itemsToHydrate.length === 0) return;
+
+    const tmdbIds = itemsToHydrate.map(item => Number(normalizeContentId(item.id))).filter(id => !isNaN(id));
+
+    // Fase 1: Bulk query su TmdbScoringData per evitare N chiamate individuali
+    let scoringMap = new Map();
+    try {
+        const TmdbScoringData = require('../db/models/TmdbScoringData');
+        const cachedDocs = await TmdbScoringData.find({ tmdbId: { $in: tmdbIds }, type: tmdbType }).lean();
+        for (const doc of cachedDocs) {
+            scoringMap.set(doc.tmdbId, doc);
+        }
+    } catch (_e) { /* TmdbScoringData miss is non-blocking */ }
+
+    // Fase 2: Idratta i risultati, con fallback individuale solo per i miss
     await Promise.all(
-        metas.slice(0, 60).map(async (item) => {
-            if (!item || !item.id || item.rawTMDB || (item.cast && item.keywords)) return;
+        itemsToHydrate.map(async (item) => {
             try {
-                const tmdbId = normalizeContentId(item.id);
-                const cachedDetails = await getTmdbMovieDetails(tmdbApiKey, tmdbId, tmdbType, { cacheOnly: true });
+                const tmdbId = Number(normalizeContentId(item.id));
+                const scoringDoc = scoringMap.get(tmdbId);
+
+                if (scoringDoc) {
+                    // Ricostruisci un oggetto compatibile con ProfileScorer dalla scoring cache
+                    item.rawTMDB = {
+                        id: scoringDoc.tmdbId,
+                        genre_ids: scoringDoc.genre_ids,
+                        vote_average: scoringDoc.vote_average,
+                        vote_count: scoringDoc.vote_count,
+                        keywords: { keywords: scoringDoc.keyword_ids.map(id => ({ id })) },
+                        credits: {
+                            crew: scoringDoc.director_ids.map(id => ({ id, job: 'Director' })),
+                            cast: scoringDoc.cast_ids.map(id => ({ id }))
+                        }
+                    };
+                    item.keywords = item.rawTMDB.keywords.keywords;
+                    item.cast = item.rawTMDB.credits.cast;
+                    return;
+                }
+
+                // Fallback: chiamata individuale alla cache TMDB per i titoli sconosciuti
+                const cachedDetails = await getTmdbMovieDetails(tmdbApiKey, String(tmdbId), tmdbType, { cacheOnly: true });
                 if (!cachedDetails) return;
 
                 item.rawTMDB = cachedDetails;
@@ -270,10 +306,14 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
     }
 
     if (tmdbParams.with_keywords !== undefined && tmdbParams.with_keywords !== null) {
+        const kwStr = String(tmdbParams.with_keywords);
+        // Rileva il separatore originale: se contiene pipe usa OR, altrimenti AND (virgola)
+        const kwIsOr = kwStr.includes('|');
+        const kwSeparator = kwIsOr ? '|' : ',';
         const normalizedKeywords = Array.isArray(tmdbParams.with_keywords)
             ? tmdbParams.with_keywords.map(String)
-            : String(tmdbParams.with_keywords).split(/[|,]/).map(k => k.trim()).filter(Boolean);
-        if (normalizedKeywords.length > 0) tmdbParams.with_keywords = [...new Set(normalizedKeywords)].join('|');
+            : kwStr.split(kwIsOr ? '|' : ',').map(k => k.trim()).filter(Boolean);
+        if (normalizedKeywords.length > 0) tmdbParams.with_keywords = [...new Set(normalizedKeywords)].join(kwSeparator);
     }
 
     if (filters.genre_ids?.length) {
@@ -976,7 +1016,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                                 const srcType = sourceTypes[idx] || type;
                                 const srcFilters = { ...sourceFilters[idx] };
                                 if (!srcFilters.strategy) srcFilters.strategy = 'discovery';
-                                const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, 0, activeProfileSettings, tmdbFetchOptions);
+                                const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, skip, activeProfileSettings, tmdbFetchOptions);
                                 return { metas: items.slice(0, fetchLimit) };
                             }
                             // Recursive catalogHandler (for preset/DB IDs) - Pass correct skip
