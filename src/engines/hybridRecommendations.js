@@ -486,7 +486,7 @@ async function twoTierScore(pool, profile, options) {
     const survivorIds = survivors.map(s => s.data.id);
     let scoringCache = new Map();
     try {
-        const cached = await TmdbScoringData.find({ tmdbId: { $in: survivorIds }, type: types });
+        const cached = await TmdbScoringData.find({ tmdbId: { $in: survivorIds }, type: types }).lean();
         for (const doc of cached) {
             scoringCache.set(doc.tmdbId, doc);
         }
@@ -829,7 +829,7 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
         // Risolvi e lancia ricerche parallele con filtri di qualità
         const queryPromises = aiQueries.map(async (q) => {
             const tmdbParams = await resolveAiQueryToTmdbParams(q, tmdbApiKey, types);
-            return fetchDiscoverPages({ ...dnaParams, ...qualityFilters, ...tmdbParams }, 2);
+            return fetchDiscoverPages({ ...dnaParams, ...tmdbParams, ...qualityFilters }, 2);
         });
         const allResults = await Promise.all(queryPromises);
         allResults.forEach(results => addResults(results));
