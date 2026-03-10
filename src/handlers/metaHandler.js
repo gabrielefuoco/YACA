@@ -99,7 +99,7 @@ async function metaHandler(args, userConfig) {
                                         const kitsuId = await getKitsuIdFromTmdbId(tmdbId, 'series');
                                         if (kitsuId) {
                                             const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
-                                            if ((!Array.isArray(bgMeta.videos) || bgMeta.videos.length === 0) && kitsuEpisodes && kitsuEpisodes.length > 0) {
+                                            if (kitsuEpisodes && kitsuEpisodes.length > 0) {
                                                 bgMeta.videos = normalizeAnimeEpisodes(bgMeta.id, kitsuEpisodes);
                                             }
                                         }
@@ -124,7 +124,7 @@ async function metaHandler(args, userConfig) {
                                 if (kitsuId) {
                                     console.log(`[HybridAnime] Trovato mapping Kitsu ${kitsuId} per TMDB ${tmdbId}. Carico episodi...`);
                                     const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
-                                    if ((!Array.isArray(meta.videos) || meta.videos.length === 0) && kitsuEpisodes && kitsuEpisodes.length > 0) {
+                                    if (kitsuEpisodes && kitsuEpisodes.length > 0) {
                                         meta.videos = normalizeAnimeEpisodes(meta.id, kitsuEpisodes);
                                     }
                                 }

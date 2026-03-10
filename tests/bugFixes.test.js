@@ -520,7 +520,10 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
         expect(result.meta._isAnime).toBeUndefined();
     });
 
-    it('should keep TMDB episode list for anime when TMDB already returned videos', async () => {
+    it('should override TMDB episode list with Kitsu episodes for anime when Kitsu is available', async () => {
+        const tmdbVideos = [
+            { id: 'tt200:1:1', title: 'Enter Naruto', season: 1, episode: 1, overview: 'Trama IT' }
+        ];
         const mockMeta = {
             id: 'tt200',
             name: 'Naruto',
@@ -529,9 +532,7 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
             genres: ['Animation', 'Action & Adventure'],
             _isAnime: true,
             _keywordNames: ['anime', 'ninja'],
-            videos: [
-                { id: 'tt200:1:1', title: 'Enter Naruto', season: 1, episode: 1, overview: 'Trama IT' }
-            ],
+            videos: [...tmdbVideos],
             behaviorHints: {}
         };
 
@@ -560,8 +561,11 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
             { apiKeys: { tmdb: 'key' } }
         );
 
-        expect(result.meta.videos).toEqual([
+        expect(tmdbVideos).toEqual([
             { id: 'tt200:1:1', title: 'Enter Naruto', season: 1, episode: 1, overview: 'Trama IT' }
+        ]);
+        expect(result.meta.videos).toEqual([
+            { id: 'tt200:1:1', title: 'Episode 1', season: 1, episode: 1 }
         ]);
     });
 
