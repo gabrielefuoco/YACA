@@ -3,12 +3,14 @@ const { createAxiosInstance } = require('../utils/httpClient');
 const LRUCache = require('../utils/LRUCache');
 const { RECOMMENDATIONS_CACHE_TTL_MS, ITEMS_PER_PAGE } = require('../config');
 const TasteProfile = require('../db/models/TasteProfile');
+const TmdbScoringData = require('../db/models/TmdbScoringData');
 const User = require('../db/models/User');
 const ProfileBuilder = require('../profile/ProfileBuilder');
 const ProfileScorer = require('../profile/ProfileScorer');
 const tmdb = require('../clients/tmdb');
 const { rateLimitedMap } = require('../utils/rateLimiter');
 const RecommendationCache = require('../models/RecommendationCache');
+const { generateDiscoveryQueries } = require('../ai/querySynthesizer');
 
 const traktApiClient = createAxiosInstance('https://api.trakt.tv');
 
@@ -416,9 +418,161 @@ async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, media
 }
 
 /**
+ * Risolve una singola query AI in parametri TMDB validi.
+ * Converte keyword testuali in ID numerici TMDB tramite /search/keyword.
+ * @param {Object} aiQuery { genre_ids, keyword, vibe }
+ * @param {string} tmdbApiKey
+ * @param {string} types 'movie' o 'tv'
+ * @returns {Object} Parametri TMDB validi per /discover
+ */
+async function resolveAiQueryToTmdbParams(aiQuery, tmdbApiKey, types) {
+    const params = { api_key: tmdbApiKey, sort_by: 'popularity.desc' };
+
+    if (aiQuery.genre_ids && aiQuery.genre_ids.length > 0) {
+        params.with_genres = aiQuery.genre_ids.join('|');
+    }
+
+    if (aiQuery.keyword) {
+        const isOr = aiQuery.keyword.includes('|');
+        const separator = isOr ? '|' : ',';
+        const keywordNames = aiQuery.keyword.split(separator).map(k => k.trim()).filter(Boolean);
+
+        const results = await Promise.allSettled(
+            keywordNames.map(k => tmdb.getTmdbIdByName(tmdbApiKey, 'keyword', k))
+        );
+        const validIds = results
+            .filter(r => r.status === 'fulfilled' && r.value)
+            .map(r => r.value);
+
+        if (validIds.length > 0) {
+            params.with_keywords = validIds.join(separator);
+        }
+    }
+
+    return params;
+}
+
+/**
+ * Esegue il Two-Tier Scoring su un pool di candidati.
+ * Tier 1: Light Score in RAM (generi + bayesian) → taglio metà inferiore
+ * Tier 2: Deep Score sui sopravvissuti (metadati completi)
+ * 
+ * @param {Array} pool Array di item TMDB "light" (da /discover)
+ * @param {Object} profile TasteProfile
+ * @param {Object} options { tmdbApiKey, types, dnaFilters, globalProfile }
+ * @returns {Array} Array di { data, score } ordinati per score
+ */
+async function twoTierScore(pool, profile, options) {
+    const { tmdbApiKey, types, dnaFilters, globalProfile } = options;
+
+    // --- Tier 1: Light Score in RAM ---
+    const lightScored = pool.map(item => {
+        const lightData = {
+            id: item.id,
+            genre_ids: item.genre_ids || [],
+            vote_average: item.vote_average || 0,
+            vote_count: item.vote_count || 0
+        };
+        const lightScore = ProfileScorer.calculateLightScore(lightData, profile);
+        return { data: item, lightScore };
+    });
+
+    // Taglio Brutale: ordina per Light Score e tieni solo la metà superiore (max 80)
+    lightScored.sort((a, b) => b.lightScore - a.lightScore);
+    const survivors = lightScored.slice(0, Math.min(80, Math.ceil(lightScored.length / 2)));
+
+    // --- Tier 2: Deep Score con metadati completi ---
+    // Prima controlla la Scoring Cache per evitare chiamate API
+    const survivorIds = survivors.map(s => s.data.id);
+    let scoringCache = new Map();
+    try {
+        const cached = await TmdbScoringData.find({ tmdbId: { $in: survivorIds }, type: types });
+        for (const doc of cached) {
+            scoringCache.set(doc.tmdbId, doc);
+        }
+    } catch (_e) { /* scoring cache miss is non-blocking */ }
+
+    const scored = await rateLimitedMap(
+        survivors,
+        async ({ data }) => {
+            // Prova prima la scoring cache locale
+            const cachedScoring = scoringCache.get(data.id);
+            if (cachedScoring) {
+                // Ricostruisci un oggetto compatibile con ProfileScorer
+                const syntheticData = {
+                    id: cachedScoring.tmdbId,
+                    genre_ids: cachedScoring.genre_ids,
+                    vote_average: cachedScoring.vote_average,
+                    vote_count: cachedScoring.vote_count,
+                    keywords: { keywords: cachedScoring.keyword_ids.map(id => ({ id })) },
+                    credits: {
+                        crew: cachedScoring.director_ids.map(id => ({ id, job: 'Director' })),
+                        cast: cachedScoring.cast_ids.map(id => ({ id }))
+                    }
+                };
+                const score = ProfileScorer.calculateItemMatch(syntheticData, profile, { dnaFilters, globalProfile });
+                return { data, score };
+            }
+
+            // Fallback: chiama TMDB per metadati completi
+            const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, data.id, types);
+            if (!details) return { data, score: 0 };
+
+            // Salva in scoring cache in background (fire-and-forget)
+            saveScoringData(details, types).catch(() => {});
+
+            const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
+            return { data, score };
+        },
+        { batchSize: 5, delayMs: 50 }
+    );
+
+    return scored.sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Salva i dati di scoring in cache permanente per un titolo TMDB.
+ * @param {Object} tmdbDetails Dati completi TMDB (con credits e keywords)
+ * @param {string} type 'movie' o 'tv'
+ */
+async function saveScoringData(tmdbDetails, type) {
+    if (!tmdbDetails || !tmdbDetails.id) return;
+
+    const keywordItems = tmdbDetails.keywords?.keywords || tmdbDetails.keywords?.results || [];
+    const directors = (tmdbDetails.credits?.crew || [])
+        .filter(c => c.job === 'Director')
+        .map(c => c.id)
+        .filter(Boolean);
+    const cast = (tmdbDetails.credits?.cast || [])
+        .slice(0, 5)
+        .map(c => c.id)
+        .filter(Boolean);
+    const genreIds = tmdbDetails.genre_ids || (tmdbDetails.genres ? tmdbDetails.genres.map(g => g.id) : []);
+
+    try {
+        await TmdbScoringData.updateOne(
+            { tmdbId: tmdbDetails.id, type },
+            {
+                $set: {
+                    vote_average: tmdbDetails.vote_average || 0,
+                    vote_count: tmdbDetails.vote_count || 0,
+                    genre_ids: genreIds,
+                    keyword_ids: keywordItems.map(k => k.id).filter(Boolean),
+                    director_ids: directors,
+                    cast_ids: cast
+                }
+            },
+            { upsert: true }
+        );
+    } catch (_e) { /* scoring cache write failure is non-blocking */ }
+}
+
+/**
  * 🎯 Hero Catalog 1: True Blend ("Scelti per Te")
- * Unisce Top Popolari + Discovery basin (OR genres/keywords) + Simili a 5 titoli amati.
- * Il ProfileScorer riordina il pool e il DNA penalizza i titoli fuori tema.
+ * Usa il Query Synthesizer (Mistral) per generare 2-3 ricerche ampie (OR logic).
+ * Paginazione profonda per creare un bacino largo (~150 titoli).
+ * Two-Tier Scoring: Light Score → taglio → Deep Score.
+ * Fallback al metodo classico se Mistral non è disponibile.
  */
 async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) {
     const [profile, user, globalProfile] = await Promise.all([
@@ -450,26 +604,46 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
         }
     };
 
-    const fetchDiscover = async (params) => {
-        try {
-            const res = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
-                params: { ...params, api_key: tmdbApiKey, sort_by: 'popularity.desc' },
-                timeout: 5000
-            });
-            return res.data?.results || [];
-        } catch (_e) { return []; }
+    const fetchDiscoverPages = async (params, pages = 3) => {
+        const results = [];
+        for (let page = 1; page <= pages; page++) {
+            try {
+                const res = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
+                    params: { ...params, api_key: tmdbApiKey, sort_by: 'popularity.desc', page },
+                    timeout: 5000
+                });
+                results.push(...(res.data?.results || []));
+            } catch (_e) { /* page fetch failure is non-blocking */ }
+        }
+        return results;
     };
 
-    // Source 1: Top Popular (no genre filter)
-    addResults(await fetchDiscover({ ...dnaParams, sort_by: 'popularity.desc' }));
+    // Source 1: AI Query Synthesizer (Mistral) — genera 2-3 ricerche ampie
+    const mistralKey = user?.apiKeys?.mistral;
+    let aiQueries = [];
+    if (mistralKey) {
+        try {
+            aiQueries = await generateDiscoveryQueries(profile, mistralKey, 'trueBlend');
+        } catch (_e) { /* AI failure falls through to classic fallback */ }
+    }
 
-    // Source 2: Discovery basin — OR on top genres + top keywords (Phase 2.1)
-    const discoveryParams = { ...dnaParams };
-    if (topGenres.length) discoveryParams.with_genres = topGenres.join('|');
-    if (topKeywords.length) discoveryParams.with_keywords = topKeywords.join('|');
-    addResults(await fetchDiscover(discoveryParams));
+    if (aiQueries.length > 0) {
+        // Risolvi keyword testuali in ID TMDB e lancia ricerche parallele con paginazione profonda
+        const queryPromises = aiQueries.map(async (q) => {
+            const tmdbParams = await resolveAiQueryToTmdbParams(q, tmdbApiKey, types);
+            return fetchDiscoverPages({ ...dnaParams, ...tmdbParams }, 3);
+        });
+        const allResults = await Promise.all(queryPromises);
+        allResults.forEach(results => addResults(results));
+    } else {
+        // Fallback classico: Discovery basin con OR su top genres + top keywords
+        const discoveryParams = { ...dnaParams };
+        if (topGenres.length) discoveryParams.with_genres = topGenres.join('|');
+        if (topKeywords.length) discoveryParams.with_keywords = topKeywords.join('|');
+        addResults(await fetchDiscoverPages(discoveryParams, 3));
+    }
 
-    // Source 3: Simili a 5 titoli amati casuali dal profilo
+    // Source 2: Simili a 5 titoli amati casuali dal profilo
     const lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 5);
     if (lovedIds.length > 0) {
         const similarResults = await rateLimitedMap(
@@ -487,18 +661,10 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
         });
     }
 
-    // Score and filter with ProfileScorer (DNA acts as bouncer)
-    const scored = await rateLimitedMap(
-        pool.slice(0, 100),
-        async (item) => {
-            const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-            const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
-            return { data: item, score };
-        },
-        { batchSize: 5, delayMs: 50 }
-    );
+    // Two-Tier Scoring: Light → taglio → Deep
+    const scored = await twoTierScore(pool, profile, { tmdbApiKey, types, dnaFilters, globalProfile });
 
-    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => String(i.data.id));
+    return scored.slice(0, 100).map(i => String(i.data.id));
 }
 
 /**
@@ -594,8 +760,9 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
 
 /**
  * 💎 Hero Catalog 3: Hidden Gems ("Gemme Nascoste" / Anti-Trash)
- * Cerca titoli affini al profilo con bassa popolarità ma qualità certificata.
- * Applica: minVotes>=100, minAvg>=7.2, Bayesian rating, esclude cortometraggi.
+ * Usa il Query Synthesizer (Mistral) per generare 3-4 ricerche iper-specifiche (AND logic).
+ * Mantiene filtri di qualità: bassa popolarità, alto rating, minimo voti.
+ * Applica Two-Tier Scoring. Fallback al metodo classico se Mistral non è disponibile.
  */
 async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     const [profile, user, globalProfile] = await Promise.all([
@@ -614,44 +781,74 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     const topGenres = computeTopGenres(profile, 3);
 
     // Quality cage: low popularity, high quality
-    const params = {
-        ...dnaParams,
+    const qualityFilters = {
         sort_by: 'vote_average.desc',
         'vote_count.gte': 100,
         'vote_average.gte': 7.2,
-        'popularity.lte': 20,  // Low popularity threshold
-        api_key: tmdbApiKey
+        'popularity.lte': 20
+    };
+    if (types === 'movie') qualityFilters['with_runtime.gte'] = 60; // Exclude short films
+
+    const existingIds = new Set();
+    let pool = [];
+
+    const addResults = (items) => {
+        for (const item of (items || [])) {
+            const normalizedItemId = normalizeContentId(item?.id);
+            if (item && !existingIds.has(normalizedItemId)) {
+                pool.push(item);
+                existingIds.add(normalizedItemId);
+            }
+        }
     };
 
-    if (topGenres.length) params.with_genres = topGenres.join('|');
-    if (types === 'movie') params['with_runtime.gte'] = 60; // Exclude short films
+    const fetchDiscoverPages = async (params, pages = 2) => {
+        const results = [];
+        for (let page = 1; page <= pages; page++) {
+            try {
+                const res = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
+                    params: { ...params, api_key: tmdbApiKey, page },
+                    timeout: 5000
+                });
+                results.push(...(res.data?.results || []));
+            } catch (_e) { /* page fetch failure is non-blocking */ }
+        }
+        return results;
+    };
 
-    const results = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
-        params,
-        timeout: 5000
-    }).then((res) => res.data?.results || [])
-        .catch((err) => {
-            console.debug(`[Hybrid] discover fetch failed in buildHiddenGemsCatalog (${types}):`, err.message);
-            return [];
+    // Source 1: AI Query Synthesizer (Mistral) — genera 3-4 ricerche iper-specifiche
+    const mistralKey = user?.apiKeys?.mistral;
+    let aiQueries = [];
+    if (mistralKey) {
+        try {
+            aiQueries = await generateDiscoveryQueries(profile, mistralKey, 'hiddenGems');
+        } catch (_e) { /* AI failure falls through to classic fallback */ }
+    }
+
+    if (aiQueries.length > 0) {
+        // Risolvi e lancia ricerche parallele con filtri di qualità
+        const queryPromises = aiQueries.map(async (q) => {
+            const tmdbParams = await resolveAiQueryToTmdbParams(q, tmdbApiKey, types);
+            return fetchDiscoverPages({ ...dnaParams, ...qualityFilters, ...tmdbParams }, 2);
         });
+        const allResults = await Promise.all(queryPromises);
+        allResults.forEach(results => addResults(results));
+    } else {
+        // Fallback classico: top genres + quality filters
+        const params = { ...dnaParams, ...qualityFilters };
+        if (topGenres.length) params.with_genres = topGenres.join('|');
+        addResults(await fetchDiscoverPages(params, 2));
+    }
 
-    // Apply ProfileScorer with DNA filter
-    const scored = await rateLimitedMap(
-        results.slice(0, 70),
-        async (item) => {
-            const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-            const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
-            return { data: item, score };
-        },
-        { batchSize: 5, delayMs: 50 }
-    );
+    // Two-Tier Scoring: Light → taglio → Deep
+    const scored = await twoTierScore(pool, profile, { tmdbApiKey, types, dnaFilters, globalProfile });
 
-    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => String(i.data.id));
+    return scored.slice(0, 100).map(i => String(i.data.id));
 }
 
 /**
  * 🌐 Hero Catalog 4: Trakt Filtered ("Suggeriti dalla Community")
- * Legge le raccomandazioni Trakt dal DB, le passa attraverso il ProfileScorer.
+ * Legge le raccomandazioni Trakt dal DB (100 risultati grezzi), le passa attraverso il ProfileScorer.
  */
 async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
     const [profile, user, globalProfile] = await Promise.all([
@@ -664,8 +861,8 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const dnaFilters = getDnaFilters(user, context);
 
-    // Fetch Trakt recommendations
-    const traktRaw = await fetchTraktRecommendationsRaw(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 40);
+    // Fetch Trakt recommendations — pool ampliato a 100 per massimizzare lo scoring
+    const traktRaw = await fetchTraktRecommendationsRaw(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 100);
     const traktTmdbIds = traktRaw
         .map(item => item.movie?.ids?.tmdb || item.show?.ids?.tmdb)
         .filter(Boolean);
@@ -674,7 +871,7 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
 
     // Enrich and score with ProfileScorer
     const scored = await rateLimitedMap(
-        traktTmdbIds.slice(0, 40),
+        traktTmdbIds.slice(0, 100),
         async (id) => {
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, id, types);
             if (!details) return null;
@@ -868,6 +1065,11 @@ module.exports = {
     fetchPopularFallbackIds,
     buildHybridCatalog,
     buildTopGenresMixCatalog,
+    buildHiddenGemsCatalog,
+    buildTraktFilteredCatalog,
+    twoTierScore,
+    resolveAiQueryToTmdbParams,
+    saveScoringData,
     catalogCache,
     recommendationsCache
 };

@@ -304,12 +304,17 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
     }
 
     if (filters.keyword && filters.keyword !== 'kdrama') {
-        const keywords = filters.keyword.split(',').map(k => k.trim()).filter(Boolean);
+        // Rileva se Mistral ha usato OR (|) o AND (,)
+        const isOr = filters.keyword.includes('|');
+        const separator = isOr ? '|' : ',';
+
+        const keywords = filters.keyword.split(separator).map(k => k.trim()).filter(Boolean);
         asyncTasks.push(
             Promise.allSettled(keywords.map(k => getTmdbIdByName(tmdbApiKey, 'keyword', k)))
                 .then(results => {
                     const valid = results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
-                    if (valid.length > 0) tmdbParams.with_keywords = valid.join('|');
+                    // Unisce gli ID numerici usando lo STESSO separatore scelto dall'AI
+                    if (valid.length > 0) tmdbParams.with_keywords = valid.join(separator);
                 })
         );
     }
