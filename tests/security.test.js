@@ -1,4 +1,13 @@
-const { sanitizeString, isAllowedUrl, isValidUUID } = require('../src/utils/helpers');
+jest.mock('nanoid', () => ({
+    nanoid: () => 'test-nanoid'
+}));
+
+jest.mock('../src/db/models/UserList', () => ({
+    findOne: jest.fn(() => ({ lean: jest.fn().mockResolvedValue(null) })),
+    deleteMany: jest.fn().mockResolvedValue({ deletedCount: 0 })
+}));
+
+const { sanitizeString, isAllowedUrl, getProfileDnaFilters } = require('../src/utils/helpers');
 
 describe('sanitizeString', () => {
     it('should remove HTML tags', () => {
@@ -76,17 +85,24 @@ describe('isAllowedUrl', () => {
     });
 });
 
-describe('isValidUUID - security checks', () => {
-    it('should reject non-UUID strings used as injection', () => {
-        expect(isValidUUID('u1')).toBe(false);
-        expect(isValidUUID('')).toBe(false);
-        expect(isValidUUID('../../../etc/passwd')).toBe(false);
-        expect(isValidUUID('SELECT * FROM users')).toBe(false);
-    });
+describe('getProfileDnaFilters - safety checks', () => {
+    it('should only return DNA arrays from the selected profile settings', () => {
+        const filters = getProfileDnaFilters({
+            profiles: [
+                {
+                    id: 'safe',
+                    settings: {
+                        manualDNA: [{ type: 'genre', id: '28' }],
+                        suggestedDNA: [{ type: 'keyword', id: 'spy' }]
+                    }
+                }
+            ]
+        }, 'safe');
 
-    it('should accept valid UUIDs', () => {
-        expect(isValidUUID('a1b2c3d4-e5f6-7890-abcd-ef1234567890')).toBe(true);
-        expect(isValidUUID('550e8400-e29b-41d4-a716-446655440000')).toBe(true);
+        expect(filters).toEqual([
+            { type: 'genre', id: '28' },
+            { type: 'keyword', id: 'spy' }
+        ]);
     });
 });
 
@@ -109,7 +125,8 @@ describe('configure route - XSS sanitization', () => {
     jest.mock('../src/models/UserConfig', () => ({
         buildConfig: jest.fn(),
         encodeConfig: jest.fn(),
-        decodeConfig: jest.fn()
+        decodeConfig: jest.fn(),
+        saveUser: jest.fn().mockResolvedValue({ userId: 'u1', configVersion: 'cv1' })
     }));
 
     jest.mock('../src/ai/router', () => ({
@@ -131,6 +148,8 @@ describe('configure route - XSS sanitization', () => {
         UserConfig.buildConfig.mockReturnValue({ config: {}, configBase64: 'abc123', configVersion: 'cv1' });
 
         const req = {
+            protocol: 'http',
+            get: jest.fn().mockReturnValue('localhost:7000'),
             body: {
                 tmdbKey: 'some_key',
                 profiles: [{

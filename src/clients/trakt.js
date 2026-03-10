@@ -155,15 +155,7 @@ async function executeTraktRequest(endpoint, page, traktToken) {
     let results = [];
 
     // === ENDPOINT PUBBLICI (Non richiedono username) ===
-    if (endpoint === 'trending_movies') {
-        const res = await traktClient.get('/movies/trending', { params: { page, limit: 20 } });
-        results = res.data;
-    }
-    else if (endpoint === 'trending_shows') {
-        const res = await traktClient.get('/shows/trending', { params: { page, limit: 20 } });
-        results = res.data;
-    }
-    else if (endpoint === 'popular_movies') {
+    if (endpoint === 'popular_movies') {
         const res = await traktClient.get('/movies/popular', { params: { page, limit: 20 } });
         results = res.data.map(m => ({ type: 'movie', movie: m }));
     }
@@ -346,5 +338,6 @@ module.exports = {
     refreshTraktTokens,
     syncTraktTokensToDb,
     syncTraktRatings,
-    syncTraktHistory
+    syncTraktHistory,
+    traktClient
 };

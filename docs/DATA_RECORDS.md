@@ -57,7 +57,7 @@ Contiene la "memoria dei gusti" dell'utente, aggregata da tutte le fonti.
 - **`tmdb-addon|catalog:*`**: Risultati dei cataloghi generati (TTL variabile).
 - **`tmdb-addon|release:*`**: Date di rilascio region-specific (TTL 6h).
 
-### AI Cache (`AICache.js`)
+### AI Cache (`cache/cacheInstances.js`)
 Memorizza le traduzioni dei prompt in filtri TMDB. Se due utenti chiedono "Film cyberpunk anni 80", il secondo riceve la risposta istantaneamente senza invocare Mistral.
 
 ### Recommendation Cache

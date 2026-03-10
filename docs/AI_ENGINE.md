@@ -37,5 +37,5 @@ L'AI viene utilizzata anche per generare nomi creativi per i cataloghi uniti (Me
 
 ## Ottimizzazione e Costi
 
-- **AI Cache (`src/models/AICache.js`)**: Per evitare di interrogare Mistral per gli stessi prompt, i risultati della traduzione Prompt -> Filtri vengono salvati nel database.
+- **AI Cache (`src/cache/cacheInstances.js`)**: Per evitare di interrogare Mistral per gli stessi prompt, i risultati della traduzione Prompt -> Filtri vengono salvati tramite istanze condivise di `CacheManager`.
 - **Persistence**: Se un prompt è considerato "stabile", la sua interpretazione è resa permanente, riducendo drasticamente il consumo di token API.

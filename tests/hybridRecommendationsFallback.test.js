@@ -1,15 +1,3 @@
-const axios = require('axios');
-
-jest.mock('axios', () => ({
-    get: jest.fn()
-}));
-
-jest.mock('../src/utils/httpClient', () => ({
-    createAxiosInstance: jest.fn(() => ({
-        get: jest.fn()
-    }))
-}));
-
 jest.mock('../src/db/models/TasteProfile', () => ({
     findOne: jest.fn()
 }));
@@ -35,9 +23,19 @@ jest.mock('../src/clients/tmdb', () => ({
     }))
 }));
 
-jest.mock('../src/models/RecommendationCache', () => ({
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue(null)
+jest.mock('../src/cache/cacheInstances', () => ({
+    hybridRecommendationsCache: {
+        getWithStatus: jest.fn().mockResolvedValue({ value: null, status: 'miss' }),
+        set: jest.fn().mockResolvedValue(null),
+        delete: jest.fn().mockResolvedValue(null),
+        clear: jest.fn().mockResolvedValue(null)
+    }
+}));
+
+jest.mock('../src/clients/trakt', () => ({
+    traktClient: {
+        get: jest.fn()
+    }
 }));
 
 const TasteProfile = require('../src/db/models/TasteProfile');
@@ -47,7 +45,7 @@ const { getHybridCatalog, recommendationsCache } = require('../src/engines/hybri
 describe('hybrid recommendations popular fallback', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        recommendationsCache.clear();
+        recommendationsCache.clear.mockResolvedValue(null);
     });
 
     it('returns popular items when personalized recommendation ids are empty', async () => {
@@ -55,7 +53,7 @@ describe('hybrid recommendations popular fallback', () => {
             .mockResolvedValueOnce({ lastUpdated: new Date() }) // stale-check in background sync
             .mockResolvedValue(null); // profile lookup in builders
 
-        axios.get.mockResolvedValue({
+        const tmdbGet = jest.fn().mockResolvedValue({
             data: {
                 results: [
                     { id: 101 },
@@ -63,6 +61,7 @@ describe('hybrid recommendations popular fallback', () => {
                 ]
             }
         });
+        tmdbClient.createTmdbClient.mockReturnValue({ get: tmdbGet });
 
         tmdbClient.getTmdbMovieDetails
             .mockResolvedValueOnce({
@@ -89,8 +88,8 @@ describe('hybrid recommendations popular fallback', () => {
             'global'
         );
 
-        expect(axios.get).toHaveBeenCalledWith(
-            'https://api.themoviedb.org/3/discover/movie',
+        expect(tmdbGet).toHaveBeenCalledWith(
+            '/discover/movie',
             expect.objectContaining({
                 params: expect.objectContaining({ sort_by: 'popularity.desc' })
             })
@@ -106,22 +105,23 @@ describe('hybrid recommendations popular fallback', () => {
             .mockResolvedValueOnce({ lastUpdated: new Date() })
             .mockResolvedValue(null);
 
-        axios.get.mockResolvedValue({
-            data: {
-                results: [{ id: 201 }]
-            }
-        });
+        const tmdbFallbackGet = jest.fn()
+            .mockResolvedValueOnce({
+                data: {
+                    results: [{ id: 201 }]
+                }
+            })
+            .mockResolvedValueOnce({
+                data: {
+                    id: 201,
+                    title: 'Live Item',
+                    poster_path: '/live.jpg',
+                    vote_average: 8
+                }
+            });
+        tmdbClient.createTmdbClient.mockReturnValue({ get: tmdbFallbackGet });
 
         tmdbClient.getTmdbMovieDetails.mockResolvedValueOnce(null);
-        const tmdbGet = jest.fn().mockResolvedValue({
-            data: {
-                id: 201,
-                title: 'Live Item',
-                poster_path: '/live.jpg',
-                vote_average: 8
-            }
-        });
-        tmdbClient.createTmdbClient.mockReturnValueOnce({ get: tmdbGet });
 
         const metas = await getHybridCatalog(
             'yaca_signature_blend_movies',
@@ -132,7 +132,7 @@ describe('hybrid recommendations popular fallback', () => {
             'global'
         );
 
-        expect(tmdbGet).toHaveBeenCalledWith('/movie/201');
+        expect(tmdbFallbackGet).toHaveBeenCalledWith('/movie/201');
         expect(metas).toHaveLength(1);
         expect(metas[0].id).toBe('tmdb:201');
     });

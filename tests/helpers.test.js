@@ -1,24 +1,4 @@
-const { isValidUUID, parseExtra } = require('../src/utils/helpers');
-
-describe('isValidUUID', () => {
-    it('should accept valid UUIDv4', () => {
-        expect(isValidUUID('550e8400-e29b-41d4-a716-446655440000')).toBe(true);
-        expect(isValidUUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')).toBe(true);
-    });
-
-    it('should reject invalid UUIDs', () => {
-        expect(isValidUUID('')).toBe(false);
-        expect(isValidUUID('not-a-uuid')).toBe(false);
-        expect(isValidUUID('550e8400-e29b-41d4-a716')).toBe(false);
-        expect(isValidUUID('550e8400e29b41d4a716446655440000')).toBe(false);
-        expect(isValidUUID('gggggggg-gggg-gggg-gggg-gggggggggggg')).toBe(false);
-    });
-
-    it('should be case insensitive', () => {
-        expect(isValidUUID('550E8400-E29B-41D4-A716-446655440000')).toBe(true);
-        expect(isValidUUID('550e8400-E29B-41d4-A716-446655440000')).toBe(true);
-    });
-});
+const { parseExtra, getProfileDnaFilters } = require('../src/utils/helpers');
 
 describe('parseExtra', () => {
     it('should return empty object for falsy input', () => {
@@ -43,5 +23,30 @@ describe('parseExtra', () => {
     it('should skip entries without value', () => {
         expect(parseExtra('search=test&empty=')).toEqual({ search: 'test' });
         expect(parseExtra('novalue&search=test')).toEqual({ search: 'test' });
+    });
+});
+
+describe('getProfileDnaFilters', () => {
+    it('should merge manualDNA and suggestedDNA for the selected profile', () => {
+        const filters = getProfileDnaFilters({
+            profiles: [
+                {
+                    id: 'kids',
+                    settings: {
+                        manualDNA: [{ type: 'genre', id: '16' }],
+                        suggestedDNA: [{ type: 'keyword', id: 'robot' }]
+                    }
+                }
+            ]
+        }, 'kids');
+
+        expect(filters).toEqual([
+            { type: 'genre', id: '16' },
+            { type: 'keyword', id: 'robot' }
+        ]);
+    });
+
+    it('should return an empty array when the profile does not exist', () => {
+        expect(getProfileDnaFilters({ profiles: [] }, 'missing')).toEqual([]);
     });
 });

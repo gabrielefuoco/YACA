@@ -15,6 +15,8 @@ const { parseExtra, sanitizeString, isAllowedUrl } = require('./src/utils/helper
 const { getBlurredImageUrl, addBadgeToImage } = require('./src/utils/imageProcessor');
 const { streamHandler } = require('./src/handlers/streamHandler');
 const { clearAllTmdbCaches } = require('./src/clients/tmdb');
+const { stremioClient } = require('./src/clients/stremio');
+const { traktClient } = require('./src/clients/trakt');
 const { clearIdCache } = require('./src/id_mapping/id_cache');
 const TmdbRequestCache = require('./src/models/TmdbRequestCache');
 const { updateStremioAddonCollection } = require('./src/utils/stremioAddonSync');
@@ -24,15 +26,12 @@ const User = require('./src/db/models/User');
 const { syncIncrementalRecommendations } = require('./src/engines/hybridRecommendations');
 const { generateMergedName } = require('./src/api/mergeRoutes');
 const CacheManager = require('./src/cache/CacheManager');
+const { aiPromptCache, aiDiscoveryCache, hybridRecommendationsCache } = require('./src/cache/cacheInstances');
 const { rateLimitedMap } = require('./src/utils/rateLimiter');
-const RecommendationCache = require('./src/models/RecommendationCache');
-const AICache = require('./src/models/AICache');
 const { disconnectRedis } = require('./src/cache/redisClient');
 const { preWarmRedisFromMongo } = require('./src/cache/preWarm');
 
 const tmdbClient = createAxiosInstance('https://api.themoviedb.org/3');
-const stremioClient = createAxiosInstance('https://api.strem.io');
-const traktClient = createAxiosInstance('https://api.trakt.tv');
 
 // Connessione MongoDB
 connectDB().then(() => {
@@ -615,8 +614,9 @@ app.post('/api/cache/clear', async (req, res) => {
             await clearAllTmdbCaches();
             await clearIdCache();
             await TmdbRequestCache.clear();
-            await RecommendationCache.clear();
-            await AICache.clear();
+            await hybridRecommendationsCache.clear();
+            await aiPromptCache.clear();
+            await aiDiscoveryCache.clear();
             return res.json({ success: true, message: 'Tutte le cache svuotate.' });
         }
 
@@ -992,22 +992,6 @@ app.get('/api/users/:userId/switch-profile/:profileId', async (req, res) => {
     } catch (err) {
         console.error(`Errore switch profile per user ${userId}:`, err.message);
         res.status(500).send('Internal validation error');
-    }
-});
-
-// 8. Auto-Sync Backend Route (usata dalla Web UI)
-app.post('/api/stremio-addon-update', async (req, res) => {
-    const { authKey, manifestUrl } = req.body;
-    if (!authKey || !manifestUrl) {
-        return res.status(400).json({ error: "Missing parameters" });
-    }
-
-    try {
-        const result = await updateStremioAddonCollection(authKey, manifestUrl);
-        res.json(result);
-    } catch (err) {
-        console.error("Errore aggiornamento Stremio:", err);
-        res.status(500).json({ error: "Errore durante la sincronizzazione con Stremio" });
     }
 });
 

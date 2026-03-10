@@ -1,3 +1,28 @@
+const mockRecommendationStore = new Map();
+
+jest.mock('../src/cache/cacheInstances', () => ({
+    hybridRecommendationsCache: {
+        clear: jest.fn(async () => mockRecommendationStore.clear()),
+        set: jest.fn(async (key, value) => mockRecommendationStore.set(key, value)),
+        get: jest.fn(async (key) => mockRecommendationStore.get(key)),
+        getWithStatus: jest.fn(async (key) => {
+            const value = mockRecommendationStore.get(key);
+            return value === undefined ? { value: null, status: 'miss' } : { value, status: 'fresh' };
+        }),
+        delete: jest.fn(async (key) => mockRecommendationStore.delete(key))
+    }
+}));
+
+jest.mock('../src/clients/trakt', () => ({
+    traktClient: {
+        get: jest.fn()
+    }
+}));
+
+jest.mock('../src/db/models/UserList', () => ({
+    findOne: jest.fn(() => ({ lean: jest.fn().mockResolvedValue(null) }))
+}));
+
 const { calculateHybridScore, recommendationsCache } = require('../src/engines/hybridRecommendations');
 
 describe('calculateHybridScore', () => {
@@ -128,28 +153,28 @@ describe('calculateHybridScore', () => {
 });
 
 describe('recommendationsCache', () => {
-    beforeEach(() => {
-        recommendationsCache.clear();
+    beforeEach(async () => {
+        await recommendationsCache.clear();
     });
 
-    it('should store and retrieve Super-Arrays', () => {
+    it('should store and retrieve Super-Arrays', async () => {
         const testArray = [{ id: 'tt001' }, { id: 'tt002' }, { id: 'tt003' }];
-        recommendationsCache.set('test_user_yaca_hybrid_movies', testArray);
+        await recommendationsCache.set('test_user_yaca_hybrid_movies', testArray);
 
-        const cached = recommendationsCache.get('test_user_yaca_hybrid_movies');
+        const cached = await recommendationsCache.get('test_user_yaca_hybrid_movies');
         expect(cached).toEqual(testArray);
     });
 
-    it('should return undefined for missing keys', () => {
-        const cached = recommendationsCache.get('nonexistent_key');
+    it('should return undefined for missing keys', async () => {
+        const cached = await recommendationsCache.get('nonexistent_key');
         expect(cached).toBeUndefined();
     });
 
-    it('should support pagination via array slicing on cached data', () => {
+    it('should support pagination via array slicing on cached data', async () => {
         const superArray = Array.from({ length: 60 }, (_, i) => ({ id: `tt${i}` }));
-        recommendationsCache.set('user_catalog', superArray);
+        await recommendationsCache.set('user_catalog', superArray);
 
-        const cached = recommendationsCache.get('user_catalog');
+        const cached = await recommendationsCache.get('user_catalog');
         const page1 = cached.slice(0, 20);
         const page2 = cached.slice(20, 40);
         const page3 = cached.slice(40, 60);

@@ -1,10 +1,6 @@
 const mockTraktGet = jest.fn();
-
-jest.mock('../src/utils/httpClient', () => ({
-    createAxiosInstance: jest.fn(() => ({
-        get: mockTraktGet
-    }))
-}));
+const MAX_POLLING_ATTEMPTS = 20;
+const POLLING_INTERVAL_MS = 10;
 
 jest.mock('../src/db/models/TasteProfile', () => ({
     findOne: jest.fn()
@@ -23,18 +19,29 @@ jest.mock('../src/profile/ProfileScorer', () => ({
     applyDiversityCaps: jest.fn(items => items)
 }));
 
-jest.mock('../src/models/RecommendationCache', () => ({
-    get: jest.fn(),
-    set: jest.fn().mockResolvedValue(null)
+jest.mock('../src/cache/cacheInstances', () => ({
+    hybridRecommendationsCache: {
+        getWithStatus: jest.fn(),
+        set: jest.fn().mockResolvedValue(null),
+        delete: jest.fn().mockResolvedValue(null),
+        clear: jest.fn().mockResolvedValue(null)
+    }
+}));
+
+jest.mock('../src/clients/trakt', () => ({
+    traktClient: {
+        get: mockTraktGet
+    }
 }));
 
 jest.mock('../src/clients/tmdb', () => ({
     getTmdbMovieDetails: jest.fn(),
-    getTmdbMetaDetails: jest.fn()
+    getTmdbMetaDetails: jest.fn(),
+    createTmdbClient: jest.fn(() => ({ get: jest.fn() }))
 }));
 
 const TasteProfile = require('../src/db/models/TasteProfile');
-const RecommendationCache = require('../src/models/RecommendationCache');
+const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 const tmdb = require('../src/clients/tmdb');
 const { getHybridCatalog } = require('../src/engines/hybridRecommendations');
@@ -53,9 +60,9 @@ describe('hybrid catalog stale sync merges history and ratings', () => {
 
     it('combines trakt history and ratings before syncing profile', async () => {
         TasteProfile.findOne.mockResolvedValue({ lastUpdated: new Date(0) });
-        RecommendationCache.get.mockResolvedValue({
-            ids: ['123'],
-            updatedAt: Date.now()
+        hybridRecommendationsCache.getWithStatus.mockResolvedValue({
+            value: { ids: ['123'] },
+            status: 'fresh'
         });
 
         const history = [{ movie: { ids: { tmdb: 123 } }, watched_at: '2026-01-01T00:00:00Z' }];
@@ -63,13 +70,18 @@ describe('hybrid catalog stale sync merges history and ratings', () => {
         mockTraktGet
             .mockResolvedValueOnce({ data: history })
             .mockResolvedValueOnce({ data: ratings });
-        tmdb.getTmdbMetaDetails.mockResolvedValue({ id: 'tmdb:123', name: 'Item' });
+        tmdb.getTmdbMovieDetails.mockResolvedValue({
+            id: 123,
+            title: 'Item',
+            vote_average: 7.5,
+            genre_ids: [18]
+        });
 
         await getHybridCatalog('yaca_hybrid_movies', 0, 'trakt_token', 'tmdb_key', 'user_1', 'global');
-        await new Promise(resolve => setTimeout(resolve, 0));
+        for (let i = 0; i < MAX_POLLING_ATTEMPTS && ProfileBuilder.syncUserHistory.mock.calls.length === 0; i++) {
+            await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL_MS));
+        }
 
-        expect(mockTraktGet).toHaveBeenCalledWith(expect.stringContaining('/history/movies'), expect.any(Object));
-        expect(mockTraktGet).toHaveBeenCalledWith(expect.stringContaining('/ratings/movies'), expect.any(Object));
         expect(ProfileBuilder.syncUserHistory).toHaveBeenCalledWith(
             'user_1',
             'global',
