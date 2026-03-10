@@ -916,24 +916,21 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         const DISCOVERY_IDS = new Set(['yaca_signature_blend_movies', 'yaca_signature_blend_series', 'yaca_discovery_movies', 'yaca_discovery_series']);
         const TOP20_IDS = new Set(['yaca_signature_star_movies', 'yaca_signature_star_series', 'yaca_top20_movies', 'yaca_top20_series']);
 
-        let ids;
-        if (TRUE_BLEND_IDS.has(catalogId)) {
-            ids = await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType);
-        } else if (SEED_NETWORK_IDS.has(catalogId)) {
-            ids = await buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType);
-        } else if (HIDDEN_GEMS_IDS.has(catalogId)) {
-            ids = await buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType);
-        } else if (TRAKT_FILTERED_IDS.has(catalogId)) {
-            ids = await buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType);
-        } else if (HYBRID_IDS.has(catalogId)) {
-            ids = await buildSignatureCore(userId, context, tmdbApiKey, mediaType);
-        } else if (DISCOVERY_IDS.has(catalogId)) {
-            ids = await buildSignatureBlend(userId, context, tmdbApiKey, mediaType);
-        } else if (TOP20_IDS.has(catalogId)) {
-            ids = await buildSignatureStar(userId, context, traktToken, tmdbApiKey, mediaType);
-        } else {
-            ids = await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType);
-        }
+        const ids = TRUE_BLEND_IDS.has(catalogId)
+            ? await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType)
+            : SEED_NETWORK_IDS.has(catalogId)
+                ? await buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType)
+                : HIDDEN_GEMS_IDS.has(catalogId)
+                    ? await buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType)
+                    : TRAKT_FILTERED_IDS.has(catalogId)
+                        ? await buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType)
+                        : HYBRID_IDS.has(catalogId)
+                            ? await buildSignatureCore(userId, context, tmdbApiKey, mediaType)
+                            : DISCOVERY_IDS.has(catalogId)
+                                ? await buildSignatureBlend(userId, context, tmdbApiKey, mediaType)
+                                : TOP20_IDS.has(catalogId)
+                                    ? await buildSignatureStar(userId, context, traktToken, tmdbApiKey, mediaType)
+                                    : await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType);
 
         await hybridRecommendationsCache.set(cacheKey, { ids });
         return ids;

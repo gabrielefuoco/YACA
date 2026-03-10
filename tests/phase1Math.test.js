@@ -139,7 +139,7 @@ describe('Phase 1.3 - Bayesian Weighted Rating (IMDb formula)', () => {
 
         // With 0 votes, Bayesian score = C = 6.5 (weighted by tmdbWeight=1, traktWeight=0)
         // normalizedScore = (0 * 0 + 6.5 * 1) / 1 = 6.5
-        // Senza epsilon il punteggio deve rimanere centrato sulla media bayesiana 6.5
+        // Without epsilon, the score should stay centered on the 6.5 Bayesian mean
         expect(score).toBeGreaterThan(6.4);
         expect(score).toBeLessThan(6.6);
     });

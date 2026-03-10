@@ -5,7 +5,7 @@ const { BINGE_SESSION_GAP_MS, BINGE_MULTIPLIER } = require('../config');
 const GLOBAL_PROFILE_MIRROR_RATIO = 0.2;
 
 function mergeProcessedIds(existingIds = [], newIds = []) {
-    return Array.from(new Set([...(existingIds || []), ...(newIds || [])].map(id => id?.toString()).filter(Boolean)));
+    return Array.from(new Set([...existingIds, ...newIds].map(id => id?.toString()).filter(Boolean)));
 }
 
 /**

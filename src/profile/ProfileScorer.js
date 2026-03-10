@@ -4,6 +4,11 @@ const BAYESIAN_MEAN_VOTE = 6.5;  // C: mean vote across the catalogue
 const ACTIVE_PROFILE_WEIGHT = 0.8;
 const GLOBAL_PROFILE_WEIGHT = 0.2;
 const NICHE_GENRE_IDS = new Set(['99', '10402', '36', '37', '10770']);
+const NICHE_MIN_REAL_VOTES = 20;
+const NICHE_TARGET_MAX_VOTES = 500;
+const NICHE_FADE_OUT_VOTES = 2000;
+const NICHE_MIN_VOTE_BONUS = 1.0;
+const NICHE_MAX_VOTE_BONUS = 2.5;
 
 function clampScore(value) {
     return Math.min(Math.max(value, 0), 10);
@@ -134,12 +139,18 @@ class ProfileScorer {
      * @returns {Number} Score da 0.0 a 10.0
      */
     static calculateNicheVoteBonus(voteCount) {
-        if (voteCount < 20) return 0;
-        if (voteCount <= 500) {
-            return 1 + (((500 - voteCount) / 480) * 1.5);
+        // Hidden gems should reward "real but niche" titles: ignore near-empty vote counts,
+        // favor the 20-500 vote window, then fade out the bonus as titles become mainstream.
+        if (voteCount < NICHE_MIN_REAL_VOTES) return 0;
+        if (voteCount <= NICHE_TARGET_MAX_VOTES) {
+            const voteDensityRatio = (NICHE_TARGET_MAX_VOTES - voteCount)
+                / (NICHE_TARGET_MAX_VOTES - NICHE_MIN_REAL_VOTES);
+            return NICHE_MIN_VOTE_BONUS + (voteDensityRatio * (NICHE_MAX_VOTE_BONUS - NICHE_MIN_VOTE_BONUS));
         }
-        if (voteCount <= 2000) {
-            return Math.max(0, 1 - ((voteCount - 500) / 1500));
+        if (voteCount <= NICHE_FADE_OUT_VOTES) {
+            const mainstreamFadeRatio = (voteCount - NICHE_TARGET_MAX_VOTES)
+                / (NICHE_FADE_OUT_VOTES - NICHE_TARGET_MAX_VOTES);
+            return Math.max(0, NICHE_MIN_VOTE_BONUS - mainstreamFadeRatio);
         }
         return 0;
     }
@@ -176,7 +187,7 @@ class ProfileScorer {
         const bayesianScore = ((voteCount / (voteCount + m)) * voteAvg) + ((m / (voteCount + m)) * C);
 
         if (context.catalogContext === 'hidden_gems' || context.catalogContext === 'niche') {
-            const credibilityMultiplier = (voteCount > 0 && voteCount < 20) ? 0.15 : 1;
+            const credibilityMultiplier = (voteCount > 0 && voteCount < NICHE_MIN_REAL_VOTES) ? 0.15 : 1;
             const nicheVoteBonus = this.calculateNicheVoteBonus(voteCount);
             const thematicScore = genreScore + (keywordScore * 0.35) + nicheGenreBonus;
             const combined = ((thematicScore * 0.8) + (nicheVoteBonus * 0.2)) * credibilityMultiplier;
