@@ -3,7 +3,7 @@ const User = require('../db/models/User');
 const { fetchTraktCatalog } = require('../clients/trakt'); // We'll need to extend trakt client for POST
 
 const LIKES_ADDON_URL = 'https://likes.stremio.com/addons/liked/movies-shows';
-const LOVED_ADDON_URL = 'https://loved.stremio.com/addons/loved/movies-shows';
+const LOVED_ADDON_URL = 'https://likes.stremio.com/addons/loved/movies-shows';
 
 const stremioClient = createAxiosInstance('https://api.strem.io');
 const stremioLikesClient = createAxiosInstance('https://likes.stremio.com');
