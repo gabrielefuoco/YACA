@@ -144,8 +144,20 @@ describe('parseQuerySynthesizerResponse', () => {
         expect(parseQuerySynthesizerResponse('not json')).toEqual([]);
     });
 
-    it('should return empty array for non-array JSON', () => {
+    it('should return empty array for non-array JSON without embedded arrays', () => {
         expect(parseQuerySynthesizerResponse('{"key": "value"}')).toEqual([]);
+    });
+
+    it('should handle object-wrapped arrays (json_object format)', () => {
+        const input = JSON.stringify({
+            queries: [
+                { vibe: 'Sci-Fi Action', genre_ids: [878, 28], keyword: 'cyberpunk|neon' }
+            ]
+        });
+        const result = parseQuerySynthesizerResponse(input);
+        expect(result).toHaveLength(1);
+        expect(result[0].genre_ids).toEqual([878, 28]);
+        expect(result[0].keyword).toBe('cyberpunk|neon');
     });
 
     it('should handle empty array', () => {

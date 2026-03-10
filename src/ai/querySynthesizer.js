@@ -100,6 +100,12 @@ const GENRE_NAME_TO_ID = {
 };
 
 // ============================================
+// CONSTANTS
+// ============================================
+const MISTRAL_TIMEOUT_MS = 25000;
+const QUERY_CACHE_SWR_THRESHOLD_MS = 1000 * 60 * 60; // 1 hour
+
+// ============================================
 // FUNCTIONS
 // ============================================
 
@@ -117,7 +123,18 @@ function parseQuerySynthesizerResponse(content) {
     if (arrayMatch) jsonContent = arrayMatch[0];
 
     try {
-        const parsed = JSON.parse(jsonContent);
+        let parsed = JSON.parse(jsonContent);
+
+        // Handle object-wrapped arrays (json_object format may produce {"queries": [...]})
+        if (!Array.isArray(parsed) && parsed && typeof parsed === 'object') {
+            const values = Object.values(parsed);
+            const arrayValue = values.find(v => Array.isArray(v));
+            if (arrayValue) {
+                parsed = arrayValue;
+            } else {
+                return [];
+            }
+        }
         if (!Array.isArray(parsed)) return [];
 
         const ALLOWED_FIELDS = new Set(['vibe', 'genre_ids', 'keyword']);
@@ -215,7 +232,7 @@ async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend')
         const rawCached = await AICache.get(cacheKey);
         if (rawCached) {
             const age = Date.now() - (rawCached.updatedAt || 0);
-            const isStale = age > 1000 * 60 * 60; // 1 hour SWR for query synthesis
+            const isStale = age > QUERY_CACHE_SWR_THRESHOLD_MS;
 
             if (isStale) {
                 // Background refresh
@@ -226,7 +243,7 @@ async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend')
             if (Array.isArray(cached) && cached.length > 0) return cached;
         }
 
-        const client = new Mistral({ apiKey: mistralKey, timeout: 25000 });
+        const client = new Mistral({ apiKey: mistralKey, timeout: MISTRAL_TIMEOUT_MS });
 
         const response = await client.chat.complete({
             model: 'mistral-small-latest',
