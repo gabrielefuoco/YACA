@@ -210,6 +210,7 @@ function buildDnaDescription(profile, topN = 5) {
  * @param {Object} profile TasteProfile document (active profile only)
  * @param {string} mistralKey Mistral API key
  * @param {'trueBlend'|'hiddenGems'} mode Which prompt template to use
+ * @param {boolean} [isBackgroundRefresh=false] True when revalidating a stale cache entry to avoid recursive refresh loops
  * @returns {Array} Array of discovery query objects [{genre_ids, keyword, vibe}]
  */
 async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend', isBackgroundRefresh = false) {

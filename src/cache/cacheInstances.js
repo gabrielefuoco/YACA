@@ -6,6 +6,8 @@ const ONE_DAY_MS = 1000 * 60 * 60 * 24;
 const TEN_MINUTES_MS = 1000 * 60 * 10;
 const ONE_HOUR_MS = 1000 * 60 * 60;
 
+// 10 minutes fresh + 24 hours SWR keeps AI prompt results hot in L1
+// while still refreshing them aggressively in background.
 const aiPromptCache = new CacheManager('ai_prompt_cache', {
     ramMax: 100,
     ramTtlMs: TEN_MINUTES_MS,

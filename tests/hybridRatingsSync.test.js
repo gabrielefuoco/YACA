@@ -1,4 +1,6 @@
 const mockTraktGet = jest.fn();
+const MAX_POLLING_ATTEMPTS = 20;
+const POLLING_INTERVAL_MS = 10;
 
 jest.mock('../src/db/models/TasteProfile', () => ({
     findOne: jest.fn()
@@ -76,8 +78,8 @@ describe('hybrid catalog stale sync merges history and ratings', () => {
         });
 
         await getHybridCatalog('yaca_hybrid_movies', 0, 'trakt_token', 'tmdb_key', 'user_1', 'global');
-        for (let i = 0; i < 20 && ProfileBuilder.syncUserHistory.mock.calls.length === 0; i++) {
-            await new Promise(resolve => setTimeout(resolve, 10));
+        for (let i = 0; i < MAX_POLLING_ATTEMPTS && ProfileBuilder.syncUserHistory.mock.calls.length === 0; i++) {
+            await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL_MS));
         }
 
         expect(ProfileBuilder.syncUserHistory).toHaveBeenCalledWith(

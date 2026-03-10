@@ -15,10 +15,22 @@ function normalizeContentId(id) {
     return String(id ?? '').replace(/^tmdb:/i, '').trim();
 }
 
+/**
+ * Returns the active profile settings for the user.
+ * @param {Object|null} user User document
+ * @param {string} context Active profile ID
+ * @returns {Object} Profile settings object or an empty object
+ */
 function getProfileSettings(user, context) {
     return user?.profiles?.find(p => p.id === context)?.settings || {};
 }
 
+/**
+ * Loads the profile context needed by hybrid catalogs in one place.
+ * @param {string} userId Unique user ID
+ * @param {string} context Active profile ID
+ * @returns {Promise<{profile: Object|null, user: Object|null, globalProfile: Object|null}>}
+ */
 async function fetchProfileContext(userId, context) {
     const [profile, user, globalProfile] = await Promise.all([
         TasteProfile.findOne({ owner: userId, context }),
@@ -29,6 +41,15 @@ async function fetchProfileContext(userId, context) {
     return { profile, user, globalProfile };
 }
 
+/**
+ * Executes a TMDB query through the standardized client and always returns an array.
+ * On failure it logs the issue and returns [] to keep the flow best-effort.
+ * @param {Object} tmdbClient Client created with tmdb.createTmdbClient()
+ * @param {string} endpoint Relative TMDB endpoint
+ * @param {Object} [params={}] Additional query params
+ * @param {string} [errorLabel=endpoint] Human-readable label for error logs
+ * @returns {Promise<Array>} TMDB results array or [] when the request fails
+ */
 async function fetchTmdbResults(tmdbClient, endpoint, params = {}, errorLabel = endpoint) {
     try {
         const res = await tmdbClient.get(endpoint, { params, timeout: 5000 });
