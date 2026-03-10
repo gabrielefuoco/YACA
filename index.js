@@ -156,7 +156,7 @@ app.post('/api/preview-catalog', async (req, res) => {
         strategy = aiFilters.strategy || 'discovery';
         // Preserve original AI keyword text before buildDiscoveryParams resolves them to IDs
         const originalAiKeywords = aiFilters.keyword || null;
-        discoverFilters = strategy === 'discovery'
+        discoverFilters = strategy === 'discovery' && !aiFilters.queries
             ? await buildDiscoveryParams(aiFilters, sanitizedTmdbKey, aiType)
             : aiFilters;
         // Attach original keyword names for frontend display
@@ -188,14 +188,14 @@ app.post('/api/preview-catalog', async (req, res) => {
         }
     }
 
-    // Caso speciale: MERGE catalog preview
-    if (customFilters?.merge) {
+    // Caso speciale: MERGE catalog o AI MULTI-QUERY preview
+    if (customFilters?.merge || discoverFilters?.queries) {
         try {
             const previewData = await catalogHandler(
                 {
-                    type: customType || 'movie',
+                    type: discoverType === 'tv' ? 'series' : 'movie',
                     id: null,
-                    filters: customFilters,
+                    filters: discoverFilters?.queries ? discoverFilters : customFilters,
                     extra: { skip: 0 }
                 },
                 { apiKeys: { tmdb: sanitizedTmdbKey, mistral: mistralKey } },
@@ -212,12 +212,13 @@ app.post('/api/preview-catalog', async (req, res) => {
 
             return res.json({
                 items,
-                filters: customFilters,
-                type: customType || 'movie'
+                filters: discoverFilters?.queries ? discoverFilters : customFilters,
+                type: discoverType === 'tv' ? 'series' : 'movie',
+                name: sanitizedPrompt ? sanitizedPrompt.substring(0, MAX_PREVIEW_CATALOG_NAME_LENGTH) : null
             });
         } catch (err) {
-            console.error("Errore preview merge:", err);
-            return res.status(500).json({ error: 'Errore nel generare anteprima merge' });
+            console.error("Errore preview multi-query/merge:", err);
+            return res.status(500).json({ error: 'Errore nel generare anteprima' });
         }
     }
 

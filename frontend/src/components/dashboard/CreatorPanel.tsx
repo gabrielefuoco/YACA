@@ -33,6 +33,8 @@ interface SelectedItem {
 interface BlockState {
   id: string;
   strategy: 'discovery' | 'multi_search' | 'similar';
+  similarTo?: string;
+  textSearch?: string;
   sortBy: string;
   language: string;
   genres: string[];
@@ -49,6 +51,8 @@ function createEmptyBlock(): BlockState {
   return {
     id: generateId(),
     strategy: 'discovery',
+    similarTo: '',
+    textSearch: '',
     sortBy: 'popularity.desc',
     language: '',
     genres: [],
@@ -133,6 +137,8 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
     return {
       id: generateId(),
       strategy: (f.strategy as BlockState['strategy']) || 'discovery',
+      similarTo: (f.similar_to as string) || '',
+      textSearch: (f.text_search as string) || '',
       sortBy: (f.sort_by as string) || 'popularity.desc',
       language: (f.with_original_language as string) || '',
       genres: parseList(f.with_genres),
@@ -180,6 +186,8 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
   // --- Build query blocks for save ---
   const buildQueryBlock = (block: BlockState): QueryBlock => ({
     strategy: block.strategy,
+    ...(block.similarTo && { similar_to: block.similarTo }),
+    ...(block.textSearch && { text_search: block.textSearch }),
     sort_by: block.sortBy,
     ...(block.language && { with_original_language: block.language }),
     ...(block.genres.length && { with_genres: block.genres.join(',') }),
@@ -277,19 +285,35 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       {/* Block body */}
       {!block.collapsed && (
         <div className="p-5 space-y-5">
-          {/* Strategy selector */}
-          <div>
-            <Label className="text-slate-900 dark:text-slate-100 font-bold">Strategia</Label>
-            <Select value={block.strategy} onValueChange={(v) => updateBlock(block.id, { strategy: v as BlockState['strategy'] })}>
-              <SelectTrigger className="mt-1 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STRATEGY_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Strategy selector and inputs */}
+          <div className="space-y-4">
+            <div>
+              <Label className="text-slate-900 dark:text-slate-100 font-bold">Strategia</Label>
+              <Select value={block.strategy} onValueChange={(v) => updateBlock(block.id, { strategy: v as BlockState['strategy'] })}>
+                <SelectTrigger className="mt-1 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STRATEGY_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {block.strategy === 'similar' && (
+              <div>
+                <Label className="text-slate-900 dark:text-slate-100 font-bold">Titolo di Riferimento</Label>
+                <Input value={block.similarTo || ''} onChange={(e) => updateBlock(block.id, { similarTo: e.target.value })} placeholder="es. Bridgerton" className="mt-1 bg-white dark:bg-slate-900" />
+              </div>
+            )}
+
+            {block.strategy === 'multi_search' && (
+              <div>
+                <Label className="text-slate-900 dark:text-slate-100 font-bold">Titolo da Cercare</Label>
+                <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white dark:bg-slate-900" />
+              </div>
+            )}
           </div>
 
           {/* Basic filters */}
