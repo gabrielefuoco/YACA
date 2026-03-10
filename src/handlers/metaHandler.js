@@ -81,7 +81,15 @@ async function metaHandler(args, userConfig) {
                 const cacheKey = `meta_${tmdbId}_${type}_${imdbIdForRatings}_${Boolean(mdblistApiKey)}`;
 
                 // Use getWithStatus for SWR support
-                const { value: cachedMeta, status: cacheStatus } = await finalMetaCache.getWithStatus(cacheKey);
+                let { value: cachedMeta, status: cacheStatus } = await finalMetaCache.getWithStatus(cacheKey);
+
+                // Se a causa del vecchio bug abbiamo cachato una serie con 0 episodi, invalidiamo la cache forzatamente
+                if (cacheStatus !== 'miss' && type === 'series' && (!cachedMeta.videos || cachedMeta.videos.length === 0)) {
+                    console.log(`[Cache Invalidation] Trovata serie ${id} in cache con 0 episodi, forzo ricaricamento...`);
+                    cacheStatus = 'miss';
+                    cachedMeta = null;
+                }
+
                 if (cacheStatus === 'fresh') {
                     meta = cachedMeta;
                 } else {
