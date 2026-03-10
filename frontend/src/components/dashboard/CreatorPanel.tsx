@@ -173,7 +173,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
           setPresentationStrategy('interleave');
         }
       }
-    } catch { /* AI failure is non-fatal */ }
+    } catch (e) { console.error('AI generation failed:', e); }
     setAiLoading(false);
   };
 

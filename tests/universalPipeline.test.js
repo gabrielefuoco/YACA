@@ -332,3 +332,35 @@ describe('Fallback state — no skip===0 dependency', () => {
         expect(fnBody).toContain('_fallbackFlagCache');
     });
 });
+
+// ============================================
+// Test 8: Security — MAX_QUERIES limit
+// ============================================
+describe('executeUniversalPipeline — security limits', () => {
+    it('enforces MAX_QUERIES limit (10) in source code', () => {
+        const fs = require('fs');
+        const source = fs.readFileSync(
+            require.resolve('../src/handlers/catalogHandler.js'),
+            'utf8'
+        );
+
+        const pipelineStart = source.indexOf('async function executeUniversalPipeline');
+        const pipelineEnd = source.indexOf('function normalizeContentId', pipelineStart) > 0
+            ? source.indexOf('function normalizeContentId', pipelineStart)
+            : source.indexOf('module.exports', pipelineStart);
+        const pipelineBody = source.substring(pipelineStart, pipelineEnd);
+
+        expect(pipelineBody).toContain('MAX_QUERIES');
+        expect(pipelineBody).toContain('.slice(0, MAX_QUERIES)');
+    });
+
+    it('fallback cache has size limit to prevent memory leak', () => {
+        const fs = require('fs');
+        const source = fs.readFileSync(
+            require.resolve('../src/handlers/catalogHandler.js'),
+            'utf8'
+        );
+
+        expect(source).toContain('FALLBACK_FLAG_MAX_SIZE');
+    });
+});

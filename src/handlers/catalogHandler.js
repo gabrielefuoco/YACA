@@ -34,11 +34,18 @@ const MERGED_CATALOG_PAGE_SIZE = 20;
 // qui così che le pagine successive usino automaticamente gli stessi filtri allargati.
 const _fallbackFlagCache = new Map();
 const FALLBACK_FLAG_TTL_MS = 30 * 60 * 1000; // 30 minuti
+const FALLBACK_FLAG_MAX_SIZE = 5000;
 // Pulizia periodica dei flag scaduti
 setInterval(() => {
     const now = Date.now();
     for (const [key, val] of _fallbackFlagCache) {
         if (now - val.timestamp > FALLBACK_FLAG_TTL_MS) _fallbackFlagCache.delete(key);
+    }
+    // Evict oldest entries if cache exceeds size limit
+    if (_fallbackFlagCache.size > FALLBACK_FLAG_MAX_SIZE) {
+        const entries = [..._fallbackFlagCache.entries()].sort((a, b) => a[1].timestamp - b[1].timestamp);
+        const toEvict = entries.length - FALLBACK_FLAG_MAX_SIZE;
+        for (let i = 0; i < toEvict; i++) _fallbackFlagCache.delete(entries[i][0]);
     }
 }, 5 * 60 * 1000);
 
@@ -616,9 +623,12 @@ const LOOKAHEAD_PAGES = 3;
 const PAGE_SIZE = 20;
 
 async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions) {
-    const { queries, presentation_strategy } = universalCatalog;
+    const { presentation_strategy } = universalCatalog;
+    // Safety limit: cap the number of queries to prevent DoS from unbounded arrays
+    const MAX_QUERIES = 10;
+    const queries = (universalCatalog.queries || []).slice(0, MAX_QUERIES);
 
-    if (!queries || queries.length === 0) return [];
+    if (queries.length === 0) return [];
 
     // Single-query fast path: no consensus needed, direct execution
     if (queries.length === 1) {
