@@ -438,7 +438,7 @@ async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, media
  * @returns {Object} Parametri TMDB validi per /discover
  */
 async function resolveAiQueryToTmdbParams(aiQuery, tmdbApiKey, types) {
-    const params = { api_key: tmdbApiKey, sort_by: 'popularity.desc' };
+    const params = { api_key: tmdbApiKey };
 
     if (aiQuery.genre_ids && aiQuery.genre_ids.length > 0) {
         params.with_genres = aiQuery.genre_ids.join('|');
@@ -778,12 +778,13 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
 
     const topGenres = computeTopGenres(profile, 3);
 
-    // Quality cage: low popularity, high quality
+    // Quality cage: relatively low popularity but high quality
     const qualityFilters = {
-        sort_by: 'popularity.asc',
-        'vote_count.gte': 150,
-        'vote_count.lte': 2000,
-        'vote_average.gte': 6.8
+        sort_by: 'vote_average.desc',
+        'vote_count.gte': 100,
+        'vote_count.lte': 3000,
+        'vote_average.gte': 7.0,
+        'popularity.lte': 80 // Limit to less mainstream titles
     };
     if (types === 'movie') qualityFilters['with_runtime.gte'] = 60; // Exclude short films
 

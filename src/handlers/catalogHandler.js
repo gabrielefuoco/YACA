@@ -536,7 +536,7 @@ function interleaveResults(listA = [], listB = [], skip, limit) {
  * Interseca N liste di risultati alternandoli (interleaving generalizzato).
  * Deduplica per ID.
  */
-function interleaveMultipleResults(queryResultsArrays, limit) {
+function interleaveMultipleResults(queryResultsArrays, limit, skip = 0) {
     const seen = new Set();
     const combined = [];
     const maxLen = Math.max(...queryResultsArrays.map(arr => (arr || []).length), 0);
@@ -546,12 +546,14 @@ function interleaveMultipleResults(queryResultsArrays, limit) {
             const item = (arr || [])[i];
             if (!item) continue;
             const itemId = item.id !== undefined && item.id !== null ? normalizeContentId(item.id) : null;
-            if (itemId && seen.has(itemId)) continue;
+            if (itemId) {
+                if (seen.has(itemId)) continue;
+                seen.add(itemId);
+            }
             combined.push(item);
-            if (itemId) seen.add(itemId);
         }
     }
-    return combined.slice(0, limit);
+    return combined.slice(skip, skip + limit);
 }
 
 /**
@@ -561,6 +563,15 @@ function interleaveMultipleResults(queryResultsArrays, limit) {
 function normalizeToUniversalSchema(catalogMeta, directFilters) {
     // Caso 1: Filtri diretti passati dall'esterno (es. preview)
     if (directFilters) {
+        // Multi-query AI filters already present
+        if (Array.isArray(directFilters.queries) && directFilters.queries.length > 0) {
+            return {
+                queries: directFilters.queries,
+                presentation_strategy: directFilters.presentation_strategy || 'popularity',
+                weights: directFilters.weights
+            };
+        }
+
         // Merged catalog via directFilters
         if (directFilters.merge) {
             return {
@@ -1252,37 +1263,32 @@ async function catalogHandler(args, userConfig, hostUrl) {
             if (universalCatalog._isMerge) {
                 const filters = universalCatalog._rawFilters;
                 const mergeConfig = filters.merge || { catalogs: catalogMeta?.mergedFrom || [] };
-                const sourceIds = mergeConfig.catalogs;
+                const sourceIds = (mergeConfig.catalogs || []).filter(sid => sid && sid !== id); // Recursion guard
                 const sourceFilters = mergeConfig.sourceFilters || [];
                 const sourceTypes = mergeConfig.sourceTypes || [];
-                const strategy = mergeConfig.strategy || 'popularity'; // 'popularity' or 'mixed'
+                const strategy = mergeConfig.strategy || 'popularity';
 
-                if (sourceIds && sourceIds.length >= 2) {
+                if (sourceIds.length > 0) {
                     const fetchSource = async (idx) => {
+                        const srcId = sourceIds[idx];
                         if (sourceFilters[idx] && typeof sourceFilters[idx] === 'object' && !sourceFilters[idx].merge) {
-                            // Direct filter execution - no need for recursive ID resolution
                             const srcType = sourceTypes[idx] || type;
                             const srcFilters = { ...sourceFilters[idx] };
                             if (!srcFilters.strategy) srcFilters.strategy = 'discovery';
                             const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, skip, activeProfileSettings, tmdbFetchOptions);
                             return { metas: items.slice(0, MERGED_CATALOG_PAGE_SIZE) };
                         }
-                        // Recursive catalogHandler (for preset/DB IDs) - Pass correct skip
-                        return catalogHandler({ type, id: sourceIds[idx], extra: { ...extra, skip, limit: MERGED_CATALOG_PAGE_SIZE } }, userConfig, hostUrl);
+                        return catalogHandler({ type, id: srcId, extra: { ...extra, skip, limit: MERGED_CATALOG_PAGE_SIZE } }, userConfig, hostUrl);
                     };
 
-                    const [resA, resB] = await Promise.all([fetchSource(0), fetchSource(1)]);
+                    const sourceResults = await Promise.all(sourceIds.map((_, idx) => fetchSource(idx)));
+                    const lists = sourceResults.map(res => Array.isArray(res?.metas) ? res.metas : []);
 
-                    const listA = Array.isArray(resA?.metas) ? resA.metas : [];
-                    const listB = Array.isArray(resB?.metas) ? resB.metas : [];
-
-                    if (strategy === 'mixed') {
-                        // I dati sorgente sono già impaginati (skip applicato da executeComplexStrategy/catalogHandler),
-                        // quindi non ripetiamo lo skip qui — slice(0, 20) per la pagina corretta.
-                        results = interleaveResults(listA, listB, 0, MERGED_CATALOG_PAGE_SIZE);
+                    if (strategy === 'mixed' || strategy === 'interleave') {
+                        results = interleaveMultipleResults(lists, MERGED_CATALOG_PAGE_SIZE, 0);
                     } else {
-                        // Popularity: horizontal page fetch, merge on the fly, dedupe, sort by TMDB popularity, then rerank the current page.
-                        const combined = [...listA, ...listB];
+                        // Popularity: merge all, dedupe, sort by popularity
+                        const combined = lists.flat();
                         const unique = Array.from(new Map(combined.map(item => [normalizeContentId(item.id), item])).values());
                         const pageResults = unique
                             .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))

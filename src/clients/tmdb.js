@@ -556,13 +556,19 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
     const fetchSize = ITEMS_PER_PAGE;
     // Stremio page number (1-based)
     const pageNum = Math.floor(normalizedSkip / fetchSize) + 1;
+    const intraPageOffset = normalizedSkip % fetchSize;
+
+    // Se lo skip non è allineato alla pagina, potremmo aver bisogno di 2 pagine TMDB per coprire la richiesta
+    const needsTwoPages = intraPageOffset > 0;
+    const pagesToFetchForSlice = needsTwoPages ? 2 : 1;
+
     const cacheKey = getPageCacheKey(endpoint, customParams, type, pageNum);
     const cacheTtl = getPageCacheTtl(pageNum, options);
 
     try {
         const { value: cached, status } = await TmdbRequestCache.getWithStatus(cacheKey);
 
-        if (cached && status !== 'miss') {
+        if (cached && status !== 'miss' && !needsTwoPages) {
             const cachedItems = Array.isArray(cached.stremioData) ? cached.stremioData : [];
 
             // SWR: if stale, trigger background revalidation
@@ -585,40 +591,36 @@ async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type 
         // Fall through to fresh fetch
     }
 
-    // ─── Cache Miss: fetch from TMDB ───
-    // For page 1 (skip=0), prefetch PAGES_PER_REQUEST pages for the first 3 pages cache
-    const isFirstPage = pageNum === 1;
-    const tmdbStartPage = pageNum; // 1 TMDB page per Stremio page
-    const pagesToFetch = isFirstPage ? PAGES_PER_REQUEST : 1;
+    // ─── Cache Miss or Misaligned Skip: fetch from TMDB ───
+    const isFirstPage = pageNum === 1 && !needsTwoPages;
+    const tmdbStartPage = pageNum;
+    const pagesToFetch = isFirstPage ? PAGES_PER_REQUEST : pagesToFetchForSlice;
 
-    // Fast-Pass: deep pages on total cache miss skip enrichment
     const lightMode = !isFirstPage && !options.disableLightMode;
 
     const { items: results, nextPageFetched } = await fetchTmdbCatalogDirect(
         client, endpoint, tmdbStartPage, customParams, type, pagesToFetch, { lightMode }
     );
 
-    // Save results per-page
-    if (isFirstPage && results.length > 0) {
-        // Split prefetched results into per-page cache entries
-        for (let p = 0; p < PAGES_PER_REQUEST; p++) {
-            const pageSlice = results.slice(p * ITEMS_PER_PAGE, (p + 1) * ITEMS_PER_PAGE);
-            if (pageSlice.length > 0) {
-                const pageKey = getPageCacheKey(endpoint, customParams, type, p + 1);
-                const pageTtl = getPageCacheTtl(p + 1, options);
-                TmdbRequestCache.set(pageKey, { stremioData: pageSlice }, pageTtl, options)
-                    .catch(e => console.error('[Cache Save] Error:', e.message));
+    // Save results per-page (only for aligned requests to keep cache clean)
+    if (!needsTwoPages) {
+        if (isFirstPage && results.length > 0) {
+            for (let p = 0; p < PAGES_PER_REQUEST; p++) {
+                const pageSlice = results.slice(p * ITEMS_PER_PAGE, (p + 1) * ITEMS_PER_PAGE);
+                if (pageSlice.length > 0) {
+                    const pageKey = getPageCacheKey(endpoint, customParams, type, p + 1);
+                    const pageTtl = getPageCacheTtl(p + 1, options);
+                    TmdbRequestCache.set(pageKey, { stremioData: pageSlice }, pageTtl, options)
+                        .catch(e => console.error('[Cache Save] Error:', e.message));
+                }
             }
+        } else if (results.length > 0) {
+            TmdbRequestCache.set(cacheKey, { stremioData: results }, cacheTtl, options)
+                .catch(e => console.error('[Cache Save] Error:', e.message));
         }
-        return results.slice(0, fetchSize);
     }
 
-    if (results.length > 0) {
-        TmdbRequestCache.set(cacheKey, { stremioData: results }, cacheTtl, options)
-            .catch(e => console.error('[Cache Save] Error:', e.message));
-    }
-
-    return results.slice(0, fetchSize);
+    return results.slice(intraPageOffset, intraPageOffset + fetchSize);
 }
 
 /**
@@ -673,20 +675,25 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
             }
         }
 
+        let translationsDone = 0;
+        const TRANSLATION_LIMIT = 50;
+
         const buildEpisodesFromSeason = async (seasonData, fallbackMaps = {}) => {
             if (!seasonData?.episodes) return [];
             const enOverviewByEpisode = fallbackMaps.enOverviewByEpisode || new Map();
             const originalOverviewByEpisode = fallbackMaps.originalOverviewByEpisode || new Map();
             return rateLimitedMap(seasonData.episodes, async (ep) => {
                 let overview = ep.overview || '';
-                if (!overview.trim()) {
+                if (!overview.trim() && translationsDone < TRANSLATION_LIMIT) {
                     const enOverview = enOverviewByEpisode.get(ep.episode_number) || '';
                     const originalOverview = originalOverviewByEpisode.get(ep.episode_number) || '';
 
                     if (enOverview) {
                         overview = await translateTextToItalian(enOverview, 'en');
+                        translationsDone++;
                     } else if (originalOverview) {
                         overview = await translateTextToItalian(originalOverview, originalLanguage || 'en');
+                        translationsDone++;
                     }
                 }
 
@@ -706,7 +713,8 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
         const allSeasonEntries = Array.from(seasonDataMap.entries());
         const seasonVideoChunks = await rateLimitedMap(allSeasonEntries, async ([seasonNumber, seasonData]) => {
             const hasMissingOverview = seasonData.episodes.some(ep => !ep.overview?.trim());
-            if (!hasMissingOverview) {
+            // Se abbiamo già raggiunto il limite di traduzioni, non facciamo nemmeno le richieste di fallback
+            if (!hasMissingOverview || translationsDone >= TRANSLATION_LIMIT) {
                 return buildEpisodesFromSeason(seasonData);
             }
 

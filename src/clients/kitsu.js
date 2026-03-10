@@ -104,7 +104,7 @@ async function fetchKitsuEpisodes(kitsuId) {
         const episodes = allData.map(ep => {
             const attrs = ep.attributes;
             return {
-                id: `kitsu:${kitsuId}:${attrs.number}`,
+                id: `kitsu:${kitsuId}:1:${attrs.number}`,
                 title: attrs.titles?.it || attrs.titles?.en || attrs.titles?.en_jp || `Episodio ${attrs.number}`,
                 released: attrs.airdate ? new Date(attrs.airdate).toISOString() : null,
                 season: 1,

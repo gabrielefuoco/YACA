@@ -10,17 +10,22 @@ const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 2000, ramT
 function normalizeAnimeEpisodes(seriesId, episodes) {
     if (!seriesId || !Array.isArray(episodes)) return [];
 
-    return episodes.map((episode, index) => {
-        const season = Number(episode?.season) > 0 ? Number(episode.season) : 1;
-        const episodeNumber = Number(episode?.episode) > 0 ? Number(episode.episode) : index + 1;
+    return episodes
+        .map((episode, index) => {
+            const season = Number(episode?.season) > 0 ? Number(episode.season) : 1;
+            const episodeNumber = Number(episode?.episode) > 0 ? Number(episode.episode) : index + 1;
 
-        return {
-            ...episode,
-            id: `${seriesId}:${season}:${episodeNumber}`,
-            season,
-            episode: episodeNumber
-        };
-    });
+            // Preserve existing ID if it looks like a full Stremio ID (contains at least 2 colons)
+            const hasFullId = episode.id && (episode.id.match(/:/g) || []).length >= 2;
+
+            return {
+                ...episode,
+                id: hasFullId ? episode.id : `${seriesId}:${season}:${episodeNumber}`,
+                season,
+                episode: episodeNumber
+            };
+        })
+        .sort((a, b) => (a.season - b.season) || (a.episode - b.episode));
 }
 
 /**

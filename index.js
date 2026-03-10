@@ -150,7 +150,7 @@ app.post('/api/preview-catalog', async (req, res) => {
         if (!sanitizedPrompt) {
             return res.status(400).json({ error: 'Prompt non valido' });
         }
-        const aiFilters = await generateTmdbFiltersFromPrompt(sanitizedPrompt, mistralKey);
+        const aiFilters = await generateTmdbFiltersFromPrompt(sanitizedPrompt, mistralKey, false, 'multi_query');
         const aiType = customType === 'series' || aiFilters.target === 'kitsu' ? 'series' : 'movie';
         discoverType = aiType === 'series' ? 'tv' : 'movie';
         strategy = aiFilters.strategy || 'discovery';
