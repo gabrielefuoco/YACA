@@ -29,6 +29,19 @@ const FORCED_SLOW_PRESETS = new Set(FORCED_SLOW_PRESET_IDS);
 const MAX_BADGE_CACHE_HYDRATION_ITEMS = 60;
 const MERGED_CATALOG_PAGE_SIZE = 20;
 
+// Cache per il flag di fallback persistente (Fase 2.4):
+// Quando una query TMDB restituisce < 20 risultati, salviamo i parametri rilassati
+// qui così che le pagine successive usino automaticamente gli stessi filtri allargati.
+const _fallbackFlagCache = new Map();
+const FALLBACK_FLAG_TTL_MS = 30 * 60 * 1000; // 30 minuti
+// Pulizia periodica dei flag scaduti
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, val] of _fallbackFlagCache) {
+        if (now - val.timestamp > FALLBACK_FLAG_TTL_MS) _fallbackFlagCache.delete(key);
+    }
+}, 5 * 60 * 1000);
+
 // Cataloghi che mostrano episodi recenti (badge numero episodio sul poster)
 const EPISODE_CATALOG_IDS = new Set([
     'preset_new_series_eps',
@@ -340,11 +353,19 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
     }
 
     if (filters.keyword && filters.keyword !== 'kdrama') {
+        // Sanitizzazione: se la stringa contiene pipe (OR), forza tutte le virgole a pipe (e viceversa)
+        // Questo previene corruzione quando Mistral mescola separatori nella stessa stringa
+        let sanitizedKeyword = filters.keyword;
+        if (sanitizedKeyword.includes('|') && sanitizedKeyword.includes(',')) {
+            // Mixed separators detected — normalize to pipe (OR) since pipe was the primary intent
+            sanitizedKeyword = sanitizedKeyword.replace(/,/g, '|');
+        }
+
         // Rileva se Mistral ha usato OR (|) o AND (,)
-        const isOr = filters.keyword.includes('|');
+        const isOr = sanitizedKeyword.includes('|');
         const separator = isOr ? '|' : ',';
 
-        const keywords = filters.keyword.split(separator).map(k => k.trim()).filter(Boolean);
+        const keywords = sanitizedKeyword.split(separator).map(k => k.trim()).filter(Boolean);
         asyncTasks.push(
             Promise.allSettled(keywords.map(k => getTmdbIdByName(tmdbApiKey, 'keyword', k)))
                 .then(results => {
@@ -406,47 +427,64 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
     else {
         const tmdbParams = await buildDiscoveryParams(filters, tmdbApiKey, type, settings);
         const endpoint = `/discover/${searchType}`;
-        results = await fetchTmdbCatalog(tmdbClient, endpoint, skip, tmdbParams, type, cacheOptions);
 
-        // === LOGICA DI FALLBACK PER RISULTATI SCARSI (< 20) ===
-        // Solo se siamo sulla prima pagina (skip === 0)
-        if (skip === 0 && results.length < 20) {
-            let relaxedParams = { ...tmdbParams };
-            let changed = false;
+        // === FALLBACK PERSISTENTE (Fase 2.4) ===
+        // Il fallback non dipende più dallo skip. Usa un flag in cache per sapere
+        // se questa specifica query richiede parametri rilassati.
+        const paramsKey = JSON.stringify(tmdbParams);
+        const fallbackFlag = _fallbackFlagCache.get(paramsKey);
 
-            // Step 1: Abbassa il limite dei voti (vote_count.gte)
-            if (relaxedParams['vote_count.gte'] > 5) {
-                relaxedParams['vote_count.gte'] = 5;
-                changed = true;
-            } else if (relaxedParams['vote_count.gte'] > 0) {
-                relaxedParams['vote_count.gte'] = 0;
-                changed = true;
-            }
+        if (fallbackFlag) {
+            // Applica automaticamente i filtri allargati salvati in precedenza
+            results = await fetchTmdbCatalog(tmdbClient, endpoint, skip, fallbackFlag.relaxedParams, type, cacheOptions);
+        } else {
+            results = await fetchTmdbCatalog(tmdbClient, endpoint, skip, tmdbParams, type, cacheOptions);
 
-            if (changed) {
-                const extraResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
-                // Unione e deduplicazione manuale per ID
-                const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
-                for (const item of extraResults) {
-                    const normalizedItemId = normalizeContentId(item.id);
-                    if (!existingIds.has(normalizedItemId)) {
-                        results.push(item);
-                        existingIds.add(normalizedItemId);
+            // Se la prima chiamata restituisce pochi risultati, prova a rilassare i filtri
+            // e salva il flag per le pagine successive
+            if (results.length < 20) {
+                let relaxedParams = { ...tmdbParams };
+                let changed = false;
+
+                // Step 1: Abbassa il limite dei voti (vote_count.gte)
+                if (relaxedParams['vote_count.gte'] > 5) {
+                    relaxedParams['vote_count.gte'] = 5;
+                    changed = true;
+                } else if (relaxedParams['vote_count.gte'] > 0) {
+                    relaxedParams['vote_count.gte'] = 0;
+                    changed = true;
+                }
+
+                if (changed) {
+                    const extraResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
+                    // Unione e deduplicazione manuale per ID
+                    const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
+                    for (const item of extraResults) {
+                        const normalizedItemId = normalizeContentId(item.id);
+                        if (!existingIds.has(normalizedItemId)) {
+                            results.push(item);
+                            existingIds.add(normalizedItemId);
+                        }
                     }
                 }
-            }
 
-            // Step 2: Se ancora pochi risultati, rimuovi le keyword ma tieni i generi
-            if (results.length < 20 && relaxedParams.with_keywords) {
-                delete relaxedParams.with_keywords;
-                const broadResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
-                const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
-                for (const item of broadResults) {
-                    const normalizedItemId = normalizeContentId(item.id);
-                    if (!existingIds.has(normalizedItemId)) {
-                        results.push(item);
-                        existingIds.add(normalizedItemId);
+                // Step 2: Se ancora pochi risultati, rimuovi le keyword ma tieni i generi
+                if (results.length < 20 && relaxedParams.with_keywords) {
+                    delete relaxedParams.with_keywords;
+                    const broadResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
+                    const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
+                    for (const item of broadResults) {
+                        const normalizedItemId = normalizeContentId(item.id);
+                        if (!existingIds.has(normalizedItemId)) {
+                            results.push(item);
+                            existingIds.add(normalizedItemId);
+                        }
                     }
+                }
+
+                // Salva il flag di fallback in cache per le pagine successive
+                if (changed) {
+                    _fallbackFlagCache.set(paramsKey, { relaxedParams, timestamp: Date.now() });
                 }
             }
         }
@@ -485,6 +523,185 @@ function interleaveResults(listA = [], listB = [], skip, limit) {
         appendIfNotSeen(safeListB[i]);
     }
     return combined.slice(skip, skip + limit);
+}
+
+/**
+ * Interseca N liste di risultati alternandoli (interleaving generalizzato).
+ * Deduplica per ID.
+ */
+function interleaveMultipleResults(queryResultsArrays, limit) {
+    const seen = new Set();
+    const combined = [];
+    const maxLen = Math.max(...queryResultsArrays.map(arr => (arr || []).length), 0);
+
+    for (let i = 0; i < maxLen; i++) {
+        for (const arr of queryResultsArrays) {
+            const item = (arr || [])[i];
+            if (!item) continue;
+            const itemId = item.id !== undefined && item.id !== null ? normalizeContentId(item.id) : null;
+            if (itemId && seen.has(itemId)) continue;
+            combined.push(item);
+            if (itemId) seen.add(itemId);
+        }
+    }
+    return combined.slice(0, limit);
+}
+
+/**
+ * Normalizza qualsiasi catalogMeta (vecchio formato `filters` o nuovo `queries[]`)
+ * nello Universal Catalog Schema. Garantisce backward compatibility.
+ */
+function normalizeToUniversalSchema(catalogMeta, directFilters) {
+    // Caso 1: Filtri diretti passati dall'esterno (es. preview)
+    if (directFilters) {
+        // Merged catalog via directFilters
+        if (directFilters.merge) {
+            return {
+                queries: null, // Handled by legacy merge path
+                presentation_strategy: directFilters.merge.strategy === 'mixed' ? 'interleave' : 'popularity',
+                _isMerge: true,
+                _rawFilters: directFilters
+            };
+        }
+        return {
+            queries: [{ strategy: 'discovery', ...directFilters }],
+            presentation_strategy: 'popularity'
+        };
+    }
+
+    if (!catalogMeta) return { queries: [{}], presentation_strategy: 'popularity' };
+
+    // Caso 2: Nuovo formato con queries[] già presente
+    if (Array.isArray(catalogMeta.queries) && catalogMeta.queries.length > 0) {
+        return {
+            queries: catalogMeta.queries,
+            presentation_strategy: catalogMeta.presentation_strategy || 'popularity',
+            weights: catalogMeta.weights
+        };
+    }
+
+    // Caso 3: Vecchio formato con filters (backward compat per DB documents esistenti)
+    if (catalogMeta.filters && Object.keys(catalogMeta.filters).length > 0) {
+        // Merged catalog vecchio formato
+        if (catalogMeta.source === 'merged' || catalogMeta.sourceType === 'merged' || catalogMeta.filters.merge) {
+            return {
+                queries: null,
+                presentation_strategy: 'popularity',
+                _isMerge: true,
+                _rawFilters: catalogMeta.filters
+            };
+        }
+        return {
+            queries: [{ strategy: 'discovery', ...catalogMeta.filters }],
+            presentation_strategy: catalogMeta.presentation_strategy || 'popularity',
+            weights: catalogMeta.weights
+        };
+    }
+
+    // Caso 4: Catalogo senza filtri (placeholder per trakt/signature che vengono intercettati prima)
+    return {
+        queries: [{}],
+        presentation_strategy: catalogMeta.presentation_strategy || 'popularity'
+    };
+}
+
+/**
+ * Universal Execution Pipeline (Fase 2):
+ * Processa qualsiasi catalogo attraverso il suo array `queries`, applicando:
+ * - Look-ahead Fetching (3 pagine per blocco sulla prima richiesta)
+ * - Consenso Universale (bonus per item che appaiono in più query)
+ * - Paginazione Orizzontale Dinamica basata su presentation_strategy
+ */
+const LOOKAHEAD_PAGES = 3;
+const PAGE_SIZE = 20;
+
+async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions) {
+    const { queries, presentation_strategy } = universalCatalog;
+
+    if (!queries || queries.length === 0) return [];
+
+    // Single-query fast path: no consensus needed, direct execution
+    if (queries.length === 1) {
+        const query = { ...queries[0] };
+        if (!query.strategy) query.strategy = 'discovery';
+        return executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions);
+    }
+
+    // Multi-query path: Look-ahead + Consensus
+    const isFirstPage = skip === 0;
+
+    // Compute pagination offsets based on strategy
+    let perQuerySkip;
+    if (presentation_strategy === 'interleave') {
+        // Skip diviso per il numero di blocchi
+        perQuerySkip = Math.floor(skip / queries.length);
+    } else {
+        // Popularity: tutte le query ricevono lo stesso skip
+        perQuerySkip = skip;
+    }
+
+    // Execute all queries in parallel with look-ahead fetching
+    const queryResults = await Promise.all(
+        queries.map(async (queryDef) => {
+            const query = { ...queryDef };
+            if (!query.strategy) query.strategy = 'discovery';
+
+            // Look-ahead: fetch multiple pages on first request for consensus pool
+            const pagesToFetch = isFirstPage ? LOOKAHEAD_PAGES : 1;
+            const pagePromises = [];
+            for (let p = 0; p < pagesToFetch; p++) {
+                const pageSkip = perQuerySkip + (p * PAGE_SIZE);
+                pagePromises.push(
+                    executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions)
+                );
+            }
+            const pageResults = await Promise.all(pagePromises);
+            return pageResults.flat();
+        })
+    );
+
+    // Consensus scoring: items appearing in multiple query results get exponential bonus
+    const mergedMap = new Map();
+    queryResults.forEach((items, queryIndex) => {
+        for (const item of items || []) {
+            if (!item?.id) continue;
+            const normalizedId = normalizeContentId(item.id);
+            if (mergedMap.has(normalizedId)) {
+                const existing = mergedMap.get(normalizedId);
+                existing.consensusCount += 1;
+                existing.queryIndexes.add(queryIndex);
+            } else {
+                mergedMap.set(normalizedId, {
+                    ...item,
+                    consensusCount: 1,
+                    queryIndexes: new Set([queryIndex])
+                });
+            }
+        }
+    });
+
+    let finalItems = Array.from(mergedMap.values());
+
+    // Apply consensus bonus (exponential multiplier)
+    for (const item of finalItems) {
+        const consensusBonus = item.consensusCount > 1 ? (item.consensusCount ** 2) - 1 : 0;
+        item.consensusBonus = consensusBonus;
+        delete item.queryIndexes;
+    }
+
+    // Apply presentation strategy
+    if (presentation_strategy === 'interleave') {
+        // Interleave: round-robin from each query's results
+        return interleaveMultipleResults(queryResults, PAGE_SIZE);
+    } else {
+        // Popularity: sort by consensus bonus + popularity, return top page
+        finalItems.sort((a, b) => {
+            const bonusDiff = (b.consensusBonus || 0) - (a.consensusBonus || 0);
+            if (bonusDiff !== 0) return bonusDiff;
+            return (b.popularity || 0) - (a.popularity || 0);
+        });
+        return finalItems.slice(0, PAGE_SIZE);
+    }
 }
 
 async function rerankMergedPage(results, profileDoc, globalProfileDoc, tmdbApiKey, type, dnaFilters = []) {
@@ -1016,63 +1233,68 @@ async function catalogHandler(args, userConfig, hostUrl) {
         }
 
         if (catalogMeta || directFilters) {
-            let filters = directFilters || catalogMeta.filters;
+            // ==========================================
+            // UNIVERSAL PIPELINE: Normalizza e processa tramite Universal Catalog Schema
+            // ==========================================
+            const universalCatalog = normalizeToUniversalSchema(catalogMeta, directFilters);
 
-            if (filters) {
-                // ==========================================
-                // FASE 9.1: CATALOGHI FUSI (MERGED)
-                // ==========================================
-                if (catalogMeta?.source === 'merged' || catalogMeta?.sourceType === 'merged' || filters.merge) {
-                    const mergeConfig = filters.merge || { catalogs: catalogMeta.mergedFrom || [] };
-                    const sourceIds = mergeConfig.catalogs;
-                    const sourceFilters = mergeConfig.sourceFilters || [];
-                    const sourceTypes = mergeConfig.sourceTypes || [];
-                    const strategy = mergeConfig.strategy || 'popularity'; // 'popularity' or 'mixed'
+            // Gestione legacy: cataloghi fusi (merged) con riferimenti ad altri cataloghi
+            if (universalCatalog._isMerge) {
+                const filters = universalCatalog._rawFilters;
+                const mergeConfig = filters.merge || { catalogs: catalogMeta?.mergedFrom || [] };
+                const sourceIds = mergeConfig.catalogs;
+                const sourceFilters = mergeConfig.sourceFilters || [];
+                const sourceTypes = mergeConfig.sourceTypes || [];
+                const strategy = mergeConfig.strategy || 'popularity'; // 'popularity' or 'mixed'
 
-                    if (sourceIds && sourceIds.length >= 2) {
-                        const fetchSource = async (idx) => {
-                            if (sourceFilters[idx] && typeof sourceFilters[idx] === 'object' && !sourceFilters[idx].merge) {
-                                // Direct filter execution - no need for recursive ID resolution
-                                const srcType = sourceTypes[idx] || type;
-                                const srcFilters = { ...sourceFilters[idx] };
-                                if (!srcFilters.strategy) srcFilters.strategy = 'discovery';
-                                const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, skip, activeProfileSettings, tmdbFetchOptions);
-                                return { metas: items.slice(0, MERGED_CATALOG_PAGE_SIZE) };
-                            }
-                            // Recursive catalogHandler (for preset/DB IDs) - Pass correct skip
-                            return catalogHandler({ type, id: sourceIds[idx], extra: { ...extra, skip, limit: MERGED_CATALOG_PAGE_SIZE } }, userConfig, hostUrl);
-                        };
-
-                        const [resA, resB] = await Promise.all([fetchSource(0), fetchSource(1)]);
-
-                        const listA = Array.isArray(resA?.metas) ? resA.metas : [];
-                        const listB = Array.isArray(resB?.metas) ? resB.metas : [];
-
-                        if (strategy === 'mixed') {
-                            // I dati sorgente sono già impaginati (skip applicato da executeComplexStrategy/catalogHandler),
-                            // quindi non ripetiamo lo skip qui — slice(0, 20) per la pagina corretta.
-                            results = interleaveResults(listA, listB, 0, MERGED_CATALOG_PAGE_SIZE);
-                        } else {
-                            // Popularity: horizontal page fetch, merge on the fly, dedupe, sort by TMDB popularity, then rerank the current page.
-                            const combined = [...listA, ...listB];
-                            const unique = Array.from(new Map(combined.map(item => [normalizeContentId(item.id), item])).values());
-                            const pageResults = unique
-                                .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
-                                .slice(0, MERGED_CATALOG_PAGE_SIZE);
-                            results = await rerankMergedPage(pageResults, profileDoc, globalProfileDoc, tmdbApiKey, type, activeDnaFilters);
+                if (sourceIds && sourceIds.length >= 2) {
+                    const fetchSource = async (idx) => {
+                        if (sourceFilters[idx] && typeof sourceFilters[idx] === 'object' && !sourceFilters[idx].merge) {
+                            // Direct filter execution - no need for recursive ID resolution
+                            const srcType = sourceTypes[idx] || type;
+                            const srcFilters = { ...sourceFilters[idx] };
+                            if (!srcFilters.strategy) srcFilters.strategy = 'discovery';
+                            const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, skip, activeProfileSettings, tmdbFetchOptions);
+                            return { metas: items.slice(0, MERGED_CATALOG_PAGE_SIZE) };
                         }
+                        // Recursive catalogHandler (for preset/DB IDs) - Pass correct skip
+                        return catalogHandler({ type, id: sourceIds[idx], extra: { ...extra, skip, limit: MERGED_CATALOG_PAGE_SIZE } }, userConfig, hostUrl);
+                    };
 
-                        return await finalizeCatalog(results, id, type, hostUrl, userConfig);
+                    const [resA, resB] = await Promise.all([fetchSource(0), fetchSource(1)]);
+
+                    const listA = Array.isArray(resA?.metas) ? resA.metas : [];
+                    const listB = Array.isArray(resB?.metas) ? resB.metas : [];
+
+                    if (strategy === 'mixed') {
+                        // I dati sorgente sono già impaginati (skip applicato da executeComplexStrategy/catalogHandler),
+                        // quindi non ripetiamo lo skip qui — slice(0, 20) per la pagina corretta.
+                        results = interleaveResults(listA, listB, 0, MERGED_CATALOG_PAGE_SIZE);
+                    } else {
+                        // Popularity: horizontal page fetch, merge on the fly, dedupe, sort by TMDB popularity, then rerank the current page.
+                        const combined = [...listA, ...listB];
+                        const unique = Array.from(new Map(combined.map(item => [normalizeContentId(item.id), item])).values());
+                        const pageResults = unique
+                            .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+                            .slice(0, MERGED_CATALOG_PAGE_SIZE);
+                        results = await rerankMergedPage(pageResults, profileDoc, globalProfileDoc, tmdbApiKey, type, activeDnaFilters);
                     }
+
+                    return await finalizeCatalog(results, id, type, hostUrl, userConfig);
                 }
             }
 
-            // Crea una copia per evitare mutazioni sull'oggetto originale
-            const finalFilters = { ...filters };
-            if (!finalFilters.strategy) finalFilters.strategy = 'discovery';
-            if (sortBy) finalFilters.sort_by = sortBy;
+            // Apply sortBy override se presente
+            if (sortBy && universalCatalog.queries) {
+                for (const q of universalCatalog.queries) {
+                    q.sort_by = sortBy;
+                }
+            }
 
-            results = await executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, tmdbFetchOptions);
+            // ==========================================
+            // UNIVERSAL EXECUTION PIPELINE (Fase 2)
+            // ==========================================
+            results = await executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, tmdbFetchOptions);
 
             // ==========================================
             // FASE 10: HIDE WATCHED (WITH PROGRESSIVE FILL)
@@ -1087,7 +1309,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     const MAX_FETCH_PAGES = 4;
                     for (let i = 1; i <= MAX_FETCH_PAGES; i++) {
                         const nextSkip = skip + (i * 20);
-                        const nextPageResults = await executeComplexStrategy(finalFilters, tmdbClient, tmdbApiKey, type, nextSkip, activeProfileSettings, tmdbFetchOptions);
+                        const nextPageResults = await executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, nextSkip, activeProfileSettings, tmdbFetchOptions);
                         if (!nextPageResults || nextPageResults.length === 0) break;
 
                         const filteredNext = await filterWatchedItems(nextPageResults, userConfig);
@@ -1099,14 +1321,17 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 results = currentPool.slice(0, 20);
             }
 
-            const withGenres = Array.isArray(finalFilters.with_genres)
-                ? finalFilters.with_genres.map(String)
-                : String(finalFilters.with_genres ?? '').split(/[|,]/);
+            // Documentary fallback: se nessun risultato con keyword documentari, riprova senza keyword
+            const firstQuery = universalCatalog.queries?.[0] || {};
+            const withGenres = Array.isArray(firstQuery.with_genres)
+                ? firstQuery.with_genres.map(String)
+                : String(firstQuery.with_genres ?? '').split(/[|,]/);
 
-            if ((!results || results.length === 0) && withGenres.includes('99') && finalFilters.with_keywords) {
-                const relaxedFilters = { ...finalFilters };
-                delete relaxedFilters.with_keywords;
-                results = await executeComplexStrategy(relaxedFilters, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, tmdbFetchOptions);
+            if ((!results || results.length === 0) && withGenres.includes('99') && firstQuery.with_keywords) {
+                const relaxedQuery = { ...firstQuery };
+                delete relaxedQuery.with_keywords;
+                const relaxedCatalog = { ...universalCatalog, queries: [relaxedQuery] };
+                results = await executeUniversalPipeline(relaxedCatalog, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, tmdbFetchOptions);
             }
 
             // ==========================================
@@ -1115,8 +1340,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
             if (profileDoc && results.length > 0) {
                 await hydrateResultsFromLocalDetailsCache(results, tmdbApiKey, type);
                 // Cerca pesi specifici del preset se presenti
-                let presetWeights = { tmdb: 1.0, trakt: 1.0 };
-                if (id.startsWith('yaca_preset_')) {
+                let presetWeights = universalCatalog.weights || { tmdb: 1.0, trakt: 1.0 };
+                if (!universalCatalog.weights && id.startsWith('yaca_preset_')) {
                     const presetId = id.replace('yaca_preset_', '');
                     const presetDef = presetsList.find(p => p.id === presetId);
                     if (presetDef && presetDef.weights) {
@@ -1154,4 +1379,4 @@ async function catalogHandler(args, userConfig, hostUrl) {
     }
 }
 
-module.exports = { catalogHandler, buildDiscoveryParams, interleaveResults };
+module.exports = { catalogHandler, buildDiscoveryParams, interleaveResults, normalizeToUniversalSchema, executeUniversalPipeline, interleaveMultipleResults };

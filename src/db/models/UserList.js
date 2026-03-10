@@ -26,10 +26,21 @@ const userListSchema = new mongoose.Schema({
         enum: ['ai_prompt', 'manual_filter', 'manual_items', 'merged'],
         required: true
     },
-    // Filtri TMDB per liste dinamiche (AI o Filtri Manuali)
+    // @deprecated — Use `queries` array instead. Kept for backward compatibility with existing DB documents.
     filters: {
         type: mongoose.Schema.Types.Mixed,
         default: {}
+    },
+    // Universal Catalog Schema: array of query blocks (replaces flat `filters`)
+    queries: {
+        type: [mongoose.Schema.Types.Mixed],
+        default: undefined
+    },
+    // How to present merged results: 'popularity' (fuse + sort) or 'interleave' (round-robin)
+    presentation_strategy: {
+        type: String,
+        enum: ['popularity', 'interleave'],
+        default: 'popularity'
     },
     // Eseguito per liste "manual_items" (singoli titoli aggiunti a mano)
     items: [{
