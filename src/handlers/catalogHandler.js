@@ -547,7 +547,23 @@ async function injectProfilePreferences(filters, userId, profileId) {
 }
 
 /**
- * Esegue la Triple Search: Simple, Preset, AI.
+ * Esegue la ricerca standard TMDB senza AI né ricalcolo semantico.
+ */
+async function executeStandardSearch(search, userConfig, type, skip, cacheOptions) {
+    const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
+    const tmdbClient = createTmdbClient(tmdbApiKey);
+    const endpoint = type === 'movie' ? '/search/movie' : '/search/tv';
+    return fetchTmdbCatalog(tmdbClient, endpoint, skip, { query: search }, type, cacheOptions);
+}
+
+function getTmdbVoteScore(item) {
+    const rawVote = item?.rawTMDB?.vote_average ?? item?.vote_average ?? item?.imdbRating;
+    const vote = Number.parseFloat(rawVote);
+    return Number.isFinite(vote) ? vote : 0;
+}
+
+/**
+ * Esegue la Deep AI Search tramite query planner, consensus ranking e profilazione finale.
  */
 async function executeCombinedSearch(search, userConfig, type, skip, activeProfileSettings, cacheOptions) {
     const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
@@ -555,7 +571,6 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     const tmdbClient = createTmdbClient(tmdbApiKey);
     const userId = userConfig.userId;
     const profileId = userConfig.activeProfileId;
-
     const activeContext = profileId || 'global';
     let profileDoc = null;
     let globalProfileDoc = null;
@@ -567,72 +582,77 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     }
     const dnaFilters = getProfileDnaFilters(userConfig, activeContext);
 
-    const tasks = [
-        // 1. Simple Search (Priorità Max)
-        (async () => {
-            const ep = type === 'movie' ? '/search/movie' : '/search/tv';
-            const results = await fetchTmdbCatalog(tmdbClient, ep, 0, { query: search }, type, cacheOptions);
-            return results.map(r => ({ ...r, weight: 1.5, source: 'simple' }));
-        })(),
-
-        // 2. AI Search + Query Injection
-        (async () => {
-            try {
-                if (!mistralKey) return [];
-                const routing = await routeLiveStremioSearch(search, mistralKey);
-                if (routing.target === 'kitsu' && type === 'series') return [];
-
-                // Injection!
-                const mergedFilters = await injectProfilePreferences(routing.filters, userId, profileId);
-                const items = await executeComplexStrategy(mergedFilters, tmdbClient, tmdbApiKey, type, 0, activeProfileSettings, cacheOptions);
-                return items.map(r => ({ ...r, weight: 0.8, source: 'ai' }));
-            } catch (e) {
-                console.error("Errore AI Search (Mistral down):", e.message);
-                return [];
-            }
-        })()
-    ];
-
-    const allResults = await Promise.all(tasks);
-    const flatResults = allResults.flat();
-
-    // Fusione e Deduplicazione con Ranking (SUM dei pesi per duplicati)
-    const mergedMap = new Map();
-    for (const item of flatResults) {
-        if (!item || !item.id) continue;
-        const normalizedItemId = normalizeContentId(item.id);
-        if (mergedMap.has(normalizedItemId)) {
-            const existing = mergedMap.get(normalizedItemId);
-            existing.weight += item.weight;
-            if (!existing.sources.includes(item.source)) {
-                existing.sources.push(item.source);
-            }
-        } else {
-            mergedMap.set(normalizedItemId, { ...item, sources: [item.source] });
+    let plannedQueries = [];
+    try {
+        if (mistralKey) {
+            const routing = await routeLiveStremioSearch(search, mistralKey);
+            const rawQueries = Array.isArray(routing?.filters?.queries) ? routing.filters.queries : [];
+            plannedQueries = rawQueries.filter(query => !query?.target || query.target === 'tmdb');
         }
+    } catch (e) {
+        console.error("Errore AI Search (Mistral down):", e.message);
     }
 
-    let finalItems = Array.from(mergedMap.values());
+    if (plannedQueries.length === 0) {
+        plannedQueries = [{ strategy: 'multi_search', text_search: search, target: 'tmdb' }];
+    }
 
-    // Re-ranking tramite ProfileScorer se il profilo esiste
-    if (profileDoc) {
-        await hydrateResultsFromLocalDetailsCache(finalItems, tmdbApiKey, type);
-        for (const item of finalItems) {
-            // Se non abbiamo i dati raw (estesi), usiamo quelli disponibili per lo scoring
+    const enrichedQueries = await Promise.all(
+        plannedQueries.map(query => injectProfilePreferences(query, userId, profileId))
+    );
+    const queryResults = await Promise.all(
+        enrichedQueries.map(query =>
+            executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions)
+        )
+    );
+
+    const mergedMap = new Map();
+    queryResults.forEach((items, queryIndex) => {
+        for (const item of items || []) {
+            if (!item || !item.id) continue;
+            const normalizedItemId = normalizeContentId(item.id);
+            if (mergedMap.has(normalizedItemId)) {
+                const existing = mergedMap.get(normalizedItemId);
+                existing.consensusCount += 1;
+                existing.queryIndexes.add(queryIndex);
+            } else {
+                mergedMap.set(normalizedItemId, {
+                    ...item,
+                    consensusCount: 1,
+                    queryIndexes: new Set([queryIndex])
+                });
+            }
+        }
+    });
+
+    let finalItems = Array.from(mergedMap.values());
+    await hydrateResultsFromLocalDetailsCache(finalItems, tmdbApiKey, type);
+
+    for (const item of finalItems) {
+        const consensusBonus = item.consensusCount > 1 ? (item.consensusCount ** 2) - 1 : 0;
+        const tmdbVote = getTmdbVoteScore(item);
+        if (profileDoc) {
             const affinity = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profileDoc, {
                 globalProfile: globalProfileDoc,
                 dnaFilters
             });
             item.affinity = affinity;
-            item.finalScore = (item.weight * 2) + affinity;
+            item.finalScore = tmdbVote + consensusBonus + affinity;
+        } else {
+            item.affinity = 0;
+            item.finalScore = tmdbVote + consensusBonus;
         }
-        finalItems.sort((a, b) => b.finalScore - a.finalScore);
-    } else {
-        finalItems.sort((a, b) => b.weight - a.weight);
+        item.consensusBonus = consensusBonus;
+        delete item.queryIndexes;
     }
 
-    // Ritorna una pagina intera basata sullo skip richiesto
-    return finalItems.slice(skip, skip + 20);
+    finalItems.sort((a, b) => {
+        if (b.finalScore !== a.finalScore) return b.finalScore - a.finalScore;
+        if ((b.popularity || 0) !== (a.popularity || 0)) return (b.popularity || 0) - (a.popularity || 0);
+        return (b.consensusCount || 0) - (a.consensusCount || 0);
+    });
+
+    return finalItems.slice(0, 20);
 }
 
 /**
@@ -757,6 +777,12 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     value: search,
                     metadata: { type, id }
                 }).catch(e => console.error('Errore tracking search:', e.message));
+            }
+
+            const STANDARD_SEARCH_IDS = new Set(['yaca_search_standard']);
+            if (STANDARD_SEARCH_IDS.has(baseId)) {
+                results = await executeStandardSearch(search, userConfig, type, skip, tmdbFetchOptions);
+                return finalizeCatalog(results, id, type, hostUrl);
             }
 
             let currentSkip = skip;
