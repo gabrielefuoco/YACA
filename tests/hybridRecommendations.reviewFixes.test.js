@@ -140,6 +140,32 @@ describe('hybridRecommendations review fixes', () => {
         expect(result.length).toBe(2);
     });
 
+    it('buildHiddenGemsCatalog passes a hidden-gems context into Tier 1 scoring', async () => {
+        const ProfileScorer = require('../src/profile/ProfileScorer');
+        TasteProfile.findOne
+            .mockResolvedValueOnce({
+                owner: 'u1',
+                context: 'ctx',
+                genreScores: new Map([['18', 10]]),
+                keywordScores: new Map()
+            })
+            .mockResolvedValueOnce(null);
+        User.findOne.mockResolvedValue({
+            userId: 'u1',
+            apiKeys: {},
+            profiles: [{ id: 'ctx', settings: {} }]
+        });
+        tmdbGet.mockResolvedValue({ data: { results: [{ id: 1, genre_ids: [18], vote_average: 7.5, vote_count: 120 }] } });
+
+        await buildHiddenGemsCatalog('u1', 'ctx', 'tmdb-key', 'movie');
+
+        expect(ProfileScorer.calculateLightScore).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 1, vote_count: 120 }),
+            expect.any(Object),
+            expect.objectContaining({ catalogContext: 'hidden_gems', types: 'movie' })
+        );
+    });
+
     it('saveScoringData persists normalized scoring fields with upsert', async () => {
         await saveScoringData({
             id: 999,

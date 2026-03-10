@@ -3,6 +3,16 @@ const BAYESIAN_MIN_VOTES = 300;  // m: minimum votes threshold
 const BAYESIAN_MEAN_VOTE = 6.5;  // C: mean vote across the catalogue
 const ACTIVE_PROFILE_WEIGHT = 0.8;
 const GLOBAL_PROFILE_WEIGHT = 0.2;
+const NICHE_GENRE_IDS = new Set(['99', '10402', '36', '37', '10770']);
+const NICHE_MIN_REAL_VOTES = 20;
+const NICHE_TARGET_MAX_VOTES = 500;
+const NICHE_FADE_OUT_VOTES = 2000;
+const NICHE_MIN_VOTE_BONUS = 1.0;
+const NICHE_MAX_VOTE_BONUS = 2.5;
+
+function clampScore(value) {
+    return Math.min(Math.max(value, 0), 10);
+}
 
 class ProfileScorer {
     static normalizeDnaId(value) {
@@ -90,18 +100,12 @@ class ProfileScorer {
         const C = BAYESIAN_MEAN_VOTE;
         const bayesianScore = ((voteCount / (voteCount + m)) * voteAvg) + ((m / (voteCount + m)) * C);
 
-        // --- Phase 1.4: Epsilon Tracker (deterministic daily rotation) ---
-        const tmdbId = tmdbData.id || 0;
-        // Use start of UTC day to ensure epsilon stays constant throughout the day
-        const dayOfYear = Math.floor(new Date().setUTCHours(0, 0, 0, 0) / (1000 * 60 * 60 * 24));
-        const epsilon = ((tmdbId * dayOfYear) % 1000) * 0.000001;
-
         // --- 4. Formula Finale Bilanciata dai Pesi ---
         const totalWeight = tmdbWeight + traktWeight;
         if (totalWeight === 0) return 0;
 
         const normalizedScore = ((profileMatch * traktWeight) + (bayesianScore * tmdbWeight)) / totalWeight;
-        return Math.min(Math.max(normalizedScore + epsilon, 0), 10);
+        return clampScore(normalizedScore);
     }
 
     /**
@@ -134,7 +138,24 @@ class ProfileScorer {
      * @param {Object} profile Documento TasteProfile
      * @returns {Number} Score da 0.0 a 10.0
      */
-    static calculateLightScore(lightData, profile) {
+    static calculateNicheVoteBonus(voteCount) {
+        // Hidden gems should reward "real but niche" titles: ignore near-empty vote counts,
+        // favor the 20-500 vote window, then fade out the bonus as titles become mainstream.
+        if (voteCount < NICHE_MIN_REAL_VOTES) return 0;
+        if (voteCount <= NICHE_TARGET_MAX_VOTES) {
+            const voteDensityRatio = (NICHE_TARGET_MAX_VOTES - voteCount)
+                / (NICHE_TARGET_MAX_VOTES - NICHE_MIN_REAL_VOTES);
+            return NICHE_MIN_VOTE_BONUS + (voteDensityRatio * (NICHE_MAX_VOTE_BONUS - NICHE_MIN_VOTE_BONUS));
+        }
+        if (voteCount <= NICHE_FADE_OUT_VOTES) {
+            const mainstreamFadeRatio = (voteCount - NICHE_TARGET_MAX_VOTES)
+                / (NICHE_FADE_OUT_VOTES - NICHE_TARGET_MAX_VOTES);
+            return Math.max(0, NICHE_MIN_VOTE_BONUS - mainstreamFadeRatio);
+        }
+        return 0;
+    }
+
+    static calculateLightScore(lightData, profile, context = {}) {
         if (!lightData || !profile) return 0;
 
         // Genre match score
@@ -146,6 +167,18 @@ class ProfileScorer {
             }
         });
 
+        const keywordItems = lightData.keywords?.keywords || lightData.keywords?.results || lightData.keywords || [];
+        let keywordScore = 0;
+        keywordItems.forEach((kw) => {
+            if (kw && kw.id) {
+                keywordScore += profile.keywordScores?.get(kw.id.toString()) || 0;
+            }
+        });
+
+        const nicheGenreBonus = genreIds.reduce((bonus, gid) => (
+            NICHE_GENRE_IDS.has(gid?.toString()) ? bonus + 0.75 : bonus
+        ), 0);
+
         // Bayesian Weighted Rating
         const voteAvg = lightData.vote_average || 0;
         const voteCount = lightData.vote_count || 0;
@@ -153,9 +186,17 @@ class ProfileScorer {
         const C = BAYESIAN_MEAN_VOTE;
         const bayesianScore = ((voteCount / (voteCount + m)) * voteAvg) + ((m / (voteCount + m)) * C);
 
+        if (context.catalogContext === 'hidden_gems' || context.catalogContext === 'niche') {
+            const credibilityMultiplier = (voteCount > 0 && voteCount < NICHE_MIN_REAL_VOTES) ? 0.15 : 1;
+            const nicheVoteBonus = this.calculateNicheVoteBonus(voteCount);
+            const thematicScore = genreScore + (keywordScore * 0.35) + nicheGenreBonus;
+            const combined = ((thematicScore * 0.8) + (nicheVoteBonus * 0.2)) * credibilityMultiplier;
+            return clampScore(combined);
+        }
+
         // Combine: genre affinity (70%) + bayesian quality (30%)
         const combined = (genreScore * 0.7) + (bayesianScore * 0.3);
-        return Math.min(Math.max(combined, 0), 10);
+        return clampScore(combined);
     }
 
     /**

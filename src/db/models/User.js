@@ -47,6 +47,11 @@ const userSchema = new mongoose.Schema({
                 type: { type: String, enum: ['genre', 'keyword', 'country'] },
                 id: String,
                 name: String
+            }],
+            pendingDNASuggestions: [{
+                type: { type: String, enum: ['genre', 'keyword', 'country'] },
+                id: String,
+                name: String
             }]
         },
         catalogs: [{
