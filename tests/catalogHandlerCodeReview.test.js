@@ -217,9 +217,9 @@ describe('Merge catalog fetchSource — no double-skip pagination', () => {
         const mergeResultSection = source.substring(mergeResultStart, mergeResultEnd);
 
         // interleaveResults must use 0 offset (data already skipped by source fetchers)
-        expect(mergeResultSection).toContain('interleaveResults(listA, listB, 0, 20)');
-        // Popularity slice must use .slice(0, 20), NOT .slice(skip, skip + 20)
-        expect(mergeResultSection).toContain('.slice(0, 20)');
+        expect(mergeResultSection).toContain('interleaveResults(listA, listB, 0, MERGED_CATALOG_PAGE_SIZE)');
+        // Popularity slice must use .slice(0, MERGED_CATALOG_PAGE_SIZE), NOT .slice(skip, skip + 20)
+        expect(mergeResultSection).toContain('.slice(0, MERGED_CATALOG_PAGE_SIZE)');
         expect(mergeResultSection).not.toContain('.slice(skip, skip + 20)');
     });
 });
