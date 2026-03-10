@@ -13,6 +13,30 @@ export interface ProfileSettings {
   suggestedDNA?: DNAItem[];
 }
 
+export interface QueryBlock {
+  strategy?: 'discovery' | 'multi_search' | 'similar';
+  similar_to?: string;
+  text_search?: string;
+  genre_ids?: number[];
+  people_list?: string[];
+  keyword?: string;
+  company_name?: string;
+  watch_provider?: string;
+  original_language?: string;
+  language?: string;
+  year_from?: string;
+  year_to?: string;
+  runtime_lte?: number;
+  sort_by?: string;
+  with_genres?: string;
+  with_keywords?: string;
+  with_cast?: string;
+  with_crew?: string;
+  'vote_average.gte'?: number;
+  'vote_count.gte'?: number;
+  [key: string]: unknown;
+}
+
 export interface Catalog {
   id: string;
   name: string;
@@ -20,6 +44,8 @@ export interface Catalog {
   type: 'movie' | 'series';
   source?: string;
   filters?: Record<string, unknown>;
+  queries?: QueryBlock[];
+  presentation_strategy?: 'popularity' | 'interleave';
   emoji?: string;
 }
 
@@ -42,7 +68,9 @@ export interface Preset {
   type: 'movie' | 'series' | 'both';
   category: string;
   emoji?: string;
-  filters: Record<string, unknown>;
+  filters?: Record<string, unknown>;
+  queries?: QueryBlock[];
+  presentation_strategy?: 'popularity' | 'interleave';
   description?: string;
 }
 

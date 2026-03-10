@@ -138,8 +138,13 @@ app.post('/api/preview-catalog', async (req, res) => {
             return res.status(404).json({ error: 'Preset non trovato' });
         }
         discoverType = preset.type === 'series' ? 'tv' : 'movie';
-        discoverFilters = preset.filters;
-        strategy = 'discovery';
+        // Universal Schema: extract filters from first query block (backward compat with filters field)
+        const firstQuery = Array.isArray(preset.queries) && preset.queries.length > 0
+            ? preset.queries[0]
+            : (preset.filters || {});
+        const { strategy: queryStrategy, ...queryFilters } = firstQuery;
+        discoverFilters = queryFilters;
+        strategy = queryStrategy || 'discovery';
     } else if (prompt) {
         sanitizedPrompt = sanitizeString(String(prompt)).substring(0, MAX_PROMPT_LENGTH);
         if (!sanitizedPrompt) {
