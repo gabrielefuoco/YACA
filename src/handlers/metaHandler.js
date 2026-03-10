@@ -104,6 +104,8 @@ async function metaHandler(args, userConfig) {
                                             }
                                         }
                                     }
+                                    // Aggiornamento silente scoring cache (voti freschi)
+                                    updateScoringCache(Number(tmdbId), type === 'series' ? 'tv' : type, bgMeta).catch(() => {});
                                     delete bgMeta._keywordNames;
                                     delete bgMeta._isAnime;
                                     await finalMetaCache.set(cacheKey, bgMeta);
@@ -129,6 +131,9 @@ async function metaHandler(args, userConfig) {
                                     }
                                 }
                             }
+
+                            // Aggiornamento silente scoring cache (voti freschi)
+                            updateScoringCache(Number(tmdbId), type === 'series' ? 'tv' : type, meta).catch(() => {});
 
                             // Clean internal properties before caching/sending to Stremio
                             delete meta._keywordNames;
@@ -162,6 +167,31 @@ async function metaHandler(args, userConfig) {
         console.error("Errore Meta Handler:", err.message);
         return { meta: null };
     }
+}
+
+/**
+ * Aggiornamento silente della scoring cache quando l'utente naviga i dettagli.
+ * Salva solo vote_average e vote_count (i dati volatili utili allo scorer).
+ * Usa lazy require per non bloccare il caricamento del modulo se mongoose non è disponibile.
+ * @param {number} tmdbId ID TMDB
+ * @param {string} type 'movie' o 'tv'
+ * @param {Object} metaData Dati meta freschi dal TMDB
+ */
+async function updateScoringCache(tmdbId, type, metaData) {
+    if (!tmdbId || !metaData) return;
+    try {
+        const TmdbScoringData = require('../db/models/TmdbScoringData');
+        await TmdbScoringData.updateOne(
+            { tmdbId, type },
+            {
+                $set: {
+                    vote_average: metaData.vote_average || (metaData.imdbRating ? parseFloat(metaData.imdbRating) : 0),
+                    vote_count: metaData.vote_count || 0
+                }
+            },
+            { upsert: false } // Solo aggiorna se già esiste; non creare nuovi documenti parziali
+        );
+    } catch (_e) { /* scoring cache update failure is non-blocking */ }
 }
 
 module.exports = { metaHandler };

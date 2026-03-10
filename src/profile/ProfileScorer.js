@@ -128,6 +128,37 @@ class ProfileScorer {
     }
 
     /**
+     * Tier 1 Light Score: calcola un punteggio usando solo generi e formula bayesiana dei voti.
+     * Eseguibile in RAM senza chiamate API aggiuntive, usato per il taglio brutale del Two-Tier Scoring.
+     * @param {Object} lightData Dati leggeri { id, genre_ids, vote_average, vote_count }
+     * @param {Object} profile Documento TasteProfile
+     * @returns {Number} Score da 0.0 a 10.0
+     */
+    static calculateLightScore(lightData, profile) {
+        if (!lightData || !profile) return 0;
+
+        // Genre match score
+        let genreScore = 0;
+        const genreIds = lightData.genre_ids || [];
+        genreIds.forEach(gid => {
+            if (gid !== undefined && gid !== null) {
+                genreScore += profile.genreScores.get(gid.toString()) || 0;
+            }
+        });
+
+        // Bayesian Weighted Rating
+        const voteAvg = lightData.vote_average || 0;
+        const voteCount = lightData.vote_count || 0;
+        const m = BAYESIAN_MIN_VOTES;
+        const C = BAYESIAN_MEAN_VOTE;
+        const bayesianScore = ((voteCount / (voteCount + m)) * voteAvg) + ((m / (voteCount + m)) * C);
+
+        // Combine: genre affinity (70%) + bayesian quality (30%)
+        const combined = (genreScore * 0.7) + (bayesianScore * 0.3);
+        return Math.min(Math.max(combined, 0), 10);
+    }
+
+    /**
      * Applica cap di diversità ai risultati per evitare che un singolo genere/regista domini.
      * @param {Array} items Array di oggetti con proprietà id, genres, directors
      * @param {Object} caps Limiti massimi per categoria { genre: 10, director: 3 }
