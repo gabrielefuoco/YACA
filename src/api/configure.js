@@ -181,14 +181,41 @@ module.exports = async (req, res) => {
 
             // 1. Aggiungi Cataloghi AI Esistenti (se stiamo modificando) - con validazione
             if (profile.existingCatalogs && Array.isArray(profile.existingCatalogs)) {
-                const safeCatalogs = profile.existingCatalogs.slice(0, LIMITS.MAX_EXISTING_CATALOGS).map(cat => {
-                    if (!cat || typeof cat !== 'object') return null;
-                    return {
-                        id: String(cat.id || ''),
+                const safeCatalogs = [];
+                for (const cat of profile.existingCatalogs.slice(0, LIMITS.MAX_EXISTING_CATALOGS)) {
+                    if (!cat || typeof cat !== 'object') continue;
+                    const catId = String(cat.id || '');
+                    const isMerge = catId.startsWith('merged_') || cat.filters?.merge;
+
+                    if (isMerge && cat.filters) {
+                        try {
+                            const mergeConfig = cat.filters.merge || {};
+                            await UserList.findOneAndUpdate(
+                                { listId: catId },
+                                {
+                                    owner: finalUserId,
+                                    listId: catId,
+                                    name: String(cat.name || '').substring(0, LIMITS.MAX_CATALOG_NAME_LENGTH),
+                                    type: cat.type === 'series' ? 'series' : 'movie',
+                                    sourceType: 'merged',
+                                    filters: cat.filters,
+                                    mergedFrom: mergeConfig.catalogs || [],
+                                    presentation_strategy: mergeConfig.strategy === 'interleave' ? 'interleave' : 'popularity'
+                                },
+                                { upsert: true }
+                            );
+                        } catch (err) {
+                            console.error("Errore salvataggio UserList per merged catalog:", err.message);
+                        }
+                    }
+
+                    safeCatalogs.push({
+                        id: catId,
                         name: String(cat.name || '').substring(0, LIMITS.MAX_CATALOG_NAME_LENGTH),
-                        type: cat.type === 'series' ? 'series' : 'movie'
-                    };
-                }).filter(Boolean);
+                        type: cat.type === 'series' ? 'series' : 'movie',
+                        filters: cat.filters
+                    });
+                }
                 parsedCatalogs.push(...safeCatalogs);
             }
 
@@ -217,7 +244,7 @@ module.exports = async (req, res) => {
                     .map(p => p.trim().substring(0, LIMITS.MAX_PROMPT_LENGTH))
                     .slice(0, LIMITS.MAX_AI_PROMPTS);
                 const settledResults = await Promise.allSettled(
-                    validPrompts.map(prompt => generateTmdbFiltersFromPrompt(prompt, mistralKey))
+                    validPrompts.map(prompt => generateTmdbFiltersFromPrompt(prompt, mistralKey, false, 'multi_query'))
                 );
 
                 for (let i = 0; i < validPrompts.length; i++) {
@@ -230,7 +257,8 @@ module.exports = async (req, res) => {
 
                     let catalogType = 'movie';
                     const lowerPrompt = prompt.toLowerCase();
-                    if (filters.target === 'kitsu') {
+                    const firstQuery = filters.queries?.[0] || filters;
+                    if (firstQuery.target === 'kitsu') {
                         catalogType = 'series';
                     } else {
                         const seriesPatterns = ['serie tv', 'serie ', 'series', 'tv show', 'show tv', 'sitcom', 'anime', 'k-drama', 'kdrama', 'docuserie', 'miniserie', 'telefilm'];
@@ -251,7 +279,9 @@ module.exports = async (req, res) => {
                                 name: listName,
                                 type: catalogType,
                                 sourceType: 'ai_prompt',
-                                filters: filters,
+                                filters: filters.queries ? undefined : filters,
+                                queries: filters.queries || undefined,
+                                presentation_strategy: filters.queries ? 'interleave' : 'popularity',
                                 rawPrompt: prompt
                             },
                             { upsert: true, returnDocument: 'after' }

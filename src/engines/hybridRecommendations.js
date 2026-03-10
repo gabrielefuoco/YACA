@@ -532,7 +532,7 @@ async function twoTierScore(pool, profile, options) {
             if (!details) return { data, score: 0 };
 
             // Salva in scoring cache in background (fire-and-forget)
-            saveScoringData(details, types).catch(() => {});
+            saveScoringData(details, types).catch(() => { });
 
             const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
             return { data, score };
@@ -780,10 +780,10 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
 
     // Quality cage: low popularity, high quality
     const qualityFilters = {
-        sort_by: 'vote_average.desc',
-        'vote_count.gte': 100,
-        'vote_average.gte': 7.2,
-        'popularity.lte': 20
+        sort_by: 'popularity.asc',
+        'vote_count.gte': 150,
+        'vote_count.lte': 2000,
+        'vote_average.gte': 6.8
     };
     if (types === 'movie') qualityFilters['with_runtime.gte'] = 60; // Exclude short films
 
@@ -1004,7 +1004,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                 const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
                 await tmdb.getTmdbMovieDetails(tmdbApiKey, tmdbId.toString(), tmdbType);
             } catch (_e) { /* background enrichment failure is non-blocking */ }
-        }, { batchSize: 1, delayMs: 600 }).catch(() => {});
+        }, { batchSize: 1, delayMs: 600 }).catch(() => { });
     });
 
     return results.filter(Boolean);

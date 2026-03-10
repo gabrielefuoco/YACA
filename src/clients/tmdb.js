@@ -960,7 +960,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
 
     // Se è una serie TV, scarica gli episodi per popolare la griglia in Stremio
     // Skip episode fetching for anime — metaHandler will use Kitsu episodes instead
-    if (type === 'series' && data.number_of_seasons) {
+    if (type === 'series' && data.number_of_seasons && !isAnime) {
         meta.videos = await fetchTmdbEpisodes(
             client,
             tmdbId,
