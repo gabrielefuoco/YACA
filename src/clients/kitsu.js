@@ -1,6 +1,10 @@
-const { kitsuClient } = require('../utils/httpClient');
+const { createAxiosInstance } = require('../utils/httpClient');
 const { KITSU_ENDPOINT, ITEMS_PER_PAGE } = require('../config');
 const CacheManager = require('../cache/CacheManager');
+
+// Crea l'istanza client qui
+const kitsuClient = createAxiosInstance(KITSU_ENDPOINT || 'https://kitsu.io/api/edge');
+
 
 // Cache per Kitsu
 const kitsuMetaCache = new CacheManager('kitsu_meta', { ramMax: 50, ramTtlMs: 3600000 });

@@ -228,11 +228,6 @@ const getPresets = () => {
         // =============================================
         // --- 👤 IL MIO TRAKT & COMMUNITY (MDBList) ---
         // =============================================
-        { id: 'mdblist_123', name: 'MDBList: Top 100 Film (Sempre)', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
-        { id: 'mdblist_456', name: 'MDBList: Top 100 Serie (Sempre)', category: '👤 Il Mio Trakt & Community', type: 'series', filters: { mdblist: true } },
-        { id: 'mdblist_789', name: 'MDBList: Ultime Uscite', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
-        { id: 'mdblist_101', name: 'MDBList: In Tendenza (Settimana)', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
-        { id: 'mdblist_102', name: 'MDBList: Gemme Nascoste', category: '👤 Il Mio Trakt & Community', type: 'movie', filters: { mdblist: true } },
 
         // ==========================================
         // 👤 IL MIO TRAKT & COMMUNITY
@@ -272,7 +267,6 @@ const profileTemplates = [
         presets: [
             'preset_pop_movies', 'preset_new_movies', 'preset_top_rated_movies', 'preset_oscar_winners',
             'preset_blockbusters', 'preset_big_sagas', 'preset_nolan', 'preset_tarantino',
-            'mdblist_123', 'mdblist_789', // MDBList
             'preset_scorsese', 'preset_a24', 'preset_mindfuck', 'preset_pure_comedy'
         ]
     },
