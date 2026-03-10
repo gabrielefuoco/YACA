@@ -99,7 +99,7 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, isBackground = 
     }
     try {
         // 1. Check Cache
-        const cacheKey = `${taskType}:${prompt.toLowerCase().trim()}`;
+        const cacheKey = `search-v2:${taskType}:${prompt.toLowerCase().trim()}`;
         const { value: rawCached, status: cacheStatus } = await aiPromptCache.getWithStatus(cacheKey);
         if (rawCached && cacheStatus !== 'miss') {
             console.log(`[AICache] Hit per: "${prompt}" (Stale: ${cacheStatus === 'stale'})`);

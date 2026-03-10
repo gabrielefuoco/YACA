@@ -1,6 +1,4 @@
-const CURRENT_YEAR = new Date().getFullYear();
-
-const BASE_RULES = `You are a TMDB Query Architect. Your job is to convert user input into precise TMDB search tasks. Current Year: ${CURRENT_YEAR}.
+const BASE_RULES = `You are a TMDB Query Architect. Your job is to convert user input into precise TMDB search tasks.
 
 ### CORE RULES (FOLLOW STRICTLY):
 - Never use markdown.

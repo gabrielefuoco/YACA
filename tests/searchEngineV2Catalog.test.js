@@ -102,6 +102,22 @@ describe('Search Engine V2 catalog routing', () => {
         expect(result.metas[0].name).toBe('Avatar');
     });
 
+    it('returns an empty catalog when the standard TMDB search fails', async () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        fetchTmdbCatalog.mockRejectedValueOnce(new Error('TMDB down'));
+
+        const result = await catalogHandler({
+            type: 'movie',
+            id: 'yaca_search_standard',
+            extra: { skip: 0, search: 'Avatar' }
+        }, {
+            apiKeys: { tmdb: 'tmdb-key', mistral: 'mistral-key' }
+        }, 'http://localhost:7000');
+
+        expect(result).toEqual({ metas: [] });
+        consoleSpy.mockRestore();
+    });
+
     it('runs AI planner queries in parallel pages and ranks consensus titles first', async () => {
         routeLiveStremioSearch.mockResolvedValueOnce({
             filters: {
