@@ -511,13 +511,104 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
 
         // Should have looked up Kitsu ID for anime
         expect(kitsuMock.getKitsuIdFromTmdbId).toHaveBeenCalledWith('200', 'series');
-        // Should have replaced videos with Kitsu episodes
+        // Should have normalized Kitsu fallback IDs to the series base for stream addon compatibility
         expect(result.meta.videos).toEqual([
-            { id: 'kitsu:123:1:1', title: 'Episode 1', season: 1, episode: 1 }
+            { id: 'tt200:1:1', title: 'Episode 1', season: 1, episode: 1 }
         ]);
         // Internal properties should be cleaned before sending to Stremio
         expect(result.meta._keywordNames).toBeUndefined();
         expect(result.meta._isAnime).toBeUndefined();
+    });
+
+    it('should override TMDB episode list with Kitsu episodes for anime when Kitsu is available', async () => {
+        const tmdbVideos = [
+            { id: 'tt200:1:1', title: 'Enter Naruto', season: 1, episode: 1, overview: 'Trama IT' }
+        ];
+        const mockMeta = {
+            id: 'tt200',
+            name: 'Naruto',
+            type: 'series',
+            genre_ids: [16, 10759],
+            genres: ['Animation', 'Action & Adventure'],
+            _isAnime: true,
+            _keywordNames: ['anime', 'ninja'],
+            videos: [...tmdbVideos],
+            behaviorHints: {}
+        };
+
+        jest.doMock('../src/clients/tmdb', () => ({
+            getTmdbMetaDetails: jest.fn().mockResolvedValue(mockMeta)
+        }));
+        const kitsuMock = {
+            getKitsuMetaDetails: jest.fn(),
+            getKitsuIdFromTmdbId: jest.fn().mockResolvedValue('123'),
+            fetchKitsuEpisodes: jest.fn().mockResolvedValue([
+                { id: 'kitsu:123:1', title: 'Episode 1', season: 1, episode: 1 }
+            ])
+        };
+        jest.doMock('../src/clients/kitsu', () => kitsuMock);
+        jest.doMock('../src/id_mapping/id_cache', () => ({
+            translateImdbToTmdb: jest.fn().mockResolvedValue({ id: '200' })
+        }));
+        jest.doMock('../src/utils/mdblist', () => ({
+            fetchMdblistRatings: jest.fn().mockResolvedValue({})
+        }));
+
+        const { metaHandler } = require('../src/handlers/metaHandler');
+
+        const result = await metaHandler(
+            { type: 'series', id: 'tmdb:200' },
+            { apiKeys: { tmdb: 'key' } }
+        );
+
+        expect(tmdbVideos).toEqual([
+            { id: 'tt200:1:1', title: 'Enter Naruto', season: 1, episode: 1, overview: 'Trama IT' }
+        ]);
+        expect(result.meta.videos).toEqual([
+            { id: 'tt200:1:1', title: 'Episode 1', season: 1, episode: 1 }
+        ]);
+    });
+
+    it('should normalize Kitsu fallback episode ids to the TMDB or IMDb series id', async () => {
+        const mockMeta = {
+            id: 'tt200',
+            name: 'Naruto',
+            type: 'series',
+            genre_ids: [16, 10759],
+            genres: ['Animation', 'Action & Adventure'],
+            _isAnime: true,
+            _keywordNames: ['anime', 'ninja'],
+            behaviorHints: {}
+        };
+
+        jest.doMock('../src/clients/tmdb', () => ({
+            getTmdbMetaDetails: jest.fn().mockResolvedValue(mockMeta)
+        }));
+        const kitsuMock = {
+            getKitsuMetaDetails: jest.fn(),
+            getKitsuIdFromTmdbId: jest.fn().mockResolvedValue('123'),
+            fetchKitsuEpisodes: jest.fn().mockResolvedValue([
+                { id: 'kitsu:123:7', title: 'Episode 7', season: 1, episode: 7, overview: 'Fallback overview' }
+            ])
+        };
+        jest.doMock('../src/clients/kitsu', () => kitsuMock);
+        jest.doMock('../src/id_mapping/id_cache', () => ({
+            translateImdbToTmdb: jest.fn().mockResolvedValue({ id: '200' })
+        }));
+        jest.doMock('../src/utils/mdblist', () => ({
+            fetchMdblistRatings: jest.fn().mockResolvedValue({})
+        }));
+
+        const { metaHandler } = require('../src/handlers/metaHandler');
+
+        const result = await metaHandler(
+            { type: 'series', id: 'tmdb:200' },
+            { apiKeys: { tmdb: 'key' } }
+        );
+
+        expect(result.meta.videos).toEqual([
+            { id: 'tt200:1:7', title: 'Episode 7', season: 1, episode: 7, overview: 'Fallback overview' }
+        ]);
     });
 
     it('should not make duplicate getTmdbMetaDetails calls', async () => {
@@ -644,7 +735,7 @@ describe('Bug Fix: Anime keyword detection uses raw keywords, not sliced links',
         // Should have detected anime via _isAnime flag (set by getTmdbMetaDetails)
         expect(kitsuMock.getKitsuIdFromTmdbId).toHaveBeenCalledWith('300', 'series');
         expect(result.meta.videos).toEqual([
-            { id: 'kitsu:456:1:1', title: 'Romance Dawn', season: 1, episode: 1 }
+            { id: 'tt300:1:1', title: 'Romance Dawn', season: 1, episode: 1 }
         ]);
         // Internal properties should be cleaned before sending to Stremio
         expect(result.meta._keywordNames).toBeUndefined();
@@ -773,11 +864,11 @@ describe('Bug Fix: Trakt TMDB enrichment uses rate-limited batching', () => {
 
 describe('Bug Fix: Lingva timeout reduced to 1500ms', () => {
     it('should use a timeout of 1500ms for Lingva translation requests', () => {
-        const tmdbSource = require('fs').readFileSync(
-            require('path').join(__dirname, '../src/clients/tmdb.js'), 'utf-8'
+        const translationSource = require('fs').readFileSync(
+            require('path').join(__dirname, '../src/utils/translation.js'), 'utf-8'
         );
         // The Lingva call should use timeout: 1500, not 2000 or 4000
-        const lingvaCallMatch = tmdbSource.match(/lingvaClient\.get\([^;]+\)/s);
+        const lingvaCallMatch = translationSource.match(/lingvaClient\.get\([^;]+\)/s);
         expect(lingvaCallMatch).toBeTruthy();
         expect(lingvaCallMatch[0]).toContain('timeout: 1500');
         expect(lingvaCallMatch[0]).not.toContain('timeout: 4000');

@@ -7,6 +7,22 @@ const CacheManager = require('../cache/CacheManager');
 // Cache per l'oggetto meta finale combinato (TMDB + MDBList)
 const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 2000, ramTtlMs: 3600000, swrMs: 600000 });
 
+function normalizeAnimeEpisodes(seriesId, episodes) {
+    if (!seriesId || !Array.isArray(episodes)) return [];
+
+    return episodes.map((episode, index) => {
+        const season = Number(episode?.season) > 0 ? Number(episode.season) : 1;
+        const episodeNumber = Number(episode?.episode) > 0 ? Number(episode.episode) : index + 1;
+
+        return {
+            ...episode,
+            id: `${seriesId}:${season}:${episodeNumber}`,
+            season,
+            episode: episodeNumber
+        };
+    });
+}
+
 /**
  * Gestisce la richiesta di metadati dettagliati quando l'utente clicca su un titolo
  */
@@ -84,7 +100,7 @@ async function metaHandler(args, userConfig) {
                                         if (kitsuId) {
                                             const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
                                             if (kitsuEpisodes && kitsuEpisodes.length > 0) {
-                                                bgMeta.videos = kitsuEpisodes;
+                                                bgMeta.videos = normalizeAnimeEpisodes(bgMeta.id, kitsuEpisodes);
                                             }
                                         }
                                     }
@@ -109,7 +125,7 @@ async function metaHandler(args, userConfig) {
                                     console.log(`[HybridAnime] Trovato mapping Kitsu ${kitsuId} per TMDB ${tmdbId}. Carico episodi...`);
                                     const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
                                     if (kitsuEpisodes && kitsuEpisodes.length > 0) {
-                                        meta.videos = kitsuEpisodes;
+                                        meta.videos = normalizeAnimeEpisodes(meta.id, kitsuEpisodes);
                                     }
                                 }
                             }

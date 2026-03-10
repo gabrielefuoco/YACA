@@ -23,10 +23,9 @@ const {
 const { rateLimitedMap } = require('../utils/rateLimiter');
 const { generateRequestHash } = require('../utils/requestHash');
 const TmdbRequestCache = require('../models/TmdbRequestCache');
+const { translateTextToItalian } = require('../utils/translation');
 
 const CacheManager = require('../cache/CacheManager');
-
-const lingvaClient = createAxiosInstance('https://lingva.ml');
 
 // Costanti di trimming per ridurre il peso dei payload TMDB in cache (anti-OOM / anti-16MB BSON)
 const MAX_CAST_SIZE = 10;
@@ -261,6 +260,21 @@ function pickPosterPath(tmdbItem) {
     const preferredPoster = itPoster || enPoster || nullPoster || posters[0];
 
     return preferredPoster?.file_path || tmdbItem.poster_path || null;
+}
+
+function prioritizeLocalizedImages(images = []) {
+    if (!Array.isArray(images) || images.length <= MAX_IMAGES_PER_TYPE) {
+        return images;
+    }
+
+    const prioritized = [
+        ...images.filter(img => img?.iso_639_1 === 'it'),
+        ...images.filter(img => img?.iso_639_1 === 'en'),
+        ...images.filter(img => !img?.iso_639_1),
+        ...images.filter(img => img?.iso_639_1 && img.iso_639_1 !== 'it' && img.iso_639_1 !== 'en')
+    ];
+
+    return prioritized.slice(0, MAX_IMAGES_PER_TYPE);
 }
 
 /**
@@ -659,22 +673,33 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
             }
         }
 
-        const buildEpisodesFromSeason = (seasonData, fallbackMaps = {}) => {
+        const buildEpisodesFromSeason = async (seasonData, fallbackMaps = {}) => {
             if (!seasonData?.episodes) return [];
             const enOverviewByEpisode = fallbackMaps.enOverviewByEpisode || new Map();
             const originalOverviewByEpisode = fallbackMaps.originalOverviewByEpisode || new Map();
-            return seasonData.episodes.map(ep => {
-                const fallbackOverview = enOverviewByEpisode.get(ep.episode_number) || originalOverviewByEpisode.get(ep.episode_number) || '';
+            return rateLimitedMap(seasonData.episodes, async (ep) => {
+                let overview = ep.overview || '';
+                if (!overview.trim()) {
+                    const enOverview = enOverviewByEpisode.get(ep.episode_number) || '';
+                    const originalOverview = originalOverviewByEpisode.get(ep.episode_number) || '';
+
+                    if (enOverview) {
+                        overview = await translateTextToItalian(enOverview, 'en');
+                    } else if (originalOverview) {
+                        overview = await translateTextToItalian(originalOverview, originalLanguage || 'en');
+                    }
+                }
+
                 return {
                     id: imdbId ? `${imdbId}:${ep.season_number}:${ep.episode_number}` : `tmdb:${tmdbId}:${ep.season_number}:${ep.episode_number}`,
                     title: ep.name || `Episodio ${ep.episode_number}`,
                     released: ep.air_date ? new Date(ep.air_date).toISOString() : null,
                     season: ep.season_number,
                     episode: ep.episode_number,
-                    overview: ep.overview || fallbackOverview,
+                    overview,
                     thumbnail: ep.still_path ? `https://image.tmdb.org/t/p/w500${ep.still_path}` : null
                 };
-            });
+            }, { batchSize: 3, delayMs: 50 });
         };
 
         // Process seasons: build episodes with overview fallback where needed
@@ -773,9 +798,9 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
                     }
                 }
                 if (data.images) {
-                    if (Array.isArray(data.images.logos)) data.images.logos = data.images.logos.slice(0, MAX_IMAGES_PER_TYPE);
+                    if (Array.isArray(data.images.logos)) data.images.logos = prioritizeLocalizedImages(data.images.logos);
                     if (Array.isArray(data.images.backdrops)) data.images.backdrops = data.images.backdrops.slice(0, MAX_IMAGES_PER_TYPE);
-                    if (Array.isArray(data.images.posters)) data.images.posters = data.images.posters.slice(0, MAX_IMAGES_PER_TYPE);
+                    if (Array.isArray(data.images.posters)) data.images.posters = prioritizeLocalizedImages(data.images.posters);
                 }
                 if (data.videos?.results) {
                     data.videos.results = data.videos.results
@@ -848,17 +873,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
                     data.overview = originalOverview;
                 } else if (enOverview) {
                     try {
-                        // Truncate to avoid 414 URI Too Long (max ~1500 chars for safe URL length)
-                        const MAX_LINGVA_TEXT_LEN = 1500;
-                        const truncatedOverview = enOverview.length > MAX_LINGVA_TEXT_LEN
-                            ? enOverview.substring(0, MAX_LINGVA_TEXT_LEN) + '...'
-                            : enOverview;
-                        const transRes = await lingvaClient.get(`/api/v1/en/it/${encodeURIComponent(truncatedOverview)}`, { timeout: 1500 });
-                        if (transRes.data?.translation) {
-                            data.overview = transRes.data.translation;
-                        } else {
-                            data.overview = enOverview;
-                        }
+                        data.overview = await translateTextToItalian(enOverview, 'en');
                     } catch (_e) {
                         data.overview = enOverview;
                     }
@@ -945,7 +960,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
 
     // Se è una serie TV, scarica gli episodi per popolare la griglia in Stremio
     // Skip episode fetching for anime — metaHandler will use Kitsu episodes instead
-    if (type === 'series' && data.number_of_seasons && !isAnime) {
+    if (type === 'series' && data.number_of_seasons) {
         meta.videos = await fetchTmdbEpisodes(
             client,
             tmdbId,
