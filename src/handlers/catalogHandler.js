@@ -156,7 +156,7 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
     const itemsToHydrate = metas.slice(0, 60).filter(item => item && item.id && !item.rawTMDB && !(item.cast && item.keywords));
     if (itemsToHydrate.length === 0) return;
 
-    const tmdbIds = itemsToHydrate.map(item => Number(normalizeContentId(item.id))).filter(id => !isNaN(id));
+    const tmdbIds = itemsToHydrate.map(item => normalizeContentId(item.id)).filter(Boolean);
 
     // Fase 1: Bulk query su TmdbScoringData per evitare N chiamate individuali
     let scoringMap = new Map();
@@ -164,7 +164,7 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
         const TmdbScoringData = require('../db/models/TmdbScoringData');
         const cachedDocs = await TmdbScoringData.find({ tmdbId: { $in: tmdbIds }, type: tmdbType }).lean();
         for (const doc of cachedDocs) {
-            scoringMap.set(doc.tmdbId, doc);
+            scoringMap.set(String(doc.tmdbId), doc);
         }
     } catch (_e) { /* TmdbScoringData miss is non-blocking */ }
 
@@ -172,7 +172,7 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
     await Promise.all(
         itemsToHydrate.map(async (item) => {
             try {
-                const tmdbId = Number(normalizeContentId(item.id));
+                const tmdbId = normalizeContentId(item.id);
                 const scoringDoc = scoringMap.get(tmdbId);
 
                 if (scoringDoc) {
@@ -1029,14 +1029,16 @@ async function catalogHandler(args, userConfig, hostUrl) {
                         const listB = Array.isArray(resB?.metas) ? resB.metas : [];
 
                         if (strategy === 'mixed') {
-                            results = interleaveResults(listA, listB, skip, 20);
+                            // I dati sorgente sono già impaginati (skip applicato da executeComplexStrategy/catalogHandler),
+                            // quindi non ripetiamo lo skip qui — slice(0, 20) per la pagina corretta.
+                            results = interleaveResults(listA, listB, 0, 20);
                         } else {
                             // Popularity: combine, deduplicate, and sort
                             const combined = [...listA, ...listB];
                             const unique = Array.from(new Map(combined.map(item => [normalizeContentId(item.id), item])).values());
                             results = unique
                                 .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
-                                .slice(skip, skip + 20);
+                                .slice(0, 20);
                         }
 
                         return await finalizeCatalog(results, id, type, hostUrl, userConfig);

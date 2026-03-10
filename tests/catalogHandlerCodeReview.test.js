@@ -137,68 +137,63 @@ describe('buildDiscoveryParams — with_keywords separator preservation', () => 
 });
 
 // ============================================
-// Test 2: Bulk hydration via TmdbScoringData
+// Test 2: Bulk hydration via TmdbScoringData — String type consistency
 // ============================================
 describe('hydrateResultsFromLocalDetailsCache — bulk TmdbScoringData query', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it('uses TmdbScoringData bulk query before falling back to individual getTmdbMovieDetails calls', async () => {
-        // Import the hydrate function indirectly through catalogHandler's scoring flow
-        // We test by verifying TmdbScoringData.find is called with $in and getTmdbMovieDetails is called less
-        const mockScoringDocs = [
-            {
-                tmdbId: 100,
-                type: 'movie',
-                genre_ids: [28, 53],
-                vote_average: 7.5,
-                vote_count: 1000,
-                keyword_ids: [1234],
-                director_ids: [5678],
-                cast_ids: [111, 222]
-            }
-        ];
-
-        TmdbScoringData.find.mockReturnValue({
-            lean: jest.fn().mockResolvedValue(mockScoringDocs)
-        });
-
-        // Item 100 should be hydrated from TmdbScoringData (no getTmdbMovieDetails call)
-        // Item 200 should fall back to getTmdbMovieDetails
-        getTmdbMovieDetails.mockResolvedValue({
-            id: 200,
-            genre_ids: [18],
-            keywords: { keywords: [{ id: 9999 }] },
-            credits: { cast: [{ id: 333 }] }
-        });
-
-        // We need to access hydrateResultsFromLocalDetailsCache indirectly
-        // It's called during catalog ranking. Let's test through the TmdbScoringData mock.
-        // The bulk query should be called with the right IDs
-        const { catalogHandler } = require('../src/handlers/catalogHandler');
-
-        // Verify that when TmdbScoringData is available, it performs a bulk find
-        expect(TmdbScoringData.find).toBeDefined();
-        expect(typeof TmdbScoringData.find).toBe('function');
-    });
-});
-
-// ============================================
-// Test 3: Merge catalog pagination
-// ============================================
-describe('Merge catalog fetchSource — skip propagation', () => {
-    it('should not hardcode skip=0 in executeComplexStrategy calls', () => {
-        // Verify the fix by reading the source and checking the function signature
+    it('uses String keys consistently in scoringMap to match normalizeContentId output', () => {
+        // The fix ensures scoringMap keys are String (via String(doc.tmdbId))
+        // and lookups use normalizeContentId which returns String.
+        // Verify the source code uses String() on map set and normalizeContentId on map get.
         const fs = require('fs');
         const source = fs.readFileSync(
             require.resolve('../src/handlers/catalogHandler.js'),
             'utf8'
         );
 
-        // The old bug: executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, 0, ...)
-        // The fix: executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, skip, ...)
-        // Search for the fetchSource pattern within merge strategy
+        const hydrateSection = source.substring(
+            source.indexOf('async function hydrateResultsFromLocalDetailsCache'),
+            source.indexOf('// Fase 2:')
+        );
+
+        // Must NOT cast to Number for tmdbIds
+        expect(hydrateSection).not.toContain('Number(normalizeContentId');
+        // Must use String() when setting map keys from MongoDB docs
+        expect(hydrateSection).toContain('String(doc.tmdbId)');
+    });
+
+    it('scoringMap lookup uses normalizeContentId (String) not Number()', () => {
+        const fs = require('fs');
+        const source = fs.readFileSync(
+            require.resolve('../src/handlers/catalogHandler.js'),
+            'utf8'
+        );
+
+        // Find the phase 2 section
+        const phase2Start = source.indexOf('// Fase 2:');
+        const phase2End = source.indexOf('// Fallback:', phase2Start);
+        const phase2Section = source.substring(phase2Start, phase2End);
+
+        // The lookup key must be from normalizeContentId (String), not Number()
+        expect(phase2Section).toContain('const tmdbId = normalizeContentId(item.id)');
+        expect(phase2Section).not.toContain('Number(normalizeContentId');
+    });
+});
+
+// ============================================
+// Test 3: Merge catalog pagination — no double-skip
+// ============================================
+describe('Merge catalog fetchSource — no double-skip pagination', () => {
+    it('should not hardcode skip=0 in executeComplexStrategy calls', () => {
+        const fs = require('fs');
+        const source = fs.readFileSync(
+            require.resolve('../src/handlers/catalogHandler.js'),
+            'utf8'
+        );
+
         const mergeSection = source.substring(
             source.indexOf('const fetchSource = async (idx)'),
             source.indexOf('const [resA, resB]')
@@ -207,5 +202,51 @@ describe('Merge catalog fetchSource — skip propagation', () => {
         // Verify skip is passed instead of hardcoded 0
         expect(mergeSection).toContain('srcType, skip, activeProfileSettings');
         expect(mergeSection).not.toMatch(/srcType,\s*0,\s*activeProfileSettings/);
+    });
+
+    it('interleaveResults and popularity slice use 0 offset since data is already paginated', () => {
+        const fs = require('fs');
+        const source = fs.readFileSync(
+            require.resolve('../src/handlers/catalogHandler.js'),
+            'utf8'
+        );
+
+        // Find the merge results section (between listB and finalizeCatalog)
+        const mergeResultStart = source.indexOf("if (strategy === 'mixed')");
+        const mergeResultEnd = source.indexOf('return await finalizeCatalog(results', mergeResultStart);
+        const mergeResultSection = source.substring(mergeResultStart, mergeResultEnd);
+
+        // interleaveResults must use 0 offset (data already skipped by source fetchers)
+        expect(mergeResultSection).toContain('interleaveResults(listA, listB, 0, 20)');
+        // Popularity slice must use .slice(0, 20), NOT .slice(skip, skip + 20)
+        expect(mergeResultSection).toContain('.slice(0, 20)');
+        expect(mergeResultSection).not.toContain('.slice(skip, skip + 20)');
+    });
+});
+
+// ============================================
+// Test 4: interleaveResults with skip=0 returns correct page
+// ============================================
+describe('interleaveResults — functional pagination tests', () => {
+    const { interleaveResults } = require('../src/handlers/catalogHandler');
+
+    it('returns up to limit items when skip is 0', () => {
+        const listA = Array.from({ length: 20 }, (_, i) => ({ id: `a${i}`, name: `A${i}` }));
+        const listB = Array.from({ length: 20 }, (_, i) => ({ id: `b${i}`, name: `B${i}` }));
+
+        const result = interleaveResults(listA, listB, 0, 20);
+        expect(result.length).toBe(20);
+        // First item should be from listA
+        expect(result[0].id).toBe('a0');
+    });
+
+    it('returns empty when skip exceeds combined length (the old double-skip bug)', () => {
+        // Simulates what happened with the old bug: 20 items each, skip=40 → empty
+        const listA = Array.from({ length: 20 }, (_, i) => ({ id: `a${i}`, name: `A${i}` }));
+        const listB = Array.from({ length: 20 }, (_, i) => ({ id: `b${i}`, name: `B${i}` }));
+
+        const result = interleaveResults(listA, listB, 40, 20);
+        // This proves skip=40 on a 40-element combined array gives nothing
+        expect(result.length).toBe(0);
     });
 });
