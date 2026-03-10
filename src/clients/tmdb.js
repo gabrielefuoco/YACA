@@ -958,6 +958,12 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
     const isAnime = isAnimation && hasAnimeKeyword;
     meta._isAnime = isAnime;
 
+    // Store necessary properties for fallback TMDB episode fetching if Kitsu mapping fails
+    if (isAnime && type === 'series') {
+        meta._numberOfSeasons = data.number_of_seasons;
+        meta._originalLanguage = data.original_language;
+    }
+
     // Se è una serie TV, scarica gli episodi per popolare la griglia in Stremio
     // Skip episode fetching for anime — metaHandler will use Kitsu episodes instead
     if (type === 'series' && data.number_of_seasons && !isAnime) {
@@ -1052,5 +1058,6 @@ module.exports = {
     resolveImdbId,
     clearAllTmdbCaches,
     toStremioMetaItem,
-    formatRichDescription
+    formatRichDescription,
+    fetchTmdbEpisodes
 };
