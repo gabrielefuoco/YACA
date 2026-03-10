@@ -1,9 +1,7 @@
-const { createAxiosInstance } = require('./httpClient');
+const { stremioClient } = require('../clients/stremio');
 
 const ADDON_ID = 'org.stremio.yaca.catalog';
 const STREMIO_TIMEOUT = 10000;
-
-const stremioClient = createAxiosInstance('https://api.strem.io');
 
 /**
  * Aggiorna o aggiunge l'addon YACA nella collezione Stremio dell'utente.

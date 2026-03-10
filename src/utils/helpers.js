@@ -1,10 +1,3 @@
-// UUID format validation
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function isValidUUID(uuid) {
-    return UUID_REGEX.test(uuid);
-}
-
 /**
  * Parsa i parametri "extra" stile Stremio (es. "search=avengers&skip=20")
  */
@@ -62,4 +55,9 @@ function isAllowedUrl(url, allowedHosts) {
     }
 }
 
-module.exports = { isValidUUID, parseExtra, sanitizeString, isAllowedUrl };
+function getProfileDnaFilters(userConfig, profileId) {
+    const profileSettings = userConfig?.profiles?.find((p) => p.id === profileId)?.settings || {};
+    return [...(profileSettings.manualDNA || []), ...(profileSettings.suggestedDNA || [])];
+}
+
+module.exports = { parseExtra, sanitizeString, isAllowedUrl, getProfileDnaFilters };

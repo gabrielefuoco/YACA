@@ -1,5 +1,5 @@
 const { Mistral } = require('@mistralai/mistralai');
-const AICache = require('../models/AICache');
+const { aiPromptCache } = require('../cache/cacheInstances');
 
 // ============================================
 // SYSTEM PROMPTS
@@ -206,13 +206,11 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, isBackground = 
     try {
         // 1. Check Cache
         const cacheKey = prompt.toLowerCase().trim();
-        const rawCached = await AICache.get(cacheKey);
-        if (rawCached) {
-            const age = Date.now() - (rawCached.updatedAt || 0);
-            const isStale = age > 1000 * 60 * 10; // 10 minutes SWR
-            console.log(`[AICache] Hit per: "${prompt}" (Stale: ${isStale})`);
+        const { value: rawCached, status: cacheStatus } = await aiPromptCache.getWithStatus(cacheKey);
+        if (rawCached && cacheStatus !== 'miss') {
+            console.log(`[AICache] Hit per: "${prompt}" (Stale: ${cacheStatus === 'stale'})`);
 
-            if (isStale) {
+            if (cacheStatus === 'stale' && !isBackground) {
                 // Background refresh
                 generateTmdbFiltersFromPrompt(prompt, mistralKey, true).catch(() => { });
             }
@@ -240,7 +238,7 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, isBackground = 
         const parsed = parseMistralResponse(rawJson, prompt);
 
         // 2. Set Cache
-        await AICache.set(cacheKey, { filters: parsed, updatedAt: Date.now() });
+        await aiPromptCache.set(cacheKey, { filters: parsed });
 
         return parsed;
     } catch (err) {

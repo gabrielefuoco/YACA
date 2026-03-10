@@ -1,22 +1,3 @@
-jest.mock('axios', () => ({
-    get: jest.fn().mockResolvedValue({ data: { results: [{ id: 101, genre_ids: [1], vote_average: 8, vote_count: 100 }] } })
-}));
-
-jest.mock('../src/utils/httpClient', () => ({
-    createAxiosInstance: jest.fn(() => ({ get: jest.fn().mockResolvedValue({ data: [] }) }))
-}));
-
-jest.mock('../src/utils/LRUCache', () => {
-    return jest.fn().mockImplementation(() => {
-        const map = new Map();
-        return {
-            get: (k) => map.get(k),
-            set: (k, v) => map.set(k, v),
-            clear: () => map.clear()
-        };
-    });
-});
-
 jest.mock('../src/db/models/TasteProfile', () => ({
     findOne: jest.fn()
 }));
@@ -41,23 +22,33 @@ jest.mock('../src/profile/ProfileScorer', () => ({
 
 jest.mock('../src/clients/tmdb', () => ({
     getTmdbIdByName: jest.fn(),
-    getTmdbMovieDetails: jest.fn().mockResolvedValue(null)
+    getTmdbMovieDetails: jest.fn().mockResolvedValue(null),
+    createTmdbClient: jest.fn()
 }));
 
 jest.mock('../src/utils/rateLimiter', () => ({
     rateLimitedMap: jest.fn(async (items, fn) => Promise.all(items.map(fn)))
 }));
 
-jest.mock('../src/models/RecommendationCache', () => ({
-    findOne: jest.fn().mockResolvedValue(null),
-    updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
+jest.mock('../src/cache/cacheInstances', () => ({
+    hybridRecommendationsCache: {
+        getWithStatus: jest.fn().mockResolvedValue({ value: null, status: 'miss' }),
+        set: jest.fn().mockResolvedValue(null),
+        delete: jest.fn().mockResolvedValue(null),
+        clear: jest.fn().mockResolvedValue(null)
+    }
+}));
+
+jest.mock('../src/clients/trakt', () => ({
+    traktClient: {
+        get: jest.fn()
+    }
 }));
 
 jest.mock('../src/ai/querySynthesizer', () => ({
     generateDiscoveryQueries: jest.fn().mockResolvedValue([{ genre_ids: [18], keyword: 'slow burn' }])
 }));
 
-const axios = require('axios');
 const TasteProfile = require('../src/db/models/TasteProfile');
 const User = require('../src/db/models/User');
 const TmdbScoringData = require('../src/db/models/TmdbScoringData');
@@ -70,8 +61,11 @@ const {
 } = require('../src/engines/hybridRecommendations');
 
 describe('hybridRecommendations review fixes', () => {
+    const tmdbGet = jest.fn();
+
     beforeEach(() => {
         jest.clearAllMocks();
+        tmdb.createTmdbClient.mockReturnValue({ get: tmdbGet });
     });
 
     it('buildHiddenGemsCatalog keeps quality sort_by precedence over AI sort_by', async () => {
@@ -90,7 +84,7 @@ describe('hybridRecommendations review fixes', () => {
 
         await buildHiddenGemsCatalog('u1', 'ctx', 'tmdb-key', 'movie');
 
-        const firstCallParams = axios.get.mock.calls[0][1].params;
+        const firstCallParams = tmdbGet.mock.calls[0][1].params;
         expect(firstCallParams.sort_by).toBe('vote_average.desc');
     });
 

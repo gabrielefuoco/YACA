@@ -6,11 +6,11 @@ const { fetchMDBListItems, parseMDBListItems } = require('../utils/mdblist');
 const { routeLiveStremioSearch } = require('../ai/router');
 const { getHybridCatalog } = require('../engines/hybridRecommendations');
 const { getImageKitUrl } = require('../utils/imageProcessor');
+const { getProfileDnaFilters } = require('../utils/helpers');
 const UserList = require('../db/models/UserList');
 const TasteProfile = require('../db/models/TasteProfile');
 const UserActivity = require('../db/models/UserActivity');
 const ProfileScorer = require('../profile/ProfileScorer');
-const CacheEntry = require('../db/models/CacheEntry');
 const { getPresets } = require('../data/presets');
 const {
     CACHE_TTL_MS,
@@ -39,11 +39,6 @@ const EPISODE_CATALOG_IDS = new Set([
 
 function normalizeContentId(id) {
     return String(id ?? '').replace(/^tmdb:/i, '').trim();
-}
-
-function buildDnaFiltersForProfile(userConfig, profileId) {
-    const profileSettings = userConfig?.profiles?.find((p) => p.id === profileId)?.settings || {};
-    return [...(profileSettings.manualDNA || []), ...(profileSettings.suggestedDNA || [])];
 }
 
 async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
@@ -544,7 +539,7 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
             activeContext === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
         ]);
     }
-    const dnaFilters = buildDnaFiltersForProfile(userConfig, activeContext);
+    const dnaFilters = getProfileDnaFilters(userConfig, activeContext);
 
     const tasks = [
         // 1. Simple Search (Priorità Max)
@@ -554,31 +549,7 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
             return results.map(r => ({ ...r, weight: 1.5, source: 'simple' }));
         })(),
 
-        // 2. Preset Search (Cache/Database)
-        (async () => {
-            try {
-                // Cerchiamo nel namespace 'tmdb_catalog' per item che matchano il titolo
-                const cachedEntries = await CacheEntry.find({
-                    namespace: 'tmdb_catalog',
-                    'value.stremioData.name': { $regex: search, $options: 'i' }
-                }).limit(5).lean();
-
-                const items = [];
-                cachedEntries.forEach(entry => {
-                    const matched = entry.value.stremioData.filter(m =>
-                        m.name.toLowerCase().includes(search.toLowerCase())
-                    );
-                    items.push(...matched);
-                });
-
-                return items.map(r => ({ ...r, weight: 1.1, source: 'cache' }));
-            } catch (e) {
-                console.error('Errore search cache:', e.message);
-                return [];
-            }
-        })(),
-
-        // 3. AI Search + Query Injection
+        // 2. AI Search + Query Injection
         (async () => {
             try {
                 if (!mistralKey) return [];
@@ -663,7 +634,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
         let activeProfileSettings = { minVoteAverage: 0, minVoteCount: 0 };
         let profileDoc = null;
         let globalProfileDoc = null;
-        const activeDnaFilters = buildDnaFiltersForProfile(userConfig, userConfig?.activeProfileId);
+        const activeDnaFilters = getProfileDnaFilters(userConfig, userConfig?.activeProfileId);
         if (userConfig.profiles && userConfig.activeProfileId) {
             [profileDoc, globalProfileDoc] = await Promise.all([
                 TasteProfile.findOne({ owner: userConfig.userId, context: userConfig.activeProfileId }),

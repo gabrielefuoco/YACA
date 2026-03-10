@@ -1,31 +1,42 @@
-const axios = require('axios');
-const { createAxiosInstance } = require('../utils/httpClient');
-const LRUCache = require('../utils/LRUCache');
-const { RECOMMENDATIONS_CACHE_TTL_MS, ITEMS_PER_PAGE } = require('../config');
+const { ITEMS_PER_PAGE } = require('../config');
 const TasteProfile = require('../db/models/TasteProfile');
 const TmdbScoringData = require('../db/models/TmdbScoringData');
 const User = require('../db/models/User');
 const ProfileBuilder = require('../profile/ProfileBuilder');
 const ProfileScorer = require('../profile/ProfileScorer');
 const tmdb = require('../clients/tmdb');
+const { traktClient } = require('../clients/trakt');
+const { hybridRecommendationsCache } = require('../cache/cacheInstances');
+const { getProfileDnaFilters } = require('../utils/helpers');
 const { rateLimitedMap } = require('../utils/rateLimiter');
-const RecommendationCache = require('../models/RecommendationCache');
 const { generateDiscoveryQueries } = require('../ai/querySynthesizer');
-
-const traktApiClient = createAxiosInstance('https://api.trakt.tv');
-
-// Cache per i cataloghi finali generati (RAM Livello 3)
-const catalogCache = new LRUCache({ max: 20, ttl: RECOMMENDATIONS_CACHE_TTL_MS });
-// Alias per compatibilità con i test
-const recommendationsCache = catalogCache;
 
 function normalizeContentId(id) {
     return String(id ?? '').replace(/^tmdb:/i, '').trim();
 }
 
-function getDnaFilters(user, context) {
-    const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
-    return [...(settings.manualDNA || []), ...(settings.suggestedDNA || [])];
+function getProfileSettings(user, context) {
+    return user?.profiles?.find(p => p.id === context)?.settings || {};
+}
+
+async function fetchProfileContext(userId, context) {
+    const [profile, user, globalProfile] = await Promise.all([
+        TasteProfile.findOne({ owner: userId, context }),
+        User.findOne({ userId }),
+        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
+    ]);
+
+    return { profile, user, globalProfile };
+}
+
+async function fetchTmdbResults(tmdbClient, endpoint, params = {}, errorLabel = endpoint) {
+    try {
+        const res = await tmdbClient.get(endpoint, { params, timeout: 5000 });
+        return res.data?.results || [];
+    } catch (err) {
+        console.warn(`[Hybrid] ${errorLabel} failed:`, err.message);
+        return [];
+    }
 }
 
 /**
@@ -108,23 +119,17 @@ function computeTopGenres(profile, n = 5) {
 
 async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60) {
     const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
-    try {
-        const res = await axios.get(`https://api.themoviedb.org/3/discover/${tmdbType}`, {
-            params: {
-                api_key: tmdbApiKey,
-                sort_by: 'popularity.desc',
-                'vote_count.gte': 50
-            },
-            timeout: 5000
-        });
-        return (res.data?.results || [])
-            .map(item => normalizeContentId(item.id))
-            .filter(Boolean)
-            .slice(0, limit);
-    } catch (err) {
-        console.warn(`[Hybrid] Popular fallback failed for ${mediaType}:`, err.message);
-        return [];
-    }
+    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+    const results = await fetchTmdbResults(
+        tmdbClient,
+        `/discover/${tmdbType}`,
+        { sort_by: 'popularity.desc', 'vote_count.gte': 50 },
+        `Popular fallback (${mediaType})`
+    );
+    return results
+        .map(item => normalizeContentId(item.id))
+        .filter(Boolean)
+        .slice(0, limit);
 }
 
 /**
@@ -137,21 +142,19 @@ async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60) {
 async function fetchTmdbSimilarCounts(seedTmdbIds, tmdbApiKey, mediaType = 'movie') {
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const counts = new Map();
+    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
 
     if (!seedTmdbIds || seedTmdbIds.length === 0) return counts;
 
     const results = await rateLimitedMap(
         seedTmdbIds,
-        (id) => axios.get(`https://api.themoviedb.org/3/${types}/${id}/recommendations`, {
-            params: { api_key: tmdbApiKey },
-            timeout: 5000
-        }).catch(() => null),
+        (id) => fetchTmdbResults(tmdbClient, `/${types}/${id}/recommendations`, {}, `Similar fetch (${types}/${id})`),
         { batchSize: 5, delayMs: 50 }
     );
 
-    results.forEach(res => {
-        if (res && res.data?.results) {
-            for (const item of res.data.results) {
+    results.forEach(items => {
+        if (Array.isArray(items)) {
+            for (const item of items) {
                 counts.set(item.id, (counts.get(item.id) || 0) + 1);
             }
         }
@@ -219,17 +222,14 @@ function extractDNAParams(manualDNA = []) {
  * 🔱 Signature: The Core (Top Genre + Top Keyword + DNA. Cascade esatta -> broad)
  */
 async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
-    const [profile, user, globalProfile] = await Promise.all([
-        TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId }),
-        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
-    ]);
+    const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     if (!profile) return [];
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
+    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+    const settings = getProfileSettings(user, context);
     const dna = settings.manualDNA || [];
-    const dnaFilters = getDnaFilters(user, context);
+    const dnaFilters = getProfileDnaFilters(user, context);
     const dnaParams = extractDNAParams(dna);
 
     const topGenres = computeTopGenres(profile, 3);
@@ -239,20 +239,18 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
     const existingIds = new Set();
 
     const fetchAndAdd = async (params) => {
-        try {
-            const res = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
-                params: { ...params, api_key: tmdbApiKey, sort_by: 'popularity.desc' },
-                timeout: 5000
-            });
-            for (const item of (res.data?.results || [])) {
-                const normalizedItemId = normalizeContentId(item.id);
-                if (!existingIds.has(normalizedItemId)) {
-                    results.push(item);
-                    existingIds.add(normalizedItemId);
-                }
+        const items = await fetchTmdbResults(
+            tmdbClient,
+            `/discover/${types}`,
+            { ...params, sort_by: 'popularity.desc' },
+            `Signature Core discover (${types})`
+        );
+        for (const item of items) {
+            const normalizedItemId = normalizeContentId(item.id);
+            if (!existingIds.has(normalizedItemId)) {
+                results.push(item);
+                existingIds.add(normalizedItemId);
             }
-        } catch (err) {
-            console.debug(`[Hybrid] discover fetch failed in buildSignatureCore (${types}):`, err.message);
         }
     };
 
@@ -291,29 +289,25 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
  * 🌀 Signature: The Blend (Mix di gusti + Fallback DNA)
  */
 async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
-    const [profile, user, globalProfile] = await Promise.all([
-        TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId }),
-        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
-    ]);
+    const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     if (!profile) return [];
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
+    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+    const settings = getProfileSettings(user, context);
     const dna = settings.manualDNA || [];
-    const dnaFilters = getDnaFilters(user, context);
+    const dnaFilters = getProfileDnaFilters(user, context);
     let dnaParams = extractDNAParams(dna);
 
     const topGenres = computeTopGenres(profile, 5);
 
     const fetchBatch = async (params) => {
-        try {
-            const res = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
-                params: { ...params, api_key: tmdbApiKey, sort_by: 'popularity.desc' },
-                timeout: 5000
-            });
-            return res.data?.results || [];
-        } catch (e) { return []; }
+        return fetchTmdbResults(
+            tmdbClient,
+            `/discover/${types}`,
+            { ...params, sort_by: 'popularity.desc' },
+            `Signature Blend discover (${types})`
+        );
     };
 
     let results = [];
@@ -363,17 +357,14 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
  * ⭐ Signature: Rising Star (Popular + DNA + Trakt Watchlist/History Influence)
  */
 async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, mediaType) {
-    const [profile, user, globalProfile] = await Promise.all([
-        TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId }),
-        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
-    ]);
+    const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     if (!profile) return [];
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
+    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+    const settings = getProfileSettings(user, context);
     const dna = settings.manualDNA || [];
-    const dnaFilters = getDnaFilters(user, context);
+    const dnaFilters = getProfileDnaFilters(user, context);
     const dnaParams = extractDNAParams(dna);
 
     const history = await fetchRecentHistory(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 5);
@@ -383,25 +374,24 @@ async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, media
             history.slice(0, 3),
             (item) => {
                 const id = item.movie?.ids?.tmdb || item.show?.ids?.tmdb;
-                return axios.get(`https://api.themoviedb.org/3/${types}/${id}/recommendations`, {
-                    params: { api_key: tmdbApiKey },
-                    timeout: 5000
-                }).catch(() => null);
+                return fetchTmdbResults(tmdbClient, `/${types}/${id}/recommendations`, {}, `Signature Star recommendations (${types}/${id})`);
             },
             { batchSize: 5, delayMs: 50 }
         );
-        results.forEach(res => {
-            if (res && res.data?.results) traktRecs.push(...res.data.results);
+        results.forEach(items => {
+            if (Array.isArray(items)) traktRecs.push(...items);
         });
     }
 
     // Discover Popolari + DNA (Phase 2.1: OR logic)
-    const searchRes = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
-        params: { ...dnaParams, api_key: tmdbApiKey, 'vote_average.gte': 7, sort_by: 'popularity.desc' },
-        timeout: 5000
-    }).catch(() => ({ data: { results: [] } }));
+    const searchResults = await fetchTmdbResults(
+        tmdbClient,
+        `/discover/${types}`,
+        { ...dnaParams, 'vote_average.gte': 7, sort_by: 'popularity.desc' },
+        `Signature Star discover (${types})`
+    );
 
-    let combined = [...(searchRes?.data?.results || []), ...traktRecs];
+    let combined = [...searchResults, ...traktRecs];
     const uniquePool = [...new Map(combined.map(item => [normalizeContentId(item.id), item])).values()];
 
     const scored = await rateLimitedMap(
@@ -575,18 +565,15 @@ async function saveScoringData(tmdbDetails, type) {
  * Fallback al metodo classico se Mistral non è disponibile.
  */
 async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) {
-    const [profile, user, globalProfile] = await Promise.all([
-        TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId }),
-        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
-    ]);
+    const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     if (!profile) return [];
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
+    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+    const settings = getProfileSettings(user, context);
     const dna = settings.manualDNA || [];
     const dnaParams = extractDNAParams(dna);
-    const dnaFilters = getDnaFilters(user, context);
+    const dnaFilters = getProfileDnaFilters(user, context);
 
     const topGenres = computeTopGenres(profile, 5);
     const topKeywords = [...profile.keywordScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => e[0]);
@@ -607,13 +594,13 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     const fetchDiscoverPages = async (params, pages = 3) => {
         const results = [];
         for (let page = 1; page <= pages; page++) {
-            try {
-                const res = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
-                    params: { ...params, api_key: tmdbApiKey, sort_by: 'popularity.desc', page },
-                    timeout: 5000
-                });
-                results.push(...(res.data?.results || []));
-            } catch (_e) { /* page fetch failure is non-blocking */ }
+            const pageResults = await fetchTmdbResults(
+                tmdbClient,
+                `/discover/${types}`,
+                { ...params, sort_by: 'popularity.desc', page },
+                `Top Genres Mix discover (${types})`
+            );
+            results.push(...pageResults);
         }
         return results;
     };
@@ -648,16 +635,11 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     if (lovedIds.length > 0) {
         const similarResults = await rateLimitedMap(
             lovedIds,
-            (id) => axios.get(`https://api.themoviedb.org/3/${types}/${id}/recommendations`, {
-                params: { api_key: tmdbApiKey },
-                timeout: 5000
-            }).catch(() => null),
+            (id) => fetchTmdbResults(tmdbClient, `/${types}/${id}/recommendations`, {}, `Top Genres Mix recommendations (${types}/${id})`),
             { batchSize: 5, delayMs: 50 }
         );
-        similarResults.forEach(res => {
-            if (res && res.data?.results) {
-                addResults(res.data.results);
-            }
+        similarResults.forEach(items => {
+            addResults(items);
         });
     }
 
@@ -673,15 +655,12 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
  * Chiede TMDB /similar per ogni seed, somma i pesi (stacking).
  */
 async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
-    const [profile, user, globalProfile] = await Promise.all([
-        TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId }),
-        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
-    ]);
+    const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     if (!profile) return [];
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const dnaFilters = getDnaFilters(user, context);
+    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+    const dnaFilters = getProfileDnaFilters(user, context);
 
     const topGenres = computeTopGenres(profile, 3);
 
@@ -707,11 +686,10 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
 
     const allSimilar = await rateLimitedMap(
         allSeeds,
-        (seed) => axios.get(`https://api.themoviedb.org/3/${types}/${seed.id}/recommendations`, {
-            params: { api_key: tmdbApiKey },
-            timeout: 5000
-        }).then(res => ({ results: res.data?.results || [], weight: seed.weight }))
-            .catch(() => ({ results: [], weight: seed.weight })),
+        async (seed) => ({
+            results: await fetchTmdbResults(tmdbClient, `/${types}/${seed.id}/recommendations`, {}, `Hybrid recommendations (${types}/${seed.id})`),
+            weight: seed.weight
+        }),
         { batchSize: 5, delayMs: 50 }
     );
     const itemData = new Map(); // tmdbId -> raw item data
@@ -765,18 +743,15 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
  * Applica Two-Tier Scoring. Fallback al metodo classico se Mistral non è disponibile.
  */
 async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
-    const [profile, user, globalProfile] = await Promise.all([
-        TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId }),
-        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
-    ]);
+    const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     if (!profile) return [];
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const settings = user?.profiles?.find(p => p.id === context)?.settings || {};
+    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+    const settings = getProfileSettings(user, context);
     const dna = settings.manualDNA || [];
     const dnaParams = extractDNAParams(dna);
-    const dnaFilters = getDnaFilters(user, context);
+    const dnaFilters = getProfileDnaFilters(user, context);
 
     const topGenres = computeTopGenres(profile, 3);
 
@@ -805,13 +780,13 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     const fetchDiscoverPages = async (params, pages = 2) => {
         const results = [];
         for (let page = 1; page <= pages; page++) {
-            try {
-                const res = await axios.get(`https://api.themoviedb.org/3/discover/${types}`, {
-                    params: { ...params, api_key: tmdbApiKey, page },
-                    timeout: 5000
-                });
-                results.push(...(res.data?.results || []));
-            } catch (_e) { /* page fetch failure is non-blocking */ }
+            const pageResults = await fetchTmdbResults(
+                tmdbClient,
+                `/discover/${types}`,
+                { ...params, page },
+                `Hidden Gems discover (${types})`
+            );
+            results.push(...pageResults);
         }
         return results;
     };
@@ -851,15 +826,11 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
  * Legge le raccomandazioni Trakt dal DB (100 risultati grezzi), le passa attraverso il ProfileScorer.
  */
 async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
-    const [profile, user, globalProfile] = await Promise.all([
-        TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId }),
-        context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
-    ]);
+    const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     if (!profile) return [];
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const dnaFilters = getDnaFilters(user, context);
+    const dnaFilters = getProfileDnaFilters(user, context);
 
     // Fetch Trakt recommendations — pool ampliato a 100 per massimizzare lo scoring
     const traktRaw = await fetchTraktRecommendationsRaw(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 100);
@@ -908,7 +879,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                 fetchRecentRatings(traktToken, traktType, 40)
             ]);
             await ProfileBuilder.syncUserHistory(userId, context, [...history, ...ratings], tmdbApiKey);
-            catalogCache.delete(cacheKey); // Invalida RAM
+            await hybridRecommendationsCache.delete(cacheKey);
         }
     }).catch(err => console.error("Errore check stale profile:", err.message));
 
@@ -944,31 +915,20 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
             ids = await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType);
         }
 
-        await RecommendationCache.set(cacheKey, { ids, updatedAt: Date.now() });
-        catalogCache.set(cacheKey, ids);
+        await hybridRecommendationsCache.set(cacheKey, { ids });
         return ids;
     };
 
-    // 1. Try RAM (L1/L3)
-    let recommendationIds = catalogCache.get(cacheKey);
-
-    // 2. Try L2 (Persistent)
-    if (!recommendationIds) {
-        const cachedEntry = await RecommendationCache.get(cacheKey);
-        if (cachedEntry) {
-            recommendationIds = cachedEntry.ids;
-            catalogCache.set(cacheKey, recommendationIds);
-
-            // AGGRESSIVE SWR: If stale, revalidate in background
-            const age = Date.now() - (cachedEntry.updatedAt || 0);
-            if (age > 1000 * 60 * 60 * 4) { // 4h staleness threshold for background refresh
-                console.log(`[Hybrid-SWR] Revalidando catalogo ${catalogId} in background...`);
-                buildRecommendIds().catch(e => console.error('[Hybrid-SWR] Error:', e.message));
-            }
+    let recommendationIds;
+    const { value: cachedEntry, status: cacheStatus } = await hybridRecommendationsCache.getWithStatus(cacheKey);
+    if (cacheStatus !== 'miss' && Array.isArray(cachedEntry?.ids)) {
+        recommendationIds = cachedEntry.ids;
+        if (cacheStatus === 'stale') {
+            console.log(`[Hybrid-SWR] Revalidando catalogo ${catalogId} in background...`);
+            buildRecommendIds().catch(e => console.error('[Hybrid-SWR] Error:', e.message));
         }
     }
 
-    // 3. Fallback: Build from scratch
     if (!recommendationIds) {
         recommendationIds = await buildRecommendIds();
     }
@@ -976,8 +936,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {
         recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType);
         if (recommendationIds.length > 0) {
-            await RecommendationCache.set(cacheKey, { ids: recommendationIds, updatedAt: Date.now() });
-            catalogCache.set(cacheKey, recommendationIds);
+            await hybridRecommendationsCache.set(cacheKey, { ids: recommendationIds });
         }
     }
 
@@ -1070,6 +1029,5 @@ module.exports = {
     twoTierScore,
     resolveAiQueryToTmdbParams,
     saveScoringData,
-    catalogCache,
-    recommendationsCache
+    recommendationsCache: hybridRecommendationsCache
 };

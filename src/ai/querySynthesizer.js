@@ -1,5 +1,5 @@
 const { Mistral } = require('@mistralai/mistralai');
-const AICache = require('../models/AICache');
+const { aiDiscoveryCache } = require('../cache/cacheInstances');
 
 // ============================================
 // SYSTEM PROMPTS FOR QUERY SYNTHESIS
@@ -103,12 +103,6 @@ const GENRE_NAME_TO_ID = {
 // CONSTANTS
 // ============================================
 const MISTRAL_TIMEOUT_MS = 25000;
-const QUERY_CACHE_SWR_THRESHOLD_MS = 1000 * 60 * 60; // 1 hour
-
-// ============================================
-// FUNCTIONS
-// ============================================
-
 /**
  * Parses and validates a Mistral response that should be a JSON array of discovery queries.
  * Defends against malformed output and prompt injection.
@@ -218,7 +212,7 @@ function buildDnaDescription(profile, topN = 5) {
  * @param {'trueBlend'|'hiddenGems'} mode Which prompt template to use
  * @returns {Array} Array of discovery query objects [{genre_ids, keyword, vibe}]
  */
-async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend') {
+async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend', isBackgroundRefresh = false) {
     if (!mistralKey || !profile) return [];
 
     const dnaDescription = buildDnaDescription(profile);
@@ -229,14 +223,11 @@ async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend')
 
     try {
         // Check cache first
-        const rawCached = await AICache.get(cacheKey);
-        if (rawCached) {
-            const age = Date.now() - (rawCached.updatedAt || 0);
-            const isStale = age > QUERY_CACHE_SWR_THRESHOLD_MS;
-
-            if (isStale) {
+        const { value: rawCached, status: cacheStatus } = await aiDiscoveryCache.getWithStatus(cacheKey);
+        if (rawCached && cacheStatus !== 'miss') {
+            if (cacheStatus === 'stale' && !isBackgroundRefresh) {
                 // Background refresh
-                generateDiscoveryQueries(profile, mistralKey, mode).catch(() => {});
+                generateDiscoveryQueries(profile, mistralKey, mode, true).catch(() => { });
             }
 
             const cached = rawCached.queries || rawCached;
@@ -265,7 +256,7 @@ async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend')
 
         // Cache the result
         if (queries.length > 0) {
-            await AICache.set(cacheKey, { queries, updatedAt: Date.now() });
+            await aiDiscoveryCache.set(cacheKey, { queries });
         }
 
         return queries;

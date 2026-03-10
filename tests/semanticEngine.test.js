@@ -2,9 +2,11 @@ const ProfileScorer = require('../src/profile/ProfileScorer');
 
 // Mock external dependencies before importing querySynthesizer
 jest.mock('@mistralai/mistralai', () => ({ Mistral: jest.fn() }), { virtual: true });
-jest.mock('../src/models/AICache', () => ({
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue(null)
+jest.mock('../src/cache/cacheInstances', () => ({
+    aiDiscoveryCache: {
+        getWithStatus: jest.fn().mockResolvedValue({ value: null, status: 'miss' }),
+        set: jest.fn().mockResolvedValue(null)
+    }
 }), { virtual: true });
 
 const { parseQuerySynthesizerResponse, buildDnaDescription, GENRE_NAME_TO_ID } = require('../src/ai/querySynthesizer');
