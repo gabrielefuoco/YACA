@@ -72,13 +72,36 @@ async function fetchKitsuEpisodes(kitsuId) {
     if (cacheStatus !== 'miss') return cached;
 
     try {
-        const res = await kitsuClient.get(`/anime/${kitsuId}/episodes`, {
-            params: { 'page[limit]': 200 }
+        const firstRes = await kitsuClient.get(`/anime/${kitsuId}/episodes`, {
+            params: { 'page[limit]': 20, 'page[offset]': 0 }
         });
 
-        if (!res.data || !res.data.data) return [];
+        if (!firstRes.data || !firstRes.data.data) return [];
 
-        const episodes = res.data.data.map(ep => {
+        let allData = [...firstRes.data.data];
+        const totalCount = firstRes.data.meta?.count || 0;
+
+        if (totalCount > 20) {
+            const promises = [];
+            // Cap to reasonable max to avoid abusing API (e.g. 1000 episodes)
+            const maxOffsets = Math.min(totalCount, 1000);
+            for (let offset = 20; offset < maxOffsets; offset += 20) {
+                promises.push(
+                    kitsuClient.get(`/anime/${kitsuId}/episodes`, {
+                        params: { 'page[limit]': 20, 'page[offset]': offset }
+                    }).then(r => r.data?.data || []).catch(e => {
+                        console.error(`Errore offset ${offset} episodi Kitsu ${kitsuId}:`, e.message);
+                        return [];
+                    })
+                );
+            }
+            const results = await Promise.all(promises);
+            for (const resData of results) {
+                allData = allData.concat(resData);
+            }
+        }
+
+        const episodes = allData.map(ep => {
             const attrs = ep.attributes;
             return {
                 id: `kitsu:${kitsuId}:${attrs.number}`,
