@@ -417,9 +417,10 @@ class ProfileBuilder {
             const nextPending = [...pending];
 
             inferredTraits.forEach((item) => {
-                if (!existingDNAIds.has(item.id)) {
+                const itemKey = `${item.type}:${item.id}`;
+                if (!existingDNAIds.has(itemKey)) {
                     nextPending.push(item);
-                    existingDNAIds.add(item.id);
+                    existingDNAIds.add(itemKey);
                 }
             });
 
