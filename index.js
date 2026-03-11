@@ -470,12 +470,20 @@ app.post('/api/validate-tmdb-key', async (req, res) => {
 // AUTH ENDPOINTS (Session-based, HttpOnly cookie)
 // ==========================================
 
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minuti
+    limit: 15, // Max 15 tentativi per IP ogni 15 minuti
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: 'Troppi tentativi di login. Riprova tra qualche minuto.' }
+});
+
 /**
  * POST /api/auth/login
  * Autentica l'utente tramite credenziali Stremio, crea la sessione e salva/aggiorna l'utente su DB.
  * Restituisce un flag `isNewUser` per innescare il flusso di onboarding BYOK.
  */
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', authLimiter, async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
         return res.status(400).json({ success: false, error: 'Email e password obbligatorie' });
