@@ -5,7 +5,7 @@
  *   - CredentialsProvider: valida le credenziali utente contro le API ufficiali di Stremio
  *   - Sessione JWT: cookie HttpOnly firmato e cifrato con NEXTAUTH_SECRET
  *   - Nessuno stato server-side: il backend Express è completamente stateless
- *   - Il modulo UserConfig.saveUser() applica crittografia e riconciliazione sicura
+ *   - Il salvataggio utente avviene tramite chiamata HTTP interna al backend Express
  *
  * Variabili d'ambiente richieste:
  *   - NEXTAUTH_SECRET: Chiave crittografica per firmare/cifrare i JWT (generare con: openssl rand -base64 32)
@@ -15,9 +15,16 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
-// Import dei moduli backend: funziona perché Next.js e Express girano nello stesso processo Node
-// grazie al custom server (server.js)
-const UserConfig = require('../../../../src/models/UserConfig');
+/**
+ * Accede al modulo UserConfig del backend Express.
+ * Funziona perché Next.js e Express girano nello stesso processo Node
+ * grazie al custom server (server.js). Il require è lazy (runtime-only)
+ * per evitare errori durante il build di Next.js.
+ */
+function getUserConfig() {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return require(/* webpackIgnore: true */ '../../../../src/models/UserConfig');
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
@@ -57,6 +64,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const userEmail = stremioData.result.user?.email || credentials.email;
 
         // 2. Salvataggio sicuro tramite il modulo Mongoose (applica encryption + hash + riconciliazione)
+        //    Il require è lazy per funzionare sia a build-time che a runtime
+        const UserConfig = getUserConfig();
         const { user: userDoc, isNewUser } = await UserConfig.saveUser({
           apiKeys: { stremio: authKey, stremioPass: credentials.password as string },
           email: userEmail,
