@@ -316,9 +316,6 @@ class ProfileBuilder {
             const userDoc = await User.findOne({ userId: profile.owner });
             if (!userDoc) return;
 
-            const userProfile = Array.isArray(userDoc.profiles) ? userDoc.profiles.find(p => p.id === profile.context) : null;
-            if (!userProfile) return;
-
             // Logica di threshold per considerare un asse come "Pilastro"
             const MIN_ABSOLUTE_SCORE = 3.0; // Punteggio minimo assoluto per considerarlo (evita rumore iniziale)
             const DOMINANCE_RATIOS = { // Percentuale minima sul totale della categoria
@@ -369,6 +366,46 @@ class ProfileBuilder {
                 }
             };
 
+            const inferredTraits = [];
+            const inferredIds = new Set();
+            analyzeScores(profile.genreScores, 'genre', inferredIds, inferredTraits, (id) => `Genre ${id}`);
+            analyzeScores(profile.keywordScores, 'keyword', inferredIds, inferredTraits, (id) => `Keyword ${id}`);
+            analyzeScores(profile.countryScores, 'country', inferredIds, inferredTraits, (id) => id);
+
+            if (inferredTraits.length === 0) return;
+
+            const userProfiles = Array.isArray(userDoc.profiles) ? userDoc.profiles : [];
+            const userProfile = userProfiles.find(p => p.id === profile.context);
+
+            if (!userProfile && profile.context === 'global' && userProfiles.length > 0) {
+                let hasChanges = false;
+                for (const targetProfile of userProfiles) {
+                    if (!targetProfile) continue;
+                    if (!targetProfile.settings || typeof targetProfile.settings !== 'object') {
+                        targetProfile.settings = {};
+                    }
+                    const manual = targetProfile.settings.manualDNA || [];
+                    const suggested = targetProfile.settings.suggestedDNA || [];
+                    const pending = targetProfile.settings.pendingDNASuggestions || [];
+                    const existingIds = new Set([
+                        ...manual.map((item) => `${item.type}:${item.id}`),
+                        ...suggested.map((item) => `${item.type}:${item.id}`),
+                        ...pending.map((item) => `${item.type}:${item.id}`)
+                    ]);
+                    const additions = inferredTraits.filter((item) => !existingIds.has(`${item.type}:${item.id}`));
+                    if (additions.length > 0) {
+                        targetProfile.settings.suggestedDNA = [...suggested, ...additions];
+                        hasChanges = true;
+                    }
+                }
+                if (hasChanges && typeof userDoc.save === 'function') {
+                    await userDoc.save();
+                }
+                return;
+            }
+
+            if (!userProfile) return;
+
             const suggested = userProfile.settings?.suggestedDNA || [];
             const manual = userProfile.settings?.manualDNA || [];
             const pending = userProfile.settings?.pendingDNASuggestions || [];
@@ -379,11 +416,12 @@ class ProfileBuilder {
             ]);
             const nextPending = [...pending];
 
-            // Mapping molto basico per i nomi in questa fase di inferenza background
-            // Il frontend o il DB dovrebbero avere nomi migliori, qui usiamo l'ID o deduzioni logiche se necessario
-            analyzeScores(profile.genreScores, 'genre', existingDNAIds, nextPending, (id) => `Genre ${id}`);
-            analyzeScores(profile.keywordScores, 'keyword', existingDNAIds, nextPending, (id) => `Keyword ${id}`);
-            analyzeScores(profile.countryScores, 'country', existingDNAIds, nextPending, (id) => id);
+            inferredTraits.forEach((item) => {
+                if (!existingDNAIds.has(item.id)) {
+                    nextPending.push(item);
+                    existingDNAIds.add(item.id);
+                }
+            });
 
             if (nextPending.length > pending.length) {
                 await User.findOneAndUpdate(
