@@ -23,6 +23,8 @@ interface SettingsPageProps {
   traktRefreshToken?: string | null;
   configVersion?: string;
   userId?: string;
+  globalTmdbKey?: string;
+  globalMistralKey?: string;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
   onLogout: () => void;
   onDisconnectTrakt: () => void;
@@ -38,6 +40,8 @@ export function SettingsPage({
   traktRefreshToken,
   configVersion,
   userId,
+  globalTmdbKey,
+  globalMistralKey,
   onUpdateProfile,
   onLogout,
   onDisconnectTrakt,
@@ -47,7 +51,8 @@ export function SettingsPage({
   const settings = activeProfile?.settings ?? {};
 
   const [fastRefresh, setFastRefresh] = useState(settings.fastRefresh ?? false);
-  const [tmdbKey, setTmdbKey] = useState(settings.tmdbKey ?? '');
+  const [tmdbKey, setTmdbKey] = useState(globalTmdbKey || settings.tmdbKey || '');
+  const [mistralKey, setMistralKey] = useState(globalMistralKey || '');
   const [loading, setLoading] = useState(false);
   const [cacheLoading, setCacheLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -97,6 +102,8 @@ export function SettingsPage({
         traktToken,
         traktRefreshToken,
         configVersion,
+        tmdbKey,
+        mistralKey,
       });
 
       if (data.userId) {
@@ -365,26 +372,44 @@ export function SettingsPage({
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* TMDB API Key                                                       */}
+      {/* Global API Keys                                                    */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/40 p-5 space-y-3">
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/40 p-5 space-y-4">
         <div className="flex items-center gap-2 text-primary">
           <span className="material-symbols-outlined text-lg">key</span>
-          <h3 className="text-sm font-black uppercase tracking-widest">API Key TMDB (opzionale)</h3>
+          <h3 className="text-sm font-black uppercase tracking-widest">Chiavi API Globale</h3>
         </div>
-        <div>
-          <Label htmlFor="tmdb-key" className="text-slate-900 dark:text-slate-100">Chiave API TMDB personalizzata</Label>
-          <Input
-            id="tmdb-key"
-            value={tmdbKey}
-            onChange={(e) => setTmdbKey(e.target.value)}
-            placeholder="La tua API key TMDB..."
-            className="mt-1 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-            type="password"
-          />
-          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-            Usa una chiave API TMDB personale per limiti più alti
-          </p>
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="tmdb-key" className="text-slate-900 dark:text-slate-100">TMDB API Key (Opzionale)</Label>
+            <Input
+              id="tmdb-key"
+              value={tmdbKey}
+              onChange={(e) => setTmdbKey(e.target.value)}
+              placeholder="La tua API key TMDB..."
+              className="mt-1 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+              type="password"
+            />
+            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+              Aiuta la rete globale fornendo limiti aumentati o usa il tuo account.
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="mistral-key" className="text-slate-900 dark:text-slate-100">Mistral API Key (Opzionale)</Label>
+            <Input
+              id="mistral-key"
+              value={mistralKey}
+              onChange={(e) => setMistralKey(e.target.value)}
+              placeholder="La tua API key Mistral..."
+              className="mt-1 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+              type="password"
+            />
+            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+              Sblocca i superpoteri AI per generare cataloghi intelligenti. 
+            </p>
+          </div>
         </div>
       </section>
 

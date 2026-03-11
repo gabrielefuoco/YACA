@@ -5,6 +5,7 @@ import { useConfig } from '@/hooks/useConfig';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfiles } from '@/hooks/useProfiles';
 import { usePresets } from '@/hooks/usePresets';
+import { useBackgroundSync } from '@/hooks/useBackgroundSync';
 import { Header } from '@/components/layout/Header';
 import { TabNav } from '@/components/layout/TabNav';
 import { LoginPage } from '@/components/pages/LoginPage';
@@ -51,7 +52,12 @@ export default function Home() {
   const [initialProfiles, setInitialProfiles] = useState<Profile[] | undefined>(undefined);
   const [userId, setUserId] = useState<string | null>(null);
   const [configDecoded, setConfigDecoded] = useState(false);
+  const [globalTmdbKey, setGlobalTmdbKey] = useState<string>('');
+  const [globalMistralKey, setGlobalMistralKey] = useState<string>('');
   const autoConfigCalledRef = useRef(false);
+
+  // Initialize background sync worker for crowdsourced ecosystem
+  useBackgroundSync(globalTmdbKey, userId ?? undefined);
 
   // Async load user config from API
   useEffect(() => {
@@ -102,6 +108,11 @@ export default function Home() {
                 console.warn('Failed to store pending activeProfileId:', err);
               }
             }
+          }
+
+          if (data.apiKeys) {
+            if (data.apiKeys.tmdb) setGlobalTmdbKey(data.apiKeys.tmdb);
+            if (data.apiKeys.mistral) setGlobalMistralKey(data.apiKeys.mistral);
           }
         } else {
           setInitialProfiles(createDefaultProfiles());
@@ -402,6 +413,8 @@ export default function Home() {
                   traktRefreshToken={traktRefreshToken}
                   configVersion={configVersion}
                   userId={userId ?? undefined}
+                  globalTmdbKey={globalTmdbKey}
+                  globalMistralKey={globalMistralKey}
                   onUpdateProfile={updateProfile}
                   onLogout={handleLogout}
                   onDisconnectTrakt={handleDisconnectTrakt}

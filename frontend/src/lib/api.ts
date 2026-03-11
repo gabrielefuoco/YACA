@@ -35,4 +35,8 @@ export const api = {
     post('/api/check-user', { authKey, email }),
   getProfileAnalytics: (profileId: string, userId: string) =>
     fetch(`/api/profiles/${encodeURIComponent(profileId)}/analytics?userId=${encodeURIComponent(userId)}`).then(r => r.json()),
+  getGlobalSyncQueue: (limit = 20) => 
+    fetch(`/api/sync/global-queue?limit=${limit}`).then(r => r.json()),
+  enrichSyncItem: (body: { tmdbId: string, type: string, rawTMDB: any, userId?: string }) => 
+    post('/api/sync/enrich', body),
 };

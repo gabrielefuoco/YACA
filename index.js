@@ -574,6 +574,11 @@ app.post('/api/trakt/device/token', async (req, res) => {
 app.post('/api/configure', configureRoute);
 app.post('/api/ai/generate-merged-name', generateMergedName);
 
+// 2.1 Sync Endpoints (Crowdsourced Enrichment)
+const syncLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, standardHeaders: true, legacyHeaders: false });
+app.get('/api/sync/global-queue', syncLimiter, require('./src/api/sync/global-queue'));
+app.post('/api/sync/enrich', syncLimiter, require('./src/api/sync/enrich'));
+
 // Profile analytics endpoint (DNA & AI Lab)
 const analyticsLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
 app.get('/api/profiles/:id/analytics', analyticsLimiter, getProfileAnalytics);

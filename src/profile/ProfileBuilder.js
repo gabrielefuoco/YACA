@@ -320,37 +320,52 @@ class ProfileBuilder {
             if (!userProfile) return;
 
             // Logica di threshold per considerare un asse come "Pilastro"
-            const MIN_SCORE_THRESHOLD = 50;
+            const MIN_ABSOLUTE_SCORE = 3.0; // Punteggio minimo assoluto per considerarlo (evita rumore iniziale)
+            const DOMINANCE_RATIOS = { // Percentuale minima sul totale della categoria
+                genre: 0.15,   // 15% minimo per permettere più generi in profili eterogenei
+                keyword: 0.08, // 8% vista la frammentazione delle keyword
+                country: 0.25  // 25% per i paesi
+            };
+            // Rimosso STABILITY_GAP: se due generi sono forti (es. 20% e 18%), li vogliamo entrambi come DNA.
 
             // Helper function per analizzare una mappa di score
             const analyzeScores = (scoreMap, type, existingDNAIds, targetSuggestedDNA, nameResolver = null) => {
                 if (!scoreMap || scoreMap.size === 0) return;
 
-                // Ordina per score decrescente
+                // 1. Calcolo del totale della categoria
+                let totalScore = 0;
+                for (const score of scoreMap.values()) {
+                    totalScore += score;
+                }
+
+                if (totalScore === 0) return;
+
+                // 2. Ordina per punteggio decrescente
                 const sorted = Array.from(scoreMap.entries()).sort((a, b) => b[1] - a[1]);
                 if (sorted.length === 0) return;
 
-                const topItem = sorted[0];
-                const topId = topItem[0];
-                const topScore = topItem[1];
-
-                // Rilevamento: il punteggio deve superare una soglia, 
-                // e (se c'è un secondo elemento) deve essere almeno il doppio del secondo
-                let isDNA = topScore >= MIN_SCORE_THRESHOLD;
-                if (isDNA && sorted.length > 1) {
-                    const secondScore = sorted[1][1];
-                    if (topScore < secondScore * 2) {
-                        isDNA = false; // Non è "sproporzionatamente" più alto
+                // 3. Estrazione dei tratti dominanti (anche multipli)
+                const dominanceThreshold = DOMINANCE_RATIOS[type] || 0.15;
+                
+                // Iteriamo sui tratti finché troviamo pilastri validi
+                for (const [id, score] of sorted) {
+                    const isAbsoluteValid = score >= MIN_ABSOLUTE_SCORE;
+                    const isDominant = (score / totalScore) >= dominanceThreshold;
+                    
+                    if (isAbsoluteValid && isDominant) {
+                        if (!existingDNAIds.has(id)) {
+                            targetSuggestedDNA.push({
+                                type,
+                                id: id,
+                                name: nameResolver ? nameResolver(id) : id
+                            });
+                            existingDNAIds.add(id);
+                        }
+                    } else {
+                        // Poiché l'array è ordinato, se un elemento non passa la dominanza,
+                        // nessuno degli elementi successivi (con punteggio minore) lo farà.
+                        break; 
                     }
-                }
-
-                if (isDNA && !existingDNAIds.has(topId)) {
-                    targetSuggestedDNA.push({
-                        type,
-                        id: topId,
-                        name: nameResolver ? nameResolver(topId) : topId
-                    });
-                    existingDNAIds.add(topId);
                 }
             };
 

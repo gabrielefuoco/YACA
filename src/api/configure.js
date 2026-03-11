@@ -97,9 +97,12 @@ function createGlobalProfileInput() {
 module.exports = async (req, res) => {
     try {
         const { activeProfileId, profiles, userId: existingUserId } = req.body;
-        // Server-side env vars take priority; request body keys kept for backward compatibility
-        const tmdbKey = process.env.TMDB_API_KEY || req.body.tmdbKey;
-        const mistralKey = process.env.MISTRAL_API_KEY || req.body.mistralKey;
+        // Server-side env vars fallback; request body keys take priority for crowdsourced sync
+        const personalTmdbKey = req.body.tmdbKey || null;
+        const personalMistralKey = req.body.mistralKey || null;
+        
+        const effectiveTmdbKey = personalTmdbKey || process.env.TMDB_API_KEY;
+        const effectiveMistralKey = personalMistralKey || process.env.MISTRAL_API_KEY;
         const traktToken = req.body.traktToken || req.body.traktUsername;
         const traktRefreshToken = req.body.traktRefreshToken || null;
         const mdblistKey = req.body.mdblistKey || null;
@@ -107,15 +110,14 @@ module.exports = async (req, res) => {
         const stremioEmail = req.body.stremioEmail || req.body.email || null;
         const stremioPassword = req.body.stremioPassword || null;
 
-        if (!tmdbKey) {
-            return res.status(400).json({ error: "TMDB API key non configurata sul server." });
+        if (!effectiveTmdbKey) {
+            return res.status(400).json({ error: "TMDB API key non configurata sul server o mancante." });
         }
 
-        // Input validation - limiti ragionevoli
-        if (typeof tmdbKey !== 'string' || tmdbKey.length > LIMITS.MAX_KEY_LENGTH) {
+        if (personalTmdbKey && (typeof personalTmdbKey !== 'string' || personalTmdbKey.length > LIMITS.MAX_KEY_LENGTH)) {
             return res.status(400).json({ error: "TMDB Key non valida." });
         }
-        if (mistralKey && (typeof mistralKey !== 'string' || mistralKey.length > LIMITS.MAX_KEY_LENGTH)) {
+        if (personalMistralKey && (typeof personalMistralKey !== 'string' || personalMistralKey.length > LIMITS.MAX_KEY_LENGTH)) {
             return res.status(400).json({ error: "Mistral Key non valida." });
         }
         if (traktToken && (typeof traktToken !== 'string' || traktToken.length > LIMITS.MAX_TOKEN_LENGTH)) {
@@ -147,8 +149,8 @@ module.exports = async (req, res) => {
             if (req.body.prompts.some(pr => pr && pr.trim().length > 0)) needsMistral = true;
         }
 
-        if (needsMistral && !mistralKey) {
-            return res.status(400).json({ error: "Chiave Mistral non configurata sul server. Contattare l'amministratore." });
+        if (needsMistral && !effectiveMistralKey) {
+            return res.status(400).json({ error: "Chiave Mistral non configurata sul server. Contattare l'amministratore o inserirne una personale." });
         }
 
         // --- BACKWARD COMPATIBILITY / DEFAULT PROFILE MAPPING ---
@@ -370,8 +372,8 @@ module.exports = async (req, res) => {
         const userDoc = await UserConfig.saveUser({
             userId: finalUserId,
             apiKeys: {
-                tmdb: tmdbKey,
-                mistral: mistralKey,
+                tmdb: personalTmdbKey,
+                mistral: personalMistralKey,
                 trakt: traktToken || null,
                 traktRefreshToken: traktRefreshToken || null,
                 mdblist: mdblistKey || null,

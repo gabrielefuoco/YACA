@@ -275,10 +275,8 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-    const settings = getProfileSettings(user, context);
-    const dna = settings.manualDNA || [];
     const dnaFilters = getProfileDnaFilters(user, context);
-    const dnaParams = extractDNAParams(dna);
+    const dnaParams = extractDNAParams(dnaFilters);
 
     const topGenres = computeTopGenres(profile, 3);
     const topKeywords = [...profile.keywordScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
@@ -342,10 +340,8 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-    const settings = getProfileSettings(user, context);
-    const dna = settings.manualDNA || [];
     const dnaFilters = getProfileDnaFilters(user, context);
-    let dnaParams = extractDNAParams(dna);
+    let dnaParams = extractDNAParams(dnaFilters);
 
     const topGenres = computeTopGenres(profile, 5);
 
@@ -373,7 +369,7 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
     });
 
     // FALLBACK ZERO RESULTS ALGORITHM
-    if (results.length === 0 && dna.length > 0) {
+    if (results.length === 0 && dnaFilters.length > 0) {
         console.warn(`[Fallback] Zero Blend results per ${userId}/${context}. Disattivo il DNA.`);
         const fallbackQuery = genreOrString ? { with_genres: genreOrString } : {};
         allResults = await Promise.allSettled([fetchBatch(fallbackQuery)]);
@@ -410,10 +406,8 @@ async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, media
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-    const settings = getProfileSettings(user, context);
-    const dna = settings.manualDNA || [];
     const dnaFilters = getProfileDnaFilters(user, context);
-    const dnaParams = extractDNAParams(dna);
+    const dnaParams = extractDNAParams(dnaFilters);
 
     const history = await fetchRecentHistory(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 5);
     const traktRecs = [];
@@ -619,10 +613,8 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-    const settings = getProfileSettings(user, context);
-    const dna = settings.manualDNA || [];
-    const dnaParams = extractDNAParams(dna);
     const dnaFilters = getProfileDnaFilters(user, context);
+    const dnaParams = extractDNAParams(dnaFilters);
 
     const topGenres = computeTopGenres(profile, 5);
     const topKeywords = [...profile.keywordScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => e[0]);
@@ -813,10 +805,8 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-    const settings = getProfileSettings(user, context);
-    const dna = settings.manualDNA || [];
-    const dnaParams = extractDNAParams(dna);
     const dnaFilters = getProfileDnaFilters(user, context);
+    const dnaParams = extractDNAParams(dnaFilters);
 
     const topGenres = computeTopGenres(profile, 3);
 

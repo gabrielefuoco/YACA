@@ -13,10 +13,13 @@ const tmdbScoringDataSchema = new mongoose.Schema({
     genre_ids: { type: [Number], default: [] },
     keyword_ids: { type: [Number], default: [] },
     director_ids: { type: [Number], default: [] },
-    cast_ids: { type: [Number], default: [] }
+    cast_ids: { type: [Number], default: [] },
+    needsEnrichment: { type: Boolean, default: false },
+    lockedUntil: { type: Date, default: null }
 }, { timestamps: true });
 
-// Indice composto unico per lookup veloce
+// Indici per query rapide
 tmdbScoringDataSchema.index({ tmdbId: 1, type: 1 }, { unique: true });
+tmdbScoringDataSchema.index({ needsEnrichment: 1, lockedUntil: 1 });
 
 module.exports = mongoose.model('TmdbScoringData', tmdbScoringDataSchema);
