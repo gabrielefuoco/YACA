@@ -6,8 +6,9 @@ import { ProfileSettingsPanel } from '@/components/dashboard/ProfileSettingsPane
 import { ActiveCatalogsPanel } from '@/components/dashboard/ActiveCatalogsPanel';
 import { ExplorePanel } from '@/components/dashboard/ExplorePanel';
 import { CreatorPanel } from '@/components/dashboard/CreatorPanel';
+import { DnaAndAiPanel } from '@/components/dashboard/DnaAndAiPanel';
 
-type DashboardTab = 'active' | 'explore' | 'creator';
+type DashboardTab = 'active' | 'explore' | 'creator' | 'dna';
 
 interface DashboardPageProps {
   profiles: Profile[];
@@ -91,6 +92,7 @@ export function DashboardPage({
     { id: 'active' as const, label: 'Cataloghi Attivi', icon: 'grid_view' },
     { id: 'explore' as const, label: 'Esplora', icon: 'explore' },
     { id: 'creator' as const, label: 'Creatore', icon: 'auto_fix' },
+    { id: 'dna' as const, label: 'DNA & AI Lab', icon: 'biotech' },
   ];
 
   return (
@@ -174,6 +176,13 @@ export function DashboardPage({
           {activeTab === 'creator' && (
             <CreatorPanel
               onAddCatalog={(catalog) => onAddCatalog(editingProfileId, catalog)}
+            />
+          )}
+
+          {activeTab === 'dna' && editingProfile && (
+            <DnaAndAiPanel
+              profile={editingProfile}
+              onUpdateProfile={onUpdateProfile}
             />
           )}
         </div>

@@ -33,4 +33,6 @@ export const api = {
     post('/api/ai/generate-merged-name', { nameA, nameB }),
   checkUser: (authKey: string, email?: string) =>
     post('/api/check-user', { authKey, email }),
+  getProfileAnalytics: (profileId: string, userId: string) =>
+    fetch(`/api/profiles/${encodeURIComponent(profileId)}/analytics?userId=${encodeURIComponent(userId)}`).then(r => r.json()),
 };

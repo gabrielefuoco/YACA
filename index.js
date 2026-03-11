@@ -25,6 +25,7 @@ const connectDB = require('./src/db/connection');
 const User = require('./src/db/models/User');
 const { syncIncrementalRecommendations } = require('./src/engines/hybridRecommendations');
 const { generateMergedName } = require('./src/api/mergeRoutes');
+const { getProfileAnalytics } = require('./src/api/analytics');
 const CacheManager = require('./src/cache/CacheManager');
 const { aiPromptCache, aiDiscoveryCache, hybridRecommendationsCache } = require('./src/cache/cacheInstances');
 const { rateLimitedMap } = require('./src/utils/rateLimiter');
@@ -572,6 +573,10 @@ app.post('/api/trakt/device/token', async (req, res) => {
 // 2. Registra endpoint configuration (Frontend Web)
 app.post('/api/configure', configureRoute);
 app.post('/api/ai/generate-merged-name', generateMergedName);
+
+// Profile analytics endpoint (DNA & AI Lab)
+const analyticsLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
+app.get('/api/profiles/:id/analytics', analyticsLimiter, getProfileAnalytics);
 
 // Endpoint per recuperare i profili dell'utente tramite userId (Sostituisce il decode Base64 frontend)
 app.get('/api/user/:userId', async (req, res) => {

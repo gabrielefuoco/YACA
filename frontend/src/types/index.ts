@@ -112,3 +112,9 @@ export interface MyList {
   filters?: Record<string, unknown>;
   createdAt: number;
 }
+
+export interface AnalyticsData {
+  genreScores: Record<string, number>;
+  keywordScores: Record<string, number>;
+  aiLogs: Record<string, unknown[]>;
+}
