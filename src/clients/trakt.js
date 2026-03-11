@@ -246,6 +246,7 @@ async function fetchTraktCatalog(endpoint, skip = 0, traktToken = null, tmdbApiK
             const newTokens = await refreshTraktTokens(refreshContext.userConfig.apiKeys.traktRefreshToken);
 
             if (newTokens) {
+                console.log(`Trakt: auto-refresh riuscito per ${endpoint}.`);
                 // Sincronizza i nuovi token su MongoDB se l'utente è stateful
                 if (refreshContext?.userConfig?.userId) {
                     syncTraktTokensToDb(
