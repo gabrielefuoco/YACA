@@ -10,7 +10,8 @@ const UserConfig = require('../src/models/UserConfig');
 
 describe('UserConfig.saveUser pending DNA preservation', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        User.findOne.mockReset();
+        User.findOneAndUpdate.mockReset();
     });
 
     it('preserves pendingDNASuggestions when the dashboard saves profiles without that field', async () => {
@@ -61,4 +62,48 @@ describe('UserConfig.saveUser pending DNA preservation', () => {
             expect.any(Object)
         );
     });
+
+    it('preserves mistral and tmdb api keys when incoming values are empty', async () => {
+        User.findOne
+            .mockResolvedValueOnce({
+                userId: 'user-1',
+                email: 'user@test.dev',
+                apiKeys: {
+                    tmdb: 'existing-tmdb-key',
+                    mistral: 'existing-mistral-key',
+                    trakt: 'existing-trakt-key'
+                },
+                config: { activeProfileId: 'p1' },
+                profiles: []
+            })
+            .mockResolvedValueOnce(null);
+        User.findOneAndUpdate.mockResolvedValue({ userId: 'user-1' });
+
+        await UserConfig.saveUser({
+            userId: 'user-1',
+            email: 'user@test.dev',
+            apiKeys: {
+                tmdb: '',
+                mistral: '',
+                trakt: 'new-trakt-key'
+            },
+            config: { activeProfileId: 'p1' },
+            profiles: []
+        });
+
+        expect(User.findOneAndUpdate).toHaveBeenCalledWith(
+            { userId: 'user-1' },
+            expect.objectContaining({
+                $set: expect.objectContaining({
+                    apiKeys: expect.objectContaining({
+                        tmdb: 'existing-tmdb-key',
+                        mistral: 'existing-mistral-key',
+                        trakt: 'new-trakt-key'
+                    })
+                })
+            }),
+            expect.any(Object)
+        );
+    });
+
 });
