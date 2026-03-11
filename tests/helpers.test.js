@@ -27,14 +27,18 @@ describe('parseExtra', () => {
 });
 
 describe('getProfileDnaFilters', () => {
-    it('should merge manualDNA and suggestedDNA for the selected profile', () => {
+    it('should merge manualDNA, suggestedDNA and pending DNA for the selected profile without duplicates', () => {
         const filters = getProfileDnaFilters({
             profiles: [
                 {
                     id: 'kids',
                     settings: {
                         manualDNA: [{ type: 'genre', id: '16' }],
-                        suggestedDNA: [{ type: 'keyword', id: 'robot' }]
+                        suggestedDNA: [{ type: 'keyword', id: 'robot' }],
+                        pendingDNASuggestions: [
+                            { type: 'genre', id: '16' },
+                            { type: 'country', id: 'JP' }
+                        ]
                     }
                 }
             ]
@@ -42,7 +46,8 @@ describe('getProfileDnaFilters', () => {
 
         expect(filters).toEqual([
             { type: 'genre', id: '16' },
-            { type: 'keyword', id: 'robot' }
+            { type: 'keyword', id: 'robot' },
+            { type: 'country', id: 'JP' }
         ]);
     });
 

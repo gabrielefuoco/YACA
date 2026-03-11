@@ -43,21 +43,34 @@ function buildSuggestedDNAFromPresets(selectedPresets = [], presetsList = []) {
     const genreCounts = new Map();
     const keywordCounts = new Map();
 
+    const collectPresetFilters = (preset) => {
+        if (preset?.filters && typeof preset.filters === 'object') {
+            return [preset.filters];
+        }
+        if (Array.isArray(preset?.queries)) {
+            return preset.queries.filter((query) => query && typeof query === 'object');
+        }
+        return [];
+    };
+
     for (const presetId of selectedPresets) {
         const preset = presetsList.find(p => p.id === presetId);
-        if (!preset?.filters || typeof preset.filters !== 'object') continue;
+        const filterBlocks = collectPresetFilters(preset);
+        if (filterBlocks.length === 0) continue;
 
-        for (const gid of splitOrIds(preset.filters.with_genres)) {
-            genreCounts.set(gid, (genreCounts.get(gid) || 0) + 1);
-        }
-        for (const gid of splitOrIds(preset.filters.genre_ids)) {
-            genreCounts.set(gid, (genreCounts.get(gid) || 0) + 1);
-        }
-        for (const kid of splitOrIds(preset.filters.with_keywords)) {
-            keywordCounts.set(kid, (keywordCounts.get(kid) || 0) + 1);
-        }
-        for (const kid of splitOrIds(preset.filters.keyword)) {
-            keywordCounts.set(kid, (keywordCounts.get(kid) || 0) + 1);
+        for (const filters of filterBlocks) {
+            for (const gid of splitOrIds(filters.with_genres)) {
+                genreCounts.set(gid, (genreCounts.get(gid) || 0) + 1);
+            }
+            for (const gid of splitOrIds(filters.genre_ids)) {
+                genreCounts.set(gid, (genreCounts.get(gid) || 0) + 1);
+            }
+            for (const kid of splitOrIds(filters.with_keywords)) {
+                keywordCounts.set(kid, (keywordCounts.get(kid) || 0) + 1);
+            }
+            for (const kid of splitOrIds(filters.keyword)) {
+                keywordCounts.set(kid, (keywordCounts.get(kid) || 0) + 1);
+            }
         }
     }
 

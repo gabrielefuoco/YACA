@@ -57,7 +57,19 @@ function isAllowedUrl(url, allowedHosts) {
 
 function getProfileDnaFilters(userConfig, profileId) {
     const profileSettings = userConfig?.profiles?.find((p) => p.id === profileId)?.settings || {};
-    return [...(profileSettings.manualDNA || []), ...(profileSettings.suggestedDNA || [])];
+    const orderedDna = [
+        ...(profileSettings.manualDNA || []),
+        ...(profileSettings.suggestedDNA || []),
+        ...(profileSettings.pendingDNASuggestions || [])
+    ];
+    const seen = new Set();
+    return orderedDna.filter((item) => {
+        if (!item?.type || item?.id === undefined || item?.id === null) return false;
+        const key = `${item.type}:${String(item.id)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
 }
 
 module.exports = { parseExtra, sanitizeString, isAllowedUrl, getProfileDnaFilters };
