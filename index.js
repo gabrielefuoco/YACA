@@ -575,7 +575,8 @@ app.post('/api/configure', configureRoute);
 app.post('/api/ai/generate-merged-name', generateMergedName);
 
 // Profile analytics endpoint (DNA & AI Lab)
-app.get('/api/profiles/:id/analytics', getProfileAnalytics);
+const analyticsLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
+app.get('/api/profiles/:id/analytics', analyticsLimiter, getProfileAnalytics);
 
 // Endpoint per recuperare i profili dell'utente tramite userId (Sostituisce il decode Base64 frontend)
 app.get('/api/user/:userId', async (req, res) => {
