@@ -93,6 +93,12 @@ const UserConfig = {
                 if (!userData.apiKeys?.stremioPass && existingUser.apiKeys?.stremioPass) {
                     mergedApiKeys.stremioPass = existingUser.apiKeys.stremioPass;
                 }
+                if (!userData.apiKeys?.mistral && existingUser.apiKeys?.mistral) {
+                    mergedApiKeys.mistral = existingUser.apiKeys.mistral;
+                }
+                if (!userData.apiKeys?.tmdb && existingUser.apiKeys?.tmdb) {
+                    mergedApiKeys.tmdb = existingUser.apiKeys.tmdb;
+                }
 
                 userData.apiKeys = mergedApiKeys;
 
