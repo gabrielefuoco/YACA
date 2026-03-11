@@ -155,6 +155,32 @@ async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60) {
 }
 
 /**
+ * Fallback specifico per Hidden Gems: scopre titoli di qualità a bassa popolarità.
+ * NON usa popularity.desc — forza vote_count.lte e vote_average.gte su base temporale.
+ */
+async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = 60) {
+    const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
+    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+    const results = await fetchTmdbResults(
+        tmdbClient,
+        `/discover/${tmdbType}`,
+        {
+            sort_by: 'vote_average.desc',
+            'vote_count.gte': 50,
+            'vote_count.lte': 2000,
+            'vote_average.gte': 7.0
+        },
+        `Hidden Gems fallback (${mediaType})`
+    );
+    // Manual popularity filter since TMDB ignores popularity.lte
+    return results
+        .filter(item => (item.popularity ?? Infinity) <= 80)
+        .map(item => normalizeContentId(item.id))
+        .filter(Boolean)
+        .slice(0, limit);
+}
+
+/**
  * Per ogni seed TMDB ID, recupera i film "simili" e conta quante volte ogni film appare.
  * @param {Array} seedTmdbIds Array di ID TMDB (numeri o stringhe)
  * @param {String} tmdbApiKey Chiave API TMDB
@@ -669,7 +695,22 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     // Two-Tier Scoring: Light → taglio → Deep
     const scored = await twoTierScore(pool, profile, { tmdbApiKey, types, dnaFilters, globalProfile });
 
-    return scored.slice(0, 100).map(i => String(i.data.id));
+    // Diversity jitter: apply small random perturbation + genre over-exposure penalty
+    // to force mathematical divergence from Seed Network results
+    const genreCounts = new Map();
+    const jittered = scored.map(item => {
+        const genres = item.data.genre_ids || [];
+        let penalty = 0;
+        for (const g of genres) {
+            const count = genreCounts.get(g) || 0;
+            if (count > 5) penalty += 0.15 * (count - 5);
+            genreCounts.set(g, count + 1);
+        }
+        const jitter = (Math.random() - 0.5) * 0.3;
+        return { ...item, score: item.score + jitter - penalty };
+    });
+
+    return jittered.sort((a, b) => b.score - a.score).slice(0, 100).map(i => String(i.data.id));
 }
 
 /**
@@ -745,18 +786,19 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
 
     candidates.sort((a, b) => b.hybridScore - a.hybridScore);
 
-    // Apply ProfileScorer with DNA filtering
+    // Apply ProfileScorer with DNA filtering — preserve hybridScore for combined sort
     const scored = await rateLimitedMap(
         candidates.slice(0, 80),
-        async ({ data }) => {
+        async ({ data, hybridScore }) => {
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, data.id, types);
             const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
-            return { data, score };
+            return { data, score, hybridScore };
         },
         { batchSize: 5, delayMs: 50 }
     );
 
-    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => String(i.data.id));
+    // Combined sort: fuse ProfileScorer affinity with network graph hybridScore
+    return scored.sort((a, b) => (b.score + b.hybridScore) - (a.score + a.hybridScore)).slice(0, 100).map(i => String(i.data.id));
 }
 
 /**
@@ -838,6 +880,9 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
         if (topGenres.length) params.with_genres = topGenres.join('|');
         addResults(await fetchDiscoverPages(params, 2));
     }
+
+    // Manual popularity filter: TMDB ignores popularity.lte, so we enforce it in JS
+    pool = pool.filter(item => (item.popularity ?? Infinity) <= 80);
 
     // Two-Tier Scoring: Light → taglio → Deep
     const scored = await twoTierScore(pool, profile, { tmdbApiKey, types, dnaFilters, globalProfile, catalogContext: 'hidden_gems' });
@@ -952,8 +997,23 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     }
 
     if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {
-        recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType);
-        if (recommendationIds.length > 0) {
+        // Context-specific fallbacks: niche catalogs must NOT fall back to popularity.desc
+        const NICHE_CATALOG_IDS = new Set([
+            'yaca_hidden_gems_movies', 'yaca_hidden_gems_series',
+            'yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series'
+        ]);
+
+        if (NICHE_CATALOG_IDS.has(catalogId)) {
+            // Hidden Gems: fallback to quality-based discovery (not popular)
+            if (catalogId.startsWith('yaca_hidden_gems')) {
+                recommendationIds = await fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
+            }
+            // Trakt Filtered: no generic fallback — return empty if Trakt has no data
+        } else {
+            recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType);
+        }
+
+        if (recommendationIds && recommendationIds.length > 0) {
             await hybridRecommendationsCache.set(cacheKey, { ids: recommendationIds });
         }
     }
@@ -1047,6 +1107,7 @@ module.exports = {
     calculateHybridScore,
     computeTopGenres,
     fetchPopularFallbackIds,
+    fetchHiddenGemsFallbackIds,
     buildHybridCatalog,
     buildTopGenresMixCatalog,
     buildHiddenGemsCatalog,
