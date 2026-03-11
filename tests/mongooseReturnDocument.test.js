@@ -4,7 +4,8 @@ jest.mock('nanoid', () => ({
 
 jest.mock('../src/db/models/User', () => ({
     findOne: jest.fn(),
-    findOneAndUpdate: jest.fn()
+    findOneAndUpdate: jest.fn(),
+    hashValue: jest.fn((v) => v ? `hash_${v}` : null)
 }));
 
 jest.mock('../src/db/models/CacheEntry', () => ({
@@ -28,25 +29,23 @@ describe('Mongoose findOneAndUpdate options', () => {
 
         expect(User.findOneAndUpdate).toHaveBeenCalledWith(
             { userId: 'generated_user_id' },
-            expect.objectContaining({ userId: 'generated_user_id' }),
+            { $set: expect.objectContaining({ userId: 'generated_user_id' }) },
             expect.objectContaining({ returnDocument: 'after' })
         );
     });
 
     it('reuses existing userId for duplicate stremio account', async () => {
-        User.findOne.mockReturnValueOnce({
-            select: jest.fn().mockReturnValue({
-                lean: jest.fn().mockResolvedValue({ userId: 'existing_user' })
-            })
-        });
+        // stremioAuthHash lookup returns existing user (email lookup is skipped since no email provided)
+        User.findOne
+            .mockResolvedValueOnce({ userId: 'existing_user', apiKeys: {} }); // stremioAuthHash lookup
         User.findOneAndUpdate.mockResolvedValueOnce({ userId: 'existing_user' });
 
         await UserConfig.saveUser({ apiKeys: { tmdb: 'k', stremio: 'stremio_key' } });
 
-        expect(User.findOne).toHaveBeenCalledWith({ 'apiKeys.stremio': 'stremio_key' });
+        expect(User.findOne).toHaveBeenCalledWith({ stremioAuthHash: 'hash_stremio_key' });
         expect(User.findOneAndUpdate).toHaveBeenCalledWith(
             { userId: 'existing_user' },
-            expect.objectContaining({ userId: 'existing_user' }),
+            { $set: expect.objectContaining({ userId: 'existing_user' }) },
             expect.objectContaining({ returnDocument: 'after' })
         );
     });
@@ -73,7 +72,7 @@ describe('Mongoose findOneAndUpdate options', () => {
             configBase64: 'abc123',
             configVersion: 'v1'
         });
-        const saveUser = jest.fn().mockResolvedValueOnce({ userId: 'generated_user_id' });
+        const saveUser = jest.fn().mockResolvedValueOnce({ user: { userId: 'generated_user_id' }, isNewUser: true });
         const generateTmdbFiltersFromPrompt = jest.fn().mockResolvedValueOnce({ target: 'tmdb' });
 
         jest.doMock('../src/db/models/UserList', () => ({

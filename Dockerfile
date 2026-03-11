@@ -1,13 +1,13 @@
 # --- Stage 1: Build Frontend ---
 FROM node:20-slim AS frontend-builder
-LABEL version="1.0.4"
+LABEL version="2.0.0"
 WORKDIR /app/frontend
 
 # Copia i file di configurazione del frontend
 COPY frontend/package*.json ./
 RUN npm install
 
-# Copia il resto dell'app frontend e costruisci (static export)
+# Copia il resto dell'app frontend e costruisci (Next.js server build, non static export)
 COPY frontend/ ./
 RUN npm run build
 
@@ -31,9 +31,10 @@ RUN npm install --omit=dev
 # Copia il resto dell'applicazione backend
 COPY . .
 
-# Copia il frontend buildato dalla cartella 'out' generata nel primo stage
-# L'index.js serve questi file da /frontend/out
-COPY --from=frontend-builder /app/frontend/out ./frontend/out
+# Copia il frontend buildato (Next.js .next directory)
+COPY --from=frontend-builder /app/frontend/.next ./frontend/.next
+COPY --from=frontend-builder /app/frontend/node_modules ./frontend/node_modules
+COPY --from=frontend-builder /app/frontend/package.json ./frontend/package.json
 
 # Copy startup script and make executable
 COPY scripts/start.sh /app/scripts/start.sh

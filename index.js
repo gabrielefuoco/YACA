@@ -23,6 +23,7 @@ const { updateStremioAddonCollection } = require('./src/utils/stremioAddonSync')
 const { syncAllStremioData } = require('./src/utils/stremioSync');
 const connectDB = require('./src/db/connection');
 const User = require('./src/db/models/User');
+const { hashValue } = require('./src/db/models/User');
 const { syncIncrementalRecommendations } = require('./src/engines/hybridRecommendations');
 const { generateMergedName } = require('./src/api/mergeRoutes');
 const { getProfileAnalytics } = require('./src/api/analytics');
@@ -56,10 +57,9 @@ const badgeLimiter = rateLimit({
 // CORS configurabile tramite variabile d'ambiente (default: permissivo per retrocompatibilità con Stremio)
 const corsOrigins = process.env.CORS_ALLOWED_ORIGINS;
 const corsOptions = corsOrigins
-    ? { origin: corsOrigins.split(',').map(o => o.trim()), methods: ['GET', 'POST'] }
-    : { methods: ['GET', 'POST'] };
+    ? { origin: corsOrigins.split(',').map(o => o.trim()), methods: ['GET', 'POST'], credentials: true }
+    : { methods: ['GET', 'POST'], credentials: true };
 app.use(cors(corsOptions));
-app.use(express.static(path.join(__dirname, 'frontend', 'out')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '1mb' }));
 
@@ -438,7 +438,9 @@ app.post('/api/validate-tmdb-key', async (req, res) => {
     }
 });
 
-// Stremio API: Login con credenziali Stremio per ottenere authKey
+// ==========================================
+
+// Stremio API: Login con credenziali Stremio per ottenere authKey (legacy endpoint, mantenuto per retrocompatibilità)
 app.post('/api/stremio-auth', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -468,7 +470,10 @@ app.post('/api/check-user', async (req, res) => {
             existingUser = await User.findOne({ email }).lean();
         }
         if (!existingUser && authKey) {
-            existingUser = await User.findOne({ 'apiKeys.stremio': authKey }).lean();
+            const authHash = hashValue(authKey);
+            if (authHash) {
+                existingUser = await User.findOne({ stremioAuthHash: authHash }).lean();
+            }
         }
 
         if (existingUser?.userId) {
@@ -492,6 +497,7 @@ app.post('/api/check-user', async (req, res) => {
 // Stremio API: Aggiorna addon nella collezione dell'utente (senza reinstallare manualmente)
 app.post('/api/stremio-addon-update', async (req, res) => {
     const { authKey, manifestUrl } = req.body;
+
     if (!authKey || !manifestUrl) {
         return res.status(400).json({ success: false, error: 'authKey e manifestUrl obbligatori' });
     }
@@ -752,7 +758,7 @@ app.get('/api/cron/warmup', async (req, res) => {
     // Warmup Fase 3: Stremio & Trakt Sync (Throttled & Randomized)
     console.log("🔥 Avvio Sync Dati Stremio/Trakt per utenti registrati...");
     try {
-        const users = await User.find({ 'apiKeys.stremio': { $exists: true, $ne: null } });
+        const users = await User.find({ stremioAuthHash: { $exists: true, $ne: null } });
         const now = new Date();
 
         await rateLimitedMap(
@@ -1013,47 +1019,48 @@ app.get('/api/users/:userId/switch-profile/:profileId', async (req, res) => {
     }
 });
 
-// Catch-all route per gestire il routing lato client di Next.js
-app.get('/{*path}', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend', 'out', 'index.html'));
-});
+// Esporta l'app Express per uso nel server.js custom (Express + Next.js)
+// Next.js gestirà il rendering delle pagine e le rotte di autenticazione (/api/auth/*)
+module.exports = app;
 
-// Avvia il server
-const server = app.listen(PORT, () => {
-    console.log(`🚀 YACA Server in esecuzione su http://localhost:${PORT}`);
-    if (!process.env.HOST_URL && !process.env.RENDER_EXTERNAL_URL) {
-        console.warn('⚠️ HOST_URL non configurato nel file .env. I poster con badge e le immagini sfocate potrebbero non funzionare su client remoti (Stremio). Imposta HOST_URL=https://tuo-dominio.com nel file .env.');
-    }
-});
-
-// Graceful shutdown
-const shutdown = (signal) => {
-    console.log(`\n${signal} ricevuto. Spegnimento in corso...`);
-    server.close(async () => {
-        console.log('Server chiuso correttamente.');
-        try {
-            await disconnectRedis();
-            const mongoose = require('mongoose');
-            await mongoose.disconnect();
-            console.log('MongoDB disconnesso.');
-        } catch (err) {
-            console.error('Errore durante la disconnessione:', err.message);
+// Se eseguito direttamente (non importato), avvia il server standalone
+if (require.main === module) {
+    const server = app.listen(PORT, () => {
+        console.log(`🚀 YACA API Server (standalone) in esecuzione su http://localhost:${PORT}`);
+        if (!process.env.HOST_URL && !process.env.RENDER_EXTERNAL_URL) {
+            console.warn('⚠️ HOST_URL non configurato nel file .env.');
         }
-        process.exit(0);
     });
-    setTimeout(() => {
-        console.error('Spegnimento forzato dopo timeout.');
-        process.exit(1);
-    }, 10000);
-};
 
-process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT', () => shutdown('SIGINT'));
+    // Graceful shutdown
+    const shutdown = (signal) => {
+        console.log(`\n${signal} ricevuto. Spegnimento in corso...`);
+        server.close(async () => {
+            console.log('Server chiuso correttamente.');
+            try {
+                await disconnectRedis();
+                const mongoose = require('mongoose');
+                await mongoose.disconnect();
+                console.log('MongoDB disconnesso.');
+            } catch (err) {
+                console.error('Errore durante la disconnessione:', err.message);
+            }
+            process.exit(0);
+        });
+        setTimeout(() => {
+            console.error('Spegnimento forzato dopo timeout.');
+            process.exit(1);
+        }, 10000);
+    };
 
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
 
-process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
-});
+    process.on('unhandledRejection', (reason, promise) => {
+        console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    });
+
+    process.on('uncaughtException', (err) => {
+        console.error('Uncaught Exception:', err);
+    });
+}

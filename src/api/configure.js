@@ -259,7 +259,7 @@ module.exports = async (req, res) => {
                     .map(p => p.trim().substring(0, LIMITS.MAX_PROMPT_LENGTH))
                     .slice(0, LIMITS.MAX_AI_PROMPTS);
                 const settledResults = await Promise.allSettled(
-                    validPrompts.map(prompt => generateTmdbFiltersFromPrompt(prompt, mistralKey, false, 'multi_query'))
+                    validPrompts.map(prompt => generateTmdbFiltersFromPrompt(prompt, effectiveMistralKey, false, 'multi_query'))
                 );
 
                 for (let i = 0; i < validPrompts.length; i++) {
@@ -382,7 +382,7 @@ module.exports = async (req, res) => {
         const configVersion = Date.now().toString(36);
 
         // 4. PERSISTENZA MONGODB (New Stateful Flow)
-        const userDoc = await UserConfig.saveUser({
+        const { user: userDoc } = await UserConfig.saveUser({
             userId: finalUserId,
             apiKeys: {
                 tmdb: personalTmdbKey,

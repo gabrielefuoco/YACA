@@ -2,7 +2,8 @@ jest.mock('nanoid', () => ({ nanoid: jest.fn(() => 'mock-id') }));
 
 jest.mock('../src/db/models/User', () => ({
     findOne: jest.fn(),
-    findOneAndUpdate: jest.fn()
+    findOneAndUpdate: jest.fn(),
+    hashValue: jest.fn((v) => v ? `hash_${v}` : null)
 }));
 
 const User = require('../src/db/models/User');

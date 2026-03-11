@@ -11,7 +11,7 @@ import { TabNav } from '@/components/layout/TabNav';
 import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
-import { MyList, StremioAuth, Profile } from '@/types';
+import { MyList, Profile } from '@/types';
 import { LOCAL_STORAGE_KEYS, SESSION_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 import { api } from '@/lib/api';
 
@@ -36,14 +36,11 @@ function createDefaultProfiles(): Profile[] {
 export default function Home() {
   const { isLoaded } = useConfig();
   const {
-    stremioAuth,
-    traktToken,
-    traktRefreshToken,
+    user,
+    isAuthenticated,
     isLoaded: authLoaded,
-    setStremioAuth,
-    setTraktToken,
-    setTraktRefreshToken,
     logout,
+    refreshSession,
   } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'settings'>('dashboard');
@@ -59,21 +56,26 @@ export default function Home() {
   // Initialize background sync worker for crowdsourced ecosystem
   useBackgroundSync(globalTmdbKey, userId ?? undefined);
 
+  // Sync userId from session
+  useEffect(() => {
+    if (user?.userId) {
+      setUserId(user.userId);
+    }
+  }, [user]);
+
   // Async load user config from API
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || !authLoaded) return;
 
     // Try to get userId from the URL path first (e.g., /ExVSfh84z8/configure)
     const pathParts = window.location.pathname.split('/').filter(Boolean);
-    // userId is usually the first part if it's not "configure"
     let urlUserId = pathParts.length > 0 && pathParts[0] !== 'configure' ? pathParts[0] : null;
-
-    // If it's a versioned URL (e.g., /ExVSfh84z8/v1/configure)
     if (urlUserId && pathParts.length > 2 && pathParts[2] === 'configure') {
       urlUserId = pathParts[0];
     }
 
-    const storedUserId = urlUserId || localStorage.getItem(LOCAL_STORAGE_KEYS.USER_ID);
+    const sessionUserId = user?.userId || null;
+    const storedUserId = urlUserId || sessionUserId;
 
     if (!storedUserId) {
       setInitialProfiles(createDefaultProfiles());
@@ -81,14 +83,9 @@ export default function Home() {
       return;
     }
 
-    if (urlUserId) {
-      setUserId(urlUserId);
-      localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, urlUserId);
-    } else {
-      setUserId(storedUserId);
-    }
+    setUserId(storedUserId);
 
-    fetch(`/api/user/${storedUserId}`)
+    fetch(`/api/user/${storedUserId}`, { credentials: 'include' })
       .then(res => {
         if (!res.ok) throw new Error("User not found");
         return res.json();
@@ -125,7 +122,7 @@ export default function Home() {
       .finally(() => {
         setConfigDecoded(true);
       });
-  }, [isLoaded]);
+  }, [isLoaded, authLoaded, user]);
 
   const {
     profiles,
@@ -154,45 +151,33 @@ export default function Home() {
         sessionStorage.removeItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID);
       }
     } catch (err) {
-      // Silently fail if sessionStorage is unavailable (e.g., private browsing)
       console.warn('Failed to restore pending activeProfileId from sessionStorage. Active profile will not be restored:', err);
     }
   }, [profiles, setActiveProfileId]);
 
-  // Auto-configure when stremio is logged in but no config/userId is stored yet
+  // Auto-configure when user session exists but no config has been fetched yet
   useEffect(() => {
     if (!isLoaded || !authLoaded || !configDecoded) return;
     if (autoConfigCalledRef.current) return;
-    if (stremioAuth && !userId) {
+    if (isAuthenticated && user && !configVersion) {
       autoConfigCalledRef.current = true;
       api.configure({
         profiles: profilesToApiPayload(profiles),
         activeProfileId,
-        stremioAuthKey: stremioAuth.authKey,
-        email: stremioAuth.email,
-        stremioPassword: stremioAuth.password,
-        traktToken: traktToken ?? undefined,
-        traktRefreshToken: traktRefreshToken ?? undefined,
+        userId: user.userId,
+        traktToken: user.traktToken ?? undefined,
+        traktRefreshToken: user.traktRefreshToken ?? undefined,
       }).then((data) => {
         if (data.userId) {
           setUserId(data.userId);
-          localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
         }
         if (data.configVersion) setConfigVersion(String(data.configVersion));
-        if (data.userId && stremioAuth?.authKey) {
-          const host = window.location.host;
-          const manifestPath = data.configVersion
-            ? `/${data.userId}/${data.configVersion}/manifest.json`
-            : `/${data.userId}/manifest.json`;
-          const httpsManifestUrl = `https://${host}${manifestPath}`;
-          api.stremioAddonUpdate(stremioAuth.authKey, httpsManifestUrl).catch(() => { });
-        }
       }).catch(() => { });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, authLoaded, configDecoded, stremioAuth, userId]);
+  }, [isLoaded, authLoaded, configDecoded, isAuthenticated, user]);
 
-  // Load my lists from localStorage
+  // Load my lists from localStorage (non-sensitive UI data)
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.MY_LISTS);
@@ -213,75 +198,53 @@ export default function Home() {
     saveMyLists(myLists.filter((l) => l.id !== id));
   };
 
-  const handleLoginComplete = async (
-    newStremioAuth: StremioAuth | null,
-    newTraktToken: string | null,
-    newTraktRefreshToken: string | null,
-    existingUserId?: string,
-    existingProfiles?: any[],
-    existingActiveProfileId?: string
-  ) => {
-    if (newStremioAuth) setStremioAuth(newStremioAuth);
-    if (newTraktToken) setTraktToken(newTraktToken);
-    if (newTraktRefreshToken) setTraktRefreshToken(newTraktRefreshToken);
-
+  const handleLoginComplete = async (loginData: {
+    userId: string;
+    email: string;
+    traktToken: string | null;
+    traktRefreshToken: string | null;
+    profiles: any[];
+    activeProfileId: string;
+  }) => {
     let activeProfiles = profiles;
 
     // If existing profiles are returned (returning user), restore them immediately
-    if (existingProfiles && Array.isArray(existingProfiles) && existingProfiles.length > 0) {
-      const mapped = existingProfiles.map(mapBackendProfile);
+    if (loginData.profiles && Array.isArray(loginData.profiles) && loginData.profiles.length > 0) {
+      const mapped = loginData.profiles.map(mapBackendProfile);
       setProfiles(mapped);
-      activeProfiles = mapped; // Use these for the configure call below
+      activeProfiles = mapped;
 
-      if (existingActiveProfileId) {
-        setActiveProfileId(existingActiveProfileId);
+      if (loginData.activeProfileId) {
+        setActiveProfileId(loginData.activeProfileId);
       }
     }
 
-    // If an existing userId was returned from check-user, set it immediately
-    if (existingUserId) {
-      setUserId(existingUserId);
-      localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, existingUserId);
-    }
+    setUserId(loginData.userId);
 
     // Generate initial config
     try {
       const data = await api.configure({
         profiles: profilesToApiPayload(activeProfiles),
-        activeProfileId: existingActiveProfileId || activeProfileId,
-        userId: existingUserId || (userId ?? undefined),
-        stremioAuthKey: newStremioAuth?.authKey,
-        email: newStremioAuth?.email,
-        stremioPassword: newStremioAuth?.password,
-        traktToken: newTraktToken,
-        traktRefreshToken: newTraktRefreshToken,
+        activeProfileId: loginData.activeProfileId || activeProfileId,
+        userId: loginData.userId,
+        traktToken: loginData.traktToken,
+        traktRefreshToken: loginData.traktRefreshToken,
       });
       if (data.userId) {
         setUserId(data.userId);
-        localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
         if (data.configVersion) setConfigVersion(String(data.configVersion));
-
-        // Auto-install addon in Stremio using short userId URL
-        if (newStremioAuth?.authKey) {
-          const host = window.location.host;
-          const manifestPath = data.configVersion
-            ? `/${data.userId}/${data.configVersion}/manifest.json`
-            : `/${data.userId}/manifest.json`;
-          const httpsManifestUrl = `https://${host}${manifestPath}`;
-          try {
-            await api.stremioAddonUpdate(newStremioAuth.authKey, httpsManifestUrl);
-          } catch (e) {
-            console.warn('Auto-install addon failed:', e);
-          }
-        }
       }
     } catch { }
+
+    // Refresh della sessione NextAuth per aggiornare i dati utente
+    try {
+      await refreshSession();
+    } catch { /* NextAuth refresh is best-effort */ }
   };
 
   const handleConfigSaved = (newUserId?: string) => {
     if (newUserId) {
       setUserId(newUserId);
-      localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, newUserId);
     }
   };
 
@@ -303,24 +266,20 @@ export default function Home() {
         profiles: profilesToApiPayload(nextProfiles),
         activeProfileId,
         userId: userId ?? undefined,
-        stremioAuthKey: stremioAuth?.authKey,
-        email: stremioAuth?.email,
-        stremioPassword: stremioAuth?.password,
-        traktToken: traktToken ?? undefined,
-        traktRefreshToken: traktRefreshToken ?? undefined,
+        traktToken: user?.traktToken ?? undefined,
+        traktRefreshToken: user?.traktRefreshToken ?? undefined,
       });
 
       const resolvedUserId = data.userId || userId;
       if (!resolvedUserId) return;
       if (data.userId) {
         setUserId(data.userId);
-        localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
       }
       if (data.configVersion) {
         setConfigVersion(String(data.configVersion));
       }
 
-      const response = await fetch(`/api/user/${resolvedUserId}`);
+      const response = await fetch(`/api/user/${resolvedUserId}`, { credentials: 'include' });
       if (!response.ok) return;
       const freshUser = await response.json();
       if (Array.isArray(freshUser.profiles) && freshUser.profiles.length > 0) {
@@ -332,28 +291,32 @@ export default function Home() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    // Aggressively clear all YACA-related localStorage and sessionStorage keys
-    Object.values(LOCAL_STORAGE_KEYS).forEach((key) => {
-      localStorage.removeItem(key);
-    });
+  const handleLogout = async () => {
+    await logout();
+    // Clear non-sensitive UI localStorage keys
     Object.values(SESSION_STORAGE_KEYS).forEach((key) => {
       sessionStorage.removeItem(key);
     });
     setUserId(null);
     setInitialProfiles(createDefaultProfiles());
     setProfiles(createDefaultProfiles());
-    // Force a full page reload to reset all React state
     window.location.reload();
   };
 
   const handleDisconnectTrakt = () => {
-    setTraktToken(null);
-    setTraktRefreshToken(null);
+    // Trakt disconnect: update the configure endpoint to remove trakt token
+    if (userId) {
+      api.configure({
+        userId,
+        profiles: profilesToApiPayload(profiles),
+        activeProfileId,
+        traktToken: null,
+        traktRefreshToken: null,
+      }).catch(() => { });
+    }
   };
 
-  const isLoggedIn = Boolean(userId || stremioAuth);
+  const isLoggedIn = Boolean(userId || isAuthenticated);
 
   if (!isLoaded || !authLoaded || !configDecoded) {
     return (
@@ -407,10 +370,9 @@ export default function Home() {
                 <SettingsPage
                   profiles={profiles}
                   activeProfileId={activeProfileId}
-                  stremioEmail={stremioAuth?.email}
-                  stremioAuthKey={stremioAuth?.authKey}
-                  traktToken={traktToken}
-                  traktRefreshToken={traktRefreshToken}
+                  stremioEmail={user?.email}
+                  traktToken={user?.traktToken}
+                  traktRefreshToken={user?.traktRefreshToken}
                   configVersion={configVersion}
                   userId={userId ?? undefined}
                   globalTmdbKey={globalTmdbKey}

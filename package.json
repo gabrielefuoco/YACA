@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node --expose-gc index.js",
-    "dev": "node index.js",
+    "start": "node --expose-gc server.js",
+    "start:api": "node --expose-gc index.js",
+    "dev": "node server.js",
     "build": "cd frontend && npm run build",
     "test": "jest",
     "lint": "eslint ."
@@ -22,7 +23,11 @@
     "express-rate-limit": "^8.1.0",
     "ioredis": "^5.10.0",
     "mongoose": "^9.2.3",
-    "nanoid": "^5.1.6"
+    "mongoose-field-encryption": "^7.0.1",
+    "nanoid": "^5.1.6",
+    "next": "^16.1.6",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

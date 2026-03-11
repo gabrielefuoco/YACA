@@ -1,10 +1,24 @@
 /**
  * UserConfig Manager: Gestisce il caricamento e il salvataggio delle configurazioni utente.
- * Supporta sia il nuovo modello stateful (MongoDB via userId) che il vecchio stateless (Base64).
+ * Supporta il modello stateful (MongoDB via userId) con riconciliazione sicura.
+ *
+ * REGOLE:
+ * - VIETATE le mutazioni distruttive: mai sovrascrivere campi validi con null/undefined/stringa vuota.
+ * - Riconciliazione con ordine gerarchico stretto: userId → email → stremioAuthHash.
+ * - L'hash SHA-256 dell'authKey Stremio (stremioAuthHash) è usato per lookup sicuro.
  */
 
 const { nanoid } = require('nanoid');
 const User = require('../db/models/User');
+const { hashValue } = require('../db/models/User');
+
+/**
+ * Verifica se un valore è una stringa non-vuota valida.
+ * Usato per prevenire sovrascritture distruttive.
+ */
+function isValidString(value) {
+    return typeof value === 'string' && value.trim().length > 0;
+}
 
 const UserConfig = {
     /**
@@ -22,10 +36,19 @@ const UserConfig = {
     },
 
     /**
-     * Salva o aggiorna un utente nel database.
+     * Salva o aggiorna un utente nel database con riconciliazione sicura.
      * Se userData.userId non esiste, ne genera uno nuovo.
+     *
+     * Riconciliazione gerarchica:
+     *   1. userId (se fornito, lookup diretto)
+     *   2. email (se fornita e non trovato via userId)
+     *   3. stremioAuthHash (hash dell'authKey Stremio)
+     *
+     * Regola anti-sovrascrittura: i campi stringa preesistenti non vengono mai sovrascritti
+     * da valori null, undefined o stringa vuota provenienti da payload parziali.
+     *
      * @param {object} userData - Dati dell'utente
-     * @returns {Promise<object>} Il documento salvato
+     * @returns {Promise<{user: object, isNewUser: boolean}>} Il documento salvato e flag nuovo utente
      */
     async saveUser(userData) {
         try {
@@ -33,26 +56,40 @@ const UserConfig = {
             const email = userData.email;
             let targetUserId = userData.userId;
 
-            // 1. RECONCILIATION: Find existing user
+            // 1. RECONCILIATION: Ordine gerarchico stretto (userId → email → stremioAuthHash)
             let existingUser = null;
-            if (email) {
-                existingUser = await User.findOne({ email });
-            }
-            if (!existingUser && stremioKey) {
-                existingUser = await User.findOne({ 'apiKeys.stremio': stremioKey });
+
+            // Step 1a: Lookup per userId (priorità massima)
+            if (targetUserId) {
+                existingUser = await User.findOne({ userId: targetUserId });
             }
 
-            // If we found an existing user, we MUST use their ID
+            // Step 1b: Lookup per email (se non trovato via userId)
+            if (!existingUser && isValidString(email)) {
+                existingUser = await User.findOne({ email });
+            }
+
+            // Step 1c: Lookup per stremioAuthHash (se non trovato via email)
+            if (!existingUser && isValidString(stremioKey)) {
+                const hash = hashValue(stremioKey);
+                if (hash) {
+                    existingUser = await User.findOne({ stremioAuthHash: hash });
+                }
+            }
+
+            const isNewUser = !existingUser;
+
+            // Se abbiamo trovato un utente esistente, DOBBIAMO usare il suo ID
             if (existingUser) {
                 targetUserId = existingUser.userId;
             }
 
-            // If still no userId, generate a new one
+            // Se ancora nessun userId, generiamo uno nuovo
             if (!targetUserId) {
                 targetUserId = nanoid(10);
             }
 
-            // 2. DATA PRESERVATION & MERGING
+            // 2. DATA PRESERVATION & MERGING (Anti-sovrascrittura)
             if (existingUser) {
                 // Preserve profiles if incoming are empty
                 if (!userData.profiles?.length && existingUser.profiles?.length) {
@@ -77,37 +114,28 @@ const UserConfig = {
                     });
                 }
 
-                // Merge API Keys: preserve existing if incoming are null/missing
-                const mergedApiKeys = {
-                    ...existingUser.apiKeys?.toObject?.() || existingUser.apiKeys,
-                    ...userData.apiKeys
-                };
+                // Merge API Keys: SAFE merge — mai sovrascrivere valori validi con null/vuoto
+                const existingApiKeys = existingUser.apiKeys?.toObject?.() || existingUser.apiKeys || {};
+                const incomingApiKeys = userData.apiKeys || {};
+                const mergedApiKeys = { ...existingApiKeys };
 
-                // Specific check for Trakt: if incoming is missing, preserve existing
-                if (!userData.apiKeys?.trakt && existingUser.apiKeys?.trakt) {
-                    mergedApiKeys.trakt = existingUser.apiKeys.trakt;
-                }
-                if (!userData.apiKeys?.traktRefreshToken && existingUser.apiKeys?.traktRefreshToken) {
-                    mergedApiKeys.traktRefreshToken = existingUser.apiKeys.traktRefreshToken;
-                }
-                if (!userData.apiKeys?.stremioPass && existingUser.apiKeys?.stremioPass) {
-                    mergedApiKeys.stremioPass = existingUser.apiKeys.stremioPass;
-                }
-                if (!userData.apiKeys?.mistral && existingUser.apiKeys?.mistral) {
-                    mergedApiKeys.mistral = existingUser.apiKeys.mistral;
-                }
-                if (!userData.apiKeys?.tmdb && existingUser.apiKeys?.tmdb) {
-                    mergedApiKeys.tmdb = existingUser.apiKeys.tmdb;
+                const apiKeyFields = ['tmdb', 'trakt', 'traktRefreshToken', 'mistral', 'mdblist', 'stremio', 'stremioPass'];
+                for (const field of apiKeyFields) {
+                    if (isValidString(incomingApiKeys[field])) {
+                        // Il valore incoming è valido → usa quello
+                        mergedApiKeys[field] = incomingApiKeys[field];
+                    }
+                    // Se incoming è null/undefined/vuoto, mantieni il valore esistente (già nel merge base)
                 }
 
                 userData.apiKeys = mergedApiKeys;
 
-                // Preserve Email
-                if (!userData.email && existingUser.email) {
+                // Preserve Email: non sovrascrivere email valida con null/vuoto
+                if (!isValidString(userData.email) && isValidString(existingUser.email)) {
                     userData.email = existingUser.email;
                 }
 
-                // Preserve Config
+                // Preserve Config: merge conservativo
                 userData.config = {
                     ...existingUser.config?.toObject?.() || existingUser.config,
                     ...userData.config
@@ -117,14 +145,19 @@ const UserConfig = {
             // Ensure userId is the one we decided on
             userData.userId = targetUserId;
 
+            // Calcola stremioAuthHash per lookup sicuro
+            const finalStremioKey = userData.apiKeys?.stremio;
+            if (isValidString(finalStremioKey)) {
+                userData.stremioAuthHash = hashValue(finalStremioKey);
+            }
+
             // 3. FINAL SAVE
-            // We use findOneAndUpdate with the stable targetUserId
             const updatedUser = await User.findOneAndUpdate(
                 { userId: targetUserId },
                 { $set: userData },
                 { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
             );
-            return updatedUser;
+            return { user: updatedUser, isNewUser };
         } catch (err) {
             console.error(`Errore salvataggio utente:`, err.message);
             throw err;
