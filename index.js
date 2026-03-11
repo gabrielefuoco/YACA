@@ -67,6 +67,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '1mb' }));
 
 // Sessione utente via cookie HttpOnly (sostituisce localStorage per auth)
+if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+    console.error('FATAL: SESSION_SECRET is required in production. Set it as an environment variable.');
+    process.exit(1);
+}
 const sessionSecret = process.env.SESSION_SECRET || 'yaca-dev-secret-change-in-production';
 app.use(session({
     secret: sessionSecret,
