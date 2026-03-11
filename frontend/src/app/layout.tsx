@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,11 +19,13 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
       </head>
       <body className="antialiased font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
-          <div className="layout-container flex h-full grow flex-col">
-            {children}
+        <AuthProvider>
+          <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+            <div className="layout-container flex h-full grow flex-col">
+              {children}
+            </div>
           </div>
-        </div>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,10 +1,10 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '@/lib/api';
+import { useSession, signIn, signOut } from 'next-auth/react';
+import { useCallback } from 'react';
 
 /**
- * Dati della sessione utente ricevuti dal backend.
- * Nessun dato sensibile è memorizzato lato client (no localStorage per auth).
+ * Dati della sessione utente derivati dal JWT di NextAuth.
+ * Nessun dato sensibile è memorizzato lato client (no localStorage, no sessionStorage per auth).
  */
 export interface SessionUser {
   userId: string;
@@ -17,58 +17,67 @@ export interface SessionUser {
   configVersion: string | null;
 }
 
+/**
+ * Hook di autenticazione basato su NextAuth.js.
+ * Wrappa useSession() e fornisce un'interfaccia compatibile con il resto dell'app.
+ *
+ * NON usa localStorage o sessionStorage per dati di autenticazione.
+ * I cookie JWT HttpOnly sono gestiti automaticamente da NextAuth.
+ */
 export function useAuth() {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const { data: session, status, update } = useSession();
 
-  // Carica la sessione dal backend via cookie HttpOnly
-  const refreshSession = useCallback(async () => {
-    try {
-      const data = await api.authSession();
-      if (data.authenticated && data.user) {
-        setUser(data.user);
-      } else {
-        setUser(null);
+  // Mappa i dati della sessione NextAuth alla struttura SessionUser
+  const user: SessionUser | null = session?.user
+    ? {
+        userId: (session.user as any).userId ?? '',
+        email: session.user.email ?? '',
+        isNewUser: (session.user as any).isNewUser ?? false,
+        traktToken: (session.user as any).traktToken ?? null,
+        traktRefreshToken: (session.user as any).traktRefreshToken ?? null,
+        profiles: (session.user as any).profiles ?? [],
+        activeProfileId: (session.user as any).activeProfileId ?? 'global',
+        configVersion: null,
       }
-    } catch {
-      setUser(null);
-    } finally {
-      setIsLoaded(true);
+    : null;
+
+  /**
+   * Login tramite NextAuth CredentialsProvider.
+   * Chiama signIn("credentials", ...) che invoca la funzione authorize()
+   * nel file auth.ts, che a sua volta valida le credenziali contro Stremio API.
+   */
+  const login = useCallback(async (email: string, password: string) => {
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      return { success: false, error: result.error };
     }
+    return { success: true };
   }, []);
 
-  useEffect(() => {
-    refreshSession();
-  }, [refreshSession]);
+  /**
+   * Logout: distrugge il cookie JWT HttpOnly.
+   */
+  const logout = useCallback(async () => {
+    await signOut({ redirect: false });
+  }, []);
 
-  const login = async (email: string, password: string) => {
-    const data = await api.authLogin(email, password);
-    if (data.success) {
-      setUser({
-        userId: data.userId,
-        email: data.email,
-        isNewUser: data.isNewUser,
-        traktToken: data.traktToken,
-        traktRefreshToken: data.traktRefreshToken,
-        profiles: data.profiles,
-        activeProfileId: data.activeProfileId,
-        configVersion: null,
-      });
-    }
-    return data;
-  };
-
-  const logout = async () => {
-    try {
-      await api.authLogout();
-    } catch { /* ignore */ }
-    setUser(null);
-  };
+  /**
+   * Refresh della sessione: forza il rinnovo del token JWT.
+   * Utile dopo aver aggiornato i dati utente sul backend (es. dopo configure).
+   */
+  const refreshSession = useCallback(async () => {
+    await update();
+  }, [update]);
 
   return {
     user,
-    isAuthenticated: Boolean(user),
-    isLoaded,
+    isAuthenticated: status === 'authenticated',
+    isLoaded: status !== 'loading',
     login,
     logout,
     refreshSession,

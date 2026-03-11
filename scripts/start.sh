@@ -14,5 +14,5 @@ done
 
 echo "✅ Redis is ready."
 
-# Start the Node.js application
-exec node --expose-gc index.js
+# Start the Node.js application (Express + Next.js custom server)
+exec node --expose-gc server.js

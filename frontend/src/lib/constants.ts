@@ -62,9 +62,9 @@ export const LANGUAGES = [
 export const LOCAL_STORAGE_KEYS = {
   CONFIG: 'yaca_config',
   MY_LISTS: 'yaca_my_lists',
-  // Auth tokens (STREMIO_AUTH, TRAKT_TOKEN, TRAKT_REFRESH_TOKEN, USER_ID)
-  // sono stati migrati a cookie HttpOnly lato server.
-  // I seguenti restano per retrocompatibilità e cleanup al logout.
+  // Auth gestita interamente da NextAuth.js (cookie JWT HttpOnly).
+  // Nessun token o dato sensibile in localStorage.
+  // USER_ID mantenuto solo per cleanup retrocompatibilità al logout.
   USER_ID: 'yaca_user_id',
 } as const;
 

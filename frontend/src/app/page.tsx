@@ -236,8 +236,10 @@ export default function Home() {
       }
     } catch { }
 
-    // Refresh session to update user data
-    await refreshSession();
+    // Refresh della sessione NextAuth per aggiornare i dati utente
+    try {
+      await refreshSession();
+    } catch { /* NextAuth refresh is best-effort */ }
   };
 
   const handleConfigSaved = (newUserId?: string) => {

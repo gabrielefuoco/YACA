@@ -1,10 +1,12 @@
 'use client';
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TraktAuthModal } from '@/components/modals/TraktAuthModal';
 import { api } from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2, CheckCircle2, ChevronRight, Tv2, Film, KeyRound, Sparkles, Zap } from 'lucide-react';
 
 interface LoginPageProps {
@@ -19,6 +21,9 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onComplete }: LoginPageProps) {
+  const { login } = useAuth();
+  const { update: updateSession } = useSession();
+
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,7 +48,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
   const [tmdbKey, setTmdbKey] = useState('');
   const [savingKeys, setSavingKeys] = useState(false);
 
-  // Step 1: Login Stremio via sessione backend
+  // Step 1: Login Stremio tramite NextAuth CredentialsProvider
   const handleStremioLogin = async () => {
     if (!email.trim() || !password.trim()) {
       setError('Inserisci email e password');
@@ -52,20 +57,30 @@ export function LoginPage({ onComplete }: LoginPageProps) {
     setLoading(true);
     setError('');
     try {
-      const data = await api.authLogin(email, password);
-      if (data.success) {
+      const loginRes = await login(email, password);
+      if (loginRes.success) {
+        // Dopo il signIn, forza il refresh della sessione per ottenere i dati utente
+        const freshSession = await updateSession();
+        const sessionUser = (freshSession as any)?.user;
+
+        if (!sessionUser?.userId) {
+          setError('Errore nel recupero della sessione. Riprova.');
+          setLoading(false);
+          return;
+        }
+
         const result = {
-          userId: data.userId,
-          email: data.email,
-          isNewUser: data.isNewUser,
-          traktToken: data.traktToken || null,
-          traktRefreshToken: data.traktRefreshToken || null,
-          profiles: data.profiles || [],
-          activeProfileId: data.activeProfileId || 'global',
+          userId: sessionUser.userId,
+          email: sessionUser.email ?? email,
+          isNewUser: sessionUser.isNewUser ?? false,
+          traktToken: sessionUser.traktToken || null,
+          traktRefreshToken: sessionUser.traktRefreshToken || null,
+          profiles: sessionUser.profiles || [],
+          activeProfileId: sessionUser.activeProfileId || 'global',
         };
         setLoginResult(result);
 
-        if (!data.isNewUser) {
+        if (!result.isNewUser) {
           // Utente esistente: salta onboarding, vai direttamente alla dashboard
           setConfiguring(true);
           onComplete(result);
@@ -76,7 +91,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
         // Nuovo utente: procedi all'onboarding BYOK (Step 2)
         setStep(2);
       } else {
-        setError(data.error ?? 'Credenziali non valide');
+        setError(loginRes.error ?? 'Credenziali non valide');
       }
     } catch {
       setError('Errore di connessione');

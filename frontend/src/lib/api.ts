@@ -16,11 +16,7 @@ async function get(url: string) {
 }
 
 export const api = {
-  // Auth endpoints (session-based, HttpOnly cookie)
-  authLogin: (email: string, password: string) =>
-    post('/api/auth/login', { email, password }),
-  authLogout: () => post('/api/auth/logout'),
-  authSession: () => get('/api/auth/session'),
+  // Auth gestita da NextAuth.js (/api/auth/*) — nessun endpoint custom necessario
 
   getPresets: () => get('/api/presets'),
   previewCatalog: (body: object) => post('/api/preview-catalog', body),
