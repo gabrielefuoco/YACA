@@ -32,7 +32,6 @@ export function ProfileSettingsPanel({
     const isGlobalProfile = profile.id === 'global';
 
     const handleAddDNA = (item: DNAItem) => {
-        if (isGlobalProfile) return;
         if (profileDNA.find((p) => String(p.id) === String(item.id))) return;
         const newDNA = [...profileDNA, item];
         onUpdateProfile(profile.id, {
@@ -41,7 +40,6 @@ export function ProfileSettingsPanel({
     };
 
     const handleRemoveDNA = (id: string) => {
-        if (isGlobalProfile) return;
         const newDNA = profileDNA.filter((p) => String(p.id) !== String(id));
         onUpdateProfile(profile.id, {
             settings: { ...profile.settings, manualDNA: newDNA },
@@ -155,8 +153,7 @@ export function ProfileSettingsPanel({
                             )}
                         </div>
 
-                        {!isGlobalProfile && (
-                            <div className="rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 p-4">
+                        <div className="rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 p-4">
                                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">Forza Gusti (DNA Manuale)</p>
                                 <div className="flex flex-wrap gap-2 mb-3">
                                     {profileDNA.map((p) => (
@@ -193,7 +190,6 @@ export function ProfileSettingsPanel({
                                     </div>
                                 </div>
                             </div>
-                        )}
                     </div>
                 </div>
             </div>
