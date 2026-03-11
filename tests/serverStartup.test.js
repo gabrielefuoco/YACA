@@ -10,7 +10,8 @@ describe('server startup guards', () => {
         const result = spawnSync('node', ['server.js'], {
             cwd: repoRoot,
             env: envWithoutSecret,
-            encoding: 'utf8'
+            encoding: 'utf8',
+            timeout: 5000
         });
 
         expect(result.status).toBe(1);
