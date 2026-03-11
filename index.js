@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const { createAxiosInstance } = require('./src/utils/httpClient');
 const rateLimit = require('express-rate-limit');
 
@@ -23,6 +25,7 @@ const { updateStremioAddonCollection } = require('./src/utils/stremioAddonSync')
 const { syncAllStremioData } = require('./src/utils/stremioSync');
 const connectDB = require('./src/db/connection');
 const User = require('./src/db/models/User');
+const { hashValue } = require('./src/db/models/User');
 const { syncIncrementalRecommendations } = require('./src/engines/hybridRecommendations');
 const { generateMergedName } = require('./src/api/mergeRoutes');
 const { getProfileAnalytics } = require('./src/api/analytics');
@@ -56,12 +59,33 @@ const badgeLimiter = rateLimit({
 // CORS configurabile tramite variabile d'ambiente (default: permissivo per retrocompatibilità con Stremio)
 const corsOrigins = process.env.CORS_ALLOWED_ORIGINS;
 const corsOptions = corsOrigins
-    ? { origin: corsOrigins.split(',').map(o => o.trim()), methods: ['GET', 'POST'] }
-    : { methods: ['GET', 'POST'] };
+    ? { origin: corsOrigins.split(',').map(o => o.trim()), methods: ['GET', 'POST'], credentials: true }
+    : { methods: ['GET', 'POST'], credentials: true };
 app.use(cors(corsOptions));
 app.use(express.static(path.join(__dirname, 'frontend', 'out')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '1mb' }));
+
+// Sessione utente via cookie HttpOnly (sostituisce localStorage per auth)
+const sessionSecret = process.env.SESSION_SECRET || 'yaca-dev-secret-change-in-production';
+app.use(session({
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    store: process.env.MONGODB_URI
+        ? MongoStore.create({
+            mongoUrl: process.env.MONGODB_URI,
+            collectionName: 'sessions',
+            ttl: 30 * 24 * 60 * 60 // 30 giorni
+        })
+        : undefined,
+    cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 giorni
+    }
+}));
 
 /**
  * Helper per risolvere la configurazione utente (Stateful).
@@ -438,7 +462,109 @@ app.post('/api/validate-tmdb-key', async (req, res) => {
     }
 });
 
-// Stremio API: Login con credenziali Stremio per ottenere authKey
+// ==========================================
+// AUTH ENDPOINTS (Session-based, HttpOnly cookie)
+// ==========================================
+
+/**
+ * POST /api/auth/login
+ * Autentica l'utente tramite credenziali Stremio, crea la sessione e salva/aggiorna l'utente su DB.
+ * Restituisce un flag `isNewUser` per innescare il flusso di onboarding BYOK.
+ */
+app.post('/api/auth/login', async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ success: false, error: 'Email e password obbligatorie' });
+    }
+    try {
+        // 1. Valida credenziali contro Stremio API
+        const stremioRes = await stremioClient.post('/api/login', { email, password }, { timeout: 10000 });
+        const data = stremioRes.data;
+        if (!data?.result?.authKey) {
+            return res.json({ success: false, error: data?.result?.error || 'Credenziali non valide' });
+        }
+
+        const authKey = data.result.authKey;
+        const userEmail = data.result.user?.email || email;
+
+        // 2. Salva/aggiorna utente su DB con riconciliazione sicura
+        const { user: userDoc, isNewUser } = await UserConfig.saveUser({
+            apiKeys: { stremio: authKey, stremioPass: password },
+            email: userEmail
+        });
+
+        // 3. Crea sessione HttpOnly
+        req.session.userId = userDoc.userId;
+        req.session.email = userEmail;
+        req.session.isNewUser = isNewUser;
+
+        return res.json({
+            success: true,
+            userId: userDoc.userId,
+            email: userEmail,
+            isNewUser,
+            traktToken: userDoc.apiKeys?.trakt || null,
+            traktRefreshToken: userDoc.apiKeys?.traktRefreshToken || null,
+            profiles: userDoc.profiles || [],
+            activeProfileId: userDoc.config?.activeProfileId || 'global'
+        });
+    } catch (err) {
+        console.error('[Auth Login] Error:', err.message);
+        return res.json({ success: false, error: 'Errore di connessione al servizio di autenticazione.' });
+    }
+});
+
+/**
+ * POST /api/auth/logout
+ * Distrugge la sessione utente.
+ */
+app.post('/api/auth/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('[Auth Logout] Error:', err.message);
+            return res.status(500).json({ success: false, error: 'Errore durante il logout' });
+        }
+        res.clearCookie('connect.sid');
+        return res.json({ success: true });
+    });
+});
+
+/**
+ * GET /api/auth/session
+ * Restituisce i dati della sessione corrente (userId, email, isNewUser).
+ * Se non autenticato, restituisce null.
+ */
+app.get('/api/auth/session', async (req, res) => {
+    if (!req.session?.userId) {
+        return res.json({ authenticated: false, user: null });
+    }
+    try {
+        const user = await UserConfig.getUser(req.session.userId);
+        if (!user) {
+            return res.json({ authenticated: false, user: null });
+        }
+        return res.json({
+            authenticated: true,
+            user: {
+                userId: user.userId,
+                email: user.email || req.session.email,
+                isNewUser: req.session.isNewUser || false,
+                traktToken: user.apiKeys?.trakt || null,
+                traktRefreshToken: user.apiKeys?.traktRefreshToken || null,
+                profiles: user.profiles || [],
+                activeProfileId: user.config?.activeProfileId || 'global',
+                configVersion: user.config?.configVersion || null
+            }
+        });
+    } catch (err) {
+        console.error('[Auth Session] Error:', err.message);
+        return res.json({ authenticated: false, user: null });
+    }
+});
+
+// ==========================================
+
+// Stremio API: Login con credenziali Stremio per ottenere authKey (legacy endpoint, mantenuto per retrocompatibilità)
 app.post('/api/stremio-auth', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -468,7 +594,10 @@ app.post('/api/check-user', async (req, res) => {
             existingUser = await User.findOne({ email }).lean();
         }
         if (!existingUser && authKey) {
-            existingUser = await User.findOne({ 'apiKeys.stremio': authKey }).lean();
+            const authHash = hashValue(authKey);
+            if (authHash) {
+                existingUser = await User.findOne({ stremioAuthHash: authHash }).lean();
+            }
         }
 
         if (existingUser?.userId) {
@@ -752,7 +881,7 @@ app.get('/api/cron/warmup', async (req, res) => {
     // Warmup Fase 3: Stremio & Trakt Sync (Throttled & Randomized)
     console.log("🔥 Avvio Sync Dati Stremio/Trakt per utenti registrati...");
     try {
-        const users = await User.find({ 'apiKeys.stremio': { $exists: true, $ne: null } });
+        const users = await User.find({ stremioAuthHash: { $exists: true, $ne: null } });
         const now = new Date();
 
         await rateLimitedMap(

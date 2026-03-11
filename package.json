@@ -16,12 +16,15 @@
   "dependencies": {
     "@mistralai/mistralai": "^1.14.0",
     "axios": "^1.13.5",
+    "connect-mongo": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.1.0",
+    "express-session": "^1.19.0",
     "ioredis": "^5.10.0",
     "mongoose": "^9.2.3",
+    "mongoose-field-encryption": "^7.0.1",
     "nanoid": "^5.1.6"
   },
   "devDependencies": {

@@ -382,7 +382,7 @@ module.exports = async (req, res) => {
         const configVersion = Date.now().toString(36);
 
         // 4. PERSISTENZA MONGODB (New Stateful Flow)
-        const userDoc = await UserConfig.saveUser({
+        const { user: userDoc } = await UserConfig.saveUser({
             userId: finalUserId,
             apiKeys: {
                 tmdb: personalTmdbKey,

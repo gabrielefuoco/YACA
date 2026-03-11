@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
+const { fieldEncryption } = require('mongoose-field-encryption');
 
 const userSchema = new mongoose.Schema({
     userId: {
@@ -12,7 +14,13 @@ const userSchema = new mongoose.Schema({
         sparse: true,
         index: true
     },
-    // Chiavi API salvate (non criptate per specifica semplificata)
+    // Hash SHA-256 dell'authKey Stremio per lookup sicuro (il valore originale è crittografato)
+    stremioAuthHash: {
+        type: String,
+        sparse: true,
+        index: true
+    },
+    // Chiavi API salvate — crittografate a riposo via mongoose-field-encryption
     apiKeys: {
         tmdb: String,
         trakt: String, // Access Token
@@ -20,7 +28,7 @@ const userSchema = new mongoose.Schema({
         mistral: String,
         mdblist: String,
         stremio: String,
-        stremioPass: String // Salva password Stremio per auto-login
+        stremioPass: String
     },
     // Configurazioni globali dell'Addon
     config: {
@@ -65,8 +73,37 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
-userSchema.index({ 'apiKeys.stremio': 1 }, { unique: true, sparse: true });
+// Crittografia a riposo: tutti i campi sensibili in apiKeys vengono crittografati prima del salvataggio su DB
+const encryptionKey = process.env.DATABASE_ENCRYPTION_KEY;
+if (encryptionKey) {
+    userSchema.plugin(fieldEncryption, {
+        fields: [
+            'apiKeys.stremio',
+            'apiKeys.stremioPass',
+            'apiKeys.tmdb',
+            'apiKeys.trakt',
+            'apiKeys.traktRefreshToken',
+            'apiKeys.mistral',
+            'apiKeys.mdblist'
+        ],
+        secret: encryptionKey,
+        saltGenerator: () => crypto.randomBytes(16).toString('hex')
+    });
+}
+
+// Indice per lookup sicuro via hash dell'authKey Stremio
+userSchema.index({ stremioAuthHash: 1 }, { unique: true, sparse: true });
+
+/**
+ * Genera un hash SHA-256 deterministico di un valore.
+ * Usato per creare stremioAuthHash a partire dall'authKey Stremio.
+ */
+function hashValue(value) {
+    if (!value || typeof value !== 'string') return null;
+    return crypto.createHash('sha256').update(value).digest('hex');
+}
 
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
+module.exports.hashValue = hashValue;
