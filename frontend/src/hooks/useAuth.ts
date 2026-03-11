@@ -30,13 +30,13 @@ export function useAuth() {
   // Mappa i dati della sessione NextAuth alla struttura SessionUser
   const user: SessionUser | null = session?.user
     ? {
-        userId: (session.user as any).userId ?? '',
+        userId: session.user.userId ?? '',
         email: session.user.email ?? '',
-        isNewUser: (session.user as any).isNewUser ?? false,
-        traktToken: (session.user as any).traktToken ?? null,
-        traktRefreshToken: (session.user as any).traktRefreshToken ?? null,
-        profiles: (session.user as any).profiles ?? [],
-        activeProfileId: (session.user as any).activeProfileId ?? 'global',
+        isNewUser: session.user.isNewUser ?? false,
+        traktToken: session.user.traktToken ?? null,
+        traktRefreshToken: session.user.traktRefreshToken ?? null,
+        profiles: session.user.profiles ?? [],
+        activeProfileId: session.user.activeProfileId ?? 'global',
         configVersion: null,
       }
     : null;

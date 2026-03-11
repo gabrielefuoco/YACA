@@ -14,6 +14,7 @@
 
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import path from "path";
 
 /**
  * Accede al modulo UserConfig del backend Express.
@@ -22,8 +23,9 @@ import Credentials from "next-auth/providers/credentials";
  * per evitare errori durante il build di Next.js.
  */
 function getUserConfig() {
+  const modulePath = path.resolve(process.cwd(), 'src/models/UserConfig');
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require(/* webpackIgnore: true */ '../../../../src/models/UserConfig');
+  return require(/* webpackIgnore: true */ modulePath);
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -93,12 +95,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         // Primo login: inietta i dati dell'utente nel token
-        token.userId = (user as any).id;
-        token.isNewUser = (user as any).isNewUser;
-        token.traktToken = (user as any).traktToken;
-        token.traktRefreshToken = (user as any).traktRefreshToken;
-        token.profiles = (user as any).profiles;
-        token.activeProfileId = (user as any).activeProfileId;
+        token.userId = user.id;
+        token.isNewUser = user.isNewUser;
+        token.traktToken = user.traktToken;
+        token.traktRefreshToken = user.traktRefreshToken;
+        token.profiles = user.profiles;
+        token.activeProfileId = user.activeProfileId;
       }
       return token;
     },
@@ -110,12 +112,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
      */
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).userId = token.userId;
-        (session.user as any).isNewUser = token.isNewUser;
-        (session.user as any).traktToken = token.traktToken;
-        (session.user as any).traktRefreshToken = token.traktRefreshToken;
-        (session.user as any).profiles = token.profiles;
-        (session.user as any).activeProfileId = token.activeProfileId;
+        session.user.userId = token.userId ?? '';
+        session.user.isNewUser = token.isNewUser ?? false;
+        session.user.traktToken = token.traktToken ?? null;
+        session.user.traktRefreshToken = token.traktRefreshToken ?? null;
+        session.user.profiles = token.profiles ?? [];
+        session.user.activeProfileId = token.activeProfileId ?? 'global';
       }
       return session;
     },

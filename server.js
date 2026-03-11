@@ -35,7 +35,7 @@ async function main() {
 
     // 4. Delega tutto il resto a Next.js (pagine frontend + /api/auth/*)
     //    Next.js gestirà automaticamente i cookie di sessione JWT via NextAuth
-    expressApp.all('/{*path}', (req, res) => {
+    expressApp.all('*', (req, res) => {
         return nextHandle(req, res);
     });
 
