@@ -882,7 +882,8 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     }
 
     // Manual popularity filter: TMDB ignores popularity.lte, so we enforce it in JS
-    pool = pool.filter(item => (item.popularity ?? Infinity) <= 80);
+    // Items without popularity data are kept (they may be from cache sources without this field)
+    pool = pool.filter(item => item.popularity == null || item.popularity <= 80);
 
     // Two-Tier Scoring: Light → taglio → Deep
     const scored = await twoTierScore(pool, profile, { tmdbApiKey, types, dnaFilters, globalProfile, catalogContext: 'hidden_gems' });
