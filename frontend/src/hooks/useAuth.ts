@@ -1,66 +1,76 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { StremioAuth } from '@/types';
-import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
+import { useState, useEffect, useCallback } from 'react';
+import { api } from '@/lib/api';
+
+/**
+ * Dati della sessione utente ricevuti dal backend.
+ * Nessun dato sensibile è memorizzato lato client (no localStorage per auth).
+ */
+export interface SessionUser {
+  userId: string;
+  email: string;
+  isNewUser: boolean;
+  traktToken: string | null;
+  traktRefreshToken: string | null;
+  profiles: any[];
+  activeProfileId: string;
+  configVersion: string | null;
+}
 
 export function useAuth() {
-  const [stremioAuth, setStremioAuthState] = useState<StremioAuth | null>(null);
-  const [traktToken, setTraktTokenState] = useState<string | null>(null);
-  const [traktRefreshToken, setTraktRefreshTokenState] = useState<string | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
+  // Carica la sessione dal backend via cookie HttpOnly
+  const refreshSession = useCallback(async () => {
     try {
-      const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.STREMIO_AUTH);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (raw) setStremioAuthState(JSON.parse(raw));
-    } catch { }
-    setTraktTokenState(localStorage.getItem(LOCAL_STORAGE_KEYS.TRAKT_TOKEN));
-    setTraktRefreshTokenState(localStorage.getItem(LOCAL_STORAGE_KEYS.TRAKT_REFRESH_TOKEN));
-    setIsLoaded(true);
+      const data = await api.authSession();
+      if (data.authenticated && data.user) {
+        setUser(data.user);
+      } else {
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    } finally {
+      setIsLoaded(true);
+    }
   }, []);
 
-  const setStremioAuth = (auth: StremioAuth | null) => {
-    setStremioAuthState(auth);
-    if (auth) {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.STREMIO_AUTH, JSON.stringify(auth));
-    } else {
-      localStorage.removeItem(LOCAL_STORAGE_KEYS.STREMIO_AUTH);
+  useEffect(() => {
+    refreshSession();
+  }, [refreshSession]);
+
+  const login = async (email: string, password: string) => {
+    const data = await api.authLogin(email, password);
+    if (data.success) {
+      setUser({
+        userId: data.userId,
+        email: data.email,
+        isNewUser: data.isNewUser,
+        traktToken: data.traktToken,
+        traktRefreshToken: data.traktRefreshToken,
+        profiles: data.profiles,
+        activeProfileId: data.activeProfileId,
+        configVersion: null,
+      });
     }
+    return data;
   };
 
-  const setTraktToken = (token: string | null) => {
-    setTraktTokenState(token);
-    if (token) {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.TRAKT_TOKEN, token);
-    } else {
-      localStorage.removeItem(LOCAL_STORAGE_KEYS.TRAKT_TOKEN);
-    }
-  };
-
-  const setTraktRefreshToken = (token: string | null) => {
-    setTraktRefreshTokenState(token);
-    if (token) {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.TRAKT_REFRESH_TOKEN, token);
-    } else {
-      localStorage.removeItem(LOCAL_STORAGE_KEYS.TRAKT_REFRESH_TOKEN);
-    }
-  };
-
-  const logout = () => {
-    setStremioAuth(null);
-    setTraktToken(null);
-    setTraktRefreshToken(null);
+  const logout = async () => {
+    try {
+      await api.authLogout();
+    } catch { /* ignore */ }
+    setUser(null);
   };
 
   return {
-    stremioAuth,
-    traktToken,
-    traktRefreshToken,
+    user,
+    isAuthenticated: Boolean(user),
     isLoaded,
-    setStremioAuth,
-    setTraktToken,
-    setTraktRefreshToken,
+    login,
     logout,
+    refreshSession,
   };
 }

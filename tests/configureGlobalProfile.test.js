@@ -20,6 +20,11 @@ jest.mock('../src/data/presets', () => ({
     ]
 }));
 
+jest.mock('../src/db/models/UserList', () => ({
+    findOneAndUpdate: jest.fn().mockResolvedValue({}),
+    deleteMany: jest.fn().mockResolvedValue({})
+}));
+
 const configureRoute = require('../src/api/configure');
 const UserConfig = require('../src/models/UserConfig');
 
@@ -29,7 +34,7 @@ describe('configure route global profile safeguards', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         process.env = { ...originalEnv, TMDB_API_KEY: 'tmdb_key' };
-        UserConfig.saveUser.mockResolvedValue({ userId: 'u1' });
+        UserConfig.saveUser.mockResolvedValue({ user: { userId: 'u1' }, isNewUser: false });
     });
 
     afterAll(() => {

@@ -62,9 +62,9 @@ export const LANGUAGES = [
 export const LOCAL_STORAGE_KEYS = {
   CONFIG: 'yaca_config',
   MY_LISTS: 'yaca_my_lists',
-  STREMIO_AUTH: 'yaca_stremio_auth',
-  TRAKT_TOKEN: 'yaca_trakt_token',
-  TRAKT_REFRESH_TOKEN: 'yaca_trakt_refresh_token',
+  // Auth tokens (STREMIO_AUTH, TRAKT_TOKEN, TRAKT_REFRESH_TOKEN, USER_ID)
+  // sono stati migrati a cookie HttpOnly lato server.
+  // I seguenti restano per retrocompatibilità e cleanup al logout.
   USER_ID: 'yaca_user_id',
 } as const;
 

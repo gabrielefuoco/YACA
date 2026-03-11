@@ -620,7 +620,17 @@ app.post('/api/check-user', async (req, res) => {
 
 // Stremio API: Aggiorna addon nella collezione dell'utente (senza reinstallare manualmente)
 app.post('/api/stremio-addon-update', async (req, res) => {
-    const { authKey, manifestUrl } = req.body;
+    let authKey = req.body.authKey;
+    const { manifestUrl } = req.body;
+
+    // Se non fornito nel body, tenta di recuperare l'authKey dalla sessione utente
+    if (!authKey && req.session?.userId) {
+        try {
+            const sessionUser = await User.findOne({ userId: req.session.userId });
+            authKey = sessionUser?.apiKeys?.stremio || null;
+        } catch { /* ignore */ }
+    }
+
     if (!authKey || !manifestUrl) {
         return res.status(400).json({ success: false, error: 'authKey e manifestUrl obbligatori' });
     }

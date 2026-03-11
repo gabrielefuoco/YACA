@@ -126,7 +126,7 @@ describe('configure route - XSS sanitization', () => {
         buildConfig: jest.fn(),
         encodeConfig: jest.fn(),
         decodeConfig: jest.fn(),
-        saveUser: jest.fn().mockResolvedValue({ userId: 'u1', configVersion: 'cv1' })
+        saveUser: jest.fn().mockResolvedValue({ user: { userId: 'u1', configVersion: 'cv1' }, isNewUser: false })
     }));
 
     jest.mock('../src/ai/router', () => ({
@@ -137,16 +137,20 @@ describe('configure route - XSS sanitization', () => {
         getPresets: () => []
     }));
 
+    jest.mock('../src/db/models/UserList', () => ({
+        findOneAndUpdate: jest.fn().mockResolvedValue({}),
+        deleteMany: jest.fn().mockResolvedValue({})
+    }));
+
     const configureRoute = require('../src/api/configure');
     const UserConfig = require('../src/models/UserConfig');
 
     beforeEach(() => {
         jest.clearAllMocks();
+        UserConfig.saveUser.mockResolvedValue({ user: { userId: 'u1', configVersion: 'cv1' }, isNewUser: false });
     });
 
     it('should sanitize profile names with HTML content', async () => {
-        UserConfig.buildConfig.mockReturnValue({ config: {}, configBase64: 'abc123', configVersion: 'cv1' });
-
         const req = {
             protocol: 'http',
             get: jest.fn().mockReturnValue('localhost:7000'),
@@ -169,7 +173,7 @@ describe('configure route - XSS sanitization', () => {
 
         await configureRoute(req, res);
 
-        expect(UserConfig.buildConfig).toHaveBeenCalledWith(
+        expect(UserConfig.saveUser).toHaveBeenCalledWith(
             expect.objectContaining({
                 profiles: expect.arrayContaining([
                     expect.objectContaining({
