@@ -9,6 +9,12 @@
  */
 
 require('dotenv').config();
+
+if (!process.env.NEXTAUTH_SECRET) {
+    console.error('FATAL ERROR: NEXTAUTH_SECRET is missing. Shutting down.');
+    process.exit(1);
+}
+
 const path = require('path');
 const next = require('next');
 const connectDB = require('./src/db/connection');

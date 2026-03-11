@@ -18,8 +18,7 @@ Il backend risponde alle richieste standard di Stremio:
 Utilizzati dal sito di configurazione web per gestire l'utente e i profili.
 
 ### Gestione Utente
--   `POST /api/stremio-auth`: Effettua il login su Stremio per ottenere l' `authKey`.
--   `POST /api/check-user`: Verifica se un utente esiste già nel database YACA.
+-   L'autenticazione utente è gestita da NextAuth via `POST /api/auth/*`.
 -   `POST /api/configure`: Carica o aggiorna l'intera configurazione (profili, API key, preferenze).
 
 ### Utility e Preview
