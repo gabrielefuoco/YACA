@@ -23,21 +23,8 @@ async function getProfileAnalytics(req, res) {
         const profile = await TasteProfile.findOne({ owner: userId, context: profileId });
 
         // Build scores DTO from profile (or empty if profile doesn't exist yet)
-        const genreScores = {};
-        const keywordScores = {};
-
-        if (profile) {
-            if (profile.genreScores) {
-                for (const [key, value] of profile.genreScores.entries()) {
-                    genreScores[key] = value;
-                }
-            }
-            if (profile.keywordScores) {
-                for (const [key, value] of profile.keywordScores.entries()) {
-                    keywordScores[key] = value;
-                }
-            }
-        }
+        const genreScores = profile?.genreScores ? Object.fromEntries(profile.genreScores) : {};
+        const keywordScores = profile?.keywordScores ? Object.fromEntries(profile.keywordScores) : {};
 
         // Retrieve AI discovery logs from cache
         const aiLogs = {};
