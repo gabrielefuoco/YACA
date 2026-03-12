@@ -89,7 +89,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             activeProfileId: userDoc.config?.activeProfileId || "global",
           };
         } catch (error: unknown) {
-          const errorMessage = error instanceof Error ? error.message : error;
+          const errorMessage = error instanceof Error ? error.message : String(error);
           console.error("🔥 ERRORE DURANTE IL LOGIN:", errorMessage);
           return null;
         }
