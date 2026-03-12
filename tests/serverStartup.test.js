@@ -25,7 +25,12 @@ describe('server startup guards', () => {
         const redisClientPath = path.join(repoRoot, 'src', 'cache', 'redisClient.js');
         const indexPath = path.join(repoRoot, 'index.js');
 
-        const nextHandle = jest.fn();
+        let authUrlSeenByNext;
+        const nextHandle = jest.fn((req) => {
+            if (req.originalUrl && req.originalUrl.startsWith('/api/auth')) {
+                authUrlSeenByNext = req.url;
+            }
+        });
         const close = jest.fn();
         const prepare = jest.fn().mockResolvedValue(undefined);
         const use = jest.fn();
@@ -61,7 +66,7 @@ describe('server startup guards', () => {
             await new Promise(setImmediate);
             await new Promise(setImmediate);
 
-            const authReq = { url: '/api/auth/callback/credentials' };
+            const authReq = { originalUrl: '/api/auth/callback/credentials', url: '/callback/credentials' };
             const fallbackReq = { url: '/dashboard' };
             const res = { end: jest.fn() };
 
@@ -85,6 +90,8 @@ describe('server startup guards', () => {
 
             expect(nextHandle).toHaveBeenCalledWith(authReq, res);
             expect(nextHandle).toHaveBeenCalledWith(fallbackReq, res);
+            expect(authReq.url).toBe('/api/auth/callback/credentials');
+            expect(authUrlSeenByNext).toBe('/api/auth/callback/credentials');
         } finally {
             logSpy.mockRestore();
             warnSpy.mockRestore();
