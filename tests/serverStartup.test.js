@@ -1,4 +1,5 @@
 const { spawnSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 describe('server startup guards', () => {
@@ -61,7 +62,7 @@ describe('server startup guards', () => {
             await new Promise(setImmediate);
             await new Promise(setImmediate);
 
-            const authReq = { url: '/api/auth/callback/credentials' };
+            const authReq = { originalUrl: '/api/auth/callback/credentials', url: '/callback/credentials' };
             const fallbackReq = { url: '/dashboard' };
             const res = { end: jest.fn() };
 
@@ -85,6 +86,7 @@ describe('server startup guards', () => {
 
             expect(nextHandle).toHaveBeenCalledWith(authReq, res);
             expect(nextHandle).toHaveBeenCalledWith(fallbackReq, res);
+            expect(authReq.url).toBe('/api/auth/callback/credentials');
         } finally {
             logSpy.mockRestore();
             warnSpy.mockRestore();
@@ -98,5 +100,13 @@ describe('server startup guards', () => {
             jest.dontMock(indexPath);
             delete process.env.NEXTAUTH_SECRET;
         }
+    });
+
+    it('disables trailing slash in Next.js config', () => {
+        const repoRoot = path.resolve(__dirname, '..');
+        const nextConfigPath = path.join(repoRoot, 'frontend', 'next.config.ts');
+        const nextConfig = fs.readFileSync(nextConfigPath, 'utf8');
+
+        expect(nextConfig).toMatch(/trailingSlash:\s*false/);
     });
 });
