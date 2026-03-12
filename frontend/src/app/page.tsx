@@ -11,6 +11,7 @@ import { TabNav } from '@/components/layout/TabNav';
 import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
+import { TraktAuthModal } from '@/components/modals/TraktAuthModal';
 import { MyList, Profile } from '@/types';
 import { LOCAL_STORAGE_KEYS, SESSION_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 import { api } from '@/lib/api';
@@ -48,6 +49,7 @@ export default function Home() {
   const [configVersion, setConfigVersion] = useState<string | undefined>();
   const [initialProfiles, setInitialProfiles] = useState<Profile[] | undefined>(undefined);
   const [userId, setUserId] = useState<string | null>(null);
+  const [traktModalOpen, setTraktModalOpen] = useState(false);
   const [configDecoded, setConfigDecoded] = useState(false);
   const [globalTmdbKey, setGlobalTmdbKey] = useState<string>('');
   const [globalMistralKey, setGlobalMistralKey] = useState<string>('');
@@ -316,6 +318,30 @@ export default function Home() {
     }
   };
 
+  const handleConnectTrakt = () => {
+    setTraktModalOpen(true);
+  };
+
+  const handleTraktSuccess = async (token: string, refreshToken: string) => {
+    if (!userId) {
+      setTraktModalOpen(false);
+      return;
+    }
+    try {
+      await api.configure({
+        userId,
+        profiles: profilesToApiPayload(profiles),
+        activeProfileId,
+        traktToken: token,
+        traktRefreshToken: refreshToken,
+      });
+      await refreshSession();
+    } catch (err) {
+      console.warn('Trakt token sync failed:', err);
+    }
+    setTraktModalOpen(false);
+  };
+
   const isLoggedIn = Boolean(userId || isAuthenticated);
 
   if (!isLoaded || !authLoaded || !configDecoded) {
@@ -379,6 +405,7 @@ export default function Home() {
                   globalMistralKey={globalMistralKey}
                   onUpdateProfile={updateProfile}
                   onLogout={handleLogout}
+                  onConnectTrakt={handleConnectTrakt}
                   onDisconnectTrakt={handleDisconnectTrakt}
                   onConfigSaved={handleConfigSaved}
                 />
@@ -387,6 +414,11 @@ export default function Home() {
           )}
         </div>
       </main>
+      <TraktAuthModal
+        open={traktModalOpen}
+        onClose={() => setTraktModalOpen(false)}
+        onSuccess={handleTraktSuccess}
+      />
     </>
   );
 }
