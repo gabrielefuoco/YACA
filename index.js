@@ -15,7 +15,6 @@ const { parseExtra, sanitizeString, isAllowedUrl } = require('./src/utils/helper
 const { getBlurredImageUrl, addBadgeToImage } = require('./src/utils/imageProcessor');
 const { streamHandler } = require('./src/handlers/streamHandler');
 const { clearAllTmdbCaches } = require('./src/clients/tmdb');
-const { stremioClient } = require('./src/clients/stremio');
 const { traktClient } = require('./src/clients/trakt');
 const { clearIdCache } = require('./src/id_mapping/id_cache');
 const TmdbRequestCache = require('./src/models/TmdbRequestCache');
@@ -23,7 +22,6 @@ const { updateStremioAddonCollection } = require('./src/utils/stremioAddonSync')
 const { syncAllStremioData } = require('./src/utils/stremioSync');
 const connectDB = require('./src/db/connection');
 const User = require('./src/db/models/User');
-const { hashValue } = require('./src/db/models/User');
 const { syncIncrementalRecommendations } = require('./src/engines/hybridRecommendations');
 const { generateMergedName } = require('./src/api/mergeRoutes');
 const { getProfileAnalytics } = require('./src/api/analytics');
@@ -439,60 +437,6 @@ app.post('/api/validate-tmdb-key', async (req, res) => {
 });
 
 // ==========================================
-
-// Stremio API: Login con credenziali Stremio per ottenere authKey (legacy endpoint, mantenuto per retrocompatibilità)
-app.post('/api/stremio-auth', async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ success: false, error: 'Email e password obbligatorie' });
-    }
-    try {
-        const stremioRes = await stremioClient.post('/api/login', { email, password }, { timeout: 10000 });
-        const data = stremioRes.data;
-        if (data && data.result && data.result.authKey) {
-            return res.json({ success: true, authKey: data.result.authKey, email: data.result.user?.email || email });
-        }
-        return res.json({ success: false, error: data?.result?.error || 'Credenziali non valide' });
-    } catch (_err) {
-        return res.json({ success: false, error: 'Errore di connessione al servizio di autenticazione.' });
-    }
-});
-
-// Check if user already exists in DB by stremio authKey (skip Trakt for returning users)
-app.post('/api/check-user', async (req, res) => {
-    const { authKey, email } = req.body;
-    if (!authKey && !email) {
-        return res.status(400).json({ exists: false, error: 'authKey o email obbligatorio' });
-    }
-    try {
-        let existingUser = null;
-        if (email) {
-            existingUser = await User.findOne({ email }).lean();
-        }
-        if (!existingUser && authKey) {
-            const authHash = hashValue(authKey);
-            if (authHash) {
-                existingUser = await User.findOne({ stremioAuthHash: authHash }).lean();
-            }
-        }
-
-        if (existingUser?.userId) {
-            return res.json({
-                exists: true,
-                userId: existingUser.userId,
-                traktToken: existingUser.apiKeys?.trakt || null,
-                traktRefreshToken: existingUser.apiKeys?.traktRefresh || null,
-                configVersion: existingUser.config?.configVersion || null,
-                profiles: existingUser.profiles || [],
-                activeProfileId: existingUser.config?.activeProfileId || 'global'
-            });
-        }
-        return res.json({ exists: false });
-    } catch (err) {
-        console.error('Errore check-user:', err.message);
-        return res.status(500).json({ exists: false, error: 'Errore interno' });
-    }
-});
 
 // Stremio API: Aggiorna addon nella collezione dell'utente (senza reinstallare manualmente)
 app.post('/api/stremio-addon-update', async (req, res) => {
