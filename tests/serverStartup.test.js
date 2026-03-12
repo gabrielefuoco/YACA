@@ -59,11 +59,19 @@ describe('server startup guards', () => {
             await new Promise(setImmediate);
             await new Promise(setImmediate);
 
+            const req = { url: '/test' };
+            const res = { end: jest.fn() };
+
             expect(prepare).toHaveBeenCalledTimes(1);
-            expect(use).toHaveBeenCalledTimes(1);
-            expect(typeof use.mock.calls[0][0]).toBe('function');
+            expect(use).toHaveBeenCalled();
             expect(all).not.toHaveBeenCalled();
             expect(listen).toHaveBeenCalledTimes(1);
+
+            const fallbackHandler = use.mock.calls.at(-1)[0];
+            expect(typeof fallbackHandler).toBe('function');
+
+            fallbackHandler(req, res);
+            expect(nextHandle).toHaveBeenCalledWith(req, res);
         } finally {
             logSpy.mockRestore();
             warnSpy.mockRestore();
