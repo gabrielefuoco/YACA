@@ -18,7 +18,7 @@ describe('server startup guards', () => {
         expect(result.stderr).toContain('FATAL ERROR: NEXTAUTH_SECRET is missing. Shutting down.');
     });
 
-    it('registers the Next.js fallback without using an Express 5 wildcard route', async () => {
+    it('routes /api/auth requests directly to Next.js before Express middleware', async () => {
         const repoRoot = path.resolve(__dirname, '..');
         const serverPath = path.join(repoRoot, 'server.js');
         const dbConnectionPath = path.join(repoRoot, 'src', 'db', 'connection.js');
@@ -29,17 +29,19 @@ describe('server startup guards', () => {
         const close = jest.fn();
         const prepare = jest.fn().mockResolvedValue(undefined);
         const use = jest.fn();
-        const all = jest.fn();
         const listen = jest.fn((port, callback) => {
             if (callback) callback();
             return { close: jest.fn() };
         });
-        const expressApp = { use, all, listen };
+        const mainApp = { use, listen };
+        const expressFactory = jest.fn(() => mainApp);
+        const expressApp = { name: 'express-api-app' };
 
         process.env.NEXTAUTH_SECRET = 'test-secret';
 
         jest.resetModules();
         jest.doMock('dotenv', () => ({ config: jest.fn() }));
+        jest.doMock('express', () => expressFactory);
         jest.doMock('next', () => jest.fn(() => ({
             prepare,
             getRequestHandler: () => nextHandle,
@@ -59,25 +61,37 @@ describe('server startup guards', () => {
             await new Promise(setImmediate);
             await new Promise(setImmediate);
 
-            const req = { url: '/test' };
+            const authReq = { url: '/api/auth/callback/credentials' };
+            const fallbackReq = { url: '/dashboard' };
             const res = { end: jest.fn() };
 
             expect(prepare).toHaveBeenCalledTimes(1);
-            expect(use).toHaveBeenCalled();
-            expect(all).not.toHaveBeenCalled();
+            expect(expressFactory).toHaveBeenCalledTimes(1);
+            expect(use).toHaveBeenCalledTimes(3);
             expect(listen).toHaveBeenCalledTimes(1);
 
-            const fallbackHandler = use.mock.calls.at(-1)[0];
+            const [authPath, authHandler] = use.mock.calls[0];
+            expect(authPath).toBe('/api/auth');
+            expect(typeof authHandler).toBe('function');
+
+            const [mountedExpressApp] = use.mock.calls[1];
+            expect(mountedExpressApp).toBe(expressApp);
+
+            const fallbackHandler = use.mock.calls[2][0];
             expect(typeof fallbackHandler).toBe('function');
 
-            fallbackHandler(req, res);
-            expect(nextHandle).toHaveBeenCalledWith(req, res);
+            authHandler(authReq, res);
+            fallbackHandler(fallbackReq, res);
+
+            expect(nextHandle).toHaveBeenCalledWith(authReq, res);
+            expect(nextHandle).toHaveBeenCalledWith(fallbackReq, res);
         } finally {
             logSpy.mockRestore();
             warnSpy.mockRestore();
             errorSpy.mockRestore();
             processOnSpy.mockRestore();
             jest.dontMock('dotenv');
+            jest.dontMock('express');
             jest.dontMock('next');
             jest.dontMock(dbConnectionPath);
             jest.dontMock(redisClientPath);

@@ -36,27 +36,35 @@ async function main() {
     // 2. Prepara Next.js (compila le pagine e le rotte API auth)
     await nextApp.prepare();
 
-    // 3. Importa l'app Express con tutte le rotte API già configurate
-    const expressApp = require('./index');
+    const express = require('express');
+    const mainApp = express();
 
-    // 4. Delega tutto il resto a Next.js (pagine frontend + /api/auth/*)
-    //    Next.js gestirà automaticamente i cookie di sessione JWT via NextAuth
-    expressApp.use((req, res) => {
+    // 3. FIX CRITICO: inoltra le rotte NextAuth prima dei middleware/body-parser di Express
+    mainApp.use('/api/auth', (req, res) => {
         return nextHandle(req, res);
     });
 
-    // 5. Avvia il server unificato
-    const server = expressApp.listen(PORT, () => {
+    // 4. Importa l'app Express con tutte le rotte API già configurate
+    const expressApp = require('./index');
+    mainApp.use(expressApp);
+
+    // 5. Delega tutto il resto a Next.js (pagine frontend e asset)
+    mainApp.use((req, res) => {
+        return nextHandle(req, res);
+    });
+
+    // 6. Avvia il server unificato
+    const server = mainApp.listen(PORT, () => {
         console.log(`🚀 YACA Server (Express + Next.js) in esecuzione su http://localhost:${PORT}`);
+        console.log(`   ├── Auth NextAuth: /api/auth/* (Bypass Express Middleware)`);
         console.log(`   ├── API Express: /api/* (stateless, JWT-authenticated)`);
-        console.log(`   ├── Auth NextAuth: /api/auth/* (JWT cookies HttpOnly)`);
         console.log(`   └── Frontend Next.js: tutto il resto`);
         if (!process.env.HOST_URL && !process.env.RENDER_EXTERNAL_URL) {
             console.warn('⚠️ HOST_URL non configurato nel file .env.');
         }
     });
 
-    // 6. Graceful shutdown
+    // 7. Graceful shutdown
     const shutdown = (signal) => {
         console.log(`\n${signal} ricevuto. Spegnimento in corso...`);
         server.close(async () => {
