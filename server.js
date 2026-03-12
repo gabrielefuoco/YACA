@@ -41,6 +41,7 @@ async function main() {
 
     // 3. FIX CRITICO: inoltra le rotte NextAuth prima dei middleware/body-parser di Express
     mainApp.use('/api/auth', (req, res) => {
+        // Express rimuove il prefisso mount path da req.url: Next.js/NextAuth richiede l'URL completo originale.
         req.url = req.originalUrl;
         return nextHandle(req, res);
     });

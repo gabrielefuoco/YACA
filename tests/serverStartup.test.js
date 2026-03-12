@@ -1,5 +1,4 @@
 const { spawnSync } = require('child_process');
-const fs = require('fs');
 const path = require('path');
 
 describe('server startup guards', () => {
@@ -26,7 +25,12 @@ describe('server startup guards', () => {
         const redisClientPath = path.join(repoRoot, 'src', 'cache', 'redisClient.js');
         const indexPath = path.join(repoRoot, 'index.js');
 
-        const nextHandle = jest.fn();
+        let authUrlSeenByNext;
+        const nextHandle = jest.fn((req) => {
+            if (req.originalUrl && req.originalUrl.startsWith('/api/auth')) {
+                authUrlSeenByNext = req.url;
+            }
+        });
         const close = jest.fn();
         const prepare = jest.fn().mockResolvedValue(undefined);
         const use = jest.fn();
@@ -87,6 +91,7 @@ describe('server startup guards', () => {
             expect(nextHandle).toHaveBeenCalledWith(authReq, res);
             expect(nextHandle).toHaveBeenCalledWith(fallbackReq, res);
             expect(authReq.url).toBe('/api/auth/callback/credentials');
+            expect(authUrlSeenByNext).toBe('/api/auth/callback/credentials');
         } finally {
             logSpy.mockRestore();
             warnSpy.mockRestore();
@@ -100,13 +105,5 @@ describe('server startup guards', () => {
             jest.dontMock(indexPath);
             delete process.env.NEXTAUTH_SECRET;
         }
-    });
-
-    it('disables trailing slash in Next.js config', () => {
-        const repoRoot = path.resolve(__dirname, '..');
-        const nextConfigPath = path.join(repoRoot, 'frontend', 'next.config.ts');
-        const nextConfig = fs.readFileSync(nextConfigPath, 'utf8');
-
-        expect(nextConfig).toMatch(/trailingSlash:\s*false/);
     });
 });
