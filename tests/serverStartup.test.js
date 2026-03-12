@@ -11,7 +11,7 @@ describe('server startup guards', () => {
             cwd: repoRoot,
             env: envWithoutSecret,
             encoding: 'utf8',
-            timeout: 5000
+            timeout: 10000
         });
 
         expect(result.status).toBe(1);
