@@ -72,6 +72,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           apiKeys: { stremio: authKey, stremioPass: credentials.password as string },
           email: userEmail,
         });
+        const plainProfiles = JSON.parse(JSON.stringify(userDoc.profiles || []));
 
         // 3. Ritorno dei dati essenziali al JWT di NextAuth
         //    NOTA: Non includere MAI chiavi API in chiaro nel token JWT
@@ -81,7 +82,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           isNewUser,
           traktToken: userDoc.apiKeys?.trakt || null,
           traktRefreshToken: userDoc.apiKeys?.traktRefreshToken || null,
-          profiles: userDoc.profiles || [],
+          profiles: plainProfiles,
           activeProfileId: userDoc.config?.activeProfileId || "global",
         };
       },
