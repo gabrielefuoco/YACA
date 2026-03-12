@@ -34,13 +34,12 @@ describe('server startup guards', () => {
         const close = jest.fn();
         const prepare = jest.fn().mockResolvedValue(undefined);
         const use = jest.fn();
-        const all = jest.fn();
         const set = jest.fn();
         const listen = jest.fn((port, callback) => {
             if (callback) callback();
             return { close: jest.fn() };
         });
-        const mainApp = { use, all, set, listen };
+        const mainApp = { use, set, listen };
         const expressFactory = jest.fn(() => mainApp);
         const expressApp = { name: 'express-api-app' };
 
@@ -75,18 +74,17 @@ describe('server startup guards', () => {
             expect(prepare).toHaveBeenCalledTimes(1);
             expect(expressFactory).toHaveBeenCalledTimes(1);
             expect(set).toHaveBeenCalledWith('trust proxy', true);
-            expect(use).toHaveBeenCalledTimes(2);
-            expect(all).toHaveBeenCalledTimes(1);
+            expect(use).toHaveBeenCalledTimes(3);
             expect(listen).toHaveBeenCalledTimes(1);
 
-            const [authPath, authHandler] = all.mock.calls[0];
-            expect(authPath).toBe('/api/auth/*');
+            const [authPath, authHandler] = use.mock.calls[0];
+            expect(authPath).toBe('/api/auth');
             expect(typeof authHandler).toBe('function');
 
-            const [mountedExpressApp] = use.mock.calls[0];
+            const [mountedExpressApp] = use.mock.calls[1];
             expect(mountedExpressApp).toBe(expressApp);
 
-            const fallbackHandler = use.mock.calls[1][0];
+            const fallbackHandler = use.mock.calls[2][0];
             expect(typeof fallbackHandler).toBe('function');
 
             authHandler(authReq, res);
