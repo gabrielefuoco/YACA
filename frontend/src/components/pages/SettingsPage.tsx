@@ -27,6 +27,7 @@ interface SettingsPageProps {
   globalMistralKey?: string;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
   onLogout: () => void;
+  onConnectTrakt: () => void;
   onDisconnectTrakt: () => void;
   onConfigSaved: (userId?: string) => void;
 }
@@ -44,6 +45,7 @@ export function SettingsPage({
   globalMistralKey,
   onUpdateProfile,
   onLogout,
+  onConnectTrakt,
   onDisconnectTrakt,
   onConfigSaved,
 }: SettingsPageProps) {
@@ -411,6 +413,16 @@ export function SettingsPage({
             </p>
           </div>
         </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleSave}
+          disabled={loading}
+          className="w-full mt-4"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+          Salva Chiavi API
+        </Button>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -449,7 +461,7 @@ export function SettingsPage({
         </div>
 
         <div className="flex gap-2">
-          {traktToken && (
+          {traktToken ? (
             <Button
               variant="outline"
               size="sm"
@@ -457,6 +469,15 @@ export function SettingsPage({
               className="flex-1 text-xs"
             >
               Disconnetti Trakt
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onConnectTrakt}
+              className="flex-1 text-xs bg-[#8a5aeb] hover:bg-[#8a5aeb]/80 text-white"
+            >
+              🎬 Connetti Trakt
             </Button>
           )}
           <Button

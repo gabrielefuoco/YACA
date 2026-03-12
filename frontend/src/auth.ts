@@ -9,7 +9,8 @@
  *
  * Variabili d'ambiente richieste:
  *   - NEXTAUTH_SECRET: Chiave crittografica per firmare/cifrare i JWT (generare con: openssl rand -base64 32)
- *   - NEXTAUTH_URL: URL canonico dell'applicazione (es. https://nome-spazio.hf.space)
+ *   - AUTH_URL / NEXTAUTH_URL: URL canonico dell'applicazione (es. https://nome-spazio.hf.space)
+ *   - AUTH_TRUST_HOST=true in produzione (configurato via environment, non nel codice)
  */
 
 import NextAuth from "next-auth";
