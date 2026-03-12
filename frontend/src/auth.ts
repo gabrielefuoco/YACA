@@ -8,7 +8,7 @@
  *   - Il salvataggio utente avviene tramite chiamata HTTP interna al backend Express
  *
  * Variabili d'ambiente richieste:
- *   - NEXTAUTH_SECRET: Chiave crittografica per firmare/cifrare i JWT (generare con: openssl rand -base64 32)
+ *   - AUTH_SECRET (fallback: NEXTAUTH_SECRET): Chiave crittografica per firmare/cifrare i JWT (generare con: openssl rand -base64 32)
  *   - AUTH_URL / NEXTAUTH_URL: URL canonico dell'applicazione (es. https://nome-spazio.hf.space)
  *   - AUTH_TRUST_HOST=true in produzione (configurato via environment, non nel codice)
  */
@@ -30,7 +30,7 @@ function getUserConfig() {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   trustHost: true,
   session: { strategy: "jwt" },
   pages: {
@@ -44,49 +44,55 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email e password obbligatorie");
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            throw new Error("Email e password obbligatorie");
+          }
+
+          // 1. Validazione credenziali contro le API ufficiali di Stremio (Single Source of Truth)
+          const stremioRes = await fetch("https://api.strem.io/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          });
+
+          const stremioData = await stremioRes.json();
+
+          if (!stremioData?.result?.authKey) {
+            throw new Error(stremioData?.result?.error || "Credenziali Stremio non valide");
+          }
+
+          const authKey = stremioData.result.authKey;
+          const userEmail = stremioData.result.user?.email || credentials.email;
+
+          // 2. Salvataggio sicuro tramite il modulo Mongoose (applica encryption + hash + riconciliazione)
+          //    Il require è lazy per funzionare sia a build-time che a runtime
+          const UserConfig = getUserConfig();
+          const { user: userDoc, isNewUser } = await UserConfig.saveUser({
+            apiKeys: { stremio: authKey, stremioPass: credentials.password as string },
+            email: userEmail,
+          });
+          const plainProfiles = JSON.parse(JSON.stringify(userDoc.profiles || []));
+
+          // 3. Ritorno dei dati essenziali al JWT di NextAuth
+          //    NOTA: Non includere MAI chiavi API in chiaro nel token JWT
+          return {
+            id: userDoc.userId,
+            email: userEmail,
+            isNewUser,
+            traktToken: userDoc.apiKeys?.trakt || null,
+            traktRefreshToken: userDoc.apiKeys?.traktRefreshToken || null,
+            profiles: plainProfiles,
+            activeProfileId: userDoc.config?.activeProfileId || "global",
+          };
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : error;
+          console.error("🔥 ERRORE DURANTE IL LOGIN:", errorMessage);
+          return null;
         }
-
-        // 1. Validazione credenziali contro le API ufficiali di Stremio (Single Source of Truth)
-        const stremioRes = await fetch("https://api.strem.io/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: credentials.email,
-            password: credentials.password,
-          }),
-        });
-
-        const stremioData = await stremioRes.json();
-
-        if (!stremioData?.result?.authKey) {
-          throw new Error(stremioData?.result?.error || "Credenziali Stremio non valide");
-        }
-
-        const authKey = stremioData.result.authKey;
-        const userEmail = stremioData.result.user?.email || credentials.email;
-
-        // 2. Salvataggio sicuro tramite il modulo Mongoose (applica encryption + hash + riconciliazione)
-        //    Il require è lazy per funzionare sia a build-time che a runtime
-        const UserConfig = getUserConfig();
-        const { user: userDoc, isNewUser } = await UserConfig.saveUser({
-          apiKeys: { stremio: authKey, stremioPass: credentials.password as string },
-          email: userEmail,
-        });
-        const plainProfiles = JSON.parse(JSON.stringify(userDoc.profiles || []));
-
-        // 3. Ritorno dei dati essenziali al JWT di NextAuth
-        //    NOTA: Non includere MAI chiavi API in chiaro nel token JWT
-        return {
-          id: userDoc.userId,
-          email: userEmail,
-          isNewUser,
-          traktToken: userDoc.apiKeys?.trakt || null,
-          traktRefreshToken: userDoc.apiKeys?.traktRefreshToken || null,
-          profiles: plainProfiles,
-          activeProfileId: userDoc.config?.activeProfileId || "global",
-        };
       },
     }),
   ],
