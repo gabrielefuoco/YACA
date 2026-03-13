@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { api } from '@/lib/api';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
 import {
-  Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Download, Upload, RefreshCw, Save, Rocket, Server
+  Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Download, Upload, RefreshCw, Save, Rocket, Server, ShieldCheck
 } from 'lucide-react';
 import { profilesToApiPayload } from '@/lib/utils';
 import Link from 'next/link';
@@ -59,6 +59,27 @@ export function SettingsPage({
   const [installUrl, setInstallUrl] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [mistralVerifying, setMistralVerifying] = useState(false);
+  const [mistralVerified, setMistralVerified] = useState(false);
+  const [mistralVerifyError, setMistralVerifyError] = useState('');
+
+  const handleVerifyMistralKey = async () => {
+    if (!mistralKey.trim()) return;
+    setMistralVerifying(true);
+    setMistralVerified(false);
+    setMistralVerifyError('');
+    try {
+      const result = await api.validateMistralKey(mistralKey.trim());
+      if (result.valid) {
+        setMistralVerified(true);
+      } else {
+        setMistralVerifyError(result.error || 'Chiave Mistral non valida.');
+      }
+    } catch {
+      setMistralVerifyError('Errore di connessione durante la verifica.');
+    }
+    setMistralVerifying(false);
+  };
 
   const handleSave = async () => {
     setLoading(true);
@@ -146,12 +167,11 @@ export function SettingsPage({
   };
 
   const handleExport = () => {
+    // Export only non-sensitive config data (no auth keys/tokens)
     const config: AppConfig = {
       profiles,
       activeProfileId,
-      stremioAuthKey,
-      traktToken: traktToken ?? undefined,
-      traktRefreshToken: traktRefreshToken ?? undefined,
+      configVersion,
     };
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -397,17 +417,45 @@ export function SettingsPage({
           </div>
 
           <div>
-            <Label htmlFor="mistral-key" className="text-slate-900 dark:text-slate-100">Mistral API Key (Opzionale)</Label>
-            <Input
-              id="mistral-key"
-              value={mistralKey}
-              onChange={(e) => setMistralKey(e.target.value)}
-              placeholder="La tua API key Mistral..."
-              className="mt-1 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-              type="password"
-            />
+            <Label htmlFor="mistral-key" className="text-slate-900 dark:text-slate-100">Mistral API Key (Obbligatoria per AI)</Label>
+            <div className="flex gap-2 mt-1">
+              <Input
+                id="mistral-key"
+                value={mistralKey}
+                onChange={(e) => {
+                  setMistralKey(e.target.value);
+                  setMistralVerified(false);
+                  setMistralVerifyError('');
+                }}
+                placeholder="La tua API key Mistral..."
+                className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                type="password"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleVerifyMistralKey}
+                disabled={!mistralKey.trim() || mistralVerifying}
+                className="shrink-0"
+              >
+                {mistralVerifying ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : mistralVerified ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <ShieldCheck className="h-4 w-4" />
+                )}
+                <span className="ml-1">{mistralVerified ? 'Valida' : 'Verifica'}</span>
+              </Button>
+            </div>
+            {mistralVerified && (
+              <p className="mt-1.5 text-xs text-emerald-500 font-medium">✓ Chiave Mistral verificata con successo.</p>
+            )}
+            {mistralVerifyError && (
+              <p className="mt-1.5 text-xs text-rose-400">{mistralVerifyError}</p>
+            )}
             <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-              Sblocca i superpoteri AI per generare cataloghi intelligenti. 
+              Obbligatoria per generare cataloghi AI. Verifica la chiave prima di salvare.
             </p>
           </div>
         </div>

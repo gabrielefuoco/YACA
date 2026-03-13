@@ -9,6 +9,11 @@ lerna-debug.log*
 
 # Addon specific ignores
 frontend/lint_output.json
+frontend/lint_output.txt
+frontend/lint.json
+frontend/lint.txt
+frontend/eslint.json
+frontend/eslint.txt
 public/assets/profile_updated.mp4
 stitch_yaca_dashboard_improved_layout/
 Watchly-main/

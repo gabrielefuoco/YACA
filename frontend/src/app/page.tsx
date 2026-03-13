@@ -59,7 +59,7 @@ export default function Home() {
   // Initialize background sync worker for crowdsourced ecosystem
   useBackgroundSync(globalTmdbKey, userId ?? undefined);
 
-  // Async load user config from API
+  // Async load user config from API (cookie-based session)
   useEffect(() => {
     if (!isLoaded) return;
 
@@ -76,8 +76,40 @@ export default function Home() {
     const storedUserId = urlUserId || localStorage.getItem(LOCAL_STORAGE_KEYS.USER_ID);
 
     if (!storedUserId) {
-      setInitialProfiles(createDefaultProfiles());
-      setConfigDecoded(true);
+      // Try cookie-based session restoration via /api/auth/me
+      api.authMe()
+        .then(data => {
+          if (data.authenticated && data.userId) {
+            setUserId(data.userId);
+            localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
+            // Load full user data
+            return fetch(`/api/user/${data.userId}`, { credentials: 'include' });
+          }
+          return null;
+        })
+        .then(res => {
+          if (res && res.ok) return res.json();
+          return null;
+        })
+        .then(data => {
+          if (data && Array.isArray(data.profiles) && data.profiles.length > 0) {
+            const mappedProfiles = (data.profiles as BackendProfile[]).map(mapBackendProfile);
+            setInitialProfiles(mappedProfiles);
+            if (data.configVersion) setConfigVersion(String(data.configVersion));
+            if (data.apiKeys) {
+              if (data.apiKeys.tmdb) setGlobalTmdbKey(data.apiKeys.tmdb);
+              if (data.apiKeys.mistral) setGlobalMistralKey(data.apiKeys.mistral);
+            }
+          } else {
+            setInitialProfiles(createDefaultProfiles());
+          }
+        })
+        .catch(() => {
+          setInitialProfiles(createDefaultProfiles());
+        })
+        .finally(() => {
+          setConfigDecoded(true);
+        });
       return;
     }
 
@@ -88,7 +120,7 @@ export default function Home() {
       setUserId(storedUserId);
     }
 
-    fetch(`/api/user/${storedUserId}`)
+    fetch(`/api/user/${storedUserId}`, { credentials: 'include' })
       .then(res => {
         if (!res.ok) throw new Error("User not found");
         return res.json();
@@ -168,9 +200,8 @@ export default function Home() {
       api.configure({
         profiles: profilesToApiPayload(profiles),
         activeProfileId,
-        stremioAuthKey: stremioAuth.authKey,
+        stremioAuthKey: stremioAuth.authKey || undefined,
         email: stremioAuth.email,
-        stremioPassword: stremioAuth.password,
         traktToken: traktToken ?? undefined,
         traktRefreshToken: traktRefreshToken ?? undefined,
       }).then((data) => {
@@ -238,21 +269,20 @@ export default function Home() {
       }
     }
 
-    // If an existing userId was returned from check-user, set it immediately
+    // If an existing userId was returned, set it immediately
     if (existingUserId) {
       setUserId(existingUserId);
       localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, existingUserId);
     }
 
-    // Generate initial config
+    // Generate initial config — no auth tokens in body, cookie handles identity
     try {
       const data = await api.configure({
         profiles: profilesToApiPayload(activeProfiles),
         activeProfileId: existingActiveProfileId || activeProfileId,
         userId: existingUserId || (userId ?? undefined),
-        stremioAuthKey: newStremioAuth?.authKey,
+        stremioAuthKey: newStremioAuth?.authKey || undefined,
         email: newStremioAuth?.email,
-        stremioPassword: newStremioAuth?.password,
         traktToken: newTraktToken,
         traktRefreshToken: newTraktRefreshToken,
       });
@@ -261,7 +291,7 @@ export default function Home() {
         localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
         if (data.configVersion) setConfigVersion(String(data.configVersion));
 
-        // Auto-install addon in Stremio using short userId URL
+        // Auto-install addon in Stremio
         if (newStremioAuth?.authKey) {
           const host = window.location.host;
           const manifestPath = data.configVersion
@@ -303,9 +333,8 @@ export default function Home() {
         profiles: profilesToApiPayload(nextProfiles),
         activeProfileId,
         userId: userId ?? undefined,
-        stremioAuthKey: stremioAuth?.authKey,
+        stremioAuthKey: stremioAuth?.authKey || undefined,
         email: stremioAuth?.email,
-        stremioPassword: stremioAuth?.password,
         traktToken: traktToken ?? undefined,
         traktRefreshToken: traktRefreshToken ?? undefined,
       });
@@ -320,7 +349,7 @@ export default function Home() {
         setConfigVersion(String(data.configVersion));
       }
 
-      const response = await fetch(`/api/user/${resolvedUserId}`);
+      const response = await fetch(`/api/user/${resolvedUserId}`, { credentials: 'include' });
       if (!response.ok) return;
       const freshUser = await response.json();
       if (Array.isArray(freshUser.profiles) && freshUser.profiles.length > 0) {
@@ -332,9 +361,9 @@ export default function Home() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    // Aggressively clear all YACA-related localStorage and sessionStorage keys
+  const handleLogout = async () => {
+    await logout(); // Calls /api/auth/logout to clear HttpOnly cookie
+    // Clear only non-sensitive localStorage keys (USER_ID, CONFIG, MY_LISTS)
     Object.values(LOCAL_STORAGE_KEYS).forEach((key) => {
       localStorage.removeItem(key);
     });

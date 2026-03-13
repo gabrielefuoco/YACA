@@ -45,6 +45,7 @@ function requireAuth(req, res, next) {
  */
 function optionalAuth(req, res, next) {
     const token = req.cookies?.[COOKIE_NAME];
+    req.user = null;
     if (!token) return next();
 
     const secret = process.env.JWT_SECRET;

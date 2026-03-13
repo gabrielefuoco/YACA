@@ -4,13 +4,29 @@ async function post(url: string, body?: object) {
   const res = await fetch(url, {
     method: 'POST',
     headers: JSON_HEADERS,
+    credentials: 'include',
     body: body ? JSON.stringify(body) : undefined,
   });
   return res.json();
 }
 
+async function get(url: string) {
+  const res = await fetch(url, { credentials: 'include' });
+  return res.json();
+}
+
 export const api = {
-  getPresets: () => fetch('/api/presets').then((r) => r.json()),
+  // Auth endpoints (JWT HttpOnly Cookie)
+  authLogin: (email: string, password: string) =>
+    post('/api/auth/login', { email, password }),
+  authMe: () =>
+    fetch('/api/auth/me', { credentials: 'include' }).then(async (r) => {
+      if (!r.ok) return { authenticated: false };
+      return r.json();
+    }),
+  authLogout: () => post('/api/auth/logout'),
+
+  getPresets: () => get('/api/presets'),
   previewCatalog: (body: object) => post('/api/preview-catalog', body),
   configure: (body: object) => post('/api/configure', body),
   stremioAuth: (email: string, password: string) =>
@@ -19,24 +35,26 @@ export const api = {
     post('/api/stremio-addon-update', { authKey, manifestUrl }),
   validateTmdbKey: (tmdbKey: string) =>
     post('/api/validate-tmdb-key', { tmdbKey }),
+  validateMistralKey: (mistralKey: string) =>
+    post('/api/validate-mistral-key', { mistralKey }),
   traktDeviceCode: () => post('/api/trakt/device/code'),
   traktDeviceToken: (device_code: string) =>
     post('/api/trakt/device/token', { device_code }),
   clearCache: () => post('/api/clear-cache'),
   searchTmdbKeywords: (query: string) =>
-    fetch(`/api/tmdb/search/keyword?query=${encodeURIComponent(query)}`).then(r => r.json()),
+    get(`/api/tmdb/search/keyword?query=${encodeURIComponent(query)}`),
   searchTmdbGenres: (query: string) =>
-    fetch(`/api/tmdb/search/genre?query=${encodeURIComponent(query)}`).then(r => r.json()),
+    get(`/api/tmdb/search/genre?query=${encodeURIComponent(query)}`),
   searchTmdbPeople: (query: string) =>
-    fetch(`/api/tmdb/search/person?query=${encodeURIComponent(query)}`).then(r => r.json()),
+    get(`/api/tmdb/search/person?query=${encodeURIComponent(query)}`),
   generateMergedName: (nameA: string, nameB: string) =>
     post('/api/ai/generate-merged-name', { nameA, nameB }),
   checkUser: (authKey: string, email?: string) =>
     post('/api/check-user', { authKey, email }),
   getProfileAnalytics: (profileId: string, userId: string) =>
-    fetch(`/api/profiles/${encodeURIComponent(profileId)}/analytics?userId=${encodeURIComponent(userId)}`).then(r => r.json()),
+    get(`/api/profiles/${encodeURIComponent(profileId)}/analytics?userId=${encodeURIComponent(userId)}`),
   getGlobalSyncQueue: (limit = 20) => 
-    fetch(`/api/sync/global-queue?limit=${limit}`).then(r => r.json()),
+    get(`/api/sync/global-queue?limit=${limit}`),
   enrichSyncItem: (body: { tmdbId: string, type: string, rawTMDB: any, userId?: string }) => 
     post('/api/sync/enrich', body),
 };
