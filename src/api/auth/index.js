@@ -14,6 +14,7 @@ const User = require('../../db/models/User');
 const { nanoid } = require('nanoid');
 
 const JWT_EXPIRY = '7d';
+const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms — must match JWT_EXPIRY
 
 /**
  * Builds the Set-Cookie options for the session cookie.
@@ -24,7 +25,7 @@ function getCookieOptions() {
         httpOnly: true,
         secure: isProd,
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+        maxAge: COOKIE_MAX_AGE_MS,
         path: '/'
     };
 }
