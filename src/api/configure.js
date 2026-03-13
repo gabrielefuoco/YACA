@@ -115,7 +115,8 @@ module.exports = async (req, res) => {
         const personalMistralKey = req.body.mistralKey || null;
         
         const effectiveTmdbKey = personalTmdbKey || process.env.TMDB_API_KEY;
-        const effectiveMistralKey = personalMistralKey || process.env.MISTRAL_API_KEY;
+        // BYOK Strict: Mistral AI generation requires a personal key — no server fallback
+        const effectiveMistralKey = personalMistralKey || null;
         const traktToken = req.body.traktToken || req.body.traktUsername;
         const traktRefreshToken = req.body.traktRefreshToken || null;
         const mdblistKey = req.body.mdblistKey || null;
@@ -163,7 +164,7 @@ module.exports = async (req, res) => {
         }
 
         if (needsMistral && !effectiveMistralKey) {
-            return res.status(400).json({ error: "Chiave Mistral non configurata sul server. Contattare l'amministratore o inserirne una personale." });
+            return res.status(403).json({ error: "Per generare cataloghi AI è necessaria una chiave Mistral personale. Inseriscila nelle Impostazioni." });
         }
 
         // --- BACKWARD COMPATIBILITY / DEFAULT PROFILE MAPPING ---

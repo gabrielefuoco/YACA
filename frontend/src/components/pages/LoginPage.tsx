@@ -39,34 +39,28 @@ export function LoginPage({ onComplete }: LoginPageProps) {
     setLoading(true);
     setError('');
     try {
-      const data = await api.stremioAuth(email, password);
-      if (data.success && data.authKey) {
+      // Use the new JWT-based auth endpoint
+      const data = await api.authLogin(email, password);
+      if (data.success && data.userId) {
         const auth: StremioAuth = {
-          authKey: data.authKey,
+          authKey: '', // Auth key managed server-side via HttpOnly cookie
           email: data.email ?? email,
-          password: password
         };
         setStremioAuth(auth);
 
-        // Check if user already exists in DB — skip Trakt step if so
-        try {
-          const checkResult = await api.checkUser(data.authKey, data.email ?? email);
-          if (checkResult.exists) {
-            // Returning user: skip Trakt auth, complete login directly
-            setConfiguring(true);
-            onComplete(
-              auth,
-              checkResult.traktToken || null,
-              checkResult.traktRefreshToken || null,
-              checkResult.userId || undefined,
-              checkResult.profiles || undefined,
-              checkResult.activeProfileId || undefined
-            );
-            setLoading(false);
-            return;
-          }
-        } catch {
-          // If check fails, fall through to Trakt step
+        if (data.isReturningUser) {
+          // Returning user: skip Trakt auth, complete login directly
+          setConfiguring(true);
+          onComplete(
+            auth,
+            data.traktConnected ? 'connected' : null,
+            null,
+            data.userId || undefined,
+            data.profiles || undefined,
+            data.activeProfileId || undefined
+          );
+          setLoading(false);
+          return;
         }
 
         setStep(2);

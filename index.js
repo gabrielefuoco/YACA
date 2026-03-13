@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const { createAxiosInstance } = require('./src/utils/httpClient');
 const rateLimit = require('express-rate-limit');
@@ -31,6 +32,8 @@ const { aiPromptCache, aiDiscoveryCache, hybridRecommendationsCache } = require(
 const { rateLimitedMap } = require('./src/utils/rateLimiter');
 const { disconnectRedis } = require('./src/cache/redisClient');
 const { preWarmRedisFromMongo } = require('./src/cache/preWarm');
+const { loginHandler, meHandler, logoutHandler } = require('./src/api/auth');
+const { requireAuth, optionalAuth } = require('./src/middleware/requireAuth');
 
 const tmdbClient = createAxiosInstance('https://api.themoviedb.org/3');
 
@@ -56,9 +59,10 @@ const badgeLimiter = rateLimit({
 // CORS configurabile tramite variabile d'ambiente (default: permissivo per retrocompatibilità con Stremio)
 const corsOrigins = process.env.CORS_ALLOWED_ORIGINS;
 const corsOptions = corsOrigins
-    ? { origin: corsOrigins.split(',').map(o => o.trim()), methods: ['GET', 'POST'] }
-    : { methods: ['GET', 'POST'] };
+    ? { origin: corsOrigins.split(',').map(o => o.trim()), credentials: true, methods: ['GET', 'POST'] }
+    : { credentials: true, methods: ['GET', 'POST'] };
 app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'frontend', 'out')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '1mb' }));
@@ -94,6 +98,20 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Rate limiter for auth endpoints (brute-force protection)
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 20,                 // max 20 attempts per window
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Troppi tentativi. Riprova tra qualche minuto.' }
+});
+
+// --- AUTH ROUTES (JWT HttpOnly Cookie) ---
+app.post('/api/auth/login', authLimiter, loginHandler);
+app.get('/api/auth/me', authLimiter, meHandler);
+app.post('/api/auth/logout', logoutHandler);
+
 // Endpoint per recuperare i preset disponibili
 // 2. API per il frontend (configurazione)
 app.get('/api/user/:userId', async (req, res) => {
@@ -120,7 +138,8 @@ const MAX_PREVIEW_CATALOG_NAME_LENGTH = 30;
 app.post('/api/preview-catalog', async (req, res) => {
     const { presetId, filters: customFilters, type: customType, prompt } = req.body;
     const tmdbKey = req.body.tmdbKey || process.env.TMDB_API_KEY;
-    const mistralKey = req.body.mistralKey || process.env.MISTRAL_API_KEY;
+    // BYOK Strict: Mistral requires a personal key for AI generation
+    const mistralKey = req.body.mistralKey || null;
     if (!tmdbKey) {
         return res.status(400).json({ error: 'TMDB API key non configurata sul server' });
     }
@@ -147,6 +166,10 @@ app.post('/api/preview-catalog', async (req, res) => {
         discoverFilters = queryFilters;
         strategy = queryStrategy || 'discovery';
     } else if (prompt) {
+        // BYOK Strict: AI prompt generation requires a personal Mistral key
+        if (!mistralKey) {
+            return res.status(403).json({ error: 'Per generare cataloghi AI è necessaria una chiave Mistral personale.' });
+        }
         sanitizedPrompt = sanitizeString(String(prompt)).substring(0, MAX_PROMPT_LENGTH);
         if (!sanitizedPrompt) {
             return res.status(400).json({ error: 'Prompt non valido' });
@@ -435,6 +458,29 @@ app.post('/api/validate-tmdb-key', async (req, res) => {
             return res.json({ valid: false, error: 'Chiave TMDB non valida (401 Unauthorized)' });
         }
         return res.json({ valid: false, error: 'Impossibile verificare la chiave. Riprova.' });
+    }
+});
+
+// Endpoint per validare una Mistral API Key (BYOK verification)
+app.post('/api/validate-mistral-key', async (req, res) => {
+    const { mistralKey } = req.body;
+    if (!mistralKey) {
+        return res.status(400).json({ valid: false, error: 'Chiave Mistral non fornita.' });
+    }
+    try {
+        const { Mistral } = require('@mistralai/mistralai');
+        const client = new Mistral({ apiKey: mistralKey, timeout: 10000 });
+        const response = await client.models.list();
+        if (response?.data && Array.isArray(response.data)) {
+            return res.json({ valid: true });
+        }
+        return res.json({ valid: false, error: 'Risposta non valida da Mistral.' });
+    } catch (err) {
+        const status = err.status || err.statusCode;
+        if (status === 401) {
+            return res.json({ valid: false, error: 'Chiave Mistral non valida (401 Unauthorized).' });
+        }
+        return res.json({ valid: false, error: 'Impossibile verificare la chiave Mistral. Riprova.' });
     }
 });
 
