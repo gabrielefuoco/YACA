@@ -98,9 +98,18 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Rate limiter for auth endpoints (brute-force protection)
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 20,                 // max 20 attempts per window
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Troppi tentativi. Riprova tra qualche minuto.' }
+});
+
 // --- AUTH ROUTES (JWT HttpOnly Cookie) ---
-app.post('/api/auth/login', loginHandler);
-app.get('/api/auth/me', meHandler);
+app.post('/api/auth/login', authLimiter, loginHandler);
+app.get('/api/auth/me', authLimiter, meHandler);
 app.post('/api/auth/logout', logoutHandler);
 
 // Endpoint per recuperare i preset disponibili
