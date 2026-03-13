@@ -1,4 +1,26 @@
 const mongoose = require('mongoose');
+const { encryptIfNeeded, decryptSafe, getMasterKey } = require('../../utils/encryption');
+
+/**
+ * Creates a Mongoose schema type descriptor with transparent AES-256-GCM encryption.
+ * The `set` function encrypts on write; the `get` function decrypts on read.
+ * If MASTER_ENCRYPTION_KEY is not configured, values pass through as plaintext.
+ */
+function encryptedString() {
+    return {
+        type: String,
+        set: function (val) {
+            if (!val || typeof val !== 'string' || val.length === 0) return val;
+            if (!getMasterKey()) return val; // No encryption key — store plaintext
+            return encryptIfNeeded(val);
+        },
+        get: function (val) {
+            if (!val || typeof val !== 'string' || val.length === 0) return val;
+            if (!getMasterKey()) return val; // No encryption key — return as-is
+            return decryptSafe(val);
+        }
+    };
+}
 
 const userSchema = new mongoose.Schema({
     userId: {
@@ -12,15 +34,15 @@ const userSchema = new mongoose.Schema({
         sparse: true,
         index: true
     },
-    // Chiavi API salvate (non criptate per specifica semplificata)
+    // Chiavi API crittografate con AES-256-GCM (trasparente via getter/setter)
     apiKeys: {
-        tmdb: String,
-        trakt: String, // Access Token
-        traktRefreshToken: String,
-        mistral: String,
-        mdblist: String,
-        stremio: String,
-        stremioPass: String // Salva password Stremio per auto-login
+        tmdb: encryptedString(),
+        trakt: encryptedString(), // Access Token
+        traktRefreshToken: encryptedString(),
+        mistral: encryptedString(),
+        mdblist: encryptedString(),
+        stremio: encryptedString(),
+        stremioPass: encryptedString() // Password Stremio per auto-login
     },
     // Configurazioni globali dell'Addon
     config: {
@@ -62,7 +84,9 @@ const userSchema = new mongoose.Schema({
         raw_ui_state: { type: mongoose.Schema.Types.Mixed }
     }]
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true }
 });
 
 userSchema.index({ 'apiKeys.stremio': 1 }, { unique: true, sparse: true });
