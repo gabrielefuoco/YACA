@@ -67,7 +67,7 @@ router.post('/check-user', async (req, res) => {
                 exists: true,
                 userId: existingUser.userId,
                 traktToken: existingUser.apiKeys?.trakt || null,
-                traktRefreshToken: existingUser.apiKeys?.traktRefresh || null,
+                traktRefreshToken: existingUser.apiKeys?.traktRefreshToken || null,
                 configVersion: existingUser.config?.configVersion || null,
                 profiles: existingUser.profiles || [],
                 activeProfileId: existingUser.config?.activeProfileId || 'global'

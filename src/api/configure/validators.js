@@ -11,7 +11,9 @@ const LIMITS = {
 };
 
 function isValidTraktTokenCandidate(value) {
-    return /^[A-Za-z0-9._-]{20,500}$/.test(value);
+    if (typeof value !== 'string') return false;
+    // Base64 compatible regex, allowing for a wider range of tokens
+    return /^[A-Za-z0-9._\-+/=]{10,1000}$/.test(value);
 }
 
 function normalizeInputString(value) {
@@ -29,8 +31,13 @@ function validateAuth(req) {
 function validateKeys(body, existingUser, warnings) {
     const personalTmdbKey = normalizeInputString(body.tmdbKey);
     const personalMistralKey = normalizeInputString(body.mistralKey);
-    const traktToken = normalizeInputString(body.traktToken);
+    let traktToken = normalizeInputString(body.traktToken);
     const traktRefreshToken = normalizeInputString(body.traktRefreshToken);
+
+    // Defensive: if traktToken is accidentally passed as an object (e.g. from a raw API response)
+    if (traktToken && typeof traktToken === 'object' && traktToken.access_token) {
+        traktToken = traktToken.access_token;
+    }
     const stremioAuthKey = normalizeInputString(body.stremioAuthKey);
     const stremioEmail = body.email || null; // email can come from body in some flows
 
