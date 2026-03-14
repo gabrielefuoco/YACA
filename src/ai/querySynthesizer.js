@@ -174,13 +174,14 @@ function buildDnaDescription(profile, topN = 5) {
             .sort((a, b) => b[1] - a[1])
             .slice(0, topN);
         if (topGenres.length > 0) {
-            // Reverse-map genre IDs to names
+            // Reverse-map genre IDs to names + profile idNames
             const idToName = {};
             for (const [name, id] of Object.entries(GENRE_NAME_TO_ID)) {
                 idToName[String(id)] = name;
             }
             const genreNames = topGenres.map(([id, score]) => {
-                const name = idToName[String(id)] || `Genre ${id}`;
+                let name = profile.idNames ? profile.idNames.get(String(id)) : null;
+                if (!name) name = idToName[String(id)] || `Genre ${id}`;
                 return `${name} (${score.toFixed(1)})`;
             });
             parts.push(`Top Genres: ${genreNames.join(', ')}`);
@@ -193,7 +194,10 @@ function buildDnaDescription(profile, topN = 5) {
             .sort((a, b) => b[1] - a[1])
             .slice(0, topN);
         if (topKeywords.length > 0) {
-            const kwNames = topKeywords.map(([name, score]) => `${name} (${score.toFixed(1)})`);
+            const kwNames = topKeywords.map(([id, score]) => {
+                const name = profile.idNames ? profile.idNames.get(String(id)) : `Keyword ${id}`;
+                return `${name} (${score.toFixed(1)})`;
+            });
             parts.push(`Top Keywords: ${kwNames.join(', ')}`);
         }
     }

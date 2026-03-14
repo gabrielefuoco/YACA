@@ -149,6 +149,10 @@ function formatRichDescription(data, type, ratings = {}) {
 
     if (scoreParts.length > 0) {
         lines.push(scoreParts.join(' | '));
+        // Aggiungi link IMDb se presente
+        if (data.external_ids?.imdb_id) {
+            lines.push(`🔗 [IMDb](https://www.imdb.com/title/${data.external_ids.imdb_id})`);
+        }
         lines.push('');
     }
 
@@ -212,7 +216,9 @@ function formatRichDescription(data, type, ratings = {}) {
     // 5. Saga e Dati Finanziari (solo film)
     if (type === 'movie' && (data.belongs_to_collection || data.budget)) {
         const curiosities = [];
-        if (data.belongs_to_collection) curiosities.push(`🎬 Saga: ${data.belongs_to_collection.name}`);
+        if (data.belongs_to_collection) {
+            curiosities.push(`🎬 Saga: ${data.belongs_to_collection.name}`);
+        }
         if (data.budget) {
             const budget = data.budget > 0 ? `$${(data.budget / 1000000).toFixed(0)}M` : 'N/A';
             const revenue = data.revenue > 0 ? `$${(data.revenue / 1000000).toFixed(0)}M` : 'N/A';
@@ -365,7 +371,7 @@ function toStremioMetaItem(tmdbItem, type) {
     // Generi
     if (tmdbItem.genres) {
         for (const g of tmdbItem.genres) {
-            meta.links.push({ name: g.name, category: 'Generi', url: `stremio://search?search=${encodeURIComponent(g.name)}` });
+            meta.links.push({ name: g.name, category: 'Generi', url: `stremio:///search?search=${encodeURIComponent(g.name)}` });
         }
     }
 
@@ -373,18 +379,18 @@ function toStremioMetaItem(tmdbItem, type) {
     if (type === 'movie' && tmdbItem.credits?.crew) {
         const directors = tmdbItem.credits.crew.filter(c => c.job === 'Director').slice(0, 3);
         for (const d of directors) {
-            meta.links.push({ name: d.name, category: 'Regia', url: `stremio://search?search=${encodeURIComponent(d.name)}` });
+            meta.links.push({ name: d.name, category: 'Regia', url: `stremio:///search?search=${encodeURIComponent(d.name)}` });
         }
     } else if (type === 'series' && tmdbItem.created_by?.length > 0) {
         for (const c of tmdbItem.created_by.slice(0, 3)) {
-            meta.links.push({ name: c.name, category: 'Creato da', url: `stremio://search?search=${encodeURIComponent(c.name)}` });
+            meta.links.push({ name: c.name, category: 'Creato da', url: `stremio:///search?search=${encodeURIComponent(c.name)}` });
         }
     }
 
     // Cast (primi 5)
     if (tmdbItem.credits?.cast) {
         for (const c of tmdbItem.credits.cast.slice(0, 5)) {
-            meta.links.push({ name: c.name, category: 'Cast', url: `stremio://search?search=${encodeURIComponent(c.name)}` });
+            meta.links.push({ name: c.name, category: 'Cast', url: `stremio:///search?search=${encodeURIComponent(c.name)}` });
         }
     }
 
@@ -392,20 +398,33 @@ function toStremioMetaItem(tmdbItem, type) {
     const kwList = type === 'movie' ? tmdbItem.keywords?.keywords : tmdbItem.keywords?.results;
     if (kwList && kwList.length > 0) {
         for (const k of kwList.slice(0, 5)) {
-            meta.links.push({ name: k.name, category: 'Tema', url: `stremio://search?search=${encodeURIComponent(k.name)}` });
+            meta.links.push({ name: k.name, category: 'Tema', url: `stremio:///search?search=${encodeURIComponent(k.name)}` });
         }
     }
 
     // Saga
     if (tmdbItem.belongs_to_collection) {
-        meta.links.push({ name: tmdbItem.belongs_to_collection.name, category: 'Saga', url: `stremio://search?search=${encodeURIComponent(tmdbItem.belongs_to_collection.name)}` });
+        meta.links.push({ name: tmdbItem.belongs_to_collection.name, category: 'Saga', url: `stremio:///search?search=${encodeURIComponent(tmdbItem.belongs_to_collection.name)}` });
     }
 
-    // Network
     if (type === 'series' && tmdbItem.networks) {
         for (const n of tmdbItem.networks) {
-            meta.links.push({ name: n.name, category: 'Network', url: `stremio://search?search=${encodeURIComponent(n.name)}` });
+            meta.links.push({ name: n.name, category: 'Network', url: `stremio:///search?search=${encodeURIComponent(n.name)}` });
         }
+    }
+
+    // Official Socials & Links
+    if (tmdbItem.external_ids) {
+        const ids = tmdbItem.external_ids;
+        if (ids.imdb_id) meta.links.push({ name: 'IMDb', category: 'ID Esterni', url: `https://www.imdb.com/title/${ids.imdb_id}` });
+        if (ids.facebook_id) meta.links.push({ name: 'Facebook', category: 'Social', url: `https://facebook.com/${ids.facebook_id}` });
+        if (ids.instagram_id) meta.links.push({ name: 'Instagram', category: 'Social', url: `https://instagram.com/${ids.instagram_id}` });
+        if (ids.twitter_id) meta.links.push({ name: 'Twitter', category: 'Social', url: `https://twitter.com/${ids.twitter_id}` });
+    }
+    
+    // Website ufficiale
+    if (tmdbItem.homepage) {
+        meta.links.push({ name: 'Sito Ufficiale', category: 'Link', url: tmdbItem.homepage });
     }
 
     if (meta.links.length === 0) delete meta.links;

@@ -32,11 +32,8 @@ module.exports = async (req, res) => {
 
         // Update User's TasteProfile (compensate for fetching, instantaneous DNA update)
         if (userId) {
-            const profile = await TasteProfile.findOne({ owner: userId, context: 'global' });
-            if (profile) {
-                ProfileBuilder.processItem(profile, rawTMDB, 1.0); // apply regular weight
-                await profile.save();
-            }
+            const increments = ProfileBuilder.processItem(rawTMDB, 1.0);
+            await ProfileBuilder.saveAtomic(userId, 'global', increments);
         }
 
         res.json({ success: true });

@@ -72,6 +72,22 @@ const tasteProfileSchema = new mongoose.Schema({
         of: Number,
         default: {}
     },
+    // ID to human-readable Name mapping
+    idNames: {
+        type: Map,
+        of: String,
+        default: {}
+    },
+    syncStatus: {
+        isSyncing: { type: Boolean, default: false },
+        total: { type: Number, default: 0 },
+        current: { type: Number, default: 0 },
+        lastSync: { type: Date }
+    },
+    onboardingCompleted: { 
+        type: Boolean, 
+        default: false 
+    },
     // Elenco ID già processati per evitare ricalcoli
     processedTraktIds: [{
         type: String

@@ -165,14 +165,15 @@ const configureLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHea
 app.post('/api/configure', cookieParser(), configureLimiter, csrfProtection, requireAuth, configureRoute);
 app.post('/api/ai/generate-merged-name', generateMergedName);
 
-// 2.1 Sync Endpoints (Crowdsourced Enrichment)
+// 2.1 Sync & Profile Endpoints
 const syncLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, standardHeaders: true, legacyHeaders: false });
 app.get('/api/sync/global-queue', syncLimiter, require('./src/api/sync/global-queue'));
 app.post('/api/sync/enrich', syncLimiter, inputSanitizer, require('./src/api/sync/enrich'));
 
-// Profile analytics endpoint (DNA & AI Lab)
-const analyticsLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
-app.get('/api/profiles/:id/analytics', analyticsLimiter, inputSanitizer, getProfileAnalytics);
+// Unified Profiles API (DNA, Analytics, Sync Status)
+const profileRoutes = require('./src/api/profiles');
+const profileLimiter = rateLimit({ windowMs: 60 * 1000, limit: 100, standardHeaders: true, legacyHeaders: false });
+app.use('/api/profiles', profileLimiter, inputSanitizer, profileRoutes);
 
 // Catch-all route per gestire il routing lato client di Next.js
 app.get(/.*/, (req, res) => {

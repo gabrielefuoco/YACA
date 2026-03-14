@@ -65,6 +65,12 @@ export const api = {
     post('/api/check-user', { authKey, email }),
   getProfileAnalytics: (profileId: string, userId: string) =>
     get(`/api/profiles/${encodeURIComponent(profileId)}/analytics?userId=${encodeURIComponent(userId)}`),
+  getSyncStatus: (profileId: string, userId: string) =>
+    get(`/api/profiles/${encodeURIComponent(profileId)}/sync-status?userId=${encodeURIComponent(userId)}`),
+  confirmDNA: (profileId: string, userId: string) =>
+    post(`/api/profiles/${encodeURIComponent(profileId)}/dna/confirm`, { userId }),
+  refreshSync: (profileId: string, userId: string) =>
+    post(`/api/profiles/${encodeURIComponent(profileId)}/sync/refresh`, { userId }),
   getGlobalSyncQueue: (limit = 20) => 
     get(`/api/sync/global-queue?limit=${limit}`),
   enrichSyncItem: (body: { tmdbId: string, type: string, rawTMDB: any, userId?: string }) => 

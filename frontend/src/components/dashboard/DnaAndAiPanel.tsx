@@ -21,12 +21,22 @@ interface DnaAndAiPanelProps {
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
 }
 
+interface SyncStatus {
+  isSyncing: boolean;
+  total: number;
+  current: number;
+  onboardingCompleted: boolean;
+  lastSync?: string;
+}
+
 export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) {
   const profileDNA: DNAItem[] = profile?.settings?.manualDNA ?? [];
   const suggestedDNA: DNAItem[] = profile?.settings?.suggestedDNA ?? [];
 
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
+  const [showProgressModal, setShowProgressModal] = useState(false);
 
   const fetchAnalytics = useCallback(async () => {
     setAnalyticsLoading(true);
@@ -44,9 +54,54 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
     }
   }, [profile.id]);
 
+  const fetchSyncStatus = useCallback(async () => {
+    try {
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('yaca_user_id') : null;
+      if (!userId) return;
+      const status = await api.getSyncStatus(profile.id, userId);
+      setSyncStatus(status);
+      
+      // Auto-show modal if syncing or if onboarding is pending with suggestions
+      if (status.isSyncing) {
+        setShowProgressModal(true);
+      }
+    } catch (e) {
+      console.error('Failed to fetch sync status', e);
+    }
+  }, [profile.id]);
+
   useEffect(() => {
     fetchAnalytics();
-  }, [fetchAnalytics]);
+    fetchSyncStatus();
+  }, [fetchAnalytics, fetchSyncStatus]);
+
+  // Polling during sync
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (syncStatus?.isSyncing) {
+      interval = setInterval(fetchSyncStatus, 2000);
+    }
+    return () => clearInterval(interval);
+  }, [syncStatus?.isSyncing, fetchSyncStatus]);
+
+  const handleRefresh = async () => {
+    const userId = localStorage.getItem('yaca_user_id');
+    if (!userId) return;
+    await api.refreshSync(profile.id, userId);
+    setSyncStatus(prev => prev ? { ...prev, isSyncing: true } : null);
+    setShowProgressModal(true);
+  };
+
+  const handleConfirmDNA = async () => {
+    const userId = localStorage.getItem('yaca_user_id');
+    if (!userId) return;
+    const res = await api.confirmDNA(profile.id, userId);
+    if (res.success) {
+      await fetchSyncStatus();
+      setShowProgressModal(false);
+      // Trigger a parent update if needed, or just let local syncStatus handle it
+    }
+  };
 
   const handleAddDNA = (item: DNAItem) => {
     if (profileDNA.find((p) => String(p.id) === String(item.id))) return;
@@ -67,9 +122,19 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
     <div className="flex flex-col gap-10 w-full">
       {/* ── Section 1: DNA Tracker & Editor ── */}
       <section className="flex flex-col gap-6">
-        <div className="flex items-center gap-3 text-primary">
-          <BrainCircuit className="h-6 w-6" />
-          <h2 className="text-lg font-black uppercase tracking-widest">DNA Tracker &amp; Editor</h2>
+        <div className="flex items-center justify-between gap-3 text-primary">
+          <div className="flex items-center gap-3">
+            <BrainCircuit className="h-6 w-6" />
+            <h2 className="text-lg font-black uppercase tracking-widest">DNA Tracker &amp; Editor</h2>
+          </div>
+          <button 
+            onClick={handleRefresh}
+            disabled={syncStatus?.isSyncing}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all disabled:opacity-50"
+          >
+            <span className={`material-symbols-outlined text-sm ${syncStatus?.isSyncing ? 'animate-spin' : ''}`}>sync</span>
+            {syncStatus?.isSyncing ? 'Sincronizzazione...' : 'Aggiorna DNA'}
+          </button>
         </div>
 
         {/* Suggested DNA (read-only) */}
@@ -177,6 +242,87 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
           })}
         </div>
       </section>
+
+      {/* ── Progress & Onboarding Modal ── */}
+      {showProgressModal && syncStatus && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/20">
+                  <BrainCircuit className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">DNA Analysis Engine</h3>
+                  <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">
+                    {syncStatus.isSyncing ? 'Elaborazione in corso...' : 'Analisi Completata'}
+                  </p>
+                </div>
+              </div>
+              {!syncStatus.isSyncing && (
+                <button onClick={() => setShowProgressModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+                  <X className="h-5 w-5" />
+                </button>
+              )}
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-8">
+              {syncStatus.isSyncing ? (
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center justify-between text-sm font-bold">
+                    <span>Mappatura Catalogo</span>
+                    <span className="text-primary">{syncStatus.current} / {syncStatus.total}</span>
+                  </div>
+                  <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all duration-500 ease-out" 
+                      style={{ width: `${Math.round((syncStatus.current / (syncStatus.total || 1)) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-center text-sm text-slate-500 italic">
+                    Stiamo analizzando i tuoi titoli per estrarre il tuo DNA cinofilo unico...
+                  </p>
+                </div>
+              ) : !syncStatus.onboardingCompleted ? (
+                <div className="flex flex-col gap-6">
+                  <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                    <p className="text-sm text-slate-700 dark:text-slate-300 mb-4 leading-relaxed">
+                      Abbiamo analizzato il tuo catalogo! Ecco i tratti principali che abbiamo individuato. Confermi che corrispondono ai tuoi gusti?
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {suggestedDNA.map((p) => (
+                        <span key={p.id} className="inline-flex items-center gap-1 rounded-full bg-primary/20 text-primary px-3 py-1 text-xs font-bold">
+                          {p.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={handleConfirmDNA}
+                    className="w-full py-4 rounded-xl bg-primary text-white font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/30"
+                  >
+                    🚀 Conferma DNA e Inizia
+                  </button>
+                  <p className="text-[10px] text-center text-slate-500 uppercase font-bold tracking-tighter">
+                    Potrai sempre modificare questi tratti nell&apos;editor manuale.
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="inline-flex items-center justify-center p-4 rounded-full bg-emerald-500/20 text-emerald-500 mb-4">
+                    <span className="material-symbols-outlined text-4xl">check_circle</span>
+                  </div>
+                  <h4 className="text-xl font-bold mb-2">Prendi il volo!</h4>
+                  <p className="text-sm text-slate-500">I tuoi suggerimenti sono ora attivi nel sistema AI.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

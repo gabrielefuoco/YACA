@@ -2,6 +2,8 @@ const LRUCache = require('../utils/LRUCache');
 const CacheEntry = require('../models/CacheEntry');
 const { getRedisClient, isRedisAvailable } = require('./redisClient');
 
+const NEGATIVE_CACHE_MARKER = '__NULL__';
+
 class CacheManager {
     static instances = [];
 
@@ -115,15 +117,18 @@ class CacheManager {
             if (envelope && typeof envelope === 'object' && 't' in envelope && 'v' in envelope) {
                 const age = Date.now() - envelope.t;
                 if (age <= this.ramTtlMs) {
-                    return { value: envelope.v, status: 'fresh' };
+                    const finalValue = envelope.v === NEGATIVE_CACHE_MARKER ? null : envelope.v;
+                    return { value: finalValue, status: 'fresh' };
                 }
                 if (this.swrMs > 0 && age <= this.ramTtlMs + this.swrMs) {
-                    return { value: envelope.v, status: 'stale' };
+                    const finalValue = envelope.v === NEGATIVE_CACHE_MARKER ? null : envelope.v;
+                    return { value: finalValue, status: 'stale' };
                 }
                 // Beyond SWR window — treat as miss, but we can still use L2
             } else {
                 // Legacy format (plain value without envelope) — treat as fresh
-                return { value: envelope, status: 'fresh' };
+                const finalValue = envelope === NEGATIVE_CACHE_MARKER ? null : envelope;
+                return { value: finalValue, status: 'fresh' };
             }
         }
 
@@ -143,7 +148,10 @@ class CacheManager {
                 await this._l1Set(key, freshEnvelope, l1Ttl);
                 const age = Date.now() - originalTimestamp;
                 const status = age <= this.ramTtlMs ? 'fresh' : (this.swrMs > 0 && age <= this.ramTtlMs + this.swrMs ? 'stale' : 'miss');
-                return { value: entry.value, status };
+                
+                // Handle negative cache marker
+                const finalValue = entry.value === NEGATIVE_CACHE_MARKER ? null : entry.value;
+                return { value: finalValue, status };
             }
         } catch (error) {
             console.error(`[CacheManager:${this.namespace}] L2 get error:`, error.message);
@@ -174,20 +182,27 @@ class CacheManager {
         const effectiveTtl = ttlMs || this.mongoTtlMs;
         const useRam = options.useRam !== false;
 
+        // Use marker for null values to distinguish from cache miss
+        const storageValue = value === null ? NEGATIVE_CACHE_MARKER : value;
+
         // 1. L1 (Redis / LRU)
         if (useRam) {
-            const envelope = { v: value, t: Date.now() };
+            const envelope = { v: storageValue, t: Date.now() };
             const l1Ttl = this.ramTtlMs + this.swrMs;
             await this._l1Set(key, envelope, l1Ttl);
         }
 
         // 2. L2 (MongoDB)
         try {
+            // Apply TTL jitter (+/- 5%) to mitigate thundering herd
+            const jitter = effectiveTtl * 0.05 * (Math.random() * 2 - 1);
+            const jitteredTtl = Math.max(0, effectiveTtl + jitter);
+
             await CacheEntry.findOneAndUpdate(
                 { key, namespace: this.namespace },
                 {
-                    value,
-                    expiresAt: new Date(Date.now() + effectiveTtl)
+                    value: storageValue,
+                    expiresAt: new Date(Date.now() + jitteredTtl)
                 },
                 { upsert: true, returnDocument: 'after' }
             );

@@ -916,8 +916,13 @@ async function catalogHandler(args, userConfig, hostUrl) {
             return finalizeCatalog(results, id, type, hostUrl);
         }
 
-        if (id === 'yaca_anime_trending') {
-            results = await fetchKitsuCatalog('/anime', skip, { sort: '-popularityRank' });
+        if (id === 'yaca_anime_trending' || id === 'yaca_anime_ova' || id === 'yaca_anime_ona' || id === 'yaca_anime_specials') {
+            const kitsuParams = { sort: '-popularityRank' };
+            if (id === 'yaca_anime_ova') kitsuParams['filter[subtype]'] = 'OVA';
+            if (id === 'yaca_anime_ona') kitsuParams['filter[subtype]'] = 'ONA';
+            if (id === 'yaca_anime_specials') kitsuParams['filter[subtype]'] = 'special';
+
+            results = await fetchKitsuCatalog('/anime', skip, kitsuParams);
             await rateLimitedMap(
                 results,
                 async (item) => {

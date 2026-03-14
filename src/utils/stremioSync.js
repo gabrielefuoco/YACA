@@ -8,8 +8,9 @@ const LOVED_ADDON_URL = 'https://likes.stremio.com/addons/loved/movies-shows';
 /**
  * Fetches data from Stremio (Likes, Loves, Library) and syncs to Global Taste Profile.
  * Also pushes new interactions to Trakt.
+ * If a profileId is provided, it handles profile-specific sync.
  */
-async function syncAllStremioData(userId, authKey) {
+async function syncAllStremioData(userId, authKey, profileId = 'global') {
     try {
         console.log(`[StremioSync] Starting full sync for user ${userId}...`);
 
@@ -33,18 +34,31 @@ async function syncAllStremioData(userId, authKey) {
             library: library
         };
 
-        // 3. Update Global Taste Profile via ProfileBuilder
+        // 3. Update Taste Profile via ProfileBuilder
         const ProfileBuilder = require('../profile/ProfileBuilder');
         const user = await User.findOne({ userId });
-        await ProfileBuilder.syncStremioData(userId, stremioData, user?.apiKeys?.tmdb);
+        const tmdbKey = user?.apiKeys?.tmdb;
 
-        // 4. Push to Trakt (Two-Way Sync)
-        await pushToTrakt(userId, stremioData);
+        if (profileId === 'global') {
+            await ProfileBuilder.syncStremioData(userId, stremioData, tmdbKey, 'global');
+        } else {
+            // Se è un profilo specifico, sincronizziamo i suoi cataloghi
+            const profile = user.profiles.find(p => p.id === profileId);
+            if (profile) {
+                const catalogItems = await syncCatalogData(profile.catalogs);
+                await ProfileBuilder.syncStremioData(userId, catalogItems, tmdbKey, profileId);
+            }
+        }
 
-        // 5. Update lastSync timestamp with randomization logic
-        await updateSyncTimestamp(userId);
+        // 4. Push to Trakt (Two-Way Sync) - Solo per Global o se desiderato
+        if (profileId === 'global') {
+            await pushToTrakt(userId, stremioData);
+        }
 
-        console.log(`[StremioSync] Sync completed successfully for user ${userId}`);
+        // 5. Update lastSync timestamp
+        await updateSyncTimestamp(userId, profileId);
+
+        console.log(`[StremioSync] Sync completed successfully for user ${userId} (${profileId})`);
         return { success: true };
     } catch (error) {
         console.error(`[StremioSync] Error syncing data for user ${userId}:`, error.message);
@@ -102,21 +116,50 @@ async function pushToTrakt(userId, data) {
     }
 }
 
-async function updateSyncTimestamp(userId) {
+async function syncCatalogData(catalogs) {
+    if (!catalogs || !Array.isArray(catalogs)) return [];
+    
+    // Questa funzione estrae gli ID dai cataloghi assegnati al profilo
+    // Per ora supportiamo Preset e Cataloghi Generici che hanno una lista di item pre-caricati
+    let allItems = [];
+    
+    for (const cat of catalogs) {
+        if (cat.items && Array.isArray(cat.items)) {
+            // Se il catalogo ha già gli item (es. un preset caricato o una lista manuale)
+            allItems = [...allItems, ...cat.items];
+        } else if (cat.type === 'preset') {
+            // Se è un preset TMDB, potremmo doverlo risolvere (opzionale se già fatto in UI)
+            // Per ora assumiamo che gli item siano passati o che il profilo sia stato "seedato"
+        }
+    }
+    
+    return allItems;
+}
+
+async function updateSyncTimestamp(userId, profileId) {
     // 8 hours base + random offset between -2h and +2h (± 120 minutes)
     const randomOffsetMs = (Math.floor(Math.random() * 241) - 120) * 60 * 1000;
     const nextSyncInterval = (8 * 60 * 60 * 1000) + randomOffsetMs;
 
+    const update = {
+        $set: {
+            'config.lastStremioSync': new Date(),
+            'config.nextSyncInterval': nextSyncInterval
+        }
+    };
+
+    if (profileId !== 'global') {
+        update.$set[`profiles.$[elem].settings.lastSync`] = new Date();
+    }
+
     await User.findOneAndUpdate(
         { userId },
-        {
-            $set: {
-                'config.lastStremioSync': new Date(),
-                'config.nextSyncInterval': nextSyncInterval
-            }
-        },
-        { returnDocument: 'after' }
+        update,
+        { 
+            arrayFilters: [{ 'elem.id': profileId }],
+            returnDocument: 'after' 
+        }
     );
 }
 
-module.exports = { syncAllStremioData };
+module.exports = { syncAllStremioData, syncCatalogData };

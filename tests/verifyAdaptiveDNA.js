@@ -5,62 +5,93 @@ const TasteProfile = require('../src/models/TasteProfile');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 
 async function runTest() {
+    const TEST_USER_ID = 'test_dna_user';
+    const TEST_CONTEXT = 'test_dna_context';
+
     try {
         await mongoose.connect(process.env.MONGODB_URI);
         console.log('Connected to MongoDB');
 
-        const userId = 'lXI1NtNuGN';
-        const context = '5e37f110';
+        // 1. Cleanup old test data
+        await TasteProfile.deleteMany({ owner: TEST_USER_ID });
+        await User.deleteMany({ userId: TEST_USER_ID });
 
-        const profile = await TasteProfile.findOne({ owner: userId, context });
-        if (!profile) {
-            console.error('Profile not found.');
-            process.exit(1);
+        // 2. Create mock User
+        const user = new User({
+            userId: TEST_USER_ID,
+            email: 'test@example.com',
+            profiles: [{
+                id: TEST_CONTEXT,
+                name: 'Test Profile',
+                settings: {
+                    suggestedDNA: [],
+                    manualDNA: []
+                }
+            }]
+        });
+        await user.save();
+        console.log('Created mock user');
+
+        // 3. Process mock items to build profile
+        console.log('\n--- Processing Mock Item 1 (Cyberpunk Action) ---');
+        const item1 = {
+            genres: [
+                { id: 28, name: 'Action' },
+                { id: 878, name: 'Science Fiction' }
+            ],
+            keywords: {
+                keywords: [
+                    { id: 12377, name: 'Cyberpunk' },
+                    { id: 9663, name: 'Future' }
+                ]
+            }
+        };
+
+        // Run processItem multiple times to exceed thresholds
+        const increments = {};
+        for(let i=0; i<5; i++) {
+            ProfileBuilder.processItem(item1, 1.0, increments);
         }
+        await ProfileBuilder.saveAtomic(TEST_USER_ID, TEST_CONTEXT, increments);
 
-        console.log(`Testing DNA inference for User: ${userId}, Context: ${context}`);
-        
-        console.log('--- Before Inference ---');
-        const userDocBefore = await User.findOne({ userId });
-        const userProfileBefore = userDocBefore.profiles.find(p => p.id === context);
-        console.log('Pending DNA Suggestions:', userProfileBefore.settings.pendingDNASuggestions);
+        // 4. Verify idNames and scores in DB
+        let profile = await TasteProfile.findOne({ owner: TEST_USER_ID, context: TEST_CONTEXT });
+        console.log('\nVerified Profile Persistence:');
+        console.log('- Genre 28 Score:', profile.genreScores.get('28'));
+        console.log('- Keyword 12377 Name in DB:', profile.idNames.get('12377'));
 
-        // Clear existing pending suggestions for testing purposes
-        await User.findOneAndUpdate(
-            { userId: userId, 'profiles.id': context },
-            { $set: { 'profiles.$.settings.pendingDNASuggestions': [] } }
-        );
-
-        // Print score maps for debugging
-        console.log('\n--- Score Maps ---');
-        console.log('Genre Scores:');
-        Array.from(profile.genreScores.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
-            .forEach(([id, score]) => console.log(`  ${id}: ${score.toFixed(2)}`));
-            
-        console.log('Keyword Scores:');
-        Array.from(profile.keywordScores.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
-            .forEach(([id, score]) => console.log(`  ${id}: ${score.toFixed(2)}`));
-
+        // 5. Run DNA Inference
         console.log('\nRunning inferDNAFromProfile...');
         await ProfileBuilder.inferDNAFromProfile(profile);
 
-        console.log('\n--- After Inference ---');
-        const userDocAfter = await User.findOne({ userId });
-        const userProfileAfter = userDocAfter.profiles.find(p => p.id === context);
-        console.log('New Pending DNA Suggestions:');
-        userProfileAfter.settings.pendingDNASuggestions.forEach(s => {
-            console.log(`- Type: ${s.type}, ID: ${s.id}, Name: ${s.name}`);
-        });
+        // 6. Assert result in User settings
+        const updatedUser = await User.findOne({ userId: TEST_USER_ID });
+        const updatedProfile = updatedUser.profiles.find(p => p.id === TEST_CONTEXT);
+        
+        console.log('\n--- Final DNA Results ---');
+        const dna = updatedProfile.settings.suggestedDNA || [];
+        if (dna.length === 0) {
+            console.error('FAIL: No DNA suggested!');
+        } else {
+            dna.forEach(trait => {
+                console.log(`[Trait] Type: ${trait.type}, ID: ${trait.id}, Name: ${trait.name}`);
+                if (trait.id === '12377' && trait.name === 'Cyberpunk') {
+                    console.log('SUCCESS: Cyberpunk keyword mapped correctly!');
+                }
+                if (trait.id === '28' && trait.name === 'Action') {
+                    console.log('SUCCESS: Action genre mapped correctly!');
+                }
+            });
+        }
 
     } catch (error) {
         console.error('Error during test:', error);
     } finally {
+        // Optional: Cleanup
+        // await TasteProfile.deleteMany({ owner: TEST_USER_ID });
+        // await User.deleteMany({ userId: TEST_USER_ID });
         await mongoose.disconnect();
-        console.log('Disconnected from MongoDB');
+        console.log('\nDisconnected from MongoDB');
     }
 }
 
