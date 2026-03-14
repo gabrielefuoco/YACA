@@ -249,6 +249,8 @@ export default function Home() {
     newTraktToken: string | null,
     newTraktRefreshToken: string | null,
     existingUserId?: string,
+    tmdbKey?: string,
+    mistralKey?: string,
     existingProfiles?: any[],
     existingActiveProfileId?: string
   ) => {
@@ -274,6 +276,8 @@ export default function Home() {
       setUserId(existingUserId);
       localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, existingUserId);
     }
+    if (tmdbKey) setGlobalTmdbKey(tmdbKey);
+    if (mistralKey) setGlobalMistralKey(mistralKey);
 
     // Generate initial config — no auth tokens in body, cookie handles identity
     try {
@@ -281,6 +285,8 @@ export default function Home() {
         profiles: profilesToApiPayload(activeProfiles),
         activeProfileId: existingActiveProfileId || activeProfileId,
         userId: existingUserId || (userId ?? undefined),
+        tmdbKey: tmdbKey ?? undefined,
+        mistralKey: mistralKey ?? undefined,
         stremioAuthKey: newStremioAuth?.authKey || undefined,
         email: newStremioAuth?.email,
         traktToken: newTraktToken,
