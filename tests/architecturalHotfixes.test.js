@@ -36,7 +36,7 @@ describe('architectural hotfixes', () => {
 
     it('protects /api/configure with optionalAuth middleware', () => {
         const source = fs.readFileSync(path.join(__dirname, '..', 'index.js'), 'utf-8');
-        expect(source).toContain("app.post('/api/configure', optionalAuth, configureRoute);");
+        expect(source).toContain("app.post('/api/configure', configureLimiter, optionalAuth, configureRoute);");
     });
 
     it('prioritizes JWT userId over request body in configure route', () => {

@@ -250,7 +250,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">Configura le API Key</h2>
-              <p className="text-xs text-white/40">TMDB opzionale, Mistral obbligatoria per le funzioni AI</p>
+              <p className="text-xs text-white/40">TMDB opzionale, Mistral necessaria per usare le funzioni AI</p>
             </div>
           </div>
 
