@@ -12,7 +12,7 @@ const { catalogHandler, buildDiscoveryParams } = require('./src/handlers/catalog
 const { metaHandler } = require('./src/handlers/metaHandler');
 const { generateTmdbFiltersFromPrompt } = require('./src/ai/router');
 const { getPresets, profileTemplates } = require('./src/data/presets');
-const { parseExtra, sanitizeString, isAllowedUrl } = require('./src/utils/helpers');
+const { parseExtra, sanitizeString, isAllowedUrl, resolveHostUrl } = require('./src/utils/helpers');
 const { getBlurredImageUrl, addBadgeToImage } = require('./src/utils/imageProcessor');
 const { streamHandler } = require('./src/handlers/streamHandler');
 const { clearAllTmdbCaches } = require('./src/clients/tmdb');
@@ -46,19 +46,6 @@ connectDB().then(() => {
 // 1. Inizializza Express
 const app = express();
 app.set('trust proxy', 1);
-
-function resolveHostUrl(req) {
-    const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;
-    if (explicitHost) return explicitHost;
-
-    const forwardedHost = req.headers?.['x-forwarded-host'];
-    if (forwardedHost) {
-        const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'https';
-        return `${proto}://${String(forwardedHost).split(',')[0].trim()}`;
-    }
-
-    return `${req.protocol}://${req.get('host')}`;
-}
 
 function csrfProtection(req, res, next) {
     const method = req.method?.toUpperCase();
@@ -683,27 +670,6 @@ app.post('/api/sync/enrich', syncLimiter, require('./src/api/sync/enrich'));
 // Profile analytics endpoint (DNA & AI Lab)
 const analyticsLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
 app.get('/api/profiles/:id/analytics', analyticsLimiter, getProfileAnalytics);
-
-// Endpoint per recuperare i profili dell'utente tramite userId (Sostituisce il decode Base64 frontend)
-app.get('/api/user/:userId', async (req, res) => {
-    const { userId } = req.params;
-    if (!userId) return res.status(400).json({ error: 'userId parameter is required' });
-
-    try {
-        const userConfig = await resolveUserConfig(userId);
-        if (!userConfig) {
-            return res.status(404).json({ error: 'Utente non trovato' });
-        }
-        res.json({
-            profiles: userConfig.profiles || [],
-            activeProfileId: userConfig.activeProfileId,
-            configVersion: userConfig.configVersion
-        });
-    } catch (err) {
-        console.error('Errore durante il recupero dell\'utente:', err.message);
-        res.status(500).json({ error: 'Errore interno del server' });
-    }
-});
 
 // Endpoint per estrarre le statistiche di tutte le cache
 app.get('/api/cache/stats', async (req, res) => {

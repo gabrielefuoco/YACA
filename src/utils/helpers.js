@@ -72,4 +72,17 @@ function getProfileDnaFilters(userConfig, profileId) {
     });
 }
 
-module.exports = { parseExtra, sanitizeString, isAllowedUrl, getProfileDnaFilters };
+function resolveHostUrl(req) {
+    const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;
+    if (explicitHost) return explicitHost;
+
+    const forwardedHost = req.headers?.['x-forwarded-host'];
+    if (forwardedHost) {
+        const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'https';
+        return `${proto}://${String(forwardedHost).split(',')[0].trim()}`;
+    }
+
+    return `${req.protocol}://${req.get('host')}`;
+}
+
+module.exports = { parseExtra, sanitizeString, isAllowedUrl, getProfileDnaFilters, resolveHostUrl };

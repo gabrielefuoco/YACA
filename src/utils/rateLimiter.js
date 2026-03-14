@@ -40,4 +40,4 @@ async function rateLimitedMapFiltered(items, fn, options = {}) {
     return results.filter(Boolean);
 }
 
-module.exports = { rateLimitedMap, rateLimitedMapFiltered, sleep };
+module.exports = { rateLimitedMap, rateLimitedMapFiltered };

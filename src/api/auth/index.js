@@ -20,10 +20,10 @@ const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms — must matc
 /**
  * Builds the Set-Cookie options for the session cookie.
  */
-function getCookieOptions() {
+function buildCookieOptions(httpOnly) {
     const isProd = process.env.NODE_ENV === 'production';
     return {
-        httpOnly: true,
+        httpOnly,
         secure: isProd,
         sameSite: 'lax',
         maxAge: COOKIE_MAX_AGE_MS,
@@ -31,15 +31,12 @@ function getCookieOptions() {
     };
 }
 
+function getCookieOptions() {
+    return buildCookieOptions(true);
+}
+
 function getCsrfCookieOptions() {
-    const isProd = process.env.NODE_ENV === 'production';
-    return {
-        httpOnly: false,
-        secure: isProd,
-        sameSite: 'lax',
-        maxAge: COOKIE_MAX_AGE_MS,
-        path: '/'
-    };
+    return buildCookieOptions(false);
 }
 
 /**
@@ -204,4 +201,4 @@ function logoutHandler(req, res) {
     return res.json({ success: true });
 }
 
-module.exports = { loginHandler, guestHandler, meHandler, logoutHandler, getCookieOptions, signToken };
+module.exports = { loginHandler, guestHandler, meHandler, logoutHandler };

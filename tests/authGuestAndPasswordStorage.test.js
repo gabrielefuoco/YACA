@@ -60,6 +60,10 @@ describe('auth handlers security hardening', () => {
         expect(UserConfig.saveUser.mock.calls[0][0].apiKeys.stremioPass).toBeUndefined();
         expect(res.cookie).toHaveBeenCalledWith('yaca_session', expect.any(String), expect.any(Object));
         expect(res.cookie).toHaveBeenCalledWith('yaca_csrf', expect.any(String), expect.any(Object));
+        const sessionCookieOpts = res.cookie.mock.calls.find(call => call[0] === 'yaca_session')[2];
+        const csrfCookieOpts = res.cookie.mock.calls.find(call => call[0] === 'yaca_csrf')[2];
+        expect(sessionCookieOpts).toEqual(expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/' }));
+        expect(csrfCookieOpts).toEqual(expect.objectContaining({ httpOnly: false, sameSite: 'lax', path: '/' }));
     });
 
     it('creates guest JWT session and cookie for anonymous users', async () => {
