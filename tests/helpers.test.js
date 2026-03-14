@@ -1,4 +1,4 @@
-const { parseExtra, getProfileDnaFilters } = require('../src/utils/helpers');
+const { parseExtra, getProfileDnaFilters, resolveHostUrl } = require('../src/utils/helpers');
 
 describe('parseExtra', () => {
     it('should return empty object for falsy input', () => {
@@ -53,5 +53,42 @@ describe('getProfileDnaFilters', () => {
 
     it('should return an empty array when the profile does not exist', () => {
         expect(getProfileDnaFilters({ profiles: [] }, 'missing')).toEqual([]);
+    });
+});
+
+describe('resolveHostUrl', () => {
+    const originalHost = process.env.HOST_URL;
+    const originalRenderHost = process.env.RENDER_EXTERNAL_URL;
+
+    afterEach(() => {
+        process.env.HOST_URL = originalHost;
+        process.env.RENDER_EXTERNAL_URL = originalRenderHost;
+    });
+
+    it('prefers explicit environment host when configured', () => {
+        process.env.HOST_URL = 'https://configured.example.com';
+        const req = { headers: {}, protocol: 'http', get: () => 'ignored.example.com' };
+        expect(resolveHostUrl(req)).toBe('https://configured.example.com');
+    });
+
+    it('uses forwarded host/proto when present', () => {
+        process.env.HOST_URL = '';
+        process.env.RENDER_EXTERNAL_URL = '';
+        const req = {
+            headers: {
+                'x-forwarded-host': 'edge.example.com, proxy.local',
+                'x-forwarded-proto': 'https'
+            },
+            protocol: 'http',
+            get: () => 'internal.example.com'
+        };
+        expect(resolveHostUrl(req)).toBe('https://edge.example.com');
+    });
+
+    it('falls back to request protocol and host', () => {
+        process.env.HOST_URL = '';
+        process.env.RENDER_EXTERNAL_URL = '';
+        const req = { headers: {}, protocol: 'http', get: () => 'localhost:7000' };
+        expect(resolveHostUrl(req)).toBe('http://localhost:7000');
     });
 });

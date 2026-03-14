@@ -2,7 +2,7 @@ const UserConfig = require('../models/UserConfig');
 const UserList = require('../db/models/UserList');
 const { generateTmdbFiltersFromPrompt } = require('../ai/router');
 const { getPresets } = require('../data/presets');
-const { sanitizeString } = require('../utils/helpers');
+const { sanitizeString, resolveHostUrl } = require('../utils/helpers');
 
 const LIMITS = {
     MAX_PROFILES: 20,
@@ -15,19 +15,6 @@ const LIMITS = {
     MAX_PROFILE_NAME_LENGTH: 50,
     MAX_CATALOG_NAME_LENGTH: 50
 };
-
-function resolveHostUrl(req) {
-    const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;
-    if (explicitHost) return explicitHost;
-
-    const forwardedHost = req.headers?.['x-forwarded-host'];
-    if (forwardedHost) {
-        const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'https';
-        return `${proto}://${String(forwardedHost).split(',')[0].trim()}`;
-    }
-
-    return `${req.protocol}://${req.get('host')}`;
-}
 
 function isValidTraktTokenCandidate(value) {
     return /^[A-Za-z0-9._-]{20,500}$/.test(value);

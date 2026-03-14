@@ -12,7 +12,7 @@ const { catalogHandler, buildDiscoveryParams } = require('./src/handlers/catalog
 const { metaHandler } = require('./src/handlers/metaHandler');
 const { generateTmdbFiltersFromPrompt } = require('./src/ai/router');
 const { getPresets, profileTemplates } = require('./src/data/presets');
-const { parseExtra, sanitizeString, isAllowedUrl } = require('./src/utils/helpers');
+const { parseExtra, sanitizeString, isAllowedUrl, resolveHostUrl } = require('./src/utils/helpers');
 const { getBlurredImageUrl, addBadgeToImage } = require('./src/utils/imageProcessor');
 const { streamHandler } = require('./src/handlers/streamHandler');
 const { clearAllTmdbCaches } = require('./src/clients/tmdb');
@@ -46,19 +46,6 @@ connectDB().then(() => {
 // 1. Inizializza Express
 const app = express();
 app.set('trust proxy', 1);
-
-function resolveHostUrl(req) {
-    const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;
-    if (explicitHost) return explicitHost;
-
-    const forwardedHost = req.headers?.['x-forwarded-host'];
-    if (forwardedHost) {
-        const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'https';
-        return `${proto}://${String(forwardedHost).split(',')[0].trim()}`;
-    }
-
-    return `${req.protocol}://${req.get('host')}`;
-}
 
 function csrfProtection(req, res, next) {
     const method = req.method?.toUpperCase();

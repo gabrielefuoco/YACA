@@ -40,4 +40,13 @@ describe('dead code and duplication cleanup', () => {
         expect(normalizeContentId('tmdb:123')).toBe('123');
         expect(normalizeContentId('TMDB:456')).toBe('456');
     });
+
+    it('deduplicates resolveHostUrl into shared helpers utility', () => {
+        const indexSource = fs.readFileSync(require.resolve('../index.js'), 'utf-8');
+        const configureSource = fs.readFileSync(require.resolve('../src/api/configure.js'), 'utf-8');
+        expect(indexSource).toContain('./src/utils/helpers');
+        expect(configureSource).toContain('../utils/helpers');
+        expect(indexSource).not.toContain('function resolveHostUrl(');
+        expect(configureSource).not.toContain('function resolveHostUrl(');
+    });
 });
