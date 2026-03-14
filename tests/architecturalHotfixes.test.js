@@ -33,4 +33,14 @@ describe('architectural hotfixes', () => {
         const hybridSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'engines', 'hybridRecommendations.js'), 'utf-8');
         expect(hybridSource).not.toContain("require('axios')");
     });
+
+    it('protects /api/configure with optionalAuth middleware', () => {
+        const source = fs.readFileSync(path.join(__dirname, '..', 'index.js'), 'utf-8');
+        expect(source).toContain("app.post('/api/configure', optionalAuth, configureRoute);");
+    });
+
+    it('prioritizes JWT userId over request body in configure route', () => {
+        const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'api', 'configure.js'), 'utf-8');
+        expect(source).toContain('const existingUserId = req.user?.userId || req.body.userId;');
+    });
 });

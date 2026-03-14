@@ -617,7 +617,7 @@ app.post('/api/trakt/device/token', async (req, res) => {
 });
 
 // 2. Registra endpoint configuration (Frontend Web)
-app.post('/api/configure', configureRoute);
+app.post('/api/configure', optionalAuth, configureRoute);
 app.post('/api/ai/generate-merged-name', generateMergedName);
 
 // 2.1 Sync Endpoints (Crowdsourced Enrichment)

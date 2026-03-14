@@ -109,7 +109,8 @@ function createGlobalProfileInput() {
 
 module.exports = async (req, res) => {
     try {
-        const { activeProfileId, profiles, userId: existingUserId } = req.body;
+        const { activeProfileId, profiles } = req.body;
+        const existingUserId = req.user?.userId || req.body.userId;
         // Server-side env vars fallback; request body keys take priority for crowdsourced sync
         const personalTmdbKey = req.body.tmdbKey || null;
         const personalMistralKey = req.body.mistralKey || null;

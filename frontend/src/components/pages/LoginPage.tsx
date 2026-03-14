@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { TraktAuthModal } from '@/components/modals/TraktAuthModal';
 import { api } from '@/lib/api';
 import { StremioAuth } from '@/types';
-import { Loader2, CheckCircle2, ChevronRight, Tv2, Film } from 'lucide-react';
+import { Loader2, CheckCircle2, ChevronRight, Tv2, Film, KeyRound } from 'lucide-react';
 
 interface LoginPageProps {
   onComplete: (
@@ -14,13 +14,18 @@ interface LoginPageProps {
     traktToken: string | null,
     traktRefreshToken: string | null,
     existingUserId?: string,
+    tmdbKey?: string,
+    mistralKey?: string,
     existingProfiles?: any[],
     existingActiveProfileId?: string
   ) => void;
 }
 
 export function LoginPage({ onComplete }: LoginPageProps) {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [sessionUserId, setSessionUserId] = useState<string | undefined>(undefined);
+  const [tmdbKey, setTmdbKey] = useState('');
+  const [mistralKey, setMistralKey] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [stremioAuth, setStremioAuth] = useState<StremioAuth | null>(null);
@@ -47,6 +52,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
           email: data.email ?? email,
         };
         setStremioAuth(auth);
+        setSessionUserId(data.userId);
 
         if (data.isReturningUser) {
           // Returning user: skip Trakt auth, complete login directly
@@ -56,6 +62,8 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             data.traktConnected ? 'connected' : null,
             null,
             data.userId || undefined,
+            undefined,
+            undefined,
             data.profiles || undefined,
             data.activeProfileId || undefined
           );
@@ -75,18 +83,25 @@ export function LoginPage({ onComplete }: LoginPageProps) {
 
   const handleComplete = (tkn: string | null = null, refresh: string | null = null) => {
     setConfiguring(true);
-    onComplete(stremioAuth, tkn, refresh);
+    onComplete(
+      stremioAuth,
+      tkn,
+      refresh,
+      sessionUserId,
+      tmdbKey.trim() || undefined,
+      mistralKey.trim() || undefined
+    );
   };
 
   const handleSkipTrakt = () => {
-    handleComplete();
+    setStep(3);
   };
 
   const handleTraktSuccess = (token: string, refresh: string) => {
     setTraktToken(token);
     setTraktRefreshToken(refresh);
     setTraktModalOpen(false);
-    handleComplete(token, refresh);
+    setStep(3);
   };
 
   if (configuring) {
@@ -102,7 +117,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
     <div className="space-y-6">
       {/* Step indicators */}
       <div className="flex items-center gap-2">
-        {[1, 2].map((s) => (
+        {[1, 2, 3].map((s) => (
           <div key={s} className="flex items-center gap-2">
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${step > s
@@ -114,11 +129,11 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             >
               {step > s ? <CheckCircle2 className="h-4 w-4" /> : s}
             </div>
-            {s < 2 && <div className={`h-px w-8 transition-colors ${step > s ? 'bg-emerald-500' : 'bg-white/[0.08]'}`} />}
+            {s < 3 && <div className={`h-px w-8 transition-colors ${step > s ? 'bg-emerald-500' : 'bg-white/[0.08]'}`} />}
           </div>
         ))}
         <span className="ml-3 text-xs text-white/40 font-medium">
-          {step === 1 ? 'Account Stremio' : 'Connetti Trakt'}
+          {step === 1 ? 'Account Stremio' : step === 2 ? 'Connetti Trakt' : 'Chiavi API'}
         </span>
       </div>
 
@@ -218,11 +233,63 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3">
               <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
               <p className="text-sm text-emerald-400 font-medium">Trakt connesso!</p>
-              <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => handleComplete(traktToken, traktRefreshToken)}>
+              <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => setStep(3)}>
                 Continua <ChevronRight className="h-3 w-3 ml-1" />
               </Button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Step 3: API Keys (BYOK) */}
+      {step === 3 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/20 shadow-lg shadow-cyan-500/10">
+              <KeyRound className="h-6 w-6 text-cyan-300" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Configura le API Key</h2>
+              <p className="text-xs text-white/40">TMDB opzionale, Mistral necessaria per le funzioni AI</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="tmdbKey">TMDB API Key (opzionale)</Label>
+              <Input
+                id="tmdbKey"
+                type="password"
+                value={tmdbKey}
+                onChange={(e) => setTmdbKey(e.target.value)}
+                placeholder="Inserisci la tua TMDB API key"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="mistralKey">Mistral API Key</Label>
+              <Input
+                id="mistralKey"
+                type="password"
+                value={mistralKey}
+                onChange={(e) => setMistralKey(e.target.value)}
+                placeholder="Inserisci la tua Mistral API key"
+                className="mt-1"
+              />
+              <p className="mt-1 text-xs text-white/40">
+                Senza chiave Mistral personale le funzioni AI saranno disabilitate.
+              </p>
+            </div>
+
+            <Button
+              className="w-full bg-gradient-to-r from-[#8a5aeb] to-[#6d3fd4] hover:from-[#7a4adb] hover:to-[#5d2fc4] shadow-lg shadow-[#8a5aeb]/20"
+              onClick={() => handleComplete(traktToken, traktRefreshToken)}
+            >
+              Completa configurazione
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
         </div>
       )}
 
