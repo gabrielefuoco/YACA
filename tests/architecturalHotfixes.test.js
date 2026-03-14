@@ -36,7 +36,8 @@ describe('architectural hotfixes', () => {
 
     it('protects /api/configure with requireAuth middleware', () => {
         const source = fs.readFileSync(path.join(__dirname, '..', 'index.js'), 'utf-8');
-        expect(source).toContain("app.post('/api/configure', configureLimiter, requireAuth, configureRoute);");
+        expect(source).toContain("app.post('/api/configure', cookieParser(), configureLimiter, csrfProtection, requireAuth, configureRoute);");
+        expect(source).toContain("req.get('x-csrf-token')");
     });
 
     it('prioritizes JWT userId over request body in configure route', () => {

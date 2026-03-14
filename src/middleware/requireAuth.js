@@ -5,6 +5,7 @@
 const jwt = require('jsonwebtoken');
 
 const COOKIE_NAME = 'yaca_session';
+const CSRF_COOKIE_NAME = 'yaca_csrf';
 
 /**
  * Middleware that requires a valid JWT session cookie.
@@ -63,4 +64,4 @@ function optionalAuth(req, res, next) {
     next();
 }
 
-module.exports = { requireAuth, optionalAuth, COOKIE_NAME };
+module.exports = { requireAuth, optionalAuth, COOKIE_NAME, CSRF_COOKIE_NAME };

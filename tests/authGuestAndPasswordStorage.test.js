@@ -58,6 +58,8 @@ describe('auth handlers security hardening', () => {
             apiKeys: { stremio: 'stremio_auth_key' }
         }));
         expect(UserConfig.saveUser.mock.calls[0][0].apiKeys.stremioPass).toBeUndefined();
+        expect(res.cookie).toHaveBeenCalledWith('yaca_session', expect.any(String), expect.any(Object));
+        expect(res.cookie).toHaveBeenCalledWith('yaca_csrf', expect.any(String), expect.any(Object));
     });
 
     it('creates guest JWT session and cookie for anonymous users', async () => {
@@ -68,7 +70,8 @@ describe('auth handlers security hardening', () => {
         await guestHandler(req, res);
 
         expect(UserConfig.saveUser).toHaveBeenCalledWith({ userId: 'guest_user_id' });
-        expect(res.cookie).toHaveBeenCalled();
+        expect(res.cookie).toHaveBeenCalledWith('yaca_session', expect.any(String), expect.any(Object));
+        expect(res.cookie).toHaveBeenCalledWith('yaca_csrf', expect.any(String), expect.any(Object));
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
             success: true,
             userId: 'guest_user_id',

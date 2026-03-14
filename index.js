@@ -33,7 +33,7 @@ const { rateLimitedMap } = require('./src/utils/rateLimiter');
 const { disconnectRedis } = require('./src/cache/redisClient');
 const { preWarmRedisFromMongo } = require('./src/cache/preWarm');
 const { loginHandler, guestHandler, meHandler, logoutHandler } = require('./src/api/auth');
-const { requireAuth } = require('./src/middleware/requireAuth');
+const { requireAuth, COOKIE_NAME, CSRF_COOKIE_NAME } = require('./src/middleware/requireAuth');
 
 const tmdbClient = createAxiosInstance('https://api.themoviedb.org/3');
 
@@ -59,6 +59,47 @@ function resolveHostUrl(req) {
 
     return `${req.protocol}://${req.get('host')}`;
 }
+
+function csrfProtection(req, res, next) {
+    const method = req.method?.toUpperCase();
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        return next();
+    }
+
+    const hasSessionCookie = Boolean(req.cookies?.[COOKIE_NAME]);
+    if (hasSessionCookie) {
+        const csrfCookie = req.cookies?.[CSRF_COOKIE_NAME];
+        const csrfHeader = req.get('x-csrf-token');
+        if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+            return res.status(403).json({ error: 'CSRF validation failed.' });
+        }
+    }
+
+    const origin = req.get('origin');
+    const referer = req.get('referer');
+    if (!origin && !referer) {
+        return next();
+    }
+
+    let expectedHost = null;
+    try {
+        expectedHost = new URL(resolveHostUrl(req)).host;
+    } catch {
+        expectedHost = req.get('host');
+    }
+
+    const candidate = origin || referer;
+    try {
+        const sourceHost = new URL(candidate).host;
+        if (sourceHost !== expectedHost) {
+            return res.status(403).json({ error: 'CSRF validation failed.' });
+        }
+    } catch {
+        return res.status(403).json({ error: 'CSRF validation failed.' });
+    }
+
+    return next();
+}
 const PORT = process.env.PORT || 7000;
 
 const BADGE_CACHE_TTL_SECS = 14 * 24 * 60 * 60; // 1209600
@@ -75,7 +116,6 @@ const corsOptions = corsOrigins
     ? { origin: corsOrigins.split(',').map(o => o.trim()), credentials: true, methods: ['GET', 'POST'] }
     : { credentials: true, methods: ['GET', 'POST'] };
 app.use(cors(corsOptions));
-app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'frontend', 'out')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '1mb' }));
@@ -121,10 +161,10 @@ const authLimiter = rateLimit({
 });
 
 // --- AUTH ROUTES (JWT HttpOnly Cookie) ---
-app.post('/api/auth/login', authLimiter, loginHandler);
-app.post('/api/auth/guest', authLimiter, guestHandler);
-app.get('/api/auth/me', authLimiter, meHandler);
-app.post('/api/auth/logout', logoutHandler);
+app.post('/api/auth/login', cookieParser(), authLimiter, csrfProtection, loginHandler);
+app.post('/api/auth/guest', cookieParser(), authLimiter, csrfProtection, guestHandler);
+app.get('/api/auth/me', cookieParser(), authLimiter, meHandler);
+app.post('/api/auth/logout', cookieParser(), csrfProtection, logoutHandler);
 
 // Endpoint per recuperare i preset disponibili
 // 2. API per il frontend (configurazione)
@@ -632,7 +672,7 @@ app.post('/api/trakt/device/token', async (req, res) => {
 
 // 2. Registra endpoint configuration (Frontend Web)
 const configureLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
-app.post('/api/configure', configureLimiter, requireAuth, configureRoute);
+app.post('/api/configure', cookieParser(), configureLimiter, csrfProtection, requireAuth, configureRoute);
 app.post('/api/ai/generate-merged-name', generateMergedName);
 
 // 2.1 Sync Endpoints (Crowdsourced Enrichment)

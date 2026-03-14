@@ -7,7 +7,8 @@
  *   POST /api/auth/logout — Clears session cookie
  */
 const jwt = require('jsonwebtoken');
-const { COOKIE_NAME } = require('../../middleware/requireAuth');
+const crypto = require('crypto');
+const { COOKIE_NAME, CSRF_COOKIE_NAME } = require('../../middleware/requireAuth');
 const { stremioClient } = require('../../clients/stremio');
 const UserConfig = require('../../models/UserConfig');
 const User = require('../../db/models/User');
@@ -23,6 +24,17 @@ function getCookieOptions() {
     const isProd = process.env.NODE_ENV === 'production';
     return {
         httpOnly: true,
+        secure: isProd,
+        sameSite: 'lax',
+        maxAge: COOKIE_MAX_AGE_MS,
+        path: '/'
+    };
+}
+
+function getCsrfCookieOptions() {
+    const isProd = process.env.NODE_ENV === 'production';
+    return {
+        httpOnly: false,
         secure: isProd,
         sameSite: 'lax',
         maxAge: COOKIE_MAX_AGE_MS,
@@ -96,7 +108,9 @@ async function loginHandler(req, res) {
 
         // 3. Sign JWT and set cookie
         const token = signToken({ userId, email: resolvedEmail });
+        const csrfToken = crypto.randomBytes(32).toString('hex');
         res.cookie(COOKIE_NAME, token, getCookieOptions());
+        res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions());
 
         // 4. Return user info (no sensitive tokens in the body)
         return res.json({
@@ -124,7 +138,9 @@ async function guestHandler(req, res) {
         const userId = nanoid(10);
         await UserConfig.saveUser({ userId });
         const token = signToken({ userId, email: null, isGuest: true });
+        const csrfToken = crypto.randomBytes(32).toString('hex');
         res.cookie(COOKIE_NAME, token, getCookieOptions());
+        res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions());
         return res.json({ success: true, userId, isGuest: true });
     } catch (err) {
         console.error('[Auth] Guest login error:', err.message);
@@ -184,6 +200,7 @@ async function meHandler(req, res) {
  */
 function logoutHandler(req, res) {
     res.clearCookie(COOKIE_NAME, getCookieOptions());
+    res.clearCookie(CSRF_COOKIE_NAME, getCsrfCookieOptions());
     return res.json({ success: true });
 }
 

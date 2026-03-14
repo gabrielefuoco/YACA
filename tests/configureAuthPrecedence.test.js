@@ -82,5 +82,8 @@ describe('configure route auth userId precedence', () => {
 
         expect(UserConfig.saveUser).not.toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            error: expect.stringContaining('Non autenticato')
+        }));
     });
 });

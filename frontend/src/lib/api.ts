@@ -1,9 +1,19 @@
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
+function getCsrfTokenFromCookie() {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|;\s*)yaca_csrf=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 async function post(url: string, body?: object) {
+  const csrfToken = getCsrfTokenFromCookie();
+  const headers = csrfToken
+    ? { ...JSON_HEADERS, 'X-CSRF-Token': csrfToken }
+    : JSON_HEADERS;
   const res = await fetch(url, {
     method: 'POST',
-    headers: JSON_HEADERS,
+    headers,
     credentials: 'include',
     body: body ? JSON.stringify(body) : undefined,
   });
