@@ -110,7 +110,7 @@ function createGlobalProfileInput() {
 module.exports = async (req, res) => {
     try {
         const { activeProfileId, profiles } = req.body;
-        const existingUserId = req.user?.userId || req.body.userId;
+        const existingUserId = req.user?.userId || null;
         // Server-side env vars fallback; request body keys take priority for crowdsourced sync
         const personalTmdbKey = req.body.tmdbKey || null;
         const personalMistralKey = req.body.mistralKey || null;
@@ -118,6 +118,7 @@ module.exports = async (req, res) => {
         const effectiveTmdbKey = personalTmdbKey || process.env.TMDB_API_KEY;
         // BYOK Strict: Mistral AI generation requires a personal key — no server fallback
         const effectiveMistralKey = personalMistralKey || null;
+        const mistralKey = effectiveMistralKey;
         const traktToken = req.body.traktToken || req.body.traktUsername;
         const traktRefreshToken = req.body.traktRefreshToken || null;
         const mdblistKey = req.body.mdblistKey || null;
