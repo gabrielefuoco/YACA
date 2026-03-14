@@ -8,7 +8,7 @@
  * This script:
  * 1. Connects to MongoDB
  * 2. Iterates all UserConfig documents
- * 3. Checks each sensitive field — if plaintext (not in IV:Tag:CipherText format), encrypts it
+ * 3. Checks each sensitive field — if plaintext (not in YACA_ENC:v1 format), encrypts it
  * 4. Updates the document in-place
  * 
  * Safe to run multiple times (idempotent) — already-encrypted values are skipped.
@@ -24,17 +24,12 @@ const SENSITIVE_FIELDS = [
     'apiKeys.traktRefreshToken',
     'apiKeys.mistral',
     'apiKeys.mdblist',
-    'apiKeys.stremio',
-    'apiKeys.stremioPass'
+    'apiKeys.stremio'
 ];
 
 async function migrate() {
     // Validate encryption key
-    const key = getMasterKey();
-    if (!key) {
-        console.error('❌ MASTER_ENCRYPTION_KEY non configurata o non valida (deve essere 32 byte in base64).');
-        process.exit(1);
-    }
+    getMasterKey();
 
     const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
     if (!uri) {

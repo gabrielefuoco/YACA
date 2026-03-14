@@ -83,14 +83,14 @@ async function loginHandler(req, res) {
             await UserConfig.saveUser({
                 userId,
                 email: resolvedEmail,
-                apiKeys: { stremio: authKey, stremioPass: password }
+                apiKeys: { stremio: authKey }
             });
         } else {
             userId = nanoid(10);
             await UserConfig.saveUser({
                 userId,
                 email: resolvedEmail,
-                apiKeys: { stremio: authKey, stremioPass: password }
+                apiKeys: { stremio: authKey }
             });
         }
 
@@ -112,6 +112,23 @@ async function loginHandler(req, res) {
     } catch (err) {
         console.error('[Auth] Login error:', err.message);
         return res.json({ success: false, error: 'Errore di connessione al servizio di autenticazione.' });
+    }
+}
+
+/**
+ * POST /api/auth/guest
+ * Creates an anonymous guest session with JWT cookie.
+ */
+async function guestHandler(req, res) {
+    try {
+        const userId = nanoid(10);
+        await UserConfig.saveUser({ userId });
+        const token = signToken({ userId, email: null, isGuest: true });
+        res.cookie(COOKIE_NAME, token, getCookieOptions());
+        return res.json({ success: true, userId, isGuest: true });
+    } catch (err) {
+        console.error('[Auth] Guest login error:', err.message);
+        return res.status(500).json({ success: false, error: 'Errore creazione sessione ospite.' });
     }
 }
 
@@ -170,4 +187,4 @@ function logoutHandler(req, res) {
     return res.json({ success: true });
 }
 
-module.exports = { loginHandler, meHandler, logoutHandler, getCookieOptions, signToken };
+module.exports = { loginHandler, guestHandler, meHandler, logoutHandler, getCookieOptions, signToken };

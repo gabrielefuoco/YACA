@@ -19,6 +19,8 @@ export const api = {
   // Auth endpoints (JWT HttpOnly Cookie)
   authLogin: (email: string, password: string) =>
     post('/api/auth/login', { email, password }),
+  authGuest: () =>
+    post('/api/auth/guest'),
   authMe: () =>
     fetch('/api/auth/me', { credentials: 'include' }).then(async (r) => {
       if (!r.ok) return { authenticated: false };

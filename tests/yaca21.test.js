@@ -16,7 +16,7 @@ jest.mock('../src/clients/tmdb', () => ({
 }));
 jest.mock('../src/models/UserConfig', () => ({
     saveUser: jest.fn(),
-    getUser: jest.fn()
+    getUser: jest.fn().mockResolvedValue(null)
 }));
 jest.mock('nanoid', () => ({
     nanoid: () => 'mocked-id'

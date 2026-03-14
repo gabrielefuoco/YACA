@@ -1,5 +1,6 @@
 jest.mock('../src/models/UserConfig', () => ({
-    saveUser: jest.fn()
+    saveUser: jest.fn(),
+    getUser: jest.fn().mockResolvedValue(null)
 }));
 
 jest.mock('nanoid', () => ({
@@ -8,6 +9,11 @@ jest.mock('nanoid', () => ({
 
 jest.mock('../src/ai/router', () => ({
     generateTmdbFiltersFromPrompt: jest.fn()
+}));
+
+jest.mock('../src/db/models/UserList', () => ({
+    findOneAndUpdate: jest.fn().mockResolvedValue({}),
+    deleteMany: jest.fn().mockResolvedValue({ deletedCount: 0 })
 }));
 
 jest.mock('../src/data/presets', () => ({
@@ -40,6 +46,7 @@ describe('configure route global profile safeguards', () => {
         const req = {
             protocol: 'http',
             get: jest.fn(() => 'localhost:7000'),
+            user: { userId: 'u1', email: 'user@example.com' },
             body: {
                 activeProfileId: 'p1',
                 profiles: [{
@@ -68,6 +75,7 @@ describe('configure route global profile safeguards', () => {
         const req = {
             protocol: 'http',
             get: jest.fn(() => 'localhost:7000'),
+            user: { userId: 'u1', email: 'user@example.com' },
             body: {
                 activeProfileId: 'global',
                 profiles: [{
@@ -96,6 +104,7 @@ describe('configure route global profile safeguards', () => {
         const req = {
             protocol: 'http',
             get: jest.fn(() => 'localhost:7000'),
+            user: { userId: 'u1', email: 'user@example.com' },
             body: {
                 activeProfileId: 'p1',
                 profiles: [{
@@ -130,6 +139,7 @@ describe('configure route global profile safeguards', () => {
         const req = {
             protocol: 'http',
             get: jest.fn(() => 'localhost:7000'),
+            user: { userId: 'u1', email: 'user@example.com' },
             body: {
                 activeProfileId: 'p1',
                 profiles: [{
@@ -161,6 +171,7 @@ describe('configure route global profile safeguards', () => {
         const req = {
             protocol: 'http',
             get: jest.fn(() => 'localhost:7000'),
+            user: { userId: 'u1', email: 'user@example.com' },
             body: {
                 activeProfileId: 'p1',
                 profiles: [{
@@ -192,6 +203,7 @@ describe('configure route global profile safeguards', () => {
         const req = {
             protocol: 'http',
             get: jest.fn(() => 'localhost:7000'),
+            user: { userId: 'u1', email: 'user@example.com' },
             body: {
                 activeProfileId: 'p1',
                 profiles: [{

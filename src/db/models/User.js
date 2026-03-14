@@ -4,19 +4,18 @@ const { encryptIfNeeded, decryptSafe, getMasterKey } = require('../../utils/encr
 /**
  * Creates a Mongoose schema type descriptor with transparent AES-256-GCM encryption.
  * The `set` function encrypts on write; the `get` function decrypts on read.
- * If MASTER_ENCRYPTION_KEY is not configured, values pass through as plaintext.
  */
 function encryptedString() {
     return {
         type: String,
         set: function (val) {
             if (!val || typeof val !== 'string' || val.length === 0) return val;
-            if (!getMasterKey()) return val; // No encryption key — store plaintext
+            getMasterKey();
             return encryptIfNeeded(val);
         },
         get: function (val) {
             if (!val || typeof val !== 'string' || val.length === 0) return val;
-            if (!getMasterKey()) return val; // No encryption key — return as-is
+            getMasterKey();
             return decryptSafe(val);
         }
     };
@@ -41,8 +40,7 @@ const userSchema = new mongoose.Schema({
         traktRefreshToken: encryptedString(),
         mistral: encryptedString(),
         mdblist: encryptedString(),
-        stremio: encryptedString(),
-        stremioPass: encryptedString() // Password Stremio per auto-login
+        stremio: encryptedString()
     },
     // Configurazioni globali dell'Addon
     config: {

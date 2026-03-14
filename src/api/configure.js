@@ -1,6 +1,5 @@
 const UserConfig = require('../models/UserConfig');
 const UserList = require('../db/models/UserList');
-const { nanoid } = require('nanoid');
 const { generateTmdbFiltersFromPrompt } = require('../ai/router');
 const { getPresets } = require('../data/presets');
 const { sanitizeString } = require('../utils/helpers');
@@ -16,6 +15,29 @@ const LIMITS = {
     MAX_PROFILE_NAME_LENGTH: 50,
     MAX_CATALOG_NAME_LENGTH: 50
 };
+
+function resolveHostUrl(req) {
+    const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;
+    if (explicitHost) return explicitHost;
+
+    const forwardedHost = req.headers?.['x-forwarded-host'];
+    if (forwardedHost) {
+        const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'https';
+        return `${proto}://${String(forwardedHost).split(',')[0].trim()}`;
+    }
+
+    return `${req.protocol}://${req.get('host')}`;
+}
+
+function isValidTraktTokenCandidate(value) {
+    return /^[A-Za-z0-9._-]{20,500}$/.test(value);
+}
+
+function normalizeInputString(value) {
+    if (value === undefined || value === null) return value;
+    if (typeof value !== 'string') return value;
+    return value.trim();
+}
 
 function splitOrIds(value) {
     if (Array.isArray(value)) return value.map(String).map(v => v.trim()).filter(Boolean);
@@ -109,22 +131,29 @@ function createGlobalProfileInput() {
 
 module.exports = async (req, res) => {
     try {
+        if (!req.user?.userId) {
+            return res.status(401).json({ error: 'Non autenticato. Effettua il login.' });
+        }
+
         const { activeProfileId, profiles } = req.body;
-        const existingUserId = req.user?.userId || null;
+        const existingUserId = req.user.userId;
         // Server-side env vars fallback; request body keys take priority for crowdsourced sync
-        const personalTmdbKey = req.body.tmdbKey || null;
-        const personalMistralKey = req.body.mistralKey || null;
-        
+        const personalTmdbKey = normalizeInputString(req.body.tmdbKey);
+        const personalMistralKey = normalizeInputString(req.body.mistralKey);
+
+        const existingUser = await UserConfig.getUser(existingUserId);
+
         const effectiveTmdbKey = personalTmdbKey || process.env.TMDB_API_KEY;
         // BYOK Strict: Mistral AI generation requires a personal key — no server fallback
-        const effectiveMistralKey = personalMistralKey || null;
+        const effectiveMistralKey = (personalMistralKey === undefined
+            ? (existingUser?.apiKeys?.mistral || null)
+            : (personalMistralKey || null));
         const mistralKey = effectiveMistralKey;
-        const traktToken = req.body.traktToken || req.body.traktUsername;
-        const traktRefreshToken = req.body.traktRefreshToken || null;
-        const mdblistKey = req.body.mdblistKey || null;
-        const stremioAuthKey = req.body.stremioAuthKey || null;
-        const stremioEmail = req.body.stremioEmail || req.body.email || null;
-        const stremioPassword = req.body.stremioPassword || null;
+        const traktToken = normalizeInputString(req.body.traktToken);
+        const traktRefreshToken = normalizeInputString(req.body.traktRefreshToken);
+        const mdblistKey = normalizeInputString(req.body.mdblistKey);
+        const stremioAuthKey = normalizeInputString(req.body.stremioAuthKey);
+        const stremioEmail = req.user?.email || existingUser?.email || null;
 
         if (!effectiveTmdbKey) {
             return res.status(400).json({ error: "TMDB API key non configurata sul server o mancante." });
@@ -135,6 +164,9 @@ module.exports = async (req, res) => {
         }
         if (personalMistralKey && (typeof personalMistralKey !== 'string' || personalMistralKey.length > LIMITS.MAX_KEY_LENGTH)) {
             return res.status(400).json({ error: "Mistral Key non valida." });
+        }
+        if (traktToken !== undefined && traktToken !== null && traktToken !== '' && !isValidTraktTokenCandidate(traktToken)) {
+            return res.status(400).json({ error: "Token Trakt non valido." });
         }
         if (traktToken && (typeof traktToken !== 'string' || traktToken.length > LIMITS.MAX_TOKEN_LENGTH)) {
             return res.status(400).json({ error: "Token Trakt non valido." });
@@ -190,7 +222,8 @@ module.exports = async (req, res) => {
         // Ricalcola i preset con date dinamiche
         const presetsList = getPresets();
 
-        const finalUserId = existingUserId || nanoid(10);
+        const finalUserId = existingUserId;
+        const warnings = [];
 
         // --- PROCESSING PROFILES ---
         for (const profile of inputProfiles) {
@@ -268,7 +301,15 @@ module.exports = async (req, res) => {
                 for (let i = 0; i < validPrompts.length; i++) {
                     const prompt = validPrompts[i];
                     const result = settledResults[i];
-                    if (result.status !== 'fulfilled') continue;
+                    if (result.status !== 'fulfilled') {
+                        warnings.push({
+                            type: 'ai_generation_failed',
+                            profileId: profile.id || 'global',
+                            prompt,
+                            message: `Il catalogo AI per il prompt "${prompt}" non è stato generato.`
+                        });
+                        continue;
+                    }
 
                     const filters = result.value;
                     if (!filters || typeof filters !== 'object') continue;
@@ -390,11 +431,10 @@ module.exports = async (req, res) => {
             apiKeys: {
                 tmdb: personalTmdbKey,
                 mistral: personalMistralKey,
-                trakt: traktToken || null,
-                traktRefreshToken: traktRefreshToken || null,
-                mdblist: mdblistKey || null,
-                stremio: stremioAuthKey || null,
-                stremioPass: stremioPassword || null
+                trakt: traktToken,
+                traktRefreshToken,
+                mdblist: mdblistKey,
+                stremio: stremioAuthKey
             },
             config: {
                 activeProfileId: finalActiveProfileId,
@@ -427,14 +467,15 @@ module.exports = async (req, res) => {
         }
 
         // 5. Costruisci URL Manifest Stateful
-        const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+        const hostUrl = resolveHostUrl(req);
         const manifestUrl = `${hostUrl}/${userDoc.userId}/${configVersion}/manifest.json`;
 
         res.json({
             success: true,
             userId: userDoc.userId,
             manifestUrl,
-            configVersion
+            configVersion,
+            warnings
         });
 
     } catch (err) {
