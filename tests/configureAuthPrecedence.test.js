@@ -61,7 +61,7 @@ describe('configure route auth userId precedence', () => {
         }));
     });
 
-    it('falls back to body userId when JWT identity is missing', async () => {
+    it('ignores body userId when JWT identity is missing and generates one', async () => {
         const req = {
             protocol: 'http',
             get: jest.fn(() => 'localhost:7000'),
@@ -84,7 +84,7 @@ describe('configure route auth userId precedence', () => {
         await configureRoute(req, res);
 
         expect(UserConfig.saveUser).toHaveBeenCalledWith(expect.objectContaining({
-            userId: 'body_user'
+            userId: 'generated_user'
         }));
     });
 });

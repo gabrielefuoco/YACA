@@ -59,7 +59,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
           setConfiguring(true);
           onComplete(
             auth,
-            data.traktConnected ? 'connected' : null,
+            null,
             null,
             data.userId || undefined,
             undefined,

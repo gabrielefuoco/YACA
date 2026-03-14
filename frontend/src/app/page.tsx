@@ -284,7 +284,6 @@ export default function Home() {
       const data = await api.configure({
         profiles: profilesToApiPayload(activeProfiles),
         activeProfileId: existingActiveProfileId || activeProfileId,
-        userId: existingUserId || (userId ?? undefined),
         tmdbKey: tmdbKey ?? undefined,
         mistralKey: mistralKey ?? undefined,
         stremioAuthKey: newStremioAuth?.authKey || undefined,

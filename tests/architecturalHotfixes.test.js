@@ -41,6 +41,24 @@ describe('architectural hotfixes', () => {
 
     it('prioritizes JWT userId over request body in configure route', () => {
         const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'api', 'configure.js'), 'utf-8');
-        expect(source).toContain('const existingUserId = req.user?.userId || req.body.userId;');
+        expect(source).toContain('const existingUserId = req.user?.userId || null;');
+        expect(source).not.toContain('const existingUserId = req.user?.userId || req.body.userId;');
+    });
+
+    it('defines mistralKey alias for AI prompt generation', () => {
+        const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'api', 'configure.js'), 'utf-8');
+        expect(source).toContain('const mistralKey = effectiveMistralKey;');
+    });
+
+    it('does not send userId from frontend configure payload', () => {
+        const source = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'src', 'app', 'page.tsx'), 'utf-8');
+        expect(source).not.toContain('userId: existingUserId || (userId ?? undefined),');
+    });
+
+    it('does not overwrite trakt token for returning user login flow', () => {
+        const source = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'src', 'components', 'pages', 'LoginPage.tsx'), 'utf-8');
+        const normalized = source.replace(/\s+/g, '');
+        expect(normalized).toContain('onComplete(auth,null,null,data.userId||undefined,');
+        expect(source).not.toContain("data.traktConnected ? 'connected' : null,");
     });
 });
