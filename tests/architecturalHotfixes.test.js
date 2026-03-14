@@ -57,8 +57,8 @@ describe('architectural hotfixes', () => {
 
     it('does not overwrite trakt token for returning user login flow', () => {
         const source = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'src', 'components', 'pages', 'LoginPage.tsx'), 'utf-8');
-        expect(source).toContain('onComplete(');
-        expect(source).toContain('            null,');
+        const normalized = source.replace(/\s+/g, '');
+        expect(normalized).toContain('onComplete(auth,null,null,data.userId||undefined,');
         expect(source).not.toContain("data.traktConnected ? 'connected' : null,");
     });
 });
