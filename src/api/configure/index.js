@@ -1,9 +1,9 @@
 const UserConfig = require('../../models/UserConfig');
-const UserList = require('../../models/UserList');
+const UserList = require('../../db/models/UserList');
 const { resolveHostUrl } = require('../../utils/helpers');
 const { validateAuth, validateKeys } = require('./validators');
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');
-const { scheduleSync } = require('../../utils/syncManager');
+const { updateStremioAddonCollection } = require('../../utils/stremioAddonSync');
 
 module.exports = async (req, res) => {
     try {
@@ -99,7 +99,10 @@ module.exports = async (req, res) => {
         const manifestUrl = `${hostUrl}/${userDoc.userId}/${configVersion}/manifest.json`;
 
         if (userDoc.apiKeys?.stremio) {
-            scheduleSync(userDoc.userId, userDoc.apiKeys.stremio, hostUrl, configVersion);
+            updateStremioAddonCollection(userDoc.apiKeys.stremio, manifestUrl)
+                .catch((syncError) => {
+                    console.error('Errore aggiornamento addon Stremio:', syncError.message);
+                });
         }
 
         res.json({
