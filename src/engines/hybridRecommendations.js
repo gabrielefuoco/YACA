@@ -10,11 +10,8 @@ const { hybridRecommendationsCache } = require('../cache/cacheInstances');
 const { getProfileDnaFilters } = require('../utils/helpers');
 const { rateLimitedMap } = require('../utils/rateLimiter');
 const { generateDiscoveryQueries } = require('../ai/querySynthesizer');
+const { normalizeContentId } = require('../utils/contentId');
 const activeSyncLocks = new Set();
-
-function normalizeContentId(id) {
-    return String(id ?? '').replace(/^tmdb:/i, '').trim();
-}
 
 /**
  * Returns the active profile settings for the user.

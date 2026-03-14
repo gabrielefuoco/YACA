@@ -21,4 +21,15 @@ describe('dead code and duplication cleanup', () => {
         const rateLimiter = require('../src/utils/rateLimiter');
         expect(rateLimiter.sleep).toBeUndefined();
     });
+
+    it('uses shared normalizeContentId utility instead of duplicate definitions', () => {
+        const catalogSource = fs.readFileSync(require.resolve('../src/handlers/catalogHandler.js'), 'utf-8');
+        const hybridSource = fs.readFileSync(require.resolve('../src/engines/hybridRecommendations.js'), 'utf-8');
+        expect(catalogSource).not.toContain('function normalizeContentId(');
+        expect(hybridSource).not.toContain('function normalizeContentId(');
+
+        const { normalizeContentId } = require('../src/utils/contentId');
+        expect(normalizeContentId('tmdb:123')).toBe('123');
+        expect(normalizeContentId('TMDB:456')).toBe('456');
+    });
 });

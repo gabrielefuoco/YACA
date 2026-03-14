@@ -7,6 +7,7 @@ const { routeLiveStremioSearch } = require('../ai/router');
 const { getHybridCatalog } = require('../engines/hybridRecommendations');
 const { getImageKitUrl } = require('../utils/imageProcessor');
 const { getProfileDnaFilters } = require('../utils/helpers');
+const { normalizeContentId } = require('../utils/contentId');
 const UserList = require('../db/models/UserList');
 const TasteProfile = require('../db/models/TasteProfile');
 const UserActivity = require('../db/models/UserActivity');
@@ -57,10 +58,6 @@ const EPISODE_CATALOG_IDS = new Set([
     'yaca_discover_series',
     'yaca_trakt_filtered_series'
 ]);
-
-function normalizeContentId(id) {
-    return String(id ?? '').replace(/^tmdb:/i, '').trim();
-}
 
 async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
     if (!tmdbApiKey || !Array.isArray(metas) || metas.length === 0) return;
