@@ -684,27 +684,6 @@ app.post('/api/sync/enrich', syncLimiter, require('./src/api/sync/enrich'));
 const analyticsLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
 app.get('/api/profiles/:id/analytics', analyticsLimiter, getProfileAnalytics);
 
-// Endpoint per recuperare i profili dell'utente tramite userId (Sostituisce il decode Base64 frontend)
-app.get('/api/user/:userId', async (req, res) => {
-    const { userId } = req.params;
-    if (!userId) return res.status(400).json({ error: 'userId parameter is required' });
-
-    try {
-        const userConfig = await resolveUserConfig(userId);
-        if (!userConfig) {
-            return res.status(404).json({ error: 'Utente non trovato' });
-        }
-        res.json({
-            profiles: userConfig.profiles || [],
-            activeProfileId: userConfig.activeProfileId,
-            configVersion: userConfig.configVersion
-        });
-    } catch (err) {
-        console.error('Errore durante il recupero dell\'utente:', err.message);
-        res.status(500).json({ error: 'Errore interno del server' });
-    }
-});
-
 // Endpoint per estrarre le statistiche di tutte le cache
 app.get('/api/cache/stats', async (req, res) => {
     try {

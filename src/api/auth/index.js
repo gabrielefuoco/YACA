@@ -204,4 +204,4 @@ function logoutHandler(req, res) {
     return res.json({ success: true });
 }
 
-module.exports = { loginHandler, guestHandler, meHandler, logoutHandler, getCookieOptions, signToken };
+module.exports = { loginHandler, guestHandler, meHandler, logoutHandler };
