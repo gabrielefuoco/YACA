@@ -14,6 +14,8 @@ const userSchema = new mongoose.Schema({
     profiles: [{
         id: String,
         name: String,
+        catalogs: mongoose.Schema.Types.Mixed,
+        raw_ui_state: mongoose.Schema.Types.Mixed,
         settings: mongoose.Schema.Types.Mixed
     }],
     config: {
