@@ -1,7 +1,7 @@
 const { getPresets } = require('../../data/presets');
 const { sanitizeString } = require('../../utils/helpers');
 const { generateTmdbFiltersFromPrompt } = require('../../ai/router');
-const UserList = require('../../models/UserList');
+const UserList = require('../../db/models/UserList');
 const { LIMITS } = require('./validators');
 
 const GENRE_NAMES = {
