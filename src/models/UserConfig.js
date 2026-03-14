@@ -29,28 +29,14 @@ const UserConfig = {
      */
     async saveUser(userData) {
         try {
-            const stremioKey = userData.apiKeys?.stremio;
-            const email = userData.email;
             let targetUserId = userData.userId;
-
-            // 1. RECONCILIATION: Find existing user
-            let existingUser = null;
-            if (email) {
-                existingUser = await User.findOne({ email });
-            }
-            if (!existingUser && stremioKey) {
-                existingUser = await User.findOne({ 'apiKeys.stremio': stremioKey });
-            }
-
-            // If we found an existing user, we MUST use their ID
-            if (existingUser) {
-                targetUserId = existingUser.userId;
-            }
 
             // If still no userId, generate a new one
             if (!targetUserId) {
                 targetUserId = nanoid(10);
             }
+
+            const existingUser = await User.findOne({ userId: targetUserId });
 
             // 2. DATA PRESERVATION & MERGING
             if (existingUser) {
@@ -77,27 +63,25 @@ const UserConfig = {
                     });
                 }
 
-                // Merge API Keys: preserve existing if incoming are null/missing
+                // Merge API Keys: preserve existing only when incoming keys are undefined
+                const incomingApiKeys = userData.apiKeys || {};
                 const mergedApiKeys = {
                     ...existingUser.apiKeys?.toObject?.() || existingUser.apiKeys,
-                    ...userData.apiKeys
+                    ...incomingApiKeys
                 };
 
-                // Specific check for Trakt: if incoming is missing, preserve existing
-                if (!userData.apiKeys?.trakt && existingUser.apiKeys?.trakt) {
-                    mergedApiKeys.trakt = existingUser.apiKeys.trakt;
-                }
-                if (!userData.apiKeys?.traktRefreshToken && existingUser.apiKeys?.traktRefreshToken) {
-                    mergedApiKeys.traktRefreshToken = existingUser.apiKeys.traktRefreshToken;
-                }
-                if (!userData.apiKeys?.stremioPass && existingUser.apiKeys?.stremioPass) {
-                    mergedApiKeys.stremioPass = existingUser.apiKeys.stremioPass;
-                }
-                if (!userData.apiKeys?.mistral && existingUser.apiKeys?.mistral) {
-                    mergedApiKeys.mistral = existingUser.apiKeys.mistral;
-                }
-                if (!userData.apiKeys?.tmdb && existingUser.apiKeys?.tmdb) {
-                    mergedApiKeys.tmdb = existingUser.apiKeys.tmdb;
+                const apiKeyFields = new Set([
+                    ...Object.keys(existingUser.apiKeys?.toObject?.() || existingUser.apiKeys || {}),
+                    ...Object.keys(incomingApiKeys)
+                ]);
+                for (const key of apiKeyFields) {
+                    if (!(key in incomingApiKeys) || incomingApiKeys[key] === undefined) {
+                        mergedApiKeys[key] = existingUser.apiKeys?.[key];
+                        continue;
+                    }
+                    if (incomingApiKeys[key] === null || incomingApiKeys[key] === '') {
+                        mergedApiKeys[key] = null;
+                    }
                 }
 
                 userData.apiKeys = mergedApiKeys;
@@ -119,9 +103,22 @@ const UserConfig = {
 
             // 3. FINAL SAVE
             // We use findOneAndUpdate with the stable targetUserId
+            const updateOperation = { $set: userData };
+            if (userData.apiKeys && typeof userData.apiKeys === 'object') {
+                const unsetApiKeys = Object.entries(userData.apiKeys)
+                    .filter(([, value]) => value === null || value === '')
+                    .reduce((acc, [key]) => {
+                        acc[`apiKeys.${key}`] = 1;
+                        return acc;
+                    }, {});
+                if (Object.keys(unsetApiKeys).length > 0) {
+                    updateOperation.$unset = unsetApiKeys;
+                }
+            }
+
             const updatedUser = await User.findOneAndUpdate(
                 { userId: targetUserId },
-                { $set: userData },
+                updateOperation,
                 { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
             );
             return updatedUser;

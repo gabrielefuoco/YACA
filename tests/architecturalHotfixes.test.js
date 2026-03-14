@@ -34,15 +34,16 @@ describe('architectural hotfixes', () => {
         expect(hybridSource).not.toContain("require('axios')");
     });
 
-    it('protects /api/configure with optionalAuth middleware', () => {
+    it('protects /api/configure with requireAuth middleware', () => {
         const source = fs.readFileSync(path.join(__dirname, '..', 'index.js'), 'utf-8');
-        expect(source).toContain("app.post('/api/configure', configureLimiter, optionalAuth, configureRoute);");
+        expect(source).toContain("app.post('/api/configure', cookieParser(), configureLimiter, csrfProtection, requireAuth, configureRoute);");
+        expect(source).toContain("req.get('x-csrf-token')");
     });
 
     it('prioritizes JWT userId over request body in configure route', () => {
         const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'api', 'configure.js'), 'utf-8');
-        expect(source).toContain('const existingUserId = req.user?.userId || null;');
-        expect(source).not.toContain('const existingUserId = req.user?.userId || req.body.userId;');
+        expect(source).toContain('const existingUserId = req.user.userId;');
+        expect(source).not.toContain('req.body.userId');
     });
 
     it('defines mistralKey alias for AI prompt generation', () => {

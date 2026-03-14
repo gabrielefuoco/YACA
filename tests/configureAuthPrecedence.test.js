@@ -1,5 +1,6 @@
 jest.mock('../src/models/UserConfig', () => ({
-    saveUser: jest.fn().mockResolvedValue({ userId: 'saved_user' })
+    saveUser: jest.fn().mockResolvedValue({ userId: 'saved_user' }),
+    getUser: jest.fn().mockResolvedValue(null)
 }));
 
 jest.mock('../src/db/models/UserList', () => ({
@@ -12,10 +13,6 @@ jest.mock('../src/ai/router', () => ({
 
 jest.mock('../src/data/presets', () => ({
     getPresets: () => []
-}));
-
-jest.mock('nanoid', () => ({
-    nanoid: jest.fn(() => 'generated_user')
 }));
 
 const configureRoute = require('../src/api/configure');
@@ -61,7 +58,7 @@ describe('configure route auth userId precedence', () => {
         }));
     });
 
-    it('ignores body userId when JWT identity is missing and generates one', async () => {
+    it('rejects configure calls when JWT identity is missing', async () => {
         const req = {
             protocol: 'http',
             get: jest.fn(() => 'localhost:7000'),
@@ -83,8 +80,10 @@ describe('configure route auth userId precedence', () => {
 
         await configureRoute(req, res);
 
-        expect(UserConfig.saveUser).toHaveBeenCalledWith(expect.objectContaining({
-            userId: 'generated_user'
+        expect(UserConfig.saveUser).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            error: expect.stringContaining('Non autenticato')
         }));
     });
 });

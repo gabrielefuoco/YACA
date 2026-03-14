@@ -123,10 +123,8 @@ describe('AI response validation (prompt injection defense)', () => {
 
 describe('configure route - XSS sanitization', () => {
     jest.mock('../src/models/UserConfig', () => ({
-        buildConfig: jest.fn(),
-        encodeConfig: jest.fn(),
-        decodeConfig: jest.fn(),
-        saveUser: jest.fn().mockResolvedValue({ userId: 'u1', configVersion: 'cv1' })
+        saveUser: jest.fn().mockResolvedValue({ userId: 'u1', configVersion: 'cv1' }),
+        getUser: jest.fn().mockResolvedValue(null)
     }));
 
     jest.mock('../src/ai/router', () => ({
@@ -145,11 +143,10 @@ describe('configure route - XSS sanitization', () => {
     });
 
     it('should sanitize profile names with HTML content', async () => {
-        UserConfig.buildConfig.mockReturnValue({ config: {}, configBase64: 'abc123', configVersion: 'cv1' });
-
         const req = {
             protocol: 'http',
             get: jest.fn().mockReturnValue('localhost:7000'),
+            user: { userId: 'u1', email: 'user@example.com' },
             body: {
                 tmdbKey: 'some_key',
                 profiles: [{
@@ -169,7 +166,7 @@ describe('configure route - XSS sanitization', () => {
 
         await configureRoute(req, res);
 
-        expect(UserConfig.buildConfig).toHaveBeenCalledWith(
+        expect(UserConfig.saveUser).toHaveBeenCalledWith(
             expect.objectContaining({
                 profiles: expect.arrayContaining([
                     expect.objectContaining({

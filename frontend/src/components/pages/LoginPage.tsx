@@ -193,7 +193,17 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             </Button>
 
             <button
-              onClick={() => {
+              onClick={async () => {
+                setError('');
+                try {
+                  const guestSession = await api.authGuest();
+                  if (guestSession?.success && guestSession?.userId) {
+                    setSessionUserId(guestSession.userId);
+                  }
+                } catch {
+                  setError('Errore creazione sessione ospite');
+                  return;
+                }
                 setStremioAuth(null);
                 setStep(2);
               }}

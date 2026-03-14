@@ -32,8 +32,8 @@ const { aiPromptCache, aiDiscoveryCache, hybridRecommendationsCache } = require(
 const { rateLimitedMap } = require('./src/utils/rateLimiter');
 const { disconnectRedis } = require('./src/cache/redisClient');
 const { preWarmRedisFromMongo } = require('./src/cache/preWarm');
-const { loginHandler, meHandler, logoutHandler } = require('./src/api/auth');
-const { requireAuth, optionalAuth } = require('./src/middleware/requireAuth');
+const { loginHandler, guestHandler, meHandler, logoutHandler } = require('./src/api/auth');
+const { requireAuth, COOKIE_NAME, CSRF_COOKIE_NAME } = require('./src/middleware/requireAuth');
 
 const tmdbClient = createAxiosInstance('https://api.themoviedb.org/3');
 
@@ -46,6 +46,60 @@ connectDB().then(() => {
 // 1. Inizializza Express
 const app = express();
 app.set('trust proxy', 1);
+
+function resolveHostUrl(req) {
+    const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;
+    if (explicitHost) return explicitHost;
+
+    const forwardedHost = req.headers?.['x-forwarded-host'];
+    if (forwardedHost) {
+        const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'https';
+        return `${proto}://${String(forwardedHost).split(',')[0].trim()}`;
+    }
+
+    return `${req.protocol}://${req.get('host')}`;
+}
+
+function csrfProtection(req, res, next) {
+    const method = req.method?.toUpperCase();
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        return next();
+    }
+
+    const hasSessionCookie = Boolean(req.cookies?.[COOKIE_NAME]);
+    if (hasSessionCookie) {
+        const csrfCookie = req.cookies?.[CSRF_COOKIE_NAME];
+        const csrfHeader = req.get('x-csrf-token');
+        if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+            return res.status(403).json({ error: 'CSRF validation failed.' });
+        }
+    }
+
+    const origin = req.get('origin');
+    const referer = req.get('referer');
+    if (!origin && !referer) {
+        return next();
+    }
+
+    let expectedHost = null;
+    try {
+        expectedHost = new URL(resolveHostUrl(req)).host;
+    } catch {
+        expectedHost = req.get('host');
+    }
+
+    const candidate = origin || referer;
+    try {
+        const sourceHost = new URL(candidate).host;
+        if (sourceHost !== expectedHost) {
+            return res.status(403).json({ error: 'CSRF validation failed.' });
+        }
+    } catch {
+        return res.status(403).json({ error: 'CSRF validation failed.' });
+    }
+
+    return next();
+}
 const PORT = process.env.PORT || 7000;
 
 const BADGE_CACHE_TTL_SECS = 14 * 24 * 60 * 60; // 1209600
@@ -62,7 +116,6 @@ const corsOptions = corsOrigins
     ? { origin: corsOrigins.split(',').map(o => o.trim()), credentials: true, methods: ['GET', 'POST'] }
     : { credentials: true, methods: ['GET', 'POST'] };
 app.use(cors(corsOptions));
-app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'frontend', 'out')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '1mb' }));
@@ -108,9 +161,10 @@ const authLimiter = rateLimit({
 });
 
 // --- AUTH ROUTES (JWT HttpOnly Cookie) ---
-app.post('/api/auth/login', authLimiter, loginHandler);
-app.get('/api/auth/me', authLimiter, meHandler);
-app.post('/api/auth/logout', logoutHandler);
+app.post('/api/auth/login', cookieParser(), authLimiter, csrfProtection, loginHandler);
+app.post('/api/auth/guest', cookieParser(), authLimiter, csrfProtection, guestHandler);
+app.get('/api/auth/me', cookieParser(), authLimiter, meHandler);
+app.post('/api/auth/logout', cookieParser(), csrfProtection, logoutHandler);
 
 // Endpoint per recuperare i preset disponibili
 // 2. API per il frontend (configurazione)
@@ -223,7 +277,7 @@ app.post('/api/preview-catalog', async (req, res) => {
                     extra: { skip: 0 }
                 },
                 { apiKeys: { tmdb: sanitizedTmdbKey, mistral: mistralKey } },
-                `${req.protocol}://${req.get('host')}`
+                resolveHostUrl(req)
             );
 
             const items = (previewData.metas || []).slice(0, 20).map(item => ({
@@ -618,7 +672,7 @@ app.post('/api/trakt/device/token', async (req, res) => {
 
 // 2. Registra endpoint configuration (Frontend Web)
 const configureLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
-app.post('/api/configure', configureLimiter, optionalAuth, configureRoute);
+app.post('/api/configure', cookieParser(), configureLimiter, csrfProtection, requireAuth, configureRoute);
 app.post('/api/ai/generate-merged-name', generateMergedName);
 
 // 2.1 Sync Endpoints (Crowdsourced Enrichment)
@@ -893,12 +947,13 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
             });
         }
 
+        const hostUrl = resolveHostUrl(req);
         const manifest = {
             id: 'org.stremio.yaca.catalog',
             version: dynamicVersion,
             name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
             description: 'Catalogo Intelligente Potenziato da AI',
-            logo: `${req.protocol}://${req.get('host')}/logo.png`,
+            logo: `${hostUrl}/logo.png`,
             resources: [
                 'catalog',
                 'meta',
@@ -912,7 +967,7 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
                 configurationRequired: false
             },
             contactEmail: 'yaca.addon@proton.me',
-            configurationURL: `${req.protocol}://${req.get('host')}/${req.params.userHandle}/configure`
+            configurationURL: `${hostUrl}/${req.params.userHandle}/configure`
         };
 
         return res.json(manifest);
@@ -924,12 +979,13 @@ app.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.jso
 
 // Root manifest (senza config) per guidare l'utente alla configurazione
 app.get('/manifest.json', (req, res) => {
+    const hostUrl = resolveHostUrl(req);
     const manifest = {
         id: 'org.stremio.yaca.catalog',
         version: '1.0.4',
         name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
         description: 'Catalogo Intelligente Potenziato da AI - Configurazione Richiesta',
-        logo: `${req.protocol}://${req.get('host')}/logo.png`,
+        logo: `${hostUrl}/logo.png`,
         contactEmail: 'yaca.addon@proton.me',
         resources: [],
         types: [],
@@ -969,7 +1025,7 @@ app.get([
     }
 
     const args = { type, id, extra };
-    const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+    const hostUrl = resolveHostUrl(req);
 
     try {
         const response = await catalogHandler(args, userConfig, hostUrl);
@@ -1009,7 +1065,7 @@ app.get(['/:userHandle/stream/:type/:id.json', '/:userHandle/:configVersion/stre
     const { type, id } = req.params;
     const configVersion = req.params.configVersion || '';
     const args = { type, id };
-    const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+    const hostUrl = resolveHostUrl(req);
 
     try {
         const response = await streamHandler(args, userConfig, hostUrl, configVersion);
@@ -1043,7 +1099,7 @@ app.get('/api/users/:userId/switch-profile/:profileId', async (req, res) => {
 
         const stremioAuthKey = userConfig.apiKeys?.stremio;
         if (stremioAuthKey) {
-            const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+            const hostUrl = resolveHostUrl(req);
             const manifestUrl = `${hostUrl}/${userId}/${newConfigVersion}/manifest.json`;
             // Sync fire-and-forget
             updateStremioAddonCollection(stremioAuthKey, manifestUrl)
@@ -1069,7 +1125,7 @@ app.get('/{*path}', (req, res) => {
 const server = app.listen(PORT, () => {
     console.log(`🚀 YACA Server in esecuzione su http://localhost:${PORT}`);
     if (!process.env.HOST_URL && !process.env.RENDER_EXTERNAL_URL) {
-        console.warn('⚠️ HOST_URL non configurato nel file .env. I poster con badge e le immagini sfocate potrebbero non funzionare su client remoti (Stremio). Imposta HOST_URL=https://tuo-dominio.com nel file .env.');
+        console.warn('⚠️ HOST_URL non configurato nel file .env. Verranno usati gli header proxy (X-Forwarded-Host/X-Forwarded-Proto) quando disponibili.');
     }
 });
 
