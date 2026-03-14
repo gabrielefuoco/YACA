@@ -11,7 +11,7 @@ const crypto = require('crypto');
 const { COOKIE_NAME, CSRF_COOKIE_NAME } = require('../../middleware/requireAuth');
 const { stremioClient } = require('../../clients/stremio');
 const UserConfig = require('../../models/UserConfig');
-const User = require('../../db/models/User');
+const User = require('../../models/User');
 const { nanoid } = require('nanoid');
 
 const JWT_EXPIRY = '7d';
@@ -77,18 +77,17 @@ async function loginHandler(req, res) {
         const resolvedEmail = data.result.user?.email || email;
 
         // 2. Find or create user in DB
-        let existingUser = null;
-        if (resolvedEmail) {
-            existingUser = await User.findOne({ email: resolvedEmail });
-        }
-        if (!existingUser && authKey) {
-            existingUser = await User.findOne({ 'apiKeys.stremio': authKey });
-        }
+        let existingUser = await User.findOne({ 
+            $or: [
+                { email: resolvedEmail },
+                { 'apiKeys.stremio': authKey }
+            ]
+        });
 
         let userId;
         if (existingUser) {
             userId = existingUser.userId;
-            // Update stremio auth key & password if changed
+            // Update stremio auth key if changed
             await UserConfig.saveUser({
                 userId,
                 email: resolvedEmail,
@@ -104,12 +103,14 @@ async function loginHandler(req, res) {
         }
 
         // 3. Sign JWT and set cookie
+        // Rimosso sessionId (Selective Logout) - Usiamo solo userId e email
         const token = signToken({ userId, email: resolvedEmail });
         const csrfToken = crypto.randomBytes(32).toString('hex');
+
         res.cookie(COOKIE_NAME, token, getCookieOptions());
         res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions());
 
-        // 4. Return user info (no sensitive tokens in the body)
+        // 4. Return user info
         return res.json({
             success: true,
             userId,
@@ -127,25 +128,6 @@ async function loginHandler(req, res) {
 }
 
 /**
- * POST /api/auth/guest
- * Creates an anonymous guest session with JWT cookie.
- */
-async function guestHandler(req, res) {
-    try {
-        const userId = nanoid(10);
-        await UserConfig.saveUser({ userId });
-        const token = signToken({ userId, email: null, isGuest: true });
-        const csrfToken = crypto.randomBytes(32).toString('hex');
-        res.cookie(COOKIE_NAME, token, getCookieOptions());
-        res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions());
-        return res.json({ success: true, userId, isGuest: true });
-    } catch (err) {
-        console.error('[Auth] Guest login error:', err.message);
-        return res.status(500).json({ success: false, error: 'Errore creazione sessione ospite.' });
-    }
-}
-
-/**
  * GET /api/auth/me
  * Returns the current authenticated user's session info.
  * Requires valid JWT cookie.
@@ -157,19 +139,18 @@ async function meHandler(req, res) {
     }
 
     const secret = process.env.JWT_SECRET;
-    if (!secret) {
-        return res.status(500).json({ error: 'JWT_SECRET non configurato.' });
-    }
+    if (!secret) return res.status(500).json({ error: 'JWT_SECRET missing.' });
 
     try {
         const decoded = jwt.verify(token, secret);
         const user = await User.findOne({ userId: decoded.userId }).lean();
 
         if (!user) {
-            // User deleted — clear cookie
             res.clearCookie(COOKIE_NAME, getCookieOptions());
             return res.status(401).json({ authenticated: false });
         }
+
+        // Rimosso il controllo sessione attiva (Stateless)
 
         return res.json({
             authenticated: true,
@@ -185,7 +166,6 @@ async function meHandler(req, res) {
             }
         });
     } catch (err) {
-        // Invalid or expired token
         res.clearCookie(COOKIE_NAME, getCookieOptions());
         return res.status(401).json({ authenticated: false });
     }
@@ -195,10 +175,10 @@ async function meHandler(req, res) {
  * POST /api/auth/logout
  * Clears the session cookie.
  */
-function logoutHandler(req, res) {
+async function logoutHandler(req, res) {
     res.clearCookie(COOKIE_NAME, getCookieOptions());
     res.clearCookie(CSRF_COOKIE_NAME, getCsrfCookieOptions());
     return res.json({ success: true });
 }
 
-module.exports = { loginHandler, guestHandler, meHandler, logoutHandler };
+module.exports = { loginHandler, meHandler, logoutHandler };

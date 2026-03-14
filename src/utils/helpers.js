@@ -59,8 +59,7 @@ function getProfileDnaFilters(userConfig, profileId) {
     const profileSettings = userConfig?.profiles?.find((p) => p.id === profileId)?.settings || {};
     const orderedDna = [
         ...(profileSettings.manualDNA || []),
-        ...(profileSettings.suggestedDNA || []),
-        ...(profileSettings.pendingDNASuggestions || [])
+        ...(profileSettings.suggestedDNA || [])
     ];
     const seen = new Set();
     return orderedDna.filter((item) => {
@@ -73,15 +72,24 @@ function getProfileDnaFilters(userConfig, profileId) {
 }
 
 function resolveHostUrl(req) {
+    // 1. Explicitly configured URL (Highest priority)
     const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;
     if (explicitHost) return explicitHost;
 
+    // 2. Hugging Face Spaces detection
+    // SPACE_HOST is often provided automatically in HF Docker environments
+    if (process.env.SPACE_HOST) {
+        return `https://${process.env.SPACE_HOST}`;
+    }
+
+    // 3. Reverse Proxy Headers
     const forwardedHost = req.headers?.['x-forwarded-host'];
     if (forwardedHost) {
         const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'https';
         return `${proto}://${String(forwardedHost).split(',')[0].trim()}`;
     }
 
+    // 4. Fallback to Local Host
     return `${req.protocol}://${req.get('host')}`;
 }
 

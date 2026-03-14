@@ -53,7 +53,7 @@ async function syncTraktTokensToDb(userId, newAccessToken, newRefreshToken) {
     if (!userId) return false;
 
     try {
-        const User = require('../db/models/User');
+        const User = require('../models/User');
         await User.findOneAndUpdate(
             { userId },
             {
@@ -242,30 +242,37 @@ async function fetchTraktCatalog(endpoint, skip = 0, traktToken = null, tmdbApiK
 
         // === AUTO-REFRESH: se 401 e abbiamo il contesto per il refresh ===
         if (status === 401 && refreshContext?.userConfig?.apiKeys?.traktRefreshToken) {
-            console.log(`Trakt: token scaduto per ${endpoint}, tentativo di auto-refresh...`);
-            const newTokens = await refreshTraktTokens(refreshContext.userConfig.apiKeys.traktRefreshToken);
+            const userId = refreshContext.userConfig.userId;
+            
+            try {
+                console.log(`Trakt: token scaduto per ${endpoint}, tentativo di auto-refresh...`);
+                const newTokens = await refreshTraktTokens(refreshContext.userConfig.apiKeys.traktRefreshToken);
 
-            if (newTokens) {
-                console.log(`Trakt: auto-refresh riuscito per ${endpoint}.`);
-                // Sincronizza i nuovi token su MongoDB se l'utente è stateful
-                if (refreshContext?.userConfig?.userId) {
-                    syncTraktTokensToDb(
-                        refreshContext.userConfig.userId,
-                        newTokens.access_token,
-                        newTokens.refresh_token
-                    ).catch(dbErr => console.error(`Trakt auto-refresh DB error (${endpoint}):`, dbErr.message));
-                }
+                if (newTokens) {
+                    console.log(`Trakt: auto-refresh riuscito per ${endpoint}.`);
+                    // Sincronizza i nuovi token su MongoDB se l'utente è stateful
+                    if (userId) {
+                        await syncTraktTokensToDb(
+                            userId,
+                            newTokens.access_token,
+                            newTokens.refresh_token
+                        );
+                    }
 
-                // Riprova la richiesta con il nuovo token
-                try {
-                    const retryResults = await executeTraktRequest(endpoint, page, newTokens.access_token);
-                    return await deduplicateAndEnrich(retryResults, tmdbApiKey);
-                } catch (retryErr) {
-                    console.error(`Trakt: retry fallito dopo refresh (${endpoint}):`, retryErr.response?.data || retryErr.message);
+                    // Riprova la richiesta con il nuovo token
+                    try {
+                        const retryResults = await executeTraktRequest(endpoint, page, newTokens.access_token);
+                        return await deduplicateAndEnrich(retryResults, tmdbApiKey);
+                    } catch (retryErr) {
+                        console.error(`Trakt: retry fallito dopo refresh (${endpoint}):`, retryErr.response?.data || retryErr.message);
+                        return [];
+                    }
+                } else {
+                    console.error(`Trakt: auto-refresh fallito per ${endpoint}.`);
                     return [];
                 }
-            } else {
-                console.error(`Trakt: auto-refresh fallito per ${endpoint}.`);
+            } catch (refreshErr) {
+                console.error(`Trakt: errore durante auto-refresh per ${endpoint}:`, refreshErr.message);
                 return [];
             }
         }

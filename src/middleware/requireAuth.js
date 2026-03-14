@@ -27,9 +27,14 @@ function requireAuth(req, res, next) {
 
     try {
         const decoded = jwt.verify(token, secret);
+        
+        // Semplificazione: ci fidiamo della firma e della scadenza del JWT (Stateless)
+        // Rimosso il trip al DB per 'activeSessions' (De-engineering)
+
         req.user = {
             userId: decoded.userId,
-            email: decoded.email
+            email: decoded.email,
+            sessionId: decoded.sessionId // Mantenuto per compatibilità, ma non validato via DB
         };
         next();
     } catch (err) {

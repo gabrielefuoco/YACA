@@ -1,7 +1,7 @@
 const { ITEMS_PER_PAGE } = require('../config');
-const TasteProfile = require('../db/models/TasteProfile');
-const TmdbScoringData = require('../db/models/TmdbScoringData');
-const User = require('../db/models/User');
+const TasteProfile = require('../models/TasteProfile');
+const TmdbScoringData = require('../models/TmdbScoringData');
+const User = require('../models/User');
 const ProfileBuilder = require('../profile/ProfileBuilder');
 const ProfileScorer = require('../profile/ProfileScorer');
 const tmdb = require('../clients/tmdb');
@@ -11,7 +11,6 @@ const { getProfileDnaFilters } = require('../utils/helpers');
 const { rateLimitedMap } = require('../utils/rateLimiter');
 const { generateDiscoveryQueries } = require('../ai/querySynthesizer');
 const { normalizeContentId } = require('../utils/contentId');
-const activeSyncLocks = new Set();
 
 /**
  * Returns the active profile settings for the user.
@@ -1064,11 +1063,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
  */
 async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context = 'global') {
     if (!userId || !traktToken || !tmdbApiKey) return false;
-    const lockKey = `sync_lock:${userId}:${context}`;
-    if (activeSyncLocks.has(lockKey)) {
-        return false;
-    }
-    activeSyncLocks.add(lockKey);
+
     try {
         const traktType = mediaType === 'movie' ? 'movies' : 'shows';
         const [history, ratings] = await Promise.all([
@@ -1080,8 +1075,6 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
     } catch (err) {
         console.error(`[Hybrid] syncIncrementalRecommendations failed for ${userId}/${context}:`, err.message);
         return false;
-    } finally {
-        activeSyncLocks.delete(lockKey);
     }
 }
 

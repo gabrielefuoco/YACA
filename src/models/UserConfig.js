@@ -4,7 +4,7 @@
  */
 
 const { nanoid } = require('nanoid');
-const User = require('../db/models/User');
+const User = require('./User');
 
 const UserConfig = {
     /**
@@ -14,6 +14,7 @@ const UserConfig = {
      */
     async getUser(userId) {
         try {
+            if (typeof userId !== 'string') return null;
             return await User.findOne({ userId });
         } catch (err) {
             console.error(`Errore caricamento utente ${userId}:`, err.message);
@@ -23,109 +24,184 @@ const UserConfig = {
 
     /**
      * Salva o aggiorna un utente nel database.
-     * Se userData.userId non esiste, ne genera uno nuovo.
-     * @param {object} userData - Dati dell'utente
+     * Implementa Optimistic Concurrency Control (OCC) per evitare sovrascritture accidentali.
+     * @param {object} userData - Dati dell'utente da aggiornare
      * @returns {Promise<object>} Il documento salvato
      */
     async saveUser(userData) {
-        try {
-            let targetUserId = userData.userId;
+        const MAX_RETRIES = 3;
+        let attempt = 0;
 
-            // If still no userId, generate a new one
-            if (!targetUserId) {
-                targetUserId = nanoid(10);
-            }
+        while (attempt < MAX_RETRIES) {
+            try {
+                let targetUserId = userData.userId;
 
-            const existingUser = await User.findOne({ userId: targetUserId });
+                // 1. Ensure userId exists and is a string
+                if (!targetUserId) {
+                    targetUserId = nanoid(10);
+                } else if (typeof targetUserId !== 'string') {
+                    throw new Error("userId non valido");
+                }
 
-            // 2. DATA PRESERVATION & MERGING
-            if (existingUser) {
-                // Preserve profiles if incoming are empty
-                if (!userData.profiles?.length && existingUser.profiles?.length) {
-                    userData.profiles = existingUser.profiles;
-                } else if (Array.isArray(userData.profiles) && existingUser.profiles?.length) {
-                    const existingProfiles = new Map(
-                        existingUser.profiles.map((profile) => [profile.id, profile.toObject?.() || profile])
-                    );
-                    userData.profiles = userData.profiles.map((profile) => {
-                        const existingProfile = existingProfiles.get(profile.id);
-                        const existingPending = existingProfile?.settings?.pendingDNASuggestions;
-                        if (!existingPending || existingPending.length === 0 || profile?.settings?.pendingDNASuggestions !== undefined) {
+                // 2. DATA PRESERVATION & MERGING
+                const existingUser = await this.getUser(targetUserId);
+                if (existingUser) {
+                    // Check for conflicts if configVersion is provided
+                    if (userData.config?.configVersion && 
+                        existingUser.config?.configVersion && 
+                        userData.config.configVersion !== existingUser.config.configVersion) {
+                        console.warn(`[UserConfig] Concurrency conflict for ${targetUserId}. Incoming: ${userData.config.configVersion}, DB: ${existingUser.config.configVersion}`);
+                        // If we are far behind, we should probably fail or reload. 
+                        // For now, increment attempt and retry (the next loop will use fresh existingUser).
+                        attempt++;
+                        if (attempt >= MAX_RETRIES) throw new Error("Conflitto di versione: impossibile salvare le modifiche");
+                        continue; 
+                    }
+
+                    // Merge Profiles (preserving pending suggestions if not provided)
+                    if (!userData.profiles?.length && existingUser.profiles?.length) {
+                        userData.profiles = existingUser.profiles;
+                    } else if (Array.isArray(userData.profiles) && existingUser.profiles?.length) {
+                        const existingProfiles = new Map(
+                            existingUser.profiles.map((p) => [p.id, p.toObject?.() || p])
+                        );
+                        userData.profiles = userData.profiles.map((profile) => {
+                            const existingProfile = existingProfiles.get(profile.id);
+                            if (!existingProfile) return profile;
                             return profile;
+                        });
+                    }
+
+                    // Merge API Keys
+                    const incomingApiKeys = userData.apiKeys || {};
+                    const currentApiKeys = existingUser.apiKeys?.toObject?.() || existingUser.apiKeys || {};
+                    const mergedApiKeys = { ...currentApiKeys, ...incomingApiKeys };
+
+                    // Handle null/empty deletes
+                    for (const [key, value] of Object.entries(incomingApiKeys)) {
+                        if (value === null || value === '') {
+                            delete mergedApiKeys[key];
                         }
-                        return {
-                            ...profile,
-                            settings: {
-                                ...(profile.settings || {}),
-                                pendingDNASuggestions: existingPending.map((item) => ({ ...item }))
+                    }
+                    userData.apiKeys = mergedApiKeys;
+
+                    // Preserve fields if not provided
+                    if (!userData.email && existingUser.email) userData.email = existingUser.email;
+                    
+                    // Merge Config
+                    userData.config = {
+                        ...existingUser.config?.toObject?.() || existingUser.config,
+                        ...(userData.config || {}),
+                        configVersion: nanoid(8) // Increment version on every save
+                    };
+                } else {
+                    // New user initialization
+                    if (!userData.config) userData.config = {};
+                    userData.config.configVersion = nanoid(8);
+                }
+
+                userData.userId = targetUserId;
+
+                // 3. ATOMIC UPDATE WITH GRANULAR MERGING
+                const updateOperation = { $set: {} };
+                const unsetFields = {};
+
+                if (userData.email) updateOperation.$set.email = userData.email;
+                if (userData.config) {
+                    for (const [k, v] of Object.entries(userData.config)) {
+                        updateOperation.$set[`config.${k}`] = v;
+                    }
+                }
+
+                if (Array.isArray(userData.profiles)) {
+                    if (!existingUser || !existingUser.profiles?.length) {
+                        updateOperation.$set.profiles = userData.profiles;
+                    } else {
+                        const profileMap = new Map(existingUser.profiles.map(p => [p.id, p.toObject?.() || p]));
+                        userData.profiles.forEach(p => {
+                            const existing = profileMap.get(p.id);
+                            if (existing) {
+                                const mergedSettings = { ...(existing.settings || {}), ...(p.settings || {}) };
+                                profileMap.set(p.id, { ...existing, ...p, settings: mergedSettings });
+                            } else {
+                                profileMap.set(p.id, p);
                             }
-                        };
+                        });
+                        updateOperation.$set.profiles = Array.from(profileMap.values());
+                    }
+                }
+
+                if (userData.apiKeys) {
+                    const keysInDoc = ['stremio', 'tmdb', 'mistral', 'trakt', 'traktRefreshToken', 'mdblist'];
+                    keysInDoc.forEach(k => {
+                        const val = userData.apiKeys[k];
+                        if (val === null || val === '') {
+                            unsetFields[`apiKeys.${k}`] = 1;
+                        } else if (val !== undefined) {
+                            updateOperation.$set[`apiKeys.${k}`] = val;
+                        }
                     });
                 }
 
-                // Merge API Keys: preserve existing only when incoming keys are undefined
-                const incomingApiKeys = userData.apiKeys || {};
-                const mergedApiKeys = {
-                    ...existingUser.apiKeys?.toObject?.() || existingUser.apiKeys,
-                    ...incomingApiKeys
-                };
+                if (Object.keys(unsetFields).length > 0) updateOperation.$unset = unsetFields;
+                if (Object.keys(updateOperation.$set).length === 0) delete updateOperation.$set;
 
-                const apiKeyFields = new Set([
-                    ...Object.keys(existingUser.apiKeys?.toObject?.() || existingUser.apiKeys || {}),
-                    ...Object.keys(incomingApiKeys)
-                ]);
-                for (const key of apiKeyFields) {
-                    if (!(key in incomingApiKeys) || incomingApiKeys[key] === undefined) {
-                        mergedApiKeys[key] = existingUser.apiKeys?.[key];
-                        continue;
+                // 4. ATOMIC SAVE WITH VERSION CHECK
+                const query = { userId: targetUserId };
+                if (existingUser) {
+                    // Optimized: only update if the version matches what we read
+                    query['config.configVersion'] = existingUser.config?.configVersion;
+                }
+
+                const updatedUser = await User.findOneAndUpdate(
+                    query,
+                    updateOperation,
+                    { 
+                        returnDocument: 'after', 
+                        upsert: !existingUser, // Only upsert if it's a new user
+                        setDefaultsOnInsert: true,
+                        runValidators: true
                     }
-                    if (incomingApiKeys[key] === null || incomingApiKeys[key] === '') {
-                        mergedApiKeys[key] = null;
-                    }
+                );
+
+                if (!updatedUser) {
+                    // If no user found with this query, it means the version changed in between read and write
+                    attempt++;
+                    if (attempt >= MAX_RETRIES) throw new Error("Conflitto di versione persistente: impossibile salvare");
+                    continue;
                 }
 
-                userData.apiKeys = mergedApiKeys;
-
-                // Preserve Email
-                if (!userData.email && existingUser.email) {
-                    userData.email = existingUser.email;
+                return updatedUser;
+            } catch (err) {
+                if (attempt >= MAX_RETRIES - 1) {
+                    console.error(`[UserConfig] Errore salvataggio definitivo utente ${userData?.userId}:`, err.message);
+                    throw err;
                 }
-
-                // Preserve Config
-                userData.config = {
-                    ...existingUser.config?.toObject?.() || existingUser.config,
-                    ...userData.config
-                };
+                attempt++;
             }
-
-            // Ensure userId is the one we decided on
-            userData.userId = targetUserId;
-
-            // 3. FINAL SAVE
-            // We use findOneAndUpdate with the stable targetUserId
-            const updateOperation = { $set: userData };
-            if (userData.apiKeys && typeof userData.apiKeys === 'object') {
-                const unsetApiKeys = Object.entries(userData.apiKeys)
-                    .filter(([, value]) => value === null || value === '')
-                    .reduce((acc, [key]) => {
-                        acc[`apiKeys.${key}`] = 1;
-                        return acc;
-                    }, {});
-                if (Object.keys(unsetApiKeys).length > 0) {
-                    updateOperation.$unset = unsetApiKeys;
-                }
-            }
-
-            const updatedUser = await User.findOneAndUpdate(
-                { userId: targetUserId },
-                updateOperation,
-                { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
-            );
-            return updatedUser;
-        } catch (err) {
-            console.error(`Errore salvataggio utente:`, err.message);
-            throw err;
         }
+    },
+
+    /**
+     * Helper per risolvere la configurazione utente (Stateful).
+     * @param {string} userId - userId (MongoDB)
+     * @returns {Promise<object|null>} Configurazione utente normalizzata
+     */
+    async resolveUserConfig(userId) {
+        if (!userId) return null;
+
+        const user = await this.getUser(userId);
+        if (user) {
+            return {
+                userId: user.userId,
+                apiKeys: user.apiKeys,
+                profiles: user.profiles,
+                activeProfileId: user.config?.activeProfileId,
+                configVersion: user.config?.configVersion
+            };
+        }
+
+        return null;
     }
 };
 

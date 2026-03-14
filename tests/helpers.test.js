@@ -27,15 +27,15 @@ describe('parseExtra', () => {
 });
 
 describe('getProfileDnaFilters', () => {
-    it('should merge manualDNA, suggestedDNA and pending DNA for the selected profile without duplicates', () => {
+    it('should merge manualDNA and suggestedDNA for the selected profile without duplicates', () => {
         const filters = getProfileDnaFilters({
             profiles: [
                 {
                     id: 'kids',
                     settings: {
                         manualDNA: [{ type: 'genre', id: '16' }],
-                        suggestedDNA: [{ type: 'keyword', id: 'robot' }],
-                        pendingDNASuggestions: [
+                        suggestedDNA: [
+                            { type: 'keyword', id: 'robot' },
                             { type: 'genre', id: '16' },
                             { type: 'country', id: 'JP' }
                         ]

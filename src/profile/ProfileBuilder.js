@@ -1,4 +1,4 @@
-const TasteProfile = require('../db/models/TasteProfile');
+const TasteProfile = require('../models/TasteProfile');
 const tmdb = require('../clients/tmdb');
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const { BINGE_SESSION_GAP_MS, BINGE_MULTIPLIER } = require('../config');
@@ -22,93 +22,130 @@ function addWithDecay(current, increment) {
 
 class ProfileBuilder {
     /**
-     * Elabora un singolo contenuto TMDB e aggiorna i punteggi nel profilo.
-     * @param {Object} profile Il documento Mongoose TasteProfile
-     * @param {Object} tmdbData I dati grezzi da TMDB (con credits e keywords)
-     * @param {Number} weight Moltiplicatore per i punteggi (default 1.0)
+     * Elabora un singolo contenuto TMDB e accumula gli incrementi in un oggetto.
+     * @param {Object} tmdbData I dati grezzi da TMDB
+     * @param {Number} weight Moltiplicatore per i punteggi
+     * @param {Object} [increments] Oggetto opzionale per accumulare gli incrementi
+     * @returns {Object} Gli incrementi accumulati
      */
-    static processItem(profile, tmdbData, weight = 1.0) {
-        if (!tmdbData) return;
+    static processItem(tmdbData, weight = 1.0, increments = {}) {
+        if (!tmdbData) return increments;
 
-        // 1. Generi (+1.0 primo, +0.6 secondo, +0.3 restanti) — with logarithmic decay
+        const ensureNested = (obj, key) => {
+            if (!obj[key]) obj[key] = {};
+            return obj[key];
+        };
+
+        // 1. Generi (+1.0 primo, +0.6 secondo, +0.3 restanti)
         if (tmdbData.genres && tmdbData.genres.length > 0) {
+            const genreIncrements = ensureNested(increments, 'genreScores');
             tmdbData.genres.forEach((g, index) => {
                 const genreId = g.id.toString();
                 let score = 0.3;
                 if (index === 0) score = 1.0;
                 else if (index === 1) score = 0.6;
-
-                const current = profile.genreScores.get(genreId) || 0;
-                profile.genreScores.set(genreId, addWithDecay(current, score * weight));
+                genreIncrements[genreId] = (genreIncrements[genreId] || 0) + (score * weight);
             });
         }
 
-        // 2. Keywords (+1.0 ciascuna) — with logarithmic decay
+        // 2. Keywords (+1.0 ciascuna)
         const keywords = tmdbData.keywords?.keywords || tmdbData.keywords?.results || [];
-        keywords.forEach(kw => {
-            const kwId = kw.id.toString();
-            const current = profile.keywordScores.get(kwId) || 0;
-            profile.keywordScores.set(kwId, addWithDecay(current, 1.0 * weight));
-        });
+        if (keywords.length > 0) {
+            const keywordIncrements = ensureNested(increments, 'keywordScores');
+            keywords.forEach(kw => {
+                const kwId = kw.id.toString();
+                keywordIncrements[kwId] = (keywordIncrements[kwId] || 0) + (1.0 * weight);
+            });
+        }
 
-        // 3. Registi (+1.0 ciascuno) — with logarithmic decay
+        // 3. Registi (+1.0 ciascuno)
         if (tmdbData.credits && tmdbData.credits.crew) {
             const directors = tmdbData.credits.crew.filter(c => c.job === 'Director');
-            directors.forEach(d => {
-                const directorId = d.id.toString();
-                const current = profile.directorScores.get(directorId) || 0;
-                profile.directorScores.set(directorId, addWithDecay(current, 1.0 * weight));
-            });
+            if (directors.length > 0) {
+                const directorIncrements = ensureNested(increments, 'directorScores');
+                directors.forEach(d => {
+                    const directorId = d.id.toString();
+                    directorIncrements[directorId] = (directorIncrements[directorId] || 0) + (1.0 * weight);
+                });
+            }
         }
 
-        // 4. Attori (+1.0 primi 3) — with logarithmic decay
+        // 4. Attori (+1.0 primi 3)
         if (tmdbData.credits && tmdbData.credits.cast) {
+            const actorIncrements = ensureNested(increments, 'actorScores');
             tmdbData.credits.cast.slice(0, 3).forEach(a => {
                 const actorId = a.id.toString();
-                const current = profile.actorScores.get(actorId) || 0;
-                profile.actorScores.set(actorId, addWithDecay(current, 1.0 * weight));
+                actorIncrements[actorId] = (actorIncrements[actorId] || 0) + (1.0 * weight);
             });
         }
 
-        // 5. Studios (+1.0 ciascuna production company) — with logarithmic decay
-        if (tmdbData.production_companies) {
+        // 5. Studios (+1.0 ciascuna production company)
+        if (tmdbData.production_companies && tmdbData.production_companies.length > 0) {
+            const studioIncrements = ensureNested(increments, 'studioScores');
             tmdbData.production_companies.forEach(s => {
                 const studioId = s.id.toString();
-                const current = profile.studioScores.get(studioId) || 0;
-                profile.studioScores.set(studioId, addWithDecay(current, 1.0 * weight));
+                studioIncrements[studioId] = (studioIncrements[studioId] || 0) + (1.0 * weight);
             });
         }
 
-        // 6. Era (+1.0 per decade) — with logarithmic decay
+        // 6. Era (+1.0 per decade)
         const releaseDate = tmdbData.release_date || tmdbData.first_air_date;
         if (releaseDate) {
             const year = new Date(releaseDate).getFullYear();
             if (!isNaN(year)) {
                 const decade = `${Math.floor(year / 10) * 10}s`;
-                const current = profile.eraScores.get(decade) || 0;
-                profile.eraScores.set(decade, addWithDecay(current, 1.0 * weight));
+                const eraIncrements = ensureNested(increments, 'eraScores');
+                eraIncrements[decade] = (eraIncrements[decade] || 0) + (1.0 * weight);
             }
         }
 
-        // 7. Paese (+1.0 ciascuno) — with logarithmic decay
+        // 7. Paese (+1.0 ciascuno)
         const countries = tmdbData.origin_country || (tmdbData.production_countries ? tmdbData.production_countries.map(c => c.iso_3166_1) : []);
-        countries.forEach(c => {
-            const current = profile.countryScores.get(c) || 0;
-            profile.countryScores.set(c, addWithDecay(current, 1.0 * weight));
-        });
+        if (countries.length > 0) {
+            const countryIncrements = ensureNested(increments, 'countryScores');
+            countries.forEach(c => {
+                countryIncrements[c] = (countryIncrements[c] || 0) + (1.0 * weight);
+            });
+        }
 
-        // 8. Runtime (+1.0) — with logarithmic decay
+        // 8. Runtime (+1.0)
         const runtime = tmdbData.runtime || (tmdbData.episode_run_time ? tmdbData.episode_run_time[0] : null);
         if (runtime) {
             let category = "medium";
             if (runtime < 90) category = "short";
             else if (runtime > 150) category = "long";
 
-            const current = profile.runtimeScores.get(category) || 0;
-            profile.runtimeScores.set(category, addWithDecay(current, 1.0 * weight));
+            const runtimeIncrements = ensureNested(increments, 'runtimeScores');
+            runtimeIncrements[category] = (runtimeIncrements[category] || 0) + (1.0 * weight);
         }
 
-        profile.lastUpdated = new Date();
+        return increments;
+    }
+
+    /**
+     * Applica gli incrementi in modo atomico usando MongoDB $inc.
+     * @param {String} owner 
+     * @param {String} context 
+     * @param {Object} increments 
+     */
+    static async saveAtomic(owner, context, increments) {
+        if (!increments || Object.keys(increments).length === 0) return;
+
+        const updateDoc = { $set: { lastUpdated: new Date() }, $inc: {} };
+        
+        // Convert the nested increments object to MongoDB dot notation
+        for (const [category, scores] of Object.entries(increments)) {
+            for (const [id, value] of Object.entries(scores)) {
+                // We use $inc for the scores. 
+                // Note: The logarithmic decay is now harder to apply purely with $inc.
+                // We will apply a simplified linear increment here for performance/concurrency,
+                // or we could stick to the read-modify-save model inside the lock.
+                // Given the user wants atomic updates, we'll use $inc.
+                updateDoc.$inc[`${category}.${id}`] = value;
+            }
+        }
+
+        await TasteProfile.updateOne({ owner, context }, updateDoc);
     }
 
     /**
@@ -119,127 +156,138 @@ class ProfileBuilder {
      * @param {String} apiKey Chiave API TMDB
      */
     static async syncUserHistory(owner, context, traktHistory, apiKey) {
-        // Use findOneAndUpdate with upsert to avoid race conditions creating duplicate profiles
-        let profile = await TasteProfile.findOneAndUpdate(
-            { owner, context },
-            { $setOnInsert: { processedTraktIds: [], processedStremioIds: [] } },
-            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
-        );
+        if (!owner || !traktHistory?.length) return null;
 
-        const shouldMirrorToGlobal = context && context !== 'global';
-        let globalProfile = null;
-        if (shouldMirrorToGlobal) {
-            globalProfile = await TasteProfile.findOneAndUpdate(
-                { owner, context: 'global' },
+        try {
+            // Use findOneAndUpdate with upsert to avoid race conditions creating duplicate profiles
+            let profile = await TasteProfile.findOneAndUpdate(
+                { owner, context },
                 { $setOnInsert: { processedTraktIds: [], processedStremioIds: [] } },
                 { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
             );
-        }
 
-        // Filtra solo quelli non ancora processati
-        const seenProcessedIds = new Set((profile.processedTraktIds || []).map(id => id.toString()));
-        const newItems = traktHistory.filter(item => {
-            const id = item.movie?.ids?.tmdb || item.show?.ids?.tmdb || item.movie?.ids?.imdb || item.show?.ids?.imdb;
-            if (!id || seenProcessedIds.has(id.toString())) return false;
-            seenProcessedIds.add(id.toString());
-            return true;
-        });
-
-        if (newItems.length === 0) return profile;
-
-        // Binge-watching detection: sort items by watched_at, group by session
-        // A session is a group of items watched within BINGE_SESSION_GAP_MS of each other
-        const itemsWithTime = newItems.map(item => ({
-            item,
-            watchedAt: item.watched_at ? new Date(item.watched_at).getTime() : 0
-        })).sort((a, b) => a.watchedAt - b.watchedAt);
-
-        // Group into sessions by looking at consecutive gaps
-        const sessions = [];
-        if (itemsWithTime.length > 0) {
-            let currentSession = [itemsWithTime[0]];
-            for (let i = 1; i < itemsWithTime.length; i++) {
-                const prev = itemsWithTime[i - 1];
-                const curr = itemsWithTime[i];
-                const gap = Math.abs(curr.watchedAt - prev.watchedAt);
-                if (gap <= BINGE_SESSION_GAP_MS) {
-                    currentSession.push(curr);
-                } else {
-                    sessions.push(currentSession);
-                    currentSession = [curr];
-                }
+            const shouldMirrorToGlobal = context && context !== 'global';
+            let globalProfileProcessedIds = [];
+            if (shouldMirrorToGlobal) {
+                const globalProfile = await TasteProfile.findOneAndUpdate(
+                    { owner, context: 'global' },
+                    { $setOnInsert: { processedTraktIds: [], processedStremioIds: [] } },
+                    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
+                );
+                globalProfileProcessedIds = globalProfile.processedTraktIds || [];
             }
-            sessions.push(currentSession);
-        }
 
-        // Determine frequency multiplier: session with >= 3 items in one day counts as binge
-        const sessionMultiplierMap = new Map();
-        for (const session of sessions) {
-            const isBinge = session.length >= 3;
-            const multiplier = isBinge ? BINGE_MULTIPLIER : 1.0;
-            for (const { item } of session) {
+            // Filtra solo quelli non ancora processati
+            const seenProcessedIds = new Set((profile.processedTraktIds || []).map(id => id.toString()));
+            const newItems = traktHistory.filter(item => {
                 const id = item.movie?.ids?.tmdb || item.show?.ids?.tmdb || item.movie?.ids?.imdb || item.show?.ids?.imdb;
-                if (id) sessionMultiplierMap.set(id.toString(), multiplier);
-            }
-        }
-
-        // Processa in batch per non saturare TMDB
-        const batchSize = 5;
-        const processedProfileIds = [];
-        const processedGlobalIds = [];
-        for (let i = 0; i < newItems.length; i += batchSize) {
-            const batch = newItems.slice(i, i + batchSize);
-            const promises = batch.map(async (item) => {
-                const tmdbIdRaw = item.movie?.ids?.tmdb || item.show?.ids?.tmdb;
-                const imdbId = item.movie?.ids?.imdb || item.show?.ids?.imdb;
-                const tmdbId = tmdbIdRaw || (imdbId ? (await translateImdbToTmdb(imdbId, apiKey))?.id : null);
-                const processedId = tmdbIdRaw || imdbId || tmdbId;
-                const type = item.movie ? 'movie' : 'tv';
-                if (!tmdbId || !processedId) return;
-
-                try {
-                    const details = await tmdb.getTmdbMovieDetails(apiKey, tmdbId, type);
-                    if (details) {
-                        const bingeMultiplier = sessionMultiplierMap.get(processedId.toString()) || 1.0;
-                        this.processItem(profile, details, bingeMultiplier);
-                        processedProfileIds.push(processedId.toString());
-                        if (globalProfile && !globalProfile.processedTraktIds.includes(processedId.toString())) {
-                            this.processItem(globalProfile, details, bingeMultiplier * GLOBAL_PROFILE_MIRROR_RATIO);
-                            processedGlobalIds.push(processedId.toString());
-                        }
-                    }
-                } catch (e) {
-                    console.error(`Errore processamento item ${tmdbId}:`, e.message);
-                }
+                if (!id || seenProcessedIds.has(id.toString())) return false;
+                seenProcessedIds.add(id.toString());
+                return true;
             });
 
-            await Promise.all(promises);
-        }
+            if (newItems.length === 0) return profile;
 
-        await profile.save();
-        if (processedProfileIds.length > 0) {
-            await TasteProfile.updateOne(
-                { owner, context },
-                { $addToSet: { processedTraktIds: { $each: processedProfileIds } } }
-            );
-            profile.processedTraktIds = mergeProcessedIds(profile.processedTraktIds, processedProfileIds);
-        }
-        if (globalProfile) {
-            await globalProfile.save();
+            // Binge-watching detection
+            const itemsWithTime = newItems.map(item => ({
+                item,
+                watchedAt: item.watched_at ? new Date(item.watched_at).getTime() : 0
+            })).sort((a, b) => a.watchedAt - b.watchedAt);
+
+            const sessions = [];
+            if (itemsWithTime.length > 0) {
+                let currentSession = [itemsWithTime[0]];
+                for (let i = 1; i < itemsWithTime.length; i++) {
+                    const prev = itemsWithTime[i - 1];
+                    const curr = itemsWithTime[i];
+                    const gap = Math.abs(curr.watchedAt - prev.watchedAt);
+                    if (gap <= BINGE_SESSION_GAP_MS) {
+                        currentSession.push(curr);
+                    } else {
+                        sessions.push(currentSession);
+                        currentSession = [curr];
+                    }
+                }
+                sessions.push(currentSession);
+            }
+
+            const sessionMultiplierMap = new Map();
+            for (const session of sessions) {
+                const multiplier = session.length >= 3 ? BINGE_MULTIPLIER : 1.0;
+                for (const { item } of session) {
+                    const id = item.movie?.ids?.tmdb || item.show?.ids?.tmdb || item.movie?.ids?.imdb || item.show?.ids?.imdb;
+                    if (id) sessionMultiplierMap.set(id.toString(), multiplier);
+                }
+            }
+
+            const batchSize = 5;
+            const processedProfileIds = [];
+            const processedGlobalIds = [];
+            const profileIncrements = {};
+            const globalIncrements = {};
+
+            const globalSeenSet = new Set(globalProfileProcessedIds.map(id => id.toString()));
+
+            for (let i = 0; i < newItems.length; i += batchSize) {
+                const batch = newItems.slice(i, i + batchSize);
+                await Promise.all(batch.map(async (item) => {
+                    const tmdbIdRaw = item.movie?.ids?.tmdb || item.show?.ids?.tmdb;
+                    const imdbId = item.movie?.ids?.imdb || item.show?.ids?.imdb;
+                    const tmdbId = tmdbIdRaw || (imdbId ? (await translateImdbToTmdb(imdbId, apiKey))?.id : null);
+                    const processedId = tmdbIdRaw || imdbId || tmdbId;
+                    const type = item.movie ? 'movie' : 'tv';
+                    if (!tmdbId || !processedId) return;
+
+                    try {
+                        const details = await tmdb.getTmdbMovieDetails(apiKey, tmdbId, type);
+                        if (details) {
+                            const bingeMultiplier = sessionMultiplierMap.get(processedId.toString()) || 1.0;
+                            ProfileBuilder.processItem(details, bingeMultiplier, profileIncrements);
+                            processedProfileIds.push(processedId.toString());
+                            
+                            if (shouldMirrorToGlobal && !globalSeenSet.has(processedId.toString())) {
+                                ProfileBuilder.processItem(details, bingeMultiplier * GLOBAL_PROFILE_MIRROR_RATIO, globalIncrements);
+                                processedGlobalIds.push(processedId.toString());
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`Errore processamento item ${tmdbId}:`, e.message);
+                    }
+                }));
+            }
+
+            // Apply atomic increments
+            await ProfileBuilder.saveAtomic(owner, context, profileIncrements);
+            if (Object.keys(globalIncrements).length > 0) {
+                await ProfileBuilder.saveAtomic(owner, 'global', globalIncrements);
+            }
+
+            if (processedProfileIds.length > 0) {
+                await TasteProfile.updateOne(
+                    { owner, context },
+                    { $addToSet: { processedTraktIds: { $each: processedProfileIds } } }
+                );
+            }
             if (processedGlobalIds.length > 0) {
                 await TasteProfile.updateOne(
                     { owner, context: 'global' },
                     { $addToSet: { processedTraktIds: { $each: processedGlobalIds } } }
                 );
-                globalProfile.processedTraktIds = mergeProcessedIds(globalProfile.processedTraktIds, processedGlobalIds);
             }
-        }
 
-        await this.inferDNAFromProfile(profile);
-        if (globalProfile) {
-            await this.inferDNAFromProfile(globalProfile);
+            // Reload profile and infer DNA
+            const updatedProfile = await TasteProfile.findOne({ owner, context });
+            await this.inferDNAFromProfile(updatedProfile);
+            if (shouldMirrorToGlobal) {
+                const updatedGlobal = await TasteProfile.findOne({ owner, context: 'global' });
+                await this.inferDNAFromProfile(updatedGlobal);
+            }
+            return updatedProfile;
+
+        } catch (e) {
+            console.error(`[ProfileBuilder] Sync error for ${owner}:${context}:`, e.message);
+            throw e;
         }
-        return profile;
     }
 
     /**
@@ -249,59 +297,68 @@ class ProfileBuilder {
      * @param {String} apiKey Chiave API TMDB
      */
     static async syncStremioData(owner, stremioData, apiKey) {
-        if (!stremioData) return;
+        if (!stremioData || !owner) return null;
 
-        // Use findOneAndUpdate with upsert to avoid race conditions
-        let profile = await TasteProfile.findOneAndUpdate(
-            { owner, context: 'global' },
-            { $setOnInsert: { processedTraktIds: [], processedStremioIds: [] } },
-            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
-        );
-
-        const allItems = [
-            ...stremioData.loved.map(item => ({ item, weight: 4.0 })),
-            ...stremioData.liked.map(item => ({ item, weight: 3.0 })),
-            ...stremioData.library.map(item => {
-                const isWatched = item.state?.watched && (item.state?.overallProgress >= 0.9);
-                return { item, weight: isWatched ? 2.0 : 1.0 };
-            })
-        ];
-
-        // Processa in batch
-        const batchSize = 5;
-        const existingStremioIds = new Set((profile.processedStremioIds || []).map(id => id.toString()));
-        const processedStremioIds = [];
-        for (let i = 0; i < allItems.length; i += batchSize) {
-            const batch = allItems.slice(i, i + batchSize);
-            await Promise.all(batch.map(async ({ item, weight }) => {
-                const id = item.id || item._id; // Stremio usa id o _id
-                const type = item.type === 'series' ? 'tv' : 'movie';
-
-                // Evita duplicati se già processato con peso simile
-                if (!id || existingStremioIds.has(id.toString())) return;
-                existingStremioIds.add(id.toString());
-
-                try {
-                    const details = await tmdb.getTmdbMovieDetails(apiKey, id, type);
-                    if (details) {
-                        this.processItem(profile, details, weight);
-                        processedStremioIds.push(id.toString());
-                    }
-                } catch (e) {
-                    console.error(`[ProfileBuilder] Errore processamento item Stremio ${id}:`, e.message);
-                }
-            }));
-        }
-
-        await profile.save();
-        if (processedStremioIds.length > 0) {
-            await TasteProfile.updateOne(
+        try {
+            // Use findOneAndUpdate with upsert to avoid race conditions
+            let profile = await TasteProfile.findOneAndUpdate(
                 { owner, context: 'global' },
-                { $addToSet: { processedStremioIds: { $each: processedStremioIds } } }
+                { $setOnInsert: { processedTraktIds: [], processedStremioIds: [] } },
+                { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
             );
-            profile.processedStremioIds = mergeProcessedIds(profile.processedStremioIds, processedStremioIds);
+
+            const allItems = [
+                ...stremioData.loved.map(item => ({ item, weight: 4.0 })),
+                ...stremioData.liked.map(item => ({ item, weight: 3.0 })),
+                ...stremioData.library.map(item => {
+                    const isWatched = item.state?.watched && (item.state?.overallProgress >= 0.9);
+                    return { item, weight: isWatched ? 2.0 : 1.0 };
+                })
+            ];
+
+            const batchSize = 5;
+            const existingStremioIds = new Set((profile.processedStremioIds || []).map(id => id.toString()));
+            const processedStremioIds = [];
+            const profileIncrements = {};
+
+            for (let i = 0; i < allItems.length; i += batchSize) {
+                const batch = allItems.slice(i, i + batchSize);
+                await Promise.all(batch.map(async ({ item, weight }) => {
+                    const id = item.id || item._id; // Stremio uses id or _id
+                    const type = item.type === 'series' ? 'tv' : 'movie';
+
+                    if (!id || existingStremioIds.has(id.toString())) return;
+                    existingStremioIds.add(id.toString());
+
+                    try {
+                        const details = await tmdb.getTmdbMovieDetails(apiKey, id, type);
+                        if (details) {
+                            ProfileBuilder.processItem(details, weight, profileIncrements);
+                            processedStremioIds.push(id.toString());
+                        }
+                    } catch (e) {
+                        console.error(`[ProfileBuilder] Stremio sync error for item ${id}:`, e.message);
+                    }
+                }));
+            }
+
+            // Apply atomic increments
+            if (Object.keys(profileIncrements).length > 0) {
+                await ProfileBuilder.saveAtomic(owner, 'global', profileIncrements);
+            }
+
+            if (processedStremioIds.length > 0) {
+                await TasteProfile.updateOne(
+                    { owner, context: 'global' },
+                    { $addToSet: { processedStremioIds: { $each: processedStremioIds } } }
+                );
+            }
+            
+            return await TasteProfile.findOne({ owner, context: 'global' });
+        } catch (e) {
+            console.error(`[ProfileBuilder] Stremio sync error for ${owner}:`, e.message);
+            throw e;
         }
-        return profile;
     }
     /**
      * Deduces new DNA based on the dominant score values in the profile.
@@ -312,7 +369,7 @@ class ProfileBuilder {
         if (!profile) return;
 
         try {
-            const User = require('../db/models/User');
+            const User = require('../models/User');
             const userDoc = await User.findOne({ userId: profile.owner });
             if (!userDoc) return;
 
@@ -386,11 +443,9 @@ class ProfileBuilder {
                     }
                     const manual = targetProfile.settings.manualDNA || [];
                     const suggested = targetProfile.settings.suggestedDNA || [];
-                    const pending = targetProfile.settings.pendingDNASuggestions || [];
                     const existingIds = new Set([
                         ...manual.map((item) => `${item.type}:${item.id}`),
-                        ...suggested.map((item) => `${item.type}:${item.id}`),
-                        ...pending.map((item) => `${item.type}:${item.id}`)
+                        ...suggested.map((item) => `${item.type}:${item.id}`)
                     ]);
                     const additions = inferredTraits.filter((item) => !existingIds.has(`${item.type}:${item.id}`));
                     if (additions.length > 0) {
@@ -408,28 +463,26 @@ class ProfileBuilder {
 
             const suggested = userProfile.settings?.suggestedDNA || [];
             const manual = userProfile.settings?.manualDNA || [];
-            const pending = userProfile.settings?.pendingDNASuggestions || [];
             const existingDNAIds = new Set([
-                ...suggested.map(p => p.id),
-                ...manual.map(p => p.id),
-                ...pending.map(p => p.id)
+                ...suggested.map(p => `${p.type}:${p.id}`),
+                ...manual.map(p => `${p.type}:${p.id}`)
             ]);
-            const nextPending = [...pending];
+            const nextSuggested = [...suggested];
 
             inferredTraits.forEach((item) => {
                 const itemKey = `${item.type}:${item.id}`;
                 if (!existingDNAIds.has(itemKey)) {
-                    nextPending.push(item);
+                    nextSuggested.push(item);
                     existingDNAIds.add(itemKey);
                 }
             });
 
-            if (nextPending.length > pending.length) {
+            if (nextSuggested.length > suggested.length) {
                 await User.findOneAndUpdate(
                     { userId: profile.owner, 'profiles.id': profile.context },
-                    { $set: { 'profiles.$.settings.pendingDNASuggestions': nextPending } }
+                    { $set: { 'profiles.$.settings.suggestedDNA': nextSuggested } }
                 );
-                console.log(`💡 Nuovi DNA in pending per l'utente ${profile.owner}, contesto ${profile.context}`);
+                console.log(`💡 Nuovi DNA suggeriti aggiunti direttamente per l'utente ${profile.owner}, contesto ${profile.context}`);
             }
 
         } catch (e) {
