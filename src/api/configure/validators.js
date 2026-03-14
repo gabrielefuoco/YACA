@@ -32,19 +32,28 @@ function validateKeys(body, existingUser, warnings) {
     const personalTmdbKey = normalizeInputString(body.tmdbKey);
     const personalMistralKey = normalizeInputString(body.mistralKey);
     let traktToken = normalizeInputString(body.traktToken);
-    const traktRefreshToken = normalizeInputString(body.traktRefreshToken);
+    let traktRefreshToken = normalizeInputString(body.traktRefreshToken);
 
     // Defensive: if traktToken is accidentally passed as an object (e.g. from a raw API response)
     if (traktToken && typeof traktToken === 'object' && traktToken.access_token) {
         traktToken = traktToken.access_token;
     }
+
+    // Preserve Trakt tokens if not provided or set to 'null' string
+    if (traktToken === undefined || traktToken === null || traktToken === 'null' || traktToken === '') {
+        traktToken = existingUser?.apiKeys?.trakt || null;
+    }
+    if (traktRefreshToken === undefined || traktRefreshToken === null || traktRefreshToken === 'null' || traktRefreshToken === '') {
+        traktRefreshToken = existingUser?.apiKeys?.traktRefreshToken || null;
+    }
+
     const stremioAuthKey = normalizeInputString(body.stremioAuthKey);
     const stremioEmail = body.email || null; // email can come from body in some flows
 
     const effectiveTmdbKey = personalTmdbKey || process.env.TMDB_API_KEY;
-    const effectiveMistralKey = (personalMistralKey === undefined
+    const effectiveMistralKey = (personalMistralKey === undefined || personalMistralKey === null || personalMistralKey === 'null' || personalMistralKey === '')
         ? (existingUser?.apiKeys?.mistral || null)
-        : (personalMistralKey || null));
+        : (personalMistralKey || null);
 
     if (!effectiveTmdbKey) {
         throw { status: 400, message: "TMDB API key non configurata sul server o mancante." };

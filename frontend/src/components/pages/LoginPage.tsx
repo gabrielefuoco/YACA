@@ -55,12 +55,12 @@ export function LoginPage({ onComplete }: LoginPageProps) {
         setSessionUserId(data.userId);
 
         if (data.isReturningUser) {
-          // Returning user: skip Trakt auth, complete login directly
+          // Returning user: restore Trakt auth if present, complete login directly
           setConfiguring(true);
           onComplete(
             auth,
-            null,
-            null,
+            data.traktToken || null,
+            data.traktRefreshToken || null,
             data.userId || undefined,
             undefined,
             undefined,

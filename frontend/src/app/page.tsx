@@ -99,6 +99,8 @@ export default function Home() {
             if (data.apiKeys) {
               if (data.apiKeys.tmdb) setGlobalTmdbKey(data.apiKeys.tmdb);
               if (data.apiKeys.mistral) setGlobalMistralKey(data.apiKeys.mistral);
+              if (data.apiKeys.trakt) setTraktToken(data.apiKeys.trakt);
+              if (data.apiKeys.traktRefreshToken) setTraktRefreshToken(data.apiKeys.traktRefreshToken);
             }
           } else {
             setInitialProfiles(createDefaultProfiles());
@@ -145,6 +147,8 @@ export default function Home() {
           if (data.apiKeys) {
             if (data.apiKeys.tmdb) setGlobalTmdbKey(data.apiKeys.tmdb);
             if (data.apiKeys.mistral) setGlobalMistralKey(data.apiKeys.mistral);
+            if (data.apiKeys.trakt) setTraktToken(data.apiKeys.trakt);
+            if (data.apiKeys.traktRefreshToken) setTraktRefreshToken(data.apiKeys.traktRefreshToken);
           }
         } else {
           setInitialProfiles(createDefaultProfiles());
@@ -295,6 +299,10 @@ export default function Home() {
         setUserId(data.userId);
         localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
         if (data.configVersion) setConfigVersion(String(data.configVersion));
+
+        // Restore tokens if returned (ensure state stays in sync)
+        if (data.apiKeys?.trakt) setTraktToken(data.apiKeys.trakt);
+        if (data.apiKeys?.traktRefreshToken) setTraktRefreshToken(data.apiKeys.traktRefreshToken);
 
         // Auto-install addon in Stremio
         if (newStremioAuth?.authKey) {

@@ -109,6 +109,7 @@ module.exports = async (req, res) => {
             userId: userDoc.userId,
             manifestUrl,
             configVersion: userDoc.config?.configVersion,
+            apiKeys: userDoc.apiKeys, // Return keys for frontend state sync
             warnings,
             message: userDoc.apiKeys?.stremio ? "Configurazione salvata. Stremio aggiornato." : "Configurazione salvata."
         });
