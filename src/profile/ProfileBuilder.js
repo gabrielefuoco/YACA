@@ -1,4 +1,4 @@
-const TasteProfile = require('../db/models/TasteProfile');
+const TasteProfile = require('../models/TasteProfile');
 const tmdb = require('../clients/tmdb');
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const { BINGE_SESSION_GAP_MS, BINGE_MULTIPLIER } = require('../config');

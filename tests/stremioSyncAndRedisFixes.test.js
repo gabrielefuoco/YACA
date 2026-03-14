@@ -54,7 +54,7 @@ describe('stremio sync builder invocation', () => {
         jest.doMock('../src/profile/ProfileBuilder', () => ({
             syncStremioData
         }));
-        jest.doMock('../src/db/models/User', () => ({
+        jest.doMock('../src/models/User', () => ({
             findOne,
             findOneAndUpdate
         }));

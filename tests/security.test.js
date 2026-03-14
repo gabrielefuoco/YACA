@@ -2,7 +2,7 @@ jest.mock('nanoid', () => ({
     nanoid: () => 'test-nanoid'
 }));
 
-jest.mock('../src/db/models/UserList', () => ({
+jest.mock('../src/models/UserList', () => ({
     findOne: jest.fn(() => ({ lean: jest.fn().mockResolvedValue(null) })),
     deleteMany: jest.fn().mockResolvedValue({ deletedCount: 0 })
 }));

@@ -1,6 +1,6 @@
-const TmdbScoringData = require('../../db/models/TmdbScoringData');
+const TmdbScoringData = require('../../models/TmdbScoringData');
 const ProfileBuilder = require('../../profile/ProfileBuilder');
-const TasteProfile = require('../../db/models/TasteProfile');
+const TasteProfile = require('../../models/TasteProfile');
 
 module.exports = async (req, res) => {
     try {

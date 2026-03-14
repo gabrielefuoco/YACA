@@ -1,4 +1,4 @@
-jest.mock('../src/db/models/TasteProfile', () => ({
+jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn(),
     findOneAndUpdate: jest.fn(),
     updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
@@ -12,14 +12,14 @@ jest.mock('../src/id_mapping/id_cache', () => ({
     translateImdbToTmdb: jest.fn()
 }));
 
-jest.mock('../src/db/models/User', () => ({
+jest.mock('../src/models/User', () => ({
     findOne: jest.fn(),
     findOneAndUpdate: jest.fn().mockResolvedValue({ acknowledged: true })
 }));
 
-const TasteProfile = require('../src/db/models/TasteProfile');
+const TasteProfile = require('../src/models/TasteProfile');
 const tmdb = require('../src/clients/tmdb');
-const User = require('../src/db/models/User');
+const User = require('../src/models/User');
 const { translateImdbToTmdb } = require('../src/id_mapping/id_cache');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 

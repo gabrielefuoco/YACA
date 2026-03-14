@@ -1,7 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('../src/db/models/User');
-const TasteProfile = require('../src/db/models/TasteProfile');
+const User = require('../src/models/User');
+const TasteProfile = require('../src/models/TasteProfile');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 
 async function runTest() {

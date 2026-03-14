@@ -1,6 +1,6 @@
 const { ITEMS_PER_PAGE } = require('../config');
-const TasteProfile = require('../db/models/TasteProfile');
-const TmdbScoringData = require('../db/models/TmdbScoringData');
+const TasteProfile = require('../models/TasteProfile');
+const TmdbScoringData = require('../models/TmdbScoringData');
 const User = require('../models/User');
 const ProfileBuilder = require('../profile/ProfileBuilder');
 const ProfileScorer = require('../profile/ProfileScorer');

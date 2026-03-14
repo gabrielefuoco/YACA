@@ -2,17 +2,17 @@ jest.mock('nanoid', () => ({
     nanoid: jest.fn(() => 'generated_user_id')
 }));
 
-jest.mock('../src/db/models/User', () => ({
+jest.mock('../src/models/User', () => ({
     findOne: jest.fn(),
     findOneAndUpdate: jest.fn()
 }));
 
-jest.mock('../src/db/models/CacheEntry', () => ({
+jest.mock('../src/models/CacheEntry', () => ({
     findOneAndUpdate: jest.fn()
 }));
 
-const User = require('../src/db/models/User');
-const CacheEntry = require('../src/db/models/CacheEntry');
+const User = require('../src/models/User');
+const CacheEntry = require('../src/models/CacheEntry');
 const UserConfig = require('../src/models/UserConfig');
 const CacheManager = require('../src/cache/CacheManager');
 
@@ -99,7 +99,7 @@ describe('Mongoose findOneAndUpdate options', () => {
         const saveUser = jest.fn().mockResolvedValueOnce({ userId: 'generated_user_id' });
         const generateTmdbFiltersFromPrompt = jest.fn().mockResolvedValueOnce({ target: 'tmdb' });
 
-        jest.doMock('../src/db/models/UserList', () => ({
+        jest.doMock('../src/models/UserList', () => ({
             findOneAndUpdate: userListFindOneAndUpdate,
             deleteMany: jest.fn().mockResolvedValue({ deletedCount: 0 })
         }));

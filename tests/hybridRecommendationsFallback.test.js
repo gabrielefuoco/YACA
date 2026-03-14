@@ -1,8 +1,8 @@
-jest.mock('../src/db/models/TasteProfile', () => ({
+jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn()
 }));
 
-jest.mock('../src/db/models/User', () => ({
+jest.mock('../src/models/User', () => ({
     findOne: jest.fn().mockResolvedValue(null)
 }));
 
@@ -38,7 +38,7 @@ jest.mock('../src/clients/trakt', () => ({
     }
 }));
 
-const TasteProfile = require('../src/db/models/TasteProfile');
+const TasteProfile = require('../src/models/TasteProfile');
 const tmdbClient = require('../src/clients/tmdb');
 const { getHybridCatalog, recommendationsCache } = require('../src/engines/hybridRecommendations');
 

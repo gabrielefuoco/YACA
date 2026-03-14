@@ -10,17 +10,21 @@ const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 2000, ramT
 function normalizeAnimeEpisodes(seriesId, episodes) {
     if (!seriesId || !Array.isArray(episodes)) return [];
 
+    let absoluteIndex = 1;
     return episodes
-        .map((episode, index) => {
+        .map((episode) => {
             const season = Number(episode?.season) > 0 ? Number(episode.season) : 1;
-            const episodeNumber = Number(episode?.episode) > 0 ? Number(episode.episode) : index + 1;
+            const episodeNumber = Number(episode?.episode) > 0 ? Number(episode.episode) : absoluteIndex++;
 
-            // Preserve existing ID if it looks like a full Stremio ID (contains at least 2 colons)
+            // If we have an IMDB seriesId (tt...), we want to force its use for better stream compatibility
+            // otherwise we preserve full IDs (like kitsu: absolute ones).
+            const isImdbSeries = seriesId && seriesId.startsWith('tt');
             const hasFullId = episode.id && (episode.id.match(/:/g) || []).length >= 2;
+            const useSeriesIdMapping = isImdbSeries || !hasFullId;
 
             return {
                 ...episode,
-                id: hasFullId ? episode.id : `${seriesId}:${season}:${episodeNumber}`,
+                id: useSeriesIdMapping ? `${seriesId}:${season}:${episodeNumber}` : episode.id,
                 season,
                 episode: episodeNumber
             };
@@ -227,7 +231,7 @@ async function metaHandler(args, userConfig) {
 async function updateScoringCache(tmdbId, type, metaData) {
     if (!tmdbId || !metaData) return;
     try {
-        const TmdbScoringData = require('../db/models/TmdbScoringData');
+        const TmdbScoringData = require('../models/TmdbScoringData');
         await TmdbScoringData.updateOne(
             { tmdbId, type },
             {

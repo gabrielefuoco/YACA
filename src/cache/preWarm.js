@@ -1,4 +1,4 @@
-const CacheEntry = require('../db/models/CacheEntry');
+const CacheEntry = require('../models/CacheEntry');
 const { getRedisClient, isRedisAvailable } = require('./redisClient');
 const { PREWARM_PAGES, PREWARM_PRESET_IDS } = require('../config');
 

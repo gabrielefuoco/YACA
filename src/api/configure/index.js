@@ -1,5 +1,5 @@
 const UserConfig = require('../../models/UserConfig');
-const UserList = require('../../db/models/UserList');
+const UserList = require('../../models/UserList');
 const { resolveHostUrl } = require('../../utils/helpers');
 const { validateAuth, validateKeys } = require('./validators');
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');

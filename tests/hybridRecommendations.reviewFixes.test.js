@@ -1,12 +1,12 @@
-jest.mock('../src/db/models/TasteProfile', () => ({
+jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn()
 }));
 
-jest.mock('../src/db/models/User', () => ({
+jest.mock('../src/models/User', () => ({
     findOne: jest.fn()
 }));
 
-jest.mock('../src/db/models/TmdbScoringData', () => ({
+jest.mock('../src/models/TmdbScoringData', () => ({
     find: jest.fn(),
     updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
 }));
@@ -49,9 +49,9 @@ jest.mock('../src/ai/querySynthesizer', () => ({
     generateDiscoveryQueries: jest.fn().mockResolvedValue([{ genre_ids: [18], keyword: 'slow burn' }])
 }));
 
-const TasteProfile = require('../src/db/models/TasteProfile');
-const User = require('../src/db/models/User');
-const TmdbScoringData = require('../src/db/models/TmdbScoringData');
+const TasteProfile = require('../src/models/TasteProfile');
+const User = require('../src/models/User');
+const TmdbScoringData = require('../src/models/TmdbScoringData');
 const tmdb = require('../src/clients/tmdb');
 const {
     resolveAiQueryToTmdbParams,

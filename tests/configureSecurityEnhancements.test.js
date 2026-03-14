@@ -3,7 +3,7 @@ jest.mock('../src/models/UserConfig', () => ({
     getUser: jest.fn().mockResolvedValue(null)
 }));
 
-jest.mock('../src/db/models/UserList', () => ({
+jest.mock('../src/models/UserList', () => ({
     findOneAndUpdate: jest.fn().mockResolvedValue({}),
     deleteMany: jest.fn().mockResolvedValue({ deletedCount: 0 })
 }));

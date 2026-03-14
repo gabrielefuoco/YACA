@@ -33,15 +33,15 @@ jest.mock('../src/engines/hybridRecommendations', () => ({
     getHybridCatalog: jest.fn()
 }));
 
-jest.mock('../src/db/models/UserList', () => ({
+jest.mock('../src/models/UserList', () => ({
     findOne: jest.fn(() => ({ lean: jest.fn().mockResolvedValue(null) }))
 }));
 
-jest.mock('../src/db/models/TasteProfile', () => ({
+jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn().mockResolvedValue(null)
 }));
 
-jest.mock('../src/db/models/UserActivity', () => ({
+jest.mock('../src/models/UserActivity', () => ({
     create: jest.fn().mockResolvedValue(null),
     find: jest.fn(() => ({ sort: jest.fn(() => ({ limit: jest.fn().mockResolvedValue([]) })) }))
 }));
@@ -54,11 +54,11 @@ jest.mock('../src/utils/rateLimiter', () => ({
     rateLimitedMap: jest.fn(async (items, fn) => Promise.all(items.map(fn)))
 }));
 
-jest.mock('../src/db/models/CacheEntry', () => ({
+jest.mock('../src/models/CacheEntry', () => ({
     find: jest.fn(() => ({ limit: jest.fn(() => ({ lean: jest.fn().mockResolvedValue([]) })) }))
 }));
 
-jest.mock('../src/db/models/TmdbScoringData', () => ({
+jest.mock('../src/models/TmdbScoringData', () => ({
     find: jest.fn(() => ({ lean: jest.fn().mockResolvedValue([]) }))
 }));
 
@@ -71,8 +71,8 @@ const { fetchKitsuCatalog, fetchKitsuEpisodes } = require('../src/clients/kitsu'
 const { routeLiveStremioSearch } = require('../src/ai/router');
 const { getHybridCatalog } = require('../src/engines/hybridRecommendations');
 const { getPresets } = require('../src/data/presets');
-const TasteProfile = require('../src/db/models/TasteProfile');
-const TmdbScoringData = require('../src/db/models/TmdbScoringData');
+const TasteProfile = require('../src/models/TasteProfile');
+const TmdbScoringData = require('../src/models/TmdbScoringData');
 const ProfileScorer = require('../src/profile/ProfileScorer');
 const { getTmdbMovieDetails } = require('../src/clients/tmdb');
 const { catalogHandler } = require('../src/handlers/catalogHandler');

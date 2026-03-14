@@ -1,4 +1,4 @@
-const User = require('../db/models/User');
+const User = require('../models/User');
 const { fetchTraktCatalog } = require('../clients/trakt'); // We'll need to extend trakt client for POST
 const { stremioClient, stremioLikesClient } = require('../clients/stremio');
 

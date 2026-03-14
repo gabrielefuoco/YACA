@@ -1,4 +1,4 @@
-const TasteProfile = require('../db/models/TasteProfile');
+const TasteProfile = require('../models/TasteProfile');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const { buildDnaDescription } = require('../ai/querySynthesizer');
 

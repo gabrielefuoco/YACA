@@ -1,4 +1,4 @@
-jest.mock('../src/db/models/User', () => ({
+jest.mock('../src/models/User', () => ({
     findOne: jest.fn()
 }));
 jest.mock('../src/clients/trakt', () => ({
@@ -26,7 +26,7 @@ const { buildDiscoveryParams } = require('../src/handlers/catalogHandler');
 const configureHandler = require('../src/api/configure');
 const { buildSuggestedDNAFromPresets } = configureHandler;
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
-const User = require('../src/db/models/User');
+const User = require('../src/models/User');
 const config = require('../src/config');
 
 describe('YACA 2.1 - Inclusive OR discovery params', () => {

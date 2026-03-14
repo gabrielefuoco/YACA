@@ -6,7 +6,7 @@ jest.mock('../src/models/UserConfig', () => ({
     saveUser: jest.fn()
 }));
 
-jest.mock('../src/db/models/User', () => ({
+jest.mock('../src/models/User', () => ({
     findOne: jest.fn()
 }));
 
@@ -16,7 +16,7 @@ jest.mock('nanoid', () => ({
 
 const { stremioClient } = require('../src/clients/stremio');
 const UserConfig = require('../src/models/UserConfig');
-const User = require('../src/db/models/User');
+const User = require('../src/models/User');
 const { loginHandler, guestHandler } = require('../src/api/auth');
 
 describe('auth handlers security hardening', () => {

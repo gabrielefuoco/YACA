@@ -29,8 +29,16 @@ const hybridRecommendationsCache = new CacheManager('recommendation_cache', {
     swrMs: ONE_HOUR_MS
 });
 
+const catalogFallbackCache = new CacheManager('catalog_fallback', {
+    ramMax: 500,
+    ramTtlMs: TEN_MINUTES_MS,
+    mongoTtlMs: ONE_DAY_MS,
+    swrMs: ONE_HOUR_MS
+});
+
 module.exports = {
     aiPromptCache,
     aiDiscoveryCache,
-    hybridRecommendationsCache
+    hybridRecommendationsCache,
+    catalogFallbackCache
 };

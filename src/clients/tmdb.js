@@ -676,15 +676,24 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
         }
 
         let translationsDone = 0;
-        const TRANSLATION_LIMIT = 50;
+        const TRANSLATION_LIMIT = 30; // Reduced from 50 to further protect against timeouts on large series
 
         const buildEpisodesFromSeason = async (seasonData, fallbackMaps = {}) => {
             if (!seasonData?.episodes) return [];
             const enOverviewByEpisode = fallbackMaps.enOverviewByEpisode || new Map();
             const originalOverviewByEpisode = fallbackMaps.originalOverviewByEpisode || new Map();
+            
+            // Limit mapping to avoid processing huge arrays synchronously if possible
             return rateLimitedMap(seasonData.episodes, async (ep) => {
                 let overview = ep.overview || '';
-                if (!overview.trim() && translationsDone < TRANSLATION_LIMIT) {
+                
+                // Only translate if there's no Italian overview and we are within translation limits
+                // Also prioritize recent episodes or first 100 episodes total for translation
+                const shouldTranslate = !overview.trim() && 
+                                       translationsDone < TRANSLATION_LIMIT && 
+                                       (ep.season_number <= 2 || ep.episode_number <= 50);
+
+                if (shouldTranslate) {
                     const enOverview = enOverviewByEpisode.get(ep.episode_number) || '';
                     const originalOverview = originalOverviewByEpisode.get(ep.episode_number) || '';
 
@@ -706,7 +715,7 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
                     overview,
                     thumbnail: ep.still_path ? `https://image.tmdb.org/t/p/w500${ep.still_path}` : null
                 };
-            }, { batchSize: 3, delayMs: 50 });
+            }, { batchSize: 5, delayMs: 40 }); // Increased batch size for faster processing of large lists
         };
 
         // Process seasons: build episodes with overview fallback where needed

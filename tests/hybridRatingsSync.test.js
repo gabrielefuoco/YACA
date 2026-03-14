@@ -2,11 +2,11 @@ const mockTraktGet = jest.fn();
 const MAX_POLLING_ATTEMPTS = 20;
 const POLLING_INTERVAL_MS = 10;
 
-jest.mock('../src/db/models/TasteProfile', () => ({
+jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn()
 }));
 
-jest.mock('../src/db/models/User', () => ({
+jest.mock('../src/models/User', () => ({
     findOne: jest.fn().mockResolvedValue(null)
 }));
 
@@ -40,7 +40,7 @@ jest.mock('../src/clients/tmdb', () => ({
     createTmdbClient: jest.fn(() => ({ get: jest.fn() }))
 }));
 
-const TasteProfile = require('../src/db/models/TasteProfile');
+const TasteProfile = require('../src/models/TasteProfile');
 const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 const tmdb = require('../src/clients/tmdb');

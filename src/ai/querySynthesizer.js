@@ -52,13 +52,14 @@ const HIDDEN_GEMS_SYSTEM_PROMPT = `You are a TMDB Query Architect specialized in
 ### DECISION LOGIC (FOLLOW STRICTLY):
 1. **STRATEGY: "niche_discovery_array"** - TRIGGER: You receive a user's Taste DNA (Top Genres and Top Keywords).
    - ACTION: You MUST generate an ARRAY of exactly 3 or 4 distinct "discovery" query objects.
-   - GOAL: Find niche, indie, or experimental combinations. Cross-reference specific keywords to create highly targeted searches.
+    - GOAL: Find niche, indie, or experimental combinations that have low visibility. You MUST avoid mainstream blockbuster titles.
+    - PREFER: Combinations that would result in titles with low vote counts (e.g. < 500) or low popularity scores on TMDB.
 
 ### PARAMETER EXTRACTION RULES:
 - **LOGIC OPERATORS (CRITICAL)**:
-   - Use **comma (',')** for **AND** logic (e.g., "snow,serial killer").
-   - Use **pipe ('|')** for **OR** logic.
-   - For Hidden Gems, you MUST heavily prefer the comma (',') operator to narrow down the search surgically.
+    - Use **comma (',')** for **AND** logic (e.g., "snow,serial killer").
+    - Use **pipe ('|')** for **OR** logic.
+    - For Hidden Gems, you MUST heavily prefer the comma (',') operator to narrow down the search surgically and find specific niche crossovers.
 - **KEYWORDS**: You MUST output descriptive English nouns. Do NOT use numerical IDs for keywords. You can infer 1-2 new related keywords to find niche titles.
 - **GENRES**: Map genres to their respective numerical IDs in an array (Max 2 genres per object).
 
@@ -103,6 +104,8 @@ const GENRE_NAME_TO_ID = {
 // CONSTANTS
 // ============================================
 const MISTRAL_TIMEOUT_MS = 25000;
+const { safeJsonParse } = require('../utils/jsonParser');
+
 /**
  * Parses and validates a Mistral response that should be a JSON array of discovery queries.
  * Defends against malformed output and prompt injection.
@@ -110,55 +113,48 @@ const MISTRAL_TIMEOUT_MS = 25000;
  * @returns {Array} Validated array of query objects
  */
 function parseQuerySynthesizerResponse(content) {
-    let jsonContent = content;
+    const parsed = safeJsonParse(content);
+    if (!parsed) return [];
 
-    // Extract JSON array from markdown fences or surrounding text
-    const arrayMatch = content.match(/\[[\s\S]*\]/);
-    if (arrayMatch) jsonContent = arrayMatch[0];
+    let queries = parsed;
 
-    try {
-        let parsed = JSON.parse(jsonContent);
-
-        // Handle object-wrapped arrays (json_object format may produce {"queries": [...]})
-        if (!Array.isArray(parsed) && parsed && typeof parsed === 'object') {
-            const values = Object.values(parsed);
-            const arrayValue = values.find(v => Array.isArray(v));
-            if (arrayValue) {
-                parsed = arrayValue;
-            } else {
-                return [];
-            }
+    // Handle object-wrapped arrays (json_object format may produce {"queries": [...]})
+    if (!Array.isArray(queries) && queries && typeof queries === 'object') {
+        const values = Object.values(queries);
+        const arrayValue = values.find(v => Array.isArray(v));
+        if (arrayValue) {
+            queries = arrayValue;
+        } else {
+            return [];
         }
-        if (!Array.isArray(parsed)) return [];
-
-        const ALLOWED_FIELDS = new Set(['vibe', 'genre_ids', 'keyword']);
-
-        return parsed
-            .filter(item => item && typeof item === 'object')
-            .map(item => {
-                // Remove non-whitelisted fields
-                const clean = {};
-                for (const key of Object.keys(item)) {
-                    if (ALLOWED_FIELDS.has(key)) clean[key] = item[key];
-                }
-
-                // Validate genre_ids
-                if (clean.genre_ids && (!Array.isArray(clean.genre_ids) || !clean.genre_ids.every(id => Number.isInteger(id)))) {
-                    delete clean.genre_ids;
-                }
-
-                // Validate keyword is a string
-                if (clean.keyword && typeof clean.keyword !== 'string') {
-                    delete clean.keyword;
-                }
-
-                return clean;
-            })
-            .filter(item => item.genre_ids || item.keyword); // Must have at least one useful field
-    } catch (err) {
-        console.error('[QuerySynthesizer] JSON parse error:', err.message);
-        return [];
     }
+
+    if (!Array.isArray(queries)) return [];
+
+    const ALLOWED_FIELDS = new Set(['vibe', 'genre_ids', 'keyword']);
+
+    return queries
+        .filter(item => item && typeof item === 'object')
+        .map(item => {
+            // Remove non-whitelisted fields
+            const clean = {};
+            for (const key of Object.keys(item)) {
+                if (ALLOWED_FIELDS.has(key)) clean[key] = item[key];
+            }
+
+            // Validate genre_ids
+            if (clean.genre_ids && (!Array.isArray(clean.genre_ids) || !clean.genre_ids.every(id => Number.isInteger(id)))) {
+                delete clean.genre_ids;
+            }
+
+            // Validate keyword is a string
+            if (clean.keyword && typeof clean.keyword !== 'string') {
+                delete clean.keyword;
+            }
+
+            return clean;
+        })
+        .filter(item => item.genre_ids || item.keyword || item.vibe); // Must have at least one useful field or vibe
 }
 
 /**

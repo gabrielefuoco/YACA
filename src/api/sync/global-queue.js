@@ -1,4 +1,4 @@
-const TmdbScoringData = require('../../db/models/TmdbScoringData');
+const TmdbScoringData = require('../../models/TmdbScoringData');
 
 module.exports = async (req, res) => {
     try {

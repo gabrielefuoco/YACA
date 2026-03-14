@@ -103,11 +103,16 @@ async function fetchKitsuEpisodes(kitsuId) {
 
         const episodes = allData.map(ep => {
             const attrs = ep.attributes;
+            // Kitsu often lists episodes with a seasonNumber or we can infer it if strictly mapped
+            // However, for Stremio, we need to decide if we keep absolute or split.
+            // By default, Kitsu returns absolute numbers. We keep them but allow future season mapping.
+            const season = attrs.seasonNumber || 1; 
+            
             return {
-                id: `kitsu:${kitsuId}:1:${attrs.number}`,
+                id: `kitsu:${kitsuId}:${season}:${attrs.number}`,
                 title: attrs.titles?.it || attrs.titles?.en || attrs.titles?.en_jp || `Episodio ${attrs.number}`,
                 released: attrs.airdate ? new Date(attrs.airdate).toISOString() : null,
-                season: 1,
+                season: season,
                 episode: attrs.number,
                 overview: attrs.synopsis || '',
                 thumbnail: attrs.thumbnail ? attrs.thumbnail.original : null

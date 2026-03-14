@@ -1,5 +1,5 @@
 const LRUCache = require('../utils/LRUCache');
-const CacheEntry = require('../db/models/CacheEntry');
+const CacheEntry = require('../models/CacheEntry');
 const { getRedisClient, isRedisAvailable } = require('./redisClient');
 
 class CacheManager {

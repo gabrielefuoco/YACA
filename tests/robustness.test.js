@@ -1,3 +1,11 @@
+jest.mock('../src/cache/CacheManager', () => {
+    return jest.fn().mockImplementation(() => ({
+        get: jest.fn().mockResolvedValue(null),
+        set: jest.fn().mockResolvedValue(true),
+        clear: jest.fn().mockResolvedValue(true)
+    }));
+});
+
 const { translateImdbToTmdb } = require('../src/id_mapping/id_cache');
 
 describe('Input validation - IMDB ID format', () => {

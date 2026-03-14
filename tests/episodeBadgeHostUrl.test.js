@@ -22,15 +22,15 @@ jest.mock('../src/ai/router', () => ({
     routeLiveStremioSearch: jest.fn()
 }));
 
-jest.mock('../src/db/models/UserList', () => ({
+jest.mock('../src/models/UserList', () => ({
     findOne: jest.fn(() => ({ lean: jest.fn().mockResolvedValue(null) }))
 }));
 
-jest.mock('../src/db/models/TasteProfile', () => ({
+jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn().mockResolvedValue(null)
 }));
 
-jest.mock('../src/db/models/UserActivity', () => ({
+jest.mock('../src/models/UserActivity', () => ({
     create: jest.fn().mockResolvedValue(null),
     find: jest.fn(() => ({ sort: jest.fn(() => ({ limit: jest.fn().mockResolvedValue([]) })) }))
 }));
@@ -39,7 +39,7 @@ jest.mock('../src/profile/ProfileScorer', () => ({
     calculateItemMatch: jest.fn(() => 0)
 }));
 
-jest.mock('../src/db/models/CacheEntry', () => ({
+jest.mock('../src/models/CacheEntry', () => ({
     find: jest.fn(() => ({ limit: jest.fn(() => ({ lean: jest.fn().mockResolvedValue([]) })) }))
 }));
 

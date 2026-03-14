@@ -13,12 +13,12 @@ jest.mock('../src/utils/httpClient', () => ({
 }));
 
 // Mock MongoDB User Model
-jest.mock('../src/db/models/User', () => ({
+jest.mock('../src/models/User', () => ({
     findOneAndUpdate: jest.fn()
 }));
 
 const { refreshTraktTokens, syncTraktTokensToDb, traktClient } = require('../src/clients/trakt');
-const User = require('../src/db/models/User');
+const User = require('../src/models/User');
 
 describe('Trakt Stateful Auto-Refresh', () => {
     const ORIGINAL_ENV = process.env;

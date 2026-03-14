@@ -81,5 +81,14 @@ module.exports = {
 
     // ─── Pre-warming Configuration ───
     PREWARM_PAGES: [1, 2],  // Which pages to pre-warm on boot
-    PREWARM_PRESET_IDS: ['preset_new_movies', 'preset_new_series', 'preset_pop_anime', 'preset_new_anime']
+    PREWARM_PRESET_IDS: ['preset_new_movies', 'preset_new_series', 'preset_pop_anime', 'preset_new_anime'],
+    
+    // Security
+    ALLOWED_IMAGE_HOSTS: [
+        'image.tmdb.org',
+        'media.kitsu.app',
+        'walter.trakt.tv',
+        'artworks.thetvdb.com',
+        'via.placeholder.com'
+    ]
 };

@@ -1,0 +1,147 @@
+﻿npx : [0m[7m[1m[31m FAIL [39m[22m[27m[0m 
+[2mtests/[22m[1mrobustness.test.js[22m ([0m[1m[41m6.898 
+s[49m[22m[0m)
+In riga:1 car:1
++ npx jest tests/robustness.test.js --color 2>&1 | Out-File -FilePath t ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([0m[7m[1m[3...[49m[22m 
+   [0m):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Input validation - IMDB ID format
+    [32mÔêÜ[39m [2mshould reject null IMDB ID (4 ms)[22m
+    [32mÔêÜ[39m [2mshould reject empty string IMDB ID (1 ms)[22m
+    [32mÔêÜ[39m [2mshould reject malformed IMDB ID without tt prefix (1 
+ms)[22m
+    [32mÔêÜ[39m [2mshould reject IMDB ID with path traversal (1 ms)[22m
+    [32mÔêÜ[39m [2mshould reject IMDB ID with special characters (1 
+ms)[22m
+    [31m├ù[39m [2mshould accept valid IMDB ID format (5006 ms)[22m
+  AI router - missing Mistral key guard
+    [32mÔêÜ[39m [2mshould return fallback filters when Mistral key is 
+missing (692 ms)[22m
+    [32mÔêÜ[39m [2mshould return fallback filters when Mistral key is 
+empty string (2 ms)[22m
+
+[1m[31m  [1mÔùÅ [22m[1mInput validation - IMDB ID format ÔÇ║ should 
+accept valid IMDB ID format[39m[22m
+
+    thrown: "Exceeded timeout of 5000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a 
+long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+[2m[22m
+[2m    [0m [90m 27 |[39m     })[33m;[39m[22m
+[2m     [90m 28 |[39m[22m
+[2m    [31m[1m>[22m[2m[39m[90m 29 |[39m     it([32m'should accept 
+valid IMDB ID format'[39m[33m,[39m [36masync[39m () [33m=>[39m 
+{[22m
+[2m     [90m    |[39m     [31m[1m^[22m[2m[39m[22m
+[2m     [90m 30 |[39m         [90m// This will fail because there's no 
+real API, but it validates the format check passes[39m[22m
+[2m     [90m 31 |[39m         [90m// and reaches the API call (which 
+will throw)[39m[22m
+[2m     [90m 32 |[39m         [36mconst[39m result [33m=[39m 
+[36mawait[39m translateImdbToTmdb([32m'tt1234567'[39m[33m,[39m 
+[32m'fake-key'[39m)[33m;[39m[0m[22m
+[2m[22m
+[2m      [2mat it ([22m[2m[0m[36mtests/robustness.test.js[39m[0m[2
+m:29:5)[22m[2m[22m
+[2m      [2mat Object.describe 
+([22m[2m[0m[36mtests/robustness.test.js[39m[0m[2m:3:1)[22m[2m[22m
+
+[1mTest Suites: [22m[1m[31m1 failed[39m[22m, 1 total
+[1mTests:       [22m[1m[31m1 failed[39m[22m, [1m[32m7 
+passed[39m[22m, 8 total
+[1mSnapshots:   [22m0 total
+[1mTime:[22m        7.016 s, estimated 8 s
+[2mRan all test suites[22m[2m matching 
+[22mtests/robustness.test.js[2m.[22m
+[33m[1mJest did not exit one second after the test run has 
+completed.[22m[39m
+[33m[1m[22m[39m
+[33m[1m'[22m[39m[33mThis usually means that there are asynchronous 
+operations that weren't stopped in your tests. Consider running Jest with 
+`--detectOpenHandles` to troubleshoot this issue.[39m
+  [2m[31mconsole.error[39m[22m
+[31m    [CacheManager:imdb_to_tmdb] L2 get error: Operation `cacheentries.findOne()` buffering timed out after 10000ms[39m
+[2m[22m
+[2m    [0m [90m 171 |[39m     [36masync[39m [36mset[39m(key[33m,[39m value[33m,[39m ttlMs [33m=[39m [36mnull[39m[33m,[39m options [33m=[39m { useRam[33m:[39m [36mtrue[39m }) {[22m
+[2m     [90m 172 |[39m         [36mif[39m ([33m![39mkey) [36mreturn[39m[33m;[39m[22m
+[2m    [31m[1m>[22m[2m[39m[90m 173 |[39m[22m
+[2m     [90m     |[39m [31m[1m^[22m[2m[39m[22m
+[2m     [90m 174 |[39m         [36mconst[39m effectiveTtl [33m=[39m ttlMs [33m||[39m [36mthis[39m[33m.[39mmongoTtlMs[33m;[39m[22m
+[2m     [90m 175 |[39m         [36mconst[39m useRam [33m=[39m options[33m.[39museRam [33m!==[39m [36mfalse[39m[33m;[39m[22m
+[2m     [90m 176 |[39m[0m[22m
+[2m[22m
+[2m      [2mat CacheManager.getWithStatus ([22m[2msrc/cache/CacheManager.js[2m:173:15)[22m[2m[22m
+[2m      [2mat CacheManager.get ([22m[2msrc/cache/CacheManager.js[2m:188:9)[22m[2m[22m
+[2m      [2mat translateImdbToTmdb ([22m[2msrc/id_mapping/id_cache.js[2m:22:18)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36mtests/robustness.test.js[39m[0m[2m:28:20)[22m[2m[22m
+
+
+ReferenceError: You are trying to `import` a file after the Jest 
+environment has been torn down. From tests/robustness.test.js.
+
+    [0m [90m 26 |[39m         [36mconst[39m client [33m=[39m 
+createTmdbClient(tmdbApiKey)[33m;[39m
+     [90m 27 |[39m         [36mconst[39m res [33m=[39m 
+[36mawait[39m 
+client[33m.[39m[36mget[39m([32m`/find/${imdbId}`[39m[33m,[39m {
+    [31m[1m>[22m[39m[90m 28 |[39m             params[33m:[39m { 
+external_source[33m:[39m [32m'imdb_id'[39m }
+     [90m    |[39m                              [31m[1m^[22m[39m
+     [90m 29 |[39m         })[33m;[39m
+     [90m 30 |[39m
+     [90m 31 |[39m         [36mconst[39m data [33m=[39m 
+res[33m.[39mdata[33m;[39m[0m
+
+      [2mat module.exports 
+([22mnode_modules/follow-redirects/debug.js[2m:7:15)[22m
+      [2mat Object.request 
+([22mnode_modules/follow-redirects/index.js[2m:542:7)[22m
+      [2mat dispatchHttpRequest 
+([22mnode_modules/axios/lib/adapters/http.js[2m:666:21)[22m
+      [2mat [22mnode_modules/axios/lib/adapters/http.js[2m:253:5[22m
+      [2mat wrapAsync 
+([22mnode_modules/axios/lib/adapters/http.js[2m:233:10)[22m
+      [2mat http 
+([22mnode_modules/axios/lib/adapters/http.js[2m:319:10)[22m
+      [2mat Axios.dispatchRequest 
+([22mnode_modules/axios/lib/core/dispatchRequest.js[2m:51:10)[22m
+      [2mat Axios._request 
+([22mnode_modules/axios/lib/core/Axios.js[2m:194:33)[22m
+      [2mat Axios.request 
+([22mnode_modules/axios/lib/core/Axios.js[2m:41:25)[22m
+      [2mat Axios.<computed> [as get] 
+([22mnode_modules/axios/lib/core/Axios.js[2m:220:17)[22m
+      [2mat Function.wrap [as get] 
+([22mnode_modules/axios/lib/helpers/bind.js[2m:12:15)[22m
+      [2mat translateImdbToTmdb 
+([22msrc/id_mapping/id_cache.js[2m:28:30)[22m
+      [2mat Object.<anonymous> 
+([22m[0m[36mtests/robustness.test.js[39m[0m[2m:28:20)[22m
+  [2m[31mconsole.error[39m[22m
+[31m    Errore traduzione IMDB (tt1234567): Request failed with status code 401[39m
+[2m[22m
+[2m    [0m [90m 51 |[39m         console[33m.[39merror([32m`Errore traduzione IMDB (${imdbId}):`[39m[33m,[39m err[33m.[39mmessage)[33m;[39m[22m
+[2m     [90m 52 |[39m         [36mreturn[39m [36mnull[39m[33m;[39m[22m
+[2m    [31m[1m>[22m[2m[39m[90m 53 |[39m     }[22m
+[2m     [90m    |[39m      [31m[1m^[22m[2m[39m[22m
+[2m     [90m 54 |[39m }[22m
+[2m     [90m 55 |[39m[22m
+[2m     [90m 56 |[39m [36masync[39m [36mfunction[39m clearIdCache() {[0m[22m
+[2m[22m
+[2m      [2mat translateImdbToTmdb ([22m[2msrc/id_mapping/id_cache.js[2m:53:13)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36mtests/robustness.test.js[39m[0m[2m:28:20)[22m[2m[22m
+
+(node:16892) [JEST-01] DeprecationWarning: 'matchers' property was 
+accessed on [Object] after it was soft deleted
+  Jest deletes objects that were set on the global scope between test 
+files to reduce memory leaks.
+  Currently it only "soft" deletes them and emits this warning if those 
+objects were accessed after their deletion.
+  In future versions of Jest, this behavior will change to "on", which 
+will likely fail tests.
+  You can change the behavior in your test configuration now to reduce 
+memory usage.
+(Use `node --trace-deprecation ...` to show where the warning was created)
