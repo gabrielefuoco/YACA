@@ -50,13 +50,12 @@ module.exports = async (req, res) => {
             ? activeProfileId
             : (parsedProfiles?.some(p => p.id === 'global') ? 'global' : (parsedProfiles?.[0]?.id || existingUser?.config?.activeProfileId || 'global'));
 
-        const configVersion = Date.now().toString(36);
+
 
         const updateData = {
             userId,
             config: {
-                activeProfileId: finalActiveProfileId,
-                configVersion
+                activeProfileId: finalActiveProfileId
             }
         };
 
@@ -96,7 +95,7 @@ module.exports = async (req, res) => {
         }
 
         const hostUrl = resolveHostUrl(req);
-        const manifestUrl = `${hostUrl}/${userDoc.userId}/${configVersion}/manifest.json`;
+        const manifestUrl = `${hostUrl}/${userDoc.userId}/${userDoc.config?.configVersion}/manifest.json`;
 
         if (userDoc.apiKeys?.stremio) {
             updateStremioAddonCollection(userDoc.apiKeys.stremio, manifestUrl)
@@ -109,7 +108,7 @@ module.exports = async (req, res) => {
             success: true,
             userId: userDoc.userId,
             manifestUrl,
-            configVersion,
+            configVersion: userDoc.config?.configVersion,
             warnings,
             message: userDoc.apiKeys?.stremio ? "Configurazione salvata. Stremio aggiornato." : "Configurazione salvata."
         });
