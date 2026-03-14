@@ -288,8 +288,8 @@ export default function Home() {
         mistralKey: mistralKey ?? undefined,
         stremioAuthKey: newStremioAuth?.authKey || undefined,
         email: newStremioAuth?.email,
-        traktToken: newTraktToken,
-        traktRefreshToken: newTraktRefreshToken,
+        traktToken: newTraktToken ?? undefined,
+        traktRefreshToken: newTraktRefreshToken ?? undefined,
       });
       if (data.userId) {
         setUserId(data.userId);

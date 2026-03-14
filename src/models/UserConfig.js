@@ -77,12 +77,14 @@ const UserConfig = {
                     const currentApiKeys = existingUser.apiKeys?.toObject?.() || existingUser.apiKeys || {};
                     const mergedApiKeys = { ...currentApiKeys, ...incomingApiKeys };
 
+                    /*
                     // Handle null/empty deletes
                     for (const [key, value] of Object.entries(incomingApiKeys)) {
                         if (value === null || value === '') {
                             delete mergedApiKeys[key];
                         }
                     }
+                    */
                     userData.apiKeys = mergedApiKeys;
 
                     // Preserve fields if not provided
