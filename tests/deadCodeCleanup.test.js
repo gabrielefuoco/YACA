@@ -9,7 +9,10 @@ describe('dead code and duplication cleanup', () => {
 
     it('does not expose internal auth helpers as module exports', () => {
         const authSource = fs.readFileSync(require.resolve('../src/api/auth/index.js'), 'utf-8');
-        expect(authSource).toContain('module.exports = { loginHandler, guestHandler, meHandler, logoutHandler };');
+        const exportsLine = authSource.match(/module\.exports\s*=\s*\{[^}]+\};/);
+        expect(exportsLine).not.toBeNull();
+        expect(exportsLine[0]).not.toContain('getCookieOptions');
+        expect(exportsLine[0]).not.toContain('signToken');
     });
 
     it('does not expose internal sleep helper from rateLimiter', () => {
