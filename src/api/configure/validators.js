@@ -39,8 +39,9 @@ function validateKeys(body, existingUser, warnings) {
         traktToken = traktToken.access_token;
     }
 
-    // Preserve Trakt tokens if not provided or set to 'null' string
-    if (traktToken === undefined || traktToken === null || traktToken === 'null' || traktToken === '') {
+    // Preserve Trakt tokens if not provided, set to 'null' string, or set to the
+    // 'connected' sentinel used by the frontend when the real token is held server-side.
+    if (traktToken === undefined || traktToken === null || traktToken === 'null' || traktToken === '' || traktToken === 'connected') {
         traktToken = existingUser?.apiKeys?.trakt || null;
     }
     if (traktRefreshToken === undefined || traktRefreshToken === null || traktRefreshToken === 'null' || traktRefreshToken === '') {

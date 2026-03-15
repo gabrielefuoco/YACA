@@ -95,7 +95,7 @@ app.use('/api', catalogRoutes);
 
 app.get('/api/user/:userId', inputSanitizer, async (req, res) => {
     try {
-        const user = await UserConfig.getUser(req.params.userId);
+        const user = await UserConfig.resolveUserConfig(req.params.userId);
         if (!user) {
             return res.status(404).json({ error: "Utente non trovato" });
         }
