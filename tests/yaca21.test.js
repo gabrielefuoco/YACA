@@ -1,5 +1,9 @@
-jest.mock('../src/models/User', () => ({
+jest.mock('../src/db/models/UserAccount', () => ({
     findOne: jest.fn()
+}));
+jest.mock('../src/db/models/AddonConfig', () => ({
+    findOne: jest.fn(),
+    updateOne: jest.fn()
 }));
 jest.mock('../src/clients/trakt', () => ({
     fetchTraktCatalog: jest.fn()
@@ -26,7 +30,8 @@ const { buildDiscoveryParams } = require('../src/handlers/catalogHandler');
 const configureHandler = require('../src/api/configure');
 const { buildSuggestedDNAFromPresets } = configureHandler;
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
-const User = require('../src/models/User');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
 const config = require('../src/config');
 
 describe('YACA 2.1 - Inclusive OR discovery params', () => {
@@ -76,14 +81,22 @@ describe('YACA 2.1 - global profile DNA inference', () => {
     });
 
     it('propagates inferred DNA from global context to user profiles', async () => {
-        const userDoc = {
+        const addonUuid = 'test-uuid';
+
+        // Mock UserAccount.findOne with .lean() chain (used by _resolveAddonUuid)
+        UserAccount.findOne.mockReturnValue({
+            lean: jest.fn().mockResolvedValue({ addonUuid })
+        });
+
+        // Mock AddonConfig.findOne to return config with a 'global' profile
+        AddonConfig.findOne.mockResolvedValue({
             profiles: [
-                { id: 'p1', settings: { manualDNA: [], suggestedDNA: [] } },
+                { id: 'global', settings: { manualDNA: [], suggestedDNA: [] } },
                 { id: 'p2', settings: { manualDNA: [], suggestedDNA: [] } }
-            ],
-            save: jest.fn().mockResolvedValue(undefined)
-        };
-        User.findOne.mockResolvedValue(userDoc);
+            ]
+        });
+
+        AddonConfig.updateOne.mockResolvedValue({});
 
         await ProfileBuilder.inferDNAFromProfile({
             owner: 'user_1',
@@ -93,12 +106,11 @@ describe('YACA 2.1 - global profile DNA inference', () => {
             countryScores: new Map()
         });
 
-        expect(userDoc.save).toHaveBeenCalled();
-        expect(userDoc.profiles[0].settings.suggestedDNA).toEqual(
-            expect.arrayContaining([expect.objectContaining({ type: 'genre', id: '28' })])
-        );
-        expect(userDoc.profiles[1].settings.suggestedDNA).toEqual(
-            expect.arrayContaining([expect.objectContaining({ type: 'genre', id: '28' })])
+        expect(AddonConfig.updateOne).toHaveBeenCalledWith(
+            { uuid: addonUuid, 'profiles.id': 'global' },
+            { $addToSet: { 'profiles.$.settings.suggestedDNA': { $each: expect.arrayContaining([
+                expect.objectContaining({ type: 'genre', id: '28' })
+            ]) } } }
         );
     });
 });

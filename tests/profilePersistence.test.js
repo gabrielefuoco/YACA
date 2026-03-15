@@ -1,8 +1,10 @@
 const UserConfig = require('../src/models/UserConfig');
-const User = require('../src/models/User');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
 
-// Mock User model
-jest.mock('../src/models/User');
+// Mock Two-Table Split models
+jest.mock('../src/db/models/UserAccount');
+jest.mock('../src/db/models/AddonConfig');
 
 describe('Profile Persistence', () => {
     beforeEach(() => {
@@ -11,9 +13,16 @@ describe('Profile Persistence', () => {
 
     test('should preserve catalogs and raw_ui_state in profiles', async () => {
         const userId = 'user123';
-        const existingUser = {
+        const addonUuid = 'test-addon-uuid';
+
+        const existingAccount = {
             userId,
+            addonUuid,
             apiKeys: {},
+        };
+
+        const existingConfig = {
+            uuid: addonUuid,
             profiles: [
                 {
                     id: 'global',
@@ -40,27 +49,38 @@ describe('Profile Persistence', () => {
             ]
         };
 
-        // Mock findOne to return existing user
-        User.findOne.mockReturnValue({
-            exec: jest.fn().mockResolvedValue(existingUser)
+        // Mock UserAccount.findOne to return existing account
+        UserAccount.findOne.mockResolvedValue(existingAccount);
+
+        // Mock AddonConfig.findOne with .lean() chain
+        AddonConfig.findOne.mockReturnValue({
+            lean: jest.fn().mockResolvedValue(existingConfig)
         });
 
-        // Mock findOneAndUpdate to return the "saved" doc
-        User.findOneAndUpdate.mockReturnValue({
-            exec: jest.fn().mockResolvedValue({
-                ...existingUser,
+        // Mock UserAccount.findOneAndUpdate to return account doc
+        UserAccount.findOneAndUpdate.mockResolvedValue({
+            ...existingAccount,
+            toObject: jest.fn().mockReturnValue(existingAccount)
+        });
+
+        // Mock AddonConfig.findOneAndUpdate to return the "saved" config
+        AddonConfig.findOneAndUpdate.mockResolvedValue({
+            ...existingConfig,
+            profiles: incomingData.profiles,
+            toObject: jest.fn().mockReturnValue({
+                ...existingConfig,
                 profiles: incomingData.profiles
             })
         });
 
         const savedUser = await UserConfig.saveUser(incomingData);
 
-        // Verify findOneAndUpdate was called with the correct data
-        const updateCall = User.findOneAndUpdate.mock.calls[0][1];
-        
+        // Verify AddonConfig.findOneAndUpdate was called with the correct profiles
+        const updateCall = AddonConfig.findOneAndUpdate.mock.calls[0][1];
+
         expect(updateCall.$set.profiles).toBeDefined();
         const savedProfile = updateCall.$set.profiles[0];
-        
+
         expect(savedProfile.id).toBe('global');
         expect(savedProfile.catalogs).toEqual(incomingData.profiles[0].catalogs);
         expect(savedProfile.raw_ui_state).toEqual(incomingData.profiles[0].raw_ui_state);

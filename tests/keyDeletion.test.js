@@ -1,7 +1,9 @@
 const UserConfig = require('../src/models/UserConfig');
-const User = require('../src/models/User');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
 
-jest.mock('../src/models/User');
+jest.mock('../src/db/models/UserAccount');
+jest.mock('../src/db/models/AddonConfig');
 
 describe('UserConfig Key Deletion Regression', () => {
     beforeEach(() => {
@@ -10,25 +12,44 @@ describe('UserConfig Key Deletion Regression', () => {
 
     it('should correctly trigger $unset when apiKeys are set to null or empty string', async () => {
         const userId = 'test-user';
-        const existingUser = {
+        const addonUuid = 'test-addon-uuid';
+
+        const existingAccount = {
             userId,
+            addonUuid,
             apiKeys: { tmdb: 'old-key', mistral: 'mistral-key' },
-            config: { configVersion: 'v1' },
-            toObject: jest.fn().mockReturnValue({
-                userId,
-                apiKeys: { tmdb: 'old-key', mistral: 'mistral-key' },
-                config: { configVersion: 'v1' }
-            })
         };
 
-        // Mock getUser (which calls findOne)
-        User.findOne.mockResolvedValue(existingUser);
-        
-        // Mock findOneAndUpdate
-        User.findOneAndUpdate.mockResolvedValue({
+        const existingConfig = {
+            uuid: addonUuid,
+            config: { configVersion: 'v1' },
+            profiles: []
+        };
+
+        // Mock UserAccount.findOne (returns existing account)
+        UserAccount.findOne.mockResolvedValue(existingAccount);
+
+        // Mock AddonConfig.findOne with .lean() chain
+        AddonConfig.findOne.mockReturnValue({
+            lean: jest.fn().mockResolvedValue(existingConfig)
+        });
+
+        // Mock UserAccount.findOneAndUpdate
+        UserAccount.findOneAndUpdate.mockResolvedValue({
             userId,
-            apiKeys: { mistral: 'mistral-key' }, // tmdb should be gone
-            config: { configVersion: 'v2' }
+            addonUuid,
+            apiKeys: { mistral: 'mistral-key' },
+            toObject: jest.fn().mockReturnValue({
+                userId,
+                addonUuid,
+                apiKeys: { mistral: 'mistral-key' }
+            })
+        });
+
+        // Mock AddonConfig.findOneAndUpdate
+        AddonConfig.findOneAndUpdate.mockResolvedValue({
+            ...existingConfig,
+            toObject: jest.fn().mockReturnValue(existingConfig)
         });
 
         // Simulating the user clearing the TMDB key
@@ -40,8 +61,8 @@ describe('UserConfig Key Deletion Regression', () => {
 
         await UserConfig.saveUser(updateData);
 
-        // Verify findOneAndUpdate was called with $unset for apiKeys.tmdb
-        expect(User.findOneAndUpdate).toHaveBeenCalledWith(
+        // Verify UserAccount.findOneAndUpdate was called with $unset for apiKeys.tmdb
+        expect(UserAccount.findOneAndUpdate).toHaveBeenCalledWith(
             expect.objectContaining({ userId }),
             expect.objectContaining({
                 $unset: { 'apiKeys.tmdb': 1 }
@@ -52,19 +73,45 @@ describe('UserConfig Key Deletion Regression', () => {
 
     it('should NOT trigger $unset when tokens are undefined (frontend-safe behavior)', async () => {
         const userId = 'test-user';
-        const existingUser = {
+        const addonUuid = 'test-addon-uuid';
+
+        const existingAccount = {
             userId,
+            addonUuid,
             apiKeys: { trakt: 'existing-trakt' },
-            config: { configVersion: 'v1' },
-            toObject: jest.fn().mockReturnValue({
-                userId,
-                apiKeys: { trakt: 'existing-trakt' },
-                config: { configVersion: 'v1' }
-            })
         };
 
-        User.findOne.mockResolvedValue(existingUser);
-        User.findOneAndUpdate.mockResolvedValue(existingUser);
+        const existingConfig = {
+            uuid: addonUuid,
+            config: { configVersion: 'v1' },
+            profiles: []
+        };
+
+        // Mock UserAccount.findOne
+        UserAccount.findOne.mockResolvedValue(existingAccount);
+
+        // Mock AddonConfig.findOne with .lean() chain
+        AddonConfig.findOne.mockReturnValue({
+            lean: jest.fn().mockResolvedValue(existingConfig)
+        });
+
+        // Mock UserAccount.findOneAndUpdate
+        UserAccount.findOneAndUpdate.mockResolvedValue({
+            userId,
+            addonUuid,
+            apiKeys: { trakt: 'existing-trakt' },
+            toObject: jest.fn().mockReturnValue({
+                userId,
+                addonUuid,
+                apiKeys: { trakt: 'existing-trakt' }
+            })
+        });
+
+        // Mock AddonConfig.findOneAndUpdate
+        AddonConfig.findOneAndUpdate.mockResolvedValue({
+            ...existingConfig,
+            toObject: jest.fn().mockReturnValue(existingConfig)
+        });
 
         // Simulating the LoginPage completion where tokens are undefined (newTraktToken ?? undefined)
         const updateData = {
@@ -75,10 +122,10 @@ describe('UserConfig Key Deletion Regression', () => {
 
         await UserConfig.saveUser(updateData);
 
-        // Verify findOneAndUpdate does NOT have $unset for trakt
-        const call = User.findOneAndUpdate.mock.calls[0];
+        // Verify UserAccount.findOneAndUpdate does NOT have $unset for trakt
+        const call = UserAccount.findOneAndUpdate.mock.calls[0];
         const updateDoc = call[1];
-        
+
         expect(updateDoc.$unset).toBeUndefined();
     });
 });
