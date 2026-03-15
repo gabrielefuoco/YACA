@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const { stremioClient } = require('../clients/stremio');
 const { traktClient } = require('../clients/trakt');
 const { updateStremioAddonCollection } = require('../utils/stremioAddonSync');
@@ -11,6 +12,9 @@ const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler } = require('../handlers/metaHandler');
 const { streamHandler } = require('../handlers/streamHandler');
 const { resolveHostUrl, parseExtra } = require('../utils/helpers');
+
+// Rate limiter for sync-status polling (max 30 requests per minute per IP)
+const syncStatusLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
 
 const SORT_OPTIONS = ['Popolarità', 'Voto Medio', 'Data di Uscita', 'Incassi'];
 const SORT_MAP = {
@@ -335,7 +339,7 @@ router.get(['/:userHandle/stream/:type/:id.json', '/:userHandle/:configVersion/s
 // Sync Status Polling endpoint (Phase 0.4: Dumb Frontend Pattern)
 // Frontend polls this every 3-5 seconds while syncStatus.isSyncing is true.
 // Requires JWT authentication to prevent unauthorized access to user sync data.
-router.get('/sync-status/:userId', requireAuth, async (req, res) => {
+router.get('/sync-status/:userId', syncStatusLimiter, requireAuth, async (req, res) => {
     const { userId } = req.params;
     if (!userId) return res.status(400).json({ error: 'userId required' });
     // Ensure authenticated user can only access their own sync status
