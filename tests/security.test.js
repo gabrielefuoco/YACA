@@ -124,7 +124,7 @@ describe('AI response validation (prompt injection defense)', () => {
 describe('configure route - XSS sanitization', () => {
     jest.mock('../src/models/UserConfig', () => ({
         saveUser: jest.fn().mockResolvedValue({ userId: 'u1', configVersion: 'cv1' }),
-        getUser: jest.fn().mockResolvedValue(null)
+        resolveUserConfig: jest.fn().mockResolvedValue(null)
     }));
 
     jest.mock('../src/ai/router', () => ({

@@ -485,9 +485,13 @@ class ProfileBuilder {
         if (!profile) return;
 
         try {
-            const User = require('../models/User');
-            const userDoc = await User.findOne({ userId: profile.owner });
-            if (!userDoc) return;
+            // Resolve the addonUuid for this user (Two-Table Split)
+            const uuid = await ProfileBuilder._resolveAddonUuid(profile.owner);
+            if (!uuid) return;
+
+            const AddonConfig = require('../db/models/AddonConfig');
+            const addonConfig = await AddonConfig.findOne({ uuid });
+            if (!addonConfig) return;
 
             const MIN_ABSOLUTE_SCORE = 0.5;
             const DOMINANCE_RATIOS = { 
@@ -529,16 +533,16 @@ class ProfileBuilder {
 
             console.log(`[ProfileBuilder] Analyzed scores. Inferred: ${allInferred.length} traits`);
 
-            let targetGroup = (userDoc.profiles || []).find(p => p.id === profile.context);
+            let targetGroup = (addonConfig.profiles || []).find(p => p.id === profile.context);
             if (!targetGroup) {
-                console.warn(`[ProfileBuilder] Target profile ${profile.context} not found in user doc`);
+                console.warn(`[ProfileBuilder] Target profile ${profile.context} not found in AddonConfig`);
                 return;
             }
 
-            const query = { userId: profile.owner, 'profiles.id': profile.context };
+            const query = { uuid, 'profiles.id': profile.context };
 
-            const existingManual = targetGroup.settings?.manualDNA || targetGroup.manualDNA || [];
-            const existingSuggested = targetGroup.settings?.suggestedDNA || targetGroup.suggestedDNA || [];
+            const existingManual = targetGroup.settings?.manualDNA || [];
+            const existingSuggested = targetGroup.settings?.suggestedDNA || [];
             const existingDNAIds = new Set([
                 ...existingManual.map(d => `${d.type}:${d.id}`),
                 ...existingSuggested.map(d => `${d.type}:${d.id}`)
@@ -553,7 +557,7 @@ class ProfileBuilder {
             const finalUpdateField = `profiles.$.settings.${destField}`;
 
             console.log(`[ProfileBuilder] New traits for ${profile.context}:`, newTraits.map(t => t.name));
-            await User.updateOne(query, { $addToSet: { [finalUpdateField]: { $each: newTraits } } });
+            await AddonConfig.updateOne(query, { $addToSet: { [finalUpdateField]: { $each: newTraits } } });
             console.log(`[ProfileBuilder] DNA ${onboardingCompleted ? 'activated' : 'suggested'} for ${profile.owner} (${profile.context}): ${newTraits.length} traits`);
 
         } catch (e) {

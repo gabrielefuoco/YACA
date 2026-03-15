@@ -5,7 +5,6 @@ const { validateAuth, validateKeys } = require('./validators');
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');
 const { updateStremioAddonCollection } = require('../../utils/stremioAddonSync');
 const UserAccount = require('../../db/models/UserAccount');
-const AddonConfig = require('../../db/models/AddonConfig');
 
 module.exports = async (req, res) => {
     try {
@@ -13,7 +12,9 @@ module.exports = async (req, res) => {
 
         const { activeProfileId, profiles: bodyProfiles } = req.body;
         const userId = req.user.userId;
-        const existingUser = await UserConfig.getUser(userId);
+
+        // Read existing data from both tables via resolveUserConfig
+        const existingUser = await UserConfig.resolveUserConfig(userId);
 
         const warnings = [];
         const {
@@ -50,7 +51,7 @@ module.exports = async (req, res) => {
 
         const finalActiveProfileId = (activeProfileId && parsedProfiles?.some(p => p.id === activeProfileId))
             ? activeProfileId
-            : (parsedProfiles?.some(p => p.id === 'global') ? 'global' : (parsedProfiles?.[0]?.id || existingUser?.config?.activeProfileId || 'global'));
+            : (parsedProfiles?.some(p => p.id === 'global') ? 'global' : (parsedProfiles?.[0]?.id || existingUser?.activeProfileId || 'global'));
 
 
 
@@ -93,48 +94,8 @@ module.exports = async (req, res) => {
         if (parsedProfiles !== undefined) updateData.profiles = parsedProfiles;
         if (stremioEmail) updateData.email = stremioEmail;
 
+        // saveUser now handles both UserAccount + AddonConfig (Two-Table Split)
         const userDoc = await UserConfig.saveUser(updateData);
-
-        // Two-Table Sync: Mirror data into UserAccount + AddonConfig (Phase 0.1)
-        // UserAccount gets API keys; AddonConfig gets profiles & config.
-        const accountUpdate = {};
-        if (hasApiKeys) accountUpdate.apiKeys = apiKeys;
-        if (stremioEmail) accountUpdate.email = stremioEmail;
-
-        if (Object.keys(accountUpdate).length > 0) {
-            try {
-                await UserAccount.findOneAndUpdate(
-                    { userId },
-                    { $set: accountUpdate, $setOnInsert: { userId } },
-                    { upsert: true }
-                );
-            } catch (err) {
-                console.error('[TwoTableSync] UserAccount sync error:', err.message);
-            }
-        }
-
-        const configUpdate = {};
-        if (parsedProfiles !== undefined) configUpdate.profiles = parsedProfiles;
-        configUpdate.config = { activeProfileId: finalActiveProfileId, configVersion: userDoc.config?.configVersion };
-
-        // Get or create the addon UUID for this user
-        let addonUuid;
-        try {
-            const account = await UserAccount.findOne({ userId }).lean();
-            addonUuid = account?.addonUuid;
-        } catch (_e) { /* ignore */ }
-
-        if (addonUuid) {
-            try {
-                await AddonConfig.findOneAndUpdate(
-                    { uuid: addonUuid },
-                    { $set: configUpdate },
-                    { upsert: true }
-                );
-            } catch (err) {
-                console.error('[TwoTableSync] AddonConfig sync error:', err.message);
-            }
-        }
 
         // Cleanup unreferenced lists
         if (parsedProfiles) {

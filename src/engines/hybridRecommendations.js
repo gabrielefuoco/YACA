@@ -1,7 +1,8 @@
 const { ITEMS_PER_PAGE } = require('../config');
 const TasteProfile = require('../models/TasteProfile');
 const TmdbScoringData = require('../models/TmdbScoringData');
-const User = require('../models/User');
+const UserAccount = require('../db/models/UserAccount');
+const AddonConfig = require('../db/models/AddonConfig');
 const ProfileBuilder = require('../profile/ProfileBuilder');
 const ProfileScorer = require('../profile/ProfileScorer');
 const tmdb = require('../clients/tmdb');
@@ -30,13 +31,19 @@ function getProfileSettings(user, context) {
  * @returns {Promise<{profile: Object|null, user: Object|null, globalProfile: Object|null}>}
  */
 async function fetchProfileContext(userId, context) {
-    const [profile, user, globalProfile] = await Promise.all([
+    // Read TasteProfile directly; for user profiles, resolve via Two-Table Split
+    const account = await UserAccount.findOne({ userId }).lean();
+    const addonConfig = account?.addonUuid
+        ? await AddonConfig.findOne({ uuid: account.addonUuid }).lean()
+        : null;
+
+    const [profile, globalProfile] = await Promise.all([
         TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId }),
         context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
     ]);
 
-    return { profile, user, globalProfile };
+    // Return addonConfig as 'user' — consumers use it for .profiles and .settings
+    return { profile, user: addonConfig, globalProfile };
 }
 
 /**

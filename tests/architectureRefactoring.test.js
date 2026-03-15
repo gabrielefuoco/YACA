@@ -123,11 +123,11 @@ describe('Phase 0.1: Two-Table Split Models', () => {
         expect(fs.existsSync(filePath)).toBe(false);
     });
 
-    it('src/models/User shim should redirect to UserAccount', () => {
-        // The transitional shim should export the same model as UserAccount
-        const shim = require('../src/models/User');
-        const UserAccount = require('../src/db/models/UserAccount');
-        expect(shim).toBe(UserAccount);
+    it('legacy User.js shim should be DELETED (clean-slate, no old users)', () => {
+        const fs = require('fs');
+        const path = require('path');
+        const filePath = path.join(__dirname, '../src/models/User.js');
+        expect(fs.existsSync(filePath)).toBe(false);
     });
 });
 
@@ -271,10 +271,8 @@ describe('Phase 0.2: Configure Redirect', () => {
         jest.mock('../src/utils/stremioAddonSync', () => ({
             updateStremioAddonCollection: jest.fn()
         }));
-        jest.mock('../src/models/User', () => ({}));
         jest.mock('../src/models/UserConfig', () => ({
             resolveUserConfig: jest.fn(),
-            getUser: jest.fn(),
             saveUser: jest.fn()
         }));
         jest.mock('../src/db/models/AddonConfig', () => ({

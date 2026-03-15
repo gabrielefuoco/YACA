@@ -2,7 +2,11 @@ jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn()
 }));
 
-jest.mock('../src/models/User', () => ({
+jest.mock('../src/db/models/UserAccount', () => ({
+    findOne: jest.fn()
+}));
+
+jest.mock('../src/db/models/AddonConfig', () => ({
     findOne: jest.fn()
 }));
 
@@ -50,7 +54,8 @@ jest.mock('../src/ai/querySynthesizer', () => ({
 }));
 
 const TasteProfile = require('../src/models/TasteProfile');
-const User = require('../src/models/User');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
 const TmdbScoringData = require('../src/models/TmdbScoringData');
 const tmdb = require('../src/clients/tmdb');
 const {
@@ -76,9 +81,13 @@ describe('hybridRecommendations review fixes', () => {
                 ratings: [{ genres: [18, 53] }]
             })
             .mockResolvedValueOnce(null);
-        User.findOne.mockResolvedValue({
+        UserAccount.findOne.mockResolvedValue({
             userId: 'u1',
             apiKeys: { mistral: 'm-key' },
+            addonUuid: 'uuid-1'
+        });
+        AddonConfig.findOne.mockResolvedValue({
+            uuid: 'uuid-1',
             profiles: [{ id: 'ctx', settings: {} }]
         });
 
@@ -150,11 +159,13 @@ describe('hybridRecommendations review fixes', () => {
                 keywordScores: new Map()
             })
             .mockResolvedValueOnce(null);
-        User.findOne.mockResolvedValue({
+        UserAccount.findOne.mockResolvedValue({
             userId: 'u1',
             apiKeys: {},
-            profiles: [{ id: 'ctx', settings: {} }]
+            addonUuid: 'uuid-2'
         });
+        AddonConfig.findOne
+            .mockResolvedValueOnce({ uuid: 'uuid-2', profiles: [{ id: 'ctx', settings: {} }] });
         tmdbGet.mockResolvedValue({ data: { results: [{ id: 1, genre_ids: [18], vote_average: 7.5, vote_count: 120 }] } });
 
         await buildHiddenGemsCatalog('u1', 'ctx', 'tmdb-key', 'movie');

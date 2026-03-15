@@ -1,6 +1,10 @@
 /**
  * Auth API Routes — JWT-based authentication with HttpOnly cookies.
  * 
+ * Two-Table Split Architecture:
+ *   - UserAccount: Stores auth credentials and API keys
+ *   - AddonConfig: Stores profiles and public Stremio config
+ * 
  * Endpoints:
  *   POST /api/auth/login  — Authenticates via Stremio, returns JWT cookie
  *   GET  /api/auth/me     — Returns current session user info
@@ -11,7 +15,8 @@ const crypto = require('crypto');
 const { COOKIE_NAME, CSRF_COOKIE_NAME } = require('../../middleware/requireAuth');
 const { stremioClient } = require('../../clients/stremio');
 const UserConfig = require('../../models/UserConfig');
-const User = require('../../models/User');
+const UserAccount = require('../../db/models/UserAccount');
+const AddonConfig = require('../../db/models/AddonConfig');
 const { nanoid } = require('nanoid');
 
 const JWT_EXPIRY = '7d';
@@ -53,6 +58,7 @@ function signToken(payload) {
  * Body: { email, password }
  * 
  * Authenticates via Stremio API, finds/creates user in DB, and sets JWT cookie.
+ * Uses Two-Table Split: reads account from UserAccount, profiles from AddonConfig.
  */
 async function loginHandler(req, res) {
     const { email, password } = req.body;
@@ -76,8 +82,8 @@ async function loginHandler(req, res) {
         const authKey = data.result.authKey;
         const resolvedEmail = data.result.user?.email || email;
 
-        // 2. Find or create user in DB
-        let existingUser = await User.findOne({ 
+        // 2. Find or create user in DB (UserAccount table)
+        let existingAccount = await UserAccount.findOne({ 
             $or: [
                 { email: resolvedEmail },
                 { 'apiKeys.stremio': authKey }
@@ -85,33 +91,43 @@ async function loginHandler(req, res) {
         });
 
         let userId;
-        if (existingUser) {
-            userId = existingUser.userId;
-            // Update stremio auth key if changed
-            await UserConfig.saveUser({
-                userId,
-                email: resolvedEmail,
-                apiKeys: { stremio: authKey }
-            });
+        const isReturningUser = Boolean(existingAccount);
+
+        if (existingAccount) {
+            userId = existingAccount.userId;
         } else {
             userId = nanoid(10);
-            await UserConfig.saveUser({
-                userId,
-                email: resolvedEmail,
-                apiKeys: { stremio: authKey }
-            });
         }
 
-        // 3. Sign JWT and set cookie
-        // Rimosso sessionId (Selective Logout) - Usiamo solo userId e email
+        // Save/update via Two-Table saveUser (handles both UserAccount + AddonConfig)
+        await UserConfig.saveUser({
+            userId,
+            email: resolvedEmail,
+            apiKeys: { stremio: authKey }
+        });
+
+        // Re-read the account to get the addonUuid
+        const account = await UserAccount.findOne({ userId }).lean();
+
+        // 3. Read profiles from AddonConfig (NOT from UserAccount!)
+        let addonConfig = null;
+        if (account?.addonUuid) {
+            addonConfig = await AddonConfig.findOne({ uuid: account.addonUuid }).lean();
+            if (!addonConfig) {
+                // Cold start safety: create empty AddonConfig if it doesn't exist
+                addonConfig = await AddonConfig.create({ uuid: account.addonUuid, profiles: [] });
+            }
+        }
+
+        // 4. Sign JWT and set cookie
         const token = signToken({ userId, email: resolvedEmail });
         const csrfToken = crypto.randomBytes(32).toString('hex');
 
         res.cookie(COOKIE_NAME, token, getCookieOptions());
         res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions());
 
-        // 4. Return user info
-        const resolvedProfiles = (existingUser?.profiles || []).map(p => {
+        // 5. Return user info with profiles from AddonConfig
+        const resolvedProfiles = (addonConfig?.profiles || []).map(p => {
             const pObj = p.toObject?.() || p;
             return {
                 ...pObj,
@@ -123,11 +139,11 @@ async function loginHandler(req, res) {
             success: true,
             userId,
             email: resolvedEmail,
-            isReturningUser: Boolean(existingUser),
+            isReturningUser,
             profiles: resolvedProfiles,
-            activeProfileId: existingUser?.config?.activeProfileId || 'global',
-            traktConnected: Boolean(existingUser?.apiKeys?.trakt),
-            configVersion: existingUser?.config?.configVersion || null
+            activeProfileId: addonConfig?.config?.activeProfileId || 'global',
+            traktConnected: Boolean(account?.apiKeys?.trakt),
+            configVersion: addonConfig?.config?.configVersion || null
         });
     } catch (err) {
         console.error('[Auth] Login error:', err.message);
@@ -139,6 +155,7 @@ async function loginHandler(req, res) {
  * GET /api/auth/me
  * Returns the current authenticated user's session info.
  * Requires valid JWT cookie.
+ * Uses Two-Table Split: reads account from UserAccount, profiles from AddonConfig.
  */
 async function meHandler(req, res) {
     const token = req.cookies?.[COOKIE_NAME];
@@ -151,38 +168,38 @@ async function meHandler(req, res) {
 
     try {
         const decoded = jwt.verify(token, secret);
-        const user = await User.findOne({ userId: decoded.userId }).lean();
 
-        if (!user) {
+        // Read auth data from UserAccount
+        const account = await UserAccount.findOne({ userId: decoded.userId }).lean();
+        if (!account) {
             res.clearCookie(COOKIE_NAME, getCookieOptions());
             return res.status(401).json({ authenticated: false });
         }
 
-        // Rimosso il controllo sessione attiva (Stateless)
+        // Read profiles from AddonConfig via addonUuid join
+        const addonConfig = account.addonUuid
+            ? await AddonConfig.findOne({ uuid: account.addonUuid }).lean()
+            : null;
 
-        // Map profiles to ensure they each have a stable 'id' field (fallback to _id)
-        const resolvedProfiles = (user.profiles || []).map(p => {
-            const pObj = p.toObject?.() || p;
-            return {
-                ...pObj,
-                id: pObj.id || pObj._id?.toString()
-            };
-        });
+        const resolvedProfiles = (addonConfig?.profiles || []).map(p => ({
+            ...p,
+            id: p.id || p._id?.toString()
+        }));
 
         return res.json({
             authenticated: true,
-            userId: user.userId,
-            email: user.email,
+            userId: account.userId,
+            email: account.email,
             profiles: resolvedProfiles,
-            activeProfileId: user.config?.activeProfileId || 'global',
-            configVersion: user.config?.configVersion || null,
-            traktConnected: Boolean(user.apiKeys?.trakt),
+            activeProfileId: addonConfig?.config?.activeProfileId || 'global',
+            configVersion: addonConfig?.config?.configVersion || null,
+            traktConnected: Boolean(account.apiKeys?.trakt),
             apiKeys: {
-                stremio: user.apiKeys?.stremio || null,
-                tmdb: user.apiKeys?.tmdb || null,
-                mistral: user.apiKeys?.mistral || null,
-                trakt: user.apiKeys?.trakt || null,
-                mdblist: user.apiKeys?.mdblist || null
+                stremio: account.apiKeys?.stremio || null,
+                tmdb: account.apiKeys?.tmdb || null,
+                mistral: account.apiKeys?.mistral || null,
+                trakt: account.apiKeys?.trakt || null,
+                mdblist: account.apiKeys?.mdblist || null
             }
         });
     } catch (err) {

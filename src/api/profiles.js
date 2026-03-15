@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const TasteProfile = require('../models/TasteProfile');
-const User = require('../models/User');
+const UserAccount = require('../db/models/UserAccount');
+const AddonConfig = require('../db/models/AddonConfig');
 const { syncAllStremioData } = require('../utils/stremioSync');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const { buildDnaDescription } = require('../ai/querySynthesizer');
@@ -18,10 +19,13 @@ router.get('/:id/analytics', async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'userId query parameter is required' });
 
     try {
-        const [profile, user] = await Promise.all([
-            TasteProfile.findOne({ owner: userId, context: profileId }),
-            User.findOne({ userId })
-        ]);
+        // Read TasteProfile and resolve AddonConfig via Two-Table Split
+        const account = await UserAccount.findOne({ userId }).lean();
+        const addonConfig = account?.addonUuid
+            ? await AddonConfig.findOne({ uuid: account.addonUuid }).lean()
+            : null;
+
+        const profile = await TasteProfile.findOne({ owner: userId, context: profileId });
         
         const genreScores = profile?.genreScores ? Object.fromEntries(profile.genreScores) : {};
         const keywordScores = profile?.keywordScores ? Object.fromEntries(profile.keywordScores) : {};
@@ -34,8 +38,8 @@ router.get('/:id/analytics', async (req, res) => {
             yaca_hidden_gems_series: 'hiddenGems',
         };
 
-        if (profile || user) {
-            const dnaDescription = buildDnaDescription(profile, user, profileId);
+        if (profile || addonConfig) {
+            const dnaDescription = buildDnaDescription(profile, addonConfig, profileId);
             if (dnaDescription) {
                 const modes = new Set(Object.values(CATALOG_MODES).filter(Boolean));
                 const modeResults = {};
@@ -91,6 +95,7 @@ router.get('/:id/sync-status', async (req, res) => {
 
 /**
  * POST /api/profiles/:id/dna/confirm
+ * Reads/writes profiles from AddonConfig (Two-Table Split).
  */
 router.post('/:id/dna/confirm', async (req, res) => {
     const { id: profileId } = req.params;
@@ -99,14 +104,18 @@ router.post('/:id/dna/confirm', async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {
-        const user = await User.findOne({ userId });
-        if (!user) return res.status(404).json({ error: 'User not found' });
+        // Resolve addonUuid and read profiles from AddonConfig
+        const account = await UserAccount.findOne({ userId }).lean();
+        if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
-        const profile = (user.profiles || []).find(p => p.id === profileId);
+        const addonConfig = await AddonConfig.findOne({ uuid: account.addonUuid });
+        if (!addonConfig) return res.status(404).json({ error: 'User not found' });
+
+        const profile = (addonConfig.profiles || []).find(p => p.id === profileId);
         if (!profile) return res.status(404).json({ error: 'Profile not found' });
         
         const targetSettings = profile.settings || {};
-        const updateQuery = { userId, 'profiles.id': profileId };
+        const updateQuery = { uuid: account.addonUuid, 'profiles.id': profileId };
 
         const suggested = targetSettings.suggestedDNA || [];
         const manual = targetSettings.manualDNA || [];
@@ -123,7 +132,7 @@ router.post('/:id/dna/confirm', async (req, res) => {
             'profiles.$.settings.suggestedDNA': []
         };
 
-        await User.updateOne(updateQuery, { $set: setObj });
+        await AddonConfig.updateOne(updateQuery, { $set: setObj });
 
         await TasteProfile.updateOne(
             { owner: userId, context: profileId },
@@ -140,6 +149,7 @@ router.post('/:id/dna/confirm', async (req, res) => {
 
 /**
  * POST /api/profiles/:id/sync/refresh
+ * Reads API keys from UserAccount (Two-Table Split).
  */
 router.post('/:id/sync/refresh', async (req, res) => {
     const { id: profileId } = req.params;
@@ -148,10 +158,10 @@ router.post('/:id/sync/refresh', async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {
-        const user = await User.findOne({ userId });
-        if (!user || !user.apiKeys?.stremio) return res.status(400).json({ error: 'Stremio API Key missing' });
+        const account = await UserAccount.findOne({ userId }).lean();
+        if (!account || !account.apiKeys?.stremio) return res.status(400).json({ error: 'Stremio API Key missing' });
 
-        syncAllStremioData(userId, user.apiKeys.stremio, profileId)
+        syncAllStremioData(userId, account.apiKeys.stremio, profileId)
             .catch(err => console.error(`[BackgroundSync] Failure for ${userId} (Profile: ${profileId}):`, err));
 
         res.json({ success: true, message: `Sync started for profile ${profileId}` });

@@ -11,7 +11,10 @@ describe('hybrid recommendations module resolution', () => {
                 find: jest.fn(),
                 updateOne: jest.fn()
             }));
-            jest.doMock('../src/models/User', () => ({
+            jest.doMock('../src/db/models/UserAccount', () => ({
+                findOne: jest.fn()
+            }));
+            jest.doMock('../src/db/models/AddonConfig', () => ({
                 findOne: jest.fn()
             }));
             jest.doMock('../src/profile/ProfileScorer', () => ({

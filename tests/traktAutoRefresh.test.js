@@ -12,13 +12,13 @@ jest.mock('../src/utils/httpClient', () => ({
     createAxiosInstance: jest.fn(() => mockTraktClient)
 }));
 
-// Mock MongoDB User Model
-jest.mock('../src/models/User', () => ({
+// Mock MongoDB UserAccount Model (Two-Table Split: trakt.js writes tokens to UserAccount)
+jest.mock('../src/db/models/UserAccount', () => ({
     findOneAndUpdate: jest.fn()
 }));
 
 const { refreshTraktTokens, syncTraktTokensToDb, traktClient } = require('../src/clients/trakt');
-const User = require('../src/models/User');
+const UserAccount = require('../src/db/models/UserAccount');
 
 describe('Trakt Stateful Auto-Refresh', () => {
     const ORIGINAL_ENV = process.env;
@@ -65,13 +65,13 @@ describe('Trakt Stateful Auto-Refresh', () => {
     });
 
     describe('syncTraktTokensToDb', () => {
-        it('updates MongoDB with new tokens', async () => {
-            User.findOneAndUpdate.mockResolvedValueOnce({ userId: 'user123' });
+        it('updates MongoDB with new tokens via UserAccount', async () => {
+            UserAccount.findOneAndUpdate.mockResolvedValueOnce({ userId: 'user123' });
 
             const result = await syncTraktTokensToDb('user123', 'new_access', 'new_refresh');
 
             expect(result).toBe(true);
-            expect(User.findOneAndUpdate).toHaveBeenCalledWith(
+            expect(UserAccount.findOneAndUpdate).toHaveBeenCalledWith(
                 { userId: 'user123' },
                 {
                     $set: {

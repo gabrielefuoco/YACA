@@ -12,14 +12,19 @@ jest.mock('../src/id_mapping/id_cache', () => ({
     translateImdbToTmdb: jest.fn()
 }));
 
-jest.mock('../src/models/User', () => ({
+jest.mock('../src/db/models/UserAccount', () => ({
+    findOne: jest.fn()
+}));
+
+jest.mock('../src/db/models/AddonConfig', () => ({
     findOne: jest.fn(),
-    findOneAndUpdate: jest.fn().mockResolvedValue({ acknowledged: true })
+    updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
 }));
 
 const TasteProfile = require('../src/models/TasteProfile');
 const tmdb = require('../src/clients/tmdb');
-const User = require('../src/models/User');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
 const { translateImdbToTmdb } = require('../src/id_mapping/id_cache');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 
@@ -44,7 +49,8 @@ function createTasteProfile(context) {
 describe('ProfileBuilder core taste bias', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        User.findOne.mockResolvedValue(null);
+        UserAccount.findOne.mockResolvedValue(null);
+        AddonConfig.findOne.mockResolvedValue(null);
     });
 
     it('mirrors non-global history updates into global profile at 20%', async () => {
@@ -87,29 +93,36 @@ describe('ProfileBuilder core taste bias', () => {
         const globalProfile = createTasteProfile('global');
         globalProfile.genreScores.set('16', 120);
         globalProfile.keywordScores.set('210024', 80);
-        User.findOne.mockResolvedValue({
+
+        // Two-Table Split: inferDNAFromProfile resolves addonUuid, then writes to AddonConfig
+        UserAccount.findOne.mockResolvedValue({
             userId: 'user_1',
+            addonUuid: 'uuid-1'
+        });
+        AddonConfig.findOne.mockResolvedValue({
+            uuid: 'uuid-1',
             profiles: [{
                 id: 'global',
                 settings: {
                     manualDNA: [],
-                    suggestedDNA: [],
-                    pendingDNASuggestions: []
+                    suggestedDNA: []
                 }
             }]
         });
 
         await ProfileBuilder.inferDNAFromProfile(globalProfile);
 
-        expect(User.findOne).toHaveBeenCalled();
-        expect(User.findOneAndUpdate).toHaveBeenCalledWith(
-            { userId: 'user_1', 'profiles.id': 'global' },
+        expect(UserAccount.findOne).toHaveBeenCalled();
+        expect(AddonConfig.updateOne).toHaveBeenCalledWith(
+            { uuid: 'uuid-1', 'profiles.id': 'global' },
             {
-                $set: {
-                    'profiles.$.settings.pendingDNASuggestions': expect.arrayContaining([
-                        expect.objectContaining({ type: 'genre', id: '16' }),
-                        expect.objectContaining({ type: 'keyword', id: '210024' })
-                    ])
+                $addToSet: {
+                    'profiles.$.settings.suggestedDNA': {
+                        $each: expect.arrayContaining([
+                            expect.objectContaining({ type: 'genre', id: '16' }),
+                            expect.objectContaining({ type: 'keyword', id: '210024' })
+                        ])
+                    }
                 }
             }
         );

@@ -1,6 +1,6 @@
 jest.mock('../src/models/UserConfig', () => ({
     saveUser: jest.fn(),
-    getUser: jest.fn().mockResolvedValue(null)
+    resolveUserConfig: jest.fn().mockResolvedValue(null)
 }));
 
 jest.mock('nanoid', () => ({

@@ -4,7 +4,6 @@ const rateLimit = require('express-rate-limit');
 const { stremioClient } = require('../clients/stremio');
 const { traktClient } = require('../clients/trakt');
 const { updateStremioAddonCollection } = require('../utils/stremioAddonSync');
-const User = require('../models/User');
 const UserConfig = require('../models/UserConfig');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
@@ -61,23 +60,28 @@ router.post('/check-user', async (req, res) => {
         return res.status(400).json({ exists: false, error: 'authKey o email obbligatorio' });
     }
     try {
-        let existingUser = null;
+        let existingAccount = null;
         if (email) {
-            existingUser = await User.findOne({ email }).lean();
+            existingAccount = await UserAccount.findOne({ email }).lean();
         }
-        if (!existingUser && authKey) {
-            existingUser = await User.findOne({ 'apiKeys.stremio': authKey }).lean();
+        if (!existingAccount && authKey) {
+            existingAccount = await UserAccount.findOne({ 'apiKeys.stremio': authKey }).lean();
         }
 
-        if (existingUser?.userId) {
+        if (existingAccount?.userId) {
+            // Read profiles from AddonConfig (Two-Table Split)
+            const addonConfig = existingAccount.addonUuid
+                ? await AddonConfig.findOne({ uuid: existingAccount.addonUuid }).lean()
+                : null;
+
             return res.json({
                 exists: true,
-                userId: existingUser.userId,
-                traktToken: existingUser.apiKeys?.trakt || null,
-                traktRefreshToken: existingUser.apiKeys?.traktRefreshToken || null,
-                configVersion: existingUser.config?.configVersion || null,
-                profiles: existingUser.profiles || [],
-                activeProfileId: existingUser.config?.activeProfileId || 'global'
+                userId: existingAccount.userId,
+                traktToken: existingAccount.apiKeys?.trakt || null,
+                traktRefreshToken: existingAccount.apiKeys?.traktRefreshToken || null,
+                configVersion: addonConfig?.config?.configVersion || null,
+                profiles: addonConfig?.profiles || [],
+                activeProfileId: addonConfig?.config?.activeProfileId || 'global'
             });
         }
         return res.json({ exists: false });
