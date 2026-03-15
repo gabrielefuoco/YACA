@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Profile, DNAItem, AnalyticsData } from '@/types';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { api } from '@/lib/api';
@@ -12,6 +12,18 @@ const HERO_CATALOGS_BASE = [
   { idBase: 'yaca_hidden_gems', label: 'Hidden Gems', emoji: '💎', type: 'ai', desc: 'Ricerca AI di nicchia + Quality Cage algoritmica.' },
   { idBase: 'yaca_trakt_filtered', label: 'Trakt Filtered', emoji: '🌐', type: 'algo', desc: 'Suggerimenti community filtrati col tuo DNA.' },
 ];
+
+const TMDB_KEY_TO_DNA_TYPE: Record<string, DNAItem['type']> = {
+  with_genres: 'genre',
+  with_keywords: 'keyword',
+  with_origin_country: 'country',
+};
+
+const TMDB_KEY_BADGE_LABEL: Record<string, { icon: string; name: string }> = {
+  with_genres: { icon: '🎭', name: 'Genere' },
+  with_keywords: { icon: '🏷️', name: 'Keyword' },
+  with_origin_country: { icon: '🌍', name: 'Paese' },
+};
 
 interface DnaAndAiPanelProps {
   profile: Profile;
@@ -36,7 +48,16 @@ function dnaArraysEqual(a: DNAItem[] = [], b: DNAItem[] = []) {
 export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) {
   const profileDNA: DNAItem[] = profile?.settings?.manualDNA ?? [];
   const suggestedDNA: DNAItem[] = profile?.settings?.suggestedDNA ?? [];
-  const allDnaItems = [...profileDNA, ...suggestedDNA];
+  const dnaLookup = useMemo(() => {
+    const lookup = new Map<string, string>();
+    [...profileDNA, ...suggestedDNA].forEach((item) => {
+      const dnaKey = `${item.type}:${String(item.id)}`;
+      if (!lookup.has(dnaKey)) {
+        lookup.set(dnaKey, item.name);
+      }
+    });
+    return lookup;
+  }, [profileDNA, suggestedDNA]);
   const latestSettingsRef = useRef(profile.settings);
 
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -45,15 +66,9 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
   const [showProgressModal, setShowProgressModal] = useState(false);
 
   const getDnaName = (id: string, tmdbKey: string) => {
-    const typeMap: Record<string, DNAItem['type']> = {
-      with_genres: 'genre',
-      with_keywords: 'keyword',
-      with_origin_country: 'country',
-    };
-    const targetType = typeMap[tmdbKey];
+    const targetType = TMDB_KEY_TO_DNA_TYPE[tmdbKey];
     if (!targetType) return id;
-    const found = allDnaItems.find((item) => String(item.id) === String(id) && item.type === targetType);
-    return found ? found.name : id;
+    return dnaLookup.get(`${targetType}:${String(id)}`) ?? id;
   };
 
   const toggleHeroCatalog = (fullCatalogId: string, isEnabled: boolean) => {
@@ -68,6 +83,13 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
         selectedPresets: newPresets,
       },
     });
+  };
+
+  const parseAndDeduplicateIds = (rawValue: unknown) => {
+    if (typeof rawValue !== 'string' && typeof rawValue !== 'number') {
+      return [];
+    }
+    return [...new Set(String(rawValue).split('|').map((v) => v.trim()).filter(Boolean))];
   };
 
   useEffect(() => {
@@ -293,10 +315,16 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
           {HERO_CATALOGS_BASE.map((catalog) => {
             const idMovies = `${catalog.idBase}_movies`;
             const idSeries = `${catalog.idBase}_series`;
+            const movieSwitchId = `${catalog.idBase}-switch-movies`;
+            const seriesSwitchId = `${catalog.idBase}-switch-series`;
             const selectedPresets = profile.raw_ui_state?.selectedPresets ?? [];
             const isMoviesEnabled = selectedPresets.includes(idMovies);
             const isSeriesEnabled = selectedPresets.includes(idSeries);
-            const aiLog = analytics?.aiLogs?.[idMovies] ?? analytics?.aiLogs?.[idSeries];
+            const movieLog = analytics?.aiLogs?.[idMovies];
+            const seriesLog = analytics?.aiLogs?.[idSeries];
+            const preferredLog = isSeriesEnabled && !isMoviesEnabled ? seriesLog : movieLog;
+            const fallbackLog = preferredLog === movieLog ? seriesLog : movieLog;
+            const aiLog = preferredLog ?? fallbackLog;
 
             return (
               <div
@@ -310,13 +338,13 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                       <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{catalog.label}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <label className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                      <label htmlFor={movieSwitchId} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
                         Film
-                        <Switch checked={isMoviesEnabled} onCheckedChange={(checked) => toggleHeroCatalog(idMovies, checked)} />
+                        <Switch id={movieSwitchId} checked={isMoviesEnabled} onCheckedChange={(checked) => toggleHeroCatalog(idMovies, checked)} />
                       </label>
-                      <label className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                      <label htmlFor={seriesSwitchId} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
                         Serie
-                        <Switch checked={isSeriesEnabled} onCheckedChange={(checked) => toggleHeroCatalog(idSeries, checked)} />
+                        <Switch id={seriesSwitchId} checked={isSeriesEnabled} onCheckedChange={(checked) => toggleHeroCatalog(idSeries, checked)} />
                       </label>
                     </div>
                   </div>
@@ -345,7 +373,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                               {JSON.stringify(aiLog, null, 2)}
                             </pre>
                           ) : (
-                            <p className="text-slate-500 text-xs font-mono">Nessun log AI generato. Configura una chiave API Mistral o forza l&apos;aggiornamento.</p>
+                            <p className="text-slate-500 text-xs font-mono">Nessun log AI generato. Configura una chiave API Mistral o forza l'aggiornamento.</p>
                           )}
                         </div>
                       </div>
@@ -368,20 +396,17 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                           {analytics?.baseDnaParams && Object.keys(analytics.baseDnaParams).length > 0 ? (
                             <div className="flex flex-col gap-2">
                               {Object.entries(analytics.baseDnaParams).map(([key, rawValue]) => {
-                                const ids = String(rawValue).split('|').map((v) => v.trim()).filter(Boolean);
-                                const badgeLabel =
-                                  key === 'with_genres'
-                                    ? { icon: '🎭', name: 'Genere' }
-                                    : key === 'with_keywords'
-                                      ? { icon: '🏷️', name: 'Keyword' }
-                                      : key === 'with_origin_country'
-                                        ? { icon: '🌍', name: 'Paese' }
-                                        : { icon: '🧬', name: key };
+                                const ids = parseAndDeduplicateIds(rawValue);
+                                if (ids.length === 0) {
+                                  // If backend returns empty values we skip rendering this row to avoid misleading empty badges.
+                                  return null;
+                                }
+                                const badgeLabel = TMDB_KEY_BADGE_LABEL[key] ?? { icon: '🧬', name: key };
 
                                 return (
-                                  <div key={key} className="flex flex-wrap items-center gap-2">
+                                  <div key={key} className="flex flex-wrap items-center gap-2 py-1 border-b border-slate-200/70 dark:border-slate-700/40 last:border-b-0">
                                     {ids.map((id, idx) => (
-                                      <div key={`${key}-${id}-${idx}`} className="inline-flex items-center gap-2">
+                                      <div key={`${key}-${id}`} className="inline-flex items-center gap-2">
                                         <span className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold bg-primary/15 text-primary">
                                           {badgeLabel.icon} {badgeLabel.name}: {getDnaName(id, key)}
                                         </span>
