@@ -102,11 +102,15 @@ module.exports = async (req, res) => {
         if (stremioEmail) accountUpdate.email = stremioEmail;
 
         if (Object.keys(accountUpdate).length > 0) {
-            UserAccount.findOneAndUpdate(
-                { userId },
-                { $set: accountUpdate, $setOnInsert: { userId, addonUuid: require('crypto').randomUUID() } },
-                { upsert: true }
-            ).catch(err => console.error('[TwoTableSync] UserAccount sync error:', err.message));
+            try {
+                await UserAccount.findOneAndUpdate(
+                    { userId },
+                    { $set: accountUpdate, $setOnInsert: { userId, addonUuid: require('crypto').randomUUID() } },
+                    { upsert: true }
+                );
+            } catch (err) {
+                console.error('[TwoTableSync] UserAccount sync error:', err.message);
+            }
         }
 
         const configUpdate = {};
@@ -121,11 +125,15 @@ module.exports = async (req, res) => {
         } catch (_e) { /* ignore */ }
 
         if (addonUuid) {
-            AddonConfig.findOneAndUpdate(
-                { uuid: addonUuid },
-                { $set: { ...configUpdate, userId } },
-                { upsert: true }
-            ).catch(err => console.error('[TwoTableSync] AddonConfig sync error:', err.message));
+            try {
+                await AddonConfig.findOneAndUpdate(
+                    { uuid: addonUuid },
+                    { $set: { ...configUpdate, userId } },
+                    { upsert: true }
+                );
+            } catch (err) {
+                console.error('[TwoTableSync] AddonConfig sync error:', err.message);
+            }
         }
 
         // Cleanup unreferenced lists

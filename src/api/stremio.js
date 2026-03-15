@@ -6,6 +6,7 @@ const { updateStremioAddonCollection } = require('../utils/stremioAddonSync');
 const User = require('../models/User');
 const UserConfig = require('../models/UserConfig');
 const AddonConfig = require('../db/models/AddonConfig');
+const { requireAuth } = require('../middleware/requireAuth');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler } = require('../handlers/metaHandler');
 const { streamHandler } = require('../handlers/streamHandler');
@@ -333,9 +334,14 @@ router.get(['/:userHandle/stream/:type/:id.json', '/:userHandle/:configVersion/s
 
 // Sync Status Polling endpoint (Phase 0.4: Dumb Frontend Pattern)
 // Frontend polls this every 3-5 seconds while syncStatus.isSyncing is true.
-router.get('/sync-status/:userId', async (req, res) => {
+// Requires JWT authentication to prevent unauthorized access to user sync data.
+router.get('/sync-status/:userId', requireAuth, async (req, res) => {
     const { userId } = req.params;
     if (!userId) return res.status(400).json({ error: 'userId required' });
+    // Ensure authenticated user can only access their own sync status
+    if (req.user.userId !== userId) {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
     try {
         const config = await AddonConfig.findOne({ userId }).lean();
         if (!config) {
@@ -350,9 +356,16 @@ router.get('/sync-status/:userId', async (req, res) => {
 
 // Configure Redirect: When Stremio opens the configure gear icon, redirect to Frontend Login.
 // This ensures no UUID context is leaked — the user must authenticate via JWT.
+// FRONTEND_URL is a server-side env variable, not user-controlled input.
 router.get('/:userHandle/configure', (_req, res) => {
-    const frontendUrl = process.env.FRONTEND_URL || '/';
-    res.redirect(302, frontendUrl);
+    const frontendUrl = process.env.FRONTEND_URL;
+    // Only redirect to FRONTEND_URL if it's a valid absolute URL or relative path.
+    // Fall back to root path if not configured.
+    if (frontendUrl && (frontendUrl.startsWith('https://') || frontendUrl.startsWith('http://') || frontendUrl.startsWith('/'))) {
+        res.redirect(302, frontendUrl);
+    } else {
+        res.redirect(302, '/');
+    }
 });
 
 // Switch Profile
