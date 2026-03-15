@@ -370,13 +370,19 @@ router.get('/sync-status/:userId', syncStatusLimiter, requireAuth, async (req, r
 // FRONTEND_URL is a server-side env variable, not user-controlled input.
 router.get('/:userHandle/configure', (_req, res) => {
     const frontendUrl = process.env.FRONTEND_URL;
-    // Only redirect to FRONTEND_URL if it's a valid absolute URL or relative path.
-    // Fall back to root path if not configured.
-    if (frontendUrl && (frontendUrl.startsWith('https://') || frontendUrl.startsWith('http://') || frontendUrl.startsWith('/'))) {
-        res.redirect(302, frontendUrl);
-    } else {
-        res.redirect(302, '/');
+    // Validate FRONTEND_URL is a well-formed URL or relative path before redirecting.
+    if (frontendUrl) {
+        if (frontendUrl.startsWith('/')) {
+            return res.redirect(302, frontendUrl);
+        }
+        try {
+            const parsed = new URL(frontendUrl);
+            if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+                return res.redirect(302, parsed.href);
+            }
+        } catch (_e) { /* malformed URL — fall through to default */ }
     }
+    res.redirect(302, '/');
 });
 
 // Switch Profile

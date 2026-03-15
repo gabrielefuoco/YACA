@@ -105,7 +105,7 @@ module.exports = async (req, res) => {
             try {
                 await UserAccount.findOneAndUpdate(
                     { userId },
-                    { $set: accountUpdate, $setOnInsert: { userId, addonUuid: require('crypto').randomUUID() } },
+                    { $set: accountUpdate, $setOnInsert: { userId } },
                     { upsert: true }
                 );
             } catch (err) {

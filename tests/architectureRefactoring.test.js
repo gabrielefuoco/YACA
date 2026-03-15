@@ -28,8 +28,8 @@ describe('Phase 0.1: Two-Table Split Models', () => {
         const doc = new UserAccount({ userId: 'test-user' });
         expect(doc.addonUuid).toBeDefined();
         expect(typeof doc.addonUuid).toBe('string');
-        // UUID v4 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-        expect(doc.addonUuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+        // UUID v4 format with version+variant bits
+        expect(doc.addonUuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
     });
 
     it('AddonConfig model should NOT have userId field (Critica 1: full anonymity)', () => {
