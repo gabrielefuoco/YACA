@@ -1,6 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('../src/models/User');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
 const TasteProfile = require('../src/models/TasteProfile');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 
@@ -14,20 +15,26 @@ async function testCompleteFlow() {
 
         // 0. Cleanup
         await TasteProfile.deleteMany({ owner: TEST_USER_ID });
-        await User.deleteMany({ userId: TEST_USER_ID });
+        await UserAccount.deleteMany({ userId: TEST_USER_ID });
 
-        // 1. Initial State
-        const user = new User({
+        // 1. Initial State (Two-Table Split: create UserAccount + AddonConfig)
+        const account = new UserAccount({
             userId: TEST_USER_ID,
             email: 'e2e@example.com',
+            passwordHash: 'e2e_placeholder_hash'
+        });
+        await account.save();
+
+        const addonConfig = new AddonConfig({
+            uuid: account.addonUuid,
             profiles: [{
                 id: TEST_CONTEXT,
                 name: 'E2E Profile',
                 settings: { suggestedDNA: [], manualDNA: [] }
             }]
         });
-        await user.save();
-        console.log('✅ User created (onboardingCompleted: false)');
+        await addonConfig.save();
+        console.log('✅ UserAccount + AddonConfig created (onboardingCompleted: false)');
 
         // 2. Simulate First Sync (Onboarding)
         console.log('\n--- PHASE 1: Initial Sync ---');
@@ -50,8 +57,8 @@ async function testCompleteFlow() {
         let profile = await TasteProfile.findOne({ owner: TEST_USER_ID, context: TEST_CONTEXT });
         await ProfileBuilder.inferDNAFromProfile(profile);
 
-        let updatedUser = await User.findOne({ userId: TEST_USER_ID });
-        let updatedProfile = updatedUser.profiles.find(p => p.id === TEST_CONTEXT);
+        let updatedAddon = await AddonConfig.findOne({ uuid: account.addonUuid });
+        let updatedProfile = updatedAddon.profiles.find(p => p.id === TEST_CONTEXT);
         
         console.log('📊 Result Phase 1:');
         console.log('- Suggested DNA length:', updatedProfile.settings.suggestedDNA.length);
@@ -65,8 +72,8 @@ async function testCompleteFlow() {
         // 3. Confirm DNA (Onboarding completion)
         console.log('\n--- PHASE 2: Confirmation ---');
         const suggested = updatedProfile.settings.suggestedDNA;
-        await User.updateOne(
-            { userId: TEST_USER_ID, 'profiles.id': TEST_CONTEXT },
+        await AddonConfig.updateOne(
+            { uuid: account.addonUuid, 'profiles.id': TEST_CONTEXT },
             { $set: { 
                 'profiles.$.settings.manualDNA': suggested, 
                 'profiles.$.settings.suggestedDNA': [] 
@@ -92,8 +99,8 @@ async function testCompleteFlow() {
         profile = await TasteProfile.findOne({ owner: TEST_USER_ID, context: TEST_CONTEXT });
         await ProfileBuilder.inferDNAFromProfile(profile);
 
-        updatedUser = await User.findOne({ userId: TEST_USER_ID });
-        updatedProfile = updatedUser.profiles.find(p => p.id === TEST_CONTEXT);
+        updatedAddon = await AddonConfig.findOne({ uuid: account.addonUuid });
+        updatedProfile = updatedAddon.profiles.find(p => p.id === TEST_CONTEXT);
 
         console.log('📊 Result Phase 3:');
         console.log('- Total confirmed DNA length:', updatedProfile.settings.manualDNA.length);

@@ -95,15 +95,21 @@ const UserConfig = {
                 }
 
                 // 4. MERGE API KEYS (from UserAccount)
+                // undefined = "don't touch" (preserve existing), null/'' = "delete this key"
+                const keysToUnset = new Set();
                 if (existingAccount) {
                     const incomingApiKeys = userData.apiKeys || {};
                     const currentApiKeys = existingAccount.apiKeys?.toObject?.() || existingAccount.apiKeys || {};
-                    const mergedApiKeys = { ...currentApiKeys, ...incomingApiKeys };
+                    const mergedApiKeys = { ...currentApiKeys };
 
                     for (const [key, value] of Object.entries(incomingApiKeys)) {
                         if (value === null || value === '') {
                             delete mergedApiKeys[key];
+                            keysToUnset.add(key);
+                        } else if (value !== undefined) {
+                            mergedApiKeys[key] = value;
                         }
+                        // undefined = "don't touch", so we keep the existing value
                     }
                     userData.apiKeys = mergedApiKeys;
 
@@ -131,11 +137,13 @@ const UserConfig = {
                 if (userData.apiKeys) {
                     const keysInDoc = ['stremio', 'tmdb', 'mistral', 'trakt', 'traktRefreshToken', 'mdblist'];
                     keysInDoc.forEach(k => {
-                        const val = userData.apiKeys[k];
-                        if (val === null || val === '') {
+                        if (keysToUnset.has(k)) {
                             accountUnset[`apiKeys.${k}`] = 1;
-                        } else if (val !== undefined) {
-                            accountUpdate.$set[`apiKeys.${k}`] = val;
+                        } else {
+                            const val = userData.apiKeys[k];
+                            if (val !== undefined) {
+                                accountUpdate.$set[`apiKeys.${k}`] = val;
+                            }
                         }
                     });
                 }

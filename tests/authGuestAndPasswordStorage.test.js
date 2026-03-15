@@ -8,11 +8,11 @@ jest.mock('../src/models/UserConfig', () => ({
 
 // Two-Table Split: auth/index.js now imports UserAccount and AddonConfig directly
 jest.mock('../src/db/models/UserAccount', () => ({
-    findOne: jest.fn()
+    findOne: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) })
 }));
 
 jest.mock('../src/db/models/AddonConfig', () => ({
-    findOne: jest.fn(),
+    findOne: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
     create: jest.fn()
 }));
 
@@ -53,13 +53,16 @@ describe('auth handlers security hardening', () => {
                 }
             }
         });
-        UserAccount.findOne.mockResolvedValue(null);
-        UserConfig.saveUser.mockResolvedValue({ userId: 'guest_user_id' });
-        // After saveUser, loginHandler re-reads account and addon config
+        // First call: lookup existing account → not found
+        // Second call: re-read account after saveUser → found
+        const mockAccount = { userId: 'guest_user_id', addonUuid: 'uuid-1', apiKeys: {} };
         UserAccount.findOne
-            .mockResolvedValueOnce(null) // first call: lookup existing account
-            .mockResolvedValueOnce({ userId: 'guest_user_id', addonUuid: 'uuid-1', apiKeys: {} }); // re-read
-        AddonConfig.findOne.mockResolvedValue({ uuid: 'uuid-1', profiles: [], config: {} });
+            .mockReturnValueOnce({ lean: jest.fn().mockResolvedValue(null) })
+            .mockReturnValueOnce({ lean: jest.fn().mockResolvedValue(mockAccount) });
+        UserConfig.saveUser.mockResolvedValue({ userId: 'guest_user_id' });
+        AddonConfig.findOne.mockReturnValue({
+            lean: jest.fn().mockResolvedValue({ uuid: 'uuid-1', profiles: [], config: {} })
+        });
 
         const req = { body: { email: 'user@example.com', password: 'super-secret-password' } };
         const res = mockRes();

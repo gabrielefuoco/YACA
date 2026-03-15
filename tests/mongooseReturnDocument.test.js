@@ -31,7 +31,6 @@ describe('Mongoose findOneAndUpdate options', () => {
     it('uses returnDocument: after in UserConfig.saveUser (UserAccount)', async () => {
         UserAccount.findOne.mockResolvedValueOnce(null);
         UserAccount.findOneAndUpdate.mockResolvedValueOnce({ userId: 'generated_user_id', addonUuid: 'uuid-1', apiKeys: {} });
-        AddonConfig.findOne.mockResolvedValueOnce(null);
         AddonConfig.findOneAndUpdate.mockResolvedValueOnce({ uuid: 'uuid-1', profiles: [], config: {} });
 
         await UserConfig.saveUser({ apiKeys: { tmdb: 'k' } });
@@ -46,7 +45,6 @@ describe('Mongoose findOneAndUpdate options', () => {
     it('uses returnDocument: after in UserConfig.saveUser (AddonConfig)', async () => {
         UserAccount.findOne.mockResolvedValueOnce(null);
         UserAccount.findOneAndUpdate.mockResolvedValueOnce({ userId: 'generated_user_id', addonUuid: 'uuid-1', apiKeys: {} });
-        AddonConfig.findOne.mockResolvedValueOnce(null);
         AddonConfig.findOneAndUpdate.mockResolvedValueOnce({ uuid: 'uuid-1', profiles: [], config: {} });
 
         await UserConfig.saveUser({ apiKeys: { tmdb: 'k' } });
@@ -60,7 +58,9 @@ describe('Mongoose findOneAndUpdate options', () => {
 
     it('updates UserAccount by provided userId', async () => {
         UserAccount.findOne.mockResolvedValueOnce({ userId: 'existing_user', apiKeys: {}, addonUuid: 'uuid-2' });
-        AddonConfig.findOne.mockResolvedValueOnce({ uuid: 'uuid-2', profiles: [], config: {} });
+        AddonConfig.findOne.mockReturnValueOnce({
+            lean: jest.fn().mockResolvedValue({ uuid: 'uuid-2', profiles: [], config: {} })
+        });
         UserAccount.findOneAndUpdate.mockResolvedValueOnce({ userId: 'existing_user', addonUuid: 'uuid-2', apiKeys: {} });
         AddonConfig.findOneAndUpdate.mockResolvedValueOnce({ uuid: 'uuid-2', profiles: [], config: {} });
 
@@ -93,13 +93,16 @@ describe('Mongoose findOneAndUpdate options', () => {
             apiKeys: { mistral: 'old_mistral', tmdb: 'old_tmdb', toObject: () => ({ mistral: 'old_mistral', tmdb: 'old_tmdb' }) },
             addonUuid: 'uuid-3'
         });
-        AddonConfig.findOne.mockResolvedValueOnce({ uuid: 'uuid-3', profiles: [], config: {} });
+        AddonConfig.findOne.mockReturnValueOnce({
+            lean: jest.fn().mockResolvedValue({ uuid: 'uuid-3', profiles: [], config: {} })
+        });
         UserAccount.findOneAndUpdate.mockResolvedValueOnce({ userId: 'existing_user', addonUuid: 'uuid-3', apiKeys: {} });
         AddonConfig.findOneAndUpdate.mockResolvedValueOnce({ uuid: 'uuid-3', profiles: [], config: {} });
 
         await UserConfig.saveUser({ userId: 'existing_user', apiKeys: { mistral: undefined, tmdb: null } });
 
-        // tmdb=null should trigger an $unset
+        // mistral=undefined means "don't touch" → preserves old_mistral in $set
+        // tmdb=null means "delete" → $unset
         expect(UserAccount.findOneAndUpdate).toHaveBeenCalledWith(
             expect.objectContaining({ userId: 'existing_user' }),
             expect.objectContaining({
@@ -112,16 +115,16 @@ describe('Mongoose findOneAndUpdate options', () => {
         );
     });
 
-    it('uses returnDocument: after in configure user list upsert', async () => {
+    it('uses deleteMany + create in configure user list upsert', async () => {
         jest.resetModules();
 
-        const userListFindOneAndUpdate = jest.fn().mockResolvedValueOnce({});
+        const userListDeleteMany = jest.fn().mockResolvedValue({ deletedCount: 0 });
         const saveUser = jest.fn().mockResolvedValueOnce({ userId: 'generated_user_id' });
         const generateTmdbFiltersFromPrompt = jest.fn().mockResolvedValueOnce({ target: 'tmdb' });
 
         jest.doMock('../src/models/UserList', () => ({
-            findOneAndUpdate: userListFindOneAndUpdate,
-            deleteMany: jest.fn().mockResolvedValue({ deletedCount: 0 })
+            findOneAndUpdate: jest.fn(),
+            deleteMany: userListDeleteMany
         }));
         jest.doMock('../src/models/UserConfig', () => ({
             saveUser,
@@ -132,6 +135,12 @@ describe('Mongoose findOneAndUpdate options', () => {
         }));
         jest.doMock('../src/data/presets', () => ({
             getPresets: () => []
+        }));
+        jest.doMock('../src/db/models/UserAccount', () => ({
+            findOne: jest.fn().mockResolvedValue({ userId: 'generated_user_id', addonUuid: 'uuid-1' })
+        }));
+        jest.doMock('../src/utils/stremioAddonSync', () => ({
+            updateStremioAddonCollection: jest.fn().mockResolvedValue(undefined)
         }));
 
         const configureRoute = require('../src/api/configure');
@@ -156,9 +165,10 @@ describe('Mongoose findOneAndUpdate options', () => {
 
         await configureRoute(req, res);
 
-        expect(userListFindOneAndUpdate).toHaveBeenCalled();
-        expect(userListFindOneAndUpdate.mock.calls[0][2]).toEqual(
-            expect.objectContaining({ upsert: true, returnDocument: 'after' })
+        // Configure now deletes old lists and saves new user config
+        expect(saveUser).toHaveBeenCalled();
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ success: true })
         );
     });
 });

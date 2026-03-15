@@ -12,9 +12,10 @@ jest.mock('../src/id_mapping/id_cache', () => ({
     translateImdbToTmdb: jest.fn()
 }));
 
-jest.mock('../src/db/models/UserAccount', () => ({
-    findOne: jest.fn()
-}));
+jest.mock('../src/db/models/UserAccount', () => {
+    const mockFindOne = jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
+    return { findOne: mockFindOne };
+});
 
 jest.mock('../src/db/models/AddonConfig', () => ({
     findOne: jest.fn(),
@@ -49,7 +50,7 @@ function createTasteProfile(context) {
 describe('ProfileBuilder core taste bias', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        UserAccount.findOne.mockResolvedValue(null);
+        UserAccount.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
         AddonConfig.findOne.mockResolvedValue(null);
     });
 
@@ -95,9 +96,11 @@ describe('ProfileBuilder core taste bias', () => {
         globalProfile.keywordScores.set('210024', 80);
 
         // Two-Table Split: inferDNAFromProfile resolves addonUuid, then writes to AddonConfig
-        UserAccount.findOne.mockResolvedValue({
-            userId: 'user_1',
-            addonUuid: 'uuid-1'
+        UserAccount.findOne.mockReturnValue({
+            lean: jest.fn().mockResolvedValue({
+                userId: 'user_1',
+                addonUuid: 'uuid-1'
+            })
         });
         AddonConfig.findOne.mockResolvedValue({
             uuid: 'uuid-1',
