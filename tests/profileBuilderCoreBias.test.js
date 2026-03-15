@@ -59,11 +59,11 @@ describe('ProfileBuilder core taste bias', () => {
         const globalProfile = createTasteProfile('global');
 
         TasteProfile.findOne
-            .mockResolvedValueOnce(nicheProfile)
-            .mockResolvedValueOnce(globalProfile);
+            .mockResolvedValueOnce(nicheProfile)   // re-read after saveAtomic (anime)
+            .mockResolvedValueOnce(globalProfile);  // re-read after saveAtomic (global mirror)
         TasteProfile.findOneAndUpdate
-            .mockResolvedValueOnce(nicheProfile)
-            .mockResolvedValueOnce(globalProfile);
+            .mockResolvedValueOnce(nicheProfile)    // upsert for anime context
+            .mockResolvedValueOnce(globalProfile);  // upsert for global mirror context
 
         tmdb.getTmdbMovieDetails.mockResolvedValue({
             id: 100,
@@ -82,12 +82,17 @@ describe('ProfileBuilder core taste bias', () => {
             'tmdb_key'
         );
 
-        const nicheGenreScore = nicheProfile.genreScores.get('16');
-        const globalGenreScore = globalProfile.genreScores.get('16');
+        // saveAtomic uses TasteProfile.updateOne with $inc for genre scores
+        // First call: anime context at full weight (1.0), second: global mirror at 20%
+        const updateCalls = TasteProfile.updateOne.mock.calls;
+        const animeCall = updateCalls.find(c => c[0].context === 'anime' && c[1].$inc);
+        const globalCall = updateCalls.find(c => c[0].context === 'global' && c[1].$inc);
 
-        expect(nicheGenreScore).toBeGreaterThan(0);
-        expect(globalGenreScore).toBeGreaterThan(0);
-        expect(globalGenreScore).toBeLessThan(nicheGenreScore);
+        expect(animeCall).toBeDefined();
+        expect(globalCall).toBeDefined();
+        expect(animeCall[1].$inc['genreScores.16']).toBeGreaterThan(0);
+        expect(globalCall[1].$inc['genreScores.16']).toBeGreaterThan(0);
+        expect(globalCall[1].$inc['genreScores.16']).toBeLessThan(animeCall[1].$inc['genreScores.16']);
     });
 
     it('stages inferred DNA into pending suggestions for the matching profile', async () => {
@@ -134,6 +139,7 @@ describe('ProfileBuilder core taste bias', () => {
     it('processes imdb-only trakt items by translating to tmdb', async () => {
         const profile = createTasteProfile('global');
         TasteProfile.findOneAndUpdate.mockResolvedValueOnce(profile);
+        TasteProfile.findOne.mockResolvedValueOnce(profile); // re-read after saveAtomic
         translateImdbToTmdb.mockResolvedValueOnce({ id: 'tmdb:777', type: 'movie' });
         tmdb.getTmdbMovieDetails.mockResolvedValueOnce({
             id: 777,
@@ -154,12 +160,16 @@ describe('ProfileBuilder core taste bias', () => {
 
         expect(translateImdbToTmdb).toHaveBeenCalledWith('tt1234567', 'tmdb_key');
         expect(tmdb.getTmdbMovieDetails).toHaveBeenCalledWith('tmdb_key', 'tmdb:777', 'movie');
-        expect(profile.processedTraktIds).toContain('tt1234567');
+        // processedTraktIds are added atomically via updateOne $addToSet
+        const addToSetCall = TasteProfile.updateOne.mock.calls.find(c => c[1].$addToSet);
+        expect(addToSetCall).toBeDefined();
+        expect(addToSetCall[1].$addToSet.processedTraktIds.$each).toContain('tt1234567');
     });
 
     it('stores trakt ids atomically after saving the profile document', async () => {
         const profile = createTasteProfile('global');
         TasteProfile.findOneAndUpdate.mockResolvedValueOnce(profile);
+        TasteProfile.findOne.mockResolvedValueOnce(profile); // re-read after saveAtomic
         tmdb.getTmdbMovieDetails.mockResolvedValueOnce({
             id: 888,
             genres: [{ id: 18 }],
@@ -177,10 +187,12 @@ describe('ProfileBuilder core taste bias', () => {
             'tmdb_key'
         );
 
-        expect(profile.save).toHaveBeenCalled();
-        expect(TasteProfile.updateOne).toHaveBeenCalledWith(
-            { owner: 'user_1', context: 'global' },
-            { $addToSet: { processedTraktIds: { $each: ['888'] } } }
-        );
+        // saveAtomic uses updateOne with $inc (scores), then a separate updateOne with $addToSet (ids)
+        const incCall = TasteProfile.updateOne.mock.calls.find(c => c[1].$inc);
+        const addToSetCall = TasteProfile.updateOne.mock.calls.find(c => c[1].$addToSet);
+        expect(incCall).toBeDefined();
+        expect(addToSetCall).toBeDefined();
+        expect(addToSetCall[0]).toEqual({ owner: 'user_1', context: 'global' });
+        expect(addToSetCall[1].$addToSet.processedTraktIds.$each).toEqual(['888']);
     });
 });
