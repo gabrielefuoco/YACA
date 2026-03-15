@@ -141,21 +141,35 @@ const UserConfig = {
                     if (!existingUser || !existingUser.profiles?.length) {
                         updateOperation.$set.profiles = userData.profiles;
                     } else {
-                        const profileMap = new Map(existingUser.profiles.map(p => [p.id, p.toObject?.() || p]));
+                        const profileMap = new Map();
+                        
+                        // Initialize map with existing profiles, prioritizing explicit 'id' field, falling back to '_id'
+                        existingUser.profiles.forEach(p => {
+                            const pObj = p.toObject?.() || p;
+                            const key = pObj.id || pObj._id?.toString() || p._id?.toString();
+                            if (key) profileMap.set(key, pObj);
+                        });
+
                         userData.profiles.forEach(p => {
-                            const existing = profileMap.get(p.id);
+                            const pId = p.id || p._id?.toString();
+                            if (!pId) return; // Skip invalid entries
+
+                            const existing = profileMap.get(pId);
                             if (existing) {
-                                const mergedSettings = { ...(existing.settings || {}), ...(p.settings || {}) };
+                                // Sub-merge settings to preserve DNA
+                                const mergedSettings = { 
+                                    ...(existing.settings || {}), 
+                                    ...(p.settings || {}) 
+                                };
                                 
-                                // Specific preservation for DNA traits
-                                if (existing.settings?.manualDNA?.length && !p.settings?.manualDNA) {
+                                if (existing.settings?.manualDNA?.length && (!p.settings?.manualDNA || p.settings.manualDNA.length === 0)) {
                                     mergedSettings.manualDNA = existing.settings.manualDNA;
                                 }
-                                if (existing.settings?.suggestedDNA?.length && !p.settings?.suggestedDNA) {
+                                if (existing.settings?.suggestedDNA?.length && (!p.settings?.suggestedDNA || p.settings.suggestedDNA.length === 0)) {
                                     mergedSettings.suggestedDNA = existing.settings.suggestedDNA;
                                 }
 
-                                profileMap.set(p.id, { 
+                                profileMap.set(pId, { 
                                     ...existing, 
                                     ...p, 
                                     catalogs: p.catalogs || existing.catalogs || [],
@@ -163,7 +177,7 @@ const UserConfig = {
                                     settings: mergedSettings 
                                 });
                             } else {
-                                profileMap.set(p.id, p);
+                                profileMap.set(pId, p);
                             }
                         });
                         updateOperation.$set.profiles = Array.from(profileMap.values());
@@ -231,10 +245,19 @@ const UserConfig = {
 
         const user = await this.getUser(userId);
         if (user) {
+            // Map profiles to ensure they each have a stable 'id' field (fallback to _id)
+            const resolvedProfiles = (user.profiles || []).map(p => {
+                const pObj = p.toObject?.() || p;
+                return {
+                    ...pObj,
+                    id: pObj.id || pObj._id?.toString()
+                };
+            });
+
             return {
                 userId: user.userId,
                 apiKeys: user.apiKeys,
-                profiles: user.profiles,
+                profiles: resolvedProfiles,
                 activeProfileId: user.config?.activeProfileId,
                 configVersion: user.config?.configVersion
             };

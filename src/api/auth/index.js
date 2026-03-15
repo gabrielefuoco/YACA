@@ -111,12 +111,20 @@ async function loginHandler(req, res) {
         res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions());
 
         // 4. Return user info
+        const resolvedProfiles = (existingUser?.profiles || []).map(p => {
+            const pObj = p.toObject?.() || p;
+            return {
+                ...pObj,
+                id: pObj.id || pObj._id?.toString()
+            };
+        });
+
         return res.json({
             success: true,
             userId,
             email: resolvedEmail,
             isReturningUser: Boolean(existingUser),
-            profiles: existingUser?.profiles || [],
+            profiles: resolvedProfiles,
             activeProfileId: existingUser?.config?.activeProfileId || 'global',
             traktConnected: Boolean(existingUser?.apiKeys?.trakt),
             configVersion: existingUser?.config?.configVersion || null

@@ -19,7 +19,8 @@ export function generateId(): string {
  * `existingCatalogs`, and different settings field names.
  */
 export interface BackendProfile {
-  id?: unknown;
+  id?: string;
+  _id?: string | { $oid: string };
   name?: unknown;
   catalogs?: BackendCatalog[];
   settings?: {
@@ -88,8 +89,13 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
       raw_prompt: c.raw_prompt,
     }));
 
+  const targetId = backendProfile.id || 
+                   (typeof backendProfile._id === 'string' ? backendProfile._id : 
+                    (backendProfile._id as any)?.$oid) || 
+                   generateId();
+
   return {
-    id: String(backendProfile.id ?? generateId()),
+    id: String(targetId),
     name: String(backendProfile.name ?? 'Profilo'),
     raw_ui_state: {
       selectedPresets: Array.isArray(rawUi.selectedPresets) ? rawUi.selectedPresets : [],
