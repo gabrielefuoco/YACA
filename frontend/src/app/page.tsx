@@ -198,6 +198,33 @@ export default function Home() {
     }
   }, [profiles, setActiveProfileId]);
 
+  // Auto-save profiles when they change (debounced)
+  useEffect(() => {
+    if (isInitializing || !configDecoded || !userId) return;
+    
+    // Skip if these are just the initial default profiles and we're still waiting for real data
+    if (!initialProfiles && profiles.length === 1 && profiles[0].id === 'global' && profiles[0].raw_ui_state.selectedPresets.length === 0) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      api.configure({
+        profiles: profilesToApiPayload(profiles),
+        activeProfileId,
+        stremioAuthKey: stremioAuth?.authKey || undefined,
+        email: stremioAuth?.email,
+        traktToken: traktToken ?? undefined,
+        traktRefreshToken: traktRefreshToken ?? undefined,
+      }).then(data => {
+        if (data.configVersion) setConfigVersion(String(data.configVersion));
+      }).catch(err => {
+        console.warn('Auto-save failed:', err);
+      });
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [profiles, activeProfileId, userId, isInitializing, configDecoded, stremioAuth, traktToken, traktRefreshToken]);
+
   // Auto-configure when stremio is logged in but no config/userId is stored yet
   useEffect(() => {
     if (!isLoaded || !authLoaded || !configDecoded || isInitializing) return;
