@@ -4,16 +4,13 @@ import { Profile, DNAItem, AnalyticsData } from '@/types';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { api } from '@/lib/api';
 import { X, BrainCircuit, Terminal } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
-const HERO_CATALOGS = [
-  { id: 'yaca_true_blend_movies', label: 'True Blend (Film)', emoji: '🎯', type: 'ai', desc: 'Pipeline Ibrida: Ricerca semantica (Mistral) + Two-Tier Scoring algoritmico.' },
-  { id: 'yaca_true_blend_series', label: 'True Blend (Serie)', emoji: '🎯', type: 'ai', desc: 'Pipeline Ibrida: Ricerca semantica (Mistral) + Two-Tier Scoring algoritmico.' },
-  { id: 'yaca_seed_network_movies', label: 'Seed Network (Film)', emoji: '🕸️', type: 'algo', desc: 'Espande la rete dei titoli che hai già amato (Stacking e Calcoli Matematici).' },
-  { id: 'yaca_seed_network_series', label: 'Seed Network (Serie)', emoji: '🕸️', type: 'algo', desc: 'Espande la rete dei titoli che hai già amato (Stacking e Calcoli Matematici).' },
-  { id: 'yaca_hidden_gems_movies', label: 'Hidden Gems (Film)', emoji: '💎', type: 'ai', desc: 'Pipeline Ibrida: Ricerca semantica (Mistral) + Quality Cage algoritmica.' },
-  { id: 'yaca_hidden_gems_series', label: 'Hidden Gems (Serie)', emoji: '💎', type: 'ai', desc: 'Pipeline Ibrida: Ricerca semantica (Mistral) + Quality Cage algoritmica.' },
-  { id: 'yaca_trakt_filtered_movies', label: 'Trakt Filtered (Film)', emoji: '🌐', type: 'algo', desc: 'Suggerimenti della community filtrati e ri-ordinati col tuo DNA.' },
-  { id: 'yaca_trakt_filtered_series', label: 'Trakt Filtered (Serie)', emoji: '🌐', type: 'algo', desc: 'Suggerimenti della community filtrati e ri-ordinati col tuo DNA.' },
+const HERO_CATALOGS_BASE = [
+  { idBase: 'yaca_true_blend', label: 'True Blend', emoji: '🎯', type: 'ai', desc: 'Ricerca semantica AI + Scoring algoritmico.' },
+  { idBase: 'yaca_seed_network', label: 'Seed Network', emoji: '🕸️', type: 'algo', desc: 'Espande la rete dei titoli amati (Stacking).' },
+  { idBase: 'yaca_hidden_gems', label: 'Hidden Gems', emoji: '💎', type: 'ai', desc: 'Ricerca AI di nicchia + Quality Cage algoritmica.' },
+  { idBase: 'yaca_trakt_filtered', label: 'Trakt Filtered', emoji: '🌐', type: 'algo', desc: 'Suggerimenti community filtrati col tuo DNA.' },
 ];
 
 interface DnaAndAiPanelProps {
@@ -39,12 +36,39 @@ function dnaArraysEqual(a: DNAItem[] = [], b: DNAItem[] = []) {
 export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) {
   const profileDNA: DNAItem[] = profile?.settings?.manualDNA ?? [];
   const suggestedDNA: DNAItem[] = profile?.settings?.suggestedDNA ?? [];
+  const allDnaItems = [...profileDNA, ...suggestedDNA];
   const latestSettingsRef = useRef(profile.settings);
 
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [showProgressModal, setShowProgressModal] = useState(false);
+
+  const getDnaName = (id: string, tmdbKey: string) => {
+    const typeMap: Record<string, DNAItem['type']> = {
+      with_genres: 'genre',
+      with_keywords: 'keyword',
+      with_origin_country: 'country',
+    };
+    const targetType = typeMap[tmdbKey];
+    if (!targetType) return id;
+    const found = allDnaItems.find((item) => String(item.id) === String(id) && item.type === targetType);
+    return found ? found.name : id;
+  };
+
+  const toggleHeroCatalog = (fullCatalogId: string, isEnabled: boolean) => {
+    const currentPresets = profile.raw_ui_state?.selectedPresets || [];
+    const newPresets = isEnabled
+      ? (currentPresets.includes(fullCatalogId) ? currentPresets : [...currentPresets, fullCatalogId])
+      : currentPresets.filter((id) => id !== fullCatalogId);
+
+    onUpdateProfile(profile.id, {
+      raw_ui_state: {
+        ...profile.raw_ui_state,
+        selectedPresets: newPresets,
+      },
+    });
+  };
 
   useEffect(() => {
     latestSettingsRef.current = profile.settings;
@@ -187,6 +211,9 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
             {syncStatus?.isSyncing ? 'Sincronizzazione...' : 'Aggiorna DNA'}
           </button>
         </div>
+        <p className="text-[11px] text-slate-500 -mt-2">
+          Aggiorna DNA ricalcola solo il DNA suggerito in base alla cronologia recente, senza modificare il tuo override manuale.
+        </p>
 
         {/* Suggested DNA (read-only) */}
         <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 p-5">
@@ -262,19 +289,36 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
           <h2 className="text-lg font-black uppercase tracking-widest">Ispettore AI (Hero Catalogs)</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {HERO_CATALOGS.map((catalog) => {
-            const aiLog = analytics?.aiLogs?.[catalog.id];
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {HERO_CATALOGS_BASE.map((catalog) => {
+            const idMovies = `${catalog.idBase}_movies`;
+            const idSeries = `${catalog.idBase}_series`;
+            const selectedPresets = profile.raw_ui_state?.selectedPresets ?? [];
+            const isMoviesEnabled = selectedPresets.includes(idMovies);
+            const isSeriesEnabled = selectedPresets.includes(idSeries);
+            const aiLog = analytics?.aiLogs?.[idMovies] ?? analytics?.aiLogs?.[idSeries];
 
             return (
               <div
-                key={catalog.id}
+                key={catalog.idBase}
                 className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 overflow-hidden flex flex-col"
               >
                 <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700/40 bg-slate-50 dark:bg-slate-800/60">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{catalog.emoji}</span>
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{catalog.label}</span>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{catalog.emoji}</span>
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{catalog.label}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <label className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                        Film
+                        <Switch checked={isMoviesEnabled} onCheckedChange={(checked) => toggleHeroCatalog(idMovies, checked)} />
+                      </label>
+                      <label className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                        Serie
+                        <Switch checked={isSeriesEnabled} onCheckedChange={(checked) => toggleHeroCatalog(idSeries, checked)} />
+                      </label>
+                    </div>
                   </div>
                   <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
                     {catalog.desc}
@@ -286,9 +330,9 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                       {/* Visualizzazione IBRIDA per Cataloghi AI */}
                       <div className="flex flex-col h-full gap-2">
                         <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
-                          <span className="bg-primary/20 text-primary px-2 py-0.5 rounded">Fase 1: AI Prompting</span>
-                          <span className="material-symbols-outlined text-xs">arrow_forward</span>
-                          <span className="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded">Fase 2: Scoring Matematico</span>
+                          <span className="bg-primary/20 text-primary px-2 py-0.5 rounded">Fase 1: AI Prompt</span>
+                          <span className="text-xs">➔</span>
+                          <span className="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded">Fase 2: Scoring</span>
                         </div>
                         <div className="rounded-lg bg-slate-900 dark:bg-black p-4 flex-grow overflow-auto border border-slate-700/50 shadow-inner">
                           <p className="text-[9px] text-slate-400 font-bold mb-2 uppercase tracking-wider">
@@ -301,7 +345,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                               {JSON.stringify(aiLog, null, 2)}
                             </pre>
                           ) : (
-                            <p className="text-slate-500 text-xs font-mono">Nessun log AI disponibile per questo catalogo.</p>
+                            <p className="text-slate-500 text-xs font-mono">Nessun log AI generato. Configura una chiave API Mistral o forza l&apos;aggiornamento.</p>
                           )}
                         </div>
                       </div>
@@ -311,7 +355,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                       {/* Visualizzazione per Cataloghi Algoritmici */}
                       <div className="rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-4 min-h-[140px] flex flex-col items-center justify-center text-center h-full">
                         <span className="material-symbols-outlined text-3xl text-slate-400 mb-2 opacity-60">
-                          {catalog.id.includes('seed_network') ? 'hub' : 'forum'}
+                          {catalog.idBase.includes('seed_network') ? 'hub' : 'forum'}
                         </span>
                         <p className="text-xs text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider mb-1">
                           Analisi Motore Algoritmico
@@ -319,14 +363,37 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                         <p className="text-[10px] text-slate-500 max-w-[90%] leading-relaxed mb-4">
                           Calcolo affinità puro (no LLM text query). Il tuo DNA viene forzato e iniettato direttamente nel calcolo matematico usando questi parametri TMDB:
                         </p>
-
-                        {/* Box Code per i filtri TMDB crudi dal backend */}
-                        <div className="w-full bg-slate-900 dark:bg-black rounded-md p-3 text-left overflow-auto border border-slate-700/50 shadow-inner">
-                          <p className="text-[9px] text-slate-400 font-bold mb-1 uppercase tracking-wider">Payload Iniettato:</p>
+                        <div className="w-full rounded-md p-3 text-left border border-slate-200 dark:border-slate-700/60 bg-white/70 dark:bg-slate-900/50">
+                          <p className="text-[9px] text-slate-500 font-bold mb-2 uppercase tracking-wider">DNA iniettato (mapping semantico)</p>
                           {analytics?.baseDnaParams && Object.keys(analytics.baseDnaParams).length > 0 ? (
-                            <pre className="text-[10px] text-blue-400 font-mono whitespace-pre-wrap break-all">
-                              {JSON.stringify(analytics.baseDnaParams, null, 2)}
-                            </pre>
+                            <div className="flex flex-col gap-2">
+                              {Object.entries(analytics.baseDnaParams).map(([key, rawValue]) => {
+                                const ids = String(rawValue).split('|').map((v) => v.trim()).filter(Boolean);
+                                const badgeLabel =
+                                  key === 'with_genres'
+                                    ? { icon: '🎭', name: 'Genere' }
+                                    : key === 'with_keywords'
+                                      ? { icon: '🏷️', name: 'Keyword' }
+                                      : key === 'with_origin_country'
+                                        ? { icon: '🌍', name: 'Paese' }
+                                        : { icon: '🧬', name: key };
+
+                                return (
+                                  <div key={key} className="flex flex-wrap items-center gap-2">
+                                    {ids.map((id, idx) => (
+                                      <div key={`${key}-${id}-${idx}`} className="inline-flex items-center gap-2">
+                                        <span className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold bg-primary/15 text-primary">
+                                          {badgeLabel.icon} {badgeLabel.name}: {getDnaName(id, key)}
+                                        </span>
+                                        {idx < ids.length - 1 && (
+                                          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500">OPPURE</span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })}
+                            </div>
                           ) : (
                             <p className="text-[10px] text-slate-500 italic font-mono">Nessun filtro DNA attualmente attivo sul profilo.</p>
                           )}
