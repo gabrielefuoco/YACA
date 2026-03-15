@@ -127,9 +127,18 @@ async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40) {
  * @param {Number} n Numero di generi da estrarre (default 5)
  * @returns {Array} Array di ID genere (stringhe)
  */
-function computeTopGenres(profile, n = 5) {
-    if (!profile || !profile.genreScores) return [];
-    return [...profile.genreScores.entries()]
+function computeTopGenres(profile, n = 5, user = null, context = 'global') {
+    const scores = profile?.genreScores ? (profile.genreScores instanceof Map ? Object.fromEntries(profile.genreScores) : profile.genreScores) : {};
+    
+    // Add manual genres as high-score entries if they aren't there
+    const dnaFilters = getProfileDnaFilters(user, context);
+    dnaFilters.filter(f => f.type === 'genre').forEach(f => {
+        const gid = String(f.id);
+        if (!scores[gid]) scores[gid] = 100; // Force visibility
+        else scores[gid] += 50; // Boost visibility
+    });
+
+    return Object.entries(scores)
         .sort((a, b) => b[1] - a[1])
         .slice(0, n)
         .map(e => e[0]);
@@ -274,7 +283,7 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
     const dnaFilters = getProfileDnaFilters(user, context);
     const dnaParams = extractDNAParams(dnaFilters);
 
-    const topGenres = computeTopGenres(profile, 3);
+    const topGenres = computeTopGenres(profile, 3, user, context);
     const topKeywords = [...profile.keywordScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
 
     let results = [];
@@ -339,7 +348,7 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
     const dnaFilters = getProfileDnaFilters(user, context);
     let dnaParams = extractDNAParams(dnaFilters);
 
-    const topGenres = computeTopGenres(profile, 5);
+    const topGenres = computeTopGenres(profile, 5, user, context);
 
     const fetchBatch = async (params) => {
         return fetchTmdbResults(
@@ -612,7 +621,7 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     const dnaFilters = getProfileDnaFilters(user, context);
     const dnaParams = extractDNAParams(dnaFilters);
 
-    const topGenres = computeTopGenres(profile, 5);
+    const topGenres = computeTopGenres(profile, 5, user, context);
     const topKeywords = [...profile.keywordScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => e[0]);
 
     const existingIds = new Set();
@@ -647,7 +656,7 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     let aiQueries = [];
     if (mistralKey) {
         try {
-            aiQueries = await generateDiscoveryQueries(profile, mistralKey, 'trueBlend');
+            aiQueries = await generateDiscoveryQueries(profile, mistralKey, 'trueBlend', user, context);
         } catch (_e) { /* AI failure falls through to classic fallback */ }
     }
 
@@ -714,7 +723,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
     const dnaFilters = getProfileDnaFilters(user, context);
 
-    const topGenres = computeTopGenres(profile, 3);
+    const topGenres = computeTopGenres(profile, 3, user, context);
 
     // Gather seeds with weights
     const lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 20).map(id => ({ id: String(id), weight: 2 }));
@@ -848,7 +857,7 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     let aiQueries = [];
     if (mistralKey) {
         try {
-            aiQueries = await generateDiscoveryQueries(profile, mistralKey, 'hiddenGems');
+            aiQueries = await generateDiscoveryQueries(profile, mistralKey, 'hiddenGems', user, context);
         } catch (_e) { /* AI failure falls through to classic fallback */ }
     }
 

@@ -319,17 +319,66 @@ class ProfileBuilder {
             for (let i = 0; i < allItems.length; i += batchSize) {
                 const batch = allItems.slice(i, i + batchSize);
                 await Promise.all(batch.map(async ({ item, weight }) => {
-                    const id = item.id || item._id; 
-                    const type = item.type === 'series' ? 'tv' : 'movie';
+                    let id = item.id || item._id; 
+                    let type = item.type === 'series' ? 'tv' : 'movie';
 
                     if (!id || existingStremioIds.has(id.toString())) return;
-                    existingStremioIds.add(id.toString());
 
                     try {
-                        const details = await tmdb.getTmdbMovieDetails(apiKey, id, type);
+                        let details = null;
+                        
+                        // Handle Kitsu IDs
+                        if (id.toString().startsWith('kitsu:')) {
+                            const kitsuId = id.toString().split(':')[1];
+                            const { getTmdbIdFromKitsuId } = require('../clients/kitsu');
+                            const mapping = await getTmdbIdFromKitsuId(kitsuId);
+                            
+                            if (mapping) {
+                                id = mapping.tmdbId;
+                                type = mapping.type;
+                                details = await tmdb.getTmdbMovieDetails(apiKey, id, type);
+                            } else {
+                                // Fallback: try to fetch Kitsu meta directly if mapping failed
+                                console.warn(`[ProfileBuilder] No TMDB mapping for Kitsu:${kitsuId}. Using fallback metadata.`);
+                                const { getKitsuMetaDetails } = require('../clients/kitsu');
+                                const kitsuMeta = await getKitsuMetaDetails(kitsuId);
+                                if (kitsuMeta) {
+                                    // Mapping Kitsu categories to TMDB Genre IDs
+                                    const kituToTmdbGenre = {
+                                        'Action': 28, 'Adventure': 12, 'Comedy': 35, 'Drama': 18, 
+                                        'Fantasy': 14, 'Horror': 27, 'Mystery': 9648, 'Romance': 10749, 
+                                        'Sci-Fi': 878, 'Thriller': 53, 'Psychological': 53, 'Ecchi': 35,
+                                        'Slice of Life': 18, 'Supernatural': 14, 'Magic': 14, 'Mecha': 878,
+                                        'Military': 10752, 'Music': 10402, 'Police': 80, 'Sports': 18
+                                    };
+
+                                    // Synthesize TMDB-like details from Kitsu meta
+                                    details = {
+                                        id: `kitsu:${kitsuId}`,
+                                        genres: (kitsuMeta.genres || []).map(g => ({
+                                            id: kituToTmdbGenre[g] || 16, // Default to Animation (16) if no mapping
+                                            name: g
+                                        })),
+                                        overview: kitsuMeta.description,
+                                        title: kitsuMeta.name,
+                                        name: kitsuMeta.name,
+                                        keywords: { results: [] }
+                                    };
+                                    
+                                    // Always ensure Animation genre is present for Kitsu items
+                                    if (!details.genres.find(g => g.id === 16)) {
+                                        details.genres.push({ id: 16, name: 'Animation' });
+                                    }
+                                }
+                            }
+                        } else {
+                            details = await tmdb.getTmdbMovieDetails(apiKey, id, type);
+                        }
+
                         if (details) {
                             ProfileBuilder.processItem(details, weight * mirrorFactor, profileIncrements);
-                            processedStremioIds.push(id.toString());
+                            processedStremioIds.push(item.id.toString());
+                            existingStremioIds.add(item.id.toString());
                         }
                     } catch (e) {
                         console.error(`[ProfileBuilder] Stremio sync error for item ${id}:`, e.message);

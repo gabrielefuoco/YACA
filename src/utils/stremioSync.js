@@ -66,12 +66,14 @@ async function syncAllStremioData(userId, authKey, profileId = 'global') {
         if (profileId === 'global') {
             await pushToTrakt(userId, stremioData);
         }
-
         // 5. Update lastSync timestamp
         await updateSyncTimestamp(userId, profileId);
 
+        const updatedUser = await User.findOne({ userId });
+        const updatedProfile = await TasteProfile.findOne({ owner: userId, context: profileId });
+
         console.log(`[StremioSync] Sync completed successfully for user ${userId} (${profileId})`);
-        return { success: true };
+        return { success: true, user: updatedUser, profile: updatedProfile };
     } catch (error) {
         console.error(`[StremioSync] Error syncing data for user ${userId}:`, error.message);
         return { success: false, error: error.message };

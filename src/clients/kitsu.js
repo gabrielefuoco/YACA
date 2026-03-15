@@ -194,9 +194,42 @@ async function getKitsuIdFromTmdbId(tmdbId, type = 'series') {
     return null;
 }
 
+/**
+ * Risolve un ID TMDB partendo da un ID Kitsu usando l'endpoint mappings.
+ */
+async function getTmdbIdFromKitsuId(kitsuId) {
+    const cacheKey = `kitsu_mapping:${kitsuId}`;
+    const { value: cached, status: cacheStatus } = await kitsuMappingCache.getWithStatus(cacheKey);
+    if (cacheStatus !== 'miss') return cached;
+
+    try {
+        // Fetch mappings specific to this anime
+        const res = await kitsuClient.get(`/anime/${kitsuId}/mappings`);
+        const mappings = res.data?.data || [];
+
+        // Search for themoviedb mappings
+        const tmdbMapping = mappings.find(m => 
+            m.attributes?.externalSite === 'themoviedb/tv' || 
+            m.attributes?.externalSite === 'themoviedb/movie'
+        );
+
+        if (tmdbMapping) {
+            const tmdbId = tmdbMapping.attributes.externalId;
+            const type = tmdbMapping.attributes.externalSite.includes('tv') ? 'tv' : 'movie';
+            const result = { tmdbId, type };
+            await kitsuMappingCache.set(cacheKey, result);
+            return result;
+        }
+    } catch (e) {
+        console.error(`Errore mapping TMDB per Kitsu ${kitsuId}:`, e.message);
+    }
+    return null;
+}
+
 module.exports = {
     fetchKitsuCatalog,
     getKitsuMetaDetails,
     getKitsuIdFromTmdbId,
+    getTmdbIdFromKitsuId,
     fetchKitsuEpisodes
 };

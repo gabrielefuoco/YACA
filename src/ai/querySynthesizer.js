@@ -159,46 +159,61 @@ function parseQuerySynthesizerResponse(content) {
 
 /**
  * Builds a natural language DNA description from profile data for Mistral.
- * @param {Object} profile TasteProfile document
+ * Incorporates both inferred scores and manual/suggested DNA filters.
+ * 
+ * @param {Object} profile TasteProfile document (scores)
+ * @param {Object} user User document (contains manualDNA)
+ * @param {string} context Profile ID
  * @param {number} topN Number of top items to include
  * @returns {string} DNA description string
  */
-function buildDnaDescription(profile, topN = 5) {
-    if (!profile) return '';
-
+function buildDnaDescription(profile, user, context, topN = 5) {
     const parts = [];
+    const { getProfileDnaFilters } = require('../utils/helpers');
 
-    // Top genres
-    if (profile.genreScores && profile.genreScores.size > 0) {
-        const topGenres = [...profile.genreScores.entries()]
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, topN);
-        if (topGenres.length > 0) {
-            // Reverse-map genre IDs to names + profile idNames
-            const idToName = {};
-            for (const [name, id] of Object.entries(GENRE_NAME_TO_ID)) {
-                idToName[String(id)] = name;
+    // 1. Collect Manual DNA (Highest Priority)
+    const dnaFilters = getProfileDnaFilters(user, context);
+    const manualGenres = dnaFilters.filter(f => f.type === 'genre').map(f => f.name || `Genre ${f.id}`);
+    const manualKeywords = dnaFilters.filter(f => f.type === 'keyword').map(f => f.name || `Keyword ${f.id}`);
+
+    if (manualGenres.length > 0) parts.push(`User Manual Genres: ${manualGenres.join(', ')}`);
+    if (manualKeywords.length > 0) parts.push(`User Manual Keywords: ${manualKeywords.join(', ')}`);
+
+    // 2. Collect Inferred DNA (Scores)
+    if (profile) {
+        // Top genres from scores
+        if (profile.genreScores && profile.genreScores.size > 0) {
+            const topGenres = [...profile.genreScores.entries()]
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, topN);
+            
+            if (topGenres.length > 0) {
+                const idToName = {};
+                for (const [name, id] of Object.entries(GENRE_NAME_TO_ID)) {
+                    idToName[String(id)] = name;
+                }
+                const genreNames = topGenres.map(([id, score]) => {
+                    let name = profile.idNames ? profile.idNames.get(String(id)) : null;
+                    if (!name) name = idToName[String(id)] || `Genre ${id}`;
+                    return `${name}`;
+                });
+                parts.push(`Inferred Preferred Genres: ${genreNames.join(', ')}`);
             }
-            const genreNames = topGenres.map(([id, score]) => {
-                let name = profile.idNames ? profile.idNames.get(String(id)) : null;
-                if (!name) name = idToName[String(id)] || `Genre ${id}`;
-                return `${name} (${score.toFixed(1)})`;
-            });
-            parts.push(`Top Genres: ${genreNames.join(', ')}`);
         }
-    }
 
-    // Top keywords
-    if (profile.keywordScores && profile.keywordScores.size > 0) {
-        const topKeywords = [...profile.keywordScores.entries()]
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, topN);
-        if (topKeywords.length > 0) {
-            const kwNames = topKeywords.map(([id, score]) => {
-                const name = profile.idNames ? profile.idNames.get(String(id)) : `Keyword ${id}`;
-                return `${name} (${score.toFixed(1)})`;
-            });
-            parts.push(`Top Keywords: ${kwNames.join(', ')}`);
+        // Top keywords from scores
+        if (profile.keywordScores && profile.keywordScores.size > 0) {
+            const topKeywords = [...profile.keywordScores.entries()]
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, topN);
+            
+            if (topKeywords.length > 0) {
+                const kwNames = topKeywords.map(([id, score]) => {
+                    const name = profile.idNames ? profile.idNames.get(String(id)) : `Keyword ${id}`;
+                    return `${name}`;
+                });
+                parts.push(`Inferred Preferred Keywords: ${kwNames.join(', ')}`);
+            }
         }
     }
 
@@ -210,13 +225,15 @@ function buildDnaDescription(profile, topN = 5) {
  * @param {Object} profile TasteProfile document (active profile only)
  * @param {string} mistralKey Mistral API key
  * @param {'trueBlend'|'hiddenGems'} mode Which prompt template to use
- * @param {boolean} [isBackgroundRefresh=false] True when revalidating a stale cache entry to avoid recursive refresh loops
+ * @param {Object} user User document for manualDNA context
+ * @param {string} context profileId
+ * @param {boolean} [isBackgroundRefresh=false] True when revalidating a stale cache entry
  * @returns {Array} Array of discovery query objects [{genre_ids, keyword, vibe}]
  */
-async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend', isBackgroundRefresh = false) {
-    if (!mistralKey || !profile) return [];
+async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend', user = null, context = 'global', isBackgroundRefresh = false) {
+    if (!mistralKey || (!profile && !user)) return [];
 
-    const dnaDescription = buildDnaDescription(profile);
+    const dnaDescription = buildDnaDescription(profile, user, context);
     if (!dnaDescription) return [];
 
     const systemPrompt = mode === 'hiddenGems' ? HIDDEN_GEMS_SYSTEM_PROMPT : TRUE_BLEND_SYSTEM_PROMPT;
@@ -228,7 +245,7 @@ async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend',
         if (rawCached && cacheStatus !== 'miss') {
             if (cacheStatus === 'stale' && !isBackgroundRefresh) {
                 // Background refresh
-                generateDiscoveryQueries(profile, mistralKey, mode, true).catch(() => { });
+                generateDiscoveryQueries(profile, mistralKey, mode, user, context, true).catch(() => { });
             }
 
             const cached = rawCached.queries || rawCached;

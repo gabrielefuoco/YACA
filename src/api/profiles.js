@@ -18,7 +18,10 @@ router.get('/:id/analytics', async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'userId query parameter is required' });
 
     try {
-        const profile = await TasteProfile.findOne({ owner: userId, context: profileId });
+        const [profile, user] = await Promise.all([
+            TasteProfile.findOne({ owner: userId, context: profileId }),
+            User.findOne({ userId })
+        ]);
         
         const genreScores = profile?.genreScores ? Object.fromEntries(profile.genreScores) : {};
         const keywordScores = profile?.keywordScores ? Object.fromEntries(profile.keywordScores) : {};
@@ -31,8 +34,8 @@ router.get('/:id/analytics', async (req, res) => {
             yaca_hidden_gems_series: 'hiddenGems',
         };
 
-        if (profile) {
-            const dnaDescription = buildDnaDescription(profile);
+        if (profile || user) {
+            const dnaDescription = buildDnaDescription(profile, user, profileId);
             if (dnaDescription) {
                 const modes = new Set(Object.values(CATALOG_MODES).filter(Boolean));
                 const modeResults = {};
