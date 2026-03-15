@@ -30,6 +30,25 @@ router.get('/:id/analytics', async (req, res) => {
         const genreScores = profile?.genreScores ? Object.fromEntries(profile.genreScores) : {};
         const keywordScores = profile?.keywordScores ? Object.fromEntries(profile.keywordScores) : {};
         const aiLogs = {};
+        const profileSettings = (addonConfig?.profiles || []).find((p) => p.id === profileId)?.settings || {};
+        const combinedDna = [
+            ...(Array.isArray(profileSettings.manualDNA) ? profileSettings.manualDNA : []),
+            ...(Array.isArray(profileSettings.suggestedDNA) ? profileSettings.suggestedDNA : [])
+        ];
+        const genreIds = combinedDna
+            .filter((item) => item?.type === 'genre' && item?.id !== undefined && item?.id !== null)
+            .map((item) => String(item.id));
+        const keywordIds = combinedDna
+            .filter((item) => item?.type === 'keyword' && item?.id !== undefined && item?.id !== null)
+            .map((item) => String(item.id));
+        const countryIds = combinedDna
+            .filter((item) => item?.type === 'country' && item?.id !== undefined && item?.id !== null)
+            .map((item) => String(item.id));
+        const baseDnaParams = {};
+
+        if (genreIds.length > 0) baseDnaParams.with_genres = genreIds.join('|');
+        if (keywordIds.length > 0) baseDnaParams.with_keywords = keywordIds.join('|');
+        if (countryIds.length > 0) baseDnaParams.with_origin_country = countryIds.join('|');
 
         const CATALOG_MODES = {
             yaca_true_blend_movies: 'trueBlend',
@@ -71,7 +90,7 @@ router.get('/:id/analytics', async (req, res) => {
             }
         }
 
-        return res.json({ genreScores, keywordScores, aiLogs });
+        return res.json({ genreScores, keywordScores, aiLogs, baseDnaParams });
     } catch (err) {
         console.error(`[Analytics] Error fetching profile analytics for ${profileId}:`, err.message);
         return res.status(500).json({ error: 'Internal server error' });

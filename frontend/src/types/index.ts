@@ -117,4 +117,5 @@ export interface AnalyticsData {
   genreScores: Record<string, number>;
   keywordScores: Record<string, number>;
   aiLogs: Record<string, unknown[]>;
+  baseDnaParams?: Record<string, string>;
 }

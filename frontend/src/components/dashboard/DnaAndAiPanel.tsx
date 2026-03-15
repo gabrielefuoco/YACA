@@ -6,14 +6,14 @@ import { api } from '@/lib/api';
 import { X, BrainCircuit, Terminal } from 'lucide-react';
 
 const HERO_CATALOGS = [
-  { id: 'yaca_true_blend_movies', label: 'True Blend (Film)', emoji: '🎯' },
-  { id: 'yaca_true_blend_series', label: 'True Blend (Serie)', emoji: '🎯' },
-  { id: 'yaca_seed_network_movies', label: 'Seed Network (Film)', emoji: '🕸️' },
-  { id: 'yaca_seed_network_series', label: 'Seed Network (Serie)', emoji: '🕸️' },
-  { id: 'yaca_hidden_gems_movies', label: 'Hidden Gems (Film)', emoji: '💎' },
-  { id: 'yaca_hidden_gems_series', label: 'Hidden Gems (Serie)', emoji: '💎' },
-  { id: 'yaca_trakt_filtered_movies', label: 'Trakt Filtered (Film)', emoji: '🌐' },
-  { id: 'yaca_trakt_filtered_series', label: 'Trakt Filtered (Serie)', emoji: '🌐' },
+  { id: 'yaca_true_blend_movies', label: 'True Blend (Film)', emoji: '🎯', type: 'ai', desc: 'Pipeline Ibrida: Ricerca semantica (Mistral) + Two-Tier Scoring algoritmico.' },
+  { id: 'yaca_true_blend_series', label: 'True Blend (Serie)', emoji: '🎯', type: 'ai', desc: 'Pipeline Ibrida: Ricerca semantica (Mistral) + Two-Tier Scoring algoritmico.' },
+  { id: 'yaca_seed_network_movies', label: 'Seed Network (Film)', emoji: '🕸️', type: 'algo', desc: 'Espande la rete dei titoli che hai già amato (Stacking e Calcoli Matematici).' },
+  { id: 'yaca_seed_network_series', label: 'Seed Network (Serie)', emoji: '🕸️', type: 'algo', desc: 'Espande la rete dei titoli che hai già amato (Stacking e Calcoli Matematici).' },
+  { id: 'yaca_hidden_gems_movies', label: 'Hidden Gems (Film)', emoji: '💎', type: 'ai', desc: 'Pipeline Ibrida: Ricerca semantica (Mistral) + Quality Cage algoritmica.' },
+  { id: 'yaca_hidden_gems_series', label: 'Hidden Gems (Serie)', emoji: '💎', type: 'ai', desc: 'Pipeline Ibrida: Ricerca semantica (Mistral) + Quality Cage algoritmica.' },
+  { id: 'yaca_trakt_filtered_movies', label: 'Trakt Filtered (Film)', emoji: '🌐', type: 'algo', desc: 'Suggerimenti della community filtrati e ri-ordinati col tuo DNA.' },
+  { id: 'yaca_trakt_filtered_series', label: 'Trakt Filtered (Serie)', emoji: '🌐', type: 'algo', desc: 'Suggerimenti della community filtrati e ri-ordinati col tuo DNA.' },
 ];
 
 interface DnaAndAiPanelProps {
@@ -269,24 +269,71 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
             return (
               <div
                 key={catalog.id}
-                className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 overflow-hidden"
+                className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 overflow-hidden flex flex-col"
               >
-                <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700/40 bg-slate-50 dark:bg-slate-800/60 flex items-center gap-2">
-                  <span className="text-lg">{catalog.emoji}</span>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{catalog.label}</span>
-                </div>
-                <div className="p-3">
-                  <div className="rounded-lg bg-slate-900 dark:bg-black p-4 min-h-[120px] max-h-[300px] overflow-auto">
-                    {analyticsLoading ? (
-                      <p className="text-green-400 text-xs font-mono animate-pulse">Caricamento log AI in corso...</p>
-                    ) : aiLog && Array.isArray(aiLog) && aiLog.length > 0 ? (
-                      <pre className="text-green-400 text-xs font-mono whitespace-pre-wrap break-words">
-                        {JSON.stringify(aiLog, null, 2)}
-                      </pre>
-                    ) : (
-                      <p className="text-slate-500 text-xs font-mono">Nessun log AI disponibile per questo catalogo.</p>
-                    )}
+                <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700/40 bg-slate-50 dark:bg-slate-800/60">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{catalog.emoji}</span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{catalog.label}</span>
                   </div>
+                  <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                    {catalog.desc}
+                  </p>
+                </div>
+                <div className="p-3 flex-grow">
+                  {catalog.type === 'ai' ? (
+                    <>
+                      {/* Visualizzazione IBRIDA per Cataloghi AI */}
+                      <div className="flex flex-col h-full gap-2">
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
+                          <span className="bg-primary/20 text-primary px-2 py-0.5 rounded">Fase 1: AI Prompting</span>
+                          <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                          <span className="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded">Fase 2: Scoring Matematico</span>
+                        </div>
+                        <div className="rounded-lg bg-slate-900 dark:bg-black p-4 flex-grow overflow-auto border border-slate-700/50 shadow-inner">
+                          <p className="text-[9px] text-slate-400 font-bold mb-2 uppercase tracking-wider">
+                            Log Query Synthesizer (Mistral):
+                          </p>
+                          {analyticsLoading ? (
+                            <p className="text-green-400 text-xs font-mono animate-pulse">Caricamento log AI in corso...</p>
+                          ) : aiLog && Array.isArray(aiLog) && aiLog.length > 0 ? (
+                            <pre className="text-green-400 text-xs font-mono whitespace-pre-wrap break-words">
+                              {JSON.stringify(aiLog, null, 2)}
+                            </pre>
+                          ) : (
+                            <p className="text-slate-500 text-xs font-mono">Nessun log AI disponibile per questo catalogo.</p>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Visualizzazione per Cataloghi Algoritmici */}
+                      <div className="rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-4 min-h-[140px] flex flex-col items-center justify-center text-center h-full">
+                        <span className="material-symbols-outlined text-3xl text-slate-400 mb-2 opacity-60">
+                          {catalog.id.includes('seed_network') ? 'hub' : 'forum'}
+                        </span>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider mb-1">
+                          Analisi Motore Algoritmico
+                        </p>
+                        <p className="text-[10px] text-slate-500 max-w-[90%] leading-relaxed mb-4">
+                          Calcolo affinità puro (no LLM text query). Il tuo DNA viene forzato e iniettato direttamente nel calcolo matematico usando questi parametri TMDB:
+                        </p>
+
+                        {/* Box Code per i filtri TMDB crudi dal backend */}
+                        <div className="w-full bg-slate-900 dark:bg-black rounded-md p-3 text-left overflow-auto border border-slate-700/50 shadow-inner">
+                          <p className="text-[9px] text-slate-400 font-bold mb-1 uppercase tracking-wider">Payload Iniettato:</p>
+                          {analytics?.baseDnaParams && Object.keys(analytics.baseDnaParams).length > 0 ? (
+                            <pre className="text-[10px] text-blue-400 font-mono whitespace-pre-wrap break-all">
+                              {JSON.stringify(analytics.baseDnaParams, null, 2)}
+                            </pre>
+                          ) : (
+                            <p className="text-[10px] text-slate-500 italic font-mono">Nessun filtro DNA attualmente attivo sul profilo.</p>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             );

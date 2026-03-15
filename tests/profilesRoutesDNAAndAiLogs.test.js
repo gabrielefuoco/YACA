@@ -186,4 +186,112 @@ describe('profiles API route fixes (DNA refresh + AI logs)', () => {
             })
         }));
     });
+
+    it('returns baseDnaParams with OR joined ids from manual and suggested DNA', async () => {
+        jest.doMock('../src/utils/stremioSync', () => ({
+            syncAllStremioData: jest.fn()
+        }));
+        jest.doMock('../src/cache/cacheInstances', () => ({
+            aiDiscoveryCache: { get: jest.fn() }
+        }));
+        jest.doMock('../src/ai/querySynthesizer', () => ({
+            buildDnaDescription: jest.fn().mockReturnValue(null),
+            generateDiscoveryQueries: jest.fn()
+        }));
+        jest.doMock('../src/db/models/UserAccount', () => ({
+            findOne: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue({
+                    userId: 'u1',
+                    addonUuid: 'uuid-1',
+                    apiKeys: {}
+                })
+            })
+        }));
+        jest.doMock('../src/db/models/AddonConfig', () => ({
+            findOne: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue({
+                    uuid: 'uuid-1',
+                    profiles: [{
+                        id: 'anime',
+                        settings: {
+                            manualDNA: [
+                                { type: 'genre', id: '28', name: 'Action' },
+                                { type: 'country', id: 'US', name: 'United States' }
+                            ],
+                            suggestedDNA: [
+                                { type: 'genre', id: '878', name: 'Sci-Fi' },
+                                { type: 'keyword', id: '1234', name: 'Cyberpunk' }
+                            ]
+                        }
+                    }]
+                })
+            }),
+            updateOne: jest.fn()
+        }));
+        jest.doMock('../src/models/TasteProfile', () => ({
+            findOne: jest.fn().mockResolvedValue(null),
+            updateOne: jest.fn()
+        }));
+
+        const router = require('../src/api/profiles');
+        const analyticsHandler = findRouteHandler(router, 'get', '/:id/analytics');
+        const req = { params: { id: 'anime' }, query: { userId: 'u1' } };
+        const res = createMockRes();
+
+        await analyticsHandler(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            baseDnaParams: {
+                with_genres: '28|878',
+                with_keywords: '1234',
+                with_origin_country: 'US'
+            }
+        }));
+    });
+
+    it('returns empty baseDnaParams when DNA is missing', async () => {
+        jest.doMock('../src/utils/stremioSync', () => ({
+            syncAllStremioData: jest.fn()
+        }));
+        jest.doMock('../src/cache/cacheInstances', () => ({
+            aiDiscoveryCache: { get: jest.fn() }
+        }));
+        jest.doMock('../src/ai/querySynthesizer', () => ({
+            buildDnaDescription: jest.fn().mockReturnValue(null),
+            generateDiscoveryQueries: jest.fn()
+        }));
+        jest.doMock('../src/db/models/UserAccount', () => ({
+            findOne: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue({
+                    userId: 'u1',
+                    addonUuid: 'uuid-1',
+                    apiKeys: {}
+                })
+            })
+        }));
+        jest.doMock('../src/db/models/AddonConfig', () => ({
+            findOne: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue({
+                    uuid: 'uuid-1',
+                    profiles: [{ id: 'anime', settings: {} }]
+                })
+            }),
+            updateOne: jest.fn()
+        }));
+        jest.doMock('../src/models/TasteProfile', () => ({
+            findOne: jest.fn().mockResolvedValue(null),
+            updateOne: jest.fn()
+        }));
+
+        const router = require('../src/api/profiles');
+        const analyticsHandler = findRouteHandler(router, 'get', '/:id/analytics');
+        const req = { params: { id: 'anime' }, query: { userId: 'u1' } };
+        const res = createMockRes();
+
+        await analyticsHandler(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            baseDnaParams: {}
+        }));
+    });
 });
