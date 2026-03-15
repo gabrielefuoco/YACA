@@ -5,7 +5,7 @@ const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
 const { syncAllStremioData } = require('../utils/stremioSync');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
-const { buildDnaDescription } = require('../ai/querySynthesizer');
+const { buildDnaDescription, generateDiscoveryQueries } = require('../ai/querySynthesizer');
 
 /**
  * GET /api/profiles/:id/analytics
@@ -43,12 +43,22 @@ router.get('/:id/analytics', async (req, res) => {
             if (dnaDescription) {
                 const modes = new Set(Object.values(CATALOG_MODES).filter(Boolean));
                 const modeResults = {};
+                const mistralKey = account?.apiKeys?.mistral;
 
                 for (const mode of modes) {
                     const cacheKey = `qs_${mode}_${dnaDescription}`.toLowerCase().trim();
                     try {
                         const cached = await aiDiscoveryCache.get(cacheKey);
-                        if (cached) modeResults[mode] = cached.queries || cached;
+                        if (cached) {
+                            modeResults[mode] = cached.queries || cached;
+                            continue;
+                        }
+                        if (mistralKey) {
+                            const generated = await generateDiscoveryQueries(profile, mistralKey, mode, addonConfig, profileId);
+                            if (Array.isArray(generated) && generated.length > 0) {
+                                modeResults[mode] = generated;
+                            }
+                        }
                     } catch {}
                 }
 
@@ -75,9 +85,21 @@ router.get('/:id/sync-status', async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {
+        const account = await UserAccount.findOne({ userId }).lean();
+        const addonConfig = account?.addonUuid
+            ? await AddonConfig.findOne({ uuid: account.addonUuid }).lean()
+            : null;
+        const profileSettings = (addonConfig?.profiles || []).find((p) => p.id === profileId)?.settings || {};
         const profile = await TasteProfile.findOne({ owner: userId, context: profileId });
         if (!profile) {
-            return res.json({ isSyncing: false, total: 0, current: 0, onboardingCompleted: false });
+            return res.json({
+                isSyncing: false,
+                total: 0,
+                current: 0,
+                onboardingCompleted: false,
+                manualDNA: profileSettings.manualDNA || [],
+                suggestedDNA: profileSettings.suggestedDNA || []
+            });
         }
 
         res.json({
@@ -85,7 +107,9 @@ router.get('/:id/sync-status', async (req, res) => {
             total: profile.syncStatus?.total || 0,
             current: profile.syncStatus?.current || 0,
             lastSync: profile.syncStatus?.lastSync,
-            onboardingCompleted: profile.onboardingCompleted || false
+            onboardingCompleted: profile.onboardingCompleted || false,
+            manualDNA: profileSettings.manualDNA || [],
+            suggestedDNA: profileSettings.suggestedDNA || []
         });
     } catch (err) {
         console.error(`[ProfileAPI] Error fetching sync status:`, err.message);
@@ -160,6 +184,18 @@ router.post('/:id/sync/refresh', async (req, res) => {
     try {
         const account = await UserAccount.findOne({ userId }).lean();
         if (!account || !account.apiKeys?.stremio) return res.status(400).json({ error: 'Stremio API Key missing' });
+
+        await TasteProfile.updateOne(
+            { owner: userId, context: profileId },
+            {
+                $set: {
+                    'syncStatus.isSyncing': true,
+                    'syncStatus.total': 1,
+                    'syncStatus.current': 0
+                }
+            },
+            { upsert: true }
+        );
 
         syncAllStremioData(userId, account.apiKeys.stremio, profileId)
             .catch(err => console.error(`[BackgroundSync] Failure for ${userId} (Profile: ${profileId}):`, err));

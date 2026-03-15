@@ -27,6 +27,13 @@ interface SyncStatus {
   current: number;
   onboardingCompleted: boolean;
   lastSync?: string;
+  manualDNA?: DNAItem[];
+  suggestedDNA?: DNAItem[];
+}
+
+function dnaArraysEqual(a: DNAItem[] = [], b: DNAItem[] = []) {
+  if (a.length !== b.length) return false;
+  return a.every((item, idx) => item.type === b[idx]?.type && String(item.id) === String(b[idx]?.id) && item.name === b[idx]?.name);
 }
 
 export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) {
@@ -60,6 +67,23 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
       if (!userId) return;
       const status = await api.getSyncStatus(profile.id, userId);
       setSyncStatus(status);
+
+      if (status && (Array.isArray(status.manualDNA) || Array.isArray(status.suggestedDNA))) {
+        const nextManualDNA = Array.isArray(status.manualDNA) ? status.manualDNA : (profile.settings?.manualDNA ?? []);
+        const nextSuggestedDNA = Array.isArray(status.suggestedDNA) ? status.suggestedDNA : (profile.settings?.suggestedDNA ?? []);
+        const currentManualDNA = profile.settings?.manualDNA ?? [];
+        const currentSuggestedDNA = profile.settings?.suggestedDNA ?? [];
+
+        if (!dnaArraysEqual(nextManualDNA, currentManualDNA) || !dnaArraysEqual(nextSuggestedDNA, currentSuggestedDNA)) {
+          onUpdateProfile(profile.id, {
+            settings: {
+              ...(profile.settings ?? {}),
+              manualDNA: nextManualDNA,
+              suggestedDNA: nextSuggestedDNA,
+            },
+          });
+        }
+      }
       
       // Auto-show modal if syncing or if onboarding is pending with suggestions
       if (status.isSyncing) {
@@ -68,7 +92,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
     } catch (e) {
       console.error('Failed to fetch sync status', e);
     }
-  }, [profile.id]);
+  }, [onUpdateProfile, profile.id, profile.settings]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -84,6 +108,12 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
     return () => clearInterval(interval);
   }, [syncStatus?.isSyncing, fetchSyncStatus]);
 
+  useEffect(() => {
+    if (syncStatus && !syncStatus.isSyncing) {
+      fetchAnalytics();
+    }
+  }, [fetchAnalytics, syncStatus, syncStatus?.isSyncing]);
+
   const handleRefresh = async () => {
     const userId = localStorage.getItem('yaca_user_id');
     if (!userId) return;
@@ -97,9 +127,24 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
     if (!userId) return;
     const res = await api.confirmDNA(profile.id, userId);
     if (res.success) {
+      const currentManualDNA = profile.settings?.manualDNA ?? [];
+      const mergedManualDNA = [...currentManualDNA];
+      const seen = new Set(currentManualDNA.map((item) => `${item.type}:${item.id}`));
+      for (const item of suggestedDNA) {
+        const key = `${item.type}:${item.id}`;
+        if (seen.has(key)) continue;
+        mergedManualDNA.push(item);
+        seen.add(key);
+      }
+      onUpdateProfile(profile.id, {
+        settings: {
+          ...(profile.settings ?? {}),
+          manualDNA: mergedManualDNA,
+          suggestedDNA: [],
+        },
+      });
       await fetchSyncStatus();
       setShowProgressModal(false);
-      // Trigger a parent update if needed, or just let local syncStatus handle it
     }
   };
 
