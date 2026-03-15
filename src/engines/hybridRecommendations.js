@@ -42,8 +42,13 @@ async function fetchProfileContext(userId, context) {
         context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
     ]);
 
-    // Return addonConfig as 'user' — consumers use it for .profiles and .settings
-    return { profile, user: addonConfig, globalProfile };
+    // Merge public profile config (AddonConfig) with private API keys (UserAccount)
+    // so downstream engines can read both user.profiles and user.apiKeys.
+    const user = addonConfig
+        ? { ...addonConfig, apiKeys: account?.apiKeys || {} }
+        : (account?.apiKeys ? { profiles: [], apiKeys: account.apiKeys } : null);
+
+    return { profile, user, globalProfile };
 }
 
 /**

@@ -58,11 +58,13 @@ const UserAccount = require('../src/db/models/UserAccount');
 const AddonConfig = require('../src/db/models/AddonConfig');
 const TmdbScoringData = require('../src/models/TmdbScoringData');
 const tmdb = require('../src/clients/tmdb');
+const { generateDiscoveryQueries } = require('../src/ai/querySynthesizer');
 const {
     resolveAiQueryToTmdbParams,
     twoTierScore,
     saveScoringData,
-    buildHiddenGemsCatalog
+    buildHiddenGemsCatalog,
+    buildTopGenresMixCatalog
 } = require('../src/engines/hybridRecommendations');
 
 describe('hybridRecommendations review fixes', () => {
@@ -95,6 +97,41 @@ describe('hybridRecommendations review fixes', () => {
 
         const firstCallParams = tmdbGet.mock.calls[0][1].params;
         expect(firstCallParams.sort_by).toBe('vote_average.desc');
+    });
+
+    it('uses mistral key from UserAccount even when AddonConfig has no apiKeys', async () => {
+        generateDiscoveryQueries.mockResolvedValueOnce([]);
+        TasteProfile.findOne
+            .mockResolvedValueOnce({
+                owner: 'u1',
+                context: 'ctx',
+                genreScores: new Map([['18', 10]]),
+                keywordScores: new Map()
+            })
+            .mockResolvedValueOnce(null);
+        UserAccount.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue({
+            userId: 'u1',
+            apiKeys: { mistral: 'm-key' },
+            addonUuid: 'uuid-1'
+        }) });
+        AddonConfig.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue({
+            uuid: 'uuid-1',
+            profiles: [{ id: 'ctx', settings: {} }]
+        }) });
+        tmdbGet.mockResolvedValue({ data: { results: [] } });
+
+        await buildTopGenresMixCatalog('u1', 'ctx', 'tmdb-key', 'movie');
+
+        expect(generateDiscoveryQueries).toHaveBeenCalledWith(
+            expect.any(Object),
+            'm-key',
+            'trueBlend',
+            expect.objectContaining({
+                profiles: expect.any(Array),
+                apiKeys: { mistral: 'm-key' }
+            }),
+            'ctx'
+        );
     });
 
     it('resolveAiQueryToTmdbParams preserves AND separator when resolving keywords', async () => {
