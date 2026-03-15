@@ -198,7 +198,7 @@ export default function Home() {
     }
   }, [profiles, setActiveProfileId]);
 
-  // Auto-save profiles when they change (debounced)
+  // 1. Instant DB Sync (500ms debounce)
   useEffect(() => {
     if (isInitializing || !configDecoded || !userId) return;
     
@@ -218,12 +218,54 @@ export default function Home() {
       }).then(data => {
         if (data.configVersion) setConfigVersion(String(data.configVersion));
       }).catch(err => {
-        console.warn('Auto-save failed:', err);
+        console.warn('DB Auto-save failed:', err);
       });
-    }, 2000);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [profiles, activeProfileId, userId, isInitializing, configDecoded, stremioAuth, traktToken, traktRefreshToken]);
+
+  // 2. Delayed Stremio Addon Update (20s base + 1s increment per change)
+  const addonUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const addonUpdateDelayRef = useRef<number>(20000); // 20s base
+  const changeCountRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (isInitializing || !configDecoded || !userId || !stremioAuth?.authKey) return;
+
+    // Reset/Increment timer logic
+    if (addonUpdateTimerRef.current) {
+      clearTimeout(addonUpdateTimerRef.current);
+      changeCountRef.current += 1;
+      addonUpdateDelayRef.current += 1000; // +1s for each extra change
+    } else {
+      changeCountRef.current = 0;
+      addonUpdateDelayRef.current = 20000; // start at 20s
+    }
+
+    addonUpdateTimerRef.current = setTimeout(() => {
+      const manifestPath = configVersion
+        ? `/${userId}/${configVersion}/manifest.json`
+        : `/${userId}/manifest.json`;
+      const httpsManifestUrl = `https://${window.location.host}${manifestPath}`;
+      
+      api.stremioAddonUpdate(stremioAuth.authKey, httpsManifestUrl)
+        .then(() => {
+          addonUpdateTimerRef.current = null;
+          changeCountRef.current = 0;
+          addonUpdateDelayRef.current = 20000;
+        })
+        .catch(err => {
+          console.warn('Stremio addon update failed:', err);
+          addonUpdateTimerRef.current = null; // allow retry on next change
+        });
+    }, addonUpdateDelayRef.current);
+
+    return () => {
+      // We don't clear the timeout on unmount here to allow the update to finish 
+      // even if the user navigates away, but we must clean up if the component is truly destroyed
+    };
+  }, [profiles, activeProfileId, userId, isInitializing, configDecoded, stremioAuth, configVersion]);
 
   // Auto-configure when stremio is logged in but no config/userId is stored yet
   useEffect(() => {
