@@ -30,7 +30,8 @@ class ProfileBuilder {
         try {
             const account = await UserAccount.findOne({ userId: owner }).lean();
             return account?.addonUuid || null;
-        } catch (_e) {
+        } catch (err) {
+            console.warn('[ProfileBuilder] Failed to resolve addonUuid:', err.message);
             return null;
         }
     }
@@ -48,8 +49,8 @@ class ProfileBuilder {
                 { uuid },
                 { $set: statusUpdate }
             );
-        } catch (_e) {
-            // Non-blocking: AddonConfig may not exist yet for legacy users
+        } catch (err) {
+            console.warn('[ProfileBuilder] Failed to update sync status:', err.message);
         }
     }
 
