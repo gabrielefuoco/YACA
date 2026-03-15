@@ -143,3 +143,6 @@ dist
 # Windows
 Thumbs.db
 node_modules/
+
+# Antigravity Agent
+.agent/
