@@ -1,6 +1,9 @@
 const User = require('../models/User');
-const { fetchTraktCatalog } = require('../clients/trakt'); // We'll need to extend trakt client for POST
+const { fetchTraktCatalog } = require('../clients/trakt');
 const { stremioClient, stremioLikesClient } = require('../clients/stremio');
+const { executeUniversalPipeline } = require('../handlers/catalogHandler');
+const { createTmdbClient } = require('../clients/tmdb');
+const { getPresets } = require('../data/presets');
 
 const LIKES_ADDON_URL = 'https://likes.stremio.com/addons/liked/movies-shows';
 const LOVED_ADDON_URL = 'https://likes.stremio.com/addons/loved/movies-shows';
@@ -45,8 +48,17 @@ async function syncAllStremioData(userId, authKey, profileId = 'global') {
             // Se è un profilo specifico, sincronizziamo i suoi cataloghi
             const profile = user.profiles.find(p => p.id === profileId);
             if (profile) {
-                const catalogItems = await syncCatalogData(profile.catalogs);
-                await ProfileBuilder.syncStremioData(userId, catalogItems, tmdbKey, profileId);
+                console.log(`[StremioSync] Resolving catalogs for profile ${profile.name || profileId}...`);
+                const catalogItems = await syncCatalogData(profile.catalogs, tmdbKey, profile.settings || {});
+                
+                // Wrap in expected structure for ProfileBuilder
+                const formattedData = {
+                    liked: catalogItems,
+                    loved: [],
+                    library: []
+                };
+                
+                await ProfileBuilder.syncStremioData(userId, formattedData, tmdbKey, profileId);
             }
         }
 
@@ -116,20 +128,53 @@ async function pushToTrakt(userId, data) {
     }
 }
 
-async function syncCatalogData(catalogs) {
-    if (!catalogs || !Array.isArray(catalogs)) return [];
+async function syncCatalogData(catalogs, tmdbApiKey, settings = {}) {
+    if (!catalogs || !Array.isArray(catalogs) || !tmdbApiKey) return [];
     
     // Questa funzione estrae gli ID dai cataloghi assegnati al profilo
-    // Per ora supportiamo Preset e Cataloghi Generici che hanno una lista di item pre-caricati
+    // Supporta Preset, Liste Utente (AI/MDBList) e cataloghi con item pre-caricati
+    const allPresets = getPresets();
+    const presetMap = new Map(allPresets.map(p => [p.id, p]));
+    const tmdbClient = createTmdbClient(tmdbApiKey);
+    
     let allItems = [];
     
     for (const cat of catalogs) {
-        if (cat.items && Array.isArray(cat.items)) {
-            // Se il catalogo ha già gli item (es. un preset caricato o una lista manuale)
+        // 1. Se il catalogo ha già gli item (raro per dynamic)
+        if (cat.items && Array.isArray(cat.items) && cat.items.length > 0) {
             allItems = [...allItems, ...cat.items];
-        } else if (cat.type === 'preset') {
-            // Se è un preset TMDB, potremmo doverlo risolvere (opzionale se già fatto in UI)
-            // Per ora assumiamo che gli item siano passati o che il profilo sia stato "seedato"
+            continue;
+        }
+
+        // 2. Risoluzione Dinamica (Preset o Liste)
+        try {
+            const baseId = (cat.id || '').startsWith('yaca_preset_') ? cat.id.replace('yaca_preset_', '') : (cat.id || '');
+            let catalogMeta = presetMap.get(baseId);
+            
+            if (!catalogMeta) {
+                 // Potrebbe essere una lista personalizzata a DB (AI Search o MDBList)
+                 const UserList = require('../models/UserList');
+                 catalogMeta = await UserList.findOne({ listId: cat.id }).lean();
+            }
+
+            if (catalogMeta) {
+                // Fetch limitato (prime 20 posizioni) per fare seeding del DNA veloce e rappresentativo
+                const results = await executeUniversalPipeline(
+                    catalogMeta, 
+                    tmdbClient, 
+                    tmdbApiKey, 
+                    catalogMeta.type || 'movie', 
+                    0, 
+                    settings, 
+                    { cacheTtlMs: 3600000 } 
+                );
+                
+                if (results && results.length > 0) {
+                    allItems = [...allItems, ...results];
+                }
+            }
+        } catch (err) {
+            console.warn(`[StremioSync] Failed to resolve catalog ${cat.id || 'unknown'}:`, err.message);
         }
     }
     
