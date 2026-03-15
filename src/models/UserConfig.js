@@ -256,11 +256,12 @@ const UserConfig = {
                 id: p.id || p._id?.toString()
             }));
 
-            // Internal join: fetch API keys from UserAccount (never exposed to Stremio HTTP responses)
+            // Internal join: fetch API keys and userId from UserAccount (never exposed to Stremio HTTP responses)
+            // AddonConfig is 100% anonymous — userId comes from UserAccount only.
             const account = await UserAccount.findOne({ addonUuid: handle }).lean().catch(() => null);
 
             return {
-                userId: addonConfig.userId,
+                userId: account?.userId || null,
                 addonUuid: addonConfig.uuid,
                 apiKeys: account?.apiKeys || {},
                 profiles: resolvedProfiles,

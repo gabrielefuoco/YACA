@@ -3,6 +3,7 @@ const tmdb = require('../clients/tmdb');
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const { BINGE_SESSION_GAP_MS, BINGE_MULTIPLIER } = require('../config');
 const AddonConfig = require('../db/models/AddonConfig');
+const UserAccount = require('../db/models/UserAccount');
 const GLOBAL_PROFILE_MIRROR_RATIO = 0.2;
 
 /**
@@ -18,6 +19,40 @@ function addWithDecay(current, increment) {
 }
 
 class ProfileBuilder {
+    /**
+     * Resolves the addon UUID for a given owner (userId).
+     * Used for unidirectional join: UserAccount.addonUuid → AddonConfig.uuid.
+     * AddonConfig does NOT contain userId (Security by Design: full anonymity).
+     * @param {String} owner - userId of the user
+     * @returns {Promise<String|null>} The addon UUID, or null if not found
+     */
+    static async _resolveAddonUuid(owner) {
+        try {
+            const account = await UserAccount.findOne({ userId: owner }).lean();
+            return account?.addonUuid || null;
+        } catch (_e) {
+            return null;
+        }
+    }
+
+    /**
+     * Updates syncStatus in AddonConfig using the anonymous UUID join.
+     * @param {String} owner - userId of the user
+     * @param {Object} statusUpdate - Fields to $set in syncStatus
+     */
+    static async _updateSyncStatus(owner, statusUpdate) {
+        try {
+            const uuid = await ProfileBuilder._resolveAddonUuid(owner);
+            if (!uuid) return; // AddonConfig may not exist yet for legacy users
+            await AddonConfig.updateOne(
+                { uuid },
+                { $set: statusUpdate }
+            );
+        } catch (_e) {
+            // Non-blocking: AddonConfig may not exist yet for legacy users
+        }
+    }
+
     /**
      * Elabora un singolo contenuto TMDB e accumula gli incrementi in un oggetto.
      * @param {Object} tmdbData I dati grezzi da TMDB
@@ -163,10 +198,12 @@ class ProfileBuilder {
         if (!owner || !traktHistory?.length) return null;
 
         // Update syncStatus: signal that sync is in progress (Phase 0.4)
-        AddonConfig.updateOne(
-            { userId: owner },
-            { $set: { 'syncStatus.isSyncing': true, 'syncStatus.total': traktHistory.length, 'syncStatus.current': 0 } }
-        ).catch(() => { /* AddonConfig may not exist yet for legacy users */ });
+        // Uses anonymous UUID join (no userId in AddonConfig)
+        ProfileBuilder._updateSyncStatus(owner, {
+            'syncStatus.isSyncing': true,
+            'syncStatus.total': traktHistory.length,
+            'syncStatus.current': 0
+        }).catch(() => { /* non-blocking */ });
 
         try {
             let profile = await TasteProfile.findOneAndUpdate(
@@ -264,19 +301,19 @@ class ProfileBuilder {
             }
 
             // Update syncStatus: signal that sync is complete (Phase 0.4)
-            AddonConfig.updateOne(
-                { userId: owner },
-                { $set: { 'syncStatus.isSyncing': false, 'syncStatus.lastSync': new Date() } }
-            ).catch(() => { /* non-blocking */ });
+            // Uses anonymous UUID join (no userId in AddonConfig)
+            ProfileBuilder._updateSyncStatus(owner, {
+                'syncStatus.isSyncing': false,
+                'syncStatus.lastSync': new Date()
+            }).catch(() => { /* non-blocking */ });
 
             return updatedProfile;
 
         } catch (e) {
-            // Update syncStatus on error too
-            AddonConfig.updateOne(
-                { userId: owner },
-                { $set: { 'syncStatus.isSyncing': false } }
-            ).catch(() => { /* non-blocking */ });
+            // Update syncStatus on error too (anonymous UUID join)
+            ProfileBuilder._updateSyncStatus(owner, {
+                'syncStatus.isSyncing': false
+            }).catch(() => { /* non-blocking */ });
             console.error(`[ProfileBuilder] Sync error for ${owner}:${context}:`, e.message);
             throw e;
         }

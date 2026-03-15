@@ -7,6 +7,7 @@ const { updateStremioAddonCollection } = require('../utils/stremioAddonSync');
 const User = require('../models/User');
 const UserConfig = require('../models/UserConfig');
 const AddonConfig = require('../db/models/AddonConfig');
+const UserAccount = require('../db/models/UserAccount');
 const { requireAuth } = require('../middleware/requireAuth');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler } = require('../handlers/metaHandler');
@@ -339,6 +340,7 @@ router.get(['/:userHandle/stream/:type/:id.json', '/:userHandle/:configVersion/s
 // Sync Status Polling endpoint (Phase 0.4: Dumb Frontend Pattern)
 // Frontend polls this every 3-5 seconds while syncStatus.isSyncing is true.
 // Requires JWT authentication to prevent unauthorized access to user sync data.
+// Uses unidirectional join: UserAccount.addonUuid → AddonConfig.uuid (no userId in AddonConfig).
 router.get('/sync-status/:userId', syncStatusLimiter, requireAuth, async (req, res) => {
     const { userId } = req.params;
     if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -347,7 +349,12 @@ router.get('/sync-status/:userId', syncStatusLimiter, requireAuth, async (req, r
         return res.status(403).json({ error: 'Unauthorized' });
     }
     try {
-        const config = await AddonConfig.findOne({ userId }).lean();
+        // Unidirectional join: find the user's addonUuid, then query AddonConfig by uuid
+        const account = await UserAccount.findOne({ userId }).lean();
+        if (!account?.addonUuid) {
+            return res.json({ isSyncing: false, total: 0, current: 0, lastSync: null });
+        }
+        const config = await AddonConfig.findOne({ uuid: account.addonUuid }).lean();
         if (!config) {
             return res.json({ isSyncing: false, total: 0, current: 0, lastSync: null });
         }

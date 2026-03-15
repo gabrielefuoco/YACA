@@ -32,11 +32,12 @@ describe('Phase 0.1: Two-Table Split Models', () => {
         expect(doc.addonUuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     });
 
-    it('AddonConfig model should have required fields', () => {
+    it('AddonConfig model should NOT have userId field (Critica 1: full anonymity)', () => {
         const AddonConfig = require('../src/db/models/AddonConfig');
         const schema = AddonConfig.schema;
         expect(schema.path('uuid')).toBeDefined();
-        expect(schema.path('userId')).toBeDefined();
+        // userId must NOT exist in AddonConfig — the relationship is unidirectional
+        expect(schema.path('userId')).toBeUndefined();
         expect(schema.path('profiles')).toBeDefined();
         expect(schema.path('config.activeProfileId')).toBeDefined();
         expect(schema.path('syncStatus.isSyncing')).toBeDefined();
@@ -45,12 +46,38 @@ describe('Phase 0.1: Two-Table Split Models', () => {
         expect(schema.path('syncStatus.lastSync')).toBeDefined();
     });
 
+    it('AddonConfig profiles should have typed catalogs and dna fields (Critica 2 & 3)', () => {
+        const AddonConfig = require('../src/db/models/AddonConfig');
+        const schema = AddonConfig.schema;
+        // Catalogs should be an array of strings, not Mixed
+        const profileSchema = schema.path('profiles').schema;
+        expect(profileSchema.path('id')).toBeDefined();
+        expect(profileSchema.path('name')).toBeDefined();
+        expect(profileSchema.path('catalogs')).toBeDefined();
+        // DNA fields should exist for inferred traits
+        expect(profileSchema.path('dna.genres')).toBeDefined();
+        expect(profileSchema.path('dna.keywords')).toBeDefined();
+        // Settings should have typed fields
+        expect(profileSchema.path('settings.language')).toBeDefined();
+        expect(profileSchema.path('settings.includeAdult')).toBeDefined();
+    });
+
     it('AddonConfig syncStatus defaults to not syncing', () => {
         const AddonConfig = require('../src/db/models/AddonConfig');
-        const doc = new AddonConfig({ uuid: 'test-uuid', userId: 'test-user' });
+        const doc = new AddonConfig({ uuid: 'test-uuid' });
         expect(doc.syncStatus.isSyncing).toBe(false);
         expect(doc.syncStatus.total).toBe(0);
         expect(doc.syncStatus.current).toBe(0);
+    });
+
+    it('legacy User.js should have deprecation comment', () => {
+        const fs = require('fs');
+        const path = require('path');
+        const content = fs.readFileSync(
+            path.join(__dirname, '../src/db/models/User.js'), 'utf-8'
+        );
+        expect(content).toContain('DEPRECATED');
+        expect(content).toContain('TO BE REMOVED AFTER MIGRATION');
     });
 });
 

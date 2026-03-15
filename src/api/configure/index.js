@@ -128,7 +128,7 @@ module.exports = async (req, res) => {
             try {
                 await AddonConfig.findOneAndUpdate(
                     { uuid: addonUuid },
-                    { $set: { ...configUpdate, userId } },
+                    { $set: configUpdate },
                     { upsert: true }
                 );
             } catch (err) {
