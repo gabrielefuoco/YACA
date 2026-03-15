@@ -160,11 +160,20 @@ async function meHandler(req, res) {
 
         // Rimosso il controllo sessione attiva (Stateless)
 
+        // Map profiles to ensure they each have a stable 'id' field (fallback to _id)
+        const resolvedProfiles = (user.profiles || []).map(p => {
+            const pObj = p.toObject?.() || p;
+            return {
+                ...pObj,
+                id: pObj.id || pObj._id?.toString()
+            };
+        });
+
         return res.json({
             authenticated: true,
             userId: user.userId,
             email: user.email,
-            profiles: user.profiles || [],
+            profiles: resolvedProfiles,
             activeProfileId: user.config?.activeProfileId || 'global',
             configVersion: user.config?.configVersion || null,
             traktConnected: Boolean(user.apiKeys?.trakt),
