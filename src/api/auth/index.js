@@ -161,8 +161,11 @@ async function meHandler(req, res) {
             configVersion: user.config?.configVersion || null,
             traktConnected: Boolean(user.apiKeys?.trakt),
             apiKeys: {
+                stremio: user.apiKeys?.stremio || null,
                 tmdb: user.apiKeys?.tmdb || null,
-                mistral: user.apiKeys?.mistral || null
+                mistral: user.apiKeys?.mistral || null,
+                trakt: user.apiKeys?.trakt || null,
+                mdblist: user.apiKeys?.mdblist || null
             }
         });
     } catch (err) {

@@ -68,7 +68,28 @@ const UserConfig = {
                         userData.profiles = userData.profiles.map((profile) => {
                             const existingProfile = existingProfiles.get(profile.id);
                             if (!existingProfile) return profile;
-                            return profile;
+
+                            // Robust Merge: Preserve existing values if not provided in the update
+                            const mergedSettings = { 
+                                ...(existingProfile.settings || {}), 
+                                ...(profile.settings || {}) 
+                            };
+                            
+                            // Specific preservation for DNA traits if settings were merged
+                            if (existingProfile.settings?.manualDNA?.length && !profile.settings?.manualDNA) {
+                                mergedSettings.manualDNA = existingProfile.settings.manualDNA;
+                            }
+                            if (existingProfile.settings?.suggestedDNA?.length && !profile.settings?.suggestedDNA) {
+                                mergedSettings.suggestedDNA = existingProfile.settings.suggestedDNA;
+                            }
+
+                            return { 
+                                ...existingProfile, 
+                                ...profile, 
+                                catalogs: profile.catalogs || existingProfile.catalogs || [],
+                                raw_ui_state: profile.raw_ui_state || existingProfile.raw_ui_state || {},
+                                settings: mergedSettings 
+                            };
                         });
                     }
 
@@ -123,7 +144,22 @@ const UserConfig = {
                             const existing = profileMap.get(p.id);
                             if (existing) {
                                 const mergedSettings = { ...(existing.settings || {}), ...(p.settings || {}) };
-                                profileMap.set(p.id, { ...existing, ...p, settings: mergedSettings });
+                                
+                                // Specific preservation for DNA traits
+                                if (existing.settings?.manualDNA?.length && !p.settings?.manualDNA) {
+                                    mergedSettings.manualDNA = existing.settings.manualDNA;
+                                }
+                                if (existing.settings?.suggestedDNA?.length && !p.settings?.suggestedDNA) {
+                                    mergedSettings.suggestedDNA = existing.settings.suggestedDNA;
+                                }
+
+                                profileMap.set(p.id, { 
+                                    ...existing, 
+                                    ...p, 
+                                    catalogs: p.catalogs || existing.catalogs || [],
+                                    raw_ui_state: p.raw_ui_state || existing.raw_ui_state || {},
+                                    settings: mergedSettings 
+                                });
                             } else {
                                 profileMap.set(p.id, p);
                             }
