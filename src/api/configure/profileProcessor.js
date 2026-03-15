@@ -129,7 +129,8 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings) {
             }
         };
 
-        // 2. Enforce global profile invariants
+        // 2. Enforce global profile invariants: the global profile is system-managed
+        //    and must not carry user DNA. DNA is only allowed on user-created profiles.
         if (isGlobal) {
             profile.settings.manualDNA = [];
             profile.settings.suggestedDNA = [];
