@@ -9,11 +9,12 @@
 
 // --- Phase 0.1: Model Tests ---
 describe('Phase 0.1: Two-Table Split Models', () => {
-    it('UserAccount model should have required fields', () => {
+    it('UserAccount model should have required fields including passwordHash', () => {
         const UserAccount = require('../src/db/models/UserAccount');
         const schema = UserAccount.schema;
         expect(schema.path('userId')).toBeDefined();
         expect(schema.path('email')).toBeDefined();
+        expect(schema.path('passwordHash')).toBeDefined();
         expect(schema.path('addonUuid')).toBeDefined();
         expect(schema.path('apiKeys.stremio')).toBeDefined();
         expect(schema.path('apiKeys.tmdb')).toBeDefined();
@@ -23,16 +24,28 @@ describe('Phase 0.1: Two-Table Split Models', () => {
         expect(schema.path('apiKeys.mdblist')).toBeDefined();
     });
 
+    it('UserAccount email should be required (not sparse)', () => {
+        const UserAccount = require('../src/db/models/UserAccount');
+        const emailPath = UserAccount.schema.path('email');
+        expect(emailPath.isRequired).toBe(true);
+    });
+
+    it('UserAccount passwordHash should be required', () => {
+        const UserAccount = require('../src/db/models/UserAccount');
+        const passwordPath = UserAccount.schema.path('passwordHash');
+        expect(passwordPath.isRequired).toBe(true);
+    });
+
     it('UserAccount should auto-generate addonUuid', () => {
         const UserAccount = require('../src/db/models/UserAccount');
-        const doc = new UserAccount({ userId: 'test-user' });
+        const doc = new UserAccount({ userId: 'test-user', email: 'test@example.com', passwordHash: 'hashed' });
         expect(doc.addonUuid).toBeDefined();
         expect(typeof doc.addonUuid).toBe('string');
         // UUID v4 format with version+variant bits
         expect(doc.addonUuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
     });
 
-    it('AddonConfig model should NOT have userId field (Critica 1: full anonymity)', () => {
+    it('AddonConfig model should NOT have userId field (full anonymity)', () => {
         const AddonConfig = require('../src/db/models/AddonConfig');
         const schema = AddonConfig.schema;
         expect(schema.path('uuid')).toBeDefined();
@@ -46,20 +59,46 @@ describe('Phase 0.1: Two-Table Split Models', () => {
         expect(schema.path('syncStatus.lastSync')).toBeDefined();
     });
 
-    it('AddonConfig profiles should have typed catalogs and dna fields (Critica 2 & 3)', () => {
+    it('AddonConfig catalogs should be typed objects with id/name/type (not plain strings)', () => {
         const AddonConfig = require('../src/db/models/AddonConfig');
-        const schema = AddonConfig.schema;
-        // Catalogs should be an array of strings, not Mixed
-        const profileSchema = schema.path('profiles').schema;
-        expect(profileSchema.path('id')).toBeDefined();
-        expect(profileSchema.path('name')).toBeDefined();
-        expect(profileSchema.path('catalogs')).toBeDefined();
-        // DNA fields should exist for inferred traits
-        expect(profileSchema.path('dna.genres')).toBeDefined();
-        expect(profileSchema.path('dna.keywords')).toBeDefined();
-        // Settings should have typed fields
-        expect(profileSchema.path('settings.language')).toBeDefined();
-        expect(profileSchema.path('settings.includeAdult')).toBeDefined();
+        const profileSchema = AddonConfig.schema.path('profiles').schema;
+        const catalogsPath = profileSchema.path('catalogs');
+        expect(catalogsPath).toBeDefined();
+        // Catalogs should be an array of subdocuments, not array of strings
+        const catalogSchema = catalogsPath.schema;
+        expect(catalogSchema.path('id')).toBeDefined();
+        expect(catalogSchema.path('name')).toBeDefined();
+        expect(catalogSchema.path('type')).toBeDefined();
+    });
+
+    it('AddonConfig DNA fields should use Map of Number (not Mixed)', () => {
+        const AddonConfig = require('../src/db/models/AddonConfig');
+        const profileSchema = AddonConfig.schema.path('profiles').schema;
+        // DNA fields should exist and be Map type
+        for (const field of ['dna.genres', 'dna.keywords', 'dna.networks', 'dna.companies']) {
+            const fieldPath = profileSchema.path(field);
+            expect(fieldPath).toBeDefined();
+            expect(fieldPath.instance).toBe('Map');
+        }
+    });
+
+    it('AddonConfig DNA Map should accept numeric values', () => {
+        const AddonConfig = require('../src/db/models/AddonConfig');
+        const doc = new AddonConfig({
+            uuid: 'test-uuid',
+            profiles: [{
+                id: 'global',
+                name: 'Test',
+                dna: {
+                    genres: { '27': 15.5, '28': 8.2 },
+                    keywords: { '1234': 3.0 }
+                }
+            }]
+        });
+        const profile = doc.profiles[0];
+        expect(profile.dna.genres.get('27')).toBe(15.5);
+        expect(profile.dna.genres.get('28')).toBe(8.2);
+        expect(profile.dna.keywords.get('1234')).toBe(3.0);
     });
 
     it('AddonConfig syncStatus defaults to not syncing', () => {
@@ -70,14 +109,25 @@ describe('Phase 0.1: Two-Table Split Models', () => {
         expect(doc.syncStatus.current).toBe(0);
     });
 
-    it('legacy User.js should have deprecation comment', () => {
+    it('legacy User.js should be DELETED (clean-slate, no old users)', () => {
         const fs = require('fs');
         const path = require('path');
-        const content = fs.readFileSync(
-            path.join(__dirname, '../src/db/models/User.js'), 'utf-8'
-        );
-        expect(content).toContain('DEPRECATED');
-        expect(content).toContain('TO BE REMOVED AFTER MIGRATION');
+        const filePath = path.join(__dirname, '../src/db/models/User.js');
+        expect(fs.existsSync(filePath)).toBe(false);
+    });
+
+    it('legacy migration script should be DELETED', () => {
+        const fs = require('fs');
+        const path = require('path');
+        const filePath = path.join(__dirname, '../scripts/migrate-encrypt-keys.js');
+        expect(fs.existsSync(filePath)).toBe(false);
+    });
+
+    it('src/models/User shim should redirect to UserAccount', () => {
+        // The transitional shim should export the same model as UserAccount
+        const shim = require('../src/models/User');
+        const UserAccount = require('../src/db/models/UserAccount');
+        expect(shim).toBe(UserAccount);
     });
 });
 

@@ -14,6 +14,14 @@ const mongoose = require('mongoose');
  *
  * Primary Key: uuid (corresponds to addonUuid in UserAccount).
  */
+
+// Explicit subdocument schema for catalog objects (created by profileProcessor).
+const catalogSchema = new mongoose.Schema({
+    id: { type: String, required: true },
+    name: String,
+    type: String
+}, { _id: false });
+
 const addonConfigSchema = new mongoose.Schema({
     uuid: { type: String, required: true, unique: true, index: true },
     // REMOVED: userId — this document must remain 100% anonymous.
@@ -22,23 +30,24 @@ const addonConfigSchema = new mongoose.Schema({
     profiles: [{
         id: { type: String, required: true },
         name: { type: String, required: true },
-        catalogs: [{ type: String }], // Array of catalog IDs (e.g. ["yaca_preset_horror"])
+        // Catalogs are objects created by profileProcessor: { id, name, type }
+        catalogs: [catalogSchema],
         settings: {
             language: String,
             includeAdult: Boolean,
             region: String,
-            // Additional typed settings
             manualDNA: [mongoose.Schema.Types.Mixed],
             suggestedDNA: [mongoose.Schema.Types.Mixed]
         },
         raw_ui_state: mongoose.Schema.Types.Mixed, // Ok to leave Mixed for frontend UI state
 
-        // DNA: Inferred taste traits from ProfileBuilder
+        // DNA: Inferred taste traits from ProfileBuilder.
+        // Uses Map<String, Number> so Mongoose validates that all scores are numeric.
         dna: {
-            genres: mongoose.Schema.Types.Mixed,
-            keywords: mongoose.Schema.Types.Mixed,
-            networks: mongoose.Schema.Types.Mixed,
-            companies: mongoose.Schema.Types.Mixed
+            genres: { type: Map, of: Number },
+            keywords: { type: Map, of: Number },
+            networks: { type: Map, of: Number },
+            companies: { type: Map, of: Number }
         }
     }],
     config: {

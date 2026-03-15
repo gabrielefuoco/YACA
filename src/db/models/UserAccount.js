@@ -6,12 +6,13 @@ const crypto = require('crypto');
  * Manages human authentication and stores API keys securely.
  * This collection must NEVER be queried directly by public Stremio routes.
  *
- * Primary Key: userId (internal, for backward compatibility).
+ * Primary Key: userId (internal identifier).
  * Lookup Key: addonUuid (UUID v4, used to join with AddonConfig).
  */
 const userAccountSchema = new mongoose.Schema({
     userId: { type: String, required: true, unique: true, index: true },
-    email: { type: String, sparse: true, index: true },
+    email: { type: String, required: true, unique: true, index: true },
+    passwordHash: { type: String, required: true },
     addonUuid: {
         type: String,
         unique: true,
