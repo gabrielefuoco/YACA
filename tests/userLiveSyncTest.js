@@ -1,6 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('../src/models/User');
+const UserAccount = require('../src/db/models/UserAccount');
 const TasteProfile = require('../src/models/TasteProfile');
 const { syncAllStremioData } = require('../src/utils/stremioSync');
 
@@ -12,7 +12,7 @@ async function testLiveSync() {
         await mongoose.connect(process.env.MONGODB_URI);
         console.log('✅ Connected to MongoDB');
 
-        const user = await User.findOne({ email: TARGET_EMAIL });
+        const user = await UserAccount.findOne({ email: TARGET_EMAIL });
         if (!user) {
             console.error(`❌ User ${TARGET_EMAIL} not found!`);
             return;

@@ -1,17 +1,22 @@
 describe('hybrid recommendations module resolution', () => {
     it('loads without missing model modules', () => {
         jest.isolateModules(() => {
-            jest.doMock('../src/db/models/TasteProfile', () => ({
+            // Mock paths as seen by the test file (../src/...)
+            // TasteProfile and TmdbScoringData are re-exported via src/models/
+            jest.doMock('../src/models/TasteProfile', () => ({
                 findOne: jest.fn(),
                 updateOne: jest.fn(),
                 findOneAndUpdate: jest.fn()
             }));
-            jest.doMock('../src/db/models/TmdbScoringData', () => ({
+            jest.doMock('../src/models/TmdbScoringData', () => ({
                 findOne: jest.fn(),
                 find: jest.fn(),
                 updateOne: jest.fn()
             }));
-            jest.doMock('../src/models/User', () => ({
+            jest.doMock('../src/db/models/UserAccount', () => ({
+                findOne: jest.fn()
+            }));
+            jest.doMock('../src/db/models/AddonConfig', () => ({
                 findOne: jest.fn()
             }));
             jest.doMock('../src/profile/ProfileScorer', () => ({

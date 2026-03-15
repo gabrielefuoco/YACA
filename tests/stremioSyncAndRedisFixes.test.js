@@ -42,8 +42,9 @@ describe('stremio sync builder invocation', () => {
         });
         const stremioPost = jest.fn().mockResolvedValue({ data: { result: [] } });
         const syncStremioData = jest.fn().mockResolvedValue({});
-        const findOne = jest.fn().mockResolvedValue({ apiKeys: { tmdb: 'tmdb-key' } });
-        const findOneAndUpdate = jest.fn().mockResolvedValue({});
+        const accountFindOne = jest.fn().mockResolvedValue({ userId: 'user-1', apiKeys: { tmdb: 'tmdb-key' }, addonUuid: 'uuid-1' });
+        const addonFindOne = jest.fn().mockResolvedValue({ uuid: 'uuid-1', profiles: [], config: {} });
+        const addonFindOneAndUpdate = jest.fn().mockResolvedValue({});
 
         jest.doMock('../src/utils/httpClient', () => ({
             createAxiosInstance: jest.fn((baseUrl) => {
@@ -54,20 +55,26 @@ describe('stremio sync builder invocation', () => {
         jest.doMock('../src/profile/ProfileBuilder', () => ({
             syncStremioData
         }));
-        jest.doMock('../src/models/User', () => ({
-            findOne,
-            findOneAndUpdate
+        jest.doMock('../src/db/models/UserAccount', () => ({
+            findOne: accountFindOne
+        }));
+        jest.doMock('../src/db/models/AddonConfig', () => ({
+            findOne: addonFindOne,
+            findOneAndUpdate: addonFindOneAndUpdate
         }));
         jest.doMock('../src/clients/trakt', () => ({
             fetchTraktCatalog: jest.fn(),
             syncTraktRatings: jest.fn(),
             syncTraktHistory: jest.fn()
         }));
+        jest.doMock('../src/models/TasteProfile', () => ({
+            findOne: jest.fn().mockResolvedValue(null)
+        }));
 
         const { syncAllStremioData } = require('../src/utils/stremioSync');
         await syncAllStremioData('user-1', 'auth-key');
 
-        expect(syncStremioData).toHaveBeenCalledWith('user-1', expect.any(Object), 'tmdb-key');
-        expect(findOneAndUpdate).toHaveBeenCalled();
+        expect(syncStremioData).toHaveBeenCalledWith('user-1', expect.any(Object), 'tmdb-key', 'global');
+        expect(addonFindOneAndUpdate).toHaveBeenCalled();
     });
 });

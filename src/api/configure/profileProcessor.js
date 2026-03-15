@@ -2,6 +2,80 @@ const { nanoid } = require('nanoid');
 const { getPresets } = require('../../data/presets');
 
 /**
+ * TMDB genre ID → Italian name lookup.
+ * Used to resolve known genre IDs when building suggestedDNA from presets.
+ */
+const GENRE_ID_TO_NAME = {
+    '28': 'Azione', '12': 'Avventura', '16': 'Animazione', '35': 'Commedia',
+    '80': 'Crime', '99': 'Documentario', '18': 'Dramma', '10751': 'Famiglia',
+    '14': 'Fantasy', '36': 'Storia', '27': 'Horror', '10402': 'Musica',
+    '9648': 'Mistero', '10749': 'Romance', '878': 'Fantascienza',
+    '53': 'Thriller', '10752': 'Guerra', '37': 'Western',
+    '10759': 'Azione & Avventura', '10762': 'Kids', '10763': 'News',
+    '10764': 'Reality', '10765': 'Sci-Fi & Fantasy', '10766': 'Soap',
+    '10767': 'Talk', '10768': 'War & Politics', '10770': 'Film TV'
+};
+
+/**
+ * Splits a pipe- or comma-separated ID string, or returns array values as strings.
+ * @param {string|Array|null} value
+ * @returns {string[]}
+ */
+function splitOrIds(value) {
+    if (Array.isArray(value)) return value.map(String).map(v => v.trim()).filter(Boolean);
+    if (value === null || value === undefined) return [];
+    return String(value).split(/[|,]/).map(v => v.trim()).filter(Boolean);
+}
+
+/**
+ * Extracts suggested DNA entries (genres + keywords) from active presets.
+ * Handles both traditional TMDB filters (with_genres, with_keywords) and
+ * AI-style filters (genre_ids arrays, keyword comma-separated strings).
+ * Resolves known genre IDs to Italian names.
+ *
+ * @param {string[]} selectedPresets - Active preset IDs
+ * @param {Array} presetsList - All available presets
+ * @returns {Array<{id: string, type: string, name: string}>}
+ */
+function buildSuggestedDNAFromPresets(selectedPresets = [], presetsList = []) {
+    const genreCounts = new Map();
+    const keywordCounts = new Map();
+
+    for (const presetId of selectedPresets) {
+        const preset = presetsList.find(p => p.id === presetId);
+        if (!preset?.filters || typeof preset.filters !== 'object') continue;
+
+        // Traditional TMDB filters: with_genres / with_keywords (pipe/comma-separated)
+        for (const gid of splitOrIds(preset.filters.with_genres)) {
+            genreCounts.set(gid, (genreCounts.get(gid) || 0) + 1);
+        }
+        for (const kid of splitOrIds(preset.filters.with_keywords)) {
+            keywordCounts.set(kid, (keywordCounts.get(kid) || 0) + 1);
+        }
+
+        // AI-style filters: genre_ids (array), keyword (comma-separated string)
+        for (const gid of splitOrIds(preset.filters.genre_ids)) {
+            genreCounts.set(gid, (genreCounts.get(gid) || 0) + 1);
+        }
+        for (const kid of splitOrIds(preset.filters.keyword)) {
+            keywordCounts.set(kid, (keywordCounts.get(kid) || 0) + 1);
+        }
+    }
+
+    const topGenres = Array.from(genreCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([id]) => ({ id: String(id), type: 'genre', name: GENRE_ID_TO_NAME[String(id)] || `Genre ${id}` }));
+
+    const topKeywords = Array.from(keywordCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([id]) => ({ id: String(id), type: 'keyword', name: `Keyword ${id}` }));
+
+    return [...topGenres, ...topKeywords];
+}
+
+/**
  * Creates a default input object for the global profile.
  * Used when no profiles are provided in the config request.
  */
@@ -23,6 +97,7 @@ function createGlobalProfileInput() {
 /**
  * Processes incoming profile data from the frontend.
  * Resolves presets into catalog objects and structures the profile for saving.
+ * Enforces global profile invariants and builds suggestedDNA from active presets.
  * 
  * @param {Array} inputProfiles - Raw profile objects from request body
  * @param {string} userId - Current user ID
@@ -42,30 +117,30 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings) {
         // 1. Basic Structure
         const profile = {
             id: input.id || nanoid(8),
-            name: input.name || (isGlobal ? '🏠 Generale' : 'Nuovo Profilo'),
+            name: isGlobal ? 'Generale' : (input.name || 'Nuovo Profilo'),
             catalogs: Array.isArray(input.existingCatalogs) ? [...input.existingCatalogs] : [],
             raw_ui_state: {
                 selectedPresets: Array.isArray(input.selectedPresets) ? input.selectedPresets : [],
                 catalogOrder: Array.isArray(input.catalogOrder) ? input.catalogOrder : [],
                 newPrompts: Array.isArray(input.newPrompts) ? input.newPrompts : []
             },
-            // Settings and DNA preservation
-            // Note: UserConfig.saveUser handles the heavy lifting of merging with DB state,
-            // but we ensure we don't accidentally wipe them here if passed from frontend.
             settings: {
-                ...(input.settings || {}),
-                // CRITICAL FIX: Do NOT force reset DNA traits to [] anymore.
-                // We keep whatever is in input.settings, or if missing, 
-                // UserConfig will merge with the existing DB values.
+                ...(input.settings || {})
             }
         };
 
-        // 2. Resolve Presets to Catalogs
+        // 2. Enforce global profile invariants: the global profile is system-managed
+        //    and must not carry user DNA. DNA is only allowed on user-created profiles.
+        if (isGlobal) {
+            profile.settings.manualDNA = [];
+            profile.settings.suggestedDNA = [];
+        }
+
+        // 3. Resolve Presets to Catalogs
         if (profile.raw_ui_state.selectedPresets.length > 0) {
             for (const presetId of profile.raw_ui_state.selectedPresets) {
                 const preset = presetMap.get(presetId);
                 if (preset) {
-                    // Check if already present to avoid duplicates
                     const exists = profile.catalogs.some(c => c.id === `yaca_preset_${presetId}`);
                     if (!exists) {
                         profile.catalogs.push({
@@ -80,9 +155,17 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings) {
             }
         }
 
-        // 3. Handle AI Prompts (Future/Current Synthesis)
-        // If the frontend sends prompts, they should be processed here or in a separate flow.
-        // Currently, we just ensure they are captured in raw_ui_state for UserConfig to handle.
+        // 4. Build suggestedDNA from active presets (non-global profiles only)
+        if (!isGlobal) {
+            const manualDNA = Array.isArray(profile.settings.manualDNA) ? profile.settings.manualDNA : [];
+            const manualIds = new Set(manualDNA.map(d => `${d.type}:${d.id}`));
+            const presetDNA = buildSuggestedDNAFromPresets(
+                profile.raw_ui_state.selectedPresets,
+                allPresets
+            );
+            // Deduplicate: exclude items already in manualDNA
+            profile.settings.suggestedDNA = presetDNA.filter(d => !manualIds.has(`${d.type}:${d.id}`));
+        }
 
         processed.push(profile);
     }
@@ -92,5 +175,7 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings) {
 
 module.exports = {
     processProfiles,
-    createGlobalProfileInput
+    createGlobalProfileInput,
+    buildSuggestedDNAFromPresets,
+    splitOrIds
 };

@@ -2,6 +2,8 @@ const TasteProfile = require('../models/TasteProfile');
 const tmdb = require('../clients/tmdb');
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const { BINGE_SESSION_GAP_MS, BINGE_MULTIPLIER } = require('../config');
+const AddonConfig = require('../db/models/AddonConfig');
+const UserAccount = require('../db/models/UserAccount');
 const GLOBAL_PROFILE_MIRROR_RATIO = 0.2;
 
 /**
@@ -17,6 +19,41 @@ function addWithDecay(current, increment) {
 }
 
 class ProfileBuilder {
+    /**
+     * Resolves the addon UUID for a given owner (userId).
+     * Used for unidirectional join: UserAccount.addonUuid → AddonConfig.uuid.
+     * AddonConfig does NOT contain userId (Security by Design: full anonymity).
+     * @param {String} owner - userId of the user
+     * @returns {Promise<String|null>} The addon UUID, or null if not found
+     */
+    static async _resolveAddonUuid(owner) {
+        try {
+            const account = await UserAccount.findOne({ userId: owner }).lean();
+            return account?.addonUuid || null;
+        } catch (err) {
+            console.warn('[ProfileBuilder] Failed to resolve addonUuid:', err.message);
+            return null;
+        }
+    }
+
+    /**
+     * Updates syncStatus in AddonConfig using the anonymous UUID join.
+     * @param {String} owner - userId of the user
+     * @param {Object} statusUpdate - Fields to $set in syncStatus
+     */
+    static async _updateSyncStatus(owner, statusUpdate) {
+        try {
+            const uuid = await ProfileBuilder._resolveAddonUuid(owner);
+            if (!uuid) return; // AddonConfig may not exist yet for legacy users
+            await AddonConfig.updateOne(
+                { uuid },
+                { $set: statusUpdate }
+            );
+        } catch (err) {
+            console.warn('[ProfileBuilder] Failed to update sync status:', err.message);
+        }
+    }
+
     /**
      * Elabora un singolo contenuto TMDB e accumula gli incrementi in un oggetto.
      * @param {Object} tmdbData I dati grezzi da TMDB
@@ -161,6 +198,14 @@ class ProfileBuilder {
     static async syncUserHistory(owner, context, traktHistory, apiKey, isMirroring = false) {
         if (!owner || !traktHistory?.length) return null;
 
+        // Update syncStatus: signal that sync is in progress (Phase 0.4)
+        // Uses anonymous UUID join (no userId in AddonConfig)
+        ProfileBuilder._updateSyncStatus(owner, {
+            'syncStatus.isSyncing': true,
+            'syncStatus.total': traktHistory.length,
+            'syncStatus.current': 0
+        }).catch(() => { /* non-blocking */ });
+
         try {
             let profile = await TasteProfile.findOneAndUpdate(
                 { owner, context },
@@ -256,9 +301,20 @@ class ProfileBuilder {
                 await this.syncUserHistory(owner, 'global', traktHistory, apiKey, true);
             }
 
+            // Update syncStatus: signal that sync is complete (Phase 0.4)
+            // Uses anonymous UUID join (no userId in AddonConfig)
+            ProfileBuilder._updateSyncStatus(owner, {
+                'syncStatus.isSyncing': false,
+                'syncStatus.lastSync': new Date()
+            }).catch(() => { /* non-blocking */ });
+
             return updatedProfile;
 
         } catch (e) {
+            // Update syncStatus on error too (anonymous UUID join)
+            ProfileBuilder._updateSyncStatus(owner, {
+                'syncStatus.isSyncing': false
+            }).catch(() => { /* non-blocking */ });
             console.error(`[ProfileBuilder] Sync error for ${owner}:${context}:`, e.message);
             throw e;
         }
@@ -430,9 +486,13 @@ class ProfileBuilder {
         if (!profile) return;
 
         try {
-            const User = require('../models/User');
-            const userDoc = await User.findOne({ userId: profile.owner });
-            if (!userDoc) return;
+            // Resolve the addonUuid for this user (Two-Table Split)
+            const uuid = await ProfileBuilder._resolveAddonUuid(profile.owner);
+            if (!uuid) return;
+
+            const AddonConfig = require('../db/models/AddonConfig');
+            const addonConfig = await AddonConfig.findOne({ uuid });
+            if (!addonConfig) return;
 
             const MIN_ABSOLUTE_SCORE = 0.5;
             const DOMINANCE_RATIOS = { 
@@ -474,16 +534,16 @@ class ProfileBuilder {
 
             console.log(`[ProfileBuilder] Analyzed scores. Inferred: ${allInferred.length} traits`);
 
-            let targetGroup = (userDoc.profiles || []).find(p => p.id === profile.context);
+            let targetGroup = (addonConfig.profiles || []).find(p => p.id === profile.context);
             if (!targetGroup) {
-                console.warn(`[ProfileBuilder] Target profile ${profile.context} not found in user doc`);
+                console.warn(`[ProfileBuilder] Target profile ${profile.context} not found in AddonConfig`);
                 return;
             }
 
-            const query = { userId: profile.owner, 'profiles.id': profile.context };
+            const query = { uuid, 'profiles.id': profile.context };
 
-            const existingManual = targetGroup.settings?.manualDNA || targetGroup.manualDNA || [];
-            const existingSuggested = targetGroup.settings?.suggestedDNA || targetGroup.suggestedDNA || [];
+            const existingManual = targetGroup.settings?.manualDNA || [];
+            const existingSuggested = targetGroup.settings?.suggestedDNA || [];
             const existingDNAIds = new Set([
                 ...existingManual.map(d => `${d.type}:${d.id}`),
                 ...existingSuggested.map(d => `${d.type}:${d.id}`)
@@ -498,7 +558,7 @@ class ProfileBuilder {
             const finalUpdateField = `profiles.$.settings.${destField}`;
 
             console.log(`[ProfileBuilder] New traits for ${profile.context}:`, newTraits.map(t => t.name));
-            await User.updateOne(query, { $addToSet: { [finalUpdateField]: { $each: newTraits } } });
+            await AddonConfig.updateOne(query, { $addToSet: { [finalUpdateField]: { $each: newTraits } } });
             console.log(`[ProfileBuilder] DNA ${onboardingCompleted ? 'activated' : 'suggested'} for ${profile.owner} (${profile.context}): ${newTraits.length} traits`);
 
         } catch (e) {

@@ -1,14 +1,20 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const { stremioClient } = require('../clients/stremio');
 const { traktClient } = require('../clients/trakt');
 const { updateStremioAddonCollection } = require('../utils/stremioAddonSync');
-const User = require('../models/User');
 const UserConfig = require('../models/UserConfig');
+const AddonConfig = require('../db/models/AddonConfig');
+const UserAccount = require('../db/models/UserAccount');
+const { requireAuth } = require('../middleware/requireAuth');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler } = require('../handlers/metaHandler');
 const { streamHandler } = require('../handlers/streamHandler');
 const { resolveHostUrl, parseExtra } = require('../utils/helpers');
+
+// Rate limiter for sync-status polling (max 30 requests per minute per IP)
+const syncStatusLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
 
 const SORT_OPTIONS = ['Popolarità', 'Voto Medio', 'Data di Uscita', 'Incassi'];
 const SORT_MAP = {
@@ -54,23 +60,28 @@ router.post('/check-user', async (req, res) => {
         return res.status(400).json({ exists: false, error: 'authKey o email obbligatorio' });
     }
     try {
-        let existingUser = null;
+        let existingAccount = null;
         if (email) {
-            existingUser = await User.findOne({ email }).lean();
+            existingAccount = await UserAccount.findOne({ email }).lean();
         }
-        if (!existingUser && authKey) {
-            existingUser = await User.findOne({ 'apiKeys.stremio': authKey }).lean();
+        if (!existingAccount && authKey) {
+            existingAccount = await UserAccount.findOne({ 'apiKeys.stremio': authKey }).lean();
         }
 
-        if (existingUser?.userId) {
+        if (existingAccount?.userId) {
+            // Read profiles from AddonConfig (Two-Table Split)
+            const addonConfig = existingAccount.addonUuid
+                ? await AddonConfig.findOne({ uuid: existingAccount.addonUuid }).lean()
+                : null;
+
             return res.json({
                 exists: true,
-                userId: existingUser.userId,
-                traktToken: existingUser.apiKeys?.trakt || null,
-                traktRefreshToken: existingUser.apiKeys?.traktRefreshToken || null,
-                configVersion: existingUser.config?.configVersion || null,
-                profiles: existingUser.profiles || [],
-                activeProfileId: existingUser.config?.activeProfileId || 'global'
+                userId: existingAccount.userId,
+                traktToken: existingAccount.apiKeys?.trakt || null,
+                traktRefreshToken: existingAccount.apiKeys?.traktRefreshToken || null,
+                configVersion: addonConfig?.config?.configVersion || null,
+                profiles: addonConfig?.profiles || [],
+                activeProfileId: addonConfig?.config?.activeProfileId || 'global'
             });
         }
         return res.json({ exists: false });
@@ -328,6 +339,54 @@ router.get(['/:userHandle/stream/:type/:id.json', '/:userHandle/:configVersion/s
         console.error("Errore Stream Endpoint:", err.message);
         res.json({ streams: [] });
     }
+});
+
+// Sync Status Polling endpoint (Phase 0.4: Dumb Frontend Pattern)
+// Frontend polls this every 3-5 seconds while syncStatus.isSyncing is true.
+// Requires JWT authentication to prevent unauthorized access to user sync data.
+// Uses unidirectional join: UserAccount.addonUuid → AddonConfig.uuid (no userId in AddonConfig).
+router.get('/sync-status/:userId', syncStatusLimiter, requireAuth, async (req, res) => {
+    const { userId } = req.params;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    // Ensure authenticated user can only access their own sync status
+    if (req.user.userId !== userId) {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+        // Unidirectional join: find the user's addonUuid, then query AddonConfig by uuid
+        const account = await UserAccount.findOne({ userId }).lean();
+        if (!account?.addonUuid) {
+            return res.json({ isSyncing: false, total: 0, current: 0, lastSync: null });
+        }
+        const config = await AddonConfig.findOne({ uuid: account.addonUuid }).lean();
+        if (!config) {
+            return res.json({ isSyncing: false, total: 0, current: 0, lastSync: null });
+        }
+        return res.json(config.syncStatus || { isSyncing: false, total: 0, current: 0, lastSync: null });
+    } catch (err) {
+        console.error('[SyncStatus] Error:', err.message);
+        return res.status(500).json({ error: 'Internal error' });
+    }
+});
+
+// Configure Redirect: When Stremio opens the configure gear icon, redirect to Frontend Login.
+// This ensures no UUID context is leaked — the user must authenticate via JWT.
+// FRONTEND_URL is a server-side env variable, not user-controlled input.
+router.get('/:userHandle/configure', (_req, res) => {
+    const frontendUrl = process.env.FRONTEND_URL;
+    // Validate FRONTEND_URL is a well-formed URL or relative path before redirecting.
+    if (frontendUrl) {
+        if (frontendUrl.startsWith('/')) {
+            return res.redirect(302, frontendUrl);
+        }
+        try {
+            const parsed = new URL(frontendUrl);
+            if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+                return res.redirect(302, parsed.href);
+            }
+        } catch (_e) { /* malformed URL — fall through to default */ }
+    }
+    res.redirect(302, '/');
 });
 
 // Switch Profile

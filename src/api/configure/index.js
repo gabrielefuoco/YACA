@@ -4,6 +4,7 @@ const { resolveHostUrl } = require('../../utils/helpers');
 const { validateAuth, validateKeys } = require('./validators');
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');
 const { updateStremioAddonCollection } = require('../../utils/stremioAddonSync');
+const UserAccount = require('../../db/models/UserAccount');
 
 module.exports = async (req, res) => {
     try {
@@ -11,7 +12,9 @@ module.exports = async (req, res) => {
 
         const { activeProfileId, profiles: bodyProfiles } = req.body;
         const userId = req.user.userId;
-        const existingUser = await UserConfig.getUser(userId);
+
+        // Read existing data from both tables via resolveUserConfig
+        const existingUser = await UserConfig.resolveUserConfig(userId);
 
         const warnings = [];
         const {
@@ -48,7 +51,7 @@ module.exports = async (req, res) => {
 
         const finalActiveProfileId = (activeProfileId && parsedProfiles?.some(p => p.id === activeProfileId))
             ? activeProfileId
-            : (parsedProfiles?.some(p => p.id === 'global') ? 'global' : (parsedProfiles?.[0]?.id || existingUser?.config?.activeProfileId || 'global'));
+            : (parsedProfiles?.some(p => p.id === 'global') ? 'global' : (parsedProfiles?.[0]?.id || existingUser?.activeProfileId || 'global'));
 
 
 
@@ -59,21 +62,30 @@ module.exports = async (req, res) => {
             }
         };
 
-        // Prepare API Keys for update
+        // Prepare API Keys for update using VALIDATED values from validateKeys(),
+        // NOT raw req.body values. This prevents empty strings from overwriting
+        // valid tokens stored in the DB (Bug 1.1: Token Invalidation).
         const apiKeys = {};
         let hasApiKeys = false;
-        const keyMap = { 
-            tmdbKey: 'tmdb', 
-            mistralKey: 'mistral', 
-            traktToken: 'trakt', 
-            traktRefreshToken: 'traktRefreshToken', 
-            mdblistKey: 'mdblist', 
-            stremioAuthKey: 'stremio' 
+
+        // Map validated key names to DB field names
+        const validatedKeyMap = {
+            effectiveTmdbKey: 'tmdb',
+            mistralKey: 'mistral',
+            traktToken: 'trakt',
+            traktRefreshToken: 'traktRefreshToken',
+            mdblistKey: 'mdblist',
+            stremioAuthKey: 'stremio'
         };
 
-        for (const [bodyKey, dbKey] of Object.entries(keyMap)) {
-            if (Object.prototype.hasOwnProperty.call(req.body, bodyKey)) {
-                apiKeys[dbKey] = req.body[bodyKey] === '' ? null : (req.body[bodyKey] || null);
+        // Only include keys that were explicitly provided in the request body
+        // and have a non-empty validated value. Ignore empty/undefined values
+        // to prevent accidental overwrite of existing DB tokens.
+        const validatedValues = { effectiveTmdbKey, mistralKey, traktToken, traktRefreshToken, mdblistKey, stremioAuthKey };
+        for (const [validatedName, dbKey] of Object.entries(validatedKeyMap)) {
+            const value = validatedValues[validatedName];
+            if (value !== undefined && value !== null && value !== '') {
+                apiKeys[dbKey] = value;
                 hasApiKeys = true;
             }
         }
@@ -82,6 +94,7 @@ module.exports = async (req, res) => {
         if (parsedProfiles !== undefined) updateData.profiles = parsedProfiles;
         if (stremioEmail) updateData.email = stremioEmail;
 
+        // saveUser now handles both UserAccount + AddonConfig (Two-Table Split)
         const userDoc = await UserConfig.saveUser(updateData);
 
         // Cleanup unreferenced lists

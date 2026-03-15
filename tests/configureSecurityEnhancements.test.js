@@ -1,6 +1,6 @@
 jest.mock('../src/models/UserConfig', () => ({
     saveUser: jest.fn().mockResolvedValue({ userId: 'jwt_user' }),
-    getUser: jest.fn().mockResolvedValue(null)
+    resolveUserConfig: jest.fn().mockResolvedValue(null)
 }));
 
 jest.mock('../src/models/UserList', () => ({
@@ -59,7 +59,7 @@ describe('configure security enhancements', () => {
     }
 
     it('uses persisted mistral key when request omits mistralKey', async () => {
-        UserConfig.getUser.mockResolvedValueOnce({
+        UserConfig.resolveUserConfig.mockResolvedValueOnce({
             userId: 'jwt_user',
             email: 'jwt@example.com',
             apiKeys: { mistral: 'stored_mistral_key' }
@@ -84,7 +84,7 @@ describe('configure security enhancements', () => {
     });
 
     it('returns AI warnings when prompt generation fails', async () => {
-        UserConfig.getUser.mockResolvedValueOnce({
+        UserConfig.resolveUserConfig.mockResolvedValueOnce({
             userId: 'jwt_user',
             email: 'jwt@example.com',
             apiKeys: { mistral: 'stored_mistral_key' }

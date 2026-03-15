@@ -2,7 +2,8 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const { catalogHandler } = require('../src/handlers/catalogHandler');
 const TasteProfile = require('../src/db/models/TasteProfile');
-const User = require('../src/db/models/User');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
 
 async function testHideWatched() {
     try {
@@ -11,14 +12,20 @@ async function testHideWatched() {
 
         const testUserId = 'test_user_hide_watched_' + Date.now();
 
-        // 1. Creazione utente con hideWatched: true
-        const user = await User.create({
+        // 1. Creazione utente con hideWatched: true (Two-Table Split)
+        const account = await UserAccount.create({
             userId: testUserId,
-            config: {
-                hideWatched: true,
-                activeProfileId: 'main'
-            }
+            email: `${testUserId}@test.com`,
+            passwordHash: 'test-hash'
         });
+        await AddonConfig.findOneAndUpdate(
+            { uuid: account.addonUuid },
+            { $set: {
+                config: { hideWatched: true, activeProfileId: 'main' },
+                profiles: [{ id: 'main', name: 'Main' }]
+            } },
+            { upsert: true }
+        );
 
         // 2. Simuliamo che l'utente abbia già visto alcuni film popolari
         // Prendiamo i primi 5 film che solitamente appaiono in "Popular" (es. film famosi)
@@ -26,8 +33,10 @@ async function testHideWatched() {
         // facciamo una prima chiamata senza filtri per scoprire gli ID, poi li aggiungiamo al profilo.
 
         console.log('\n--- Step 1: Chiamata senza filtri (mock) ---');
-        user.config.hideWatched = false;
-        await user.save();
+        await AddonConfig.updateOne(
+            { uuid: account.addonUuid },
+            { $set: { 'config.hideWatched': false } }
+        );
 
         const resNormal = await catalogHandler({
             id: 'yaca_discover_movies',
@@ -80,8 +89,9 @@ async function testHideWatched() {
             console.log('⚠️ ATTENZIONE: La pagina è più corta del normale (Filling parziale o fine catalogo).');
         }
 
-        // Cleanup
-        await User.deleteOne({ userId: testUserId });
+        // Cleanup (Two-Table Split)
+        await UserAccount.deleteOne({ userId: testUserId });
+        await AddonConfig.deleteOne({ uuid: account.addonUuid });
         await TasteProfile.deleteOne({ owner: testUserId });
         console.log('\nCleanup completato.');
 

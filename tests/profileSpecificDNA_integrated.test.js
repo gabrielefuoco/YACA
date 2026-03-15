@@ -1,6 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('../src/models/User');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
 const TasteProfile = require('../src/models/TasteProfile');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 
@@ -29,6 +30,7 @@ tmdb.getTmdbMovieDetails = async (apiKey, id, type) => {
 
 async function runTest() {
     const TEST_USER_ID = 'test_integrated_user_' + Date.now();
+    const ADDON_UUID = 'test-uuid-' + Date.now();
     const PROFILE_ANIME = 'profile_anime';
     const PROFILE_GLOBAL = 'global';
 
@@ -36,10 +38,17 @@ async function runTest() {
         await mongoose.connect(process.env.MONGODB_URI);
         console.log('🚀 Starting Integrated Profile DNA Test');
 
-        // 1. Setup User
-        const user = new User({
+        // 1. Setup UserAccount + AddonConfig (Two-Table Split)
+        const account = new UserAccount({
             userId: TEST_USER_ID,
             email: 'test@yaca.com',
+            passwordHash: 'test-hash-placeholder',
+            addonUuid: ADDON_UUID,
+        });
+        await account.save();
+
+        const addonConfig = new AddonConfig({
+            uuid: ADDON_UUID,
             profiles: [
                 {
                     id: PROFILE_GLOBAL,
@@ -54,7 +63,7 @@ async function runTest() {
             ],
             config: { activeProfileId: PROFILE_GLOBAL }
         });
-        await user.save();
+        await addonConfig.save();
         console.log('✅ User created');
 
         // 2. TEST CASE 1: Catalog Sync (No Mirroring)
@@ -78,15 +87,15 @@ async function runTest() {
         console.log('🧪 Inferring DNA for Anime...');
         await ProfileBuilder.inferDNAFromProfile(profileAnime);
 
-        let updatedUser = await User.findOne({ userId: TEST_USER_ID });
-        console.log('📦 Updated User profiles IDs:', updatedUser.profiles.map(p => p.id));
+        let updatedConfig = await AddonConfig.findOne({ uuid: ADDON_UUID });
+        console.log('📦 Updated AddonConfig profiles IDs:', updatedConfig.profiles.map(p => p.id));
         
-        const animeProfile = updatedUser.profiles.find(p => p.id === PROFILE_ANIME);
+        const animeProfile = updatedConfig.profiles.find(p => p.id === PROFILE_ANIME);
         if (!animeProfile) {
-            console.error('❌ Could not find Anime profile in user doc! Profiles available:', updatedUser.profiles);
+            console.error('❌ Could not find Anime profile in AddonConfig! Profiles available:', updatedConfig.profiles);
             throw new Error('Anime profile disappeared!');
         }
-        const globalProfile = updatedUser.profiles.find(p => p.id === PROFILE_GLOBAL);
+        const globalProfile = updatedConfig.profiles.find(p => p.id === PROFILE_GLOBAL);
         if (!globalProfile) throw new Error('Global profile not found!');
         
         const animeSettings = animeProfile.settings;
@@ -136,9 +145,9 @@ async function runTest() {
         await ProfileBuilder.inferDNAFromProfile(profileAnimeUpdated);
         await ProfileBuilder.inferDNAFromProfile(profileGlobal);
 
-        updatedUser = await User.findOne({ userId: TEST_USER_ID });
-        const animeProfile2 = updatedUser.profiles.find(p => p.id === PROFILE_ANIME);
-        const globalProfile2 = updatedUser.profiles.find(p => p.id === PROFILE_GLOBAL);
+        updatedConfig = await AddonConfig.findOne({ uuid: ADDON_UUID });
+        const animeProfile2 = updatedConfig.profiles.find(p => p.id === PROFILE_ANIME);
+        const globalProfile2 = updatedConfig.profiles.find(p => p.id === PROFILE_GLOBAL);
         
         const animeSettings2 = animeProfile2.settings;
         const globalSettings2 = globalProfile2.settings;
@@ -164,7 +173,8 @@ async function runTest() {
         // Restore original function
         tmdb.getTmdbMovieDetails = originalGetDetails;
         // Cleanup
-        await User.deleteMany({ userId: { $regex: /^test_integrated_user_/ } });
+        await UserAccount.deleteMany({ userId: { $regex: /^test_integrated_user_/ } });
+        await AddonConfig.deleteMany({ uuid: ADDON_UUID });
         await TasteProfile.deleteMany({ owner: { $regex: /^test_integrated_user_/ } });
         await mongoose.disconnect();
     }

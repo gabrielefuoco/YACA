@@ -6,8 +6,14 @@ jest.mock('../src/models/UserConfig', () => ({
     saveUser: jest.fn()
 }));
 
-jest.mock('../src/models/User', () => ({
-    findOne: jest.fn()
+// Two-Table Split: auth/index.js now imports UserAccount and AddonConfig directly
+jest.mock('../src/db/models/UserAccount', () => ({
+    findOne: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) })
+}));
+
+jest.mock('../src/db/models/AddonConfig', () => ({
+    findOne: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
+    create: jest.fn()
 }));
 
 jest.mock('nanoid', () => ({
@@ -16,8 +22,9 @@ jest.mock('nanoid', () => ({
 
 const { stremioClient } = require('../src/clients/stremio');
 const UserConfig = require('../src/models/UserConfig');
-const User = require('../src/models/User');
-const { loginHandler, guestHandler } = require('../src/api/auth');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
+const { loginHandler } = require('../src/api/auth');
 
 describe('auth handlers security hardening', () => {
     beforeEach(() => {
@@ -46,8 +53,16 @@ describe('auth handlers security hardening', () => {
                 }
             }
         });
-        User.findOne.mockResolvedValue(null);
+        // First call: lookup existing account → not found
+        // Second call: re-read account after saveUser → found
+        const mockAccount = { userId: 'guest_user_id', addonUuid: 'uuid-1', apiKeys: {} };
+        UserAccount.findOne
+            .mockReturnValueOnce({ lean: jest.fn().mockResolvedValue(null) })
+            .mockReturnValueOnce({ lean: jest.fn().mockResolvedValue(mockAccount) });
         UserConfig.saveUser.mockResolvedValue({ userId: 'guest_user_id' });
+        AddonConfig.findOne.mockReturnValue({
+            lean: jest.fn().mockResolvedValue({ uuid: 'uuid-1', profiles: [], config: {} })
+        });
 
         const req = { body: { email: 'user@example.com', password: 'super-secret-password' } };
         const res = mockRes();
@@ -66,20 +81,4 @@ describe('auth handlers security hardening', () => {
         expect(csrfCookieOpts).toEqual(expect.objectContaining({ httpOnly: false, sameSite: 'lax', path: '/' }));
     });
 
-    it('creates guest JWT session and cookie for anonymous users', async () => {
-        UserConfig.saveUser.mockResolvedValue({ userId: 'guest_user_id' });
-        const req = { body: {} };
-        const res = mockRes();
-
-        await guestHandler(req, res);
-
-        expect(UserConfig.saveUser).toHaveBeenCalledWith({ userId: 'guest_user_id' });
-        expect(res.cookie).toHaveBeenCalledWith('yaca_session', expect.any(String), expect.any(Object));
-        expect(res.cookie).toHaveBeenCalledWith('yaca_csrf', expect.any(String), expect.any(Object));
-        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-            success: true,
-            userId: 'guest_user_id',
-            isGuest: true
-        }));
-    });
 });

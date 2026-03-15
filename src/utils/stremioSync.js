@@ -1,4 +1,5 @@
-const User = require('../models/User');
+const UserAccount = require('../db/models/UserAccount');
+const AddonConfig = require('../db/models/AddonConfig');
 const { fetchTraktCatalog } = require('../clients/trakt');
 const { stremioClient, stremioLikesClient } = require('../clients/stremio');
 const { executeUniversalPipeline } = require('../handlers/catalogHandler');
@@ -12,6 +13,8 @@ const LOVED_ADDON_URL = 'https://likes.stremio.com/addons/loved/movies-shows';
  * Fetches data from Stremio (Likes, Loves, Library) and syncs to Global Taste Profile.
  * Also pushes new interactions to Trakt.
  * If a profileId is provided, it handles profile-specific sync.
+ * 
+ * Two-Table Split: reads apiKeys from UserAccount, profiles from AddonConfig.
  */
 async function syncAllStremioData(userId, authKey, profileId = 'global') {
     try {
@@ -38,15 +41,20 @@ async function syncAllStremioData(userId, authKey, profileId = 'global') {
         };
 
         // 3. Update Taste Profile via ProfileBuilder
+        // Read API keys from UserAccount, profiles from AddonConfig
         const ProfileBuilder = require('../profile/ProfileBuilder');
-        const user = await User.findOne({ userId });
-        const tmdbKey = user?.apiKeys?.tmdb;
+        const account = await UserAccount.findOne({ userId }).lean();
+        const tmdbKey = account?.apiKeys?.tmdb;
+
+        const addonConfig = account?.addonUuid
+            ? await AddonConfig.findOne({ uuid: account.addonUuid }).lean()
+            : null;
 
         if (profileId === 'global') {
             await ProfileBuilder.syncStremioData(userId, stremioData, tmdbKey, 'global');
         } else {
             // Se è un profilo specifico, sincronizziamo i suoi cataloghi
-            const profile = user.profiles.find(p => p.id === profileId);
+            const profile = (addonConfig?.profiles || []).find(p => p.id === profileId);
             if (profile) {
                 console.log(`[StremioSync] Resolving catalogs for profile ${profile.name || profileId}...`);
                 const catalogItems = await syncCatalogData(profile.catalogs, tmdbKey, profile.settings || {});
@@ -69,11 +77,11 @@ async function syncAllStremioData(userId, authKey, profileId = 'global') {
         // 5. Update lastSync timestamp
         await updateSyncTimestamp(userId, profileId);
 
-        const updatedUser = await User.findOne({ userId });
+        const TasteProfile = require('../models/TasteProfile');
         const updatedProfile = await TasteProfile.findOne({ owner: userId, context: profileId });
 
         console.log(`[StremioSync] Sync completed successfully for user ${userId} (${profileId})`);
-        return { success: true, user: updatedUser, profile: updatedProfile };
+        return { success: true, profile: updatedProfile };
     } catch (error) {
         console.error(`[StremioSync] Error syncing data for user ${userId}:`, error.message);
         return { success: false, error: error.message };
@@ -106,8 +114,8 @@ async function fetchStremioLibrary(authKey) {
 }
 
 async function pushToTrakt(userId, data) {
-    const user = await User.findOne({ userId });
-    const traktToken = user?.apiKeys?.trakt;
+    const account = await UserAccount.findOne({ userId }).lean();
+    const traktToken = account?.apiKeys?.trakt;
     if (!traktToken) return;
 
     const { syncTraktRatings, syncTraktHistory } = require('../clients/trakt');
@@ -188,6 +196,10 @@ async function updateSyncTimestamp(userId, profileId) {
     const randomOffsetMs = (Math.floor(Math.random() * 241) - 120) * 60 * 1000;
     const nextSyncInterval = (8 * 60 * 60 * 1000) + randomOffsetMs;
 
+    // Write sync metadata to AddonConfig (profiles + config live there)
+    const account = await UserAccount.findOne({ userId }).lean();
+    if (!account?.addonUuid) return;
+
     const update = {
         $set: {
             'config.lastStremioSync': new Date(),
@@ -199,8 +211,8 @@ async function updateSyncTimestamp(userId, profileId) {
         update.$set[`profiles.$[elem].settings.lastSync`] = new Date();
     }
 
-    await User.findOneAndUpdate(
-        { userId },
+    await AddonConfig.findOneAndUpdate(
+        { uuid: account.addonUuid },
         update,
         { 
             arrayFilters: [{ 'elem.id': profileId }],

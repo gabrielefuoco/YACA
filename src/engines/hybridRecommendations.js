@@ -1,7 +1,8 @@
 const { ITEMS_PER_PAGE } = require('../config');
 const TasteProfile = require('../models/TasteProfile');
 const TmdbScoringData = require('../models/TmdbScoringData');
-const User = require('../models/User');
+const UserAccount = require('../db/models/UserAccount');
+const AddonConfig = require('../db/models/AddonConfig');
 const ProfileBuilder = require('../profile/ProfileBuilder');
 const ProfileScorer = require('../profile/ProfileScorer');
 const tmdb = require('../clients/tmdb');
@@ -11,6 +12,7 @@ const { getProfileDnaFilters } = require('../utils/helpers');
 const { rateLimitedMap } = require('../utils/rateLimiter');
 const { generateDiscoveryQueries } = require('../ai/querySynthesizer');
 const { normalizeContentId } = require('../utils/contentId');
+const { getPresets } = require('../data/presets');
 
 /**
  * Returns the active profile settings for the user.
@@ -29,13 +31,19 @@ function getProfileSettings(user, context) {
  * @returns {Promise<{profile: Object|null, user: Object|null, globalProfile: Object|null}>}
  */
 async function fetchProfileContext(userId, context) {
-    const [profile, user, globalProfile] = await Promise.all([
+    // Read TasteProfile directly; for user profiles, resolve via Two-Table Split
+    const account = await UserAccount.findOne({ userId }).lean();
+    const addonConfig = account?.addonUuid
+        ? await AddonConfig.findOne({ uuid: account.addonUuid }).lean()
+        : null;
+
+    const [profile, globalProfile] = await Promise.all([
         TasteProfile.findOne({ owner: userId, context }),
-        User.findOne({ userId }),
         context === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
     ]);
 
-    return { profile, user, globalProfile };
+    // Return addonConfig as 'user' — consumers use it for .profiles and .settings
+    return { profile, user: addonConfig, globalProfile };
 }
 
 /**
@@ -186,6 +194,59 @@ async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = 60) {
 }
 
 /**
+ * 🎯 Direct Preset Catalog Builder (Bug 1.3 Fix: Preset Fall-through)
+ * Executes a preset's hardcoded TMDB discovery queries directly,
+ * bypassing the Two-Tier Scoring and hybrid calculation pipeline.
+ * This ensures preset catalogs always return results even when the
+ * user has no profile or when the preset ID doesn't match any
+ * hardcoded hero catalog constant.
+ *
+ * @param {string} presetId - The preset ID (e.g., 'preset_horror_all')
+ * @param {string} tmdbApiKey - TMDB API key
+ * @param {string} mediaType - 'movie' or 'series'
+ * @returns {Promise<string[]>} Array of TMDB IDs
+ */
+async function buildDirectPresetCatalog(presetId, tmdbApiKey, mediaType) {
+    const presetsList = getPresets();
+    const preset = presetsList.find(p => p.id === presetId);
+    if (!preset || !preset.queries || preset.queries.length === 0) {
+        return [];
+    }
+
+    const tmdbType = (preset.type === 'series' || mediaType === 'series') ? 'tv' : 'movie';
+    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+    const existingIds = new Set();
+    const pool = [];
+
+    for (const query of preset.queries) {
+        const params = { ...query };
+        delete params.strategy; // Remove non-TMDB field
+
+        // Use the preset's sort_by or default to popularity.desc
+        if (!params.sort_by) params.sort_by = 'popularity.desc';
+
+        // Fetch up to 3 pages for a deep result pool
+        for (let page = 1; page <= 3; page++) {
+            const results = await fetchTmdbResults(
+                tmdbClient,
+                `/discover/${tmdbType}`,
+                { ...params, page },
+                `Direct Preset (${presetId}) page ${page}`
+            );
+            for (const item of results) {
+                const nId = normalizeContentId(item.id);
+                if (nId && !existingIds.has(nId)) {
+                    existingIds.add(nId);
+                    pool.push(nId);
+                }
+            }
+        }
+    }
+
+    return pool.slice(0, 100);
+}
+
+/**
  * Per ogni seed TMDB ID, recupera i film "simili" e conta quante volte ogni film appare.
  * @param {Array} seedTmdbIds Array di ID TMDB (numeri o stringhe)
  * @param {String} tmdbApiKey Chiave API TMDB
@@ -276,7 +337,7 @@ function extractDNAParams(manualDNA = []) {
  */
 async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return [];
+    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
@@ -341,7 +402,7 @@ async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
  */
 async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return [];
+    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
@@ -407,7 +468,7 @@ async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
  */
 async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return [];
+    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
@@ -614,7 +675,7 @@ async function saveScoringData(tmdbDetails, type) {
  */
 async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return [];
+    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
@@ -717,7 +778,7 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
  */
 async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return [];
+    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
@@ -806,7 +867,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
  */
 async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return [];
+    if (!profile) return fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
@@ -892,7 +953,7 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
  */
 async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return [];
+    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const dnaFilters = getProfileDnaFilters(user, context);
@@ -947,6 +1008,23 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 
     // Helper to build IDs from scratch
     const buildRecommendIds = async () => {
+        // ============================================================
+        // EARLY EXIT for Presets (Bug 1.3 Fix: Preset Fall-through)
+        // If catalogId matches a known preset from presets.js, execute
+        // its hardcoded TMDB queries directly, bypassing the hybrid
+        // scoring pipeline entirely. This prevents presets from falling
+        // through to the catch-all buildTopGenresMixCatalog.
+        // ============================================================
+        const presetsList = getPresets();
+        const matchedPreset = presetsList.find(p => p.id === catalogId);
+        if (matchedPreset) {
+            const ids = await buildDirectPresetCatalog(catalogId, tmdbApiKey, mediaType);
+            if (ids.length > 0) {
+                await hybridRecommendationsCache.set(cacheKey, { ids });
+                return ids;
+            }
+        }
+
         // Hero Catalog IDs (Phase 4)
         const TRUE_BLEND_IDS = new Set(['yaca_true_blend_movies', 'yaca_true_blend_series', 'yaca_top_genres_mix']);
         const SEED_NETWORK_IDS = new Set(['yaca_seed_network_movies', 'yaca_seed_network_series']);
@@ -1098,6 +1176,7 @@ module.exports = {
     computeTopGenres,
     fetchPopularFallbackIds,
     fetchHiddenGemsFallbackIds,
+    buildDirectPresetCatalog,
     buildHybridCatalog,
     buildTopGenresMixCatalog,
     buildHiddenGemsCatalog,

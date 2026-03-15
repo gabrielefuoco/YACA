@@ -4,7 +4,11 @@ jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn()
 }));
 
-jest.mock('../src/models/User', () => ({
+jest.mock('../src/db/models/UserAccount', () => ({
+    findOne: jest.fn()
+}));
+
+jest.mock('../src/db/models/AddonConfig', () => ({
     findOne: jest.fn()
 }));
 

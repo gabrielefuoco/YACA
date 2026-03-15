@@ -1,32 +1,29 @@
 /**
  * UserConfig Manager: Gestisce il caricamento e il salvataggio delle configurazioni utente.
- * Supporta sia il nuovo modello stateful (MongoDB via userId) che il vecchio stateless (Base64).
+ * 
+ * Two-Table Split Architecture:
+ *   - UserAccount: Stores secrets (auth credentials, API keys, addonUuid)
+ *   - AddonConfig: Stores public Stremio config (profiles, catalogs, DNA, syncStatus)
+ * 
+ * The join is strictly unidirectional: UserAccount.addonUuid → AddonConfig.uuid.
+ * AddonConfig is 100% anonymous — it has NO userId field.
  */
 
 const { nanoid } = require('nanoid');
-const User = require('./User');
+const AddonConfig = require('../db/models/AddonConfig');
+const UserAccount = require('../db/models/UserAccount');
 
 const UserConfig = {
     /**
-     * Carica un utente dal database MongoDB tramite il suo ID corto.
-     * @param {string} userId - ID univoco dell'utente
-     * @returns {Promise<object|null>} Il documento utente o null
-     */
-    async getUser(userId) {
-        try {
-            if (typeof userId !== 'string') return null;
-            return await User.findOne({ userId });
-        } catch (err) {
-            console.error(`Errore caricamento utente ${userId}:`, err.message);
-            return null;
-        }
-    },
-
-    /**
-     * Salva o aggiorna un utente nel database.
-     * Implementa Optimistic Concurrency Control (OCC) per evitare sovrascritture accidentali.
+     * Salva o aggiorna un utente nel database (Two-Table Split).
+     * 
+     * Step 1: Upsert UserAccount with auth credentials + API keys.
+     * Step 2: Resolve addonUuid from UserAccount.
+     * Step 3: Upsert AddonConfig with profiles + config.
+     * 
+     * Implements Optimistic Concurrency Control (OCC) via configVersion.
      * @param {object} userData - Dati dell'utente da aggiornare
-     * @returns {Promise<object>} Il documento salvato
+     * @returns {Promise<object>} Merged view of both tables
      */
     async saveUser(userData) {
         const MAX_RETRIES = 3;
@@ -43,41 +40,42 @@ const UserConfig = {
                     throw new Error("userId non valido");
                 }
 
-                // 2. DATA PRESERVATION & MERGING
-                const existingUser = await this.getUser(targetUserId);
-                if (existingUser) {
-                    // Check for conflicts if configVersion is provided
+                // 2. READ EXISTING DATA FROM BOTH TABLES
+                const existingAccount = await UserAccount.findOne({ userId: targetUserId });
+                const existingAddonUuid = existingAccount?.addonUuid;
+                const existingConfig = existingAddonUuid
+                    ? await AddonConfig.findOne({ uuid: existingAddonUuid }).lean()
+                    : null;
+
+                // Check for OCC conflicts against AddonConfig's configVersion
+                if (existingConfig) {
                     if (userData.config?.configVersion && 
-                        existingUser.config?.configVersion && 
-                        userData.config.configVersion !== existingUser.config.configVersion) {
-                        console.warn(`[UserConfig] Concurrency conflict for ${targetUserId}. Incoming: ${userData.config.configVersion}, DB: ${existingUser.config.configVersion}`);
-                        // If we are far behind, we should probably fail or reload. 
-                        // For now, increment attempt and retry (the next loop will use fresh existingUser).
+                        existingConfig.config?.configVersion && 
+                        userData.config.configVersion !== existingConfig.config?.configVersion) {
+                        console.warn(`[UserConfig] Concurrency conflict for ${targetUserId}. Incoming: ${userData.config.configVersion}, DB: ${existingConfig.config.configVersion}`);
                         attempt++;
                         if (attempt >= MAX_RETRIES) throw new Error("Conflitto di versione: impossibile salvare le modifiche");
                         continue; 
                     }
+                }
 
-                    // Merge Profiles (preserving pending suggestions if not provided)
-                    if (!userData.profiles?.length && existingUser.profiles?.length) {
-                        userData.profiles = existingUser.profiles;
-                    } else if (Array.isArray(userData.profiles) && existingUser.profiles?.length) {
+                // 3. MERGE PROFILES (from AddonConfig)
+                if (existingConfig) {
+                    if (!userData.profiles?.length && existingConfig.profiles?.length) {
+                        userData.profiles = existingConfig.profiles;
+                    } else if (Array.isArray(userData.profiles) && existingConfig.profiles?.length) {
                         const existingProfiles = new Map(
-                            existingUser.profiles.map((p) => [p.id, p.toObject?.() || p])
+                            existingConfig.profiles.map((p) => [p.id, p])
                         );
                         userData.profiles = userData.profiles.map((profile) => {
                             const existingProfile = existingProfiles.get(profile.id);
                             if (!existingProfile) return profile;
 
-                            // Robust Merge: Preserve existing values if not provided in the update
                             const mergedSettings = { 
                                 ...(existingProfile.settings || {}), 
                                 ...(profile.settings || {}) 
                             };
                             
-                            // Specific preservation for DNA traits: 
-                            // If incoming update is explicitly empty [] but DB has data, 
-                            // we assume it's a "reset prevention" scenario (e.g. initialization glitch).
                             if (existingProfile.settings?.manualDNA?.length && (!profile.settings?.manualDNA || profile.settings.manualDNA.length === 0)) {
                                 mergedSettings.manualDNA = existingProfile.settings.manualDNA;
                             }
@@ -94,69 +92,109 @@ const UserConfig = {
                             };
                         });
                     }
+                }
 
-                    // Merge API Keys
+                // 4. MERGE API KEYS (from UserAccount)
+                // undefined = "don't touch" (preserve existing), null/'' = "delete this key"
+                const keysToUnset = new Set();
+                if (existingAccount) {
                     const incomingApiKeys = userData.apiKeys || {};
-                    const currentApiKeys = existingUser.apiKeys?.toObject?.() || existingUser.apiKeys || {};
-                    const mergedApiKeys = { ...currentApiKeys, ...incomingApiKeys };
+                    const currentApiKeys = existingAccount.apiKeys?.toObject?.() || existingAccount.apiKeys || {};
+                    const mergedApiKeys = { ...currentApiKeys };
 
-                    // Handle null/empty deletes — removes from the $set object below,
-                    // effectively preventing update if they become undefined there.
                     for (const [key, value] of Object.entries(incomingApiKeys)) {
                         if (value === null || value === '') {
                             delete mergedApiKeys[key];
+                            keysToUnset.add(key);
+                        } else if (value !== undefined) {
+                            mergedApiKeys[key] = value;
                         }
+                        // undefined = "don't touch", so we keep the existing value
                     }
                     userData.apiKeys = mergedApiKeys;
 
-                    // Preserve fields if not provided
-                    if (!userData.email && existingUser.email) userData.email = existingUser.email;
-                    
-                    // Merge Config
-                    userData.config = {
-                        ...existingUser.config?.toObject?.() || existingUser.config,
-                        ...(userData.config || {}),
-                        configVersion: nanoid(8) // Increment version on every save
-                    };
-                } else {
-                    // New user initialization
-                    if (!userData.config) userData.config = {};
-                    userData.config.configVersion = nanoid(8);
+                    if (!userData.email && existingAccount.email) userData.email = existingAccount.email;
                 }
+
+                // Merge Config (version bump on every save)
+                const existingConfigObj = existingConfig?.config || {};
+                userData.config = {
+                    ...existingConfigObj,
+                    ...(userData.config || {}),
+                    configVersion: nanoid(8)
+                };
 
                 userData.userId = targetUserId;
 
-                // 3. ATOMIC UPDATE WITH GRANULAR MERGING
-                const updateOperation = { $set: {} };
-                const unsetFields = {};
+                // ============================================
+                // TABLE A: UserAccount (secrets vault)
+                // ============================================
+                const accountUpdate = { $set: {} };
+                const accountUnset = {};
 
-                if (userData.email) updateOperation.$set.email = userData.email;
+                if (userData.email) accountUpdate.$set.email = userData.email;
+
+                if (userData.apiKeys) {
+                    const keysInDoc = ['stremio', 'tmdb', 'mistral', 'trakt', 'traktRefreshToken', 'mdblist'];
+                    keysInDoc.forEach(k => {
+                        if (keysToUnset.has(k)) {
+                            accountUnset[`apiKeys.${k}`] = 1;
+                        } else {
+                            const val = userData.apiKeys[k];
+                            if (val !== undefined) {
+                                accountUpdate.$set[`apiKeys.${k}`] = val;
+                            }
+                        }
+                    });
+                }
+
+                if (Object.keys(accountUnset).length > 0) accountUpdate.$unset = accountUnset;
+                if (Object.keys(accountUpdate.$set).length === 0) delete accountUpdate.$set;
+
+                const accountDoc = await UserAccount.findOneAndUpdate(
+                    { userId: targetUserId },
+                    accountUpdate,
+                    { 
+                        returnDocument: 'after', 
+                        upsert: true,
+                        setDefaultsOnInsert: true,
+                        runValidators: true
+                    }
+                );
+
+                if (!accountDoc) throw new Error("Errore creazione UserAccount");
+
+                // ============================================
+                // TABLE B: AddonConfig (public, anonymous)
+                // ============================================
+                const targetUuid = accountDoc.addonUuid;
+                const configUpdateOp = { $set: {} };
+
+                // Config fields
                 if (userData.config) {
                     for (const [k, v] of Object.entries(userData.config)) {
-                        updateOperation.$set[`config.${k}`] = v;
+                        configUpdateOp.$set[`config.${k}`] = v;
                     }
                 }
 
+                // Profiles merge
                 if (Array.isArray(userData.profiles)) {
-                    if (!existingUser || !existingUser.profiles?.length) {
-                        updateOperation.$set.profiles = userData.profiles;
+                    if (!existingConfig || !existingConfig.profiles?.length) {
+                        configUpdateOp.$set.profiles = userData.profiles;
                     } else {
                         const profileMap = new Map();
                         
-                        // Initialize map with existing profiles, prioritizing explicit 'id' field, falling back to '_id'
-                        existingUser.profiles.forEach(p => {
-                            const pObj = p.toObject?.() || p;
-                            const key = pObj.id || pObj._id?.toString() || p._id?.toString();
-                            if (key) profileMap.set(key, pObj);
+                        existingConfig.profiles.forEach(p => {
+                            const key = p.id || p._id?.toString();
+                            if (key) profileMap.set(key, p);
                         });
 
                         userData.profiles.forEach(p => {
                             const pId = p.id || p._id?.toString();
-                            if (!pId) return; // Skip invalid entries
+                            if (!pId) return;
 
                             const existing = profileMap.get(pId);
                             if (existing) {
-                                // Sub-merge settings to preserve DNA
                                 const mergedSettings = { 
                                     ...(existing.settings || {}), 
                                     ...(p.settings || {}) 
@@ -180,51 +218,38 @@ const UserConfig = {
                                 profileMap.set(pId, p);
                             }
                         });
-                        updateOperation.$set.profiles = Array.from(profileMap.values());
+                        configUpdateOp.$set.profiles = Array.from(profileMap.values());
                     }
                 }
 
-                if (userData.apiKeys) {
-                    const keysInDoc = ['stremio', 'tmdb', 'mistral', 'trakt', 'traktRefreshToken', 'mdblist'];
-                    keysInDoc.forEach(k => {
-                        const val = userData.apiKeys[k];
-                        if (val === null || val === '') {
-                            unsetFields[`apiKeys.${k}`] = 1;
-                        } else if (val !== undefined) {
-                            updateOperation.$set[`apiKeys.${k}`] = val;
-                        }
-                    });
+                if (Object.keys(configUpdateOp.$set).length === 0) delete configUpdateOp.$set;
+
+                // OCC query: match version if existing config exists
+                const configQuery = { uuid: targetUuid };
+                if (existingConfig) {
+                    configQuery['config.configVersion'] = existingConfig.config?.configVersion;
                 }
 
-                if (Object.keys(unsetFields).length > 0) updateOperation.$unset = unsetFields;
-                if (Object.keys(updateOperation.$set).length === 0) delete updateOperation.$set;
-
-                // 4. ATOMIC SAVE WITH VERSION CHECK
-                const query = { userId: targetUserId };
-                if (existingUser) {
-                    // Optimized: only update if the version matches what we read
-                    query['config.configVersion'] = existingUser.config?.configVersion;
-                }
-
-                const updatedUser = await User.findOneAndUpdate(
-                    query,
-                    updateOperation,
+                const updatedConfig = await AddonConfig.findOneAndUpdate(
+                    configQuery,
+                    configUpdateOp,
                     { 
                         returnDocument: 'after', 
-                        upsert: !existingUser, // Only upsert if it's a new user
+                        upsert: !existingConfig,
                         setDefaultsOnInsert: true,
                         runValidators: true
                     }
                 );
 
-                if (!updatedUser) {
-                    // If no user found with this query, it means the version changed in between read and write
+                if (!updatedConfig && existingConfig) {
+                    // Version changed between read and write — retry
                     attempt++;
                     if (attempt >= MAX_RETRIES) throw new Error("Conflitto di versione persistente: impossibile salvare");
                     continue;
                 }
 
-                return updatedUser;
+                // Return a merged view compatible with the rest of the app
+                return this._mergeView(accountDoc, updatedConfig);
             } catch (err) {
                 if (attempt >= MAX_RETRIES - 1) {
                     console.error(`[UserConfig] Errore salvataggio definitivo utente ${userData?.userId}:`, err.message);
@@ -237,33 +262,68 @@ const UserConfig = {
 
     /**
      * Helper per risolvere la configurazione utente (Stateful).
-     * @param {string} userId - userId (MongoDB)
+     * Supports lookup by userId or by addon UUID.
+     * Reads public config from AddonConfig and joins API keys from UserAccount.
+     * @param {string} handle - userId or addon UUID
      * @returns {Promise<object|null>} Configurazione utente normalizzata
      */
-    async resolveUserConfig(userId) {
-        if (!userId) return null;
+    async resolveUserConfig(handle) {
+        if (!handle) return null;
 
-        const user = await this.getUser(userId);
-        if (user) {
-            // Map profiles to ensure they each have a stable 'id' field (fallback to _id)
-            const resolvedProfiles = (user.profiles || []).map(p => {
-                const pObj = p.toObject?.() || p;
-                return {
-                    ...pObj,
-                    id: pObj.id || pObj._id?.toString()
-                };
-            });
+        // Try UUID-based lookup (AddonConfig table) first
+        const addonConfig = await AddonConfig.findOne({ uuid: handle }).lean().catch(() => null);
+        if (addonConfig) {
+            const account = await UserAccount.findOne({ addonUuid: handle }).lean().catch(() => null);
+            return this._buildResolvedConfig(account, addonConfig);
+        }
 
-            return {
-                userId: user.userId,
-                apiKeys: user.apiKeys,
-                profiles: resolvedProfiles,
-                activeProfileId: user.config?.activeProfileId,
-                configVersion: user.config?.configVersion
-            };
+        // Try userId-based lookup
+        const account = await UserAccount.findOne({ userId: handle }).lean().catch(() => null);
+        if (account?.addonUuid) {
+            const config = await AddonConfig.findOne({ uuid: account.addonUuid }).lean().catch(() => null);
+            return this._buildResolvedConfig(account, config);
         }
 
         return null;
+    },
+
+    /**
+     * Builds a normalized config object from UserAccount + AddonConfig.
+     * @private
+     */
+    _buildResolvedConfig(account, addonConfig) {
+        const resolvedProfiles = (addonConfig?.profiles || []).map(p => ({
+            ...p,
+            id: p.id || p._id?.toString()
+        }));
+
+        return {
+            userId: account?.userId || null,
+            addonUuid: addonConfig?.uuid || account?.addonUuid || null,
+            apiKeys: account?.apiKeys || {},
+            profiles: resolvedProfiles,
+            activeProfileId: addonConfig?.config?.activeProfileId,
+            configVersion: addonConfig?.config?.configVersion,
+            syncStatus: addonConfig?.syncStatus
+        };
+    },
+
+    /**
+     * Creates a merged view from both table documents for backwards compatibility.
+     * @private
+     */
+    _mergeView(accountDoc, configDoc) {
+        const accountObj = accountDoc?.toObject?.() || accountDoc || {};
+        const configObj = configDoc?.toObject?.() || configDoc || {};
+        return {
+            userId: accountObj.userId,
+            email: accountObj.email,
+            addonUuid: accountObj.addonUuid,
+            apiKeys: accountObj.apiKeys || {},
+            profiles: configObj.profiles || [],
+            config: configObj.config || {},
+            syncStatus: configObj.syncStatus || {}
+        };
     }
 };
 

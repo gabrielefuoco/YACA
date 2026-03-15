@@ -53,8 +53,8 @@ async function syncTraktTokensToDb(userId, newAccessToken, newRefreshToken) {
     if (!userId) return false;
 
     try {
-        const User = require('../models/User');
-        await User.findOneAndUpdate(
+        const UserAccount = require('../db/models/UserAccount');
+        await UserAccount.findOneAndUpdate(
             { userId },
             {
                 $set: {
