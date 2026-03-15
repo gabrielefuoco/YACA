@@ -129,4 +129,61 @@ describe('profiles API route fixes (DNA refresh + AI logs)', () => {
             })
         }));
     });
+
+    it('skips AI generation when mistral key is missing', async () => {
+        const mockBuildDnaDescription = jest.fn().mockReturnValue('manual dna profile');
+        const mockGenerateDiscoveryQueries = jest.fn();
+        const mockCacheGet = jest.fn().mockResolvedValue(null);
+
+        jest.doMock('../src/utils/stremioSync', () => ({
+            syncAllStremioData: jest.fn()
+        }));
+        jest.doMock('../src/cache/cacheInstances', () => ({
+            aiDiscoveryCache: { get: mockCacheGet }
+        }));
+        jest.doMock('../src/ai/querySynthesizer', () => ({
+            buildDnaDescription: mockBuildDnaDescription,
+            generateDiscoveryQueries: mockGenerateDiscoveryQueries
+        }));
+        jest.doMock('../src/db/models/UserAccount', () => ({
+            findOne: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue({
+                    userId: 'u1',
+                    addonUuid: 'uuid-1',
+                    apiKeys: {}
+                })
+            })
+        }));
+        jest.doMock('../src/db/models/AddonConfig', () => ({
+            findOne: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue({
+                    uuid: 'uuid-1',
+                    profiles: [{ id: 'anime', settings: { manualDNA: [{ type: 'genre', id: '28', name: 'Action' }] } }]
+                })
+            }),
+            updateOne: jest.fn()
+        }));
+        jest.doMock('../src/models/TasteProfile', () => ({
+            findOne: jest.fn().mockResolvedValue(null),
+            updateOne: jest.fn()
+        }));
+
+        const router = require('../src/api/profiles');
+        const analyticsHandler = findRouteHandler(router, 'get', '/:id/analytics');
+        const req = { params: { id: 'anime' }, query: { userId: 'u1' } };
+        const res = createMockRes();
+
+        await analyticsHandler(req, res);
+
+        expect(mockBuildDnaDescription).toHaveBeenCalled();
+        expect(mockGenerateDiscoveryQueries).not.toHaveBeenCalled();
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            aiLogs: expect.objectContaining({
+                yaca_true_blend_movies: [],
+                yaca_true_blend_series: [],
+                yaca_hidden_gems_movies: [],
+                yaca_hidden_gems_series: []
+            })
+        }));
+    });
 });

@@ -59,7 +59,10 @@ router.get('/:id/analytics', async (req, res) => {
                                 modeResults[mode] = generated;
                             }
                         }
-                    } catch {}
+                    } catch (err) {
+                        // Non-blocking: inspector logs must never fail the analytics endpoint
+                        console.warn(`[Analytics] AI log resolution failed for mode ${mode}:`, err.message);
+                    }
                 }
 
                 for (const [catalogId, mode] of Object.entries(CATALOG_MODES)) {

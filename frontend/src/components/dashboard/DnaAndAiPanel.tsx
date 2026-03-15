@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Profile, DNAItem, AnalyticsData } from '@/types';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { api } from '@/lib/api';
@@ -39,11 +39,16 @@ function dnaArraysEqual(a: DNAItem[] = [], b: DNAItem[] = []) {
 export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) {
   const profileDNA: DNAItem[] = profile?.settings?.manualDNA ?? [];
   const suggestedDNA: DNAItem[] = profile?.settings?.suggestedDNA ?? [];
+  const latestSettingsRef = useRef(profile.settings);
 
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [showProgressModal, setShowProgressModal] = useState(false);
+
+  useEffect(() => {
+    latestSettingsRef.current = profile.settings;
+  }, [profile.settings]);
 
   const fetchAnalytics = useCallback(async () => {
     setAnalyticsLoading(true);
@@ -68,16 +73,17 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
       const status = await api.getSyncStatus(profile.id, userId);
       setSyncStatus(status);
 
-      if (status && (Array.isArray(status.manualDNA) || Array.isArray(status.suggestedDNA))) {
-        const nextManualDNA = Array.isArray(status.manualDNA) ? status.manualDNA : (profile.settings?.manualDNA ?? []);
-        const nextSuggestedDNA = Array.isArray(status.suggestedDNA) ? status.suggestedDNA : (profile.settings?.suggestedDNA ?? []);
-        const currentManualDNA = profile.settings?.manualDNA ?? [];
-        const currentSuggestedDNA = profile.settings?.suggestedDNA ?? [];
+      if (status && Array.isArray(status.manualDNA) && Array.isArray(status.suggestedDNA)) {
+        const currentSettings = latestSettingsRef.current ?? {};
+        const nextManualDNA = status.manualDNA;
+        const nextSuggestedDNA = status.suggestedDNA;
+        const currentManualDNA = currentSettings.manualDNA ?? [];
+        const currentSuggestedDNA = currentSettings.suggestedDNA ?? [];
 
         if (!dnaArraysEqual(nextManualDNA, currentManualDNA) || !dnaArraysEqual(nextSuggestedDNA, currentSuggestedDNA)) {
           onUpdateProfile(profile.id, {
             settings: {
-              ...(profile.settings ?? {}),
+              ...currentSettings,
               manualDNA: nextManualDNA,
               suggestedDNA: nextSuggestedDNA,
             },
@@ -92,7 +98,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
     } catch (e) {
       console.error('Failed to fetch sync status', e);
     }
-  }, [onUpdateProfile, profile.id, profile.settings]);
+  }, [onUpdateProfile, profile.id]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -109,10 +115,10 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
   }, [syncStatus?.isSyncing, fetchSyncStatus]);
 
   useEffect(() => {
-    if (syncStatus && !syncStatus.isSyncing) {
+    if (syncStatus?.isSyncing === false) {
       fetchAnalytics();
     }
-  }, [fetchAnalytics, syncStatus, syncStatus?.isSyncing]);
+  }, [fetchAnalytics, syncStatus?.isSyncing]);
 
   const handleRefresh = async () => {
     const userId = localStorage.getItem('yaca_user_id');
