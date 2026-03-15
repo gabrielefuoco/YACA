@@ -1,6 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('../src/models/User');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
 const TasteProfile = require('../src/models/TasteProfile');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 
@@ -14,23 +15,27 @@ async function runTest() {
 
         // 1. Cleanup old test data
         await TasteProfile.deleteMany({ owner: TEST_USER_ID });
-        await User.deleteMany({ userId: TEST_USER_ID });
+        await UserAccount.deleteMany({ userId: TEST_USER_ID });
 
-        // 2. Create mock User
-        const user = new User({
+        // 2. Create mock UserAccount + AddonConfig (Two-Table Split)
+        const account = await UserAccount.create({
             userId: TEST_USER_ID,
             email: 'test@example.com',
-            profiles: [{
+            passwordHash: 'test-hash'
+        });
+        await AddonConfig.findOneAndUpdate(
+            { uuid: account.addonUuid },
+            { $set: { profiles: [{
                 id: TEST_CONTEXT,
                 name: 'Test Profile',
                 settings: {
                     suggestedDNA: [],
                     manualDNA: []
                 }
-            }]
-        });
-        await user.save();
-        console.log('Created mock user');
+            }] } },
+            { upsert: true }
+        );
+        console.log('Created mock user (Two-Table Split)');
 
         // 3. Process mock items to build profile
         console.log('\n--- Processing Mock Item 1 (Cyberpunk Action) ---');
@@ -64,9 +69,10 @@ async function runTest() {
         console.log('\nRunning inferDNAFromProfile...');
         await ProfileBuilder.inferDNAFromProfile(profile);
 
-        // 6. Assert result in User settings
-        const updatedUser = await User.findOne({ userId: TEST_USER_ID });
-        const updatedProfile = updatedUser.profiles.find(p => p.id === TEST_CONTEXT);
+        // 6. Assert result in AddonConfig settings (Two-Table Split)
+        const updatedAccount = await UserAccount.findOne({ userId: TEST_USER_ID });
+        const updatedConfig = await AddonConfig.findOne({ uuid: updatedAccount.addonUuid });
+        const updatedProfile = updatedConfig.profiles.find(p => p.id === TEST_CONTEXT);
         
         console.log('\n--- Final DNA Results ---');
         const dna = updatedProfile.settings.suggestedDNA || [];
@@ -89,7 +95,7 @@ async function runTest() {
     } finally {
         // Optional: Cleanup
         // await TasteProfile.deleteMany({ owner: TEST_USER_ID });
-        // await User.deleteMany({ userId: TEST_USER_ID });
+        // await UserAccount.deleteMany({ userId: TEST_USER_ID });
         await mongoose.disconnect();
         console.log('\nDisconnected from MongoDB');
     }

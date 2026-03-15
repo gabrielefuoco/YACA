@@ -1,7 +1,8 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const axios = require('axios');
-const User = require('../src/models/User');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
 const TasteProfile = require('../src/models/TasteProfile');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 
@@ -26,16 +27,20 @@ async function testRealisticCatalog() {
 
         if (metas.length === 0) throw new Error("No items received from Cinemeta");
 
-        // 2. Prep User & Profile
+        // 2. Prep UserAccount + AddonConfig & Profile (Two-Table Split)
         await TasteProfile.deleteMany({ owner: TEST_USER_ID });
-        await User.deleteMany({ userId: TEST_USER_ID });
-        
-        const user = new User({
+        await UserAccount.deleteMany({ userId: TEST_USER_ID });
+
+        const account = await UserAccount.create({
             userId: TEST_USER_ID,
             email: 'real@example.com',
-            profiles: [{ id: TEST_CONTEXT, name: 'Realistic Profile' }]
+            passwordHash: 'test-hash'
         });
-        await user.save();
+        await AddonConfig.findOneAndUpdate(
+            { uuid: account.addonUuid },
+            { $set: { profiles: [{ id: TEST_CONTEXT, name: 'Realistic Profile' }] } },
+            { upsert: true }
+        );
 
         // 3. Process via ProfileBuilder
         console.log('\n--- PHASE 1: Processing Real Items ---');
@@ -79,9 +84,11 @@ async function testRealisticCatalog() {
         console.log('\n--- PHASE 2: Running DNA Inference ---');
         await ProfileBuilder.inferDNAFromProfile(profile);
 
-        const updatedUser = await User.findOne({ userId: TEST_USER_ID });
-        const updatedProfile = updatedUser.profiles.find(p => p.id === TEST_CONTEXT);
-        const dnaCount = updatedProfile.settings.suggestedDNA.length;
+        // Read DNA from AddonConfig (not UserAccount — Two-Table Split)
+        const updatedAccount = await UserAccount.findOne({ userId: TEST_USER_ID });
+        const updatedConfig = await AddonConfig.findOne({ uuid: updatedAccount.addonUuid });
+        const updatedProfile = updatedConfig.profiles.find(p => p.id === TEST_CONTEXT);
+        const dnaCount = (updatedProfile?.settings?.suggestedDNA || []).length;
 
         console.log(`✅ DNA Inference complete. Suggested traits: ${dnaCount}`);
         
