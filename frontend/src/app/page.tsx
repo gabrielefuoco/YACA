@@ -54,6 +54,7 @@ export default function Home() {
   const [configDecoded, setConfigDecoded] = useState(false);
   const [globalTmdbKey, setGlobalTmdbKey] = useState<string>('');
   const [globalMistralKey, setGlobalMistralKey] = useState<string>('');
+  const [isInitializing, setIsInitializing] = useState(true);
   const autoConfigCalledRef = useRef(false);
 
   // Initialize background sync worker for crowdsourced ecosystem
@@ -110,6 +111,7 @@ export default function Home() {
           setInitialProfiles(createDefaultProfiles());
         })
         .finally(() => {
+          setIsInitializing(false);
           setConfigDecoded(true);
         });
       return;
@@ -159,6 +161,7 @@ export default function Home() {
         setInitialProfiles(createDefaultProfiles());
       })
       .finally(() => {
+        setIsInitializing(false);
         setConfigDecoded(true);
       });
   }, [isLoaded]);
@@ -197,7 +200,7 @@ export default function Home() {
 
   // Auto-configure when stremio is logged in but no config/userId is stored yet
   useEffect(() => {
-    if (!isLoaded || !authLoaded || !configDecoded) return;
+    if (!isLoaded || !authLoaded || !configDecoded || isInitializing) return;
     if (autoConfigCalledRef.current) return;
     if (stremioAuth && !userId) {
       autoConfigCalledRef.current = true;

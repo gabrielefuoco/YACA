@@ -89,14 +89,11 @@ export function useProfiles(initialProfiles?: Profile[]) {
       prev.map((p) => {
         if (p.id !== id) return p;
         if (p.id === 'global') {
-          const sanitizedSettings = updates.settings
-            ? { ...updates.settings, manualDNA: [] }
-            : undefined;
           return {
             ...p,
             ...updates,
             name: p.name,
-            settings: sanitizedSettings ? { ...p.settings, ...sanitizedSettings } : p.settings,
+            settings: updates.settings ? { ...p.settings, ...updates.settings } : p.settings,
           };
         }
         return { ...p, ...updates };

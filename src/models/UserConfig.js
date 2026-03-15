@@ -75,11 +75,13 @@ const UserConfig = {
                                 ...(profile.settings || {}) 
                             };
                             
-                            // Specific preservation for DNA traits if settings were merged
-                            if (existingProfile.settings?.manualDNA?.length && !profile.settings?.manualDNA) {
+                            // Specific preservation for DNA traits: 
+                            // If incoming update is explicitly empty [] but DB has data, 
+                            // we assume it's a "reset prevention" scenario (e.g. initialization glitch).
+                            if (existingProfile.settings?.manualDNA?.length && (!profile.settings?.manualDNA || profile.settings.manualDNA.length === 0)) {
                                 mergedSettings.manualDNA = existingProfile.settings.manualDNA;
                             }
-                            if (existingProfile.settings?.suggestedDNA?.length && !profile.settings?.suggestedDNA) {
+                            if (existingProfile.settings?.suggestedDNA?.length && (!profile.settings?.suggestedDNA || profile.settings.suggestedDNA.length === 0)) {
                                 mergedSettings.suggestedDNA = existingProfile.settings.suggestedDNA;
                             }
 
