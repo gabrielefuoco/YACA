@@ -99,7 +99,7 @@ describe('hybridRecommendations review fixes', () => {
         expect(firstCallParams.sort_by).toBe('vote_average.desc');
     });
 
-    it('uses mistral key from UserAccount even when AddonConfig has no apiKeys', async () => {
+    it('uses mistral key from UserAccount when AddonConfig profile data exists', async () => {
         generateDiscoveryQueries.mockResolvedValueOnce([]);
         TasteProfile.findOne
             .mockResolvedValueOnce({
@@ -130,6 +130,35 @@ describe('hybridRecommendations review fixes', () => {
                 profiles: expect.any(Array),
                 apiKeys: { mistral: 'm-key' }
             }),
+            'ctx'
+        );
+    });
+
+    it('uses mistral key fallback when AddonConfig is missing', async () => {
+        generateDiscoveryQueries.mockResolvedValueOnce([]);
+        TasteProfile.findOne
+            .mockResolvedValueOnce({
+                owner: 'u1',
+                context: 'ctx',
+                genreScores: new Map([['18', 10]]),
+                keywordScores: new Map()
+            })
+            .mockResolvedValueOnce(null);
+        UserAccount.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue({
+            userId: 'u1',
+            apiKeys: { mistral: 'm-key' },
+            addonUuid: 'uuid-missing'
+        }) });
+        AddonConfig.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
+        tmdbGet.mockResolvedValue({ data: { results: [] } });
+
+        await buildTopGenresMixCatalog('u1', 'ctx', 'tmdb-key', 'movie');
+
+        expect(generateDiscoveryQueries).toHaveBeenCalledWith(
+            expect.any(Object),
+            'm-key',
+            'trueBlend',
+            expect.objectContaining({ apiKeys: { mistral: 'm-key' }, profiles: [] }),
             'ctx'
         );
     });

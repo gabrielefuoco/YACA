@@ -44,9 +44,12 @@ async function fetchProfileContext(userId, context) {
 
     // Merge public profile config (AddonConfig) with private API keys (UserAccount)
     // so downstream engines can read both user.profiles and user.apiKeys.
-    const user = addonConfig
-        ? { ...addonConfig, apiKeys: account?.apiKeys || {} }
-        : (account?.apiKeys ? { profiles: [], apiKeys: account.apiKeys } : null);
+    let user = null;
+    if (addonConfig) {
+        user = { ...addonConfig, apiKeys: account?.apiKeys || {} };
+    } else if (account?.apiKeys) {
+        user = { profiles: [], apiKeys: account.apiKeys };
+    }
 
     return { profile, user, globalProfile };
 }
