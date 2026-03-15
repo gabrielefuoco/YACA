@@ -33,7 +33,7 @@ describe('User model cleanup (Two-Table Split complete)', () => {
         expect(violations).toEqual([]);
     });
 
-    test('no test files should import the deleted models/User model', () => {
+    test('no test or script files should import the deleted models/User model', () => {
         const testsDir = path.join(__dirname, '../tests');
         const scriptsDir = path.join(__dirname, '../scripts');
         const dirs = [testsDir, scriptsDir].filter(d => fs.existsSync(d));
