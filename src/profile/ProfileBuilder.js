@@ -2,6 +2,7 @@ const TasteProfile = require('../models/TasteProfile');
 const tmdb = require('../clients/tmdb');
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const { BINGE_SESSION_GAP_MS, BINGE_MULTIPLIER } = require('../config');
+const AddonConfig = require('../db/models/AddonConfig');
 const GLOBAL_PROFILE_MIRROR_RATIO = 0.2;
 
 /**
@@ -161,6 +162,12 @@ class ProfileBuilder {
     static async syncUserHistory(owner, context, traktHistory, apiKey, isMirroring = false) {
         if (!owner || !traktHistory?.length) return null;
 
+        // Update syncStatus: signal that sync is in progress (Phase 0.4)
+        AddonConfig.updateOne(
+            { userId: owner },
+            { $set: { 'syncStatus.isSyncing': true, 'syncStatus.total': traktHistory.length, 'syncStatus.current': 0 } }
+        ).catch(() => { /* AddonConfig may not exist yet for legacy users */ });
+
         try {
             let profile = await TasteProfile.findOneAndUpdate(
                 { owner, context },
@@ -256,9 +263,20 @@ class ProfileBuilder {
                 await this.syncUserHistory(owner, 'global', traktHistory, apiKey, true);
             }
 
+            // Update syncStatus: signal that sync is complete (Phase 0.4)
+            AddonConfig.updateOne(
+                { userId: owner },
+                { $set: { 'syncStatus.isSyncing': false, 'syncStatus.lastSync': new Date() } }
+            ).catch(() => { /* non-blocking */ });
+
             return updatedProfile;
 
         } catch (e) {
+            // Update syncStatus on error too
+            AddonConfig.updateOne(
+                { userId: owner },
+                { $set: { 'syncStatus.isSyncing': false } }
+            ).catch(() => { /* non-blocking */ });
             console.error(`[ProfileBuilder] Sync error for ${owner}:${context}:`, e.message);
             throw e;
         }
