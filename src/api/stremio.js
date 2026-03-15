@@ -5,6 +5,7 @@ const { traktClient } = require('../clients/trakt');
 const { updateStremioAddonCollection } = require('../utils/stremioAddonSync');
 const User = require('../models/User');
 const UserConfig = require('../models/UserConfig');
+const AddonConfig = require('../db/models/AddonConfig');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler } = require('../handlers/metaHandler');
 const { streamHandler } = require('../handlers/streamHandler');
@@ -328,6 +329,30 @@ router.get(['/:userHandle/stream/:type/:id.json', '/:userHandle/:configVersion/s
         console.error("Errore Stream Endpoint:", err.message);
         res.json({ streams: [] });
     }
+});
+
+// Sync Status Polling endpoint (Phase 0.4: Dumb Frontend Pattern)
+// Frontend polls this every 3-5 seconds while syncStatus.isSyncing is true.
+router.get('/sync-status/:userId', async (req, res) => {
+    const { userId } = req.params;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    try {
+        const config = await AddonConfig.findOne({ userId }).lean();
+        if (!config) {
+            return res.json({ isSyncing: false, total: 0, current: 0, lastSync: null });
+        }
+        return res.json(config.syncStatus || { isSyncing: false, total: 0, current: 0, lastSync: null });
+    } catch (err) {
+        console.error('[SyncStatus] Error:', err.message);
+        return res.status(500).json({ error: 'Internal error' });
+    }
+});
+
+// Configure Redirect: When Stremio opens the configure gear icon, redirect to Frontend Login.
+// This ensures no UUID context is leaked — the user must authenticate via JWT.
+router.get('/:userHandle/configure', (_req, res) => {
+    const frontendUrl = process.env.FRONTEND_URL || '/';
+    res.redirect(302, frontendUrl);
 });
 
 // Switch Profile

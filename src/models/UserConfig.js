@@ -5,6 +5,8 @@
 
 const { nanoid } = require('nanoid');
 const User = require('./User');
+const AddonConfig = require('../db/models/AddonConfig');
+const UserAccount = require('../db/models/UserAccount');
 
 const UserConfig = {
     /**
@@ -237,13 +239,39 @@ const UserConfig = {
 
     /**
      * Helper per risolvere la configurazione utente (Stateful).
-     * @param {string} userId - userId (MongoDB)
+     * Supports lookup by userId (legacy) or by addon UUID (new Two-Table Split).
+     * When resolving by UUID, reads public config from AddonConfig and joins
+     * API keys internally from UserAccount (never exposed to Stremio responses).
+     * @param {string} handle - userId or addon UUID
      * @returns {Promise<object|null>} Configurazione utente normalizzata
      */
-    async resolveUserConfig(userId) {
-        if (!userId) return null;
+    async resolveUserConfig(handle) {
+        if (!handle) return null;
 
-        const user = await this.getUser(userId);
+        // Try UUID-based lookup (AddonConfig table) first
+        const addonConfig = await AddonConfig.findOne({ uuid: handle }).lean().catch(() => null);
+        if (addonConfig) {
+            const resolvedProfiles = (addonConfig.profiles || []).map(p => ({
+                ...p,
+                id: p.id || p._id?.toString()
+            }));
+
+            // Internal join: fetch API keys from UserAccount (never exposed to Stremio HTTP responses)
+            const account = await UserAccount.findOne({ addonUuid: handle }).lean().catch(() => null);
+
+            return {
+                userId: addonConfig.userId,
+                addonUuid: addonConfig.uuid,
+                apiKeys: account?.apiKeys || {},
+                profiles: resolvedProfiles,
+                activeProfileId: addonConfig.config?.activeProfileId,
+                configVersion: addonConfig.config?.configVersion,
+                syncStatus: addonConfig.syncStatus
+            };
+        }
+
+        // Fallback: legacy userId-based lookup
+        const user = await this.getUser(handle);
         if (user) {
             // Map profiles to ensure they each have a stable 'id' field (fallback to _id)
             const resolvedProfiles = (user.profiles || []).map(p => {

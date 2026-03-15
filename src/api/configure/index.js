@@ -4,6 +4,8 @@ const { resolveHostUrl } = require('../../utils/helpers');
 const { validateAuth, validateKeys } = require('./validators');
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');
 const { updateStremioAddonCollection } = require('../../utils/stremioAddonSync');
+const UserAccount = require('../../db/models/UserAccount');
+const AddonConfig = require('../../db/models/AddonConfig');
 
 module.exports = async (req, res) => {
     try {
@@ -59,21 +61,30 @@ module.exports = async (req, res) => {
             }
         };
 
-        // Prepare API Keys for update
+        // Prepare API Keys for update using VALIDATED values from validateKeys(),
+        // NOT raw req.body values. This prevents empty strings from overwriting
+        // valid tokens stored in the DB (Bug 1.1: Token Invalidation).
         const apiKeys = {};
         let hasApiKeys = false;
-        const keyMap = { 
-            tmdbKey: 'tmdb', 
-            mistralKey: 'mistral', 
-            traktToken: 'trakt', 
-            traktRefreshToken: 'traktRefreshToken', 
-            mdblistKey: 'mdblist', 
-            stremioAuthKey: 'stremio' 
+
+        // Map validated key names to DB field names
+        const validatedKeyMap = {
+            effectiveTmdbKey: 'tmdb',
+            mistralKey: 'mistral',
+            traktToken: 'trakt',
+            traktRefreshToken: 'traktRefreshToken',
+            mdblistKey: 'mdblist',
+            stremioAuthKey: 'stremio'
         };
 
-        for (const [bodyKey, dbKey] of Object.entries(keyMap)) {
-            if (Object.prototype.hasOwnProperty.call(req.body, bodyKey)) {
-                apiKeys[dbKey] = req.body[bodyKey] === '' ? null : (req.body[bodyKey] || null);
+        // Only include keys that were explicitly provided in the request body
+        // and have a non-empty validated value. Ignore empty/undefined values
+        // to prevent accidental overwrite of existing DB tokens.
+        const validatedValues = { effectiveTmdbKey, mistralKey, traktToken, traktRefreshToken, mdblistKey, stremioAuthKey };
+        for (const [validatedName, dbKey] of Object.entries(validatedKeyMap)) {
+            const value = validatedValues[validatedName];
+            if (value !== undefined && value !== null && value !== '') {
+                apiKeys[dbKey] = value;
                 hasApiKeys = true;
             }
         }
@@ -83,6 +94,39 @@ module.exports = async (req, res) => {
         if (stremioEmail) updateData.email = stremioEmail;
 
         const userDoc = await UserConfig.saveUser(updateData);
+
+        // Two-Table Sync: Mirror data into UserAccount + AddonConfig (Phase 0.1)
+        // UserAccount gets API keys; AddonConfig gets profiles & config.
+        const accountUpdate = {};
+        if (hasApiKeys) accountUpdate.apiKeys = apiKeys;
+        if (stremioEmail) accountUpdate.email = stremioEmail;
+
+        if (Object.keys(accountUpdate).length > 0) {
+            UserAccount.findOneAndUpdate(
+                { userId },
+                { $set: accountUpdate, $setOnInsert: { userId, addonUuid: require('crypto').randomUUID() } },
+                { upsert: true }
+            ).catch(err => console.error('[TwoTableSync] UserAccount sync error:', err.message));
+        }
+
+        const configUpdate = {};
+        if (parsedProfiles !== undefined) configUpdate.profiles = parsedProfiles;
+        configUpdate.config = { activeProfileId: finalActiveProfileId, configVersion: userDoc.config?.configVersion };
+
+        // Get or create the addon UUID for this user
+        let addonUuid;
+        try {
+            const account = await UserAccount.findOne({ userId }).lean();
+            addonUuid = account?.addonUuid;
+        } catch (_e) { /* ignore */ }
+
+        if (addonUuid) {
+            AddonConfig.findOneAndUpdate(
+                { uuid: addonUuid },
+                { $set: { ...configUpdate, userId } },
+                { upsert: true }
+            ).catch(err => console.error('[TwoTableSync] AddonConfig sync error:', err.message));
+        }
 
         // Cleanup unreferenced lists
         if (parsedProfiles) {
