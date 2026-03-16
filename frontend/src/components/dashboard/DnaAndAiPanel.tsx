@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Profile, DNAItem, AnalyticsData } from '@/types';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { api } from '@/lib/api';
-import { X, BrainCircuit, Terminal } from 'lucide-react';
+import { X, BrainCircuit, Terminal, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
 const HERO_CATALOGS_BASE = [
@@ -73,14 +73,21 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
 
   const toggleHeroCatalog = (fullCatalogId: string, isEnabled: boolean) => {
     const currentPresets = profile.raw_ui_state?.selectedPresets || [];
+    const currentCatalogOrder = profile.raw_ui_state?.catalogOrder || [];
+
     const newPresets = isEnabled
       ? (currentPresets.includes(fullCatalogId) ? currentPresets : [...currentPresets, fullCatalogId])
       : currentPresets.filter((id) => id !== fullCatalogId);
+
+    const newCatalogOrder = isEnabled
+      ? (currentCatalogOrder.includes(fullCatalogId) ? currentCatalogOrder : [...currentCatalogOrder, fullCatalogId])
+      : currentCatalogOrder.filter((id) => id !== fullCatalogId);
 
     onUpdateProfile(profile.id, {
       raw_ui_state: {
         ...profile.raw_ui_state,
         selectedPresets: newPresets,
+        catalogOrder: newCatalogOrder,
       },
     });
   };
@@ -311,7 +318,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
           <h2 className="text-lg font-black uppercase tracking-widest">Ispettore AI (Hero Catalogs)</h2>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-6">
           {HERO_CATALOGS_BASE.map((catalog) => {
             const idMovies = `${catalog.idBase}_movies`;
             const idSeries = `${catalog.idBase}_series`;
@@ -320,6 +327,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
             const selectedPresets = profile.raw_ui_state?.selectedPresets ?? [];
             const isMoviesEnabled = selectedPresets.includes(idMovies);
             const isSeriesEnabled = selectedPresets.includes(idSeries);
+            const isCatalogDisabled = !isMoviesEnabled && !isSeriesEnabled;
             const movieLog = analytics?.aiLogs?.[idMovies];
             const seriesLog = analytics?.aiLogs?.[idSeries];
             const preferredLog = isSeriesEnabled && !isMoviesEnabled ? seriesLog : movieLog;
@@ -353,7 +361,17 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                   </p>
                 </div>
                 <div className="p-3 flex-grow">
-                  {catalog.type === 'ai' ? (
+                  {isCatalogDisabled ? (
+                    <div className="rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-6 min-h-[140px] flex flex-col items-center justify-center text-center opacity-70">
+                      <EyeOff className="h-8 w-8 text-slate-400 mb-2" />
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Ispettore disattivato
+                      </p>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        Attiva Film o Serie per visualizzare log e dettagli del catalogo.
+                      </p>
+                    </div>
+                  ) : catalog.type === 'ai' ? (
                     <>
                       {/* Visualizzazione IBRIDA per Cataloghi AI */}
                       <div className="flex flex-col h-full gap-2">
@@ -411,7 +429,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                                           {badgeLabel.icon} {badgeLabel.name}: {getDnaName(id, key)}
                                         </span>
                                         {idx < ids.length - 1 && (
-                                          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500">OPPURE</span>
+                                          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500">&amp;</span>
                                         )}
                                       </div>
                                     ))}
