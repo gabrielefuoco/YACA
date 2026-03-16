@@ -252,12 +252,12 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
               {suggestedDNA.map((p) => (
                 <span
                   key={`${p.type}-${p.id}`}
-                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${
                     p.type === 'genre'
-                      ? 'bg-secondary text-primary border border-primary/10'
+                      ? 'bg-secondary text-marrow-deep border border-primary/20'
                       : p.type === 'keyword'
-                        ? 'bg-accent/20 text-accent-foreground border border-accent/10'
-                        : 'bg-primary/20 text-primary border border-primary/20'
+                        ? 'bg-accent/15 text-marrow-deep border border-accent/20'
+                        : 'bg-primary/15 text-marrow-deep border border-primary/20'
                   }`}
                 >
                   {p.name}
@@ -276,12 +276,12 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
             {profileDNA.length > 0 ? profileDNA.map((p) => (
               <span
                 key={`${p.type}-${p.id}`}
-                className={`inline-flex items-center gap-1 rounded px-3 py-1.5 text-xs font-bold ${
+                className={`inline-flex items-center gap-1 rounded px-3 py-1.5 text-xs font-black ${
                   p.type === 'genre'
-                    ? 'bg-secondary text-primary border border-primary/10'
+                    ? 'bg-secondary text-marrow-deep border border-primary/20'
                     : p.type === 'keyword'
-                      ? 'bg-accent/20 text-accent-foreground border border-accent/10'
-                      : 'bg-primary/20 text-primary border border-primary/20'
+                      ? 'bg-accent/15 text-marrow-deep border border-accent/20'
+                      : 'bg-primary/15 text-marrow-deep border border-primary/20'
                 }`}
               >
                 {p.type === 'genre' ? '🎭 ' : p.type === 'country' ? '🌍 ' : '🏷️ '} {p.name}
@@ -382,9 +382,9 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                        <div className="flex items-center gap-2 text-[10px] text-marrow-light/40 font-bold uppercase tracking-wider mb-1">
                         <span className="bg-primary/20 text-primary px-2 py-0.5 rounded border border-primary/10">Fase 1: AI Prompt</span>
                         <span className="text-xs">➔</span>
-                        <span className="bg-marrow-light/10 px-2 py-0.5 rounded">Fase 2: Scoring</span>
+                        <span className="bg-marrow-deep text-white/90 px-2 py-0.5 rounded border border-white/5">Fase 2: Scoring</span>
                       </div>
-                      <div className="rounded-lg bg-marrow-light/90 p-4 flex-grow overflow-auto border border-marrow-light/20 shadow-inner">
+                      <div className="rounded-lg bg-marrow-deep p-4 flex-grow overflow-auto border border-black/20 shadow-[inset_0_2px_10px_rgba(0,0,0,0.3)]">
                         <p className="text-[9px] text-white/60 font-bold mb-2 uppercase tracking-wider">
                           Log Query Synthesizer (Mistral):
                         </p>
@@ -423,10 +423,10 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                                 <div key={key} className="flex flex-wrap items-center gap-2 py-1 border-b border-marrow-light/10 last:border-b-0">
                                   {ids.map((id, idx) => (
                                     <div key={`${key}-${id}`} className="inline-flex items-center gap-2">
-                                      <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${
-                                        badgeLabel.name === 'Genere' ? 'bg-secondary text-primary border border-primary/10' : 
-                                        badgeLabel.name === 'Keyword' ? 'bg-accent/20 text-accent-foreground border border-accent/10' : 
-                                        'bg-primary/25 text-primary border border-primary/20'
+                                      <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-black ${
+                                        badgeLabel.name === 'Genere' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
+                                        badgeLabel.name === 'Keyword' ? 'bg-accent/15 text-marrow-deep border border-accent/20' : 
+                                        'bg-primary/15 text-marrow-deep border border-primary/20'
                                       }`}>
                                         {badgeLabel.icon} {badgeLabel.name}: {getDnaName(id, key)}
                                       </span>

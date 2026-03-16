@@ -140,7 +140,7 @@ export function DashboardPage({
               onClick={() => setActiveTab(id)}
               className={activeTab === id
                 ? 'px-6 md:px-8 py-2.5 text-sm font-bold bg-primary text-white rounded-lg flex items-center gap-2 shadow-lg shadow-primary/25 transition-all whitespace-nowrap'
-                : 'px-6 md:px-8 py-2.5 text-sm font-medium text-marrow-light/70 hover:text-primary transition-colors flex items-center gap-2 whitespace-nowrap'
+                : 'px-6 md:px-8 py-2.5 text-sm font-medium text-marrow-light/90 hover:text-primary transition-colors flex items-center gap-2 whitespace-nowrap'
               }
             >
               <span className="material-symbols-outlined text-lg">{icon}</span>

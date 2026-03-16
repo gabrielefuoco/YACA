@@ -256,10 +256,10 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
         onClick={() => updateBlock(block.id, { collapsed: !block.collapsed })}
         className="w-full flex items-center justify-between px-5 py-3 bg-marrow-light/5 select-none hover:bg-marrow-light/10 transition-colors"
       >
-        <span className="flex items-center gap-2 text-sm font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
+        <span className="flex items-center gap-2 text-sm font-bold text-zinc-900 uppercase tracking-wider">
           <Layers className="h-4 w-4 text-primary" />
           Query {index + 1}
-          <span className="text-xs font-normal normal-case text-zinc-500 dark:text-zinc-400">
+          <span className="text-xs font-normal normal-case text-zinc-500">
             — {STRATEGY_OPTIONS.find(s => s.value === block.strategy)?.label ?? block.strategy}
           </span>
         </span>
@@ -288,7 +288,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
           {/* Strategy selector and inputs */}
           <div className="space-y-4">
             <div>
-              <Label className="text-zinc-900 dark:text-zinc-100 font-bold">Strategia</Label>
+              <Label className="text-zinc-900 font-bold">Strategia</Label>
               <Select value={block.strategy} onValueChange={(v) => updateBlock(block.id, { strategy: v as BlockState['strategy'] })}>
                 <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10">
                   <SelectValue />
@@ -310,7 +310,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
             {block.strategy === 'multi_search' && (
               <div>
-                <Label className="text-zinc-900 dark:text-zinc-100 font-bold">Titolo da Cercare</Label>
+                <Label className="text-zinc-900 font-bold">Titolo da Cercare</Label>
                 <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white/60 border-marrow-light/10" />
               </div>
             )}
@@ -318,7 +318,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
           {/* Basic filters */}
           <details className="group [&_summary::-webkit-details-marker]:hidden" open>
-            <summary className="flex cursor-pointer items-center justify-between font-bold text-sm text-zinc-900 dark:text-zinc-100 select-none uppercase tracking-wider">
+            <summary className="flex cursor-pointer items-center justify-between font-bold text-sm text-zinc-900 select-none uppercase tracking-wider">
               Filtri di Base
               {chevronSvg}
             </summary>
@@ -362,11 +362,11 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Anno da</Label>
-                  <Input value={block.yearFrom} onChange={(e) => updateBlock(block.id, { yearFrom: e.target.value })} placeholder="es. 2000" className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10" type="number" min="1900" max="2099" />
+                  <Input value={block.yearFrom} onChange={(e) => updateBlock(block.id, { yearFrom: e.target.value })} placeholder="es. 2000" className="mt-1 bg-white border-marrow-light/10" type="number" min="1900" max="2099" />
                 </div>
                 <div>
                   <Label>Anno a</Label>
-                  <Input value={block.yearTo} onChange={(e) => updateBlock(block.id, { yearTo: e.target.value })} placeholder="es. 2024" className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10" type="number" min="1900" max="2099" />
+                  <Input value={block.yearTo} onChange={(e) => updateBlock(block.id, { yearTo: e.target.value })} placeholder="es. 2024" className="mt-1 bg-white border-marrow-light/10" type="number" min="1900" max="2099" />
                 </div>
               </div>
             </div>
@@ -374,7 +374,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
           {/* Genres */}
           <details className="group [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex cursor-pointer items-center justify-between font-bold text-sm text-zinc-900 dark:text-zinc-100 select-none uppercase tracking-wider">
+            <summary className="flex cursor-pointer items-center justify-between font-bold text-sm text-zinc-900 select-none uppercase tracking-wider">
               Generi {block.genres.length > 0 && <span className="text-xs font-normal normal-case text-primary ml-2">({block.genres.length} selezionati)</span>}
               {chevronSvg}
             </summary>
@@ -442,12 +442,12 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       {/* Header: Name + Type */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <Label className="text-zinc-900 dark:text-zinc-100 font-bold">Nome catalogo</Label>
+          <Label className="text-zinc-900 font-bold">Nome catalogo</Label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Il mio catalogo"
-            className="mt-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-white/10"
+            className="mt-1 bg-zinc-50 border-marrow-light/10"
           />
         </div>
         <div>
@@ -473,7 +473,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       <div className="rounded-xl border border-marrow-light/10 bg-white/40 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center gap-2 shrink-0">
           <Layers className="h-4 w-4 text-primary" />
-          <Label className="text-zinc-900 dark:text-zinc-100 font-bold whitespace-nowrap">Strategia di presentazione</Label>
+          <Label className="text-zinc-900 font-bold whitespace-nowrap">Strategia di presentazione</Label>
           <span className="relative group">
             <Info className="h-3.5 w-3.5 text-zinc-400 cursor-help" />
             <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg bg-zinc-900 dark:bg-zinc-700 text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
@@ -504,7 +504,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
           <Wand2 className="h-5 w-5" />
           <span className="text-sm font-black uppercase tracking-widest">Genera con AI</span>
         </div>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-xs text-zinc-500">
           Descrivi il catalogo che vuoi creare. L&apos;AI interpreterà la tua richiesta e creerà automaticamente i blocchi query.
         </p>
         <div className="flex gap-2">
@@ -512,7 +512,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="es. Film horror italiani degli anni 80..."
-            className="flex-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10"
+            className="flex-1 bg-white border-marrow-light/10"
             onKeyDown={(e) => { if (e.key === 'Enter') handleAiGenerate(); }}
           />
           <Button onClick={handleAiGenerate} disabled={aiLoading || !prompt.trim()} className="shrink-0 bg-primary text-white hover:brightness-110">
@@ -525,7 +525,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       {/* Query Blocks */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-100">
+          <span className="text-sm font-black uppercase tracking-widest text-zinc-900">
             Query Blocks ({blocks.length})
           </span>
           <Button onClick={addBlock} variant="outline" size="sm" className="gap-1.5 text-xs font-bold">

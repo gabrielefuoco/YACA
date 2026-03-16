@@ -124,12 +124,12 @@ export function ProfileSettingsPanel({
                                     {suggestedDNA.map((p) => (
                                         <span
                                             key={`${p.type}-${p.id}`}
-                                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
+                                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${
                                                 p.type === 'genre'
-                                                    ? 'bg-secondary text-primary dark:bg-secondary/40'
+                                                    ? 'bg-secondary text-marrow-deep border border-primary/20'
                                                     : p.type === 'keyword'
-                                                        ? 'bg-accent/20 text-accent-foreground dark:bg-accent/20 dark:text-zinc-200'
-                                                        : 'bg-primary/20 text-primary'
+                                                        ? 'bg-accent/15 text-marrow-deep border border-accent/20'
+                                                        : 'bg-primary/15 text-marrow-deep border border-primary/20'
                                             }`}
                                         >
                                             {p.name}
@@ -147,12 +147,12 @@ export function ProfileSettingsPanel({
                                 {profileDNA.map((p) => (
                                     <span
                                         key={`${p.type}-${p.id}`}
-                                        className={`inline-flex items-center gap-1 rounded px-3 py-1.5 text-xs font-bold ${
+                                        className={`inline-flex items-center gap-1 rounded px-3 py-1.5 text-xs font-black ${
                                             p.type === 'genre'
-                                                ? 'bg-secondary text-secondary-foreground dark:bg-secondary/10 dark:text-zinc-200'
+                                                ? 'bg-secondary text-marrow-deep border border-primary/20'
                                                 : p.type === 'keyword'
-                                                    ? 'bg-accent/20 text-accent-foreground dark:bg-accent/20 dark:text-zinc-200'
-                                                    : 'bg-primary/20 text-primary'
+                                                    ? 'bg-accent/15 text-marrow-deep border border-accent/20'
+                                                    : 'bg-primary/15 text-marrow-deep border border-primary/20'
                                         }`}
                                     >
                                         {p.type === 'genre' ? '🎭 ' : p.type === 'country' ? '🌍 ' : '🏷️ '} {p.name}
