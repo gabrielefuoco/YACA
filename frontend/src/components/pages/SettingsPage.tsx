@@ -319,7 +319,7 @@ export function SettingsPage({
               <Button
                 size="sm"
                 onClick={() => window.open(manifestUrl, '_blank')}
-                className="flex-1 text-xs bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+                className="flex-1 text-xs bg-primary hover:bg-primary-dark text-white shadow-md shadow-primary/20 transition-all font-black"
               >
                 <ExternalLink className="h-3.5 w-3.5 mr-1" />
                 Installa su Stremio
@@ -332,11 +332,11 @@ export function SettingsPage({
 
         {/* Backup & Import */}
         <div className="flex gap-3">
-          <Button variant="outline" onClick={handleExport} className="flex-1 font-medium">
+          <Button variant="outline" onClick={handleExport} className="flex-1 font-black text-marrow-deep border-marrow-light/30 bg-white/40 hover:bg-white/60">
             <Download className="h-4 w-4 mr-2" />
             Esporta Backup
           </Button>
-          <Button variant="outline" onClick={handleImport} className="flex-1 font-medium">
+          <Button variant="outline" onClick={handleImport} className="flex-1 font-black text-marrow-deep border-marrow-light/30 bg-white/40 hover:bg-white/60">
             <Upload className="h-4 w-4 mr-2" />
             Importa Backup
           </Button>
@@ -366,7 +366,7 @@ export function SettingsPage({
           variant="outline"
           onClick={handleClearCache}
           disabled={cacheLoading}
-          className="w-full"
+          className="w-full font-black text-marrow-deep border-marrow-light/30 bg-white/40 hover:bg-white/60"
         >
           {cacheLoading ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -385,7 +385,7 @@ export function SettingsPage({
             Gestione Avanzata Cache (Admin)
             <ExternalLink className="h-3 w-3 opacity-50" />
           </Link>
-          <p className="mt-2 text-[10px] text-center text-marrow-light font-bold">
+          <p className="mt-2 text-[10px] text-center text-marrow-deep font-black uppercase tracking-tighter opacity-70">
             Visualizza statistiche dettagliate per Redis e MongoDB
           </p>
         </div>

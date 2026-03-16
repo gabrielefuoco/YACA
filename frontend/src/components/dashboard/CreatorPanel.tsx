@@ -249,7 +249,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
   // --- Render a single query block card ---
   const renderBlock = (block: BlockState, index: number) => (
-    <div key={block.id} className="rounded-xl border border-marrow-light/10 bg-white/40 shadow-sm overflow-hidden backdrop-blur-sm">
+    <div key={block.id} className="rounded-xl border border-marrow-light/20 bg-white/60 shadow-md overflow-hidden backdrop-blur-sm">
       {/* Block header – clickable to collapse/expand */}
       <button
         type="button"
@@ -290,7 +290,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             <div>
               <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Strategia</Label>
               <Select value={block.strategy} onValueChange={(v) => updateBlock(block.id, { strategy: v as BlockState['strategy'] })}>
-                <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10">
+                <SelectTrigger className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -311,7 +311,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             {block.strategy === 'multi_search' && (
               <div>
                 <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Titolo da Cercare</Label>
-                <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white/60 border-marrow-light/10" />
+                <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40" />
               </div>
             )}
           </div>
@@ -361,12 +361,12 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Anno da</Label>
-                  <Input value={block.yearFrom} onChange={(e) => updateBlock(block.id, { yearFrom: e.target.value })} placeholder="es. 2000" className="mt-1 bg-white border-marrow-light/10" type="number" min="1900" max="2099" />
+                  <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Anno da</Label>
+                  <Input value={block.yearFrom} onChange={(e) => updateBlock(block.id, { yearFrom: e.target.value })} placeholder="es. 2000" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40" type="number" min="1900" max="2099" />
                 </div>
                 <div>
-                  <Label>Anno a</Label>
-                  <Input value={block.yearTo} onChange={(e) => updateBlock(block.id, { yearTo: e.target.value })} placeholder="es. 2024" className="mt-1 bg-white border-marrow-light/10" type="number" min="1900" max="2099" />
+                  <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Anno a</Label>
+                  <Input value={block.yearTo} onChange={(e) => updateBlock(block.id, { yearTo: e.target.value })} placeholder="es. 2024" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40" type="number" min="1900" max="2099" />
                 </div>
               </div>
             </div>
@@ -447,7 +447,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Il mio catalogo"
-            className="mt-1 bg-zinc-50 border-marrow-light/10"
+            className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40"
           />
         </div>
         <div>
@@ -512,7 +512,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="es. Film horror italiani degli anni 80..."
-            className="flex-1 bg-white border-marrow-light/10"
+            className="flex-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40"
             onKeyDown={(e) => { if (e.key === 'Enter') handleAiGenerate(); }}
           />
           <Button onClick={handleAiGenerate} disabled={aiLoading || !prompt.trim()} className="shrink-0 bg-primary text-white hover:brightness-110">

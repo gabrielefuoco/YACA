@@ -55,7 +55,7 @@ export function CatalogItem({
           </div>
           <div>
             <h3 className="font-black text-marrow-deep text-lg leading-tight line-clamp-1">{catalog.name}</h3>
-            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-emerald-700/10 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-700/20">
               <span className="material-symbols-outlined text-[10px]">{sourceIcon}</span> {sourceLabel}
             </span>
           </div>
@@ -63,7 +63,7 @@ export function CatalogItem({
         {onRemove && (
           <button
             onClick={onRemove}
-            className="text-zinc-400 hover:text-destructive transition-colors p-2 -mr-2 -mt-2"
+            className="text-marrow-light/40 hover:text-primary transition-colors p-2 -mr-2 -mt-2"
           >
             <span className="material-symbols-outlined text-[20px]">delete</span>
           </button>
@@ -79,11 +79,11 @@ export function CatalogItem({
       </div>
 
       <div className="mt-auto pt-4 border-t border-marrow-light/10 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-marrow-light/80">
+        <div className="flex items-center gap-1.5 text-xs font-black text-marrow-deep/70">
           <span className="material-symbols-outlined text-sm">{catalog.type === 'movie' ? 'movie' : 'tv'}</span>
           {filterCount} Filtr{filterCount !== 1 ? 'i' : 'o'}
         </div>
-        <button className="flex items-center gap-1 text-xs font-bold text-primary hover:text-primary/70 transition-colors">
+        <button className="flex items-center gap-1 text-xs font-black text-primary hover:text-primary-dark transition-colors uppercase tracking-tight">
           Personalizza <span className="material-symbols-outlined text-sm">arrow_forward</span>
         </button>
       </div>
