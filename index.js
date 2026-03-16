@@ -50,11 +50,10 @@ const badgeLimiter = rateLimit({
 });
 
 // CORS configurabile tramite variabile d'ambiente (default: permissivo per retrocompatibilità con Stremio)
-const corsOrigins = process.env.CORS_ALLOWED_ORIGINS;
-const corsOptions = corsOrigins
-    ? { origin: corsOrigins.split(',').map(o => o.trim()), credentials: true, methods: ['GET', 'POST'] }
-    : { credentials: true, methods: ['GET', 'POST'] };
+const corsOptions = { origin: '*', credentials: true, methods: ['GET', 'POST'] };
 const resolveUserConfig = (userId) => UserConfig.resolveUserConfig(userId);
+
+app.use(cors(corsOptions));
 
 // --- STREMIO ADDON ROUTES ---
 // Mount at root BEFORE static serving to ensure manifest/catalog discovery
