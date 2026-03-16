@@ -61,14 +61,43 @@ app.use(express.json({ limit: '1mb' }));
 app.get(['/fiamma_yaca.png', '/logo_yaca.png'], (req, res) => {
     const fileName = req.path.split('/').pop();
     const filePath = path.join(__dirname, 'public', fileName);
-    if (!fs.existsSync(filePath)) return res.status(404).end();
     
-    // Hugging Face specific: force permissive headers and cache
+    console.log(`[Asset Request] ${req.path} -> checking ${filePath}`);
+
+    if (!fs.existsSync(filePath)) {
+        console.error(`[Asset Error] File not found: ${filePath}`);
+        // Fallback check in current dir or frontend/out
+        const altPath = path.join(__dirname, fileName);
+        if (fs.existsSync(altPath)) {
+            console.log(`[Asset Found] Found in root: ${altPath}`);
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Content-Type', 'image/png');
+            return res.sendFile(altPath);
+        }
+        return res.status(404).json({ error: 'Asset not found', path: filePath });
+    }
+    
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.setHeader('Vary', 'Origin');
     res.sendFile(filePath);
+});
+
+// Diagnostic route for the user
+app.get('/debug-assets', (req, res) => {
+    const publicFiles = fs.existsSync(path.join(__dirname, 'public')) ? fs.readdirSync(path.join(__dirname, 'public')) : [];
+    const rootFiles = fs.readdirSync(__dirname);
+    res.json({
+        cwd: process.cwd(),
+        dirname: __dirname,
+        publicFiles,
+        rootFiles: rootFiles.filter(f => !f.startsWith('.')),
+        env: {
+            SPACE_HOST: process.env.SPACE_HOST,
+            NODE_ENV: process.env.NODE_ENV
+        }
+    });
 });
 
 // 2. STATIC ASSETS (Actual files from public/ or frontend/out/)
