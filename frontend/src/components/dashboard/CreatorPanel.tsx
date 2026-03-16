@@ -249,12 +249,12 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
   // --- Render a single query block card ---
   const renderBlock = (block: BlockState, index: number) => (
-    <div key={block.id} className="rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-zinc-50 dark:bg-zinc-800/40 shadow-sm overflow-hidden">
+    <div key={block.id} className="rounded-xl border border-marrow-light/10 bg-white/40 shadow-sm overflow-hidden backdrop-blur-sm">
       {/* Block header – clickable to collapse/expand */}
       <button
         type="button"
         onClick={() => updateBlock(block.id, { collapsed: !block.collapsed })}
-        className="w-full flex items-center justify-between px-5 py-3 bg-zinc-100 dark:bg-zinc-800 select-none"
+        className="w-full flex items-center justify-between px-5 py-3 bg-marrow-light/5 select-none hover:bg-marrow-light/10 transition-colors"
       >
         <span className="flex items-center gap-2 text-sm font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
           <Layers className="h-4 w-4 text-primary" />
@@ -290,7 +290,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             <div>
               <Label className="text-zinc-900 dark:text-zinc-100 font-bold">Strategia</Label>
               <Select value={block.strategy} onValueChange={(v) => updateBlock(block.id, { strategy: v as BlockState['strategy'] })}>
-                <SelectTrigger className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10">
+                <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -304,14 +304,14 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             {block.strategy === 'similar' && (
               <div>
                 <Label className="text-zinc-900 dark:text-zinc-100 font-bold">Titolo di Riferimento</Label>
-                <Input value={block.similarTo || ''} onChange={(e) => updateBlock(block.id, { similarTo: e.target.value })} placeholder="es. Bridgerton" className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10" />
+                <Input value={block.similarTo || ''} onChange={(e) => updateBlock(block.id, { similarTo: e.target.value })} placeholder="es. Bridgerton" className="mt-1 bg-white/60 border-marrow-light/10" />
               </div>
             )}
 
             {block.strategy === 'multi_search' && (
               <div>
                 <Label className="text-zinc-900 dark:text-zinc-100 font-bold">Titolo da Cercare</Label>
-                <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10" />
+                <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white/60 border-marrow-light/10" />
               </div>
             )}
           </div>
@@ -327,7 +327,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                 <div>
                   <Label>Ordina per</Label>
                   <Select value={block.sortBy} onValueChange={(v) => updateBlock(block.id, { sortBy: v })}>
-                    <SelectTrigger className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10">
+                    <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -340,7 +340,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                 <div>
                   <Label>Lingua originale</Label>
                   <Select value={block.language || '__any'} onValueChange={(v) => updateBlock(block.id, { language: v === '__any' ? '' : v })}>
-                    <SelectTrigger className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10">
+                    <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10">
                       <SelectValue placeholder="Qualsiasi" />
                     </SelectTrigger>
                     <SelectContent>
@@ -385,7 +385,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                   onClick={() => toggleBlockGenre(block.id, id)}
                   className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all shadow-sm ${block.genres.includes(id)
                     ? 'bg-primary text-white shadow-primary/20'
-                    : 'bg-white dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/60 border border-zinc-200 dark:border-zinc-700/50'
+                    : 'bg-white/50 text-marrow-light hover:bg-marrow-light/10 border border-marrow-light/20 shadow-sm'
                     }`}
                 >
                   {genreName}
@@ -459,7 +459,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                 onClick={() => setType(t)}
                 className={`flex-1 rounded-lg border py-2 text-sm font-bold transition-all ${type === t
                   ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
-                  : 'border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/40 text-zinc-500 dark:text-zinc-400 hover:text-primary hover:border-primary/50'
+                  : 'border-marrow-light/20 bg-white/40 text-marrow-light hover:text-primary hover:border-primary/50'
                   }`}
               >
                 {t === 'movie' ? '🎬 Film' : '📺 Serie'}
@@ -470,7 +470,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       </div>
 
       {/* Global Presentation Strategy */}
-      <div className="rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-zinc-50 dark:bg-zinc-800/40 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="rounded-xl border border-marrow-light/10 bg-white/40 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center gap-2 shrink-0">
           <Layers className="h-4 w-4 text-primary" />
           <Label className="text-zinc-900 dark:text-zinc-100 font-bold whitespace-nowrap">Strategia di presentazione</Label>
@@ -489,7 +489,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
               onClick={() => setPresentationStrategy(s)}
               className={`rounded-lg border px-4 py-1.5 text-xs font-bold transition-all ${presentationStrategy === s
                 ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
-                : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-primary hover:border-primary/50'
+                : 'border-marrow-light/20 bg-white/50 text-marrow-light hover:text-primary hover:border-primary/50'
                 }`}
             >
               {s === 'popularity' ? '🏆 Popularity' : '🔀 Interleave'}
@@ -539,7 +539,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
       {/* Preview */}
       {previewFilters && (
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-800 p-4 overflow-hidden">
+        <div className="rounded-xl border border-marrow-light/10 bg-white/40 p-4 overflow-hidden backdrop-blur-md">
           <PosterRow filters={previewFilters} type={previewType} />
         </div>
       )}

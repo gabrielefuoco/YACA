@@ -2,13 +2,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #080000;
-  --foreground: #ffffff;
+  --background: #EED9B9;
+  --foreground: #5E0006;
 }
 
 @theme inline {
   --color-background-light: #fdfaf5;
-  --color-background-dark: #080000;
+  --color-background-dark: #EED9B9;
   --color-primary: #9B0F06;
   --color-primary-dark: #5E0006;
   --color-accent: #D53E0F;
@@ -27,7 +27,7 @@
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -45,11 +45,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(94, 0, 6, 0.2);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(94, 0, 6, 0.4);
 }
 
 /* Smooth transitions for interactive elements */
@@ -70,23 +70,25 @@ button, a, input, select {
 
 /* Glassmorphism & Premium UI */
 .glass-panel {
-  background: rgba(15, 15, 20, 0.7);
+  background: rgba(238, 217, 185, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(94, 0, 6, 0.1);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(94, 0, 6, 0.08);
   transition: all 0.2s ease;
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(94, 0, 6, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(94, 0, 6, 0.12);
 }
 
 @keyframes pulse-subtle {

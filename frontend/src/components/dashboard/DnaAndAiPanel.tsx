@@ -234,19 +234,19 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
           <button 
             onClick={handleRefresh}
             disabled={syncStatus?.isSyncing}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-dark/40 hover:bg-accent/20 text-primary text-xs font-bold border border-primary/30 transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/40 hover:bg-white/60 text-marrow-light text-xs font-bold border border-marrow-light/10 transition-all disabled:opacity-50 shadow-sm"
           >
             <span className={`material-symbols-outlined text-sm ${syncStatus?.isSyncing ? 'animate-spin' : ''}`}>sync</span>
             {syncStatus?.isSyncing ? 'Sincronizzazione...' : 'Aggiorna DNA'}
           </button>
         </div>
-        <p className="text-[11px] text-zinc-500 -mt-2">
+        <p className="text-[11px] text-marrow-light/40 -mt-2">
           Aggiorna DNA ricalcola solo il DNA suggerito in base alla cronologia recente, senza modificare il tuo override manuale.
         </p>
 
         {/* Suggested DNA (read-only) */}
-        <div className="glass-card p-5">
-          <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-3 uppercase tracking-wider">Suggested DNA (Appreso dall&apos;AI)</p>
+        <div className="glass-panel p-5">
+          <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">Suggested DNA (Appreso dall&apos;AI)</p>
           {suggestedDNA.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {suggestedDNA.map((p) => (
@@ -254,9 +254,9 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                   key={`${p.type}-${p.id}`}
                   className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
                     p.type === 'genre'
-                      ? 'bg-secondary text-secondary-foreground dark:bg-secondary/10 dark:text-zinc-200 border border-secondary/20'
+                      ? 'bg-secondary text-primary border border-primary/10'
                       : p.type === 'keyword'
-                        ? 'bg-accent/20 text-accent-foreground dark:bg-accent/20 dark:text-zinc-200 border border-accent/20'
+                        ? 'bg-accent/20 text-accent-foreground border border-accent/10'
                         : 'bg-primary/20 text-primary border border-primary/20'
                   }`}
                 >
@@ -265,22 +265,22 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
               ))}
             </div>
           ) : (
-            <p className="text-xs text-zinc-400">Apprendimento in corso: attiva cataloghi o guarda contenuti per arricchire il DNA.</p>
+            <p className="text-xs text-marrow-light/40 italic">Apprendimento in corso: attiva cataloghi o guarda contenuti per arricchire il DNA.</p>
           )}
         </div>
 
         {/* Manual DNA Override */}
-        <div className="glass-card p-5">
-          <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-3 uppercase tracking-wider">Override Manuale (DNA Forzato)</p>
+        <div className="glass-panel p-5">
+          <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">Override Manuale (DNA Forzato)</p>
           <div className="flex flex-wrap gap-2 mb-4">
             {profileDNA.length > 0 ? profileDNA.map((p) => (
               <span
                 key={`${p.type}-${p.id}`}
                 className={`inline-flex items-center gap-1 rounded px-3 py-1.5 text-xs font-bold ${
                   p.type === 'genre'
-                    ? 'bg-secondary text-secondary-foreground dark:bg-secondary/10 dark:text-zinc-200 border border-secondary/20'
+                    ? 'bg-secondary text-primary border border-primary/10'
                     : p.type === 'keyword'
-                      ? 'bg-accent/20 text-accent-foreground dark:bg-accent/20 dark:text-zinc-200 border border-accent/20'
+                      ? 'bg-accent/20 text-accent-foreground border border-accent/10'
                       : 'bg-primary/20 text-primary border border-primary/20'
                 }`}
               >
@@ -293,20 +293,20 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                 </button>
               </span>
             )) : (
-              <p className="text-xs text-zinc-400">Nessun DNA manuale impostato. Aggiungi generi o keyword per forzare i gusti.</p>
+              <p className="text-xs text-marrow-light/40 italic">Nessun DNA manuale impostato. Aggiungi generi o keyword per forzare i gusti.</p>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-black dark:text-white">
-            <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white dark:[&_input]:bg-zinc-900/50 [&_input]:border-zinc-200 dark:[&_input]:border-white/10 [&_input]:rounded-lg [&_input]:text-sm">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 z-10 pointer-events-none">movie</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-marrow-light">
+            <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white/40 [&_input]:border-marrow-light/10 [&_input]:rounded-lg [&_input]:text-sm">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-marrow-light/40 z-10 pointer-events-none">movie</span>
               <AutocompleteSearch
                 placeholder="Aggiungi genere (es. Thriller)"
                 searchFn={api.searchTmdbGenres}
                 onSelect={(item) => handleAddDNA({ type: 'genre', id: String(item.id), name: item.name })}
               />
             </div>
-            <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white dark:[&_input]:bg-zinc-900/50 [&_input]:border-zinc-200 dark:[&_input]:border-white/10 [&_input]:rounded-lg [&_input]:text-sm">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 z-10 pointer-events-none">tag</span>
+            <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white/40 [&_input]:border-marrow-light/10 [&_input]:rounded-lg [&_input]:text-sm">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-marrow-light/40 z-10 pointer-events-none">tag</span>
               <AutocompleteSearch
                 placeholder="Aggiungi keyword (es. Cyberpunk)"
                 searchFn={api.searchTmdbKeywords}
@@ -343,116 +343,107 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
             return (
               <div
                 key={catalog.idBase}
-                className="glass-card overflow-hidden flex flex-col"
+                className="glass-panel overflow-hidden flex flex-col shadow-lg shadow-marrow-light/5"
               >
-                <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5 bg-zinc-50 dark:bg-zinc-900/40">
+                <div className="px-4 py-3 border-b border-marrow-light/10 bg-marrow-light/5">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{catalog.emoji}</span>
-                      <span className="text-xs font-bold text-zinc-700 dark:text-zinc-200">{catalog.label}</span>
+                      <span className="text-xs font-bold text-marrow-light">{catalog.label}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <label htmlFor={movieSwitchId} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-zinc-600 dark:text-zinc-300">
-                        Film
+                      <label htmlFor={movieSwitchId} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-marrow-light/60 font-mono">
+                        FILM
                         <Switch id={movieSwitchId} checked={isMoviesEnabled} onCheckedChange={(checked) => toggleHeroCatalog(idMovies, checked)} />
                       </label>
-                      <label htmlFor={seriesSwitchId} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-zinc-600 dark:text-zinc-300">
-                        Serie
+                      <label htmlFor={seriesSwitchId} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-marrow-light/60 font-mono">
+                        SERIE
                         <Switch id={seriesSwitchId} checked={isSeriesEnabled} onCheckedChange={(checked) => toggleHeroCatalog(idSeries, checked)} />
                       </label>
                     </div>
                   </div>
-                  <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">
+                  <p className="text-[10px] text-marrow-light/40 mt-1 leading-relaxed italic">
                     {catalog.desc}
                   </p>
                 </div>
                 <div className="p-3 flex-grow">
                   {isCatalogDisabled ? (
-                    <div className="rounded-lg bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 p-6 min-h-[140px] flex flex-col items-center justify-center text-center opacity-70">
-                      <EyeOff className="h-8 w-8 text-zinc-400 mb-2" />
-                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                    <div className="rounded-lg bg-marrow-light/5 border border-marrow-light/10 p-6 min-h-[140px] flex flex-col items-center justify-center text-center opacity-70">
+                      <EyeOff className="h-8 w-8 text-marrow-light/20 mb-2" />
+                      <p className="text-xs font-bold uppercase tracking-wider text-marrow-light/40">
                         Ispettore disattivato
                       </p>
-                      <p className="text-[10px] text-zinc-500 mt-1">
+                      <p className="text-[10px] text-marrow-light/40 mt-1">
                         Attiva Film o Serie per visualizzare log e dettagli del catalogo.
                       </p>
                     </div>
                   ) : catalog.type === 'ai' ? (
-                    <>
-                      {/* Visualizzazione IBRIDA per Cataloghi AI */}
-                      <div className="flex flex-col h-full gap-2">
-                         <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">
-                          <span className="bg-primary/40 text-primary px-2 py-0.5 rounded border border-primary/30">Fase 1: AI Prompt</span>
-                          <span className="text-xs">➔</span>
-                          <span className="bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 rounded">Fase 2: Scoring</span>
-                        </div>
-                        <div className="rounded-lg bg-zinc-900 dark:bg-black p-4 flex-grow overflow-auto border border-zinc-700/50 shadow-inner">
-                          <p className="text-[9px] text-zinc-400 font-bold mb-2 uppercase tracking-wider">
-                            Log Query Synthesizer (Mistral):
-                          </p>
-                          {analyticsLoading ? (
-                            <p className="text-green-400 text-xs font-mono animate-pulse">Caricamento log AI in corso...</p>
-                          ) : aiLog && Array.isArray(aiLog) && aiLog.length > 0 ? (
-                            <pre className="text-green-400 text-xs font-mono whitespace-pre-wrap break-words">
-                              {JSON.stringify(aiLog, null, 2)}
-                            </pre>
-                          ) : (
-                            <p className="text-zinc-500 text-xs font-mono">Nessun log AI generato. Configura una chiave API Mistral o forza l'aggiornamento.</p>
-                          )}
-                        </div>
+                    <div className="flex flex-col h-full gap-2">
+                       <div className="flex items-center gap-2 text-[10px] text-marrow-light/40 font-bold uppercase tracking-wider mb-1">
+                        <span className="bg-primary/20 text-primary px-2 py-0.5 rounded border border-primary/10">Fase 1: AI Prompt</span>
+                        <span className="text-xs">➔</span>
+                        <span className="bg-marrow-light/10 px-2 py-0.5 rounded">Fase 2: Scoring</span>
                       </div>
-                    </>
+                      <div className="rounded-lg bg-marrow-light/90 p-4 flex-grow overflow-auto border border-marrow-light/20 shadow-inner">
+                        <p className="text-[9px] text-white/60 font-bold mb-2 uppercase tracking-wider">
+                          Log Query Synthesizer (Mistral):
+                        </p>
+                        {analyticsLoading ? (
+                          <p className="text-secondary text-xs font-mono animate-pulse">Caricamento log AI in corso...</p>
+                        ) : aiLog && Array.isArray(aiLog) && aiLog.length > 0 ? (
+                          <pre className="text-white text-xs font-mono whitespace-pre-wrap break-words">
+                            {JSON.stringify(aiLog, null, 2)}
+                          </pre>
+                        ) : (
+                          <p className="text-white/40 text-xs font-mono">Nessun log AI generato. Configura una chiave API Mistral o forza l'aggiornamento.</p>
+                        )}
+                      </div>
+                    </div>
                   ) : (
-                    <>
-                      {/* Visualizzazione per Cataloghi Algoritmici */}
-                      <div className="rounded-lg bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 p-4 min-h-[140px] flex flex-col items-center justify-center text-center h-full">
-                        <span className="material-symbols-outlined text-3xl text-zinc-400 mb-2 opacity-60">
-                          {catalog.idBase.includes('seed_network') ? 'hub' : 'forum'}
-                        </span>
-                        <p className="text-xs text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wider mb-1">
-                          Analisi Motore Algoritmico
-                        </p>
-                        <p className="text-[10px] text-zinc-500 max-w-[90%] leading-relaxed mb-4">
-                          Calcolo affinità puro (no LLM text query). Il tuo DNA viene forzato e iniettato direttamente nel calcolo matematico usando questi parametri TMDB:
-                        </p>
-                        <div className="w-full rounded-md p-3 text-left border border-zinc-200 dark:border-zinc-700/60 bg-white/70 dark:bg-zinc-900/50">
-                          <p className="text-[9px] text-zinc-500 font-bold mb-2 uppercase tracking-wider">DNA iniettato (mapping semantico)</p>
-                          {analytics?.baseDnaParams && Object.keys(analytics.baseDnaParams).length > 0 ? (
-                            <div className="flex flex-col gap-2">
-                              {Object.entries(analytics.baseDnaParams).map(([key, rawValue]) => {
-                                const ids = parseAndDeduplicateIds(rawValue);
-                                if (ids.length === 0) {
-                                  // If backend returns empty values we skip rendering this row to avoid misleading empty badges.
-                                  return null;
-                                }
-                                const badgeLabel = TMDB_KEY_BADGE_LABEL[key] ?? { icon: '🧬', name: key };
+                    <div className="rounded-lg bg-marrow-light/5 border border-marrow-light/10 p-4 min-h-[140px] flex flex-col items-center justify-center text-center h-full">
+                      <span className="material-symbols-outlined text-3xl text-marrow-light/20 mb-2 opacity-60">
+                        {catalog.idBase.includes('seed_network') ? 'hub' : 'forum'}
+                      </span>
+                      <p className="text-xs text-marrow-light/60 font-bold uppercase tracking-wider mb-1">
+                        Analisi Motore Algoritmico
+                      </p>
+                      <p className="text-[10px] text-marrow-light/40 max-w-[90%] leading-relaxed mb-4">
+                        Calcolo affinità puro (no LLM text query). Il tuo DNA viene forzato e iniettato direttamente nel calcolo matematico usando questi parametri TMDB:
+                      </p>
+                      <div className="w-full rounded-md p-3 text-left border border-marrow-light/10 bg-white/40">
+                        <p className="text-[9px] text-marrow-light/60 font-bold mb-2 uppercase tracking-wider font-mono">DNA INIETTATO (MAPPING SEMANTICO)</p>
+                        {analytics?.baseDnaParams && Object.keys(analytics.baseDnaParams).length > 0 ? (
+                          <div className="flex flex-col gap-2">
+                            {Object.entries(analytics.baseDnaParams).map(([key, rawValue]) => {
+                              const ids = parseAndDeduplicateIds(rawValue);
+                              if (ids.length === 0) return null;
+                              const badgeLabel = TMDB_KEY_BADGE_LABEL[key] ?? { icon: '🧬', name: key };
 
-                                return (
-                                  <div key={key} className="flex flex-wrap items-center gap-2 py-1 border-b border-zinc-200/70 dark:border-zinc-700/40 last:border-b-0">
-                                    {ids.map((id, idx) => (
-                                      <div key={`${key}-${id}`} className="inline-flex items-center gap-2">
-                                        <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${
-                                          badgeLabel.name === 'Genere' ? 'bg-secondary text-secondary-foreground dark:bg-secondary/10 dark:text-zinc-200 border border-secondary/20' : 
-                                          badgeLabel.name === 'Keyword' ? 'bg-accent/20 text-accent-foreground dark:bg-accent/20 dark:text-zinc-200 border border-accent/20' : 
-                                          'bg-primary/25 text-primary border border-primary/20'
-                                        }`}>
-                                          {badgeLabel.icon} {badgeLabel.name}: {getDnaName(id, key)}
-                                        </span>
-                                        {idx < ids.length - 1 && (
-                                          <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">&amp;</span>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <p className="text-[10px] text-zinc-500 italic font-mono">Nessun filtro DNA attualmente attivo sul profilo.</p>
-                          )}
-                        </div>
+                              return (
+                                <div key={key} className="flex flex-wrap items-center gap-2 py-1 border-b border-marrow-light/10 last:border-b-0">
+                                  {ids.map((id, idx) => (
+                                    <div key={`${key}-${id}`} className="inline-flex items-center gap-2">
+                                      <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${
+                                        badgeLabel.name === 'Genere' ? 'bg-secondary text-primary border border-primary/10' : 
+                                        badgeLabel.name === 'Keyword' ? 'bg-accent/20 text-accent-foreground border border-accent/10' : 
+                                        'bg-primary/25 text-primary border border-primary/20'
+                                      }`}>
+                                        {badgeLabel.icon} {badgeLabel.name}: {getDnaName(id, key)}
+                                      </span>
+                                      {idx < ids.length - 1 && (
+                                        <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">&amp;</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-[10px] text-marrow-light/40 italic font-mono">Nessun filtro DNA attualmente attivo sul profilo.</p>
+                        )}
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
@@ -463,23 +454,23 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
 
       {/* ── Progress & Onboarding Modal ── */}
       {showProgressModal && syncStatus && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-marrow-light/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-lg bg-beige rounded-2xl shadow-2xl border border-marrow-light/10 overflow-hidden animate-in zoom-in-95 duration-300">
             {/* Modal Header */}
-            <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+            <div className="p-6 border-b border-marrow-light/10 flex items-center justify-between bg-marrow-light/5">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/40 border border-primary/30">
-                  <BrainCircuit className="h-6 w-6 text-primary-dark" />
+                <div className="p-2 rounded-lg bg-white/40 border border-marrow-light/10">
+                  <BrainCircuit className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold">DNA Analysis Engine</h3>
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">
+                  <h3 className="text-lg font-bold text-marrow-light">DNA Analysis Engine</h3>
+                  <p className="text-xs text-marrow-light/40 uppercase tracking-wider font-semibold">
                     {syncStatus.isSyncing ? 'Elaborazione in corso...' : 'Analisi Completata'}
                   </p>
                 </div>
               </div>
               {!syncStatus.isSyncing && (
-                <button onClick={() => setShowProgressModal(false)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full">
+                <button onClick={() => setShowProgressModal(false)} className="p-2 hover:bg-white/40 rounded-full transition-colors text-marrow-light/40">
                   <X className="h-5 w-5" />
                 </button>
               )}
@@ -489,29 +480,29 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
             <div className="p-8">
               {syncStatus.isSyncing ? (
                 <div className="flex flex-col gap-6">
-                  <div className="flex items-center justify-between text-sm font-bold">
+                  <div className="flex items-center justify-between text-sm font-bold text-marrow-light">
                     <span>Mappatura Catalogo</span>
                     <span className="text-primary">{syncStatus.current} / {syncStatus.total}</span>
                   </div>
-                  <div className="h-3 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-3 w-full bg-marrow-light/10 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-primary transition-all duration-500 ease-out" 
                       style={{ width: `${Math.round((syncStatus.current / (syncStatus.total || 1)) * 100)}%` }}
                     />
                   </div>
-                  <p className="text-center text-sm text-zinc-500 italic">
+                  <p className="text-center text-sm text-marrow-light/60 italic">
                     Stiamo analizzando i tuoi titoli per estrarre il tuo DNA cinofilo unico...
                   </p>
                 </div>
               ) : !syncStatus.onboardingCompleted ? (
                 <div className="flex flex-col gap-6">
-                  <div className="p-4 rounded-xl bg-primary-dark/20 border border-primary/40">
-                    <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-4 leading-relaxed">
+                  <div className="p-4 rounded-xl bg-white/40 border border-marrow-light/10 shadow-inner">
+                    <p className="text-sm text-marrow-light/80 mb-4 leading-relaxed font-medium">
                       Abbiamo analizzato il tuo catalogo! Ecco i tratti principali che abbiamo individuato. Confermi che corrispondono ai tuoi gusti?
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {suggestedDNA.map((p) => (
-                        <span key={p.id} className="inline-flex items-center gap-1 rounded-full bg-primary-dark/60 text-white border border-primary/50 px-3 py-1 text-xs font-bold shadow-md shadow-primary/20">
+                        <span key={p.id} className="inline-flex items-center gap-1 rounded-full bg-secondary text-primary border border-primary/20 px-3 py-1 text-xs font-bold shadow-sm">
                           {p.name}
                         </span>
                       ))}
@@ -520,21 +511,21 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                   
                   <button 
                     onClick={handleConfirmDNA}
-                    className="w-full py-4 rounded-xl bg-primary text-white font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/40"
+                    className="w-full py-4 rounded-xl bg-primary text-white font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20"
                   >
                     🚀 Conferma DNA e Inizia
                   </button>
-                  <p className="text-[10px] text-center text-zinc-500 uppercase font-black tracking-widest">
+                  <p className="text-[10px] text-center text-marrow-light/40 uppercase font-black tracking-widest">
                     Potrai sempre modificare questi tratti nell&apos;editor manuale.
                   </p>
                 </div>
               ) : (
                 <div className="text-center py-6">
-                  <div className="inline-flex items-center justify-center p-4 rounded-full bg-emerald-500/20 text-emerald-500 mb-4">
+                  <div className="inline-flex items-center justify-center p-4 rounded-full bg-secondary text-primary mb-4 border border-primary/10">
                     <span className="material-symbols-outlined text-4xl">check_circle</span>
                   </div>
-                  <h4 className="text-xl font-bold mb-2">Prendi il volo!</h4>
-                  <p className="text-sm text-zinc-500">I tuoi suggerimenti sono ora attivi nel sistema AI.</p>
+                  <h4 className="text-xl font-bold mb-2 text-marrow-light">Prendi il volo!</h4>
+                  <p className="text-sm text-marrow-light/60">I tuoi suggerimenti sono ora attivi nel sistema AI.</p>
                 </div>
               )}
             </div>
