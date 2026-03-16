@@ -14,17 +14,6 @@ frontend/lint.json
 frontend/lint.txt
 frontend/eslint.json
 frontend/eslint.txt
-public/assets/profile_updated.mp4
-stitch_yaca_dashboard_improved_layout/
-Watchly-main/
-*.mp4
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.svg
-*.ico
-
 # Diagnostic reports
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 pnpm-debug.log*
