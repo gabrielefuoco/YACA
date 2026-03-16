@@ -86,8 +86,15 @@ app.get(['/fiamma_yaca.png', '/logo_yaca.png'], (req, res) => {
 
 // Diagnostic route for the user
 app.get('/debug-assets', (req, res) => {
-    const publicFiles = fs.existsSync(path.join(__dirname, 'public')) ? fs.readdirSync(path.join(__dirname, 'public')) : [];
+    const pubDir = path.join(__dirname, 'public');
+    const publicFiles = fs.existsSync(pubDir) ? fs.readdirSync(pubDir) : [];
     const rootFiles = fs.readdirSync(__dirname);
+    
+    console.log(`[Debug Assets] __dirname: ${__dirname}`);
+    console.log(`[Debug Assets] Public folder exists: ${fs.existsSync(pubDir)}`);
+    console.log(`[Debug Assets] Public files: ${publicFiles.join(', ')}`);
+    console.log(`[Debug Assets] Root files: ${rootFiles.filter(f => !f.startsWith('.')).join(', ')}`);
+    
     res.json({
         cwd: process.cwd(),
         dirname: __dirname,
