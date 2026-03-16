@@ -431,7 +431,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                                         {badgeLabel.icon} {badgeLabel.name}: {getDnaName(id, key)}
                                       </span>
                                       {idx < ids.length - 1 && (
-                                        <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">&amp;</span>
+                                        <span className="text-[9px] font-black uppercase tracking-wider text-marrow-light/60">&amp;</span>
                                       )}
                                     </div>
                                   ))}

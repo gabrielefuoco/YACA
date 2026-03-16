@@ -232,8 +232,8 @@ export function SettingsPage({
             <Rocket className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Salva & Installa</h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Salva la configurazione, installa l&apos;addon su Stremio e gestisci i backup</p>
+            <h3 className="text-base font-black text-marrow-deep">Salva & Installa</h3>
+            <p className="text-xs text-marrow-light font-medium">Salva la configurazione, installa l&apos;addon su Stremio e gestisci i backup</p>
           </div>
         </div>
 
@@ -294,12 +294,12 @@ export function SettingsPage({
 
         {/* Quick install link (if already configured) */}
         {userId && !success && (
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-emerald-500">Addon già configurato</p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">Reinstalla o copia il link per aggiornare</p>
+                <p className="text-sm font-black text-emerald-700 uppercase tracking-wide">Addon già configurato</p>
+                <p className="text-xs text-marrow-light font-medium">Reinstalla o copia il link per aggiornare</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -328,7 +328,7 @@ export function SettingsPage({
           </div>
         )}
 
-        <Separator className="bg-zinc-200 dark:bg-zinc-700/50" />
+        <Separator className="bg-marrow-light/10" />
 
         {/* Backup & Import */}
         <div className="flex gap-3">
@@ -346,7 +346,7 @@ export function SettingsPage({
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Cache & Performance                                                */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-800/40 p-5 space-y-4">
+      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-5 space-y-4 shadow-sm backdrop-blur-sm">
         <div className="flex items-center gap-2 text-primary">
           <span className="material-symbols-outlined text-lg">bolt</span>
           <h3 className="text-sm font-black uppercase tracking-widest">Cache & Performance</h3>
@@ -354,13 +354,13 @@ export function SettingsPage({
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Refresh rapido</p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Aggiorna i cataloghi più frequentemente</p>
+            <p className="text-sm font-black text-marrow-deep">Refresh rapido</p>
+            <p className="text-xs text-marrow-light font-medium">Aggiorna i cataloghi più frequentemente</p>
           </div>
           <Switch checked={fastRefresh} onCheckedChange={setFastRefresh} />
         </div>
 
-        <Separator className="bg-zinc-200 dark:bg-zinc-700/50" />
+        <Separator className="bg-marrow-light/10" />
 
         <Button
           variant="outline"
@@ -379,13 +379,13 @@ export function SettingsPage({
         <div className="pt-2">
           <Link
             href="/admin/cache"
-            className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-primary/20 bg-primary/5 text-primary text-xs font-bold hover:bg-primary/10 transition-all"
+            className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-primary/30 bg-primary/5 text-primary text-xs font-black hover:bg-primary/10 transition-all uppercase tracking-wide"
           >
             <Server className="h-3.5 w-3.5" />
             Gestione Avanzata Cache (Admin)
             <ExternalLink className="h-3 w-3 opacity-50" />
           </Link>
-          <p className="mt-2 text-[10px] text-center text-zinc-500">
+          <p className="mt-2 text-[10px] text-center text-marrow-light font-bold">
             Visualizza statistiche dettagliate per Redis e MongoDB
           </p>
         </div>
@@ -394,7 +394,7 @@ export function SettingsPage({
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Global API Keys                                                    */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-800/40 p-5 space-y-4">
+      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-5 space-y-4 shadow-sm backdrop-blur-sm">
         <div className="flex items-center gap-2 text-primary">
           <span className="material-symbols-outlined text-lg">key</span>
           <h3 className="text-sm font-black uppercase tracking-widest">Chiavi API Globale</h3>
@@ -402,22 +402,22 @@ export function SettingsPage({
         
         <div className="space-y-4">
           <div>
-            <Label htmlFor="tmdb-key" className="text-zinc-900 dark:text-zinc-100">TMDB API Key (Opzionale)</Label>
+            <Label htmlFor="tmdb-key" className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">TMDB API Key (Opzionale)</Label>
             <Input
               id="tmdb-key"
               value={tmdbKey}
               onChange={(e) => setTmdbKey(e.target.value)}
               placeholder="La tua API key TMDB..."
-              className="mt-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+              className="mt-1 bg-white border-marrow-light/10 focus:border-primary/50 text-marrow-deep placeholder:text-marrow-light/30"
               type="password"
             />
-            <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1.5 text-xs text-marrow-light font-medium">
               Aiuta la rete globale fornendo limiti aumentati o usa il tuo account.
             </p>
           </div>
 
           <div>
-            <Label htmlFor="mistral-key" className="text-zinc-900 dark:text-zinc-100">Mistral API Key (Obbligatoria per AI)</Label>
+            <Label htmlFor="mistral-key" className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Mistral API Key (Obbligatoria per AI)</Label>
             <div className="flex gap-2 mt-1">
               <Input
                 id="mistral-key"
@@ -428,7 +428,7 @@ export function SettingsPage({
                   setMistralVerifyError('');
                 }}
                 placeholder="La tua API key Mistral..."
-                className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+                className="bg-white border-marrow-light/10 focus:border-primary/50 text-marrow-deep placeholder:text-marrow-light/30"
                 type="password"
               />
               <Button
@@ -454,7 +454,7 @@ export function SettingsPage({
             {mistralVerifyError && (
               <p className="mt-1.5 text-xs text-destructive">{mistralVerifyError}</p>
             )}
-            <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1.5 text-xs text-marrow-light font-medium">
               Obbligatoria per generare cataloghi AI. Verifica la chiave prima di salvare.
             </p>
           </div>
@@ -464,17 +464,17 @@ export function SettingsPage({
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Account                                                            */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-800/40 p-5 space-y-4">
+      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-5 space-y-4 shadow-sm backdrop-blur-sm">
         <div className="flex items-center gap-2 text-primary">
           <span className="material-symbols-outlined text-lg">person</span>
           <h3 className="text-sm font-black uppercase tracking-widest">Account</h3>
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between rounded-lg bg-zinc-50 dark:bg-zinc-800 px-4 py-3 border border-zinc-200 dark:border-zinc-700/50">
+          <div className="flex items-center justify-between rounded-lg bg-white/60 px-4 py-3 border border-marrow-light/10">
             <div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Stremio</p>
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+              <p className="text-[10px] font-black uppercase tracking-wider text-marrow-light/60">Stremio</p>
+              <p className="text-sm font-bold text-marrow-deep">
                 {stremioEmail ?? 'Non connesso'}
               </p>
             </div>
@@ -483,10 +483,10 @@ export function SettingsPage({
             )}
           </div>
 
-          <div className="flex items-center justify-between rounded-lg bg-zinc-50 dark:bg-zinc-800 px-4 py-3 border border-zinc-200 dark:border-zinc-700/50">
+          <div className="flex items-center justify-between rounded-lg bg-white/60 px-4 py-3 border border-marrow-light/10">
             <div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Trakt</p>
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+              <p className="text-[10px] font-black uppercase tracking-wider text-marrow-light/60">Trakt</p>
+              <p className="text-sm font-bold text-marrow-deep">
                 {traktToken ? 'Connesso' : 'Non connesso'}
               </p>
             </div>

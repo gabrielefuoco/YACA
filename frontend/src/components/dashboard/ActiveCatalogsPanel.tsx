@@ -134,19 +134,19 @@ export function ActiveCatalogsPanel({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+        <h3 className="text-lg font-black text-marrow-deep">
           I tuoi Cataloghi ({catalogs.length})
         </h3>
         {catalogs.length > 1 && (
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">Trascina per riordinare &bull; Shift + trascina per unire</p>
+          <p className="text-xs text-marrow-light/80 font-medium">Trascina per riordinare &bull; Shift + trascina per unire</p>
         )}
       </div>
 
       {catalogs.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-zinc-200 dark:border-zinc-700/50 p-12 text-center bg-zinc-50 dark:bg-zinc-800/20">
-          <Layers className="mx-auto h-12 w-12 text-zinc-400 dark:text-zinc-500 mb-4" />
-          <p className="text-base font-bold text-zinc-900 dark:text-zinc-100">Nessun catalogo attivo</p>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2">Aggiungi cataloghi dalla sezione Esplora o creane uno nuovo.</p>
+        <div className="rounded-xl border-2 border-dashed border-marrow-light/20 p-12 text-center bg-white/40">
+          <Layers className="mx-auto h-12 w-12 text-marrow-light/40 mb-4" />
+          <p className="text-base font-black text-marrow-deep">Nessun catalogo attivo</p>
+          <p className="text-sm text-marrow-light/70 font-medium mt-2">Aggiungi cataloghi dalla sezione Esplora o creane uno nuovo.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-4 w-full">
@@ -172,8 +172,8 @@ export function ActiveCatalogsPanel({
 
       {/* My Lists */}
       {myLists.length > 0 && (
-        <div className="pt-8 border-t border-zinc-200 dark:border-zinc-700/50">
-          <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-4">
+        <div className="pt-8 border-t border-marrow-light/10">
+          <h3 className="text-lg font-black text-marrow-deep mb-4">
             Le Mie Liste ({myLists.length})
           </h3>
           <div className="flex flex-col gap-4 w-full">

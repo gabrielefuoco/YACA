@@ -100,8 +100,8 @@ export function DashboardPage({
   return (
     <div className="flex flex-col w-full gap-8">
       <div className="flex flex-col gap-1">
-        <h1 className="text-zinc-900 text-3xl font-black leading-tight tracking-tight text-center md:text-left">Dashboard</h1>
-        <p className="text-zinc-600 text-sm text-center md:text-left">Gestisci i tuoi profili e personalizza i cataloghi multimediali</p>
+        <h1 className="text-marrow-deep text-3xl font-black leading-tight tracking-tight text-center md:text-left">Dashboard</h1>
+        <p className="text-marrow-light text-sm text-center md:text-left font-medium">Gestisci i tuoi profili e personalizza i cataloghi multimediali</p>
       </div>
 
       {/* Profiles Section */}

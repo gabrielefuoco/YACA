@@ -54,8 +54,8 @@ export function CatalogItem({
             <span className="text-2xl">{catalog.emoji ?? '📋'}</span>
           </div>
           <div>
-            <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-lg leading-tight line-clamp-1">{catalog.name}</h3>
-            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+            <h3 className="font-black text-marrow-deep text-lg leading-tight line-clamp-1">{catalog.name}</h3>
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">
               <span className="material-symbols-outlined text-[10px]">{sourceIcon}</span> {sourceLabel}
             </span>
           </div>
@@ -70,7 +70,7 @@ export function CatalogItem({
         )}
       </div>
 
-      <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-4 relative z-10">
+      <p className="text-sm text-marrow-light font-medium line-clamp-2 mb-4 relative z-10">
         {catalog.raw_prompt || 'Catalogo basato su filtri e preferenze per risultati personalizzati.'}
       </p>
 
@@ -78,8 +78,8 @@ export function CatalogItem({
         <PosterRow presetId={catalog.source === 'preset' ? catalog.id : undefined} type={catalog.type} filters={catalog.filters} prompt={catalog.raw_prompt} />
       </div>
 
-      <div className="mt-auto pt-4 border-t border-zinc-100 dark:border-white/10 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+      <div className="mt-auto pt-4 border-t border-marrow-light/10 flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-marrow-light/80">
           <span className="material-symbols-outlined text-sm">{catalog.type === 'movie' ? 'movie' : 'tv'}</span>
           {filterCount} Filtr{filterCount !== 1 ? 'i' : 'o'}
         </div>

@@ -68,7 +68,7 @@ export function ProfileSettingsPanel({
                     )}
                     {!isGlobalProfile && (
                         <>
-                            <button onClick={startRename} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-700 hover:bg-primary/20 text-zinc-700 dark:text-zinc-200 text-xs font-bold transition-all">
+                            <button onClick={startRename} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/40 hover:bg-primary/20 text-marrow-deep text-xs font-black transition-all border border-marrow-light/10 shadow-sm">
                                 <span className="material-symbols-outlined text-sm">edit</span>
                                 <span>Rinomina</span>
                             </button>
@@ -100,10 +100,10 @@ export function ProfileSettingsPanel({
                                 <div
                                     key={tpl.id}
                                     onClick={() => handleApplyTemplate(tpl)}
-                                    className="p-3 rounded-lg bg-white/60 border border-marrow-light/10 hover:border-primary/50 transition-all cursor-pointer shadow-sm"
+                                    className="p-3 rounded-lg bg-white/60 border border-marrow-light/10 hover:border-primary/50 transition-all cursor-pointer shadow-sm group/tpl"
                                 >
-                                    <p className="text-zinc-900 font-bold text-xs truncate">{tpl.name}</p>
-                                    <p className="text-zinc-600 text-[10px] mt-0.5 line-clamp-2">{tpl.description}</p>
+                                    <p className="text-marrow-deep font-black text-xs truncate group-hover/tpl:text-primary transition-colors">{tpl.name}</p>
+                                    <p className="text-marrow-light/60 font-medium text-[10px] mt-0.5 line-clamp-2">{tpl.description}</p>
                                 </div>
                             ))}
                         </div>
@@ -165,7 +165,7 @@ export function ProfileSettingsPanel({
                                     </span>
                                 ))}
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-zinc-900">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-marrow-deep">
                                 <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white/60 [&_input]:border-marrow-light/10 [&_input]:rounded-lg [&_input]:text-sm">
                                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-marrow-light/40 z-10 pointer-events-none">movie</span>
                                     <AutocompleteSearch
