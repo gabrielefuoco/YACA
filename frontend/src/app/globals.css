@@ -8,12 +8,12 @@
 
 @theme inline {
   --color-background-light: #f6f5f8;
-  --color-background-dark: #151022;
-  --color-primary: #e50914;
-  --color-primary-dark: #b20710;
-  --color-primary-10: color-mix(in srgb, #e50914 10%, transparent);
-  --color-primary-20: color-mix(in srgb, #e50914 20%, transparent);
-  --color-primary-30: color-mix(in srgb, #e50914 30%, transparent);
+  --color-background-dark: #0a0a0f;
+  --color-primary: #ad0712;
+  --color-primary-dark: #8a060e;
+  --color-primary-10: color-mix(in srgb, #ad0712 10%, transparent);
+  --color-primary-20: color-mix(in srgb, #ad0712 20%, transparent);
+  --color-primary-30: color-mix(in srgb, #ad0712 30%, transparent);
   --font-display: "Outfit", "Inter", sans-serif;
 }
 
