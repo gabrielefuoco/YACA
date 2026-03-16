@@ -56,18 +56,27 @@ const resolveUserConfig = (userId) => UserConfig.resolveUserConfig(userId);
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 
-// 1. STATIC ASSETS (Prioritize actual files like .png, .jpg, .js, .css)
+// 1. ASSET FAIL-SAFE (Direct routes for critical branding)
+app.get(['/fiamma_yaca.png', '/logo_yaca.png'], (req, res) => {
+    const fileName = req.path.split('/').pop();
+    const filePath = path.join(__dirname, 'public', fileName);
+    if (!fs.existsSync(filePath)) return res.status(404).end();
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'image/png');
+    res.sendFile(filePath);
+});
+
+// 2. STATIC ASSETS (Actual files from public/ or frontend/out/)
 const staticOptions = {
     setHeaders: (res) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     }
 };
 app.use(express.static(path.join(__dirname, 'public'), staticOptions));
 app.use(express.static(path.join(__dirname, 'frontend', 'out'), staticOptions));
 
-// 2. STREMIO ADDON ROUTES (Prioritize over frontend routing)
+// 3. STREMIO ADDON ROUTES
 app.use('/', stremioRoutes);
 
 // Health check endpoint per monitoring e deployment platforms
