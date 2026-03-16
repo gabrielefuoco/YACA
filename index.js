@@ -54,14 +54,14 @@ const corsOptions = { origin: '*', credentials: true, methods: ['GET', 'POST'] }
 const resolveUserConfig = (userId) => UserConfig.resolveUserConfig(userId);
 
 app.use(cors(corsOptions));
-
-// --- STREMIO ADDON ROUTES ---
-// Mount at root BEFORE static serving to ensure manifest/catalog discovery
-app.use('/', stremioRoutes);
-
-app.use(express.static(path.join(__dirname, 'frontend', 'out')));
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '1mb' }));
+
+// 1. STATIC ASSETS (Prioritize actual files like .png, .jpg, .js, .css)
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'frontend', 'out')));
+
+// 2. STREMIO ADDON ROUTES (Prioritize over frontend routing)
+app.use('/', stremioRoutes);
 
 // Health check endpoint per monitoring e deployment platforms
 app.get('/health', (req, res) => {
@@ -177,7 +177,8 @@ const profileLimiter = rateLimit({ windowMs: 60 * 1000, limit: 100, standardHead
 app.use('/api/profiles', profileLimiter, inputSanitizer, profileRoutes);
 
 // Catch-all route per gestire il routing lato client di Next.js
-app.get(/.*/, (req, res) => {
+// Catch-all route per gestire il routing lato client di Next.js (Solo per richieste che sembrano pagine)
+app.get(/^(?!\/api|\/manifest\.json|.*\.(png|jpg|jpeg|gif|svg|ico|js|css|json|mp4|webm)).*$/, (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', 'out', 'index.html'));
 });
 

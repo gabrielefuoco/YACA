@@ -167,6 +167,30 @@ router.post('/trakt/device/token', async (req, res) => {
 
 // --- STREMIO ADDON ENDPOINTS ---
 
+// Root manifest (senza config) - MOVED TO TOP to avoid shadowing by parameterized routes
+router.get('/manifest.json', (req, res) => {
+    const hostUrl = resolveHostUrl(req);
+    const manifest = {
+        id: 'org.stremio.yaca.catalog',
+        version: '1.0.4',
+        name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
+        description: 'Catalogo Intelligente Potenziato da AI - Configurazione Richiesta',
+        logo: `${hostUrl}/logo_yaca.png`,
+        contactEmail: 'yaca.addon@proton.me',
+        resources: [],
+        types: [],
+        catalogs: [],
+        behaviorHints: {
+            configurable: true,
+            configurationRequired: true
+        },
+        // Point to root for configuration if no user context
+        configurationURL: `${hostUrl}/`
+    };
+    res.setHeader('Content-Type', 'application/json');
+    res.json(manifest);
+});
+
 // Manifest di Stremio (Dinamico)
 router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.json'], async (req, res) => {
     const userConfig = await UserConfig.resolveUserConfig(req.params.userHandle);
@@ -242,26 +266,7 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
     }
 });
 
-// Root manifest (senza config)
-router.get('/manifest.json', (req, res) => {
-    const hostUrl = resolveHostUrl(req);
-    const manifest = {
-        id: 'org.stremio.yaca.catalog',
-        version: '1.0.4',
-        name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
-        description: 'Catalogo Intelligente Potenziato da AI - Configurazione Richiesta',
-        logo: `${hostUrl}/logo_yaca.png`,
-        contactEmail: 'yaca.addon@proton.me',
-        resources: [],
-        types: [],
-        catalogs: [],
-        behaviorHints: {
-            configurable: true,
-            configurationRequired: true
-        }
-    };
-    res.json(manifest);
-});
+// (Moved to top)
 
 // CatalogHandler
 router.get([
