@@ -242,7 +242,7 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
             version: dynamicVersion,
             name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
             description: 'Catalogo Intelligente Potenziato da AI',
-            logo: `${hostUrl}/logo_yaca.png`,
+            logo: `${hostUrl}/fiamma_yaca.png`,
             resources: [
                 'catalog',
                 'meta',
