@@ -88,7 +88,7 @@ app.post('/api/auth/logout', cookieParser(), csrfProtection, logoutHandler);
 
 
 // --- CONFIG & UTILITY ROUTES ---
-app.use('/api', stremioRoutes);
+app.use('/', stremioRoutes);
 app.use('/api', tmdbRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', catalogRoutes);
