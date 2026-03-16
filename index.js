@@ -57,8 +57,15 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 
 // 1. STATIC ASSETS (Prioritize actual files like .png, .jpg, .js, .css)
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'frontend', 'out')));
+const staticOptions = {
+    setHeaders: (res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    }
+};
+app.use(express.static(path.join(__dirname, 'public'), staticOptions));
+app.use(express.static(path.join(__dirname, 'frontend', 'out'), staticOptions));
 
 // 2. STREMIO ADDON ROUTES (Prioritize over frontend routing)
 app.use('/', stremioRoutes);

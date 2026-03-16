@@ -93,6 +93,11 @@ function resolveHostUrl(req) {
         }
     }
 
+    // Force HTTPS for non-local environments to avoid Mixed Content issues
+    if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+        host = host.replace(/^http:\/\//, 'https://');
+    }
+
     // Clean up trailing slash
     return host.replace(/\/+$/, '');
 }
