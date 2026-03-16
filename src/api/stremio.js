@@ -176,7 +176,6 @@ router.get('/manifest.json', (req, res) => {
         name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
         description: 'Catalogo Intelligente Potenziato da AI - Configurazione Richiesta',
         logo: `${hostUrl}/logo_yaca.png`,
-        background: `${hostUrl}/logo_yaca.png`,
         contactEmail: 'yaca.addon@proton.me',
         resources: [],
         types: [],
@@ -244,7 +243,6 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
             name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
             description: 'Catalogo Intelligente Potenziato da AI',
             logo: `${hostUrl}/logo_yaca.png`,
-            background: `${hostUrl}/logo_yaca.png`,
             resources: [
                 'catalog',
                 'meta',
