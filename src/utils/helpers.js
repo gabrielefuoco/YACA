@@ -72,25 +72,29 @@ function getProfileDnaFilters(userConfig, profileId) {
 }
 
 function resolveHostUrl(req) {
+    let host = '';
+
     // 1. Explicitly configured URL (Highest priority)
     const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;
-    if (explicitHost) return explicitHost;
-
-    // 2. Hugging Face Spaces detection
-    // SPACE_HOST is often provided automatically in HF Docker environments
-    if (process.env.SPACE_HOST) {
-        return `https://${process.env.SPACE_HOST}`;
+    if (explicitHost) {
+        host = explicitHost;
+    } else if (process.env.SPACE_HOST) {
+        // 2. Hugging Face Spaces detection
+        host = `https://${process.env.SPACE_HOST}`;
+    } else {
+        // 3. Reverse Proxy Headers
+        const forwardedHost = req.headers?.['x-forwarded-host'];
+        if (forwardedHost) {
+            const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'https';
+            host = `${proto}://${String(forwardedHost).split(',')[0].trim()}`;
+        } else {
+            // 4. Fallback to Local Host
+            host = `${req.protocol}://${req.get('host')}`;
+        }
     }
 
-    // 3. Reverse Proxy Headers
-    const forwardedHost = req.headers?.['x-forwarded-host'];
-    if (forwardedHost) {
-        const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'https';
-        return `${proto}://${String(forwardedHost).split(',')[0].trim()}`;
-    }
-
-    // 4. Fallback to Local Host
-    return `${req.protocol}://${req.get('host')}`;
+    // Clean up trailing slash
+    return host.replace(/\/+$/, '');
 }
 
 module.exports = { parseExtra, sanitizeString, isAllowedUrl, getProfileDnaFilters, resolveHostUrl };

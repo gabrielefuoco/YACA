@@ -54,12 +54,15 @@ const corsOrigins = process.env.CORS_ALLOWED_ORIGINS;
 const corsOptions = corsOrigins
     ? { origin: corsOrigins.split(',').map(o => o.trim()), credentials: true, methods: ['GET', 'POST'] }
     : { credentials: true, methods: ['GET', 'POST'] };
-app.use(cors(corsOptions));
+const resolveUserConfig = (userId) => UserConfig.resolveUserConfig(userId);
+
+// --- STREMIO ADDON ROUTES ---
+// Mount at root BEFORE static serving to ensure manifest/catalog discovery
+app.use('/', stremioRoutes);
+
 app.use(express.static(path.join(__dirname, 'frontend', 'out')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '1mb' }));
-
-const resolveUserConfig = (userId) => UserConfig.resolveUserConfig(userId);
 
 // Health check endpoint per monitoring e deployment platforms
 app.get('/health', (req, res) => {
@@ -88,7 +91,6 @@ app.post('/api/auth/logout', cookieParser(), csrfProtection, logoutHandler);
 
 
 // --- CONFIG & UTILITY ROUTES ---
-app.use('/', stremioRoutes);
 app.use('/api', tmdbRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', catalogRoutes);
