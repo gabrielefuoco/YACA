@@ -198,6 +198,7 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
         return res.status(400).json({ error: "Configurazione non valida" });
     }
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    try {
         const cv = userConfig.configVersion?.toString().replace(/_/g, '-');
         const dynamicVersion = cv ? `1.0.4+${cv}` : '1.0.4';
 
