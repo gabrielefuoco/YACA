@@ -80,12 +80,15 @@ function resolveHostUrl(req) {
         host = explicitHost;
     } else if (process.env.SPACE_HOST) {
         // 2. Hugging Face Spaces detection
+        // SPACE_HOST is typically "username-spacename.hf.space"
         host = `https://${process.env.SPACE_HOST}`;
     } else {
         // 3. Reverse Proxy Headers
         const forwardedHost = req.headers?.['x-forwarded-host'];
+        const forwardedProto = req.headers?.['x-forwarded-proto'];
+        
         if (forwardedHost) {
-            const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'https';
+            const proto = forwardedProto || req.protocol || 'https';
             host = `${proto}://${String(forwardedHost).split(',')[0].trim()}`;
         } else {
             // 4. Fallback to Local Host
@@ -94,6 +97,7 @@ function resolveHostUrl(req) {
     }
 
     // Force HTTPS for non-local environments to avoid Mixed Content issues
+    // Hugging Face and Render always terminate SSL at the proxy
     if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
         host = host.replace(/^http:\/\//, 'https://');
     }

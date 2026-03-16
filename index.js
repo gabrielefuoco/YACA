@@ -61,8 +61,12 @@ app.get(['/fiamma_yaca.png', '/logo_yaca.png'], (req, res) => {
     const fileName = req.path.split('/').pop();
     const filePath = path.join(__dirname, 'public', fileName);
     if (!fs.existsSync(filePath)) return res.status(404).end();
+    
+    // Hugging Face specific: force permissive headers and cache
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Vary', 'Origin');
     res.sendFile(filePath);
 });
 
