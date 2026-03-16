@@ -176,11 +176,9 @@ export function LoginPage({ onComplete }: LoginPageProps) {
               />
             </div>
 
-            {error && (
-              <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-2.5">
-                <p className="text-xs text-red-400">{error}</p>
+              <div className="rounded-lg bg-primary-dark/10 border border-primary-dark/20 p-2.5">
+                <p className="text-xs text-primary-dark">{error}</p>
               </div>
-            )}
 
             <Button
               className="w-full bg-primary hover:bg-primary-dark shadow-primary/20"
@@ -219,8 +217,8 @@ export function LoginPage({ onComplete }: LoginPageProps) {
       {step === 2 && (
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/20 shadow-lg shadow-red-500/10">
-              <Film className="h-6 w-6 text-red-400" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/20 shadow-lg shadow-accent/10">
+              <Film className="h-6 w-6 text-accent" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">Connetti Trakt (opzionale)</h2>
@@ -228,7 +226,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             </div>
           </div>
 
-          <Button className="w-full bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30" variant="outline" onClick={() => setTraktModalOpen(true)}>
+          <Button className="w-full bg-accent/20 border border-accent/30 text-accent hover:bg-accent/30" variant="outline" onClick={() => setTraktModalOpen(true)}>
             🎬 Connetti Trakt
           </Button>
 
@@ -255,8 +253,8 @@ export function LoginPage({ onComplete }: LoginPageProps) {
       {step === 3 && (
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/20 shadow-lg shadow-cyan-500/10">
-              <KeyRound className="h-6 w-6 text-cyan-300" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/20 shadow-lg shadow-secondary/10">
+              <KeyRound className="h-6 w-6 text-secondary" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">Configura le API Key</h2>
