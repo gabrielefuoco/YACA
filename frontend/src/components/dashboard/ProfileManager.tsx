@@ -77,40 +77,29 @@ export function ProfileManager({
           if (profile.name.startsWith('🏠')) icon = 'home';
           else if (profile.name.startsWith('🎬') || profile.name.startsWith('📺') || profile.name.startsWith('🎭')) icon = 'movie';
 
-          if (isActive) {
-            return (
-              <div
-                key={profile.id}
-                onClick={() => onSelectEditing(profile.id)}
-                className={`flex flex-col items-center p-4 rounded-xl border-2 cursor-pointer gap-3 relative transition-all ${isEditing ? 'border-primary bg-primary/5' : 'border-primary/50 bg-primary/5 hover:border-primary'}`}
-              >
-                <div className="size-12 rounded-full bg-primary text-white flex items-center justify-center">
-                  {icon.length > 2 ? <span className="material-symbols-outlined">{icon}</span> : icon}
-                </div>
-                <div className="text-center w-full">
-                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate w-full">{profile.name}</p>
-                  <p className="text-[10px] text-emerald-500 font-bold uppercase mt-0.5">Attivo</p>
-                </div>
-                <div className="absolute top-2 right-2">
-                  <span className="material-symbols-outlined text-primary text-sm">check_circle</span>
-                </div>
-              </div>
-            );
-          }
-
           return (
-            <div
+            <button
               key={profile.id}
               onClick={() => onSelectEditing(profile.id)}
-              className={`flex flex-col items-center p-4 rounded-xl border border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/40 gap-3 hover:border-primary/50 transition-all cursor-pointer ${isEditing ? 'ring-2 ring-primary/30 border-primary/50' : ''}`}
+              className={`flex flex-col items-center p-4 rounded-xl border-2 gap-3 relative transition-all text-left w-full ${
+                isActive 
+                  ? (isEditing ? 'border-primary bg-primary/5' : 'border-primary/50 bg-primary/5 hover:border-primary')
+                  : (isEditing ? 'ring-2 ring-primary/30 border-primary/50 bg-slate-100 dark:bg-slate-800/40' : 'border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/40 hover:border-primary/50')
+              }`}
             >
-              <div className="size-12 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 flex items-center justify-center font-bold">
+              <div className={`size-12 rounded-full flex items-center justify-center font-bold shrink-0 ${isActive ? 'bg-primary text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}>
                 {icon.length > 2 ? <span className="material-symbols-outlined">{icon}</span> : icon}
               </div>
               <div className="text-center w-full">
                 <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate w-full">{profile.name}</p>
+                {isActive && <p className="text-[10px] text-emerald-500 font-bold uppercase mt-0.5">Attivo</p>}
               </div>
-            </div>
+              {isActive && (
+                <div className="absolute top-2 right-2">
+                  <span className="material-symbols-outlined text-primary text-sm">check_circle</span>
+                </div>
+              )}
+            </button>
           );
         })}
       </div>

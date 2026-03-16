@@ -135,31 +135,31 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
               <button
                 onClick={() => setStrategy('mixed')}
                 className={`flex flex-col items-start p-4 rounded-xl border transition-all relative overflow-hidden group ${strategy === 'mixed'
-                  ? 'border-[#8a5aeb] bg-[#8a5aeb]/10 text-white'
+                  ? 'border-primary bg-primary/10 text-white'
                   : 'border-white/5 bg-white/[0.02] text-white/50 hover:bg-white/[0.05] hover:text-white'
                   }`}
               >
-                <div className={`mb-2 p-1.5 rounded-lg ${strategy === 'mixed' ? 'bg-[#8a5aeb] text-white' : 'bg-white/10 text-white/40 group-hover:bg-white/20'}`}>
+                <div className={`mb-2 p-1.5 rounded-lg ${strategy === 'mixed' ? 'bg-primary text-white' : 'bg-white/10 text-white/40 group-hover:bg-white/20'}`}>
                   <RotateCcw className="h-4 w-4" />
                 </div>
                 <span className="text-sm font-bold">Misto</span>
                 <span className="text-[11px] opacity-60 leading-tight mt-1">Alterna i titoli delle due liste (1 a 1)</span>
-                {strategy === 'mixed' && <div className="absolute top-3 right-3"><Check className="h-4 w-4 text-[#8a5aeb]" /></div>}
+                {strategy === 'mixed' && <div className="absolute top-3 right-3"><Check className="h-4 w-4 text-primary" /></div>}
               </button>
 
               <button
                 onClick={() => setStrategy('popularity')}
                 className={`flex flex-col items-start p-4 rounded-xl border transition-all relative overflow-hidden group ${strategy === 'popularity'
-                  ? 'border-[#8a5aeb] bg-[#8a5aeb]/10 text-white'
+                  ? 'border-primary bg-primary/10 text-white'
                   : 'border-white/5 bg-white/[0.02] text-white/50 hover:bg-white/[0.05] hover:text-white'
                   }`}
               >
-                <div className={`mb-2 p-1.5 rounded-lg ${strategy === 'popularity' ? 'bg-[#8a5aeb] text-white' : 'bg-white/10 text-white/40 group-hover:bg-white/20'}`}>
+                <div className={`mb-2 p-1.5 rounded-lg ${strategy === 'popularity' ? 'bg-primary text-white' : 'bg-white/10 text-white/40 group-hover:bg-white/20'}`}>
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <span className="text-sm font-bold">Popolarità</span>
                 <span className="text-[11px] opacity-60 leading-tight mt-1">Ordina per voto e popolarità globale</span>
-                {strategy === 'popularity' && <div className="absolute top-3 right-3"><Check className="h-4 w-4 text-[#8a5aeb]" /></div>}
+                {strategy === 'popularity' && <div className="absolute top-3 right-3"><Check className="h-4 w-4 text-primary" /></div>}
               </button>
             </div>
           </div>
@@ -171,7 +171,7 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
               <button
                 onClick={handleAiNaming}
                 disabled={namingLoading}
-                className="flex items-center gap-1.5 text-[11px] text-[#8a5aeb] font-bold hover:brightness-125 transition-all disabled:opacity-50"
+                className="flex items-center gap-1.5 text-[11px] text-primary font-bold hover:brightness-125 transition-all disabled:opacity-50"
               >
                 {namingLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                 GENERA CON AI
@@ -183,7 +183,7 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={`${catalogA.name} + ${catalogB.name}`}
-                className="bg-white/[0.03] border-white/10 focus:border-[#8a5aeb] h-11 px-4 text-sm rounded-xl"
+                className="bg-white/[0.03] border-white/10 focus:border-primary h-11 px-4 text-sm rounded-xl"
               />
             </div>
           </div>
@@ -195,7 +195,7 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
               {loading ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-10 transition-opacity">
                   <div className="flex flex-col items-center gap-2">
-                    <Loader2 className="h-8 w-8 animate-spin text-[#8a5aeb]" />
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     <span className="text-[10px] text-white/50 uppercase tracking-widest">Sincronizzazione...</span>
                   </div>
                 </div>
@@ -205,7 +205,7 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
                 {previewItems.length > 0 ? (
                   previewItems.slice(0, 10).map((item) => (
                     <div key={item.id} className="flex-shrink-0 group/poster">
-                      <div className="relative h-36 w-24 rounded-lg overflow-hidden border border-white/10 group-hover/poster:border-[#8a5aeb]/50 transition-all">
+                      <div className="relative h-36 w-24 rounded-lg overflow-hidden border border-white/10 group-hover/poster:border-primary/50 transition-all">
                         {item.poster ? (
                           <img src={item.poster} alt={item.title} className="h-full w-full object-cover group-hover/poster:scale-110 transition-transform duration-500" />
                         ) : (
@@ -233,7 +233,7 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
           </Button>
           <Button
             onClick={handleConfirm}
-            className="bg-[#8a5aeb] hover:bg-[#7a49db] text-white px-8 font-bold rounded-xl shadow-lg shadow-[#8a5aeb]/20"
+            className="bg-primary hover:bg-primary-dark text-white px-8 font-bold rounded-xl shadow-lg shadow-primary/20"
           >
             Crea Lista Unita
           </Button>

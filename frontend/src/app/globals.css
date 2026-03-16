@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -8,11 +9,12 @@
 @theme inline {
   --color-background-light: #f6f5f8;
   --color-background-dark: #151022;
-  --color-primary: #895af6;
-  --color-primary-10: color-mix(in srgb, #895af6 10%, transparent);
-  --color-primary-20: color-mix(in srgb, #895af6 20%, transparent);
-  --color-primary-30: color-mix(in srgb, #895af6 30%, transparent);
-  --font-display: "Inter", sans-serif;
+  --color-primary: #e50914;
+  --color-primary-dark: #b20710;
+  --color-primary-10: color-mix(in srgb, #e50914 10%, transparent);
+  --color-primary-20: color-mix(in srgb, #e50914 20%, transparent);
+  --color-primary-30: color-mix(in srgb, #e50914 30%, transparent);
+  --font-display: "Outfit", "Inter", sans-serif;
 }
 
 * {
@@ -59,4 +61,34 @@ button, a, input, select {
 }
 .hide-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari e Opera */
+}
+
+/* Glassmorphism & Premium UI */
+.glass-panel {
+  background: rgba(15, 15, 20, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

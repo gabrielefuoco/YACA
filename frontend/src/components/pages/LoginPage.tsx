@@ -107,7 +107,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
   if (configuring) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-4">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-[#8a5aeb]" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-primary" />
         <p className="text-sm text-white/50">Configurazione in corso…</p>
       </div>
     );
@@ -123,7 +123,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
               className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${step > s
                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
                 : step === s
-                  ? 'bg-gradient-to-br from-[#8a5aeb] to-[#6d3fd4] text-white shadow-lg shadow-[#8a5aeb]/25'
+                  ? 'bg-primary text-white shadow-lg shadow-primary/25'
                   : 'bg-white/[0.06] text-white/30 border border-white/[0.06]'
                 }`}
             >
@@ -141,8 +141,8 @@ export function LoginPage({ onComplete }: LoginPageProps) {
       {step === 1 && (
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#8a5aeb]/20 shadow-lg shadow-[#8a5aeb]/10">
-              <Tv2 className="h-6 w-6 text-[#8a5aeb]" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 shadow-lg shadow-primary/10">
+              <Tv2 className="h-6 w-6 text-primary" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">Accedi a Stremio</h2>
@@ -183,7 +183,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             )}
 
             <Button
-              className="w-full bg-gradient-to-r from-[#8a5aeb] to-[#6d3fd4] hover:from-[#7a4adb] hover:to-[#5d2fc4] shadow-lg shadow-[#8a5aeb]/20"
+              className="w-full bg-primary hover:bg-primary-dark shadow-primary/20"
               onClick={handleStremioLogin}
               disabled={loading}
             >
@@ -293,7 +293,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             </div>
 
             <Button
-              className="w-full bg-gradient-to-r from-[#8a5aeb] to-[#6d3fd4] hover:from-[#7a4adb] hover:to-[#5d2fc4] shadow-lg shadow-[#8a5aeb]/20"
+              className="w-full bg-primary hover:bg-primary-dark shadow-primary/20"
               onClick={() => handleComplete(traktToken, traktRefreshToken)}
             >
               Completa configurazione

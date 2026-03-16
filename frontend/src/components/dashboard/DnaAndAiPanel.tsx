@@ -245,7 +245,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
         </p>
 
         {/* Suggested DNA (read-only) */}
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 p-5">
+        <div className="glass-card p-5">
           <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Suggested DNA (Appreso dall&apos;AI)</p>
           {suggestedDNA.length > 0 ? (
             <div className="flex flex-wrap gap-2">
@@ -256,7 +256,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                     p.type === 'genre'
                       ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
                       : p.type === 'keyword'
-                        ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300'
+                        ? 'bg-primary/20 text-primary'
                         : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
                   }`}
                 >
@@ -270,7 +270,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
         </div>
 
         {/* Manual DNA Override */}
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 p-5">
+        <div className="glass-card p-5">
           <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Override Manuale (DNA Forzato)</p>
           <div className="flex flex-wrap gap-2 mb-4">
             {profileDNA.length > 0 ? profileDNA.map((p) => (
@@ -337,7 +337,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
             return (
               <div
                 key={catalog.idBase}
-                className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 overflow-hidden flex flex-col"
+                className="glass-card overflow-hidden flex flex-col"
               >
                 <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700/40 bg-slate-50 dark:bg-slate-800/60">
                   <div className="flex items-center justify-between gap-3">

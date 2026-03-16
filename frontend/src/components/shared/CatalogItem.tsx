@@ -40,7 +40,7 @@ export function CatalogItem({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
-      className={`group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 transition-all p-5 cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50 scale-95' : ''
+      className={`group relative flex flex-col glass-card transition-all p-5 cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50 scale-95' : ''
         } ${isMergeTarget
           ? 'scale-105 ring-4 ring-primary ring-offset-4 ring-offset-background-light dark:ring-offset-background-dark bg-primary/10 z-10 animate-pulse'
           : ''

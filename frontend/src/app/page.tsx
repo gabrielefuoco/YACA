@@ -11,6 +11,7 @@ import { TabNav } from '@/components/layout/TabNav';
 import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { MyList, StremioAuth, Profile } from '@/types';
 import { LOCAL_STORAGE_KEYS, SESSION_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 import { api } from '@/lib/api';
@@ -50,6 +51,7 @@ export default function Home() {
   const [myLists, setMyLists] = useState<MyList[]>([]);
   const [configVersion, setConfigVersion] = useState<string | undefined>();
   const [initialProfiles, setInitialProfiles] = useState<Profile[] | undefined>(undefined);
+  const [initialActiveProfileId, setInitialActiveProfileId] = useState<string | undefined>(undefined);
   const [userId, setUserId] = useState<string | null>(null);
   const [configDecoded, setConfigDecoded] = useState(false);
   const [globalTmdbKey, setGlobalTmdbKey] = useState<string>('');
@@ -136,14 +138,7 @@ export default function Home() {
           if (data.configVersion) setConfigVersion(String(data.configVersion));
 
           if (data.activeProfileId && typeof data.activeProfileId === 'string') {
-            const profileExists = mappedProfiles.some(p => p.id === data.activeProfileId);
-            if (profileExists) {
-              try {
-                sessionStorage.setItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID, data.activeProfileId);
-              } catch (err) {
-                console.warn('Failed to store pending activeProfileId:', err);
-              }
-            }
+            setInitialActiveProfileId(data.activeProfileId);
           }
 
           if (data.apiKeys) {
@@ -180,23 +175,11 @@ export default function Home() {
     reorderCatalogs,
     removeCatalog,
     addCatalog,
-  } = useProfiles(initialProfiles);
+  } = useProfiles(initialProfiles, initialActiveProfileId);
 
   const { presets, profileTemplates, categories } = usePresets();
 
-  // Restore activeProfileId from decoded config if it was stored temporarily
-  useEffect(() => {
-    try {
-      const pendingId = sessionStorage.getItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID);
-      if (pendingId && profiles.some(p => p.id === pendingId)) {
-        setActiveProfileId(pendingId);
-        sessionStorage.removeItem(SESSION_STORAGE_KEYS.PENDING_ACTIVE_PROFILE_ID);
-      }
-    } catch (err) {
-      // Silently fail if sessionStorage is unavailable (e.g., private browsing)
-      console.warn('Failed to restore pending activeProfileId from sessionStorage. Active profile will not be restored:', err);
-    }
-  }, [profiles, setActiveProfileId]);
+  // Remove manual sessionStorage restoration since it's handled by useProfiles constructor/effect
 
   // 1. Instant DB Sync (500ms debounce)
   useEffect(() => {
@@ -469,10 +452,13 @@ export default function Home() {
 
   const isLoggedIn = Boolean(userId || stremioAuth);
 
-  if (!isLoaded || !authLoaded || !configDecoded) {
+  if (!isLoaded || !authLoaded || !configDecoded || isInitializing) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-[#8a5aeb]" />
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-8 max-w-6xl pb-32">
+          <DashboardSkeleton />
+        </main>
       </div>
     );
   }

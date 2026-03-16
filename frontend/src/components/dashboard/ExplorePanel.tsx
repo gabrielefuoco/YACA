@@ -85,7 +85,7 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
           const isSelected = selectedPresets.includes(preset.id);
 
           return (
-            <div key={preset.id} className="w-full min-w-0 p-0 flex flex-col group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm overflow-hidden">
+            <div key={preset.id} className="w-full min-w-0 p-0 flex flex-col group glass-card overflow-hidden">
               <div className="flex flex-col p-4 bg-slate-50 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-700/50 relative z-10">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0 flex-1">

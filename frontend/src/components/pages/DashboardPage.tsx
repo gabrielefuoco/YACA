@@ -7,6 +7,7 @@ import { ActiveCatalogsPanel } from '@/components/dashboard/ActiveCatalogsPanel'
 import { ExplorePanel } from '@/components/dashboard/ExplorePanel';
 import { CreatorPanel } from '@/components/dashboard/CreatorPanel';
 import { DnaAndAiPanel } from '@/components/dashboard/DnaAndAiPanel';
+import { RenameProfileDialog } from '@/components/modals/RenameProfileDialog';
 
 type DashboardTab = 'active' | 'explore' | 'creator' | 'dna';
 
@@ -56,6 +57,7 @@ export function DashboardPage({
   onTemplateApplied,
 }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('active');
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
   const editingProfile = profiles.find((p) => p.id === editingProfileId) ?? profiles[0];
 
   const handleApplyTemplate = async (template: ProfileTemplate) => {
@@ -98,8 +100,8 @@ export function DashboardPage({
   return (
     <div className="flex flex-col w-full gap-8">
       <div className="flex flex-col gap-1">
-        <h1 className="text-slate-900 dark:text-slate-100 text-3xl font-black leading-tight tracking-tight">Dashboard</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm">Gestisci i tuoi profili e personalizza i cataloghi multimediali</p>
+        <h1 className="text-slate-900 dark:text-slate-100 text-3xl font-black leading-tight tracking-tight text-center md:text-left">Dashboard</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-sm text-center md:text-left">Gestisci i tuoi profili e personalizza i cataloghi multimediali</p>
       </div>
 
       {/* Profiles Section */}
@@ -124,10 +126,7 @@ export function DashboardPage({
           isActive={editingProfileId === activeProfileId}
           startRename={() => {
             if (editingProfile.id === 'global') return;
-            const newName = window.prompt('Nuovo nome per il profilo:', editingProfile.name);
-            if (newName && newName.trim()) {
-              onRenameProfile(editingProfile.id, newName.trim());
-            }
+            setIsRenameOpen(true);
           }}
         />
       )}
@@ -187,6 +186,13 @@ export function DashboardPage({
           )}
         </div>
       </section>
+
+      <RenameProfileDialog
+        open={isRenameOpen}
+        onOpenChange={setIsRenameOpen}
+        currentName={editingProfile?.name ?? ''}
+        onRename={(newName) => onRenameProfile(editingProfile.id, newName)}
+      />
     </div>
   );
 }

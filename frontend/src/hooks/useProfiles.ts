@@ -1,6 +1,7 @@
 'use client';
 import { useState, useCallback, useEffect } from 'react';
 import { Profile, Catalog } from '@/types';
+import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
 
 import { generateId } from '@/lib/utils';
 
@@ -49,18 +50,32 @@ function ensureGlobalProfile(list: Profile[]): Profile[] {
   return [createGlobalProfile(), ...list];
 }
 
-export function useProfiles(initialProfiles?: Profile[]) {
+export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?: string) {
   const [profiles, setProfiles] = useState<Profile[]>(
     initialProfiles && initialProfiles.length > 0
       ? ensureGlobalProfile(initialProfiles)
       : [createGlobalProfile()]
   );
-  const [activeProfileId, setActiveProfileId] = useState<string>(
-    initialProfiles?.[0]?.id ?? profiles[0]?.id ?? ''
-  );
-  const [editingProfileId, setEditingProfileId] = useState<string>(
-    initialProfiles?.[0]?.id ?? profiles[0]?.id ?? ''
-  );
+  const [activeProfileId, setActiveProfileId] = useState<string>(() => {
+    if (initialActiveProfileId && (initialProfiles ?? profiles).some(p => p.id === initialActiveProfileId)) {
+      return initialActiveProfileId;
+    }
+    return initialProfiles?.[0]?.id ?? profiles[0]?.id ?? '';
+  });
+  const [editingProfileId, setEditingProfileId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEYS.EDITING_PROFILE_ID);
+      if (stored) return stored;
+    }
+    return initialProfiles?.[0]?.id ?? profiles[0]?.id ?? '';
+  });
+
+  // Persist editingProfileId
+  useEffect(() => {
+    if (editingProfileId) {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.EDITING_PROFILE_ID, editingProfileId);
+    }
+  }, [editingProfileId]);
 
   // Sync when initialProfiles changes (e.g. after async config decode or save)
   useEffect(() => {
@@ -75,9 +90,14 @@ export function useProfiles(initialProfiles?: Profile[]) {
       setActiveProfileId((prev) =>
         safe.some((p) => p.id === prev) ? prev : safe[0].id
       );
-      setEditingProfileId((prev) =>
-        safe.some((p) => p.id === prev) ? prev : safe[0].id
-      );
+      setEditingProfileId((prev) => {
+        // Priority: stored local id > initial id > first profile
+        if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem(LOCAL_STORAGE_KEYS.EDITING_PROFILE_ID);
+          if (stored && safe.some(p => p.id === stored)) return stored;
+        }
+        return safe.some((p) => p.id === prev) ? prev : safe[0].id;
+      });
     }
   }, [initialProfiles]);
 

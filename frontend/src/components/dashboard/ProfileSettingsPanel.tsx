@@ -47,26 +47,14 @@ export function ProfileSettingsPanel({
     };
 
     const handleApplyTemplate = async (template: ProfileTemplate) => {
-        const hasExistingDNA = profileDNA.length > 0;
-        if (hasExistingDNA) {
-            const confirm = window.confirm(
-                `Stai applicando il modello "${template.name}".\n\nVuoi che YACA aggiorni automaticamente il "Profile DNA" (generi e temi) basandosi sui nuovi preset?`
-            );
-            if (confirm) {
-                // We'll let the backend handle the DNA inference if possible, 
-                // but for now we just apply the template.
-                // In a more advanced version, we'd trigger a DNA rebuild.
-            }
-        }
+        // We'll let the backend handle the DNA inference if possible, 
+        // but for now we just apply the template via the parent callback.
         await onApplyTemplate(template);
-        setTimeout(() => {
-            window.location.reload();
-        }, TEMPLATE_DNA_REFRESH_DELAY_MS);
     };
 
     return (
-        <div className="flex flex-col rounded-xl border-2 border-primary/30 bg-white/5 dark:bg-slate-800/60 overflow-hidden shadow-lg shadow-primary/5 mt-2">
-            <div className="px-6 py-4 border-b border-primary/10 flex items-center justify-between bg-primary/5">
+        <div className="flex flex-col glass-panel mt-2 overflow-hidden shadow-lg shadow-primary/5">
+            <div className="px-6 py-4 border-b border-primary/10 flex items-center justify-between bg-primary/5/50">
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">settings</span>
                     <span className="text-sm font-bold">Impostazioni Profilo: <span className="text-primary">{profile.name}</span></span>
@@ -140,7 +128,7 @@ export function ProfileSettingsPanel({
                                                 p.type === 'genre'
                                                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
                                                     : p.type === 'keyword'
-                                                        ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300'
+                                                        ? 'bg-primary/20 text-primary'
                                                         : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
                                             }`}
                                         >

@@ -66,6 +66,7 @@ export const LOCAL_STORAGE_KEYS = {
   TRAKT_TOKEN: 'yaca_trakt_token',
   TRAKT_REFRESH_TOKEN: 'yaca_trakt_refresh_token',
   USER_ID: 'yaca_user_id',
+  EDITING_PROFILE_ID: 'yaca_editing_profile_id',
 } as const;
 
 export const SESSION_STORAGE_KEYS = {

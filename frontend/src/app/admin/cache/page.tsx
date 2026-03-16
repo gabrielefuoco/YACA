@@ -91,7 +91,7 @@ export default function CacheAdminPage() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
-                                <Database className="w-8 h-8 text-[#8a5aeb]" />
+                                <Database className="w-8 h-8 text-primary" />
                                 Gestione Cache
                             </h1>
                             <p className="text-slate-400 mt-2">
