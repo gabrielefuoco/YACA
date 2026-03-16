@@ -8,8 +8,8 @@ export function Header({ children }: { children?: React.ReactNode }) {
           <img src="/fiamma_yaca.png" alt="YACA Logo" className="h-8 w-8 object-contain" />
         </div>
         <div className="flex flex-col">
-          <h2 className="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">YACA</h2>
-          <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Yet Another Catalog Addon</span>
+          <h2 className="text-zinc-900 dark:text-zinc-50 text-lg font-black leading-tight tracking-tighter">YACA</h2>
+          <span className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 dark:text-zinc-500 hidden sm:block">Yet Another Catalog Addon</span>
         </div>
       </div>
       <div className="flex flex-1 justify-end gap-8">

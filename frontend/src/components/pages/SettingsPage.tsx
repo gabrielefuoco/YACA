@@ -226,20 +226,20 @@ export function SettingsPage({
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* HERO SECTION: Salva, Aggiorna, Installa & Backup                  */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 space-y-5 shadow-lg shadow-primary/5">
+      <section className="rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary-dark/60 via-primary/5 to-transparent p-6 space-y-5 shadow-2xl shadow-primary/20">
         <div className="flex items-center gap-3">
           <div className="size-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
             <Rocket className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Salva & Installa</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Salva la configurazione, installa l&apos;addon su Stremio e gestisci i backup</p>
+            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Salva & Installa</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Salva la configurazione, installa l&apos;addon su Stremio e gestisci i backup</p>
           </div>
         </div>
 
         {/* Save Button */}
         <Button
-          className="w-full py-3 bg-primary text-white hover:brightness-110 font-bold text-sm shadow-md shadow-primary/20"
+          className="w-full py-3 bg-primary text-white hover:bg-accent font-bold text-sm shadow-xl shadow-primary/30"
           size="lg"
           onClick={handleSave}
           disabled={loading}
@@ -254,8 +254,8 @@ export function SettingsPage({
 
         {/* Error */}
         {error && (
-          <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-3">
-            <p className="text-sm text-rose-400">{error}</p>
+          <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+            <p className="text-sm text-destructive">{error}</p>
           </div>
         )}
 
@@ -283,7 +283,7 @@ export function SettingsPage({
               <Button
                 size="sm"
                 onClick={() => window.open(installUrl, '_blank')}
-                className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="flex-1 text-xs bg-secondary hover:bg-secondary/80 text-secondary-foreground"
               >
                 <ExternalLink className="h-3.5 w-3.5 mr-1" />
                 Installa su Stremio
@@ -299,7 +299,7 @@ export function SettingsPage({
               <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-emerald-500">Addon già configurato</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Reinstalla o copia il link per aggiornare</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Reinstalla o copia il link per aggiornare</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -319,7 +319,7 @@ export function SettingsPage({
               <Button
                 size="sm"
                 onClick={() => window.open(manifestUrl, '_blank')}
-                className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="flex-1 text-xs bg-secondary hover:bg-secondary/80 text-secondary-foreground"
               >
                 <ExternalLink className="h-3.5 w-3.5 mr-1" />
                 Installa su Stremio
@@ -328,7 +328,7 @@ export function SettingsPage({
           </div>
         )}
 
-        <Separator className="bg-slate-200 dark:bg-slate-700/50" />
+        <Separator className="bg-zinc-200 dark:bg-zinc-700/50" />
 
         {/* Backup & Import */}
         <div className="flex gap-3">
@@ -346,7 +346,7 @@ export function SettingsPage({
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Cache & Performance                                                */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/40 p-5 space-y-4">
+      <section className="rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-800/40 p-5 space-y-4">
         <div className="flex items-center gap-2 text-primary">
           <span className="material-symbols-outlined text-lg">bolt</span>
           <h3 className="text-sm font-black uppercase tracking-widest">Cache & Performance</h3>
@@ -354,13 +354,13 @@ export function SettingsPage({
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Refresh rapido</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Aggiorna i cataloghi più frequentemente</p>
+            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Refresh rapido</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Aggiorna i cataloghi più frequentemente</p>
           </div>
           <Switch checked={fastRefresh} onCheckedChange={setFastRefresh} />
         </div>
 
-        <Separator className="bg-slate-200 dark:bg-slate-700/50" />
+        <Separator className="bg-zinc-200 dark:bg-zinc-700/50" />
 
         <Button
           variant="outline"
@@ -385,7 +385,7 @@ export function SettingsPage({
             Gestione Avanzata Cache (Admin)
             <ExternalLink className="h-3 w-3 opacity-50" />
           </Link>
-          <p className="mt-2 text-[10px] text-center text-slate-500">
+          <p className="mt-2 text-[10px] text-center text-zinc-500">
             Visualizza statistiche dettagliate per Redis e MongoDB
           </p>
         </div>
@@ -394,7 +394,7 @@ export function SettingsPage({
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Global API Keys                                                    */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/40 p-5 space-y-4">
+      <section className="rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-800/40 p-5 space-y-4">
         <div className="flex items-center gap-2 text-primary">
           <span className="material-symbols-outlined text-lg">key</span>
           <h3 className="text-sm font-black uppercase tracking-widest">Chiavi API Globale</h3>
@@ -402,22 +402,22 @@ export function SettingsPage({
         
         <div className="space-y-4">
           <div>
-            <Label htmlFor="tmdb-key" className="text-slate-900 dark:text-slate-100">TMDB API Key (Opzionale)</Label>
+            <Label htmlFor="tmdb-key" className="text-zinc-900 dark:text-zinc-100">TMDB API Key (Opzionale)</Label>
             <Input
               id="tmdb-key"
               value={tmdbKey}
               onChange={(e) => setTmdbKey(e.target.value)}
               placeholder="La tua API key TMDB..."
-              className="mt-1 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+              className="mt-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
               type="password"
             />
-            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
               Aiuta la rete globale fornendo limiti aumentati o usa il tuo account.
             </p>
           </div>
 
           <div>
-            <Label htmlFor="mistral-key" className="text-slate-900 dark:text-slate-100">Mistral API Key (Obbligatoria per AI)</Label>
+            <Label htmlFor="mistral-key" className="text-zinc-900 dark:text-zinc-100">Mistral API Key (Obbligatoria per AI)</Label>
             <div className="flex gap-2 mt-1">
               <Input
                 id="mistral-key"
@@ -428,7 +428,7 @@ export function SettingsPage({
                   setMistralVerifyError('');
                 }}
                 placeholder="La tua API key Mistral..."
-                className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
                 type="password"
               />
               <Button
@@ -452,9 +452,9 @@ export function SettingsPage({
               <p className="mt-1.5 text-xs text-emerald-500 font-medium">✓ Chiave Mistral verificata con successo.</p>
             )}
             {mistralVerifyError && (
-              <p className="mt-1.5 text-xs text-rose-400">{mistralVerifyError}</p>
+              <p className="mt-1.5 text-xs text-destructive">{mistralVerifyError}</p>
             )}
-            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
               Obbligatoria per generare cataloghi AI. Verifica la chiave prima di salvare.
             </p>
           </div>
@@ -464,17 +464,17 @@ export function SettingsPage({
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Account                                                            */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/40 p-5 space-y-4">
+      <section className="rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-800/40 p-5 space-y-4">
         <div className="flex items-center gap-2 text-primary">
           <span className="material-symbols-outlined text-lg">person</span>
           <h3 className="text-sm font-black uppercase tracking-widest">Account</h3>
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between rounded-lg bg-slate-50 dark:bg-slate-800 px-4 py-3 border border-slate-200 dark:border-slate-700/50">
+          <div className="flex items-center justify-between rounded-lg bg-zinc-50 dark:bg-zinc-800 px-4 py-3 border border-zinc-200 dark:border-zinc-700/50">
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Stremio</p>
-              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Stremio</p>
+              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                 {stremioEmail ?? 'Non connesso'}
               </p>
             </div>
@@ -483,10 +483,10 @@ export function SettingsPage({
             )}
           </div>
 
-          <div className="flex items-center justify-between rounded-lg bg-slate-50 dark:bg-slate-800 px-4 py-3 border border-slate-200 dark:border-slate-700/50">
+          <div className="flex items-center justify-between rounded-lg bg-zinc-50 dark:bg-zinc-800 px-4 py-3 border border-zinc-200 dark:border-zinc-700/50">
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Trakt</p>
-              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Trakt</p>
+              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                 {traktToken ? 'Connesso' : 'Non connesso'}
               </p>
             </div>

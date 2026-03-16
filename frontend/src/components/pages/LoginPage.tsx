@@ -121,18 +121,18 @@ export function LoginPage({ onComplete }: LoginPageProps) {
           <div key={s} className="flex items-center gap-2">
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${step > s
-                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
                 : step === s
-                  ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                  : 'bg-white/[0.06] text-white/30 border border-white/[0.06]'
+                  ? 'bg-primary text-white shadow-xl shadow-primary/40 scale-110'
+                  : 'bg-white/[0.04] text-white/20 border border-white/[0.05]'
                 }`}
             >
               {step > s ? <CheckCircle2 className="h-4 w-4" /> : s}
             </div>
-            {s < 3 && <div className={`h-px w-8 transition-colors ${step > s ? 'bg-emerald-500' : 'bg-white/[0.08]'}`} />}
+            {s < 3 && <div className={`h-[2px] w-8 transition-colors ${step > s ? 'bg-emerald-500' : 'bg-white/[0.08]'}`} />}
           </div>
         ))}
-        <span className="ml-3 text-xs text-white/40 font-medium">
+        <span className="ml-3 text-xs text-white/40 font-black uppercase tracking-widest">
           {step === 1 ? 'Account Stremio' : step === 2 ? 'Connetti Trakt' : 'Chiavi API'}
         </span>
       </div>
@@ -141,7 +141,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
       {step === 1 && (
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 shadow-lg shadow-primary/10">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 border border-primary/30 shadow-2xl shadow-primary/20">
               <Tv2 className="h-6 w-6 text-primary" />
             </div>
             <div>
@@ -176,12 +176,12 @@ export function LoginPage({ onComplete }: LoginPageProps) {
               />
             </div>
 
-              <div className="rounded-lg bg-primary-dark/10 border border-primary-dark/20 p-2.5">
-                <p className="text-xs text-primary-dark">{error}</p>
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-2.5">
+                <p className="text-xs text-destructive">{error}</p>
               </div>
 
             <Button
-              className="w-full bg-primary hover:bg-primary-dark shadow-primary/20"
+              className="w-full bg-primary hover:bg-accent text-white font-black uppercase tracking-wider h-12 transition-all shadow-xl shadow-primary/30"
               onClick={handleStremioLogin}
               disabled={loading}
             >
@@ -217,7 +217,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
       {step === 2 && (
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/20 shadow-lg shadow-accent/10">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/20 border border-accent/40 shadow-2xl shadow-accent/20">
               <Film className="h-6 w-6 text-accent" />
             </div>
             <div>
@@ -226,7 +226,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             </div>
           </div>
 
-          <Button className="w-full bg-accent/20 border border-accent/30 text-accent hover:bg-accent/30" variant="outline" onClick={() => setTraktModalOpen(true)}>
+          <Button className="w-full bg-accent/10 border border-accent/40 text-accent hover:bg-accent/20 h-12 font-bold transition-all shadow-lg shadow-accent/10" variant="outline" onClick={() => setTraktModalOpen(true)}>
             🎬 Connetti Trakt
           </Button>
 
@@ -253,8 +253,8 @@ export function LoginPage({ onComplete }: LoginPageProps) {
       {step === 3 && (
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/20 shadow-lg shadow-secondary/10">
-              <KeyRound className="h-6 w-6 text-secondary" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/30 border border-secondary/50 shadow-2xl shadow-secondary/30">
+              <KeyRound className="h-6 w-6 text-secondary-foreground" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">Configura le API Key</h2>
@@ -291,7 +291,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             </div>
 
             <Button
-              className="w-full bg-primary hover:bg-primary-dark shadow-primary/20"
+              className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/80 font-black uppercase tracking-wider h-12 transition-all shadow-xl shadow-secondary/40"
               onClick={() => handleComplete(traktToken, traktRefreshToken)}
             >
               Completa configurazione

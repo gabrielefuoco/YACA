@@ -249,17 +249,17 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
   // --- Render a single query block card ---
   const renderBlock = (block: BlockState, index: number) => (
-    <div key={block.id} className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/40 shadow-sm overflow-hidden">
+    <div key={block.id} className="rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-zinc-50 dark:bg-zinc-800/40 shadow-sm overflow-hidden">
       {/* Block header – clickable to collapse/expand */}
       <button
         type="button"
         onClick={() => updateBlock(block.id, { collapsed: !block.collapsed })}
-        className="w-full flex items-center justify-between px-5 py-3 bg-slate-100 dark:bg-slate-800 select-none"
+        className="w-full flex items-center justify-between px-5 py-3 bg-zinc-100 dark:bg-zinc-800 select-none"
       >
-        <span className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+        <span className="flex items-center gap-2 text-sm font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
           <Layers className="h-4 w-4 text-primary" />
           Query {index + 1}
-          <span className="text-xs font-normal normal-case text-slate-500 dark:text-slate-400">
+          <span className="text-xs font-normal normal-case text-zinc-500 dark:text-zinc-400">
             — {STRATEGY_OPTIONS.find(s => s.value === block.strategy)?.label ?? block.strategy}
           </span>
         </span>
@@ -270,7 +270,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
               tabIndex={0}
               onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); removeBlock(block.id); } }}
-              className="text-slate-400 hover:text-red-500 transition-colors p-0.5 rounded"
+              className="text-zinc-400 hover:text-destructive transition-colors p-0.5 rounded"
               title="Rimuovi query"
             >
               <X className="h-4 w-4" />
@@ -288,9 +288,9 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
           {/* Strategy selector and inputs */}
           <div className="space-y-4">
             <div>
-              <Label className="text-slate-900 dark:text-slate-100 font-bold">Strategia</Label>
+              <Label className="text-zinc-900 dark:text-zinc-100 font-bold">Strategia</Label>
               <Select value={block.strategy} onValueChange={(v) => updateBlock(block.id, { strategy: v as BlockState['strategy'] })}>
-                <SelectTrigger className="mt-1 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                <SelectTrigger className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -303,22 +303,22 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
             {block.strategy === 'similar' && (
               <div>
-                <Label className="text-slate-900 dark:text-slate-100 font-bold">Titolo di Riferimento</Label>
-                <Input value={block.similarTo || ''} onChange={(e) => updateBlock(block.id, { similarTo: e.target.value })} placeholder="es. Bridgerton" className="mt-1 bg-white dark:bg-slate-900" />
+                <Label className="text-zinc-900 dark:text-zinc-100 font-bold">Titolo di Riferimento</Label>
+                <Input value={block.similarTo || ''} onChange={(e) => updateBlock(block.id, { similarTo: e.target.value })} placeholder="es. Bridgerton" className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10" />
               </div>
             )}
 
             {block.strategy === 'multi_search' && (
               <div>
-                <Label className="text-slate-900 dark:text-slate-100 font-bold">Titolo da Cercare</Label>
-                <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white dark:bg-slate-900" />
+                <Label className="text-zinc-900 dark:text-zinc-100 font-bold">Titolo da Cercare</Label>
+                <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10" />
               </div>
             )}
           </div>
 
           {/* Basic filters */}
           <details className="group [&_summary::-webkit-details-marker]:hidden" open>
-            <summary className="flex cursor-pointer items-center justify-between font-bold text-sm text-slate-900 dark:text-slate-100 select-none uppercase tracking-wider">
+            <summary className="flex cursor-pointer items-center justify-between font-bold text-sm text-zinc-900 dark:text-zinc-100 select-none uppercase tracking-wider">
               Filtri di Base
               {chevronSvg}
             </summary>
@@ -327,7 +327,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                 <div>
                   <Label>Ordina per</Label>
                   <Select value={block.sortBy} onValueChange={(v) => updateBlock(block.id, { sortBy: v })}>
-                    <SelectTrigger className="mt-1 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                    <SelectTrigger className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -340,7 +340,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                 <div>
                   <Label>Lingua originale</Label>
                   <Select value={block.language || '__any'} onValueChange={(v) => updateBlock(block.id, { language: v === '__any' ? '' : v })}>
-                    <SelectTrigger className="mt-1 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                    <SelectTrigger className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10">
                       <SelectValue placeholder="Qualsiasi" />
                     </SelectTrigger>
                     <SelectContent>
@@ -362,11 +362,11 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Anno da</Label>
-                  <Input value={block.yearFrom} onChange={(e) => updateBlock(block.id, { yearFrom: e.target.value })} placeholder="es. 2000" className="mt-1 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700" type="number" min="1900" max="2099" />
+                  <Input value={block.yearFrom} onChange={(e) => updateBlock(block.id, { yearFrom: e.target.value })} placeholder="es. 2000" className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10" type="number" min="1900" max="2099" />
                 </div>
                 <div>
                   <Label>Anno a</Label>
-                  <Input value={block.yearTo} onChange={(e) => updateBlock(block.id, { yearTo: e.target.value })} placeholder="es. 2024" className="mt-1 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700" type="number" min="1900" max="2099" />
+                  <Input value={block.yearTo} onChange={(e) => updateBlock(block.id, { yearTo: e.target.value })} placeholder="es. 2024" className="mt-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10" type="number" min="1900" max="2099" />
                 </div>
               </div>
             </div>
@@ -374,7 +374,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
           {/* Genres */}
           <details className="group [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex cursor-pointer items-center justify-between font-bold text-sm text-slate-900 dark:text-slate-100 select-none uppercase tracking-wider">
+            <summary className="flex cursor-pointer items-center justify-between font-bold text-sm text-zinc-900 dark:text-zinc-100 select-none uppercase tracking-wider">
               Generi {block.genres.length > 0 && <span className="text-xs font-normal normal-case text-primary ml-2">({block.genres.length} selezionati)</span>}
               {chevronSvg}
             </summary>
@@ -385,7 +385,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                   onClick={() => toggleBlockGenre(block.id, id)}
                   className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all shadow-sm ${block.genres.includes(id)
                     ? 'bg-primary text-white shadow-primary/20'
-                    : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'
+                    : 'bg-white dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/60 border border-zinc-200 dark:border-zinc-700/50'
                     }`}
                 >
                   {genreName}
@@ -396,7 +396,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
           {/* Keywords & Staff */}
           <details className="group [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex cursor-pointer items-center justify-between font-bold text-sm text-slate-900 dark:text-slate-100 select-none uppercase tracking-wider">
+            <summary className="flex cursor-pointer items-center justify-between font-bold text-sm text-zinc-900 dark:text-zinc-100 select-none uppercase tracking-wider">
               Parole Chiave & Staff {(block.keywords.length + block.cast.length + block.crew.length) > 0 && <span className="text-xs font-normal normal-case text-primary ml-2">({block.keywords.length + block.cast.length + block.crew.length} selezionati)</span>}
               {chevronSvg}
             </summary>
@@ -442,16 +442,16 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       {/* Header: Name + Type */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <Label className="text-slate-900 dark:text-slate-100 font-bold">Nome catalogo</Label>
+          <Label className="text-zinc-900 dark:text-zinc-100 font-bold">Nome catalogo</Label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Il mio catalogo"
-            className="mt-1 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+            className="mt-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-white/10"
           />
         </div>
         <div>
-          <Label className="text-slate-900 dark:text-slate-100 font-bold">Tipo</Label>
+          <Label className="text-zinc-900 dark:text-zinc-100 font-bold">Tipo</Label>
           <div className="flex gap-2 mt-1">
             {(['movie', 'series'] as const).map((t) => (
               <button
@@ -459,7 +459,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                 onClick={() => setType(t)}
                 className={`flex-1 rounded-lg border py-2 text-sm font-bold transition-all ${type === t
                   ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
-                  : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 hover:text-primary hover:border-primary/50'
+                  : 'border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/40 text-zinc-500 dark:text-zinc-400 hover:text-primary hover:border-primary/50'
                   }`}
               >
                 {t === 'movie' ? '🎬 Film' : '📺 Serie'}
@@ -470,13 +470,13 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       </div>
 
       {/* Global Presentation Strategy */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/40 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-zinc-50 dark:bg-zinc-800/40 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center gap-2 shrink-0">
           <Layers className="h-4 w-4 text-primary" />
-          <Label className="text-slate-900 dark:text-slate-100 font-bold whitespace-nowrap">Strategia di presentazione</Label>
+          <Label className="text-zinc-900 dark:text-zinc-100 font-bold whitespace-nowrap">Strategia di presentazione</Label>
           <span className="relative group">
-            <Info className="h-3.5 w-3.5 text-slate-400 cursor-help" />
-            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
+            <Info className="h-3.5 w-3.5 text-zinc-400 cursor-help" />
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg bg-zinc-900 dark:bg-zinc-700 text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
               <strong>Popularity:</strong> ordina tutti i risultati per popolarità globale.
               <br /><strong>Interleave:</strong> alterna i risultati di ogni query per massima varietà (consensus scoring).
             </span>
@@ -489,7 +489,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
               onClick={() => setPresentationStrategy(s)}
               className={`rounded-lg border px-4 py-1.5 text-xs font-bold transition-all ${presentationStrategy === s
                 ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
-                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-primary hover:border-primary/50'
+                : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-primary hover:border-primary/50'
                 }`}
             >
               {s === 'popularity' ? '🏆 Popularity' : '🔀 Interleave'}
@@ -504,7 +504,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
           <Wand2 className="h-5 w-5" />
           <span className="text-sm font-black uppercase tracking-widest">Genera con AI</span>
         </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
           Descrivi il catalogo che vuoi creare. L&apos;AI interpreterà la tua richiesta e creerà automaticamente i blocchi query.
         </p>
         <div className="flex gap-2">
@@ -512,7 +512,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="es. Film horror italiani degli anni 80..."
-            className="flex-1 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+            className="flex-1 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-white/10"
             onKeyDown={(e) => { if (e.key === 'Enter') handleAiGenerate(); }}
           />
           <Button onClick={handleAiGenerate} disabled={aiLoading || !prompt.trim()} className="shrink-0 bg-primary text-white hover:brightness-110">
@@ -525,7 +525,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       {/* Query Blocks */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-slate-100">
+          <span className="text-sm font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-100">
             Query Blocks ({blocks.length})
           </span>
           <Button onClick={addBlock} variant="outline" size="sm" className="gap-1.5 text-xs font-bold">
@@ -539,7 +539,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
       {/* Preview */}
       {previewFilters && (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800 p-4 overflow-hidden">
+        <div className="rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-800 p-4 overflow-hidden">
           <PosterRow filters={previewFilters} type={previewType} />
         </div>
       )}

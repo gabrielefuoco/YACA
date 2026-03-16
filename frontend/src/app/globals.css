@@ -2,20 +2,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0f;
+  --background: #080000;
   --foreground: #ffffff;
 }
 
 @theme inline {
-  --color-background-light: #f6f5f8;
-  --color-background-dark: #0a0a0f;
-  --color-primary: #F67280;
-  --color-primary-dark: #C06C84;
-  --color-accent: #6C5B7B;
-  --color-secondary: #355C7D;
-  --color-primary-10: color-mix(in srgb, #F67280 10%, transparent);
-  --color-primary-20: color-mix(in srgb, #F67280 20%, transparent);
-  --color-primary-30: color-mix(in srgb, #F67280 30%, transparent);
+  --color-background-light: #fdfaf5;
+  --color-background-dark: #080000;
+  --color-primary: #9B0F06;
+  --color-primary-dark: #5E0006;
+  --color-accent: #D53E0F;
+  --color-secondary: #EED9B9;
+  --color-destructive: #9B0F06;
+  --color-destructive-foreground: #EED9B9;
+  --color-success: #10b981;
+  --color-primary-10: color-mix(in srgb, #9B0F06 10%, transparent);
+  --color-primary-20: color-mix(in srgb, #9B0F06 20%, transparent);
+  --color-primary-30: color-mix(in srgb, #9B0F06 30%, transparent);
   --font-display: "Outfit", "Inter", sans-serif;
 }
 

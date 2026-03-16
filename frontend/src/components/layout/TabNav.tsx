@@ -21,8 +21,8 @@ export function TabNav({ activeTab, onTabChange }: TabNavProps) {
           className={cn(
             'text-sm transition-colors flex items-center px-4 py-1.5',
             activeTab === id
-              ? 'bg-primary text-white font-bold leading-normal rounded-full shadow-md'
-              : 'text-slate-600 dark:text-slate-400 font-medium leading-normal hover:text-primary'
+              ? 'bg-primary text-white font-black leading-normal rounded-full shadow-lg shadow-primary/30 scale-105'
+              : 'text-zinc-500 dark:text-zinc-500 font-medium leading-normal hover:text-primary transition-all'
           )}
         >
           {label}

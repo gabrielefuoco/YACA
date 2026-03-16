@@ -51,7 +51,7 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
       {loading && (
         <div className="flex max-w-full gap-2 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-[225px] w-[150px] shrink-0 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800/40" />
+            <div key={i} className="h-[225px] w-[150px] shrink-0 animate-pulse rounded-lg bg-primary/10 border border-primary/5 shadow-inner" />
           ))}
         </div>
       )}
@@ -64,23 +64,23 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
                 <img
                   src={item.poster}
                   alt={item.title}
-                  className="h-[225px] w-[150px] rounded-lg object-cover transition-transform duration-200 group-hover/poster:scale-105 shadow-md shadow-black/30"
+                  className="h-[225px] w-[150px] rounded-lg object-cover transition-all duration-300 group-hover/poster:scale-105 group-hover/poster:shadow-2xl group-hover/poster:shadow-primary/40 shadow-lg shadow-black/50"
                 />
               ) : (
-                <div className="flex h-[225px] w-[150px] items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/40 text-xs text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700/50">
+                <div className="flex h-[225px] w-[150px] items-center justify-center rounded-lg bg-primary-dark/20 text-xs text-primary/60 border border-primary/20">
                   {item.title.slice(0, 2)}
                 </div>
               )}
-              <div className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black/80 via-black/20 to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover/poster:opacity-100">
-                <p className="text-[11px] font-medium text-white line-clamp-2 leading-tight">{item.title}</p>
-                {item.year && <p className="text-[11px] text-white/60">{item.year}</p>}
+              <div className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-background-dark/90 via-background-dark/30 to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover/poster:opacity-100">
+                <p className="text-[12px] font-black text-white line-clamp-2 leading-tight drop-shadow-md">{item.title}</p>
+                {item.year && <p className="text-[10px] text-accent font-bold mt-0.5">{item.year}</p>}
               </div>
             </div>
           ))}
         </div>
       )}
       {!loading && loaded && items.length === 0 && (
-        <p className="text-xs text-slate-400 dark:text-slate-500 py-4 text-center italic">Nessun risultato</p>
+        <p className="text-xs text-zinc-400 dark:text-zinc-500 py-4 text-center italic">Nessun risultato</p>
       )}
     </div>
   );

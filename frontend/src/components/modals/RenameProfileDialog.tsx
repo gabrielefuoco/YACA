@@ -41,7 +41,7 @@ export function RenameProfileDialog({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="flex flex-col gap-2">
-            <label htmlFor="name" className="text-sm font-medium text-slate-400">
+            <label htmlFor="name" className="text-sm font-bold uppercase tracking-widest text-zinc-500">
               Nuovo nome per il profilo
             </label>
             <Input

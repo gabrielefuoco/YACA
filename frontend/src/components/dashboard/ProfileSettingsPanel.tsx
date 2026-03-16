@@ -53,8 +53,8 @@ export function ProfileSettingsPanel({
     };
 
     return (
-        <div className="flex flex-col glass-panel mt-2 overflow-hidden shadow-lg shadow-primary/5">
-            <div className="px-6 py-4 border-b border-primary/10 flex items-center justify-between bg-primary/5/50">
+        <div className="flex flex-col glass-panel mt-2 overflow-hidden shadow-xl shadow-primary/10">
+            <div className="px-6 py-4 border-b border-primary/20 flex items-center justify-between bg-primary-dark/30">
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">settings</span>
                     <span className="text-sm font-bold">Impostazioni Profilo: <span className="text-primary">{profile.name}</span></span>
@@ -68,11 +68,11 @@ export function ProfileSettingsPanel({
                     )}
                     {!isGlobalProfile && (
                         <>
-                            <button onClick={startRename} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-primary/20 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all">
+                            <button onClick={startRename} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-700 hover:bg-primary/20 text-zinc-700 dark:text-zinc-200 text-xs font-bold transition-all">
                                 <span className="material-symbols-outlined text-sm">edit</span>
                                 <span>Rinomina</span>
                             </button>
-                            <button onClick={() => onRemove(profile.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 text-xs font-bold transition-all">
+                            <button onClick={() => onRemove(profile.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 hover:bg-destructive hover:text-white text-destructive text-xs font-bold transition-all">
                                 <span className="material-symbols-outlined text-sm">delete</span>
                                 <span>Elimina</span>
                             </button>
@@ -81,17 +81,17 @@ export function ProfileSettingsPanel({
                 </div>
             </div>
 
-            <div className="p-6 flex flex-col gap-8 bg-slate-100 dark:bg-transparent">
+            <div className="p-6 flex flex-col gap-8 bg-zinc-100 dark:bg-transparent">
                 {/* Modelli Suggeriti Section */}
                 {profileTemplates.length > 0 && (
-                    <details className="group border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/40 rounded-xl p-4 shadow-sm [&_summary::-webkit-details-marker]:hidden">
+                    <details className="group border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-800/40 rounded-xl p-4 shadow-sm [&_summary::-webkit-details-marker]:hidden">
                         <summary className="flex cursor-pointer items-center justify-between font-bold text-sm select-none">
                             <div className="flex items-center gap-2 text-primary">
                                 <span className="material-symbols-outlined">auto_awesome</span>
                                 <span className="text-sm font-black uppercase tracking-widest">Modelli Suggeriti</span>
-                                <span className="text-xs font-normal normal-case text-slate-400 ml-1">({profileTemplates.length})</span>
+                                <span className="text-xs font-normal normal-case text-zinc-400 ml-1">({profileTemplates.length})</span>
                             </div>
-                            <span className="transition group-open:rotate-180 text-slate-400">
+                            <span className="transition group-open:rotate-180 text-zinc-400">
                                 <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="20"><path d="M6 9l6 6 6-6"></path></svg>
                             </span>
                         </summary>
@@ -100,10 +100,10 @@ export function ProfileSettingsPanel({
                                 <div
                                     key={tpl.id}
                                     onClick={() => handleApplyTemplate(tpl)}
-                                    className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:border-primary transition-all cursor-pointer"
+                                    className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-700 hover:border-primary transition-all cursor-pointer"
                                 >
-                                    <p className="text-slate-900 dark:text-slate-100 font-bold text-xs truncate">{tpl.name}</p>
-                                    <p className="text-slate-500 dark:text-slate-400 text-[10px] mt-0.5 line-clamp-2">{tpl.description}</p>
+                                    <p className="text-zinc-900 dark:text-zinc-100 font-bold text-xs truncate">{tpl.name}</p>
+                                    <p className="text-zinc-500 dark:text-zinc-400 text-[10px] mt-0.5 line-clamp-2">{tpl.description}</p>
                                 </div>
                             ))}
                         </div>
@@ -117,8 +117,8 @@ export function ProfileSettingsPanel({
                         <p className="text-sm font-black uppercase tracking-widest">Profile DNA</p>
                     </div>
                     <div className="flex flex-col gap-3">
-                        <div className="rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 p-4">
-                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">L&apos;algoritmo dice che ami...</p>
+                        <div className="rounded-lg border border-zinc-200 dark:border-zinc-700/60 bg-white dark:bg-zinc-900/40 p-4">
+                            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-3">L&apos;algoritmo dice che ami...</p>
                             {suggestedDNA.length > 0 ? (
                                 <div className="flex flex-wrap gap-2">
                                     {suggestedDNA.map((p) => (
@@ -126,10 +126,10 @@ export function ProfileSettingsPanel({
                                             key={`${p.type}-${p.id}`}
                                             className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
                                                 p.type === 'genre'
-                                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
+                                                    ? 'bg-secondary text-secondary-foreground dark:bg-secondary/10 dark:text-zinc-200'
                                                     : p.type === 'keyword'
-                                                        ? 'bg-primary/20 text-primary'
-                                                        : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                                                        ? 'bg-accent/20 text-accent-foreground dark:bg-accent/20 dark:text-zinc-200'
+                                                        : 'bg-primary/20 text-primary'
                                             }`}
                                         >
                                             {p.name}
@@ -137,47 +137,53 @@ export function ProfileSettingsPanel({
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-xs text-slate-400">Apprendimento in corso: attiva cataloghi o guarda contenuti per arricchire il DNA.</p>
+                                <p className="text-xs text-zinc-400">Apprendimento in corso: attiva cataloghi o guarda contenuti per arricchire il DNA.</p>
                             )}
                         </div>
 
-                        <div className="rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/40 p-4">
-                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">Forza Gusti (DNA Manuale)</p>
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {profileDNA.map((p) => (
-                                        <span
-                                            key={`${p.type}-${p.id}`}
-                                            className="inline-flex items-center gap-1 rounded bg-primary/20 text-primary px-3 py-1.5 text-xs font-bold"
+                        <div className="rounded-lg border border-zinc-200 dark:border-zinc-700/60 bg-white dark:bg-zinc-900/40 p-4">
+                            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-3">Forza Gusti (DNA Manuale)</p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                                {profileDNA.map((p) => (
+                                    <span
+                                        key={`${p.type}-${p.id}`}
+                                        className={`inline-flex items-center gap-1 rounded px-3 py-1.5 text-xs font-bold ${
+                                            p.type === 'genre'
+                                                ? 'bg-secondary text-secondary-foreground dark:bg-secondary/10 dark:text-zinc-200'
+                                                : p.type === 'keyword'
+                                                    ? 'bg-accent/20 text-accent-foreground dark:bg-accent/20 dark:text-zinc-200'
+                                                    : 'bg-primary/20 text-primary'
+                                        }`}
+                                    >
+                                        {p.type === 'genre' ? '🎭 ' : p.type === 'country' ? '🌍 ' : '🏷️ '} {p.name}
+                                        <button
+                                            onClick={() => handleRemoveDNA(String(p.id))}
+                                            className="ml-1 opacity-70 hover:opacity-100 transition-opacity"
                                         >
-                                            {p.type === 'genre' ? '🎭 ' : p.type === 'country' ? '🌍 ' : '🏷️ '} {p.name}
-                                            <button
-                                                onClick={() => handleRemoveDNA(String(p.id))}
-                                                className="ml-1 text-primary hover:text-primary/70 transition-colors"
-                                            >
-                                                <X className="h-3 w-3" />
-                                            </button>
-                                        </span>
-                                    ))}
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-black dark:text-white">
+                                <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white dark:[&_input]:bg-zinc-900/50 [&_input]:border-zinc-200 dark:[&_input]:border-white/10 [&_input]:rounded-lg [&_input]:text-sm">
+                                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 z-10 pointer-events-none">movie</span>
+                                    <AutocompleteSearch
+                                        placeholder="Aggiungi genere (es. Thriller)"
+                                        searchFn={api.searchTmdbGenres}
+                                        onSelect={(item) => handleAddDNA({ type: 'genre', id: String(item.id), name: item.name })}
+                                    />
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-black dark:text-white">
-                                    <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white dark:[&_input]:bg-slate-800 [&_input]:border-slate-200 dark:[&_input]:border-slate-700 [&_input]:rounded-lg [&_input]:text-sm">
-                                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none">movie</span>
-                                        <AutocompleteSearch
-                                            placeholder="Aggiungi genere (es. Thriller)"
-                                            searchFn={api.searchTmdbGenres}
-                                            onSelect={(item) => handleAddDNA({ type: 'genre', id: String(item.id), name: item.name })}
-                                        />
-                                    </div>
-                                    <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white dark:[&_input]:bg-slate-800 [&_input]:border-slate-200 dark:[&_input]:border-slate-700 [&_input]:rounded-lg [&_input]:text-sm">
-                                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none">tag</span>
-                                        <AutocompleteSearch
-                                            placeholder="Aggiungi keyword (es. Cyberpunk)"
-                                            searchFn={api.searchTmdbKeywords}
-                                            onSelect={(item) => handleAddDNA({ type: 'keyword', id: String(item.id), name: item.name })}
-                                        />
-                                    </div>
+                                <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white dark:[&_input]:bg-zinc-900/50 [&_input]:border-zinc-200 dark:[&_input]:border-white/10 [&_input]:rounded-lg [&_input]:text-sm">
+                                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 z-10 pointer-events-none">tag</span>
+                                    <AutocompleteSearch
+                                        placeholder="Aggiungi keyword (es. Cyberpunk)"
+                                        searchFn={api.searchTmdbKeywords}
+                                        onSelect={(item) => handleAddDNA({ type: 'keyword', id: String(item.id), name: item.name })}
+                                    />
                                 </div>
                             </div>
+                        </div>
                     </div>
                 </div>
             </div>
