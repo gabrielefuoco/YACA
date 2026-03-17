@@ -87,93 +87,108 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-2xl bg-background border-marrow-light/20 shadow-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 bg-primary/10 rounded-lg text-primary">
-              <Wand2 className="h-5 w-5" />
+      <DialogContent className="sm:max-w-2xl bg-background-light border-marrow-light/30 shadow-2xl p-0 overflow-hidden max-h-[95vh] flex flex-col">
+        {/* Modern Header */}
+        <DialogHeader className="p-6 sm:p-8 bg-white/40 border-b border-marrow-light/10">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-primary rounded-2xl text-white shadow-lg shadow-primary/20">
+              <Wand2 className="h-6 w-6" />
             </div>
-            <div>
-              <DialogTitle className="text-xl font-black text-marrow-deep tracking-tight">Smart Merge</DialogTitle>
-              <DialogDescription className="text-marrow-light text-sm font-medium">
+            <div className="flex flex-col">
+              <DialogTitle className="text-2xl font-black text-marrow-deep tracking-tight leading-none mb-1">Smart Merge</DialogTitle>
+              <DialogDescription className="text-marrow-light/70 text-sm font-medium">
                 Crea una lista intelligente unendo due cataloghi
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="grid gap-6 py-4">
-          {/* Catalogs comparison */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white/40 border border-marrow-light/10 relative shadow-sm">
-            <div className="flex-1 min-w-0 w-full sm:w-auto text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-                <span className="text-lg">{catalogA.emoji ?? '📋'}</span>
-                <span className="text-sm font-bold text-marrow-deep truncate">{catalogA.name}</span>
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-8 scrollbar-hide">
+          {/* Catalogs comparison (High Contrast) */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 rounded-3xl bg-white/80 border-2 border-marrow-light/10 shadow-sm relative">
+            <div className="flex-1 min-w-0 w-full text-center md:text-left space-y-2">
+              <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
+                <span className="text-2xl">{catalogA.emoji ?? '📋'}</span>
+                <span className="text-base font-black text-marrow-deep truncate">{catalogA.name}</span>
               </div>
               <TypeBadge type={catalogA.type} />
             </div>
 
-            <div className="flex flex-col items-center justify-center px-2">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-black shadow-lg shadow-primary/30">
+            <div className="flex shrink-0">
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-black text-xl shadow-xl shadow-primary/30 ring-4 ring-white">
                 +
               </div>
             </div>
 
-            <div className="flex-1 min-w-0 w-full sm:w-auto text-center sm:text-right">
-              <div className="flex items-center justify-center sm:justify-end gap-2 mb-1">
-                <span className="text-sm font-bold text-marrow-deep truncate">{catalogB.name}</span>
-                <span className="text-lg">{catalogB.emoji ?? '📋'}</span>
+            <div className="flex-1 min-w-0 w-full text-center md:text-right space-y-2">
+              <div className="flex items-center justify-center md:justify-end gap-2 mb-1">
+                <span className="text-base font-black text-marrow-deep truncate">{catalogB.name}</span>
+                <span className="text-2xl">{catalogB.emoji ?? '📋'}</span>
               </div>
               <TypeBadge type={catalogB.type} />
             </div>
           </div>
 
-          {/* Strategy configuration */}
-          <div className="space-y-3">
-            <Label className="text-[10px] uppercase tracking-widest text-marrow-light font-black ml-1">Strategia di Unione</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Strategy Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 ml-1">
+              <div className="w-1 h-4 bg-primary rounded-full" />
+              <Label className="text-xs uppercase tracking-[0.2em] text-marrow-light font-black">Strategia di Unione</Label>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 onClick={() => setStrategy('mixed')}
-                className={`flex flex-col items-start p-4 rounded-2xl border-2 transition-all relative overflow-hidden group ${strategy === 'mixed'
-                  ? 'border-primary bg-primary/5 text-marrow-deep'
-                  : 'border-marrow-light/10 bg-white/30 text-marrow-light hover:bg-white/50 hover:text-marrow-deep'
+                className={`flex flex-col items-start p-5 rounded-2xl border-2 transition-all relative overflow-hidden group ${strategy === 'mixed'
+                  ? 'border-primary bg-primary/5 shadow-md'
+                  : 'border-marrow-light/10 bg-white/60 text-marrow-light hover:border-primary/40 hover:bg-white/90'
                   }`}
               >
-                <div className={`mb-2 p-1.5 rounded-lg transition-colors ${strategy === 'mixed' ? 'bg-primary text-white' : 'bg-marrow-light/10 text-marrow-light group-hover:bg-primary/10 group-hover:text-primary'}`}>
-                  <RotateCcw className="h-4 w-4" />
+                <div className={`mb-3 p-2 rounded-xl transition-colors ${strategy === 'mixed' ? 'bg-primary text-white' : 'bg-marrow-light/10 text-marrow-light'}`}>
+                  <RotateCcw className="h-5 w-5" />
                 </div>
-                <span className="text-sm font-black uppercase tracking-tight">Misto</span>
-                <span className="text-[11px] font-medium opacity-70 leading-tight mt-1 text-left">Alterna i titoli delle due liste (1 a 1)</span>
-                {strategy === 'mixed' && <div className="absolute top-3 right-3"><div className="bg-primary rounded-full p-0.5"><Check className="h-3 w-3 text-white" strokeWidth={4} /></div></div>}
+                <span className={`text-sm font-black uppercase tracking-tight ${strategy === 'mixed' ? 'text-primary' : 'text-marrow-deep'}`}>Misto</span>
+                <span className="text-[12px] font-medium opacity-80 leading-snug mt-1.5 text-left">Alterna i titoli delle due liste (1 a 1)</span>
+                {strategy === 'mixed' && (
+                  <div className="absolute top-4 right-4 bg-primary rounded-full p-1 shadow-sm">
+                    <Check className="h-3 w-3 text-white" strokeWidth={5} />
+                  </div>
+                )}
               </button>
 
               <button
                 onClick={() => setStrategy('popularity')}
-                className={`flex flex-col items-start p-4 rounded-2xl border-2 transition-all relative overflow-hidden group ${strategy === 'popularity'
-                  ? 'border-primary bg-primary/5 text-marrow-deep'
-                  : 'border-marrow-light/10 bg-white/30 text-marrow-light hover:bg-white/50 hover:text-marrow-deep'
+                className={`flex flex-col items-start p-5 rounded-2xl border-2 transition-all relative overflow-hidden group ${strategy === 'popularity'
+                  ? 'border-primary bg-primary/5 shadow-md'
+                  : 'border-marrow-light/10 bg-white/60 text-marrow-light hover:border-primary/40 hover:bg-white/90'
                   }`}
               >
-                <div className={`mb-2 p-1.5 rounded-lg transition-colors ${strategy === 'popularity' ? 'bg-primary text-white' : 'bg-marrow-light/10 text-marrow-light group-hover:bg-primary/10 group-hover:text-primary'}`}>
-                  <Sparkles className="h-4 w-4" />
+                <div className={`mb-3 p-2 rounded-xl transition-colors ${strategy === 'popularity' ? 'bg-primary text-white' : 'bg-marrow-light/10 text-marrow-light'}`}>
+                  <Sparkles className="h-5 w-5" />
                 </div>
-                <span className="text-sm font-black uppercase tracking-tight">Popolarità</span>
-                <span className="text-[11px] font-medium opacity-70 leading-tight mt-1 text-left">Ordina per voto e popolarità globale</span>
-                {strategy === 'popularity' && <div className="absolute top-3 right-3"><div className="bg-primary rounded-full p-0.5"><Check className="h-3 w-3 text-white" strokeWidth={4} /></div></div>}
+                <span className={`text-sm font-black uppercase tracking-tight ${strategy === 'popularity' ? 'text-primary' : 'text-marrow-deep'}`}>Popolarità</span>
+                <span className="text-[12px] font-medium opacity-80 leading-snug mt-1.5 text-left">Ordina per voto e popolarità globale</span>
+                {strategy === 'popularity' && (
+                  <div className="absolute top-4 right-4 bg-primary rounded-full p-1 shadow-sm">
+                    <Check className="h-3 w-3 text-white" strokeWidth={5} />
+                  </div>
+                )}
               </button>
             </div>
           </div>
 
-          {/* Name customization */}
-          <div className="space-y-3">
+          {/* Name Selection */}
+          <div className="space-y-4">
             <div className="flex items-center justify-between ml-1">
-              <Label htmlFor="merge-name" className="text-[10px] uppercase tracking-widest text-marrow-light font-black">Nome della Lista</Label>
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-4 bg-primary rounded-full" />
+                <Label htmlFor="merge-name" className="text-xs uppercase tracking-[0.2em] text-marrow-light font-black">Titolo Lista Unita</Label>
+              </div>
               <button
                 onClick={handleAiNaming}
                 disabled={namingLoading}
-                className="flex items-center gap-1.5 text-[10px] text-primary font-black tracking-wider hover:brightness-125 transition-all disabled:opacity-50"
+                className="flex items-center gap-2 text-[11px] text-primary font-black tracking-wider hover:brightness-110 transition-all disabled:opacity-50 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10"
               >
-                {namingLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                {namingLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                 GENERA CON AI
               </button>
             </div>
@@ -183,43 +198,48 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={`${catalogA.name} + ${catalogB.name}`}
-                className="bg-white/40 border-marrow-light/10 focus:border-primary focus:ring-primary/20 h-11 px-4 text-sm rounded-xl font-bold text-marrow-deep"
+                className="bg-white/80 border-2 border-marrow-light/10 focus:border-primary focus:ring-4 focus:ring-primary/5 h-14 px-5 text-base rounded-2xl font-bold text-marrow-deep placeholder:text-marrow-light/30 shadow-sm"
               />
             </div>
           </div>
 
-          {/* Preview Section */}
-          <div className="space-y-3">
-            <Label className="text-[10px] uppercase tracking-widest text-marrow-light font-black ml-1">Anteprima Risultati</Label>
-            <div className="relative min-h-[140px] rounded-2xl bg-white/20 border border-marrow-light/10 p-4 overflow-hidden shadow-inner">
-              {loading ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-sm z-10 transition-opacity">
-                  <div className="flex flex-col items-center gap-2">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-[10px] text-marrow-light font-black uppercase tracking-widest">Sincronizzazione...</span>
+          {/* Result Preview (Modern) */}
+          <div className="space-y-4">
+             <div className="flex items-center gap-2 ml-1">
+              <div className="w-1 h-4 bg-primary rounded-full" />
+              <Label className="text-xs uppercase tracking-[0.2em] text-marrow-light font-black">Visual Anteprima</Label>
+            </div>
+            <div className="relative min-h-[160px] rounded-3xl bg-white/60 border-2 border-marrow-light/10 p-5 overflow-hidden shadow-inner">
+              {loading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-md z-10">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="size-10 bg-primary/5 rounded-full flex items-center justify-center">
+                       <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                    <span className="text-[10px] text-marrow-light font-black uppercase tracking-[0.3em]">Processing...</span>
                   </div>
                 </div>
-              ) : null}
+              )}
 
-              <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
                 {previewItems.length > 0 ? (
-                  previewItems.slice(0, 10).map((item) => (
+                  previewItems.slice(0, 12).map((item) => (
                     <div key={item.id} className="flex-shrink-0 group/poster">
-                      <div className="relative h-36 w-24 rounded-xl overflow-hidden border border-marrow-light/10 group-hover/poster:border-primary transition-all shadow-sm">
+                      <div className="relative h-44 w-28 rounded-2xl overflow-hidden border-2 border-marrow-light/10 group-hover/poster:border-primary transition-all shadow-md group-hover/poster:shadow-lg group-hover/poster:-translate-y-1">
                         {item.poster ? (
-                          <img src={item.poster} alt={item.title} className="h-full w-full object-cover group-hover/poster:scale-110 transition-transform duration-500" />
+                          <img src={item.poster} alt={item.title} className="h-full w-full object-cover transition-transform duration-700 group-hover/poster:scale-110" />
                         ) : (
-                          <div className="h-full w-full bg-marrow-light/5 flex items-center justify-center text-[10px] text-marrow-light p-2 text-center font-bold">
+                          <div className="h-full w-full bg-marrow-light/5 flex items-center justify-center text-[10px] text-marrow-light p-3 text-center font-bold">
                             {item.title}
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-marrow-deep/60 via-transparent to-transparent opacity-0 group-hover/poster:opacity-100 transition-opacity" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-marrow-deep via-transparent to-transparent opacity-0 group-hover/poster:opacity-40 transition-opacity" />
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="w-full flex flex-col items-center justify-center py-8 text-marrow-light/30">
-                    <p className="text-sm font-bold italic">Nessun titolo trovato</p>
+                  <div className="w-full flex flex-col items-center justify-center py-12 text-marrow-light/20">
+                    <p className="text-base font-bold italic">Nessun titolo disponibile</p>
                   </div>
                 )}
               </div>
@@ -227,15 +247,21 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
           </div>
         </div>
 
-        <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 mt-2 pt-4 border-t border-marrow-light/10">
-          <Button variant="ghost" onClick={onClose} className="hover:bg-marrow-light/5 text-marrow-light font-bold uppercase tracking-wider text-xs">
-            Annulla
+        {/* High-Contrast Footer */}
+        <DialogFooter className="p-6 sm:p-8 bg-white/60 border-t border-marrow-light/10 flex flex-col-reverse sm:flex-row gap-4">
+          <Button 
+            variant="ghost" 
+            onClick={onClose} 
+            className="h-12 px-6 hover:bg-primary/5 text-marrow-light font-black uppercase tracking-[0.15em] text-xs transition-all"
+          >
+            Cancella
           </Button>
           <Button
             onClick={handleConfirm}
-            className="bg-primary hover:bg-marrow-deep text-white px-8 h-10 font-black rounded-xl shadow-lg shadow-primary/20 uppercase tracking-wider text-xs transition-all hover:scale-105 active:scale-95"
+            className="bg-primary hover:bg-marrow-deep text-white px-10 h-12 font-black rounded-2xl shadow-xl shadow-primary/20 uppercase tracking-[0.15em] text-xs transition-all hover:scale-[1.03] active:scale-95 flex items-center gap-2"
           >
-            Crea Lista Unita
+            <span>Genera Lista</span>
+            <Check className="h-4 w-4" />
           </Button>
         </DialogFooter>
       </DialogContent>
