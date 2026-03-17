@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
  */
 const tmdbScoringDataSchema = new mongoose.Schema({
     tmdbId: { type: Number, required: true },
+    imdbId: { type: String, default: null },
     type: { type: String, enum: ['movie', 'tv'], required: true },
     vote_average: { type: Number, default: 0 },
     vote_count: { type: Number, default: 0 },
@@ -21,6 +22,7 @@ const tmdbScoringDataSchema = new mongoose.Schema({
 
 // Indici per query rapide
 tmdbScoringDataSchema.index({ tmdbId: 1, type: 1 }, { unique: true });
+tmdbScoringDataSchema.index({ imdbId: 1 });
 tmdbScoringDataSchema.index({ needsEnrichment: 1, lockedUntil: 1 });
 
 module.exports = mongoose.model('TmdbScoringData', tmdbScoringDataSchema);

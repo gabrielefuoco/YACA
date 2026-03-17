@@ -1027,7 +1027,7 @@ async function getTmdbMovieDetails(apiKey, id, type = 'movie', options = {}) {
     const tmdbId = id.toString().replace('tmdb:', '').trim();
     if (!/^\d+$/.test(tmdbId)) return null;
 
-    const cacheKey = `${type}:${tmdbId}`;
+    const cacheKey = `v2:${type}:${tmdbId}`;
     const { value: cached, status: cacheStatus } = await tmdbDetailsCache.getWithStatus(cacheKey);
     if (cacheStatus !== 'miss') return cached;
     if (cacheOnly) return null;
@@ -1037,7 +1037,10 @@ async function getTmdbMovieDetails(apiKey, id, type = 'movie', options = {}) {
 
     try {
         const res = await client.get(endpoint, {
-            params: { append_to_response: 'credits,keywords' }
+            params: { 
+                append_to_response: 'credits,keywords,images',
+                include_image_language: 'it,en,null'
+            }
         });
 
         const data = res.data;
@@ -1052,6 +1055,11 @@ async function getTmdbMovieDetails(apiKey, id, type = 'movie', options = {}) {
                         .filter(c => KEY_CREW_ROLES.includes(c.job))
                         .slice(0, MAX_CREW_SIZE);
                 }
+            }
+            if (data.images) {
+                if (Array.isArray(data.images.logos)) data.images.logos = prioritizeLocalizedImages(data.images.logos);
+                if (Array.isArray(data.images.backdrops)) data.images.backdrops = data.images.backdrops.slice(0, MAX_IMAGES_PER_TYPE);
+                if (Array.isArray(data.images.posters)) data.images.posters = prioritizeLocalizedImages(data.images.posters);
             }
             // keywords lasciate intatte (fondamentali per l'algoritmo di raccomandazione)
 
@@ -1092,8 +1100,7 @@ module.exports = {
     getTmdbMovieDetails,
     getTmdbIdByName,
     resolveImdbId,
-    clearAllTmdbCaches,
-    toStremioMetaItem,
     formatRichDescription,
-    fetchTmdbEpisodes
+    fetchTmdbEpisodes,
+    prioritizeLocalizedImages
 };

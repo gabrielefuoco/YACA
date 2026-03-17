@@ -167,9 +167,8 @@ async function finalizeCatalog(results, id, type, hostUrl, userConfig, skip, isL
     }
 
     // Forza l'idratazione dei loghi per il formato landscape
-    if (isLandscapeEnabled && results.length > 0) {
-        await hydrateResultsFromLocalDetailsCache(results, tmdbApiKey, type);
-    }
+    // Fase 4: Idratazione Metadati (Logo, Cast, Keywords) se necessario
+    await hydrateResultsFromLocalDetailsCache(results, tmdbApiKey, type, isLandscapeEnabled);
 
     const sanitizeOptions = {
         shouldApplyEpisodeBadge,
@@ -181,11 +180,17 @@ async function finalizeCatalog(results, id, type, hostUrl, userConfig, skip, isL
     };
 }
 
-async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
+async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type, isLandscapeEnabled) {
     if (!tmdbApiKey || !Array.isArray(metas) || metas.length === 0) return;
 
     const tmdbType = type === 'series' ? 'tv' : 'movie';
-    const itemsToHydrate = metas.slice(0, 60).filter(item => item && item.id && !item.rawTMDB && !(item.cast && item.keywords));
+    const itemsToHydrate = metas.slice(0, 60).filter(item => {
+        if (!item || !item.id) return false;
+        // Idratiamo se mancano metadati fondamentali (cast/keywords) o se manca il logo in formato landscape
+        const isMissingMeta = !(item.cast && item.keywords);
+        const isMissingLogo = !item.logo;
+        return isMissingMeta || (isLandscapeEnabled && isMissingLogo);
+    });
     if (itemsToHydrate.length === 0) return;
 
     const tmdbIds = itemsToHydrate.map(item => normalizeContentId(item.id)).filter(Boolean);
@@ -194,9 +199,24 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
     let scoringMap = new Map();
     try {
         const TmdbScoringData = require('../models/TmdbScoringData');
-        const cachedDocs = await TmdbScoringData.find({ tmdbId: { $in: tmdbIds }, type: tmdbType }).lean();
+        // Build a query that can handle both TMDB IDs (numeric) and IMDB IDs (string starting with 'tt')
+        const orConditions = tmdbIds.map(id => {
+            if (id.startsWith('tt')) {
+                return { imdbId: id };
+            } else {
+                return { tmdbId: Number(id) };
+            }
+        });
+
+        const cachedDocs = await TmdbScoringData.find({
+            $or: orConditions,
+            type: tmdbType
+        }).lean();
+
         for (const doc of cachedDocs) {
-            scoringMap.set(String(doc.tmdbId), doc);
+            // Store by both tmdbId and imdbId for easier lookup later
+            if (doc.tmdbId) scoringMap.set(String(doc.tmdbId), doc);
+            if (doc.imdbId) scoringMap.set(doc.imdbId, doc);
         }
     } catch (_e) { /* TmdbScoringData miss is non-blocking */ }
 
@@ -235,7 +255,14 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
                 item.rawTMDB = cachedDetails;
                 item.keywords = cachedDetails.keywords?.keywords || cachedDetails.keywords?.results || [];
                 item.cast = cachedDetails.credits?.cast || [];
-                if (cachedDetails.logo) {
+                
+                if (cachedDetails.images?.logos?.length > 0) {
+                    const { prioritizeLocalizedImages } = require('../clients/tmdb');
+                    const bestLogo = prioritizeLocalizedImages(cachedDetails.images.logos)[0];
+                    if (bestLogo) {
+                        item.logo = bestLogo.file_path.startsWith('http') ? bestLogo.file_path : `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
+                    }
+                } else if (cachedDetails.logo) {
                     item.logo = cachedDetails.logo;
                 }
             } catch (_err) {

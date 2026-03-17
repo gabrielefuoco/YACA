@@ -50,9 +50,9 @@ function getImageKitUrl(imageUrl, optionsOrText, imageKitId) {
             .replace(/\+/g, '-')
             .replace(/\//g, '_')
             .replace(/=+$/, '');
-        // Remote image overlay syntax: l-image,i-base64:<b64>
-        // Use a reasonable width (200px) and bottom-left/top-left position
-        logoTransform = `l-image,i-base64:${logoB64},w-200,lx-10,ly-10,l-end`;
+        // Remote image overlay syntax using ie- (Input Encoded) for base64 URLs
+        // Use a reasonable width (150px) and bottom-left position
+        logoTransform = `l-image,ie-${logoB64},w-150,lfo-bottom_left,lx-10,ly-10,l-end`;
     } else if (options.addLogo) {
         // Fallback or legacy: overlay logo_yaca.png from ImageKit media library
         logoTransform = 'l-image,i-logo_yaca.png,w-80,lx-10,ly-10,l-end';
