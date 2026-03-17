@@ -44,6 +44,10 @@ interface BackendCatalog {
   type: string;
   filters?: Record<string, unknown>;
   raw_prompt?: string;
+  source?: string;
+  emoji?: string;
+  queries?: any[];
+  presentation_strategy?: 'popularity' | 'interleave';
 }
 
 /**
