@@ -34,7 +34,7 @@ export function ProfileManager({
     <section className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h2 className="text-zinc-900 text-xl font-bold">I tuoi Profili</h2>
+          <h2 className="text-marrow-deep text-xl font-bold">I tuoi Profili</h2>
           <span className="bg-primary/20 text-primary text-xs font-bold px-2 py-0.5 rounded-full">
             {profiles.length} Profil{profiles.length !== 1 ? 'i' : 'o'}
           </span>
@@ -82,23 +82,37 @@ export function ProfileManager({
               key={profile.id}
               onClick={() => onSelectEditing(profile.id)}
               className={`flex flex-col items-center p-4 rounded-xl border-2 gap-3 relative transition-all text-left w-full ${
-                isActive 
-                  ? (isEditing ? 'border-primary bg-primary/5' : 'border-primary/50 bg-primary/5 hover:border-primary')
-                  : (isEditing ? 'ring-2 ring-primary/30 border-primary/50 bg-white/50' : 'border-marrow-light/10 bg-white/30 hover:border-primary/50 hover:bg-white/50')
+                isEditing
+                  ? 'border-primary ring-2 ring-primary/20 bg-primary/5 shadow-lg shadow-primary/5'
+                  : 'border-marrow-light/10 bg-white/30 hover:border-primary/50 hover:bg-white/50'
               }`}
             >
-              <div className={`size-12 rounded-full flex items-center justify-center font-bold shrink-0 ${isActive ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-marrow-light/10 text-marrow-light'}`}>
+              <div className={`size-12 rounded-full flex items-center justify-center font-bold shrink-0 transition-colors ${
+                isEditing 
+                  ? 'bg-primary text-white shadow-md shadow-primary/20' 
+                  : isActive 
+                    ? 'bg-emerald-500/10 text-emerald-600'
+                    : 'bg-marrow-light/10 text-marrow-light'
+              }`}>
                 {icon.length > 2 ? <span className="material-symbols-outlined">{icon}</span> : icon}
               </div>
               <div className="text-center w-full">
-                <p className="text-sm font-bold text-zinc-900 truncate w-full">{profile.name}</p>
-                {isActive && <p className="text-[10px] text-emerald-500 font-bold uppercase mt-0.5">Attivo</p>}
+                <p className="text-sm font-bold text-marrow-deep truncate w-full">{profile.name}</p>
+                {isActive && <p className="text-[10px] text-emerald-500 font-black uppercase mt-0.5 tracking-wider">Attivo</p>}
               </div>
-              {isActive && (
-                <div className="absolute top-2 right-2">
-                  <span className="material-symbols-outlined text-primary text-sm">check_circle</span>
-                </div>
-              )}
+
+              {/* Status Indicators */}
+              <div className="absolute top-2 right-2 flex gap-1">
+                {isActive && (
+                  <div className="size-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                )}
+                {isEditing && !isActive && (
+                  <span className="material-symbols-outlined text-primary text-sm">edit</span>
+                )}
+                {isEditing && isActive && (
+                  <span className="material-symbols-outlined text-emerald-500 text-sm">check_circle</span>
+                )}
+              </div>
             </button>
           );
         })}
