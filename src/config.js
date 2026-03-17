@@ -78,6 +78,14 @@ module.exports = {
     FORCED_FAST_CATALOG_IDS: ['yaca_anime_trending'],
     FORCED_FAST_PRESET_IDS: ['preset_new_movies', 'preset_new_series', 'preset_new_series_eps', 'preset_new_anime', 'preset_new_anime_eps', 'preset_pop_anime'],
     FORCED_SLOW_PRESET_IDS: ['preset_top_rated_movies', 'preset_top_rated_series', 'preset_80s_movies', 'preset_90s_movies', 'preset_00s_movies', 'preset_oscar_winners', 'preset_blockbusters'],
+    
+    // --- Landscape Configuration ---
+    LANDSCAPE_ENABLED_CATALOGS: new Set([
+        'yaca_signature_core_movies',
+        'yaca_signature_core_series',
+        'yaca_signature_blend_movies',
+        'yaca_signature_blend_series'
+    ]),
 
     // ─── Pre-warming Configuration ───
     PREWARM_PAGES: [1, 2],  // Which pages to pre-warm on boot

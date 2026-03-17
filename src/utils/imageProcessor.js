@@ -14,36 +14,53 @@ function getBlurredImageUrl(imageUrl) {
 /**
  * Costruisce un URL ImageKit stateless per un poster remoto.
  * Il poster sorgente viene codificato nell'URL e ImageKit applica resize/ottimizzazione.
- * Se è presente un badge, viene aggiunta anche la trasformazione del testo.
+ * Supporta badge di testo, formato landscape e overlay del logo.
  */
-function getImageKitUrl(imageUrl, text, imageKitId) {
+function getImageKitUrl(imageUrl, optionsOrText, imageKitId) {
     const resolvedImageKitId = resolveImageKitId(imageKitId);
     if (
         !resolvedImageKitId ||
         resolvedImageKitId === 'yaca_placeholder' ||
+        !imageUrl ||
         typeof imageUrl !== 'string' ||
         imageUrl.length === 0
     ) {
         return imageUrl;
     }
 
+    // Normalizzazione opzioni
+    const options = typeof optionsOrText === 'string' 
+        ? { text: optionsOrText } 
+        : (optionsOrText || {});
+
     const cleanId = resolvedImageKitId.replace(/\/+$/, '');
 
-    let transformations = 'tr:w-300,h-450';
-    if (typeof text === 'string' && text.length > 0) {
-        // Use URL-safe Base64 for the text overlay content
-        const b64 = Buffer.from(text).toString('base64')
+    // 1. Base Transformations (Resize & Optimization)
+    // Default portrait: 300x450. Landscape: 600x338 (approx 16:9)
+    let trParts = options.posterShape === 'landscape' ? ['w-600,h-338'] : ['w-300,h-450'];
+    
+    // Auto-quality and format optimization
+    trParts.push('f-auto,q-80');
+
+    // 2. Logo Overlay
+    if (options.addLogo) {
+        // Overlay logo_yaca.png from ImageKit media library
+        // Positioned at top-left (lx-10, ly-10) with width 80
+        trParts.push('l-image,i-logo_yaca.png,w-80,lx-10,ly-10,l-end');
+    }
+
+    // 3. Text Badge Overlay (backward compatible)
+    if (typeof options.text === 'string' && options.text.length > 0) {
+        const b64 = Buffer.from(options.text).toString('base64')
             .replace(/\+/g, '-')
             .replace(/\//g, '_')
             .replace(/=+$/, '');
-        // Using r instead of radius, and manual positioning (lx-N10 = 10px from right)
-        // Mandatory l-end to close the layer correctly
-        // bg-00000066 = Black with 40% transparency (Balanced Look)
-        transformations += `,l-text,ie-${b64},co-FFFFFF,bg-00000066,pa-10,r-10,lx-N10,ly-10,l-end`;
+        trParts.push(`l-text,ie-${b64},co-FFFFFF,bg-00000066,pa-10,r-10,lx-N10,ly-10,l-end`);
     }
 
-    // Append source URL as part of the path (as per user's "hooking" description)
-    // IMPORTANT for iyr3i5hd3: Use the full protocol (https://) without replacement.
+    const transformations = `tr:${trParts.join(':')}`;
+
+    // Append source URL
     const cleanSource = imageUrl.replace(/^\/+/, '');
     return `https://ik.imagekit.io/${cleanId}/${transformations}/${cleanSource}`;
 }

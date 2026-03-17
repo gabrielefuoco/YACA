@@ -26,7 +26,8 @@ const {
     PAGES_PER_REQUEST,
     FORCED_FAST_CATALOG_IDS,
     FORCED_FAST_PRESET_IDS,
-    FORCED_SLOW_PRESET_IDS
+    FORCED_SLOW_PRESET_IDS,
+    LANDSCAPE_ENABLED_CATALOGS
 } = require('../config');
 const { catalogFallbackCache } = require('../cache/cacheInstances');
 
@@ -111,24 +112,35 @@ function getEpisodeBadgeText(item) {
         : `S ${season} Ep ${episode}`;
 }
 
-function sanitizeCatalogMeta(item, shouldApplyEpisodeBadge = false, imageKitId) {
+function sanitizeCatalogMeta(item, options = {}, imageKitId) {
     if (!item) return item;
 
+    const { shouldApplyEpisodeBadge, isLandscapeEnabled } = options;
     const badgeText = shouldApplyEpisodeBadge ? getEpisodeBadgeText(item) : null;
 
-    // In catalogHandler, item.poster is already a full TMDB URL (e.g., https://image.tmdb.org/t/p/w342/...)
-    // because it comes from fetchTmdbCatalog. 
-    // ImageKit expects the full path after the ID.
-    const poster = (typeof item.poster === 'string' && item.poster.length > 0)
-        ? getImageKitUrl(item.poster, badgeText, imageKitId)
-        : item.poster;
+    // Se è abilitato il formato landscape, usiamo il backdrop (background) invece del poster portrait
+    let sourceImage = item.poster;
+    let finalPosterShape = item.posterShape || 'poster';
+    let ikOptions = { text: badgeText };
+
+    if (isLandscapeEnabled) {
+        // Fallback: se non c'è background, usiamo il poster ma forziamo il formato widescreen
+        sourceImage = item.background || item.poster;
+        finalPosterShape = 'landscape';
+        ikOptions.posterShape = 'landscape';
+        ikOptions.addLogo = true;
+    }
+
+    const poster = (typeof sourceImage === 'string' && sourceImage.length > 0)
+        ? getImageKitUrl(sourceImage, ikOptions, imageKitId)
+        : sourceImage;
 
     return {
         id: item.id,
         type: item.type,
         name: item.name,
         poster,
-        posterShape: item.posterShape || 'poster',
+        posterShape: finalPosterShape,
         background: item.background,
         description: item.description,
         releaseInfo: item.releaseInfo,
@@ -138,7 +150,7 @@ function sanitizeCatalogMeta(item, shouldApplyEpisodeBadge = false, imageKitId) 
     };
 }
 
-async function finalizeCatalog(results, id, type, hostUrl, userConfig) {
+async function finalizeCatalog(results, id, type, hostUrl, userConfig, skip, isLandscapeEnabled) {
     if (!Array.isArray(results)) return { metas: [] };
 
     const tmdbApiKey = userConfig?.apiKeys?.tmdb || process.env.TMDB_API_KEY;
@@ -150,8 +162,13 @@ async function finalizeCatalog(results, id, type, hostUrl, userConfig) {
         await hydrateEpisodeBadgesFromCache(results, tmdbApiKey);
     }
 
+    const sanitizeOptions = {
+        shouldApplyEpisodeBadge,
+        isLandscapeEnabled
+    };
+
     return {
-        metas: results.map(item => sanitizeCatalogMeta(item, shouldApplyEpisodeBadge, imageKitId))
+        metas: results.map(item => sanitizeCatalogMeta(item, sanitizeOptions, imageKitId))
     };
 }
 
@@ -779,6 +796,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
         // Pulisce l'ID nel caso arrivi come Preset dalla Dashboard
         const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
+        
+        // Verifica se il formato landscape è abilitato per questo catalogo (solo home page: skip=0)
+        const isLandscapeEnabled = skip === 0 && LANDSCAPE_ENABLED_CATALOGS.has(baseId);
+
         const tmdbFetchOptions = {
             ...cacheOptions,
             disableLightMode: type === 'series' && EPISODE_CATALOG_IDS.has(baseId)
@@ -878,7 +899,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             const STANDARD_SEARCH_IDS = new Set(['yaca_search_standard']);
             if (STANDARD_SEARCH_IDS.has(baseId)) {
                 results = await executeStandardSearch(search, userConfig, type, skip, tmdbFetchOptions);
-                return finalizeCatalog(results, id, type, hostUrl);
+                return await finalizeCatalog(results, id, type, hostUrl, effectiveUserConfig, skip, isLandscapeEnabled);
             }
 
             let currentSkip = skip;
@@ -896,7 +917,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 if (combinedResults.length >= 20) break;
             }
             results = combinedResults.slice(0, 20);
-            return finalizeCatalog(results, id, type, hostUrl);
+            return await finalizeCatalog(results, id, type, hostUrl, effectiveUserConfig, skip, isLandscapeEnabled);
         }
 
         // ==========================================
@@ -930,7 +951,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
 
             results = combinedResults.slice(0, 40);
-            return finalizeCatalog(results, id, type, hostUrl);
+            return await finalizeCatalog(results, id, type, hostUrl, effectiveUserConfig, skip, isLandscapeEnabled);
         }
 
         if (id === 'yaca_anime_trending' || id === 'yaca_anime_ova' || id === 'yaca_anime_ona' || id === 'yaca_anime_specials') {
@@ -989,7 +1010,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 if (combinedResults.length >= 20) break;
             }
             results = combinedResults.slice(0, 20);
-            return await finalizeCatalog(results, id, type, hostUrl, userConfig);
+            return await finalizeCatalog(results, id, type, hostUrl, effectiveUserConfig, skip, isLandscapeEnabled);
         }
 
         // ==========================================
@@ -1030,7 +1051,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 if (combinedResults.length >= 20 || merged.length === 0 || !userConfig?.config?.hideWatched) break;
             }
             results = combinedResults.slice(0, 40);
-            return await finalizeCatalog(results, id, type, hostUrl, userConfig);
+            return await finalizeCatalog(results, id, type, hostUrl, effectiveUserConfig, skip, isLandscapeEnabled);
         }
 
         // ==========================================
@@ -1080,7 +1101,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 }
 
                 results = combinedResults.slice(0, 20); // Restituiamo esattamente una pagina
-                return await finalizeCatalog(results, id, type, hostUrl, userConfig);
+                return await finalizeCatalog(results, id, type, hostUrl, effectiveUserConfig, skip, isLandscapeEnabled);
             }
         }
 
@@ -1113,7 +1134,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
 
             results = combinedResults.slice(0, 20);
-            return await finalizeCatalog(results, id, type, hostUrl, userConfig);
+            return await finalizeCatalog(results, id, type, hostUrl, effectiveUserConfig, skip, isLandscapeEnabled);
         }
 
         if (catalogMeta || directFilters) {
@@ -1159,7 +1180,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                         results = await rerankMergedPage(pageResults, profileDoc, globalProfileDoc, tmdbApiKey, type, activeDnaFilters);
                     }
 
-                    return await finalizeCatalog(results, id, type, hostUrl, userConfig);
+                    return await finalizeCatalog(results, id, type, hostUrl, effectiveUserConfig, skip, isLandscapeEnabled);
                 }
             }
 
@@ -1247,7 +1268,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
 
             // Fase 9: Enrichment Progressivo in background (non blocca la risposta)
-            return await finalizeCatalog(results, id, type, hostUrl, userConfig);
+            return await finalizeCatalog(results, id, type, hostUrl, effectiveUserConfig, skip, isLandscapeEnabled);
         }
 
         return { metas: [] };
