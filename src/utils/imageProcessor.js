@@ -51,11 +51,12 @@ function getImageKitUrl(imageUrl, optionsOrText, imageKitId) {
             .replace(/\//g, '_')
             .replace(/=+$/, '');
         // Remote image overlay syntax using ie- (Input Encoded) for base64 URLs
-        // Use a reasonable width (150px) and bottom-left position
-        logoTransform = `l-image,ie-${logoB64},w-150,lfo-bottom_left,lx-10,ly-10,l-end`;
+        // Ingrandito da 150px a 240px e margini aumentati da 10 a 25 per evitare overscan TV
+        logoTransform = `l-image,ie-${logoB64},w-240,lfo-bottom_left,lx-25,ly-25,l-end`;
     } else if (options.addLogo) {
         // Fallback or legacy: overlay logo_yaca.png from ImageKit media library
-        logoTransform = 'l-image,i-logo_yaca.png,w-80,lx-10,ly-10,l-end';
+        // Ingrandito proporzionalmente anche il fallback
+        logoTransform = 'l-image,i-logo_yaca.png,w-120,lfo-bottom_left,lx-25,ly-25,l-end';
     }
 
     if (logoTransform) {
