@@ -131,61 +131,72 @@ export function DashboardPage({
         />
       )}
 
-      {/* Catalog Actions & Navigation */}
-      <section className="flex flex-col gap-6 items-center w-full mt-4">
-        <div className="inline-flex p-1 bg-white/40 shadow-inner rounded-xl w-fit mb-4 mx-auto overflow-x-auto max-w-full hide-scrollbar backdrop-blur-sm border border-marrow-light/5">
-          {tabsItems.map(({ id, label, icon }) => (
+      {/* Navigation Tabs */}
+      <div className="flex justify-center mb-4">
+        <div className="inline-flex p-1.5 bg-white/40 backdrop-blur-md rounded-2xl border border-marrow-light/20 shadow-xl shadow-primary/5 max-w-full overflow-x-auto hide-scrollbar">
+          {tabsItems.map((tab) => (
             <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={activeTab === id
-                ? 'px-6 md:px-8 py-2.5 text-sm font-bold bg-primary text-white rounded-lg flex items-center gap-2 shadow-lg shadow-primary/25 transition-all whitespace-nowrap'
-                : 'px-6 md:px-8 py-2.5 text-sm font-medium text-marrow-light/90 hover:text-primary transition-colors flex items-center gap-2 whitespace-nowrap'
-              }
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`
+                flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 whitespace-nowrap
+                ${activeTab === tab.id
+                  ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-105'
+                  : 'text-marrow-light hover:text-primary hover:bg-primary/5'
+                }
+              `}
             >
-              <span className="material-symbols-outlined text-lg">{icon}</span>
-              {label}
+              <span className={`material-symbols-outlined text-lg ${activeTab === tab.id ? 'animate-pulse' : ''}`}>{tab.icon}</span>
+              <span className="uppercase tracking-wider">{tab.label}</span>
             </button>
           ))}
         </div>
+      </div>
 
-        {/* Panel content */}
-        <div className="w-full">
-          {activeTab === 'active' && editingProfile && (
-            <ActiveCatalogsPanel
-              profile={editingProfile}
-              onReorder={(catalogs) => onReorderCatalogs(editingProfileId, catalogs)}
-              onRemove={(id) => onRemoveCatalog(editingProfileId, id)}
-              onMerge={(catalog) => onAddCatalog(editingProfileId, catalog)}
-              presets={presets}
-              myLists={myListCatalogs}
-              onRemoveMyList={onRemoveMyList}
-            />
-          )}
+      {/* Main Content Area */}
+      <div className="w-full">
+        <div className="glass-panel p-6 sm:p-8 min-h-[500px] relative overflow-hidden transition-all duration-500 bg-white/40 shadow-xl shadow-primary/5 rounded-2xl border border-marrow-light/10">
+          {/* Subtle decorative elements */}
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 blur-3xl rounded-full" />
+          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-accent/5 blur-3xl rounded-full" />
 
-          {activeTab === 'explore' && editingProfile && (
-            <ExplorePanel
-              presets={presets}
-              categories={categories}
-              profile={editingProfile}
-              onTogglePreset={(presetId) => onTogglePreset(editingProfileId, presetId)}
-            />
-          )}
+          <div className="relative z-10">
+            {activeTab === 'active' && editingProfile && (
+              <ActiveCatalogsPanel
+                profile={editingProfile}
+                onReorder={(catalogs) => onReorderCatalogs(editingProfileId, catalogs)}
+                onRemove={(id) => onRemoveCatalog(editingProfileId, id)}
+                onMerge={(catalog) => onAddCatalog(editingProfileId, catalog)}
+                presets={presets}
+                myLists={myListCatalogs}
+                onRemoveMyList={onRemoveMyList}
+              />
+            )}
 
-          {activeTab === 'creator' && (
-            <CreatorPanel
-              onAddCatalog={(catalog) => onAddCatalog(editingProfileId, catalog)}
-            />
-          )}
+            {activeTab === 'explore' && editingProfile && (
+              <ExplorePanel
+                presets={presets}
+                categories={categories}
+                profile={editingProfile}
+                onTogglePreset={(presetId) => onTogglePreset(editingProfileId, presetId)}
+              />
+            )}
 
-          {activeTab === 'dna' && editingProfile && (
-            <DnaAndAiPanel
-              profile={editingProfile}
-              onUpdateProfile={onUpdateProfile}
-            />
-          )}
+            {activeTab === 'creator' && (
+              <CreatorPanel
+                onAddCatalog={(catalog) => onAddCatalog(editingProfileId, catalog)}
+              />
+            )}
+
+            {activeTab === 'dna' && editingProfile && (
+              <DnaAndAiPanel
+                profile={editingProfile}
+                onUpdateProfile={onUpdateProfile}
+              />
+            )}
+          </div>
         </div>
-      </section>
+      </div>
 
       <RenameProfileDialog
         open={isRenameOpen}

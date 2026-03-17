@@ -249,12 +249,12 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
   // --- Render a single query block card ---
   const renderBlock = (block: BlockState, index: number) => (
-    <div key={block.id} className="rounded-xl border border-marrow-light/20 bg-white/60 shadow-md overflow-hidden backdrop-blur-sm">
+    <div key={block.id} className="rounded-xl border border-marrow-light/20 bg-white/40 shadow-sm overflow-hidden backdrop-blur-sm">
       {/* Block header – clickable to collapse/expand */}
       <button
         type="button"
         onClick={() => updateBlock(block.id, { collapsed: !block.collapsed })}
-        className="w-full flex items-center justify-between px-5 py-3 bg-marrow-light/5 select-none hover:bg-marrow-light/10 transition-colors"
+        className="w-full flex items-center justify-between px-5 py-3 bg-primary-dark/5 select-none hover:bg-primary-dark/10 transition-colors"
       >
         <span className="flex items-center gap-2 text-sm font-black text-marrow-deep uppercase tracking-wider">
           <Layers className="h-4 w-4 text-primary" />
@@ -270,13 +270,13 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
               tabIndex={0}
               onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); removeBlock(block.id); } }}
-              className="text-zinc-400 hover:text-destructive transition-colors p-0.5 rounded"
+              className="text-marrow-faded hover:text-destructive transition-colors p-0.5 rounded"
               title="Rimuovi query"
             >
               <X className="h-4 w-4" />
             </span>
           )}
-          <span className={`transition-transform ${block.collapsed ? '' : 'rotate-180'}`}>
+          <span className={`transition-transform ${block.collapsed ? '' : 'rotate-180'} text-marrow-light/40`}>
             <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="20"><path d="M6 9l6 6 6-6"></path></svg>
           </span>
         </span>
@@ -290,7 +290,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             <div>
               <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Strategia</Label>
               <Select value={block.strategy} onValueChange={(v) => updateBlock(block.id, { strategy: v as BlockState['strategy'] })}>
-                <SelectTrigger className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black">
+                <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/20 text-marrow-deep font-black">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -304,14 +304,14 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             {block.strategy === 'similar' && (
               <div>
                 <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Titolo di Riferimento</Label>
-                <Input value={block.similarTo || ''} onChange={(e) => updateBlock(block.id, { similarTo: e.target.value })} placeholder="es. Bridgerton" className="mt-1 bg-white/60 border-marrow-light/10" />
+                <Input value={block.similarTo || ''} onChange={(e) => updateBlock(block.id, { similarTo: e.target.value })} placeholder="es. Bridgerton" className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-black placeholder:text-marrow-light/40" />
               </div>
             )}
 
             {block.strategy === 'multi_search' && (
               <div>
                 <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Titolo da Cercare</Label>
-                <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40" />
+                <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-black placeholder:text-marrow-light/40" />
               </div>
             )}
           </div>
@@ -325,9 +325,9 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             <div className="mt-4 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Ordina per</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Ordina per</Label>
                   <Select value={block.sortBy} onValueChange={(v) => updateBlock(block.id, { sortBy: v })}>
-                    <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10">
+                    <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -338,9 +338,9 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                   </Select>
                 </div>
                 <div>
-                  <Label>Lingua originale</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Lingua originale</Label>
                   <Select value={block.language || '__any'} onValueChange={(v) => updateBlock(block.id, { language: v === '__any' ? '' : v })}>
-                    <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10">
+                    <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-xs">
                       <SelectValue placeholder="Qualsiasi" />
                     </SelectTrigger>
                     <SelectContent>
@@ -353,7 +353,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
               </div>
 
               <div>
-                <Label className="mb-2 block">Voto minimo: {block.voteMin > 0 ? block.voteMin.toFixed(1) : 'Qualsiasi'}</Label>
+                <Label className="mb-2 block text-xs font-bold text-marrow-deep">Voto minimo: {block.voteMin > 0 ? block.voteMin.toFixed(1) : 'Qualsiasi'}</Label>
                 <div className="px-2">
                   <Slider min={0} max={9} step={0.5} value={[block.voteMin]} onValueChange={([v]) => updateBlock(block.id, { voteMin: v })} />
                 </div>
@@ -385,7 +385,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                   onClick={() => toggleBlockGenre(block.id, id)}
                   className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all shadow-sm ${block.genres.includes(id)
                     ? 'bg-primary text-white shadow-primary/20'
-                    : 'bg-white/50 text-marrow-light hover:bg-marrow-light/10 border border-marrow-light/20 shadow-sm'
+                    : 'bg-white/40 text-marrow-light hover:text-primary hover:bg-primary/10 border border-marrow-light/20 shadow-sm'
                     }`}
                 >
                   {genreName}
@@ -402,7 +402,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             </summary>
             <div className="mt-4 space-y-5">
               <div>
-                <Label className="mb-2 block">Parole Chiave</Label>
+                <Label className="mb-2 block text-xs font-bold text-marrow-deep">Parole Chiave</Label>
                 <AutocompleteSearch
                   placeholder="Cerca parole chiave su TMDB..."
                   searchFn={api.searchTmdbKeywords}
@@ -412,7 +412,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
               </div>
 
               <div>
-                <Label className="mb-2 block">Attori (Cast)</Label>
+                <Label className="mb-2 block text-xs font-bold text-marrow-deep">Attori (Cast)</Label>
                 <AutocompleteSearch
                   placeholder="Cerca un attore..."
                   searchFn={api.searchTmdbPeople}
@@ -422,7 +422,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
               </div>
 
               <div>
-                <Label className="mb-2 block">Registi / Crew</Label>
+                <Label className="mb-2 block text-xs font-bold text-marrow-deep">Registi / Crew</Label>
                 <AutocompleteSearch
                   placeholder="Cerca regista o membro dello staff..."
                   searchFn={api.searchTmdbPeople}

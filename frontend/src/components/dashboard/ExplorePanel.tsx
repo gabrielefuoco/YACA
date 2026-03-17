@@ -40,14 +40,14 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
     <div className="space-y-4">
       {/* Search toggle */}
       <div className="flex items-center gap-2">
-        <div className="flex-1 flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+        <div className="flex-1 flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
           {allCategories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-all ${selectedCategory === cat
                 ? 'bg-primary text-white shadow-xl shadow-primary/40 scale-105'
-                : 'bg-zinc-100 dark:bg-zinc-800/60 text-zinc-500 dark:text-zinc-500 hover:text-primary transition-colors border border-zinc-200 dark:border-zinc-700/50'
+                : 'bg-white/40 text-marrow-light hover:text-primary transition-colors border border-marrow-light/10 shadow-sm'
                 }`}
             >
               {cat}
@@ -57,8 +57,8 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 shrink-0 text-zinc-500 hover:text-primary"
-          onClick={() => setShowSearch(!showSearch)}
+          className="h-8 w-8 shrink-0 text-marrow-light hover:text-primary"
+          onClick={() => setShowSearch(!search)}
         >
           <Search className="h-4 w-4" />
         </Button>
@@ -70,14 +70,14 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cerca cataloghi..."
           autoFocus
-          className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+          className="bg-white/60 border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40"
         />
       )}
 
       {/* Preset grid — always shows posters */}
       <div className="grid gap-8">
         {filtered.length === 0 && (
-          <div className="py-8 text-center text-sm text-zinc-400 dark:text-zinc-500">
+          <div className="py-8 text-center text-sm text-marrow-faded italic">
             Nessun catalogo trovato
           </div>
         )}
@@ -86,11 +86,11 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
 
           return (
             <div key={preset.id} className="w-full min-w-0 p-0 flex flex-col group glass-card overflow-hidden">
-              <div className="flex flex-col p-4 bg-zinc-50 dark:bg-zinc-800/40 border-b border-zinc-100 dark:border-white/10 relative z-10">
+              <div className="flex flex-col p-4 bg-primary-dark/5 border-b border-marrow-light/10 relative z-10">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className="text-xl shrink-0 leading-none">{preset.emoji ?? '📋'}</span>
-                    <h4 className="flex-1 truncate text-sm font-bold text-zinc-900 dark:text-zinc-100">{preset.name}</h4>
+                    <h4 className="flex-1 truncate text-sm font-bold text-marrow-deep">{preset.name}</h4>
                     <div className="shrink-0">
                       <TypeBadge type={preset.type as 'movie' | 'series' | 'both'} />
                     </div>
@@ -105,7 +105,7 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
                     size="sm"
                     variant={isSelected ? 'secondary' : 'default'}
                     onClick={() => onTogglePreset(preset.id)}
-                    className={`h-8 px-3 text-xs shrink-0 ml-auto font-bold ${isSelected ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20' : 'bg-primary text-white hover:brightness-110'
+                    className={`h-8 px-3 text-xs shrink-0 ml-auto font-bold ${isSelected ? 'bg-success-faded text-success hover:bg-success/20' : 'bg-primary text-white hover:brightness-110'
                       }`}
                   >
                     {isSelected ? (
@@ -119,12 +119,12 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
                   </Button>
                 </div>
                 {preset.description && (
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2 line-clamp-2">{preset.description}</p>
+                  <p className="text-xs text-marrow-light mt-2 line-clamp-2">{preset.description}</p>
                 )}
               </div>
 
               {/* Always-visible poster row */}
-              <div className="w-full min-w-0 overflow-hidden bg-white dark:bg-zinc-800 p-2">
+              <div className="w-full min-w-0 overflow-hidden bg-white/60 p-2">
                 <PosterRow presetId={preset.id} type={preset.type} />
               </div>
             </div>

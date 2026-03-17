@@ -7,19 +7,33 @@
 }
 
 @theme inline {
+  /* Core Palette */
   --color-background-light: #fdfaf5;
   --color-background-dark: #EED9B9;
   --color-primary: #9B0F06;
   --color-primary-dark: #5E0006;
-  --color-marrow-deep: #4A0005;
   --color-accent: #D53E0F;
   --color-secondary: #EED9B9;
+  
+  /* Text & Contrast */
+  --color-marrow-deep: #4A0005;
+  --color-marrow-light: #5E0006;
+  --color-marrow-faded: color-mix(in srgb, #5E0006 40%, transparent);
+  
+  /* Status Colors */
   --color-destructive: #9B0F06;
   --color-destructive-foreground: #EED9B9;
   --color-success: #10b981;
+  --color-success-faded: color-mix(in srgb, #10b981 10%, transparent);
+
+  /* Functional Tokens */
   --color-primary-10: color-mix(in srgb, #9B0F06 10%, transparent);
   --color-primary-20: color-mix(in srgb, #9B0F06 20%, transparent);
   --color-primary-30: color-mix(in srgb, #9B0F06 30%, transparent);
+  --color-border-subtle: color-mix(in srgb, #4A0005 10%, transparent);
+  --color-glass-bg: rgba(238, 217, 185, 0.7);
+  --color-glass-border: rgba(94, 0, 6, 0.15);
+
   --font-display: "Outfit", "Inter", sans-serif;
 }
 
@@ -71,25 +85,25 @@ button, a, input, select {
 
 /* Glassmorphism & Premium UI */
 .glass-panel {
-  background: rgba(238, 217, 185, 0.7);
+  background: var(--color-glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(94, 0, 6, 0.15);
+  border: 1px solid var(--color-glass-border);
   box-shadow: 0 4px 20px rgba(94, 0, 6, 0.05);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.5);
+  background: color-mix(in srgb, white 50%, transparent);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(94, 0, 6, 0.12);
+  border: 1px solid var(--color-border-subtle);
   transition: all 0.2s ease;
   box-shadow: 0 2px 10px rgba(94, 0, 6, 0.03);
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.6);
-  border-color: rgba(94, 0, 6, 0.15);
+  background: color-mix(in srgb, white 60%, transparent);
+  border-color: var(--color-glass-border);
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(94, 0, 6, 0.12);
 }

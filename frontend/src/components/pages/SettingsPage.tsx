@@ -226,7 +226,8 @@ export function SettingsPage({
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* HERO SECTION: Salva, Aggiorna, Installa & Backup                  */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary-dark/60 via-primary/5 to-transparent p-6 space-y-5 shadow-2xl shadow-primary/20">
+      {/* HERO SECTION: Salva, Aggiorna, Installa & Backup                  */}
+      <section className="rounded-2xl border-2 border-primary/40 bg-white/40 p-6 space-y-5 shadow-2xl shadow-primary/10 backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <div className="size-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
             <Rocket className="h-5 w-5" />
@@ -261,20 +262,20 @@ export function SettingsPage({
 
         {/* Success state */}
         {success && installUrl && (
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 space-y-3">
+          <div className="rounded-xl border border-success/20 bg-success-faded p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-              <p className="text-sm font-bold text-emerald-500">Configurazione salvata con successo!</p>
+              <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+              <p className="text-sm font-bold text-success">Configurazione salvata con successo!</p>
             </div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleCopy(installUrl)}
-                className="flex-1 text-xs"
+                className="flex-1 text-xs border-success/30 bg-white/10 hover:bg-success/20 text-success"
               >
                 {copied ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-500" />
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-success" />
                 ) : (
                   <Copy className="h-3.5 w-3.5 mr-1" />
                 )}
@@ -283,7 +284,7 @@ export function SettingsPage({
               <Button
                 size="sm"
                 onClick={() => window.open(installUrl, '_blank')}
-                className="flex-1 text-xs bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+                className="flex-1 text-xs bg-success text-white hover:brightness-110 shadow-md shadow-success/20 font-black"
               >
                 <ExternalLink className="h-3.5 w-3.5 mr-1" />
                 Installa su Stremio
@@ -294,11 +295,11 @@ export function SettingsPage({
 
         {/* Quick install link (if already configured) */}
         {userId && !success && (
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 space-y-3">
+          <div className="rounded-xl border border-success/30 bg-success-faded p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+              <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
               <div>
-                <p className="text-sm font-black text-emerald-700 uppercase tracking-wide">Addon già configurato</p>
+                <p className="text-sm font-black text-success uppercase tracking-wide">Addon già configurato</p>
                 <p className="text-xs text-marrow-light font-medium">Reinstalla o copia il link per aggiornare</p>
               </div>
             </div>
@@ -307,10 +308,10 @@ export function SettingsPage({
                 variant="outline"
                 size="sm"
                 onClick={() => handleCopy(manifestUrl)}
-                className="flex-1 text-xs"
+                className="flex-1 text-xs border-success/30 bg-white/10 hover:bg-success/20 text-success"
               >
                 {copied ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-500" />
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-success" />
                 ) : (
                   <Copy className="h-3.5 w-3.5 mr-1" />
                 )}
