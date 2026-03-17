@@ -269,18 +269,22 @@ function pickPosterPath(tmdbItem) {
 }
 
 function prioritizeLocalizedImages(images = []) {
-    if (!Array.isArray(images) || images.length <= MAX_IMAGES_PER_TYPE) {
+    if (!Array.isArray(images)) {
         return images;
     }
 
+    // Always prioritize even if array is small!
     const prioritized = [
-        ...images.filter(img => img?.iso_639_1 === 'it'),
-        ...images.filter(img => img?.iso_639_1 === 'en'),
-        ...images.filter(img => !img?.iso_639_1),
-        ...images.filter(img => img?.iso_639_1 && img.iso_639_1 !== 'it' && img.iso_639_1 !== 'en')
+        ...images.filter(img => img && img.iso_639_1 === 'it'),
+        ...images.filter(img => img && img.iso_639_1 === 'en'),
+        ...images.filter(img => img && !img.iso_639_1),
+        ...images.filter(img => img && img.iso_639_1 && img.iso_639_1 !== 'it' && img.iso_639_1 !== 'en')
     ];
 
-    return prioritized.slice(0, MAX_IMAGES_PER_TYPE);
+    // Remove duplicates if any
+    const uniquePrioritized = Array.from(new Set(prioritized));
+
+    return uniquePrioritized.slice(0, typeof MAX_IMAGES_PER_TYPE !== 'undefined' ? MAX_IMAGES_PER_TYPE : 10);
 }
 
 /**

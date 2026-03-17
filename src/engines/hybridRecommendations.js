@@ -1116,11 +1116,28 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                 if (!item) {
                     if (!tmdbClient) tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
                     const endpoint = mediaType === 'movie' ? `/movie/${normalizedId}` : `/tv/${normalizedId}`;
-                    const res = await tmdbClient.get(endpoint);
+                    const res = await tmdbClient.get(endpoint, {
+                        params: {
+                            append_to_response: 'images',
+                            include_image_language: 'it,en,null'
+                        }
+                    });
                     item = res.data;
                 }
 
                 if (!item) return null;
+
+                // Extract Best Logo using the prioritized helper from tmdb.js
+                let logoUrl = null;
+                if (item.images && item.images.logos && item.images.logos.length > 0) {
+                    const { prioritizeLocalizedImages } = require('../clients/tmdb');
+                    const bestLogoArray = prioritizeLocalizedImages(item.images.logos);
+                    const bestLogoObj = bestLogoArray.length > 0 ? bestLogoArray[0] : null;
+                    if (bestLogoObj && bestLogoObj.file_path) {
+                        logoUrl = `https://image.tmdb.org/t/p/w500${bestLogoObj.file_path}`;
+                    }
+                }
+
                 return {
                     id: `tmdb:${normalizedId}`,
                     type: mediaType === 'movie' ? 'movie' : 'series',
@@ -1128,6 +1145,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                     poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
                     posterShape: 'poster',
                     background: item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null,
+                    logo: logoUrl, // Attach the extracted logo!
                     description: item.overview || '',
                     releaseInfo: (item.release_date || item.first_air_date || '').substring(0, 4),
                     imdbRating: item.vote_average ? item.vote_average.toFixed(1) : undefined,
