@@ -1,5 +1,5 @@
 const CacheEntry = require('../models/CacheEntry');
-const { getRedisClient, isRedisAvailable } = require('./redisClient');
+const { getRedisClient, isRedisAvailable, waitForRedisReady } = require('./redisClient');
 const { PREWARM_PAGES, PREWARM_PRESET_IDS } = require('../config');
 
 /**
@@ -10,7 +10,9 @@ const { PREWARM_PAGES, PREWARM_PRESET_IDS } = require('../config');
  * Only runs if Redis is available. Silently skips if no data in L2.
  */
 async function preWarmRedisFromMongo() {
-    if (!isRedisAvailable()) {
+    const redisReady = await waitForRedisReady();
+
+    if (!redisReady || !isRedisAvailable()) {
         console.log('[PreWarm] Redis not available, skipping pre-warm.');
         return;
     }
