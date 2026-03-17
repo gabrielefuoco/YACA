@@ -108,7 +108,7 @@ module.exports = async (req, res) => {
         }
 
         const hostUrl = resolveHostUrl(req);
-        const manifestUrl = `${hostUrl}/api/${userDoc.userId}/${userDoc.config?.configVersion}/manifest.json`;
+        const manifestUrl = `${hostUrl}/${userDoc.userId}/${userDoc.config?.configVersion}/manifest.json`;
 
         if (userDoc.apiKeys?.stremio) {
             updateStremioAddonCollection(userDoc.apiKeys.stremio, manifestUrl)
