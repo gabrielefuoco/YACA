@@ -528,7 +528,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
           <span className="text-[10px] font-black uppercase tracking-widest text-marrow-deep">
             Query Blocks ({blocks.length})
           </span>
-          <Button onClick={addBlock} variant="outline" size="sm" className="gap-1.5 text-xs font-bold">
+          <Button onClick={addBlock} variant="outline" size="sm" className="gap-1.5 text-xs font-bold text-marrow-deep">
             <Plus className="h-3.5 w-3.5" />
             Aggiungi Query
           </Button>
@@ -546,7 +546,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
       {/* Action Buttons */}
       <div className="flex gap-3">
-        <Button onClick={handleManualPreview} variant="outline" className="flex-1 py-3 font-bold">
+        <Button onClick={handleManualPreview} variant="outline" className="flex-1 py-3 font-bold text-marrow-deep">
           <Eye className="h-4 w-4 mr-2" />
           Anteprima
         </Button>

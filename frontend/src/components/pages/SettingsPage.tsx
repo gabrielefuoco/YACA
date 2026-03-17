@@ -240,7 +240,7 @@ export function SettingsPage({
 
         {/* Save Button */}
         <Button
-          className="w-full py-3 bg-primary text-white hover:bg-accent font-bold text-sm shadow-xl shadow-primary/30"
+          className="w-full py-3 bg-primary text-white hover:bg-accent font-bold text-sm"
           size="lg"
           onClick={handleSave}
           disabled={loading}
@@ -284,7 +284,7 @@ export function SettingsPage({
               <Button
                 size="sm"
                 onClick={() => window.open(installUrl, '_blank')}
-                className="flex-1 text-xs bg-success text-white hover:brightness-110 shadow-md shadow-success/20 font-black"
+                className="flex-1 text-xs bg-success text-white hover:brightness-110 font-black"
               >
                 <ExternalLink className="h-3.5 w-3.5 mr-1" />
                 Installa su Stremio
@@ -320,7 +320,7 @@ export function SettingsPage({
               <Button
                 size="sm"
                 onClick={() => window.open(manifestUrl, '_blank')}
-                className="flex-1 text-xs bg-primary hover:bg-primary-dark text-white shadow-md shadow-primary/20 transition-all font-black"
+                className="flex-1 text-xs bg-primary hover:bg-primary-dark text-white transition-all font-black"
               >
                 <ExternalLink className="h-3.5 w-3.5 mr-1" />
                 Installa su Stremio
@@ -503,7 +503,7 @@ export function SettingsPage({
               variant="outline"
               size="sm"
               onClick={onDisconnectTrakt}
-              className="flex-1 text-xs"
+              className="flex-1 text-xs text-marrow-deep"
             >
               Disconnetti Trakt
             </Button>
