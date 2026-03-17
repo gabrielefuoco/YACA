@@ -20,6 +20,7 @@ module.exports = async (req, res) => {
             keyword_ids: (rawTMDB.keywords?.keywords || rawTMDB.keywords?.results || []).map(k => k.id),
             cast_ids: (rawTMDB.credits?.cast || []).slice(0, 5).map(c => c.id),
             director_ids: (rawTMDB.credits?.crew || []).filter(c => c.job === 'Director').map(c => c.id),
+            logo_path: rawTMDB.logo || (rawTMDB.images?.logos?.length > 0 ? (rawTMDB.images.logos.find(l => l.iso_639_1 === 'it') || rawTMDB.images.logos[0]).file_path : null),
             needsEnrichment: false,
             lockedUntil: null
         };

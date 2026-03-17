@@ -166,6 +166,11 @@ async function finalizeCatalog(results, id, type, hostUrl, userConfig, skip, isL
         await hydrateEpisodeBadgesFromCache(results, tmdbApiKey);
     }
 
+    // Forza l'idratazione dei loghi per il formato landscape
+    if (isLandscapeEnabled && results.length > 0) {
+        await hydrateResultsFromLocalDetailsCache(results, tmdbApiKey, type);
+    }
+
     const sanitizeOptions = {
         shouldApplyEpisodeBadge,
         isLandscapeEnabled
@@ -217,6 +222,9 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
                     };
                     item.keywords = item.rawTMDB.keywords.keywords;
                     item.cast = item.rawTMDB.credits.cast;
+                    if (scoringDoc.logo_path) {
+                        item.logo = scoringDoc.logo_path.startsWith('http') ? scoringDoc.logo_path : `https://image.tmdb.org/t/p/w500${scoringDoc.logo_path}`;
+                    }
                     return;
                 }
 
@@ -227,6 +235,9 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
                 item.rawTMDB = cachedDetails;
                 item.keywords = cachedDetails.keywords?.keywords || cachedDetails.keywords?.results || [];
                 item.cast = cachedDetails.credits?.cast || [];
+                if (cachedDetails.logo) {
+                    item.logo = cachedDetails.logo;
+                }
             } catch (_err) {
                 // Il recupero cache è best-effort: in caso di errore si continua con i dati Light Mode.
             }

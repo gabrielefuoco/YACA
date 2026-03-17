@@ -14,6 +14,7 @@ const tmdbScoringDataSchema = new mongoose.Schema({
     keyword_ids: { type: [Number], default: [] },
     director_ids: { type: [Number], default: [] },
     cast_ids: { type: [Number], default: [] },
+    logo_path: { type: String, default: null },
     needsEnrichment: { type: Boolean, default: false },
     lockedUntil: { type: Date, default: null }
 }, { timestamps: true });
