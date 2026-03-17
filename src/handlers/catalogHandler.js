@@ -839,9 +839,9 @@ async function catalogHandler(args, userConfig, hostUrl) {
         // Pulisce l'ID nel caso arrivi come Preset dalla Dashboard
         const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
         
-        // Disattivato temporaneamente il formato landscape a causa delle limitazioni Stremio
-        // nella vista Discovery (che forza proporzioni verticali rimpicciolendo i landscape)
-        const isLandscapeEnabled = false;
+        // Verifica se il formato landscape è abilitato per questo catalogo (ora anche per la vista discovery)
+        // Estensione: abilita automaticamente landscape per tutti i cataloghi "Signature" (ID dinamici)
+        const isLandscapeEnabled = LANDSCAPE_ENABLED_CATALOGS.has(baseId) || baseId.startsWith('yaca_signature_');
 
         const tmdbFetchOptions = {
             ...cacheOptions,
