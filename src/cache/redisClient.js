@@ -61,12 +61,11 @@ async function waitForRedisReady(timeoutMs = 8000, pollMs = 100) {
     const client = getRedisClient();
     const deadline = Date.now() + timeoutMs;
 
-    while (Date.now() < deadline) {
+    while (true) {
         if (client.status === 'ready') return true;
+        if (Date.now() >= deadline) return false;
         await new Promise(resolve => setTimeout(resolve, pollMs));
     }
-
-    return client.status === 'ready';
 }
 
 /**

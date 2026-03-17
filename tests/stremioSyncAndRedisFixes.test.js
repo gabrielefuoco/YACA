@@ -90,14 +90,16 @@ describe('redis pre-warm startup readiness', () => {
     });
 
     it('waits for Redis readiness before deciding to skip pre-warm', async () => {
+        const fixedNow = 1_700_000_000_000;
         const set = jest.fn().mockResolvedValue('OK');
         const redis = { set };
         const lean = jest.fn().mockResolvedValue([{
             key: 'popular:movie:page:1',
             value: { metas: [] },
-            expiresAt: new Date(Date.now() + 60_000)
+            expiresAt: new Date(fixedNow + 60_000)
         }]);
         const find = jest.fn().mockReturnValue({ lean });
+        const dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(fixedNow);
 
         jest.doMock('../src/cache/redisClient', () => ({
             getRedisClient: jest.fn(() => redis),
@@ -112,6 +114,7 @@ describe('redis pre-warm startup readiness', () => {
 
         expect(find).toHaveBeenCalled();
         expect(set).toHaveBeenCalled();
+        dateNowSpy.mockRestore();
     });
 
     it('skips pre-warm when Redis does not become ready in time', async () => {

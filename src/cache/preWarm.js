@@ -10,7 +10,6 @@ const { PREWARM_PAGES, PREWARM_PRESET_IDS } = require('../config');
  * Only runs if Redis is available. Silently skips if no data in L2.
  */
 async function preWarmRedisFromMongo() {
-    const redis = getRedisClient();
     const redisReady = await waitForRedisReady();
 
     if (!redisReady || !isRedisAvailable()) {
@@ -18,6 +17,7 @@ async function preWarmRedisFromMongo() {
         return;
     }
 
+    const redis = getRedisClient();
     const pagesLoaded = [];
 
     try {
