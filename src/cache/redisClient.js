@@ -54,6 +54,22 @@ function isRedisAvailable() {
 }
 
 /**
+ * Waits briefly for Redis to become ready after process startup.
+ * Returns true when ready, false on timeout.
+ */
+async function waitForRedisReady(timeoutMs = 8000, pollMs = 100) {
+    const client = getRedisClient();
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+        if (client.status === 'ready') return true;
+        await new Promise(resolve => setTimeout(resolve, pollMs));
+    }
+
+    return client.status === 'ready';
+}
+
+/**
  * Gracefully disconnect Redis on shutdown.
  */
 async function disconnectRedis() {
@@ -69,4 +85,4 @@ async function disconnectRedis() {
     }
 }
 
-module.exports = { getRedisClient, isRedisAvailable, disconnectRedis };
+module.exports = { getRedisClient, isRedisAvailable, waitForRedisReady, disconnectRedis };
