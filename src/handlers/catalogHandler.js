@@ -1190,7 +1190,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
             if (universalCatalog._isMerge) {
                 const filters = universalCatalog._rawFilters;
                 const mergeConfig = filters.merge || { catalogs: catalogMeta?.mergedFrom || [] };
-                const sourceIds = (mergeConfig.catalogs || []).filter(sid => sid && sid !== id); // Recursion guard
+                const fallbackMergedFrom = Array.isArray(catalogMeta?.mergedFrom) ? catalogMeta.mergedFrom : [];
+                const mergedCatalogs = Array.isArray(mergeConfig.catalogs) ? mergeConfig.catalogs : [];
+                const sourceIds = (mergedCatalogs.length > 0 ? mergedCatalogs : fallbackMergedFrom)
+                    .filter(sid => sid && sid !== id); // Recursion guard
                 const sourceFilters = mergeConfig.sourceFilters || [];
                 const sourceTypes = mergeConfig.sourceTypes || [];
                 const strategy = mergeConfig.strategy || 'popularity';
