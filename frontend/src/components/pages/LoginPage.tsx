@@ -107,8 +107,8 @@ export function LoginPage({ onComplete }: LoginPageProps) {
   if (configuring) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-4">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-primary" />
-        <p className="text-sm text-white/50">Configurazione in corso…</p>
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+        <p className="text-sm text-muted-foreground">Configurazione in corso…</p>
       </div>
     );
   }
@@ -123,16 +123,16 @@ export function LoginPage({ onComplete }: LoginPageProps) {
               className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${step > s
                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
                 : step === s
-                  ? 'bg-primary text-white shadow-xl shadow-primary/40 scale-110'
-                  : 'bg-white/[0.04] text-white/20 border border-white/[0.05]'
+                  ? 'bg-primary text-primary-foreground shadow-xl shadow-primary/40 scale-110'
+                  : 'bg-muted text-muted-foreground border border-border'
                 }`}
             >
               {step > s ? <CheckCircle2 className="h-4 w-4" /> : s}
             </div>
-            {s < 3 && <div className={`h-[2px] w-8 transition-colors ${step > s ? 'bg-emerald-500' : 'bg-white/[0.08]'}`} />}
+            {s < 3 && <div className={`h-[2px] w-8 transition-colors ${step > s ? 'bg-emerald-500' : 'bg-border'}`} />}
           </div>
         ))}
-        <span className="ml-3 text-xs text-white/40 font-black uppercase tracking-widest">
+        <span className="ml-3 text-xs text-muted-foreground font-black uppercase tracking-widest">
           {step === 1 ? 'Account Stremio' : step === 2 ? 'Connetti Trakt' : 'Chiavi API'}
         </span>
       </div>
@@ -145,8 +145,8 @@ export function LoginPage({ onComplete }: LoginPageProps) {
               <Tv2 className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Accedi a Stremio</h2>
-              <p className="text-xs text-white/40">Connetti il tuo account Stremio</p>
+              <h2 className="text-lg font-semibold text-foreground">Accedi a Stremio</h2>
+              <p className="text-xs text-muted-foreground">Connetti il tuo account Stremio</p>
             </div>
           </div>
 
@@ -181,7 +181,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
               </div>
 
             <Button
-              className="w-full bg-primary hover:bg-accent text-white font-black uppercase tracking-wider h-12 transition-all shadow-xl shadow-primary/30"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-wider h-12 transition-all shadow-xl shadow-primary/30"
               onClick={handleStremioLogin}
               disabled={loading}
             >
@@ -205,7 +205,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
                 setStremioAuth(null);
                 setStep(2);
               }}
-              className="w-full text-xs text-white/25 hover:text-white/50 transition-colors py-1"
+              className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
             >
               Salta (configura senza account)
             </button>
@@ -221,8 +221,8 @@ export function LoginPage({ onComplete }: LoginPageProps) {
               <Film className="h-6 w-6 text-accent" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Connetti Trakt (opzionale)</h2>
-              <p className="text-xs text-white/40">Per personalizzare i cataloghi in base alla tua watchlist</p>
+              <h2 className="text-lg font-semibold text-foreground">Connetti Trakt (opzionale)</h2>
+              <p className="text-xs text-muted-foreground">Per personalizzare i cataloghi in base alla tua watchlist</p>
             </div>
           </div>
 
@@ -232,7 +232,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
 
           <button
             onClick={handleSkipTrakt}
-            className="w-full text-xs text-white/25 hover:text-white/50 transition-colors py-1"
+            className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
           >
             Salta
           </button>
@@ -257,8 +257,8 @@ export function LoginPage({ onComplete }: LoginPageProps) {
               <KeyRound className="h-6 w-6 text-secondary-foreground" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Configura le API Key</h2>
-              <p className="text-xs text-white/40">TMDB opzionale, Mistral necessaria per usare le funzioni AI</p>
+              <h2 className="text-lg font-semibold text-foreground">Configura le API Key</h2>
+              <p className="text-xs text-muted-foreground">TMDB opzionale, Mistral necessaria per usare le funzioni AI</p>
             </div>
           </div>
 
@@ -285,7 +285,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
                 placeholder="Inserisci la tua Mistral API key"
                 className="mt-1"
               />
-              <p className="mt-1 text-xs text-white/40">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Senza chiave Mistral personale le funzioni AI saranno disabilitate.
               </p>
             </div>

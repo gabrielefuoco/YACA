@@ -107,7 +107,7 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
         {loading && (
           <div className="flex flex-col items-center py-8 gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-white/50">Connessione a Trakt...</p>
+            <p className="text-sm text-muted-foreground">Connessione a Trakt...</p>
           </div>
         )}
 
@@ -116,34 +116,34 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
               <CheckCircle2 className="h-8 w-8 text-emerald-400" />
             </div>
-            <p className="text-white font-semibold text-lg">Trakt connesso!</p>
-            <p className="text-sm text-white/50">Reindirizzamento in corso...</p>
+            <p className="text-foreground font-semibold text-lg">Trakt connesso!</p>
+            <p className="text-sm text-muted-foreground">Reindirizzamento in corso...</p>
           </div>
         )}
 
         {!loading && !success && userCode && (
           <div className="space-y-5">
-            <div className="relative rounded-xl bg-gradient-to-br from-primary/10 to-red-900/10 border border-white/10 p-6 text-center overflow-hidden">
-              <p className="text-xs text-white/50 mb-3 uppercase tracking-wider font-medium">Il tuo codice di attivazione</p>
+            <div className="relative rounded-xl bg-gradient-to-br from-primary/10 to-red-900/10 border border-border/50 p-6 text-center overflow-hidden">
+              <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider font-medium">Il tuo codice di attivazione</p>
               <p className="text-4xl font-mono font-bold tracking-[0.3em] text-primary">{userCode}</p>
               <div className="mt-4 flex items-center justify-center gap-2">
-                <div className="h-1.5 flex-1 max-w-[200px] rounded-full bg-white/10 overflow-hidden">
+                <div className="h-1.5 flex-1 max-w-[200px] rounded-full bg-muted overflow-hidden">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-primary to-red-600 transition-all duration-1000"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-                <span className="text-xs text-white/40 font-mono tabular-nums">
+                <span className="text-xs text-muted-foreground font-mono tabular-nums">
                   {mins}:{secs.toString().padStart(2, '0')}
                 </span>
               </div>
             </div>
 
-            <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-              <ol className="space-y-3 text-sm text-white/70">
+            <div className="rounded-xl bg-muted/50 border border-border p-4">
+              <ol className="space-y-3 text-sm text-foreground/70">
                 <li className="flex gap-3 items-start">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">1</span>
-                  <span>Vai su <strong className="text-white">{verificationUrl}</strong></span>
+                  <span>Vai su <strong className="text-foreground">{verificationUrl}</strong></span>
                 </li>
                 <li className="flex gap-3 items-start">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">2</span>
@@ -164,7 +164,7 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
             </a>
 
             {polling && (
-              <div className="flex items-center justify-center gap-2 text-xs text-white/50 py-1">
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground py-1">
                 <Loader2 className="h-3 w-3 animate-spin text-primary" />
                 In attesa di autorizzazione...
               </div>
@@ -179,7 +179,7 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
         )}
 
         <div className="flex justify-end">
-          <Button variant="ghost" onClick={onClose} className="text-white/50 hover:text-white">Annulla</Button>
+          <Button variant="ghost" onClick={onClose} className="text-muted-foreground hover:text-foreground">Annulla</Button>
         </div>
       </DialogContent>
     </Dialog>
