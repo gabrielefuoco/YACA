@@ -279,8 +279,8 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
     const tmdbParams = {
         ...filters, // Spread per far passare le chiavi TMDB dirette usate nei preset
         sort_by: filters.sort_by || 'popularity.desc',
-        'vote_count.gte': filters['vote_count.gte'] !== undefined ? filters['vote_count.gte'] : (parseInt(baseSettings.minVoteCount) || 0),
-        'vote_average.gte': filters['vote_average.gte'] !== undefined ? filters['vote_average.gte'] : (parseFloat(baseSettings.minVoteAverage) || 0),
+        'vote_count.gte': filters['vote_count.gte'],
+        'vote_average.gte': filters['vote_average.gte'],
         'vote_count.lte': filters['vote_count.lte'],
         'vote_average.lte': filters['vote_average.lte'],
         'popularity.lte': filters['popularity.lte'],
@@ -442,7 +442,7 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
 
             // Se la prima chiamata restituisce pochi risultati, prova a rilassare i filtri
             // e salva il flag per le pagine successive
-            if (results.length < 20) {
+            if (results.length < 20 && !settings.noFallback) {
                 let relaxedParams = { ...tmdbParams };
                 let changed = false;
 
@@ -1137,7 +1137,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                             const srcType = sourceTypes[idx] || type;
                             const srcFilters = { ...sourceFilters[idx] };
                             if (!srcFilters.strategy) srcFilters.strategy = 'discovery';
-                            const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, skip, activeProfileSettings, tmdbFetchOptions);
+                            const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, skip, { ...activeProfileSettings, noFallback: true }, tmdbFetchOptions);
                             return { metas: items.slice(0, MERGED_CATALOG_PAGE_SIZE) };
                         }
                         return catalogHandler({ type, id: srcId, extra: { ...extra, skip, limit: MERGED_CATALOG_PAGE_SIZE } }, userConfig, hostUrl);

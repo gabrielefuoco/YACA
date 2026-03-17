@@ -17,8 +17,6 @@ function createGlobalProfile(): Profile {
     },
     existingCatalogs: [],
     settings: {
-      voteAverageMin: 0,
-      voteCountMin: 0,
       fastRefresh: false,
       manualDNA: [],
       suggestedDNA: [],
@@ -38,8 +36,6 @@ function createDefaultProfile(name: string = 'Profilo Principale'): Profile {
     },
     existingCatalogs: [],
     settings: {
-      voteAverageMin: 0,
-      voteCountMin: 0,
       fastRefresh: false,
     },
   };

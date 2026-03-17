@@ -137,6 +137,7 @@ export function ActiveCatalogsPanel({
               isDragging={dragIndex === index}
               isMerging={mergeSource?.id === catalog.id}
               mergeSelectionInProgress={isSelectionMode}
+              canBeMergeTarget={!mergeSource || mergeSource.type === catalog.type}
               onRemove={() => !isSelectionMode && onRemove(catalog.id)}
               onMergeStart={() => startMerging(catalog)}
               onMergeSelect={() => selectMergeTarget(catalog)}
@@ -167,6 +168,7 @@ export function ActiveCatalogsPanel({
                 onRemove={() => !isSelectionMode && onRemoveMyList(catalog.id)}
                 isMerging={mergeSource?.id === catalog.id}
                 mergeSelectionInProgress={isSelectionMode}
+                canBeMergeTarget={!mergeSource || mergeSource.type === catalog.type}
                 onMergeStart={() => startMerging(catalog)}
                 onMergeSelect={() => selectMergeTarget(catalog)}
                 onDragStart={() => handleDragStart(index + 1000)}

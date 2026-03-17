@@ -29,7 +29,7 @@ function createDefaultProfiles(): Profile[] {
         catalogOrder: [],
       },
       existingCatalogs: [],
-      settings: { voteAverageMin: 0, voteCountMin: 0, fastRefresh: false },
+      settings: { fastRefresh: false },
     },
   ];
 }

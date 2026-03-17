@@ -24,8 +24,6 @@ export interface BackendProfile {
   name?: unknown;
   catalogs?: BackendCatalog[];
   settings?: {
-    minVoteAverage?: number;
-    minVoteCount?: number;
     fastPresetRefresh?: boolean;
     tmdbKey?: string;
     manualDNA?: unknown[];
@@ -63,8 +61,6 @@ export function profilesToApiPayload(profiles: Profile[]) {
     existingCatalogs: p.existingCatalogs,
     newPrompts: p.raw_ui_state.newPrompts,
     settings: {
-      minVoteAverage: p.settings?.voteAverageMin ?? 0,
-      minVoteCount: p.settings?.voteCountMin ?? 0,
       fastPresetRefresh: p.settings?.fastRefresh ?? false,
       tmdbKey: p.settings?.tmdbKey,
       ...(p.settings?.manualDNA?.length ? { manualDNA: p.settings.manualDNA } : {}),
@@ -113,8 +109,6 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
     },
     existingCatalogs,
     settings: {
-      voteAverageMin: typeof bSettings.minVoteAverage === 'number' ? bSettings.minVoteAverage : 0,
-      voteCountMin: typeof bSettings.minVoteCount === 'number' ? bSettings.minVoteCount : 0,
       fastRefresh: Boolean(bSettings.fastPresetRefresh),
       tmdbKey: bSettings.tmdbKey ?? '',
       manualDNA: Array.isArray(bSettings.manualDNA) ? bSettings.manualDNA as import('@/types').DNAItem[] : [],
@@ -122,4 +116,3 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
     },
   };
 }
-

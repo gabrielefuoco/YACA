@@ -5,8 +5,6 @@ export interface DNAItem {
 }
 
 export interface ProfileSettings {
-  voteAverageMin?: number;
-  voteCountMin?: number;
   fastRefresh?: boolean;
   tmdbKey?: string;
   manualDNA?: DNAItem[];

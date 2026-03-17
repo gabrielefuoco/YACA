@@ -12,6 +12,7 @@ interface CatalogItemProps {
   isMergeTarget?: boolean;
   isMerging?: boolean; 
   mergeSelectionInProgress?: boolean;
+  canBeMergeTarget?: boolean;
   onDragStart?: React.DragEventHandler;
   onDragOver?: React.DragEventHandler;
   onDragLeave?: React.DragEventHandler;
@@ -28,6 +29,7 @@ export function CatalogItem({
   isMergeTarget,
   isMerging,
   mergeSelectionInProgress,
+  canBeMergeTarget = true,
   onDragStart,
   onDragOver,
   onDragLeave,
@@ -48,12 +50,16 @@ export function CatalogItem({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
-      onClick={mergeSelectionInProgress && !isMerging ? onMergeSelect : undefined}
+      onClick={mergeSelectionInProgress && !isMerging && canBeMergeTarget ? onMergeSelect : undefined}
       className={`group relative flex flex-col glass-card transition-all p-5 shadow-sm border-2 ${
         isDragging ? 'opacity-30 scale-95 border-marrow-light/10' : 
         isMerging ? 'border-primary ring-4 ring-primary/10 bg-primary/5 z-20 scale-[1.02] shadow-xl' :
         isMergeTarget ? 'border-primary bg-primary/5 z-20 scale-[1.02] shadow-xl animate-pulse cursor-pointer' :
-        mergeSelectionInProgress ? (isMerging ? 'opacity-100' : 'opacity-60 grayscale-[0.5] hover:opacity-100 hover:grayscale-0 hover:border-primary/50 cursor-pointer') :
+        mergeSelectionInProgress ? (
+          isMerging ? 'opacity-100' : 
+          !canBeMergeTarget ? 'opacity-20 grayscale scale-[0.98] pointer-events-none border-marrow-light/5' :
+          'opacity-100 hover:border-primary/50 cursor-pointer shadow-md'
+        ) :
         'border-marrow-light/10 bg-white/60 hover:bg-white/90 hover:border-primary/30 cursor-grab active:cursor-grabbing'
       }`}
     >
