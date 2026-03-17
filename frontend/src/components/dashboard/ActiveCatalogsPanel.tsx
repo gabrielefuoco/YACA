@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Profile, Catalog, Preset } from '@/types';
 import { CatalogItem } from '@/components/shared/CatalogItem';
 import { MergeModal } from '@/components/modals/MergeModal';
-import { Layers } from 'lucide-react';
+import { Layers, Wand2 } from 'lucide-react';
 
 interface ActiveCatalogsPanelProps {
   profile: Profile;
@@ -28,8 +28,7 @@ export function ActiveCatalogsPanel({
   const [mergeSource, setMergeSource] = useState<Catalog | null>(null);
   const [mergeTarget, setMergeTarget] = useState<Catalog | null>(null);
   const [showMergeModal, setShowMergeModal] = useState(false);
-  const [hoverMergeIndex, setHoverMergeIndex] = useState<number | null>(null);
-  const [hoverTimer, setHoverTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   const presetMap = new Map(presets.map((preset) => [preset.id, preset]));
   const presetCatalogs: Catalog[] = profile.raw_ui_state.selectedPresets
@@ -52,6 +51,7 @@ export function ActiveCatalogsPanel({
   });
 
   const handleDragStart = (index: number) => {
+    if (isSelectionMode) return;
     setDragIndex(index);
   };
 
@@ -59,94 +59,74 @@ export function ActiveCatalogsPanel({
     if (dragIndex === null || dragIndex === targetIndex) return;
     const reordered = [...catalogs];
     const [moved] = reordered.splice(dragIndex, 1);
-
-    // If dropped on same position or adjacent, reorder; if Shift held could merge
     reordered.splice(targetIndex, 0, moved);
     onReorder(reordered);
     setDragIndex(null);
   };
 
-  const handleMergeDrop = (targetCatalog: Catalog, sourceCatalog: Catalog) => {
-    setMergeSource(sourceCatalog);
-    setMergeTarget(targetCatalog);
+  const startMerging = (catalog: Catalog) => {
+    setMergeSource(catalog);
+    setIsSelectionMode(true);
+  };
+
+  const selectMergeTarget = (catalog: Catalog) => {
+    if (!mergeSource || mergeSource.id === catalog.id) return;
+    setMergeTarget(catalog);
     setShowMergeModal(true);
+    setIsSelectionMode(false);
   };
 
-  const handleDragOverWithMerge = (
-    e: React.DragEvent,
-    targetIndex: number,
-    targetCatalog: Catalog
-  ) => {
-    e.preventDefault();
-
-    // Normal reorder if not holding over
-    if (dragIndex === null || dragIndex === targetIndex) {
-      if (hoverTimer) {
-        clearTimeout(hoverTimer);
-        setHoverTimer(null);
-      }
-      setHoverMergeIndex(null);
-      return;
-    }
-
-    // Hover-to-merge logic
-    if (hoverMergeIndex !== targetIndex) {
-      if (hoverTimer) clearTimeout(hoverTimer);
-
-      setHoverMergeIndex(targetIndex);
-      const timer = setTimeout(() => {
-        handleMergeDrop(targetCatalog, catalogs[dragIndex]);
-        setHoverMergeIndex(null);
-        setHoverTimer(null);
-      }, 1000); // 1 second hold to merge
-
-      setHoverTimer(timer);
-    }
-
-    if (e.shiftKey) {
-      e.dataTransfer.dropEffect = 'copy';
-    }
-  };
-
-  const handleDragLeave = () => {
-    if (hoverTimer) {
-      clearTimeout(hoverTimer);
-      setHoverTimer(null);
-    }
-    setHoverMergeIndex(null);
-  };
-
-  const handleDropWithMerge = (e: React.DragEvent, targetIndex: number, targetCatalog: Catalog) => {
-    if (hoverTimer) {
-      clearTimeout(hoverTimer);
-      setHoverTimer(null);
-    }
-    setHoverMergeIndex(null);
-
-    if (e.shiftKey && dragIndex !== null && dragIndex !== targetIndex) {
-      handleMergeDrop(targetCatalog, catalogs[dragIndex]);
-    } else {
-      handleDrop(targetIndex);
-    }
-    setDragIndex(null);
+  const cancelMerge = () => {
+    setIsSelectionMode(false);
+    setMergeSource(null);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-black text-marrow-deep">
-          I tuoi Cataloghi ({catalogs.length})
-        </h3>
-        {catalogs.length > 1 && (
-          <p className="text-xs text-marrow-light/80 font-medium">Trascina per riordinare &bull; Shift + trascina per unire</p>
+        <div className="flex flex-col">
+          <h3 className="text-xl font-black text-marrow-deep tracking-tight">
+            I tuoi Cataloghi <span className="text-primary/40 ml-1">({catalogs.length})</span>
+          </h3>
+          <p className="text-xs text-marrow-light/60 font-bold uppercase tracking-widest mt-1">Gestisci e ordina la tua esperienza</p>
+        </div>
+        
+        {!isSelectionMode && catalogs.length > 1 && (
+           <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/40 rounded-2xl border border-marrow-light/10 shadow-sm">
+             <span className="material-symbols-outlined text-primary text-sm">info</span>
+             <p className="text-[10px] text-marrow-light font-black uppercase tracking-wider">Trascina per riordinare</p>
+           </div>
         )}
       </div>
 
+      {/* Merge Selection Bar */}
+      {isSelectionMode && (
+        <div className="p-4 rounded-2xl bg-primary border-2 border-primary shadow-xl shadow-primary/20 flex items-center justify-between animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-4">
+            <div className="size-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <Wand2 className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex flex-col">
+              <p className="text-xs font-black text-white uppercase tracking-[0.2em] leading-none mb-1">Fase 2: Unione Intelligente</p>
+              <p className="text-sm font-bold text-white/80">Scegli il secondo catalogo da fondere con <span className="text-white underline decoration-white/30">{mergeSource?.name}</span></p>
+            </div>
+          </div>
+          <button 
+            onClick={cancelMerge}
+            className="px-4 py-2 bg-white text-primary rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-marrow-deep hover:text-white transition-all shadow-lg"
+          >
+            Annulla
+          </button>
+        </div>
+      )}
+
       {catalogs.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-marrow-light/20 p-12 text-center bg-white/40">
-          <Layers className="mx-auto h-12 w-12 text-marrow-light/40 mb-4" />
-          <p className="text-base font-black text-marrow-deep">Nessun catalogo attivo</p>
-          <p className="text-sm text-marrow-light/70 font-medium mt-2">Aggiungi cataloghi dalla sezione Esplora o creane uno nuovo.</p>
+        <div className="rounded-[2.5rem] border-2 border-dashed border-marrow-light/20 p-16 text-center bg-white/40 shadow-inner">
+          <div className="size-20 bg-marrow-light/5 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Layers className="h-10 w-10 text-marrow-light/20" />
+          </div>
+          <p className="text-xl font-black text-marrow-deep">Nessun catalogo attivo</p>
+          <p className="text-sm text-marrow-light/70 font-medium mt-3 max-w-xs mx-auto">Aggiungi cataloghi dalla sezione Esplora o creane uno nuovo per iniziare.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-4 w-full">
@@ -155,42 +135,44 @@ export function ActiveCatalogsPanel({
               key={catalog.id}
               catalog={catalog}
               isDragging={dragIndex === index}
-              isMergeTarget={hoverMergeIndex === index}
-              onRemove={() => onRemove(catalog.id)}
+              isMerging={mergeSource?.id === catalog.id}
+              mergeSelectionInProgress={isSelectionMode}
+              onRemove={() => !isSelectionMode && onRemove(catalog.id)}
+              onMergeStart={() => startMerging(catalog)}
+              onMergeSelect={() => selectMergeTarget(catalog)}
               onDragStart={() => handleDragStart(index)}
-              onDragOver={(e) => handleDragOverWithMerge(e, index, catalog)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDropWithMerge(e, index, catalog)}
-              onDragEnd={() => {
-                setDragIndex(null);
-                handleDragLeave();
-              }}
+              onDragOver={(e) => { e.preventDefault(); }}
+              onDrop={() => handleDrop(index)}
+              onDragEnd={() => setDragIndex(null)}
             />
           ))}
         </div>
       )}
 
-      {/* My Lists */}
+      {/* My Lists Section (Refined) */}
       {myLists.length > 0 && (
-        <div className="pt-8 border-t border-marrow-light/10">
-          <h3 className="text-lg font-black text-marrow-deep mb-4">
-            Le Mie Liste ({myLists.length})
-          </h3>
+        <div className="pt-10 border-t-2 border-marrow-light/10 mt-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1.5 h-6 bg-primary rounded-full" />
+            <h3 className="text-xl font-black text-marrow-deep tracking-tight">
+              Le Mie Liste <span className="text-primary/40 ml-1">({myLists.length})</span>
+            </h3>
+          </div>
+          
           <div className="flex flex-col gap-4 w-full">
             {myLists.map((catalog, index) => (
               <CatalogItem
                 key={catalog.id}
                 catalog={catalog}
-                onRemove={() => onRemoveMyList(catalog.id)}
-                isMergeTarget={hoverMergeIndex === index + 1000} // Offset for myLists
-                onDragStart={() => setDragIndex(index + 1000)}
-                onDragOver={(e) => handleDragOverWithMerge(e, index + 1000, catalog)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDropWithMerge(e, index + 1000, catalog)}
-                onDragEnd={() => {
-                  setDragIndex(null);
-                  handleDragLeave();
-                }}
+                onRemove={() => !isSelectionMode && onRemoveMyList(catalog.id)}
+                isMerging={mergeSource?.id === catalog.id}
+                mergeSelectionInProgress={isSelectionMode}
+                onMergeStart={() => startMerging(catalog)}
+                onMergeSelect={() => selectMergeTarget(catalog)}
+                onDragStart={() => handleDragStart(index + 1000)}
+                onDragOver={(e) => { e.preventDefault(); }}
+                onDrop={() => handleDrop(index + 1000)}
+                onDragEnd={() => setDragIndex(null)}
               />
             ))}
           </div>
