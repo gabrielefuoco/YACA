@@ -975,7 +975,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 },
                 { batchSize: 3, delayMs: 100 }
             );
-            return finalizeCatalog(results, id, 'series', hostUrl);
+            return finalizeCatalog(results, id, 'series', hostUrl, effectiveUserConfig, skip, isLandscapeEnabled);
         }
 
         // ==========================================

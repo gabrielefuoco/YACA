@@ -81,10 +81,22 @@ module.exports = {
     
     // --- Landscape Configuration ---
     LANDSCAPE_ENABLED_CATALOGS: new Set([
+        // Hero Catalogs (Home Page Suggestions)
+        'yaca_true_blend_movies',
+        'yaca_true_blend_series',
+        'yaca_seed_network_movies',
+        'yaca_seed_network_series',
+        'yaca_hidden_gems_movies',
+        'yaca_hidden_gems_series',
+        'yaca_trakt_filtered_movies',
+        'yaca_trakt_filtered_series',
+        // Signature Presets (for users who have them in dashboard)
         'yaca_signature_core_movies',
         'yaca_signature_core_series',
         'yaca_signature_blend_movies',
-        'yaca_signature_blend_series'
+        'yaca_signature_blend_series',
+        'yaca_signature_star_movies',
+        'yaca_signature_star_series'
     ]),
 
     // ─── Pre-warming Configuration ───
