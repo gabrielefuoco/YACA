@@ -43,10 +43,23 @@ function getImageKitUrl(imageUrl, optionsOrText, imageKitId) {
     trParts.push('f-auto,q-80');
 
     // 2. Logo Overlay
-    if (options.addLogo) {
-        // Overlay logo_yaca.png from ImageKit media library
-        // Positioned at top-left (lx-10, ly-10) with width 80
-        trParts.push('l-image,i-logo_yaca.png,w-80,lx-10,ly-10,l-end');
+    let logoTransform = null;
+    if (options.logoUrl && typeof options.logoUrl === 'string' && options.logoUrl.startsWith('http')) {
+        // Overlay remote image using base64 encoding for the URL
+        const logoB64 = Buffer.from(options.logoUrl).toString('base64')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+        // Remote image overlay syntax: l-image,i-base64:<b64>
+        // Use a reasonable width (200px) and bottom-left/top-left position
+        logoTransform = `l-image,i-base64:${logoB64},w-200,lx-10,ly-10,l-end`;
+    } else if (options.addLogo) {
+        // Fallback or legacy: overlay logo_yaca.png from ImageKit media library
+        logoTransform = 'l-image,i-logo_yaca.png,w-80,lx-10,ly-10,l-end';
+    }
+
+    if (logoTransform) {
+        trParts.push(logoTransform);
     }
 
     // 3. Text Badge Overlay (backward compatible)

@@ -128,7 +128,11 @@ function sanitizeCatalogMeta(item, options = {}, imageKitId) {
         sourceImage = item.background || item.poster;
         finalPosterShape = 'landscape';
         ikOptions.posterShape = 'landscape';
-        ikOptions.addLogo = true;
+        
+        // Se l'item ha un logo (fornito dai metadati arricchiti di TMDB), lo usiamo come overlay
+        if (item.logo) {
+            ikOptions.logoUrl = item.logo;
+        }
     }
 
     const poster = (typeof sourceImage === 'string' && sourceImage.length > 0)
