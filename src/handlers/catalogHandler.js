@@ -432,7 +432,7 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
         // Il fallback non dipende più dallo skip. Usa il CacheManager per sapere
         // se questa specifica query richiede parametri rilassati.
         const paramsKey = JSON.stringify(tmdbParams);
-        const fallbackFlag = await catalogFallbackCache.get(paramsKey);
+        const fallbackFlag = !settings.noFallback ? await catalogFallbackCache.get(paramsKey) : null;
 
         if (fallbackFlag) {
             // Applica automaticamente i filtri allargati salvati in precedenza
@@ -743,6 +743,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
         const skip = extra.skip || 0;
         const search = extra.search || null;
         const sortBy = extra.sortBy || null;
+        const noFallback = extra.noFallback || false;
 
         let results = [];
 
@@ -1140,7 +1141,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                             const items = await executeComplexStrategy(srcFilters, tmdbClient, tmdbApiKey, srcType, skip, { ...activeProfileSettings, noFallback: true }, tmdbFetchOptions);
                             return { metas: items.slice(0, MERGED_CATALOG_PAGE_SIZE) };
                         }
-                        return catalogHandler({ type, id: srcId, extra: { ...extra, skip, limit: MERGED_CATALOG_PAGE_SIZE } }, userConfig, hostUrl);
+                        return catalogHandler({ type, id: srcId, extra: { ...extra, skip, limit: MERGED_CATALOG_PAGE_SIZE, noFallback: true } }, userConfig, hostUrl);
                     };
 
                     const sourceResults = await Promise.all(sourceIds.map((_, idx) => fetchSource(idx)));
@@ -1172,7 +1173,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             // ==========================================
             // UNIVERSAL EXECUTION PIPELINE (Fase 2)
             // ==========================================
-            results = await executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, tmdbFetchOptions);
+            results = await executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, skip, { ...activeProfileSettings, noFallback }, tmdbFetchOptions);
 
             // ==========================================
             // FASE 10: HIDE WATCHED (WITH PROGRESSIVE FILL)
@@ -1205,7 +1206,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 ? firstQuery.with_genres.map(String)
                 : String(firstQuery.with_genres ?? '').split(/[|,]/);
 
-            if ((!results || results.length === 0) && withGenres.includes('99') && firstQuery.with_keywords) {
+            if (!noFallback && (!results || results.length === 0) && withGenres.includes('99') && firstQuery.with_keywords) {
                 const relaxedQuery = { ...firstQuery };
                 delete relaxedQuery.with_keywords;
                 const relaxedCatalog = { ...universalCatalog, queries: [relaxedQuery] };

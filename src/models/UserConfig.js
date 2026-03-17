@@ -59,43 +59,7 @@ const UserConfig = {
                     }
                 }
 
-                // 3. MERGE PROFILES (from AddonConfig)
-                if (existingConfig) {
-                    if (!userData.profiles?.length && existingConfig.profiles?.length) {
-                        userData.profiles = existingConfig.profiles;
-                    } else if (Array.isArray(userData.profiles) && existingConfig.profiles?.length) {
-                        const existingProfiles = new Map(
-                            existingConfig.profiles.map((p) => [p.id, p])
-                        );
-                        userData.profiles = userData.profiles.map((profile) => {
-                            const existingProfile = existingProfiles.get(profile.id);
-                            if (!existingProfile) return profile;
-
-                            const mergedSettings = { 
-                                ...(existingProfile.settings || {}), 
-                                ...(profile.settings || {}) 
-                            };
-                            
-                            if (existingProfile.settings?.manualDNA?.length && (!profile.settings?.manualDNA || profile.settings.manualDNA.length === 0)) {
-                                mergedSettings.manualDNA = existingProfile.settings.manualDNA;
-                            }
-                            if (existingProfile.settings?.suggestedDNA?.length && (!profile.settings?.suggestedDNA || profile.settings.suggestedDNA.length === 0)) {
-                                mergedSettings.suggestedDNA = existingProfile.settings.suggestedDNA;
-                            }
-
-                            return { 
-                                ...existingProfile, 
-                                ...profile, 
-                                catalogs: profile.catalogs || existingProfile.catalogs || [],
-                                raw_ui_state: profile.raw_ui_state || existingProfile.raw_ui_state || {},
-                                settings: mergedSettings 
-                            };
-                        });
-                    }
-                }
-
-                // 4. MERGE API KEYS (from UserAccount)
-                // undefined = "don't touch" (preserve existing), null/'' = "delete this key"
+                // 3. MERGE DATA & PREPARE UPDATES
                 const keysToUnset = new Set();
                 if (existingAccount) {
                     const incomingApiKeys = userData.apiKeys || {};
@@ -109,11 +73,49 @@ const UserConfig = {
                         } else if (value !== undefined) {
                             mergedApiKeys[key] = value;
                         }
-                        // undefined = "don't touch", so we keep the existing value
                     }
                     userData.apiKeys = mergedApiKeys;
-
                     if (!userData.email && existingAccount.email) userData.email = existingAccount.email;
+                }
+
+                // Prepare finalized profiles list (Synchronized Merge)
+                let finalizedProfiles = existingConfig?.profiles || [];
+                if (Array.isArray(userData.profiles)) {
+                    const existingProfileMap = new Map(
+                        (existingConfig?.profiles || []).map(p => [p.id || p._id?.toString(), p])
+                    );
+
+                    finalizedProfiles = userData.profiles.map(incoming => {
+                        const pId = incoming.id || incoming._id?.toString();
+                        const existing = existingProfileMap.get(pId);
+                        
+                        // If it's a new profile, use as is
+                        if (!existing) return incoming;
+
+                        // If it's an existing profile, merge carefully
+                        const mergedSettings = { 
+                            ...(existing.settings || {}), 
+                            ...(incoming.settings || {}) 
+                        };
+                        
+                        // Preserve DNA if missing in incoming payload (server-side only fields)
+                        if (existing.settings?.manualDNA?.length && (!incoming.settings?.manualDNA || incoming.settings.manualDNA.length === 0)) {
+                            mergedSettings.manualDNA = existing.settings.manualDNA;
+                        }
+                        if (existing.settings?.suggestedDNA?.length && (!incoming.settings?.suggestedDNA || incoming.settings.suggestedDNA.length === 0)) {
+                            mergedSettings.suggestedDNA = existing.settings.suggestedDNA;
+                        }
+
+                        return { 
+                            ...existing, 
+                            ...incoming, 
+                            catalogs: incoming.catalogs || existing.catalogs || [],
+                            raw_ui_state: incoming.raw_ui_state || existing.raw_ui_state || {},
+                            settings: mergedSettings,
+                            // CRITICAL: Always preserve DNA scores (server-calculated)
+                            dna: existing.dna || incoming.dna 
+                        };
+                    });
                 }
 
                 // Merge Config (version bump on every save)
@@ -177,50 +179,8 @@ const UserConfig = {
                     }
                 }
 
-                // Profiles merge
-                if (Array.isArray(userData.profiles)) {
-                    if (!existingConfig || !existingConfig.profiles?.length) {
-                        configUpdateOp.$set.profiles = userData.profiles;
-                    } else {
-                        const profileMap = new Map();
-                        
-                        existingConfig.profiles.forEach(p => {
-                            const key = p.id || p._id?.toString();
-                            if (key) profileMap.set(key, p);
-                        });
-
-                        userData.profiles.forEach(p => {
-                            const pId = p.id || p._id?.toString();
-                            if (!pId) return;
-
-                            const existing = profileMap.get(pId);
-                            if (existing) {
-                                const mergedSettings = { 
-                                    ...(existing.settings || {}), 
-                                    ...(p.settings || {}) 
-                                };
-                                
-                                if (existing.settings?.manualDNA?.length && (!p.settings?.manualDNA || p.settings.manualDNA.length === 0)) {
-                                    mergedSettings.manualDNA = existing.settings.manualDNA;
-                                }
-                                if (existing.settings?.suggestedDNA?.length && (!p.settings?.suggestedDNA || p.settings.suggestedDNA.length === 0)) {
-                                    mergedSettings.suggestedDNA = existing.settings.suggestedDNA;
-                                }
-
-                                profileMap.set(pId, { 
-                                    ...existing, 
-                                    ...p, 
-                                    catalogs: p.catalogs || existing.catalogs || [],
-                                    raw_ui_state: p.raw_ui_state || existing.raw_ui_state || {},
-                                    settings: mergedSettings 
-                                });
-                            } else {
-                                profileMap.set(pId, p);
-                            }
-                        });
-                        configUpdateOp.$set.profiles = Array.from(profileMap.values());
-                    }
-                }
+                // Set profiles directly (synchronized)
+                configUpdateOp.$set.profiles = finalizedProfiles;
 
                 if (Object.keys(configUpdateOp.$set).length === 0) delete configUpdateOp.$set;
 
