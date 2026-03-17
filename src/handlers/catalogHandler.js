@@ -786,11 +786,27 @@ async function catalogHandler(args, userConfig, hostUrl) {
         // Carica i preset con date dinamiche (ricalcolate ad ogni richiesta)
         const presetsList = getPresets();
 
-        // Risoluzione metadati catalogo (Preset o Lista Utente)
+        // Risoluzione metadati catalogo (Preset o Lista Utente o Embedded in Profilo)
         let catalogMeta = presetsList.find(p => p.id === baseId);
         if (!catalogMeta) {
             // Se non è un preset hardcoded, cerchiamo nelle liste personalizzate dell'utente (AI o manuali)
             catalogMeta = await UserList.findOne({ listId: id }).lean();
+        }
+
+        // AGGIUNTA: Risoluzione per cataloghi "embedded" nel profilo (es. Merged Lists)
+        if (!catalogMeta && userConfig?.profiles) {
+            for (const profile of userConfig.profiles) {
+                const found = (profile.catalogs || []).find(c => c.id === id);
+                if (found) {
+                    catalogMeta = {
+                        ...found,
+                        listId: found.id,
+                        name: found.name,
+                        filters: found.filters
+                    };
+                    break;
+                }
+            }
         }
 
         // ==========================================

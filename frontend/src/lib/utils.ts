@@ -87,6 +87,10 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
       type: c.type === 'series' ? 'series' : 'movie',
       filters: c.filters,
       raw_prompt: c.raw_prompt,
+      source: c.source,
+      emoji: c.emoji,
+      queries: c.queries,
+      presentation_strategy: c.presentation_strategy,
     }));
 
   const targetId = backendProfile.id || 
