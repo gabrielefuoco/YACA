@@ -11,7 +11,9 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: 'tmdbId, type, and rawTMDB are required' });
         }
 
-        const numericId = parseInt(String(tmdbId).replace(/^tmdb:/, ''), 10);
+        const { normalizeContentId } = require('../../utils/contentId');
+        const normalizedId = normalizeContentId(tmdbId);
+        const numericId = parseInt(normalizedId, 10);
 
         // Miglioramento estrazione logo: se rawTMDB non ha loghi, prova a recuperarli dai dettagli completi
         let logoPath = rawTMDB.logo || (rawTMDB.images?.logos?.length > 0 ? prioritizeLocalizedImages(rawTMDB.images.logos)[0]?.file_path : null);
