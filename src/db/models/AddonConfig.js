@@ -19,7 +19,14 @@ const mongoose = require('mongoose');
 const catalogSchema = new mongoose.Schema({
     id: { type: String, required: true },
     name: String,
-    type: String
+    type: String,
+    source: String,
+    filters: mongoose.Schema.Types.Mixed,
+    queries: [mongoose.Schema.Types.Mixed],
+    presentation_strategy: { type: String, enum: ['popularity', 'interleave'] },
+    raw_prompt: String,
+    emoji: String,
+    mergedFrom: [String]
 }, { _id: false });
 
 const addonConfigSchema = new mongoose.Schema({
