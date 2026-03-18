@@ -140,6 +140,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
     const cast = mapToPills(f.with_cast, 'Cast');
     const crew = mapToPills(f.with_crew, 'Crew');
     const people = mapToPills(f.with_people, 'Persona');
+    const shouldUsePeopleForCast = cast.length === 0 && people.length > 0;
 
     return {
       id: generateId(),
@@ -150,7 +151,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       language: (f.with_original_language as string) || (f.original_language as string) || '',
       genres: parseList(f.with_genres ?? f.genre_ids),
       keywords: kws,
-      cast: cast.length > 0 ? cast : people,
+      cast: shouldUsePeopleForCast ? people : cast,
       crew,
       voteMin: Number(f['vote_average.gte']) || 0,
       yearFrom: (f.year_from as string) || (dateGte ? dateGte.substring(0, 4) : ''),
