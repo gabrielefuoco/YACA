@@ -50,6 +50,10 @@ jest.mock('../src/profile/ProfileScorer', () => ({
     calculateItemMatch: jest.fn(() => 0)
 }));
 
+jest.mock('../src/db/models/UserAccount', () => ({
+    findOne: jest.fn()
+}));
+
 jest.mock('../src/utils/rateLimiter', () => ({
     rateLimitedMap: jest.fn(async (items, fn) => Promise.all(items.map(fn)))
 }));
@@ -74,6 +78,7 @@ const { getPresets } = require('../src/data/presets');
 const TasteProfile = require('../src/models/TasteProfile');
 const TmdbScoringData = require('../src/models/TmdbScoringData');
 const ProfileScorer = require('../src/profile/ProfileScorer');
+const UserAccount = require('../src/db/models/UserAccount');
 const { getTmdbMovieDetails } = require('../src/clients/tmdb');
 const { catalogHandler } = require('../src/handlers/catalogHandler');
 
@@ -83,6 +88,7 @@ describe('catalogHandler critical recommendation/search fixes', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         TmdbScoringData.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
+        UserAccount.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
     });
 
     it('executes hybrid catalogs even when trakt token is missing', async () => {
@@ -105,6 +111,39 @@ describe('catalogHandler critical recommendation/search fixes', () => {
             'yaca_hybrid_movies',
             0,
             undefined,
+            'tmdb_key',
+            'user_1',
+            'global'
+        );
+        expect(result.metas).toHaveLength(1);
+    });
+
+    it('hydrates missing Trakt token from UserAccount for Trakt-dependent hybrid catalogs', async () => {
+        UserAccount.findOne.mockReturnValueOnce({
+            lean: jest.fn().mockResolvedValue({
+                apiKeys: { trakt: 'db_trakt_token', traktRefreshToken: 'db_refresh' }
+            })
+        });
+        getHybridCatalog.mockResolvedValueOnce([{ id: 'tmdb:11', name: 'Seed Item', type: 'movie' }]);
+
+        const userConfig = {
+            userId: 'user_1',
+            activeProfileId: 'global',
+            apiKeys: { tmdb: 'tmdb_key' },
+            profiles: []
+        };
+
+        const result = await catalogHandler({
+            type: 'movie',
+            id: 'yaca_seed_network_movies',
+            extra: { skip: 0 }
+        }, userConfig, 'http://localhost:7000');
+
+        expect(UserAccount.findOne).toHaveBeenCalledWith({ userId: 'user_1' });
+        expect(getHybridCatalog).toHaveBeenCalledWith(
+            'yaca_seed_network_movies',
+            0,
+            'db_trakt_token',
             'tmdb_key',
             'user_1',
             'global'
