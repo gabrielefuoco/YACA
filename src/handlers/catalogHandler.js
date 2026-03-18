@@ -18,6 +18,7 @@ const UserList = require('../models/UserList');
 const TasteProfile = require('../models/TasteProfile');
 const UserActivity = require('../models/UserActivity');
 const ProfileScorer = require('../profile/ProfileScorer');
+const UserAccount = require('../db/models/UserAccount');
 const { getPresets } = require('../data/presets');
 const {
     CACHE_TTL_MS,
@@ -807,7 +808,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
         let results = [];
 
         // Preview mode: minimal userConfig if missing
-        const effectiveUserConfig = userConfig || { apiKeys: { tmdb: process.env.TMDB_API_KEY, mistral: process.env.MISTRAL_API_KEY } };
+        let effectiveUserConfig = userConfig || { apiKeys: { tmdb: process.env.TMDB_API_KEY, mistral: process.env.MISTRAL_API_KEY } };
 
         const tmdbApiKey = effectiveUserConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
         if (!tmdbApiKey) throw new Error("TMDB API key mancante");
@@ -838,6 +839,32 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
         // Pulisce l'ID nel caso arrivi come Preset dalla Dashboard
         const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
+
+        const TRAKT_TOKEN_REQUIRED_IDS = new Set([
+            'yaca_seed_network_movies', 'yaca_seed_network_series',
+            'yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series',
+            'yaca_signature_star_movies', 'yaca_signature_star_series',
+            'yaca_top20_movies', 'yaca_top20_series'
+        ]);
+        const needsTraktToken = baseId.startsWith('trakt_') || TRAKT_TOKEN_REQUIRED_IDS.has(baseId);
+        const isMissingTraktToken = !effectiveUserConfig?.apiKeys?.trakt;
+        if (needsTraktToken && isMissingTraktToken && effectiveUserConfig?.userId) {
+            try {
+                const account = await UserAccount.findOne({ userId: effectiveUserConfig.userId }).lean();
+                if (account?.apiKeys?.trakt) {
+                    effectiveUserConfig = {
+                        ...effectiveUserConfig,
+                        apiKeys: {
+                            ...(effectiveUserConfig.apiKeys || {}),
+                            trakt: account.apiKeys.trakt,
+                            traktRefreshToken: effectiveUserConfig.apiKeys?.traktRefreshToken || account.apiKeys.traktRefreshToken
+                        }
+                    };
+                }
+            } catch (err) {
+                console.warn(`[catalogHandler] Impossibile recuperare token Trakt per ${effectiveUserConfig.userId}:`, err.message);
+            }
+        }
         
         // Verifica se il formato landscape è abilitato per questo catalogo (ora anche per la vista discovery)
         // Estensione: abilita automaticamente landscape per tutti i cataloghi "Signature" (ID dinamici)
@@ -1036,7 +1063,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             'yaca_top_genres_mix'
         ]);
         if (TASTE_BASED_IDS.has(baseId)) {
-            const traktToken = userConfig.apiKeys?.trakt;
+            const traktToken = effectiveUserConfig.apiKeys?.trakt;
             let currentSkip = skip;
             let combinedResults = [];
 
@@ -1100,10 +1127,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
         // ==========================================
         // SCENARIO 3: CATALOGHI TRAKT
         // ==========================================
-        const traktUname = userConfig.apiKeys?.trakt;
+        const traktUname = effectiveUserConfig.apiKeys?.trakt;
         // Contesto per auto-refresh token Trakt (usato solo per endpoint autenticati)
-        const refreshContext = (userConfig.apiKeys?.traktRefreshToken && hostUrl)
-            ? { userConfig, hostUrl } : null;
+        const refreshContext = (effectiveUserConfig.apiKeys?.traktRefreshToken && hostUrl)
+            ? { userConfig: effectiveUserConfig, hostUrl } : null;
 
         if (baseId.startsWith('trakt_')) {
             const traktTypeMap = {
