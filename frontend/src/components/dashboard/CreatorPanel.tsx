@@ -127,12 +127,20 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       const names = keywordNames.replace(/\|/g, ',').split(',').map(s => s.trim()).filter(Boolean);
       const ids = parseList(f.with_keywords);
       kws = names.map((n, i) => ({ id: ids[i] || n, name: n }));
-    } else {
+    } else if (f.with_keywords) {
       kws = mapToPills(f.with_keywords, 'Keyword');
+    } else if (f.keyword) {
+      kws = parseList(f.keyword).map(name => ({ id: name, name }));
+    } else {
+      kws = [];
     }
 
-    const dateGte = f['primary_release_date.gte'] as string;
-    const dateLte = f['primary_release_date.lte'] as string;
+    const dateGte = (f['primary_release_date.gte'] as string) || (f['first_air_date.gte'] as string);
+    const dateLte = (f['primary_release_date.lte'] as string) || (f['first_air_date.lte'] as string);
+    const cast = mapToPills(f.with_cast, 'Cast');
+    const crew = mapToPills(f.with_crew, 'Crew');
+    const people = mapToPills(f.with_people, 'Persona');
+    const shouldUsePeopleForCast = cast.length === 0 && people.length > 0;
 
     return {
       id: generateId(),
@@ -140,14 +148,14 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       similarTo: (f.similar_to as string) || '',
       textSearch: (f.text_search as string) || '',
       sortBy: (f.sort_by as string) || 'popularity.desc',
-      language: (f.with_original_language as string) || '',
-      genres: parseList(f.with_genres),
+      language: (f.with_original_language as string) || (f.original_language as string) || '',
+      genres: parseList(f.with_genres ?? f.genre_ids),
       keywords: kws,
-      cast: mapToPills(f.with_cast, 'Cast'),
-      crew: mapToPills(f.with_crew, 'Crew'),
+      cast: shouldUsePeopleForCast ? people : cast,
+      crew,
       voteMin: Number(f['vote_average.gte']) || 0,
-      yearFrom: dateGte ? dateGte.substring(0, 4) : '',
-      yearTo: dateLte ? dateLte.substring(0, 4) : '',
+      yearFrom: (f.year_from as string) || (dateGte ? dateGte.substring(0, 4) : ''),
+      yearTo: (f.year_to as string) || (dateLte ? dateLte.substring(0, 4) : ''),
       collapsed: false,
     };
   }, []);
@@ -184,20 +192,23 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
   };
 
   // --- Build query blocks for save ---
-  const buildQueryBlock = (block: BlockState): QueryBlock => ({
-    strategy: block.strategy,
-    ...(block.similarTo && { similar_to: block.similarTo }),
-    ...(block.textSearch && { text_search: block.textSearch }),
-    sort_by: block.sortBy,
-    ...(block.language && { with_original_language: block.language }),
-    ...(block.genres.length && { with_genres: block.genres.join(',') }),
-    ...(block.keywords.length && { with_keywords: block.keywords.map(k => k.id).join(',') }),
-    ...(block.cast.length && { with_cast: block.cast.map(c => c.id).join(',') }),
-    ...(block.crew.length && { with_crew: block.crew.map(c => c.id).join(',') }),
-    ...(block.voteMin > 0 && { 'vote_average.gte': block.voteMin }),
-    ...(block.yearFrom && { 'primary_release_date.gte': `${block.yearFrom}-01-01` }),
-    ...(block.yearTo && { 'primary_release_date.lte': `${block.yearTo}-12-31` }),
-  });
+  const buildQueryBlock = (block: BlockState): QueryBlock => {
+    const dateKey = type === 'series' ? 'first_air_date' : 'primary_release_date';
+    return {
+      strategy: block.strategy,
+      ...(block.similarTo && { similar_to: block.similarTo }),
+      ...(block.textSearch && { text_search: block.textSearch }),
+      sort_by: block.sortBy,
+      ...(block.language && { with_original_language: block.language }),
+      ...(block.genres.length && { with_genres: block.genres.join(',') }),
+      ...(block.keywords.length && { with_keywords: block.keywords.map(k => k.id).join(',') }),
+      ...(block.cast.length && { with_cast: block.cast.map(c => c.id).join(',') }),
+      ...(block.crew.length && { with_crew: block.crew.map(c => c.id).join(',') }),
+      ...(block.voteMin > 0 && { 'vote_average.gte': block.voteMin }),
+      ...(block.yearFrom && { [`${dateKey}.gte`]: `${block.yearFrom}-01-01` }),
+      ...(block.yearTo && { [`${dateKey}.lte`]: `${block.yearTo}-12-31` }),
+    };
+  };
 
   // Build a flat filters object from a block (for preview backward compat)
   const buildFiltersFromBlock = (block: BlockState): Record<string, unknown> => buildQueryBlock(block) as Record<string, unknown>;
