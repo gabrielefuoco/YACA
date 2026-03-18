@@ -172,16 +172,19 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       setPreviewType(aiType);
       setName(result?.name || trimmed.slice(0, MAX_AI_CATALOG_NAME_LENGTH));
 
-      // Support multi-query AI response
-      const queries: Record<string, unknown>[] = Array.isArray(result?.queries)
-        ? result.queries
-        : result?.filters ? [result.filters as Record<string, unknown>] : [];
+      // Support multi-query AI response, including nested payloads in filters.queries
+      const rawFilters = result?.filters as Record<string, unknown> | undefined;
+      const extractedQueries: Record<string, unknown>[] = Array.isArray(result?.queries)
+        ? result.queries as Record<string, unknown>[]
+        : Array.isArray(rawFilters?.queries)
+          ? rawFilters.queries as Record<string, unknown>[]
+          : rawFilters ? [rawFilters] : [];
 
-      if (queries.length > 0) {
-        const newBlocks = queries.map(q => filtersToBlock(q));
+      if (extractedQueries.length > 0) {
+        const newBlocks = extractedQueries.map(q => filtersToBlock(q));
         setBlocks(newBlocks);
-        // Preview using the first block's filters
-        setPreviewFilters(queries[0]);
+        // Preview using normalized filters from the first UI block
+        setPreviewFilters(buildFiltersFromBlock(newBlocks[0]));
 
         if (result?.presentation_strategy === 'interleave') {
           setPresentationStrategy('interleave');
