@@ -17,4 +17,15 @@ describe('CreatorPanel AI -> manual mapping safeguards', () => {
         expect(source).toContain("[`${dateKey}.gte`]");
         expect(source).toContain("[`${dateKey}.lte`]");
     });
+
+    it('extracts AI query arrays from nested filters payloads', () => {
+        expect(source).toContain('const rawFilters = result?.filters as Record<string, unknown> | undefined;');
+        expect(source).toContain('Array.isArray(rawFilters?.queries)');
+        expect(source).toContain("? rawFilters.queries as Record<string, unknown>[]");
+        expect(source).toContain(': rawFilters ? [rawFilters] : [];');
+    });
+
+    it('normalizes preview filters through block builder instead of raw AI query', () => {
+        expect(source).toContain('setPreviewFilters(buildFiltersFromBlock(newBlocks[0]));');
+    });
 });
