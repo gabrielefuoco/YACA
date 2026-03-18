@@ -857,7 +857,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                         apiKeys: {
                             ...(effectiveUserConfig.apiKeys || {}),
                             trakt: account.apiKeys.trakt,
-                            traktRefreshToken: effectiveUserConfig.apiKeys?.traktRefreshToken || account.apiKeys.traktRefreshToken
+                            traktRefreshToken: account.apiKeys.traktRefreshToken || effectiveUserConfig.apiKeys?.traktRefreshToken
                         }
                     };
                 }
