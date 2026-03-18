@@ -61,8 +61,9 @@ router.post('/preview-catalog', async (req, res) => {
     } else {
         discoverType = customType === 'series' ? 'tv' : 'movie';
         discoverFilters = {};
-        strategy = 'discovery';
+        strategy = sanitizeString(String(customFilters?.strategy || 'discovery'));
         const allowedFilterKeys = [
+            'strategy', 'similar_to', 'text_search',
             'sort_by', 'with_genres', 'with_keywords', 'with_cast', 'with_crew',
             'with_companies', 'with_original_language', 'vote_average.gte', 'vote_count.gte',
             'primary_release_date.gte', 'primary_release_date.lte',
