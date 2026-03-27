@@ -1,0 +1,281 @@
+const { fetchTmdbCatalog, getTmdbIdByName } = require('../../clients/tmdb');
+const { routeLiveStremioSearch } = require('../../ai/router');
+const { getProfileDnaFilters } = require('../../utils/helpers');
+const { normalizeContentId } = require('../../utils/contentId');
+const { interleaveMultipleResults, applyConsensusScoring } = require('../../utils/resultMerger');
+const { catalogFallbackCache } = require('../../cache/cacheInstances');
+const TasteProfile = require('../../models/TasteProfile');
+const ProfileScorer = require('../../profile/ProfileScorer');
+
+// Import from local providers/processors
+const { buildDiscoveryParams, getTmdbVoteScore } = require('./TmdbProvider');
+const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataHydrator');
+
+const LOOKAHEAD_PAGES = 3;
+const PAGE_SIZE = 20;
+
+async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, settings = {}, cacheOptions = {}) {
+    let results = [];
+    const searchType = type === 'series' ? 'tv' : 'movie';
+
+    if (filters.strategy === "similar" && filters.similar_to) {
+        const targetId = await getTmdbIdByName(tmdbApiKey, searchType, filters.similar_to);
+        if (targetId) {
+            results = await fetchTmdbCatalog(
+                tmdbClient,
+                `/${searchType}/${targetId}/recommendations`,
+                skip,
+                { language: 'it-IT' },
+                type,
+                cacheOptions
+            );
+        }
+    }
+    else if (filters.strategy === "multi_search") {
+        const ep = type === 'movie' ? '/search/movie' : '/search/tv';
+        results = await fetchTmdbCatalog(tmdbClient, ep, skip, { query: filters.text_search || filters.keyword }, type, cacheOptions);
+    }
+    else {
+        const tmdbParams = await buildDiscoveryParams(filters, tmdbApiKey, type, settings);
+        const endpoint = `/discover/${searchType}`;
+
+        const paramsKey = JSON.stringify(tmdbParams);
+        const fallbackFlag = !settings.noFallback ? await catalogFallbackCache.get(paramsKey) : null;
+
+        if (fallbackFlag) {
+            results = await fetchTmdbCatalog(tmdbClient, endpoint, skip, fallbackFlag.relaxedParams, type, cacheOptions);
+        } else {
+            results = await fetchTmdbCatalog(tmdbClient, endpoint, skip, tmdbParams, type, cacheOptions);
+
+            if (results.length < 20 && !settings.noFallback) {
+                let relaxedParams = { ...tmdbParams };
+                let changed = false;
+
+                if (relaxedParams['vote_count.gte'] > 5) {
+                    relaxedParams['vote_count.gte'] = 5;
+                    changed = true;
+                } else if (relaxedParams['vote_count.gte'] > 0) {
+                    relaxedParams['vote_count.gte'] = 0;
+                    changed = true;
+                }
+
+                if (changed) {
+                    const extraResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
+                    const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
+                    for (const item of extraResults) {
+                        const normalizedItemId = normalizeContentId(item.id);
+                        if (!existingIds.has(normalizedItemId)) {
+                            results.push(item);
+                            existingIds.add(normalizedItemId);
+                        }
+                    }
+                }
+
+                if (results.length < 20 && relaxedParams.with_keywords) {
+                    delete relaxedParams.with_keywords;
+                    const broadResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
+                    const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
+                    for (const item of broadResults) {
+                        const normalizedItemId = normalizeContentId(item.id);
+                        if (!existingIds.has(normalizedItemId)) {
+                            results.push(item);
+                            existingIds.add(normalizedItemId);
+                        }
+                    }
+                    changed = true;
+                }
+
+                if (changed) {
+                    await catalogFallbackCache.set(paramsKey, { relaxedParams });
+                }
+            }
+        }
+    }
+
+    return results;
+}
+
+// Fase 2: Processa qualsiasi catalogo tramite array "queries" (LookAhead, Consensus)
+async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions) {
+    const { presentation_strategy } = universalCatalog;
+    const MAX_QUERIES = 10;
+    const queries = (universalCatalog.queries || []).slice(0, MAX_QUERIES);
+
+    if (queries.length === 0) return [];
+
+    if (queries.length === 1) {
+        const query = { ...queries[0] };
+        if (!query.strategy) query.strategy = 'discovery';
+        return executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions);
+    }
+
+    const isFirstPage = skip === 0;
+    let perQuerySkip;
+    if (presentation_strategy === 'interleave') {
+        perQuerySkip = Math.floor(skip / queries.length);
+    } else {
+        perQuerySkip = skip;
+    }
+
+    const queryResults = await Promise.all(
+        queries.map(async (queryDef) => {
+            const query = { ...queryDef };
+            if (!query.strategy) query.strategy = 'discovery';
+
+            const pagesToFetch = isFirstPage ? LOOKAHEAD_PAGES : 1;
+            const pagePromises = [];
+            for (let p = 0; p < pagesToFetch; p++) {
+                const pageSkip = perQuerySkip + (p * PAGE_SIZE);
+                pagePromises.push(
+                    executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions)
+                );
+            }
+            const pageResults = await Promise.all(pagePromises);
+            return pageResults.flat();
+        })
+    );
+
+    if (presentation_strategy === 'interleave') {
+        return interleaveMultipleResults(queryResults, PAGE_SIZE);
+    }
+
+    const finalItems = applyConsensusScoring(queryResults);
+    
+    finalItems.sort((a, b) => {
+        const bonusDiff = (b.consensusBonus || 0) - (a.consensusBonus || 0);
+        if (bonusDiff !== 0) return bonusDiff;
+        return (b.popularity || 0) - (a.popularity || 0);
+    });
+
+    return finalItems.slice(0, PAGE_SIZE);
+}
+
+// Automatic query injection from profile
+async function injectProfilePreferences(filters, userId, profileId) {
+    if (!userId) return filters;
+    const profile = await TasteProfile.findOne({ owner: userId, context: profileId || 'global' });
+    if (!profile) return filters;
+
+    const enriched = { ...filters };
+
+    const topKeywords = [...profile.keywordScores.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(e => e[0]);
+
+    const topGenres = [...profile.genreScores.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 2)
+        .map(e => e[0]);
+
+    if (topKeywords.length > 0) {
+        const existingKws = enriched.with_keywords ? enriched.with_keywords.split(/[|,]/) : [];
+        enriched.with_keywords = [...new Set([...existingKws, ...topKeywords])].join('|');
+    }
+
+    if (topGenres.length > 0) {
+        const existingGenres = enriched.with_genres ? enriched.with_genres.split(/[|,]/) : [];
+        enriched.with_genres = [...new Set([...existingGenres, ...topGenres])].join('|');
+    }
+
+    return enriched;
+}
+
+// Esegue Deep AI Search, consensus ranking e profilazione
+async function executeCombinedSearch(search, userConfig, type, skip, activeProfileSettings, cacheOptions) {
+    const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
+    const mistralKey = userConfig.apiKeys?.mistral || process.env.MISTRAL_API_KEY;
+    const tmdbClient = require('../../clients/tmdb').createTmdbClient(tmdbApiKey);
+    const userId = userConfig.userId;
+    const profileId = userConfig.activeProfileId;
+    const activeContext = profileId || 'global';
+    
+    let profileDoc = null;
+    let globalProfileDoc = null;
+    if (userId) {
+        [profileDoc, globalProfileDoc] = await Promise.all([
+            TasteProfile.findOne({ owner: userId, context: activeContext }),
+            activeContext === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
+        ]);
+    }
+    const dnaFilters = getProfileDnaFilters(userConfig, activeContext);
+
+    let plannedQueries = [];
+    try {
+        if (mistralKey) {
+            const routing = await routeLiveStremioSearch(search, mistralKey);
+            const rawQueries = Array.isArray(routing?.filters?.queries) ? routing.filters.queries : [];
+            plannedQueries = rawQueries.filter(query => !query?.target || query.target === 'tmdb');
+        }
+    } catch (e) {
+        console.error("Errore AI Search (Mistral down):", e.message);
+    }
+
+    if (plannedQueries.length === 0) {
+        plannedQueries = [{ strategy: 'multi_search', text_search: search, target: 'tmdb' }];
+    }
+
+    const enrichedQueries = await Promise.all(
+        plannedQueries.map(query => injectProfilePreferences(query, userId, profileId))
+    );
+    const queryResults = await Promise.all(
+        enrichedQueries.map(query =>
+            executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions)
+        )
+    );
+
+    const mergedMap = new Map();
+    queryResults.forEach((items, queryIndex) => {
+        for (const item of items || []) {
+            if (!item || !item.id) continue;
+            const normalizedItemId = normalizeContentId(item.id);
+            if (mergedMap.has(normalizedItemId)) {
+                const existing = mergedMap.get(normalizedItemId);
+                existing.consensusCount += 1;
+                existing.queryIndexes.add(queryIndex);
+            } else {
+                mergedMap.set(normalizedItemId, {
+                    ...item,
+                    consensusCount: 1,
+                    queryIndexes: new Set([queryIndex])
+                });
+            }
+        }
+    });
+
+    let finalItems = Array.from(mergedMap.values());
+    await hydrateResultsFromLocalDetailsCache(finalItems, tmdbApiKey, type, false);
+
+    for (const item of finalItems) {
+        const consensusBonus = item.consensusCount > 1 ? (item.consensusCount ** 2) - 1 : 0;
+        const tmdbVote = getTmdbVoteScore(item);
+        if (profileDoc) {
+            const affinity = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profileDoc, {
+                globalProfile: globalProfileDoc,
+                dnaFilters
+            });
+            item.affinity = affinity;
+            item.finalScore = tmdbVote + consensusBonus + affinity;
+        } else {
+            item.affinity = 0;
+            item.finalScore = tmdbVote + consensusBonus;
+        }
+        item.consensusBonus = consensusBonus;
+        delete item.queryIndexes;
+    }
+
+    finalItems.sort((a, b) => {
+        if (b.finalScore !== a.finalScore) return b.finalScore - a.finalScore;
+        if ((b.popularity || 0) !== (a.popularity || 0)) return (b.popularity || 0) - (a.popularity || 0);
+        return (b.consensusCount || 0) - (a.consensusCount || 0);
+    });
+
+    return finalItems.slice(0, 20);
+}
+
+module.exports = {
+    executeComplexStrategy,
+    executeUniversalPipeline,
+    executeCombinedSearch,
+    injectProfilePreferences
+};

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { catalogHandler, buildDiscoveryParams } = require('../handlers/catalogHandler');
+const { catalogHandler } = require('../handlers/catalogHandler');
+const { buildDiscoveryParams } = require('../catalog/providers/TmdbProvider');
 const { generateTmdbFiltersFromPrompt } = require('../ai/router');
 const { getPresets } = require('../data/presets');
 const { sanitizeString, resolveHostUrl } = require('../utils/helpers');

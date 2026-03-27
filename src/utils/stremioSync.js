@@ -2,7 +2,7 @@ const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
 const { fetchTraktCatalog } = require('../clients/trakt');
 const { stremioClient, stremioLikesClient } = require('../clients/stremio');
-const { executeUniversalPipeline } = require('../handlers/catalogHandler');
+const { executeUniversalPipeline } = require('../catalog/providers/AiDiscoveryProvider');
 const { createTmdbClient } = require('../clients/tmdb');
 const { getPresets } = require('../data/presets');
 
