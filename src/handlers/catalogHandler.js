@@ -1,15 +1,12 @@
 const { createTmdbClient } = require('../clients/tmdb');
 const { getCacheConfig } = require('../cache/CacheManager');
 const { catalogRequestCache } = require('../cache/cacheInstances');
-const { applyFilterEffects } = require('../utils/helpers');
-const { processAndTranslateCatalog } = require('../utils/resultMerger');
-const { getSettings } = require('../profile/SettingsManager');
 const { getPresets } = require('../data/presets');
 const { generateRequestHash } = require('../utils/requestHash');
 
 const { routeCatalogRequest } = require('../catalog/CatalogRouter');
 const { filterWatchedItems } = require('../catalog/processors/FilterWatched');
-const { formatForStremio } = require('../catalog/formatters/StremioFormatter');
+const { formatStremioCatalog } = require('../catalog/formatters/StremioFormatter');
 
 /**
  * Funzione principale (Orchestrator) che riceve la richiesta da Stremio ed elabora il catalogo.
@@ -19,8 +16,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const { id, type, extra, filters: directFilters } = args;
     const skip = extra?.skip || 0;
     
-    const settings = await getSettings(userConfig.userId);
-    const activeProfileSettings = settings?.activeProfile || {};
+    // Resolve active profile settings directly from userConfig (instead of phantom SettingsManager)
+    const activeProfileSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
     
     // TMDB Client Initialization
     const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
@@ -80,24 +77,18 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     catalogMeta || {}
                 );
             }
-
-            // 4. POST-PROCESSING: Traduzione e Arricchimento
-            finalResults = await processAndTranslateCatalog(finalResults, tmdbClient, tmdbFetchOptions, tmdbApiKey);
-            if (userConfig.settings?.filterEffects) {
-                finalResults = applyFilterEffects(finalResults, userConfig.userId, activeProfileSettings);
-            }
             
-            // 5. FORMATTAZIONE (STREMIO)
-            const metas = await formatForStremio(
+            // 4. FORMATTAZIONE (STREMIO)
+            const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
+            const formattedData = formatStremioCatalog(
                 finalResults,
+                baseId,
                 type,
                 userConfig,
-                catalogMeta,
-                activeProfileSettings,
-                tmdbApiKey
+                isLandscape
             );
 
-            return { metas };
+            return formattedData;
         } catch (e) {
             console.error(`[CATALOG] Error in catalog generation pipeline:`, e);
             throw e;

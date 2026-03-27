@@ -1,12 +1,5 @@
 const { normalizeContentId } = require('./contentId');
 
-/**
- * Interseca due liste di risultati alternandoli (interleaving).
- * Deduplica per ID tramite interleaveMultipleResults.
- */
-function interleaveResults(listA = [], listB = [], skip = 0, limit = 20) {
-    return interleaveMultipleResults([listA, listB], limit, skip);
-}
 
 
 /**
@@ -138,7 +131,6 @@ function applyConsensusScoring(queryResults) {
 }
 
 module.exports = {
-    interleaveResults,
     interleaveMultipleResults,
     normalizeToUniversalSchema,
     applyConsensusScoring

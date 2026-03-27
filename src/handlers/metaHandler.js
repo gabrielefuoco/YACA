@@ -32,6 +32,32 @@ function normalizeAnimeEpisodes(seriesId, episodes) {
         .sort((a, b) => (a.season - b.season) || (a.episode - b.episode));
 }
 
+async function resolveAnimeEpisodes(metaObj, tmdbId, tmdbApiKey) {
+    let kitsuEpisodesResolved = false;
+    const kitsuId = await getKitsuIdFromTmdbId(tmdbId, 'series');
+    if (kitsuId) {
+        console.log(`[HybridAnime] Mapping Kitsu ${kitsuId} per TMDB ${tmdbId}. Carico episodi...`);
+        const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
+        if (kitsuEpisodes && kitsuEpisodes.length > 0) {
+            metaObj.videos = normalizeAnimeEpisodes(metaObj.id, kitsuEpisodes);
+            kitsuEpisodesResolved = true;
+        }
+    }
+
+    // Fallback to TMDB episodes if Kitsu mapping failed or no episodes found
+    if (!kitsuEpisodesResolved && metaObj._numberOfSeasons) {
+        console.log(`[HybridAnime] Fallback: Carico episodi TMDB per Anime ${tmdbId}`);
+        const tmdbClient = createTmdbClient(tmdbApiKey);
+        metaObj.videos = await fetchTmdbEpisodes(
+            tmdbClient,
+            tmdbId,
+            metaObj._numberOfSeasons,
+            metaObj.id.startsWith('tt') ? metaObj.id : null,
+            metaObj._originalLanguage || null
+        );
+    }
+}
+
 /**
  * Gestisce la richiesta di metadati dettagliati quando l'utente clicca su un titolo
  */
@@ -113,28 +139,7 @@ async function metaHandler(args, userConfig) {
                                 if (bgMeta) {
                                     // Anime series: fetch Kitsu episodes (TMDB episodes were skipped)
                                     if (bgMeta._isAnime && type === 'series') {
-                                        let kitsuEpisodesResolved = false;
-                                        const kitsuId = await getKitsuIdFromTmdbId(tmdbId, 'series');
-                                        if (kitsuId) {
-                                            const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
-                                            if (kitsuEpisodes && kitsuEpisodes.length > 0) {
-                                                bgMeta.videos = normalizeAnimeEpisodes(bgMeta.id, kitsuEpisodes);
-                                                kitsuEpisodesResolved = true;
-                                            }
-                                        }
-
-                                        // Fallback to TMDB episodes if Kitsu mapping failed or no episodes found
-                                        if (!kitsuEpisodesResolved && bgMeta._numberOfSeasons) {
-                                            console.log(`[HybridAnime] Fallback: Carico episodi TMDB in background per Anime ${tmdbId} (Kitsu fallito)`);
-                                            const tmdbClient = createTmdbClient(tmdbApiKey);
-                                            bgMeta.videos = await fetchTmdbEpisodes(
-                                                tmdbClient,
-                                                tmdbId,
-                                                bgMeta._numberOfSeasons,
-                                                bgMeta.id.startsWith('tt') ? bgMeta.id : null,
-                                                bgMeta._originalLanguage || null
-                                            );
-                                        }
+                                        await resolveAnimeEpisodes(bgMeta, tmdbId, tmdbApiKey);
                                     }
                                     // Aggiornamento silente scoring cache (voti freschi)
                                     updateScoringCache(Number(tmdbId), type === 'series' ? 'tv' : type, bgMeta).catch(() => { });
@@ -156,29 +161,7 @@ async function metaHandler(args, userConfig) {
                         if (meta) {
                             // Anime series: fetch Kitsu episodes (TMDB episodes were skipped)
                             if (meta._isAnime && type === 'series') {
-                                let kitsuEpisodesResolved = false;
-                                const kitsuId = await getKitsuIdFromTmdbId(tmdbId, 'series');
-                                if (kitsuId) {
-                                    console.log(`[HybridAnime] Trovato mapping Kitsu ${kitsuId} per TMDB ${tmdbId}. Carico episodi...`);
-                                    const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
-                                    if (kitsuEpisodes && kitsuEpisodes.length > 0) {
-                                        meta.videos = normalizeAnimeEpisodes(meta.id, kitsuEpisodes);
-                                        kitsuEpisodesResolved = true;
-                                    }
-                                }
-
-                                // Fallback to TMDB episodes if Kitsu mapping failed or no episodes found
-                                if (!kitsuEpisodesResolved && meta._numberOfSeasons) {
-                                    console.log(`[HybridAnime] Fallback: Carico episodi TMDB per Anime ${tmdbId} (Kitsu mapping fallito)`);
-                                    const tmdbClient = createTmdbClient(tmdbApiKey);
-                                    meta.videos = await fetchTmdbEpisodes(
-                                        tmdbClient,
-                                        tmdbId,
-                                        meta._numberOfSeasons,
-                                        meta.id.startsWith('tt') ? meta.id : null,
-                                        meta._originalLanguage || null
-                                    );
-                                }
+                                await resolveAnimeEpisodes(meta, tmdbId, tmdbApiKey);
                             }
 
                             // Aggiornamento silente scoring cache (voti freschi)

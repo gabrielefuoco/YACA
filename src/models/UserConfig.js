@@ -12,8 +12,18 @@
 const { nanoid } = require('nanoid');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
+const { encryptIfNeeded, decryptSafe } = require('../utils/encryption');
 
 const UserConfig = {
+    _decryptApiKeys(apiKeysObj) {
+        if (!apiKeysObj) return {};
+        const decrypted = {};
+        for (const [key, value] of Object.entries(apiKeysObj)) {
+            decrypted[key] = decryptSafe(value);
+        }
+        return decrypted;
+    },
+    
     /**
      * Salva o aggiorna un utente nel database (Two-Table Split).
      * 
@@ -144,7 +154,7 @@ const UserConfig = {
                         } else {
                             const val = userData.apiKeys[k];
                             if (val !== undefined) {
-                                accountUpdate.$set[`apiKeys.${k}`] = val;
+                                accountUpdate.$set[`apiKeys.${k}`] = encryptIfNeeded(val);
                             }
                         }
                     });
@@ -260,7 +270,7 @@ const UserConfig = {
         return {
             userId: account?.userId || null,
             addonUuid: addonConfig?.uuid || account?.addonUuid || null,
-            apiKeys: account?.apiKeys || {},
+            apiKeys: this._decryptApiKeys(account?.apiKeys?.toObject?.() || account?.apiKeys || {}),
             profiles: resolvedProfiles,
             activeProfileId: addonConfig?.config?.activeProfileId,
             configVersion: addonConfig?.config?.configVersion,
@@ -279,7 +289,7 @@ const UserConfig = {
             userId: accountObj.userId,
             email: accountObj.email,
             addonUuid: accountObj.addonUuid,
-            apiKeys: accountObj.apiKeys || {},
+            apiKeys: this._decryptApiKeys(accountObj.apiKeys || {}),
             profiles: configObj.profiles || [],
             config: configObj.config || {},
             syncStatus: configObj.syncStatus || {}

@@ -28,8 +28,6 @@ module.exports = {
 
     // Legacy aliases (kept for backward compat)
     CACHE_TTL_MS: 24 * 60 * 60 * 1000, // 24 ore (default)
-    FAST_CACHE_TTL_MS: 30 * 60 * 1000, // 30 minuti
-    SLOW_CACHE_TTL_MS: 7 * 24 * 60 * 60 * 1000, // 7 giorni
 
     // ─── Metadata Cache (single items) ───
     // Movies (completed)
@@ -46,16 +44,7 @@ module.exports = {
     RECOMMENDATIONS_CACHE_TTL_MS: 4 * 60 * 60 * 1000,
 
     // Deep Enrichment Settings (Fase 9)
-    ENRICHMENT_BUDGET: 18,       // Max items to enrich per request
-    ENRICHMENT_CHUNK_SIZE: 1,    // Items per background batch
-    ENRICHMENT_DELAY_MS: 600,    // Delay between background calls
 
-    // Refined TTLs for Deep Cache
-    MOVIE_DETAILS_TTL_MS: 14 * 24 * 60 * 60 * 1000,     // 14 days (completed movies)
-    SERIES_FINISHED_TTL_MS: 24 * 60 * 60 * 1000,         // 1 day
-    SERIES_ONGOING_TTL_MS: 30 * 60 * 1000,               // 30 minutes
-
-    // ─── Recommendation Engine Cache ───
     SCORING_DATA_TTL_MS: 14 * 24 * 60 * 60 * 1000,        // 14 days (genres, keywords, cast)
     MOVIE_PRESENTATION_TTL_MS: 14 * 24 * 60 * 60 * 1000,  // 14 days base TTL for movies
     MOVIE_PRESENTATION_SWR_MS: 7 * 24 * 60 * 60 * 1000,   // 7 days SWR window for movies

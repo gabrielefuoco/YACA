@@ -1,6 +1,5 @@
 // Bayesian Weighted Rating parameters (Phase 1.3)
-const BAYESIAN_MIN_VOTES = 300;  // m: minimum votes threshold
-const BAYESIAN_MEAN_VOTE = 6.5;  // C: mean vote across the catalogue
+const { BAYESIAN_MIN_VOTES, BAYESIAN_MEAN_VOTE } = require('../config');
 const ACTIVE_PROFILE_WEIGHT = 0.8;
 const GLOBAL_PROFILE_WEIGHT = 0.2;
 const NICHE_GENRE_IDS = new Set(['99', '10402', '36', '37', '10770']);

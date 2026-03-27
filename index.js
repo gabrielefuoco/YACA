@@ -52,7 +52,6 @@ const badgeLimiter = rateLimit({
 
 // CORS configurabile tramite variabile d'ambiente (default: permissivo per retrocompatibilità con Stremio)
 const corsOptions = { origin: '*', credentials: true, methods: ['GET', 'POST'] };
-const resolveUserConfig = (userId) => UserConfig.resolveUserConfig(userId);
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
@@ -84,29 +83,7 @@ app.get(['/fiamma_yaca.png', '/logo_yaca.png'], (req, res) => {
     res.sendFile(filePath);
 });
 
-// Diagnostic route for the user
-app.get('/debug-assets', (req, res) => {
-    const pubDir = path.join(__dirname, 'public');
-    const publicFiles = fs.existsSync(pubDir) ? fs.readdirSync(pubDir) : [];
-    const rootFiles = fs.readdirSync(__dirname);
-    
-    console.log(`[Debug Assets] __dirname: ${__dirname}`);
-    console.log(`[Debug Assets] Public folder exists: ${fs.existsSync(pubDir)}`);
-    console.log(`[Debug Assets] Public files: ${publicFiles.join(', ')}`);
-    console.log(`[Debug Assets] Root files: ${rootFiles.filter(f => !f.startsWith('.')).join(', ')}`);
-    
-    res.json({
-        cwd: process.cwd(),
-        dirname: __dirname,
-        publicFiles,
-        rootFiles: rootFiles.filter(f => !f.startsWith('.')),
-        env: {
-            SPACE_HOST: process.env.SPACE_HOST,
-            NODE_ENV: process.env.NODE_ENV
-        }
-    });
-});
-
+ 
 // 2. STATIC ASSETS (Actual files from public/ or frontend/out/)
 const staticOptions = {
     setHeaders: (res) => {
