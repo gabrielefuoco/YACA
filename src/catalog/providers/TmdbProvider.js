@@ -1,5 +1,5 @@
 const { fetchTmdbCatalog, createTmdbClient, getTmdbIdByName } = require('../../clients/tmdb');
-const { filterWatchedItems } = require('../processors/FilterWatched');
+const { executePaginatedFetch } = require('./paginationHelper');
 const { rateLimitedMap } = require('../../utils/rateLimiter');
 const { STREAMING_PROVIDERS } = require('../constants');
 
@@ -18,57 +18,36 @@ function resolveGenreIds(genreIdsArray, type) {
 }
 
 async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}) {
-    const tmdbParams = {
-        ...filters,
-        sort_by: filters.sort_by || 'popularity.desc',
-        'vote_count.gte': filters['vote_count.gte'],
-        'vote_average.gte': filters['vote_average.gte'],
-        'vote_count.lte': filters['vote_count.lte'],
-        'vote_average.lte': filters['vote_average.lte'],
-        'popularity.lte': filters['popularity.lte'],
-        language: filters.language || 'it-IT'
-    };
+    const {
+        strategy, similar_to, text_search, people_list, keyword, 
+        company_name, genre_ids, year_from, year_to, runtime_lte, 
+        runtime_gte, watch_provider, original_language, target,
+        sort_by, language,
+        ...tmdbParams
+    } = filters;
 
-    if (filters.original_language) {
-        tmdbParams.with_original_language = filters.original_language;
+    tmdbParams.sort_by = sort_by || 'popularity.desc';
+    tmdbParams.language = language || 'it-IT';
+
+    if (original_language) {
+        tmdbParams.with_original_language = original_language;
     }
 
-    delete tmdbParams.strategy;
-    delete tmdbParams.similar_to;
-    delete tmdbParams.text_search;
-    delete tmdbParams.people_list;
-    delete tmdbParams.keyword;
-    delete tmdbParams.company_name;
-    delete tmdbParams.genre_ids;
-    delete tmdbParams.year_from;
-    delete tmdbParams.year_to;
-    delete tmdbParams.runtime_lte;
-    delete tmdbParams.runtime_gte;
-    delete tmdbParams.watch_provider;
-    delete tmdbParams.original_language;
-    delete tmdbParams.target;
-
-    if (tmdbParams.with_genres !== undefined && tmdbParams.with_genres !== null) {
-        const normalizedGenres = Array.isArray(tmdbParams.with_genres)
+    // Consolida logica generi (priorità a genre_ids se presenti)
+    let genres = [];
+    if (tmdbParams.with_genres) {
+        genres = Array.isArray(tmdbParams.with_genres)
             ? tmdbParams.with_genres.map(String)
             : String(tmdbParams.with_genres).split(/[|,]/).map(g => g.trim()).filter(Boolean);
-        if (normalizedGenres.length > 0) tmdbParams.with_genres = [...new Set(normalizedGenres)].join('|');
+    }
+    if (genre_ids?.length) {
+        const resolved = resolveGenreIds(genre_ids, type);
+        if (resolved) genres.push(...resolved.split('|'));
+    }
+    if (genres.length > 0) {
+        tmdbParams.with_genres = [...new Set(genres)].join('|');
     }
 
-    if (tmdbParams.with_keywords !== undefined && tmdbParams.with_keywords !== null) {
-        const kwStr = String(tmdbParams.with_keywords);
-        const kwIsOr = kwStr.includes('|');
-        const kwSeparator = kwIsOr ? '|' : ',';
-        const normalizedKeywords = Array.isArray(tmdbParams.with_keywords)
-            ? tmdbParams.with_keywords.map(String)
-            : kwStr.split(kwIsOr ? '|' : ',').map(k => k.trim()).filter(Boolean);
-        if (normalizedKeywords.length > 0) tmdbParams.with_keywords = [...new Set(normalizedKeywords)].join(kwSeparator);
-    }
-
-    if (filters.genre_ids?.length) {
-        const finalGenres = resolveGenreIds(filters.genre_ids, type);
-        if (finalGenres) tmdbParams.with_genres = finalGenres;
-    }
 
     if (filters.year_from) {
         const dateField = type === 'movie' ? 'primary_release_date' : 'first_air_date';
@@ -144,30 +123,23 @@ async function getTmdbDiscoverCatalog(id, type, skip, userConfig, tmdbClient, ac
     const endpoint = isMovie ? '/discover/movie' : '/discover/tv';
     const contentType = isMovie ? 'movie' : 'series';
 
-    let currentSkip = skip;
-    let combinedResults = [];
-
     const params = {
         sort_by: sortBy || 'popularity.desc',
         'vote_average.gte': activeProfileSettings.minVoteAverage,
         'vote_count.gte': activeProfileSettings.minVoteCount
     };
 
-    const parallelPages = (userConfig?.config?.hideWatched) ? 3 : 1;
-    const pagesResults = await rateLimitedMap(
-        Array.from({ length: parallelPages }, (_, i) => i),
-        (i) => fetchTmdbCatalog(tmdbClient, endpoint, currentSkip + (i * 20), params, contentType, tmdbFetchOptions),
+    const results = await executePaginatedFetch(
+        (currentSkip) => fetchTmdbCatalog(tmdbClient, endpoint, currentSkip, params, contentType, tmdbFetchOptions),
+        skip,
+        20,
+        userConfig,
         { batchSize: 3, delayMs: 50 }
     );
-    
-    for (let pageResults of pagesResults) {
-        pageResults = await filterWatchedItems(pageResults, userConfig);
-        combinedResults.push(...pageResults);
-        if (combinedResults.length >= 20) break;
-    }
 
-    return combinedResults.slice(0, 40);
+    return results;
 }
+
 
 function getTmdbVoteScore(item) {
     const rawVote = item?.rawTMDB?.vote_average ?? item?.vote_average ?? item?.imdbRating;

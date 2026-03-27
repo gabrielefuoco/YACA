@@ -1,5 +1,5 @@
 const { fetchTraktCatalog } = require('../../clients/trakt');
-const { filterWatchedItems } = require('../processors/FilterWatched');
+const { executePaginatedFetch } = require('./paginationHelper');
 const { PAGES_PER_REQUEST } = require('../../config');
 
 const TRAKT_TYPE_MAP = {
@@ -26,24 +26,16 @@ async function getTraktCatalog(baseId, skip, userConfig, tmdbApiKey, hostUrl) {
 
     const refreshContext = (userConfig.apiKeys?.traktRefreshToken && hostUrl) ? { userConfig, hostUrl } : null;
 
-    let combinedResults = [];
     const MAX_DEPTH = Math.max(PAGES_PER_REQUEST || 3, 3);
-    const pageSkips = (userConfig?.config?.hideWatched)
-        ? Array.from({ length: MAX_DEPTH }, (_, i) => skip + (i * 20))
-        : [skip];
 
-    const fetchedPages = await Promise.all(
-        pageSkips.map(pageSkip => fetchTraktCatalog(traktEp, pageSkip, finalTraktUname, tmdbApiKey, refreshContext).catch(() => []))
+    return await executePaginatedFetch(
+        (pageSkip) => fetchTraktCatalog(traktEp, pageSkip, finalTraktUname, tmdbApiKey, refreshContext).catch(() => []),
+        skip,
+        20,
+        userConfig,
+        { maxParallelPages: MAX_DEPTH, batchSize: MAX_DEPTH }
     );
-
-    for (let pageResults of fetchedPages) {
-        pageResults = await filterWatchedItems(pageResults, userConfig);
-        combinedResults.push(...pageResults);
-
-        if (combinedResults.length >= 20 || pageResults.length === 0 || !userConfig?.config?.hideWatched) break;
-    }
-
-    return combinedResults.slice(0, 20);
 }
+
 
 module.exports = { getTraktCatalog, TRAKT_TYPE_MAP };

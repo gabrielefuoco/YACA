@@ -13,20 +13,16 @@ function parseExtra(extraString) {
 }
 
 /**
- * Rimuove tag HTML/script e caratteri pericolosi da una stringa per prevenire XSS.
- * Applica la rimozione dei tag in loop per evitare bypass tramite tag annidati
- * (es. "<scr<script>ipt>" che dopo un solo passaggio riformerebbe "<script>").
+ * Rimuove tag HTML e caratteri pericolosi per prevenire XSS.
+ * Utilizza un approccio a singola passata più robusto rispetto alla regex ricorsiva.
  */
 function sanitizeString(str) {
     if (typeof str !== 'string') return '';
-    let result = str;
-    let prev;
-    do {
-        prev = result;
-        result = result.replace(/<[^>]*>/g, '');
-    } while (result !== prev);
-    return result.replace(/[<>"'&]/g, '');
+    return str
+        .replace(/<[^>]*>?/gm, '') // Rimuove i tag HTML
+        .replace(/[<>"'&]/g, '');   // Neutralizza caratteri speciali residui
 }
+
 
 /**
  * Verifica che un URL punti a un host consentito (protezione SSRF).

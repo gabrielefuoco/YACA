@@ -2,33 +2,12 @@ const { normalizeContentId } = require('./contentId');
 
 /**
  * Interseca due liste di risultati alternandoli (interleaving).
- * Deduplica per ID.
+ * Deduplica per ID tramite interleaveMultipleResults.
  */
-function interleaveResults(listA = [], listB = [], skip, limit) {
-    const safeListA = Array.isArray(listA) ? listA : [];
-    const safeListB = Array.isArray(listB) ? listB : [];
-    const combined = [];
-    const maxLen = Math.max(safeListA.length, safeListB.length);
-    const seen = new Set();
-    const appendIfNotSeen = (item) => {
-        if (!item) return;
-        if (item.id === undefined || item.id === null) {
-            combined.push(item);
-            return;
-        }
-        const itemId = normalizeContentId(item.id);
-        if (!seen.has(itemId)) {
-            combined.push(item);
-            seen.add(itemId);
-        }
-    };
-
-    for (let i = 0; i < maxLen; i++) {
-        appendIfNotSeen(safeListA[i]);
-        appendIfNotSeen(safeListB[i]);
-    }
-    return combined.slice(skip, skip + limit);
+function interleaveResults(listA = [], listB = [], skip = 0, limit = 20) {
+    return interleaveMultipleResults([listA, listB], limit, skip);
 }
+
 
 /**
  * Interseca N liste di risultati alternandoli (interleaving generalizzato).
