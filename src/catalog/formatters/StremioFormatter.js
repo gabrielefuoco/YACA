@@ -99,7 +99,5 @@ function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled)
 }
 
 module.exports = {
-    getEpisodeBadgeText,
-    sanitizeCatalogMeta,
     formatStremioCatalog
 };

@@ -8,9 +8,7 @@ module.exports = {
     // Paginators & Timeouts
     PAGES_PER_REQUEST: 3, // How many TMDB pages to fetch concurrently per Stremio request
     ITEMS_PER_PAGE: 20,   // Default items per page for TMDB
-    MAX_RESULTS: 100,     // Hard limit on results per Stremio response
-    TMDB_TIMEOUT: 15000,
-    AI_TIMEOUT: 25000,
+    ITEMS_PER_PAGE: 20,   // Default items per page for TMDB
 
     // Default Fallbacks
     DEFAULT_REGION: 'IT',
@@ -45,7 +43,6 @@ module.exports = {
 
     // Deep Enrichment Settings (Fase 9)
 
-    SCORING_DATA_TTL_MS: 14 * 24 * 60 * 60 * 1000,        // 14 days (genres, keywords, cast)
     MOVIE_PRESENTATION_TTL_MS: 14 * 24 * 60 * 60 * 1000,  // 14 days base TTL for movies
     MOVIE_PRESENTATION_SWR_MS: 7 * 24 * 60 * 60 * 1000,   // 7 days SWR window for movies
     SERIES_FINISHED_PRESENTATION_TTL_MS: 24 * 60 * 60 * 1000,     // 1 day
@@ -54,8 +51,6 @@ module.exports = {
     SERIES_ONGOING_PRESENTATION_SWR_MS: 30 * 60 * 1000,            // 30 min SWR for ongoing series
 
     // ─── Session Data (Redis only) ───
-    BINGE_TIMER_TTL_MS: 48 * 60 * 60 * 1000,              // 48 hours
-
     // Bayesian Weighted Rating parameters (IMDb formula)
     BAYESIAN_MIN_VOTES: 300,   // m: minimum votes required to be listed
     BAYESIAN_MEAN_VOTE: 6.5,   // C: mean vote across all items

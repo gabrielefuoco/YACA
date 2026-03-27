@@ -38,4 +38,4 @@ async function getTraktCatalog(baseId, skip, userConfig, tmdbApiKey, hostUrl) {
 }
 
 
-module.exports = { getTraktCatalog, TRAKT_TYPE_MAP };
+module.exports = { getTraktCatalog };

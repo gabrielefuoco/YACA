@@ -69,4 +69,4 @@ function optionalAuth(req, res, next) {
     next();
 }
 
-module.exports = { requireAuth, optionalAuth, COOKIE_NAME, CSRF_COOKIE_NAME };
+module.exports = { requireAuth, COOKIE_NAME, CSRF_COOKIE_NAME };

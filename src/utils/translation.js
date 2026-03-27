@@ -25,6 +25,5 @@ async function translateTextToItalian(text, sourceLang = 'en') {
 }
 
 module.exports = {
-    MAX_LINGVA_TEXT_LEN,
     translateTextToItalian
 };

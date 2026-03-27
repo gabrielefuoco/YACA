@@ -109,12 +109,6 @@ function decryptSafe(value) {
 }
 
 module.exports = {
-    encrypt,
-    decrypt,
-    isEncrypted,
     encryptIfNeeded,
-    decryptSafe,
-    getMasterKey,
-    ENCRYPTED_FORMAT,
-    ENCRYPTION_PREFIX
+    decryptSafe
 };

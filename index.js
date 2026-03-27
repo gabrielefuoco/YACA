@@ -7,7 +7,7 @@ const fs = require('fs');
 const { createAxiosInstance } = require('./src/utils/httpClient');
 const rateLimit = require('express-rate-limit');
 
-const configureRoute = require('./src/api/configure');
+const configureRoute = require('./src/api/configure/index');
 const UserConfig = require('./src/models/UserConfig');
 const { getPresets, profileTemplates } = require('./src/data/presets');
 const { sanitizeString, isAllowedUrl, resolveHostUrl } = require('./src/utils/helpers');
@@ -15,7 +15,6 @@ const { getBlurredImageUrl, addBadgeToImage } = require('./src/utils/imageProces
 const { ALLOWED_IMAGE_HOSTS } = require('./src/config');
 const connectDB = require('./src/db/connection');
 const { generateMergedName } = require('./src/api/mergeRoutes');
-const { getProfileAnalytics } = require('./src/api/analytics');
 const { disconnectRedis } = require('./src/cache/redisClient');
 const { preWarmRedisFromMongo } = require('./src/cache/preWarm');
 const { loginHandler, meHandler, logoutHandler } = require('./src/api/auth/index.js');

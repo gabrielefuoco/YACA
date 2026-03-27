@@ -221,4 +221,4 @@ async function updateSyncTimestamp(userId, profileId) {
     );
 }
 
-module.exports = { syncAllStremioData, syncCatalogData };
+module.exports = { syncAllStremioData };
