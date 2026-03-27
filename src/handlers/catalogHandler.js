@@ -1,10 +1,11 @@
 const { createTmdbClient } = require('../clients/tmdb');
 const { getCacheConfig } = require('../cache/CacheManager');
-const { catalogRequestCache, catalogFallbackCache } = require('../cache/cacheInstances');
+const { catalogRequestCache } = require('../cache/cacheInstances');
 const { applyFilterEffects } = require('../utils/helpers');
 const { processAndTranslateCatalog } = require('../utils/resultMerger');
 const { getSettings } = require('../profile/SettingsManager');
-const TasteProfile = require('../models/TasteProfile');
+const { getPresets } = require('../data/presets');
+const { generateRequestHash } = require('../utils/requestHash');
 
 const { routeCatalogRequest } = require('../catalog/CatalogRouter');
 const { filterWatchedItems } = require('../catalog/processors/FilterWatched');
@@ -30,12 +31,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const { cacheOptions: tmdbFetchOptions } = getCacheConfig(userConfig.ttl);
     
     // Check Full CACHE Request
-    const requestCacheKey = JSON.stringify({ id, type, extra, directFilters, user: userConfig.userId, profile: userConfig.activeProfileId });
-    const cachedResponse = await catalogRequestCache.get(requestCacheKey);
-    if (cachedResponse && !extra?.search) {
-        console.log(`[CATALOG] Restituisco catalogo in cache CACHE-REQUEST (${id} skip=${skip})`);
-        return cachedResponse;
-    }
+    const requestCacheKey = generateRequestHash(id, { type, extra, directFilters, user: userConfig.userId, profile: userConfig.activeProfileId }, skip, type);
     
     let catalogMeta = null;
     let baseId = id;
@@ -44,71 +40,76 @@ async function catalogHandler(args, userConfig, hostUrl) {
     }
 
     if (id !== 'yaca-profiles' && baseId !== 'yaca_search_history') {
-        const presets = require('../config/catalogPresets.json');
-        catalogMeta = presets[baseId];
+        const presets = getPresets();
+        catalogMeta = presets.find(p => p.id === baseId || p.id === id);
     }
 
-    // Aggiungo hostUrl ad extra per essere passato ai provider se serve (es. Trakt)
-    const routerArgs = { ...args, extra: { ...extra, hostUrl } };
+    // managed SWR: Fetch or Revalidate
+    const { ttl } = getCacheConfig(userConfig.ttl);
+    
+    const fetchCatalog = async () => {
+        try {
+            // Aggiungo hostUrl ad extra per essere passato ai provider se serve (es. Trakt)
+            const routerArgs = { ...args, extra: { ...extra, hostUrl } };
 
-    try {
-        // 1. ROUTING: Determina il catalogo grezzo passando attraverso il Router
-        let results = await routeCatalogRequest(routerArgs, userConfig, tmdbClient, tmdbApiKey, activeProfileSettings, tmdbFetchOptions, catalogMeta);
-        
-        if (!results || results.length === 0) {
-            return { metas: [] };
-        }
+            // 1. ROUTING: Determina il catalogo grezzo passando attraverso il Router
+            let results = await routeCatalogRequest(routerArgs, userConfig, tmdbClient, tmdbApiKey, activeProfileSettings, tmdbFetchOptions, catalogMeta);
+            
+            if (!results || results.length === 0) {
+                return { metas: [] };
+            }
 
-        // 2. FILTRAGGIO POST-FETCH: Nasconde tipo sbagliato
-        if (type === 'movie' || type === 'series') {
-            results = results.filter(i => {
-                if (i.media_type) {
-                    const expectedType = type === 'series' ? 'tv' : 'movie';
-                    return i.media_type === expectedType || i.media_type === 'person';
-                }
-                return true;
-            });
-        }
+            // 2. FILTRAGGIO POST-FETCH: Nasconde tipo sbagliato
+            if (type === 'movie' || type === 'series') {
+                results = results.filter(i => {
+                    if (i.media_type) {
+                        const expectedType = type === 'series' ? 'tv' : 'movie';
+                        return i.media_type === expectedType || i.media_type === 'person';
+                    }
+                    return true;
+                });
+            }
 
-        // 3. POST-PROCESSING: Filtri utente
-        let finalResults = results;
-        if (!extra?.search && id !== 'yaca-profiles' && baseId !== 'yaca_search_history') {
-            finalResults = await filterWatchedItems(
-                finalResults, 
-                userConfig.userId, 
-                activeProfileSettings, 
-                catalogMeta || {}
+            // 3. POST-PROCESSING: Filtri utente
+            let finalResults = results;
+            if (!extra?.search && id !== 'yaca-profiles' && baseId !== 'yaca_search_history') {
+                finalResults = await filterWatchedItems(
+                    finalResults, 
+                    userConfig.userId, 
+                    activeProfileSettings, 
+                    catalogMeta || {}
+                );
+            }
+
+            // 4. POST-PROCESSING: Traduzione e Arricchimento
+            finalResults = await processAndTranslateCatalog(finalResults, tmdbClient, tmdbFetchOptions, tmdbApiKey);
+            if (userConfig.settings?.filterEffects) {
+                finalResults = applyFilterEffects(finalResults, userConfig.userId, activeProfileSettings);
+            }
+            
+            // 5. FORMATTAZIONE (STREMIO)
+            const metas = await formatForStremio(
+                finalResults,
+                type,
+                userConfig,
+                catalogMeta,
+                activeProfileSettings,
+                tmdbApiKey
             );
-        }
 
-        // 4. POST-PROCESSING: Traduzione e Arricchimento
-        finalResults = await processAndTranslateCatalog(finalResults, tmdbClient, tmdbFetchOptions, tmdbApiKey);
-        if (userConfig.settings?.filterEffects) {
-            finalResults = applyFilterEffects(finalResults, userConfig.userId, activeProfileSettings);
+            return { metas };
+        } catch (e) {
+            console.error(`[CATALOG] Error in catalog generation pipeline:`, e);
+            throw e;
         }
-        
-        // 5. FORMATTAZIONE (STREMIO)
-        const metas = await formatForStremio(
-            finalResults,
-            type,
-            userConfig,
-            catalogMeta,
-            activeProfileSettings,
-            tmdbApiKey
-        );
+    };
 
-        const response = { metas };
-        if (!extra?.search) {
-            await catalogRequestCache.set(requestCacheKey, response, getCacheConfig(userConfig.ttl).ttl);
-        }
-        return response;
-        
-    } catch (e) {
-        console.error("[CATALOG HANDLER ERROR] Errore nel caricamento catalogo:", e);
-        return { metas: [] };
+    // SWR handling
+    if (extra?.search || id === 'yaca-profiles' || baseId === 'yaca_search_history') {
+        return await fetchCatalog();
     }
+
+    return await catalogRequestCache.getOrFetch(requestCacheKey, fetchCatalog, ttl);
 }
 
-module.exports = {
-    catalogHandler
-};
+module.exports = { catalogHandler };

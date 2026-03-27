@@ -47,17 +47,23 @@ class CacheManager {
     }
 
     async _l1Set(key, envelope, ttlMs) {
+        let redisSuccess = false;
         if (isRedisAvailable()) {
             try {
                 const rKey = this._redisKey(key);
                 const ttlSec = Math.ceil(ttlMs / 1000);
                 await getRedisClient().set(rKey, JSON.stringify(envelope), 'EX', ttlSec);
+                redisSuccess = true;
             } catch (err) {
                 console.error(`[CacheManager:${this.namespace}] Redis set error:`, err.message);
             }
         }
-        // Always write to LRU fallback as well
-        this.lruFallback.set(key, envelope);
+        
+        // Write to LRU fallback ONLY if Redis is unavailable or set failed
+        // This avoids memory redundancy when Redis is operational
+        if (!redisSuccess) {
+            this.lruFallback.set(key, envelope);
+        }
     }
 
     async _l1Delete(key) {
@@ -167,6 +173,42 @@ class CacheManager {
     async get(key) {
         const { value } = await this.getWithStatus(key);
         return value;
+    }
+
+    /**
+     * Managed SWR: get from cache, or fetch and cache.
+     * If data is stale, returns stale data AND triggers fetchFn in background.
+     * If miss, waits for fetchFn and returns result.
+     */
+    async getOrFetch(key, fetchFn, ttlMs = null, options = {}) {
+        const { value, status } = await this.getWithStatus(key);
+        
+        if (status === 'fresh') {
+            return value;
+        }
+
+        if (status === 'stale') {
+            const revalidateTtl = ttlMs || this.mongoTtlMs;
+            // Background revalidation
+            setImmediate(async () => {
+                try {
+                    const fresh = await fetchFn();
+                    if (fresh !== undefined) {
+                        await this.set(key, fresh, revalidateTtl, options);
+                    }
+                } catch (err) {
+                    console.error(`[CacheManager:${this.namespace}] SWR revalidation failed for ${key}:`, err.message);
+                }
+            });
+            return value;
+        }
+
+        // Miss: fetch and wait
+        const fresh = await fetchFn();
+        if (fresh !== undefined) {
+            await this.set(key, fresh, ttlMs || this.mongoTtlMs, options);
+        }
+        return fresh;
     }
 
     /**

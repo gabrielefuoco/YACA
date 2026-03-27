@@ -10,8 +10,8 @@ const PREVIEW_TIMEOUT_MS = 8000;
 const MAX_PROMPT_LENGTH = 500;
 const MAX_PREVIEW_CATALOG_NAME_LENGTH = 30;
 
-const { createAxiosInstance } = require('../utils/httpClient');
-const tmdbClient = createAxiosInstance('https://api.themoviedb.org/3');
+const { createTmdbClient } = require('../clients/tmdb');
+const tmdbClient = createTmdbClient();
 
 router.post('/preview-catalog', async (req, res) => {
     const { presetId, filters: customFilters, type: customType, prompt } = req.body;
