@@ -1,0 +1,123 @@
+const { getTmdbMovieDetails } = require('../../clients/tmdb');
+const { normalizeContentId } = require('../../utils/contentId');
+const TmdbScoringData = require('../../models/TmdbScoringData');
+const { MAX_BADGE_CACHE_HYDRATION_ITEMS } = require('../constants');
+
+async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
+    if (!tmdbApiKey || !Array.isArray(metas) || metas.length === 0) return;
+
+    await Promise.all(
+        metas.slice(0, MAX_BADGE_CACHE_HYDRATION_ITEMS).map(async (item) => {
+            if (!item?.id || item.rawTMDB || !item.id.startsWith('tmdb:')) return;
+
+            try {
+                const tmdbId = normalizeContentId(item.id);
+                const cachedDetails = await getTmdbMovieDetails(tmdbApiKey, tmdbId, 'tv', { cacheOnly: true });
+                if (cachedDetails) {
+                    item.rawTMDB = cachedDetails;
+                    return;
+                }
+
+                getTmdbMovieDetails(tmdbApiKey, tmdbId, 'tv').catch((err) => {
+                    console.debug(`[BadgeBackground] Cache warmup fallita per ${tmdbId}: ${err?.message || 'Unknown error'}`);
+                });
+            } catch (_err) {
+                // Il recupero badge è best-effort: in caso di errore manteniamo il poster originale.
+            }
+        })
+    );
+}
+
+async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type, isLandscapeEnabled) {
+    if (!tmdbApiKey || !Array.isArray(metas) || metas.length === 0) return;
+
+    const tmdbType = type === 'series' ? 'tv' : 'movie';
+    const itemsToHydrate = metas.slice(0, 60).filter(item => {
+        if (!item || !item.id) return false;
+        // Idratiamo se mancano metadati fondamentali (cast/keywords) o se manca il logo in formato landscape
+        const isMissingMeta = !(item.cast && item.keywords);
+        const isMissingLogo = !item.logo;
+        return isMissingMeta || (isLandscapeEnabled && isMissingLogo);
+    });
+    if (itemsToHydrate.length === 0) return;
+
+    const tmdbIds = itemsToHydrate.map(item => normalizeContentId(item.id)).filter(Boolean);
+
+    // Fase 1: Bulk query su TmdbScoringData per evitare N chiamate individuali
+    let scoringMap = new Map();
+    try {
+        const orConditions = tmdbIds.map(id => {
+            if (id.startsWith('tt')) {
+                return { imdbId: id };
+            } else {
+                return { tmdbId: Number(id) };
+            }
+        });
+
+        const cachedDocs = await TmdbScoringData.find({
+            $or: orConditions,
+            type: tmdbType
+        }).lean();
+
+        for (const doc of cachedDocs) {
+            // Store by both tmdbId and imdbId for easier lookup later
+            if (doc.tmdbId) scoringMap.set(String(doc.tmdbId), doc);
+            if (doc.imdbId) scoringMap.set(doc.imdbId, doc);
+        }
+    } catch (_e) { /* TmdbScoringData miss is non-blocking */ }
+
+    // Fase 2: Idratta i risultati in batch parallelo
+    await Promise.all(
+        itemsToHydrate.map(async (item) => {
+            try {
+                const tmdbId = normalizeContentId(item.id);
+                const scoringDoc = scoringMap.get(tmdbId);
+
+                if (scoringDoc) {
+                    item.rawTMDB = {
+                        id: scoringDoc.tmdbId,
+                        genre_ids: scoringDoc.genre_ids,
+                        vote_average: scoringDoc.vote_average,
+                        vote_count: scoringDoc.vote_count,
+                        keywords: { keywords: scoringDoc.keyword_ids.map(id => ({ id })) },
+                        credits: {
+                            crew: scoringDoc.director_ids.map(id => ({ id, job: 'Director' })),
+                            cast: scoringDoc.cast_ids.map(id => ({ id }))
+                        }
+                    };
+                    item.keywords = item.rawTMDB.keywords.keywords;
+                    item.cast = item.rawTMDB.credits.cast;
+                    if (scoringDoc.logo_path) {
+                        item.logo = scoringDoc.logo_path.startsWith('http') ? scoringDoc.logo_path : `https://image.tmdb.org/t/p/w500${scoringDoc.logo_path}`;
+                    }
+                    return;
+                }
+
+                // Fallback: chiamata individuale alla cache TMDB
+                const cachedDetails = await getTmdbMovieDetails(tmdbApiKey, String(tmdbId), tmdbType, { cacheOnly: true });
+                if (!cachedDetails) return;
+
+                item.rawTMDB = cachedDetails;
+                item.keywords = cachedDetails.keywords?.keywords || cachedDetails.keywords?.results || [];
+                item.cast = cachedDetails.credits?.cast || [];
+                
+                if (cachedDetails.images?.logos?.length > 0) {
+                    const { prioritizeLocalizedImages } = require('../../clients/tmdb');
+                    const bestLogo = prioritizeLocalizedImages(cachedDetails.images.logos)[0];
+                    if (bestLogo) {
+                        item.logo = bestLogo.file_path.startsWith('http') ? bestLogo.file_path : `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
+                    }
+                } else if (cachedDetails.logo) {
+                    item.logo = cachedDetails.logo;
+                }
+            } catch (_err) {
+                // Il recupero cache è best-effort
+            }
+        })
+    );
+}
+
+module.exports = {
+    hydrateEpisodeBadgesFromCache,
+    hydrateResultsFromLocalDetailsCache
+};
