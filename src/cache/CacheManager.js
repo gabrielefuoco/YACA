@@ -302,4 +302,35 @@ class CacheManager {
     }
 }
 
+/**
+ * Determines the appropriate TTL and fetch options for a catalog request
+ * based on the requested TTL tier or numeric value.
+ */
+function getCacheConfig(requestedTtl) {
+    const { 
+        FAST_CATALOG_PAGE1_L2_TTL_MS, 
+        SLOW_CATALOG_L2_TTL_MS, 
+        CACHE_TTL_MS 
+    } = require('../config');
+
+    if (requestedTtl === 'fast') {
+        return {
+            ttl: FAST_CATALOG_PAGE1_L2_TTL_MS,
+            cacheOptions: { catalogTier: 'fast' }
+        };
+    }
+    if (requestedTtl === 'slow') {
+        return {
+            ttl: SLOW_CATALOG_L2_TTL_MS,
+            cacheOptions: { catalogTier: 'slow' }
+        };
+    }
+    const ttl = typeof requestedTtl === 'number' ? requestedTtl : CACHE_TTL_MS;
+    return {
+        ttl,
+        cacheOptions: { cacheTtlMs: ttl }
+    };
+}
+
+CacheManager.getCacheConfig = getCacheConfig;
 module.exports = CacheManager;

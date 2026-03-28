@@ -36,9 +36,21 @@ const catalogFallbackCache = new CacheManager('catalog_fallback', {
     swrMs: ONE_HOUR_MS
 });
 
+/**
+ * Cache for refined/processed catalog requests (the high-level orchestrator cache)
+ * Uses the same namespace as preWarm to leverage pre-filled data.
+ */
+const catalogRequestCache = new CacheManager('tmdb_catalog', {
+    ramMax: 500,
+    ramTtlMs: TEN_MINUTES_MS,
+    mongoTtlMs: ONE_DAY_MS,
+    swrMs: ONE_HOUR_MS
+});
+
 module.exports = {
     aiPromptCache,
     aiDiscoveryCache,
     hybridRecommendationsCache,
-    catalogFallbackCache
+    catalogFallbackCache,
+    catalogRequestCache
 };
