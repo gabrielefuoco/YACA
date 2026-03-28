@@ -11,6 +11,9 @@ const traktClient = createAxiosInstance('https://api.trakt.tv', {
     }
 });
 
+// LOCK: Gestione dei refresh in corso per evitare race conditions (invalid_grant)
+const ongoingRefreshes = new Map();
+
 const tmdbEnrichClient = createAxiosInstance('https://api.themoviedb.org/3');
 
 /**
@@ -245,8 +248,34 @@ async function fetchTraktCatalog(endpoint, skip = 0, traktToken = null, tmdbApiK
             const userId = refreshContext.userConfig.userId;
             
             try {
+                // LOCK: Se un refresh è già in corso per questo utente, attendiamo quella Promise
+                if (userId && ongoingRefreshes.has(userId)) {
+                    console.log(`Trakt: refresh già in corso per l'utente ${userId}, attendo il risultato...`);
+                    const sharedTokens = await ongoingRefreshes.get(userId);
+                    
+                    if (sharedTokens) {
+                        // Riprova la richiesta originale con il token appena rigenerato
+                        try {
+                            const sharedRetryResults = await executeTraktRequest(endpoint, page, sharedTokens.access_token);
+                            return await deduplicateAndEnrich(sharedRetryResults, tmdbApiKey);
+                        } catch (sharedRetryErr) {
+                            console.error(`Trakt: retry fallito dopo aver atteso il lock per ${endpoint}:`, sharedRetryErr.message);
+                            return [];
+                        }
+                    }
+                    return [];
+                }
+
                 console.log(`Trakt: token scaduto per ${endpoint}, tentativo di auto-refresh...`);
-                const newTokens = await refreshTraktTokens(refreshContext.userConfig.apiKeys.traktRefreshToken);
+                
+                // Creiamo e registriamo la Promise del refresh
+                const refreshPromise = refreshTraktTokens(refreshContext.userConfig.apiKeys.traktRefreshToken);
+                if (userId) ongoingRefreshes.set(userId, refreshPromise);
+
+                const newTokens = await refreshPromise;
+                
+                // Pulizia del lock a prescindere dall'esito
+                if (userId) ongoingRefreshes.delete(userId);
 
                 if (newTokens) {
                     console.log(`Trakt: auto-refresh riuscito per ${endpoint}.`);
@@ -273,6 +302,8 @@ async function fetchTraktCatalog(endpoint, skip = 0, traktToken = null, tmdbApiK
                 }
             } catch (refreshErr) {
                 console.error(`Trakt: errore durante auto-refresh per ${endpoint}:`, refreshErr.message);
+                // Assicuriamoci di pulire il lock anche in caso di eccezione imprevista
+                if (userId) ongoingRefreshes.delete(userId);
                 return [];
             }
         }
