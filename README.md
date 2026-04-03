@@ -24,7 +24,7 @@ Abbiamo creato una documentazione dettagliata per ogni aspetto del progetto. **I
 - [🖥️ Architettura Frontend](/docs/FRONTEND.md)
 - [Logica Cataloghi](/docs/CATALOG_LOGIC.md): Lifecycle delle richieste, Merging e Interleaving.
 - [Internals Stremio](/docs/STREMIO_INTERNALS.md): Workaround per i profili e mapping Anime ibrido.
-- [Integrazioni](/docs/INTEGRATIONS.md): Sync Stremio/Trakt, ImageKit, MDBList e Failover.
+- [Integrazioni](/docs/INTEGRATIONS.md): Sync Stremio/Trakt, ImageKit e Failover.
 
 [Deploy to Hugging Face Spaces](https://huggingface.co/spaces/Gabriele-fuoco/YACA?duplicate=true)
 

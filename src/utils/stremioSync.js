@@ -142,7 +142,7 @@ async function syncCatalogData(catalogs, tmdbApiKey, settings = {}) {
     if (!catalogs || !Array.isArray(catalogs) || !tmdbApiKey) return [];
     
     // Questa funzione estrae gli ID dai cataloghi assegnati al profilo
-    // Supporta Preset, Liste Utente (AI/MDBList) e cataloghi con item pre-caricati
+    // Supporta Preset, Liste Utente (AI) e cataloghi con item pre-caricati
     const allPresets = getPresets();
     const presetMap = new Map(allPresets.map(p => [p.id, p]));
     const tmdbClient = createTmdbClient(tmdbApiKey);
@@ -162,7 +162,7 @@ async function syncCatalogData(catalogs, tmdbApiKey, settings = {}) {
             let catalogMeta = presetMap.get(baseId);
             
             if (!catalogMeta) {
-                 // Potrebbe essere una lista personalizzata a DB (AI Search o MDBList)
+                 // Potrebbe essere una lista personalizzata a DB (AI Search)
                  const UserList = require('../models/UserList');
                  catalogMeta = await UserList.findOne({ listId: cat.id }).lean();
             }

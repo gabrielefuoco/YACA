@@ -1,6 +1,5 @@
 const { getTraktCatalog } = require('./providers/TraktProvider');
 const { getKitsuCatalog } = require('./providers/KitsuProvider');
-const { getMdblistCatalog } = require('./providers/MdblistProvider');
 const { getTmdbDiscoverCatalog, executeStandardSearch } = require('./providers/TmdbProvider');
 const { getEngineHybridCatalog, getHybridPopularCatalog, TASTE_BASED_IDS } = require('./providers/HybridProvider');
 const { executeCombinedSearch, executeUniversalPipeline } = require('./providers/AiDiscoveryProvider');
@@ -87,9 +86,9 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
         return await getTraktCatalog(baseId, skip, userConfig, tmdbApiKey, extra.hostUrl);
     }
 
-    // SCENARIO 4: MDBLIST
-    if (baseId.startsWith('mdblist_') || id.startsWith('mdblist_')) {
-        return await getMdblistCatalog(id, type, skip, userConfig, tmdbApiKey);
+    // SCENARIO 4: MDBLIST DEPRECATO
+    if (baseId.startsWith('mdblist_') || id.startsWith('mdblist_') || id.startsWith('yaca_preset_mdblist_')) {
+        return [];
     }
 
     // SCENARIO 5: KITSU (ANIME)

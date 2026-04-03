@@ -147,7 +147,7 @@ const UserConfig = {
                 if (userData.email) accountUpdate.$set.email = userData.email;
 
                 if (userData.apiKeys) {
-                    const keysInDoc = ['stremio', 'tmdb', 'mistral', 'trakt', 'traktRefreshToken', 'mdblist'];
+                    const keysInDoc = ['stremio', 'tmdb', 'mistral', 'trakt', 'traktRefreshToken'];
                     keysInDoc.forEach(k => {
                         if (keysToUnset.has(k)) {
                             accountUnset[`apiKeys.${k}`] = 1;

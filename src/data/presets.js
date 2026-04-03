@@ -226,7 +226,7 @@ const getPresets = () => {
         { id: 'preset_apple_tv', name: 'Apple TV+', category: '📺 Serie TV & Docu', type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_networks: TMDB_NETWORKS.AppleTV, sort_by: 'vote_average.desc', 'vote_count.gte': 5 }] },
 
         // =============================================
-        // --- 👤 IL MIO TRAKT & COMMUNITY (MDBList) ---
+        // --- 👤 IL MIO TRAKT & COMMUNITY ---
         // =============================================
 
         // ==========================================
@@ -242,8 +242,6 @@ const getPresets = () => {
         { id: 'trakt_watchlist_series', name: 'Watchlist', type: 'series', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
         { id: 'trakt_history_movies', name: 'Cronologia', type: 'movie', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
         { id: 'trakt_history_series', name: 'Cronologia', type: 'series', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
-        { id: 'trakt_ratings_movies', name: 'I Miei Voti', type: 'movie', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
-        { id: 'trakt_ratings_series', name: 'I Miei Voti', type: 'series', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
         { id: 'trakt_favorites_movies', name: 'I Miei Preferiti (Movies)', type: 'movie', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
         { id: 'trakt_favorites_series', name: 'I Miei Preferiti (Series)', type: 'series', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] }
     ];

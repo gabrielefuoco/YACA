@@ -1,10 +1,9 @@
 const { getTmdbMetaDetails, fetchTmdbEpisodes, createTmdbClient } = require('../clients/tmdb');
 const { getKitsuMetaDetails, getKitsuIdFromTmdbId, fetchKitsuEpisodes } = require('../clients/kitsu');
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
-const { fetchMdblistRatings } = require('../utils/mdblist');
 const CacheManager = require('../cache/CacheManager');
 
-// Cache per l'oggetto meta finale combinato (TMDB + MDBList)
+// Cache per l'oggetto meta finale combinato
 const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 2000, ramTtlMs: 3600000, swrMs: 600000 });
 
 function normalizeAnimeEpisodes(seriesId, episodes) {
@@ -105,15 +104,13 @@ async function metaHandler(args, userConfig) {
             meta = await getKitsuMetaDetails(id);
         }
 
-        // Parallel Fetch: TMDB + MDBList
+        // Fetch metadata via TMDB
         if (id.startsWith('tmdb:') || id.startsWith('tt')) {
             const tmdbIdResult = id.startsWith('tmdb:') ? { id: id.replace('tmdb:', '') } : await translateImdbToTmdb(id, tmdbApiKey);
             const tmdbId = tmdbIdResult?.id;
-            const imdbIdForRatings = id.startsWith('tt') ? id : (tmdbIdResult?.imdb_id || null);
 
             if (tmdbId) {
-                const mdblistApiKey = userConfig.apiKeys?.mdblist || process.env.MDBLIST_API_KEY || null;
-                const cacheKey = `meta_${tmdbId}_${type}_${imdbIdForRatings}_${Boolean(mdblistApiKey)}`;
+                const cacheKey = `meta_${tmdbId}_${type}`;
 
                 // Use getWithStatus for SWR support
                 let { value: cachedMeta, status: cacheStatus } = await finalMetaCache.getWithStatus(cacheKey);
@@ -134,8 +131,7 @@ async function metaHandler(args, userConfig) {
                         // Fire-and-forget background revalidation
                         (async () => {
                             try {
-                                const bgRatings = imdbIdForRatings ? await fetchMdblistRatings(imdbIdForRatings, mdblistApiKey).catch(() => ({})) : {};
-                                const bgMeta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, bgRatings || {});
+                                const bgMeta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, {});
                                 if (bgMeta) {
                                     // Anime series: fetch Kitsu episodes (TMDB episodes were skipped)
                                     if (bgMeta._isAnime && type === 'series') {
@@ -152,12 +148,7 @@ async function metaHandler(args, userConfig) {
                             } catch (_e) { /* silent background revalidation */ }
                         })();
                     } else {
-                        // Cache miss: fetch ratings first, then TMDB meta with ratings in one call
-                        const ratings = imdbIdForRatings
-                            ? await fetchMdblistRatings(imdbIdForRatings, mdblistApiKey).catch(() => ({}))
-                            : {};
-
-                        meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, ratings || {});
+                        meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, {});
                         if (meta) {
                             // Anime series: fetch Kitsu episodes (TMDB episodes were skipped)
                             if (meta._isAnime && type === 'series') {
