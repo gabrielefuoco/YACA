@@ -86,17 +86,17 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
         return await getTraktCatalog(baseId, skip, userConfig, tmdbApiKey, extra.hostUrl);
     }
 
-    // SCENARIO 4.5: MDBLIST DEPRECATO
+    // SCENARIO 4: MDBLIST DEPRECATO
     if (baseId.startsWith('mdblist_') || id.startsWith('mdblist_') || id.startsWith('yaca_preset_mdblist_')) {
         return [];
     }
 
-    // SCENARIO 4: KITSU (ANIME)
+    // SCENARIO 5: KITSU (ANIME)
     if (id === 'yaca_anime_trending' || id === 'yaca_anime_ova' || id === 'yaca_anime_ona' || id === 'yaca_anime_specials') {
         return await getKitsuCatalog(id, skip);
     }
 
-    // SCENARIO 5: UNIVERSAL PIPELINE (AI/PRESETS Custom)
+    // SCENARIO 6: UNIVERSAL PIPELINE (AI/PRESETS Custom)
     if (catalogMeta || directFilters) {
         const universalCatalog = normalizeToUniversalSchema(catalogMeta, directFilters);
         if (sortBy && universalCatalog.queries) {
