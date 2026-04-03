@@ -4,7 +4,7 @@ const { catalogHandler } = require('../handlers/catalogHandler');
 const { buildDiscoveryParams } = require('../catalog/providers/TmdbProvider');
 const { generateTmdbFiltersFromPrompt } = require('../ai/router');
 const { getPresets } = require('../data/presets');
-const { sanitizeString, resolveHostUrl } = require('../utils/helpers');
+const { sanitizeString } = require('../utils/helpers');
 
 const PREVIEW_TIMEOUT_MS = 8000;
 const MAX_PROMPT_LENGTH = 500;
@@ -97,7 +97,7 @@ router.post('/preview-catalog', async (req, res) => {
                     extra: { skip: 0 }
                 },
                 { apiKeys: { tmdb: sanitizedTmdbKey, mistral: mistralKey } },
-                resolveHostUrl(req)
+                req.context?.hostUrl || `${req.protocol}://${req.get('host')}`
             );
 
             const items = (previewData.metas || []).slice(0, 20).map(item => ({

@@ -86,17 +86,12 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
         return await getTraktCatalog(baseId, skip, userConfig, tmdbApiKey, extra.hostUrl);
     }
 
-    // SCENARIO 4: MDBLIST DEPRECATO
-    if (baseId.startsWith('mdblist_') || id.startsWith('mdblist_') || id.startsWith('yaca_preset_mdblist_')) {
-        return [];
-    }
-
-    // SCENARIO 5: KITSU (ANIME)
+    // SCENARIO 4: KITSU (ANIME)
     if (id === 'yaca_anime_trending' || id === 'yaca_anime_ova' || id === 'yaca_anime_ona' || id === 'yaca_anime_specials') {
         return await getKitsuCatalog(id, skip);
     }
 
-    // SCENARIO 6: UNIVERSAL PIPELINE (AI/PRESETS Custom)
+    // SCENARIO 5: UNIVERSAL PIPELINE (AI/PRESETS Custom)
     if (catalogMeta || directFilters) {
         const universalCatalog = normalizeToUniversalSchema(catalogMeta, directFilters);
         if (sortBy && universalCatalog.queries) {
@@ -106,21 +101,7 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
         }
 
         const noFallback = extra.noFallback || false;
-        let results = await executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, skip, { ...activeProfileSettings, noFallback }, tmdbFetchOptions);
-        
-        // Documentary fallback per Universal Pipeline
-        const firstQuery = universalCatalog.queries?.[0] || {};
-        const withGenres = Array.isArray(firstQuery.with_genres)
-            ? firstQuery.with_genres.map(String)
-            : String(firstQuery.with_genres ?? '').split(/[|,]/);
-
-        if (!noFallback && (!results || results.length === 0) && withGenres.includes('99') && firstQuery.with_keywords) {
-            const relaxedQuery = { ...firstQuery };
-            delete relaxedQuery.with_keywords;
-            const relaxedCatalog = { ...universalCatalog, queries: [relaxedQuery] };
-            results = await executeUniversalPipeline(relaxedCatalog, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, tmdbFetchOptions);
-        }
-        return results;
+        return await executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, skip, { ...activeProfileSettings, noFallback }, tmdbFetchOptions);
     }
 
     return [];

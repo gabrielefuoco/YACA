@@ -21,6 +21,7 @@ const { loginHandler, meHandler, logoutHandler } = require('./src/api/auth/index
 const { requireAuth } = require('./src/middleware/requireAuth');
 const { csrfProtection } = require('./src/middleware/csrfProtection');
 const { inputSanitizer } = require('./src/middleware/inputSanitizer');
+const { attachRequestContext } = require('./src/middleware/requestContext');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
 
 const stremioRoutes = require('./src/api/stremio');
@@ -54,6 +55,7 @@ const corsOptions = { origin: '*', credentials: true, methods: ['GET', 'POST'] }
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
+app.use(attachRequestContext);
 
 // 1. ASSET FAIL-SAFE (Direct routes for critical branding)
 app.get(['/fiamma_yaca.png', '/logo_yaca.png'], (req, res) => {
