@@ -341,189 +341,6 @@ function extractDNAParams(manualDNA = []) {
 }
 
 /**
- * 🔱 Signature: The Core (Top Genre + Top Keyword + DNA. Cascade esatta -> broad)
- */
-async function buildSignatureCore(userId, context, tmdbApiKey, mediaType) {
-    const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
-
-    const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-    const dnaFilters = getProfileDnaFilters(user, context);
-    const dnaParams = extractDNAParams(dnaFilters);
-
-    const topGenres = computeTopGenres(profile, 3, user, context);
-    const topKeywords = [...profile.keywordScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
-
-    let results = [];
-    const existingIds = new Set();
-
-    const fetchAndAdd = async (params) => {
-        const items = await fetchTmdbResults(
-            tmdbClient,
-            `/discover/${types}`,
-            { ...params, sort_by: 'popularity.desc' },
-            `Signature Core discover (${types})`
-        );
-        for (const item of items) {
-            const normalizedItemId = normalizeContentId(item.id);
-            if (!existingIds.has(normalizedItemId)) {
-                results.push(item);
-                existingIds.add(normalizedItemId);
-            }
-        }
-    };
-
-    // Phase 2.1: Use OR (|) for broad results — top genres OR top keywords
-    if (topGenres.length && topKeywords.length) {
-        await fetchAndAdd({
-            ...dnaParams,
-            with_genres: topGenres.join('|'),
-            with_keywords: topKeywords.join('|')
-        });
-    }
-
-    // Cascade 2: Any Top 3 Genre + Any Top 3 Keyword + DNA (OR logic)
-    if (results.length < 20 && (topGenres.length || topKeywords.length)) {
-        const broadParams = { ...dnaParams };
-        if (topGenres.length) broadParams.with_genres = topGenres.join('|');
-        if (topKeywords.length) broadParams.with_keywords = topKeywords.join('|');
-        await fetchAndAdd(broadParams);
-    }
-
-    // Final score
-    const scored = await rateLimitedMap(
-        results,
-        async (item) => {
-            const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-            const score = ProfileScorer.calculateItemMatch(details, profile, { globalProfile, dnaFilters });
-            return { data: item, score };
-        },
-        { batchSize: 5, delayMs: 50 }
-    );
-
-    return scored.sort((a, b) => b.score - a.score).map(i => String(i.data.id));
-}
-
-/**
- * 🌀 Signature: The Blend (Mix di gusti + Fallback DNA)
- */
-async function buildSignatureBlend(userId, context, tmdbApiKey, mediaType) {
-    const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
-
-    const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-    const dnaFilters = getProfileDnaFilters(user, context);
-    let dnaParams = extractDNAParams(dnaFilters);
-
-    const topGenres = computeTopGenres(profile, 5, user, context);
-
-    const fetchBatch = async (params) => {
-        return fetchTmdbResults(
-            tmdbClient,
-            `/discover/${types}`,
-            { ...params, sort_by: 'popularity.desc' },
-            `Signature Blend discover (${types})`
-        );
-    };
-
-    let results = [];
-    // Phase 2.1: Use OR (|) — one broad query with all top genres
-    const genreOrString = topGenres.join('|');
-    const broadQuery = genreOrString ? { ...dnaParams, with_genres: genreOrString } : { ...dnaParams };
-    let allResults = await Promise.allSettled([fetchBatch(broadQuery)]);
-    allResults.forEach(r => {
-        if (r.status === 'fulfilled') {
-            r.value.forEach(item => {
-                const normalizedItemId = normalizeContentId(item.id);
-                if (!results.find(x => normalizeContentId(x.id) === normalizedItemId)) results.push(item);
-            });
-        }
-    });
-
-    // FALLBACK ZERO RESULTS ALGORITHM
-    if (results.length === 0 && dnaFilters.length > 0) {
-        console.warn(`[Fallback] Zero Blend results per ${userId}/${context}. Disattivo il DNA.`);
-        const fallbackQuery = genreOrString ? { with_genres: genreOrString } : {};
-        allResults = await Promise.allSettled([fetchBatch(fallbackQuery)]);
-        allResults.forEach(r => {
-            if (r.status === 'fulfilled') {
-                r.value.forEach(item => {
-                    const normalizedItemId = normalizeContentId(item.id);
-                    if (!results.find(x => normalizeContentId(x.id) === normalizedItemId)) results.push(item);
-                });
-            }
-        });
-    }
-
-    const scored = await rateLimitedMap(
-        results,
-        async (item) => {
-            const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-            const score = ProfileScorer.calculateItemMatch(details, profile, { globalProfile, dnaFilters });
-            return { data: item, score };
-        },
-        { batchSize: 5, delayMs: 50 }
-    );
-
-    const final = scored.sort((a, b) => b.score - a.score);
-    return final.slice(0, 60).map(i => String(i.data.id));
-}
-
-/**
- * ⭐ Signature: Rising Star (Popular + DNA + Trakt Watchlist/History Influence)
- */
-async function buildSignatureStar(userId, context, traktToken, tmdbApiKey, mediaType) {
-    const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
-
-    const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-    const dnaFilters = getProfileDnaFilters(user, context);
-    const dnaParams = extractDNAParams(dnaFilters);
-
-    const history = await fetchRecentHistory(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 5);
-    const traktRecs = [];
-    if (history.length > 0) {
-        const results = await rateLimitedMap(
-            history.slice(0, 3),
-            (item) => {
-                const id = item.movie?.ids?.tmdb || item.show?.ids?.tmdb;
-                return fetchTmdbResults(tmdbClient, `/${types}/${id}/recommendations`, {}, `Signature Star recommendations (${types}/${id})`);
-            },
-            { batchSize: 5, delayMs: 50 }
-        );
-        results.forEach(items => {
-            if (Array.isArray(items)) traktRecs.push(...items);
-        });
-    }
-
-    // Discover Popolari + DNA (Phase 2.1: OR logic)
-    const searchResults = await fetchTmdbResults(
-        tmdbClient,
-        `/discover/${types}`,
-        { ...dnaParams, 'vote_average.gte': 7, sort_by: 'popularity.desc' },
-        `Signature Star discover (${types})`
-    );
-
-    let combined = [...searchResults, ...traktRecs];
-    const uniquePool = [...new Map(combined.map(item => [normalizeContentId(item.id), item])).values()];
-
-    const scored = await rateLimitedMap(
-        uniquePool.slice(0, 50),
-        async (item) => {
-            const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, item.id, types);
-            const score = ProfileScorer.calculateItemMatch(details, profile, { globalProfile, dnaFilters });
-            return { data: item, score };
-        },
-        { batchSize: 5, delayMs: 50 }
-    );
-
-    return scored.sort((a, b) => b.score - a.score).slice(0, 20).map(i => String(i.data.id));
-}
-
-/**
  * Risolve una singola query AI in parametri TMDB validi.
  * Converte keyword testuali in ID numerici TMDB tramite /search/keyword.
  * @param {Object} aiQuery { genre_ids, keyword, vibe }
@@ -805,10 +622,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         .filter(s => s.id && s.id !== 'undefined');
 
     const allSeeds = [...traktIds, ...lovedIds, ...likedIds];
-    if (allSeeds.length === 0) {
-        // Fallback to signature core
-        return buildSignatureCore(userId, context, tmdbApiKey, mediaType);
-    }
+    if (allSeeds.length === 0) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
     // Fetch similar for all seeds, accumulate weighted counts
     const weightedCounts = new Map(); // tmdbId -> weighted score
@@ -1034,15 +848,10 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         }
 
         // Hero Catalog IDs (Phase 4)
-        const TRUE_BLEND_IDS = new Set(['yaca_true_blend_movies', 'yaca_true_blend_series', 'yaca_top_genres_mix']);
+        const TRUE_BLEND_IDS = new Set(['yaca_true_blend_movies', 'yaca_true_blend_series']);
         const SEED_NETWORK_IDS = new Set(['yaca_seed_network_movies', 'yaca_seed_network_series']);
         const HIDDEN_GEMS_IDS = new Set(['yaca_hidden_gems_movies', 'yaca_hidden_gems_series']);
         const TRAKT_FILTERED_IDS = new Set(['yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series']);
-
-        // Legacy catalog IDs
-        const HYBRID_IDS = new Set(['yaca_signature_core_movies', 'yaca_signature_core_series', 'yaca_hybrid_movies', 'yaca_hybrid_series']);
-        const DISCOVERY_IDS = new Set(['yaca_signature_blend_movies', 'yaca_signature_blend_series', 'yaca_discovery_movies', 'yaca_discovery_series']);
-        const TOP20_IDS = new Set(['yaca_signature_star_movies', 'yaca_signature_star_series', 'yaca_top20_movies', 'yaca_top20_series']);
 
         const ids = TRUE_BLEND_IDS.has(catalogId)
             ? await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType)
@@ -1052,13 +861,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                     ? await buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType)
                     : TRAKT_FILTERED_IDS.has(catalogId)
                         ? await buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType)
-                        : HYBRID_IDS.has(catalogId)
-                            ? await buildSignatureCore(userId, context, tmdbApiKey, mediaType)
-                            : DISCOVERY_IDS.has(catalogId)
-                                ? await buildSignatureBlend(userId, context, tmdbApiKey, mediaType)
-                                : TOP20_IDS.has(catalogId)
-                                    ? await buildSignatureStar(userId, context, traktToken, tmdbApiKey, mediaType)
-                                    : await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType);
+                        : [];
 
         await hybridRecommendationsCache.set(cacheKey, { ids });
         return ids;

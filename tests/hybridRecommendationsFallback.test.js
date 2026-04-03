@@ -3,11 +3,11 @@ jest.mock('../src/models/TasteProfile', () => ({
 }));
 
 jest.mock('../src/db/models/UserAccount', () => ({
-    findOne: jest.fn().mockResolvedValue(null)
+    findOne: jest.fn(() => ({ lean: jest.fn().mockResolvedValue(null) }))
 }));
 
 jest.mock('../src/db/models/AddonConfig', () => ({
-    findOne: jest.fn().mockResolvedValue(null)
+    findOne: jest.fn(() => ({ lean: jest.fn().mockResolvedValue(null) }))
 }));
 
 jest.mock('../src/profile/ProfileBuilder', () => ({
@@ -84,7 +84,7 @@ describe('hybrid recommendations popular fallback', () => {
             });
 
         const metas = await getHybridCatalog(
-            'yaca_signature_blend_movies',
+            'yaca_true_blend_movies',
             0,
             null,
             'tmdb_key',
@@ -128,7 +128,7 @@ describe('hybrid recommendations popular fallback', () => {
         tmdbClient.getTmdbMovieDetails.mockResolvedValueOnce(null);
 
         const metas = await getHybridCatalog(
-            'yaca_signature_blend_movies',
+            'yaca_true_blend_movies',
             0,
             null,
             'tmdb_key',
@@ -136,7 +136,15 @@ describe('hybrid recommendations popular fallback', () => {
             'global'
         );
 
-        expect(tmdbFallbackGet).toHaveBeenCalledWith('/movie/201');
+        expect(tmdbFallbackGet).toHaveBeenNthCalledWith(
+            2,
+            '/movie/201',
+            expect.objectContaining({
+                params: expect.objectContaining({
+                    append_to_response: 'images'
+                })
+            })
+        );
         expect(metas).toHaveLength(1);
         expect(metas[0].id).toBe('tmdb:201');
     });
