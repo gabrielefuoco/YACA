@@ -253,15 +253,17 @@ describe('catalogHandler handles hybrid catalog IDs', () => {
     });
 
     it('should route active phase4 id yaca_true_blend_movies to hybrid engine', async () => {
-        jest.resetModules();
-        jest.doMock('../src/catalog/providers/HybridProvider', () => {
-            const original = jest.requireActual('../src/catalog/providers/HybridProvider');
-            return {
-                ...original,
-                getEngineHybridCatalog: jest.fn(async () => [{ id: 'tmdb:999', type: 'movie', name: 'Phase4' }])
-            };
+        let routeCatalogRequest;
+        jest.isolateModules(() => {
+            jest.doMock('../src/catalog/providers/HybridProvider', () => {
+                const original = jest.requireActual('../src/catalog/providers/HybridProvider');
+                return {
+                    ...original,
+                    getEngineHybridCatalog: jest.fn(async () => [{ id: 'tmdb:999', type: 'movie', name: 'Phase4' }])
+                };
+            });
+            ({ routeCatalogRequest } = require('../src/catalog/CatalogRouter'));
         });
-        const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
         const result = await routeCatalogRequest(
             { type: 'movie', id: 'yaca_true_blend_movies', extra: { skip: 0 }, filters: null },
             { userId: 'u1', apiKeys: { tmdb: 'fake-key' }, profiles: [], activeProfileId: 'global' },
