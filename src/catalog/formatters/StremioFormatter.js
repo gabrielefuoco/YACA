@@ -1,5 +1,4 @@
 const { EPISODE_CATALOG_IDS } = require('../constants');
-const EPISODE_BADGE_SEPARATOR = ' • ';
 
 function getEpisodeBadgeText(item) {
     if (!item?.poster) return null;
@@ -52,9 +51,10 @@ function sanitizeCatalogMeta(item, options = {}) {
     }
 
     const poster = sourceImage;
-    const name = (badgeText && item?.name)
-        ? `${item.name}${EPISODE_BADGE_SEPARATOR}${badgeText}`
-        : item.name;
+    const baseName = item?.name;
+    const name = (badgeText && baseName)
+        ? `${baseName} • ${badgeText}`
+        : baseName;
 
     return {
         id: item.id,
