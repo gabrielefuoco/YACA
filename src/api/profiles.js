@@ -3,7 +3,7 @@ const router = express.Router();
 const TasteProfile = require('../models/TasteProfile');
 const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
-const { syncAllStremioData } = require('../utils/stremioSync');
+const { syncAllStremioData } = require('../utils/stremioAddon');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const { buildDnaDescription, generateDiscoveryQueries } = require('../ai/querySynthesizer');
 

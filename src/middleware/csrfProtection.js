@@ -1,4 +1,3 @@
-const { resolveHostUrl } = require('../utils/helpers');
 const { COOKIE_NAME, CSRF_COOKIE_NAME } = require('./requireAuth');
 
 /**
@@ -46,7 +45,7 @@ function csrfProtection(req, res, next) {
 
     let expectedHost = null;
     try {
-        expectedHost = new URL(resolveHostUrl(req)).host;
+        expectedHost = new URL(req.context?.hostUrl || `${req.protocol}://${req.get('host')}`).host;
     } catch {
         expectedHost = req.get('host');
     }

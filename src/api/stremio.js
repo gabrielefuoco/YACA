@@ -3,7 +3,7 @@ const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const { stremioClient } = require('../clients/stremio');
 const { traktClient } = require('../clients/trakt');
-const { updateStremioAddonCollection } = require('../utils/stremioAddonSync');
+const { updateStremioAddonCollection } = require('../utils/stremioAddon');
 const UserConfig = require('../models/UserConfig');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
@@ -11,7 +11,7 @@ const { requireAuth } = require('../middleware/requireAuth');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler } = require('../handlers/metaHandler');
 const { streamHandler } = require('../handlers/streamHandler');
-const { resolveHostUrl, parseExtra } = require('../utils/helpers');
+const { parseExtra, isAllowedUrl } = require('../utils/helpers');
 
 // Rate limiter for sync-status polling (max 30 requests per minute per IP)
 const syncStatusLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
@@ -103,6 +103,14 @@ router.post('/stremio-addon-update', async (req, res) => {
         if (!parsed.pathname.endsWith('/manifest.json')) {
             return res.status(400).json({ success: false, error: 'URL manifest non valido' });
         }
+        const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;
+        const spaceHost = process.env.SPACE_HOST ? `https://${process.env.SPACE_HOST}` : null;
+        const localDefault = 'http://localhost:7000';
+        const allowedOrigin = explicitHost || spaceHost || localDefault;
+        const allowedHost = new URL(allowedOrigin).hostname;
+        if (!isAllowedUrl(parsed.href, [allowedHost])) {
+            return res.status(400).json({ success: false, error: 'URL manifest non consentito' });
+        }
     } catch (_e) {
         return res.status(400).json({ success: false, error: 'URL non valido' });
     }
@@ -169,7 +177,7 @@ router.post('/trakt/device/token', async (req, res) => {
 
 // Root manifest (senza config) - MOVED TO TOP to avoid shadowing by parameterized routes
 router.get('/manifest.json', (req, res) => {
-    const hostUrl = resolveHostUrl(req);
+    const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
     const manifest = {
         id: 'org.stremio.yaca.catalog',
         version: '1.0.4',
@@ -236,7 +244,7 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
             });
         }
 
-        const hostUrl = resolveHostUrl(req);
+        const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
         const manifest = {
             id: 'org.stremio.yaca.catalog',
             version: dynamicVersion,
@@ -294,7 +302,7 @@ router.get([
     }
 
     const args = { type, id, extra };
-    const hostUrl = resolveHostUrl(req);
+    const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
 
     try {
         const response = await catalogHandler(args, userConfig, hostUrl);
@@ -334,7 +342,7 @@ router.get(['/:userHandle/stream/:type/:id.json', '/:userHandle/:configVersion/s
     const { type, id } = req.params;
     const configVersion = req.params.configVersion || '';
     const args = { type, id };
-    const hostUrl = resolveHostUrl(req);
+    const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
 
     try {
         const response = await streamHandler(args, userConfig, hostUrl, configVersion);
@@ -416,7 +424,7 @@ router.get('/users/:userId/switch-profile/:profileId', async (req, res) => {
 
         const stremioAuthKey = userConfig.apiKeys?.stremio;
         if (stremioAuthKey) {
-            const hostUrl = resolveHostUrl(req);
+            const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
             const manifestUrl = `${hostUrl}/${userId}/${newConfigVersion}/manifest.json`;
             updateStremioAddonCollection(stremioAuthKey, manifestUrl)
                 .then(r => console.log(`[Profile Switch] Sync Stremio completato per utente ${userId}: ${r.success}`))

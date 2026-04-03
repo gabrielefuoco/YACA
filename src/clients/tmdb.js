@@ -953,7 +953,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
     const meta = toStremioMetaItem(data, type);
     if (!meta) return null;
 
-    // Se abbiamo il voto IMDb reale (da MDBList/externalRatings), usiamolo per il campo nativo
+    // Se abbiamo il voto IMDb reale (da externalRatings), usiamolo per il campo nativo
     if (externalRatings.imdb) {
         meta.imdbRating = externalRatings.imdb.toString();
     }

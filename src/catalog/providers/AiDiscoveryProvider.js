@@ -106,7 +106,21 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
     if (queries.length === 1) {
         const query = { ...queries[0] };
         if (!query.strategy) query.strategy = 'discovery';
-        return executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions);
+
+        let primaryResults = await executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions);
+
+        const withGenres = Array.isArray(query.with_genres)
+            ? query.with_genres.map(String)
+            : String(query.with_genres ?? '').split(/[|,]/);
+        const isDocumentaryQuery = withGenres.includes('99');
+
+        if (!settings?.noFallback && (!primaryResults || primaryResults.length === 0) && isDocumentaryQuery && query.with_keywords) {
+            const relaxedQuery = { ...query };
+            delete relaxedQuery.with_keywords;
+            primaryResults = await executeComplexStrategy(relaxedQuery, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions);
+        }
+
+        return primaryResults;
     }
 
     const isFirstPage = skip === 0;

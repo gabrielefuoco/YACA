@@ -400,7 +400,7 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
         }));
         jest.doMock('../src/utils/mdblist', () => ({
             fetchMdblistRatings: jest.fn().mockResolvedValue({})
-        }));
+        }, { virtual: true });
 
         const { metaHandler } = require('../src/handlers/metaHandler');
         const finalMetaCache = mockCacheInstances['final_meta_cache'];
@@ -453,7 +453,7 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
         }));
         jest.doMock('../src/utils/mdblist', () => ({
             fetchMdblistRatings: jest.fn().mockResolvedValue({})
-        }));
+        }, { virtual: true });
 
         const { metaHandler } = require('../src/handlers/metaHandler');
 
@@ -500,7 +500,7 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
         }));
         jest.doMock('../src/utils/mdblist', () => ({
             fetchMdblistRatings: jest.fn().mockResolvedValue({})
-        }));
+        }, { virtual: true });
 
         const { metaHandler } = require('../src/handlers/metaHandler');
 
@@ -552,7 +552,7 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
         }));
         jest.doMock('../src/utils/mdblist', () => ({
             fetchMdblistRatings: jest.fn().mockResolvedValue({})
-        }));
+        }, { virtual: true });
 
         const { metaHandler } = require('../src/handlers/metaHandler');
 
@@ -597,7 +597,7 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
         }));
         jest.doMock('../src/utils/mdblist', () => ({
             fetchMdblistRatings: jest.fn().mockResolvedValue({})
-        }));
+        }, { virtual: true });
 
         const { metaHandler } = require('../src/handlers/metaHandler');
 
@@ -634,7 +634,7 @@ describe('Bug Fix: metaHandler SWR and anime detection', () => {
         }));
         jest.doMock('../src/utils/mdblist', () => ({
             fetchMdblistRatings: jest.fn().mockResolvedValue({})
-        }));
+        }, { virtual: true });
 
         const { metaHandler } = require('../src/handlers/metaHandler');
 
@@ -723,7 +723,7 @@ describe('Bug Fix: Anime keyword detection uses raw keywords, not sliced links',
         }));
         jest.doMock('../src/utils/mdblist', () => ({
             fetchMdblistRatings: jest.fn().mockResolvedValue({})
-        }));
+        }, { virtual: true });
 
         const { metaHandler } = require('../src/handlers/metaHandler');
 
@@ -752,7 +752,7 @@ describe('Bug Fix: Episode fallback requests are rate-limited', () => {
         jest.unmock('../src/clients/tmdb');
         jest.unmock('../src/clients/kitsu');
         jest.unmock('../src/id_mapping/id_cache');
-        jest.unmock('../src/utils/mdblist');
+        
         Object.keys(mockCacheInstances).forEach(k => delete mockCacheInstances[k]);
         tmdbGetMock = jest.fn();
         mockCreateAxiosInstance.mockReset();
@@ -841,7 +841,7 @@ describe('Bug Fix: Trakt TMDB enrichment uses rate-limited batching', () => {
         jest.unmock('../src/clients/tmdb');
         jest.unmock('../src/clients/kitsu');
         jest.unmock('../src/id_mapping/id_cache');
-        jest.unmock('../src/utils/mdblist');
+        
         Object.keys(mockCacheInstances).forEach(k => delete mockCacheInstances[k]);
     });
 

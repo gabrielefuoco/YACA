@@ -40,7 +40,7 @@ describe('Cache sizing configuration', () => {
         }));
         jest.doMock('../src/utils/mdblist', () => ({
             fetchMdblistRatings: jest.fn()
-        }));
+        }, { virtual: true });
 
         require('../src/handlers/metaHandler');
         const CacheManagerMock = require('../src/cache/CacheManager');

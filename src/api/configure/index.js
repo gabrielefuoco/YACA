@@ -1,9 +1,8 @@
 const UserConfig = require('../../models/UserConfig');
 const UserList = require('../../models/UserList');
-const { resolveHostUrl } = require('../../utils/helpers');
 const { validateAuth, validateKeys } = require('./validators');
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');
-const { updateStremioAddonCollection } = require('../../utils/stremioAddonSync');
+const { updateStremioAddonCollection } = require('../../utils/stremioAddon');
 const UserAccount = require('../../db/models/UserAccount');
 
 module.exports = async (req, res) => {
@@ -105,7 +104,7 @@ module.exports = async (req, res) => {
             });
         }
 
-        const hostUrl = resolveHostUrl(req);
+        const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
         const manifestUrl = `${hostUrl}/${userDoc.userId}/${userDoc.config?.configVersion}/manifest.json`;
 
         if (userDoc.apiKeys?.stremio) {
