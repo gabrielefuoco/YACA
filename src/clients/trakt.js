@@ -1,7 +1,6 @@
 const { createAxiosInstance } = require('../utils/httpClient');
 const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
 const UserConfig = require('../models/UserConfig');
-const { updateStremioAddonCollection } = require('../utils/stremioAddonSync');
 
 const traktClient = createAxiosInstance('https://api.trakt.tv', {
     headers: {

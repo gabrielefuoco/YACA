@@ -3,7 +3,7 @@
  * Evita di chiamare troppo spesso le API di Stremio durante l'editing granulare.
  */
 
-const { updateStremioAddonCollection } = require('./stremioAddonSync');
+const { updateStremioAddonCollection } = require('./stremioAddon');
 
 const SYNC_DEBOUNCE_MS = 20000; // 20 secondi tra un salvataggio e l'altro
 const pendingSyncs = new Map();

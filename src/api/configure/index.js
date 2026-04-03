@@ -2,7 +2,7 @@ const UserConfig = require('../../models/UserConfig');
 const UserList = require('../../models/UserList');
 const { validateAuth, validateKeys } = require('./validators');
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');
-const { updateStremioAddonCollection } = require('../../utils/stremioAddonSync');
+const { updateStremioAddonCollection } = require('../../utils/stremioAddon');
 const UserAccount = require('../../db/models/UserAccount');
 
 module.exports = async (req, res) => {

@@ -11,7 +11,7 @@ jest.mock('../src/clients/trakt', () => ({
 jest.mock('../src/utils/mdblist', () => ({
     fetchMDBListItems: jest.fn(),
     parseMDBListItems: jest.fn()
-}));
+}, { virtual: true });
 jest.mock('../src/clients/tmdb', () => ({
     fetchTmdbCatalog: jest.fn(),
     createTmdbClient: jest.fn(),
