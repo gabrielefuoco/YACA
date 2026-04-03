@@ -9,8 +9,6 @@ const TRAKT_TYPE_MAP = {
     'trakt_recommendations_series': 'recommendations_shows',
     'trakt_history_movies': 'history_movies',
     'trakt_history_series': 'history_shows',
-    'trakt_ratings_movies': 'ratings_movies',
-    'trakt_ratings_series': 'ratings_shows',
     'trakt_popular_shows': 'popular_shows',
     'trakt_favorites_movies': 'favorites_movies',
     'trakt_favorites_series': 'favorites_shows'
@@ -21,7 +19,7 @@ async function getTraktCatalog(baseId, skip, userConfig, tmdbApiKey, hostUrl) {
     if (!traktEp) return [];
 
     const traktUname = userConfig.apiKeys?.trakt;
-    const needsAuth = baseId.includes('watchlist') || baseId.includes('recommendations') || baseId.includes('history') || baseId.includes('ratings') || baseId.includes('favorites');
+    const needsAuth = baseId.includes('watchlist') || baseId.includes('recommendations') || baseId.includes('history') || baseId.includes('favorites');
     const finalTraktUname = needsAuth ? traktUname : null;
 
     const refreshContext = (userConfig.apiKeys?.traktRefreshToken && hostUrl) ? { userConfig, hostUrl } : null;

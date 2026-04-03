@@ -198,8 +198,7 @@ async function meHandler(req, res) {
                 stremio: account.apiKeys?.stremio || null,
                 tmdb: account.apiKeys?.tmdb || null,
                 mistral: account.apiKeys?.mistral || null,
-                trakt: account.apiKeys?.trakt || null,
-                mdblist: account.apiKeys?.mdblist || null
+                trakt: account.apiKeys?.trakt || null
             }
         });
     } catch (err) {

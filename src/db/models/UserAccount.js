@@ -24,8 +24,7 @@ const userAccountSchema = new mongoose.Schema({
         tmdb: String,
         mistral: String,
         trakt: String,
-        traktRefreshToken: String,
-        mdblist: String
+        traktRefreshToken: String
     }
 }, { timestamps: true });
 

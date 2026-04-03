@@ -84,7 +84,6 @@ function validateKeys(body, existingUser, warnings) {
         mistralKey: effectiveMistralKey,
         traktToken,
         traktRefreshToken,
-        mdblistKey: normalizeInputString(body.mdblistKey),
         stremioAuthKey,
         stremioEmail
     };
