@@ -28,16 +28,15 @@ async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
     );
 }
 
-async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type, isLandscapeEnabled) {
+async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
     if (!tmdbApiKey || !Array.isArray(metas) || metas.length === 0) return;
 
     const tmdbType = type === 'series' ? 'tv' : 'movie';
     const itemsToHydrate = metas.slice(0, 60).filter(item => {
         if (!item || !item.id) return false;
-        // Idratiamo se mancano metadati fondamentali (cast/keywords) o se manca il logo in formato landscape
+        // Idratiamo se mancano metadati fondamentali (cast/keywords)
         const isMissingMeta = !(item.cast && item.keywords);
-        const isMissingLogo = !item.logo;
-        return isMissingMeta || (isLandscapeEnabled && isMissingLogo);
+        return isMissingMeta;
     });
     if (itemsToHydrate.length === 0) return;
 
@@ -87,9 +86,6 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type, isLa
                     };
                     item.keywords = item.rawTMDB.keywords.keywords;
                     item.cast = item.rawTMDB.credits.cast;
-                    if (scoringDoc.logo_path) {
-                        item.logo = scoringDoc.logo_path.startsWith('http') ? scoringDoc.logo_path : `https://image.tmdb.org/t/p/w500${scoringDoc.logo_path}`;
-                    }
                     return;
                 }
 
@@ -101,15 +97,6 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type, isLa
                 item.keywords = cachedDetails.keywords?.keywords || cachedDetails.keywords?.results || [];
                 item.cast = cachedDetails.credits?.cast || [];
                 
-                if (cachedDetails.images?.logos?.length > 0) {
-                    const { prioritizeLocalizedImages } = require('../../clients/tmdb');
-                    const bestLogo = prioritizeLocalizedImages(cachedDetails.images.logos)[0];
-                    if (bestLogo) {
-                        item.logo = bestLogo.file_path.startsWith('http') ? bestLogo.file_path : `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
-                    }
-                } else if (cachedDetails.logo) {
-                    item.logo = cachedDetails.logo;
-                }
             } catch (_err) {
                 // Il recupero cache è best-effort
             }

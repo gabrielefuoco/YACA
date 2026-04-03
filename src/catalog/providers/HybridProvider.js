@@ -10,15 +10,7 @@ const TASTE_BASED_IDS = new Set([
     'yaca_true_blend_movies', 'yaca_true_blend_series',
     'yaca_seed_network_movies', 'yaca_seed_network_series',
     'yaca_hidden_gems_movies', 'yaca_hidden_gems_series',
-    'yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series',
-    // Legacy / backward compatibility
-    'yaca_signature_core_movies', 'yaca_signature_core_series',
-    'yaca_signature_blend_movies', 'yaca_signature_blend_series',
-    'yaca_signature_star_movies', 'yaca_signature_star_series',
-    'yaca_hybrid_movies', 'yaca_hybrid_series',
-    'yaca_discovery_movies', 'yaca_discovery_series',
-    'yaca_top20_movies', 'yaca_top20_series',
-    'yaca_top_genres_mix'
+    'yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series'
 ]);
 
 async function getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey) {

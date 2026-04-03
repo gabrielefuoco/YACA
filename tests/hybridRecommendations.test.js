@@ -210,34 +210,69 @@ describe('hybridRecommendations module exports', () => {
 });
 
 describe('catalogHandler handles hybrid catalog IDs', () => {
-    it('should return metas array for yaca_hybrid_movies without Trakt token', async () => {
-        const { catalogHandler } = require('../src/handlers/catalogHandler');
-        const args = { type: 'movie', id: 'yaca_hybrid_movies', extra: { skip: 0 } };
-        const userConfig = { apiKeys: { tmdb: 'fake-key' } };
-        const result = await catalogHandler(args, userConfig, 'http://localhost:7000');
-        expect(result).toHaveProperty('metas');
-        expect(Array.isArray(result.metas)).toBe(true);
-        // Without Trakt token, it should return empty
-        expect(result.metas).toEqual([]);
+    it('should return empty metas for removed legacy id yaca_hybrid_movies', async () => {
+        const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+        const result = await routeCatalogRequest(
+            { type: 'movie', id: 'yaca_hybrid_movies', extra: { skip: 0 }, filters: null },
+            { userId: 'u1', apiKeys: { tmdb: 'fake-key' }, profiles: [], activeProfileId: 'global' },
+            {},
+            'fake-key',
+            {},
+            {},
+            null
+        );
+        expect(result).toEqual([]);
     });
 
-    it('should return metas array for yaca_hybrid_series without Trakt token', async () => {
-        const { catalogHandler } = require('../src/handlers/catalogHandler');
-        const args = { type: 'series', id: 'yaca_hybrid_series', extra: { skip: 0 } };
-        const userConfig = { apiKeys: { tmdb: 'fake-key' } };
-        const result = await catalogHandler(args, userConfig, 'http://localhost:7000');
-        expect(result).toHaveProperty('metas');
-        expect(Array.isArray(result.metas)).toBe(true);
-        expect(result.metas).toEqual([]);
+    it('should return empty metas for removed legacy id yaca_hybrid_series', async () => {
+        const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+        const result = await routeCatalogRequest(
+            { type: 'series', id: 'yaca_hybrid_series', extra: { skip: 0 }, filters: null },
+            { userId: 'u1', apiKeys: { tmdb: 'fake-key' }, profiles: [], activeProfileId: 'global' },
+            {},
+            'fake-key',
+            {},
+            {},
+            null
+        );
+        expect(result).toEqual([]);
     });
 
-    it('should return metas array for yaca_top_genres_mix without Trakt token', async () => {
-        const { catalogHandler } = require('../src/handlers/catalogHandler');
-        const args = { type: 'movie', id: 'yaca_top_genres_mix', extra: { skip: 0 } };
-        const userConfig = { apiKeys: { tmdb: 'fake-key' } };
-        const result = await catalogHandler(args, userConfig, 'http://localhost:7000');
-        expect(result).toHaveProperty('metas');
-        expect(Array.isArray(result.metas)).toBe(true);
-        expect(result.metas).toEqual([]);
+    it('should return empty metas for removed legacy id yaca_top20_movies', async () => {
+        const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+        const result = await routeCatalogRequest(
+            { type: 'movie', id: 'yaca_top20_movies', extra: { skip: 0 }, filters: null },
+            { userId: 'u1', apiKeys: { tmdb: 'fake-key' }, profiles: [], activeProfileId: 'global' },
+            {},
+            'fake-key',
+            {},
+            {},
+            null
+        );
+        expect(result).toEqual([]);
+    });
+
+    it('should route active phase4 id yaca_true_blend_movies to hybrid engine', async () => {
+        let routeCatalogRequestFromIsolatedModule;
+        jest.isolateModules(() => {
+            jest.doMock('../src/catalog/providers/HybridProvider', () => {
+                const original = jest.requireActual('../src/catalog/providers/HybridProvider');
+                return {
+                    ...original,
+                    getEngineHybridCatalog: jest.fn(async () => [{ id: 'tmdb:999', type: 'movie', name: 'Phase4' }])
+                };
+            });
+            ({ routeCatalogRequest: routeCatalogRequestFromIsolatedModule } = require('../src/catalog/CatalogRouter'));
+        });
+        const result = await routeCatalogRequestFromIsolatedModule(
+            { type: 'movie', id: 'yaca_true_blend_movies', extra: { skip: 0 }, filters: null },
+            { userId: 'u1', apiKeys: { tmdb: 'fake-key' }, profiles: [], activeProfileId: 'global' },
+            {},
+            'fake-key',
+            {},
+            {},
+            null
+        );
+        expect(result).toEqual([{ id: 'tmdb:999', type: 'movie', name: 'Phase4' }]);
     });
 });

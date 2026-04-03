@@ -1,4 +1,3 @@
-const { getImageKitUrl } = require('../../utils/imageProcessor');
 const { EPISODE_CATALOG_IDS } = require('../constants');
 
 function getEpisodeBadgeText(item) {
@@ -35,7 +34,7 @@ function getEpisodeBadgeText(item) {
         : `S ${season} Ep ${episode}`;
 }
 
-function sanitizeCatalogMeta(item, options = {}, imageKitId) {
+function sanitizeCatalogMeta(item, options = {}) {
     if (!item) return item;
 
     const { shouldApplyEpisodeBadge, isLandscapeEnabled } = options;
@@ -44,28 +43,23 @@ function sanitizeCatalogMeta(item, options = {}, imageKitId) {
     // Se è abilitato il formato landscape, usiamo il backdrop (background) invece del poster portrait
     let sourceImage = item.poster;
     let finalPosterShape = item.posterShape || 'poster';
-    let ikOptions = { text: badgeText };
 
     if (isLandscapeEnabled) {
         // Fallback: se non c'è background, usiamo il poster ma forziamo il formato widescreen
         sourceImage = item.background || item.poster;
         finalPosterShape = 'landscape';
-        ikOptions.posterShape = 'landscape';
-        
-        // Se l'item ha un logo (fornito dai metadati arricchiti di TMDB), lo usiamo come overlay
-        if (item.logo) {
-            ikOptions.logoUrl = item.logo;
-        }
     }
 
-    const poster = (typeof sourceImage === 'string' && sourceImage.length > 0)
-        ? getImageKitUrl(sourceImage, ikOptions, imageKitId)
-        : sourceImage;
+    const poster = sourceImage;
+    const baseName = item.name;
+    const name = (badgeText && baseName)
+        ? `${baseName} • ${badgeText}`
+        : baseName;
 
     return {
         id: item.id,
         type: item.type,
-        name: item.name,
+        name,
         poster,
         posterShape: finalPosterShape,
         background: item.background,
@@ -84,7 +78,6 @@ function sanitizeCatalogMeta(item, options = {}, imageKitId) {
 function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled) {
     if (!Array.isArray(results)) return { metas: [] };
 
-    const imageKitId = userConfig?.apiKeys?.imagekit || process.env.IMAGEKIT_ID;
     const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
     const shouldApplyEpisodeBadge = type === 'series' && EPISODE_CATALOG_IDS.has(baseId);
 
@@ -94,7 +87,7 @@ function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled)
     };
 
     return {
-        metas: results.map(item => sanitizeCatalogMeta(item, sanitizeOptions, imageKitId))
+        metas: results.map(item => sanitizeCatalogMeta(item, sanitizeOptions))
     };
 }
 

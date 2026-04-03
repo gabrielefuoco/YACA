@@ -81,7 +81,7 @@ describe('hybrid catalog stale sync merges history and ratings', () => {
             genre_ids: [18]
         });
 
-        await getHybridCatalog('yaca_hybrid_movies', 0, 'trakt_token', 'tmdb_key', 'user_1', 'global');
+        await getHybridCatalog('yaca_seed_network_movies', 0, 'trakt_token', 'tmdb_key', 'user_1', 'global');
         for (let i = 0; i < MAX_POLLING_ATTEMPTS && ProfileBuilder.syncUserHistory.mock.calls.length === 0; i++) {
             await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL_MS));
         }

@@ -232,12 +232,6 @@ const getPresets = () => {
         // ==========================================
         // 👤 IL MIO TRAKT & COMMUNITY
         // ==========================================
-        { id: 'yaca_signature_core_movies', name: '🔱 The Core (Signature)', type: 'movie', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
-        { id: 'yaca_signature_core_series', name: '🔱 The Core (Signature)', type: 'series', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
-        { id: 'yaca_signature_blend_movies', name: '🌀 The Blend (Signature)', type: 'movie', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
-        { id: 'yaca_signature_blend_series', name: '🌀 The Blend (Signature)', type: 'series', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
-        { id: 'yaca_signature_star_movies', name: '⭐ Rising Star (Signature)', type: 'movie', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
-        { id: 'yaca_signature_star_series', name: '⭐ Rising Star (Signature)', type: 'series', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
         { id: 'trakt_watchlist_movies', name: 'Watchlist', type: 'movie', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
         { id: 'trakt_watchlist_series', name: 'Watchlist', type: 'series', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
         { id: 'trakt_history_movies', name: 'Cronologia', type: 'movie', category: '👤 Il Mio Trakt & Community', presentation_strategy: 'popularity', queries: [{}] },
