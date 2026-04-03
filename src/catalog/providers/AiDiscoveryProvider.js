@@ -244,7 +244,7 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     });
 
     let finalItems = Array.from(mergedMap.values());
-    await hydrateResultsFromLocalDetailsCache(finalItems, tmdbApiKey, type, false);
+    await hydrateResultsFromLocalDetailsCache(finalItems, tmdbApiKey, type);
 
     for (const item of finalItems) {
         const consensusBonus = item.consensusCount > 1 ? (item.consensusCount ** 2) - 1 : 0;

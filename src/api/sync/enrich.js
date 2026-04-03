@@ -1,7 +1,7 @@
 const TmdbScoringData = require('../../models/TmdbScoringData');
 const ProfileBuilder = require('../../profile/ProfileBuilder');
 const UserConfig = require('../../models/UserConfig');
-const { getTmdbMovieDetails, prioritizeLocalizedImages } = require('../../clients/tmdb');
+const { prioritizeLocalizedImages } = require('../../clients/tmdb');
 
 module.exports = async (req, res) => {
     try {
@@ -15,31 +15,8 @@ module.exports = async (req, res) => {
         const normalizedId = normalizeContentId(tmdbId);
         const numericId = parseInt(normalizedId, 10);
 
-        // Miglioramento estrazione logo: se rawTMDB non ha loghi, prova a recuperarli dai dettagli completi
+        // Estrazione logo solo dai dati già presenti, senza chiamate TMDB aggiuntive
         let logoPath = rawTMDB.logo || (rawTMDB.images?.logos?.length > 0 ? prioritizeLocalizedImages(rawTMDB.images.logos)[0]?.file_path : null);
-
-        if (!logoPath) {
-            try {
-                // Prova prima con la chiave dell'utente, poi con quella globale
-                let apiKey = process.env.TMDB_API_KEY;
-                if (userId) {
-                    const userConfig = await UserConfig.resolveUserConfig(userId);
-                    if (userConfig?.apiKeys?.tmdb) {
-                        apiKey = userConfig.apiKeys.tmdb;
-                    }
-                }
-
-                if (apiKey) {
-                    const fullDetails = await getTmdbMovieDetails(apiKey, numericId, type);
-                    if (fullDetails?.images?.logos?.length > 0) {
-                        const bestLogo = prioritizeLocalizedImages(fullDetails.images.logos)[0];
-                        logoPath = bestLogo?.file_path;
-                    }
-                }
-            } catch (fallbackErr) {
-                console.warn(`[Enrich] Fallback logo fetch failed for ${tmdbId}:`, fallbackErr.message);
-            }
-        }
 
         // Estrazione imdbId
         const imdbId = rawTMDB.imdb_id || rawTMDB.external_ids?.imdb_id || null;
