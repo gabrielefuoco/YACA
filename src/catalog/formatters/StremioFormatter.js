@@ -51,7 +51,7 @@ function sanitizeCatalogMeta(item, options = {}) {
     }
 
     const poster = sourceImage;
-    const baseName = item?.name;
+    const baseName = item.name;
     const name = (badgeText && baseName)
         ? `${baseName} • ${badgeText}`
         : baseName;
