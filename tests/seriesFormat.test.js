@@ -12,9 +12,28 @@ jest.mock('../src/clients/trakt', () => ({
     fetchTraktCatalog: jest.fn()
 }));
 
-jest.mock('../src/utils/mdblist', () => ({
-    fetchMDBListItems: jest.fn(),
-    parseMDBListItems: jest.fn()
+jest.mock('../src/catalog/providers/TraktProvider', () => ({
+    getTraktCatalog: jest.fn()
+}));
+
+jest.mock('../src/catalog/providers/KitsuProvider', () => ({
+    getKitsuCatalog: jest.fn()
+}));
+
+jest.mock('../src/catalog/providers/TmdbProvider', () => ({
+    getTmdbDiscoverCatalog: jest.fn(),
+    executeStandardSearch: jest.fn()
+}));
+
+jest.mock('../src/catalog/providers/HybridProvider', () => ({
+    getEngineHybridCatalog: jest.fn(),
+    getHybridPopularCatalog: jest.fn(),
+    TASTE_BASED_IDS: new Set()
+}));
+
+jest.mock('../src/catalog/providers/AiDiscoveryProvider', () => ({
+    executeCombinedSearch: jest.fn(),
+    executeUniversalPipeline: jest.fn()
 }));
 
 jest.mock('../src/ai/router', () => ({
@@ -27,8 +46,7 @@ jest.mock('../src/models/UserConfig', () => ({
     buildConfig: jest.fn()
 }));
 
-const { fetchMDBListItems, parseMDBListItems } = require('../src/utils/mdblist');
-const { catalogHandler } = require('../src/handlers/catalogHandler');
+const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
 
 describe('series behaviorHints format', () => {
     it('toStremioMetaItem should not set defaultVideoId for series', () => {
@@ -43,61 +61,48 @@ describe('series behaviorHints format', () => {
     });
 });
 
-describe('MDBList preset routing', () => {
+describe('deprecated MDBList routing', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it('routes yaca_preset_mdblist_ IDs to MDBList handler', async () => {
+    it('returns empty results for yaca_preset_mdblist_ IDs', async () => {
         const userConfig = {
             apiKeys: { tmdb: 'tmdb_key' },
             profiles: [{ id: 'prof1', catalogs: [{ id: 'yaca_preset_mdblist_456', type: 'series', filters: { mdblist: true } }] }],
             activeProfileId: 'prof1'
         };
 
-        fetchMDBListItems.mockResolvedValue([]);
-        parseMDBListItems.mockResolvedValue([{ id: 'tt1234567', type: 'series', name: 'Test Show' }]);
-
-        const result = await catalogHandler({
+        const result = await routeCatalogRequest({
             type: 'series',
             id: 'yaca_preset_mdblist_456',
-            extra: { skip: 0 }
-        }, userConfig);
+            extra: { skip: 0, hostUrl: 'http://localhost' }
+        }, userConfig, {}, 'tmdb_key', {}, {}, null);
 
-        expect(fetchMDBListItems).toHaveBeenCalledWith('456', null, 'it', 1);
-        expect(parseMDBListItems).toHaveBeenCalled();
-        expect(result.metas).toEqual([{ id: 'tt1234567', type: 'series', name: 'Test Show' }]);
+        expect(result).toEqual([]);
     });
 
-    it('routes bare mdblist_ IDs to MDBList handler', async () => {
+    it('returns empty results for bare mdblist_ IDs', async () => {
         const userConfig = {
             apiKeys: { tmdb: 'tmdb_key' },
             catalogs: [{ id: 'mdblist_456', type: 'series', filters: { mdblist: true } }]
         };
 
-        fetchMDBListItems.mockResolvedValue([]);
-        parseMDBListItems.mockResolvedValue([{ id: 'tt9999999', type: 'series', name: 'Another Show' }]);
-
-        const result = await catalogHandler({
+        const result = await routeCatalogRequest({
             type: 'series',
             id: 'mdblist_456',
-            extra: { skip: 0 }
-        }, userConfig);
+            extra: { skip: 0, hostUrl: 'http://localhost' }
+        }, userConfig, {}, 'tmdb_key', {}, {}, null);
 
-        expect(fetchMDBListItems).toHaveBeenCalledWith('456', null, 'it', 1);
-        expect(result.metas).toEqual([{ id: 'tt9999999', type: 'series', name: 'Another Show' }]);
+        expect(result).toEqual([]);
     });
 });
 
 describe('MDBList presets structure', () => {
-    it('all MDBList presets should have filters property with mdblist marker', () => {
+    it('should not expose MDBList presets anymore', () => {
         const { getPresets } = require('../src/data/presets');
         const presets = getPresets();
         const mdblistPresets = presets.filter(p => p.id.startsWith('mdblist_'));
-        expect(mdblistPresets.length).toBeGreaterThan(0);
-        for (const preset of mdblistPresets) {
-            expect(preset).toHaveProperty('filters');
-            expect(preset.filters.mdblist).toBe(true);
-        }
+        expect(mdblistPresets).toEqual([]);
     });
 });

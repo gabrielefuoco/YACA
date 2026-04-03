@@ -21,7 +21,6 @@ describe('Phase 0.1: Two-Table Split Models', () => {
         expect(schema.path('apiKeys.mistral')).toBeDefined();
         expect(schema.path('apiKeys.trakt')).toBeDefined();
         expect(schema.path('apiKeys.traktRefreshToken')).toBeDefined();
-        expect(schema.path('apiKeys.mdblist')).toBeDefined();
     });
 
     it('UserAccount email should be required (not sparse)', () => {
@@ -175,7 +174,6 @@ describe('Bug 1.1: Token Invalidation Prevention', () => {
             mistralKey: null,        // was empty, preserved as null
             traktToken: null,        // was empty, preserved as null
             traktRefreshToken: null,
-            mdblistKey: undefined,
             stremioAuthKey: ''
         };
 
@@ -184,7 +182,6 @@ describe('Bug 1.1: Token Invalidation Prevention', () => {
             mistralKey: 'mistral',
             traktToken: 'trakt',
             traktRefreshToken: 'traktRefreshToken',
-            mdblistKey: 'mdblist',
             stremioAuthKey: 'stremio'
         };
 

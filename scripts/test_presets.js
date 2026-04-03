@@ -17,7 +17,6 @@ const SKIP_IDS = new Set([
     'yaca_hybrid_popular_movies', 'yaca_hybrid_popular_series',
     'trakt_watchlist_movies', 'trakt_watchlist_series',
     'trakt_history_movies', 'trakt_history_series',
-    'trakt_ratings_movies', 'trakt_ratings_series',
     'trakt_trending_movies', 'trakt_trending_series',
     'trakt_popular_movies', 'trakt_popular_series',
     'trakt_favorites_movies', 'trakt_favorites_series',
@@ -25,15 +24,14 @@ const SKIP_IDS = new Set([
 ]);
 
 // Filtri custom che non vanno passati direttamente a /discover
-const CUSTOM_KEYS = new Set(['mdblist', 'strategy', 'similar_to', 'text_search', 'people_list', 'keyword', 'company_name', 'genre_ids', 'year_from', 'year_to', 'runtime_lte', 'runtime_gte', 'watch_provider', 'original_language', 'target']);
+const CUSTOM_KEYS = new Set(['strategy', 'similar_to', 'text_search', 'people_list', 'keyword', 'company_name', 'genre_ids', 'year_from', 'year_to', 'runtime_lte', 'runtime_gte', 'watch_provider', 'original_language', 'target']);
 
 async function testPreset(preset) {
     const { id, name, type, filters } = preset;
 
-    // Skip preset senza filtri reali (Trakt, Hybrid, MDBList)
+    // Skip preset senza filtri reali (Trakt, Hybrid)
     if (SKIP_IDS.has(id)) return { id, name, status: 'SKIP', reason: 'Custom handler (non /discover)' };
     if (!filters || Object.keys(filters).length === 0) return { id, name, status: 'SKIP', reason: 'Nessun filtro' };
-    if (filters.mdblist) return { id, name, status: 'SKIP', reason: 'MDBList (non TMDB)' };
 
     const searchType = type === 'series' ? 'tv' : 'movie';
     const params = { api_key: TMDB_API_KEY, language: 'it-IT', page: 1 };

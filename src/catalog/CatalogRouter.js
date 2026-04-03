@@ -86,6 +86,11 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
         return await getTraktCatalog(baseId, skip, userConfig, tmdbApiKey, extra.hostUrl);
     }
 
+    // SCENARIO 4.5: MDBLIST DEPRECATO
+    if (baseId.startsWith('mdblist_') || id.startsWith('mdblist_') || id.startsWith('yaca_preset_mdblist_')) {
+        return [];
+    }
+
     // SCENARIO 4: KITSU (ANIME)
     if (id === 'yaca_anime_trending' || id === 'yaca_anime_ova' || id === 'yaca_anime_ona' || id === 'yaca_anime_specials') {
         return await getKitsuCatalog(id, skip);

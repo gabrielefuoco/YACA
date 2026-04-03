@@ -9,7 +9,7 @@ Benvenuto nella documentazione ufficiale di **YACA (Yet Another Catalog Addon)**
 2.  **[Backend](BACKEND.md)**: Logica del server, gestione handler e motori.
 3.  **[Algoritmi](ALGORITHMS.md)**: Dettagli matematici su scoring, decay e Bayesian rating.
 4.  **[Logica Cataloghi](CATALOG_LOGIC.md)**: Lifecycle delle richieste, Merging e Interleaving.
-5.  **[Integrazioni](INTEGRATIONS.md)**: Sync Stremio/Trakt, ImageKit, MDBList e Failover.
+5.  **[Integrazioni](INTEGRATIONS.md)**: Sync Stremio/Trakt, ImageKit e Failover.
 6.  **[Frontend & UI](FRONTEND.md)**: Architettura Next.js e logica della Dashboard.
     *   Struttura dell'interfaccia di configurazione (Next.js/Vite).
 7.  **[Riferimento API](API_REFERENCE.md)**
