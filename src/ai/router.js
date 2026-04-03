@@ -1,5 +1,4 @@
 const { Mistral } = require('@mistralai/mistralai');
-const { aiPromptCache } = require('../cache/cacheInstances');
 const { buildAiPrompt } = require('./prompts');
 
 // ============================================
@@ -93,25 +92,11 @@ function parseMistralResponse(content, originalPrompt, taskType = 'single_query'
  * @param {string} mistralKey La chiave mistral dell'utente
  * @returns Object (Filtri JSON intelligenti)
  */
-async function generateTmdbFiltersFromPrompt(prompt, mistralKey, isBackground = false, taskType = 'single_query') {
+async function generateTmdbFiltersFromPrompt(prompt, mistralKey, taskType = 'single_query') {
     if (!mistralKey) {
         return buildFallbackResponse(prompt, taskType);
     }
     try {
-        // 1. Check Cache
-        const cacheKey = `search-v2:${taskType}:${prompt.toLowerCase().trim()}`;
-        const { value: rawCached, status: cacheStatus } = await aiPromptCache.getWithStatus(cacheKey);
-        if (rawCached && cacheStatus !== 'miss') {
-            console.log(`[AICache] Hit per: "${prompt}" (Stale: ${cacheStatus === 'stale'})`);
-
-            if (cacheStatus === 'stale' && !isBackground) {
-                // Background refresh
-                generateTmdbFiltersFromPrompt(prompt, mistralKey, true, taskType).catch(() => { });
-            }
-
-            return rawCached.filters || rawCached;
-        }
-
         const client = new Mistral({ apiKey: mistralKey, timeout: 25000 });
 
         const response = await client.chat.complete({
@@ -131,9 +116,6 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, isBackground = 
         }
         const parsed = parseMistralResponse(rawJson, prompt, taskType);
 
-        // 2. Set Cache
-        await aiPromptCache.set(cacheKey, { filters: parsed });
-
         return parsed;
     } catch (err) {
         console.error("Errore Fallback in AI (ritorno parametri base):", err.message);
@@ -147,7 +129,7 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, isBackground = 
  * ma manteniamo questa firma di funzione isolando solo target e query base per retrocompatibilità.
  */
 async function routeLiveStremioSearch(searchQuery, mistralKey) {
-    const filters = await generateTmdbFiltersFromPrompt(searchQuery, mistralKey, false, 'multi_query');
+    const filters = await generateTmdbFiltersFromPrompt(searchQuery, mistralKey, 'multi_query');
 
     // Convertiamo i filtri avanzati nel formato target/query atteso dal catalogHandler
     const firstQuery = Array.isArray(filters?.queries) ? filters.queries[0] : filters;
