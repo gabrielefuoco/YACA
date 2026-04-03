@@ -7,6 +7,7 @@ const TmdbRequestCache = require('../models/TmdbRequestCache');
 const { aiPromptCache, aiDiscoveryCache, hybridRecommendationsCache } = require('../cache/cacheInstances');
 const { getPresets } = require('../data/presets');
 const { resolveHostUrl } = require('../utils/helpers');
+const { triggerWarmupIfStale, getWarmupStatus } = require('../cache/warmupScheduler');
 
 // Endpoint per estrarre le statistiche di tutte le cache
 router.get('/cache/stats', async (req, res) => {
@@ -54,16 +55,27 @@ router.post('/cache/clear', async (req, res) => {
 
 // Endpoint per pre-caricare la cache dei cataloghi
 router.get('/cron/warmup', async (req, res) => {
-    res.status(200).json({ status: 'Warmup avviato in background' });
+    const tmdbConfigured = Boolean(process.env.TMDB_API_KEY);
+    const result = tmdbConfigured
+        ? await triggerWarmupIfStale()
+        : { triggered: false, reason: 'missing_tmdb_key', status: getWarmupStatus() };
+    const status = result.status || getWarmupStatus();
+    res.status(200).json({
+        status: 'OK',
+        keepAlive: true,
+        warmupTriggered: result.triggered,
+        reason: result.reason,
+        lastWarmupAt: status.lastWarmupAt || null,
+        nextWarmupAt: status.nextWarmupAt || null,
+        cooldownMs: status.cooldownMs,
+        remainingMs: status.remainingMs,
+        warmupInFlight: status.warmupInFlight
+    });
 
-    if (!process.env.TMDB_API_KEY) {
+    if (!tmdbConfigured) {
         console.warn('⚠️  Warmup saltato: TMDB_API_KEY non configurata.');
         return;
     }
-
-    // Logic for warmup (simplified or moved to a service if it grows)
-    // For now we just keep the endpoint logic here.
-    // ... rest of warmup logic from index.js could be moved to src/cache/preWarm.js or similar
 });
 
 module.exports = router;

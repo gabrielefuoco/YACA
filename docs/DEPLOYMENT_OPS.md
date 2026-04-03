@@ -49,3 +49,10 @@ YACA si affida a dei ping esterni (es. UptimeRobot) sull'endpoint `/api/cron/war
 1.  **Sincronizzare i dati** degli utenti che non aprono l'app da tempo.
 2.  **Scaldare le cache** dei cataloghi globali.
 3.  **Pulire i dati orfani** nel database.
+
+### Nota operativa warmup
+
+L'endpoint `/api/cron/warmup` risponde sempre velocemente con `200 OK` (keep-alive), ma il warmup reale è protetto da semaforo interno:
+- se un warmup è già in corso, non ne avvia un altro;
+- se l'ultimo warmup è avvenuto nelle ultime **6 ore**, non avvia nuove chiamate esterne;
+- oltre la finestra di 6 ore, riattiva il warmup in background.
