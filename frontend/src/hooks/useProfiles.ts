@@ -259,39 +259,41 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
       try {
         setSyncStatus({ isSyncing: true, total: 100, current: 0, phase: 'Inizializzazione...' });
         
-        // 1. Fetch Raw Data
-        setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Recupero cronologia...', current: 10 }));
+        // --- STAGE 1: Background Refresh ---
+        setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Sincronizzazione Stremio/Trakt...', current: 6 }));
+        await api.refreshSync(profileId, userId);
+
+        // --- STAGE 2: Client Vector Calculation ---
+        // 1. Fetch Raw Data (History + Manual DNA + Active Catalogs)
+        setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Recupero dati profilo...', current: 10 }));
         const data: RawProfileData = await api.getRawProfileData(profileId, userId);
         
-        // 2. Metadata Enrichment
+        // 2. Metadata Enrichment (Batch)
         setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Arricchimento metadati...', current: 20 }));
         
         const movies = [...new Set(data.history.filter(h => h.type === 'movie').map(h => h.tmdbId))];
         const tv = [...new Set(data.history.filter(h => h.type === 'tv').map(h => h.tmdbId))];
         
-        const metadataMap: TmdbMetadataMap = {};
+        const metadataMap: Record<number, any> = {};
         
         if (movies.length > 0) {
           const res = await api.batchTmdbDetails(movies, 'movie');
-          Object.assign(metadataMap, res.results);
+          Object.assign(metadataMap, res.results || {});
         }
         if (tv.length > 0) {
           const res = await api.batchTmdbDetails(tv, 'tv');
-          Object.assign(metadataMap, res.results);
+          Object.assign(metadataMap, res.results || {});
         }
         
         setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Calcolo vettori VSM...', current: 60 }));
 
-        // 3. Vector Calculation
-        const staticDNA: VectorAxis = {};
-        const profile = profiles.find((p: Profile) => p.id === profileId);
-        profile?.settings?.manualDNA?.forEach((dna: DNAItem) => {
-          const prefix = dna.type === 'genre' ? 'g' : dna.type === 'keyword' ? 'k' : 'u';
-          const key = `${prefix}:${dna.id}`;
-          staticDNA[key] = (staticDNA[key] || 0) + 1.0;
-        });
-
-        const vectors = VectorEngine.computeProfileVectors(data.history, metadataMap, staticDNA);
+        // 3. Vector Calculation: Real History + Manual Settings + Catalog Priming
+        const vectors = VectorEngine.computeProfileVectors(
+          data.history, 
+          metadataMap,
+          data.manualDNA || [], 
+          data.activeCatalogs || []
+        );
 
         // 4. Global Contamination (if not global)
         if (profileId !== 'global' && data.globalVectors?.V_final) {
@@ -299,15 +301,11 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
           vectors.V_final = VectorEngine.applyContamination(vectors.V_final, data.globalVectors.V_final);
         }
 
-        // 5. Sync Back
+        // 5. Final Sync Back
         setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Sincronizzazione finale...', current: 90 }));
-        await api.syncVectors(profileId, userId, vectors);
+        await api.syncVectors(profileId, userId, { compiledVectors: vectors });
         
         setSyncStatus({ isSyncing: false, total: 100, current: 100, phase: 'Completato' });
-        
-        // Optional: Trigger a profile refresh if metadata changed or icons were updated
-        // For now, we assume the user will see changes on next page load or via local state
-        
         return vectors;
       } catch (err) {
         setSyncStatus({ isSyncing: false, total: 100, current: 0, phase: 'Errore' });

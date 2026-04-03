@@ -245,8 +245,22 @@ router.get('/:id/raw-data', async (req, res) => {
         const history = await WatchHistory.find({ owner: userId, context: profileId })
             .sort({ lastWatchedAt: -1 })
             .lean();
+
+        // Resolve manualDNA and activeCatalogs from AddonConfig via Two-Table Split
+        const account = await UserAccount.findOne({ userId }).lean();
+        const addonConfig = account?.addonUuid
+            ? await AddonConfig.findOne({ uuid: account.addonUuid }).lean()
+            : null;
+
+        const profile = (addonConfig?.profiles || []).find(p => p.id === profileId);
+        const settings = profile?.settings || {};
+        const activeCatalogs = profile?.catalogs || [];
             
-        res.json({ history });
+        res.json({ 
+            history,
+            manualDNA: settings.manualDNA || [],
+            activeCatalogs
+        });
     } catch (err) {
         console.error(`[ProfileAPI] Error fetching raw data:`, err.message);
         res.status(500).json({ error: 'Internal server error' });

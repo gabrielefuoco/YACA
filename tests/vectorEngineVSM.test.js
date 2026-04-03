@@ -65,4 +65,44 @@ describe('VectorEngine (VSM frontend implementation)', () => {
         expect(pruned2['g:28']).toBeDefined();
         expect(pruned2['a:333']).toBeUndefined(); // Adesso verrà piallato perchè è l'ultimo
     });
+
+    test('should calculate catalog vector from filters', () => {
+        const mockCatalog = {
+            id: 'horror-cat',
+            filters: {
+                with_genres: '27,53',
+                with_keywords: '111|222',
+                with_cast: '333',
+                with_crew: '444'
+            }
+        };
+
+        const vector = VectorEngine.calculateCatalogVector(mockCatalog);
+        
+        expect(vector['g:27']).toBe(2.0);
+        expect(vector['g:53']).toBe(2.0);
+        expect(vector['k:111']).toBe(1.0);
+        expect(vector['k:222']).toBe(1.0);
+        expect(vector['a:333']).toBe(0.5);
+        expect(vector['d:444']).toBe(1.5);
+    });
+
+    test('should compute profile vectors using catalogs', () => {
+        const history = []; // Empty history to test catalog priming
+        const metadataMap = {};
+        const manualDNA = [{ type: 'genre', id: 28 }]; // Action
+        const activeCatalogs = [{
+            filters: { with_genres: '27' } // Horror
+        }];
+
+        const result = VectorEngine.computeProfileVectors(history, metadataMap, manualDNA, activeCatalogs);
+        
+        // V_static should contain both Action (2.5) and Horror (2.0) signals
+        expect(result.V_static['g:28']).toBeDefined();
+        expect(result.V_static['g:27']).toBeDefined();
+        
+        // V_final should be influenced by these even if history is empty
+        expect(result.V_final['g:28']).toBeGreaterThan(0);
+        expect(result.V_final['g:27']).toBeGreaterThan(0);
+    });
 });

@@ -30,7 +30,8 @@ export interface TmdbMetadata {
 
 export interface RawProfileData {
   history: WatchHistoryItem[];
-  staticCatalogs: any[];
+  manualDNA: any[];
+  activeCatalogs: any[];
   globalVectors: CompiledVector | null;
   subProfileVectors: Array<{ profileId: string; vectors: CompiledVector }>;
   excludedProfileIds: string[];
@@ -87,6 +88,48 @@ export class VectorEngine {
       const key = `a:${a.id}`;
       vector[key] = (vector[key] || 0) + (weight * 0.2);
     });
+  }
+
+  /**
+   * Dynamically calculates a semantic vector from a catalog's configuration.
+   * Parses genre IDs, keywords, and people filters into the VSM coordinate system.
+   */
+  static calculateCatalogVector(catalog: any): VectorAxis {
+    const vector: VectorAxis = {};
+    const filters = catalog.filters || {};
+    const queries = catalog.queries || [];
+
+    const processParams = (params: any) => {
+      if (!params) return;
+
+      // Genres (with_genres)
+      if (params.with_genres) {
+        const ids = String(params.with_genres).split(/[|,]/).map(s => s.trim());
+        ids.forEach(id => { if (id) vector[`g:${id}`] = 2.0; });
+      }
+
+      // Keywords (with_keywords)
+      if (params.with_keywords) {
+        const ids = String(params.with_keywords).split(/[|,]/).map(s => s.trim());
+        ids.forEach(id => { if (id) vector[`k:${id}`] = 1.0; });
+      }
+
+      // People (with_cast, with_crew)
+      if (params.with_cast) {
+        const ids = String(params.with_cast).split(/[|,]/).map(s => s.trim());
+        ids.forEach(id => { if (id) vector[`a:${id}`] = 0.5; });
+      }
+      if (params.with_crew) {
+        const ids = String(params.with_crew).split(/[|,]/).map(s => s.trim());
+        ids.forEach(id => { if (id) vector[`d:${id}`] = 1.5; });
+      }
+    };
+
+    // Process main filters and sub-queries
+    processParams(filters);
+    queries.forEach((q: any) => processParams(q));
+
+    return vector;
   }
 
   /**
@@ -177,7 +220,8 @@ export class VectorEngine {
   static computeProfileVectors(
     history: WatchHistoryItem[],
     metadataMap: Record<number, TmdbMetadata>,
-    staticDNA: VectorAxis = {}
+    manualDNA: any[] = [],
+    activeCatalogs: any[] = []
   ): { V_active: VectorAxis; V_static: VectorAxis; V_final: VectorAxis } {
     
     // 1. Compute V_active from history
@@ -194,9 +238,29 @@ export class VectorEngine {
     });
 
     const V_active = this.normalize(activeRaw);
-    const V_static = this.normalize(staticDNA);
 
-    // 2. Initial Fusion (Local Base)
+    // 2. Compute V_static from manual DNA and Active Catalogs
+    const staticRaw: VectorAxis = {};
+    
+    // Manual DNA (high weight signal: 2.5)
+    manualDNA.forEach(item => {
+      const prefix = item.type === 'genre' ? 'g' : item.type === 'keyword' ? 'k' : '';
+      if (prefix && item.id) {
+        staticRaw[`${prefix}:${item.id}`] = 2.5; 
+      }
+    });
+
+    // Active Catalogs (dynamic weight: 2.0 per entry)
+    activeCatalogs.forEach(cat => {
+      const catVector = this.calculateCatalogVector(cat);
+      Object.entries(catVector).forEach(([key, val]) => {
+        staticRaw[key] = (staticRaw[key] || 0) + val;
+      });
+    });
+
+    const V_static = this.normalize(staticRaw);
+
+    // 3. Final Fusion (Local Base)
     let V_final = this.fuse(V_active, V_static);
     V_final = this.normalize(V_final);
     V_final = this.prune(V_final);

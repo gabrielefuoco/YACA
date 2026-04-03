@@ -130,7 +130,8 @@ export interface WatchHistoryItem {
 
 export interface RawProfileData {
   history: WatchHistoryItem[];
-  staticCatalogs: Catalog[];
+  manualDNA: DNAItem[];
+  activeCatalogs: Catalog[];
   globalVectors: CompiledVector | null;
   subProfileVectors: Array<{ profileId: string; vectors: CompiledVector }>;
   excludedProfileIds: string[];
