@@ -93,7 +93,7 @@ function parseMistralResponse(content, originalPrompt, taskType = 'single_query'
  * @param {string} mistralKey La chiave mistral dell'utente
  * @returns Object (Filtri JSON intelligenti)
  */
-async function generateTmdbFiltersFromPrompt(prompt, mistralKey, isBackground = false, taskType = 'single_query') {
+async function generateTmdbFiltersFromPrompt(prompt, mistralKey, taskType = 'single_query', isBackground = false) {
     if (!mistralKey) {
         return buildFallbackResponse(prompt, taskType);
     }
@@ -106,7 +106,7 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, isBackground = 
 
             if (cacheStatus === 'stale' && !isBackground) {
                 // Background refresh
-                generateTmdbFiltersFromPrompt(prompt, mistralKey, true, taskType).catch(() => { });
+                generateTmdbFiltersFromPrompt(prompt, mistralKey, taskType, true).catch(() => { });
             }
 
             return rawCached.filters || rawCached;
@@ -147,7 +147,7 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, isBackground = 
  * ma manteniamo questa firma di funzione isolando solo target e query base per retrocompatibilità.
  */
 async function routeLiveStremioSearch(searchQuery, mistralKey) {
-    const filters = await generateTmdbFiltersFromPrompt(searchQuery, mistralKey, false, 'multi_query');
+    const filters = await generateTmdbFiltersFromPrompt(searchQuery, mistralKey, 'multi_query');
 
     // Convertiamo i filtri avanzati nel formato target/query atteso dal catalogHandler
     const firstQuery = Array.isArray(filters?.queries) ? filters.queries[0] : filters;

@@ -4,13 +4,43 @@ const AddonConfig = require('../db/models/AddonConfig');
 const { executeUniversalPipeline } = require('../catalog/providers/AiDiscoveryProvider');
 const { createTmdbClient } = require('../clients/tmdb');
 const { getPresets } = require('../data/presets');
+const { isAllowedUrl } = require('./helpers');
 
 const ADDON_ID = 'org.stremio.yaca.catalog';
 const STREMIO_TIMEOUT = 10000;
 const LIKES_ADDON_URL = 'https://likes.stremio.com/addons/liked/movies-shows';
 const LOVED_ADDON_URL = 'https://likes.stremio.com/addons/loved/movies-shows';
+const SAFE_ID_REGEX = /^[a-zA-Z0-9_-]{1,128}$/;
+
+function validateAndNormalizeSafeId(value) {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return SAFE_ID_REGEX.test(trimmed) ? trimmed : null;
+}
+
+function validateManifestUrl(manifestUrl) {
+    if (typeof manifestUrl !== 'string') return false;
+    try {
+        const parsed = new URL(manifestUrl);
+        if (!parsed.pathname.endsWith('/manifest.json')) return false;
+
+        const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;
+        const spaceHost = process.env.SPACE_HOST ? `https://${process.env.SPACE_HOST}` : null;
+        const localDefault = 'http://localhost:7000';
+        const allowedOrigin = explicitHost || spaceHost || localDefault;
+        const allowedHost = new URL(allowedOrigin).hostname;
+
+        return isAllowedUrl(parsed.href, [allowedHost]);
+    } catch (_e) {
+        return false;
+    }
+}
 
 async function updateStremioAddonCollection(authKey, manifestUrl) {
+    if (!validateManifestUrl(manifestUrl)) {
+        return { success: false, error: 'URL manifest non consentito' };
+    }
+
     const getRes = await stremioClient.post('/api/addonCollectionGet', {
         type: 'AddonCollectionGet',
         authKey,
@@ -52,8 +82,14 @@ async function updateStremioAddonCollection(authKey, manifestUrl) {
 }
 
 async function syncAllStremioData(userId, authKey, profileId = 'global') {
+    const safeUserId = validateAndNormalizeSafeId(userId);
+    const safeProfileId = validateAndNormalizeSafeId(profileId) || 'global';
+    if (!safeUserId) {
+        return { success: false, error: 'Invalid user id' };
+    }
+
     try {
-        console.log(`[StremioSync] Starting full sync for user ${userId}...`);
+        console.log(`[StremioSync] Starting full sync for user ${safeUserId}...`);
 
         const addonKeyRes = await stremioLikesClient.get(`/getAddonKey?key=${authKey}`);
         const addonKey = addonKeyRes.data;
@@ -74,37 +110,37 @@ async function syncAllStremioData(userId, authKey, profileId = 'global') {
         };
 
         const ProfileBuilder = require('../profile/ProfileBuilder');
-        const account = await UserAccount.findOne({ userId }).lean();
+        const account = await UserAccount.findOne({ userId: safeUserId }).lean();
         const tmdbKey = account?.apiKeys?.tmdb;
 
         const addonConfig = account?.addonUuid
             ? await AddonConfig.findOne({ uuid: account.addonUuid }).lean()
             : null;
 
-        if (profileId === 'global') {
-            await ProfileBuilder.syncStremioData(userId, stremioData, tmdbKey, 'global');
+        if (safeProfileId === 'global') {
+            await ProfileBuilder.syncStremioData(safeUserId, stremioData, tmdbKey, 'global');
         } else {
-            const profile = (addonConfig?.profiles || []).find(p => p.id === profileId);
+            const profile = (addonConfig?.profiles || []).find(p => p.id === safeProfileId);
             if (profile) {
-                console.log(`[StremioSync] Resolving catalogs for profile ${profile.name || profileId}...`);
+                console.log(`[StremioSync] Resolving catalogs for profile ${profile.name || safeProfileId}...`);
                 const catalogItems = await syncCatalogData(profile.catalogs, tmdbKey, profile.settings || {});
                 const formattedData = { liked: catalogItems, loved: [], library: [] };
-                await ProfileBuilder.syncStremioData(userId, formattedData, tmdbKey, profileId);
+                await ProfileBuilder.syncStremioData(safeUserId, formattedData, tmdbKey, safeProfileId);
             }
         }
 
-        if (profileId === 'global') {
-            await pushToTrakt(userId, stremioData);
+        if (safeProfileId === 'global') {
+            await pushToTrakt(safeUserId, stremioData);
         }
-        await updateSyncTimestamp(userId, profileId);
+        await updateSyncTimestamp(safeUserId, safeProfileId);
 
         const TasteProfile = require('../models/TasteProfile');
-        const updatedProfile = await TasteProfile.findOne({ owner: userId, context: profileId });
+        const updatedProfile = await TasteProfile.findOne({ owner: safeUserId, context: safeProfileId });
 
-        console.log(`[StremioSync] Sync completed successfully for user ${userId} (${profileId})`);
+        console.log(`[StremioSync] Sync completed successfully for user ${safeUserId} (${safeProfileId})`);
         return { success: true, profile: updatedProfile };
     } catch (error) {
-        console.error(`[StremioSync] Error syncing data for user ${userId}:`, error.message);
+        console.error(`[StremioSync] Error syncing data for user ${safeUserId}:`, error.message);
         return { success: false, error: error.message };
     }
 }
@@ -135,7 +171,10 @@ async function fetchStremioLibrary(authKey) {
 }
 
 async function pushToTrakt(userId, data) {
-    const account = await UserAccount.findOne({ userId }).lean();
+    const safeUserId = validateAndNormalizeSafeId(userId);
+    if (!safeUserId) return;
+
+    const account = await UserAccount.findOne({ userId: safeUserId }).lean();
     const traktToken = account?.apiKeys?.trakt;
     if (!traktToken) return;
 
@@ -174,11 +213,12 @@ async function syncCatalogData(catalogs, tmdbApiKey, settings = {}) {
 
         try {
             const baseId = (cat.id || '').startsWith('yaca_preset_') ? cat.id.replace('yaca_preset_', '') : (cat.id || '');
+            const safeListId = validateAndNormalizeSafeId(cat.id || '');
             let catalogMeta = presetMap.get(baseId);
 
-            if (!catalogMeta) {
+            if (!catalogMeta && safeListId) {
                 const UserList = require('../models/UserList');
-                catalogMeta = await UserList.findOne({ listId: cat.id }).lean();
+                catalogMeta = await UserList.findOne({ listId: safeListId }).lean();
             }
 
             if (catalogMeta) {
@@ -203,10 +243,14 @@ async function syncCatalogData(catalogs, tmdbApiKey, settings = {}) {
 }
 
 async function updateSyncTimestamp(userId, profileId) {
+    const safeUserId = validateAndNormalizeSafeId(userId);
+    if (!safeUserId) return;
+
+    const safeProfileId = validateAndNormalizeSafeId(profileId) || 'global';
     const randomOffsetMs = (Math.floor(Math.random() * 241) - 120) * 60 * 1000;
     const nextSyncInterval = (8 * 60 * 60 * 1000) + randomOffsetMs;
 
-    const account = await UserAccount.findOne({ userId }).lean();
+    const account = await UserAccount.findOne({ userId: safeUserId }).lean();
     if (!account?.addonUuid) return;
 
     const update = {
@@ -216,7 +260,7 @@ async function updateSyncTimestamp(userId, profileId) {
         }
     };
 
-    if (profileId !== 'global') {
+    if (safeProfileId !== 'global') {
         update.$set[`profiles.$[elem].settings.lastSync`] = new Date();
     }
 
@@ -224,7 +268,7 @@ async function updateSyncTimestamp(userId, profileId) {
         { uuid: account.addonUuid },
         update,
         {
-            arrayFilters: [{ 'elem.id': profileId }],
+            arrayFilters: [{ 'elem.id': safeProfileId }],
             returnDocument: 'after'
         }
     );

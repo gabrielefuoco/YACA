@@ -11,7 +11,7 @@ const { requireAuth } = require('../middleware/requireAuth');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler } = require('../handlers/metaHandler');
 const { streamHandler } = require('../handlers/streamHandler');
-const { parseExtra } = require('../utils/helpers');
+const { parseExtra, isAllowedUrl } = require('../utils/helpers');
 
 // Rate limiter for sync-status polling (max 30 requests per minute per IP)
 const syncStatusLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
@@ -102,6 +102,14 @@ router.post('/stremio-addon-update', async (req, res) => {
         const parsed = new URL(manifestUrl);
         if (!parsed.pathname.endsWith('/manifest.json')) {
             return res.status(400).json({ success: false, error: 'URL manifest non valido' });
+        }
+        const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;
+        const spaceHost = process.env.SPACE_HOST ? `https://${process.env.SPACE_HOST}` : null;
+        const localDefault = 'http://localhost:7000';
+        const allowedOrigin = explicitHost || spaceHost || localDefault;
+        const allowedHost = new URL(allowedOrigin).hostname;
+        if (!isAllowedUrl(parsed.href, [allowedHost])) {
+            return res.status(400).json({ success: false, error: 'URL manifest non consentito' });
         }
     } catch (_e) {
         return res.status(400).json({ success: false, error: 'URL non valido' });
