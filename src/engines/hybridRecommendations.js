@@ -622,6 +622,8 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         .filter(s => s.id && s.id !== 'undefined');
 
     const allSeeds = [...traktIds, ...lovedIds, ...likedIds];
+    // Legacy signature fallback removed during catalog cleanup:
+    // when no seed exists, prefer a safe deterministic popular fallback.
     if (allSeeds.length === 0) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
     // Fetch similar for all seeds, accumulate weighted counts
