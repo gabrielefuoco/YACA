@@ -175,6 +175,8 @@ export default function Home() {
     reorderCatalogs,
     removeCatalog,
     addCatalog,
+    syncStatus,
+    syncProfileVectors,
   } = useProfiles(initialProfiles, initialActiveProfileId);
 
   const { presets, profileTemplates, categories } = usePresets();
@@ -500,6 +502,9 @@ export default function Home() {
                   onRemoveMyList={handleRemoveMyList}
                   onUpdateProfile={updateProfile}
                   onTemplateApplied={handleTemplateApplied}
+                  syncStatus={syncStatus}
+                  syncProfileVectors={syncProfileVectors}
+                  userId={userId ?? undefined}
                 />
               )}
 

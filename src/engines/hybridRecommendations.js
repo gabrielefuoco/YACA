@@ -74,7 +74,11 @@ async function fetchTmdbResults(tmdbClient, endpoint, params = {}, errorLabel = 
 }
 
 /**
- * Recupera l'ultima history da Trakt (limitata per performance).
+ * Fetches recent watch history from Trakt.
+ * @param {string} traktToken OAuth token
+ * @param {string} mediaType 'movies' or 'shows'
+ * @param {number} limit Max items to fetch
+ * @returns {Promise<Array>}
  */
 async function fetchRecentHistory(traktToken, mediaType, limit = 10) {
     if (!traktToken || !process.env.TRAKT_CLIENT_ID) return [];
@@ -94,6 +98,13 @@ async function fetchRecentHistory(traktToken, mediaType, limit = 10) {
     }
 }
 
+/**
+ * Fetches recent ratings from Trakt.
+ * @param {string} traktToken OAuth token
+ * @param {string} mediaType 'movies' or 'shows'
+ * @param {number} limit Max items to fetch
+ * @returns {Promise<Array>}
+ */
 async function fetchRecentRatings(traktToken, mediaType, limit = 40) {
     if (!traktToken || !process.env.TRAKT_CLIENT_ID) return [];
     try {
@@ -113,11 +124,11 @@ async function fetchRecentRatings(traktToken, mediaType, limit = 40) {
 }
 
 /**
- * Recupera le raccomandazioni grezze di Trakt per l'utente corrente.
- * @param {String} traktToken Token OAuth Trakt
- * @param {String} mediaType 'movies' o 'shows'
- * @param {Number} limit Numero massimo di risultati
- * @returns {Array} Array di oggetti Trakt (con ids.tmdb)
+ * Fetches raw Trakt recommendations for the user.
+ * @param {string} traktToken Trakt OAuth token
+ * @param {string} mediaType 'movies' or 'shows'
+ * @param {number} limit Max results to fetch
+ * @returns {Promise<Array>} Array of Trakt objects with ids.tmdb
  */
 async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40) {
     if (!traktToken || !process.env.TRAKT_CLIENT_ID) return [];
@@ -138,26 +149,90 @@ async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40) {
 }
 
 /**
- * Estrae i top N generi dal profilo (per punteggio decrescente).
- * @param {Object} profile Documento TasteProfile
- * @param {Number} n Numero di generi da estrarre (default 5)
- * @returns {Array} Array di ID genere (stringhe)
+ * Extracts scores from V_final by prefix (e.g. 'g' for genres, 'k' for keywords).
+ * V_final stores keys as "prefix:id" (e.g. "g:28", "k:9715").
+ * @param {Object} vFinal The fused vector from compiledVectors
+ * @param {string} prefix Single-char prefix to filter by
+ * @returns {Object} Map of { id: score } with prefix stripped
+ */
+function extractVectorByPrefix(vFinal, prefix) {
+    if (!vFinal || typeof vFinal !== 'object') return {};
+    const scores = {};
+    const target = `${prefix}:`;
+    for (const [key, value] of Object.entries(vFinal)) {
+        if (key.startsWith(target)) {
+            scores[key.slice(target.length)] = value;
+        }
+    }
+    return scores;
+}
+
+/**
+ * Extracts top N genres from profile based on descending score.
+ * Reads from V_final (prefix 'g:') when VSM vectors are available.
+ * @param {Object} profile TasteProfile document
+ * @param {number} n Number of genres to extract (default 5)
+ * @param {Object|null} user User document for DNA filters
+ * @param {string} context Profile context ID
+ * @returns {string[]} Array of genre IDs
  */
 function computeTopGenres(profile, n = 5, user = null, context = 'global') {
-    const scores = profile?.genreScores ? (profile.genreScores instanceof Map ? Object.fromEntries(profile.genreScores) : profile.genreScores) : {};
+    let scores = {};
+    const vFinal = profile?.compiledVectors?.V_final;
+    if (vFinal && Object.keys(vFinal).length > 0) {
+        scores = extractVectorByPrefix(vFinal, 'g');
+    }
+    // Fallback to legacy genreScores only if V_final yielded nothing
+    if (Object.keys(scores).length === 0) {
+        scores = profile?.genreScores ? (profile.genreScores instanceof Map ? Object.fromEntries(profile.genreScores) : profile.genreScores) : {};
+    }
     
     // Add manual genres as high-score entries if they aren't there
     const dnaFilters = getProfileDnaFilters(user, context);
     dnaFilters.filter(f => f.type === 'genre').forEach(f => {
         const gid = String(f.id);
-        if (!scores[gid]) scores[gid] = 100; // Force visibility
-        else scores[gid] += 50; // Boost visibility
+        if (!scores[gid]) scores[gid] = 100;
+        else scores[gid] += 50;
     });
 
     return Object.entries(scores)
         .sort((a, b) => b[1] - a[1])
         .slice(0, n)
-        .map(e => e[0]);
+        .map(e => String(e[0]));
+}
+
+/**
+ * Extracts top N keywords from profile based on descending score.
+ * Reads from V_final (prefix 'k:') when VSM vectors are available.
+ * @param {Object} profile TasteProfile document
+ * @param {number} n Number of keywords to extract (default 3)
+ * @param {Object|null} user User document for DNA filters
+ * @param {string} context Profile context ID
+ * @returns {string[]} Array of keyword IDs
+ */
+function computeTopKeywords(profile, n = 3, user = null, context = 'global') {
+    let scores = {};
+    const vFinal = profile?.compiledVectors?.V_final;
+    if (vFinal && Object.keys(vFinal).length > 0) {
+        scores = extractVectorByPrefix(vFinal, 'k');
+    }
+    // Fallback to legacy keywordScores only if V_final yielded nothing
+    if (Object.keys(scores).length === 0) {
+        scores = profile?.keywordScores ? (profile.keywordScores instanceof Map ? Object.fromEntries(profile.keywordScores) : profile.keywordScores) : {};
+    }
+    
+    // Add manual keywords as high-score entries if they aren't there
+    const dnaFilters = getProfileDnaFilters(user, context);
+    dnaFilters.filter(f => f.type === 'keyword').forEach(f => {
+        const kid = String(f.id);
+        if (!scores[kid]) scores[kid] = 100;
+        else scores[kid] += 50;
+    });
+
+    return Object.entries(scores)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, n)
+        .map(e => String(e[0]));
 }
 
 async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60) {
@@ -176,8 +251,7 @@ async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60) {
 }
 
 /**
- * Fallback specifico per Hidden Gems: scopre titoli di qualità a bassa popolarità.
- * NON usa popularity.desc — forza vote_count.lte e vote_average.gte su base temporale.
+ * Specific fallback for Hidden Gems: discovers high quality, low popularity titles.
  */
 async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = 60) {
     const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
@@ -255,11 +329,11 @@ async function buildDirectPresetCatalog(presetId, tmdbApiKey, mediaType) {
 }
 
 /**
- * Per ogni seed TMDB ID, recupera i film "simili" e conta quante volte ogni film appare.
- * @param {Array} seedTmdbIds Array di ID TMDB (numeri o stringhe)
- * @param {String} tmdbApiKey Chiave API TMDB
- * @param {String} mediaType 'movie' o 'tv'
- * @returns {Map} Map<tmdbId, appearanceCount>
+ * For each seed TMDB ID, fetches similar items and counts occurrences.
+ * @param {string[]} seedTmdbIds Array of TMDB IDs
+ * @param {string} tmdbApiKey TMDB API key
+ * @param {string} mediaType 'movie' or 'tv'
+ * @returns {Promise<Map<number, number>>} Map of tmdbId to appearanceCount
  */
 async function fetchTmdbSimilarCounts(seedTmdbIds, tmdbApiKey, mediaType = 'movie') {
     const types = mediaType === 'movie' ? 'movie' : 'tv';
@@ -286,14 +360,14 @@ async function fetchTmdbSimilarCounts(seedTmdbIds, tmdbApiKey, mediaType = 'movi
 }
 
 /**
- * Calcola il punteggio ibrido per un elemento candidato.
- * Combina: punteggio posizione Trakt + bonus TMDB per sovrapposizioni + boost di genere.
+ * Calculates a hybrid score for a candidate item.
+ * Combines Trakt position, TMDB overlap bonus, and genre boosts.
  *
- * @param {Object} item Oggetto con { tmdbId, position? }
- * @param {Map} tmdbCounts Map<tmdbId, count> — quante volte appare nei "simili"
- * @param {Array} topGenres Array dei top genre IDs dell'utente (max 3 considerati)
- * @param {Array} itemGenres Array dei genre IDs dell'item
- * @returns {Number} Punteggio ibrido
+ * @param {Object} item Item with { tmdbId, position? }
+ * @param {Map<number, number>} tmdbCounts Map of tmdbId to similar appearance count
+ * @param {string[]} topGenres User's top genre IDs
+ * @param {number[]} itemGenres Genre IDs of the item
+ * @returns {number} Hybrid score
  */
 function calculateHybridScore(item, tmdbCounts, topGenres, itemGenres) {
     let score = 0;
@@ -341,12 +415,12 @@ function extractDNAParams(manualDNA = []) {
 }
 
 /**
- * Risolve una singola query AI in parametri TMDB validi.
- * Converte keyword testuali in ID numerici TMDB tramite /search/keyword.
+ * Resolves a single AI query into valid TMDB parameters.
+ * Converts textual keywords into TMDB numeric IDs via /search/keyword.
  * @param {Object} aiQuery { genre_ids, keyword, vibe }
  * @param {string} tmdbApiKey
- * @param {string} types 'movie' o 'tv'
- * @returns {Object} Parametri TMDB validi per /discover
+ * @param {string} types 'movie' or 'tv'
+ * @returns {Promise<Object>} Valid TMDB params for /discover
  */
 async function resolveAiQueryToTmdbParams(aiQuery, tmdbApiKey, types) {
     const params = { api_key: tmdbApiKey };
@@ -376,14 +450,14 @@ async function resolveAiQueryToTmdbParams(aiQuery, tmdbApiKey, types) {
 }
 
 /**
- * Esegue il Two-Tier Scoring su un pool di candidati.
- * Tier 1: Light Score in RAM (generi + bayesian) → taglio metà inferiore
- * Tier 2: Deep Score sui sopravvissuti (metadati completi)
+ * Executes Two-Tier Scoring on a candidate pool.
+ * Tier 1: Light Score in RAM (genres + Bayesian) -> filters bottom half
+ * Tier 2: Deep Score on survivors (full metadata + VSM)
  * 
- * @param {Array} pool Array di item TMDB "light" (da /discover)
+ * @param {Array} pool Array of "light" TMDB items (from /discover)
  * @param {Object} profile TasteProfile
  * @param {Object} options { tmdbApiKey, types, dnaFilters, globalProfile }
- * @returns {Array} Array di { data, score } ordinati per score
+ * @returns {Promise<Array>} Sorted array of { data, score }
  */
 async function twoTierScore(pool, profile, options) {
     const { tmdbApiKey, types, dnaFilters, globalProfile } = options;
@@ -455,9 +529,10 @@ async function twoTierScore(pool, profile, options) {
 }
 
 /**
- * Salva i dati di scoring in cache permanente per un titolo TMDB.
- * @param {Object} tmdbDetails Dati completi TMDB (con credits e keywords)
- * @param {string} type 'movie' o 'tv'
+ * Saves scoring data into permanent cache for a TMDB title.
+ * @param {Object} tmdbDetails Full TMDB data (with credits and keywords)
+ * @param {string} type 'movie' or 'tv'
+ * @returns {Promise<void>}
  */
 async function saveScoringData(tmdbDetails, type) {
     if (!tmdbDetails || !tmdbDetails.id) return;
@@ -493,10 +568,10 @@ async function saveScoringData(tmdbDetails, type) {
 
 /**
  * 🎯 Hero Catalog 1: True Blend ("Scelti per Te")
- * Usa il Query Synthesizer (Mistral) per generare 2-3 ricerche ampie (OR logic).
- * Paginazione profonda per creare un bacino largo (~150 titoli).
- * Two-Tier Scoring: Light Score → taglio → Deep Score.
- * Fallback al metodo classico se Mistral non è disponibile.
+ * Uses Query Synthesizer (Mistral) to generate 2-3 broad searches (OR logic).
+ * Performs deep pagination to create a large pool (~150 titles).
+ * Executes Two-Tier Scoring: Light Score -> Cut -> Deep Score.
+ * Falls back to classic method if Mistral is unavailable.
  */
 async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
@@ -508,7 +583,7 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     const dnaParams = extractDNAParams(dnaFilters);
 
     const topGenres = computeTopGenres(profile, 5, user, context);
-    const topKeywords = [...profile.keywordScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => e[0]);
+    const topKeywords = computeTopKeywords(profile, 5, user, context);
 
     const existingIds = new Set();
     let pool = [];
@@ -598,8 +673,8 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
 
 /**
  * 🕸️ Hero Catalog 2: Super-Seed Network ("La Rete dei tuoi Preferiti")
- * Legge dal DB: Trakt Recs (peso +3), Loved (peso +2), Liked (peso +1).
- * Chiede TMDB /similar per ogni seed, somma i pesi (stacking).
+ * Reads from DB: Trakt Recs (weight +3), Loved (weight +2), Liked (weight +1).
+ * Queries TMDB /similar for each seed, sums weights (stacking).
  */
 async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
@@ -685,9 +760,9 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
 
 /**
  * 💎 Hero Catalog 3: Hidden Gems ("Gemme Nascoste" / Anti-Trash)
- * Usa il Query Synthesizer (Mistral) per generare 3-4 ricerche iper-specifiche (AND logic).
- * Mantiene filtri di qualità: bassa popolarità, alto rating, minimo voti.
- * Applica Two-Tier Scoring. Fallback al metodo classico se Mistral non è disponibile.
+ * Uses Query Synthesizer (Mistral) to generate 3-4 hyper-specific searches (AND logic).
+ * Enforces quality filters: low popularity, high rating, minimum votes.
+ * Applies Two-Tier Scoring. Falls back to classic method if Mistral is unavailable.
  */
 async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
@@ -773,7 +848,7 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
 
 /**
  * 🌐 Hero Catalog 4: Trakt Filtered ("Suggeriti dalla Community")
- * Legge le raccomandazioni Trakt dal DB (100 risultati grezzi), le passa attraverso il ProfileScorer.
+ * Reads Trakt recommendations from DB (100 raw results), processes them via ProfileScorer.
  */
 async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
@@ -810,7 +885,7 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
 }
 
 /**
- * Endpoint principale: gestisce la richiesta di un catalogo ibrido profilato.
+ * Main endpoint: handles request for a profiled hybrid catalog.
  */
 async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId, activeProfileId = 'global') {
     const mediaType = (catalogId.includes('series') || catalogId.includes('tv')) ? 'series' : 'movie';
@@ -977,7 +1052,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 }
 
 /**
- * Sincronizzazione incrementale profilo utente da history Trakt.
+ * Incremental user profile synchronization from Trakt history.
  */
 async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context = 'global') {
     if (!userId || !traktToken || !tmdbApiKey) return false;
@@ -1005,6 +1080,7 @@ module.exports = {
     fetchTmdbSimilarCounts,
     calculateHybridScore,
     computeTopGenres,
+    computeTopKeywords,
     fetchPopularFallbackIds,
     fetchHiddenGemsFallbackIds,
     buildDirectPresetCatalog,

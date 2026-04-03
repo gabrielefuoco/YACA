@@ -127,4 +127,49 @@ router.post('/validate-mistral-key', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/tmdb/batch-details
+ * Fetches multiple TMDB items in a single request (sequentially with local rate limiting).
+ * Essential for the client-side VSM engine to enrich history with genres/keywords.
+ */
+router.post('/tmdb/batch-details', async (req, res) => {
+    const { items, tmdbKey } = req.body; // items: [{ id, type }]
+
+    if (!items || !Array.isArray(items)) {
+        return res.status(400).json({ error: 'items array is required' });
+    }
+
+    const apiKey = tmdbKey || process.env.TMDB_API_KEY;
+    if (!apiKey) return res.status(400).json({ error: 'TMDB API key is required' });
+
+    try {
+        const tmdb = require('../clients/tmdb');
+        const results = [];
+        
+        // Process in small batches to stay within reasonable response times 
+        // while respecting the server's rateLimiter.
+        const batchSize = 10;
+        for (let i = 0; i < items.length; i += batchSize) {
+            const batch = items.slice(i, i + batchSize);
+            const batchResults = await Promise.all(batch.map(async (item) => {
+                try {
+                    // Normalize type (Stremio 'series' -> TMDB 'tv')
+                    const type = item.type === 'series' ? 'tv' : item.type;
+                    const details = await tmdb.getTmdbMovieDetails(apiKey, item.id, type);
+                    return { id: item.id, type: item.type, details };
+                } catch (err) {
+                    console.error(`[BatchTMDB] Failed to fetch ${item.type}:${item.id}`, err.message);
+                    return { id: item.id, type: item.type, error: err.message };
+                }
+            }));
+            results.push(...batchResults);
+        }
+
+        res.json({ results });
+    } catch (err) {
+        console.error(`[BatchTMDB] Global Error:`, err.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;

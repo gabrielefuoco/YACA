@@ -179,41 +179,44 @@ function buildDnaDescription(profile, user, context, topN = 5) {
     if (manualGenres.length > 0) parts.push(`User Manual Genres: ${manualGenres.join(', ')}`);
     if (manualKeywords.length > 0) parts.push(`User Manual Keywords: ${manualKeywords.join(', ')}`);
 
-    // 2. Collect Inferred DNA (Scores)
-    if (profile) {
-        // Top genres from scores
-        if (profile.genreScores && profile.genreScores.size > 0) {
-            const topGenres = [...profile.genreScores.entries()]
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, topN);
-            
-            if (topGenres.length > 0) {
-                const idToName = {};
-                for (const [name, id] of Object.entries(GENRE_NAME_TO_ID)) {
-                    idToName[String(id)] = name;
-                }
-                const genreNames = topGenres.map(([id, score]) => {
-                    let name = profile.idNames ? profile.idNames.get(String(id)) : null;
-                    if (!name) name = idToName[String(id)] || `Genre ${id}`;
-                    return `${name}`;
-                });
-                parts.push(`Inferred Preferred Genres: ${genreNames.join(', ')}`);
+    // 2. Collect Inferred DNA (Vectors)
+    if (profile && profile.compiledVectors?.V_final) {
+        const vFinal = profile.compiledVectors.V_final;
+        const entries = Object.entries(vFinal);
+
+        // Top genres from V_final
+        const topGenres = entries
+            .filter(([key]) => key.startsWith('g:'))
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, topN);
+        
+        if (topGenres.length > 0) {
+            const idToName = {};
+            for (const [name, id] of Object.entries(GENRE_NAME_TO_ID)) {
+                idToName[String(id)] = name;
             }
+            const genreNames = topGenres.map(([key, score]) => {
+                const id = key.split(':')[1];
+                let name = profile.idNames ? profile.idNames.get(String(id)) : null;
+                if (!name) name = idToName[String(id)] || `Genre ${id}`;
+                return `${name}`;
+            });
+            parts.push(`Inferred Preferred Genres: ${genreNames.join(', ')}`);
         }
 
-        // Top keywords from scores
-        if (profile.keywordScores && profile.keywordScores.size > 0) {
-            const topKeywords = [...profile.keywordScores.entries()]
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, topN);
-            
-            if (topKeywords.length > 0) {
-                const kwNames = topKeywords.map(([id, score]) => {
-                    const name = profile.idNames ? profile.idNames.get(String(id)) : `Keyword ${id}`;
-                    return `${name}`;
-                });
-                parts.push(`Inferred Preferred Keywords: ${kwNames.join(', ')}`);
-            }
+        // Top keywords from V_final
+        const topKeywords = entries
+            .filter(([key]) => key.startsWith('k:'))
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, topN);
+        
+        if (topKeywords.length > 0) {
+            const kwNames = topKeywords.map(([key, score]) => {
+                const id = key.split(':')[1];
+                const name = profile.idNames ? profile.idNames.get(String(id)) : `Keyword ${id}`;
+                return `${name}`;
+            });
+            parts.push(`Inferred Preferred Keywords: ${kwNames.join(', ')}`);
         }
     }
 

@@ -112,8 +112,57 @@ export interface MyList {
 }
 
 export interface AnalyticsData {
-  genreScores: Record<string, number>;
-  keywordScores: Record<string, number>;
+  compiledVectors?: {
+    V_final: Record<string, number>;
+    V_active?: Record<string, number>;
+    V_static?: Record<string, number>;
+  };
   aiLogs: Record<string, unknown[]>;
   baseDnaParams?: Record<string, string>;
+}
+
+export interface WatchHistoryItem {
+  tmdbId: number;
+  type: 'movie' | 'tv';
+  episodesWatched: number;
+  lastWatchedAt: string;
+}
+
+export interface RawProfileData {
+  history: WatchHistoryItem[];
+  staticCatalogs: Catalog[];
+  globalVectors: CompiledVector | null;
+  subProfileVectors: Array<{ profileId: string; vectors: CompiledVector }>;
+  excludedProfileIds: string[];
+}
+
+export interface SyncStatus {
+  isSyncing: boolean;
+  total: number;
+  current: number;
+  phase: string;
+}
+
+export interface TmdbMetadata {
+  id?: number;
+  genres?: Array<{ id: number; name: string }>;
+  keywords?: { 
+    keywords?: Array<{ id: number; name: string }>; 
+    results?: Array<{ id: number; name: string }>;
+  };
+  credits?: { 
+    crew?: Array<{ job: string; id: number; name: string }>;
+    cast?: Array<{ id: number; name: string }>;
+  };
+  vote_average?: number;
+  vote_count?: number;
+  popularity?: number;
+}
+
+export type TmdbMetadataMap = Record<number, TmdbMetadata>;
+
+export interface CompiledVector {
+  V_final: Record<string, number>;
+  V_active?: Record<string, number>;
+  V_static?: Record<string, number>;
 }

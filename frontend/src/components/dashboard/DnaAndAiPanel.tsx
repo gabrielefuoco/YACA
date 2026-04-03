@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Profile, DNAItem, AnalyticsData } from '@/types';
+import { Profile, DNAItem, AnalyticsData, SyncStatus } from '@/types';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { api } from '@/lib/api';
 import { X, BrainCircuit, Terminal, EyeOff } from 'lucide-react';
@@ -28,24 +28,19 @@ const TMDB_KEY_BADGE_LABEL: Record<string, { icon: string; name: string }> = {
 interface DnaAndAiPanelProps {
   profile: Profile;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
+  syncStatus: SyncStatus & { onboardingCompleted?: boolean, lastSync?: string, manualDNA?: DNAItem[], suggestedDNA?: DNAItem[] };
+  syncProfileVectors: (profileId: string, userId: string) => Promise<any>;
+  userId?: string;
 }
 
-interface SyncStatus {
-  isSyncing: boolean;
-  total: number;
-  current: number;
-  onboardingCompleted: boolean;
-  lastSync?: string;
-  manualDNA?: DNAItem[];
-  suggestedDNA?: DNAItem[];
-}
+// Removed redundant SyncStatus
 
 function dnaArraysEqual(a: DNAItem[] = [], b: DNAItem[] = []) {
   if (a.length !== b.length) return false;
   return a.every((item, idx) => item.type === b[idx]?.type && String(item.id) === String(b[idx]?.id) && item.name === b[idx]?.name);
 }
 
-export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) {
+export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, syncProfileVectors, userId }: DnaAndAiPanelProps) {
   const profileDNA: DNAItem[] = profile?.settings?.manualDNA ?? [];
   const suggestedDNA: DNAItem[] = profile?.settings?.suggestedDNA ?? [];
   const dnaLookup = useMemo(() => {
@@ -62,7 +57,6 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
 
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [showProgressModal, setShowProgressModal] = useState(false);
 
   const getDnaName = (id: string, tmdbKey: string) => {
@@ -124,7 +118,6 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
       const userId = typeof window !== 'undefined' ? localStorage.getItem('yaca_user_id') : null;
       if (!userId) return;
       const status = await api.getSyncStatus(profile.id, userId);
-      setSyncStatus(status);
 
       if (status && Array.isArray(status.manualDNA) && Array.isArray(status.suggestedDNA)) {
         const currentSettings = latestSettingsRef.current ?? {};
@@ -174,11 +167,15 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
   }, [fetchAnalytics, syncStatus?.isSyncing]);
 
   const handleRefresh = async () => {
-    const userId = localStorage.getItem('yaca_user_id');
-    if (!userId) return;
-    await api.refreshSync(profile.id, userId);
-    setSyncStatus(prev => prev ? { ...prev, isSyncing: true } : null);
+    const uid = userId || localStorage.getItem('yaca_user_id');
+    if (!uid) return;
     setShowProgressModal(true);
+    try {
+      await syncProfileVectors(profile.id, uid);
+      await fetchAnalytics();
+    } catch (err) {
+      console.error('Refresh failed:', err);
+    }
   };
 
   const handleConfirmDNA = async () => {
@@ -354,11 +351,11 @@ export function DnaAndAiPanel({ profile, onUpdateProfile }: DnaAndAiPanelProps) 
                     <div className="flex items-center gap-3">
                       <label htmlFor={movieSwitchId} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-marrow-light/60 font-mono">
                         FILM
-                        <Switch id={movieSwitchId} checked={isMoviesEnabled} onCheckedChange={(checked) => toggleHeroCatalog(idMovies, checked)} />
+                        <Switch id={movieSwitchId} checked={isMoviesEnabled} onCheckedChange={(checked: boolean) => toggleHeroCatalog(idMovies, checked)} />
                       </label>
                       <label htmlFor={seriesSwitchId} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-marrow-light/60 font-mono">
                         SERIE
-                        <Switch id={seriesSwitchId} checked={isSeriesEnabled} onCheckedChange={(checked) => toggleHeroCatalog(idSeries, checked)} />
+                        <Switch id={seriesSwitchId} checked={isSeriesEnabled} onCheckedChange={(checked: boolean) => toggleHeroCatalog(idSeries, checked)} />
                       </label>
                     </div>
                   </div>

@@ -18,6 +18,18 @@ class ProfileScorer {
         return String(value ?? '').replace(/^tmdb:/i, '').trim();
     }
 
+    /**
+     * Gets a score from the fused vector for a specific type and id.
+     * @param {Object} vector V_final object
+     * @param {'g'|'k'|'d'|'a'} prefix 
+     * @param {string|number} id 
+     * @returns {number}
+     */
+    static getVectorScore(vector, prefix, id) {
+        if (!vector) return 0;
+        return vector[`${prefix}:${this.normalizeDnaId(id)}`] || 0;
+    }
+
     static computeDnaMultiplier(tmdbData, dnaFilters = []) {
         if (!Array.isArray(dnaFilters) || dnaFilters.length === 0) return 1.0;
 
@@ -42,38 +54,47 @@ class ProfileScorer {
         const tmdbWeight = context.tmdbWeight ?? profile.tmdbWeight ?? 1.0;
         const traktWeight = context.traktWeight ?? profile.traktWeight ?? 1.0;
 
+        const vFinal = profile.compiledVectors?.V_final || {};
         let thematicScore = 0;
         let authorialScore = 0;
 
-        // --- 1. Assi Tematici (Phase 1.2: worth 90% of affinity score) ---
+        // Fallback to legacy fields if VSM vectors are missing
+        const hasVsm = Object.keys(vFinal).length > 0;
+        const legacyGenres = !hasVsm && profile.genreScores ? (profile.genreScores instanceof Map ? Object.fromEntries(profile.genreScores) : profile.genreScores) : {};
+        const legacyKeywords = !hasVsm && profile.keywordScores ? (profile.keywordScores instanceof Map ? Object.fromEntries(profile.keywordScores) : profile.keywordScores) : {};
+
+        // --- 1. Assi Tematici (VSM: Vector Space Model) ---
         // Generi
         const genreIds = tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id) : []);
         genreIds.forEach(gid => {
             if (gid !== undefined && gid !== null) {
-                const score = profile.genreScores.get(gid.toString()) || 0;
-                thematicScore += score;
+                if (hasVsm) {
+                    thematicScore += this.getVectorScore(vFinal, 'g', gid);
+                } else {
+                    thematicScore += legacyGenres[String(gid)] || 0;
+                }
             }
         });
 
         // Keywords
         const keywords = tmdbData.keywords?.keywords || tmdbData.keywords?.results || [];
-        if (keywords.length > 0) {
-            keywords.forEach(kw => {
-                if (kw && kw.id) {
-                    const score = profile.keywordScores.get(kw.id.toString()) || 0;
-                    thematicScore += score;
+        keywords.forEach(kw => {
+            if (kw && kw.id) {
+                if (hasVsm) {
+                    thematicScore += this.getVectorScore(vFinal, 'k', kw.id);
+                } else {
+                    thematicScore += legacyKeywords[String(kw.id)] || 0;
                 }
-            });
-        }
+            }
+        });
 
-        // --- 2. Assi Autoriali (Phase 1.2: worth 10% as precision bonus) ---
+        // --- 2. Assi Autoriali (Precision Bonus) ---
         // Registi
         if (tmdbData.credits && tmdbData.credits.crew) {
             const directors = tmdbData.credits.crew.filter(c => c.job === 'Director');
             directors.forEach(d => {
                 if (d && d.id) {
-                    const score = profile.directorScores.get(d.id.toString()) || 0;
-                    authorialScore += score;
+                    authorialScore += this.getVectorScore(vFinal, 'd', d.id);
                 }
             });
         }
@@ -82,14 +103,14 @@ class ProfileScorer {
         if (tmdbData.credits && tmdbData.credits.cast) {
             tmdbData.credits.cast.slice(0, 5).forEach(a => {
                 if (a && a.id) {
-                    const score = profile.actorScores.get(a.id.toString()) || 0;
-                    authorialScore += score;
+                    authorialScore += this.getVectorScore(vFinal, 'a', a.id);
                 }
             });
         }
 
-        // --- 3. Phase 1.2: Rebalanced weighting (Thematic 90%, Authorial 10%) ---
-        const profileMatch = (thematicScore * 0.9) + (authorialScore * 0.1);
+        // --- 3. Final Affinity Weighting (Thematic 98%, Authorial 2%) ---
+        // Authorial weight is minimized as per user feedback: "non sono così importanti"
+        const profileMatch = (thematicScore * 0.98) + (authorialScore * 0.02);
 
         // --- Phase 1.3: Bayesian Weighted Rating (IMDb formula) ---
         // WR = ((v/(v+m)) * R) + ((m/(v+m)) * C)
@@ -158,11 +179,12 @@ class ProfileScorer {
         if (!lightData || !profile) return 0;
 
         // Genre match score
+        const vFinal = profile.compiledVectors?.V_final || {};
         let genreScore = 0;
         const genreIds = lightData.genre_ids || [];
         genreIds.forEach(gid => {
             if (gid !== undefined && gid !== null) {
-                genreScore += profile.genreScores.get(gid.toString()) || 0;
+                genreScore += this.getVectorScore(vFinal, 'g', gid);
             }
         });
 
@@ -170,7 +192,7 @@ class ProfileScorer {
         let keywordScore = 0;
         keywordItems.forEach((kw) => {
             if (kw && kw.id) {
-                keywordScore += profile.keywordScores?.get(kw.id.toString()) || 0;
+                keywordScore += this.getVectorScore(vFinal, 'k', kw.id);
             }
         });
 

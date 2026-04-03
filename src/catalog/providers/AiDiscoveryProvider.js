@@ -7,9 +7,7 @@ const { catalogFallbackCache } = require('../../cache/cacheInstances');
 const TasteProfile = require('../../models/TasteProfile');
 const ProfileScorer = require('../../profile/ProfileScorer');
 
-// Import from local providers/processors
-const { buildDiscoveryParams, getTmdbVoteScore } = require('./TmdbProvider');
-const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataHydrator');
+const { computeTopGenres, computeTopKeywords } = require('../../engines/hybridRecommendations');
 
 const LOOKAHEAD_PAGES = 3;
 const PAGE_SIZE = 20;
@@ -171,16 +169,10 @@ async function injectProfilePreferences(filters, userId, profileId) {
     if (!profile) return filters;
 
     const enriched = { ...filters };
-
-    const topKeywords = [...profile.keywordScores.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(e => e[0]);
-
-    const topGenres = [...profile.genreScores.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 2)
-        .map(e => e[0]);
+    
+    // Use VSM-based top features (V_final) with legacy fallback
+    const topKeywords = computeTopKeywords(profile, 3);
+    const topGenres = computeTopGenres(profile, 2);
 
     if (topKeywords.length > 0) {
         const existingKws = enriched.with_keywords ? enriched.with_keywords.split(/[|,]/) : [];
@@ -238,26 +230,7 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
         )
     );
 
-    const mergedMap = new Map();
-    queryResults.forEach((items, queryIndex) => {
-        for (const item of items || []) {
-            if (!item || !item.id) continue;
-            const normalizedItemId = normalizeContentId(item.id);
-            if (mergedMap.has(normalizedItemId)) {
-                const existing = mergedMap.get(normalizedItemId);
-                existing.consensusCount += 1;
-                existing.queryIndexes.add(queryIndex);
-            } else {
-                mergedMap.set(normalizedItemId, {
-                    ...item,
-                    consensusCount: 1,
-                    queryIndexes: new Set([queryIndex])
-                });
-            }
-        }
-    });
-
-    let finalItems = Array.from(mergedMap.values());
+    const finalItems = applyConsensusScoring(queryResults);
     await hydrateResultsFromLocalDetailsCache(finalItems, tmdbApiKey, type);
 
     for (const item of finalItems) {

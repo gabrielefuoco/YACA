@@ -32,6 +32,9 @@ interface DashboardPageProps {
   onRemoveMyList: (id: string) => void;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
   onTemplateApplied?: (profileId: string, selectedPresets: string[]) => Promise<void> | void;
+  syncStatus: any;
+  syncProfileVectors: (profileId: string, userId: string) => Promise<any>;
+  userId?: string;
 }
 
 export function DashboardPage({
@@ -55,6 +58,9 @@ export function DashboardPage({
   onRemoveMyList,
   onUpdateProfile,
   onTemplateApplied,
+  syncStatus,
+  syncProfileVectors,
+  userId,
 }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('active');
   const [isRenameOpen, setIsRenameOpen] = useState(false);
@@ -192,6 +198,9 @@ export function DashboardPage({
               <DnaAndAiPanel
                 profile={editingProfile}
                 onUpdateProfile={onUpdateProfile}
+                syncStatus={syncStatus}
+                syncProfileVectors={syncProfileVectors}
+                userId={userId}
               />
             )}
           </div>

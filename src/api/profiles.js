@@ -3,6 +3,7 @@ const router = express.Router();
 const TasteProfile = require('../models/TasteProfile');
 const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
+const WatchHistory = require('../models/WatchHistory');
 const { syncAllStremioData } = require('../utils/stremioAddon');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const { buildDnaDescription, generateDiscoveryQueries } = require('../ai/querySynthesizer');
@@ -225,6 +226,85 @@ router.post('/:id/sync/refresh', async (req, res) => {
         res.json({ success: true, message: `Sync started for profile ${profileId}` });
     } catch (err) {
         console.error(`[ProfileAPI] Error starting refresh:`, err.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * GET /api/profiles/:id/raw-data
+ * Returns the raw watch history for the profile.
+ * Used by client-side Vector Space Model (VSM).
+ */
+router.get('/:id/raw-data', async (req, res) => {
+    const { id: profileId } = req.params;
+    const userId = req.query.userId;
+
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    try {
+        const history = await WatchHistory.find({ owner: userId, context: profileId })
+            .sort({ lastWatchedAt: -1 })
+            .lean();
+            
+        res.json({ history });
+    } catch (err) {
+        console.error(`[ProfileAPI] Error fetching raw data:`, err.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * POST /api/profiles/:id/sync-vectors
+ * Receives the client-computed compiledVectors and updates the TasteProfile.
+ */
+router.post('/:id/sync-vectors', async (req, res) => {
+    const { id: profileId } = req.params;
+    const { userId, compiledVectors } = req.body;
+
+    if (!userId || !compiledVectors) return res.status(400).json({ error: 'userId and compiledVectors are required' });
+
+    // Structural validation: V_final must exist and be a plain object
+    const { V_final, V_active, V_static } = compiledVectors;
+    if (!V_final || typeof V_final !== 'object' || Array.isArray(V_final)) {
+        return res.status(400).json({ error: 'compiledVectors.V_final must be a non-null object' });
+    }
+
+    // Key format validation: all keys must match prefix:id pattern (g:28, k:9715, d:525, a:1100)
+    const VALID_KEY_PATTERN = /^[gkda]:\d+$/;
+    const invalidKeys = Object.keys(V_final).filter(k => !VALID_KEY_PATTERN.test(k));
+    if (invalidKeys.length > 0) {
+        return res.status(400).json({ error: `Invalid V_final keys: ${invalidKeys.slice(0, 5).join(', ')}` });
+    }
+
+    // Size guard: reject unreasonably large payloads
+    const keyCount = Object.keys(V_final).length;
+    if (keyCount > 500) {
+        return res.status(400).json({ error: `V_final too large (${keyCount} keys, max 500)` });
+    }
+
+    // Sanitize: only allow known sub-vectors through
+    const sanitized = { V_final };
+    if (V_active && typeof V_active === 'object' && !Array.isArray(V_active)) sanitized.V_active = V_active;
+    if (V_static && typeof V_static === 'object' && !Array.isArray(V_static)) sanitized.V_static = V_static;
+
+    try {
+        await TasteProfile.updateOne(
+            { owner: userId, context: profileId },
+            { 
+                $set: { 
+                    compiledVectors: {
+                        ...sanitized,
+                        lastComputed: new Date()
+                    },
+                    lastUpdated: new Date()
+                } 
+            },
+            { upsert: true }
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(`[ProfileAPI] Error syncing vectors:`, err.message);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

@@ -13,71 +13,14 @@ const tasteProfileSchema = new mongoose.Schema({
         required: true,
         index: true
     },
-    // Influenza di Trakt (0-100) - Vecchio campo per compatibilità
-    traktInfluence: {
-        type: Number,
-        default: 30,
-        min: 0,
-        max: 100
+    // Compiled Vectors (pre-computed by frontend vectorEngine)
+    compiledVectors: {
+        V_static: { type: mongoose.Schema.Types.Mixed, default: {} },
+        V_active: { type: mongoose.Schema.Types.Mixed, default: {} },
+        V_final: { type: mongoose.Schema.Types.Mixed, default: {} },
+        lastComputed: { type: Date }
     },
-    // Nuovi Pesi Granulari (Default 1.0)
-    tmdbWeight: {
-        type: Number,
-        default: 1.0,
-        min: 0
-    },
-    traktWeight: {
-        type: Number,
-        default: 1.0,
-        min: 0
-    },
-    // Punteggi per asse (Map di ID/Nome -> Punteggio)
-    genreScores: {
-        type: Map,
-        of: Number,
-        default: {}
-    },
-    keywordScores: {
-        type: Map,
-        of: Number,
-        default: {}
-    },
-    directorScores: {
-        type: Map,
-        of: Number,
-        default: {}
-    },
-    actorScores: {
-        type: Map,
-        of: Number,
-        default: {}
-    },
-    studioScores: {
-        type: Map,
-        of: Number,
-        default: {}
-    },
-    eraScores: {
-        type: Map,
-        of: Number,
-        default: {}
-    },
-    countryScores: {
-        type: Map,
-        of: Number,
-        default: {}
-    },
-    runtimeScores: {
-        type: Map,
-        of: Number,
-        default: {}
-    },
-    // ID to human-readable Name mapping
-    idNames: {
-        type: Map,
-        of: String,
-        default: {}
-    },
+    // Sync & Onboarding
     syncStatus: {
         isSyncing: { type: Boolean, default: false },
         total: { type: Number, default: 0 },
@@ -88,13 +31,11 @@ const tasteProfileSchema = new mongoose.Schema({
         type: Boolean, 
         default: false 
     },
-    // Elenco ID già processati per evitare ricalcoli
-    processedTraktIds: [{
-        type: String
-    }],
-    processedStremioIds: [{
-        type: String
-    }],
+    // Cross-profile contamination control
+    excludeFromGlobal: { 
+        type: Boolean, 
+        default: false 
+    },
     signatureTitles: {
         core: { type: String, default: null },
         blend: { type: String, default: null },

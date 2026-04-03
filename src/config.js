@@ -50,14 +50,10 @@ module.exports = {
     SERIES_ONGOING_PRESENTATION_TTL_MS: 12 * 60 * 60 * 1000,      // 12 hours for ongoing series
     SERIES_ONGOING_PRESENTATION_SWR_MS: 30 * 60 * 1000,            // 30 min SWR for ongoing series
 
-    // ─── Session Data (Redis only) ───
+    // Session Data (Redis only)
     // Bayesian Weighted Rating parameters (IMDb formula)
     BAYESIAN_MIN_VOTES: 300,   // m: minimum votes required to be listed
     BAYESIAN_MEAN_VOTE: 6.5,   // C: mean vote across all items
-
-    // Binge-watching detection threshold (max gap in ms between episodes in the same session)
-    BINGE_SESSION_GAP_MS: 24 * 60 * 60 * 1000, // 24 hours
-    BINGE_MULTIPLIER: 1.5,  // multiplier applied when binge is detected
 
     FORCED_FAST_CATALOG_IDS: ['yaca_anime_trending'],
     FORCED_FAST_PRESET_IDS: ['preset_new_movies', 'preset_new_series', 'preset_new_series_eps', 'preset_new_anime', 'preset_new_anime_eps', 'preset_pop_anime'],

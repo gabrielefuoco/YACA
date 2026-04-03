@@ -75,4 +75,12 @@ export const api = {
     get(`/api/sync/global-queue?limit=${limit}`),
   enrichSyncItem: (body: { tmdbId: string, type: string, rawTMDB: any, userId?: string }) => 
     post('/api/sync/enrich', body),
+  
+  // VSM Sync Endpoints
+  getRawProfileData: (profileId: string, userId: string) =>
+    get(`/api/profiles/${encodeURIComponent(profileId)}/raw-data?userId=${encodeURIComponent(userId)}`),
+  syncVectors: (profileId: string, userId: string, vectors: any) =>
+    post(`/api/profiles/${encodeURIComponent(profileId)}/sync-vectors`, { userId, ...vectors }),
+  batchTmdbDetails: (tmdbIds: number[], type: 'movie' | 'tv') =>
+    post('/api/tmdb/batch-details', { tmdbIds, type }),
 };
