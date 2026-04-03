@@ -50,8 +50,7 @@ router.post('/preview-catalog', async (req, res) => {
         if (!sanitizedPrompt) {
             return res.status(400).json({ error: 'Prompt non valido' });
         }
-        const aiTaskType = 'multi_query';
-        const aiFilters = await generateTmdbFiltersFromPrompt(sanitizedPrompt, mistralKey, aiTaskType);
+        const aiFilters = await generateTmdbFiltersFromPrompt(sanitizedPrompt, mistralKey, 'multi_query');
         const aiType = customType === 'series' || aiFilters.target === 'kitsu' ? 'series' : 'movie';
         discoverType = aiType === 'series' ? 'tv' : 'movie';
         strategy = aiFilters.strategy || 'discovery';
