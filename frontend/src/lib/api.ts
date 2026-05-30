@@ -49,9 +49,9 @@ export const api = {
     post('/api/validate-tmdb-key', { tmdbKey }),
   validateMistralKey: (mistralKey: string) =>
     post('/api/validate-mistral-key', { mistralKey }),
-  traktDeviceCode: () => post('/api/trakt/device/code'),
+  traktDeviceCode: () => post('/trakt/device/code'),
   traktDeviceToken: (device_code: string) =>
-    post('/api/trakt/device/token', { device_code }),
+    post('/trakt/device/token', { device_code }),
   clearCache: () => post('/api/clear-cache'),
   searchTmdbKeywords: (query: string) =>
     get(`/api/tmdb/search/keyword?query=${encodeURIComponent(query)}`),

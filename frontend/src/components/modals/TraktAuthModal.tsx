@@ -97,7 +97,7 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20 text-red-400">🎬</span>
-            Connetti Trakt
+            <span className="text-xl font-semibold">Connetti Trakt</span>
           </DialogTitle>
           <DialogDescription>
             Autorizza YACA ad accedere al tuo account Trakt

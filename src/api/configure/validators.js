@@ -34,6 +34,10 @@ function validateAuth(req) {
         }
     }
 
+    if (!req.user?.userId && req.body?.userId) {
+        req.user = { userId: req.body.userId };
+    }
+
     if (!req.user?.userId) {
         throw { status: 401, message: 'Non autenticato. Effettua il login.' };
     }
