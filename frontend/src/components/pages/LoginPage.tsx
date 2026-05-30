@@ -81,6 +81,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
 
   const handleComplete = (tkn: string | null = null, refresh: string | null = null) => {
     setConfiguring(true);
+    onComplete(
       stremioAuth,
       tkn,
       refresh,
