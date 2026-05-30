@@ -21,7 +21,7 @@ interface DashboardPageProps {
   myLists: MyList[];
   onSelectEditing: (id: string) => void;
   onSetActive: (id: string) => void;
-  onAddProfile: (name: string) => void;
+  onAddProfile: (name: string) => Profile;
   onRemoveProfile: (id: string) => void;
   onRenameProfile: (id: string, name: string) => void;
   onTogglePreset: (profileId: string, presetId: string) => void;
@@ -66,24 +66,22 @@ export function DashboardPage({
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const editingProfile = profiles.find((p) => p.id === editingProfileId) ?? profiles[0];
 
-  const handleApplyTemplate = async (template: ProfileTemplate) => {
-    const currentPresets = editingProfile?.raw_ui_state.selectedPresets ?? [];
-    const mergedPresets = Array.from(new Set([...currentPresets, ...template.presets]));
-    const currentOrder = editingProfile?.raw_ui_state.catalogOrder ?? [];
-    const mergedOrder = [...currentOrder];
-    for (const presetId of template.presets) {
-      if (!mergedOrder.includes(presetId)) {
-        mergedOrder.push(presetId);
-      }
-    }
-    onUpdateProfile(editingProfileId, {
+  const handleCreateFromTemplate = async (template: ProfileTemplate) => {
+    // Creates a new profile with the template's name
+    const newProfile = onAddProfile(template.name);
+    
+    // Set the template's presets to the new profile
+    onUpdateProfile(newProfile.id, {
       raw_ui_state: {
-        ...editingProfile.raw_ui_state,
-        selectedPresets: mergedPresets,
-        catalogOrder: mergedOrder,
+        ...newProfile.raw_ui_state,
+        selectedPresets: template.presets,
+        catalogOrder: template.presets,
       },
     });
-    await onTemplateApplied?.(editingProfileId, mergedPresets);
+
+    onSetActive(newProfile.id);
+    onSelectEditing(newProfile.id);
+    await onTemplateApplied?.(newProfile.id, template.presets);
   };
 
   const myListCatalogs: Catalog[] = myLists.map((l) => ({
@@ -118,14 +116,14 @@ export function DashboardPage({
         onSelectEditing={onSelectEditing}
         onSetActive={onSetActive}
         onAdd={onAddProfile}
+        profileTemplates={profileTemplates}
+        onCreateFromTemplate={handleCreateFromTemplate}
       />
 
       {/* Profile Settings Panel */}
       {editingProfile && (
         <ProfileSettingsPanel
           profile={editingProfile}
-          profileTemplates={profileTemplates}
-          onApplyTemplate={handleApplyTemplate}
           onUpdateProfile={onUpdateProfile}
           onSetActive={onSetActive}
           onRemove={onRemoveProfile}

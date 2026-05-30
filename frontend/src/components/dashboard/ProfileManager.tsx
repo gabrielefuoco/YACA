@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Profile } from '@/types';
+import { Profile, ProfileTemplate } from '@/types';
 import { Input } from '@/components/ui/input';
 
 interface ProfileManagerProps {
@@ -10,6 +10,8 @@ interface ProfileManagerProps {
   onSelectEditing: (id: string) => void;
   onSetActive: (id: string) => void;
   onAdd: (name: string) => void;
+  profileTemplates?: ProfileTemplate[];
+  onCreateFromTemplate?: (template: ProfileTemplate) => void;
 }
 
 export function ProfileManager({
@@ -19,6 +21,8 @@ export function ProfileManager({
   onSelectEditing,
   onSetActive,
   onAdd,
+  profileTemplates = [],
+  onCreateFromTemplate,
 }: ProfileManagerProps) {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -117,6 +121,27 @@ export function ProfileManager({
           );
         })}
       </div>
+
+      {profileTemplates.length > 0 && (
+        <div className="mt-8 flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <h3 className="text-marrow-deep text-lg font-bold">Oppure parti da un Profilo Preimpostato</h3>
+            <span className="material-symbols-outlined text-primary">auto_awesome</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {profileTemplates.map((tpl) => (
+              <button
+                key={tpl.id}
+                onClick={() => onCreateFromTemplate?.(tpl)}
+                className="flex flex-col items-start p-4 rounded-xl border-2 border-marrow-light/10 bg-white/30 hover:border-primary/50 hover:bg-white/50 transition-all text-left shadow-sm group"
+              >
+                <p className="text-sm font-bold text-marrow-deep group-hover:text-primary transition-colors mb-1">{tpl.name}</p>
+                <p className="text-xs text-marrow-light/80 font-medium line-clamp-2">{tpl.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

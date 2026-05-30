@@ -8,8 +8,6 @@ const TEMPLATE_DNA_REFRESH_DELAY_MS = 600; // allow backend save + profile refet
 
 interface ProfileSettingsPanelProps {
     profile: Profile;
-    profileTemplates: ProfileTemplate[];
-    onApplyTemplate: (template: ProfileTemplate) => void | Promise<void>;
     onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
     onSetActive: (id: string) => void;
     onRemove: (id: string) => void;
@@ -19,8 +17,6 @@ interface ProfileSettingsPanelProps {
 
 export function ProfileSettingsPanel({
     profile,
-    profileTemplates,
-    onApplyTemplate,
     onUpdateProfile,
     onSetActive,
     onRemove,
@@ -44,12 +40,6 @@ export function ProfileSettingsPanel({
         onUpdateProfile(profile.id, {
             settings: { ...profile.settings, manualDNA: newDNA },
         });
-    };
-
-    const handleApplyTemplate = async (template: ProfileTemplate) => {
-        // We'll let the backend handle the DNA inference if possible, 
-        // but for now we just apply the template via the parent callback.
-        await onApplyTemplate(template);
     };
 
     return (
@@ -82,33 +72,7 @@ export function ProfileSettingsPanel({
             </div>
 
             <div className="p-6 flex flex-col gap-8 bg-transparent">
-                {/* Modelli Suggeriti Section */}
-                {profileTemplates.length > 0 && (
-                    <details className="group border border-marrow-light/10 bg-white/30 rounded-xl p-4 shadow-sm [&_summary::-webkit-details-marker]:hidden ">
-                        <summary className="flex cursor-pointer items-center justify-between font-bold text-sm select-none">
-                            <div className="flex items-center gap-2 text-primary">
-                                <span className="material-symbols-outlined">auto_awesome</span>
-                                <span className="text-sm font-black uppercase tracking-widest">Modelli Suggeriti</span>
-                                <span className="text-xs font-normal normal-case text-marrow-light/60 ml-1">({profileTemplates.length})</span>
-                            </div>
-                            <span className="transition group-open:rotate-180 text-marrow-light/40">
-                                <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="20"><path d="M6 9l6 6 6-6"></path></svg>
-                            </span>
-                        </summary>
-                        <div className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                            {profileTemplates.map((tpl) => (
-                                <div
-                                    key={tpl.id}
-                                    onClick={() => handleApplyTemplate(tpl)}
-                                    className="p-3 rounded-lg bg-white/60 border border-marrow-light/10 hover:border-primary/50 transition-all cursor-pointer shadow-sm group/tpl"
-                                >
-                                    <p className="text-marrow-deep font-black text-xs truncate group-hover/tpl:text-primary transition-colors">{tpl.name}</p>
-                                    <p className="text-marrow-light/60 font-medium text-[10px] mt-0.5 line-clamp-2">{tpl.description}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </details>
-                )}
+
 
                 {/* Profile DNA Section */}
                 <div className="flex flex-col gap-4">
