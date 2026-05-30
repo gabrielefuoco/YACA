@@ -6,6 +6,8 @@ const { interleaveMultipleResults, applyConsensusScoring } = require('../../util
 const { catalogFallbackCache } = require('../../cache/cacheInstances');
 const TasteProfile = require('../../models/TasteProfile');
 const ProfileScorer = require('../../profile/ProfileScorer');
+const { buildDiscoveryParams, getTmdbVoteScore } = require('./TmdbProvider');
+const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataHydrator');
 
 const { computeTopGenres, computeTopKeywords } = require('../../engines/hybridRecommendations');
 
