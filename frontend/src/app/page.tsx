@@ -183,7 +183,7 @@ export default function Home() {
 
   // Remove manual sessionStorage restoration since it's handled by useProfiles constructor/effect
 
-  // 1. Instant DB Sync (500ms debounce)
+  // 1. DB Sync (No debounce)
   useEffect(() => {
     if (isInitializing || !configDecoded || !userId) return;
     
@@ -192,22 +192,19 @@ export default function Home() {
       return;
     }
 
-    const timer = setTimeout(() => {
-      api.configure({
-        profiles: profilesToApiPayload(profiles),
-        activeProfileId,
-        stremioAuthKey: stremioAuth?.authKey || undefined,
-        email: stremioAuth?.email,
-        traktToken: traktToken ?? undefined,
-        traktRefreshToken: traktRefreshToken ?? undefined,
-      }).then(data => {
-        if (data.configVersion) setConfigVersion(String(data.configVersion));
-      }).catch(err => {
-        console.warn('DB Auto-save failed:', err);
-      });
-    }, 500);
-
-    return () => clearTimeout(timer);
+    // Execute immediately on state change without delay
+    api.configure({
+      profiles: profilesToApiPayload(profiles),
+      activeProfileId,
+      stremioAuthKey: stremioAuth?.authKey || undefined,
+      email: stremioAuth?.email,
+      traktToken: traktToken ?? undefined,
+      traktRefreshToken: traktRefreshToken ?? undefined,
+    }).then(data => {
+      if (data.configVersion) setConfigVersion(String(data.configVersion));
+    }).catch(err => {
+      console.warn('DB Auto-save failed:', err);
+    });
   }, [profiles, activeProfileId, userId, isInitializing, configDecoded, stremioAuth, traktToken, traktRefreshToken, initialProfiles]);
 
   // 2. Delayed Stremio Addon Update (20s base + 1s increment per change)
