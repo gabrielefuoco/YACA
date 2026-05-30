@@ -22,10 +22,8 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onComplete }: LoginPageProps) {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [sessionUserId, setSessionUserId] = useState<string | undefined>(undefined);
-  const [tmdbKey, setTmdbKey] = useState('');
-  const [mistralKey, setMistralKey] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [stremioAuth, setStremioAuth] = useState<StremioAuth | null>(null);
@@ -83,25 +81,22 @@ export function LoginPage({ onComplete }: LoginPageProps) {
 
   const handleComplete = (tkn: string | null = null, refresh: string | null = null) => {
     setConfiguring(true);
-    onComplete(
       stremioAuth,
       tkn,
       refresh,
-      sessionUserId,
-      tmdbKey.trim() || undefined,
-      mistralKey.trim() || undefined
+      sessionUserId
     );
   };
 
   const handleSkipTrakt = () => {
-    setStep(3);
+    handleComplete(traktToken, traktRefreshToken);
   };
 
   const handleTraktSuccess = (token: string, refresh: string) => {
     setTraktToken(token);
     setTraktRefreshToken(refresh);
     setTraktModalOpen(false);
-    setStep(3);
+    handleComplete(token, refresh);
   };
 
   if (configuring) {
@@ -117,7 +112,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
     <div className="space-y-6">
       {/* Step indicators */}
       <div className="flex items-center gap-2">
-        {[1, 2, 3].map((s) => (
+        {[1, 2].map((s) => (
           <div key={s} className="flex items-center gap-2">
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${step > s
@@ -129,11 +124,11 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             >
               {step > s ? <CheckCircle2 className="h-4 w-4" /> : s}
             </div>
-            {s < 3 && <div className={`h-[2px] w-8 transition-colors ${step > s ? 'bg-emerald-500' : 'bg-border'}`} />}
+            {s < 2 && <div className={`h-[2px] w-8 transition-colors ${step > s ? 'bg-emerald-500' : 'bg-border'}`} />}
           </div>
         ))}
         <span className="ml-3 text-xs text-muted-foreground font-black uppercase tracking-widest">
-          {step === 1 ? 'Account Stremio' : step === 2 ? 'Connetti Trakt' : 'Chiavi API'}
+          {step === 1 ? 'Account Stremio' : 'Connetti Trakt'}
         </span>
       </div>
 
@@ -241,7 +236,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3">
               <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
               <p className="text-sm text-emerald-400 font-medium">Trakt connesso!</p>
-              <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => setStep(3)}>
+              <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => handleComplete(traktToken, traktRefreshToken)}>
                 Continua <ChevronRight className="h-3 w-3 ml-1" />
               </Button>
             </div>
@@ -249,57 +244,6 @@ export function LoginPage({ onComplete }: LoginPageProps) {
         </div>
       )}
 
-      {/* Step 3: API Keys (BYOK) */}
-      {step === 3 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/30 border border-secondary/50 shadow-2xl shadow-secondary/30">
-              <KeyRound className="h-6 w-6 text-secondary-foreground" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Configura le API Key</h2>
-              <p className="text-xs text-muted-foreground">TMDB opzionale, Mistral necessaria per usare le funzioni AI</p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="tmdbKey">TMDB API Key (opzionale)</Label>
-              <Input
-                id="tmdbKey"
-                type="password"
-                value={tmdbKey}
-                onChange={(e) => setTmdbKey(e.target.value)}
-                placeholder="Inserisci la tua TMDB API key"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="mistralKey">Mistral API Key</Label>
-              <Input
-                id="mistralKey"
-                type="password"
-                value={mistralKey}
-                onChange={(e) => setMistralKey(e.target.value)}
-                placeholder="Inserisci la tua Mistral API key"
-                className="mt-1"
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Senza chiave Mistral personale le funzioni AI saranno disabilitate.
-              </p>
-            </div>
-
-            <Button
-              className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/80 font-black uppercase tracking-wider h-12 transition-all shadow-xl shadow-secondary/40"
-              onClick={() => handleComplete(traktToken, traktRefreshToken)}
-            >
-              Completa configurazione
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        </div>
-      )}
 
       <TraktAuthModal
         open={traktModalOpen}

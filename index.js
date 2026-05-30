@@ -137,8 +137,8 @@ app.get('/api/presets', (req, res) => {
 
 // 2. Registra endpoint configuration (Frontend Web)
 const configureLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
-app.post('/api/configure', configureLimiter, configureRoute);
-app.post('/api/ai/generate-merged-name', generateMergedName);
+app.post('/api/configure', cookieParser(), configureLimiter, configureRoute);
+app.post('/api/ai/generate-merged-name', cookieParser(), generateMergedName);
 
 // Unified Profiles API (DNA, Sync Status)
 const profileRoutes = require('./src/api/profiles');

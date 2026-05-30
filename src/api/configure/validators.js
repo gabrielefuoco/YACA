@@ -22,7 +22,18 @@ function normalizeInputString(value) {
     return value.trim();
 }
 
+const jwt = require('jsonwebtoken');
+
 function validateAuth(req) {
+    const token = req.cookies?.yaca_session;
+    if (token) {
+        try {
+            req.user = jwt.verify(token, process.env.JWT_SECRET);
+        } catch (err) {
+            // Invalid token
+        }
+    }
+
     if (!req.user?.userId) {
         throw { status: 401, message: 'Non autenticato. Effettua il login.' };
     }

@@ -93,7 +93,7 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md bg-white text-slate-900 border-slate-200">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20 text-red-400">🎬</span>
@@ -107,24 +107,24 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
         {loading && (
           <div className="flex flex-col items-center py-8 gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Connessione a Trakt...</p>
+            <p className="text-sm text-slate-500">Connessione a Trakt...</p>
           </div>
         )}
 
         {success && (
           <div className="flex flex-col items-center py-8 gap-3">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
-              <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+              <CheckCircle2 className="h-8 w-8 text-emerald-500" />
             </div>
-            <p className="text-foreground font-semibold text-lg">Trakt connesso!</p>
-            <p className="text-sm text-muted-foreground">Reindirizzamento in corso...</p>
+            <p className="text-slate-900 font-semibold text-lg">Trakt connesso!</p>
+            <p className="text-sm text-slate-500">Reindirizzamento in corso...</p>
           </div>
         )}
 
         {!loading && !success && userCode && (
           <div className="space-y-5">
-            <div className="relative rounded-xl bg-gradient-to-br from-primary/10 to-red-900/10 border border-border/50 p-6 text-center overflow-hidden">
-              <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider font-medium">Il tuo codice di attivazione</p>
+            <div className="relative rounded-xl bg-gradient-to-br from-primary/10 to-red-900/10 border border-slate-200 p-6 text-center overflow-hidden">
+              <p className="text-xs text-slate-500 mb-3 uppercase tracking-wider font-medium">Il tuo codice di attivazione</p>
               <p className="text-4xl font-mono font-bold tracking-[0.3em] text-primary">{userCode}</p>
               <div className="mt-4 flex items-center justify-center gap-2">
                 <div className="h-1.5 flex-1 max-w-[200px] rounded-full bg-muted overflow-hidden">
@@ -133,17 +133,17 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-                <span className="text-xs text-muted-foreground font-mono tabular-nums">
+                <span className="text-xs text-slate-500 font-mono tabular-nums">
                   {mins}:{secs.toString().padStart(2, '0')}
                 </span>
               </div>
             </div>
 
-            <div className="rounded-xl bg-muted/50 border border-border p-4">
-              <ol className="space-y-3 text-sm text-foreground/70">
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
+              <ol className="space-y-3 text-sm text-slate-600">
                 <li className="flex gap-3 items-start">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">1</span>
-                  <span>Vai su <strong className="text-foreground">{verificationUrl}</strong></span>
+                  <span>Vai su <strong className="text-slate-900">{verificationUrl}</strong></span>
                 </li>
                 <li className="flex gap-3 items-start">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">2</span>
@@ -169,17 +169,17 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
                 In attesa di autorizzazione...
               </div>
             )}
-
-            {error && (
-              <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3">
-                <p className="text-xs text-red-400 text-center">{error}</p>
-              </div>
-            )}
           </div>
         )}
 
-        <div className="flex justify-end">
-          <Button variant="ghost" onClick={onClose} className="text-muted-foreground hover:text-foreground">Annulla</Button>
+        {error && (
+          <div className="rounded-lg bg-red-50 border border-red-200 p-3 mt-4">
+            <p className="text-xs text-red-600 text-center">{error}</p>
+          </div>
+        )}
+
+        <div className="flex justify-end mt-4">
+          <Button variant="ghost" onClick={onClose} className="text-slate-500 hover:text-slate-900">Annulla</Button>
         </div>
       </DialogContent>
     </Dialog>
