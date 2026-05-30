@@ -81,7 +81,6 @@ export function DashboardPage({
 
     onSetActive(newProfile.id);
     onSelectEditing(newProfile.id);
-    await onTemplateApplied?.(newProfile.id, template.presets);
   };
 
   const myListCatalogs: Catalog[] = myLists.map((l) => ({

@@ -123,24 +123,30 @@ export function ProfileManager({
       </div>
 
       {profileTemplates.length > 0 && (
-        <div className="mt-8 flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <h3 className="text-marrow-deep text-lg font-bold">Oppure parti da un Profilo Preimpostato</h3>
-            <span className="material-symbols-outlined text-primary">auto_awesome</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <details className="group border-2 border-marrow-light/10 bg-white/30 hover:border-primary/30 transition-colors rounded-xl p-4 shadow-sm [&_summary::-webkit-details-marker]:hidden mt-8">
+          <summary className="flex cursor-pointer items-center justify-between font-bold select-none">
+            <div className="flex items-center gap-2 text-primary">
+              <span className="material-symbols-outlined">auto_awesome</span>
+              <span className="text-sm font-black uppercase tracking-widest">Oppure crea un Profilo Preimpostato</span>
+              <span className="text-xs font-normal normal-case text-marrow-light/60 ml-1">({profileTemplates.length})</span>
+            </div>
+            <span className="transition group-open:rotate-180 text-marrow-light/40">
+              <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="20"><path d="M6 9l6 6 6-6"></path></svg>
+            </span>
+          </summary>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {profileTemplates.map((tpl) => (
               <button
                 key={tpl.id}
                 onClick={() => onCreateFromTemplate?.(tpl)}
-                className="flex flex-col items-start p-4 rounded-xl border-2 border-marrow-light/10 bg-white/30 hover:border-primary/50 hover:bg-white/50 transition-all text-left shadow-sm group"
+                className="flex flex-col items-start p-4 rounded-xl border-2 border-marrow-light/10 bg-white/60 hover:border-primary/50 hover:bg-white transition-all text-left shadow-sm group/tpl"
               >
-                <p className="text-sm font-bold text-marrow-deep group-hover:text-primary transition-colors mb-1">{tpl.name}</p>
+                <p className="text-sm font-bold text-marrow-deep group-hover/tpl:text-primary transition-colors mb-1">{tpl.name}</p>
                 <p className="text-xs text-marrow-light/80 font-medium line-clamp-2">{tpl.description}</p>
               </button>
             ))}
           </div>
-        </div>
+        </details>
       )}
     </section>
   );
