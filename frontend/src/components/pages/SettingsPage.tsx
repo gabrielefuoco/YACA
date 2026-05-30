@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { TraktAuthModal } from '@/components/modals/TraktAuthModal';
 import { Profile, AppConfig } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ interface SettingsPageProps {
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
   onLogout: () => void;
   onDisconnectTrakt: () => void;
+  onConnectTrakt: (token: string, refreshToken: string) => void;
   onConfigSaved: (userId?: string) => void;
 }
 
@@ -45,41 +47,18 @@ export function SettingsPage({
   onUpdateProfile,
   onLogout,
   onDisconnectTrakt,
+  onConnectTrakt,
   onConfigSaved,
 }: SettingsPageProps) {
   const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0];
   const settings = activeProfile?.settings ?? {};
 
-  const [fastRefresh, setFastRefresh] = useState(settings.fastRefresh ?? false);
-  const [tmdbKey, setTmdbKey] = useState(globalTmdbKey || settings.tmdbKey || '');
-  const [mistralKey, setMistralKey] = useState(globalMistralKey || '');
   const [loading, setLoading] = useState(false);
-  const [cacheLoading, setCacheLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [installUrl, setInstallUrl] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
-  const [mistralVerifying, setMistralVerifying] = useState(false);
-  const [mistralVerified, setMistralVerified] = useState(false);
-  const [mistralVerifyError, setMistralVerifyError] = useState('');
-
-  const handleVerifyMistralKey = async () => {
-    if (!mistralKey.trim()) return;
-    setMistralVerifying(true);
-    setMistralVerified(false);
-    setMistralVerifyError('');
-    try {
-      const result = await api.validateMistralKey(mistralKey.trim());
-      if (result.valid) {
-        setMistralVerified(true);
-      } else {
-        setMistralVerifyError(result.error || 'Chiave Mistral non valida.');
-      }
-    } catch {
-      setMistralVerifyError('Errore di connessione durante la verifica.');
-    }
-    setMistralVerifying(false);
-  };
+  const [traktModalOpen, setTraktModalOpen] = useState(false);
 
   const handleSave = async () => {
     setLoading(true);
@@ -90,8 +69,7 @@ export function SettingsPage({
     const currentSuggestedDNA = activeProfile?.settings?.suggestedDNA ?? [];
     onUpdateProfile(activeProfileId, {
       settings: {
-        fastRefresh,
-        tmdbKey,
+        ...settings,
         manualDNA: currentDNA,
         suggestedDNA: currentSuggestedDNA,
       },
@@ -105,8 +83,6 @@ export function SettingsPage({
           ...p,
           settings: {
             ...p.settings,
-            fastRefresh,
-            tmdbKey,
           },
         }
         : p
@@ -123,8 +99,8 @@ export function SettingsPage({
         traktToken,
         traktRefreshToken,
         configVersion,
-        tmdbKey,
-        mistralKey,
+        tmdbKey: globalTmdbKey || settings.tmdbKey || '',
+        mistralKey: globalMistralKey || '',
       });
 
       if (data.userId) {
@@ -152,13 +128,6 @@ export function SettingsPage({
     setLoading(false);
   };
 
-  const handleClearCache = async () => {
-    setCacheLoading(true);
-    try {
-      await api.clearCache();
-    } catch { }
-    setCacheLoading(false);
-  };
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -344,123 +313,7 @@ export function SettingsPage({
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* Cache & Performance                                                */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-5 space-y-4 shadow-sm ">
-        <div className="flex items-center gap-2 text-primary">
-          <span className="material-symbols-outlined text-lg">bolt</span>
-          <h3 className="text-sm font-black uppercase tracking-widest">Cache & Performance</h3>
-        </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-black text-marrow-deep">Refresh rapido</p>
-            <p className="text-xs text-marrow-light font-medium">Aggiorna i cataloghi più frequentemente</p>
-          </div>
-          <Switch checked={fastRefresh} onCheckedChange={setFastRefresh} />
-        </div>
-
-        <Separator className="bg-marrow-light/10" />
-
-        <Button
-          variant="outline"
-          onClick={handleClearCache}
-          disabled={cacheLoading}
-          className="w-full font-black text-marrow-deep border-marrow-light/30 bg-white/40 hover:bg-white/60"
-        >
-          {cacheLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
-          )}
-          Svuota Cache
-        </Button>
-
-        <div className="pt-2">
-          <Link
-            href="/admin/cache"
-            className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-primary/30 bg-primary/5 text-primary text-xs font-black hover:bg-primary/10 transition-all uppercase tracking-wide"
-          >
-            <Server className="h-3.5 w-3.5" />
-            Gestione Avanzata Cache (Admin)
-            <ExternalLink className="h-3 w-3 opacity-50" />
-          </Link>
-          <p className="mt-2 text-[10px] text-center text-marrow-deep font-black uppercase tracking-tighter opacity-70">
-            Visualizza statistiche dettagliate per Redis e MongoDB
-          </p>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* Global API Keys                                                    */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-5 space-y-4 shadow-sm ">
-        <div className="flex items-center gap-2 text-primary">
-          <span className="material-symbols-outlined text-lg">key</span>
-          <h3 className="text-sm font-black uppercase tracking-widest">Chiavi API Globale</h3>
-        </div>
-        
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="tmdb-key" className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">TMDB API Key (Opzionale)</Label>
-            <Input
-              id="tmdb-key"
-              value={tmdbKey}
-              onChange={(e) => setTmdbKey(e.target.value)}
-              placeholder="La tua API key TMDB..."
-              className="mt-1 bg-white border-marrow-light/10 focus:border-primary/50 text-marrow-deep placeholder:text-marrow-light/30"
-              type="password"
-            />
-            <p className="mt-1.5 text-xs text-marrow-light font-medium">
-              Aiuta la rete globale fornendo limiti aumentati o usa il tuo account.
-            </p>
-          </div>
-
-          <div>
-            <Label htmlFor="mistral-key" className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Mistral API Key (Obbligatoria per AI)</Label>
-            <div className="flex gap-2 mt-1">
-              <Input
-                id="mistral-key"
-                value={mistralKey}
-                onChange={(e) => {
-                  setMistralKey(e.target.value);
-                  setMistralVerified(false);
-                  setMistralVerifyError('');
-                }}
-                placeholder="La tua API key Mistral..."
-                className="bg-white border-marrow-light/10 focus:border-primary/50 text-marrow-deep placeholder:text-marrow-light/30"
-                type="password"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleVerifyMistralKey}
-                disabled={!mistralKey.trim() || mistralVerifying}
-                className="shrink-0"
-              >
-                {mistralVerifying ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : mistralVerified ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                ) : (
-                  <ShieldCheck className="h-4 w-4" />
-                )}
-                <span className="ml-1">{mistralVerified ? 'Valida' : 'Verifica'}</span>
-              </Button>
-            </div>
-            {mistralVerified && (
-              <p className="mt-1.5 text-xs text-emerald-500 font-medium">✓ Chiave Mistral verificata con successo.</p>
-            )}
-            {mistralVerifyError && (
-              <p className="mt-1.5 text-xs text-destructive">{mistralVerifyError}</p>
-            )}
-            <p className="mt-1.5 text-xs text-marrow-light font-medium">
-              Obbligatoria per generare cataloghi AI. Verifica la chiave prima di salvare.
-            </p>
-          </div>
-        </div>
-      </section>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Account                                                            */}
@@ -498,14 +351,33 @@ export function SettingsPage({
         </div>
 
         <div className="flex gap-2">
-          {traktToken && (
+          {traktToken ? (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setTraktModalOpen(true)}
+                className="flex-1 text-xs text-marrow-deep border-primary/20 bg-primary/5 hover:bg-primary/10"
+              >
+                Aggiorna Login Trakt
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onDisconnectTrakt}
+                className="flex-1 text-xs text-marrow-deep"
+              >
+                Disconnetti Trakt
+              </Button>
+            </>
+          ) : (
             <Button
               variant="outline"
               size="sm"
-              onClick={onDisconnectTrakt}
-              className="flex-1 text-xs text-marrow-deep"
+              onClick={() => setTraktModalOpen(true)}
+              className="flex-1 text-xs text-marrow-deep border-primary/20 bg-primary/5 hover:bg-primary/10"
             >
-              Disconnetti Trakt
+              Connetti Trakt
             </Button>
           )}
           <Button
@@ -519,6 +391,15 @@ export function SettingsPage({
           </Button>
         </div>
       </section>
+
+      <TraktAuthModal
+        open={traktModalOpen}
+        onClose={() => setTraktModalOpen(false)}
+        onSuccess={(t, r) => {
+          onConnectTrakt(t, r);
+          setTraktModalOpen(false);
+        }}
+      />
     </div>
   );
 }

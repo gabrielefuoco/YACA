@@ -523,6 +523,10 @@ export default function Home() {
                   onUpdateProfile={updateProfile}
                   onLogout={handleLogout}
                   onDisconnectTrakt={handleDisconnectTrakt}
+                  onConnectTrakt={(t, r) => {
+                    setTraktToken(t);
+                    setTraktRefreshToken(r);
+                  }}
                   onConfigSaved={handleConfigSaved}
                 />
               )}
