@@ -4,22 +4,14 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const fs = require('fs');
-const { createAxiosInstance } = require('./src/utils/httpClient');
 const rateLimit = require('express-rate-limit');
 
 const configureRoute = require('./src/api/configure/index');
 const UserConfig = require('./src/models/UserConfig');
 const { getPresets, profileTemplates } = require('./src/data/presets');
-const { sanitizeString, isAllowedUrl, resolveHostUrl } = require('./src/utils/helpers');
-const { getBlurredImageUrl, addBadgeToImage } = require('./src/utils/imageProcessor');
-const { ALLOWED_IMAGE_HOSTS } = require('./src/config');
 const connectDB = require('./src/db/connection');
 const { generateMergedName } = require('./src/api/mergeRoutes');
-const { disconnectRedis } = require('./src/cache/redisClient');
-const { preWarmRedisFromMongo } = require('./src/cache/preWarm');
 const { loginHandler, meHandler, logoutHandler } = require('./src/api/auth/index.js');
-const { requireAuth } = require('./src/middleware/requireAuth');
-const { csrfProtection } = require('./src/middleware/csrfProtection');
 const { inputSanitizer } = require('./src/middleware/inputSanitizer');
 const { attachRequestContext } = require('./src/middleware/requestContext');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
@@ -30,10 +22,7 @@ const adminRoutes = require('./src/api/admin');
 const catalogRoutes = require('./src/api/catalog');
 
 // Connessione MongoDB
-connectDB().then(() => {
-    // Pre-warm Redis from MongoDB after DB connection is established
-    preWarmRedisFromMongo().catch(err => console.error('[Boot] PreWarm error:', err.message));
-});
+connectDB();
 
 // 1. Inizializza Express
 const app = express();
@@ -42,13 +31,6 @@ app.set('trust proxy', 1);
 
 const PORT = process.env.PORT || 7000;
 
-const BADGE_CACHE_TTL_SECS = 14 * 24 * 60 * 60; // 1209600
-const badgeLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    limit: 120,
-    standardHeaders: true,
-    legacyHeaders: false
-});
 
 // CORS configurabile tramite variabile d'ambiente (default: permissivo per retrocompatibilità con Stremio)
 const corsOptions = { origin: '*', credentials: true, methods: ['GET', 'POST'] };
@@ -116,11 +98,10 @@ const authLimiter = rateLimit({
     message: { error: 'Troppi tentativi. Riprova tra qualche minuto.' }
 });
 
-// --- AUTH ROUTES (JWT HttpOnly Cookie) ---
-app.post('/api/auth/login', cookieParser(), authLimiter, csrfProtection, loginHandler);
-// app.post('/api/auth/guest', cookieParser(), authLimiter, csrfProtection, guestHandler);
-app.get('/api/auth/me', cookieParser(), authLimiter, meHandler);
-app.post('/api/auth/logout', cookieParser(), csrfProtection, logoutHandler);
+// --- AUTH ROUTES ---
+app.post('/api/auth/login', cookieParser(), authLimiter, loginHandler);
+app.get('/api/auth/me', cookieParser(), meHandler);
+app.post('/api/auth/logout', cookieParser(), logoutHandler);
 
 
 
@@ -148,49 +129,7 @@ app.get('/api/presets', (req, res) => {
 
 
 
-// Endpoint per la sfocatura immagini: redirect a wsrv.nl (proxy esterno gratuito)
-app.get('/blur', (req, res) => {
-    const { url } = req.query;
-    if (!url) {
-        return res.status(400).send('URL mancante');
-    }
-    if (!isAllowedUrl(url, ALLOWED_IMAGE_HOSTS)) {
-        console.warn(`Blur endpoint: URL bloccato dalla protezione SSRF: ${url}`);
-        return res.status(403).send('URL non consentito');
-    }
-    const blurredUrl = getBlurredImageUrl(url);
-    res.set('Cache-Control', 'public, max-age=604800');
-    return res.redirect(302, blurredUrl);
-});
 
-// Endpoint per aggiungere badge (numero episodio) su poster
-// Zero bandwidth: genera l'URL CDN ImageKit e fa redirect 302.
-// Il client (Smart TV, browser) scarica l'immagine direttamente dai server CDN globali di ImageKit.
-app.get('/badge/poster.jpg', badgeLimiter, async (req, res) => {
-    const { url, text } = req.query;
-    if (!url || !text) {
-        return res.status(400).send('URL e text obbligatori');
-    }
-    if (!isAllowedUrl(url, ALLOWED_IMAGE_HOSTS)) {
-        console.warn(`Badge endpoint: URL bloccato dalla protezione SSRF: ${url}`);
-        return res.status(403).send('URL non consentito');
-    }
-    const safeText = sanitizeString(String(text)).slice(0, 20);
-    // Permetti lettere (incluse accentate), numeri, spazi, due punti e parentesi
-    if (!safeText || !/^[\p{L}\p{N}\s:()]+$/u.test(safeText)) {
-        return res.status(400).send('Testo badge non valido');
-    }
-
-    // addBadgeToImage now returns a CDN URL (string) instead of downloading the image
-    const badgeUrl = addBadgeToImage(url, safeText);
-    if (badgeUrl) {
-        res.set('Cache-Control', `public, max-age=${BADGE_CACHE_TTL_SECS}`);
-        return res.redirect(302, badgeUrl);
-    } else {
-        // ImageKit not configured — redirect to the original poster URL
-        return res.redirect(301, url);
-    }
-});
 
 
 
@@ -198,15 +137,10 @@ app.get('/badge/poster.jpg', badgeLimiter, async (req, res) => {
 
 // 2. Registra endpoint configuration (Frontend Web)
 const configureLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
-app.post('/api/configure', cookieParser(), configureLimiter, csrfProtection, requireAuth, configureRoute);
+app.post('/api/configure', configureLimiter, configureRoute);
 app.post('/api/ai/generate-merged-name', generateMergedName);
 
-// 2.1 Sync & Profile Endpoints
-const syncLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, standardHeaders: true, legacyHeaders: false });
-app.get('/api/sync/global-queue', syncLimiter, require('./src/api/sync/global-queue'));
-app.post('/api/sync/enrich', syncLimiter, inputSanitizer, require('./src/api/sync/enrich'));
-
-// Unified Profiles API (DNA, Analytics, Sync Status)
+// Unified Profiles API (DNA, Sync Status)
 const profileRoutes = require('./src/api/profiles');
 const profileLimiter = rateLimit({ windowMs: 60 * 1000, limit: 100, standardHeaders: true, legacyHeaders: false });
 app.use('/api/profiles', profileLimiter, inputSanitizer, profileRoutes);
@@ -234,7 +168,6 @@ const shutdown = (signal) => {
     server.close(async () => {
         console.log('Server chiuso correttamente.');
         try {
-            await disconnectRedis();
             const mongoose = require('mongoose');
             await mongoose.disconnect();
             console.log('MongoDB disconnesso.');

@@ -227,7 +227,7 @@ export function SettingsPage({
       {/* HERO SECTION: Salva, Aggiorna, Installa & Backup                  */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* HERO SECTION: Salva, Aggiorna, Installa & Backup                  */}
-      <section className="rounded-2xl border-2 border-primary/40 bg-white/40 p-6 space-y-5 shadow-2xl shadow-primary/10 backdrop-blur-sm">
+      <section className="rounded-2xl border-2 border-primary/40 bg-white/40 p-6 space-y-5 shadow-2xl shadow-primary/10 ">
         <div className="flex items-center gap-3">
           <div className="size-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
             <Rocket className="h-5 w-5" />
@@ -347,7 +347,7 @@ export function SettingsPage({
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Cache & Performance                                                */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-5 space-y-4 shadow-sm backdrop-blur-sm">
+      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-5 space-y-4 shadow-sm ">
         <div className="flex items-center gap-2 text-primary">
           <span className="material-symbols-outlined text-lg">bolt</span>
           <h3 className="text-sm font-black uppercase tracking-widest">Cache & Performance</h3>
@@ -395,7 +395,7 @@ export function SettingsPage({
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Global API Keys                                                    */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-5 space-y-4 shadow-sm backdrop-blur-sm">
+      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-5 space-y-4 shadow-sm ">
         <div className="flex items-center gap-2 text-primary">
           <span className="material-symbols-outlined text-lg">key</span>
           <h3 className="text-sm font-black uppercase tracking-widest">Chiavi API Globale</h3>
@@ -465,7 +465,7 @@ export function SettingsPage({
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Account                                                            */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-5 space-y-4 shadow-sm backdrop-blur-sm">
+      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-5 space-y-4 shadow-sm ">
         <div className="flex items-center gap-2 text-primary">
           <span className="material-symbols-outlined text-lg">person</span>
           <h3 className="text-sm font-black uppercase tracking-widest">Account</h3>

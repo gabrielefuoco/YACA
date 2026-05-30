@@ -31,11 +31,6 @@ const tasteProfileSchema = new mongoose.Schema({
         type: Boolean, 
         default: false 
     },
-    // Cross-profile contamination control
-    excludeFromGlobal: { 
-        type: Boolean, 
-        default: false 
-    },
     signatureTitles: {
         core: { type: String, default: null },
         blend: { type: String, default: null },

@@ -12,7 +12,7 @@
  */
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { COOKIE_NAME, CSRF_COOKIE_NAME } = require('../../middleware/requireAuth');
+const COOKIE_NAME = 'yaca_session';
 const { stremioClient } = require('../../clients/stremio');
 const UserConfig = require('../../models/UserConfig');
 const UserAccount = require('../../db/models/UserAccount');
@@ -40,9 +40,7 @@ function getCookieOptions() {
     return buildCookieOptions(true);
 }
 
-function getCsrfCookieOptions() {
-    return buildCookieOptions(false);
-}
+
 
 /**
  * Signs a JWT token containing user identity.
@@ -121,10 +119,7 @@ async function loginHandler(req, res) {
 
         // 4. Sign JWT and set cookie
         const token = signToken({ userId, email: resolvedEmail });
-        const csrfToken = crypto.randomBytes(32).toString('hex');
-
         res.cookie(COOKIE_NAME, token, getCookieOptions());
-        res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions());
 
         // 5. Return user info with profiles from AddonConfig
         const resolvedProfiles = (addonConfig?.profiles || []).map(p => {
@@ -213,7 +208,6 @@ async function meHandler(req, res) {
  */
 async function logoutHandler(req, res) {
     res.clearCookie(COOKIE_NAME, getCookieOptions());
-    res.clearCookie(CSRF_COOKIE_NAME, getCsrfCookieOptions());
     return res.json({ success: true });
 }
 

@@ -66,6 +66,13 @@ function createEmptyBlock(): BlockState {
   };
 }
 
+const parseList = (val: unknown) => {
+  if (!val) return [];
+  return String(val).replace(/\|/g, ',').split(',').map(s => s.trim()).filter(Boolean);
+};
+
+const mapToPills = (val: unknown, prefix: string) => parseList(val).map(id => ({ id, name: `${prefix}: ${id}` }));
+
 export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
   // Global state
   const [name, setName] = useState('');
@@ -112,12 +119,6 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
   }, []);
 
   // --- Parsing helpers ---
-  const parseList = (val: unknown) => {
-    if (!val) return [];
-    return String(val).replace(/\|/g, ',').split(',').map(s => s.trim()).filter(Boolean);
-  };
-
-  const mapToPills = (val: unknown, prefix: string) => parseList(val).map(id => ({ id, name: `${prefix}: ${id}` }));
 
   // Convert API filters to a BlockState
   const filtersToBlock = useCallback((f: Record<string, unknown>): BlockState => {
@@ -263,7 +264,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
   // --- Render a single query block card ---
   const renderBlock = (block: BlockState, index: number) => (
-    <div key={block.id} className="rounded-xl border border-marrow-light/20 bg-white/40 shadow-sm overflow-hidden backdrop-blur-sm">
+    <div key={block.id} className="rounded-xl border border-marrow-light/20 bg-white/40 shadow-sm overflow-hidden ">
       {/* Block header – clickable to collapse/expand */}
       <button
         type="button"
@@ -553,7 +554,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
       {/* Preview */}
       {previewFilters && (
-        <div className="rounded-xl border border-marrow-light/10 bg-white/40 p-4 overflow-hidden backdrop-blur-md">
+        <div className="rounded-xl border border-marrow-light/10 bg-white/40 p-4 overflow-hidden ">
           <PosterRow filters={previewFilters} type={previewType} />
         </div>
       )}

@@ -118,14 +118,14 @@ async function syncAllStremioData(userId, authKey, profileId = 'global') {
             : null;
 
         if (safeProfileId === 'global') {
-            await ProfileBuilder.syncStremioData(safeUserId, stremioData, tmdbKey, 'global');
+            await ProfileBuilder.syncStremioData(safeUserId, stremioData, 'global');
         } else {
             const profile = (addonConfig?.profiles || []).find(p => p.id === safeProfileId);
             if (profile) {
                 console.log(`[StremioSync] Resolving catalogs for profile ${profile.name || safeProfileId}...`);
                 const catalogItems = await syncCatalogData(profile.catalogs, tmdbKey, profile.settings || {});
                 const formattedData = { liked: catalogItems, loved: [], library: [] };
-                await ProfileBuilder.syncStremioData(safeUserId, formattedData, tmdbKey, safeProfileId);
+                await ProfileBuilder.syncStremioData(safeUserId, formattedData, safeProfileId);
             }
         }
 

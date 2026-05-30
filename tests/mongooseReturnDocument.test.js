@@ -139,7 +139,7 @@ describe('Mongoose findOneAndUpdate options', () => {
         jest.doMock('../src/db/models/UserAccount', () => ({
             findOne: jest.fn().mockResolvedValue({ userId: 'generated_user_id', addonUuid: 'uuid-1' })
         }));
-        jest.doMock('../src/utils/stremioAddonSync', () => ({
+        jest.doMock('../src/utils/stremioAddon', () => ({
             updateStremioAddonCollection: jest.fn().mockResolvedValue(undefined)
         }));
 

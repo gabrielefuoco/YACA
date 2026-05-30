@@ -147,7 +147,7 @@ export function CatalogItem({
       </div>
 
       {isMergeTarget && (
-        <div className="absolute inset-0 flex items-center justify-center bg-primary/5 backdrop-blur-[2px] rounded-2xl border-4 border-primary pointer-events-none z-30">
+        <div className="absolute inset-0 flex items-center justify-center bg-primary/5 -[2px] rounded-2xl border-4 border-primary pointer-events-none z-30">
           <div className="bg-primary text-white px-4 py-2 rounded-full text-xs font-black uppercase tracking-[0.2em] shadow-2xl">
             Clicca per Fondere
           </div>

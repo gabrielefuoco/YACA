@@ -12,16 +12,11 @@
 const { nanoid } = require('nanoid');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
-const { encryptIfNeeded, decryptSafe } = require('../utils/encryption');
-
 const UserConfig = {
     _decryptApiKeys(apiKeysObj) {
         if (!apiKeysObj) return {};
-        const decrypted = {};
-        for (const [key, value] of Object.entries(apiKeysObj)) {
-            decrypted[key] = decryptSafe(value);
-        }
-        return decrypted;
+        // Decryption rimosso: i token sono ora salvati in chiaro
+        return { ...apiKeysObj };
     },
     
     /**
@@ -154,7 +149,8 @@ const UserConfig = {
                         } else {
                             const val = userData.apiKeys[k];
                             if (val !== undefined) {
-                                accountUpdate.$set[`apiKeys.${k}`] = encryptIfNeeded(val);
+                                // Salvataggio in chiaro
+                                accountUpdate.$set[`apiKeys.${k}`] = val;
                             }
                         }
                     });

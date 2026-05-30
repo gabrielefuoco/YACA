@@ -23,7 +23,7 @@ const {
 const { rateLimitedMap } = require('../utils/rateLimiter');
 const { generateRequestHash } = require('../utils/requestHash');
 const TmdbRequestCache = require('../models/TmdbRequestCache');
-const { translateTextToItalian } = require('../utils/translation');
+
 
 const CacheManager = require('../cache/CacheManager');
 
@@ -565,7 +565,7 @@ function getPageCacheTtl(pageNum, options = {}) {
  * Wrapper with per-page cache keys and SWR via CacheManager.
  *
  * Each Stremio "page" (skip / ITEMS_PER_PAGE + 1) gets its own isolated cache key
- * in both Redis (L1) and MongoDB (L2). SWR is handled by CacheManager.getWithStatus().
+ * in both RAM (L1) and MongoDB (L2). SWR is handled by CacheManager.getWithStatus().
  *
  * - Cache Hit Fresh: return instantly.
  * - Cache Hit Stale (SWR window): return stale data, revalidate in background.
@@ -698,8 +698,7 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
             }
         }
 
-        let translationsDone = 0;
-        const TRANSLATION_LIMIT = 30; // Reduced from 50 to further protect against timeouts on large series
+
 
         const buildEpisodesFromSeason = async (seasonData, fallbackMaps = {}) => {
             if (!seasonData?.episodes) return [];
@@ -710,23 +709,9 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
             return rateLimitedMap(seasonData.episodes, async (ep) => {
                 let overview = ep.overview || '';
                 
-                // Only translate if there's no Italian overview and we are within translation limits
-                // Also prioritize recent episodes or first 100 episodes total for translation
-                const shouldTranslate = !overview.trim() && 
-                                       translationsDone < TRANSLATION_LIMIT && 
-                                       (ep.season_number <= 2 || ep.episode_number <= 50);
-
-                if (shouldTranslate) {
-                    const enOverview = enOverviewByEpisode.get(ep.episode_number) || '';
-                    const originalOverview = originalOverviewByEpisode.get(ep.episode_number) || '';
-
-                    if (enOverview) {
-                        overview = await translateTextToItalian(enOverview, 'en');
-                        translationsDone++;
-                    } else if (originalOverview) {
-                        overview = await translateTextToItalian(originalOverview, originalLanguage || 'en');
-                        translationsDone++;
-                    }
+                // Use English or original overview as fallback if Italian is missing
+                if (!overview.trim()) {
+                    overview = enOverviewByEpisode.get(ep.episode_number) || originalOverviewByEpisode.get(ep.episode_number) || '';
                 }
 
                 return {
@@ -745,8 +730,7 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
         const allSeasonEntries = Array.from(seasonDataMap.entries());
         const seasonVideoChunks = await rateLimitedMap(allSeasonEntries, async ([seasonNumber, seasonData]) => {
             const hasMissingOverview = seasonData.episodes.some(ep => !ep.overview?.trim());
-            // Se abbiamo già raggiunto il limite di traduzioni, non facciamo nemmeno le richieste di fallback
-            if (!hasMissingOverview || translationsDone >= TRANSLATION_LIMIT) {
+            if (!hasMissingOverview) {
                 return buildEpisodesFromSeason(seasonData);
             }
 

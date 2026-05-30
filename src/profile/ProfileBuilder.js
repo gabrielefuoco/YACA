@@ -20,18 +20,42 @@ class ProfileBuilder {
     }
 
     /**
-     * Updates syncStatus in AddonConfig using the anonymous UUID join.
+     * Updates syncStatus in BOTH TasteProfile and AddonConfig concurrently.
      * @param {String} owner - userId of the user
-     * @param {Object} statusUpdate - Fields to $set in syncStatus
+     * @param {String} context - profileId/context of the profile
+     * @param {Object} statusUpdate - Fields to set in syncStatus
      */
-    static async _updateSyncStatus(owner, statusUpdate) {
+    static async _updateSyncStatus(owner, context, statusUpdate) {
         try {
-            const uuid = await ProfileBuilder._resolveAddonUuid(owner);
-            if (!uuid) return;
-            await AddonConfig.updateOne(
-                { uuid },
-                { $set: statusUpdate }
+            const isSyncing = statusUpdate.isSyncing !== undefined ? statusUpdate.isSyncing : statusUpdate['syncStatus.isSyncing'];
+            const total = statusUpdate.total !== undefined ? statusUpdate.total : statusUpdate['syncStatus.total'];
+            const current = statusUpdate.current !== undefined ? statusUpdate.current : statusUpdate['syncStatus.current'];
+            const lastSync = statusUpdate.lastSync !== undefined ? statusUpdate.lastSync : statusUpdate['syncStatus.lastSync'];
+
+            const cleanStatus = {};
+            if (isSyncing !== undefined) cleanStatus.isSyncing = isSyncing;
+            if (total !== undefined) cleanStatus.total = total;
+            if (current !== undefined) cleanStatus.current = current;
+            if (lastSync !== undefined) cleanStatus.lastSync = lastSync;
+
+            // 1. Update TasteProfile syncStatus
+            await TasteProfile.updateOne(
+                { owner, context },
+                { $set: { syncStatus: cleanStatus } },
+                { upsert: true }
             );
+
+            // 2. Update AddonConfig syncStatus
+            const uuid = await ProfileBuilder._resolveAddonUuid(owner);
+            if (uuid) {
+                const addonUpdate = {};
+                if (isSyncing !== undefined) addonUpdate['syncStatus.isSyncing'] = isSyncing;
+                if (total !== undefined) addonUpdate['syncStatus.total'] = total;
+                if (current !== undefined) addonUpdate['syncStatus.current'] = current;
+                if (lastSync !== undefined) addonUpdate['syncStatus.lastSync'] = lastSync;
+
+                await AddonConfig.updateOne({ uuid }, { $set: addonUpdate });
+            }
         } catch (err) {
             console.warn('[ProfileBuilder] Failed to update sync status:', err.message);
         }
@@ -63,10 +87,10 @@ class ProfileBuilder {
     static async syncUserHistory(owner, context, traktHistory) {
         if (!owner || !traktHistory?.length) return;
 
-        await ProfileBuilder._updateSyncStatus(owner, {
-            'syncStatus.isSyncing': true,
-            'syncStatus.total': traktHistory.length,
-            'syncStatus.current': 0
+        await ProfileBuilder._updateSyncStatus(owner, context, {
+            isSyncing: true,
+            total: traktHistory.length,
+            current: 0
         });
 
         try {
@@ -86,19 +110,19 @@ class ProfileBuilder {
                 }
 
                 if (i % 20 === 0) {
-                    await ProfileBuilder._updateSyncStatus(owner, {
-                        'syncStatus.current': i + 1
+                    await ProfileBuilder._updateSyncStatus(owner, context, {
+                        current: i + 1
                     });
                 }
             }
 
-            await ProfileBuilder._updateSyncStatus(owner, {
-                'syncStatus.isSyncing': false,
-                'syncStatus.lastSync': new Date()
+            await ProfileBuilder._updateSyncStatus(owner, context, {
+                isSyncing: false,
+                lastSync: new Date()
             });
         } catch (err) {
             console.error('[ProfileBuilder] Trakt Sync Error:', err.message);
-            await ProfileBuilder._updateSyncStatus(owner, { 'syncStatus.isSyncing': false });
+            await ProfileBuilder._updateSyncStatus(owner, context, { isSyncing: false });
         }
     }
 
@@ -120,10 +144,10 @@ class ProfileBuilder {
             ];
         }
 
-        await ProfileBuilder._updateSyncStatus(owner, {
-            'syncStatus.isSyncing': true,
-            'syncStatus.total': allItems.length,
-            'syncStatus.current': 0
+        await ProfileBuilder._updateSyncStatus(owner, context, {
+            isSyncing: true,
+            total: allItems.length,
+            current: 0
         });
 
         try {
@@ -142,19 +166,19 @@ class ProfileBuilder {
                 }
 
                 if (i % 20 === 0) {
-                    await ProfileBuilder._updateSyncStatus(owner, {
-                        'syncStatus.current': i + 1
+                    await ProfileBuilder._updateSyncStatus(owner, context, {
+                        current: i + 1
                     });
                 }
             }
 
-            await ProfileBuilder._updateSyncStatus(owner, {
-                'syncStatus.isSyncing': false,
-                'syncStatus.lastSync': new Date()
+            await ProfileBuilder._updateSyncStatus(owner, context, {
+                isSyncing: false,
+                lastSync: new Date()
             });
         } catch (err) {
             console.error('[ProfileBuilder] Stremio Sync Error:', err.message);
-            await ProfileBuilder._updateSyncStatus(owner, { 'syncStatus.isSyncing': false });
+            await ProfileBuilder._updateSyncStatus(owner, context, { isSyncing: false });
         }
     }
 }

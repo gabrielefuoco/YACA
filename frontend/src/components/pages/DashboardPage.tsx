@@ -139,7 +139,7 @@ export function DashboardPage({
 
       {/* Navigation Tabs */}
       <div className="flex justify-center mb-4">
-        <div className="inline-flex p-1.5 bg-white/40 backdrop-blur-md rounded-2xl border border-marrow-light/20 shadow-xl shadow-primary/5 max-w-full overflow-x-auto hide-scrollbar">
+        <div className="inline-flex p-1.5 bg-white/40  rounded-2xl border border-marrow-light/20 shadow-xl shadow-primary/5 max-w-full overflow-x-auto hide-scrollbar">
           {tabsItems.map((tab) => (
             <button
               key={tab.id}

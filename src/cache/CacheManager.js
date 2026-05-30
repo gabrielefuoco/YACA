@@ -1,6 +1,5 @@
 const LRUCache = require('../utils/LRUCache');
 const CacheEntry = require('../models/CacheEntry');
-const { getRedisClient, isRedisAvailable } = require('./redisClient');
 
 const NEGATIVE_CACHE_MARKER = '__NULL__';
 
@@ -10,8 +9,8 @@ class CacheManager {
     /**
      * @param {string} namespace
      * @param {object} opts
-     * @param {number} opts.ramMax      - Max items in LRU fallback (used when Redis unavailable)
-     * @param {number} opts.ramTtlMs    - L1 TTL in ms (Redis key expiry)
+     * @param {number} opts.ramMax      - Max items in LRU cache
+     * @param {number} opts.ramTtlMs    - L1 TTL in ms
      * @param {number} opts.mongoTtlMs  - L2 TTL in ms (MongoDB expiration)
      * @param {number} opts.swrMs       - Stale-While-Revalidate window in ms (0 = disabled)
      */
@@ -21,90 +20,30 @@ class CacheManager {
         this.mongoTtlMs = mongoTtlMs;
         this.swrMs = swrMs;
 
-        // LRU fallback when Redis is unavailable (e.g. local dev)
+        // LRU in-memory cache as L1
         this.lruFallback = new LRUCache({ max: ramMax, ttl: ramTtlMs + swrMs });
         CacheManager.instances.push(this);
     }
 
-    /** Build the namespaced Redis key */
-    _redisKey(key) {
-        return `${this.namespace}:${key}`;
-    }
-
-    // ─── L1 helpers (Redis with LRU fallback) ───
+    // ─── L1 helpers (Pure In-Memory LRU) ───
 
     async _l1Get(key) {
-        if (isRedisAvailable()) {
-            try {
-                const raw = await getRedisClient().get(this._redisKey(key));
-                if (raw !== null) return JSON.parse(raw);
-            } catch (err) {
-                console.error(`[CacheManager:${this.namespace}] Redis get error:`, err.message);
-            }
-        }
-        // LRU fallback
         return this.lruFallback.get(key);
     }
 
     async _l1Set(key, envelope, ttlMs) {
-        let redisSuccess = false;
-        if (isRedisAvailable()) {
-            try {
-                const rKey = this._redisKey(key);
-                const ttlSec = Math.ceil(ttlMs / 1000);
-                await getRedisClient().set(rKey, JSON.stringify(envelope), 'EX', ttlSec);
-                redisSuccess = true;
-            } catch (err) {
-                console.error(`[CacheManager:${this.namespace}] Redis set error:`, err.message);
-            }
-        }
-        
-        // Write to LRU fallback ONLY if Redis is unavailable or set failed
-        // This avoids memory redundancy when Redis is operational
-        if (!redisSuccess) {
-            this.lruFallback.set(key, envelope);
-        }
+        this.lruFallback.set(key, envelope);
     }
 
     async _l1Delete(key) {
-        if (isRedisAvailable()) {
-            try { await getRedisClient().del(this._redisKey(key)); } catch (_) { /* noop */ }
-        }
         this.lruFallback.delete(key);
     }
 
     async _l1Clear() {
-        if (isRedisAvailable()) {
-            try {
-                const redis = getRedisClient();
-                const pattern = `${this.namespace}:*`;
-                let cursor = '0';
-                do {
-                    const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 200);
-                    cursor = nextCursor;
-                    if (keys.length > 0) await redis.del(...keys);
-                } while (cursor !== '0');
-            } catch (err) {
-                console.error(`[CacheManager:${this.namespace}] Redis clear error:`, err.message);
-            }
-        }
         this.lruFallback.clear();
     }
 
     async _l1Size() {
-        if (isRedisAvailable()) {
-            try {
-                const redis = getRedisClient();
-                let count = 0;
-                let cursor = '0';
-                do {
-                    const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', `${this.namespace}:*`, 'COUNT', 200);
-                    cursor = nextCursor;
-                    count += keys.length;
-                } while (cursor !== '0');
-                return count;
-            } catch (_) { /* fall through */ }
-        }
         return this.lruFallback.size;
     }
 

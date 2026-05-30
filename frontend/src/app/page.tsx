@@ -159,7 +159,7 @@ export default function Home() {
         setIsInitializing(false);
         setConfigDecoded(true);
       });
-  }, [isLoaded]);
+  }, [isLoaded, setTraktToken, setTraktRefreshToken]);
 
   const {
     profiles,
@@ -208,7 +208,7 @@ export default function Home() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [profiles, activeProfileId, userId, isInitializing, configDecoded, stremioAuth, traktToken, traktRefreshToken]);
+  }, [profiles, activeProfileId, userId, isInitializing, configDecoded, stremioAuth, traktToken, traktRefreshToken, initialProfiles]);
 
   // 2. Delayed Stremio Addon Update (20s base + 1s increment per change)
   const addonUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -312,7 +312,7 @@ export default function Home() {
     existingUserId?: string,
     tmdbKey?: string,
     mistralKey?: string,
-    existingProfiles?: any[],
+    existingProfiles?: BackendProfile[],
     existingActiveProfileId?: string
   ) => {
     if (newStremioAuth) setStremioAuth(newStremioAuth);

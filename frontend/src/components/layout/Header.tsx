@@ -1,11 +1,12 @@
 'use client';
+import Image from 'next/image';
 
 export function Header({ children }: { children?: React.ReactNode }) {
   return (
-    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/10 bg-background/80 backdrop-blur-md px-6 md:px-10 py-3 sticky top-0 z-50">
+    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/10 bg-background/80  px-6 md:px-10 py-3 sticky top-0 z-50">
       <div className="flex items-center gap-4">
         <div className="h-8 w-8 flex items-center justify-center">
-          <img src="/fiamma_yaca.png" alt="YACA Logo" className="h-8 w-8 object-contain" />
+          <Image src="/fiamma_yaca.png" alt="YACA Logo" width={32} height={32} className="object-contain" />
         </div>
         <div className="flex flex-col">
           <h2 className="text-marrow-deep text-lg font-black leading-tight tracking-tighter">YACA</h2>

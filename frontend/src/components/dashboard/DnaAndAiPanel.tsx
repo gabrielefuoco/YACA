@@ -29,7 +29,7 @@ interface DnaAndAiPanelProps {
   profile: Profile;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
   syncStatus: SyncStatus & { onboardingCompleted?: boolean, lastSync?: string, manualDNA?: DNAItem[], suggestedDNA?: DNAItem[] };
-  syncProfileVectors: (profileId: string, userId: string) => Promise<any>;
+  syncProfileVectors: (profileId: string, userId: string) => Promise<unknown>;
   userId?: string;
 }
 
@@ -45,14 +45,14 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, syncProfil
   const suggestedDNA: DNAItem[] = profile?.settings?.suggestedDNA ?? [];
   const dnaLookup = useMemo(() => {
     const lookup = new Map<string, string>();
-    [...profileDNA, ...suggestedDNA].forEach((item) => {
+    [...(profile?.settings?.manualDNA ?? []), ...(profile?.settings?.suggestedDNA ?? [])].forEach((item) => {
       const dnaKey = `${item.type}:${String(item.id)}`;
       if (!lookup.has(dnaKey)) {
         lookup.set(dnaKey, item.name);
       }
     });
     return lookup;
-  }, [profileDNA, suggestedDNA]);
+  }, [profile?.settings?.manualDNA, profile?.settings?.suggestedDNA]);
   const latestSettingsRef = useRef(profile.settings);
 
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -392,7 +392,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, syncProfil
                             {JSON.stringify(aiLog, null, 2)}
                           </pre>
                         ) : (
-                          <p className="text-white/40 text-xs font-mono">Nessun log AI generato. Configura una chiave API Mistral o forza l'aggiornamento.</p>
+                          <p className="text-white/40 text-xs font-mono">Nessun log AI generato. Configura una chiave API Mistral o forza l&apos;aggiornamento.</p>
                         )}
                       </div>
                     </div>
@@ -451,7 +451,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, syncProfil
 
       {/* ── Progress & Onboarding Modal ── */}
       {showProgressModal && syncStatus && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-marrow-light/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-marrow-light/60  p-4 animate-in fade-in duration-300">
           <div className="w-full max-w-lg bg-beige rounded-2xl shadow-2xl border border-marrow-light/10 overflow-hidden animate-in zoom-in-95 duration-300">
             {/* Modal Header */}
             <div className="p-6 border-b border-marrow-light/10 flex items-center justify-between bg-marrow-light/5">

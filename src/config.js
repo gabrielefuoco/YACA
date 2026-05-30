@@ -8,13 +8,12 @@ module.exports = {
     // Paginators & Timeouts
     PAGES_PER_REQUEST: 3, // How many TMDB pages to fetch concurrently per Stremio request
     ITEMS_PER_PAGE: 20,   // Default items per page for TMDB
-    ITEMS_PER_PAGE: 20,   // Default items per page for TMDB
 
     // Default Fallbacks
     DEFAULT_REGION: 'IT',
     DEFAULT_LANGUAGE: 'it-IT',
 
-    // ─── Catalog Page Cache (L1 Redis + L2 MongoDB) ───
+    // ─── Catalog Page Cache (L1 RAM + L2 MongoDB) ───
     // Fast catalogs (New Releases, Anime Trending)
     FAST_CATALOG_PAGE1_L2_TTL_MS: 30 * 60 * 1000,          // 30 min
     FAST_CATALOG_PAGE1_SWR_MS: 15 * 60 * 1000,              // 15 min SWR
@@ -50,7 +49,7 @@ module.exports = {
     SERIES_ONGOING_PRESENTATION_TTL_MS: 12 * 60 * 60 * 1000,      // 12 hours for ongoing series
     SERIES_ONGOING_PRESENTATION_SWR_MS: 30 * 60 * 1000,            // 30 min SWR for ongoing series
 
-    // Session Data (Redis only)
+    // Rating Configuration
     // Bayesian Weighted Rating parameters (IMDb formula)
     BAYESIAN_MIN_VOTES: 300,   // m: minimum votes required to be listed
     BAYESIAN_MEAN_VOTE: 6.5,   // C: mean vote across all items
@@ -71,17 +70,4 @@ module.exports = {
         'yaca_trakt_filtered_movies',
         'yaca_trakt_filtered_series'
     ]),
-
-    // ─── Pre-warming Configuration ───
-    PREWARM_PAGES: [1, 2],  // Which pages to pre-warm on boot
-    PREWARM_PRESET_IDS: ['preset_new_movies', 'preset_new_series', 'preset_pop_anime', 'preset_new_anime'],
-    
-    // Security
-    ALLOWED_IMAGE_HOSTS: [
-        'image.tmdb.org',
-        'media.kitsu.app',
-        'walter.trakt.tv',
-        'artworks.thetvdb.com',
-        'via.placeholder.com'
-    ]
 };

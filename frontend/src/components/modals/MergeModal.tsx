@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -211,7 +212,7 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
             </div>
             <div className="relative min-h-[160px] rounded-3xl bg-white/60 border-2 border-marrow-light/10 p-5 overflow-hidden shadow-inner">
               {loading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-md z-10">
+                <div className="absolute inset-0 flex items-center justify-center bg-white/60  z-10">
                   <div className="flex flex-col items-center gap-3">
                     <div className="size-10 bg-primary/5 rounded-full flex items-center justify-center">
                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -227,7 +228,7 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
                     <div key={item.id} className="flex-shrink-0 group/poster">
                       <div className="relative h-44 w-28 rounded-2xl overflow-hidden border-2 border-marrow-light/10 group-hover/poster:border-primary transition-all shadow-md group-hover/poster:shadow-lg group-hover/poster:-translate-y-1">
                         {item.poster ? (
-                          <img src={item.poster} alt={item.title} className="h-full w-full object-cover transition-transform duration-700 group-hover/poster:scale-110" />
+                          <Image src={item.poster} alt={item.title || 'Poster'} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover/poster:scale-110" />
                         ) : (
                           <div className="h-full w-full bg-marrow-light/5 flex items-center justify-center text-[10px] text-marrow-light p-3 text-center font-bold">
                             {item.title}

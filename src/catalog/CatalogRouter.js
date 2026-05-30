@@ -5,7 +5,6 @@ const { getEngineHybridCatalog, getHybridPopularCatalog, TASTE_BASED_IDS } = req
 const { executeCombinedSearch, executeUniversalPipeline } = require('./providers/AiDiscoveryProvider');
 const { normalizeToUniversalSchema } = require('../utils/resultMerger');
 const { normalizeContentId } = require('../utils/contentId');
-const UserActivity = require('../models/UserActivity');
 
 async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, activeProfileSettings, tmdbFetchOptions, catalogMeta) {
     const { id, type, extra, filters: directFilters } = args;
@@ -32,32 +31,6 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
                 isSpecialProfile: true // Marker for formatter to skip TMDB formatting
             };
         });
-    }
-
-    // SCENARIO 0: CRONOLOGIA RICERCHE
-    if (baseId === 'yaca_search_history') {
-        const lastActivities = await UserActivity.find({
-            userId: userConfig.userId,
-            type: 'search'
-        }).sort({ timestamp: -1 }).limit(3).lean();
-
-        if (lastActivities.length > 0) {
-            const searchTasks = lastActivities.map(act =>
-                executeCombinedSearch(act.value, userConfig, type, 0, activeProfileSettings, tmdbFetchOptions)
-            );
-            const searchResults = await Promise.all(searchTasks);
-            let results = searchResults.flat();
-
-            const seen = new Set();
-            results = results.filter(item => {
-                const normalizedItemId = normalizeContentId(item.id);
-                if (seen.has(normalizedItemId)) return false;
-                seen.add(normalizedItemId);
-                return true;
-            });
-            return results.slice(skip, skip + 20);
-        }
-        return [];
     }
 
     // SCENARIO 1: RICERCA VIVA TESTUALE

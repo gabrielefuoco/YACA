@@ -84,7 +84,7 @@ export function ProfileSettingsPanel({
             <div className="p-6 flex flex-col gap-8 bg-transparent">
                 {/* Modelli Suggeriti Section */}
                 {profileTemplates.length > 0 && (
-                    <details className="group border border-marrow-light/10 bg-white/30 rounded-xl p-4 shadow-sm [&_summary::-webkit-details-marker]:hidden backdrop-blur-sm">
+                    <details className="group border border-marrow-light/10 bg-white/30 rounded-xl p-4 shadow-sm [&_summary::-webkit-details-marker]:hidden ">
                         <summary className="flex cursor-pointer items-center justify-between font-bold text-sm select-none">
                             <div className="flex items-center gap-2 text-primary">
                                 <span className="material-symbols-outlined">auto_awesome</span>
