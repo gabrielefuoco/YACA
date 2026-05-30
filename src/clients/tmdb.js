@@ -136,7 +136,7 @@ function getCountryEmoji(countryCode) {
 /**
  * Formatta una descrizione ricca in stile "Technical Card" per Stremio
  */
-function buildDescription(data, type, ratings) {
+function formatRichDescription(data, type, ratings = {}) {
     if (!data.overview) return '';
     return data.overview;
 }
