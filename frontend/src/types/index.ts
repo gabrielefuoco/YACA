@@ -118,7 +118,10 @@ export interface AnalyticsData {
     V_static?: Record<string, number>;
   };
   aiLogs: Record<string, unknown[]>;
-  baseDnaParams?: Record<string, string>;
+  baseDnaParams?: {
+    labels?: Record<string, string>;
+    [key: string]: any;
+  };
 }
 
 export interface WatchHistoryItem {
