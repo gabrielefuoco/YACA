@@ -281,52 +281,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
 
 
 
-        {/* Manual DNA Override */}
-        <div className="glass-panel p-5">
-          <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">Override Manuale (DNA Forzato)</p>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {profileDNA.length > 0 ? profileDNA.map((p) => (
-              <span
-                key={`${p.type}-${p.id}`}
-                className={`inline-flex items-center gap-1 rounded px-3 py-1.5 text-xs font-black ${
-                  p.type === 'genre'
-                    ? 'bg-secondary text-marrow-deep border border-primary/20'
-                    : p.type === 'keyword'
-                      ? 'bg-accent/15 text-marrow-deep border border-accent/20'
-                      : 'bg-primary/15 text-marrow-deep border border-primary/20'
-                }`}
-              >
-                {p.type === 'genre' ? '🎭 ' : p.type === 'country' ? '🌍 ' : '🏷️ '} {p.name}
-                <button
-                  onClick={() => handleRemoveDNA(String(p.id))}
-                  className="ml-1 opacity-70 hover:opacity-100 transition-opacity"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )) : (
-              <p className="text-xs text-marrow-light/40 italic">Nessun DNA manuale impostato. Aggiungi generi o keyword per forzare i gusti.</p>
-            )}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-marrow-light">
-            <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white/40 [&_input]:border-marrow-light/10 [&_input]:rounded-lg [&_input]:text-sm">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-marrow-light/40 z-10 pointer-events-none">movie</span>
-              <AutocompleteSearch
-                placeholder="Aggiungi genere (es. Thriller)"
-                searchFn={api.searchTmdbGenres}
-                onSelect={(item) => handleAddDNA({ type: 'genre', id: String(item.id), name: item.name })}
-              />
-            </div>
-            <div className="relative [&_input]:pl-10 [&_input]:py-3 [&_input]:bg-white/40 [&_input]:border-marrow-light/10 [&_input]:rounded-lg [&_input]:text-sm">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-marrow-light/40 z-10 pointer-events-none">tag</span>
-              <AutocompleteSearch
-                placeholder="Aggiungi keyword (es. Cyberpunk)"
-                searchFn={api.searchTmdbKeywords}
-                onSelect={(item) => handleAddDNA({ type: 'keyword', id: String(item.id), name: item.name })}
-              />
-            </div>
-          </div>
-        </div>
+
       </section>
 
       {/* ── Section 2: AI Inspector (Hero Catalogs) ── */}
