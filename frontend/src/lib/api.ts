@@ -83,4 +83,6 @@ export const api = {
     post(`/api/profiles/${encodeURIComponent(profileId)}/sync-vectors`, { userId, ...vectors }),
   batchTmdbDetails: (tmdbIds: number[], type: 'movie' | 'tv') =>
     post('/api/tmdb/batch-details', { tmdbIds, type }),
+  batchTmdbKeywords: (keywordIds: number[]) =>
+    post('/api/tmdb/batch-keywords', { keywordIds }),
 };

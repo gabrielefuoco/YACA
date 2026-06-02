@@ -295,6 +295,58 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
           data.activeCatalogs || []
         );
 
+        const idNames: Record<string, string> = {};
+        Object.values(metadataMap).forEach((metadata: any) => {
+            if (metadata.genres) {
+                metadata.genres.forEach((g: any) => {
+                    idNames[String(g.id)] = g.name;
+                });
+            }
+            const keywords = metadata.keywords?.keywords || metadata.keywords?.results || [];
+            keywords.forEach((k: any) => {
+                idNames[String(k.id)] = k.name;
+            });
+        });
+
+        // Add Manual DNA to idNames
+        if (data.manualDNA) {
+            data.manualDNA.forEach((item: any) => {
+                if (item.name) idNames[String(item.id)] = item.name;
+            });
+        }
+
+        // Fetch missing keywords for active catalogs
+        const missingKeywords = new Set<number>();
+        data.activeCatalogs?.forEach((cat: any) => {
+            const processParams = (params: any) => {
+                if (!params) return;
+                if (params.with_keywords) {
+                    const ids = String(params.with_keywords).split(/[|,]/).map(s => s.trim());
+                    ids.forEach(id => { 
+                        if (id && !idNames[id] && !isNaN(parseInt(id, 10))) {
+                            missingKeywords.add(parseInt(id, 10));
+                        }
+                    });
+                }
+            };
+            processParams(cat.filters);
+            cat.queries?.forEach((q: any) => processParams(q));
+        });
+
+        if (missingKeywords.size > 0) {
+            setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Recupero nomi keyword...', current: 70 }));
+            try {
+                const res = await api.batchTmdbKeywords(Array.from(missingKeywords));
+                if (res?.results) {
+                    res.results.forEach((k: any) => {
+                        idNames[String(k.id)] = k.name;
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to batch fetch keywords:', err);
+            }
+        }
+
         // 4. Global Contamination (if not global)
         if (profileId !== 'global' && data.globalVectors?.V_final) {
           setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Contaminazione globale...', current: 80 }));
@@ -303,7 +355,7 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
 
         // 5. Final Sync Back
         setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Sincronizzazione finale...', current: 90 }));
-        await api.syncVectors(profileId, userId, { compiledVectors: vectors });
+        await api.syncVectors(profileId, userId, { compiledVectors: vectors, idNames });
         
         setSyncStatus({ isSyncing: false, total: 100, current: 100, phase: 'Completato' });
         return vectors;

@@ -67,8 +67,12 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
     const prefix = vectorKey.charAt(0);
     const id = vectorKey.substring(2);
     
-    // 1. Try labels map from backend (covers keywords resolved during extraction)
-    const backendLabel = compiledVectors?.labels?.[vectorKey];
+    // 1. Try labels map from analytics endpoint (covers keywords resolved during extraction)
+    const analyticsLabel = analytics?.baseDnaParams?.labels?.[id];
+    if (analyticsLabel) return analyticsLabel;
+    
+    // 1b. Try idNames from compiled vectors if available
+    const backendLabel = compiledVectors?.idNames?.[id];
     if (backendLabel) return backendLabel;
     
     // 2. For genres, use the hardcoded TMDB map

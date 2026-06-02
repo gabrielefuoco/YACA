@@ -20,6 +20,12 @@ const tasteProfileSchema = new mongoose.Schema({
         V_final: { type: mongoose.Schema.Types.Mixed, default: {} },
         lastComputed: { type: Date }
     },
+    // ID to human-readable Name mapping
+    idNames: {
+        type: Map,
+        of: String,
+        default: {}
+    },
     // Sync & Onboarding
     syncStatus: {
         isSyncing: { type: Boolean, default: false },

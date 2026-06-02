@@ -159,7 +159,7 @@ router.get('/:id/analytics', async (req, res) => {
             UserAccount.findOne({ userId }).lean()
         ]);
         
-        const baseDnaParams = {};
+        const baseDnaParams = { labels: {} };
         if (profile?.compiledVectors?.V_final) {
             const vFinal = profile.compiledVectors.V_final;
             const genreIds = Object.keys(vFinal).filter(k => k.startsWith('g:')).map(k => k.split(':')[1]);
@@ -167,6 +167,10 @@ router.get('/:id/analytics', async (req, res) => {
             
             if (genreIds.length > 0) baseDnaParams.with_genres = genreIds.join('|');
             if (keywordIds.length > 0) baseDnaParams.with_keywords = keywordIds.join('|');
+            
+            if (profile.idNames) {
+                baseDnaParams.labels = profile.idNames;
+            }
         }
 
         const CATALOG_MODES = {
@@ -253,7 +257,7 @@ router.get('/:id/raw-data', async (req, res) => {
  */
 router.post('/:id/sync-vectors', async (req, res) => {
     const { id: profileId } = req.params;
-    const { userId, compiledVectors } = req.body;
+    const { userId, compiledVectors, idNames } = req.body;
 
     if (!userId || !compiledVectors) return res.status(400).json({ error: 'userId and compiledVectors are required' });
 
@@ -282,17 +286,21 @@ router.post('/:id/sync-vectors', async (req, res) => {
     if (V_static && typeof V_static === 'object' && !Array.isArray(V_static)) sanitized.V_static = V_static;
 
     try {
+        const updateFields = {
+            compiledVectors: {
+                ...sanitized,
+                lastComputed: new Date()
+            },
+            lastUpdated: new Date()
+        };
+
+        if (idNames && typeof idNames === 'object') {
+            updateFields.idNames = idNames;
+        }
+
         await TasteProfile.updateOne(
             { owner: userId, context: profileId },
-            { 
-                $set: { 
-                    compiledVectors: {
-                        ...sanitized,
-                        lastComputed: new Date()
-                    },
-                    lastUpdated: new Date()
-                } 
-            },
+            { $set: updateFields },
             { upsert: true }
         );
 

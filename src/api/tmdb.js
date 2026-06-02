@@ -172,4 +172,42 @@ router.post('/tmdb/batch-details', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/tmdb/batch-keywords
+ * Fetches names for an array of TMDB keyword IDs.
+ */
+router.post('/tmdb/batch-keywords', async (req, res) => {
+    const { keywordIds, tmdbKey } = req.body;
+
+    if (!keywordIds || !Array.isArray(keywordIds)) {
+        return res.status(400).json({ error: 'keywordIds array is required' });
+    }
+
+    const apiKey = tmdbKey || process.env.TMDB_API_KEY;
+    if (!apiKey) return res.status(400).json({ error: 'TMDB API key is required' });
+
+    try {
+        const results = [];
+        const batchSize = 20; // TMDB can handle many small fast requests
+        for (let i = 0; i < keywordIds.length; i += batchSize) {
+            const batch = keywordIds.slice(i, i + batchSize);
+            const batchResults = await Promise.all(batch.map(async (id) => {
+                try {
+                    const response = await tmdbClient.get(`/keyword/${id}`, {
+                        params: { api_key: sanitizeString(apiKey) },
+                        timeout: 3000
+                    });
+                    return { id, name: response.data.name };
+                } catch (err) {
+                    return { id, name: `Keyword ${id}` };
+                }
+            }));
+            results.push(...batchResults);
+        }
+        res.json({ results });
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;

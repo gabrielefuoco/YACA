@@ -197,7 +197,7 @@ function buildDnaDescription(profile, user, context, topN = 5) {
             }
             const genreNames = topGenres.map(([key, score]) => {
                 const id = key.split(':')[1];
-                let name = profile.idNames ? profile.idNames.get(String(id)) : null;
+                let name = profile.idNames ? (typeof profile.idNames.get === 'function' ? profile.idNames.get(String(id)) : profile.idNames[String(id)]) : null;
                 if (!name) name = idToName[String(id)] || `Genre ${id}`;
                 return `${name}`;
             });
@@ -213,7 +213,7 @@ function buildDnaDescription(profile, user, context, topN = 5) {
         if (topKeywords.length > 0) {
             const kwNames = topKeywords.map(([key, score]) => {
                 const id = key.split(':')[1];
-                const name = profile.idNames ? profile.idNames.get(String(id)) : `Keyword ${id}`;
+                const name = profile.idNames ? (typeof profile.idNames.get === 'function' ? profile.idNames.get(String(id)) : profile.idNames[String(id)]) : `Keyword ${id}`;
                 return `${name}`;
             });
             parts.push(`Inferred Preferred Keywords: ${kwNames.join(', ')}`);
