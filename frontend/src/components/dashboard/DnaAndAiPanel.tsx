@@ -279,30 +279,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
           </div>
         )}
 
-        {/* Suggested DNA (read-only) */}
-        <div className="glass-panel p-5">
-          <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">Suggested DNA (Appreso dall&apos;AI)</p>
-          {suggestedDNA.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {suggestedDNA.map((p) => (
-                <span
-                  key={`${p.type}-${p.id}`}
-                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${
-                    p.type === 'genre'
-                      ? 'bg-secondary text-marrow-deep border border-primary/20'
-                      : p.type === 'keyword'
-                        ? 'bg-accent/15 text-marrow-deep border border-accent/20'
-                        : 'bg-primary/15 text-marrow-deep border border-primary/20'
-                  }`}
-                >
-                  {p.name}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-marrow-light/40 italic">Apprendimento in corso: attiva cataloghi o guarda contenuti per arricchire il DNA.</p>
-          )}
-        </div>
+
 
         {/* Manual DNA Override */}
         <div className="glass-panel p-5">
