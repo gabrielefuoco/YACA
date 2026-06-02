@@ -144,7 +144,10 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
 
       // Store compiled vectors for DNA display
       if (status?.compiledVectors && Object.keys(status.compiledVectors).length > 0) {
-        setCompiledVectors(status.compiledVectors);
+        setCompiledVectors({
+          ...status.compiledVectors,
+          idNames: status.idNames || {}
+        });
       }
 
       // Auto-show modal if syncing or if onboarding is pending with suggestions

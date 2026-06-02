@@ -309,14 +309,16 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
         });
 
         // Add Manual DNA to idNames
+        const missingKeywords = new Set<number>();
         if (data.manualDNA) {
             data.manualDNA.forEach((item: any) => {
-                if (item.name) idNames[String(item.id)] = item.name;
+                if (item.name) {
+                    idNames[String(item.id)] = item.name;
+                } else if (item.type === 'keyword' && !isNaN(parseInt(item.id, 10))) {
+                    missingKeywords.add(parseInt(item.id, 10));
+                }
             });
         }
-
-        // Fetch missing keywords for active catalogs
-        const missingKeywords = new Set<number>();
         data.activeCatalogs?.forEach((cat: any) => {
             const processParams = (params: any) => {
                 if (!params) return;

@@ -45,7 +45,8 @@ router.get('/:id/sync-status', async (req, res) => {
             onboardingCompleted: profile.onboardingCompleted || false,
             manualDNA: profileSettings.manualDNA || [],
             suggestedDNA: profileSettings.suggestedDNA || [],
-            compiledVectors: profile.compiledVectors || {}
+            compiledVectors: profile.compiledVectors || {},
+            idNames: profile.idNames || {}
         });
     } catch (err) {
         console.error(`[ProfileAPI] Error fetching sync status:`, err.message);
