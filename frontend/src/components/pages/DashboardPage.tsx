@@ -196,7 +196,6 @@ export function DashboardPage({
                 profile={editingProfile}
                 onUpdateProfile={onUpdateProfile}
                 syncStatus={syncStatus}
-                syncProfileVectors={syncProfileVectors}
                 userId={userId}
               />
             )}
