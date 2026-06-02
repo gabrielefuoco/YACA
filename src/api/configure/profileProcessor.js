@@ -1,5 +1,7 @@
 const { nanoid } = require('nanoid');
 const { getPresets } = require('../../data/presets');
+const TasteProfile = require('../../models/TasteProfile');
+const { extractStaticDNAFromQueries } = require('../../utils/dnaExtractor');
 
 /**
  * TMDB genre ID → Italian name lookup.
@@ -165,6 +167,29 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings) {
             );
             // Deduplicate: exclude items already in manualDNA
             profile.settings.suggestedDNA = presetDNA.filter(d => !manualIds.has(`${d.type}:${d.id}`));
+
+            // --- DNA Extraction & Save (V_static) ---
+            const allQueries = profile.raw_ui_state.selectedPresets.flatMap(presetId => {
+                const preset = presetMap.get(presetId);
+                return preset?.queries || [];
+            });
+            
+            if (allQueries.length > 0) {
+                const inferredStaticDNA = extractStaticDNAFromQueries(allQueries);
+                
+                // Aggiorniamo il TasteProfile in background
+                TasteProfile.updateOne(
+                    { owner: userId, context: profile.id },
+                    { 
+                        $set: { 
+                            "compiledVectors.V_static": inferredStaticDNA
+                        },
+                        // Inizializza V_final con V_static solo se non esiste o è vuoto (usa setOnInsert)
+                        $setOnInsert: { "compiledVectors.V_final": inferredStaticDNA }
+                    },
+                    { upsert: true }
+                ).catch(err => console.error(`[DNA Extractor] Error saving V_static for ${profile.id}:`, err));
+            }
         }
 
         processed.push(profile);

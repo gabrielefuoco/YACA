@@ -58,21 +58,12 @@ class ProfileScorer {
         let thematicScore = 0;
         let authorialScore = 0;
 
-        // Fallback to legacy fields if VSM vectors are missing
-        const hasVsm = Object.keys(vFinal).length > 0;
-        const legacyGenres = !hasVsm && profile.genreScores ? (profile.genreScores instanceof Map ? Object.fromEntries(profile.genreScores) : profile.genreScores) : {};
-        const legacyKeywords = !hasVsm && profile.keywordScores ? (profile.keywordScores instanceof Map ? Object.fromEntries(profile.keywordScores) : profile.keywordScores) : {};
-
         // --- 1. Assi Tematici (VSM: Vector Space Model) ---
         // Generi
         const genreIds = tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id) : []);
         genreIds.forEach(gid => {
             if (gid !== undefined && gid !== null) {
-                if (hasVsm) {
-                    thematicScore += this.getVectorScore(vFinal, 'g', gid);
-                } else {
-                    thematicScore += legacyGenres[String(gid)] || 0;
-                }
+                thematicScore += this.getVectorScore(vFinal, 'g', gid);
             }
         });
 
@@ -80,11 +71,7 @@ class ProfileScorer {
         const keywords = tmdbData.keywords?.keywords || tmdbData.keywords?.results || [];
         keywords.forEach(kw => {
             if (kw && kw.id) {
-                if (hasVsm) {
-                    thematicScore += this.getVectorScore(vFinal, 'k', kw.id);
-                } else {
-                    thematicScore += legacyKeywords[String(kw.id)] || 0;
-                }
+                thematicScore += this.getVectorScore(vFinal, 'k', kw.id);
             }
         });
 

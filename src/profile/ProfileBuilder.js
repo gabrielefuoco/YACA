@@ -2,6 +2,8 @@ const TasteProfile = require('../models/TasteProfile');
 const WatchHistory = require('../models/WatchHistory');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
+const TmdbScoringData = require('../models/TmdbScoringData');
+const { extractActiveDNAFromTmdbData, computeFinalDNA } = require('../utils/dnaExtractor');
 
 class ProfileBuilder {
     /**
@@ -77,6 +79,50 @@ class ProfileBuilder {
                 $inc: { episodesWatched: episodesWatched } 
             },
             { upsert: true }
+        );
+
+        // --- Delta Update DNA ---
+        ProfileBuilder._updateVectorsAsync(owner, context, tmdbId, type).catch(err => {
+            console.error('[ProfileBuilder] Delta DNA Error:', err.message);
+        });
+    }
+
+    /**
+     * Esegue in background l'estrazione del DNA dall'item guardato, 
+     * lo somma al V_active e ricalcola il V_final.
+     */
+    static async _updateVectorsAsync(owner, context, tmdbId, type) {
+        // Cerca i dati in cache
+        const tmdbData = await TmdbScoringData.findOne({ tmdbId, type }).lean();
+        if (!tmdbData) return; // Se non abbiamo i dati TMDB pronti in cache, lo farà il sync globale
+
+        const itemDNA = extractActiveDNAFromTmdbData(tmdbData, 100);
+        if (Object.keys(itemDNA).length === 0) return;
+
+        const profile = await TasteProfile.findOne({ owner, context }).lean();
+        if (!profile) return;
+
+        const vActive = profile.compiledVectors?.V_active || {};
+        const vStatic = profile.compiledVectors?.V_static || {};
+        
+        // Aggiungi pesi al V_active
+        for (const [key, value] of Object.entries(itemDNA)) {
+            vActive[key] = (vActive[key] || 0) + value;
+        }
+
+        // Recuperiamo il conteggio totale dello storico per pesare V_final
+        const totalInteractions = await WatchHistory.countDocuments({ owner, context });
+        
+        const vFinal = computeFinalDNA(vStatic, vActive, totalInteractions);
+
+        await TasteProfile.updateOne(
+            { owner, context },
+            { 
+                $set: { 
+                    "compiledVectors.V_active": vActive,
+                    "compiledVectors.V_final": vFinal
+                } 
+            }
         );
     }
 

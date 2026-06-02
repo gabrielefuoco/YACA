@@ -28,8 +28,7 @@ const TMDB_KEY_BADGE_LABEL: Record<string, { icon: string; name: string }> = {
 interface DnaAndAiPanelProps {
   profile: Profile;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
-  syncStatus: SyncStatus & { onboardingCompleted?: boolean, lastSync?: string, manualDNA?: DNAItem[], suggestedDNA?: DNAItem[] };
-  syncProfileVectors: (profileId: string, userId: string) => Promise<unknown>;
+  syncStatus: SyncStatus & { onboardingCompleted?: boolean, lastSync?: string, manualDNA?: DNAItem[], suggestedDNA?: DNAItem[], compiledVectors?: any };
   userId?: string;
 }
 
@@ -40,7 +39,7 @@ function dnaArraysEqual(a: DNAItem[] = [], b: DNAItem[] = []) {
   return a.every((item, idx) => item.type === b[idx]?.type && String(item.id) === String(b[idx]?.id) && item.name === b[idx]?.name);
 }
 
-export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, syncProfileVectors, userId }: DnaAndAiPanelProps) {
+export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: DnaAndAiPanelProps) {
   const profileDNA: DNAItem[] = profile?.settings?.manualDNA ?? [];
   const suggestedDNA: DNAItem[] = profile?.settings?.suggestedDNA ?? [];
   const dnaLookup = useMemo(() => {
@@ -166,17 +165,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, syncProfil
     }
   }, [fetchAnalytics, syncStatus?.isSyncing]);
 
-  const handleRefresh = async () => {
-    const uid = userId || localStorage.getItem('yaca_user_id');
-    if (!uid) return;
-    setShowProgressModal(true);
-    try {
-      await syncProfileVectors(profile.id, uid);
-      await fetchAnalytics();
-    } catch (err) {
-      console.error('Refresh failed:', err);
-    }
-  };
+  // Aggiornamento DNA manuale rimosso in favore del delta update automatico backend.
 
   const handleConfirmDNA = async () => {
     const userId = localStorage.getItem('yaca_user_id');
@@ -228,18 +217,67 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, syncProfil
             <BrainCircuit className="h-6 w-6" />
             <h2 className="text-lg font-black uppercase tracking-widest">DNA Tracker &amp; Editor</h2>
           </div>
-          <button 
-            onClick={handleRefresh}
-            disabled={syncStatus?.isSyncing}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/40 hover:bg-white/60 text-marrow-light text-xs font-bold border border-marrow-light/10 transition-all disabled:opacity-50 shadow-sm"
-          >
-            <span className={`material-symbols-outlined text-sm ${syncStatus?.isSyncing ? 'animate-spin' : ''}`}>sync</span>
-            {syncStatus?.isSyncing ? 'Sincronizzazione...' : 'Aggiorna DNA'}
-          </button>
         </div>
         <p className="text-[11px] text-marrow-light/40 -mt-2">
-          Aggiorna DNA ricalcola solo il DNA suggerito in base alla cronologia recente, senza modificare il tuo override manuale.
+          Il tuo DNA viene calcolato istantaneamente dai preset selezionati e si evolve man mano che guardi film e serie tv.
         </p>
+
+        {/* DNA Dinamico (V_static e V_final) */}
+        {syncStatus?.compiledVectors && Object.keys(syncStatus.compiledVectors).length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="glass-panel p-5 border border-marrow-light/10">
+              <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">DNA Base (Dai Preset)</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(syncStatus.compiledVectors.V_static || {})
+                  .sort(([,a], [,b]) => (b as number) - (a as number))
+                  .slice(0, 10)
+                  .map(([key, weight]) => {
+                    const type = key.charAt(0);
+                    const id = key.substring(2);
+                    const name = getDnaName(id, type === 'g' ? 'with_genres' : type === 'k' ? 'with_keywords' : 'with_origin_country');
+                    return (
+                      <span key={key} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold ${
+                        type === 'g' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
+                        type === 'k' ? 'bg-accent/15 text-marrow-deep border border-accent/20' : 
+                        'bg-primary/15 text-marrow-deep border border-primary/20'
+                      }`}>
+                        {name} <span className="opacity-50 ml-1">({Math.round(weight as number)})</span>
+                      </span>
+                    )
+                  })
+                }
+                {Object.keys(syncStatus.compiledVectors.V_static || {}).length === 0 && (
+                  <p className="text-xs text-marrow-light/40 italic">Nessun DNA base. Aggiungi dei preset.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="glass-panel p-5 border border-marrow-light/10 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-accent opacity-50"></div>
+              <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">DNA Evoluto (Base + Storico)</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(syncStatus.compiledVectors.V_final || {})
+                  .sort(([,a], [,b]) => (b as number) - (a as number))
+                  .slice(0, 12)
+                  .map(([key, weight]) => {
+                    const type = key.charAt(0);
+                    const id = key.substring(2);
+                    const name = getDnaName(id, type === 'g' ? 'with_genres' : type === 'k' ? 'with_keywords' : 'with_origin_country');
+                    return (
+                      <span key={key} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold ${
+                        type === 'g' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
+                        type === 'k' ? 'bg-accent/15 text-marrow-deep border border-accent/20' : 
+                        'bg-primary/15 text-marrow-deep border border-primary/20'
+                      }`}>
+                        {name} <span className="opacity-50 ml-1">({Math.round(weight as number)})</span>
+                      </span>
+                    )
+                  })
+                }
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Suggested DNA (read-only) */}
         <div className="glass-panel p-5">

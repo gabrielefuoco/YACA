@@ -182,10 +182,6 @@ function computeTopGenres(profile, n = 5, user = null, context = 'global') {
     if (vFinal && Object.keys(vFinal).length > 0) {
         scores = extractVectorByPrefix(vFinal, 'g');
     }
-    // Fallback to legacy genreScores only if V_final yielded nothing
-    if (Object.keys(scores).length === 0) {
-        scores = profile?.genreScores ? (profile.genreScores instanceof Map ? Object.fromEntries(profile.genreScores) : profile.genreScores) : {};
-    }
     
     // Add manual genres as high-score entries if they aren't there
     const dnaFilters = getProfileDnaFilters(user, context);
@@ -215,10 +211,6 @@ function computeTopKeywords(profile, n = 3, user = null, context = 'global') {
     const vFinal = profile?.compiledVectors?.V_final;
     if (vFinal && Object.keys(vFinal).length > 0) {
         scores = extractVectorByPrefix(vFinal, 'k');
-    }
-    // Fallback to legacy keywordScores only if V_final yielded nothing
-    if (Object.keys(scores).length === 0) {
-        scores = profile?.keywordScores ? (profile.keywordScores instanceof Map ? Object.fromEntries(profile.keywordScores) : profile.keywordScores) : {};
     }
     
     // Add manual keywords as high-score entries if they aren't there

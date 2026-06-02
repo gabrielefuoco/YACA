@@ -142,6 +142,7 @@ export interface SyncStatus {
   total: number;
   current: number;
   phase: string;
+  compiledVectors?: CompiledVector;
 }
 
 export interface TmdbMetadata {

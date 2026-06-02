@@ -157,7 +157,7 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
             </div>
 
             <a href={verificationUrl} target="_blank" rel="noopener noreferrer">
-              <Button className="w-full bg-red-500/20 border-red-500/30 text-red-300 hover:bg-red-500/30" variant="outline">
+              <Button className="w-full bg-red-600 text-white hover:bg-red-700 border-0" variant="default">
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Apri Trakt.tv
               </Button>

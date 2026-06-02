@@ -32,7 +32,8 @@ router.get('/:id/sync-status', async (req, res) => {
                 current: 0,
                 onboardingCompleted: false,
                 manualDNA: profileSettings.manualDNA || [],
-                suggestedDNA: profileSettings.suggestedDNA || []
+                suggestedDNA: profileSettings.suggestedDNA || [],
+                compiledVectors: {}
             });
         }
 
@@ -43,7 +44,8 @@ router.get('/:id/sync-status', async (req, res) => {
             lastSync: profile.syncStatus?.lastSync,
             onboardingCompleted: profile.onboardingCompleted || false,
             manualDNA: profileSettings.manualDNA || [],
-            suggestedDNA: profileSettings.suggestedDNA || []
+            suggestedDNA: profileSettings.suggestedDNA || [],
+            compiledVectors: profile.compiledVectors || {}
         });
     } catch (err) {
         console.error(`[ProfileAPI] Error fetching sync status:`, err.message);
@@ -170,7 +172,8 @@ router.get('/:id/raw-data', async (req, res) => {
         res.json({ 
             history,
             manualDNA: settings.manualDNA || [],
-            activeCatalogs
+            activeCatalogs,
+            compiledVectors: profile?.compiledVectors || {}
         });
     } catch (err) {
         console.error(`[ProfileAPI] Error fetching raw data:`, err.message);
