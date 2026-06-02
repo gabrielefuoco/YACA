@@ -168,7 +168,7 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings) {
             // Deduplicate: exclude items already in manualDNA
             profile.settings.suggestedDNA = presetDNA.filter(d => !manualIds.has(`${d.type}:${d.id}`));
 
-            // --- DNA Extraction & Save (V_static) ---
+            // --- DNA Extraction & Save (V_static + V_final) ---
             const allQueries = profile.raw_ui_state.selectedPresets.flatMap(presetId => {
                 const preset = presetMap.get(presetId);
                 return preset?.queries || [];
@@ -177,18 +177,42 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings) {
             if (allQueries.length > 0) {
                 const inferredStaticDNA = extractStaticDNAFromQueries(allQueries);
                 
-                // Aggiorniamo il TasteProfile in background
-                TasteProfile.updateOne(
-                    { owner: userId, context: profile.id },
-                    { 
-                        $set: { 
-                            "compiledVectors.V_static": inferredStaticDNA
-                        },
-                        // Inizializza V_final con V_static solo se non esiste o è vuoto (usa setOnInsert)
-                        $setOnInsert: { "compiledVectors.V_final": inferredStaticDNA }
-                    },
-                    { upsert: true }
-                ).catch(err => console.error(`[DNA Extractor] Error saving V_static for ${profile.id}:`, err));
+                // Aggiorniamo V_static e ricalcoliamo V_final in background
+                (async () => {
+                    try {
+                        const existing = await TasteProfile.findOne(
+                            { owner: userId, context: profile.id }
+                        ).lean();
+                        
+                        const vActive = existing?.compiledVectors?.V_active || {};
+                        const hasActiveHistory = Object.keys(vActive).length > 0;
+                        
+                        let vFinal;
+                        if (hasActiveHistory) {
+                            // Ricalcola V_final combinando il nuovo V_static con il V_active esistente
+                            const { computeFinalDNA } = require('../../utils/dnaExtractor');
+                            const WatchHistory = require('../../models/WatchHistory');
+                            const totalInteractions = await WatchHistory.countDocuments({ owner: userId, context: profile.id });
+                            vFinal = computeFinalDNA(inferredStaticDNA, vActive, totalInteractions);
+                        } else {
+                            // Nessuno storico: V_final = V_static
+                            vFinal = { ...inferredStaticDNA };
+                        }
+                        
+                        await TasteProfile.updateOne(
+                            { owner: userId, context: profile.id },
+                            { 
+                                $set: { 
+                                    "compiledVectors.V_static": inferredStaticDNA,
+                                    "compiledVectors.V_final": vFinal
+                                }
+                            },
+                            { upsert: true }
+                        );
+                    } catch (err) {
+                        console.error(`[DNA Extractor] Error saving vectors for ${profile.id}:`, err);
+                    }
+                })();
             }
         }
 

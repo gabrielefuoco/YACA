@@ -1,7 +1,6 @@
 'use client';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Profile, DNAItem, AnalyticsData, SyncStatus } from '@/types';
-import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { api } from '@/lib/api';
 import { X, BrainCircuit, Terminal, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
@@ -34,13 +33,7 @@ interface DnaAndAiPanelProps {
 
 // Removed redundant SyncStatus
 
-function dnaArraysEqual(a: DNAItem[] = [], b: DNAItem[] = []) {
-  if (a.length !== b.length) return false;
-  return a.every((item, idx) => item.type === b[idx]?.type && String(item.id) === String(b[idx]?.id) && item.name === b[idx]?.name);
-}
-
 export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: DnaAndAiPanelProps) {
-  const profileDNA: DNAItem[] = profile?.settings?.manualDNA ?? [];
   const suggestedDNA: DNAItem[] = profile?.settings?.suggestedDNA ?? [];
   const dnaLookup = useMemo(() => {
     const lookup = new Map<string, string>();
@@ -52,11 +45,11 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
     });
     return lookup;
   }, [profile?.settings?.manualDNA, profile?.settings?.suggestedDNA]);
-  const latestSettingsRef = useRef(profile.settings);
 
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [showProgressModal, setShowProgressModal] = useState(false);
+  const [compiledVectors, setCompiledVectors] = useState<Record<string, any> | null>(null);
 
   const getDnaName = (id: string, tmdbKey: string) => {
     const targetType = TMDB_KEY_TO_DNA_TYPE[tmdbKey];
@@ -92,9 +85,6 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
     return [...new Set(String(rawValue).split('|').map((v) => v.trim()).filter(Boolean))];
   };
 
-  useEffect(() => {
-    latestSettingsRef.current = profile.settings;
-  }, [profile.settings]);
 
   const fetchAnalytics = useCallback(async () => {
     setAnalyticsLoading(true);
@@ -118,24 +108,11 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
       if (!userId) return;
       const status = await api.getSyncStatus(profile.id, userId);
 
-      if (status && Array.isArray(status.manualDNA) && Array.isArray(status.suggestedDNA)) {
-        const currentSettings = latestSettingsRef.current ?? {};
-        const nextManualDNA = status.manualDNA;
-        const nextSuggestedDNA = status.suggestedDNA;
-        const currentManualDNA = currentSettings.manualDNA ?? [];
-        const currentSuggestedDNA = currentSettings.suggestedDNA ?? [];
-
-        if (!dnaArraysEqual(nextManualDNA, currentManualDNA) || !dnaArraysEqual(nextSuggestedDNA, currentSuggestedDNA)) {
-          onUpdateProfile(profile.id, {
-            settings: {
-              ...currentSettings,
-              manualDNA: nextManualDNA,
-              suggestedDNA: nextSuggestedDNA,
-            },
-          });
-        }
+      // Store compiled vectors for DNA display
+      if (status?.compiledVectors && Object.keys(status.compiledVectors).length > 0) {
+        setCompiledVectors(status.compiledVectors);
       }
-      
+
       // Auto-show modal if syncing or if onboarding is pending with suggestions
       if (status.isSyncing) {
         setShowProgressModal(true);
@@ -143,7 +120,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
     } catch (e) {
       console.error('Failed to fetch sync status', e);
     }
-  }, [onUpdateProfile, profile.id]);
+  }, [profile.id]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -193,20 +170,8 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
     }
   };
 
-  const handleAddDNA = (item: DNAItem) => {
-    if (profileDNA.find((p) => String(p.id) === String(item.id))) return;
-    const newDNA = [...profileDNA, item];
-    onUpdateProfile(profile.id, {
-      settings: { ...profile.settings, manualDNA: newDNA },
-    });
-  };
 
-  const handleRemoveDNA = (id: string) => {
-    const newDNA = profileDNA.filter((p) => String(p.id) !== String(id));
-    onUpdateProfile(profile.id, {
-      settings: { ...profile.settings, manualDNA: newDNA },
-    });
-  };
+
 
   return (
     <div className="flex flex-col gap-10 w-full">
@@ -223,12 +188,12 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
         </p>
 
         {/* DNA Dinamico (V_static e V_final) */}
-        {syncStatus?.compiledVectors && Object.keys(syncStatus.compiledVectors).length > 0 && (
+        {compiledVectors && (Object.keys(compiledVectors.V_static || {}).length > 0 || Object.keys(compiledVectors.V_final || {}).length > 0) ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="glass-panel p-5 border border-marrow-light/10">
               <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">DNA Base (Dai Preset)</p>
               <div className="flex flex-wrap gap-2">
-                {Object.entries(syncStatus.compiledVectors.V_static || {})
+                {Object.entries(compiledVectors.V_static || {})
                   .sort(([,a], [,b]) => (b as number) - (a as number))
                   .slice(0, 10)
                   .map(([key, weight]) => {
@@ -246,7 +211,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
                     )
                   })
                 }
-                {Object.keys(syncStatus.compiledVectors.V_static || {}).length === 0 && (
+                {Object.keys(compiledVectors.V_static || {}).length === 0 && (
                   <p className="text-xs text-marrow-light/40 italic">Nessun DNA base. Aggiungi dei preset.</p>
                 )}
               </div>
@@ -256,7 +221,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-accent opacity-50"></div>
               <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">DNA Evoluto (Base + Storico)</p>
               <div className="flex flex-wrap gap-2">
-                {Object.entries(syncStatus.compiledVectors.V_final || {})
+                {Object.entries(compiledVectors.V_final || {})
                   .sort(([,a], [,b]) => (b as number) - (a as number))
                   .slice(0, 12)
                   .map(([key, weight]) => {
@@ -276,6 +241,10 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
                 }
               </div>
             </div>
+          </div>
+        ) : (
+          <div className="glass-panel p-5 border border-marrow-light/10">
+            <p className="text-xs text-marrow-light/40 italic">DNA non ancora calcolato. Seleziona dei preset e salva il profilo.</p>
           </div>
         )}
 
