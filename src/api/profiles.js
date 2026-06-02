@@ -144,6 +144,72 @@ router.post('/:id/sync/refresh', async (req, res) => {
 });
 
 /**
+ * GET /api/profiles/:id/analytics
+ * Returns the AI query logs and algorithmic baseline parameters used by the engine.
+ */
+router.get('/:id/analytics', async (req, res) => {
+    const { id: profileId } = req.params;
+    const userId = req.query.userId;
+
+    if (!userId) return res.status(400).json({ error: 'userId query parameter is required' });
+
+    try {
+        const [profile, account] = await Promise.all([
+            TasteProfile.findOne({ owner: userId, context: profileId }).lean(),
+            UserAccount.findOne({ userId }).lean()
+        ]);
+        
+        const baseDnaParams = {};
+        if (profile?.compiledVectors?.V_final) {
+            const vFinal = profile.compiledVectors.V_final;
+            const genreIds = Object.keys(vFinal).filter(k => k.startsWith('g:')).map(k => k.split(':')[1]);
+            const keywordIds = Object.keys(vFinal).filter(k => k.startsWith('k:')).map(k => k.split(':')[1]);
+            
+            if (genreIds.length > 0) baseDnaParams.with_genres = genreIds.join('|');
+            if (keywordIds.length > 0) baseDnaParams.with_keywords = keywordIds.join('|');
+        }
+
+        const CATALOG_MODES = {
+            yaca_true_blend_movies: 'trueBlend',
+            yaca_true_blend_series: 'trueBlend',
+            yaca_seed_network_movies: null,
+            yaca_seed_network_series: null,
+            yaca_hidden_gems_movies: 'hiddenGems',
+            yaca_hidden_gems_series: 'hiddenGems',
+        };
+
+        const aiLogs = {};
+        if (profile || account) {
+            const dnaDescription = buildDnaDescription(profile, account, profileId);
+            if (dnaDescription) {
+                const modes = new Set(Object.values(CATALOG_MODES).filter(Boolean));
+                const modeResults = {};
+                const mistralKey = account?.apiKeys?.mistral;
+                for (const mode of modes) {
+                    try {
+                        const generated = await generateDiscoveryQueries(profile, mistralKey, mode, account, profileId);
+                        if (Array.isArray(generated) && generated.length > 0) {
+                            modeResults[mode] = generated;
+                        }
+                    } catch (err) {
+                        console.warn(`[Analytics] AI log resolution failed for mode ${mode}:`, err.message);
+                    }
+                }
+
+                for (const [catalogId, mode] of Object.entries(CATALOG_MODES)) {
+                    aiLogs[catalogId] = (mode && modeResults[mode]) ? modeResults[mode] : [];
+                }
+            }
+        }
+
+        return res.json({ aiLogs, baseDnaParams });
+    } catch (err) {
+        console.error(`[Analytics] Error fetching profile analytics for ${profileId}:`, err.message);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
  * GET /api/profiles/:id/raw-data
  * Returns the raw watch history for the profile.
  * Used by client-side Vector Space Model (VSM).

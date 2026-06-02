@@ -24,6 +24,18 @@ const TMDB_KEY_BADGE_LABEL: Record<string, { icon: string; name: string }> = {
   with_origin_country: { icon: '🌍', name: 'Paese' },
 };
 
+// Complete TMDB genre ID → human name (Movie + TV combined)
+const GENRE_ID_TO_NAME: Record<string, string> = {
+  '28': 'Azione', '12': 'Avventura', '16': 'Animazione', '35': 'Commedia',
+  '80': 'Crime', '99': 'Documentario', '18': 'Dramma', '10751': 'Famiglia',
+  '14': 'Fantasy', '36': 'Storia', '27': 'Horror', '10402': 'Musica',
+  '9648': 'Mistero', '10749': 'Romance', '878': 'Fantascienza',
+  '53': 'Thriller', '10752': 'Guerra', '37': 'Western',
+  '10759': 'Azione & Avventura', '10762': 'Kids', '10763': 'News',
+  '10764': 'Reality', '10765': 'Sci-Fi & Fantasy', '10766': 'Soap',
+  '10767': 'Talk', '10768': 'War & Politics', '10770': 'Film TV',
+};
+
 interface DnaAndAiPanelProps {
   profile: Profile;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
@@ -51,10 +63,28 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [compiledVectors, setCompiledVectors] = useState<Record<string, any> | null>(null);
 
-  const getDnaName = (id: string, tmdbKey: string) => {
+  const getDnaName = (vectorKey: string) => {
+    const prefix = vectorKey.charAt(0);
+    const id = vectorKey.substring(2);
+    
+    // 1. Try labels map from backend (covers keywords resolved during extraction)
+    const backendLabel = compiledVectors?.labels?.[vectorKey];
+    if (backendLabel) return backendLabel;
+    
+    // 2. For genres, use the hardcoded TMDB map
+    if (prefix === 'g' && GENRE_ID_TO_NAME[id]) return GENRE_ID_TO_NAME[id];
+    
+    // 3. Try dnaLookup from profile settings (manualDNA/suggestedDNA)
+    const tmdbKey = prefix === 'g' ? 'with_genres' : prefix === 'k' ? 'with_keywords' : 'with_origin_country';
     const targetType = TMDB_KEY_TO_DNA_TYPE[tmdbKey];
-    if (!targetType) return id;
-    return dnaLookup.get(`${targetType}:${String(id)}`) ?? id;
+    if (targetType) {
+      const name = dnaLookup.get(`${targetType}:${id}`);
+      if (name) return name;
+    }
+    
+    // 4. Fallback: prefix + ID
+    const prefixLabels: Record<string, string> = { g: 'Genere', k: 'Keyword', d: 'Regista', a: 'Attore', o: 'Paese' };
+    return `${prefixLabels[prefix] || prefix} ${id}`;
   };
 
   const toggleHeroCatalog = (fullCatalogId: string, isEnabled: boolean) => {
@@ -199,7 +229,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
                   .map(([key, weight]) => {
                     const type = key.charAt(0);
                     const id = key.substring(2);
-                    const name = getDnaName(id, type === 'g' ? 'with_genres' : type === 'k' ? 'with_keywords' : 'with_origin_country');
+                    const name = getDnaName(key);
                     return (
                       <span key={key} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold ${
                         type === 'g' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
@@ -227,7 +257,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
                   .map(([key, weight]) => {
                     const type = key.charAt(0);
                     const id = key.substring(2);
-                    const name = getDnaName(id, type === 'g' ? 'with_genres' : type === 'k' ? 'with_keywords' : 'with_origin_country');
+                    const name = getDnaName(key);
                     return (
                       <span key={key} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold ${
                         type === 'g' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
@@ -364,7 +394,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
                                         badgeLabel.name === 'Keyword' ? 'bg-accent/15 text-marrow-deep border border-accent/20' : 
                                         'bg-primary/15 text-marrow-deep border border-primary/20'
                                       }`}>
-                                        {badgeLabel.icon} {badgeLabel.name}: {getDnaName(id, key)}
+                                        {badgeLabel.icon} {badgeLabel.name}: {getDnaName(`${key.startsWith('with_genres') ? 'g' : key.startsWith('with_keywords') ? 'k' : 'o'}:${id}`)}
                                       </span>
                                       {idx < ids.length - 1 && (
                                         <span className="text-[9px] font-black uppercase tracking-wider text-marrow-light/60">&amp;</span>
