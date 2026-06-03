@@ -42,13 +42,24 @@ function getCookieOptions() {
 
 
 
+let fallbackSecret = null;
+function getJwtSecret() {
+    let secret = process.env.JWT_SECRET;
+    if (!secret) {
+        if (!fallbackSecret) {
+            console.warn('[Auth] ATTENZIONE: JWT_SECRET non configurato nel .env! Verrà usato un secret generato casualmente, il che significa che le sessioni scadranno al riavvio del server.');
+            fallbackSecret = crypto.randomBytes(32).toString('hex');
+        }
+        secret = fallbackSecret;
+    }
+    return secret;
+}
+
 /**
  * Signs a JWT token containing user identity.
  */
 function signToken(payload) {
-    const secret = process.env.JWT_SECRET;
-    if (!secret) throw new Error('JWT_SECRET non configurato.');
-    return jwt.sign(payload, secret, { expiresIn: JWT_EXPIRY });
+    return jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRY });
 }
 
 /**
@@ -158,11 +169,8 @@ async function meHandler(req, res) {
         return res.status(401).json({ authenticated: false });
     }
 
-    const secret = process.env.JWT_SECRET;
-    if (!secret) return res.status(500).json({ error: 'JWT_SECRET missing.' });
-
     try {
-        const decoded = jwt.verify(token, secret);
+        const decoded = jwt.verify(token, getJwtSecret());
 
         // Read auth data from UserAccount
         const account = await UserAccount.findOne({ userId: decoded.userId }).lean();
@@ -211,4 +219,4 @@ async function logoutHandler(req, res) {
     return res.json({ success: true });
 }
 
-module.exports = { loginHandler, meHandler, logoutHandler };
+module.exports = { loginHandler, meHandler, logoutHandler, getJwtSecret };

@@ -28,7 +28,8 @@ function validateAuth(req) {
     const token = req.cookies?.yaca_session;
     if (token) {
         try {
-            req.user = jwt.verify(token, process.env.JWT_SECRET);
+            const { getJwtSecret } = require('../auth/index');
+            req.user = jwt.verify(token, getJwtSecret());
         } catch (err) {
             // Invalid token
         }
