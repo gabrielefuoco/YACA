@@ -335,8 +335,30 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
             cat.queries?.forEach((q: any) => processParams(q));
         });
 
+        // 4. Global Contamination (if not global)
+        if (profileId !== 'global' && data.globalVectors?.V_final) {
+          setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Contaminazione globale...', current: 80 }));
+          vectors.V_final = VectorEngine.applyContamination(vectors.V_final, data.globalVectors.V_final);
+        }
+
+        // 4.5 Scan vectors for any missing keyword names before final sync
+        const scanVectorsForMissingKeywords = (v: any) => {
+            if (!v) return;
+            Object.keys(v).forEach(key => {
+                if (key.startsWith('k:')) {
+                    const id = key.substring(2);
+                    if (!idNames[id] && !isNaN(parseInt(id, 10))) {
+                        missingKeywords.add(parseInt(id, 10));
+                    }
+                }
+            });
+        };
+        scanVectorsForMissingKeywords(vectors.V_static);
+        scanVectorsForMissingKeywords(vectors.V_active);
+        scanVectorsForMissingKeywords(vectors.V_final);
+
         if (missingKeywords.size > 0) {
-            setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Recupero nomi keyword...', current: 70 }));
+            setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Recupero nomi keyword...', current: 85 }));
             try {
                 const res = await api.batchTmdbKeywords(Array.from(missingKeywords));
                 if (res?.results) {
@@ -347,12 +369,6 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
             } catch (err) {
                 console.error('Failed to batch fetch keywords:', err);
             }
-        }
-
-        // 4. Global Contamination (if not global)
-        if (profileId !== 'global' && data.globalVectors?.V_final) {
-          setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Contaminazione globale...', current: 80 }));
-          vectors.V_final = VectorEngine.applyContamination(vectors.V_final, data.globalVectors.V_final);
         }
 
         // 5. Final Sync Back
