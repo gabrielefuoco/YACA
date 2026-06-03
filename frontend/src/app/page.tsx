@@ -128,6 +128,7 @@ export default function Home() {
 
     fetch(`/api/user/${storedUserId}`, { credentials: 'include' })
       .then(res => {
+        if (res.status === 401) throw new Error("Unauthorized");
         if (!res.ok) throw new Error("User not found");
         return res.json();
       })
@@ -153,6 +154,10 @@ export default function Home() {
       })
       .catch((err) => {
         console.error("Error loading user profile from DB:", err);
+        if (err.message === "Unauthorized") {
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.USER_ID);
+          setUserId(null);
+        }
         setInitialProfiles(createDefaultProfiles());
       })
       .finally(() => {
@@ -185,7 +190,7 @@ export default function Home() {
 
   // 1. DB Sync (No debounce)
   useEffect(() => {
-    if (isInitializing || !configDecoded || !userId) return;
+    if (isInitializing || !configDecoded || !userId || !isLoggedIn) return;
     
     // Skip if these are just the initial default profiles and we're still waiting for real data
     if (!initialProfiles && profiles.length === 1 && profiles[0].id === 'global' && profiles[0].raw_ui_state.selectedPresets.length === 0) {
@@ -205,7 +210,7 @@ export default function Home() {
     }).catch(err => {
       console.warn('DB Auto-save failed:', err);
     });
-  }, [profiles, activeProfileId, userId, isInitializing, configDecoded, stremioAuth, traktToken, traktRefreshToken, initialProfiles]);
+  }, [profiles, activeProfileId, userId, isInitializing, configDecoded, stremioAuth, traktToken, traktRefreshToken, initialProfiles, isLoggedIn]);
 
   // 2. Delayed Stremio Addon Update (20s base + 1s increment per change)
   const addonUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -449,7 +454,7 @@ export default function Home() {
     setTraktRefreshToken(null);
   };
 
-  const isLoggedIn = Boolean(userId || stremioAuth);
+  const isLoggedIn = Boolean(stremioAuth);
 
   if (!isLoaded || !authLoaded || !configDecoded || isInitializing) {
     return (
