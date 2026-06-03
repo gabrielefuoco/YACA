@@ -195,10 +195,11 @@ router.post('/tmdb/batch-keywords', async (req, res) => {
                 try {
                     const response = await tmdbClient.get(`/keyword/${id}`, {
                         params: { api_key: sanitizeString(apiKey) },
-                        timeout: 3000
+                        timeout: 10000
                     });
                     return { id, name: response.data.name };
                 } catch (err) {
+                    console.error(`[TMDB] Error fetching keyword ${id}:`, err.message);
                     return { id, name: `Keyword ${id}` };
                 }
             }));

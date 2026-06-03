@@ -299,6 +299,14 @@ router.post('/:id/sync-vectors', async (req, res) => {
             updateFields.idNames = idNames;
         }
 
+        // --- DEBUG INJECTION ---
+        if (!updateFields.idNames) updateFields.idNames = {};
+        updateFields.idNames['210024'] = 'TEST_ANIME_KEYWORD';
+        // -----------------------
+
+        console.log('[DEBUG] Syncing idNames keys count:', idNames ? Object.keys(idNames).length : 0);
+        console.log('[DEBUG] Syncing idNames sample:', idNames ? Object.keys(idNames).slice(0, 5) : []);
+
         await TasteProfile.updateOne(
             { owner: userId, context: profileId },
             { $set: updateFields },
