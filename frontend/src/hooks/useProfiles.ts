@@ -347,7 +347,9 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
             Object.keys(v).forEach(key => {
                 if (key.startsWith('k:')) {
                     const id = key.substring(2);
-                    if (!idNames[id] && !isNaN(parseInt(id, 10))) {
+                    const currentName = idNames[id];
+                    const isFallback = typeof currentName === 'string' && currentName.startsWith('Keyword ');
+                    if ((!currentName || isFallback) && !isNaN(parseInt(id, 10))) {
                         missingKeywords.add(parseInt(id, 10));
                     }
                 }

@@ -189,6 +189,8 @@ router.post('/tmdb/batch-keywords', async (req, res) => {
     try {
         const results = [];
         const batchSize = 20; // TMDB can handle many small fast requests
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        
         for (let i = 0; i < keywordIds.length; i += batchSize) {
             const batch = keywordIds.slice(i, i + batchSize);
             const batchResults = await Promise.all(batch.map(async (id) => {
@@ -204,6 +206,11 @@ router.post('/tmdb/batch-keywords', async (req, res) => {
                 }
             }));
             results.push(...batchResults);
+            
+            // Add a small delay between batches to respect TMDB's 50req/s limit
+            if (i + batchSize < keywordIds.length) {
+                await delay(300);
+            }
         }
         res.json({ results });
     } catch (err) {
