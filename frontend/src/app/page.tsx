@@ -190,7 +190,7 @@ export default function Home() {
 
   // 1. DB Sync (No debounce)
   useEffect(() => {
-    if (isInitializing || !configDecoded || !userId || !isLoggedIn) return;
+    if (isInitializing || !configDecoded || !userId || !stremioAuth) return;
     
     // Skip if these are just the initial default profiles and we're still waiting for real data
     if (!initialProfiles && profiles.length === 1 && profiles[0].id === 'global' && profiles[0].raw_ui_state.selectedPresets.length === 0) {
@@ -210,7 +210,7 @@ export default function Home() {
     }).catch(err => {
       console.warn('DB Auto-save failed:', err);
     });
-  }, [profiles, activeProfileId, userId, isInitializing, configDecoded, stremioAuth, traktToken, traktRefreshToken, initialProfiles, isLoggedIn]);
+  }, [profiles, activeProfileId, userId, isInitializing, configDecoded, stremioAuth, traktToken, traktRefreshToken, initialProfiles]);
 
   // 2. Delayed Stremio Addon Update (20s base + 1s increment per change)
   const addonUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
