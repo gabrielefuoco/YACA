@@ -15,6 +15,7 @@ import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { MyList, StremioAuth, Profile } from '@/types';
 import { LOCAL_STORAGE_KEYS, SESSION_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 import { api } from '@/lib/api';
+import { usePathname } from 'next/navigation';
 
 // Default profiles for new users (matches the original HTML quick-start profiles)
 function createDefaultProfiles(): Profile[] {
@@ -58,6 +59,7 @@ export default function Home() {
   const [globalMistralKey, setGlobalMistralKey] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState(true);
   const autoConfigCalledRef = useRef(false);
+  const pathname = usePathname();
 
   // Initialize background sync worker for crowdsourced ecosystem
   useBackgroundSync(globalTmdbKey, userId ?? undefined);
@@ -67,7 +69,7 @@ export default function Home() {
     if (!isLoaded) return;
 
     // Try to get userId from the URL path first (e.g., /ExVSfh84z8/configure)
-    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    const pathParts = pathname ? pathname.split('/').filter(Boolean) : [];
     // userId is usually the first part if it's not "configure"
     let urlUserId = pathParts.length > 0 && pathParts[0] !== 'configure' ? pathParts[0] : null;
 
@@ -164,7 +166,7 @@ export default function Home() {
         setIsInitializing(false);
         setConfigDecoded(true);
       });
-  }, [isLoaded, setTraktToken, setTraktRefreshToken]);
+  }, [isLoaded, setTraktToken, setTraktRefreshToken, pathname]);
 
   const {
     profiles,
@@ -249,8 +251,9 @@ export default function Home() {
     }, addonUpdateDelayRef.current);
 
     return () => {
-      // We don't clear the timeout on unmount here to allow the update to finish 
-      // even if the user navigates away, but we must clean up if the component is truly destroyed
+      if (addonUpdateTimerRef.current) {
+        clearTimeout(addonUpdateTimerRef.current);
+      }
     };
   }, [profiles, activeProfileId, userId, isInitializing, configDecoded, stremioAuth, configVersion]);
 
@@ -279,9 +282,13 @@ export default function Home() {
             ? `/${data.userId}/${data.configVersion}/manifest.json`
             : `/${data.userId}/manifest.json`;
           const httpsManifestUrl = `https://${host}${manifestPath}`;
-          api.stremioAddonUpdate(stremioAuth.authKey, httpsManifestUrl).catch(() => { });
+          api.stremioAddonUpdate(stremioAuth.authKey, httpsManifestUrl).catch((err) => {
+            console.error('Auto-install addon during auto-config failed:', err);
+          });
         }
-      }).catch(() => { });
+      }).catch((err) => {
+        console.error('Auto-config failed:', err);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, authLoaded, configDecoded, stremioAuth, userId]);
@@ -377,7 +384,9 @@ export default function Home() {
           }
         }
       }
-    } catch { }
+    } catch (err) {
+      console.error('Login complete configuration sync failed:', err);
+    }
   };
 
   const handleConfigSaved = (newUserId?: string) => {

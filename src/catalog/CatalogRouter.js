@@ -67,6 +67,28 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
     // SCENARIO 5: UNIVERSAL PIPELINE (AI/PRESETS Custom)
     if (catalogMeta || directFilters) {
         const universalCatalog = normalizeToUniversalSchema(catalogMeta, directFilters);
+        
+        if (universalCatalog._isMerge) {
+            const raw = universalCatalog._rawFilters;
+            const mergedFrom = raw.merge?.sources || raw.mergedFrom || [];
+            if (mergedFrom.length > 0) {
+                const activeProfile = userConfig.profiles?.find(p => p.id === userConfig.activeProfileId);
+                const customCatalogs = activeProfile?.catalogs || [];
+                const mergedQueries = [];
+                for (const srcId of mergedFrom) {
+                    const srcCat = customCatalogs.find(c => c.id === srcId);
+                    if (srcCat && srcCat.queries) {
+                        mergedQueries.push(...srcCat.queries);
+                    } else if (srcCat && srcCat.filters) {
+                        mergedQueries.push({ strategy: 'discovery', ...srcCat.filters });
+                    }
+                }
+                universalCatalog.queries = mergedQueries.length > 0 ? mergedQueries : [{}];
+            } else {
+                universalCatalog.queries = [{}];
+            }
+        }
+
         if (sortBy && universalCatalog.queries) {
             for (const q of universalCatalog.queries) {
                 q.sort_by = sortBy;

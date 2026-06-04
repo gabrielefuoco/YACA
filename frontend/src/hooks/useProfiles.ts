@@ -2,7 +2,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Profile, Catalog, RawProfileData, SyncStatus, TmdbMetadataMap, DNAItem } from '@/types';
 import { api } from '@/lib/api';
-import { VectorEngine, VectorAxis } from '@/engines/vectorEngine';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
 
 import { generateId } from '@/lib/utils';
@@ -254,131 +253,23 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
     removeCatalog,
     addCatalog,
 
-    syncStatus,
     syncProfileVectors: async (profileId: string, userId: string) => {
       try {
         setSyncStatus({ isSyncing: true, total: 100, current: 0, phase: 'Inizializzazione...' });
         
-        // --- STAGE 1: Background Refresh ---
-        setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Sincronizzazione Stremio/Trakt...', current: 6 }));
+        // --- STAGE 1: Avvio Sincronizzazione Backend ---
+        setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Sincronizzazione Stremio/Trakt e Calcolo DNA...', current: 10 }));
+        
+        // La chiamata POST avvia il task di sincronizzazione e estrazione vettoriale sul server Node.js.
         await api.refreshSync(profileId, userId);
 
-        // --- STAGE 2: Client Vector Calculation ---
-        // 1. Fetch Raw Data (History + Manual DNA + Active Catalogs)
-        setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Recupero dati profilo...', current: 10 }));
-        const data: RawProfileData = await api.getRawProfileData(profileId, userId);
+        // --- STAGE 2: Polling in background ---
+        // Il polling dello stato avviene già nel componente DnaAndAiPanel (fetchSyncStatus) 
+        // e verrà aggiornato reattivamente lì. Segnaliamo solo il successo preliminare qui.
+        setSyncStatus({ isSyncing: false, total: 100, current: 100, phase: 'Task in esecuzione sul server...' });
         
-        // 2. Metadata Enrichment (Batch)
-        setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Arricchimento metadati...', current: 20 }));
-        
-        const movies = [...new Set(data.history.filter(h => h.type === 'movie').map(h => h.tmdbId))];
-        const tv = [...new Set(data.history.filter(h => h.type === 'tv').map(h => h.tmdbId))];
-        
-        const metadataMap: Record<number, any> = {};
-        
-        if (movies.length > 0) {
-          const res = await api.batchTmdbDetails(movies, 'movie');
-          Object.assign(metadataMap, res.results || {});
-        }
-        if (tv.length > 0) {
-          const res = await api.batchTmdbDetails(tv, 'tv');
-          Object.assign(metadataMap, res.results || {});
-        }
-        
-        setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Calcolo vettori VSM...', current: 60 }));
-
-        // 3. Vector Calculation: Real History + Manual Settings + Catalog Priming
-        const vectors = VectorEngine.computeProfileVectors(
-          data.history, 
-          metadataMap,
-          data.manualDNA || [], 
-          data.activeCatalogs || []
-        );
-
-        const idNames: Record<string, string> = {};
-        Object.values(metadataMap).forEach((metadata: any) => {
-            if (metadata.genres) {
-                metadata.genres.forEach((g: any) => {
-                    idNames[String(g.id)] = g.name;
-                });
-            }
-            const keywords = metadata.keywords?.keywords || metadata.keywords?.results || [];
-            keywords.forEach((k: any) => {
-                idNames[String(k.id)] = k.name;
-            });
-        });
-
-        // Add Manual DNA to idNames
-        const missingKeywords = new Set<number>();
-        if (data.manualDNA) {
-            data.manualDNA.forEach((item: any) => {
-                if (item.name) {
-                    idNames[String(item.id)] = item.name;
-                } else if (item.type === 'keyword' && !isNaN(parseInt(item.id, 10))) {
-                    missingKeywords.add(parseInt(item.id, 10));
-                }
-            });
-        }
-        data.activeCatalogs?.forEach((cat: any) => {
-            const processParams = (params: any) => {
-                if (!params) return;
-                if (params.with_keywords) {
-                    const ids = String(params.with_keywords).split(/[|,]/).map(s => s.trim());
-                    ids.forEach(id => { 
-                        if (id && !idNames[id] && !isNaN(parseInt(id, 10))) {
-                            missingKeywords.add(parseInt(id, 10));
-                        }
-                    });
-                }
-            };
-            processParams(cat.filters);
-            cat.queries?.forEach((q: any) => processParams(q));
-        });
-
-        // 4. Global Contamination (if not global)
-        if (profileId !== 'global' && data.globalVectors?.V_final) {
-          setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Contaminazione globale...', current: 80 }));
-          vectors.V_final = VectorEngine.applyContamination(vectors.V_final, data.globalVectors.V_final);
-        }
-
-        // 4.5 Scan vectors for any missing keyword names before final sync
-        const scanVectorsForMissingKeywords = (v: any) => {
-            if (!v) return;
-            Object.keys(v).forEach(key => {
-                if (key.startsWith('k:')) {
-                    const id = key.substring(2);
-                    const currentName = idNames[id];
-                    const isFallback = typeof currentName === 'string' && currentName.startsWith('Keyword ');
-                    if ((!currentName || isFallback) && !isNaN(parseInt(id, 10))) {
-                        missingKeywords.add(parseInt(id, 10));
-                    }
-                }
-            });
-        };
-        scanVectorsForMissingKeywords(vectors.V_static);
-        scanVectorsForMissingKeywords(vectors.V_active);
-        scanVectorsForMissingKeywords(vectors.V_final);
-
-        if (missingKeywords.size > 0) {
-            setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Recupero nomi keyword...', current: 85 }));
-            try {
-                const res = await api.batchTmdbKeywords(Array.from(missingKeywords));
-                if (res?.results) {
-                    res.results.forEach((k: any) => {
-                        idNames[String(k.id)] = k.name;
-                    });
-                }
-            } catch (err) {
-                console.error('Failed to batch fetch keywords:', err);
-            }
-        }
-
-        // 5. Final Sync Back
-        setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Sincronizzazione finale...', current: 90 }));
-        await api.syncVectors(profileId, userId, { compiledVectors: vectors, idNames });
-        
-        setSyncStatus({ isSyncing: false, total: 100, current: 100, phase: 'Completato' });
-        return vectors;
+        // Ritorniamo un mock vuoto poichè il vero aggiornamento avverrà tramite polling di DnaAndAiPanel
+        return {};
       } catch (err) {
         setSyncStatus({ isSyncing: false, total: 100, current: 0, phase: 'Errore' });
         console.error('Failed to sync profile vectors:', err);

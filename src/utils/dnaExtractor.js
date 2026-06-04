@@ -19,6 +19,13 @@ function extractStaticDNAFromQueries(queries) {
                 V_static[k] = (V_static[k] || 0) + baseWeight;
             });
         }
+        if (query.keyword) {
+            query.keyword.toString().split(/[,|]/).forEach(kwd => {
+                if (!kwd.trim()) return;
+                const k = `k:${kwd.trim().toLowerCase()}`;
+                V_static[k] = (V_static[k] || 0) + baseWeight;
+            });
+        }
         if (query.with_cast) {
             query.with_cast.toString().split(/[,|]/).forEach(id => {
                 if (!id.trim()) return;

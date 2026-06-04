@@ -36,7 +36,14 @@ const UserConfig = {
 
         while (attempt < MAX_RETRIES) {
             try {
-                let targetUserId = userData.userId;
+                // Cloniamo i dati in ingresso per non inquinare l'oggetto nei tentativi successivi
+                const localData = {
+                    ...userData,
+                    apiKeys: { ...(userData.apiKeys || {}) },
+                    config: { ...(userData.config || {}) }
+                };
+
+                let targetUserId = localData.userId;
 
                 // 1. Ensure userId exists and is a string
                 if (!targetUserId) {
@@ -54,10 +61,10 @@ const UserConfig = {
 
                 // Check for OCC conflicts against AddonConfig's configVersion
                 if (existingConfig) {
-                    if (userData.config?.configVersion && 
+                    if (localData.config?.configVersion && 
                         existingConfig.config?.configVersion && 
-                        userData.config.configVersion !== existingConfig.config?.configVersion) {
-                        console.warn(`[UserConfig] Concurrency conflict for ${targetUserId}. Incoming: ${userData.config.configVersion}, DB: ${existingConfig.config.configVersion}`);
+                        localData.config.configVersion !== existingConfig.config?.configVersion) {
+                        console.warn(`[UserConfig] Concurrency conflict for ${targetUserId}. Incoming: ${localData.config.configVersion}, DB: ${existingConfig.config.configVersion}`);
                         attempt++;
                         if (attempt >= MAX_RETRIES) throw new Error("Conflitto di versione: impossibile salvare le modifiche");
                         continue; 
@@ -67,7 +74,7 @@ const UserConfig = {
                 // 3. MERGE DATA & PREPARE UPDATES
                 const keysToUnset = new Set();
                 if (existingAccount) {
-                    const incomingApiKeys = userData.apiKeys || {};
+                    const incomingApiKeys = localData.apiKeys || {};
                     const currentApiKeys = existingAccount.apiKeys?.toObject?.() || existingAccount.apiKeys || {};
                     const mergedApiKeys = { ...currentApiKeys };
 
@@ -79,18 +86,18 @@ const UserConfig = {
                             mergedApiKeys[key] = value;
                         }
                     }
-                    userData.apiKeys = mergedApiKeys;
-                    if (!userData.email && existingAccount.email) userData.email = existingAccount.email;
+                    localData.apiKeys = mergedApiKeys;
+                    if (!localData.email && existingAccount.email) localData.email = existingAccount.email;
                 }
 
                 // Prepare finalized profiles list (Synchronized Merge)
                 let finalizedProfiles = existingConfig?.profiles || [];
-                if (Array.isArray(userData.profiles)) {
+                if (Array.isArray(localData.profiles)) {
                     const existingProfileMap = new Map(
                         (existingConfig?.profiles || []).map(p => [p.id || p._id?.toString(), p])
                     );
 
-                    finalizedProfiles = userData.profiles.map(incoming => {
+                    finalizedProfiles = localData.profiles.map(incoming => {
                         const pId = incoming.id || incoming._id?.toString();
                         const existing = existingProfileMap.get(pId);
                         
@@ -125,13 +132,13 @@ const UserConfig = {
 
                 // Merge Config (version bump on every save)
                 const existingConfigObj = existingConfig?.config || {};
-                userData.config = {
+                localData.config = {
                     ...existingConfigObj,
-                    ...(userData.config || {}),
+                    ...(localData.config || {}),
                     configVersion: nanoid(8)
                 };
 
-                userData.userId = targetUserId;
+                localData.userId = targetUserId;
 
                 // ============================================
                 // TABLE A: UserAccount (secrets vault)
@@ -139,15 +146,15 @@ const UserConfig = {
                 const accountUpdate = { $set: {} };
                 const accountUnset = {};
 
-                if (userData.email) accountUpdate.$set.email = userData.email;
+                if (localData.email) accountUpdate.$set.email = localData.email;
 
-                if (userData.apiKeys) {
+                if (localData.apiKeys) {
                     const keysInDoc = ['stremio', 'tmdb', 'mistral', 'trakt', 'traktRefreshToken'];
                     keysInDoc.forEach(k => {
                         if (keysToUnset.has(k)) {
                             accountUnset[`apiKeys.${k}`] = 1;
                         } else {
-                            const val = userData.apiKeys[k];
+                            const val = localData.apiKeys[k];
                             if (val !== undefined) {
                                 // Salvataggio in chiaro
                                 accountUpdate.$set[`apiKeys.${k}`] = val;
@@ -179,8 +186,8 @@ const UserConfig = {
                 const configUpdateOp = { $set: {} };
 
                 // Config fields
-                if (userData.config) {
-                    for (const [k, v] of Object.entries(userData.config)) {
+                if (localData.config) {
+                    for (const [k, v] of Object.entries(localData.config)) {
                         configUpdateOp.$set[`config.${k}`] = v;
                     }
                 }

@@ -1,10 +1,6 @@
 'use client';
-import { Profile, ProfileTemplate, DNAItem } from '@/types';
-import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
+import { Profile, DNAItem } from '@/types';
 import { api } from '@/lib/api';
-import { X, BrainCircuit } from 'lucide-react';
-
-const TEMPLATE_DNA_REFRESH_DELAY_MS = 600; // allow backend save + profile refetch path before refreshing DNA badges
 
 interface ProfileSettingsPanelProps {
     profile: Profile;

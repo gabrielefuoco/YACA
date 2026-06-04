@@ -289,9 +289,5 @@ async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend',
 
 module.exports = {
     generateDiscoveryQueries,
-    buildDnaDescription,
-    parseQuerySynthesizerResponse,
-    TRUE_BLEND_SYSTEM_PROMPT,
-    HIDDEN_GEMS_SYSTEM_PROMPT,
-    GENRE_NAME_TO_ID
+    buildDnaDescription
 };

@@ -106,9 +106,6 @@ function validateKeys(body, existingUser, warnings) {
 }
 
 module.exports = {
-    LIMITS,
-    isValidTraktTokenCandidate,
-    normalizeInputString,
     validateAuth,
     validateKeys
 };

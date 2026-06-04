@@ -39,7 +39,7 @@ function safeJsonParse(text) {
         try {
             const cleaned = jsonStr
                 .replace(/\/\/.*$/gm, '') // Remove single-line comments
-                .replace(/\/\*[\s\S]*?\*\//g, '') // Remove multi-line comments
+                .replace(/\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\//g, '') // Safe regex for multi-line comments
                 .replace(/,\s*([}\]])/g, '$1'); // Remove trailing commas
             return JSON.parse(cleaned);
         } catch (e2) {

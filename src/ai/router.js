@@ -57,14 +57,14 @@ function buildFallbackResponse(originalPrompt, taskType = 'single_query') {
 
 function parseMistralResponse(content, originalPrompt, taskType = 'single_query') {
     let jsonContent = content;
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const jsonMatch = content.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
     if (jsonMatch) jsonContent = jsonMatch[0];
 
     try {
         const parsed = JSON.parse(jsonContent);
 
         if (taskType === 'multi_query') {
-            const rawQueries = Array.isArray(parsed?.queries) ? parsed.queries : [];
+            const rawQueries = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.queries) ? parsed.queries : []);
             const queries = rawQueries
                 .filter(item => item && typeof item === 'object')
                 .map(item => sanitizeSingleQuery(item, originalPrompt))
@@ -142,6 +142,5 @@ async function routeLiveStremioSearch(searchQuery, mistralKey) {
 
 module.exports = {
     generateTmdbFiltersFromPrompt,
-    routeLiveStremioSearch,
-    parseMistralResponse
+    routeLiveStremioSearch
 };

@@ -92,10 +92,13 @@ async function getTmdbIdByName(apiKey, endpoint, query) {
         const client = createTmdbClient(apiKey);
         const res = await client.get(`/search/${endpoint}`, { params: { query } });
         const id = res.data?.results?.[0]?.id || null;
-        // Cache both positive and negative results to avoid repeated lookups
+        // Cache sia dei risultati positivi che negativi (null)
         await idNameCache.set(cacheKey, id);
         return id;
     } catch (e) {
+        if (e.response?.status === 404) {
+            await idNameCache.set(cacheKey, null, 86400000); // Negative cache 24h
+        }
         console.error(`Errore getTmdbIdByName (${endpoint} - ${query}):`, e.message);
         return null;
     }
@@ -115,10 +118,13 @@ async function resolveImdbId(tmdbId, type, apiKey) {
         const searchType = type === 'movie' ? 'movie' : 'tv';
         const res = await client.get(`/${searchType}/${tmdbId}/external_ids`);
         const imdbId = res.data?.imdb_id || null;
-        // Cache both positive and negative results to avoid repeated lookups
+        // Cache sia dei risultati positivi che negativi (null)
         await imdbIdCache.set(cacheKey, imdbId);
         return imdbId;
-    } catch (_e) {
+    } catch (e) {
+        if (e.response?.status === 404) {
+            await imdbIdCache.set(cacheKey, null, 86400000); // Negative cache 24h
+        }
         return null;
     }
 }
@@ -731,6 +737,9 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
                 await tmdbDetailsCache.set(cacheKey, data);
             }
         } catch (err) {
+            if (err.response?.status === 404) {
+                await tmdbDetailsCache.set(cacheKey, null, 86400000); // Negative cache 24h
+            }
             console.error("Errore TMDB Meta Fetch:", err.message);
             return null;
         }
@@ -960,6 +969,9 @@ async function getTmdbMovieDetails(apiKey, id, type = 'movie', options = {}) {
         }
         return data;
     } catch (err) {
+        if (err.response?.status === 404) {
+            await tmdbDetailsCache.set(cacheKey, null, 86400000); // Negative cache 24h
+        }
         console.error(`Errore getTmdbMovieDetails (${type} - ${tmdbId}):`, err.message);
         return null;
     }

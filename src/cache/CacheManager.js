@@ -114,11 +114,6 @@ class CacheManager {
         return value;
     }
 
-    /**
-     * Managed SWR: get from cache, or fetch and cache.
-     * If data is stale, returns stale data AND triggers fetchFn in background.
-     * If miss, waits for fetchFn and returns result.
-     */
     async getOrFetch(key, fetchFn, ttlMs = null, options = {}) {
         const { value, status } = await this.getWithStatus(key);
         
@@ -126,28 +121,38 @@ class CacheManager {
             return value;
         }
 
-        if (status === 'stale') {
-            const revalidateTtl = ttlMs || this.mongoTtlMs;
-            // Background revalidation
-            setImmediate(async () => {
-                try {
-                    const fresh = await fetchFn();
-                    if (fresh !== undefined) {
-                        await this.set(key, fresh, revalidateTtl, options);
-                    }
-                } catch (err) {
-                    console.error(`[CacheManager:${this.namespace}] SWR revalidation failed for ${key}:`, err.message);
+        // Evita il Thundering Herd (SWR Stampede) tramite memoizzazione della Promise
+        if (this.activePromises.has(key)) {
+            if (status === 'stale') {
+                return value; // fetch in background già avviato
+            }
+            return this.activePromises.get(key); // Miss: attendi fetch in corso
+        }
+
+        const fetchPromise = (async () => {
+            try {
+                const fresh = await fetchFn();
+                if (fresh !== undefined) {
+                    await this.set(key, fresh, ttlMs || this.mongoTtlMs, options);
                 }
-            });
+                return fresh;
+            } catch (err) {
+                console.error(`[CacheManager:${this.namespace}] SWR revalidation failed for ${key}:`, err.message);
+                throw err;
+            } finally {
+                this.activePromises.delete(key);
+            }
+        })();
+
+        this.activePromises.set(key, fetchPromise);
+
+        if (status === 'stale') {
+            // Stale: ritorna il valore vecchio subito, la fetchPromise procede in background
             return value;
         }
 
-        // Miss: fetch and wait
-        const fresh = await fetchFn();
-        if (fresh !== undefined) {
-            await this.set(key, fresh, ttlMs || this.mongoTtlMs, options);
-        }
-        return fresh;
+        // Miss: attendi il risultato della fetch
+        return fetchPromise;
     }
 
     /**

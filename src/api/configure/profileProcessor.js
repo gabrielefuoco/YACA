@@ -224,7 +224,5 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings) {
 
 module.exports = {
     processProfiles,
-    createGlobalProfileInput,
-    buildSuggestedDNAFromPresets,
-    splitOrIds
+    createGlobalProfileInput
 };

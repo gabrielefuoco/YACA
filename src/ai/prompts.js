@@ -149,8 +149,5 @@ function buildAiPrompt(taskType = 'single_query') {
 }
 
 module.exports = {
-    BASE_RULES,
-    SCHEMAS,
-    EXAMPLES,
     buildAiPrompt
 };

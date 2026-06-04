@@ -9,7 +9,6 @@ export function useBackgroundSync(globalTmdbKey: string | undefined, userId: str
     const isRunningRef = useRef(false);
 
     useEffect(() => {
-        // We only contribute to the global network if the user has provided a personal TMDB key
         if (!globalTmdbKey || isRunningRef.current) return;
 
         let isMounted = true;
@@ -25,54 +24,53 @@ export function useBackgroundSync(globalTmdbKey: string | undefined, userId: str
             return await res.json();
         };
 
-        const processQueue = async () => {
-            // Give the app some time to initialize before starting background work
-            await sleep(5000); 
+        const runCycle = async () => {
+            if (!isMounted) return;
 
-            while (isMounted) {
-                try {
-                    // Fetch global queue of orphans (Priority B)
-                    // TODO: Once Phase 10 implements deep local sync, Priority A (Personal Delta) will go here.
-                    const { queue } = await api.getGlobalSyncQueue(20);
+            try {
+                // Fetch global queue of orphans
+                const { queue } = await api.getGlobalSyncQueue(20);
 
-                    if (!queue || queue.length === 0) {
-                        await sleep(DELAY_BETWEEN_BATCHES_MS);
-                        continue;
-                    }
+                if (!queue || queue.length === 0) {
+                    if (isMounted) setTimeout(runCycle, DELAY_BETWEEN_BATCHES_MS);
+                    return;
+                }
 
-                    // Process queue in chunks respecting concurrency limits
-                    let i = 0;
-                    while (i < queue.length && isMounted) {
-                        const batch = queue.slice(i, i + MAX_CONCURRENT);
-                        i += MAX_CONCURRENT;
+                // Process queue in chunks respecting concurrency limits
+                for (let i = 0; i < queue.length && isMounted; i += MAX_CONCURRENT) {
+                    const batch = queue.slice(i, i + MAX_CONCURRENT);
 
-                        await Promise.allSettled(batch.map(async (item: any) => {
-                            // Stagger requests slightly to avoid sudden bursts
-                            await sleep(Math.random() * DELAY_BETWEEN_REQUESTS_MS);
-                            try {
-                                const rawTMDB = await fetchTmdbDetails(item.id, item.type);
+                    await Promise.allSettled(batch.map(async (item: any) => {
+                        await sleep(Math.random() * DELAY_BETWEEN_REQUESTS_MS);
+                        if (!isMounted) return; // double check after sleep
+                        try {
+                            const rawTMDB = await fetchTmdbDetails(item.id, item.type);
+                            if (isMounted) {
                                 await api.enrichSyncItem({
                                     tmdbId: item.id,
                                     type: item.type,
                                     rawTMDB,
-                                    userId // Passing userId earns them immediate DNA credit
+                                    userId
                                 });
-                            } catch (err) {
-                                console.error(`[BackgroundSync] Failed to process ${item.id}`, err);
                             }
-                        }));
-                        
-                        await sleep(DELAY_BETWEEN_REQUESTS_MS);
-                    }
-
-                } catch (err) {
-                    console.error('[BackgroundSync] Queue error', err);
-                    await sleep(DELAY_BETWEEN_BATCHES_MS);
+                        } catch (err) {
+                            console.error(`[BackgroundSync] Failed to process ${item.id}`, err);
+                        }
+                    }));
+                    
+                    if (isMounted) await sleep(DELAY_BETWEEN_REQUESTS_MS);
                 }
+            } catch (err) {
+                console.error('[BackgroundSync] Queue error', err);
+            }
+
+            if (isMounted) {
+                setTimeout(runCycle, DELAY_BETWEEN_BATCHES_MS);
             }
         };
 
-        processQueue();
+        // Initial delay before starting the background work
+        setTimeout(runCycle, 5000);
 
         return () => {
             isMounted = false;

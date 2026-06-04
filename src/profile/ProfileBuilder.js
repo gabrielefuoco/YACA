@@ -126,9 +126,49 @@ class ProfileBuilder {
         );
     }
 
+    static async _bulkUpdateVectorsAsync(owner, context, items) {
+        if (!items || items.length === 0) return;
+
+        const profile = await TasteProfile.findOne({ owner, context }).lean();
+        if (!profile) return;
+
+        const vActive = profile.compiledVectors?.V_active || {};
+        const vStatic = profile.compiledVectors?.V_static || {};
+
+        // Fetch all TMDB data in one query to avoid N+1
+        const queries = items.map(item => ({ tmdbId: item.tmdbId, type: item.type }));
+        // Se la lista è enorme, splittiamo la query per evitare BSON limits
+        const chunkSize = 1000;
+        let tmdbDataList = [];
+        for (let i = 0; i < queries.length; i += chunkSize) {
+            const chunk = queries.slice(i, i + chunkSize);
+            const chunkData = await TmdbScoringData.find({ $or: chunk }).lean();
+            tmdbDataList = tmdbDataList.concat(chunkData);
+        }
+
+        for (const tmdbData of tmdbDataList) {
+            const itemDNA = extractActiveDNAFromTmdbData(tmdbData, 100);
+            for (const [key, value] of Object.entries(itemDNA)) {
+                vActive[key] = (vActive[key] || 0) + value;
+            }
+        }
+
+        const totalInteractions = await WatchHistory.countDocuments({ owner, context });
+        const vFinal = computeFinalDNA(vStatic, vActive, totalInteractions);
+
+        await TasteProfile.updateOne(
+            { owner, context },
+            { 
+                $set: { 
+                    "compiledVectors.V_active": vActive,
+                    "compiledVectors.V_final": vFinal
+                } 
+            }
+        );
+    }
+
     /**
-     * Entry point semplificato per la sincronizzazione Trakt.
-     * Salva solo i dati grezzi. Il calcolo dei vettori avverrà al prossimo login/refresh del client.
+     * Entry point per la sincronizzazione Trakt (ottimizzato Bulk).
      */
     static async syncUserHistory(owner, context, traktHistory) {
         if (!owner || !traktHistory?.length) return;
@@ -140,26 +180,35 @@ class ProfileBuilder {
         });
 
         try {
+            const bulkOps = [];
+            const itemsForDna = [];
+
             for (let i = 0; i < traktHistory.length; i++) {
                 const entry = traktHistory[i];
                 const tmdbId = entry.movie?.ids?.tmdb || entry.show?.ids?.tmdb;
                 const type = entry.movie ? 'movie' : 'tv';
                 
                 if (tmdbId) {
-                    await ProfileBuilder.appendToHistory(owner, context, {
-                        tmdbId,
-                        type,
-                        lastWatchedAt: entry.watched_at || new Date(),
-                        source: 'trakt',
-                        episodesWatched: type === 'tv' ? 1 : 1 // Su Trakt ogni entry è spesso un episodio o un play
+                    bulkOps.push({
+                        updateOne: {
+                            filter: { owner, context, tmdbId },
+                            update: { 
+                                $set: { type, lastWatchedAt: entry.watched_at || new Date(), source: 'trakt' },
+                                $inc: { episodesWatched: 1 } 
+                            },
+                            upsert: true
+                        }
                     });
+                    itemsForDna.push({ tmdbId, type });
                 }
+            }
 
-                if (i % 20 === 0) {
-                    await ProfileBuilder._updateSyncStatus(owner, context, {
-                        current: i + 1
-                    });
-                }
+            if (bulkOps.length > 0) {
+                // Batch write to DB
+                await WatchHistory.bulkWrite(bulkOps, { ordered: false });
+                await ProfileBuilder._updateSyncStatus(owner, context, { current: traktHistory.length });
+                // Bulk DNA Extraction
+                await ProfileBuilder._bulkUpdateVectorsAsync(owner, context, itemsForDna);
             }
 
             await ProfileBuilder._updateSyncStatus(owner, context, {
@@ -173,8 +222,7 @@ class ProfileBuilder {
     }
 
     /**
-     * Entry point semplificato per la sincronizzazione Stremio.
-     * Salva i metadati grezzi (Liked/Library) in WatchHistory per il VSM.
+     * Entry point per la sincronizzazione Stremio (ottimizzato Bulk).
      */
     static async syncStremioData(owner, stremioData, context = 'global') {
         if (!owner || !stremioData) return;
@@ -197,25 +245,35 @@ class ProfileBuilder {
         });
 
         try {
+            const bulkOps = [];
+            const itemsForDna = [];
+
             for (let i = 0; i < allItems.length; i++) {
                 const { item, source } = allItems[i];
-                const tmdbId = item.id || item._id; // Assumiamo siano già stati tradotti o siano TMDB
+                const tmdbId = item.id || item._id;
                 const type = item.type === 'series' ? 'tv' : 'movie';
 
                 if (tmdbId && !isNaN(tmdbId)) {
-                    await ProfileBuilder.appendToHistory(owner, context, {
-                        tmdbId: parseInt(tmdbId),
-                        type,
-                        lastWatchedAt: new Date(),
-                        source
+                    bulkOps.push({
+                        updateOne: {
+                            filter: { owner, context, tmdbId: parseInt(tmdbId) },
+                            update: { 
+                                $set: { type, lastWatchedAt: new Date(), source },
+                                $inc: { episodesWatched: 1 } 
+                            },
+                            upsert: true
+                        }
                     });
+                    itemsForDna.push({ tmdbId: parseInt(tmdbId), type });
                 }
+            }
 
-                if (i % 20 === 0) {
-                    await ProfileBuilder._updateSyncStatus(owner, context, {
-                        current: i + 1
-                    });
-                }
+            if (bulkOps.length > 0) {
+                // Batch write to DB
+                await WatchHistory.bulkWrite(bulkOps, { ordered: false });
+                await ProfileBuilder._updateSyncStatus(owner, context, { current: allItems.length });
+                // Bulk DNA Extraction
+                await ProfileBuilder._bulkUpdateVectorsAsync(owner, context, itemsForDna);
             }
 
             await ProfileBuilder._updateSyncStatus(owner, context, {

@@ -115,12 +115,7 @@ async function metaHandler(args, userConfig) {
                 // Use getWithStatus for SWR support
                 let { value: cachedMeta, status: cacheStatus } = await finalMetaCache.getWithStatus(cacheKey);
 
-                // Se a causa del vecchio bug abbiamo cachato una serie con 0 episodi, invalidiamo la cache forzatamente
-                if (cacheStatus !== 'miss' && type === 'series' && (!cachedMeta.videos || cachedMeta.videos.length === 0)) {
-                    console.log(`[Cache Invalidation] Trovata serie ${id} in cache con 0 episodi, forzo ricaricamento...`);
-                    cacheStatus = 'miss';
-                    cachedMeta = null;
-                }
+
 
                 if (cacheStatus === 'fresh') {
                     meta = cachedMeta;
