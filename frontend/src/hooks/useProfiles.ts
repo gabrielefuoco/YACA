@@ -252,7 +252,7 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
     reorderCatalogs,
     removeCatalog,
     addCatalog,
-
+    syncStatus,
     syncProfileVectors: async (profileId: string, userId: string) => {
       try {
         setSyncStatus({ isSyncing: true, total: 100, current: 0, phase: 'Inizializzazione...' });
