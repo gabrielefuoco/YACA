@@ -124,7 +124,7 @@ export function CatalogItem({
 
       <div className="-mx-2 mb-4 relative z-10 group/row">
          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover/poster:opacity-100 transition-opacity rounded-2xl -z-10" />
-        <PosterRow presetId={catalog.source === 'preset' ? catalog.id : undefined} type={catalog.type} filters={catalog.filters} prompt={catalog.raw_prompt} />
+        <PosterRow presetId={catalog.source === 'preset' ? `yaca_preset_${catalog.id}` : undefined} type={catalog.type} filters={catalog.filters} prompt={catalog.raw_prompt} />
       </div>
 
       <div className="mt-auto pt-4 border-t border-marrow-light/10 flex items-center justify-between relative z-10">

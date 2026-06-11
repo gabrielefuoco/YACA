@@ -125,7 +125,7 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
 
               {/* Always-visible poster row */}
               <div className="w-full min-w-0 overflow-hidden bg-white/60 p-2">
-                <PosterRow presetId={preset.id} type={preset.type} />
+                <PosterRow presetId={`yaca_preset_${preset.id}`} type={preset.type} />
               </div>
             </div>
           );
