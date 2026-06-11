@@ -223,7 +223,13 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
   const handleManualPreview = () => {
     if (blocks.length === 0) return;
-    setPreviewFilters(buildFiltersFromBlock(blocks[0]));
+    // For multi-query, build a merge-compatible preview payload
+    if (blocks.length > 1) {
+      const queries = blocks.map(buildQueryBlock);
+      setPreviewFilters({ queries, merge: true });
+    } else {
+      setPreviewFilters(buildFiltersFromBlock(blocks[0]));
+    }
     setPreviewType(type);
   };
 
@@ -236,8 +242,10 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       source: 'manual',
       queries,
       presentation_strategy: presentationStrategy,
-      // Keep backward-compat filters from first block
-      filters: buildFiltersFromBlock(blocks[0]),
+      // For multi-query: include merge flag + queries in filters for backend compat
+      filters: blocks.length > 1
+        ? { queries, merge: true }
+        : buildFiltersFromBlock(blocks[0]),
       emoji: '🎨',
     };
     onAddCatalog(catalog);
@@ -510,66 +518,73 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header: Name + Type */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Nome catalogo</Label>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Il mio catalogo"
-            className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40"
-          />
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* HERO CARD: Name + Type + Presentation Strategy – all in one place */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <section className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-white/60 to-primary/5 p-5 space-y-4 shadow-lg shadow-primary/5">
+        {/* Row 1: Name input + Type toggle */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 min-w-0">
+            <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Nome catalogo</Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Il mio catalogo"
+              className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base"
+            />
+          </div>
+          <div className="sm:w-56 shrink-0">
+            <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Tipo</Label>
+            <div className="flex gap-1.5 mt-1">
+              {(['movie', 'series'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setType(t)}
+                  className={`flex-1 rounded-lg border py-2 text-sm font-bold transition-all ${type === t
+                    ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
+                    : 'border-marrow-light/20 bg-white/40 text-marrow-light hover:text-primary hover:border-primary/50'
+                    }`}
+                >
+                  {t === 'movie' ? '🎬 Film' : '📺 Serie'}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <div>
-          <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Tipo</Label>
-          <div className="flex gap-2 mt-1">
-            {(['movie', 'series'] as const).map((t) => (
+
+        {/* Row 2: Presentation Strategy */}
+        <div className="flex items-center gap-3 pt-1">
+          <div className="flex items-center gap-2 shrink-0">
+            <Layers className="h-4 w-4 text-primary" />
+            <span className="text-marrow-deep font-black uppercase tracking-wide text-[10px] whitespace-nowrap">Presentazione</span>
+            <span className="relative group">
+              <Info className="h-3.5 w-3.5 text-zinc-400 cursor-help" />
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg bg-zinc-900 dark:bg-zinc-700 text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
+                <strong>Popularity:</strong> ordina tutti i risultati per popolarità globale.
+                <br /><strong>Interleave:</strong> alterna i risultati di ogni query per massima varietà (consensus scoring).
+              </span>
+            </span>
+          </div>
+          <div className="flex gap-1.5">
+            {(['popularity', 'interleave'] as const).map((s) => (
               <button
-                key={t}
-                onClick={() => setType(t)}
-                className={`flex-1 rounded-lg border py-2 text-sm font-bold transition-all ${type === t
+                key={s}
+                onClick={() => setPresentationStrategy(s)}
+                className={`rounded-lg border px-4 py-1.5 text-xs font-bold transition-all ${presentationStrategy === s
                   ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
-                  : 'border-marrow-light/20 bg-white/40 text-marrow-light hover:text-primary hover:border-primary/50'
+                  : 'border-marrow-light/20 bg-white/50 text-marrow-light hover:text-primary hover:border-primary/50'
                   }`}
               >
-                {t === 'movie' ? '🎬 Film' : '📺 Serie'}
+                {s === 'popularity' ? '🏆 Popularity' : '🔀 Interleave'}
               </button>
             ))}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Global Presentation Strategy */}
-      <div className="rounded-xl border border-marrow-light/10 bg-white/40 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex items-center gap-2 shrink-0">
-          <Layers className="h-4 w-4 text-primary" />
-          <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px] whitespace-nowrap">Strategia di presentazione</Label>
-          <span className="relative group">
-            <Info className="h-3.5 w-3.5 text-zinc-400 cursor-help" />
-            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg bg-zinc-900 dark:bg-zinc-700 text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
-              <strong>Popularity:</strong> ordina tutti i risultati per popolarità globale.
-              <br /><strong>Interleave:</strong> alterna i risultati di ogni query per massima varietà (consensus scoring).
-            </span>
-          </span>
-        </div>
-        <div className="flex gap-2">
-          {(['popularity', 'interleave'] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setPresentationStrategy(s)}
-              className={`rounded-lg border px-4 py-1.5 text-xs font-bold transition-all ${presentationStrategy === s
-                ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
-                : 'border-marrow-light/20 bg-white/50 text-marrow-light hover:text-primary hover:border-primary/50'
-                }`}
-            >
-              {s === 'popularity' ? '🏆 Popularity' : '🔀 Interleave'}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Query Blocks */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* QUERY BLOCKS                                                      */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-black uppercase tracking-widest text-marrow-deep">
@@ -584,14 +599,15 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
         {blocks.map((block, i) => renderBlock(block, i))}
       </div>
 
-      {/* Preview */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* PREVIEW + ACTIONS                                                 */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       {previewFilters && (
         <div className="rounded-xl border border-marrow-light/10 bg-white/40 p-4 overflow-hidden ">
           <PosterRow filters={previewFilters} type={previewType} />
         </div>
       )}
 
-      {/* Action Buttons */}
       <div className="flex gap-3">
         <Button onClick={handleManualPreview} variant="outline" className="flex-1 py-3 font-bold text-marrow-deep">
           <Eye className="h-4 w-4 mr-2" />
