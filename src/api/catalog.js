@@ -14,12 +14,6 @@ const { createTmdbClient } = require('../clients/tmdb');
 const tmdbClient = createTmdbClient();
 
 router.post('/preview-catalog', async (req, res) => {
-    const { presetId, filters: customFilters, type: customType, prompt } = req.body;
-    const tmdbKey = req.body.tmdbKey || process.env.TMDB_API_KEY;
-    const mistralKey = req.body.mistralKey || null;
-
-    if (!tmdbKey) {
-        return res.status(400).json({ error: 'TMDB API key non configurata sul server' });
     try {
         const { id, type: customType, filters: customFilters, prompt, tmdbKey } = req.body;
         
