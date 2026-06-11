@@ -140,11 +140,6 @@ const EXAMPLES = {
     { "strategy": "discovery", "genre_ids": [53], "people_list": ["Brad Pitt"], "year_from": "1990", "year_to": "1999", "target": "tmdb" },
     { "strategy": "discovery", "genre_ids": [53], "people_list": ["Morgan Freeman"], "year_from": "1990", "year_to": "1999", "target": "tmdb" }
   ]
-}
-- Query: "anime isekai mecha" -> {
-  "queries": [
-    { "strategy": "discovery", "genre_ids": [16], "keyword": "isekai,mecha", "target": "tmdb" }
-  ]
 }`
 };
 
