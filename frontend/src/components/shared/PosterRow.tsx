@@ -31,7 +31,7 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
           setLoading(true);
           api
             .previewCatalog({ presetId, filters, type, prompt })
-            .then((data) => setItems(data.items ?? []))
+            .then((data) => setItems(data.items || data.results || []))
             .catch((err) => { 
               console.error('Failed to preview catalog:', err);
               setItems([]); // Clear items on error to display fallback
