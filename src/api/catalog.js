@@ -157,27 +157,14 @@ router.post('/preview-catalog', async (req, res) => {
                 }));
 
                 return res.json({
-                    items,
-                    filters: discoverFilters?.queries ? discoverFilters : customFilters,
-                fullUserConfig,
-                req.context?.hostUrl || `${req.protocol}://${req.get('host')}`
-            );
-
-            const items = (previewData.metas || []).slice(0, 20).map(item => ({
-                id: item.id,
-                title: item.name || '',
-                poster: item.poster || null,
-                vote: item.vote_average || item.imdbRating || 0,
-                year: item.releaseInfo || ''
-            }));
-
-            return res.json({
-                items,
-                filters: discoverFilters?.queries ? discoverFilters : customFilters,
-                type: discoverType === 'tv' ? 'series' : 'movie',
-                name: sanitizedPrompt ? sanitizedPrompt.substring(0, MAX_PREVIEW_CATALOG_NAME_LENGTH) : null
-            });
-        } catch (err) {
+                    name: sanitizedPrompt ? sanitizedPrompt.substring(0, 50) : null,
+                    type: discoverType,
+                    filters: discoverFilters,
+                    queries: aiFilters?.queries || discoverFilters?.queries || undefined,
+                    presentation_strategy: strategy,
+                    results: items
+                });
+            } catch (err) {
             console.error("Errore preview multi-query/merge:", err);
             return res.status(500).json({ error: 'Errore nel generare anteprima' });
         }
