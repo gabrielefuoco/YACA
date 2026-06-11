@@ -89,6 +89,25 @@ router.post('/preview-catalog', async (req, res) => {
 
     if (customFilters?.merge || discoverFilters?.queries) {
         try {
+            let fullUserConfig = { apiKeys: { tmdb: sanitizedTmdbKey, mistral: mistralKey } };
+            const token = req.cookies?.yaca_session;
+            if (token) {
+                try {
+                    const jwt = require('jsonwebtoken');
+                    const { getJwtSecret } = require('../auth/index');
+                    const decoded = jwt.verify(token, getJwtSecret());
+                    if (decoded?.userId) {
+                        const UserConfig = require('../models/UserConfig');
+                        const u = await UserConfig.resolveUserConfig(decoded.userId);
+                        if (u) {
+                            fullUserConfig = { ...u, apiKeys: { ...u.apiKeys, ...fullUserConfig.apiKeys } };
+                        }
+                    }
+                } catch (e) {
+                    // Ignore auth errors for preview, fallback to mock
+                }
+            }
+
             const previewData = await catalogHandler(
                 {
                     type: discoverType === 'tv' ? 'series' : 'movie',
@@ -96,7 +115,7 @@ router.post('/preview-catalog', async (req, res) => {
                     filters: discoverFilters?.queries ? discoverFilters : customFilters,
                     extra: { skip: 0 }
                 },
-                { apiKeys: { tmdb: sanitizedTmdbKey, mistral: mistralKey } },
+                fullUserConfig,
                 req.context?.hostUrl || `${req.protocol}://${req.get('host')}`
             );
 
