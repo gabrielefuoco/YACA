@@ -30,7 +30,7 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
         if (entries[0].isIntersecting) {
           setLoading(true);
           api
-            .previewCatalog({ presetId, filters, type, prompt })
+            .previewCatalog({ id: presetId, filters, type, prompt })
             .then((data) => setItems(data.items || data.results || []))
             .catch((err) => { 
               console.error('Failed to preview catalog:', err);
