@@ -22,6 +22,7 @@ class CacheManager {
 
         // LRU in-memory cache as L1
         this.lruFallback = new LRUCache({ max: ramMax, ttl: ramTtlMs + swrMs });
+        this.activePromises = new Map();
         CacheManager.instances.push(this);
     }
 

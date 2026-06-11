@@ -70,17 +70,25 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
         
         if (universalCatalog._isMerge) {
             const raw = universalCatalog._rawFilters;
-            const mergedFrom = raw.merge?.sources || raw.mergedFrom || [];
+            const mergedFrom = raw.merge?.sources || raw.merge?.catalogs || raw.mergedFrom || [];
             if (mergedFrom.length > 0) {
                 const activeProfile = userConfig.profiles?.find(p => p.id === userConfig.activeProfileId);
-                const customCatalogs = activeProfile?.catalogs || [];
+                const customCatalogs = activeProfile?.existingCatalogs || activeProfile?.catalogs || [];
+                const allPresets = getPresets();
+                const sourceFilters = raw.merge?.sourceFilters || [];
                 const mergedQueries = [];
-                for (const srcId of mergedFrom) {
-                    const srcCat = customCatalogs.find(c => c.id === srcId);
+                for (let i = 0; i < mergedFrom.length; i++) {
+                    const srcId = mergedFrom[i];
+                    let srcCat = customCatalogs.find(c => c.id === srcId);
+                    if (!srcCat) {
+                        srcCat = allPresets.find(p => p.id === srcId);
+                    }
                     if (srcCat && srcCat.queries) {
                         mergedQueries.push(...srcCat.queries);
                     } else if (srcCat && srcCat.filters) {
                         mergedQueries.push({ strategy: 'discovery', ...srcCat.filters });
+                    } else if (sourceFilters[i]) {
+                        mergedQueries.push({ strategy: 'discovery', ...sourceFilters[i] });
                     }
                 }
                 universalCatalog.queries = mergedQueries.length > 0 ? mergedQueries : [{}];
