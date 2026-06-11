@@ -2,6 +2,7 @@ const { nanoid } = require('nanoid');
 const { getPresets } = require('../../data/presets');
 const TasteProfile = require('../../models/TasteProfile');
 const { extractStaticDNAFromQueries } = require('../../utils/dnaExtractor');
+const { createTmdbClient } = require('../../clients/tmdb');
 
 /**
  * TMDB genre ID → Italian name lookup.
@@ -30,51 +31,64 @@ function splitOrIds(value) {
 }
 
 /**
- * Extracts suggested DNA entries (genres + keywords) from active presets.
- * Handles both traditional TMDB filters (with_genres, with_keywords) and
- * AI-style filters (genre_ids arrays, keyword comma-separated strings).
+ * Extracts suggested DNA entries from installed catalogs.
+ * Handles genres, keywords, networks, companies, cast, and crew.
  * Resolves known genre IDs to Italian names.
  *
- * @param {string[]} selectedPresets - Active preset IDs
- * @param {Array} presetsList - All available presets
+ * @param {Array} catalogs - Array of installed catalogs
  * @returns {Array<{id: string, type: string, name: string}>}
  */
-function buildSuggestedDNAFromPresets(selectedPresets = [], presetsList = []) {
-    const genreCounts = new Map();
-    const keywordCounts = new Map();
+function buildSuggestedDNAFromCatalogs(catalogs = []) {
+    const counts = {
+        genre: new Map(),
+        keyword: new Map(),
+        network: new Map(),
+        company: new Map(),
+        actor: new Map(),
+        director: new Map()
+    };
 
-    for (const presetId of selectedPresets) {
-        const preset = presetsList.find(p => p.id === presetId);
-        if (!preset?.filters || typeof preset.filters !== 'object') continue;
+    for (const catalog of catalogs) {
+        if (!catalog.queries || !Array.isArray(catalog.queries)) continue;
 
-        // Traditional TMDB filters: with_genres / with_keywords (pipe/comma-separated)
-        for (const gid of splitOrIds(preset.filters.with_genres)) {
-            genreCounts.set(gid, (genreCounts.get(gid) || 0) + 1);
-        }
-        for (const kid of splitOrIds(preset.filters.with_keywords)) {
-            keywordCounts.set(kid, (keywordCounts.get(kid) || 0) + 1);
-        }
-
-        // AI-style filters: genre_ids (array), keyword (comma-separated string)
-        for (const gid of splitOrIds(preset.filters.genre_ids)) {
-            genreCounts.set(gid, (genreCounts.get(gid) || 0) + 1);
-        }
-        for (const kid of splitOrIds(preset.filters.keyword)) {
-            keywordCounts.set(kid, (keywordCounts.get(kid) || 0) + 1);
+        for (const query of catalog.queries) {
+            for (const id of splitOrIds(query.with_genres || query.genre_ids)) {
+                counts.genre.set(id, (counts.genre.get(id) || 0) + 1);
+            }
+            for (const id of splitOrIds(query.with_keywords || query.keyword)) {
+                counts.keyword.set(id, (counts.keyword.get(id) || 0) + 1);
+            }
+            for (const id of splitOrIds(query.with_networks)) {
+                counts.network.set(id, (counts.network.get(id) || 0) + 1);
+            }
+            for (const id of splitOrIds(query.with_companies)) {
+                counts.company.set(id, (counts.company.get(id) || 0) + 1);
+            }
+            for (const id of splitOrIds(query.with_cast)) {
+                counts.actor.set(id, (counts.actor.get(id) || 0) + 1);
+            }
+            for (const id of splitOrIds(query.with_crew)) {
+                counts.director.set(id, (counts.director.get(id) || 0) + 1);
+            }
         }
     }
 
-    const topGenres = Array.from(genreCounts.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 8)
-        .map(([id]) => ({ id: String(id), type: 'genre', name: GENRE_ID_TO_NAME[String(id)] || `Genre ${id}` }));
+    const results = [];
+    const limits = { genre: 8, keyword: 8, network: 3, company: 3, actor: 3, director: 3 };
 
-    const topKeywords = Array.from(keywordCounts.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 8)
-        .map(([id]) => ({ id: String(id), type: 'keyword', name: `Keyword ${id}` }));
+    for (const [type, map] of Object.entries(counts)) {
+        const top = Array.from(map.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, limits[type])
+            .map(([id]) => {
+                let name = `${type} ${id}`;
+                if (type === 'genre' && GENRE_ID_TO_NAME[id]) name = GENRE_ID_TO_NAME[id];
+                return { id: String(id), type, name };
+            });
+        results.push(...top);
+    }
 
-    return [...topGenres, ...topKeywords];
+    return results;
 }
 
 /**
@@ -107,7 +121,7 @@ function createGlobalProfileInput() {
  * @param {Array} warnings - Array to collect processing warnings
  * @returns {Promise<Array>} Processed profile objects
  */
-async function processProfiles(inputProfiles, userId, mistralKey, warnings) {
+async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdbKey) {
     const allPresets = getPresets();
     const presetMap = new Map(allPresets.map(p => [p.id, p]));
     
@@ -131,14 +145,7 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings) {
             }
         };
 
-        // 2. Enforce global profile invariants: the global profile is system-managed
-        //    and must not carry user DNA. DNA is only allowed on user-created profiles.
-        if (isGlobal) {
-            profile.settings.manualDNA = [];
-            profile.settings.suggestedDNA = [];
-        }
-
-        // 3. Resolve Presets to Catalogs
+        // 2. Resolve Presets to Catalogs
         if (profile.raw_ui_state.selectedPresets.length > 0) {
             for (const presetId of profile.raw_ui_state.selectedPresets) {
                 const preset = presetMap.get(presetId);
@@ -148,7 +155,8 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings) {
                         profile.catalogs.push({
                             id: `yaca_preset_${presetId}`,
                             name: preset.name,
-                            type: preset.type
+                            type: preset.type,
+                            queries: preset.queries || []
                         });
                     }
                 } else {
@@ -157,63 +165,79 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings) {
             }
         }
 
-        // 4. Build suggestedDNA from active presets (non-global profiles only)
-        if (!isGlobal) {
-            const manualDNA = Array.isArray(profile.settings.manualDNA) ? profile.settings.manualDNA : [];
-            const manualIds = new Set(manualDNA.map(d => `${d.type}:${d.id}`));
-            const presetDNA = buildSuggestedDNAFromPresets(
-                profile.raw_ui_state.selectedPresets,
-                allPresets
-            );
-            // Deduplicate: exclude items already in manualDNA
-            profile.settings.suggestedDNA = presetDNA.filter(d => !manualIds.has(`${d.type}:${d.id}`));
-
-            // --- DNA Extraction & Save (V_static + V_final) ---
-            const allQueries = profile.raw_ui_state.selectedPresets.flatMap(presetId => {
-                const preset = presetMap.get(presetId);
-                return preset?.queries || [];
-            });
-            
-            if (allQueries.length > 0) {
-                const inferredStaticDNA = extractStaticDNAFromQueries(allQueries);
-                
-                // Aggiorniamo V_static e ricalcoliamo V_final in background
-                (async () => {
+        // 3. Build suggestedDNA from installed catalogs
+        const manualDNA = Array.isArray(profile.settings.manualDNA) ? profile.settings.manualDNA : [];
+        const manualIds = new Set(manualDNA.map(d => `${d.type}:${d.id}`));
+        
+        const catalogDNA = buildSuggestedDNAFromCatalogs(profile.catalogs);
+        
+        // --- Fetch Keyword Names from TMDB ---
+        if (tmdbKey) {
+            const tmdbClient = createTmdbClient(tmdbKey);
+            const keywordUpdates = catalogDNA.filter(d => d.type === 'keyword' && d.name.startsWith('keyword '));
+            if (keywordUpdates.length > 0) {
+                await Promise.allSettled(keywordUpdates.map(async (k) => {
                     try {
-                        const existing = await TasteProfile.findOne(
-                            { owner: userId, context: profile.id }
-                        ).lean();
-                        
-                        const vActive = existing?.compiledVectors?.V_active || {};
-                        const hasActiveHistory = Object.keys(vActive).length > 0;
-                        
-                        let vFinal;
-                        if (hasActiveHistory) {
-                            // Ricalcola V_final combinando il nuovo V_static con il V_active esistente
-                            const { computeFinalDNA } = require('../../utils/dnaExtractor');
-                            const WatchHistory = require('../../models/WatchHistory');
-                            const totalInteractions = await WatchHistory.countDocuments({ owner: userId, context: profile.id });
-                            vFinal = computeFinalDNA(inferredStaticDNA, vActive, totalInteractions);
-                        } else {
-                            // Nessuno storico: V_final = V_static
-                            vFinal = { ...inferredStaticDNA };
+                        const res = await tmdbClient.get(`/keyword/${k.id}`);
+                        if (res.data && res.data.name) {
+                            k.name = res.data.name; // Translate keyword!
                         }
-                        
-                        await TasteProfile.updateOne(
-                            { owner: userId, context: profile.id },
-                            { 
-                                $set: { 
-                                    "compiledVectors.V_static": inferredStaticDNA,
-                                    "compiledVectors.V_final": vFinal
-                                }
-                            },
-                            { upsert: true }
-                        );
-                    } catch (err) {
-                        console.error(`[DNA Extractor] Error saving vectors for ${profile.id}:`, err);
+                    } catch (e) {
+                        // ignore failures, will fallback to generic name
                     }
-                })();
+                }));
             }
+        }
+
+        // Deduplicate: exclude items already in manualDNA
+        profile.settings.suggestedDNA = catalogDNA.filter(d => !manualIds.has(`${d.type}:${d.id}`));
+        
+        if (isGlobal) {
+            profile.settings.manualDNA = [];
+        }
+
+        // --- DNA Extraction & Save (V_static + V_final) ---
+        const allQueries = profile.catalogs.flatMap(cat => cat.queries || []);
+        
+        if (allQueries.length > 0) {
+            const inferredStaticDNA = extractStaticDNAFromQueries(allQueries);
+            
+            // Aggiorniamo V_static e ricalcoliamo V_final in background
+            (async () => {
+                try {
+                    const existing = await TasteProfile.findOne(
+                        { owner: userId, context: profile.id }
+                    ).lean();
+                    
+                    const vActive = existing?.compiledVectors?.V_active || {};
+                    const hasActiveHistory = Object.keys(vActive).length > 0;
+                    
+                    let vFinal;
+                    if (hasActiveHistory) {
+                        // Ricalcola V_final combinando il nuovo V_static con il V_active esistente
+                        const { computeFinalDNA } = require('../../utils/dnaExtractor');
+                        const WatchHistory = require('../../models/WatchHistory');
+                        const totalInteractions = await WatchHistory.countDocuments({ owner: userId, context: profile.id });
+                        vFinal = computeFinalDNA(inferredStaticDNA, vActive, totalInteractions);
+                    } else {
+                        // Nessuno storico: V_final = V_static
+                        vFinal = { ...inferredStaticDNA };
+                    }
+                    
+                    await TasteProfile.updateOne(
+                        { owner: userId, context: profile.id },
+                        { 
+                            $set: { 
+                                "compiledVectors.V_static": inferredStaticDNA,
+                                "compiledVectors.V_final": vFinal
+                            }
+                        },
+                        { upsert: true }
+                    );
+                } catch (err) {
+                    console.error(`[DNA Extractor] Error saving vectors for ${profile.id}:`, err);
+                }
+            })();
         }
 
         processed.push(profile);

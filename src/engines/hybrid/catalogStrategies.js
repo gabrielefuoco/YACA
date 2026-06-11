@@ -166,12 +166,28 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         .map(item => ({ id: String(item.movie?.ids?.tmdb || item.show?.ids?.tmdb), weight: 3 }))
         .filter(s => s.id && s.id !== 'undefined');
 
-    const allSeeds = [...traktIds, ...lovedIds, ...likedIds];
-    if (allSeeds.length === 0) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
+    const dnaParams = extractDNAParams(dnaFilters);
+    let dnaSeeds = [];
+    if (Object.keys(dnaParams).length > 0) {
+        try {
+            const discoverRes = await fetchTmdbResults(tmdbClient, `/discover/${types}`, dnaParams, `DNA Discover seeds (${types})`);
+            if (discoverRes && discoverRes.length > 0) {
+                dnaSeeds = discoverRes.slice(0, 5).map(item => ({ id: String(item.id), weight: 4 }));
+            }
+        } catch(e) { }
+    }
+
+    const allSeedsMap = new Map();
+    [...lovedIds, ...likedIds, ...traktIds, ...dnaSeeds].forEach(({ id, weight }) => {
+        allSeedsMap.set(id, (allSeedsMap.get(id) || 0) + weight);
+    });
+
+    if (allSeedsMap.size === 0) {
+        return fetchPopularFallbackIds(tmdbApiKey, mediaType);
+    }
+    const allSeeds = Array.from(allSeedsMap.entries()).map(([id, weight]) => ({ id, weight }));
 
     const weightedCounts = new Map(); 
-    const seedTmdbIds = allSeeds.map(s => s.id);
-
     const allSimilar = await rateLimitedMap(
         allSeeds,
         async (seed) => ({
@@ -198,12 +214,18 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         const rawItem = itemData.get(tmdbId);
         if (!rawItem) continue;
         const itemGenres = rawItem.genre_ids || [];
-        const hybridScore = calculateHybridScore(
+        
+        let hybridScore = calculateHybridScore(
             { tmdbId, position: null },
             new Map([[tmdbId, weightedScore]]),
             topGenres,
             itemGenres
         );
+
+        // Penalizzazione precoce per garantire il rispetto del DNA prima del taglio ai 80 candidati
+        const dnaMultiplier = ProfileScorer.computeDnaMultiplier(rawItem, dnaFilters);
+        hybridScore *= dnaMultiplier;
+
         candidates.push({ data: rawItem, hybridScore });
     }
 

@@ -44,7 +44,7 @@ module.exports = async (req, res) => {
                 inputProfiles = [createGlobalProfileInput(), ...inputProfiles];
             }
 
-            parsedProfiles = await processProfiles(inputProfiles, userId, mistralKey, warnings);
+            parsedProfiles = await processProfiles(inputProfiles, userId, mistralKey, warnings, effectiveTmdbKey);
         }
 
         const finalActiveProfileId = (activeProfileId && parsedProfiles?.some(p => p.id === activeProfileId))

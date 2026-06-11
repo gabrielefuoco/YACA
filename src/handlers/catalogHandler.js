@@ -39,6 +39,13 @@ async function catalogHandler(args, userConfig, hostUrl) {
     if (id !== 'yaca-profiles' && baseId !== 'yaca_search_history') {
         const presets = getPresets();
         catalogMeta = presets.find(p => p.id === baseId || p.id === id);
+
+        if (!catalogMeta && userConfig) {
+            const activeProfile = userConfig.profiles?.find(p => p.id === userConfig.activeProfileId);
+            if (activeProfile && activeProfile.catalogs) {
+                catalogMeta = activeProfile.catalogs.find(c => c.id === id);
+            }
+        }
     }
 
     // managed SWR: Fetch or Revalidate
