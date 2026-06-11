@@ -239,6 +239,11 @@ router.post('/preview-catalog', async (req, res) => {
         }
         return res.status(500).json({ error: 'Errore nel recupero dati da TMDB' });
     }
+
+    } catch (globalErr) {
+        console.error("Errore critico in /preview-catalog:", globalErr);
+        return res.status(500).json({ error: 'Errore interno del server' });
+    }
 });
 
 module.exports = router;
