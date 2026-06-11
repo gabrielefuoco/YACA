@@ -5,6 +5,7 @@ const { getEngineHybridCatalog, getHybridPopularCatalog, TASTE_BASED_IDS } = req
 const { executeCombinedSearch, executeUniversalPipeline } = require('./providers/AiDiscoveryProvider');
 const { normalizeToUniversalSchema } = require('../utils/resultMerger');
 const { normalizeContentId } = require('../utils/contentId');
+const { getPresets } = require('../data/presets');
 
 async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, activeProfileSettings, tmdbFetchOptions, catalogMeta) {
     const { id, type, extra, filters: directFilters } = args;
