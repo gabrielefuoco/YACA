@@ -8,18 +8,12 @@ import { Slider } from '@/components/ui/slider';
 import { PosterRow } from '@/components/shared/PosterRow';
 import { Catalog, QueryBlock } from '@/types';
 import { GENRE_NAMES, SORT_OPTIONS, LANGUAGES } from '@/lib/constants';
-import { Loader2, Wand2, Save, X, Eye, Plus, Layers, Info } from 'lucide-react';
+import { Loader2, Wand2, Save, X, Eye, Plus, Layers, Info, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { generateId } from '@/lib/utils';
 
 const MAX_AI_CATALOG_NAME_LENGTH = 30;
-
-const STRATEGY_OPTIONS = [
-  { value: 'discovery', label: 'Discovery (TMDB Filtri)' },
-  { value: 'multi_search', label: 'Multi Search (Testo)' },
-  { value: 'similar', label: 'Simili a…' },
-] as const;
 
 interface CreatorPanelProps {
   onAddCatalog: (catalog: Catalog) => void;
@@ -32,7 +26,9 @@ interface SelectedItem {
 
 interface BlockState {
   id: string;
-  strategy: 'discovery' | 'multi_search' | 'similar';
+  strategy: 'discovery' | 'multi_search' | 'similar' | 'ai';
+  aiPrompt?: string;
+  aiLoading?: boolean;
   similarTo?: string;
   textSearch?: string;
   sortBy: string;
@@ -51,6 +47,8 @@ function createEmptyBlock(): BlockState {
   return {
     id: generateId(),
     strategy: 'discovery',
+    aiPrompt: '',
+    aiLoading: false,
     similarTo: '',
     textSearch: '',
     sortBy: 'popularity.desc',
@@ -77,13 +75,11 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
   // Global state
   const [name, setName] = useState('');
   const [type, setType] = useState<'movie' | 'series'>('movie');
-  const [prompt, setPrompt] = useState('');
   const [presentationStrategy, setPresentationStrategy] = useState<'popularity' | 'interleave'>('popularity');
 
   // Block state
   const [blocks, setBlocks] = useState<BlockState[]>([createEmptyBlock()]);
 
-  const [aiLoading, setAiLoading] = useState(false);
   const [previewFilters, setPreviewFilters] = useState<Record<string, unknown> | null>(null);
   const [previewType, setPreviewType] = useState<'movie' | 'series'>('movie');
   const [saved, setSaved] = useState(false);
@@ -162,16 +158,18 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
   }, []);
 
   // --- AI Generation ---
-  const handleAiGenerate = async () => {
-    const trimmed = prompt.trim();
+  const handleAiGenerateBlock = async (blockId: string, promptText: string) => {
+    const trimmed = promptText.trim();
     if (!trimmed) return;
-    setAiLoading(true);
+    updateBlock(blockId, { aiLoading: true });
     try {
       const result = await api.previewCatalog({ prompt: trimmed, type });
       const aiType = result?.type === 'series' ? 'series' as const : 'movie' as const;
       setType(aiType);
       setPreviewType(aiType);
-      setName(result?.name || trimmed.slice(0, MAX_AI_CATALOG_NAME_LENGTH));
+      if (!name) {
+          setName(result?.name || trimmed.slice(0, MAX_AI_CATALOG_NAME_LENGTH));
+      }
 
       // Support multi-query AI response, including nested payloads in filters.queries
       const rawFilters = result?.filters as Record<string, unknown> | undefined;
@@ -183,7 +181,13 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
       if (extractedQueries.length > 0) {
         const newBlocks = extractedQueries.map(q => filtersToBlock(q));
-        setBlocks(newBlocks);
+        setBlocks(prev => {
+          const index = prev.findIndex(b => b.id === blockId);
+          if (index === -1) return prev;
+          const before = prev.slice(0, index);
+          const after = prev.slice(index + 1);
+          return [...before, ...newBlocks, ...after];
+        });
         // Preview using normalized filters from the first UI block
         setPreviewFilters(buildFiltersFromBlock(newBlocks[0]));
 
@@ -192,14 +196,14 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
         }
       }
     } catch (e) { console.error('AI generation failed:', e); }
-    setAiLoading(false);
+    updateBlock(blockId, { aiLoading: false });
   };
 
   // --- Build query blocks for save ---
   const buildQueryBlock = (block: BlockState): QueryBlock => {
     const dateKey = type === 'series' ? 'first_air_date' : 'primary_release_date';
     return {
-      strategy: block.strategy,
+      strategy: block.strategy === 'ai' ? 'discovery' : block.strategy,
       ...(block.similarTo && { similar_to: block.similarTo }),
       ...(block.textSearch && { text_search: block.textSearch }),
       sort_by: block.sortBy,
@@ -228,14 +232,13 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
     const catalog: Catalog = {
       id: generateId(),
       name: name || 'Catalogo Personalizzato',
-      raw_prompt: prompt || undefined,
       type,
-      source: prompt.trim() ? 'ai' : 'manual',
+      source: 'manual',
       queries,
       presentation_strategy: presentationStrategy,
       // Keep backward-compat filters from first block
       filters: buildFiltersFromBlock(blocks[0]),
-      emoji: prompt.trim() ? '🤖' : '🎨',
+      emoji: '🎨',
     };
     onAddCatalog(catalog);
     setSaved(true);
@@ -275,7 +278,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
           <Layers className="h-4 w-4 text-primary" />
           Query {index + 1}
           <span className="text-xs font-medium normal-case text-marrow-light/70">
-            — {STRATEGY_OPTIONS.find(s => s.value === block.strategy)?.label ?? block.strategy}
+            — {block.strategy === 'ai' ? 'Genera con AI' : block.strategy === 'discovery' ? 'Discovery (Filtri)' : block.strategy === 'similar' ? 'Simili a...' : 'Ricerca Testuale'}
           </span>
         </span>
         <span className="flex items-center gap-2">
@@ -303,18 +306,67 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
           {/* Strategy selector and inputs */}
           <div className="space-y-4">
             <div>
-              <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Strategia</Label>
-              <Select value={block.strategy} onValueChange={(v) => updateBlock(block.id, { strategy: v as BlockState['strategy'] })}>
-                <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/20 text-marrow-deep font-black">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STRATEGY_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px] block mb-2">Strategia</Label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); updateBlock(block.id, { strategy: 'ai' }); }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                    block.strategy === 'ai'
+                    ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
+                    : 'bg-white/60 border-marrow-light/10 text-marrow-light hover:text-primary hover:border-primary/30'
+                  }`}
+                >
+                  <Wand2 className="h-3.5 w-3.5" />
+                  Genera con AI
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); updateBlock(block.id, { strategy: 'discovery' }); }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                    block.strategy === 'discovery'
+                    ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
+                    : 'bg-white/60 border-marrow-light/10 text-marrow-light hover:text-primary hover:border-primary/30'
+                  }`}
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  Discovery
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); updateBlock(block.id, { strategy: 'similar' }); }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                    block.strategy === 'similar'
+                    ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
+                    : 'bg-white/60 border-marrow-light/10 text-marrow-light hover:text-primary hover:border-primary/30'
+                  }`}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Simili a...
+                </button>
+              </div>
             </div>
+
+            {block.strategy === 'ai' && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3 mt-3">
+                <p className="text-xs text-marrow-light font-medium">
+                  Descrivi il catalogo che vuoi creare. L&apos;AI interpreterà la tua richiesta e configurerà questo blocco per te.
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    value={block.aiPrompt || ''}
+                    onChange={(e) => updateBlock(block.id, { aiPrompt: e.target.value })}
+                    placeholder="es. Film horror italiani degli anni 80..."
+                    className="flex-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40"
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAiGenerateBlock(block.id, block.aiPrompt || ''); } }}
+                  />
+                  <Button onClick={(e) => { e.preventDefault(); handleAiGenerateBlock(block.id, block.aiPrompt || ''); }} disabled={block.aiLoading || !block.aiPrompt?.trim()} className="shrink-0 bg-primary text-white hover:brightness-110">
+                    {block.aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wand2 className="h-4 w-4 mr-2" />}
+                    Genera
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {block.strategy === 'similar' && (
               <div>
@@ -331,6 +383,8 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             )}
           </div>
 
+          {block.strategy !== 'ai' && (
+            <>
           {/* Basic filters */}
           <details className="group [&_summary::-webkit-details-marker]:hidden" open>
             <summary className="flex cursor-pointer items-center justify-between font-black text-[10px] text-marrow-light select-none uppercase tracking-widest">
@@ -447,6 +501,8 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
               </div>
             </div>
           </details>
+          </>
+          )}
         </div>
       )}
     </div>
@@ -510,30 +566,6 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
               {s === 'popularity' ? '🏆 Popularity' : '🔀 Interleave'}
             </button>
           ))}
-        </div>
-      </div>
-
-      {/* AI Prompt Section */}
-      <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 space-y-3">
-        <div className="flex items-center gap-2 text-primary">
-          <Wand2 className="h-5 w-5" />
-          <span className="text-sm font-black uppercase tracking-widest">Genera con AI</span>
-        </div>
-        <p className="text-xs text-marrow-light font-medium">
-          Descrivi il catalogo che vuoi creare. L&apos;AI interpreterà la tua richiesta e creerà automaticamente i blocchi query.
-        </p>
-        <div className="flex gap-2">
-          <Input
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="es. Film horror italiani degli anni 80..."
-            className="flex-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40"
-            onKeyDown={(e) => { if (e.key === 'Enter') handleAiGenerate(); }}
-          />
-          <Button onClick={handleAiGenerate} disabled={aiLoading || !prompt.trim()} className="shrink-0 bg-primary text-white hover:brightness-110">
-            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wand2 className="h-4 w-4 mr-2" />}
-            Genera
-          </Button>
         </div>
       </div>
 
