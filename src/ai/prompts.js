@@ -88,7 +88,8 @@ Return exactly one JSON object describing the best TMDB query.
 }`,
     multi_query: `### TASK:
 Act as a Query Planner. Return a JSON object with a "queries" array. Each item must be an independent TMDB task that can run in parallel.
-- Use "multi_search" for exact titles.
+- Use "multi_search" ONLY for exact titles (e.g. "Breaking Bad", "Avatar").
+- NEVER use "multi_search" for a list of topics, genres, or keywords (like "anime isekai mecha", "vampiri anni 90"). Always use "discovery" for these.
 - Use "similar" when the user explicitly asks for works like another title.
 - Use "discovery" for vibe, cast, genre, year, plot, or provider constraints.
 - Generate between 1 and 4 queries depending on complexity.
@@ -138,6 +139,11 @@ const EXAMPLES = {
   "queries": [
     { "strategy": "discovery", "genre_ids": [53], "people_list": ["Brad Pitt"], "year_from": "1990", "year_to": "1999", "target": "tmdb" },
     { "strategy": "discovery", "genre_ids": [53], "people_list": ["Morgan Freeman"], "year_from": "1990", "year_to": "1999", "target": "tmdb" }
+  ]
+}
+- Query: "anime isekai mecha" -> {
+  "queries": [
+    { "strategy": "discovery", "genre_ids": [16], "keyword": "isekai,mecha", "target": "tmdb" }
   ]
 }`
 };

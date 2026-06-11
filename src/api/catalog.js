@@ -54,11 +54,28 @@ router.post('/preview-catalog', async (req, res) => {
         const aiType = customType === 'series' || aiFilters.target === 'kitsu' ? 'series' : 'movie';
         discoverType = aiType === 'series' ? 'tv' : 'movie';
         strategy = aiFilters.strategy || 'discovery';
-        const originalAiKeywords = aiFilters.keyword || null;
-        discoverFilters = strategy === 'discovery' && !aiFilters.queries
-            ? await buildDiscoveryParams(aiFilters, sanitizedTmdbKey, aiType)
-            : aiFilters;
-        if (originalAiKeywords) discoverFilters._keywordNames = originalAiKeywords;
+        let originalAiKeywords = null;
+        
+        if (aiFilters.queries && Array.isArray(aiFilters.queries)) {
+            // Process each query to resolve TMDB IDs and keyword names
+            aiFilters.queries = await Promise.all(aiFilters.queries.map(async (q) => {
+                if (q.strategy === 'discovery') {
+                    const qKeywords = q.keyword || null;
+                    const tmdbParams = await buildDiscoveryParams(q, sanitizedTmdbKey, aiType);
+                    if (qKeywords) tmdbParams._keywordNames = qKeywords;
+                    return tmdbParams;
+                }
+                return q;
+            }));
+            discoverFilters = aiFilters;
+        } else {
+            // Single query processing
+            originalAiKeywords = aiFilters.keyword || null;
+            discoverFilters = strategy === 'discovery'
+                ? await buildDiscoveryParams(aiFilters, sanitizedTmdbKey, aiType)
+                : aiFilters;
+            if (originalAiKeywords) discoverFilters._keywordNames = originalAiKeywords;
+        }
     } else {
         discoverType = customType === 'series' ? 'tv' : 'movie';
         discoverFilters = {};
