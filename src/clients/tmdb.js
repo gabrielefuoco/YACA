@@ -91,7 +91,12 @@ async function getTmdbIdByName(apiKey, endpoint, query) {
     try {
         const client = createTmdbClient(apiKey);
         const res = await client.get(`/search/${endpoint}`, { params: { query } });
-        const id = res.data?.results?.[0]?.id || null;
+        const results = res.data?.results || [];
+        let id = null;
+        if (results.length > 0) {
+            const exactMatch = results.find(r => r.name && r.name.toLowerCase() === query.toLowerCase());
+            id = exactMatch ? exactMatch.id : results[0].id;
+        }
         // Cache sia dei risultati positivi che negativi (null)
         await idNameCache.set(cacheKey, id);
         return id;

@@ -9,7 +9,7 @@ function resolveGenreIds(genreIdsArray, type) {
 
     const MOVIE_TO_TV_MAP = {
         28: 10759, 12: 10759, 16: 16, 35: 35, 80: 80, 99: 99, 18: 18,
-        10751: 10751, 14: 10765, 36: 10768, 27: 10765, 10402: 18,
+        10751: 10751, 14: 10765, 36: 10768, 27: 9648, 10402: 18,
         9648: 9648, 10749: 18, 878: 10765, 53: 80, 10752: 10768, 37: 37
     };
 
@@ -46,18 +46,30 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
     }
 
     let genres = [];
+    let hasHorrorForTv = false;
     if (tmdbParams.with_genres) {
         const rawGenres = Array.isArray(tmdbParams.with_genres)
             ? tmdbParams.with_genres.map(String)
             : String(tmdbParams.with_genres).split(/[|,]/).map(g => g.trim()).filter(Boolean);
         
+        if (type === 'series' && rawGenres.includes('27')) hasHorrorForTv = true;
         genres.push(...resolveGenreIds(rawGenres, type));
     }
     if (genre_ids?.length) {
+        if (type === 'series' && genre_ids.map(String).includes('27')) hasHorrorForTv = true;
         genres.push(...resolveGenreIds(genre_ids, type));
     }
     if (genres.length > 0) {
         tmdbParams.with_genres = [...new Set(genres)].join(originalOperator);
+    }
+    
+    // TMDB non ha un genere Horror (27) per le serie TV. Per non perdere il focus, aggiungiamo la keyword "horror" (315058)
+    if (hasHorrorForTv) {
+        if (tmdbParams.with_keywords) {
+            tmdbParams.with_keywords += ',315058';
+        } else {
+            tmdbParams.with_keywords = '315058';
+        }
     }
 
 
