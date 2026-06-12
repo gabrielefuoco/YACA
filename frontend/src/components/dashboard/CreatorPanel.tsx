@@ -223,10 +223,10 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
   const handleManualPreview = () => {
     if (blocks.length === 0) return;
-    // For multi-query, build a merge-compatible preview payload
+    // For multi-query, send all queries so the backend processes them via universal pipeline
     if (blocks.length > 1) {
       const queries = blocks.map(buildQueryBlock);
-      setPreviewFilters({ queries, merge: true });
+      setPreviewFilters({ queries, presentation_strategy: presentationStrategy });
     } else {
       setPreviewFilters(buildFiltersFromBlock(blocks[0]));
     }
@@ -242,9 +242,10 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       source: 'manual',
       queries,
       presentation_strategy: presentationStrategy,
-      // For multi-query: include merge flag + queries in filters for backend compat
+      // For multi-query: put queries[] in filters so the backend normalizer picks them up
+      // For single-query: flatten the block as a simple filters object
       filters: blocks.length > 1
-        ? { queries, merge: true }
+        ? { queries, presentation_strategy: presentationStrategy }
         : buildFiltersFromBlock(blocks[0]),
       emoji: '🎨',
     };
@@ -511,6 +512,14 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
           </details>
           </>
           )}
+
+          {/* Per-block inline preview */}
+          {block.strategy !== 'ai' && (
+            <div className="pt-3 border-t border-dashed border-marrow-light/15">
+              <p className="text-[9px] font-black uppercase tracking-widest text-marrow-light/50 mb-2">Anteprima Query {index + 1}</p>
+              <PosterRow filters={buildFiltersFromBlock(block)} type={type} />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -603,7 +612,11 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       {/* PREVIEW + ACTIONS                                                 */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {previewFilters && (
-        <div className="rounded-xl border border-marrow-light/10 bg-white/40 p-4 overflow-hidden ">
+        <div className="rounded-xl border-2 border-primary/20 bg-white/40 p-4 overflow-hidden space-y-2">
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary/70 flex items-center gap-2">
+            <Eye className="h-3.5 w-3.5" />
+            Anteprima Globale {blocks.length > 1 && `(${blocks.length} query combinate)`}
+          </p>
           <PosterRow filters={previewFilters} type={previewType} />
         </div>
       )}
@@ -611,7 +624,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       <div className="flex gap-3">
         <Button onClick={handleManualPreview} variant="outline" className="flex-1 py-3 font-bold text-marrow-deep">
           <Eye className="h-4 w-4 mr-2" />
-          Anteprima
+          Anteprima Globale
         </Button>
         <Button onClick={handleSave} disabled={saved} className="flex-1 py-3 bg-primary text-white hover:brightness-110 font-bold">
           <Save className="h-4 w-4 mr-2" />
