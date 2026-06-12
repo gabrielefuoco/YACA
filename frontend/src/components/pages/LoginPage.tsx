@@ -136,38 +136,43 @@ export function LoginPage({ onComplete }: LoginPageProps) {
       {/* Step 1: Stremio login */}
       {step === 1 && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 border border-primary/30 shadow-2xl shadow-primary/20">
-              <Tv2 className="h-6 w-6 text-primary" />
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 border border-primary/30 shadow-xl shadow-primary/20 shrink-0">
+                <Tv2 className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-marrow-deep leading-tight">Accedi a Stremio</h2>
+                <p className="text-sm font-bold text-primary">YACA <span className="text-marrow-light/50 font-medium">(Yet Another Catalog Addon)</span></p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Accedi a Stremio</h2>
-              <p className="text-xs text-muted-foreground">Connetti il tuo account Stremio</p>
-            </div>
+            <p className="text-sm text-marrow-light/80 leading-relaxed bg-white/40 p-4 rounded-2xl border border-marrow-light/10 shadow-sm">
+              YACA crea cataloghi dinamici e personalizzati sfruttando l'Intelligenza Artificiale. Per iniziare e sincronizzare l'addon, devi fare il login utilizzando le <strong>stesse credenziali del tuo account Stremio</strong>.
+            </p>
           </div>
 
           <div className="space-y-3">
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="font-bold text-marrow-deep ml-1">Email Stremio</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="la.tua@email.com"
-                className="mt-1"
+                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-12 px-4 rounded-xl font-medium"
                 onKeyDown={(e) => e.key === 'Enter' && handleStremioLogin()}
               />
             </div>
             <div>
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="font-bold text-marrow-deep ml-1">Password Stremio</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="mt-1"
+                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-12 px-4 rounded-xl font-medium"
                 onKeyDown={(e) => e.key === 'Enter' && handleStremioLogin()}
               />
             </div>
@@ -177,7 +182,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
               </div>
 
             <Button
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-wider h-12 transition-all shadow-xl shadow-primary/30"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-wider h-12 transition-all shadow-xl shadow-primary/30 mt-2"
               onClick={handleStremioLogin}
               disabled={loading}
             >
@@ -185,26 +190,6 @@ export function LoginPage({ onComplete }: LoginPageProps) {
               Continua
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
-
-            <button
-              onClick={async () => {
-                setError('');
-                try {
-                  const guestSession = await api.authGuest();
-                  if (guestSession?.success && guestSession?.userId) {
-                    setSessionUserId(guestSession.userId);
-                  }
-                } catch {
-                  setError('Errore creazione sessione ospite');
-                  return;
-                }
-                setStremioAuth(null);
-                setStep(2);
-              }}
-              className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
-            >
-              Salta (configura senza account)
-            </button>
           </div>
         </div>
       )}
