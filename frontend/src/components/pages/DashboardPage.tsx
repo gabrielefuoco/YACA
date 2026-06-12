@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { Profile, Preset, Catalog, MyList, ProfileTemplate } from '@/types';
 import { ProfileManager } from '@/components/dashboard/ProfileManager';
-import { ProfileSettingsPanel } from '@/components/dashboard/ProfileSettingsPanel';
 import { ActiveCatalogsPanel } from '@/components/dashboard/ActiveCatalogsPanel';
 import { ExplorePanel } from '@/components/dashboard/ExplorePanel';
 import { CreatorPanel } from '@/components/dashboard/CreatorPanel';
@@ -107,32 +106,24 @@ export function DashboardPage({
         <p className="text-marrow-light text-sm text-center md:text-left font-medium">Gestisci i tuoi profili e personalizza i cataloghi multimediali</p>
       </div>
 
-      {/* Profiles Section */}
-      <ProfileManager
-        profiles={profiles}
-        editingProfileId={editingProfileId}
-        activeProfileId={activeProfileId}
-        onSelectEditing={onSelectEditing}
-        onSetActive={onSetActive}
-        onAdd={onAddProfile}
-        profileTemplates={profileTemplates}
-        onCreateFromTemplate={handleCreateFromTemplate}
-      />
-
-      {/* Profile Settings Panel */}
-      {editingProfile && (
-        <ProfileSettingsPanel
-          profile={editingProfile}
-          onUpdateProfile={onUpdateProfile}
+      {/* Profiles Section (Common Box) */}
+      <div className="glass-panel p-6 sm:p-8 bg-white/40 shadow-xl shadow-primary/5 rounded-2xl border border-marrow-light/10 relative overflow-hidden">
+        <ProfileManager
+          profiles={profiles}
+          editingProfileId={editingProfileId}
+          activeProfileId={activeProfileId}
+          onSelectEditing={onSelectEditing}
           onSetActive={onSetActive}
-          onRemove={onRemoveProfile}
-          isActive={editingProfileId === activeProfileId}
+          onAdd={onAddProfile}
+          profileTemplates={profileTemplates}
+          onCreateFromTemplate={handleCreateFromTemplate}
+          onRemove={(id) => onRemoveProfile(id)}
           startRename={() => {
-            if (editingProfile.id === 'global') return;
+            if (editingProfile?.id === 'global') return;
             setIsRenameOpen(true);
           }}
         />
-      )}
+      </div>
 
       {/* Navigation Tabs */}
       <div className="flex justify-center mb-4">

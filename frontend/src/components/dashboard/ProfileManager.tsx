@@ -14,6 +14,8 @@ interface ProfileManagerProps {
   onAdd: (name: string) => void;
   profileTemplates?: ProfileTemplate[];
   onCreateFromTemplate?: (template: ProfileTemplate) => void;
+  onRemove?: (id: string) => void;
+  startRename?: () => void;
 }
 
 export function ProfileManager({
@@ -25,6 +27,8 @@ export function ProfileManager({
   onAdd,
   profileTemplates = [],
   onCreateFromTemplate,
+  onRemove,
+  startRename,
 }: ProfileManagerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -36,6 +40,9 @@ export function ProfileManager({
     setIsDialogOpen(false);
   };
 
+  const editingProfile = profiles.find(p => p.id === editingProfileId);
+  const isGlobalSelected = editingProfile?.id === 'global';
+
   return (
     <section className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -46,13 +53,35 @@ export function ProfileManager({
           </span>
         </div>
 
-        <button
-          onClick={() => setIsDialogOpen(true)}
-          className="flex items-center gap-2 cursor-pointer justify-center rounded-lg h-9 px-4 bg-primary text-white text-sm font-bold hover:brightness-110 transition-all shadow-sm shadow-primary/20"
-        >
-          <span className="material-symbols-outlined text-sm">add</span>
-          <span>Nuovo Profilo</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {editingProfile && !isGlobalSelected && (
+            <div className="flex items-center gap-1.5 mr-2 pr-4 border-r border-marrow-light/20">
+              <button 
+                onClick={startRename}
+                title="Rinomina profilo selezionato"
+                className="flex items-center justify-center size-8 rounded-full bg-white/50 text-marrow-deep hover:bg-white hover:text-primary transition-colors border border-marrow-light/10 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[18px]">edit</span>
+              </button>
+              <button 
+                onClick={() => onRemove?.(editingProfile.id)}
+                title="Elimina profilo selezionato"
+                className="flex items-center justify-center size-8 rounded-full bg-destructive/5 text-destructive hover:bg-destructive hover:text-white transition-colors border border-destructive/10 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[18px]">delete</span>
+              </button>
+            </div>
+          )}
+
+          <button
+            onClick={() => setIsDialogOpen(true)}
+            className="flex items-center gap-2 cursor-pointer justify-center rounded-lg h-9 px-4 bg-primary text-white text-sm font-bold hover:brightness-110 transition-all shadow-sm shadow-primary/20"
+          >
+            <span className="material-symbols-outlined text-sm">add</span>
+            <span className="hidden sm:inline">Nuovo Profilo</span>
+            <span className="sm:hidden">Nuovo</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
