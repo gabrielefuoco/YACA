@@ -243,17 +243,17 @@ async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend',
     const cacheKey = `qs_${mode}_${dnaDescription}`.toLowerCase().trim();
 
     try {
-        // Check cache first
-        const { value: rawCached, status: cacheStatus } = await aiDiscoveryCache.getWithStatus(cacheKey);
-        if (rawCached && cacheStatus !== 'miss') {
-            if (cacheStatus === 'stale' && !isBackgroundRefresh) {
-                // Background refresh
-                generateDiscoveryQueries(profile, mistralKey, mode, user, context, true).catch(() => { });
-            }
-
-            const cached = rawCached.queries || rawCached;
-            if (Array.isArray(cached) && cached.length > 0) return cached;
-        }
+        // Cache reading disabled because AI is non-deterministic
+        // const { value: rawCached, status: cacheStatus } = await aiDiscoveryCache.getWithStatus(cacheKey);
+        // if (rawCached && cacheStatus !== 'miss') {
+        //     if (cacheStatus === 'stale' && !isBackgroundRefresh) {
+        //         // Background refresh
+        //         generateDiscoveryQueries(profile, mistralKey, mode, user, context, true).catch(() => { });
+        //     }
+        //
+        //     const cached = rawCached.queries || rawCached;
+        //     if (Array.isArray(cached) && cached.length > 0) return cached;
+        // }
 
         const client = new Mistral({ apiKey: mistralKey, timeout: MISTRAL_TIMEOUT_MS });
 
@@ -275,10 +275,10 @@ async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend',
 
         const queries = parseQuerySynthesizerResponse(rawJson);
 
-        // Cache the result
-        if (queries.length > 0) {
-            await aiDiscoveryCache.set(cacheKey, { queries });
-        }
+        // Cache write disabled
+        // if (queries.length > 0) {
+        //     await aiDiscoveryCache.set(cacheKey, { queries });
+        // }
 
         return queries;
     } catch (err) {
