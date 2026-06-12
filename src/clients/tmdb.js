@@ -413,7 +413,8 @@ async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customPar
             description: item.overview || '',
             releaseInfo: (item.release_date || item.first_air_date || '').substring(0, 4),
             imdbRating: item.vote_average ? item.vote_average.toFixed(1) : undefined,
-            genre_ids: item.genre_ids || []
+            genre_ids: item.genre_ids || [],
+            popularity: item.popularity || 0
         }));
 
         // Background Sync Worker: scarica in background i metadati completi per le pagine
