@@ -41,13 +41,14 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
 
         const paramsKey = JSON.stringify(tmdbParams);
         const fallbackFlag = !settings.noFallback ? await catalogFallbackCache.get(paramsKey) : null;
+        let results = [];
 
         if (fallbackFlag) {
             results = await fetchTmdbCatalog(tmdbClient, endpoint, skip, fallbackFlag.relaxedParams, type, cacheOptions);
         } else {
             results = await fetchTmdbCatalog(tmdbClient, endpoint, skip, tmdbParams, type, cacheOptions);
 
-                if (results.length === 0 && !settings.noFallback) {
+            if (results.length === 0 && !settings.noFallback) {
                 let relaxedParams = { ...tmdbParams };
                 let changed = false;
 
@@ -60,7 +61,8 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
                 }
 
                 if (changed) {
-                    const extraResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
+                console.log('--- fetchTmdbCatalog PARAMS ---', tmdbParams);
+                const extraResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
                     const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
                     for (const item of extraResults) {
                         const normalizedItemId = normalizeContentId(item.id);
@@ -69,20 +71,6 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
                             existingIds.add(normalizedItemId);
                         }
                     }
-                }
-
-                if (results.length === 0 && relaxedParams.with_keywords) {
-                    delete relaxedParams.with_keywords;
-                    const broadResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
-                    const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
-                    for (const item of broadResults) {
-                        const normalizedItemId = normalizeContentId(item.id);
-                        if (!existingIds.has(normalizedItemId)) {
-                            results.push(item);
-                            existingIds.add(normalizedItemId);
-                        }
-                    }
-                    changed = true;
                 }
 
                 if (changed) {
