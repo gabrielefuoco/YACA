@@ -65,7 +65,7 @@ export function AutocompleteSearch({ placeholder, searchFn, onSelect }: Autocomp
     return (
         <div ref={wrapperRef} className="relative w-full">
             <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-white/50" />
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-marrow-light/50" />
                 <Input
                     placeholder={placeholder}
                     value={query}
@@ -73,17 +73,17 @@ export function AutocompleteSearch({ placeholder, searchFn, onSelect }: Autocomp
                     className="pl-9"
                 />
                 {isLoading && (
-                    <Loader2 className="absolute right-2.5 top-2.5 h-4 w-4 animate-spin text-white/50" />
+                    <Loader2 className="absolute right-2.5 top-2.5 h-4 w-4 animate-spin text-marrow-light/50" />
                 )}
             </div>
 
             {isOpen && results.length > 0 && (
-                <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-marrow-light/10 bg-[#15151a] p-1 shadow-md">
+                <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-marrow-light/10 bg-background-light p-1 shadow-xl">
                     {results.map((item) => (
                         <div
                             key={item.id}
                             onClick={() => handleSelect(item)}
-                            className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-marrow-light/10 hover:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50 cursor-pointer"
+                            className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-primary/10 hover:text-primary data-[disabled]:pointer-events-none data-[disabled]:opacity-50 cursor-pointer"
                         >
                             {item.name}
                         </div>
@@ -91,7 +91,7 @@ export function AutocompleteSearch({ placeholder, searchFn, onSelect }: Autocomp
                 </div>
             )}
             {isOpen && !isLoading && query.trim() && results.length === 0 && (
-                <div className="absolute z-50 mt-1 w-full rounded-md border border-marrow-light/10 bg-[#15151a] p-2 text-sm text-white/50 text-center shadow-md">
+                <div className="absolute z-50 mt-1 w-full rounded-md border border-marrow-light/10 bg-background-light p-2 text-sm text-marrow-light/50 text-center shadow-xl">
                     Nessun risultato trovato.
                 </div>
             )}
