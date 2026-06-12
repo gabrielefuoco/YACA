@@ -574,8 +574,8 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             <Layers className="h-4 w-4 text-primary" />
             <span className="text-marrow-deep font-black uppercase tracking-wide text-[10px] whitespace-nowrap">Presentazione</span>
             <span className="relative group">
-              <Info className="h-3.5 w-3.5 text-zinc-400 cursor-help" />
-              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg bg-zinc-900 dark:bg-zinc-700 text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
+              <Info className="h-3.5 w-3.5 text-marrow-light/60 cursor-help" />
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg bg-primary-dark  text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
                 <strong>Popularity:</strong> ordina tutti i risultati per popolarità globale.
                 <br /><strong>Interleave:</strong> alterna i risultati di ogni query per massima varietà (consensus scoring).
               </span>

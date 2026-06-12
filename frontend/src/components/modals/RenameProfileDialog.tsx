@@ -32,7 +32,7 @@ export function RenameProfileDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] glass-panel border-white/10">
+      <DialogContent className="sm:max-w-[425px] glass-panel border-marrow-light/10">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <span className="material-symbols-outlined text-primary">edit</span>
@@ -41,14 +41,14 @@ export function RenameProfileDialog({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="flex flex-col gap-2">
-            <label htmlFor="name" className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+            <label htmlFor="name" className="text-sm font-bold uppercase tracking-widest text-marrow-light/70">
               Nuovo nome per il profilo
             </label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="bg-white/5 border-white/10 focus:border-primary/50"
+              className="bg-marrow-light/5 border-marrow-light/10 focus:border-primary/50"
               onKeyDown={(e) => e.key === "Enter" && handleSave()}
               autoFocus
             />

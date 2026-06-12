@@ -21,11 +21,19 @@
   --color-marrow-light: #5E0006;
   --color-marrow-faded: color-mix(in srgb, #5E0006 40%, transparent);
   
-  /* Status Colors */
+  /* Status & UI Components Colors */
+  --color-primary-foreground: #EED9B9;
+  --color-secondary-foreground: #5E0006;
+  --color-accent-foreground: #EED9B9;
   --color-destructive: #9B0F06;
   --color-destructive-foreground: #EED9B9;
   --color-success: #10b981;
   --color-success-faded: color-mix(in srgb, #10b981 10%, transparent);
+  --color-muted: color-mix(in srgb, #9B0F06 10%, transparent);
+  --color-muted-foreground: #5E0006;
+  --color-border: color-mix(in srgb, #4A0005 15%, transparent);
+  --color-input: color-mix(in srgb, #4A0005 15%, transparent);
+  --color-ring: #9B0F06;
 
   /* Functional Tokens */
   --color-primary-10: color-mix(in srgb, #9B0F06 10%, transparent);

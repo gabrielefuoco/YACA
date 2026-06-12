@@ -94,7 +94,7 @@ export default function CacheAdminPage() {
                                 <Database className="w-8 h-8 text-primary" />
                                 Gestione Cache
                             </h1>
-                            <p className="text-zinc-400 mt-2">
+                            <p className="text-marrow-light/60 mt-2">
                                 Monitora e gestisci le performance del sistema YACA nelle due aree di memorizzazione.
                             </p>
                         </div>
@@ -115,7 +115,7 @@ export default function CacheAdminPage() {
                                 <Cpu className="w-6 h-6" />
                             </div>
                             <div>
-                                <div className="text-sm text-zinc-400 font-medium">Stato Redis (L1)</div>
+                                <div className="text-sm text-marrow-light/60 font-medium">Stato Redis (L1)</div>
                                 <div className="flex items-center gap-2 mt-0.5">
                                     <span className="font-bold text-white">
                                         {redisAvailable === null ? 'Verifica...' : redisAvailable ? 'Connesso' : 'Disconnesso (Fallback RAM)'}
@@ -130,10 +130,10 @@ export default function CacheAdminPage() {
                                 <HardDrive className="w-6 h-6" />
                             </div>
                             <div>
-                                <div className="text-sm text-zinc-400 font-medium">Persistenza (L2)</div>
+                                <div className="text-sm text-marrow-light/60 font-medium">Persistenza (L2)</div>
                                 <div className="mt-0.5 flex items-center gap-2 text-white font-bold">
                                     MongoDB
-                                    <span className="px-2 py-0.5 rounded text-[10px] bg-white/5 text-zinc-400 uppercase tracking-wider">Active</span>
+                                    <span className="px-2 py-0.5 rounded text-[10px] bg-marrow-light/5 text-marrow-light/60 uppercase tracking-wider">Active</span>
                                 </div>
                             </div>
                         </div>
@@ -142,13 +142,13 @@ export default function CacheAdminPage() {
                     <div className="rounded-2xl bg-[#0f1115] border border-white/5 overflow-hidden shadow-2xl">
                         <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
                             <h2 className="font-bold text-white flex items-center gap-2">
-                                <Server className="w-4 h-4 text-zinc-400" />
+                                <Server className="w-4 h-4 text-marrow-light/60" />
                                 Dettaglio Categorie
                             </h2>
                             <button
                                 onClick={fetchStats}
                                 disabled={loading}
-                                className="p-2 rounded-lg hover:bg-white/5 text-zinc-400 transition-colors"
+                                className="p-2 rounded-lg hover:bg-marrow-light/5 text-marrow-light/60 transition-colors"
                             >
                                 <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                             </button>
@@ -158,25 +158,25 @@ export default function CacheAdminPage() {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-white/[0.02]">
-                                        <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Namespace</th>
-                                        <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">L1 (Velocità)</th>
-                                        <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">L2 (Persistente)</th>
-                                        <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Azioni</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-marrow-light/70 uppercase tracking-wider">Namespace</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-marrow-light/70 uppercase tracking-wider">L1 (Velocità)</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-marrow-light/70 uppercase tracking-wider">L2 (Persistente)</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-marrow-light/70 uppercase tracking-wider text-right">Azioni</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {loading ? (
                                         Array(4).fill(0).map((_, i) => (
                                             <tr key={i} className="animate-pulse">
-                                                <td className="px-6 py-6"><div className="h-4 w-32 bg-white/5 rounded" /></td>
-                                                <td className="px-6 py-6"><div className="h-4 w-12 bg-white/5 rounded" /></td>
-                                                <td className="px-6 py-6"><div className="h-4 w-12 bg-white/5 rounded" /></td>
-                                                <td className="px-6 py-6 text-right"><div className="h-4 w-16 bg-white/5 rounded ml-auto" /></td>
+                                                <td className="px-6 py-6"><div className="h-4 w-32 bg-marrow-light/5 rounded" /></td>
+                                                <td className="px-6 py-6"><div className="h-4 w-12 bg-marrow-light/5 rounded" /></td>
+                                                <td className="px-6 py-6"><div className="h-4 w-12 bg-marrow-light/5 rounded" /></td>
+                                                <td className="px-6 py-6 text-right"><div className="h-4 w-16 bg-marrow-light/5 rounded ml-auto" /></td>
                                             </tr>
                                         ))
                                     ) : stats.length === 0 ? (
                                         <tr>
-                                            <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                                            <td colSpan={4} className="px-6 py-12 text-center text-marrow-light/70">
                                                 Nessuna statistica disponibile.
                                             </td>
                                         </tr>
@@ -185,7 +185,7 @@ export default function CacheAdminPage() {
                                             <tr key={stat.namespace} className="hover:bg-white/[0.01] transition-colors group">
                                                 <td className="px-6 py-5">
                                                     <div className="font-bold text-white">{getFriendlyName(stat.namespace)}</div>
-                                                    <div className="text-[10px] text-zinc-500 font-mono mt-0.5">{stat.namespace}</div>
+                                                    <div className="text-[10px] text-marrow-light/70 font-mono mt-0.5">{stat.namespace}</div>
                                                 </td>
                                                 <td className="px-6 py-5">
                                                     <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-emerald-500/10 text-emerald-500">
@@ -201,7 +201,7 @@ export default function CacheAdminPage() {
                                                     <button
                                                         onClick={() => handleClear(stat.namespace)}
                                                         disabled={clearing !== null}
-                                                        className="text-xs font-bold text-zinc-400 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 flex items-center gap-1.5 ml-auto"
+                                                        className="text-xs font-bold text-marrow-light/60 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 flex items-center gap-1.5 ml-auto"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                         Svuota
@@ -215,8 +215,8 @@ export default function CacheAdminPage() {
                         </div>
 
                         <div className="px-6 py-4 bg-white/[0.02] border-t border-white/5">
-                            <div className="flex items-start gap-3 text-[11px] text-zinc-500 max-w-2xl leading-relaxed">
-                                <Info className="w-4 h-4 mt-0.5 shrink-0 text-zinc-600" />
+                            <div className="flex items-start gap-3 text-[11px] text-marrow-light/70 max-w-2xl leading-relaxed">
+                                <Info className="w-4 h-4 mt-0.5 shrink-0 text-marrow-light/70" />
                                 <p>
                                     <strong>Layer 1 (L1)</strong> utilizza Redis (se disponibile) o la memoria RAM locale del server per risposte istantanee.
                                     <strong> Layer 2 (L2)</strong> utilizza MongoDB per la persistenza a lungo termine tra i riavvii del sistema.

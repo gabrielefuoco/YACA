@@ -78,12 +78,12 @@ export function AutocompleteSearch({ placeholder, searchFn, onSelect }: Autocomp
             </div>
 
             {isOpen && results.length > 0 && (
-                <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-white/10 bg-[#15151a] p-1 shadow-md">
+                <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-marrow-light/10 bg-[#15151a] p-1 shadow-md">
                     {results.map((item) => (
                         <div
                             key={item.id}
                             onClick={() => handleSelect(item)}
-                            className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-white/10 hover:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50 cursor-pointer"
+                            className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-marrow-light/10 hover:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50 cursor-pointer"
                         >
                             {item.name}
                         </div>
@@ -91,7 +91,7 @@ export function AutocompleteSearch({ placeholder, searchFn, onSelect }: Autocomp
                 </div>
             )}
             {isOpen && !isLoading && query.trim() && results.length === 0 && (
-                <div className="absolute z-50 mt-1 w-full rounded-md border border-white/10 bg-[#15151a] p-2 text-sm text-white/50 text-center shadow-md">
+                <div className="absolute z-50 mt-1 w-full rounded-md border border-marrow-light/10 bg-[#15151a] p-2 text-sm text-white/50 text-center shadow-md">
                     Nessun risultato trovato.
                 </div>
             )}

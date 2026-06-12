@@ -428,7 +428,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
       {/* ── Progress & Onboarding Modal ── */}
       {showProgressModal && syncStatus && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-marrow-light/60  p-4 animate-in fade-in duration-300">
-          <div className="w-full max-w-lg bg-beige rounded-2xl shadow-2xl border border-marrow-light/10 overflow-hidden animate-in zoom-in-95 duration-300">
+          <div className="w-full max-w-lg bg-background-light rounded-2xl shadow-2xl border border-marrow-light/10 overflow-hidden animate-in zoom-in-95 duration-300">
             {/* Modal Header */}
             <div className="p-6 border-b border-marrow-light/10 flex items-center justify-between bg-marrow-light/5">
               <div className="flex items-center gap-3">

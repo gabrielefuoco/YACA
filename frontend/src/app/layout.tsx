@@ -12,11 +12,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="it" className="dark">
+    <html lang="it">
       <head>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
       </head>
-      <body className="antialiased font-display bg-background-light dark:bg-background-dark text-zinc-900 dark:text-zinc-100 min-h-screen">
+      <body className="antialiased font-display bg-background text-foreground min-h-screen">
         <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
           <div className="layout-container flex h-full grow flex-col">
             {children}

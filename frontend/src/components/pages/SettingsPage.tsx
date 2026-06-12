@@ -241,7 +241,7 @@ export function SettingsPage({
                 variant="outline"
                 size="sm"
                 onClick={() => handleCopy(installUrl)}
-                className="flex-1 text-xs border-success/30 bg-white/10 hover:bg-success/20 text-success"
+                className="flex-1 text-xs border-success/30 bg-marrow-light/10 hover:bg-success/20 text-success"
               >
                 {copied ? (
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-success" />
@@ -277,7 +277,7 @@ export function SettingsPage({
                 variant="outline"
                 size="sm"
                 onClick={() => handleCopy(manifestUrl)}
-                className="flex-1 text-xs border-success/30 bg-white/10 hover:bg-success/20 text-success"
+                className="flex-1 text-xs border-success/30 bg-marrow-light/10 hover:bg-success/20 text-success"
               >
                 {copied ? (
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-success" />
