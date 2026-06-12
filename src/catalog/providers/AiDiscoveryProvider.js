@@ -47,7 +47,7 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
         } else {
             results = await fetchTmdbCatalog(tmdbClient, endpoint, skip, tmdbParams, type, cacheOptions);
 
-            if (results.length < 20 && !settings.noFallback) {
+                if (results.length === 0 && !settings.noFallback) {
                 let relaxedParams = { ...tmdbParams };
                 let changed = false;
 
@@ -71,7 +71,7 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
                     }
                 }
 
-                if (results.length < 20 && relaxedParams.with_keywords) {
+                if (results.length === 0 && relaxedParams.with_keywords) {
                     delete relaxedParams.with_keywords;
                     const broadResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
                     const existingIds = new Set(results.map(r => normalizeContentId(r.id)));

@@ -163,81 +163,52 @@ router.post('/preview-catalog', async (req, res) => {
                     results: items
                 });
             } catch (err) {
-            console.error("Errore preview multi-query/merge:", err);
-            return res.status(500).json({ error: 'Errore nel generare anteprima' });
-        }
-    }
-
-    try {
-        let tmdbRes;
-        if (strategy === 'multi_search') {
-            tmdbRes = await tmdbClient.get(`/search/${discoverType}`, {
-                params: {
-                    api_key: sanitizedTmdbKey,
-                    language: 'it-IT',
-                    region: 'IT',
-                    page: 1,
-                    query: sanitizeString(discoverFilters.text_search || discoverFilters.keyword || '')
-                },
-                timeout: PREVIEW_TIMEOUT_MS
-            });
-        } else if (strategy === 'similar' && discoverFilters.similar_to) {
-            const searchRes = await tmdbClient.get(`/search/${discoverType}`, {
-                params: {
-                    api_key: sanitizedTmdbKey,
-                    language: 'it-IT',
-                    region: 'IT',
-                    page: 1,
-                    query: sanitizeString(discoverFilters.similar_to)
-                },
-                timeout: PREVIEW_TIMEOUT_MS
-            });
-            const targetId = searchRes.data?.results?.[0]?.id;
-            if (targetId) {
-                tmdbRes = await tmdbClient.get(`/${discoverType}/${targetId}/recommendations`, {
-                    params: {
-                        api_key: sanitizedTmdbKey,
-                        language: 'it-IT',
-                        page: 1
-                    },
-                    timeout: PREVIEW_TIMEOUT_MS
-                });
-            } else {
-                tmdbRes = { data: { results: [] } };
+                console.error("Errore preview multi-query/merge:", err);
+                return res.status(500).json({ error: 'Errore nel generare anteprima' });
             }
-        } else {
-            tmdbRes = await tmdbClient.get(`/discover/${discoverType}`, {
-                params: {
-                    api_key: sanitizedTmdbKey,
-                    language: 'it-IT',
-                    region: 'IT',
-                    page: 1,
-                    ...discoverFilters
-                },
-                timeout: PREVIEW_TIMEOUT_MS
-            });
         }
-        const items = (tmdbRes.data?.results || []).slice(0, 20).map(item => ({
-            id: item.id,
-            title: item.title || item.name || '',
-            poster: item.poster_path ? `https://image.tmdb.org/t/p/w185${item.poster_path}` : null,
-            vote: item.vote_average || 0,
-            year: (item.release_date || item.first_air_date || '').substring(0, 4)
-        }));
-        res.json({
-            items,
-            filters: discoverFilters,
-            type: discoverType === 'tv' ? 'series' : 'movie',
-            name: sanitizedPrompt ? sanitizedPrompt.substring(0, MAX_PREVIEW_CATALOG_NAME_LENGTH) : null
-        });
-    } catch (err) {
-        const status = err.response?.status;
-        if (status === 401) {
-            return res.status(401).json({ error: 'Chiave TMDB non valida' });
-        }
-        return res.status(500).json({ error: 'Errore nel recupero dati da TMDB' });
-    }
 
+        // --- SINGLE PREVIEW: Route through catalogHandler for consistency ---
+        try {
+            const singleQueryFilters = {
+                queries: [
+                    {
+                        strategy: strategy,
+                        ...discoverFilters
+                    }
+                ],
+                presentation_strategy: 'popularity'
+            };
+
+            const previewData = await catalogHandler(
+                {
+                    type: discoverType === 'tv' ? 'series' : 'movie',
+                    id: null,
+                    filters: singleQueryFilters,
+                    extra: { skip: 0 }
+                },
+                fullUserConfig,
+                req.context?.hostUrl || `${req.protocol}://${req.get('host')}`
+            );
+
+            const items = (previewData.metas || []).slice(0, 20).map(item => ({
+                id: item.id,
+                title: item.name || '',
+                poster: item.poster || null,
+                vote: item.vote_average || item.imdbRating || 0,
+                year: item.releaseInfo || ''
+            }));
+
+            return res.json({
+                items,
+                filters: discoverFilters,
+                type: discoverType,
+                name: sanitizedPrompt ? sanitizedPrompt.substring(0, MAX_PREVIEW_CATALOG_NAME_LENGTH) : null
+            });
+        } catch (err) {
+            console.error("Errore preview singola:", err);
+            return res.status(500).json({ error: 'Errore nel recupero dati da TMDB' });
+        }
     } catch (globalErr) {
         console.error("Errore critico in /preview-catalog:", globalErr);
         return res.status(500).json({ error: 'Errore interno del server' });
