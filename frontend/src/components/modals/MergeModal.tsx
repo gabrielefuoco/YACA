@@ -40,7 +40,7 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
         },
         type: catalogA.type,
       });
-      setPreviewItems(data.items ?? []);
+      setPreviewItems(data.items || data.results || []);
     } catch { }
     setLoading(false);
   }, [catalogA, catalogB, strategy]);
