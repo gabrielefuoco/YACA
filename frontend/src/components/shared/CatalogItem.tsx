@@ -89,15 +89,6 @@ export function CatalogItem({
         <div className="flex items-center gap-1 shrink-0">
           {!mergeSelectionInProgress ? (
             <>
-              {onMergeStart && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onMergeStart(); }}
-                  className="p-2 rounded-xl text-marrow-light/40 hover:text-primary hover:bg-primary/5 transition-all group/btn"
-                  title="Fondi con un altro catalogo"
-                >
-                  <Wand2 className="h-5 w-5 group-hover/btn:scale-110 transition-transform" />
-                </button>
-              )}
               {onRemove && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onRemove(); }}
@@ -139,9 +130,13 @@ export function CatalogItem({
           </div>
         </div>
         
-        {!mergeSelectionInProgress && (
-          <button className="flex items-center gap-1 text-[10px] font-black text-marrow-light hover:text-primary transition-colors uppercase tracking-widest border border-marrow-light/10 hover:border-primary/20 rounded-lg px-2 py-1 bg-white/40">
-            Modifica <ArrowRight className="h-3 w-3" />
+        {!mergeSelectionInProgress && onMergeStart && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onMergeStart(); }}
+            className="flex items-center gap-1 text-[10px] font-black text-marrow-light hover:text-primary transition-colors uppercase tracking-widest border border-marrow-light/10 hover:border-primary/20 rounded-lg px-2 py-1 bg-white/40 group/btn"
+            title="Fondi con un altro catalogo"
+          >
+            Fondi <Wand2 className="h-3 w-3 group-hover/btn:scale-110 transition-transform" />
           </button>
         )}
       </div>
