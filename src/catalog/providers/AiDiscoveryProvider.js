@@ -41,7 +41,7 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
 
         const paramsKey = JSON.stringify(tmdbParams);
         const fallbackFlag = !settings.noFallback ? await catalogFallbackCache.get(paramsKey) : null;
-        let results = [];
+
 
         if (fallbackFlag) {
             results = await fetchTmdbCatalog(tmdbClient, endpoint, skip, fallbackFlag.relaxedParams, type, cacheOptions);
@@ -61,8 +61,8 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
                 }
 
                 if (changed) {
-                console.log('--- fetchTmdbCatalog PARAMS ---', tmdbParams);
-                const extraResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
+                    console.log('--- fetchTmdbCatalog PARAMS ---', tmdbParams);
+                    const extraResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
                     const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
                     for (const item of extraResults) {
                         const normalizedItemId = normalizeContentId(item.id);

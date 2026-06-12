@@ -139,7 +139,7 @@ router.post('/preview-catalog', async (req, res) => {
                     {
                         type: discoverType === 'tv' ? 'series' : 'movie',
                         id: null,
-                        filters: discoverFilters?.queries ? discoverFilters : customFilters,
+                        filters: (discoverFilters && Object.keys(discoverFilters).length > 0) ? discoverFilters : customFilters,
                         extra: { skip: 0 }
                     },
                     fullUserConfig,
