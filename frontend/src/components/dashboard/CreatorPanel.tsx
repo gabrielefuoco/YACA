@@ -209,7 +209,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       sort_by: block.sortBy,
       ...(block.language && { with_original_language: block.language }),
       ...(block.genres.length && { with_genres: block.genres.join(',') }),
-      ...(block.keywords.length && { with_keywords: block.keywords.map(k => k.id).join(',') }),
+      ...(block.keywords.length && { with_keywords: block.keywords.map(k => k.id).join('|') }),
       ...(block.cast.length && { with_cast: block.cast.map(c => c.id).join(',') }),
       ...(block.crew.length && { with_crew: block.crew.map(c => c.id).join(',') }),
       ...(block.voteMin > 0 && { 'vote_average.gte': block.voteMin }),
