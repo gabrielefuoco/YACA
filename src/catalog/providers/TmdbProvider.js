@@ -4,8 +4,8 @@ const { rateLimitedMap } = require('../../utils/rateLimiter');
 const { STREAMING_PROVIDERS } = require('../constants');
 
 function resolveGenreIds(genreIdsArray, type) {
-    if (!genreIdsArray || genreIdsArray.length === 0) return '';
-    if (type === 'movie') return genreIdsArray.join('|');
+    if (!genreIdsArray || genreIdsArray.length === 0) return [];
+    if (type === 'movie') return genreIdsArray;
 
     const MOVIE_TO_TV_MAP = {
         28: 10759, 12: 10759, 16: 16, 35: 35, 80: 80, 99: 99, 18: 18,
@@ -13,8 +13,14 @@ function resolveGenreIds(genreIdsArray, type) {
         9648: 9648, 10749: 18, 878: 10765, 53: 80, 10752: 10768, 37: 37
     };
 
-    const mapped = genreIdsArray.map(id => MOVIE_TO_TV_MAP[id]).filter(id => id !== undefined);
-    return [...new Set(mapped)].join('|');
+    const validTvGenres = new Set(Object.values(MOVIE_TO_TV_MAP));
+    const mapped = genreIdsArray.map(id => {
+        const numId = Number(id);
+        if (validTvGenres.has(numId)) return id;
+        return MOVIE_TO_TV_MAP[id] || id;
+    });
+    
+    return [...new Set(mapped)];
 }
 
 async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}) {
@@ -33,19 +39,25 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
         tmdbParams.with_original_language = original_language;
     }
 
-    // Consolida logica generi (priorità a genre_ids se presenti)
+    // Consolida logica generi (priorità a genre_ids se presenti, e mappa per TV preservando l'operatore)
+    let originalOperator = ',';
+    if (tmdbParams.with_genres && typeof tmdbParams.with_genres === 'string') {
+        originalOperator = tmdbParams.with_genres.includes('|') ? '|' : ',';
+    }
+
     let genres = [];
     if (tmdbParams.with_genres) {
-        genres = Array.isArray(tmdbParams.with_genres)
+        const rawGenres = Array.isArray(tmdbParams.with_genres)
             ? tmdbParams.with_genres.map(String)
             : String(tmdbParams.with_genres).split(/[|,]/).map(g => g.trim()).filter(Boolean);
+        
+        genres.push(...resolveGenreIds(rawGenres, type));
     }
     if (genre_ids?.length) {
-        const resolved = resolveGenreIds(genre_ids, type);
-        if (resolved) genres.push(...resolved.split('|'));
+        genres.push(...resolveGenreIds(genre_ids, type));
     }
     if (genres.length > 0) {
-        tmdbParams.with_genres = [...new Set(genres)].join('|');
+        tmdbParams.with_genres = [...new Set(genres)].join(originalOperator);
     }
 
 
