@@ -66,10 +66,12 @@ export function ProfileManager({
           return (
             <div
               key={profile.id}
-              onClick={() => onSetActive(profile.id)} // Click attiva il profilo in Stremio
+              onClick={() => onSelectEditing(profile.id)} // Click seleziona per la modifica
               className={`flex flex-col items-center p-4 rounded-xl border-2 gap-3 relative transition-all text-left w-full cursor-pointer group ${
                 isActive
                   ? 'border-emerald-500 bg-emerald-500/5 shadow-lg shadow-emerald-500/10'
+                  : isEditing
+                  ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10'
                   : 'border-marrow-light/10 bg-white/30 hover:border-primary/30 hover:bg-white/50'
               }`}
             >
@@ -77,6 +79,8 @@ export function ProfileManager({
                 className={`size-12 rounded-full flex items-center justify-center text-xl font-bold shrink-0 transition-colors ${
                   isActive
                     ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
+                    : isEditing
+                    ? 'bg-primary text-white shadow-md shadow-primary/30'
                     : 'bg-marrow-light/10 text-marrow-deep group-hover:bg-primary/10 group-hover:text-primary'
                 }`}
               >
@@ -84,7 +88,7 @@ export function ProfileManager({
               </div>
 
               <div className="text-center w-full">
-                <p className={`text-sm font-bold truncate w-full ${isActive ? 'text-emerald-700' : 'text-marrow-deep'}`}>
+                <p className={`text-sm font-bold truncate w-full ${isActive ? 'text-emerald-700' : isEditing ? 'text-primary' : 'text-marrow-deep'}`}>
                   {profile.name}
                 </p>
                 {isActive && (
@@ -94,25 +98,20 @@ export function ProfileManager({
                 )}
               </div>
 
-              {/* Pulsante dedicato alla MODIFICA */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Evita di attivare il profilo quando clicchi su modifica
-                  onSelectEditing(profile.id);
-                }}
-                title="Modifica impostazioni"
-                className={`absolute top-2 right-2 flex items-center justify-center size-7 rounded-full transition-all border ${
-                  isEditing
-                    ? 'bg-primary text-white border-primary shadow-sm shadow-primary/30 scale-110'
-                    : 'bg-white/80 text-marrow-light/60 border-marrow-light/10 opacity-0 group-hover:opacity-100 hover:text-primary hover:border-primary/30'
-                } ${
-                  isActive && !isEditing
-                    ? 'opacity-100 bg-white border-emerald-200 text-emerald-600 hover:text-primary hover:border-primary'
-                    : ''
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">settings</span>
-              </button>
+              {/* Pulsante Attiva rapido sulla card */}
+              {!isActive && isEditing && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); 
+                    onSetActive(profile.id);
+                  }}
+                  title="Imposta come Attivo"
+                  className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full bg-white border border-primary/20 text-primary text-[10px] font-bold uppercase hover:bg-primary hover:text-white transition-colors shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-[12px]">check</span>
+                  Attiva
+                </button>
+              )}
             </div>
           );
         })}
