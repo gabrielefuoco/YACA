@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { Profile, ProfileTemplate } from '@/types';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface ProfileManagerProps {
   profiles: Profile[];
@@ -24,14 +26,14 @@ export function ProfileManager({
   profileTemplates = [],
   onCreateFromTemplate,
 }: ProfileManagerProps) {
-  const [adding, setAdding] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newName, setNewName] = useState('');
 
   const handleAdd = () => {
     if (!newName.trim()) return;
     onAdd(newName.trim());
     setNewName('');
-    setAdding(false);
+    setIsDialogOpen(false);
   };
 
   return (
@@ -39,37 +41,18 @@ export function ProfileManager({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h2 className="text-marrow-deep text-xl font-bold">I tuoi Profili</h2>
-          <span className="bg-primary/20 text-primary text-xs font-bold px-2 py-0.5 rounded-full">
+          <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded-full">
             {profiles.length} Profil{profiles.length !== 1 ? 'i' : 'o'}
           </span>
         </div>
 
-        {adding ? (
-          <div className="flex gap-2">
-            <Input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Nome profilo..."
-              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-              autoFocus
-             className="h-9 w-32 md:w-48 bg-white/60 border-marrow-light/10"
-            />
-            <button onClick={handleAdd} className="flex items-center justify-center rounded-lg h-9 w-9 bg-primary text-white hover:brightness-110">
-              <span className="material-symbols-outlined text-sm">check</span>
-            </button>
-            <button onClick={() => setAdding(false)} className="flex items-center justify-center rounded-lg h-9 w-9 bg-marrow-light/10 text-marrow-light hover:text-primary transition-colors">
-              <span className="material-symbols-outlined text-sm">close</span>
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-2 cursor-pointer justify-center rounded-lg h-9 px-4 bg-primary text-white text-sm font-bold hover:brightness-110 transition-all"
-          >
-            <span className="material-symbols-outlined text-sm">add</span>
-            <span>Nuovo</span>
-          </button>
-        )}
+        <button
+          onClick={() => setIsDialogOpen(true)}
+          className="flex items-center gap-2 cursor-pointer justify-center rounded-lg h-9 px-4 bg-primary text-white text-sm font-bold hover:brightness-110 transition-all shadow-sm shadow-primary/20"
+        >
+          <span className="material-symbols-outlined text-sm">add</span>
+          <span>Nuovo Profilo</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
@@ -77,77 +60,134 @@ export function ProfileManager({
           const isActive = activeProfileId === profile.id;
           const isEditing = editingProfileId === profile.id;
 
-          let icon = profile.name.charAt(0).toUpperCase();
-          if (profile.name.startsWith('🏠')) icon = 'home';
-          else if (profile.name.startsWith('🎬') || profile.name.startsWith('📺') || profile.name.startsWith('🎭')) icon = 'movie';
+          // Gestione sicura per le Emoji (estrazione del primo simbolo vero, inclusi surrogate pairs)
+          let icon = Array.from(profile.name)[0].toUpperCase();
 
           return (
-            <button
+            <div
               key={profile.id}
-              onClick={() => onSelectEditing(profile.id)}
-              className={`flex flex-col items-center p-4 rounded-xl border-2 gap-3 relative transition-all text-left w-full ${
-                isEditing
-                  ? 'border-primary ring-2 ring-primary/20 bg-primary/5 shadow-lg shadow-primary/5'
-                  : 'border-marrow-light/10 bg-white/30 hover:border-primary/50 hover:bg-white/50'
+              onClick={() => onSetActive(profile.id)} // Click attiva il profilo in Stremio
+              className={`flex flex-col items-center p-4 rounded-xl border-2 gap-3 relative transition-all text-left w-full cursor-pointer group ${
+                isActive
+                  ? 'border-emerald-500 bg-emerald-500/5 shadow-lg shadow-emerald-500/10'
+                  : 'border-marrow-light/10 bg-white/30 hover:border-primary/30 hover:bg-white/50'
               }`}
             >
-              <div className={`size-12 rounded-full flex items-center justify-center font-bold shrink-0 transition-colors ${
-                isEditing 
-                  ? 'bg-primary text-white shadow-md shadow-primary/20' 
-                  : isActive 
-                    ? 'bg-emerald-500/10 text-emerald-600'
-                    : 'bg-marrow-light/10 text-marrow-light'
-              }`}>
-                {icon.length > 2 ? <span className="material-symbols-outlined">{icon}</span> : icon}
-              </div>
-              <div className="text-center w-full">
-                <p className="text-sm font-bold text-marrow-deep truncate w-full">{profile.name}</p>
-                {isActive && <p className="text-[10px] text-emerald-500 font-black uppercase mt-0.5 tracking-wider">Attivo</p>}
+              <div
+                className={`size-12 rounded-full flex items-center justify-center text-xl font-bold shrink-0 transition-colors ${
+                  isActive
+                    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
+                    : 'bg-marrow-light/10 text-marrow-deep group-hover:bg-primary/10 group-hover:text-primary'
+                }`}
+              >
+                {icon}
               </div>
 
-              {/* Status Indicators */}
-              <div className="absolute top-2 right-2 flex gap-1">
+              <div className="text-center w-full">
+                <p className={`text-sm font-bold truncate w-full ${isActive ? 'text-emerald-700' : 'text-marrow-deep'}`}>
+                  {profile.name}
+                </p>
                 {isActive && (
-                  <div className="size-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                )}
-                {isEditing && !isActive && (
-                  <span className="material-symbols-outlined text-primary text-sm">edit</span>
-                )}
-                {isEditing && isActive && (
-                  <span className="material-symbols-outlined text-emerald-500 text-sm">check_circle</span>
+                  <p className="text-[10px] text-emerald-600 font-black uppercase mt-0.5 tracking-wider">
+                    Attivo
+                  </p>
                 )}
               </div>
-            </button>
+
+              {/* Pulsante dedicato alla MODIFICA */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation(); // Evita di attivare il profilo quando clicchi su modifica
+                  onSelectEditing(profile.id);
+                }}
+                title="Modifica impostazioni"
+                className={`absolute top-2 right-2 flex items-center justify-center size-7 rounded-full transition-all border ${
+                  isEditing
+                    ? 'bg-primary text-white border-primary shadow-sm shadow-primary/30 scale-110'
+                    : 'bg-white/80 text-marrow-light/60 border-marrow-light/10 opacity-0 group-hover:opacity-100 hover:text-primary hover:border-primary/30'
+                } ${
+                  isActive && !isEditing
+                    ? 'opacity-100 bg-white border-emerald-200 text-emerald-600 hover:text-primary hover:border-primary'
+                    : ''
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]">settings</span>
+              </button>
+            </div>
           );
         })}
       </div>
 
-      {profileTemplates.length > 0 && (
-        <details className="group border-2 border-marrow-light/10 bg-white/30 hover:border-primary/30 transition-colors rounded-xl p-4 shadow-sm [&_summary::-webkit-details-marker]:hidden mt-8">
-          <summary className="flex cursor-pointer items-center justify-between font-bold select-none">
-            <div className="flex items-center gap-2 text-primary">
-              <span className="material-symbols-outlined">auto_awesome</span>
-              <span className="text-sm font-black uppercase tracking-widest">Oppure crea un Profilo Preimpostato</span>
-              <span className="text-xs font-normal normal-case text-marrow-light/60 ml-1">({profileTemplates.length})</span>
+      {/* Dialog per Creazione Nuovo Profilo */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] bg-background-light border-marrow-light/10 shadow-2xl p-0 overflow-hidden">
+          <div className="p-6">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-black text-marrow-deep flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">add_circle</span>
+                Crea Nuovo Profilo
+              </DialogTitle>
+              <DialogDescription className="text-marrow-light/80">
+                Puoi creare un profilo partendo da zero o usare un preset ottimizzato.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-6 flex flex-col gap-6">
+              {/* Opzione 1: Da Zero */}
+              <div className="flex flex-col gap-3 p-4 bg-primary/5 rounded-xl border border-primary/10">
+                <label className="text-xs font-bold uppercase tracking-widest text-primary">
+                  Vuoto / Personalizzato
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="Nome del nuovo profilo..."
+                    onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                    className="bg-white border-marrow-light/20 flex-1"
+                  />
+                  <Button onClick={handleAdd} className="bg-primary hover:brightness-110 shrink-0 font-bold">
+                    Crea
+                  </Button>
+                </div>
+              </div>
+
+              {/* Opzione 2: Preset */}
+              {profileTemplates.length > 0 && (
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <hr className="flex-1 border-marrow-light/10" />
+                    <span className="text-xs font-bold uppercase text-marrow-light/60">
+                      Oppure scegli un Preset
+                    </span>
+                    <hr className="flex-1 border-marrow-light/10" />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[250px] overflow-y-auto p-1 hide-scrollbar">
+                    {profileTemplates.map((tpl) => (
+                      <button
+                        key={tpl.id}
+                        onClick={() => {
+                          onCreateFromTemplate?.(tpl);
+                          setIsDialogOpen(false);
+                        }}
+                        className="flex flex-col items-start p-3 rounded-xl border border-marrow-light/10 bg-white hover:border-primary/50 hover:bg-primary/5 transition-all text-left shadow-sm group/tpl"
+                      >
+                        <p className="text-sm font-bold text-marrow-deep group-hover/tpl:text-primary transition-colors mb-1 truncate w-full">
+                          {tpl.name}
+                        </p>
+                        <p className="text-xs text-marrow-light/70 font-medium line-clamp-2">
+                          {tpl.description}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <span className="transition group-open:rotate-180 text-marrow-light/40">
-              <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="20"><path d="M6 9l6 6 6-6"></path></svg>
-            </span>
-          </summary>
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {profileTemplates.map((tpl) => (
-              <button
-                key={tpl.id}
-                onClick={() => onCreateFromTemplate?.(tpl)}
-                className="flex flex-col items-start p-4 rounded-xl border-2 border-marrow-light/10 bg-white/60 hover:border-primary/50 hover:bg-white transition-all text-left shadow-sm group/tpl"
-              >
-                <p className="text-sm font-bold text-marrow-deep group-hover/tpl:text-primary transition-colors mb-1">{tpl.name}</p>
-                <p className="text-xs text-marrow-light/80 font-medium line-clamp-2">{tpl.description}</p>
-              </button>
-            ))}
           </div>
-        </details>
-      )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
