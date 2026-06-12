@@ -87,31 +87,28 @@ export function ProfileManager({
                 {icon}
               </div>
 
-              <div className="text-center w-full">
+              <div className="text-center w-full flex flex-col items-center">
                 <p className={`text-sm font-bold truncate w-full ${isActive ? 'text-emerald-700' : isEditing ? 'text-primary' : 'text-marrow-deep'}`}>
                   {profile.name}
                 </p>
-                {isActive && (
-                  <p className="text-[10px] text-emerald-600 font-black uppercase mt-0.5 tracking-wider">
+                {isActive ? (
+                  <p className="text-[10px] text-emerald-600 font-black uppercase mt-1 tracking-wider">
                     Attivo
                   </p>
-                )}
+                ) : isEditing ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); 
+                      onSetActive(profile.id);
+                    }}
+                    title="Imposta come Attivo"
+                    className="mt-1 flex items-center justify-center gap-1 w-full max-w-[100px] bg-emerald-500 text-white py-0.5 rounded-full text-[10px] font-bold uppercase hover:bg-emerald-600 transition-colors shadow-sm"
+                  >
+                    <span className="material-symbols-outlined text-[12px]">check</span>
+                    Attiva
+                  </button>
+                ) : null}
               </div>
-
-              {/* Pulsante Attiva rapido sulla card */}
-              {!isActive && isEditing && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation(); 
-                    onSetActive(profile.id);
-                  }}
-                  title="Imposta come Attivo"
-                  className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full bg-white border border-primary/20 text-primary text-[10px] font-bold uppercase hover:bg-primary hover:text-white transition-colors shadow-sm"
-                >
-                  <span className="material-symbols-outlined text-[12px]">check</span>
-                  Attiva
-                </button>
-              )}
             </div>
           );
         })}

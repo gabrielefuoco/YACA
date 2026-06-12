@@ -46,12 +46,6 @@ export function ProfileSettingsPanel({
                     <span className="text-sm font-bold">Impostazioni Profilo: <span className="text-primary">{profile.name}</span></span>
                 </div>
                 <div className="flex items-center gap-2">
-                    {!isActive && (
-                        <button onClick={() => onSetActive(profile.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold shadow-md hover:brightness-110 transition-all">
-                            <span className="material-symbols-outlined text-sm">check</span>
-                            <span>Attiva Profilo</span>
-                        </button>
-                    )}
                     {!isGlobalProfile && (
                         <>
                             <button onClick={startRename} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/40 hover:bg-primary/20 text-marrow-deep text-xs font-black transition-all border border-marrow-light/10 shadow-sm">
