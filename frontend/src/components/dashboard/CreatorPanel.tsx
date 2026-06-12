@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -221,7 +221,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
   // Build a flat filters object from a block (for preview backward compat)
   const buildFiltersFromBlock = (block: BlockState): Record<string, unknown> => buildQueryBlock(block) as Record<string, unknown>;
 
-  const handleManualPreview = () => {
+  const handleManualPreview = useCallback(() => {
     if (blocks.length === 0) return;
     // For multi-query, send all queries so the backend processes them via universal pipeline
     if (blocks.length > 1) {
@@ -231,7 +231,14 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       setPreviewFilters(buildFiltersFromBlock(blocks[0]));
     }
     setPreviewType(type);
-  };
+  }, [blocks, type, presentationStrategy]);
+
+  // Auto-update global preview when presentation or type changes
+  useEffect(() => {
+    if (previewFilters) {
+      handleManualPreview();
+    }
+  }, [presentationStrategy, type]);
 
   const handleSave = () => {
     const queries = blocks.map(buildQueryBlock);
