@@ -79,9 +79,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             if (!extra?.search && id !== 'yaca-profiles' && baseId !== 'yaca_search_history') {
                 finalResults = await filterWatchedItems(
                     finalResults, 
-                    userConfig.userId, 
-                    activeProfileSettings, 
-                    catalogMeta || {}
+                    userConfig
                 );
             }
             
