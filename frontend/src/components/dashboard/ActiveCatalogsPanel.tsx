@@ -121,7 +121,7 @@ export function ActiveCatalogsPanel({
       )}
 
       {catalogs.length === 0 ? (
-        <div className="rounded-[2.5rem] border-2 border-dashed border-marrow-light/20 p-16 text-center bg-white/40 shadow-inner">
+        <div className="rounded-[2.5rem] border-2 border-dashed border-marrow-light/20 p-8 sm:p-16 text-center bg-white/40 shadow-inner">
           <div className="size-20 bg-marrow-light/5 rounded-full flex items-center justify-center mx-auto mb-6">
             <Layers className="h-10 w-10 text-marrow-light/20" />
           </div>

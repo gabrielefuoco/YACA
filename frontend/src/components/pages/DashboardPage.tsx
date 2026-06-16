@@ -100,14 +100,14 @@ export function DashboardPage({
   ];
 
   return (
-    <div className="flex flex-col w-full gap-8">
+    <div className="flex flex-col w-full gap-4 sm:gap-8">
       <div className="flex flex-col gap-1">
-        <h1 className="text-marrow-deep text-3xl font-black leading-tight tracking-tight text-center md:text-left">Dashboard</h1>
-        <p className="text-marrow-light text-sm text-center md:text-left font-medium">Gestisci i tuoi profili e personalizza i cataloghi multimediali</p>
+        <h1 className="text-marrow-deep text-2xl sm:text-3xl font-black leading-tight tracking-tight text-center md:text-left">Dashboard</h1>
+        <p className="text-marrow-light text-xs sm:text-sm text-center md:text-left font-medium">Gestisci i tuoi profili e personalizza i cataloghi multimediali</p>
       </div>
 
       {/* Profiles Section (Common Box) */}
-      <div className="glass-panel p-6 sm:p-8 bg-white/40 shadow-xl shadow-primary/5 rounded-2xl border border-marrow-light/10 relative overflow-hidden">
+      <div className="glass-panel p-4 sm:p-8 bg-white/40 shadow-xl shadow-primary/5 rounded-2xl border border-marrow-light/10 relative overflow-hidden">
         <ProfileManager
           profiles={profiles}
           editingProfileId={editingProfileId}
@@ -126,21 +126,21 @@ export function DashboardPage({
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex justify-center mb-6 w-full px-2 sm:px-0">
-        <div className="flex flex-wrap justify-center p-1.5 bg-white/40 rounded-2xl border border-marrow-light/20 shadow-xl shadow-primary/5 w-full sm:w-auto gap-1 sm:gap-2">
+      <div className="flex justify-center mb-4 sm:mb-6 w-full px-1 sm:px-0">
+        <div className="flex flex-wrap justify-center p-1 sm:p-1.5 bg-white/40 rounded-2xl border border-marrow-light/20 shadow-xl shadow-primary/5 w-full sm:w-auto gap-1 sm:gap-2">
           {tabsItems.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`
-                flex items-center justify-center gap-1.5 px-3 py-2 sm:px-6 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-300 whitespace-nowrap flex-auto sm:flex-none
+                flex items-center justify-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:px-6 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-black transition-all duration-300 whitespace-nowrap flex-auto sm:flex-none
                 ${activeTab === tab.id
                   ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-105'
                   : 'text-marrow-light hover:text-primary hover:bg-primary/5'
                 }
               `}
             >
-              <span className={`material-symbols-outlined text-base sm:text-lg ${activeTab === tab.id ? 'animate-pulse' : ''}`}>{tab.icon}</span>
+              <span className={`material-symbols-outlined text-sm sm:text-lg ${activeTab === tab.id ? 'animate-pulse' : ''}`}>{tab.icon}</span>
               <span className="uppercase tracking-wider">{tab.label}</span>
             </button>
           ))}
@@ -149,7 +149,7 @@ export function DashboardPage({
 
       {/* Main Content Area */}
       <div className="w-full">
-        <div className="glass-panel p-6 sm:p-8 min-h-[500px] relative overflow-hidden transition-all duration-500 bg-white/40 shadow-xl shadow-primary/5 rounded-2xl border border-marrow-light/10">
+        <div className="glass-panel p-3 sm:p-8 min-h-[500px] relative overflow-hidden transition-all duration-500 bg-white/40 shadow-xl shadow-primary/5 rounded-2xl border border-marrow-light/10">
           {/* Subtle decorative elements */}
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 blur-3xl rounded-full" />
           <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-accent/5 blur-3xl rounded-full" />

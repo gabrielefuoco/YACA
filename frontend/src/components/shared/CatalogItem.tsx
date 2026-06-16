@@ -51,7 +51,7 @@ export function CatalogItem({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       onClick={mergeSelectionInProgress && !isMerging && canBeMergeTarget ? onMergeSelect : undefined}
-      className={`group relative flex flex-col glass-card transition-all p-5 shadow-sm border-2 ${
+      className={`group relative flex flex-col glass-card transition-all p-3 sm:p-5 shadow-sm border-2 ${
         isDragging ? 'opacity-30 scale-95 border-marrow-light/10' : 
         isMerging ? 'border-primary ring-4 ring-primary/10 bg-primary/5 z-20 scale-[1.02] shadow-xl' :
         isMergeTarget ? 'border-primary bg-primary/5 z-20 scale-[1.02] shadow-xl animate-pulse cursor-pointer' :

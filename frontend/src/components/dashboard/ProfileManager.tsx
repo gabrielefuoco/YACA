@@ -84,7 +84,7 @@ export function ProfileManager({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-4">
         {profiles.map((profile) => {
           const isActive = activeProfileId === profile.id;
           const isEditing = editingProfileId === profile.id;
@@ -96,7 +96,7 @@ export function ProfileManager({
             <div
               key={profile.id}
               onClick={() => onSelectEditing(profile.id)} // Click seleziona per la modifica
-              className={`flex flex-col items-center p-4 rounded-xl border-2 gap-3 relative transition-all text-left w-full cursor-pointer group ${
+              className={`flex flex-col items-center p-3 sm:p-4 rounded-xl border-2 gap-2 sm:gap-3 relative transition-all text-left w-full cursor-pointer group ${
                 isActive
                   ? 'border-emerald-500 bg-emerald-500/5 shadow-lg shadow-emerald-500/10'
                   : isEditing
@@ -105,7 +105,7 @@ export function ProfileManager({
               }`}
             >
               <div
-                className={`size-12 rounded-full flex items-center justify-center text-xl font-bold shrink-0 transition-colors ${
+                className={`size-10 sm:size-12 rounded-full flex items-center justify-center text-lg sm:text-xl font-bold shrink-0 transition-colors ${
                   isActive
                     ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
                     : isEditing
@@ -117,7 +117,7 @@ export function ProfileManager({
               </div>
 
               <div className="text-center w-full flex flex-col items-center">
-                <p className={`text-sm font-bold truncate w-full ${isActive ? 'text-emerald-700' : isEditing ? 'text-primary' : 'text-marrow-deep'}`}>
+                <p className={`text-xs sm:text-sm font-bold truncate w-full ${isActive ? 'text-emerald-700' : isEditing ? 'text-primary' : 'text-marrow-deep'}`}>
                   {profile.name}
                 </p>
                 {isActive ? (

@@ -533,20 +533,20 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* HERO CARD: Name + Type + Presentation Strategy – all in one place */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-white/60 to-primary/5 p-5 space-y-4 shadow-lg shadow-primary/5">
+      <section className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-white/60 to-primary/5 p-3 sm:p-5 space-y-3 sm:space-y-4 shadow-lg shadow-primary/5">
         {/* Row 1: Name input + Type toggle */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <div className="flex-1 min-w-0">
             <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Nome catalogo</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Il mio catalogo"
-              className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base"
+              className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-sm sm:text-base h-9 sm:h-10"
             />
           </div>
           <div className="sm:w-56 shrink-0">
@@ -556,7 +556,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                 <button
                   key={t}
                   onClick={() => setType(t)}
-                  className={`flex-1 rounded-lg border py-2 text-sm font-bold transition-all ${type === t
+                  className={`flex-1 rounded-lg border py-1.5 sm:py-2 text-xs sm:text-sm font-bold transition-all ${type === t
                     ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
                     : 'border-marrow-light/20 bg-white/40 text-marrow-light hover:text-primary hover:border-primary/50'
                     }`}
@@ -569,10 +569,10 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
         </div>
 
         {/* Row 2: Presentation Strategy */}
-        <div className="flex flex-col sm:flex-row sm:items-center items-start gap-2 sm:gap-3 pt-1">
-          <div className="flex items-center gap-2 shrink-0">
-            <Layers className="h-4 w-4 text-primary" />
-            <span className="text-marrow-deep font-black uppercase tracking-wide text-[10px] whitespace-nowrap">Presentazione</span>
+        <div className="flex flex-col sm:flex-row sm:items-center items-start gap-1 sm:gap-3 pt-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+            <span className="text-marrow-deep font-black uppercase tracking-wide text-[9px] sm:text-[10px] whitespace-nowrap">Presentazione</span>
             <span className="relative group">
               <Info className="h-3.5 w-3.5 text-marrow-light/60 cursor-help" />
               <span className="absolute bottom-full left-0 sm:left-1/2 sm:-translate-x-1/2 mb-2 w-64 rounded-lg bg-primary-dark text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
@@ -586,7 +586,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
               <button
                 key={s}
                 onClick={() => setPresentationStrategy(s)}
-                className={`flex-1 sm:flex-none rounded-lg border px-2 sm:px-4 py-1.5 text-xs font-bold transition-all ${presentationStrategy === s
+                className={`flex-1 sm:flex-none rounded-lg border px-2 sm:px-4 py-1.5 text-[10px] sm:text-xs font-bold transition-all ${presentationStrategy === s
                   ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
                   : 'border-marrow-light/20 bg-white/50 text-marrow-light hover:text-primary hover:border-primary/50'
                   }`}
@@ -598,15 +598,12 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* QUERY BLOCKS                                                      */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-black uppercase tracking-widest text-marrow-deep">
+          <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-marrow-deep">
             Query Blocks ({blocks.length})
           </span>
-          <Button onClick={addBlock} variant="outline" size="sm" className="gap-1.5 text-xs font-bold text-marrow-deep">
+          <Button onClick={addBlock} variant="outline" size="sm" className="h-8 gap-1 sm:gap-1.5 text-[10px] sm:text-xs font-bold text-marrow-deep bg-white/40 border-primary/20 hover:bg-primary/10">
             <Plus className="h-3.5 w-3.5" />
             Aggiungi Query
           </Button>
@@ -616,32 +613,39 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* PREVIEW + ACTIONS                                                 */}
+      {/* FLOATING ACTION BAR: Preview & Save */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {previewFilters && (
-        <div className="rounded-xl border-2 border-primary/20 bg-white/40 p-4 overflow-hidden space-y-2">
-          <p className="text-[10px] font-black uppercase tracking-widest text-primary/70 flex items-center gap-2">
-            <Eye className="h-3.5 w-3.5" />
-            Anteprima Globale {blocks.length > 1 && `(${blocks.length} query combinate)`}
-          </p>
-          <PosterRow filters={previewFilters} type={previewType} />
+      <div className="sticky bottom-4 z-50 mt-4 sm:mt-6">
+        <div className="glass-panel p-2 sm:p-3 flex items-center justify-between gap-2 sm:gap-3 bg-white/80 shadow-2xl shadow-primary/10 border-2 border-primary/20 rounded-2xl mx-auto max-w-2xl backdrop-blur-xl">
+          <Button
+            variant="ghost"
+            onClick={handleManualPreview}
+            className="flex-1 font-bold text-marrow-deep hover:bg-primary/10 hover:text-primary text-[10px] sm:text-sm h-10 sm:h-12"
+          >
+            <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+            <span className="hidden sm:inline">Aggiorna</span> Anteprima
+          </Button>
+
+          <Button
+            onClick={handleSave}
+            disabled={!name.trim() || blocks.length === 0 || saved}
+            className={`flex-1 font-black shadow-lg text-[10px] sm:text-sm h-10 sm:h-12 transition-all duration-300 ${saved
+              ? 'bg-success hover:bg-success text-white shadow-success/30'
+              : 'bg-primary hover:brightness-110 text-white shadow-primary/30'
+              }`}
+          >
+            {saved ? (
+              <span className="flex items-center">
+                <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" /> Salvato!
+              </span>
+            ) : (
+              <span className="flex items-center">
+                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Crea</span> Catalogo
+              </span>
+            )}
+          </Button>
         </div>
-      )}
-
-      <div className="flex gap-3">
-        <Button onClick={handleManualPreview} variant="outline" className="flex-1 py-3 font-bold text-marrow-deep">
-          <Eye className="h-4 w-4 mr-2" />
-          Anteprima Globale
-        </Button>
-        <Button onClick={handleSave} disabled={saved} className="flex-1 py-3 bg-primary text-white hover:brightness-110 font-bold">
-          <Save className="h-4 w-4 mr-2" />
-          {saved ? '✅ Aggiunto!' : 'Salva e Aggiungi'}
-        </Button>
       </div>
-
-      {saved && (
-        <p className="text-xs text-emerald-500 font-medium text-center">Catalogo aggiunto con successo al profilo.</p>
-      )}
     </div>
   );
 }
