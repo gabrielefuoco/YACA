@@ -1,6 +1,7 @@
 const { createAxiosInstance } = require('../utils/httpClient');
 const { KITSU_ENDPOINT, ITEMS_PER_PAGE } = require('../config');
 const CacheManager = require('../cache/CacheManager');
+const { createTmdbClient, prioritizeLocalizedImages } = require('./tmdb');
 
 // Crea l'istanza client qui
 const kitsuClient = createAxiosInstance(KITSU_ENDPOINT || 'https://kitsu.io/api/edge');
@@ -10,6 +11,69 @@ const kitsuClient = createAxiosInstance(KITSU_ENDPOINT || 'https://kitsu.io/api/
 const kitsuMetaCache = new CacheManager('kitsu_meta', { ramMax: 50, ramTtlMs: 3600000 });
 const kitsuMappingCache = new CacheManager('kitsu_mapping', { ramMax: 50, ramTtlMs: 3600000 * 24 }); // 24 ore per il mapping
 const kitsuEpisodesCache = new CacheManager('kitsu_episodes', { ramMax: 50, ramTtlMs: 3600000 * 12 });
+const kitsuTmdbBasicCache = new CacheManager('kitsu_tmdb_basic', { ramMax: 200, ramTtlMs: 3600000 * 24 });
+
+/**
+ * Arricchisce un item Kitsu con dati TMDB (titolo localizzato e poster migliori)
+ */
+async function enrichWithTmdb(item, kitsuId) {
+    if (!item) return;
+    try {
+        const mapping = await getTmdbIdFromKitsuId(kitsuId);
+        if (!mapping) return;
+
+        const cacheKey = `${mapping.type}:${mapping.tmdbId}`;
+        const { value: cached, status } = await kitsuTmdbBasicCache.getWithStatus(cacheKey);
+
+        let tmdbData = cached;
+        if (status === 'miss') {
+            const tmdbKey = process.env.TMDB_API_KEY;
+            if (!tmdbKey) return;
+            const tmdbClient = createTmdbClient(tmdbKey);
+            const endpoint = mapping.type === 'movie' ? `/movie/${mapping.tmdbId}` : `/tv/${mapping.tmdbId}`;
+            try {
+                const tmdbRes = await tmdbClient.get(endpoint, {
+                    params: {
+                        language: 'it-IT',
+                        append_to_response: 'images',
+                        include_image_language: 'it,en,null'
+                    }
+                });
+                tmdbData = tmdbRes.data;
+                if (tmdbData) {
+                    await kitsuTmdbBasicCache.set(cacheKey, tmdbData);
+                }
+            } catch (e) {
+                // Ignore silent failure
+            }
+        }
+
+        if (tmdbData) {
+            const title = tmdbData.title || tmdbData.name;
+            if (title) item.name = title;
+
+            let bestPoster = tmdbData.poster_path;
+            if (tmdbData.images && Array.isArray(tmdbData.images.posters)) {
+                const localizedPosters = prioritizeLocalizedImages(tmdbData.images.posters);
+                if (localizedPosters.length > 0) bestPoster = localizedPosters[0].file_path;
+            }
+            if (bestPoster) item.poster = `https://image.tmdb.org/t/p/w500${bestPoster}`;
+
+            let bestBg = tmdbData.backdrop_path;
+            if (tmdbData.images && Array.isArray(tmdbData.images.backdrops)) {
+                const localizedBgs = prioritizeLocalizedImages(tmdbData.images.backdrops);
+                if (localizedBgs.length > 0) bestBg = localizedBgs[0].file_path;
+            }
+            if (bestBg) item.background = `https://image.tmdb.org/t/p/w1280${bestBg}`;
+
+            if (tmdbData.overview && tmdbData.overview.trim().length > 0) {
+                item.description = tmdbData.overview;
+            }
+        }
+    } catch (e) {
+        // Fallback silently to Kitsu data
+    }
+}
 
 /**
  * Trasforma il risultato raw di Kitsu nel formato Stremio Meta Preview.
@@ -54,6 +118,12 @@ async function fetchKitsuCatalog(endpoint, skip = 0, customParams = {}) {
         let items = [];
         if (res.data && res.data.data) {
             items = res.data.data.map(toStremioMetaItem).filter(i => i !== null);
+            
+            // Arricchimento asincrono per tutti i risultati del catalogo
+            await Promise.allSettled(items.map(item => {
+                const kitsuId = item.id.replace('kitsu:', '');
+                return enrichWithTmdb(item, kitsuId);
+            }));
         }
 
         return items;
@@ -149,6 +219,9 @@ async function getKitsuMetaDetails(id) {
         const meta = toStremioMetaItem(item);
 
         if (meta && item.attributes) {
+            // Arricchimento TMDB
+            await enrichWithTmdb(meta, kitsuId);
+
             meta.genres = [];
             if (item.attributes.youtubeVideoId) {
                 meta.trailers = [{ source: item.attributes.youtubeVideoId, type: 'Trailer' }];
