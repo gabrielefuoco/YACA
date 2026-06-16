@@ -303,11 +303,11 @@ export function SettingsPage({
 
         {/* Backup & Import */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <Button variant="outline" onClick={handleExport} className="flex-1 font-black text-marrow-deep border-marrow-light/30 bg-white/40 hover:bg-white/60">
+          <Button variant="outline" onClick={handleExport} className="flex-1 font-black text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 shadow-sm rounded-xl py-5">
             <Download className="h-4 w-4 mr-2" />
             Esporta Backup
           </Button>
-          <Button variant="outline" onClick={handleImport} className="flex-1 font-black text-marrow-deep border-marrow-light/30 bg-white/40 hover:bg-white/60">
+          <Button variant="outline" onClick={handleImport} className="flex-1 font-black text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white shadow-sm rounded-xl py-5">
             <Upload className="h-4 w-4 mr-2" />
             Importa Backup
           </Button>
@@ -351,14 +351,14 @@ export function SettingsPage({
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 mt-4">
           {traktToken ? (
             <>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setTraktModalOpen(true)}
-                className="flex-1 text-xs text-marrow-deep border-primary/20 bg-primary/5 hover:bg-primary/10"
+                className="flex-1 text-xs text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 rounded-xl py-4"
               >
                 Aggiorna Login Trakt
               </Button>
@@ -366,7 +366,7 @@ export function SettingsPage({
                 variant="outline"
                 size="sm"
                 onClick={onDisconnectTrakt}
-                className="flex-1 text-xs text-marrow-deep"
+                className="flex-1 text-xs text-marrow-deep rounded-xl bg-white/80 border-marrow-light/20 hover:bg-white py-4 shadow-sm"
               >
                 Disconnetti Trakt
               </Button>
@@ -376,7 +376,7 @@ export function SettingsPage({
               variant="outline"
               size="sm"
               onClick={() => setTraktModalOpen(true)}
-              className="flex-1 text-xs text-marrow-deep border-primary/20 bg-primary/5 hover:bg-primary/10"
+              className="flex-1 text-xs text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 rounded-xl py-4"
             >
               Connetti Trakt
             </Button>
@@ -385,7 +385,7 @@ export function SettingsPage({
             variant="destructive"
             size="sm"
             onClick={onLogout}
-            className="flex-1 text-xs"
+            className="flex-1 text-xs rounded-xl py-4 shadow-sm"
           >
             <LogOut className="h-3.5 w-3.5 mr-1" />
             Logout

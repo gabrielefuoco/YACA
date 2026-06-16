@@ -46,34 +46,34 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
   return (
     <div className="space-y-4">
       {/* Search toggle */}
-      <div className="flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-marrow-light/70 hover:text-primary hover:bg-marrow-light/10" onClick={() => scroll('left')}>
+      <div className="flex items-center gap-1 sm:gap-2">
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-marrow-light/70 hover:text-primary hover:bg-marrow-light/10 hidden sm:flex" onClick={() => scroll('left')}>
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <div ref={scrollRef} className="flex-1 flex gap-2 overflow-x-auto pb-1 hide-scrollbar scroll-smooth">
+        <div ref={scrollRef} className="flex-1 flex gap-2 sm:gap-3 overflow-x-auto pb-2 pt-1 px-1 hide-scrollbar scroll-smooth">
           {allCategories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`shrink-0 rounded-full px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-bold transition-all ${selectedCategory === cat
-                ? 'bg-primary text-white shadow-xl shadow-primary/40 scale-105'
-                : 'bg-white/40 text-marrow-light hover:text-primary transition-colors border border-marrow-light/10 shadow-sm'
+              className={`shrink-0 rounded-full px-4 sm:px-5 py-2 sm:py-2 text-xs sm:text-sm font-bold transition-all shadow-sm ${selectedCategory === cat
+                ? 'bg-primary text-white shadow-xl shadow-primary/40 scale-105 ring-2 ring-primary/20 ring-offset-1'
+                : 'bg-white/80 text-marrow-deep hover:text-primary hover:bg-white transition-colors border border-marrow-light/10'
                 }`}
             >
               {cat}
             </button>
           ))}
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-marrow-light/70 hover:text-primary hover:bg-marrow-light/10" onClick={() => scroll('right')}>
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-marrow-light/70 hover:text-primary hover:bg-marrow-light/10 hidden sm:flex" onClick={() => scroll('right')}>
           <ChevronRight className="h-5 w-5" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 shrink-0 text-marrow-light hover:text-primary ml-1"
+          className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 text-marrow-deep bg-white/60 hover:bg-white hover:text-primary ml-1 sm:ml-2 rounded-xl shadow-sm border border-marrow-light/10"
           onClick={() => setShowSearch(!showSearch)}
         >
-          <Search className="h-4 w-4" />
+          <Search className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
       </div>
 
