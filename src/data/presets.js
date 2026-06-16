@@ -262,7 +262,17 @@ const getPresets = () => {
         
         { id: 'preset_hbo_max_series', name: 'Serie su Max', category: "📺 Network & Piattaforme", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_networks: 3186, sort_by: 'popularity.desc', 'vote_count.gte': 20, without_keywords: '210024' }] },
         { id: 'preset_hulu_series', name: 'Serie su Hulu', category: "📺 Network & Piattaforme", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_networks: 453, sort_by: 'popularity.desc', 'vote_count.gte': 20, without_keywords: '210024' }] },
-        { id: 'preset_paramount_series', name: 'Serie su Paramount+', category: "📺 Network & Piattaforme", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_networks: 4330, sort_by: 'popularity.desc', 'vote_count.gte': 20, without_keywords: '210024' }] }
+        { id: 'preset_paramount_series', name: 'Serie su Paramount+', category: "📺 Network & Piattaforme", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_networks: 4330, sort_by: 'popularity.desc', 'vote_count.gte': 20, without_keywords: '210024' }] },
+        // =============================================
+        // --- ➕ NUOVI CATALOGHI (Bambini & Famiglia) ---
+        // =============================================
+        { id: 'preset_family_movies_live', name: 'Film per Famiglie (Live)', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: 10751, without_genres: 16, without_keywords: '210024', sort_by: 'popularity.desc', 'vote_count.gte': 50 }] },
+        { id: 'preset_kids_series', name: 'Cartoni in TV & Serie Kids', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: 10762, without_keywords: '210024', sort_by: 'popularity.desc', 'vote_count.gte': 10 }] },
+        { id: 'preset_teen_preteen_tv', name: 'Teen & Pre-Teen TV (Live)', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: '10762|35', without_genres: 16, without_keywords: '210024', sort_by: 'popularity.desc', 'vote_count.gte': 20 }] },
+        { id: 'preset_fairy_tales', name: 'Fiabe, Castelli & Principesse', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_keywords: '3205|3095|12554', without_keywords: '210024', sort_by: 'popularity.desc', 'vote_count.gte': 50 }] },
+        { id: 'preset_animal_protagonists', name: 'Animali Protagonisti', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: 10751, with_keywords: '10574|6054|11303', without_keywords: '210024', sort_by: 'popularity.desc', 'vote_count.gte': 20 }] },
+        { id: 'preset_anime_kids_series', name: 'Anime per Bambini (Serie)', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_genres: '10762|16', with_keywords: '210024', without_keywords: '195668|158536|10410|818', sort_by: 'popularity.desc', 'vote_count.gte': 10 }] },
+        { id: 'preset_anime_kids_movies', name: 'Anime per Bambini (Film)', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_genres: '10751,16', with_keywords: '210024', without_keywords: '195668|158536|10410|818', sort_by: 'popularity.desc', 'vote_count.gte': 20 }] }
 
     ];
 };
@@ -428,7 +438,7 @@ const profileTemplates = [
         description: 'Contenuti sicuri e divertenti per tutta la famiglia',
         presets: [
             'preset_pixar', 'preset_dreamworks', 'preset_ghibli', 'preset_disney_plus',
-            'preset_disney_animation'
+            'preset_disney_animation', 'preset_family_movies_live', 'preset_kids_series', 'preset_teen_preteen_tv', 'preset_fairy_tales', 'preset_animal_protagonists', 'preset_anime_kids_series', 'preset_anime_kids_movies'
         ]
     }
 ];
