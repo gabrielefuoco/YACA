@@ -112,10 +112,6 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
                   <div className="min-w-0">
                     <h3 className="font-black text-marrow-deep text-lg leading-tight truncate group-hover:text-primary transition-colors">{preset.name}</h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-primary/5 text-primary text-[10px] font-black uppercase tracking-wider border border-primary/10">
-                        <span className="material-symbols-outlined text-[10px] shrink-0">auto_awesome</span> 
-                        <span className="truncate">Preset</span>
-                      </span>
                       {preset.category && (
                         <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] px-1.5 py-0 shrink-0 bg-primary/10 text-primary hover:bg-primary/20 border-0">
                           {preset.category}
