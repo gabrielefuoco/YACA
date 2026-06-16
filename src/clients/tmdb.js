@@ -401,43 +401,74 @@ async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customPar
             }
         });
 
-        // Light Mode: restituisce immediatamente metadati base (ID, nome, poster, genre_ids).
-        // Nessuna chiamata TMDB details, nessuna latenza.
-        const lightMetas = items.map(({ item, type: t }) => ({
-            id: `tmdb:${item.id}`,
-            type: t === 'series' ? 'series' : 'movie',
-            name: item.title || item.name || 'Unknown',
-            poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
-            posterShape: 'poster',
-            background: item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null,
-            description: item.overview || '',
-            releaseInfo: (item.release_date || item.first_air_date || '').substring(0, 4),
-            imdbRating: item.vote_average ? item.vote_average.toFixed(1) : undefined,
-            genre_ids: item.genre_ids || [],
-            popularity: item.popularity || 0
-        }));
-
-        // Background Sync Worker: scarica in background i metadati completi per le pagine
-        // iniziali (non bloccante). Alla visita successiva i titoli avranno dati ricchi in cache.
-        // opts.lightMode è impostato dal chiamante per deep scroll pages dove l'enrichment
-        // in background non è necessario (l'utente sta solo scorrendo velocemente).
         if (!opts.lightMode && items.length > 0) {
             const apiKey = client.defaults.params.api_key;
-            setImmediate(() => {
-                const enrichQueue = (queue) => rateLimitedMap(queue, async ({ item, type: t }) => {
+            
+            if (hotQueue.length > 0) {
+                // Fetch hotQueue synchronously to ensure the first page has localized covers!
+                await rateLimitedMap(hotQueue, async ({ item, type: t }) => {
                     try {
                         await getTmdbMovieDetails(apiKey, item.id.toString(), t === 'series' ? 'tv' : 'movie');
-                    } catch (_e) { /* background enrichment failure is non-blocking */ }
-                }, { batchSize: 1, delayMs: 600 });
+                    } catch (_e) { }
+                }, { batchSize: 5, delayMs: 0 });
+            }
 
-                enrichQueue(hotQueue)
-                    .then(() => {
-                        if (coldQueue.length > 0) return enrichQueue(coldQueue);
-                        return;
-                    })
-                    .catch(() => { });
-            });
+            if (coldQueue.length > 0) {
+                setImmediate(() => {
+                    const enrichQueue = (queue) => rateLimitedMap(queue, async ({ item, type: t }) => {
+                        try {
+                            await getTmdbMovieDetails(apiKey, item.id.toString(), t === 'series' ? 'tv' : 'movie');
+                        } catch (_e) { }
+                    }, { batchSize: 1, delayMs: 600 });
+                    enrichQueue(coldQueue).catch(() => {});
+                });
+            }
         }
+
+        const lightMetas = await Promise.all(items.map(async ({ item, type: t }) => {
+            let name = item.title || item.name || 'Unknown';
+            let poster = item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null;
+            let background = item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null;
+            
+            const tmdbId = item.id.toString();
+            const tmdbType = t === 'series' ? 'tv' : 'movie';
+            const cacheKey = `v2:${tmdbType}:${tmdbId}`;
+            
+            // Try cache (it will hit immediately for hotQueue since we just fetched it)
+            const { value: cachedData } = await tmdbDetailsCache.getWithStatus(cacheKey);
+
+            if (cachedData) {
+                if (cachedData.title) name = cachedData.title;
+                if (cachedData.name) name = cachedData.name;
+                
+                let bestPoster = cachedData.poster_path;
+                let bestBackdrop = cachedData.backdrop_path;
+
+                if (cachedData.images && Array.isArray(cachedData.images.posters) && cachedData.images.posters.length > 0) {
+                    bestPoster = cachedData.images.posters[0].file_path;
+                }
+                if (cachedData.images && Array.isArray(cachedData.images.backdrops) && cachedData.images.backdrops.length > 0) {
+                    bestBackdrop = cachedData.images.backdrops[0].file_path;
+                }
+
+                if (bestPoster) poster = `https://image.tmdb.org/t/p/w342${bestPoster}`;
+                if (bestBackdrop) background = `https://image.tmdb.org/t/p/w780${bestBackdrop}`;
+            }
+
+            return {
+                id: `tmdb:${item.id}`,
+                type: t === 'series' ? 'series' : 'movie',
+                name,
+                poster,
+                posterShape: 'poster',
+                background,
+                description: item.overview || '',
+                releaseInfo: (item.release_date || item.first_air_date || '').substring(0, 4),
+                imdbRating: item.vote_average ? item.vote_average.toFixed(1) : undefined,
+                genre_ids: item.genre_ids || [],
+                popularity: item.popularity || 0
+            };
+        }));
 
         return { items: lightMetas, nextPageFetched: startPage + pagesToFetch };
     } catch (err) {
