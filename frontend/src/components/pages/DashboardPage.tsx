@@ -126,14 +126,14 @@ export function DashboardPage({
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex justify-start sm:justify-center mb-4 w-full overflow-hidden">
-        <div className="flex p-1 sm:p-1.5 bg-white/40 rounded-2xl border border-marrow-light/20 shadow-xl shadow-primary/5 w-full sm:w-auto overflow-x-auto hide-scrollbar">
+      <div className="flex justify-center mb-6 w-full px-2 sm:px-0">
+        <div className="flex flex-wrap justify-center p-1.5 bg-white/40 rounded-2xl border border-marrow-light/20 shadow-xl shadow-primary/5 w-full sm:w-auto gap-1 sm:gap-2">
           {tabsItems.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`
-                flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-300 whitespace-nowrap shrink-0 flex-1 sm:flex-none
+                flex items-center justify-center gap-1.5 px-3 py-2 sm:px-6 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-300 whitespace-nowrap flex-auto sm:flex-none
                 ${activeTab === tab.id
                   ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-105'
                   : 'text-marrow-light hover:text-primary hover:bg-primary/5'
