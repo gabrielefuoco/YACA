@@ -54,7 +54,7 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
       {loading && (
         <div className="flex max-w-full gap-2 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-[225px] w-[150px] shrink-0 animate-pulse rounded-lg bg-primary/10 border border-primary/5" />
+            <div key={i} className="h-[180px] w-[120px] sm:h-[225px] sm:w-[150px] shrink-0 animate-pulse rounded-lg bg-primary/10 border border-primary/5" />
           ))}
         </div>
       )}
@@ -67,10 +67,10 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
                 <img
                   src={item.poster}
                   alt={item.title}
-                  className="h-[225px] w-[150px] rounded-lg object-cover transition-all duration-300 group-hover/poster:scale-105 group-hover/poster:shadow-2xl group-hover/poster:shadow-primary/30 shadow-md shadow-marrow-light/20"
+                  className="h-[180px] w-[120px] sm:h-[225px] sm:w-[150px] rounded-lg object-cover transition-all duration-300 group-hover/poster:scale-105 group-hover/poster:shadow-2xl group-hover/poster:shadow-primary/30 shadow-md shadow-marrow-light/20"
                 />
               ) : (
-                <div className="flex h-[225px] w-[150px] items-center justify-center rounded-lg bg-marrow-light/5 text-xs text-marrow-light/60 border border-marrow-light/20">
+                <div className="flex h-[180px] w-[120px] sm:h-[225px] sm:w-[150px] items-center justify-center rounded-lg bg-marrow-light/5 text-xs text-marrow-light/60 border border-marrow-light/20">
                   {item.title.slice(0, 2)}
                 </div>
               )}
