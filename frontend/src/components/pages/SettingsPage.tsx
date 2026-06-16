@@ -236,7 +236,7 @@ export function SettingsPage({
               <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
               <p className="text-sm font-bold text-success">Configurazione salvata con successo!</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -272,7 +272,7 @@ export function SettingsPage({
                 <p className="text-xs text-marrow-light font-medium">Reinstalla o copia il link per aggiornare</p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -301,7 +301,7 @@ export function SettingsPage({
         <Separator className="bg-marrow-light/10" />
 
         {/* Backup & Import */}
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <Button variant="outline" onClick={handleExport} className="flex-1 font-black text-marrow-deep border-marrow-light/30 bg-white/40 hover:bg-white/60">
             <Download className="h-4 w-4 mr-2" />
             Esporta Backup
@@ -350,7 +350,7 @@ export function SettingsPage({
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           {traktToken ? (
             <>
               <Button

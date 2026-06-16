@@ -126,21 +126,21 @@ export function DashboardPage({
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex justify-center mb-4">
-        <div className="inline-flex p-1.5 bg-white/40  rounded-2xl border border-marrow-light/20 shadow-xl shadow-primary/5 max-w-full overflow-x-auto hide-scrollbar">
+      <div className="flex justify-start sm:justify-center mb-4 w-full overflow-hidden">
+        <div className="flex p-1 sm:p-1.5 bg-white/40 rounded-2xl border border-marrow-light/20 shadow-xl shadow-primary/5 w-full sm:w-auto overflow-x-auto hide-scrollbar">
           {tabsItems.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`
-                flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 whitespace-nowrap
+                flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-300 whitespace-nowrap shrink-0 flex-1 sm:flex-none
                 ${activeTab === tab.id
                   ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-105'
                   : 'text-marrow-light hover:text-primary hover:bg-primary/5'
                 }
               `}
             >
-              <span className={`material-symbols-outlined text-lg ${activeTab === tab.id ? 'animate-pulse' : ''}`}>{tab.icon}</span>
+              <span className={`material-symbols-outlined text-base sm:text-lg ${activeTab === tab.id ? 'animate-pulse' : ''}`}>{tab.icon}</span>
               <span className="uppercase tracking-wider">{tab.label}</span>
             </button>
           ))}

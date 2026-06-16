@@ -569,24 +569,24 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
         </div>
 
         {/* Row 2: Presentation Strategy */}
-        <div className="flex items-center gap-3 pt-1">
+        <div className="flex flex-col sm:flex-row sm:items-center items-start gap-2 sm:gap-3 pt-1">
           <div className="flex items-center gap-2 shrink-0">
             <Layers className="h-4 w-4 text-primary" />
             <span className="text-marrow-deep font-black uppercase tracking-wide text-[10px] whitespace-nowrap">Presentazione</span>
             <span className="relative group">
               <Info className="h-3.5 w-3.5 text-marrow-light/60 cursor-help" />
-              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg bg-primary-dark  text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
+              <span className="absolute bottom-full left-0 sm:left-1/2 sm:-translate-x-1/2 mb-2 w-64 rounded-lg bg-primary-dark text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
                 <strong>Popularity:</strong> ordina tutti i risultati per popolarità globale.
                 <br /><strong>Interleave:</strong> alterna i risultati di ogni query per massima varietà (consensus scoring).
               </span>
             </span>
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5 w-full sm:w-auto">
             {(['popularity', 'interleave'] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => setPresentationStrategy(s)}
-                className={`rounded-lg border px-4 py-1.5 text-xs font-bold transition-all ${presentationStrategy === s
+                className={`flex-1 sm:flex-none rounded-lg border px-2 sm:px-4 py-1.5 text-xs font-bold transition-all ${presentationStrategy === s
                   ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
                   : 'border-marrow-light/20 bg-white/50 text-marrow-light hover:text-primary hover:border-primary/50'
                   }`}
