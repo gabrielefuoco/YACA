@@ -288,12 +288,12 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       <button
         type="button"
         onClick={() => updateBlock(block.id, { collapsed: !block.collapsed })}
-        className="w-full flex items-center justify-between px-5 py-3 bg-primary-dark/5 select-none hover:bg-primary-dark/10 transition-colors"
+        className="w-full flex items-center justify-between px-3 sm:px-5 py-2 sm:py-3 bg-primary-dark/5 select-none hover:bg-primary-dark/10 transition-colors"
       >
-        <span className="flex items-center gap-2 text-sm font-black text-marrow-deep uppercase tracking-wider">
-          <Layers className="h-4 w-4 text-primary" />
+        <span className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-black text-marrow-deep uppercase tracking-wider">
+          <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
           Query {index + 1}
-          <span className="text-xs font-medium normal-case text-marrow-light/70">
+          <span className="text-[10px] sm:text-xs font-medium normal-case text-marrow-light/70 hidden sm:inline">
             — {block.strategy === 'ai' ? 'Genera con AI' : block.strategy === 'discovery' ? 'Discovery (Filtri)' : block.strategy === 'similar' ? 'Simili a...' : 'Ricerca Testuale'}
           </span>
         </span>
@@ -318,12 +318,12 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
 
       {/* Block body */}
       {!block.collapsed && (
-        <div className="p-5 space-y-5">
+        <div className="p-3 sm:p-5 space-y-3 sm:space-y-5">
           {/* Strategy selector and inputs */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px] block mb-2">Strategia</Label>
-              <div className="flex flex-wrap gap-2">
+              <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px] block mb-1.5 sm:mb-2">Strategia</Label>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 <button
                   type="button"
                   onClick={(e) => { e.preventDefault(); updateBlock(block.id, { strategy: 'ai' }); }}

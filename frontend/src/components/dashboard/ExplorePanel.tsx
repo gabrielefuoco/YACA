@@ -55,7 +55,7 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-all ${selectedCategory === cat
+              className={`shrink-0 rounded-full px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-bold transition-all ${selectedCategory === cat
                 ? 'bg-primary text-white shadow-xl shadow-primary/40 scale-105'
                 : 'bg-white/40 text-marrow-light hover:text-primary transition-colors border border-marrow-light/10 shadow-sm'
                 }`}
@@ -88,7 +88,7 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
       )}
 
       {/* Preset grid — always shows posters */}
-      <div className="grid gap-8">
+      <div className="grid gap-4 sm:gap-8">
         {filtered.length === 0 && (
           <div className="py-8 text-center text-sm text-marrow-faded italic">
             Nessun catalogo trovato
@@ -100,18 +100,18 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
           const filterCount = preset.queries?.[0] ? Object.keys(preset.queries[0]).length - 1 : 0; 
 
           return (
-            <div key={preset.id} className="group relative flex flex-col glass-card transition-all p-5 shadow-sm border-2 border-marrow-light/10 bg-white/60 hover:bg-white/90 hover:border-primary/30">
+            <div key={preset.id} className="group relative flex flex-col glass-card transition-all p-3 sm:p-5 shadow-sm border-2 border-marrow-light/10 bg-white/60 hover:bg-white/90 hover:border-primary/30">
               
-              <div className="flex items-start justify-between mb-4 relative z-10">
-                <div className="flex gap-4 items-center min-w-0">
-                  <div className="flex items-center gap-3">
-                    <div className="size-12 rounded-2xl flex items-center justify-center transition-all bg-white shadow-inner text-marrow-deep">
-                      <span className="text-2xl">{preset.emoji ?? '📋'}</span>
+              <div className="flex items-start justify-between mb-2 sm:mb-4 relative z-10">
+                <div className="flex gap-2 sm:gap-4 items-center min-w-0">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="size-9 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all bg-white shadow-inner text-marrow-deep">
+                      <span className="text-lg sm:text-2xl">{preset.emoji ?? '📋'}</span>
                     </div>
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-black text-marrow-deep text-lg leading-tight truncate group-hover:text-primary transition-colors">{preset.name}</h3>
-                    <div className="flex items-center gap-2 mt-1">
+                    <h3 className="font-black text-marrow-deep text-sm sm:text-lg leading-tight truncate group-hover:text-primary transition-colors">{preset.name}</h3>
+                    <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
                       {preset.category && (
                         <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] px-1.5 py-0 shrink-0 bg-primary/10 text-primary hover:bg-primary/20 border-0">
                           {preset.category}
@@ -136,23 +136,23 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
                 </div>
               </div>
 
-              <p className="text-sm text-marrow-light/80 font-medium line-clamp-1 mb-4 relative z-10 px-1">
+              <p className="text-xs sm:text-sm text-marrow-light/80 font-medium line-clamp-1 mb-2 sm:mb-4 relative z-10 px-1">
                 {preset.description || 'Catalogo tematico preconfigurato e costantemente aggiornato.'}
               </p>
 
-              <div className="-mx-2 mb-4 relative z-10 group/row">
+              <div className="-mx-1 sm:-mx-2 mb-2 sm:mb-4 relative z-10 group/row">
                  <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover/poster:opacity-100 transition-opacity rounded-2xl -z-10" />
                  <PosterRow presetId={`yaca_preset_${preset.id}`} type={preset.type} />
               </div>
 
-              <div className="mt-auto pt-4 border-t border-marrow-light/10 flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-3">
-                   <div className="flex items-center gap-1.5 text-xs font-black text-marrow-deep/70">
-                    <span className="material-symbols-outlined text-sm">{preset.type === 'movie' ? 'movie' : 'tv'}</span>
+              <div className="mt-auto pt-2 sm:pt-4 border-t border-marrow-light/10 flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-2 sm:gap-3">
+                   <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs font-black text-marrow-deep/70">
+                    <span className="material-symbols-outlined text-xs sm:text-sm">{preset.type === 'movie' ? 'movie' : 'tv'}</span>
                     <span className="uppercase tracking-tight">{preset.type === 'movie' ? 'Film' : 'Serie'}</span>
                   </div>
                   <div className="w-1 h-1 rounded-full bg-marrow-light/20" />
-                  <div className="text-xs font-bold text-marrow-light/60">
+                  <div className="text-[10px] sm:text-xs font-bold text-marrow-light/60">
                     {Math.max(1, filterCount)} Filtr{Math.max(1, filterCount) !== 1 ? 'i' : 'o'}
                   </div>
                 </div>

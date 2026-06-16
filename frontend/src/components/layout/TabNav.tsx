@@ -13,13 +13,13 @@ export function TabNav({ activeTab, onTabChange }: TabNavProps) {
   ];
 
   return (
-    <nav className="flex items-center gap-6">
+    <nav className="flex items-center gap-1 sm:gap-6">
       {tabs.map(({ id, label }) => (
         <button
           key={id}
           onClick={() => onTabChange(id)}
           className={cn(
-            'text-sm transition-all duration-300 flex items-center px-4 py-1.5 font-black uppercase tracking-wider',
+            'text-[11px] sm:text-sm transition-all duration-300 flex items-center px-2.5 py-1 sm:px-4 sm:py-1.5 font-black uppercase tracking-wider whitespace-nowrap',
             activeTab === id
               ? 'bg-primary text-white rounded-full shadow-lg shadow-primary/30 scale-105'
               : 'text-marrow-light hover:text-primary hover:bg-primary/5 rounded-full'

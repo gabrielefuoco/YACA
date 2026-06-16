@@ -82,13 +82,13 @@ export function ActiveCatalogsPanel({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
-          <h3 className="text-xl font-black text-marrow-deep tracking-tight">
+          <h3 className="text-base sm:text-xl font-black text-marrow-deep tracking-tight">
             I tuoi Cataloghi <span className="text-primary/40 ml-1">({catalogs.length})</span>
           </h3>
-          <p className="text-xs text-marrow-light/60 font-bold uppercase tracking-widest mt-1">Gestisci e ordina la tua esperienza</p>
+          <p className="text-[9px] sm:text-xs text-marrow-light/60 font-bold uppercase tracking-widest mt-0.5 sm:mt-1">Gestisci e ordina la tua esperienza</p>
         </div>
         
         {!isSelectionMode && catalogs.length > 1 && (
@@ -129,7 +129,7 @@ export function ActiveCatalogsPanel({
           <p className="text-sm text-marrow-light/70 font-medium mt-3 max-w-xs mx-auto">Aggiungi cataloghi dalla sezione Esplora o creane uno nuovo per iniziare.</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-4 w-full">
+        <div className="flex flex-col gap-3 sm:gap-4 w-full">
           {catalogs.map((catalog, index) => (
             <CatalogItem
               key={catalog.id}

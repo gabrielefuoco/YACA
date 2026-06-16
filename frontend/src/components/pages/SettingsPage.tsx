@@ -191,25 +191,25 @@ export function SettingsPage({
     : '';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* HERO SECTION: Salva, Aggiorna, Installa & Backup                  */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* HERO SECTION: Salva, Aggiorna, Installa & Backup                  */}
-      <section className="rounded-2xl border-2 border-primary/40 bg-white/40 p-6 space-y-5 shadow-2xl shadow-primary/10 ">
-        <div className="flex items-center gap-3">
-          <div className="size-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
-            <Rocket className="h-5 w-5" />
+      <section className="rounded-2xl border-2 border-primary/40 bg-white/40 p-3 sm:p-6 space-y-3 sm:space-y-5 shadow-2xl shadow-primary/10 ">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="size-8 sm:size-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
+            <Rocket className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
           <div>
-            <h3 className="text-base font-black text-marrow-deep">Salva & Installa</h3>
-            <p className="text-xs text-marrow-light font-medium">Salva la configurazione, installa l&apos;addon su Stremio e gestisci i backup</p>
+            <h3 className="text-sm sm:text-base font-black text-marrow-deep">Salva & Installa</h3>
+            <p className="text-[10px] sm:text-xs text-marrow-light font-medium hidden sm:block">Salva la configurazione, installa l&apos;addon su Stremio e gestisci i backup</p>
           </div>
         </div>
 
         {/* Save Button */}
         <Button
-          className="w-full py-3 bg-primary text-white hover:bg-accent font-bold text-sm"
+          className="w-full py-2 sm:py-3 bg-primary text-white hover:bg-accent font-bold text-xs sm:text-sm"
           size="lg"
           onClick={handleSave}
           disabled={loading}
@@ -219,7 +219,8 @@ export function SettingsPage({
           ) : (
             <Save className="h-4 w-4 mr-2" />
           )}
-          Salva Configurazione & Aggiorna Addon
+          <span className="hidden sm:inline">Salva Configurazione & Aggiorna Addon</span>
+          <span className="sm:hidden">Salva & Aggiorna</span>
         </Button>
 
         {/* Error */}
@@ -318,14 +319,14 @@ export function SettingsPage({
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Account                                                            */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-5 space-y-4 shadow-sm ">
+      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-3 sm:p-5 space-y-3 sm:space-y-4 shadow-sm ">
         <div className="flex items-center gap-2 text-primary">
           <span className="material-symbols-outlined text-lg">person</span>
           <h3 className="text-sm font-black uppercase tracking-widest">Account</h3>
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between rounded-lg bg-white/60 px-4 py-3 border border-marrow-light/10">
+          <div className="flex items-center justify-between rounded-lg bg-white/60 px-3 sm:px-4 py-2 sm:py-3 border border-marrow-light/10">
             <div>
               <p className="text-[10px] font-black uppercase tracking-wider text-marrow-light/60">Stremio</p>
               <p className="text-sm font-bold text-marrow-deep">
@@ -337,7 +338,7 @@ export function SettingsPage({
             )}
           </div>
 
-          <div className="flex items-center justify-between rounded-lg bg-white/60 px-4 py-3 border border-marrow-light/10">
+          <div className="flex items-center justify-between rounded-lg bg-white/60 px-3 sm:px-4 py-2 sm:py-3 border border-marrow-light/10">
             <div>
               <p className="text-[10px] font-black uppercase tracking-wider text-marrow-light/60">Trakt</p>
               <p className="text-sm font-bold text-marrow-deep">

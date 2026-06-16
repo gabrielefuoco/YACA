@@ -90,23 +90,23 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
     <Dialog open={open} onOpenChange={() => onClose()}>
       <DialogContent className="sm:max-w-2xl bg-background-light border-marrow-light/30 shadow-2xl p-0 overflow-hidden max-h-[95vh] flex flex-col">
         {/* Modern Header */}
-        <DialogHeader className="p-6 sm:p-8 bg-white/40 border-b border-marrow-light/10">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-primary rounded-2xl text-white shadow-lg shadow-primary/20">
-              <Wand2 className="h-6 w-6" />
+        <DialogHeader className="p-4 sm:p-6 md:p-8 bg-white/40 border-b border-marrow-light/10">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="p-2 sm:p-3 bg-primary rounded-xl sm:rounded-2xl text-white shadow-lg shadow-primary/20">
+              <Wand2 className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
             <div className="flex flex-col">
-              <DialogTitle className="text-2xl font-black text-marrow-deep tracking-tight leading-none mb-1">Smart Merge</DialogTitle>
-              <DialogDescription className="text-marrow-light/70 text-sm font-medium">
+              <DialogTitle className="text-xl sm:text-2xl font-black text-marrow-deep tracking-tight leading-none mb-1">Smart Merge</DialogTitle>
+              <DialogDescription className="text-marrow-light/70 text-xs sm:text-sm font-medium">
                 Crea una lista intelligente unendo due cataloghi
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-8 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-8 scrollbar-hide">
           {/* Catalogs comparison (High Contrast) */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 rounded-3xl bg-white/80 border-2 border-marrow-light/10 shadow-sm relative">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/80 border-2 border-marrow-light/10 shadow-sm relative">
             <div className="flex-1 min-w-0 w-full text-center md:text-left space-y-2">
               <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
                 <span className="text-2xl">{catalogA.emoji ?? '📋'}</span>
@@ -116,7 +116,7 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
             </div>
 
             <div className="flex shrink-0">
-              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-black text-xl shadow-xl shadow-primary/30 ring-4 ring-white">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary flex items-center justify-center text-white font-black text-lg sm:text-xl shadow-xl shadow-primary/30 ring-4 ring-white">
                 +
               </div>
             </div>
@@ -139,7 +139,7 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 onClick={() => setStrategy('mixed')}
-                className={`flex flex-col items-start p-5 rounded-2xl border-2 transition-all relative overflow-hidden group ${strategy === 'mixed'
+                className={`flex flex-col items-start p-3 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all relative overflow-hidden group ${strategy === 'mixed'
                   ? 'border-primary bg-primary/5 shadow-md'
                   : 'border-marrow-light/10 bg-white/60 text-marrow-light hover:border-primary/40 hover:bg-white/90'
                   }`}

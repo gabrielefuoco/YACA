@@ -63,22 +63,22 @@ export function CatalogItem({
         'border-marrow-light/10 bg-white/60 hover:bg-white/90 hover:border-primary/30 cursor-grab active:cursor-grabbing'
       }`}
     >
-      <div className="flex items-start justify-between mb-4 relative z-10">
-        <div className="flex gap-4 items-center min-w-0">
-          <div className="flex items-center gap-3">
+      <div className="flex items-start justify-between mb-2 sm:mb-4 relative z-10">
+        <div className="flex gap-2 sm:gap-4 items-center min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3">
             {!mergeSelectionInProgress && (
-              <GripVertical className="h-4 w-4 text-marrow-light/20 cursor-grab group-hover:text-primary/40 transition-colors shrink-0" />
+              <GripVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-marrow-light/20 cursor-grab group-hover:text-primary/40 transition-colors shrink-0" />
             )}
-            <div className={`size-12 rounded-2xl flex items-center justify-center transition-all ${
+            <div className={`size-9 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all ${
               isMerging ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-white shadow-inner text-marrow-deep'
             }`}>
-              <span className="text-2xl">{catalog.emoji ?? '📋'}</span>
+              <span className="text-lg sm:text-2xl">{catalog.emoji ?? '📋'}</span>
             </div>
           </div>
           <div className="min-w-0">
-            <h3 className="font-black text-marrow-deep text-lg leading-tight truncate group-hover:text-primary transition-colors">{catalog.name}</h3>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-primary/5 text-primary text-[10px] font-black uppercase tracking-wider border border-primary/10">
+            <h3 className="font-black text-marrow-deep text-sm sm:text-lg leading-tight truncate group-hover:text-primary transition-colors">{catalog.name}</h3>
+            <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
+              <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-primary/5 text-primary text-[9px] sm:text-[10px] font-black uppercase tracking-wider border border-primary/10">
                 <span className="material-symbols-outlined text-[10px] shrink-0">{sourceIcon}</span> 
                 <span className="truncate">{sourceLabel}</span>
               </span>
@@ -109,23 +109,23 @@ export function CatalogItem({
         </div>
       </div>
 
-      <p className="text-sm text-marrow-light/80 font-medium line-clamp-1 mb-4 relative z-10 px-1">
+      <p className="text-xs sm:text-sm text-marrow-light/80 font-medium line-clamp-1 mb-2 sm:mb-4 relative z-10 px-1">
         {catalog.raw_prompt || 'Catalogo basato su filtri e preferenze personalizzate.'}
       </p>
 
-      <div className="-mx-2 mb-4 relative z-10 group/row">
+      <div className="-mx-1 sm:-mx-2 mb-2 sm:mb-4 relative z-10 group/row">
          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover/poster:opacity-100 transition-opacity rounded-2xl -z-10" />
         <PosterRow presetId={catalog.source === 'preset' ? `yaca_preset_${catalog.id}` : undefined} type={catalog.type} filters={catalog.filters} prompt={catalog.raw_prompt} />
       </div>
 
-      <div className="mt-auto pt-4 border-t border-marrow-light/10 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-3">
-           <div className="flex items-center gap-1.5 text-xs font-black text-marrow-deep/70">
-            <span className="material-symbols-outlined text-sm">{catalog.type === 'movie' ? 'movie' : 'tv'}</span>
+      <div className="mt-auto pt-2 sm:pt-4 border-t border-marrow-light/10 flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-2 sm:gap-3">
+           <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs font-black text-marrow-deep/70">
+            <span className="material-symbols-outlined text-xs sm:text-sm">{catalog.type === 'movie' ? 'movie' : 'tv'}</span>
             <span className="uppercase tracking-tight">{catalog.type === 'movie' ? 'Film' : 'Serie'}</span>
           </div>
           <div className="w-1 h-1 rounded-full bg-marrow-light/20" />
-          <div className="text-xs font-bold text-marrow-light/60">
+          <div className="text-[10px] sm:text-xs font-bold text-marrow-light/60">
             {filterCount} Filtr{filterCount !== 1 ? 'i' : 'o'}
           </div>
         </div>

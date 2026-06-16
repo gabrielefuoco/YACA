@@ -211,13 +211,13 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
 
 
   return (
-    <div className="flex flex-col gap-10 w-full">
+    <div className="flex flex-col gap-6 sm:gap-10 w-full">
       {/* ── Section 1: DNA Tracker & Editor ── */}
-      <section className="flex flex-col gap-6">
-        <div className="flex items-center justify-between gap-3 text-primary">
-          <div className="flex items-center gap-3">
-            <BrainCircuit className="h-6 w-6" />
-            <h2 className="text-lg font-black uppercase tracking-widest">DNA Tracker &amp; Editor</h2>
+      <section className="flex flex-col gap-4 sm:gap-6">
+        <div className="flex items-center justify-between gap-2 sm:gap-3 text-primary">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <BrainCircuit className="h-5 w-5 sm:h-6 sm:w-6" />
+            <h2 className="text-sm sm:text-lg font-black uppercase tracking-widest">DNA Tracker & Editor</h2>
           </div>
         </div>
         <p className="text-[11px] text-marrow-light/40 -mt-2">
@@ -227,7 +227,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
         {/* DNA Dinamico (V_static e V_final) */}
         {compiledVectors && (Object.keys(compiledVectors.V_static || {}).length > 0 || Object.keys(compiledVectors.V_final || {}).length > 0) ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="glass-panel p-5 border border-marrow-light/10">
+            <div className="glass-panel p-3 sm:p-5 border border-marrow-light/10">
               <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">DNA Base (Dai Preset)</p>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(compiledVectors.V_static || {})
@@ -254,7 +254,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
               </div>
             </div>
 
-            <div className="glass-panel p-5 border border-marrow-light/10 relative overflow-hidden">
+            <div className="glass-panel p-3 sm:p-5 border border-marrow-light/10 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-accent opacity-50"></div>
               <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">DNA Evoluto (Base + Storico)</p>
               <div className="flex flex-wrap gap-2">
@@ -291,13 +291,13 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
       </section>
 
       {/* ── Section 2: AI Inspector (Hero Catalogs) ── */}
-      <section className="flex flex-col gap-6">
-        <div className="flex items-center gap-3 text-primary">
-          <Terminal className="h-6 w-6" />
-          <h2 className="text-lg font-black uppercase tracking-widest">Ispettore AI (Hero Catalogs)</h2>
+      <section className="flex flex-col gap-4 sm:gap-6">
+        <div className="flex items-center gap-2 sm:gap-3 text-primary">
+          <Terminal className="h-5 w-5 sm:h-6 sm:w-6" />
+          <h2 className="text-sm sm:text-lg font-black uppercase tracking-widest">Ispettore AI (Hero Catalogs)</h2>
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:gap-6">
           {HERO_CATALOGS_BASE.map((catalog) => {
             const idMovies = `${catalog.idBase}_movies`;
             const idSeries = `${catalog.idBase}_series`;

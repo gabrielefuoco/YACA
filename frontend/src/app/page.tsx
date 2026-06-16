@@ -469,7 +469,7 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="container mx-auto px-4 py-8 max-w-6xl pb-32">
+        <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-6xl pb-32">
           <DashboardSkeleton />
         </main>
       </div>
@@ -484,8 +484,8 @@ export default function Home() {
         )}
       </Header>
 
-      <main className="flex flex-1 justify-center py-8">
-        <div className="layout-content-container flex flex-col w-full max-w-[1200px] px-6 md:px-10 gap-8">
+      <main className="flex flex-1 justify-center py-4 sm:py-8">
+        <div className="layout-content-container flex flex-col w-full max-w-[1200px] px-3 sm:px-6 md:px-10 gap-4 sm:gap-8">
           {!isLoggedIn ? (
             <LoginPage onComplete={handleLoginComplete} />
           ) : (

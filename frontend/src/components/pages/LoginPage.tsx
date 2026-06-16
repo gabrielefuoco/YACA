@@ -137,16 +137,16 @@ export function LoginPage({ onComplete }: LoginPageProps) {
       {step === 1 && (
         <div className="space-y-4">
           <div className="flex flex-col gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 border border-primary/30 shadow-xl shadow-primary/20 shrink-0">
-                <Tv2 className="h-6 w-6 text-primary" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-primary/20 border border-primary/30 shadow-xl shadow-primary/20 shrink-0">
+                <Tv2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
               </div>
               <div>
-                <h2 className="text-xl font-black text-marrow-deep leading-tight">Accedi a Stremio</h2>
-                <p className="text-sm font-bold text-primary">YACA <span className="text-marrow-light/50 font-medium">(Yet Another Catalog Addon)</span></p>
+                <h2 className="text-lg sm:text-xl font-black text-marrow-deep leading-tight">Accedi a Stremio</h2>
+                <p className="text-xs sm:text-sm font-bold text-primary">YACA <span className="text-marrow-light/50 font-medium hidden sm:inline">(Yet Another Catalog Addon)</span></p>
               </div>
             </div>
-            <p className="text-sm text-marrow-light/80 leading-relaxed bg-white/40 p-4 rounded-2xl border border-marrow-light/10 shadow-sm">
+            <p className="text-xs sm:text-sm text-marrow-light/80 leading-relaxed bg-white/40 p-3 sm:p-4 rounded-2xl border border-marrow-light/10 shadow-sm">
               YACA crea cataloghi dinamici e personalizzati sfruttando l'Intelligenza Artificiale. Per iniziare e sincronizzare l'addon, devi fare il login utilizzando le <strong>stesse credenziali del tuo account Stremio</strong>.
             </p>
           </div>
@@ -160,7 +160,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="la.tua@email.com"
-                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-12 px-4 rounded-xl font-medium"
+                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-10 sm:h-12 px-3 sm:px-4 rounded-xl font-medium text-sm"
                 onKeyDown={(e) => e.key === 'Enter' && handleStremioLogin()}
               />
             </div>
@@ -172,7 +172,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-12 px-4 rounded-xl font-medium"
+                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-10 sm:h-12 px-3 sm:px-4 rounded-xl font-medium text-sm"
                 onKeyDown={(e) => e.key === 'Enter' && handleStremioLogin()}
               />
             </div>
