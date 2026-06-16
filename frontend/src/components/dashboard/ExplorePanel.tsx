@@ -1,12 +1,12 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Preset, Profile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { TypeBadge } from '@/components/shared/TypeBadge';
 import { PosterRow } from '@/components/shared/PosterRow';
-import { Check, Search } from 'lucide-react';
+import { Check, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ExplorePanelProps {
   presets: Preset[];
@@ -19,6 +19,7 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Tutti');
   const [showSearch, setShowSearch] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const selectedPresets = profile.raw_ui_state.selectedPresets;
 
@@ -36,11 +37,21 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
 
   const allCategories = ['Tutti', ...categories];
 
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = 250;
+      scrollRef.current.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Search toggle */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1 flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-marrow-light/70 hover:text-primary hover:bg-marrow-light/10" onClick={() => scroll('left')}>
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <div ref={scrollRef} className="flex-1 flex gap-2 overflow-x-auto pb-1 hide-scrollbar scroll-smooth">
           {allCategories.map((cat) => (
             <button
               key={cat}
@@ -54,11 +65,14 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
             </button>
           ))}
         </div>
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-marrow-light/70 hover:text-primary hover:bg-marrow-light/10" onClick={() => scroll('right')}>
+          <ChevronRight className="h-5 w-5" />
+        </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 shrink-0 text-marrow-light hover:text-primary"
-          onClick={() => setShowSearch(!search)}
+          className="h-8 w-8 shrink-0 text-marrow-light hover:text-primary ml-1"
+          onClick={() => setShowSearch(!showSearch)}
         >
           <Search className="h-4 w-4" />
         </Button>
