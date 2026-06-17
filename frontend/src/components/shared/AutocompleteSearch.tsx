@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
+
 interface TmdbItem {
     id: number;
     name: string;
@@ -13,9 +15,10 @@ interface AutocompleteSearchProps {
     placeholder: string;
     searchFn: (query: string) => Promise<{ results: TmdbItem[] }>;
     onSelect: (item: { id: string; name: string }) => void;
+    className?: string;
 }
 
-export function AutocompleteSearch({ placeholder, searchFn, onSelect }: AutocompleteSearchProps) {
+export function AutocompleteSearch({ placeholder, searchFn, onSelect, className }: AutocompleteSearchProps) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<TmdbItem[]>([]);
     const [isOpen, setIsOpen] = useState(false);
@@ -70,7 +73,7 @@ export function AutocompleteSearch({ placeholder, searchFn, onSelect }: Autocomp
                     placeholder={placeholder}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    className="pl-9"
+                    className={cn("pl-9", className)}
                 />
                 {isLoading && (
                     <Loader2 className="absolute right-2.5 top-2.5 h-4 w-4 animate-spin text-marrow-light/50" />

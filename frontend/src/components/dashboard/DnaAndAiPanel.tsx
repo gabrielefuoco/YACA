@@ -396,6 +396,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                 placeholder="Cerca parole chiave su TMDB..."
                 searchFn={api.searchTmdbKeywords}
                 onSelect={(item) => handleAddManualDna({ type: 'keyword', id: String(item.id), name: item.name, score: manualScore })}
+                className="h-9 w-full rounded-md border border-marrow-light/15 bg-white/40 pl-9 pr-3 text-xs font-bold text-marrow-deep focus:outline-none focus:ring-1 focus:ring-primary hover:bg-white/50 transition-all duration-200 shadow-sm"
               />
             </div>
 
