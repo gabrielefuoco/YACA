@@ -48,6 +48,11 @@ router.post('/preview-catalog', async (req, res) => {
         let strategy = null;
         let sanitizedPrompt = null;
         let aiFilters = null;
+        let kidsMode = false;
+
+        const activeProfileId = fullUserConfig.activeProfileId || 'global';
+        const activeProfile = fullUserConfig.profiles?.find(p => p.id === activeProfileId) || (fullUserConfig.profiles?.[0] || {});
+        kidsMode = activeProfile.settings?.kidsMode || false;
 
         if (!sanitizedTmdbKey) {
             return res.status(400).json({ error: 'TMDB API key non configurata sul server' });
@@ -73,7 +78,7 @@ router.post('/preview-catalog', async (req, res) => {
             if (!sanitizedPrompt) {
                 return res.status(400).json({ error: 'Prompt non valido' });
             }
-            aiFilters = await generateTmdbFiltersFromPrompt(sanitizedPrompt, reqMistralKey, 'multi_query');
+            aiFilters = await generateTmdbFiltersFromPrompt(sanitizedPrompt, reqMistralKey, 'multi_query', kidsMode);
             const aiType = customType === 'series' || aiFilters.target === 'kitsu' ? 'series' : 'movie';
             discoverType = aiType === 'series' ? 'tv' : 'movie';
             strategy = aiFilters.strategy || 'discovery';
@@ -84,7 +89,7 @@ router.post('/preview-catalog', async (req, res) => {
                 aiFilters.queries = await Promise.all(aiFilters.queries.map(async (q) => {
                     if (q.strategy === 'discovery') {
                         const qKeywords = q.keyword || null;
-                        const tmdbParams = await buildDiscoveryParams(q, sanitizedTmdbKey, aiType);
+                        const tmdbParams = await buildDiscoveryParams(q, sanitizedTmdbKey, aiType, { kidsMode });
                         if (qKeywords) tmdbParams._keywordNames = qKeywords;
                         return tmdbParams;
                     }
@@ -95,7 +100,7 @@ router.post('/preview-catalog', async (req, res) => {
                 // Single query processing
                 originalAiKeywords = aiFilters.keyword || null;
                 discoverFilters = strategy === 'discovery'
-                    ? await buildDiscoveryParams(aiFilters, sanitizedTmdbKey, aiType)
+                    ? await buildDiscoveryParams(aiFilters, sanitizedTmdbKey, aiType, { kidsMode })
                     : aiFilters;
                 if (originalAiKeywords) discoverFilters._keywordNames = originalAiKeywords;
             }

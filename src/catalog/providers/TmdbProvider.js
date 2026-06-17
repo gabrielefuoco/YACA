@@ -24,13 +24,45 @@ function resolveGenreIds(genreIdsArray, type) {
 }
 
 async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}) {
-    const {
+    let {
         strategy, similar_to, text_search, people_list, keyword, 
         company_name, genre_ids, year_from, year_to, runtime_lte, 
         runtime_gte, watch_provider, original_language, target,
-        sort_by, language,
+        sort_by, language, without_genre_ids, without_keyword,
+        certification_lte, vote_average_gte, vote_average_lte,
         ...tmdbParams
     } = filters;
+
+    if (baseSettings?.kidsMode) {
+        certification_lte = 'G';
+        tmdbParams.certification_country = 'US';
+        without_genre_ids = [...(without_genre_ids || []), 27, 53, 80]; // Horror, Thriller, Crime
+        
+        // Comprehensive list of sensitive keywords to block
+        const adultKeywords = [
+            // Sexual/Nudity
+            'ecchi', 'harem', 'hentai', 'porn', 'sex', 'adult', 'nudity', 'erotic', 'erotica', 
+            'softcore', 'bondage', 'striptease', 'rape', 'prostitution', 'pedophilia', 
+            'incest', 'brothel', 'pornographic', 'pornography', 'sexual abuse', 'sexual assault',
+            // Violence/Gore/Horror
+            'gore', 'blood', 'violence', 'extreme violence', 'slasher', 'massacre', 'murder',
+            'serial killer', 'torture', 'bloody', 'splatter', 'dismemberment', 'decapitation',
+            'cannibalism', 'scary', 'terrifying', 'jumpscare', 'demon', 'demonic possession', 'satanism',
+            // Drugs/Crime/Other
+            'drugs', 'drug abuse', 'drug addiction', 'cocaine', 'heroin', 'cartel', 'mafia',
+            'gang', 'drug dealer', 'methamphetamine', 'profanity', 'strong language'
+        ].join(',');
+        
+        without_keyword = without_keyword ? `${without_keyword},${adultKeywords}` : adultKeywords;
+        
+        // Remove any vote limits that might restrict family content accidentally
+        vote_average_gte = null;
+        vote_average_lte = null;
+    }
+
+    if (vote_average_gte) tmdbParams['vote_average.gte'] = vote_average_gte;
+    if (vote_average_lte) tmdbParams['vote_average.lte'] = vote_average_lte;
+    if (certification_lte) tmdbParams['certification.lte'] = certification_lte;
 
     tmdbParams.sort_by = sort_by || 'popularity.desc';
     tmdbParams.language = language || 'it-IT';
@@ -61,6 +93,14 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
     }
     if (genres.length > 0) {
         tmdbParams.with_genres = [...new Set(genres)].join(originalOperator);
+    }
+    
+    if (without_genre_ids?.length) {
+        const mappedWithoutGenres = resolveGenreIds(without_genre_ids, type);
+        if (mappedWithoutGenres.length > 0) {
+            const currentWithout = tmdbParams.without_genres ? String(tmdbParams.without_genres).split(',') : [];
+            tmdbParams.without_genres = [...new Set([...currentWithout, ...mappedWithoutGenres])].join(',');
+        }
     }
     
     // TMDB non ha un genere Horror (27) per le serie TV. Per non perdere il focus, aggiungiamo la keyword "horror" (315058)
@@ -94,8 +134,8 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
         );
     }
 
-    if (filters.keyword && filters.keyword !== 'kdrama') {
-        let sanitizedKeyword = filters.keyword;
+    if (keyword && keyword !== 'kdrama') {
+        let sanitizedKeyword = keyword;
         if (sanitizedKeyword.includes('|') && sanitizedKeyword.includes(',')) {
             sanitizedKeyword = sanitizedKeyword.replace(/,/g, '|');
         }
@@ -109,6 +149,28 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
                 .then(results => {
                     const valid = results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
                     if (valid.length > 0) tmdbParams.with_keywords = valid.join(separator);
+                })
+        );
+    }
+
+    if (without_keyword) {
+        let sanitizedKeyword = without_keyword;
+        if (sanitizedKeyword.includes('|') && sanitizedKeyword.includes(',')) {
+            sanitizedKeyword = sanitizedKeyword.replace(/,/g, '|');
+        }
+
+        const isOr = sanitizedKeyword.includes('|');
+        const separator = isOr ? '|' : ',';
+        const keywords = sanitizedKeyword.split(separator).map(k => k.trim()).filter(Boolean);
+        
+        asyncTasks.push(
+            Promise.allSettled(keywords.map(k => getTmdbIdByName(tmdbApiKey, 'keyword', k)))
+                .then(results => {
+                    const valid = results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+                    if (valid.length > 0) {
+                        const currentWithout = tmdbParams.without_keywords ? String(tmdbParams.without_keywords).split(separator) : [];
+                        tmdbParams.without_keywords = [...new Set([...currentWithout, ...valid])].join(separator);
+                    }
                 })
         );
     }

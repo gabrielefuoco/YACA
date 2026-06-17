@@ -239,7 +239,10 @@ async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend',
     const dnaDescription = buildDnaDescription(profile, user, context);
     if (!dnaDescription) return [];
 
-    const systemPrompt = mode === 'hiddenGems' ? HIDDEN_GEMS_SYSTEM_PROMPT : TRUE_BLEND_SYSTEM_PROMPT;
+    let systemPrompt = mode === 'hiddenGems' ? HIDDEN_GEMS_SYSTEM_PROMPT : TRUE_BLEND_SYSTEM_PROMPT;
+    if (profile?.settings?.kidsMode) {
+        systemPrompt += "\n\nCRITICAL: The user is in KIDS MODE. You MUST ONLY generate queries for family-friendly, children-appropriate content. Never generate queries containing adult, violent, scary, or sexually suggestive keywords or themes.";
+    }
     const cacheKey = `qs_${mode}_${dnaDescription}`.toLowerCase().trim();
 
     try {

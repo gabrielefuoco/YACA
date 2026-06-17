@@ -38,8 +38,14 @@ interface BlockState {
   cast: SelectedItem[];
   crew: SelectedItem[];
   voteMin: number;
+  voteMax: number;
   yearFrom: string;
   yearTo: string;
+  withoutGenres: string[];
+  withoutKeywords: SelectedItem[];
+  certificationLte: string;
+  runtimeGte: string;
+  runtimeLte: string;
   collapsed: boolean;
 }
 
@@ -58,8 +64,14 @@ function createEmptyBlock(): BlockState {
     cast: [],
     crew: [],
     voteMin: 0,
+    voteMax: 10,
     yearFrom: '',
     yearTo: '',
+    withoutGenres: [],
+    withoutKeywords: [],
+    certificationLte: '',
+    runtimeGte: '',
+    runtimeLte: '',
     collapsed: false,
   };
 }
@@ -105,12 +117,20 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
     }));
   }, []);
 
-  const toggleBlockItem = useCallback((blockId: string, field: 'keywords' | 'cast' | 'crew', item: SelectedItem) => {
+  const toggleBlockItem = useCallback((blockId: string, field: 'keywords' | 'cast' | 'crew' | 'withoutKeywords', item: SelectedItem) => {
     setBlocks(prev => prev.map(b => {
       if (b.id !== blockId) return b;
       const list = b[field] as SelectedItem[];
       const exists = list.find(x => x.id === item.id);
       return { ...b, [field]: exists ? list.filter(x => x.id !== item.id) : [...list, item] };
+    }));
+  }, []);
+
+  const toggleBlockWithoutGenre = useCallback((blockId: string, genreId: string) => {
+    setBlocks(prev => prev.map(b => {
+      if (b.id !== blockId) return b;
+      const withoutGenres = b.withoutGenres.includes(genreId) ? b.withoutGenres.filter(g => g !== genreId) : [...b.withoutGenres, genreId];
+      return { ...b, withoutGenres };
     }));
   }, []);
 
@@ -138,6 +158,11 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
     const crew = mapToPills(f.with_crew, 'Crew');
     const people = mapToPills(f.with_people, 'Persona');
     const shouldUsePeopleForCast = cast.length === 0 && people.length > 0;
+    
+    let withoutKws: SelectedItem[] = [];
+    if (f.without_keywords) {
+      withoutKws = mapToPills(f.without_keywords, 'Escluso');
+    }
 
     return {
       id: generateId(),
@@ -151,8 +176,14 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       cast: shouldUsePeopleForCast ? people : cast,
       crew,
       voteMin: Number(f['vote_average.gte']) || 0,
+      voteMax: Number(f['vote_average.lte']) || 10,
       yearFrom: (f.year_from as string) || (dateGte ? dateGte.substring(0, 4) : ''),
       yearTo: (f.year_to as string) || (dateLte ? dateLte.substring(0, 4) : ''),
+      withoutGenres: parseList(f.without_genres ?? f.without_genre_ids),
+      withoutKeywords: withoutKws,
+      certificationLte: (f['certification.lte'] as string) || (f.certification_lte as string) || '',
+      runtimeGte: f['with_runtime.gte'] ? String(f['with_runtime.gte']) : (f.runtime_gte ? String(f.runtime_gte) : ''),
+      runtimeLte: f['with_runtime.lte'] ? String(f['with_runtime.lte']) : (f.runtime_lte ? String(f.runtime_lte) : ''),
       collapsed: false,
     };
   }, []);
@@ -213,8 +244,14 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       ...(block.cast.length && { with_cast: block.cast.map(c => c.id).join(',') }),
       ...(block.crew.length && { with_crew: block.crew.map(c => c.id).join(',') }),
       ...(block.voteMin > 0 && { 'vote_average.gte': block.voteMin }),
+      ...(block.voteMax < 10 && { 'vote_average.lte': block.voteMax }),
       ...(block.yearFrom && { [`${dateKey}.gte`]: `${block.yearFrom}-01-01` }),
       ...(block.yearTo && { [`${dateKey}.lte`]: `${block.yearTo}-12-31` }),
+      ...(block.withoutGenres.length && { without_genres: block.withoutGenres.join(',') }),
+      ...(block.withoutKeywords.length && { without_keywords: block.withoutKeywords.map(k => k.id).join('|') }),
+      ...(block.certificationLte && { 'certification.lte': block.certificationLte }),
+      ...(block.runtimeGte && { 'with_runtime.gte': Number(block.runtimeGte) }),
+      ...(block.runtimeLte && { 'with_runtime.lte': Number(block.runtimeLte) }),
     };
   };
 
@@ -437,10 +474,18 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                 </div>
               </div>
 
-              <div>
-                <Label className="mb-2 block text-xs font-bold text-marrow-deep">Voto minimo: {block.voteMin > 0 ? block.voteMin.toFixed(1) : 'Qualsiasi'}</Label>
-                <div className="px-2">
-                  <Slider min={0} max={9} step={0.5} value={[block.voteMin]} onValueChange={([v]) => updateBlock(block.id, { voteMin: v })} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="mb-2 block text-xs font-bold text-marrow-deep">Voto minimo: {block.voteMin > 0 ? block.voteMin.toFixed(1) : 'Qualsiasi'}</Label>
+                  <div className="px-2">
+                    <Slider min={0} max={9} step={0.5} value={[block.voteMin]} onValueChange={([v]) => updateBlock(block.id, { voteMin: v })} />
+                  </div>
+                </div>
+                <div>
+                  <Label className="mb-2 block text-xs font-bold text-marrow-deep">Voto massimo: {block.voteMax < 10 ? block.voteMax.toFixed(1) : 'Qualsiasi'}</Label>
+                  <div className="px-2">
+                    <Slider min={1} max={10} step={0.5} value={[block.voteMax]} onValueChange={([v]) => updateBlock(block.id, { voteMax: v })} />
+                  </div>
                 </div>
               </div>
 
@@ -453,6 +498,34 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                   <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Anno a</Label>
                   <Input value={block.yearTo} onChange={(e) => updateBlock(block.id, { yearTo: e.target.value })} placeholder="es. 2024" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40" type="number" min="1900" max="2099" />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Durata min (min)</Label>
+                  <Input value={block.runtimeGte} onChange={(e) => updateBlock(block.id, { runtimeGte: e.target.value })} placeholder="es. 90" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40" type="number" min="0" max="400" />
+                </div>
+                <div>
+                  <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Durata max (min)</Label>
+                  <Input value={block.runtimeLte} onChange={(e) => updateBlock(block.id, { runtimeLte: e.target.value })} placeholder="es. 180" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40" type="number" min="0" max="400" />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Censura (Fino a)</Label>
+                <Select value={block.certificationLte || '__any'} onValueChange={(v) => updateBlock(block.id, { certificationLte: v === '__any' ? '' : v })}>
+                  <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-xs">
+                    <SelectValue placeholder="Qualsiasi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__any">Qualsiasi</SelectItem>
+                    <SelectItem value="G">G (Tutti)</SelectItem>
+                    <SelectItem value="PG">PG (Bambini accompagnati)</SelectItem>
+                    <SelectItem value="PG-13">PG-13 (Vietato ai minori di 13)</SelectItem>
+                    <SelectItem value="R">R (Vietato ai minori di 17)</SelectItem>
+                    <SelectItem value="NC-17">NC-17 (Solo adulti)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </details>
@@ -477,6 +550,24 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                 </button>
               ))}
             </div>
+
+            <div className="mt-4 border-t border-marrow-light/10 pt-4">
+              <Label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-marrow-light/70">Escludi Generi {block.withoutGenres.length > 0 && <span className="text-[10px] font-normal normal-case text-red-500 ml-1">({block.withoutGenres.length} esclusi)</span>}</Label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {Object.entries(GENRE_NAMES).map(([id, genreName]) => (
+                  <button
+                    key={`without-${id}`}
+                    onClick={() => toggleBlockWithoutGenre(block.id, id)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all shadow-sm ${block.withoutGenres.includes(id)
+                      ? 'bg-red-500 text-white shadow-red-500/20'
+                      : 'bg-white/40 text-marrow-light hover:text-red-500 hover:bg-red-500/10 border border-marrow-light/20 shadow-sm'
+                      }`}
+                  >
+                    {genreName}
+                  </button>
+                ))}
+              </div>
+            </div>
           </details>
 
           {/* Keywords & Staff */}
@@ -494,6 +585,16 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
                   onSelect={(item) => !block.keywords.find(k => k.id === item.id) && toggleBlockItem(block.id, 'keywords', item)}
                 />
                 {block.keywords.length > 0 && renderPills(block.keywords, (item) => toggleBlockItem(block.id, 'keywords', item))}
+              </div>
+
+              <div className="border-t border-marrow-light/10 pt-4">
+                <Label className="mb-2 block text-xs font-bold text-marrow-deep">Escludi Parole Chiave</Label>
+                <AutocompleteSearch
+                  placeholder="Cerca parole chiave da escludere..."
+                  searchFn={api.searchTmdbKeywords}
+                  onSelect={(item) => !block.withoutKeywords.find(k => k.id === item.id) && toggleBlockItem(block.id, 'withoutKeywords', item)}
+                />
+                {block.withoutKeywords.length > 0 && renderPills(block.withoutKeywords, (item) => toggleBlockItem(block.id, 'withoutKeywords', item))}
               </div>
 
               <div>

@@ -1,6 +1,8 @@
 'use client';
 import { Profile, DNAItem } from '@/types';
 import { api } from '@/lib/api';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface ProfileSettingsPanelProps {
     profile: Profile;
@@ -59,6 +61,25 @@ export function ProfileSettingsPanel({
                         </>
                     )}
                 </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+                {!isGlobalProfile && (
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-primary/5 border border-primary/10">
+                        <div className="space-y-0.5">
+                            <Label className="text-sm font-bold text-marrow-deep">Modalità Bambini</Label>
+                            <p className="text-xs text-marrow-light">Forza filtri rigorosi (PG) e oscura contenuti espliciti su tutti i cataloghi.</p>
+                        </div>
+                        <Switch
+                            checked={profile.settings?.kidsMode || false}
+                            onCheckedChange={(checked) => {
+                                onUpdateProfile(profile.id, {
+                                    settings: { ...profile.settings, kidsMode: checked },
+                                });
+                            }}
+                        />
+                    </div>
+                )}
             </div>
 
         </div>

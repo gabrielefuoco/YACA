@@ -90,19 +90,26 @@ function parseMistralResponse(content, originalPrompt, taskType = 'single_query'
  * 
  * @param {string} prompt "Film horror anni 80 sulle navi"
  * @param {string} mistralKey La chiave mistral dell'utente
+ * @param {string} taskType Il tipo di task ('single_query', 'multi_query')
+ * @param {boolean} kidsMode Se true, forza regole family-friendly al prompt AI
  * @returns Object (Filtri JSON intelligenti)
  */
-async function generateTmdbFiltersFromPrompt(prompt, mistralKey, taskType = 'single_query') {
+async function generateTmdbFiltersFromPrompt(prompt, mistralKey, taskType = 'single_query', kidsMode = false) {
     if (!mistralKey) {
         return buildFallbackResponse(prompt, taskType);
     }
     try {
         const client = new Mistral({ apiKey: mistralKey, timeout: 25000 });
 
+        let systemPrompt = buildAiPrompt(taskType);
+        if (kidsMode) {
+            systemPrompt += "\n\nCRITICAL: The user is in KIDS MODE. You MUST ONLY generate queries for family-friendly, children-appropriate content. Never generate queries containing adult, violent, scary, or sexually suggestive keywords or themes.";
+        }
+
         const response = await client.chat.complete({
             model: "mistral-small-latest",
             messages: [
-                { role: "system", content: buildAiPrompt(taskType) },
+                { role: "system", content: systemPrompt },
                 { role: "user", content: `QUERY: "${prompt}"` }
             ],
             response_format: { type: "json_object" },
@@ -128,8 +135,8 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, taskType = 'sin
  * Abbiamo unificato la logica usando l'ADVANCED prompt perché ci dà anche le keywords e le strategie, 
  * ma manteniamo questa firma di funzione isolando solo target e query base per retrocompatibilità.
  */
-async function routeLiveStremioSearch(searchQuery, mistralKey) {
-    const filters = await generateTmdbFiltersFromPrompt(searchQuery, mistralKey, 'multi_query');
+async function routeLiveStremioSearch(searchQuery, mistralKey, kidsMode = false) {
+    const filters = await generateTmdbFiltersFromPrompt(searchQuery, mistralKey, 'multi_query', kidsMode);
 
     // Convertiamo i filtri avanzati nel formato target/query atteso dal catalogHandler
     const firstQuery = Array.isArray(filters?.queries) ? filters.queries[0] : filters;

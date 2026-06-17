@@ -84,6 +84,13 @@ Return exactly one JSON object describing the best TMDB query.
   "keyword": "string" | null,
   "original_language": "en" | "it" | "ja" | "ko" | null,
   "language": "it-IT" | "en-US" | "es-ES" | "fr-FR" | null,
+  "sort_by": "popularity.desc" | "revenue.desc" | "primary_release_date.desc" | "vote_average.desc" | null,
+  "vote_average_gte": 8.0 | null,
+  "vote_average_lte": 4.5 | null,
+  "without_genre_ids": [10749, 27] | null,
+  "without_keyword": "string" | null,
+  "certification_lte": "PG-13" | "R" | null,
+  "runtime_gte": 180 | null,
   "target": "tmdb" | "kitsu" | "trakt"
 }`,
     multi_query: `### TASK:
@@ -111,6 +118,13 @@ Act as a Query Planner. Return a JSON object with a "queries" array. Each item m
       "keyword": "string" | null,
       "original_language": "en" | "it" | "ja" | "ko" | null,
       "language": "it-IT" | "en-US" | "es-ES" | "fr-FR" | null,
+      "sort_by": "popularity.desc" | "revenue.desc" | "primary_release_date.desc" | "vote_average.desc" | null,
+      "vote_average_gte": 8.0 | null,
+      "vote_average_lte": 4.5 | null,
+      "without_genre_ids": [10749, 27] | null,
+      "without_keyword": "string" | null,
+      "certification_lte": "PG-13" | "R" | null,
+      "runtime_gte": 180 | null,
       "target": "tmdb" | null
     }
   ]

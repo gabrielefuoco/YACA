@@ -74,6 +74,16 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 });
             }
 
+            // 2.5 FILTRAGGIO POST-FETCH: Modalità Bambini Fallback
+            if (activeProfileSettings?.kidsMode) {
+                results = results.filter(i => {
+                    const genres = i.genre_ids || (i.genres ? i.genres.map(g => g.id) : []);
+                    // Exclude Horror (27), Thriller (53), Crime (80)
+                    if (genres.some(id => [27, 53, 80].includes(id))) return false;
+                    return true;
+                });
+            }
+
             // 3. POST-PROCESSING: Filtri utente
             let finalResults = results;
             if (!extra?.search && id !== 'yaca-profiles' && baseId !== 'yaca_search_history') {

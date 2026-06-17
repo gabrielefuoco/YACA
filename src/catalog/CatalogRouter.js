@@ -49,10 +49,10 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
 
     // SCENARIO 2.5 e 2.6: HYBRID RECOMMENDATIONS
     if (TASTE_BASED_IDS.has(baseId)) {
-        return await getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey);
+        return await getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey, activeProfileSettings);
     }
     if (baseId === 'yaca_hybrid_popular_movies' || baseId === 'yaca_hybrid_popular_series') {
-        return await getHybridPopularCatalog(baseId, type, skip, userConfig, tmdbClient, tmdbApiKey, tmdbFetchOptions);
+        return await getHybridPopularCatalog(baseId, type, skip, userConfig, tmdbClient, tmdbApiKey, tmdbFetchOptions, activeProfileSettings);
     }
 
     // SCENARIO 3: TRAKT

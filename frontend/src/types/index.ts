@@ -7,6 +7,7 @@ export interface DNAItem {
 export interface ProfileSettings {
   fastRefresh?: boolean;
   tmdbKey?: string;
+  kidsMode?: boolean;
   manualDNA?: DNAItem[];
   suggestedDNA?: DNAItem[];
 }
@@ -31,7 +32,13 @@ export interface QueryBlock {
   with_cast?: string;
   with_crew?: string;
   'vote_average.gte'?: number;
+  'vote_average.lte'?: number;
   'vote_count.gte'?: number;
+  without_genres?: string;
+  without_keywords?: string;
+  certification_country?: string;
+  'certification.lte'?: string;
+  'with_runtime.gte'?: number;
   [key: string]: unknown;
 }
 
