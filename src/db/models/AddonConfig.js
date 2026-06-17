@@ -42,7 +42,10 @@ const addonConfigSchema = new mongoose.Schema({
         settings: {
             language: String,
             includeAdult: Boolean,
+            kidsMode: Boolean,
+            fastPresetRefresh: Boolean,
             region: String,
+            tmdbKey: String,
             manualDNA: [mongoose.Schema.Types.Mixed],
             suggestedDNA: [mongoose.Schema.Types.Mixed]
         },
