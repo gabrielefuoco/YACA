@@ -2,6 +2,7 @@ export interface DNAItem {
   type: 'genre' | 'keyword' | 'country';
   id: string;
   name: string;
+  score?: number;
 }
 
 export interface ProfileSettings {

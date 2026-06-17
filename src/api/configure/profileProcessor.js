@@ -192,15 +192,19 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
         // Deduplicate: exclude items already in manualDNA
         profile.settings.suggestedDNA = catalogDNA.filter(d => !manualIds.has(`${d.type}:${d.id}`));
         
-        if (isGlobal) {
-            profile.settings.manualDNA = [];
-        }
-
         // --- DNA Extraction & Save (V_static + V_final) ---
         const allQueries = profile.catalogs.flatMap(cat => cat.queries || []);
         
-        if (allQueries.length > 0) {
+        if (allQueries.length > 0 || manualDNA.length > 0) {
             const inferredStaticDNA = extractStaticDNAFromQueries(allQueries);
+            
+            // Inject manually added DNA items
+            manualDNA.forEach(item => {
+                const prefix = item.type === 'genre' ? 'g' : item.type === 'keyword' ? 'k' : 'o';
+                const key = `${prefix}:${item.id}`;
+                const score = typeof item.score === 'number' ? item.score : 200;
+                inferredStaticDNA[key] = (inferredStaticDNA[key] || 0) + score;
+            });
             
             // Aggiorniamo V_static e ricalcoliamo V_final in background
             (async () => {
@@ -224,12 +228,20 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
                         vFinal = { ...inferredStaticDNA };
                     }
                     
+                    const idNamesUpdates = {};
+                    manualDNA.forEach(item => {
+                        if (item.id && item.name) {
+                            idNamesUpdates[`idNames.${item.id}`] = item.name;
+                        }
+                    });
+                    
                     await TasteProfile.updateOne(
                         { owner: userId, context: profile.id },
                         { 
                             $set: { 
                                 "compiledVectors.V_static": inferredStaticDNA,
-                                "compiledVectors.V_final": vFinal
+                                "compiledVectors.V_final": vFinal,
+                                ...idNamesUpdates
                             }
                         },
                         { upsert: true }

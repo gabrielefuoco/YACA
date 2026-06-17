@@ -111,10 +111,10 @@ const UserConfig = {
                         };
                         
                         // Preserve DNA if missing in incoming payload (server-side only fields)
-                        if (existing.settings?.manualDNA?.length && (!incoming.settings?.manualDNA || incoming.settings.manualDNA.length === 0)) {
+                        if (existing.settings?.manualDNA?.length && incoming.settings?.manualDNA === undefined) {
                             mergedSettings.manualDNA = existing.settings.manualDNA;
                         }
-                        if (existing.settings?.suggestedDNA?.length && (!incoming.settings?.suggestedDNA || incoming.settings.suggestedDNA.length === 0)) {
+                        if (existing.settings?.suggestedDNA?.length && incoming.settings?.suggestedDNA === undefined) {
                             mergedSettings.suggestedDNA = existing.settings.suggestedDNA;
                         }
 

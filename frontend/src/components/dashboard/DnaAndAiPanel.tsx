@@ -66,6 +66,8 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [compiledVectors, setCompiledVectors] = useState<(CompiledVector & { idNames?: Record<string, string> }) | null>(null);
+  const [manualScore, setManualScore] = useState<number>(200);
+  const [localIsSyncing, setLocalIsSyncing] = useState<boolean>(false);
 
   const getDnaName = (vectorKey: string) => {
     const prefix = vectorKey.charAt(0);
@@ -152,6 +154,8 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
         });
       }
 
+      setLocalIsSyncing(status.isSyncing || false);
+
       // Auto-show modal if syncing or if onboarding is pending with suggestions
       if (status.isSyncing) {
         setShowProgressModal(true);
@@ -169,17 +173,17 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
   // Polling during sync
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (syncStatus?.isSyncing) {
+    if (localIsSyncing) {
       interval = setInterval(fetchSyncStatus, 2000);
     }
     return () => clearInterval(interval);
-  }, [syncStatus?.isSyncing, fetchSyncStatus]);
+  }, [localIsSyncing, fetchSyncStatus]);
 
   useEffect(() => {
-    if (syncStatus?.isSyncing === false) {
+    if (!localIsSyncing) {
       fetchAnalytics();
     }
-  }, [fetchAnalytics, syncStatus?.isSyncing]);
+  }, [fetchAnalytics, localIsSyncing]);
 
   // Aggiornamento DNA manuale rimosso in favore del delta update automatico backend.
 
@@ -236,9 +240,11 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
   const handleSync = async () => {
     if (!syncProfileVectors || !activeUserId) return;
     try {
+      setLocalIsSyncing(true);
       await syncProfileVectors(profile.id, activeUserId);
     } catch (err) {
       console.error('Errore durante la ricalcolazione dei vettori:', err);
+      setLocalIsSyncing(false);
     }
   };
 
@@ -331,43 +337,45 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
         )}
 
         {/* ── Section: Manual DNA Editor ── */}
-        <div className="glass-panel p-4 sm:p-6 border border-marrow-light/10 flex flex-col gap-4 mt-2">
+        <div className="glass-panel p-4 sm:p-6 border border-marrow-light/10 flex flex-col gap-4 mt-2 relative overflow-hidden shadow-lg shadow-primary/5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-primary">
               <span className="material-symbols-outlined text-lg sm:text-xl">tune</span>
-              <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest">Editor DNA Manuale</h3>
+              <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-marrow-deep">Editor DNA Manuale</h3>
             </div>
             {/* Sync Button */}
             {syncProfileVectors && (
               <button
                 onClick={handleSync}
-                disabled={syncStatus?.isSyncing}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-xs font-black uppercase tracking-wider hover:scale-[1.02] active:scale-95 transition-all shadow-md disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+                disabled={localIsSyncing || syncStatus?.isSyncing}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary-dark hover:to-primary text-white text-xs font-black uppercase tracking-widest hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 shadow-md shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
               >
-                <span className={`material-symbols-outlined text-sm ${syncStatus?.isSyncing ? 'animate-spin' : ''}`}>sync</span>
-                <span>{syncStatus?.isSyncing ? 'Sincronizzazione...' : 'Ricalcola DNA'}</span>
+                <span className={`material-symbols-outlined text-sm ${localIsSyncing || syncStatus?.isSyncing ? 'animate-spin' : ''}`}>sync</span>
+                <span>{localIsSyncing || syncStatus?.isSyncing ? 'Sincronizzazione...' : 'Ricalcola DNA'}</span>
               </button>
             )}
           </div>
           
-          <p className="text-[10px] text-marrow-light/50 -mt-2">
+          <p className="text-[10px] text-marrow-light/50 -mt-2 leading-relaxed">
             Aggiungi o rimuovi manualmente generi e parole chiave (keyword) per plasmare il tuo DNA di base. Clicca su &quot;Ricalcola DNA&quot; per applicare le modifiche allo storico.
           </p>
 
           {/* Inputs row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-marrow-light/10 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-marrow-light/10 pt-4">
             {/* Add Genre */}
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-black uppercase tracking-wider text-marrow-light">Aggiungi Genere</label>
+              <label className="text-[9px] font-black uppercase tracking-widest text-marrow-light/60 flex items-center gap-1.5">
+                <span>🎭</span> Aggiungi Genere
+              </label>
               <select
                 onChange={(e) => {
                   const val = e.target.value;
                   if (!val) return;
                   const name = GENRE_ID_TO_NAME[val];
-                  handleAddManualDna({ type: 'genre', id: val, name });
+                  handleAddManualDna({ type: 'genre', id: val, name, score: manualScore });
                   e.target.value = ''; // Reset select
                 }}
-                className="w-full rounded-lg border border-marrow-light/15 bg-white/40 p-2 text-xs font-bold text-marrow-deep focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                className="h-9 w-full rounded-md border border-marrow-light/15 bg-white/40 px-3 text-xs font-bold text-marrow-deep focus:outline-none focus:ring-1 focus:ring-primary hover:bg-white/50 transition-all duration-200 cursor-pointer shadow-sm"
               >
                 <option value="">Seleziona un genere...</option>
                 {Object.entries(GENRE_ID_TO_NAME)
@@ -381,33 +389,55 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
 
             {/* Add Keyword (Autocomplete Search) */}
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-black uppercase tracking-wider text-marrow-light">Aggiungi Parola Chiave</label>
+              <label className="text-[9px] font-black uppercase tracking-widest text-marrow-light/60 flex items-center gap-1.5">
+                <span>🏷️</span> Aggiungi Parola Chiave
+              </label>
               <AutocompleteSearch
                 placeholder="Cerca parole chiave su TMDB..."
                 searchFn={api.searchTmdbKeywords}
-                onSelect={(item) => handleAddManualDna({ type: 'keyword', id: String(item.id), name: item.name })}
+                onSelect={(item) => handleAddManualDna({ type: 'keyword', id: String(item.id), name: item.name, score: manualScore })}
+              />
+            </div>
+
+            {/* Score / Weight */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[9px] font-black uppercase tracking-widest text-marrow-light/60 flex items-center gap-1.5">
+                <span>⚡</span> Peso / Score (0 - 1000)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="1000"
+                value={manualScore}
+                onChange={(e) => setManualScore(Math.max(0, Math.min(1000, Number(e.target.value) || 0)))}
+                className="h-9 w-full rounded-md border border-marrow-light/15 bg-white/40 px-3 text-xs font-bold text-marrow-deep focus:outline-none focus:ring-1 focus:ring-primary hover:bg-white/50 transition-all duration-200 shadow-sm"
               />
             </div>
           </div>
 
           {/* Selected Manual DNA list */}
           <div className="border-t border-marrow-light/10 pt-4 mt-2">
-            <p className="text-[10px] font-black uppercase tracking-wider text-marrow-light mb-2">I tuoi tratti manuali ({(profile.settings?.manualDNA ?? []).length})</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-marrow-light/60 mb-3 flex items-center gap-2">
+              I TUOI TRATTI MANUALI
+              <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[9px] font-mono">{(profile.settings?.manualDNA ?? []).length}</span>
+            </p>
             <div className="flex flex-wrap gap-2">
               {(profile.settings?.manualDNA ?? []).map((item) => {
                 const displayName = item.name || getDnaName(`${item.type === 'genre' ? 'g' : item.type === 'keyword' ? 'k' : 'o'}:${item.id}`);
+                const displayScore = item.score !== undefined ? item.score : 200;
                 return (
                   <span 
                     key={`${item.type}-${item.id}`} 
-                    className={`inline-flex items-center gap-1.5 rounded-full pl-3 pr-2 py-1 text-[10px] font-black ${
-                      item.type === 'genre' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
-                      'bg-accent/15 text-marrow-deep border border-accent/20'
+                    className={`inline-flex items-center gap-1.5 rounded-lg border pl-3 pr-2 py-1 text-[10px] font-black transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                      item.type === 'genre' 
+                        ? 'bg-secondary text-marrow-deep border-primary/20 hover:border-primary/45' 
+                        : 'bg-accent/10 text-marrow-deep border-accent/20 hover:border-accent/45'
                     }`}
                   >
-                    <span>{item.type === 'genre' ? '🎭' : '🏷️'} {displayName}</span>
+                    <span>{item.type === 'genre' ? '🎭' : '🏷️'} {displayName} <span className="opacity-60 font-mono">({displayScore})</span></span>
                     <button 
                       onClick={() => handleRemoveManualDna(item)}
-                      className="p-0.5 rounded-full hover:bg-marrow-light/10 text-marrow-light/50 hover:text-marrow-light transition-colors cursor-pointer"
+                      className="p-0.5 rounded-full hover:bg-marrow-light/10 text-marrow-light/45 hover:text-primary transition-colors cursor-pointer"
                     >
                       <X className="h-3 w-3" />
                     </button>

@@ -65,8 +65,8 @@ export function profilesToApiPayload(profiles: Profile[]) {
       fastPresetRefresh: p.settings?.fastRefresh ?? false,
       tmdbKey: p.settings?.tmdbKey,
       kidsMode: p.settings?.kidsMode ?? false,
-      ...(p.settings?.manualDNA?.length ? { manualDNA: p.settings.manualDNA } : {}),
-      ...(p.settings?.suggestedDNA?.length ? { suggestedDNA: p.settings.suggestedDNA } : {}),
+      manualDNA: p.settings?.manualDNA ?? [],
+      suggestedDNA: p.settings?.suggestedDNA ?? [],
     },
   }));
 }
