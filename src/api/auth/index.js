@@ -26,11 +26,12 @@ const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms — must matc
  * Builds the Set-Cookie options for the session cookie.
  */
 function buildCookieOptions(httpOnly) {
-    const isProd = process.env.NODE_ENV === 'production';
+    // Force secure=true and sameSite='none' to support Hugging Face Spaces iframes
+    // and Stremio Web Dashboard cross-origin requests.
     return {
         httpOnly,
-        secure: isProd,
-        sameSite: 'lax',
+        secure: true,
+        sameSite: 'none',
         maxAge: COOKIE_MAX_AGE_MS,
         path: '/'
     };
