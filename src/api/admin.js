@@ -93,6 +93,10 @@ router.get('/debug/trakt-community', async (req, res) => {
         // Test 2: fetchTraktRecommendationsRaw
         const raw = await fetchTraktRecommendationsRaw(traktToken, 'movies', 5);
         logs.push(`fetchTraktRecommendationsRaw result count=${raw.length}`);
+        if (raw.length > 0) {
+            logs.push(`raw[0] keys: ${Object.keys(raw[0]).join(', ')}`);
+            logs.push(`raw[0] JSON: ${JSON.stringify(raw[0])}`);
+        }
 
         // Test 3: Full buildTraktFilteredCatalog
         const ids = await buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, 'movie');

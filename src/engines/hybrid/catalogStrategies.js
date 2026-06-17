@@ -347,9 +347,8 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
     const dnaFilters = getProfileDnaFilters(user, context);
 
     const traktRaw = await fetchTraktRecommendationsRaw(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 100, user);
-    console.log(`[TraktFiltered] traktRaw count: ${traktRaw.length}`);
     const traktTmdbIds = traktRaw
-        .map(item => item.movie?.ids?.tmdb || item.show?.ids?.tmdb)
+        .map(item => item.movie?.ids?.tmdb || item.show?.ids?.tmdb || item.ids?.tmdb)
         .filter(Boolean);
 
     console.log(`[TraktFiltered] traktTmdbIds count: ${traktTmdbIds.length}`);
