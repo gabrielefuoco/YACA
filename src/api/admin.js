@@ -105,6 +105,7 @@ router.get('/debug/trakt-community', async (req, res) => {
         // Test 4: Full catalogHandler pipeline
         try {
             const { catalogHandler } = require('../handlers/catalogHandler');
+            const UserConfig = require('../models/UserConfig');
             const userConfig = await UserConfig.resolveUserConfig(account.addonUuid);
             const args = {
                 type: 'movie',
