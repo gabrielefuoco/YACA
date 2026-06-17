@@ -189,6 +189,7 @@ export function DashboardPage({
                 onUpdateProfile={onUpdateProfile}
                 syncStatus={syncStatus}
                 userId={userId}
+                syncProfileVectors={syncProfileVectors}
               />
             )}
           </div>

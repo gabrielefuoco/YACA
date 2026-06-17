@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { X, BrainCircuit, Terminal, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { DnaRadarChart } from './DnaRadarChart';
+import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 
 const HERO_CATALOGS_BASE = [
   { idBase: 'yaca_true_blend', label: 'True Blend', emoji: '🎯', type: 'ai', desc: 'Ricerca semantica AI + Scoring algoritmico.' },
@@ -42,11 +43,12 @@ interface DnaAndAiPanelProps {
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
   syncStatus: SyncStatus & { onboardingCompleted?: boolean, lastSync?: string, manualDNA?: DNAItem[], suggestedDNA?: DNAItem[], compiledVectors?: CompiledVector & { idNames?: Record<string, string> } };
   userId?: string;
+  syncProfileVectors?: (profileId: string, userId: string) => Promise<unknown>;
 }
 
 // Removed redundant SyncStatus
 
-export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: DnaAndAiPanelProps) {
+export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, syncProfileVectors }: DnaAndAiPanelProps) {
   const activeUserId = userId || (typeof window !== 'undefined' ? localStorage.getItem('yaca_user_id') : null);
   const suggestedDNA: DNAItem[] = profile?.settings?.suggestedDNA ?? [];
   const dnaLookup = useMemo(() => {
@@ -206,6 +208,40 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
     }
   };
 
+  const handleAddManualDna = (item: DNAItem) => {
+    const currentManual = profile.settings?.manualDNA ?? [];
+    if (currentManual.some((d) => String(d.id) === String(item.id) && d.type === item.type)) return;
+    const updatedManual = [...currentManual, item];
+    onUpdateProfile(profile.id, {
+      settings: {
+        ...(profile.settings ?? {}),
+        manualDNA: updatedManual,
+      },
+    });
+  };
+
+  const handleRemoveManualDna = (item: DNAItem) => {
+    const currentManual = profile.settings?.manualDNA ?? [];
+    const updatedManual = currentManual.filter(
+      (d) => !(String(d.id) === String(item.id) && d.type === item.type)
+    );
+    onUpdateProfile(profile.id, {
+      settings: {
+        ...(profile.settings ?? {}),
+        manualDNA: updatedManual,
+      },
+    });
+  };
+
+  const handleSync = async () => {
+    if (!syncProfileVectors || !activeUserId) return;
+    try {
+      await syncProfileVectors(profile.id, activeUserId);
+    } catch (err) {
+      console.error('Errore durante la ricalcolazione dei vettori:', err);
+    }
+  };
+
 
 
 
@@ -293,6 +329,97 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
             <p className="text-xs text-marrow-light/40 italic">DNA non ancora calcolato. Seleziona dei preset e salva il profilo.</p>
           </div>
         )}
+
+        {/* ── Section: Manual DNA Editor ── */}
+        <div className="glass-panel p-4 sm:p-6 border border-marrow-light/10 flex flex-col gap-4 mt-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-primary">
+              <span className="material-symbols-outlined text-lg sm:text-xl">tune</span>
+              <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest">Editor DNA Manuale</h3>
+            </div>
+            {/* Sync Button */}
+            {syncProfileVectors && (
+              <button
+                onClick={handleSync}
+                disabled={syncStatus?.isSyncing}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-xs font-black uppercase tracking-wider hover:scale-[1.02] active:scale-95 transition-all shadow-md disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+              >
+                <span className={`material-symbols-outlined text-sm ${syncStatus?.isSyncing ? 'animate-spin' : ''}`}>sync</span>
+                <span>{syncStatus?.isSyncing ? 'Sincronizzazione...' : 'Ricalcola DNA'}</span>
+              </button>
+            )}
+          </div>
+          
+          <p className="text-[10px] text-marrow-light/50 -mt-2">
+            Aggiungi o rimuovi manualmente generi e parole chiave (keyword) per plasmare il tuo DNA di base. Clicca su &quot;Ricalcola DNA&quot; per applicare le modifiche allo storico.
+          </p>
+
+          {/* Inputs row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-marrow-light/10 pt-4">
+            {/* Add Genre */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black uppercase tracking-wider text-marrow-light">Aggiungi Genere</label>
+              <select
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) return;
+                  const name = GENRE_ID_TO_NAME[val];
+                  handleAddManualDna({ type: 'genre', id: val, name });
+                  e.target.value = ''; // Reset select
+                }}
+                className="w-full rounded-lg border border-marrow-light/15 bg-white/40 p-2 text-xs font-bold text-marrow-deep focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+              >
+                <option value="">Seleziona un genere...</option>
+                {Object.entries(GENRE_ID_TO_NAME)
+                  .sort((a, b) => a[1].localeCompare(b[1]))
+                  .map(([id, name]) => (
+                    <option key={id} value={id}>{name}</option>
+                  ))
+                }
+              </select>
+            </div>
+
+            {/* Add Keyword (Autocomplete Search) */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black uppercase tracking-wider text-marrow-light">Aggiungi Parola Chiave</label>
+              <AutocompleteSearch
+                placeholder="Cerca parole chiave su TMDB..."
+                searchFn={api.searchTmdbKeywords}
+                onSelect={(item) => handleAddManualDna({ type: 'keyword', id: String(item.id), name: item.name })}
+              />
+            </div>
+          </div>
+
+          {/* Selected Manual DNA list */}
+          <div className="border-t border-marrow-light/10 pt-4 mt-2">
+            <p className="text-[10px] font-black uppercase tracking-wider text-marrow-light mb-2">I tuoi tratti manuali ({(profile.settings?.manualDNA ?? []).length})</p>
+            <div className="flex flex-wrap gap-2">
+              {(profile.settings?.manualDNA ?? []).map((item) => {
+                const displayName = item.name || getDnaName(`${item.type === 'genre' ? 'g' : item.type === 'keyword' ? 'k' : 'o'}:${item.id}`);
+                return (
+                  <span 
+                    key={`${item.type}-${item.id}`} 
+                    className={`inline-flex items-center gap-1.5 rounded-full pl-3 pr-2 py-1 text-[10px] font-black ${
+                      item.type === 'genre' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
+                      'bg-accent/15 text-marrow-deep border border-accent/20'
+                    }`}
+                  >
+                    <span>{item.type === 'genre' ? '🎭' : '🏷️'} {displayName}</span>
+                    <button 
+                      onClick={() => handleRemoveManualDna(item)}
+                      className="p-0.5 rounded-full hover:bg-marrow-light/10 text-marrow-light/50 hover:text-marrow-light transition-colors cursor-pointer"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                );
+              })}
+              {(profile.settings?.manualDNA ?? []).length === 0 && (
+                <p className="text-xs text-marrow-light/40 italic">Nessun tratto manuale. Aggiungine uno sopra.</p>
+              )}
+            </div>
+          </div>
+        </div>
 
 
 
