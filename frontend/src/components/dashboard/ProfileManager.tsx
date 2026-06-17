@@ -16,6 +16,7 @@ interface ProfileManagerProps {
   onCreateFromTemplate?: (template: ProfileTemplate) => void;
   onRemove?: (id: string) => void;
   startRename?: () => void;
+  onUpdateProfile?: (id: string, updates: Partial<Profile>) => void;
 }
 
 export function ProfileManager({
@@ -29,6 +30,7 @@ export function ProfileManager({
   onCreateFromTemplate,
   onRemove,
   startRename,
+  onUpdateProfile,
 }: ProfileManagerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -56,6 +58,19 @@ export function ProfileManager({
         <div className="flex items-center gap-2 sm:gap-3">
           {editingProfile && !isGlobalSelected && (
             <div className="flex items-center gap-1 sm:gap-1.5 mr-1 sm:mr-2 pr-2 sm:pr-4 border-r border-marrow-light/20">
+              <button 
+                onClick={() => onUpdateProfile?.(editingProfile.id, { settings: { ...editingProfile.settings, kidsMode: !editingProfile.settings?.kidsMode } })}
+                title={editingProfile.settings?.kidsMode ? "Disabilita Modalità Bambini" : "Abilita Modalità Bambini"}
+                className={`flex items-center justify-center size-7 sm:size-8 rounded-full transition-colors border shadow-sm ${
+                  editingProfile.settings?.kidsMode 
+                    ? 'bg-blue-500 text-white border-blue-600 hover:bg-blue-600' 
+                    : 'bg-white/50 text-marrow-deep hover:bg-white hover:text-blue-500 border-marrow-light/10'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px] sm:text-[18px]">
+                  {editingProfile.settings?.kidsMode ? 'child_care' : 'child_friendly'}
+                </span>
+              </button>
               <button 
                 onClick={startRename}
                 title="Rinomina profilo selezionato"

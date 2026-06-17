@@ -118,6 +118,7 @@ export function DashboardPage({
           profileTemplates={profileTemplates}
           onCreateFromTemplate={handleCreateFromTemplate}
           onRemove={(id) => onRemoveProfile(id)}
+          onUpdateProfile={onUpdateProfile}
           startRename={() => {
             if (editingProfile?.id === 'global') return;
             setIsRenameOpen(true);
