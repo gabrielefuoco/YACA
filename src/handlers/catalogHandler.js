@@ -28,7 +28,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const { cacheOptions: tmdbFetchOptions } = getCacheConfig(userConfig.ttl);
     
     // Check Full CACHE Request
-    const requestCacheKey = generateRequestHash(id, { type, extra, directFilters, user: userConfig.userId, profile: userConfig.activeProfileId }, skip, type);
+    const requestCacheKey = generateRequestHash(id, { type, extra, directFilters, user: userConfig.userId, profile: userConfig.activeProfileId, kidsMode: activeProfileSettings.kidsMode }, skip, type);
     
     let catalogMeta = null;
     let baseId = id;

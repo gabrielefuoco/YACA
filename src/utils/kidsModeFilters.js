@@ -34,9 +34,7 @@ function applyKidsMode(params) {
 
     const safeParams = { ...params };
     
-    // 1. Force general audiences certification
-    safeParams.certification_lte = 'G';
-    safeParams.certification_country = 'US';
+    // 1. Omitted certification_lte/country because it aggressively filters out 99% of non-US content (like Anime) that lacks a formal US rating, causing fallback triggering. We rely on strict keyword/genre blocking instead.
 
     // 2. Block sensitive genres
     if (safeParams.without_genres) {

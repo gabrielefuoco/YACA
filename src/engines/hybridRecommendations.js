@@ -16,7 +16,12 @@ const { buildDirectPresetCatalog, buildTopGenresMixCatalog, buildHybridCatalog, 
  * Main endpoint: handles request for a profiled hybrid catalog.
  */
 async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId, activeProfileId = 'global') {
-    const mediaType = (catalogId.includes('series') || catalogId.includes('tv')) ? 'series' : 'movie';
+    const presetsList = getPresets();
+    const matchedPreset = presetsList.find(p => p.id === catalogId);
+    let mediaType = (catalogId.includes('series') || catalogId.includes('tv')) ? 'series' : 'movie';
+    if (matchedPreset && matchedPreset.type) {
+        mediaType = matchedPreset.type === 'series' ? 'series' : 'movie';
+    }
     const context = activeProfileId || 'global';
     const profile = await TasteProfile.findOne({ owner: userId, context });
     const isKidsMode = profile?.settings?.kidsMode;
@@ -36,8 +41,6 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     }
 
     const buildRecommendIds = async () => {
-        const presetsList = getPresets();
-        const matchedPreset = presetsList.find(p => p.id === catalogId);
         if (matchedPreset) {
             const ids = await buildDirectPresetCatalog(catalogId, userId, context, tmdbApiKey, mediaType);
             if (ids.length > 0) {
