@@ -70,6 +70,7 @@ async function safeTraktFetch(endpoint, traktToken, limit = 40, userObj = null) 
     try {
         return await execute(traktToken);
     } catch (err) {
+        console.error(`[safeTraktFetch] Error for ${endpoint}: status=${err.response?.status}, msg=${err.message}, hasUserObj=${!!userObj}, hasRefreshToken=${!!userObj?.apiKeys?.traktRefreshToken}`);
         if (err.response?.status === 401 && userObj?.apiKeys?.traktRefreshToken) {
             console.log(`[safeTraktFetch] Token expired for ${endpoint}. Attempting refresh...`);
             const { refreshTraktTokens, syncTraktTokensToDb } = require('../../clients/trakt');

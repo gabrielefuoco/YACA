@@ -340,15 +340,19 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
  */
 async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
+    console.log(`[TraktFiltered] userId=${userId}, context=${context}, hasProfile=${!!profile}, hasUser=${!!user}, hasTraktToken=${!!traktToken}, tokenFirst10=${traktToken?.substring(0,10)}`);
     if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const dnaFilters = getProfileDnaFilters(user, context);
 
     const traktRaw = await fetchTraktRecommendationsRaw(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 100, user);
+    console.log(`[TraktFiltered] traktRaw count: ${traktRaw.length}`);
     const traktTmdbIds = traktRaw
         .map(item => item.movie?.ids?.tmdb || item.show?.ids?.tmdb)
         .filter(Boolean);
+
+    console.log(`[TraktFiltered] traktTmdbIds count: ${traktTmdbIds.length}`);
 
     if (traktTmdbIds.length === 0) return [];
 
