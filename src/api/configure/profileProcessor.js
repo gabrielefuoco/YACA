@@ -138,7 +138,8 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
             raw_ui_state: {
                 selectedPresets: Array.isArray(input.selectedPresets) ? input.selectedPresets : [],
                 catalogOrder: Array.isArray(input.catalogOrder) ? input.catalogOrder : [],
-                newPrompts: Array.isArray(input.newPrompts) ? input.newPrompts : []
+                newPrompts: Array.isArray(input.newPrompts) ? input.newPrompts : [],
+                heroPresetsInitialized: input.heroPresetsInitialized ?? false
             },
             settings: {
                 ...(input.settings || {})
@@ -166,7 +167,7 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
         }
 
         // 3. Build suggestedDNA from installed catalogs
-        const manualDNA = Array.isArray(profile.settings.manualDNA) ? profile.settings.manualDNA : [];
+        const manualDNA = isGlobal ? [] : (Array.isArray(profile.settings.manualDNA) ? profile.settings.manualDNA : []);
         const manualIds = new Set(manualDNA.map(d => `${d.type}:${d.id}`));
         
         const catalogDNA = buildSuggestedDNAFromCatalogs(profile.catalogs);
@@ -191,6 +192,12 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
 
         // Deduplicate: exclude items already in manualDNA
         profile.settings.suggestedDNA = catalogDNA.filter(d => !manualIds.has(`${d.type}:${d.id}`));
+        
+        if (isGlobal) {
+            profile.settings.manualDNA = [];
+        } else {
+            profile.settings.manualDNA = manualDNA;
+        }
         
         // --- DNA Extraction & Save (V_static + V_final) ---
         const allQueries = profile.catalogs.flatMap(cat => cat.queries || []);

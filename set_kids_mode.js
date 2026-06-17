@@ -5,17 +5,31 @@ const UserAccount = require('./src/db/models/UserAccount');
 
 async function test() {
   await mongoose.connect(process.env.MONGODB_URI);
-  const account = await UserAccount.findOne({ email: 'gabrielefuoco' }).lean() || await UserAccount.findOne({}).lean();
+  const account = await UserAccount.findOne({}).lean();
+  const config = await AddonConfig.findOne({ uuid: account.addonUuid });
   
-  await AddonConfig.updateOne(
-    { uuid: account.addonUuid, 'profiles.id': 'otaku_hardcore' },
-    { $set: { 'profiles.$.settings.kidsMode': true } }
-  );
+  // Find the otaku profile index
+  const otakuIdx = config.profiles.findIndex(p => p.name.toLowerCase().includes('otaku'));
+  if (otakuIdx === -1) {
+    console.log('Otaku profile not found!');
+    process.exit(1);
+  }
   
-  // also clear mongoose directly
+  // Use markModified to ensure Mongoose writes the nested field
+  config.profiles[otakuIdx].settings = config.profiles[otakuIdx].settings || {};
+  config.profiles[otakuIdx].settings.kidsMode = true;
+  config.markModified('profiles');
+  await config.save();
+  
+  // Clear cache
   await mongoose.connection.collection('request_cache').deleteMany({});
   
-  console.log('Kids mode for otaku_hardcore set to TRUE and Cache Cleared');
+  // Verify
+  const updated = await AddonConfig.findOne({ uuid: account.addonUuid }).lean();
+  const otaku = updated.profiles.find(p => p.name.toLowerCase().includes('otaku'));
+  console.log('VERIFIED - kidsMode:', otaku.settings.kidsMode);
+  console.log('activeProfileId:', updated.activeProfileId);
+  
   process.exit(0);
 }
 test().catch(console.error);

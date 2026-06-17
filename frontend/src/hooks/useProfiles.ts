@@ -6,15 +6,23 @@ import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
 
 import { generateId } from '@/lib/utils';
 
+const HERO_PRESET_IDS = [
+  'yaca_true_blend_movies', 'yaca_true_blend_series',
+  'yaca_seed_network_movies', 'yaca_seed_network_series',
+  'yaca_hidden_gems_movies', 'yaca_hidden_gems_series',
+  'yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series'
+];
+
 function createGlobalProfile(): Profile {
   return {
     id: 'global',
     name: '🏠 Generale',
     raw_ui_state: {
-      selectedPresets: [],
+      selectedPresets: [...HERO_PRESET_IDS],
       newPrompts: [],
       presetOverrides: {},
-      catalogOrder: [],
+      catalogOrder: [...HERO_PRESET_IDS],
+      heroPresetsInitialized: true,
     },
     existingCatalogs: [],
     settings: {
@@ -30,10 +38,11 @@ function createDefaultProfile(name: string = 'Profilo Principale'): Profile {
     id: generateId(),
     name,
     raw_ui_state: {
-      selectedPresets: [],
+      selectedPresets: [...HERO_PRESET_IDS],
       newPrompts: [],
       presetOverrides: {},
-      catalogOrder: [],
+      catalogOrder: [...HERO_PRESET_IDS],
+      heroPresetsInitialized: true,
     },
     existingCatalogs: [],
     settings: {

@@ -68,6 +68,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
   const [compiledVectors, setCompiledVectors] = useState<(CompiledVector & { idNames?: Record<string, string> }) | null>(null);
   const [manualScore, setManualScore] = useState<number>(200);
   const [localIsSyncing, setLocalIsSyncing] = useState<boolean>(false);
+  const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
 
   const getDnaName = (vectorKey: string) => {
     const prefix = vectorKey.charAt(0);
@@ -558,23 +559,35 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                               const ids = parseAndDeduplicateIds(rawValue);
                               if (ids.length === 0) return null;
                               const badgeLabel = TMDB_KEY_BADGE_LABEL[key] ?? { icon: '🧬', name: key };
+                              
+                              const isExpanded = expandedKeys[key] || false;
+                              const displayIds = isExpanded ? ids : ids.slice(0, 15);
+                              const hasMore = ids.length > 15;
 
                               return (
-                                <div key={key} className="flex flex-wrap items-center gap-2 py-1 border-b border-marrow-light/10 last:border-b-0">
-                                  {ids.map((id, idx) => (
+                                <div key={key} className="flex flex-wrap items-center gap-2 py-2 border-b border-marrow-light/10 last:border-b-0">
+                                  {displayIds.map((id, idx) => (
                                     <div key={`${key}-${id}`} className="inline-flex items-center gap-2">
                                       <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-black ${
                                         badgeLabel.name === 'Genere' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
                                         badgeLabel.name === 'Keyword' ? 'bg-accent/15 text-marrow-deep border border-accent/20' : 
                                         'bg-primary/15 text-marrow-deep border border-primary/20'
                                       }`}>
-                                        {badgeLabel.icon} {badgeLabel.name}: {getDnaName(`${key.startsWith('with_genres') ? 'g' : key.startsWith('with_keywords') ? 'k' : 'o'}:${id}`)}
+                                        {badgeLabel.icon} {getDnaName(`${key.startsWith('with_genres') ? 'g' : key.startsWith('with_keywords') ? 'k' : 'o'}:${id}`)}
                                       </span>
-                                      {idx < ids.length - 1 && (
+                                      {idx < displayIds.length - 1 && (
                                         <span className="text-[9px] font-black uppercase tracking-wider text-marrow-light/60">&amp;</span>
                                       )}
                                     </div>
                                   ))}
+                                  {hasMore && (
+                                    <button
+                                      onClick={() => setExpandedKeys(prev => ({ ...prev, [key]: !isExpanded }))}
+                                      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-black bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all cursor-pointer"
+                                    >
+                                      {isExpanded ? 'Mostra meno' : `Mostra altri (+${ids.length - 15})`}
+                                    </button>
+                                  )}
                                 </div>
                               );
                             })}

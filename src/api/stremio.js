@@ -204,13 +204,8 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
         const activeProfileId = userConfig.activeProfileId || 'global';
         const profile = userConfig.profiles?.find(p => p.id === activeProfileId) || (userConfig.profiles?.[0]);
 
-        const catalogs = [
-            { id: 'yaca-profiles', type: 'other', name: '👥 Cambia Profilo' },
-            { id: 'yaca_search_standard', type: 'movie', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
-            { id: 'yaca_search_standard', type: 'series', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
-            { id: 'yaca_search_ai', type: 'movie', name: 'YACA: Deep AI Search', extra: searchExtra },
-            { id: 'yaca_search_ai', type: 'series', name: 'YACA: Deep AI Search', extra: searchExtra },
-            // Hero Catalogs (Personalized)
+        const selectedPresets = profile?.raw_ui_state?.selectedPresets;
+        const heroCatalogs = [
             { id: 'yaca_true_blend_movies', type: 'movie', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
             { id: 'yaca_true_blend_series', type: 'series', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
             { id: 'yaca_seed_network_movies', type: 'movie', name: '🕸️ La Rete dei tuoi Preferiti', extra: [{ name: 'skip' }] },
@@ -219,6 +214,21 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
             { id: 'yaca_hidden_gems_series', type: 'series', name: '💎 Gemme Nascoste', extra: [{ name: 'skip' }] },
             { id: 'yaca_trakt_filtered_movies', type: 'movie', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
             { id: 'yaca_trakt_filtered_series', type: 'series', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
+        ];
+
+        // Filter: only show hero catalogs if they are enabled in the active profile's selectedPresets.
+        // If selectedPresets is not configured yet, show all of them.
+        const activeHeroCatalogs = Array.isArray(selectedPresets)
+            ? heroCatalogs.filter(c => selectedPresets.includes(c.id))
+            : heroCatalogs;
+
+        const catalogs = [
+            { id: 'yaca-profiles', type: 'other', name: '👥 Cambia Profilo' },
+            { id: 'yaca_search_standard', type: 'movie', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
+            { id: 'yaca_search_standard', type: 'series', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
+            { id: 'yaca_search_ai', type: 'movie', name: 'YACA: Deep AI Search', extra: searchExtra },
+            { id: 'yaca_search_ai', type: 'series', name: 'YACA: Deep AI Search', extra: searchExtra },
+            ...activeHeroCatalogs
         ];
 
         // Add User Presets

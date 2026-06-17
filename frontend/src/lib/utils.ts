@@ -45,13 +45,10 @@ interface BackendCatalog {
   raw_prompt?: string;
   source?: string;
   emoji?: string;
-  queries?: any[];
+  queries?: import('@/types').QueryBlock[];
   presentation_strategy?: 'popularity' | 'interleave';
 }
 
-/**
- * Transforms a frontend Profile array to the format the backend configure API expects.
- */
 export function profilesToApiPayload(profiles: Profile[]) {
   return profiles.map((p) => ({
     id: p.id,
@@ -59,6 +56,7 @@ export function profilesToApiPayload(profiles: Profile[]) {
     selectedPresets: p.raw_ui_state.selectedPresets,
     presetOverrides: p.raw_ui_state.presetOverrides,
     catalogOrder: p.raw_ui_state.catalogOrder,
+    heroPresetsInitialized: p.raw_ui_state.heroPresetsInitialized ?? true,
     existingCatalogs: p.existingCatalogs,
     newPrompts: p.raw_ui_state.newPrompts,
     settings: {
@@ -93,17 +91,38 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
 
   const targetId = backendProfile.id || 
                    (typeof backendProfile._id === 'string' ? backendProfile._id : 
-                    (backendProfile._id as any)?.$oid) || 
+                    (backendProfile._id as Record<string, unknown>)?.$oid) || 
                    generateId();
+
+  let selectedPresets = Array.isArray(rawUi.selectedPresets) ? rawUi.selectedPresets : [];
+  const catalogOrder = Array.isArray(rawUi.catalogOrder) ? rawUi.catalogOrder : [];
+  const heroPresetsInitialized = (rawUi as Record<string, unknown>).heroPresetsInitialized ?? false;
+
+  const HERO_PRESET_IDS = [
+    'yaca_true_blend_movies', 'yaca_true_blend_series',
+    'yaca_seed_network_movies', 'yaca_seed_network_series',
+    'yaca_hidden_gems_movies', 'yaca_hidden_gems_series',
+    'yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series'
+  ];
+
+  if (!heroPresetsInitialized) {
+    selectedPresets = Array.from(new Set([...selectedPresets, ...HERO_PRESET_IDS]));
+    HERO_PRESET_IDS.forEach(id => {
+      if (!catalogOrder.includes(id)) {
+        catalogOrder.push(id);
+      }
+    });
+  }
 
   return {
     id: String(targetId),
     name: String(backendProfile.name ?? 'Profilo'),
     raw_ui_state: {
-      selectedPresets: Array.isArray(rawUi.selectedPresets) ? rawUi.selectedPresets : [],
+      selectedPresets,
       newPrompts: [],
       presetOverrides: rawUi.presetOverrides ?? {},
-      catalogOrder: Array.isArray(rawUi.catalogOrder) ? rawUi.catalogOrder : [],
+      catalogOrder,
+      heroPresetsInitialized: true,
     },
     existingCatalogs,
     settings: {

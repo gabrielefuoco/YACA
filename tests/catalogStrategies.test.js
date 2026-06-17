@@ -54,6 +54,7 @@ describe('catalogStrategies', () => {
         });
 
         it('should fetch from TMDB using preset queries', async () => {
+            dataFetchers.fetchProfileContext.mockResolvedValueOnce({ profile: null });
             dataFetchers.fetchTmdbResults.mockResolvedValue([
                 { id: 101, title: 'Action 1' },
                 { id: 102, title: 'Action 2' }

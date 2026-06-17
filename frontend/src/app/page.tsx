@@ -17,17 +17,24 @@ import { LOCAL_STORAGE_KEYS, SESSION_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/
 import { api } from '@/lib/api';
 import { usePathname } from 'next/navigation';
 
-// Default profiles for new users (matches the original HTML quick-start profiles)
 function createDefaultProfiles(): Profile[] {
+  const HERO_PRESET_IDS = [
+    'yaca_true_blend_movies', 'yaca_true_blend_series',
+    'yaca_seed_network_movies', 'yaca_seed_network_series',
+    'yaca_hidden_gems_movies', 'yaca_hidden_gems_series',
+    'yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series'
+  ];
+
   return [
     {
       id: 'global',
       name: '🏠 Generale',
       raw_ui_state: {
-        selectedPresets: [...DEFAULT_PRESET_IDS],
+        selectedPresets: [...DEFAULT_PRESET_IDS, ...HERO_PRESET_IDS],
         newPrompts: [],
         presetOverrides: {},
-        catalogOrder: [],
+        catalogOrder: [...HERO_PRESET_IDS],
+        heroPresetsInitialized: true,
       },
       existingCatalogs: [],
       settings: { fastRefresh: false },
