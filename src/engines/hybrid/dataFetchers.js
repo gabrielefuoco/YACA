@@ -49,35 +49,60 @@ async function fetchTmdbResults(tmdbClient, endpoint, params = {}, errorLabel = 
 
 /**
  * Generic fetcher for Trakt to DRY up redundant calls.
+ * Includes auto-refresh logic for expired Trakt tokens.
  */
-async function safeTraktFetch(endpoint, traktToken, limit = 40) {
+async function safeTraktFetch(endpoint, traktToken, limit = 40, userObj = null) {
     if (!traktToken || !process.env.TRAKT_CLIENT_ID) return [];
-    try {
+    
+    const execute = async (token) => {
         const res = await traktClient.get(endpoint, {
             headers: {
                 'trakt-api-version': '2',
                 'trakt-api-key': process.env.TRAKT_CLIENT_ID,
-                'Authorization': `Bearer ${traktToken}`
+                'Authorization': `Bearer ${token}`
             },
             params: { limit, page: 1 },
             timeout: 10000
         });
         return res.data || [];
-    } catch (_e) {
+    };
+
+    try {
+        return await execute(traktToken);
+    } catch (err) {
+        if (err.response?.status === 401 && userObj?.apiKeys?.traktRefreshToken) {
+            console.log(`[safeTraktFetch] Token expired for ${endpoint}. Attempting refresh...`);
+            const { refreshTraktTokens, syncTraktTokensToDb } = require('../../clients/trakt');
+            
+            try {
+                const newTokens = await refreshTraktTokens(userObj.apiKeys.traktRefreshToken);
+                if (newTokens && newTokens.access_token) {
+                    await syncTraktTokensToDb(userObj.userId, newTokens.access_token, newTokens.refresh_token);
+                    
+                    // Update userObj in memory so subsequent calls in the same request use the new token
+                    userObj.apiKeys.trakt = newTokens.access_token;
+                    userObj.apiKeys.traktRefreshToken = newTokens.refresh_token;
+
+                    return await execute(newTokens.access_token);
+                }
+            } catch (refreshErr) {
+                console.error(`[safeTraktFetch] Refresh failed:`, refreshErr.message);
+            }
+        }
         return [];
     }
 }
 
-async function fetchRecentHistory(traktToken, mediaType, limit = 10) {
-    return safeTraktFetch(`/users/me/history/${mediaType}`, traktToken, limit);
+async function fetchRecentHistory(traktToken, mediaType, limit = 10, userObj = null) {
+    return safeTraktFetch(`/users/me/history/${mediaType}`, traktToken, limit, userObj);
 }
 
-async function fetchRecentRatings(traktToken, mediaType, limit = 40) {
-    return safeTraktFetch(`/users/me/ratings/${mediaType}`, traktToken, limit);
+async function fetchRecentRatings(traktToken, mediaType, limit = 40, userObj = null) {
+    return safeTraktFetch(`/users/me/ratings/${mediaType}`, traktToken, limit, userObj);
 }
 
-async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40) {
-    return safeTraktFetch(`/recommendations/${mediaType}`, traktToken, limit);
+async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40, userObj = null) {
+    return safeTraktFetch(`/recommendations/${mediaType}`, traktToken, limit, userObj);
 }
 
 async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60) {

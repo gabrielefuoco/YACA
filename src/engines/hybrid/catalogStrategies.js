@@ -345,7 +345,7 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const dnaFilters = getProfileDnaFilters(user, context);
 
-    const traktRaw = await fetchTraktRecommendationsRaw(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 100);
+    const traktRaw = await fetchTraktRecommendationsRaw(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 100, user);
     const traktTmdbIds = traktRaw
         .map(item => item.movie?.ids?.tmdb || item.show?.ids?.tmdb)
         .filter(Boolean);
