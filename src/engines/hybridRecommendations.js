@@ -18,19 +18,22 @@ const { buildDirectPresetCatalog, buildTopGenresMixCatalog, buildHybridCatalog, 
 async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId, activeProfileId = 'global') {
     const mediaType = (catalogId.includes('series') || catalogId.includes('tv')) ? 'series' : 'movie';
     const context = activeProfileId || 'global';
-    const cacheKey = `${userId}_${context}_${catalogId}`;
+    const profile = await TasteProfile.findOne({ owner: userId, context });
+    const isKidsMode = profile?.settings?.kidsMode;
+    const cacheKey = `${userId}_${context}_${catalogId}${isKidsMode ? '_kids' : ''}`;
 
-    TasteProfile.findOne({ owner: userId, context }).then(async (profile) => {
+    if (profile) {
         const now = new Date();
-        const isStale = !profile || (now - profile.lastUpdated) > (1000 * 60 * 60 * 12);
+        const isStale = (now - profile.lastUpdated) > (1000 * 60 * 60 * 12);
         if (isStale) {
             console.log(`[Hybrid] Sincronizzazione profilo per ${userId} (${context})...`);
-            const synced = await syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context);
-            if (synced) {
-                await hybridRecommendationsCache.delete(cacheKey);
-            }
+            syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context).then(async (synced) => {
+                if (synced) {
+                    await hybridRecommendationsCache.delete(cacheKey);
+                }
+            }).catch(err => console.error("Errore check stale profile:", err.message));
         }
-    }).catch(err => console.error("Errore check stale profile:", err.message));
+    }
 
     const buildRecommendIds = async () => {
         const presetsList = getPresets();
