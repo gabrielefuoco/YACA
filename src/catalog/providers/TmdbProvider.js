@@ -34,27 +34,6 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
     } = filters;
 
     if (baseSettings?.kidsMode) {
-        certification_lte = 'G';
-        tmdbParams.certification_country = 'US';
-        without_genre_ids = [...(without_genre_ids || []), 27, 53, 80]; // Horror, Thriller, Crime
-        
-        // Comprehensive list of sensitive keywords to block
-        const adultKeywords = [
-            // Sexual/Nudity
-            'ecchi', 'harem', 'hentai', 'porn', 'sex', 'adult', 'nudity', 'erotic', 'erotica', 
-            'softcore', 'bondage', 'striptease', 'rape', 'prostitution', 'pedophilia', 
-            'incest', 'brothel', 'pornographic', 'pornography', 'sexual abuse', 'sexual assault',
-            // Violence/Gore/Horror
-            'gore', 'blood', 'violence', 'extreme violence', 'slasher', 'massacre', 'murder',
-            'serial killer', 'torture', 'bloody', 'splatter', 'dismemberment', 'decapitation',
-            'cannibalism', 'scary', 'terrifying', 'jumpscare', 'demon', 'demonic possession', 'satanism',
-            // Drugs/Crime/Other
-            'drugs', 'drug abuse', 'drug addiction', 'cocaine', 'heroin', 'cartel', 'mafia',
-            'gang', 'drug dealer', 'methamphetamine', 'profanity', 'strong language'
-        ].join(',');
-        
-        without_keyword = without_keyword ? `${without_keyword},${adultKeywords}` : adultKeywords;
-        
         // Remove any vote limits that might restrict family content accidentally
         vote_average_gte = null;
         vote_average_lte = null;
@@ -190,6 +169,11 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
             tmdbParams.with_watch_providers = pid;
             tmdbParams.watch_region = 'IT';
         }
+    }
+
+    if (baseSettings?.kidsMode) {
+        const { applyKidsMode } = require('../../utils/kidsModeFilters');
+        tmdbParams = applyKidsMode(tmdbParams);
     }
 
     return tmdbParams;

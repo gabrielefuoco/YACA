@@ -14,6 +14,17 @@ function clampScore(value) {
 }
 
 class ProfileScorer {
+    static isItemInappropriateForKids(tmdbData) {
+        const { ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../utils/kidsModeFilters');
+        const adultGenres = ADULT_GENRE_IDS.split(',').map(Number);
+        const adultKeywords = ADULT_KEYWORD_IDS.split(',').map(Number);
+
+        const genreIds = tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id) : []);
+        const keywordItems = tmdbData.keywords?.keywords || tmdbData.keywords?.results || tmdbData.keywords || [];
+        const keywordIds = keywordItems.map(k => typeof k === 'object' ? k.id : k);
+
+        return genreIds.some(id => adultGenres.includes(id)) || keywordIds.some(id => adultKeywords.includes(id));
+    }
     static normalizeDnaId(value) {
         return String(value ?? '').replace(/^tmdb:/i, '').trim();
     }
@@ -50,6 +61,7 @@ class ProfileScorer {
 
     static calculateBaseItemMatch(tmdbData, profile, context = {}) {
         if (!tmdbData || !profile) return 0;
+        if (profile?.settings?.kidsMode && this.isItemInappropriateForKids(tmdbData)) return -9999;
 
         const tmdbWeight = context.tmdbWeight ?? profile.tmdbWeight ?? 1.0;
         const traktWeight = context.traktWeight ?? profile.traktWeight ?? 1.0;
@@ -164,6 +176,7 @@ class ProfileScorer {
 
     static calculateLightScore(lightData, profile, context = {}) {
         if (!lightData || !profile) return 0;
+        if (profile?.settings?.kidsMode && this.isItemInappropriateForKids(lightData)) return -9999;
 
         // Genre match score
         const vFinal = profile.compiledVectors?.V_final || {};

@@ -6,6 +6,7 @@ const { getProfileDnaFilters } = require('../../utils/helpers');
 const { rateLimitedMap } = require('../../utils/rateLimiter');
 
 // Import from new modules
+const { applyKidsMode } = require('../../utils/kidsModeFilters');
 const { fetchTmdbResults, fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds } = require('./dataFetchers');
 const { extractDNAParams, resolveAiQueryToTmdbParams, twoTierScore, computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
 const ProfileScorer = require('../../profile/ProfileScorer');
@@ -13,12 +14,15 @@ const ProfileScorer = require('../../profile/ProfileScorer');
 /**
  * 🎯 Direct Preset Catalog Builder (Bug 1.3 Fix: Preset Fall-through)
  */
-async function buildDirectPresetCatalog(presetId, tmdbApiKey, mediaType) {
+async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, mediaType) {
     const presetsList = getPresets();
     const preset = presetsList.find(p => p.id === presetId);
     if (!preset || !preset.queries || preset.queries.length === 0) {
         return [];
     }
+
+    const { profile } = await fetchProfileContext(userId, context);
+    const isKidsMode = profile?.settings?.kidsMode;
 
     const tmdbType = (preset.type === 'series' || mediaType === 'series') ? 'tv' : 'movie';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
@@ -30,12 +34,13 @@ async function buildDirectPresetCatalog(presetId, tmdbApiKey, mediaType) {
         delete params.strategy; 
 
         if (!params.sort_by) params.sort_by = 'popularity.desc';
+        const finalParams = isKidsMode ? applyKidsMode(params) : params;
 
         for (let page = 1; page <= 3; page++) {
             const results = await fetchTmdbResults(
                 tmdbClient,
                 `/discover/${tmdbType}`,
-                { ...params, page },
+                { ...finalParams, page },
                 `Direct Preset (${presetId}) page ${page}`
             );
             for (const item of results) {
@@ -79,13 +84,16 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
         }
     };
 
+    const isKidsMode = profile?.settings?.kidsMode;
+
     const fetchDiscoverPages = async (params, pages = 3) => {
+        const finalParams = isKidsMode ? applyKidsMode(params) : params;
         const results = [];
         for (let page = 1; page <= pages; page++) {
             const pageResults = await fetchTmdbResults(
                 tmdbClient,
                 `/discover/${types}`,
-                { ...params, sort_by: 'popularity.desc', page },
+                { ...finalParams, sort_by: 'popularity.desc', page },
                 `Top Genres Mix discover (${types})`
             );
             results.push(...pageResults);
@@ -166,11 +174,13 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         .map(item => ({ id: String(item.movie?.ids?.tmdb || item.show?.ids?.tmdb), weight: 3 }))
         .filter(s => s.id && s.id !== 'undefined');
 
+    const isKidsMode = profile?.settings?.kidsMode;
     const dnaParams = extractDNAParams(dnaFilters);
+    const safeDnaParams = isKidsMode ? applyKidsMode(dnaParams) : dnaParams;
     let dnaSeeds = [];
-    if (Object.keys(dnaParams).length > 0) {
+    if (Object.keys(safeDnaParams).length > 0) {
         try {
-            const discoverRes = await fetchTmdbResults(tmdbClient, `/discover/${types}`, dnaParams, `DNA Discover seeds (${types})`);
+            const discoverRes = await fetchTmdbResults(tmdbClient, `/discover/${types}`, safeDnaParams, `DNA Discover seeds (${types})`);
             if (discoverRes && discoverRes.length > 0) {
                 dnaSeeds = discoverRes.slice(0, 5).map(item => ({ id: String(item.id), weight: 4 }));
             }
@@ -255,6 +265,8 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
     const dnaFilters = getProfileDnaFilters(user, context);
     const dnaParams = extractDNAParams(dnaFilters);
+    const isKidsMode = profile?.settings?.kidsMode;
+    const safeDnaParams = isKidsMode ? applyKidsMode(dnaParams) : dnaParams;
 
     const topGenres = computeTopGenres(profile, 3);
 
@@ -281,12 +293,13 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     };
 
     const fetchDiscoverPages = async (params, pages = 2) => {
+        const finalParams = isKidsMode ? applyKidsMode(params) : params;
         const results = [];
         for (let page = 1; page <= pages; page++) {
             const pageResults = await fetchTmdbResults(
                 tmdbClient,
                 `/discover/${types}`,
-                { ...params, page },
+                { ...finalParams, page },
                 `Hidden Gems discover (${types})`
             );
             results.push(...pageResults);
@@ -305,14 +318,14 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     if (aiQueries.length > 0) {
         const queryPromises = aiQueries.map(async (q) => {
             const tmdbParams = await resolveAiQueryToTmdbParams(q, tmdbApiKey, types);
-            return fetchDiscoverPages({ ...dnaParams, ...tmdbParams, ...qualityFilters }, 2);
+            return fetchDiscoverPages({ ...safeDnaParams, ...qualityFilters, ...tmdbParams }, 2);
         });
         const allResults = await Promise.all(queryPromises);
         allResults.forEach(results => addResults(results));
     } else {
-        const params = { ...dnaParams, ...qualityFilters };
-        if (topGenres.length) params.with_genres = topGenres.join('|');
-        addResults(await fetchDiscoverPages(params, 2));
+        const discoveryParams = { ...safeDnaParams, ...qualityFilters };
+        if (topGenres.length) discoveryParams.with_genres = topGenres.join('|');
+        addResults(await fetchDiscoverPages(discoveryParams, 2));
     }
 
     pool = pool.filter(item => item.popularity == null || item.popularity <= 80);

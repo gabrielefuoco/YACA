@@ -36,7 +36,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         const presetsList = getPresets();
         const matchedPreset = presetsList.find(p => p.id === catalogId);
         if (matchedPreset) {
-            const ids = await buildDirectPresetCatalog(catalogId, tmdbApiKey, mediaType);
+            const ids = await buildDirectPresetCatalog(catalogId, userId, context, tmdbApiKey, mediaType);
             if (ids.length > 0) {
                 await hybridRecommendationsCache.set(cacheKey, { ids });
                 return ids;
