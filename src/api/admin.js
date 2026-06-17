@@ -102,6 +102,22 @@ router.get('/debug/trakt-community', async (req, res) => {
         const ids = await buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, 'movie');
         logs.push(`buildTraktFilteredCatalog result count=${ids.length}`);
 
+        // Test 4: Full catalogHandler pipeline
+        try {
+            const { catalogHandler } = require('../handlers/catalogHandler');
+            const userConfig = await UserConfig.resolveUserConfig(account.addonUuid);
+            const args = {
+                type: 'movie',
+                id: 'yaca_trakt_filtered_movies',
+                extra: { skip: 0 }
+            };
+            const hostUrl = `https://gabriele-fuoco-yaca.hf.space`;
+            const handlerRes = await catalogHandler(args, userConfig, hostUrl);
+            logs.push(`catalogHandler pipeline OK, metas count=${handlerRes?.metas?.length}`);
+        } catch (handlerErr) {
+            logs.push(`catalogHandler pipeline FAILED: msg=${handlerErr.message}\n${handlerErr.stack}`);
+        }
+
         res.json({ success: true, idsCount: ids.length, firstIds: ids.slice(0, 5), logs });
     } catch (err) {
         logs.push(`FATAL: ${err.message}\n${err.stack}`);
