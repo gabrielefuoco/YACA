@@ -1,9 +1,10 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Profile, DNAItem, AnalyticsData, SyncStatus } from '@/types';
+import { Profile, DNAItem, AnalyticsData, SyncStatus, CompiledVector } from '@/types';
 import { api } from '@/lib/api';
 import { X, BrainCircuit, Terminal, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { DnaRadarChart } from './DnaRadarChart';
 
 const HERO_CATALOGS_BASE = [
   { idBase: 'yaca_true_blend', label: 'True Blend', emoji: '🎯', type: 'ai', desc: 'Ricerca semantica AI + Scoring algoritmico.' },
@@ -39,13 +40,14 @@ const GENRE_ID_TO_NAME: Record<string, string> = {
 interface DnaAndAiPanelProps {
   profile: Profile;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
-  syncStatus: SyncStatus & { onboardingCompleted?: boolean, lastSync?: string, manualDNA?: DNAItem[], suggestedDNA?: DNAItem[], compiledVectors?: any };
+  syncStatus: SyncStatus & { onboardingCompleted?: boolean, lastSync?: string, manualDNA?: DNAItem[], suggestedDNA?: DNAItem[], compiledVectors?: CompiledVector & { idNames?: Record<string, string> } };
   userId?: string;
 }
 
 // Removed redundant SyncStatus
 
 export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: DnaAndAiPanelProps) {
+  const activeUserId = userId || (typeof window !== 'undefined' ? localStorage.getItem('yaca_user_id') : null);
   const suggestedDNA: DNAItem[] = profile?.settings?.suggestedDNA ?? [];
   const dnaLookup = useMemo(() => {
     const lookup = new Map<string, string>();
@@ -61,7 +63,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [showProgressModal, setShowProgressModal] = useState(false);
-  const [compiledVectors, setCompiledVectors] = useState<Record<string, any> | null>(null);
+  const [compiledVectors, setCompiledVectors] = useState<(CompiledVector & { idNames?: Record<string, string> }) | null>(null);
 
   const getDnaName = (vectorKey: string) => {
     const prefix = vectorKey.charAt(0);
@@ -123,9 +125,8 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
   const fetchAnalytics = useCallback(async () => {
     setAnalyticsLoading(true);
     try {
-      const userId = typeof window !== 'undefined' ? localStorage.getItem('yaca_user_id') : null;
-      if (!userId) return;
-      const data = await api.getProfileAnalytics(profile.id, userId);
+      if (!activeUserId) return;
+      const data = await api.getProfileAnalytics(profile.id, activeUserId);
       if (data && !data.error) {
         setAnalytics(data);
       }
@@ -134,13 +135,12 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
     } finally {
       setAnalyticsLoading(false);
     }
-  }, [profile.id]);
+  }, [profile.id, activeUserId]);
 
   const fetchSyncStatus = useCallback(async () => {
     try {
-      const userId = typeof window !== 'undefined' ? localStorage.getItem('yaca_user_id') : null;
-      if (!userId) return;
-      const status = await api.getSyncStatus(profile.id, userId);
+      if (!activeUserId) return;
+      const status = await api.getSyncStatus(profile.id, activeUserId);
 
       // Store compiled vectors for DNA display
       if (status?.compiledVectors && Object.keys(status.compiledVectors).length > 0) {
@@ -157,7 +157,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
     } catch (e) {
       console.error('Failed to fetch sync status', e);
     }
-  }, [profile.id]);
+  }, [profile.id, activeUserId]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -182,9 +182,8 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
   // Aggiornamento DNA manuale rimosso in favore del delta update automatico backend.
 
   const handleConfirmDNA = async () => {
-    const userId = localStorage.getItem('yaca_user_id');
-    if (!userId) return;
-    const res = await api.confirmDNA(profile.id, userId);
+    if (!activeUserId) return;
+    const res = await api.confirmDNA(profile.id, activeUserId);
     if (res.success) {
       const currentManualDNA = profile.settings?.manualDNA ?? [];
       const mergedManualDNA = [...currentManualDNA];
@@ -226,56 +225,66 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
 
         {/* DNA Dinamico (V_static e V_final) */}
         {compiledVectors && (Object.keys(compiledVectors.V_static || {}).length > 0 || Object.keys(compiledVectors.V_final || {}).length > 0) ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="glass-panel p-3 sm:p-5 border border-marrow-light/10">
-              <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">DNA Base (Dai Preset)</p>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(compiledVectors.V_static || {})
-                  .sort(([,a], [,b]) => (b as number) - (a as number))
-                  .slice(0, 10)
-                  .map(([key, weight]) => {
-                    const type = key.charAt(0);
-                    const id = key.substring(2);
-                    const name = getDnaName(key);
-                    return (
-                      <span key={key} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold ${
-                        type === 'g' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
-                        type === 'k' ? 'bg-accent/15 text-marrow-deep border border-accent/20' : 
-                        'bg-primary/15 text-marrow-deep border border-primary/20'
-                      }`}>
-                        {name} <span className="opacity-50 ml-1">({Math.round(weight as number)})</span>
-                      </span>
-                    )
-                  })
-                }
-                {Object.keys(compiledVectors.V_static || {}).length === 0 && (
-                  <p className="text-xs text-marrow-light/40 italic">Nessun DNA base. Aggiungi dei preset.</p>
-                )}
-              </div>
+          <div className="flex flex-col lg:flex-row gap-6 items-center">
+            {/* Grafico Radar in primo piano */}
+            <div className="w-full lg:w-1/2 flex justify-center py-2">
+              <DnaRadarChart
+                V_static={compiledVectors.V_static || {}}
+                V_final={compiledVectors.V_final || {}}
+                getDnaName={getDnaName}
+              />
             </div>
 
-            <div className="glass-panel p-3 sm:p-5 border border-marrow-light/10 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-accent opacity-50"></div>
-              <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">DNA Evoluto (Base + Storico)</p>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(compiledVectors.V_final || {})
-                  .sort(([,a], [,b]) => (b as number) - (a as number))
-                  .slice(0, 12)
-                  .map(([key, weight]) => {
-                    const type = key.charAt(0);
-                    const id = key.substring(2);
-                    const name = getDnaName(key);
-                    return (
-                      <span key={key} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold ${
-                        type === 'g' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
-                        type === 'k' ? 'bg-accent/15 text-marrow-deep border border-accent/20' : 
-                        'bg-primary/15 text-marrow-deep border border-primary/20'
-                      }`}>
-                        {name} <span className="opacity-50 ml-1">({Math.round(weight as number)})</span>
-                      </span>
-                    )
-                  })
-                }
+            {/* Dettagli DNA (Liste di badge) */}
+            <div className="w-full lg:w-1/2 flex flex-col gap-4">
+              <div className="glass-panel p-3 sm:p-5 border border-marrow-light/10 flex-grow">
+                <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">DNA Base (Dai Preset)</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(compiledVectors.V_static || {})
+                    .sort(([,a], [,b]) => (b as number) - (a as number))
+                    .slice(0, 10)
+                    .map(([key, weight]) => {
+                      const type = key.charAt(0);
+                      const name = getDnaName(key);
+                      return (
+                        <span key={key} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                          type === 'g' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
+                          type === 'k' ? 'bg-accent/15 text-marrow-deep border border-accent/20' : 
+                          'bg-primary/15 text-marrow-deep border border-primary/20'
+                        }`}>
+                          {name} <span className="opacity-50 ml-1">({Math.round(weight as number)})</span>
+                        </span>
+                      )
+                    })
+                  }
+                  {Object.keys(compiledVectors.V_static || {}).length === 0 && (
+                    <p className="text-xs text-marrow-light/40 italic">Nessun DNA base. Aggiungi dei preset.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="glass-panel p-3 sm:p-5 border border-marrow-light/10 relative overflow-hidden flex-grow">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-accent opacity-50"></div>
+                <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">DNA Evoluto (Base + Storico)</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(compiledVectors.V_final || {})
+                    .sort(([,a], [,b]) => (b as number) - (a as number))
+                    .slice(0, 12)
+                    .map(([key, weight]) => {
+                      const type = key.charAt(0);
+                      const name = getDnaName(key);
+                      return (
+                        <span key={key} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                          type === 'g' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
+                          type === 'k' ? 'bg-accent/15 text-marrow-deep border border-accent/20' : 
+                          'bg-primary/15 text-marrow-deep border border-primary/20'
+                        }`}>
+                          {name} <span className="opacity-50 ml-1">({Math.round(weight as number)})</span>
+                        </span>
+                      )
+                    })
+                  }
+                </div>
               </div>
             </div>
           </div>
