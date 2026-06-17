@@ -26,6 +26,7 @@ export interface BackendProfile {
   settings?: {
     fastPresetRefresh?: boolean;
     tmdbKey?: string;
+    kidsMode?: boolean;
     manualDNA?: unknown[];
     suggestedDNA?: unknown[];
   };
@@ -63,16 +64,13 @@ export function profilesToApiPayload(profiles: Profile[]) {
     settings: {
       fastPresetRefresh: p.settings?.fastRefresh ?? false,
       tmdbKey: p.settings?.tmdbKey,
+      kidsMode: p.settings?.kidsMode ?? false,
       ...(p.settings?.manualDNA?.length ? { manualDNA: p.settings.manualDNA } : {}),
       ...(p.settings?.suggestedDNA?.length ? { suggestedDNA: p.settings.suggestedDNA } : {}),
     },
   }));
 }
 
-/**
- * Maps a backend-stored profile (from UserConfig) to the frontend Profile type.
- * The backend stores processed `catalogs` and uses different settings field names.
- */
 export function mapBackendProfile(backendProfile: BackendProfile): Profile {
   const bCatalogs: BackendCatalog[] = backendProfile.catalogs ?? [];
   const rawUi = backendProfile.raw_ui_state ?? {};
@@ -111,6 +109,7 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
     settings: {
       fastRefresh: Boolean(bSettings.fastPresetRefresh),
       tmdbKey: bSettings.tmdbKey ?? '',
+      kidsMode: Boolean(bSettings.kidsMode),
       manualDNA: Array.isArray(bSettings.manualDNA) ? bSettings.manualDNA as import('@/types').DNAItem[] : [],
       suggestedDNA: Array.isArray(bSettings.suggestedDNA) ? bSettings.suggestedDNA as import('@/types').DNAItem[] : [],
     },
