@@ -25,9 +25,9 @@ async function fetchProfileContext(userId, context) {
 
     let user = null;
     if (addonConfig) {
-        user = { ...addonConfig, apiKeys: account?.apiKeys || {} };
+        user = { ...addonConfig, userId, apiKeys: account?.apiKeys || {} };
     } else if (account?.apiKeys) {
-        user = { profiles: [], apiKeys: account.apiKeys };
+        user = { profiles: [], userId, apiKeys: account.apiKeys };
     }
 
     return { profile, user, globalProfile };
