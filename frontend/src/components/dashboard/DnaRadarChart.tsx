@@ -31,7 +31,7 @@ export function DnaRadarChart({ V_static, V_final, getDnaName }: DnaRadarChartPr
   // Constants for SVG drawing
   const cx = 200;
   const cy = 200;
-  const radius = 110; // Padding leaves room for labels
+  const radius = 90; // Reduced from 110 to leave 110px padding for labels
 
   // 1. Process and normalize data
   const chartData = useMemo(() => {
@@ -45,8 +45,10 @@ export function DnaRadarChart({ V_static, V_final, getDnaName }: DnaRadarChartPr
     const items: RadarItem[] = allKeys.map((key) => {
       const baseVal = V_static?.[key] || 0;
       const evolvedVal = V_final?.[key] || 0;
-      const baseNorm = baseVal / maxStatic;
-      const evolvedNorm = evolvedVal / maxFinal;
+      
+      // Use square root scaling to make smaller tail values much more visible
+      const baseNorm = Math.sqrt(baseVal / maxStatic);
+      const evolvedNorm = Math.sqrt(evolvedVal / maxFinal);
 
       return {
         key,
@@ -82,13 +84,13 @@ export function DnaRadarChart({ V_static, V_final, getDnaName }: DnaRadarChartPr
       const ay = cy + radius * sin;
 
       // Distance for label positioning (offset outside the grid)
-      const labelDist = radius + 22;
+      const labelDist = radius + 18;
       const lx = cx + labelDist * cos;
       const ly = cy + labelDist * sin;
 
       // Coordinates for base DNA point (normalized)
       const bx = cx + (radius * item.baseNorm) * cos;
-      const by = cx + (radius * item.baseNorm) * sin;
+      const by = cy + (radius * item.baseNorm) * sin;
 
       // Coordinates for evolved DNA point (normalized)
       const ex = cx + (radius * item.evolvedNorm) * cos;
@@ -220,18 +222,18 @@ export function DnaRadarChart({ V_static, V_final, getDnaName }: DnaRadarChartPr
         {/* Base DNA Polygon (Background Layer) */}
         <polygon
           points={pointsBase}
-          fill="color-mix(in srgb, var(--color-accent) 8%, transparent)"
+          fill="color-mix(in srgb, var(--color-accent) 12%, transparent)"
           stroke="var(--color-accent)"
-          strokeWidth={1.5}
+          strokeWidth={2}
           strokeDasharray="4 3"
-          strokeOpacity={0.65}
+          strokeOpacity={0.85}
           className="transition-all duration-300"
         />
 
         {/* Evolved DNA Polygon (Foreground Layer) */}
         <polygon
           points={pointsEvolved}
-          fill="color-mix(in srgb, var(--color-primary) 28%, transparent)"
+          fill="color-mix(in srgb, var(--color-primary) 30%, transparent)"
           stroke="var(--color-primary)"
           strokeWidth={3}
           className="transition-all duration-300"
@@ -258,11 +260,11 @@ export function DnaRadarChart({ V_static, V_final, getDnaName }: DnaRadarChartPr
             key={`node-base-${index}`}
             cx={axis.bx}
             cy={axis.by}
-            r={3}
+            r={3.5}
             fill="var(--color-accent)"
             stroke="var(--color-background-light)"
             strokeWidth={1}
-            opacity={0.7}
+            opacity={0.85}
             pointerEvents="none"
           />
         ))}
@@ -273,7 +275,7 @@ export function DnaRadarChart({ V_static, V_final, getDnaName }: DnaRadarChartPr
             key={`node-evolved-${index}`}
             cx={axis.ex}
             cy={axis.ey}
-            r={hoveredIndex === index ? 5.5 : 4}
+            r={hoveredIndex === index ? 6 : 4.5}
             fill="var(--color-primary)"
             stroke="var(--color-background-light)"
             strokeWidth={1.5}
@@ -285,8 +287,8 @@ export function DnaRadarChart({ V_static, V_final, getDnaName }: DnaRadarChartPr
         {/* Axis Labels */}
         {axes.map((axis, index) => {
           // Truncate labels that are too long
-          const displayLabel = axis.name.length > 12 
-            ? `${axis.name.slice(0, 11)}…` 
+          const displayLabel = axis.name.length > 14 
+            ? `${axis.name.slice(0, 13)}…` 
             : axis.name;
 
           // Adjust text anchor alignment based on quadrant to prevent overlaps
