@@ -7,6 +7,7 @@ import { ExplorePanel } from '@/components/dashboard/ExplorePanel';
 import { CreatorPanel } from '@/components/dashboard/CreatorPanel';
 import { DnaAndAiPanel } from '@/components/dashboard/DnaAndAiPanel';
 import { RenameProfileDialog } from '@/components/modals/RenameProfileDialog';
+import { EditCatalogModal } from '@/components/modals/EditCatalogModal';
 import { generateId } from '@/lib/utils';
 
 type DashboardTab = 'active' | 'explore' | 'creator' | 'dna';
@@ -67,6 +68,7 @@ export function DashboardPage({
   const [activeTab, setActiveTab] = useState<DashboardTab>('active');
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [editingCatalog, setEditingCatalog] = useState<Catalog | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const editingProfile = profiles.find((p) => p.id === editingProfileId) ?? profiles[0];
 
   const handleEditCatalog = (catalog: Catalog) => {
@@ -79,7 +81,7 @@ export function DashboardPage({
       }
     }
     setEditingCatalog(catToEdit);
-    setActiveTab('creator');
+    setIsEditOpen(true);
   };
 
   const handleDuplicateCatalog = (catalog: Catalog) => {
@@ -90,6 +92,15 @@ export function DashboardPage({
       if (preset) {
         filters = preset.filters;
         queries = preset.queries;
+      }
+    }
+
+    // Ensure filters is populated from queries if missing (especially for presets)
+    if (!filters && queries) {
+      if (queries.length > 1) {
+        filters = { queries, presentation_strategy: catalog.presentation_strategy || 'popularity' };
+      } else if (queries.length === 1) {
+        filters = queries[0];
       }
     }
 
@@ -225,28 +236,10 @@ export function DashboardPage({
               />
             )}
 
-            {(activeTab === 'creator' || editingCatalog) && (
+            {activeTab === 'creator' && (
               <CreatorPanel
-                editCatalog={editingCatalog ?? undefined}
                 onAddCatalog={(catalog) => {
-                  if (editingCatalog) {
-                    if (editingCatalog.source === 'preset') {
-                      onAddCatalog(editingProfileId, {
-                        ...catalog,
-                        id: 'custom_' + generateId()
-                      });
-                      onRemoveCatalog(editingProfileId, editingCatalog.id);
-                    } else {
-                      onUpdateCatalog(editingProfileId, catalog);
-                    }
-                    setEditingCatalog(null);
-                    setActiveTab('active');
-                  } else {
-                    onAddCatalog(editingProfileId, catalog);
-                  }
-                }}
-                onCancel={() => {
-                  setEditingCatalog(null);
+                  onAddCatalog(editingProfileId, catalog);
                   setActiveTab('active');
                 }}
               />
@@ -270,6 +263,18 @@ export function DashboardPage({
         onOpenChange={setIsRenameOpen}
         currentName={editingProfile?.name ?? ''}
         onRename={(newName) => onRenameProfile(editingProfile.id, newName)}
+      />
+
+      <EditCatalogModal
+        open={isEditOpen}
+        onClose={() => {
+          setEditingCatalog(null);
+          setIsEditOpen(false);
+        }}
+        catalog={editingCatalog}
+        onAddCatalog={(cat) => onAddCatalog(editingProfileId, cat)}
+        onRemoveCatalog={(id) => onRemoveCatalog(editingProfileId, id)}
+        onUpdateCatalog={(cat) => onUpdateCatalog(editingProfileId, cat)}
       />
     </div>
   );

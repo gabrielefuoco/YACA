@@ -40,9 +40,54 @@ export function CatalogItem({
   onDrop,
   onDragEnd,
 }: CatalogItemProps) {
-  const isPreset = catalog.source === 'preset';
-  const filterCount = catalog.filters ? Object.keys(catalog.filters).length : 0;
+  const getFilterCount = (cat: Catalog) => {
+    const queryBlocks = cat.queries || 
+      (cat.filters && Array.isArray((cat.filters as any).queries) ? (cat.filters as any).queries : []) || 
+      (cat.filters ? [cat.filters] : []);
 
+    if (queryBlocks.length === 0) return 0;
+
+    let count = 0;
+    const filterKeys = [
+      'similar_to', 'similarTo',
+      'text_search', 'textSearch',
+      'with_genres', 'genre_ids', 'genres',
+      'with_keywords', 'keyword', 'keywords',
+      'with_cast', 'cast',
+      'with_crew', 'crew',
+      'with_companies', 'company_name',
+      'watch_provider',
+      'with_original_language', 'original_language', 'language',
+      'year_from', 'year_to', 'primary_release_date.gte', 'primary_release_date.lte', 'first_air_date.gte', 'first_air_date.lte',
+      'runtime_lte', 'runtimeGte', 'runtimeLte', 'with_runtime.gte', 'with_runtime.lte',
+      'vote_average.gte', 'vote_average.lte', 'voteMin', 'voteMax',
+      'vote_count.gte',
+      'without_genres', 'withoutGenres',
+      'without_keywords', 'withoutKeywords',
+      'certification_country', 'certification.lte', 'certificationLte'
+    ];
+
+    for (const q of queryBlocks) {
+      if (!q) continue;
+      for (const key of filterKeys) {
+        const val = q[key];
+        if (val !== undefined && val !== null && val !== '') {
+          if (Array.isArray(val) && val.length === 0) continue;
+          if (key === 'voteMin' && val === 0) continue;
+          if (key === 'voteMax' && val === 10) continue;
+          if (key === 'vote_average.gte' && val === 0) continue;
+          if (key === 'vote_average.lte' && val === 10) continue;
+          
+          count++;
+        }
+      }
+    }
+    return count;
+  };
+
+  const filterCount = getFilterCount(catalog);
+
+  const isPreset = catalog.source === 'preset';
   const sourceLabel = isPreset ? 'Preset' : (catalog.source === 'mylist' ? 'Mia Lista' : 'Creato');
   const sourceIcon = isPreset ? 'auto_awesome' : (catalog.source === 'mylist' ? 'list' : 'auto_fix');
 
@@ -93,15 +138,6 @@ export function CatalogItem({
         <div className="flex items-center gap-1 shrink-0">
           {!mergeSelectionInProgress ? (
             <>
-              {onEdit && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                  className="p-2 rounded-xl text-marrow-light/40 hover:text-primary hover:bg-primary/5 transition-all group/btn"
-                  title="Modifica filtri"
-                >
-                  <Pencil className="h-4.5 w-4.5 group-hover/btn:scale-110 transition-transform" />
-                </button>
-              )}
               {onDuplicate && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
@@ -147,9 +183,20 @@ export function CatalogItem({
             <span className="uppercase tracking-tight">{catalog.type === 'movie' ? 'Film' : 'Serie'}</span>
           </div>
           <div className="w-1 h-1 rounded-full bg-marrow-light/20" />
-          <div className="text-[10px] sm:text-xs font-bold text-marrow-light/60">
-            {filterCount} Filtr{filterCount !== 1 ? 'i' : 'o'}
-          </div>
+          {onEdit ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-marrow-light/60 hover:text-primary hover:bg-primary/5 px-1.5 py-0.5 rounded-md transition-all group/edit-btn cursor-pointer"
+              title="Modifica filtri"
+            >
+              <span>{filterCount} Filtr{filterCount !== 1 ? 'i' : 'o'}</span>
+              <Pencil className="h-3 w-3 text-marrow-light/40 group-hover/edit-btn:text-primary transition-colors shrink-0" />
+            </button>
+          ) : (
+            <div className="text-[10px] sm:text-xs font-bold text-marrow-light/60">
+              {filterCount} Filtr{filterCount !== 1 ? 'i' : 'o'}
+            </div>
+          )}
         </div>
         
         {!mergeSelectionInProgress && onMergeStart && (
