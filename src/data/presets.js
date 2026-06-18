@@ -50,9 +50,8 @@ const getPresets = () => {
         { id: 'preset_new_movies', name: 'Film: Nuove Uscite', emoji: '🆕', category: "🔥 Top & Trend", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', 'primary_release_date.lte': todayStr, 'primary_release_date.gte': twoMonthsAgoStr, sort_by: 'popularity.desc', 'vote_count.gte': 10 }] },
         { id: 'preset_new_series', name: 'Serie TV: Novità', emoji: '🆕', category: "🔥 Top & Trend", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', 'first_air_date.lte': todayStr, 'first_air_date.gte': sixMonthsAgoStr, sort_by: 'popularity.desc', 'vote_count.gte': 5, without_keywords: '210024' }] },
         { id: 'preset_new_series_eps', name: 'Serie: Episodi Recenti', emoji: '🆕', category: "🔥 Top & Trend", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', 'air_date.lte': todayStr, 'air_date.gte': twoWeeksAgoStr, sort_by: 'popularity.desc', without_keywords: '210024' }] },
-        { id: 'preset_pop_anime', name: 'Anime Popolari', emoji: '🌟', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_keywords: '210024', sort_by: 'popularity.desc', with_genres: TMDB_GENRES.TV.Animation, 'vote_count.gte': 20 }] },
-        { id: 'preset_new_anime', name: 'Anime: Novità', emoji: '🆕', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_keywords: '210024', 'first_air_date.lte': todayStr, 'first_air_date.gte': sixMonthsAgoStr, sort_by: 'popularity.desc', with_genres: TMDB_GENRES.TV.Animation, 'vote_count.gte': 5 }] },
-        { id: 'preset_new_anime_eps', name: 'Anime: Simulcast', emoji: '🆕', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', 'air_date.lte': todayStr, 'air_date.gte': twoWeeksAgoStr, with_keywords: '210024', sort_by: 'popularity.desc', with_genres: TMDB_GENRES.TV.Animation }] },
+        { id: 'preset_pop_anime', name: 'Anime Popolari', emoji: '🌟', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', sort_by: 'popularity.desc' }] },
+        { id: 'preset_new_anime', name: 'Anime: Novità', emoji: '🆕', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', sort_by: 'first_air_date.desc' }] },
 
         // =============================================
         // --- 🎬 CINEMA, REGISTI & AUTORI ---
@@ -213,12 +212,12 @@ const getPresets = () => {
         { id: 'preset_anime_sports', name: 'Anime: Sport & Competizione', emoji: '🏐', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', _keywordNames: 'sports', sort_by: 'vote_average.desc' }] },
 
         // =============================================
-        // --- 🏮 ANIME & ASIA (Classici & Film) ---
+        // --- 🏮 ANIME & ASIA (Classici & Film via Kitsu) ---
         // =============================================
-        { id: 'preset_anime_classic', name: 'Anime Classici (\'80/\'90)', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', 'first_air_date.gte': '1980-01-01', 'first_air_date.lte': '1999-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 100 }] },
-        { id: 'preset_anime_00s', name: 'Anime Anni 2000', emoji: '💿', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', 'first_air_date.gte': '2000-01-01', 'first_air_date.lte': '2009-12-31', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 100 }] },
-        { id: 'preset_anime_movies_top', name: 'Capolavori Anime (Film)', emoji: '🏆', category: "🏮 Solo Anime", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_genres: TMDB_GENRES.MOVIE.Animation, sort_by: 'vote_average.desc', 'vote_average.gte': 7.5, 'vote_count.gte': 200 }] },
-        { id: 'preset_anime_movies_romance', name: 'Film Anime Romantici', emoji: '🎥', category: "🏮 Solo Anime", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_genres: `${TMDB_GENRES.MOVIE.Animation},${TMDB_GENRES.MOVIE.Romance}`, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
+        { id: 'preset_anime_classic', name: 'Anime Classici (\'80/\'90)', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', 'first_air_date.gte': '1980-01-01', 'first_air_date.lte': '1999-12-31', sort_by: 'vote_average.desc' }] },
+        { id: 'preset_anime_00s', name: 'Anime Anni 2000', emoji: '💿', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', 'first_air_date.gte': '2000-01-01', 'first_air_date.lte': '2009-12-31', sort_by: 'vote_average.desc' }] },
+        { id: 'preset_anime_movies_top', name: 'Capolavori Anime (Film)', emoji: '🏆', category: "🏮 Solo Anime", type: 'movie', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', sort_by: 'vote_average.desc' }] },
+        { id: 'preset_anime_movies_romance', name: 'Film Anime Romantici', emoji: '🎥', category: "🏮 Solo Anime", type: 'movie', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', _keywordNames: 'romance', sort_by: 'popularity.desc' }] },
 
         // =============================================
         // --- 📺 SERIE TV & DOCU (Networks) ---
@@ -275,8 +274,8 @@ const getPresets = () => {
         { id: 'preset_teen_preteen_tv', name: 'Teen & Pre-Teen TV (Live)', emoji: '🎒', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: 10762, without_genres: 16, without_keywords: '210024', sort_by: 'popularity.desc', 'vote_count.gte': 20, without_original_language: 'ko|zh|th|hi|te|ta' }] },
         { id: 'preset_fairy_tales', name: 'Fiabe, Castelli & Principesse', emoji: '🧚', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: 10751, with_keywords: '3205|3095|12554', without_keywords: '210024', sort_by: 'popularity.desc', 'vote_count.gte': 50, without_original_language: 'ko|zh|th|hi|te|ta' }] },
         { id: 'preset_animal_protagonists', name: 'Animali Protagonisti', emoji: '🐾', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: 10751, with_keywords: '10574|6054|11303', without_keywords: '210024', sort_by: 'popularity.desc', 'vote_count.gte': 20, without_original_language: 'ko|zh|th|hi|te|ta' }] },
-        { id: 'preset_anime_kids_series', name: 'Anime per Bambini (Serie)', emoji: '🧸', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_genres: '16,10762', with_keywords: '210024', sort_by: 'popularity.desc', 'vote_count.gte': 10 }] },
-        { id: 'preset_anime_kids_movies', name: 'Anime per Bambini (Film)', emoji: '🧸', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_genres: '16,10751', with_keywords: '210024', sort_by: 'popularity.desc', 'vote_count.gte': 20 }] },
+        { id: 'preset_anime_kids_series', name: 'Anime per Bambini (Serie)', emoji: '🧸', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', _keywordNames: 'kids', sort_by: 'popularity.desc' }] },
+        { id: 'preset_anime_kids_movies', name: 'Anime per Bambini (Film)', emoji: '🧸', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'movie', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', _keywordNames: 'kids', sort_by: 'popularity.desc' }] },
 
     ];
 };
@@ -317,7 +316,8 @@ const profileTemplates = [
         name: '🎌 Otaku Hardcore (Anime)',
         description: 'Ogni sottogenere anime, dai classici al simulcast',
         presets: [
-            'preset_anime_simulcast', 'preset_anime_shonen', 'preset_anime_seinen', 'preset_anime_shoujo',
+            'preset_anime_simulcast', 'preset_pop_anime', 'preset_new_anime',
+            'preset_anime_shonen', 'preset_anime_seinen', 'preset_anime_shoujo',
             'preset_anime_isekai', 'preset_anime_slice_of_life', 'preset_anime_action',
             'preset_anime_mecha', 'preset_anime_dark', 'preset_anime_sports',
         ]

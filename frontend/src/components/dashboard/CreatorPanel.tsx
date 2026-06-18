@@ -51,6 +51,7 @@ interface BlockState {
   runtimeLte: string;
   collapsed: boolean;
   rawProps?: Record<string, unknown>;
+  keywordNames?: string;
 }
 
 function createEmptyBlock(): BlockState {
@@ -173,6 +174,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       runtimeLte: f['with_runtime.lte'] ? String(f['with_runtime.lte']) : (f.runtime_lte ? String(f.runtime_lte) : ''),
       collapsed: false,
       rawProps,
+      keywordNames: f._keywordNames as string || '',
     };
   }, []);
 
@@ -292,7 +294,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
   // --- Build query blocks for save ---
   const buildQueryBlock = (block: BlockState): QueryBlock => {
     const dateKey = type === 'series' ? 'first_air_date' : 'primary_release_date';
-    return {
+    const q: any = {
       ...(block.rawProps || {}),
       provider: block.provider,
       strategy: block.strategy === 'ai' ? 'discovery' : block.strategy,
@@ -314,6 +316,12 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       ...(block.runtimeGte && { 'with_runtime.gte': Number(block.runtimeGte) }),
       ...(block.runtimeLte && { 'with_runtime.lte': Number(block.runtimeLte) }),
     };
+
+    if (block.keywordNames && block.provider === 'kitsu') {
+      q._keywordNames = block.keywordNames;
+    }
+
+    return q;
   };
 
   // Build a flat filters object from a block (for preview backward compat)
@@ -619,7 +627,23 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
             </div>
           </details>
 
-          {/* Genres */}
+          {/* Kitsu Specific Categories */}
+          {block.provider === 'kitsu' && block.strategy === 'discovery' && (
+            <div className="mt-4 border-t border-marrow-light/10 pt-4">
+              <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px] block mb-1">
+                Categorie Kitsu (separate da virgola)
+              </Label>
+              <Input
+                value={block.keywordNames || ''}
+                onChange={(e) => updateBlock(block.id, { keywordNames: e.target.value })}
+                placeholder="es. shounen, romance, isekai, kids"
+                className="bg-white border-marrow-light/20 text-marrow-deep font-bold text-xs"
+              />
+            </div>
+          )}
+
+          {/* Genres (TMDB only) */}
+          {block.provider === 'tmdb' && (
           <details className="group [&_summary::-webkit-details-marker]:hidden">
             <summary className="flex cursor-pointer items-center justify-between font-black text-[10px] text-marrow-light select-none uppercase tracking-widest">
               Generi {block.genres.length > 0 && <span className="text-[10px] font-normal normal-case text-primary ml-2">({block.genres.length} selezionati)</span>}
@@ -658,8 +682,10 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               </div>
             </div>
           </details>
+          )}
 
-          {/* Keywords & Staff */}
+          {/* Keywords & Staff (TMDB only) */}
+          {block.provider === 'tmdb' && (
           <details className="group [&_summary::-webkit-details-marker]:hidden">
             <summary className="flex cursor-pointer items-center justify-between font-black text-[10px] text-marrow-light select-none uppercase tracking-widest">
               Parole Chiave & Staff {(block.keywords.length + block.cast.length + block.crew.length) > 0 && <span className="text-[10px] font-normal normal-case text-primary ml-2">({block.keywords.length + block.cast.length + block.crew.length} selezionati)</span>}
@@ -707,6 +733,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               </div>
             </div>
           </details>
+          )}
           </>
           )}
 

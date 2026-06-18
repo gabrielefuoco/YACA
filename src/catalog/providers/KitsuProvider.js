@@ -28,7 +28,7 @@ async function getKitsuCatalog(id, skip) {
     }
 }
 
-async function getKitsuCatalogFromFilters(filters, skip) {
+async function getKitsuCatalogFromFilters(filters, type, skip) {
     let kitsuParams = { sort: '-popularityRank' };
     
     if (filters.text_search || filters.keyword) {
@@ -39,6 +39,12 @@ async function getKitsuCatalogFromFilters(filters, skip) {
         kitsuParams['filter[categories]'] = filters._keywordNames.replace(/\|/g, ',');
     }
     
+    if (type === 'movie') {
+        kitsuParams['filter[subtype]'] = 'movie';
+    } else if (type === 'series') {
+        kitsuParams['filter[subtype]'] = 'TV';
+    }
+
     if (filters.sort_by) {
         if (filters.sort_by.includes('popularity')) kitsuParams.sort = '-popularityRank';
         if (filters.sort_by.includes('first_air_date')) kitsuParams.sort = '-startDate';
