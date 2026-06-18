@@ -85,22 +85,22 @@ export function DashboardPage({
   };
 
   const handleDuplicateCatalog = (catalog: Catalog) => {
-    let filters = catalog.filters;
-    let queries = catalog.queries;
+    let filters = catalog.filters ? JSON.parse(JSON.stringify(catalog.filters)) : undefined;
+    let queries = catalog.queries ? JSON.parse(JSON.stringify(catalog.queries)) : undefined;
     if (catalog.source === 'preset') {
       const preset = presets.find(p => p.id === catalog.id);
       if (preset) {
-        filters = preset.filters;
-        queries = preset.queries;
+        filters = preset.filters ? JSON.parse(JSON.stringify(preset.filters)) : undefined;
+        queries = preset.queries ? JSON.parse(JSON.stringify(preset.queries)) : undefined;
       }
     }
 
     // Ensure filters is populated from queries if missing (especially for presets)
     if (!filters && queries) {
       if (queries.length > 1) {
-        filters = { queries, presentation_strategy: catalog.presentation_strategy || 'popularity' };
+        filters = { queries: JSON.parse(JSON.stringify(queries)), presentation_strategy: catalog.presentation_strategy || 'popularity' };
       } else if (queries.length === 1) {
-        filters = queries[0];
+        filters = JSON.parse(JSON.stringify(queries[0]));
       }
     }
 

@@ -49,6 +49,7 @@ interface BlockState {
   runtimeGte: string;
   runtimeLte: string;
   collapsed: boolean;
+  rawProps?: Record<string, unknown>;
 }
 
 function createEmptyBlock(): BlockState {
@@ -75,6 +76,7 @@ function createEmptyBlock(): BlockState {
     runtimeGte: '',
     runtimeLte: '',
     collapsed: false,
+    rawProps: {},
   };
 }
 
@@ -126,6 +128,26 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       withoutKws = mapToPills(f.without_keywords, 'Escluso');
     }
 
+    // Capture unrecognized fields to prevent losing them on save (e.g. air_date, vote_count)
+    const recognizedKeys = new Set([
+      'strategy', 'similar_to', 'similarTo', 'text_search', 'textSearch', 'sort_by', 'sortBy',
+      'with_original_language', 'original_language', 'language', 'with_genres', 'genre_ids', 'genres',
+      'with_keywords', 'keyword', 'keywords', 'with_cast', 'cast', 'with_crew', 'crew', 'with_people',
+      'without_genres', 'without_genre_ids', 'withoutGenres', 'without_keywords', 'withoutKeywords',
+      'vote_average.gte', 'vote_average.lte', 'voteMin', 'voteMax', 'year_from', 'year_to',
+      'primary_release_date.gte', 'primary_release_date.lte', 'first_air_date.gte', 'first_air_date.lte',
+      'certification.lte', 'certification_lte', 'certificationLte',
+      'with_runtime.gte', 'runtime_gte', 'runtimeGte', 'with_runtime.lte', 'runtime_lte', 'runtimeLte',
+      '_keywordNames'
+    ]);
+
+    const rawProps: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(f)) {
+      if (!recognizedKeys.has(key)) {
+        rawProps[key] = val;
+      }
+    }
+
     return {
       id: generateId(),
       strategy: (f.strategy as BlockState['strategy']) || 'discovery',
@@ -147,6 +169,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       runtimeGte: f['with_runtime.gte'] ? String(f['with_runtime.gte']) : (f.runtime_gte ? String(f.runtime_gte) : ''),
       runtimeLte: f['with_runtime.lte'] ? String(f['with_runtime.lte']) : (f.runtime_lte ? String(f.runtime_lte) : ''),
       collapsed: false,
+      rawProps,
     };
   }, []);
 
@@ -267,6 +290,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
   const buildQueryBlock = (block: BlockState): QueryBlock => {
     const dateKey = type === 'series' ? 'first_air_date' : 'primary_release_date';
     return {
+      ...(block.rawProps || {}),
       strategy: block.strategy === 'ai' ? 'discovery' : block.strategy,
       ...(block.similarTo && { similar_to: block.similarTo }),
       ...(block.textSearch && { text_search: block.textSearch }),

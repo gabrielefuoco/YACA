@@ -1,0 +1,2179 @@
+[
+  {
+    "id": "preset_pop_movies",
+    "name": "Film Popolari",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_pop_series",
+    "name": "Serie TV Popolari",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_top_rated_movies",
+    "name": "Film Più Votati (All Time)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 1000
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_top_rated_series",
+    "name": "Serie Più Votate (All Time)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 500,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_new_movies",
+    "name": "Film: Nuove Uscite",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "primary_release_date.lte": "2026-06-18",
+      "primary_release_date.gte": "2026-04-18",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_new_series",
+    "name": "Serie TV: Novità",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "first_air_date.lte": "2026-06-18",
+      "first_air_date.gte": "2025-12-18",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_new_series_eps",
+    "name": "Serie: Episodi Recenti",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "air_date.lte": "2026-06-18",
+      "air_date.gte": "2026-06-04",
+      "sort_by": "popularity.desc",
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_pop_anime",
+    "name": "Anime Popolari",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "with_genres": 16,
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_new_anime",
+    "name": "Anime: Novità",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_keywords": "210024",
+      "first_air_date.lte": "2026-06-18",
+      "first_air_date.gte": "2025-12-18",
+      "sort_by": "popularity.desc",
+      "with_genres": 16,
+      "vote_count.gte": 5
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_new_anime_eps",
+    "name": "Anime: Simulcast",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "air_date.lte": "2026-06-18",
+      "air_date.gte": "2026-06-04",
+      "with_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "with_genres": 16
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_nolan",
+    "name": "Regia: Christopher Nolan",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_crew": 525,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_tarantino",
+    "name": "Regia: Quentin Tarantino",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_crew": 138,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_scorsese",
+    "name": "Regia: Martin Scorsese",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_crew": 224,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_spielberg",
+    "name": "Regia: Steven Spielberg",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_crew": 488,
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_kubrick",
+    "name": "Regia: Stanley Kubrick",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_crew": 240,
+      "sort_by": "vote_average.desc"
+    },
+    "status": "success",
+    "count": 18
+  },
+  {
+    "id": "preset_villeneuve",
+    "name": "Regia: Denis Villeneuve",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_crew": 137427,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 10
+  },
+  {
+    "id": "preset_fincher",
+    "name": "Regia: David Fincher",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_crew": 1341,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 16
+  },
+  {
+    "id": "preset_burton",
+    "name": "Regia: Tim Burton",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_crew": 510,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_wesanderson",
+    "name": "Regia: Wes Anderson",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_crew": 5655,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_lynch",
+    "name": "Regia: David Lynch",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_crew": 5602,
+      "sort_by": "vote_average.desc"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_scott",
+    "name": "Regia: Ridley Scott",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_crew": 578,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_actor_dicaprio",
+    "name": "Starring: Leonardo DiCaprio",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_cast": 6193,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_actor_cruise",
+    "name": "Starring: Tom Cruise",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_cast": 500,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_actor_reeves",
+    "name": "Starring: Keanu Reeves",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_cast": 6384,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_brad_pitt",
+    "name": "Starring: Brad Pitt",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_cast": 287,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_de_niro",
+    "name": "Starring: Robert De Niro",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_cast": 380,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_johnny_depp",
+    "name": "Starring: Johnny Depp",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_cast": 85,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_denzel",
+    "name": "Starring: Denzel Washington",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_cast": 882,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_nicolas_cage",
+    "name": "La Follia di Nicolas Cage",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_cast": 2963,
+      "sort_by": "popularity.desc"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_ghibli",
+    "name": "Studio Ghibli",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_companies": 10342,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_pixar",
+    "name": "Disney Pixar",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_companies": 3,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_a24",
+    "name": "A24: Cinema Indipendente",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_companies": 41077,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_marvel",
+    "name": "Marvel Cinematic Universe",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_companies": 420,
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_dc",
+    "name": "DC Comics (Film)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_companies": 128064,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 16
+  },
+  {
+    "id": "preset_blumhouse",
+    "name": "Blumhouse Horror",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_companies": 3172,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_dreamworks",
+    "name": "DreamWorks Animation",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_companies": 521,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_disney_animation",
+    "name": "Disney Classici & Animazione",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_companies": 2,
+      "with_genres": 16,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_kdrama_romance",
+    "name": "K-Drama: Romantici",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ko",
+      "with_genres": "35,18",
+      "with_keywords": "9840",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_kdrama_thriller",
+    "name": "K-Drama: Thriller & Mistero",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ko",
+      "with_genres": "80,9648",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_asian_action",
+    "name": "Azione Asiatica (JP, KR, HK)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_original_language": "ja|ko|zh",
+      "with_genres": "28",
+      "with_keywords": "779|2073|18034|9826",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_cinema_coreano",
+    "name": "Cinema Coreano (Film)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_original_language": "ko",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_nordic_noir",
+    "name": "Nordic Noir (Gialli Scandinavi)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "sv|da|no",
+      "with_genres": 80,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_spanish_thriller",
+    "name": "Thriller Spagnoli",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_original_language": "es",
+      "with_genres": "53|9648",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_british_crime",
+    "name": "Gialli & Crime Inglesi (UK)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_origin_country": "GB",
+      "with_genres": "80|9648",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_bollywood",
+    "name": "Bollywood & Cinema Indiano",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_original_language": "hi",
+      "with_origin_country": "IN",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_french_cinema",
+    "name": "Cinema Francese d'Autore",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_original_language": "fr",
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 7,
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_italian_cinema",
+    "name": "Cinema Italiano",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_original_language": "it",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_german_dark",
+    "name": "Serie Tedesche (Dark & Thriller)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "de",
+      "with_genres": "18|9648",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_80s_movies",
+    "name": "Cult Anni '80",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "primary_release_date.gte": "1980-01-01",
+      "primary_release_date.lte": "1989-12-31",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_90s_movies",
+    "name": "Classici Anni '90",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "primary_release_date.gte": "1990-01-01",
+      "primary_release_date.lte": "1999-12-31",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_00s_movies",
+    "name": "I favolosi Anni 2000",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "primary_release_date.gte": "2000-01-01",
+      "primary_release_date.lte": "2009-12-31",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_oscar_winners",
+    "name": "Grandi Film Premiati",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 8,
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_cult_classics",
+    "name": "Film Cult (Venerati dai fan)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_keywords": "11800",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_blockbusters",
+    "name": "Blockbusters (Campioni d'Incasso)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_mindfuck",
+    "name": "Mindfuck & Plot Twists",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": "9648|53",
+      "with_keywords": "362567|275311",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 6
+  },
+  {
+    "id": "preset_feel_good",
+    "name": "Feel-Good (Umore Leggero)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": "35,10751",
+      "without_genres": "18,27",
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 6.5,
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_pure_comedy",
+    "name": "Commedia Pura (No Dramma)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 35,
+      "without_genres": "18,10749",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_horror_all",
+    "name": "Horror: I Migliori",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 27,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200,
+      "vote_average.gte": 6.5
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_scary_horror",
+    "name": "Horror Atmosferico & Soprannaturali",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 27,
+      "with_keywords": "3335|9706|6152|10224",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_slasher_gore",
+    "name": "Slasher, Zombie & Gore",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 27,
+      "with_keywords": "12335|12377|3133|200424",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_whodunit",
+    "name": "Whodunit & Indagini",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": "9648",
+      "with_keywords": "11134|10391|191199",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 4
+  },
+  {
+    "id": "preset_apocalypse_survival",
+    "name": "Apocalisse & Sopravvivenza",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_keywords": "285366|4564|12377|241725",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_cyberpunk",
+    "name": "Cyberpunk & Futuro Distopico",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": "878|28",
+      "with_keywords": "12190|4565|156556|210086",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_sad_romance",
+    "name": "Storie d'Amore Drammatiche",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": "18,10749",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200,
+      "vote_average.gte": 7
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_heist",
+    "name": "Rapine & Colpi Grossi (Heist)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": "80|28",
+      "with_keywords": "10051",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_true_story",
+    "name": "Biopic: Grandi Storie Vere",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_keywords": "9672|5564|200155",
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 7,
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_videogame_movies",
+    "name": "Tratti da Videogiochi (Film)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_keywords": "41645|282",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_stand_up",
+    "name": "Stand-Up Comedy",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_keywords": "9716",
+      "with_genres": 35,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_musical",
+    "name": "Musical & Film Musicali",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 10402,
+      "with_keywords": "4344",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_war_movies",
+    "name": "Film di Guerra",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 10752,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_western",
+    "name": "Western",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 37,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_epic_historical",
+    "name": "Kolossal & Epopee Storiche",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": "36|28",
+      "with_keywords": "10084|302011|15167|2968",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_spy_action",
+    "name": "Spionaggio & Agenti Segreti",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": "28|53",
+      "with_keywords": "470|3230|10410",
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_neo_noir",
+    "name": "Neo-Noir & Detective Oscuri",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": "80|9648",
+      "with_keywords": "1471|207317|209210",
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 6.5,
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 19
+  },
+  {
+    "id": "preset_space_hard_scifi",
+    "name": "Hard Sci-Fi & Spazio Profondo",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 878,
+      "with_keywords": "3801|161176|3388|157675",
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 6.5,
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_disaster_movies",
+    "name": "Disaster Movies",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": "28|878",
+      "with_keywords": "5686|10483|10364",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_martial_arts",
+    "name": "Arti Marziali & Kung Fu",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 28,
+      "with_keywords": "779|18034",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_time_travel_movies",
+    "name": "Viaggi nel Tempo (Film)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 878,
+      "with_keywords": "4379",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_tv_mafia",
+    "name": "Mafia, Cartelli & Gangster",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": "80|18",
+      "with_keywords": "10398|3149|2463",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 17
+  },
+  {
+    "id": "preset_tv_high_fantasy",
+    "name": "High Fantasy (Spade & Draghi)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 10765,
+      "with_keywords": "11024|12554|3205",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_tv_dystopia",
+    "name": "Futuri Distopici",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 10765,
+      "with_keywords": "10053|4565",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_tv_politics",
+    "name": "Intrighi Politici & Potere",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": "10768|18",
+      "with_keywords": "6078|34038|41282|10410|298532",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_tv_superheroes_dark",
+    "name": "Supereroi (Toni Oscuri)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": "10759|80|18",
+      "with_keywords": "9715|180734|7002",
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 7,
+      "vote_count.gte": 100,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_tv_horror",
+    "name": "Serie Horror & Soprannaturali",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 18,
+      "with_keywords": "6152|3335",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_nature_docs",
+    "name": "Documentari: Natura e Animali",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "818|2964|2271|9882",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 7
+  },
+  {
+    "id": "preset_space_docs",
+    "name": "Documentari: Cosmo e Spazio",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "3801|161176|173161|3388",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 1
+  },
+  {
+    "id": "preset_true_crime",
+    "name": "Docuserie: True Crime",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "33722",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_sports_docs",
+    "name": "Docuserie: Sport e Atleti",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "6075|258273",
+      "sort_by": "popularity.desc"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_doc_music_legends",
+    "name": "Leggende della Musica",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": "99,10402",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_doc_food_travel",
+    "name": "Cibo, Viaggi & Alta Cucina",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "1918|9935|10637|233721|6513",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_doc_history_war",
+    "name": "Storia & Guerre Mondiali",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "273967|282633|195232|3573",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 2
+  },
+  {
+    "id": "preset_doc_tech_future",
+    "name": "Tecnologia, AI & Futuro",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "1576|2964|41666|362282|310",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "status": "success",
+    "count": 12
+  },
+  {
+    "id": "preset_big_sagas",
+    "name": "Le Grandi Saghe (Franchises)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_keywords": "363309|364043|180547|306278|368218|361758",
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_miniseries",
+    "name": "Miniserie di Qualità",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 18,
+      "with_keywords": "11162",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anthology",
+    "name": "Serie Antologiche",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_keywords": "9706",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_sketch_comedy",
+    "name": "Sketch Comedy",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 35,
+      "with_keywords": "156203",
+      "sort_by": "popularity.desc"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_sitcoms",
+    "name": "Sitcom Americane",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 35,
+      "with_keywords": "9840|193171|9713",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_medical_drama",
+    "name": "Medical Drama",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 18,
+      "with_keywords": "208788|11612|13005",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_crime_procedural",
+    "name": "Procedurali (Crime)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 80,
+      "with_keywords": "207694|268067|298849|191199",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_teen_drama",
+    "name": "Teen Drama & Coming of Age",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 18,
+      "with_keywords": "6270|10683|11156|315570",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_time_travel",
+    "name": "Viaggi nel Tempo (Serie)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 10765,
+      "with_keywords": "4379|196984",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_legal_drama",
+    "name": "Legal Drama & Tribunali",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 18,
+      "with_keywords": "222517|10909|33519",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_tv_thriller",
+    "name": "Thriller & Suspense (Serie)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": "18|9648",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100,
+      "vote_average.gte": 7.5,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_shonen",
+    "name": "Anime: Battle Shōnen",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ja",
+      "with_keywords": "363152|14643|779|207469",
+      "with_genres": 16,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_seinen",
+    "name": "Anime: Seinen (Maturi)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ja",
+      "with_keywords": "195668|158536",
+      "with_genres": 16,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_shoujo",
+    "name": "Anime: Shōjo (Romantico)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ja",
+      "with_keywords": "206437|207469|9840",
+      "with_genres": 16,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_slice_of_life",
+    "name": "Anime: Slice of Life",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ja",
+      "with_keywords": "9914|6054",
+      "with_genres": 16,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_mecha",
+    "name": "Anime: Mecha & Robot",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ja",
+      "with_keywords": "10046|238767|36",
+      "with_genres": 16,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_isekai",
+    "name": "Anime: Isekai & Fantasy",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ja",
+      "with_keywords": "237451|291482|196984|12554",
+      "with_genres": 16,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_dark",
+    "name": "Anime: Dark & Psicologico",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ja",
+      "with_keywords": "818|158536|10410",
+      "with_genres": 16,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_action",
+    "name": "Anime: Azione & Combattimento",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ja",
+      "with_keywords": "11545|18034|41165|207469|14643",
+      "with_genres": 16,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_sports",
+    "name": "Anime: Sport & Competizione",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ja",
+      "with_keywords": "6075",
+      "with_genres": 16,
+      "sort_by": "vote_average.desc"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_classic",
+    "name": "Anime Classici ('80/'90)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ja",
+      "first_air_date.gte": "1980-01-01",
+      "first_air_date.lte": "1999-12-31",
+      "with_genres": 16,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_00s",
+    "name": "Anime Anni 2000",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ja",
+      "first_air_date.gte": "2000-01-01",
+      "first_air_date.lte": "2009-12-31",
+      "with_genres": 16,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_movies_top",
+    "name": "Capolavori Anime (Film)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_original_language": "ja",
+      "with_genres": 16,
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 7.5,
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_movies_romance",
+    "name": "Film Anime Romantici",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_original_language": "ja",
+      "with_genres": "16,10749",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_hbo",
+    "name": "Produzione HBO",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_networks": 49,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_netflix",
+    "name": "Originali Netflix",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_networks": 213,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_amazon",
+    "name": "Amazon Prime Video",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_networks": 1024,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_disney_plus",
+    "name": "Disney+",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_networks": 2739,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_apple_tv",
+    "name": "Apple TV+",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_networks": 2552,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_a24_horror",
+    "name": "A24: Horror & Thriller",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_companies": 41077,
+      "with_genres": "27|53",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_vampires_werewolves",
+    "name": "Vampiri & Lupi Mannari",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_keywords": "3133|12377|12564|12377",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_cyberpunk_series",
+    "name": "Cyberpunk & Distopia (Serie)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 10765,
+      "with_keywords": "12190|4565|156556|210086",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024",
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_top_current_year",
+    "name": "Il meglio dell'anno",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "primary_release_year": 2026,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_romcom",
+    "name": "Commedie Romantiche",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": "35,10749",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 100,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_action_blockbusters",
+    "name": "Azione, Motori & Esplosioni",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 28,
+      "with_keywords": "10051|208035|4565|1701",
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 100,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_psych_thriller",
+    "name": "Thriller Psicologici",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 53,
+      "with_keywords": "15001|12377|12988|10391",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 100,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_reality_shows",
+    "name": "Reality Show & Competizioni",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 10764,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5,
+      "without_keywords": "210024",
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_fantasy_magic",
+    "name": "Grandi Saghe Fantasy & Magia",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": "14,12",
+      "with_keywords": "12554|6092|3205",
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 100,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_italian_comedy",
+    "name": "Commedie Italiane",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_original_language": "it",
+      "with_genres": 35,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_turkish_dizi",
+    "name": "Serie Turche (Dizi)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "tr",
+      "with_genres": "18|10766",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5,
+      "without_keywords": "210024"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_teen_drama_comedy",
+    "name": "High School & Teen Drama",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": "35|18",
+      "with_keywords": "6270|10683|11156|315570",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_keywords": "210024",
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_zombies",
+    "name": "Zombie & Infezioni",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_keywords": "12377|4565|10483",
+      "with_genres": "27|10765",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_keywords": "210024",
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_treasure_hunters",
+    "name": "Cacciatori di Tesori & Avventurieri",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 12,
+      "with_keywords": "10084|156525|4328",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_adult_animation",
+    "name": "Animazione per Adulti",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": "16,35",
+      "with_keywords": "161919|11192|315444",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_keywords": "210024",
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_giant_monsters",
+    "name": "Squali & Mostri Giganti",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_keywords": "10466|156095|257007|12335",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_slapstick_comedy",
+    "name": "Commedia Demenziale",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 35,
+      "with_keywords": "14185|175402|34117|9716",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 100,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_extreme_survival",
+    "name": "Sopravvivenza Estrema",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_keywords": "4564|285366|3335",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_sports_underdog",
+    "name": "Storie di Sport & Riscatto",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_keywords": "6075|10505|22822",
+      "with_genres": 18,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_netflix_movies",
+    "name": "Film su Netflix",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_watch_providers": 8,
+      "watch_region": "US",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_amazon_movies",
+    "name": "Film su Prime Video",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_watch_providers": 9,
+      "watch_region": "US",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_disney_movies",
+    "name": "Film su Disney+",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_watch_providers": 337,
+      "watch_region": "US",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_hbo_max_movies",
+    "name": "Film su Max",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_watch_providers": 1899,
+      "watch_region": "US",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_hbo_max_series",
+    "name": "Serie su Max",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_networks": 3186,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024",
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_hulu_series",
+    "name": "Serie su Hulu",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_networks": 453,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024",
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_paramount_series",
+    "name": "Serie su Paramount+",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_networks": 4330,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024",
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_family_movies_live",
+    "name": "Film per Famiglie (Live)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 10751,
+      "without_genres": 16,
+      "without_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_kids_series",
+    "name": "Cartoni in TV & Serie Kids",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 10762,
+      "without_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_teen_preteen_tv",
+    "name": "Teen & Pre-Teen TV (Live)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_genres": 10762,
+      "without_genres": 16,
+      "without_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_fairy_tales",
+    "name": "Fiabe, Castelli & Principesse",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 10751,
+      "with_keywords": "3205|3095|12554",
+      "without_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_animal_protagonists",
+    "name": "Animali Protagonisti",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_genres": 10751,
+      "with_keywords": "10574|6054|11303",
+      "without_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_kids_series",
+    "name": "Anime per Bambini (Serie)",
+    "type": "series",
+    "endpoint": "/discover/tv",
+    "params": {
+      "with_original_language": "ja",
+      "with_genres": "16,10762",
+      "with_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10
+    },
+    "status": "success",
+    "count": 20
+  },
+  {
+    "id": "preset_anime_kids_movies",
+    "name": "Anime per Bambini (Film)",
+    "type": "movie",
+    "endpoint": "/discover/movie",
+    "params": {
+      "with_original_language": "ja",
+      "with_genres": "16,10751",
+      "with_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "status": "success",
+    "count": 20
+  }
+]

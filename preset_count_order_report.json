@@ -1,0 +1,1751 @@
+[
+  {
+    "id": "preset_pop_movies",
+    "name": "Film Popolari",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_pop_series",
+    "name": "Serie TV Popolari",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_top_rated_movies",
+    "name": "Film Più Votati (All Time)",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 2 (Il padrino: 8.687) is smaller than index 3 (L'ultima missione: Project Hail Mary: 8.7) under vote_average.desc",
+      "Index 9 (Il cavaliere oscuro: 8.5) is smaller than index 10 (Il coraggioso prenderà la sposa: 8.511) under vote_average.desc",
+      "Index 15 (Your Name.: 8.481) is smaller than index 16 (Interstellar: 8.5) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_top_rated_series",
+    "name": "Serie Più Votate (All Time)",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 3 (The Pitt: 8.7) is smaller than index 4 (Quando la vita ti dà mandarini: 8.741) under vote_average.desc",
+      "Index 9 (Rick and Morty: 8.679) is smaller than index 10 (I Soprano: 8.7) under vote_average.desc",
+      "Index 12 (Primal: 8.656) is smaller than index 13 (Chiamatemi Anna: 8.7) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_new_movies",
+    "name": "Film: Nuove Uscite",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_new_series",
+    "name": "Serie TV: Novità",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_new_series_eps",
+    "name": "Serie: Episodi Recenti",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_pop_anime",
+    "name": "Anime Popolari",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_new_anime",
+    "name": "Anime: Novità",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_new_anime_eps",
+    "name": "Anime: Simulcast",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_nolan",
+    "name": "Regia: Christopher Nolan",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 21,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_tarantino",
+    "name": "Regia: Quentin Tarantino",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 32,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 8 (Una vita al massimo: 7.5) is smaller than index 9 (Hero: 7.515) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_scorsese",
+    "name": "Regia: Martin Scorsese",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 27,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 22 (The Shrouds - Segreti sepolti: 5.8) is smaller than index 23 (Rabid: 5.802) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_spielberg",
+    "name": "Regia: Steven Spielberg",
+    "type": "movie",
+    "sortField": "revenue.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_kubrick",
+    "name": "Regia: Stanley Kubrick",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 18,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_villeneuve",
+    "name": "Regia: Denis Villeneuve",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 10,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 0 (Dune - Parte due: 8.1) is smaller than index 1 (La donna che canta: 8.111) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_fincher",
+    "name": "Regia: David Fincher",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 16,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 3 (SPL: Kill Zone: 6.9) is smaller than index 4 (導火線: 6.925) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_burton",
+    "name": "Regia: Tim Burton",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 34,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_wesanderson",
+    "name": "Regia: Wes Anderson",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 22,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 5 (Rushmore: 7.394) is smaller than index 6 (Lost in Translation - L'amore tradotto: 7.4) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_lynch",
+    "name": "Regia: David Lynch",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 36 (Dune: 6.189) is smaller than index 37 (Out Yonder — Neighbor Boy: 6.2) under vote_average.desc",
+      "Index 39 (My Son, My Son, What Have Ye Done: 6.061) is smaller than index 40 (Ballerina: 6.1) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_scott",
+    "name": "Regia: Ridley Scott",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_actor_dicaprio",
+    "name": "Starring: Leonardo DiCaprio",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 33,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_actor_cruise",
+    "name": "Starring: Tom Cruise",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 59,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_actor_reeves",
+    "name": "Starring: Keanu Reeves",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_brad_pitt",
+    "name": "Starring: Brad Pitt",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 54,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 6 (L'esercito delle 12 scimmie: 7.6) is smaller than index 7 (Thelma & Louise: 7.603) under vote_average.desc",
+      "Index 38 (Confessioni di una mente pericolosa: 6.687) is smaller than index 39 (Burn After Reading - A prova di spia: 6.7) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_de_niro",
+    "name": "Starring: Robert De Niro",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 30 (Fahrenheit 9/11: 7.088) is smaller than index 31 (Mean Streets - Domenica in chiesa, lunedì all'inferno: 7.1) under vote_average.desc",
+      "Index 46 (New York, New York: 6.5) is smaller than index 47 (Terapia e pallottole: 6.515) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_johnny_depp",
+    "name": "Starring: Johnny Depp",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_denzel",
+    "name": "Starring: Denzel Washington",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 22,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_nicolas_cage",
+    "name": "La Follia di Nicolas Cage",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_ghibli",
+    "name": "Studio Ghibli",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 25,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_pixar",
+    "name": "Disney Pixar",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 24 (Inside Out 2: 7.5) is smaller than index 25 (Lou: 7.532) under vote_average.desc",
+      "Index 50 (Oltre l'infinito - Buzz e il viaggio verso Lightyear: 7) is smaller than index 51 (Ribelle - The Brave: 7.029) under vote_average.desc",
+      "Index 55 (Vacanze hawaiane: 6.968) is smaller than index 56 (22 contro la Terra: 7) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_a24",
+    "name": "A24: Cinema Indipendente",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 52,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 6 (Marty Supreme: 7.387) is smaller than index 7 (Waves - Le onde della vita: 7.4) under vote_average.desc",
+      "Index 18 (The Last Black Man in San Francisco: 6.996) is smaller than index 19 (Heretic: 7) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_marvel",
+    "name": "Marvel Cinematic Universe",
+    "type": "movie",
+    "sortField": "revenue.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_dc",
+    "name": "DC Comics (Film)",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 16,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_blumhouse",
+    "name": "Blumhouse Horror",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_dreamworks",
+    "name": "DreamWorks Animation",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 21 (Dragons - L'inizio delle corse dei draghi: 7.271) is smaller than index 22 (Dragons - Il dono del Drago: 7.3) under vote_average.desc",
+      "Index 38 (Kung Fu Panda - I segreti della pergamena: 6.879) is smaller than index 39 (I Pinguini di Madagascar in Missione Natale: 6.9) under vote_average.desc",
+      "Index 51 (Il gatto con gli stivali - I tre Diablos: 6.5) is smaller than index 52 (I pinguini di Madagascar: 6.535) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_disney_animation",
+    "name": "Disney Classici & Animazione",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 5 (Winston: 7.8) is smaller than index 6 (Testa o cuore: 7.819) under vote_average.desc",
+      "Index 32 (Cip e Ciop - Agenti speciali: 6.987) is smaller than index 33 (Fantasia 2000: 7) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_kdrama_romance",
+    "name": "K-Drama: Romantici",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_kdrama_thriller",
+    "name": "K-Drama: Thriller & Mistero",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_asian_action",
+    "name": "Azione Asiatica (JP, KR, HK)",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_cinema_coreano",
+    "name": "Cinema Coreano (Film)",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 4 (Vorrei dirti che ti amo: 8.299) is smaller than index 5 (브링 더 소울: 더 무비: 8.3) under vote_average.desc",
+      "Index 9 (Mademoiselle: 8.187) is smaller than index 10 (지금 만나러 갑니다: 8.2) under vote_average.desc",
+      "Index 19 (My Way - A modo mio: 7.9) is smaller than index 20 (The Witch: Part 1. The Subversion: 7.92) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_nordic_noir",
+    "name": "Nordic Noir (Gialli Scandinavi)",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_spanish_thriller",
+    "name": "Thriller Spagnoli",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 18 (La casa delle stelle: 7.5) is smaller than index 19 (On Probation: 7.507) under vote_average.desc",
+      "Index 45 (Hildegart - La vergine rossa: 7.09) is smaller than index 46 (Il regno: 7.1) under vote_average.desc",
+      "Index 47 (Bed Time: 7.057) is smaller than index 48 (Chi canterà per te?: 7.1) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_british_crime",
+    "name": "Gialli & Crime Inglesi (UK)",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_bollywood",
+    "name": "Bollywood & Cinema Indiano",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_french_cinema",
+    "name": "Cinema Francese d'Autore",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 6 (Shoah: 8.2) is smaller than index 7 (Mommy: 8.205) under vote_average.desc",
+      "Index 11 (Miraculous World - New York, eroi uniti: 8.089) is smaller than index 12 (L'odio: 8.1) under vote_average.desc",
+      "Index 19 (La pantera delle nevi: 7.9) is smaller than index 20 (Tre uomini in fuga: 7.926) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_italian_cinema",
+    "name": "Cinema Italiano",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 5 (C'era una volta il West: 8.273) is smaller than index 6 (Comizi d'amore: 8.3) under vote_average.desc",
+      "Index 15 (C'è ancora domani: 8.079) is smaller than index 16 (La grande guerra: 8.1) under vote_average.desc",
+      "Index 17 (Una giornata particolare: 8.052) is smaller than index 18 (Me contro Te: Il film - La vendetta del Signor S: 8.1) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_german_dark",
+    "name": "Serie Tedesche (Dark & Thriller)",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_80s_movies",
+    "name": "Cult Anni '80",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 8 (Shoah: 8.2) is smaller than index 9 (Va' e vedi: 8.211) under vote_average.desc",
+      "Index 15 (Anna dai capelli rossi: 8.098) is smaller than index 16 (Paris, Texas: 8.1) under vote_average.desc",
+      "Index 27 (Pixote, la legge del più debole: 7.9) is smaller than index 28 (Blade Runner: 7.936) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_90s_movies",
+    "name": "Classici Anni '90",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 18 (Matrix: 8.2) is smaller than index 19 (La leggenda del pianista sull'oceano: 8.242) under vote_average.desc",
+      "Index 25 (Will Hunting - Genio ribelle: 8.162) is smaller than index 26 (The Truman Show: 8.2) under vote_average.desc",
+      "Index 28 (Central do Brasil: 8.1) is smaller than index 29 (Le iene: 8.114) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_00s_movies",
+    "name": "I favolosi Anni 2000",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 3 (Il Signore degli Anelli - La Compagnia dell'Anello: 8.4) is smaller than index 4 (City of God: 8.429) under vote_average.desc",
+      "Index 11 (Bastardi senza gloria: 8.2) is smaller than index 12 (The Prestige: 8.208) under vote_average.desc",
+      "Index 21 (Amar te duele: 8.069) is smaller than index 22 (Tropa de elite - Gli squadroni della morte: 8.1) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_oscar_winners",
+    "name": "Grandi Film Premiati",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 4 (Il padrino: 8.687) is smaller than index 5 (L'ultima missione: Project Hail Mary: 8.7) under vote_average.desc",
+      "Index 6 (Morte in vacanza: 8.668) is smaller than index 7 (Attack on Titan: THE LAST ATTACK: 8.7) under vote_average.desc",
+      "Index 17 (Il cavaliere oscuro: 8.5) is smaller than index 18 (Il coraggioso prenderà la sposa: 8.511) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_cult_classics",
+    "name": "Film Cult (Venerati dai fan)",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 33,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 15 (L'altra faccia del vento: 6.7) is smaller than index 16 (Tour de Pharmacy: 6.705) under vote_average.desc",
+      "Index 19 (Vite da popstar: 6.594) is smaller than index 20 (Da morire: 6.6) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_blockbusters",
+    "name": "Blockbusters (Campioni d'Incasso)",
+    "type": "movie",
+    "sortField": "revenue.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_mindfuck",
+    "name": "Mindfuck & Plot Twists",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 6,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_feel_good",
+    "name": "Feel-Good (Umore Leggero)",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 13 (Il ritorno dei maghi - Alex contro Alex: 7.854) is smaller than index 14 (Scooby-Doo! e la maledizione del tredicesimo fantasma: 7.9) under vote_average.desc",
+      "Index 26 (Presto: 7.794) is smaller than index 27 (Scooby-Doo! Paura al campo estivo: 7.8) under vote_average.desc",
+      "Index 31 (Scooby-Doo! e la leggenda del Fantosauro: 7.7) is smaller than index 32 (Big Hero 6: 7.724) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_pure_comedy",
+    "name": "Commedia Pura (No Dramma)",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_horror_all",
+    "name": "Horror: I Migliori",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 22 (Freaks: 7.765) is smaller than index 23 (L'uomo che bruciava i cadaveri: 7.8) under vote_average.desc",
+      "Index 24 (Il carretto fantasma: 7.756) is smaller than index 25 (Il regno: 7.8) under vote_average.desc",
+      "Index 55 (La casa 2: 7.5) is smaller than index 56 (L'alba dei morti dementi: 7.544) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_scary_horror",
+    "name": "Horror Atmosferico & Soprannaturali",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 23 (Justice League Dark: 7.296) is smaller than index 24 (Hereditary - Le radici del male: 7.3) under vote_average.desc",
+      "Index 28 (Dracula: 7.165) is smaller than index 29 (Constantine: 7.2) under vote_average.desc",
+      "Index 39 (Sospesi nel tempo: 6.9) is smaller than index 40 (The Conjuring: Il rito finale: 6.935) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_slasher_gore",
+    "name": "Slasher, Zombie & Gore",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_whodunit",
+    "name": "Whodunit & Indagini",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 4,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_apocalypse_survival",
+    "name": "Apocalisse & Sopravvivenza",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_cyberpunk",
+    "name": "Cyberpunk & Futuro Distopico",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 17 (Batman: The Dark Knight Returns, Part 1: 7.7) is smaller than index 18 (L'uovo dell'angelo: 7.707) under vote_average.desc",
+      "Index 25 (Sfondamento dei cieli Gurren Lagann - The Movie 01 - Childhood's End: 7.6) is smaller than index 26 (Dragon Ball Z - La storia di Trunks: 7.624) under vote_average.desc",
+      "Index 34 (Moon: 7.565) is smaller than index 35 (Psycho-Pass 3: Primo Ispettore: 7.6) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_sad_romance",
+    "name": "Storie d'Amore Drammatiche",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 19 (Given The Movie: 8.2) is smaller than index 20 (Rascal Does Not Dream of a Dreaming Girl: 8.228) under vote_average.desc",
+      "Index 26 (Attraverso i miei occhi: 8.172) is smaller than index 27 (지금 만나러 갑니다: 8.2) under vote_average.desc",
+      "Index 33 (Se mi lasci ti cancello: 8.091) is smaller than index 34 (Chiamami col tuo nome: 8.1) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_heist",
+    "name": "Rapine & Colpi Grossi (Heist)",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 6 (Quel pomeriggio di un giorno da cani: 7.8) is smaller than index 7 (Trappola di cristallo: 7.813) under vote_average.desc",
+      "Index 10 (Troppo cattivi 2: 7.661) is smaller than index 11 (Tutte le ore feriscono... l'ultima uccide: 7.7) under vote_average.desc",
+      "Index 16 (Giungla d'asfalto: 7.498) is smaller than index 17 (Gangster Story: 7.5) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_true_story",
+    "name": "Biopic: Grandi Storie Vere",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 8 (I Swear: 8.2) is smaller than index 9 (Nuvole: 8.243) under vote_average.desc",
+      "Index 20 (A Taxi Driver: 8) is smaller than index 21 (Lion - La strada verso casa: 8.039) under vote_average.desc",
+      "Index 26 (Believe Me: The Abduction of Lisa McVey: 8) is smaller than index 27 (Amadeus: 8.022) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_videogame_movies",
+    "name": "Tratti da Videogiochi (Film)",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_stand_up",
+    "name": "Stand-Up Comedy",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_musical",
+    "name": "Musical & Film Musicali",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 28 (Cinderella Story - Se la scarpetta calza: 7.182) is smaller than index 29 (Bianco Natale: 7.2) under vote_average.desc",
+      "Index 32 (È nata una stella: 7.1) is smaller than index 33 (You, the Living: 7.129) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_war_movies",
+    "name": "Film di Guerra",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 7 (Alla mia piccola Sama: 8.2) is smaller than index 8 (Salvate il soldato Ryan: 8.227) under vote_average.desc",
+      "Index 9 (Bastardi senza gloria: 8.2) is smaller than index 10 (Va' e vedi: 8.211) under vote_average.desc",
+      "Index 14 (La Condizione Umana: Parte I – Nessun amore è più grande: 8.1) is smaller than index 15 (Il dottor Stranamore, ovvero: come ho imparato a non preoccuparmi e ad amare la bomba: 8.12) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_western",
+    "name": "Western",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 10 (L'uomo che uccise Liberty Valance: 7.8) is smaller than index 11 (Per un pugno di dollari: 7.826) under vote_average.desc",
+      "Index 19 (Bacurau: 7.6) is smaller than index 20 (Butch Cassidy: 7.616) under vote_average.desc",
+      "Index 24 (Tombstone: 7.585) is smaller than index 25 (Il grande paese: 7.6) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_epic_historical",
+    "name": "Kolossal & Epopee Storiche",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 24 (L'inferno di cristallo: 7) is smaller than index 25 (The Post: 7.005) under vote_average.desc",
+      "Index 51 (Connected: 6.4) is smaller than index 52 (Pallottole cinesi: 6.42) under vote_average.desc",
+      "Index 58 (Killer Elite: 6.271) is smaller than index 59 (I mercenari - The Expendables: 6.3) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_spy_action",
+    "name": "Spionaggio & Agenti Segreti",
+    "type": "movie",
+    "sortField": "revenue.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_neo_noir",
+    "name": "Neo-Noir & Detective Oscuri",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 19,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_space_hard_scifi",
+    "name": "Hard Sci-Fi & Spazio Profondo",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 59,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 6 (Dune - Parte due: 8.1) is smaller than index 7 (WALL•E: 8.113) under vote_average.desc",
+      "Index 49 (Guida galattica per autostoppisti: 6.686) is smaller than index 50 (2010 - L'anno del contatto: 6.7) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_disaster_movies",
+    "name": "Disaster Movies",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 57,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_martial_arts",
+    "name": "Arti Marziali & Kung Fu",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 1 (Matrix: 8.2) is smaller than index 2 (Old Boy: 8.236) under vote_average.desc",
+      "Index 5 (Mortal Kombat II: 7.984) is smaller than index 6 (Kill Bill: Volume 1: 8) under vote_average.desc",
+      "Index 14 (Mortal Kombat Legends: Snow Blind: 7.7) is smaller than index 15 (Big Hero 6: 7.724) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_time_travel_movies",
+    "name": "Viaggi nel Tempo (Film)",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 37 (Frequency - Il futuro è in ascolto: 7.277) is smaller than index 38 (Oltre i due minuti infiniti: 7.3) under vote_average.desc",
+      "Index 52 (Navigator: 6.964) is smaller than index 53 (A.R.O.G: 7) under vote_average.desc",
+      "Index 56 (Don't Let Go: 6.9) is smaller than index 57 (Looper - In fuga dal passato: 6.911) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_tv_mafia",
+    "name": "Mafia, Cartelli & Gangster",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 17,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_tv_high_fantasy",
+    "name": "High Fantasy (Spade & Draghi)",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 37,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_tv_dystopia",
+    "name": "Futuri Distopici",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 26,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_tv_politics",
+    "name": "Intrighi Politici & Potere",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_tv_superheroes_dark",
+    "name": "Supereroi (Toni Oscuri)",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 15 (Dexter: 8.2) is smaller than index 16 (Justice League: 8.216) under vote_average.desc",
+      "Index 22 (Daredevil: Rinascita: 8.183) is smaller than index 23 (Batman of the Future: 8.2) under vote_average.desc",
+      "Index 27 (Ben 10: 8.167) is smaller than index 28 (Le mie Avventure con Superman: 8.2) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_tv_horror",
+    "name": "Serie Horror & Soprannaturali",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 7 (Tale of the Nine Tailed: 8.3) is smaller than index 8 (The Uncanny Counter: 8.324) under vote_average.desc",
+      "Index 13 (Love Between Fairy and Devil: 8.2) is smaller than index 14 (Link Click: 8.204) under vote_average.desc",
+      "Index 16 (WandaVision: 8.189) is smaller than index 17 (Girigo: 8.2) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_nature_docs",
+    "name": "Documentari: Natura e Animali",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 7,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_space_docs",
+    "name": "Documentari: Cosmo e Spazio",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 1,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_true_crime",
+    "name": "Docuserie: True Crime",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_sports_docs",
+    "name": "Docuserie: Sport e Atleti",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_doc_music_legends",
+    "name": "Leggende della Musica",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 45,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 1 (Burn the Stage: The Movie: 8.3) is smaller than index 2 (Talking Heads - Stop Making Sense: 8.316) under vote_average.desc",
+      "Index 23 (Woodstock - Tre giorni di pace, amore e musica: 7.5) is smaller than index 24 (Marley: 7.543) under vote_average.desc",
+      "Index 25 (The Beatles: Eight Days a Week - The Touring Years: 7.5) is smaller than index 26 (Buena Vista Social Club: 7.512) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_doc_food_travel",
+    "name": "Cibo, Viaggi & Alta Cucina",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_doc_history_war",
+    "name": "Storia & Guerre Mondiali",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 2,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_doc_tech_future",
+    "name": "Tecnologia, AI & Futuro",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 12,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_big_sagas",
+    "name": "Le Grandi Saghe (Franchises)",
+    "type": "movie",
+    "sortField": "revenue.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_miniseries",
+    "name": "Miniserie di Qualità",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 14 (Boyfriend on Demand: 8.2) is smaller than index 15 (Battlestar Galactica: 8.203) under vote_average.desc",
+      "Index 26 (Win or Lose: 8) is smaller than index 27 (Il tatuatore di Auschwitz: 8.01) under vote_average.desc",
+      "Index 29 (The Night of - Cosa è successo quella notte?: 7.982) is smaller than index 30 (MONSTER - La storia di Jeffrey Dahmer: 8) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_anthology",
+    "name": "Serie Antologiche",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_sketch_comedy",
+    "name": "Sketch Comedy",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_sitcoms",
+    "name": "Sitcom Americane",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_medical_drama",
+    "name": "Medical Drama",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_crime_procedural",
+    "name": "Procedurali (Crime)",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_teen_drama",
+    "name": "Teen Drama & Coming of Age",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_time_travel",
+    "name": "Viaggi nel Tempo (Serie)",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 9 (The Umbrella Academy: 8.475) is smaller than index 10 (Vuoi sposare mio marito?: 8.5) under vote_average.desc",
+      "Index 16 (히어로는 아닙니다만: 8.195) is smaller than index 17 (Outlander: 8.2) under vote_average.desc",
+      "Index 34 (Oltre i limiti: 7.686) is smaller than index 35 (Intrecci del passato: 7.7) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_legal_drama",
+    "name": "Legal Drama & Tribunali",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_tv_thriller",
+    "name": "Thriller & Suspense (Serie)",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 10 (The Pitt: 8.7) is smaller than index 11 (Quando la vita ti dà mandarini: 8.741) under vote_average.desc",
+      "Index 14 (当我飞奔向你: 8.7) is smaller than index 15 (Chernobyl: 8.714) under vote_average.desc",
+      "Index 17 (Better Call Saul: 8.7) is smaller than index 18 (Weak Hero: 8.703) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_shonen",
+    "name": "Anime: Battle Shōnen",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_seinen",
+    "name": "Anime: Seinen (Maturi)",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 6 (The Rising of the Shield Hero: 8.488) is smaller than index 7 (Erased: 8.5) under vote_average.desc",
+      "Index 21 (Another: 8.296) is smaller than index 22 (La via del grembiule - Lo yakuza casalingo: 8.3) under vote_average.desc",
+      "Index 23 (【OSHI NO KO】: 8.286) is smaller than index 24 (L'estate in cui Hikaru è morto: 8.3) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_shoujo",
+    "name": "Anime: Shōjo (Romantico)",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_slice_of_life",
+    "name": "Anime: Slice of Life",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 5 (Kamisama Kiss: 8.6) is smaller than index 6 (Haikyu!! L'asso del volley: 8.616) under vote_average.desc",
+      "Index 9 (Given: 8.5) is smaller than index 10 (3D Kanojo Real Girl: 8.52) under vote_average.desc",
+      "Index 24 (A un passo da te: 8.4) is smaller than index 25 (Sasaki to Miyano: 8.424) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_mecha",
+    "name": "Anime: Mecha & Robot",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_isekai",
+    "name": "Anime: Isekai & Fantasy",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_dark",
+    "name": "Anime: Dark & Psicologico",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 38,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 2 (Cyberpunk: Edgerunners: 8.468) is smaller than index 3 (Steins;Gate: 8.5) under vote_average.desc",
+      "Index 25 (Baccano!: 7.7) is smaller than index 26 (Astra Lost in Space: 7.72) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_action",
+    "name": "Anime: Azione & Combattimento",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 45,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 40 (Whispered Words: 2.6028) is smaller than index 41 (SAND LAND: THE SERIES: 2.9814) under popularity.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_sports",
+    "name": "Anime: Sport & Competizione",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 10 (Rising Impact: 8.5) is smaller than index 11 (Yuri!! on Ice: 8.508) under vote_average.desc",
+      "Index 21 (Il principe del tennis: 8.3) is smaller than index 22 (新・エースをねらえ!: 8.333) under vote_average.desc",
+      "Index 27 (Uma Musume: Pretty Derby: 8.2) is smaller than index 28 (Free!: 8.209) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_classic",
+    "name": "Anime Classici ('80/'90)",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 46,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 24 (I Cavalieri del Drago: 8.1) is smaller than index 25 (I cieli di Escaflowne: 8.116) under vote_average.desc",
+      "Index 36 (Le situazioni di lui & lei: 7.9) is smaller than index 37 (Il Dr. Slump e Arale: 7.929) under vote_average.desc",
+      "Index 40 (Mobile Suit Gundam Wing: 7.8) is smaller than index 41 (Holly e Benji, due fuoriclasse: 7.842) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_00s",
+    "name": "Anime Anni 2000",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 20 (Lovely☆Complex: 8.3) is smaller than index 21 (Bakugan Battle Brawlers: 8.323) under vote_average.desc",
+      "Index 35 (Claymore: 8.174) is smaller than index 36 (Sfondamento dei cieli Gurren Lagann: 8.2) under vote_average.desc",
+      "Index 39 (PPG Z - Superchicche alla riscossa: 8.1) is smaller than index 40 (Host Club - Amore in affitto: 8.141) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_movies_top",
+    "name": "Capolavori Anime (Film)",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 15 (Given The Movie: 8.2) is smaller than index 16 (Rascal Does Not Dream of a Dreaming Girl: 8.228) under vote_average.desc",
+      "Index 23 (Digimon Adventure - Last Evolution Kizuna: 8.1) is smaller than index 24 (Jujutsu Kaisen 0 - Il film: 8.104) under vote_average.desc",
+      "Index 43 (Ghost in the Shell: 7.9) is smaller than index 44 (The Boy and the Beast: 7.908) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_movies_romance",
+    "name": "Film Anime Romantici",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 38,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 8 (Given The Movie: 8.2) is smaller than index 9 (Rascal Does Not Dream of a Dreaming Girl: 8.228) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_hbo",
+    "name": "Produzione HBO",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 60,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 8 (House of the Dragon: 8.298) is smaller than index 9 (Succession: 8.3) under vote_average.desc",
+      "Index 23 (Boardwalk Empire - L'impero del crimine: 8) is smaller than index 24 (Westworld - Dove tutto è concesso: 8.021) under vote_average.desc",
+      "Index 31 (Generation Kill: 7.9) is smaller than index 32 (The Nevers: 7.905) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_netflix",
+    "name": "Originali Netflix",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_amazon",
+    "name": "Amazon Prime Video",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_disney_plus",
+    "name": "Disney+",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_apple_tv",
+    "name": "Apple TV+",
+    "type": "series",
+    "sortField": "vote_average.desc",
+    "count": 59,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 18 (Dark Matter: 7.765) is smaller than index 19 (Le avventure di Snoopy: 7.8) under vote_average.desc",
+      "Index 29 (Trying: 7.5) is smaller than index 30 (Cinque giorni al Memorial: 7.53) under vote_average.desc",
+      "Index 45 (Carl Hiaasen’s Bad Monkey: 7.2) is smaller than index 46 (Mythic Quest: 7.219) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_a24_horror",
+    "name": "A24: Horror & Thriller",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 21,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_vampires_werewolves",
+    "name": "Vampiri & Lupi Mannari",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 55,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_cyberpunk_series",
+    "name": "Cyberpunk & Distopia (Serie)",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 48,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_top_current_year",
+    "name": "Il meglio dell'anno",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 57,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 33 (Mercy - Sotto accusa: 7) is smaller than index 34 (Fratelli demolitori: 7.018) under vote_average.desc",
+      "Index 37 (Good Luck, Have Fun, Don't Die: 6.98) is smaller than index 38 (The Drama - Un segreto è per sempre: 7) under vote_average.desc",
+      "Index 53 (Agente Zeta: 6.6) is smaller than index 54 (In the Grey: 6.62) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_romcom",
+    "name": "Commedie Romantiche",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 58,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_action_blockbusters",
+    "name": "Azione, Motori & Esplosioni",
+    "type": "movie",
+    "sortField": "revenue.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_psych_thriller",
+    "name": "Thriller Psicologici",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 54,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_reality_shows",
+    "name": "Reality Show & Competizioni",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 38,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_fantasy_magic",
+    "name": "Grandi Saghe Fantasy & Magia",
+    "type": "movie",
+    "sortField": "revenue.desc",
+    "count": 57,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_italian_comedy",
+    "name": "Commedie Italiane",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_turkish_dizi",
+    "name": "Serie Turche (Dizi)",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_teen_drama_comedy",
+    "name": "High School & Teen Drama",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 50,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_zombies",
+    "name": "Zombie & Infezioni",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 43,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_treasure_hunters",
+    "name": "Cacciatori di Tesori & Avventurieri",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 58,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_adult_animation",
+    "name": "Animazione per Adulti",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_giant_monsters",
+    "name": "Squali & Mostri Giganti",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_slapstick_comedy",
+    "name": "Commedia Demenziale",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 59,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_extreme_survival",
+    "name": "Sopravvivenza Estrema",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 58,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 11 (La moglie di Frankenstein: 7.5) is smaller than index 12 (E.T. l'extra-terrestre: 7.516) under vote_average.desc",
+      "Index 14 (Frankenstein: 7.47) is smaller than index 15 (Batman: The Long Halloween, Part One: 7.5) under vote_average.desc",
+      "Index 30 (La vendetta di Halloween: 6.985) is smaller than index 31 (Scooby-Doo! contro i Gul: 7) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_sports_underdog",
+    "name": "Storie di Sport & Riscatto",
+    "type": "movie",
+    "sortField": "vote_average.desc",
+    "count": 57,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 22 (I ragazzi vincenti: 7.561) is smaller than index 23 (La morte sospesa: 7.6) under vote_average.desc",
+      "Index 24 (Veloce come il vento: 7.5) is smaller than index 25 (Safety - Sempre al tuo fianco: 7.527) under vote_average.desc",
+      "Index 30 (Blue Lock Il Film - Episodio Nagi: 7.46) is smaller than index 31 (Ip Man 2: 7.5) under vote_average.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_netflix_movies",
+    "name": "Film su Netflix",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 51,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_amazon_movies",
+    "name": "Film su Prime Video",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 54,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_disney_movies",
+    "name": "Film su Disney+",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_hbo_max_movies",
+    "name": "Film su Max",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 59,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_hbo_max_series",
+    "name": "Serie su Max",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_hulu_series",
+    "name": "Serie su Hulu",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_paramount_series",
+    "name": "Serie su Paramount+",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 56,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_family_movies_live",
+    "name": "Film per Famiglie (Live)",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 58,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_kids_series",
+    "name": "Cartoni in TV & Serie Kids",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 58,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_teen_preteen_tv",
+    "name": "Teen & Pre-Teen TV (Live)",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_fairy_tales",
+    "name": "Fiabe, Castelli & Principesse",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_animal_protagonists",
+    "name": "Animali Protagonisti",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_kids_series",
+    "name": "Anime per Bambini (Serie)",
+    "type": "series",
+    "sortField": "popularity.desc",
+    "count": 57,
+    "isSorted": false,
+    "sortErrors": [
+      "Index 21 (Future GPX Cyber Formula: 11.3082) is smaller than index 22 (Shugo Chara!: 12.4055) under popularity.desc",
+      "Index 25 (Star☆Twinkle PreCure: 10.1687) is smaller than index 26 (Yes! Pretty Cure 5: 12.0934) under popularity.desc",
+      "Index 27 (Pretty Cure: 9.0998) is smaller than index 28 (Yu Gi Oh Sevens: 9.4072) under popularity.desc"
+    ],
+    "errors": []
+  },
+  {
+    "id": "preset_anime_kids_movies",
+    "name": "Anime per Bambini (Film)",
+    "type": "movie",
+    "sortField": "popularity.desc",
+    "count": 60,
+    "isSorted": true,
+    "sortErrors": [],
+    "errors": []
+  }
+]

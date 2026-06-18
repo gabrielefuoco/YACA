@@ -43,7 +43,15 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
     if (vote_average_lte) tmdbParams['vote_average.lte'] = vote_average_lte;
     if (certification_lte) tmdbParams['certification.lte'] = certification_lte;
 
-    tmdbParams.sort_by = sort_by || 'popularity.desc';
+    let finalSortBy = sort_by || 'popularity.desc';
+    if (type === 'tv' || type === 'series') {
+        if (finalSortBy === 'release_date.desc') finalSortBy = 'first_air_date.desc';
+        if (finalSortBy === 'release_date.asc') finalSortBy = 'first_air_date.asc';
+    } else {
+        if (finalSortBy === 'first_air_date.desc') finalSortBy = 'release_date.desc';
+        if (finalSortBy === 'first_air_date.asc') finalSortBy = 'release_date.asc';
+    }
+    tmdbParams.sort_by = finalSortBy;
     tmdbParams.language = language || 'it-IT';
 
     if (original_language) {
