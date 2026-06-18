@@ -38,14 +38,27 @@ export function ActiveCatalogsPanel({
   const presetCatalogs: Catalog[] = profile.raw_ui_state.selectedPresets
     .map((presetId) => presetMap.get(presetId))
     .filter((preset): preset is Preset => Boolean(preset))
-    .map((preset) => ({
-      id: preset.id,
-      name: preset.name,
-      type: preset.type === 'series' ? 'series' : 'movie',
-      source: 'preset',
-      filters: preset.filters,
-      emoji: preset.emoji,
-    }));
+    .map((preset) => {
+      let filters = preset.filters;
+      const queries = preset.queries;
+      if (!filters && queries) {
+        if (queries.length > 1) {
+          filters = { queries, presentation_strategy: preset.presentation_strategy || 'popularity' };
+        } else if (queries.length === 1) {
+          filters = queries[0];
+        }
+      }
+      return {
+        id: preset.id,
+        name: preset.name,
+        type: preset.type === 'series' ? 'series' : 'movie',
+        source: 'preset',
+        filters,
+        queries,
+        emoji: preset.emoji,
+        presentation_strategy: preset.presentation_strategy,
+      };
+    });
   const allCatalogs = [...profile.existingCatalogs, ...presetCatalogs];
   const orderMap = new Map((profile.raw_ui_state.catalogOrder ?? []).map((id, i) => [id, i]));
   const catalogs = [...allCatalogs].sort((a, b) => {

@@ -747,10 +747,8 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* FLOATING ACTION BAR: Preview & Save */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="sticky bottom-4 z-50 mt-4 sm:mt-6">
-        <div className="glass-panel p-2 sm:p-3 flex items-center justify-between gap-2 sm:gap-3 bg-white/80 shadow-2xl shadow-primary/10 border-2 border-primary/20 rounded-2xl mx-auto max-w-2xl backdrop-blur-xl">
+      <div className="relative mt-8 sm:mt-12 pb-4">
+        <div className="glass-panel p-2 sm:p-3 flex items-center justify-between gap-2 sm:gap-3 bg-white/95 shadow-md border border-marrow-light/20 rounded-2xl mx-auto max-w-2xl">
           {onCancel && (
             <Button
               variant="outline"
