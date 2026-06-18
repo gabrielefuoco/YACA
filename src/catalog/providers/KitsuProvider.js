@@ -73,9 +73,9 @@ async function getKitsuCatalogFromFilters(filters, type, skip) {
         // POST-FETCH FILTER: Kitsu API sometimes ignores filter[subtype] when combined with multiple filters (e.g. status + categories).
         // To guarantee accuracy for Movie vs Series catalogs, we enforce it locally.
         if (type === 'movie') {
-            results = results.filter(item => item.attributes.subtype === 'movie' || item.attributes.subtype === 'special');
+            results = results.filter(item => item._kitsu_subtype === 'movie' || item._kitsu_subtype === 'special');
         } else if (type === 'series') {
-            results = results.filter(item => item.attributes.subtype === 'TV' || item.attributes.subtype === 'ONA' || item.attributes.subtype === 'OVA');
+            results = results.filter(item => item._kitsu_subtype === 'TV' || item._kitsu_subtype === 'ONA' || item._kitsu_subtype === 'OVA');
         }
 
         await rateLimitedMap(

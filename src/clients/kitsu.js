@@ -90,14 +90,15 @@ function toStremioMetaItem(kitsuItem) {
 
     return {
         id,
-        type: 'series',
+        type: attrs.subtype === 'movie' ? 'movie' : 'series',
         name: title,
         poster: attrs.posterImage ? attrs.posterImage.original : null,
         background: attrs.coverImage ? attrs.coverImage.original : null,
         posterShape: 'poster',
         description: attrs.synopsis,
         releaseInfo: year,
-        imdbRating: attrs.averageRating ? (parseFloat(attrs.averageRating) / 10).toFixed(1) : null
+        imdbRating: attrs.averageRating ? (parseFloat(attrs.averageRating) / 10).toFixed(1) : null,
+        _kitsu_subtype: attrs.subtype
     };
 }
 
