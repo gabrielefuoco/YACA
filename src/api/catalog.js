@@ -112,9 +112,13 @@ router.post('/preview-catalog', async (req, res) => {
             const allowedFilterKeys = [
                 'strategy', 'presentation_strategy', 'similar_to', 'text_search',
                 'sort_by', 'with_genres', 'with_keywords', 'with_cast', 'with_crew',
-                'with_companies', 'with_original_language', 'vote_average.gte', 'vote_count.gte',
+                'with_companies', 'with_original_language', 'vote_average.gte', 'vote_average.lte', 'vote_count.gte',
                 'primary_release_date.gte', 'primary_release_date.lte',
-                'first_air_date.gte', 'first_air_date.lte', 'queries'
+                'first_air_date.gte', 'first_air_date.lte',
+                'air_date.gte', 'air_date.lte',
+                'without_genres', 'without_keywords',
+                'with_runtime.gte', 'with_runtime.lte',
+                'certification.lte', 'queries'
             ];
             
             for (const [key, value] of Object.entries(customFilters)) {
@@ -124,7 +128,7 @@ router.post('/preview-catalog', async (req, res) => {
                     } else if (typeof value === 'string') {
                         discoverFilters[key] = sanitizeString(value);
                     } else if (typeof value === 'number') {
-                        if (key === 'vote_average.gte') {
+                        if (key === 'vote_average.gte' || key === 'vote_average.lte') {
                             discoverFilters[key] = Math.max(0, Math.min(10, Number(value) || 0));
                         } else if (key === 'vote_count.gte') {
                             discoverFilters[key] = Math.max(0, Math.floor(Number(value) || 0));
