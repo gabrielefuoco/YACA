@@ -2,7 +2,7 @@ const { fetchKitsuCatalog, fetchKitsuEpisodes } = require('../../clients/kitsu')
 const { rateLimitedMap } = require('../../utils/rateLimiter');
 
 async function getKitsuCatalog(id, skip) {
-    const kitsuParams = { sort: '-popularityRank' };
+    const kitsuParams = { sort: 'popularityRank' };
     
     if (id === 'yaca_anime_ova') kitsuParams['filter[subtype]'] = 'OVA';
     if (id === 'yaca_anime_ona') kitsuParams['filter[subtype]'] = 'ONA';
@@ -36,7 +36,8 @@ async function getKitsuCatalogFromFilters(filters, type, skip) {
     }
     
     if (filters._keywordNames) {
-        kitsuParams['filter[categories]'] = filters._keywordNames.replace(/\|/g, ',');
+        const categories = filters._keywordNames.replace(/\|/g, ',').replace(/ /g, '-').toLowerCase();
+        kitsuParams['filter[categories]'] = categories;
     }
     
     if (type === 'movie') {
@@ -62,7 +63,7 @@ async function getKitsuCatalogFromFilters(filters, type, skip) {
     }
 
     if (filters.sort_by) {
-        if (filters.sort_by.includes('popularity')) kitsuParams.sort = '-popularityRank';
+        if (filters.sort_by.includes('popularity')) kitsuParams.sort = 'popularityRank';
         if (filters.sort_by.includes('first_air_date')) kitsuParams.sort = '-startDate';
         if (filters.sort_by.includes('vote_average')) kitsuParams.sort = '-averageRating';
     }
