@@ -110,6 +110,7 @@ router.post('/preview-catalog', async (req, res) => {
             strategy = sanitizeString(String(customFilters?.presentation_strategy || customFilters?.strategy || 'discovery'));
             
             const allowedFilterKeys = [
+                'provider', '_keywordNames',
                 'strategy', 'presentation_strategy', 'similar_to', 'text_search',
                 'sort_by', 'with_genres', 'with_keywords', 'with_cast', 'with_crew',
                 'with_companies', 'with_original_language', 'vote_average.gte', 'vote_average.lte', 'vote_count.gte',
