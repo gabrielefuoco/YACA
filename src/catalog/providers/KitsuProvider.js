@@ -45,6 +45,22 @@ async function getKitsuCatalogFromFilters(filters, type, skip) {
         kitsuParams['filter[subtype]'] = 'TV';
     }
 
+    // Map TMDB Date Filters to Kitsu seasonYear
+    const gteDate = filters['first_air_date.gte'] || filters['primary_release_date.gte'];
+    const lteDate = filters['first_air_date.lte'] || filters['primary_release_date.lte'];
+    
+    const currentYear = new Date().getFullYear();
+    
+    if (gteDate || lteDate) {
+        const startYear = gteDate ? gteDate.substring(0, 4) : '1900';
+        const endYear = lteDate ? lteDate.substring(0, 4) : '2030';
+        kitsuParams['filter[seasonYear]'] = `${startYear}..${endYear}`;
+    } else {
+        // Exclude future anime by default using seasonYear instead of status 
+        // because Kitsu API ignores subtype filters when status is used!
+        kitsuParams['filter[seasonYear]'] = `1900..${currentYear}`;
+    }
+
     if (filters.sort_by) {
         if (filters.sort_by.includes('popularity')) kitsuParams.sort = '-popularityRank';
         if (filters.sort_by.includes('first_air_date')) kitsuParams.sort = '-startDate';
@@ -52,8 +68,16 @@ async function getKitsuCatalogFromFilters(filters, type, skip) {
     }
 
     try {
-        const results = await fetchKitsuCatalog('/anime', skip, kitsuParams);
+        let results = await fetchKitsuCatalog('/anime', skip, kitsuParams);
         
+        // POST-FETCH FILTER: Kitsu API sometimes ignores filter[subtype] when combined with multiple filters (e.g. status + categories).
+        // To guarantee accuracy for Movie vs Series catalogs, we enforce it locally.
+        if (type === 'movie') {
+            results = results.filter(item => item.attributes.subtype === 'movie' || item.attributes.subtype === 'special');
+        } else if (type === 'series') {
+            results = results.filter(item => item.attributes.subtype === 'TV' || item.attributes.subtype === 'ONA' || item.attributes.subtype === 'OVA');
+        }
+
         await rateLimitedMap(
             results,
             async (item) => {
