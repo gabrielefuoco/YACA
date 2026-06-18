@@ -26,7 +26,7 @@ async function run() {
 
         const userId = user.userId;
         const tmdbKey = user.apiKeys?.tmdb || process.env.TMDB_API_KEY;
-        const traktToken = user.apiKeys?.traktToken;
+        const traktToken = user.apiKeys?.trakt || user.apiKeys?.traktToken;
         const { processProfiles } = require('./src/api/configure/profileProcessor');
         
         // Mock profile input for Otaku Hardcore preset

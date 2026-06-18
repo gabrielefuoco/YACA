@@ -39,8 +39,19 @@ async function fetchProfileContext(userId, context) {
  */
 async function fetchTmdbResults(tmdbClient, endpoint, params = {}, errorLabel = endpoint) {
     try {
-        const res = await tmdbClient.get(endpoint, { params, timeout: 5000 });
-        return res.data?.results || [];
+        const withoutOriginalLanguage = params.without_original_language;
+        const cleanParams = { ...params };
+        delete cleanParams.without_original_language;
+
+        const res = await tmdbClient.get(endpoint, { params: cleanParams, timeout: 5000 });
+        let results = res.data?.results || [];
+
+        if (withoutOriginalLanguage && results.length > 0) {
+            const excludedLangs = String(withoutOriginalLanguage).split('|');
+            results = results.filter(item => !excludedLangs.includes(item.original_language));
+        }
+
+        return results;
     } catch (err) {
         console.warn(`[Hybrid] ${errorLabel} failed:`, err.message);
         return [];
