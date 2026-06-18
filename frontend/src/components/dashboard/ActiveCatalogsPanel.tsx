@@ -13,6 +13,8 @@ interface ActiveCatalogsPanelProps {
   presets: Preset[];
   myLists: Catalog[];
   onRemoveMyList: (id: string) => void;
+  onEdit: (catalog: Catalog) => void;
+  onDuplicate: (catalog: Catalog) => void;
 }
 
 export function ActiveCatalogsPanel({
@@ -23,6 +25,8 @@ export function ActiveCatalogsPanel({
   presets,
   myLists,
   onRemoveMyList,
+  onEdit,
+  onDuplicate,
 }: ActiveCatalogsPanelProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [mergeSource, setMergeSource] = useState<Catalog | null>(null);
@@ -139,6 +143,8 @@ export function ActiveCatalogsPanel({
               mergeSelectionInProgress={isSelectionMode}
               canBeMergeTarget={!mergeSource || mergeSource.type === catalog.type}
               onRemove={() => !isSelectionMode && onRemove(catalog.id)}
+              onEdit={() => !isSelectionMode && onEdit(catalog)}
+              onDuplicate={() => !isSelectionMode && onDuplicate(catalog)}
               onMergeStart={() => startMerging(catalog)}
               onMergeSelect={() => selectMergeTarget(catalog)}
               onDragStart={() => handleDragStart(index)}

@@ -7,6 +7,7 @@ import { ExplorePanel } from '@/components/dashboard/ExplorePanel';
 import { CreatorPanel } from '@/components/dashboard/CreatorPanel';
 import { DnaAndAiPanel } from '@/components/dashboard/DnaAndAiPanel';
 import { RenameProfileDialog } from '@/components/modals/RenameProfileDialog';
+import { generateId } from '@/lib/utils';
 
 type DashboardTab = 'active' | 'explore' | 'creator' | 'dna';
 
@@ -27,6 +28,7 @@ interface DashboardPageProps {
   onReorderCatalogs: (profileId: string, catalogs: Catalog[]) => void;
   onRemoveCatalog: (profileId: string, catalogId: string) => void;
   onAddCatalog: (profileId: string, catalog: Catalog) => void;
+  onUpdateCatalog: (profileId: string, catalog: Catalog) => void;
   onSaveMyList: (list: MyList) => void;
   onRemoveMyList: (id: string) => void;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
@@ -53,6 +55,7 @@ export function DashboardPage({
   onReorderCatalogs,
   onRemoveCatalog,
   onAddCatalog,
+  onUpdateCatalog,
   onSaveMyList,
   onRemoveMyList,
   onUpdateProfile,
@@ -63,7 +66,45 @@ export function DashboardPage({
 }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('active');
   const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [editingCatalog, setEditingCatalog] = useState<Catalog | null>(null);
   const editingProfile = profiles.find((p) => p.id === editingProfileId) ?? profiles[0];
+
+  const handleEditCatalog = (catalog: Catalog) => {
+    let catToEdit = { ...catalog };
+    if (catalog.source === 'preset') {
+      const preset = presets.find(p => p.id === catalog.id);
+      if (preset) {
+        catToEdit.filters = preset.filters;
+        catToEdit.queries = preset.queries;
+      }
+    }
+    setEditingCatalog(catToEdit);
+    setActiveTab('creator');
+  };
+
+  const handleDuplicateCatalog = (catalog: Catalog) => {
+    let filters = catalog.filters;
+    let queries = catalog.queries;
+    if (catalog.source === 'preset') {
+      const preset = presets.find(p => p.id === catalog.id);
+      if (preset) {
+        filters = preset.filters;
+        queries = preset.queries;
+      }
+    }
+
+    const duplicated: Catalog = {
+      id: 'custom_' + generateId(),
+      name: `${catalog.name} (Copia)`,
+      type: catalog.type,
+      source: 'manual',
+      filters,
+      queries,
+      presentation_strategy: catalog.presentation_strategy || 'popularity',
+      emoji: catalog.emoji || '🎨',
+    };
+    onAddCatalog(editingProfileId, duplicated);
+  };
 
   const handleCreateFromTemplate = async (template: ProfileTemplate) => {
     // Creates a new profile with the template's name
@@ -132,7 +173,12 @@ export function DashboardPage({
           {tabsItems.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                if (tab.id !== 'creator') {
+                  setEditingCatalog(null);
+                }
+                setActiveTab(tab.id);
+              }}
               className={`
                 flex items-center justify-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:px-6 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-black transition-all duration-300 whitespace-nowrap flex-auto sm:flex-none
                 ${activeTab === tab.id
@@ -162,6 +208,8 @@ export function DashboardPage({
                 onReorder={(catalogs) => onReorderCatalogs(editingProfileId, catalogs)}
                 onRemove={(id) => onRemoveCatalog(editingProfileId, id)}
                 onMerge={(catalog) => onAddCatalog(editingProfileId, catalog)}
+                onEdit={handleEditCatalog}
+                onDuplicate={handleDuplicateCatalog}
                 presets={presets}
                 myLists={myListCatalogs}
                 onRemoveMyList={onRemoveMyList}
@@ -177,9 +225,30 @@ export function DashboardPage({
               />
             )}
 
-            {activeTab === 'creator' && (
+            {(activeTab === 'creator' || editingCatalog) && (
               <CreatorPanel
-                onAddCatalog={(catalog) => onAddCatalog(editingProfileId, catalog)}
+                editCatalog={editingCatalog ?? undefined}
+                onAddCatalog={(catalog) => {
+                  if (editingCatalog) {
+                    if (editingCatalog.source === 'preset') {
+                      onAddCatalog(editingProfileId, {
+                        ...catalog,
+                        id: 'custom_' + generateId()
+                      });
+                      onRemoveCatalog(editingProfileId, editingCatalog.id);
+                    } else {
+                      onUpdateCatalog(editingProfileId, catalog);
+                    }
+                    setEditingCatalog(null);
+                    setActiveTab('active');
+                  } else {
+                    onAddCatalog(editingProfileId, catalog);
+                  }
+                }}
+                onCancel={() => {
+                  setEditingCatalog(null);
+                  setActiveTab('active');
+                }}
               />
             )}
 

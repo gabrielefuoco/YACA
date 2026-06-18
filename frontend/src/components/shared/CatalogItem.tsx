@@ -1,11 +1,13 @@
 'use client';
 import { Catalog } from '@/types';
 import { PosterRow } from '@/components/shared/PosterRow';
-import { Wand2, GripVertical, Trash2, ArrowRight } from 'lucide-react';
+import { Wand2, GripVertical, Trash2, ArrowRight, Copy, Pencil } from 'lucide-react';
 
 interface CatalogItemProps {
   catalog: Catalog;
   onRemove?: () => void;
+  onEdit?: () => void;
+  onDuplicate?: () => void;
   onMergeStart?: () => void;
   onMergeSelect?: () => void;
   isDragging?: boolean;
@@ -23,6 +25,8 @@ interface CatalogItemProps {
 export function CatalogItem({
   catalog,
   onRemove,
+  onEdit,
+  onDuplicate,
   onMergeStart,
   onMergeSelect,
   isDragging,
@@ -89,13 +93,31 @@ export function CatalogItem({
         <div className="flex items-center gap-1 shrink-0">
           {!mergeSelectionInProgress ? (
             <>
+              {onEdit && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                  className="p-2 rounded-xl text-marrow-light/40 hover:text-primary hover:bg-primary/5 transition-all group/btn"
+                  title="Modifica filtri"
+                >
+                  <Pencil className="h-4.5 w-4.5 group-hover/btn:scale-110 transition-transform" />
+                </button>
+              )}
+              {onDuplicate && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+                  className="p-2 rounded-xl text-marrow-light/40 hover:text-primary hover:bg-primary/5 transition-all group/btn"
+                  title="Duplica catalogo"
+                >
+                  <Copy className="h-4.5 w-4.5 group-hover/btn:scale-110 transition-transform" />
+                </button>
+              )}
               {onRemove && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onRemove(); }}
                   className="p-2 rounded-xl text-marrow-light/40 hover:text-destructive hover:bg-destructive/5 transition-all group/btn"
                   title="Rimuovi"
                 >
-                  <Trash2 className="h-5 w-5 group-hover/btn:scale-110 transition-transform" />
+                  <Trash2 className="h-4.5 w-4.5 group-hover/btn:scale-110 transition-transform" />
                 </button>
               )}
             </>

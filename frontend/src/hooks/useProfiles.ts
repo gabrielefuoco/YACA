@@ -245,6 +245,19 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
       })
     );
   }, []);
+
+  const updateCatalog = useCallback((profileId: string, catalog: Catalog) => {
+    setProfiles((prev: Profile[]) =>
+      prev.map((p: Profile) => {
+        if (p.id !== profileId) return p;
+        return {
+          ...p,
+          existingCatalogs: p.existingCatalogs.map((c: Catalog) => c.id === catalog.id ? catalog : c),
+        };
+      })
+    );
+  }, []);
+
   return {
     profiles,
     setProfiles,
@@ -261,6 +274,7 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
     reorderCatalogs,
     removeCatalog,
     addCatalog,
+    updateCatalog,
     syncStatus,
     syncProfileVectors: async (profileId: string, userId: string) => {
       try {

@@ -17,6 +17,8 @@ const MAX_AI_CATALOG_NAME_LENGTH = 30;
 
 interface CreatorPanelProps {
   onAddCatalog: (catalog: Catalog) => void;
+  editCatalog?: Catalog;
+  onCancel?: () => void;
 }
 
 interface SelectedItem {
@@ -83,58 +85,18 @@ const parseList = (val: unknown) => {
 
 const mapToPills = (val: unknown, prefix: string) => parseList(val).map(id => ({ id, name: `${prefix}: ${id}` }));
 
-export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
+export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPanelProps) {
   // Global state
   const [name, setName] = useState('');
   const [type, setType] = useState<'movie' | 'series'>('movie');
   const [presentationStrategy, setPresentationStrategy] = useState<'popularity' | 'interleave'>('popularity');
 
   // Block state
-  const [blocks, setBlocks] = useState<BlockState[]>([createEmptyBlock()]);
+  const [blocks, setBlocks] = useState<BlockState[]>([]);
 
   const [previewFilters, setPreviewFilters] = useState<Record<string, unknown> | null>(null);
   const [previewType, setPreviewType] = useState<'movie' | 'series'>('movie');
   const [saved, setSaved] = useState(false);
-
-  // --- Block helpers ---
-  const updateBlock = useCallback((blockId: string, patch: Partial<BlockState>) => {
-    setBlocks(prev => prev.map(b => b.id === blockId ? { ...b, ...patch } : b));
-  }, []);
-
-  const removeBlock = useCallback((blockId: string) => {
-    setBlocks(prev => prev.length > 1 ? prev.filter(b => b.id !== blockId) : prev);
-  }, []);
-
-  const addBlock = useCallback(() => {
-    setBlocks(prev => [...prev, createEmptyBlock()]);
-  }, []);
-
-  const toggleBlockGenre = useCallback((blockId: string, genreId: string) => {
-    setBlocks(prev => prev.map(b => {
-      if (b.id !== blockId) return b;
-      const genres = b.genres.includes(genreId) ? b.genres.filter(g => g !== genreId) : [...b.genres, genreId];
-      return { ...b, genres };
-    }));
-  }, []);
-
-  const toggleBlockItem = useCallback((blockId: string, field: 'keywords' | 'cast' | 'crew' | 'withoutKeywords', item: SelectedItem) => {
-    setBlocks(prev => prev.map(b => {
-      if (b.id !== blockId) return b;
-      const list = b[field] as SelectedItem[];
-      const exists = list.find(x => x.id === item.id);
-      return { ...b, [field]: exists ? list.filter(x => x.id !== item.id) : [...list, item] };
-    }));
-  }, []);
-
-  const toggleBlockWithoutGenre = useCallback((blockId: string, genreId: string) => {
-    setBlocks(prev => prev.map(b => {
-      if (b.id !== blockId) return b;
-      const withoutGenres = b.withoutGenres.includes(genreId) ? b.withoutGenres.filter(g => g !== genreId) : [...b.withoutGenres, genreId];
-      return { ...b, withoutGenres };
-    }));
-  }, []);
-
-  // --- Parsing helpers ---
 
   // Convert API filters to a BlockState
   const filtersToBlock = useCallback((f: Record<string, unknown>): BlockState => {
@@ -186,6 +148,77 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       runtimeLte: f['with_runtime.lte'] ? String(f['with_runtime.lte']) : (f.runtime_lte ? String(f.runtime_lte) : ''),
       collapsed: false,
     };
+  }, []);
+
+  // Load editCatalog if provided
+  useEffect(() => {
+    if (editCatalog) {
+      setName(editCatalog.name || '');
+      setType(editCatalog.type || 'movie');
+      setPresentationStrategy(editCatalog.presentation_strategy || 'popularity');
+
+      let initialBlocks: BlockState[] = [];
+      if (editCatalog.queries && editCatalog.queries.length > 0) {
+        initialBlocks = editCatalog.queries.map(q => filtersToBlock(q));
+      } else if (editCatalog.filters) {
+        const rawFilters = editCatalog.filters;
+        const qArr = Array.isArray(rawFilters.queries) ? rawFilters.queries : [];
+        if (qArr.length > 0) {
+          initialBlocks = qArr.map(q => filtersToBlock(q as Record<string, unknown>));
+        } else {
+          initialBlocks = [filtersToBlock(rawFilters)];
+        }
+      }
+
+      if (initialBlocks.length === 0) {
+        initialBlocks = [createEmptyBlock()];
+      }
+      setBlocks(initialBlocks);
+    } else {
+      setName('');
+      setType('movie');
+      setPresentationStrategy('popularity');
+      setBlocks([createEmptyBlock()]);
+      setPreviewFilters(null);
+    }
+  }, [editCatalog, filtersToBlock]);
+
+  // --- Block helpers ---
+  const updateBlock = useCallback((blockId: string, patch: Partial<BlockState>) => {
+    setBlocks(prev => prev.map(b => b.id === blockId ? { ...b, ...patch } : b));
+  }, []);
+
+  const removeBlock = useCallback((blockId: string) => {
+    setBlocks(prev => prev.length > 1 ? prev.filter(b => b.id !== blockId) : prev);
+  }, []);
+
+  const addBlock = useCallback(() => {
+    setBlocks(prev => [...prev, createEmptyBlock()]);
+  }, []);
+
+  const toggleBlockGenre = useCallback((blockId: string, genreId: string) => {
+    setBlocks(prev => prev.map(b => {
+      if (b.id !== blockId) return b;
+      const genres = b.genres.includes(genreId) ? b.genres.filter(g => g !== genreId) : [...b.genres, genreId];
+      return { ...b, genres };
+    }));
+  }, []);
+
+  const toggleBlockItem = useCallback((blockId: string, field: 'keywords' | 'cast' | 'crew' | 'withoutKeywords', item: SelectedItem) => {
+    setBlocks(prev => prev.map(b => {
+      if (b.id !== blockId) return b;
+      const list = b[field] as SelectedItem[];
+      const exists = list.find(x => x.id === item.id);
+      return { ...b, [field]: exists ? list.filter(x => x.id !== item.id) : [...list, item] };
+    }));
+  }, []);
+
+  const toggleBlockWithoutGenre = useCallback((blockId: string, genreId: string) => {
+    setBlocks(prev => prev.map(b => {
+      if (b.id !== blockId) return b;
+      const withoutGenres = b.withoutGenres.includes(genreId) ? b.withoutGenres.filter(g => g !== genreId) : [...b.withoutGenres, genreId];
+      return { ...b, withoutGenres };
+    }));
   }, []);
 
   // --- AI Generation ---
@@ -280,10 +313,10 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
   const handleSave = () => {
     const queries = blocks.map(buildQueryBlock);
     const catalog: Catalog = {
-      id: generateId(),
+      id: editCatalog ? editCatalog.id : generateId(),
       name: name || 'Catalogo Personalizzato',
       type,
-      source: 'manual',
+      source: editCatalog ? editCatalog.source : 'manual',
       queries,
       presentation_strategy: presentationStrategy,
       // For multi-query: put queries[] in filters so the backend normalizer picks them up
@@ -291,7 +324,7 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       filters: blocks.length > 1
         ? { queries, presentation_strategy: presentationStrategy }
         : buildFiltersFromBlock(blocks[0]),
-      emoji: '🎨',
+      emoji: editCatalog ? editCatalog.emoji : '🎨',
     };
     onAddCatalog(catalog);
     setSaved(true);
@@ -718,6 +751,16 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="sticky bottom-4 z-50 mt-4 sm:mt-6">
         <div className="glass-panel p-2 sm:p-3 flex items-center justify-between gap-2 sm:gap-3 bg-white/80 shadow-2xl shadow-primary/10 border-2 border-primary/20 rounded-2xl mx-auto max-w-2xl backdrop-blur-xl">
+          {onCancel && (
+            <Button
+              variant="outline"
+              onClick={onCancel}
+              className="font-bold border-marrow-light/20 text-marrow-light hover:bg-marrow-light/5 text-[10px] sm:text-sm h-10 sm:h-12 px-3 sm:px-4"
+            >
+              Annulla
+            </Button>
+          )}
+
           <Button
             variant="ghost"
             onClick={handleManualPreview}
@@ -738,6 +781,10 @@ export function CreatorPanel({ onAddCatalog }: CreatorPanelProps) {
             {saved ? (
               <span className="flex items-center">
                 <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" /> Salvato!
+              </span>
+            ) : editCatalog ? (
+              <span className="flex items-center">
+                <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Salva</span> Modifiche
               </span>
             ) : (
               <span className="flex items-center">

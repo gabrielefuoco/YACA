@@ -189,6 +189,7 @@ export default function Home() {
     reorderCatalogs,
     removeCatalog,
     addCatalog,
+    updateCatalog,
     syncStatus,
     syncProfileVectors,
   } = useProfiles(initialProfiles, initialActiveProfileId);
@@ -516,6 +517,7 @@ export default function Home() {
                   onReorderCatalogs={reorderCatalogs}
                   onRemoveCatalog={removeCatalog}
                   onAddCatalog={addCatalog}
+                  onUpdateCatalog={updateCatalog}
                   onSaveMyList={handleSaveMyList}
                   onRemoveMyList={handleRemoveMyList}
                   onUpdateProfile={updateProfile}
