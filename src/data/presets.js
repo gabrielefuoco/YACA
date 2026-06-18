@@ -199,17 +199,18 @@ const getPresets = () => {
         { id: 'preset_tv_thriller', name: 'Thriller & Suspense (Serie)', emoji: '😱', category: "🕵️ Crimine, Mistero & Thriller", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: `${TMDB_GENRES.TV.Drama}|${TMDB_GENRES.TV.Mystery}`, sort_by: 'vote_average.desc', 'vote_count.gte': 100, 'vote_average.gte': 7.5, without_keywords: '210024' }] },
 
         // =============================================
-        // --- 🏮 ANIME & ASIA (Sottogeneri) ---
+        // --- 🏮 ANIME & ASIA (Sottogeneri via Kitsu) ---
         // =============================================
-        { id: 'preset_anime_shonen', name: 'Anime: Battle Shōnen', emoji: '🔥', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_keywords: '363152|14643|779|207469', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 20 }] },
-        { id: 'preset_anime_seinen', name: 'Anime: Seinen (Maturi)', emoji: '🍷', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_keywords: '195668|158536', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 100 }] },
-        { id: 'preset_anime_shoujo', name: 'Anime: Shōjo (Romantico)', emoji: '🌸', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_keywords: '206437|207469|9840', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 5 }] },
-        { id: 'preset_anime_slice_of_life', name: 'Anime: Slice of Life', emoji: '☕', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_keywords: '9914|6054', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 100 }] },
-        { id: 'preset_anime_mecha', name: 'Anime: Mecha & Robot', emoji: '🤖', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_keywords: '10046|238767|36', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 5 }] },
-        { id: 'preset_anime_isekai', name: 'Anime: Isekai & Fantasy', emoji: '🌀', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_keywords: '237451|291482|196984|12554', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 20 }] },
-        { id: 'preset_anime_dark', name: 'Anime: Dark & Psicologico', emoji: '💀', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_keywords: '818|158536|10410', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc', 'vote_count.gte': 100 }] },
-        { id: 'preset_anime_action', name: 'Anime: Azione & Combattimento', emoji: '💥', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_keywords: '11545|18034|41165|207469|14643', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 20 }] },
-        { id: 'preset_anime_sports', name: 'Anime: Sport & Competizione', emoji: '🏐', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_keywords: '6075', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'vote_average.desc' }] },
+        { id: 'preset_anime_simulcast', name: 'Simulcast (Nuovi Episodi)', emoji: '📺', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'tmdb', strategy: 'discovery', with_original_language: 'ja', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'air_date.gte': new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], 'air_date.lte': new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] }] },
+        { id: 'preset_anime_shonen', name: 'Anime: Battle Shōnen', emoji: '🔥', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', _keywordNames: 'shounen', sort_by: 'popularity.desc' }] },
+        { id: 'preset_anime_seinen', name: 'Anime: Seinen (Maturi)', emoji: '🍷', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', _keywordNames: 'seinen', sort_by: 'vote_average.desc' }] },
+        { id: 'preset_anime_shoujo', name: 'Anime: Shōjo (Romantico)', emoji: '🌸', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', _keywordNames: 'shoujo', sort_by: 'popularity.desc' }] },
+        { id: 'preset_anime_slice_of_life', name: 'Anime: Slice of Life', emoji: '☕', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', _keywordNames: 'slice of life', sort_by: 'vote_average.desc' }] },
+        { id: 'preset_anime_mecha', name: 'Anime: Mecha & Robot', emoji: '🤖', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', _keywordNames: 'mecha', sort_by: 'popularity.desc' }] },
+        { id: 'preset_anime_isekai', name: 'Anime: Isekai & Fantasy', emoji: '🌀', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', _keywordNames: 'isekai', sort_by: 'popularity.desc' }] },
+        { id: 'preset_anime_dark', name: 'Anime: Dark & Psicologico', emoji: '💀', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', _keywordNames: 'dark|psychological', sort_by: 'vote_average.desc' }] },
+        { id: 'preset_anime_action', name: 'Anime: Azione & Combattimento', emoji: '💥', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', _keywordNames: 'action', sort_by: 'popularity.desc' }] },
+        { id: 'preset_anime_sports', name: 'Anime: Sport & Competizione', emoji: '🏐', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', _keywordNames: 'sports', sort_by: 'vote_average.desc' }] },
 
         // =============================================
         // --- 🏮 ANIME & ASIA (Classici & Film) ---
@@ -316,10 +317,9 @@ const profileTemplates = [
         name: '🎌 Otaku Hardcore (Anime)',
         description: 'Ogni sottogenere anime, dai classici al simulcast',
         presets: [
-            'preset_pop_anime', 'preset_romcom', 'preset_netflix_movies', 'preset_top_current_year', 'preset_new_anime', 'preset_new_anime_eps',
-            'preset_anime_shonen', 'preset_anime_seinen', 'preset_anime_dark',
+            'preset_anime_simulcast', 'preset_anime_shonen', 'preset_anime_seinen', 'preset_anime_shoujo',
             'preset_anime_isekai', 'preset_anime_slice_of_life', 'preset_anime_action',
-            'preset_anime_movies_top', 'preset_anime_classic', 'preset_ghibli'
+            'preset_anime_mecha', 'preset_anime_dark', 'preset_anime_sports',
         ]
     },
     {

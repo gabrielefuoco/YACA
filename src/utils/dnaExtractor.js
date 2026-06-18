@@ -47,6 +47,26 @@ function extractStaticDNAFromQueries(queries) {
                 V_static[k] = (V_static[k] || 0) + baseWeight;
             });
         }
+
+        // Il "Dizionario Rosetta": Traduce i preset Kitsu in DNA TMDB
+        if (query.provider === 'kitsu') {
+            // Un utente che usa Kitsu sta chiaramente cercando Anime (Genere: Animation = 16)
+            V_static['g:16'] = (V_static['g:16'] || 0) + baseWeight;
+            // Aggiungiamo anche il paese "JP" per rafforzare l'identità Anime nel DNA
+            V_static['o:JP'] = (V_static['o:JP'] || 0) + baseWeight;
+
+            // Se ci sono categorie Kitsu testuali, proviamo a mapparle (es. "isekai")
+            if (query._keywordNames) {
+                query._keywordNames.split(/[,|]/).forEach(cat => {
+                    const cleanCat = cat.trim().toLowerCase();
+                    if (!cleanCat) return;
+                    // Aggiungiamo la stringa come keyword (k:string).
+                    // TMDB e YACA supportano anche DNA su stringhe, non solo ID interi
+                    const k = `k:${cleanCat}`;
+                    V_static[k] = (V_static[k] || 0) + baseWeight;
+                });
+            }
+        }
     });
 
     return V_static;

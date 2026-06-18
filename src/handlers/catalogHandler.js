@@ -101,6 +101,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 );
             }
             
+            // 3.5 TRADUTTORE MAGICO (TMDB -> Kitsu per Anime)
+            const { translateAnimeIdsToKitsu } = require('../utils/TmdbToKitsuMapper');
+            finalResults = await translateAnimeIdsToKitsu(finalResults);
+
             // 4. FORMATTAZIONE (STREMIO)
             const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
             const formattedData = formatStremioCatalog(

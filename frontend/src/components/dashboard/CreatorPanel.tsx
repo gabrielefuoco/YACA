@@ -28,6 +28,7 @@ interface SelectedItem {
 
 interface BlockState {
   id: string;
+  provider: 'tmdb' | 'kitsu';
   strategy: 'discovery' | 'multi_search' | 'similar' | 'ai';
   aiPrompt?: string;
   aiLoading?: boolean;
@@ -55,6 +56,7 @@ interface BlockState {
 function createEmptyBlock(): BlockState {
   return {
     id: generateId(),
+    provider: 'tmdb',
     strategy: 'discovery',
     aiPrompt: '',
     aiLoading: false,
@@ -138,7 +140,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       'primary_release_date.gte', 'primary_release_date.lte', 'first_air_date.gte', 'first_air_date.lte',
       'certification.lte', 'certification_lte', 'certificationLte',
       'with_runtime.gte', 'runtime_gte', 'runtimeGte', 'with_runtime.lte', 'runtime_lte', 'runtimeLte',
-      '_keywordNames'
+      '_keywordNames', 'provider'
     ]);
 
     const rawProps: Record<string, unknown> = {};
@@ -150,6 +152,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
 
     return {
       id: generateId(),
+      provider: (f.provider as 'tmdb' | 'kitsu') || 'tmdb',
       strategy: (f.strategy as BlockState['strategy']) || 'discovery',
       similarTo: (f.similar_to as string) || '',
       textSearch: (f.text_search as string) || '',
@@ -291,6 +294,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
     const dateKey = type === 'series' ? 'first_air_date' : 'primary_release_date';
     return {
       ...(block.rawProps || {}),
+      provider: block.provider,
       strategy: block.strategy === 'ai' ? 'discovery' : block.strategy,
       ...(block.similarTo && { similar_to: block.similarTo }),
       ...(block.textSearch && { text_search: block.textSearch }),
@@ -413,8 +417,36 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       {/* Block body */}
       {!block.collapsed && (
         <div className="p-3 sm:p-5 space-y-3 sm:space-y-5">
-          {/* Strategy selector and inputs */}
+          {/* Provider and Strategy selectors */}
           <div className="space-y-3 sm:space-y-4">
+            <div>
+              <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px] block mb-1.5 sm:mb-2">Sorgente Dati</Label>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); updateBlock(block.id, { provider: 'tmdb' }); }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                    block.provider === 'tmdb' || !block.provider
+                    ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
+                    : 'bg-white/60 border-marrow-light/10 text-marrow-light hover:text-primary hover:border-primary/30'
+                  }`}
+                >
+                  TMDB (Film & Serie)
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); updateBlock(block.id, { provider: 'kitsu' }); }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                    block.provider === 'kitsu'
+                    ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
+                    : 'bg-white/60 border-marrow-light/10 text-marrow-light hover:text-primary hover:border-primary/30'
+                  }`}
+                >
+                  Kitsu (Solo Anime)
+                </button>
+              </div>
+            </div>
+
             <div>
               <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px] block mb-1.5 sm:mb-2">Strategia</Label>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">

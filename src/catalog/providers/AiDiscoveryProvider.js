@@ -15,6 +15,11 @@ const LOOKAHEAD_PAGES = 3;
 const PAGE_SIZE = 20;
 
 async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, settings = {}, cacheOptions = {}) {
+    if (filters.provider === 'kitsu') {
+        const { getKitsuCatalogFromFilters } = require('./KitsuProvider');
+        return await getKitsuCatalogFromFilters(filters, skip);
+    }
+
     let results = [];
     const searchType = type === 'series' ? 'tv' : 'movie';
 
