@@ -65,7 +65,7 @@ function sanitizeCatalogMeta(item, options = {}) {
     if (isLandscapeEnabled) {
         if (erdbConfig && item.id) {
             const erdbId = getErdbId(item.id);
-            sourceImage = `https://easyratingsdb.com/images/${erdbConfig}/backdrop/${erdbId}`;
+            sourceImage = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
         } else {
             sourceImage = item.background || item.poster;
         }
@@ -73,7 +73,7 @@ function sanitizeCatalogMeta(item, options = {}) {
     } else {
         if (erdbConfig && item.id) {
             const erdbId = getErdbId(item.id);
-            sourceImage = `https://easyratingsdb.com/images/${erdbConfig}/poster/${erdbId}`;
+            sourceImage = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
         } else {
             sourceImage = item.poster;
         }
@@ -82,7 +82,7 @@ function sanitizeCatalogMeta(item, options = {}) {
     let background = item.background;
     if (erdbConfig && item.id) {
         const erdbId = getErdbId(item.id);
-        background = `https://easyratingsdb.com/images/${erdbConfig}/backdrop/${erdbId}`;
+        background = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
     }
 
     let poster = sourceImage;
