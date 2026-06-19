@@ -60,6 +60,11 @@ function getErdbId(item) {
         return strId;
     }
 
+    // Kitsu / AniList / MAL / already-qualified IDs: pass through
+    if (strId.startsWith('kitsu:') || strId.startsWith('anilist:') || strId.startsWith('mal:') || strId.startsWith('anidb:')) {
+        return strId;
+    }
+
     // TMDB with prefix: upgrade to typed format (tmdb:tv: or tmdb:movie:)
     if (strId.startsWith('tmdb:')) {
         const numericPart = strId.slice('tmdb:'.length);
@@ -76,7 +81,7 @@ function getErdbId(item) {
         return `tmdb:${tmdbType}:${strId}`;
     }
 
-    return null; // Not supported by ERDB
+    return strId;
 }
 
 function sanitizeCatalogMeta(item, options = {}) {
@@ -95,7 +100,12 @@ function sanitizeCatalogMeta(item, options = {}) {
     if (isLandscapeEnabled) {
         let erdbId = erdbConfig ? getErdbId(item) : null;
         if (erdbConfig && erdbId) {
-            sourceImage = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
+            const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
+            if (erdbId.startsWith('kitsu:') && hostUrl) {
+                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.background || item.poster)}`;
+            } else {
+                sourceImage = erdbUrl;
+            }
         } else {
             sourceImage = item.background || item.poster;
         }
@@ -103,7 +113,12 @@ function sanitizeCatalogMeta(item, options = {}) {
     } else {
         let erdbId = erdbConfig ? getErdbId(item) : null;
         if (erdbConfig && erdbId) {
-            sourceImage = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
+            const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
+            if (erdbId.startsWith('kitsu:') && hostUrl) {
+                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.poster)}`;
+            } else {
+                sourceImage = erdbUrl;
+            }
         } else {
             sourceImage = item.poster;
         }
@@ -120,7 +135,8 @@ function sanitizeCatalogMeta(item, options = {}) {
     if (badgeText && hostUrl && sourceImage) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';
-        poster = `${hostUrl}/images/poster/${typeParam}/${encodeURIComponent(idParam)}/${encodeURIComponent(badgeText)}?original=${encodeURIComponent(sourceImage)}&bv=${BADGE_IMG_VERSION}`;
+        const fallbackPoster = encodeURIComponent(item.poster || sourceImage);
+        poster = `${hostUrl}/images/poster/${typeParam}/${encodeURIComponent(idParam)}/${encodeURIComponent(badgeText)}?original=${encodeURIComponent(sourceImage)}&fallback=${fallbackPoster}&bv=${BADGE_IMG_VERSION}`;
     } else if (badgeText) {
         // Log why poster URL wasn't rewritten (only first time to avoid spam)
         if (!sanitizeCatalogMeta._loggedOnce) {

@@ -583,8 +583,9 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
     } catch (err) {
         console.error(`[BadgeCache] Error generating badge for ${id}:`, err.message);
 
-        // Fail-safe: redirect to original URL
-        res.redirect(302, originalUrl);
+        // Fail-safe: redirect to original URL or fallback
+        const fallbackUrl = req.query.fallback || originalUrl;
+        res.redirect(302, fallbackUrl);
 
         // Asynchronously retry generation in the background so it's ready next time
         setTimeout(async () => {
@@ -597,6 +598,25 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
                 console.error(`[BadgeCache] Background retry failed for ${id}:`, retryErr.message);
             }
         }, 5000);
+    }
+});
+
+// Fallback route for ERDB posters that might 404 (e.g. unmapped Kitsu items)
+router.get('/images/fallback', async (req, res) => {
+    const { url, fallback } = req.query;
+    if (!url || !fallback) {
+        return res.status(400).send('Missing url or fallback parameter');
+    }
+
+    try {
+        // Fast HEAD request to check if the primary URL exists
+        await axios.head(url, { timeout: 3000 });
+        // It exists! Redirect to the primary URL
+        res.redirect(302, url);
+    } catch (err) {
+        // Doesn't exist (404) or timeout. Redirect to fallback
+        console.warn(`[Fallback] Primary image failed (${err.message}), using fallback: ${fallback}`);
+        res.redirect(302, fallback);
     }
 });
 
