@@ -64,7 +64,6 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
 
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
-  const [showProgressModal, setShowProgressModal] = useState(false);
   const [compiledVectors, setCompiledVectors] = useState<(CompiledVector & { idNames?: Record<string, string> }) | null>(null);
   const [manualScore, setManualScore] = useState<number>(200);
   const [localIsSyncing, setLocalIsSyncing] = useState<boolean>(false);
@@ -156,13 +155,6 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
       }
 
       setLocalIsSyncing(status.isSyncing || false);
-
-      // Auto-show modal if syncing, hide when sync completes
-      if (status.isSyncing) {
-        setShowProgressModal(true);
-      } else {
-        setShowProgressModal(false);
-      }
     } catch (e) {
       console.error('Failed to fetch sync status', e);
     }
@@ -190,30 +182,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
 
   // Aggiornamento DNA manuale rimosso in favore del delta update automatico backend.
 
-  const handleConfirmDNA = async () => {
-    if (!activeUserId) return;
-    const res = await api.confirmDNA(profile.id, activeUserId);
-    if (res.success) {
-      const currentManualDNA = profile.settings?.manualDNA ?? [];
-      const mergedManualDNA = [...currentManualDNA];
-      const seen = new Set(currentManualDNA.map((item) => `${item.type}:${item.id}`));
-      for (const item of suggestedDNA) {
-        const key = `${item.type}:${item.id}`;
-        if (seen.has(key)) continue;
-        mergedManualDNA.push(item);
-        seen.add(key);
-      }
-      onUpdateProfile(profile.id, {
-        settings: {
-          ...(profile.settings ?? {}),
-          manualDNA: mergedManualDNA,
-          suggestedDNA: [],
-        },
-      });
-      await fetchSyncStatus();
-      setShowProgressModal(false);
-    }
-  };
+
 
   const handleAddManualDna = (item: DNAItem) => {
     const currentManual = profile.settings?.manualDNA ?? [];
@@ -606,62 +575,6 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
           })}
         </div>
       </section>
-
-      {/* ── Progress & Onboarding Modal ── */}
-      {showProgressModal && syncStatus && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-marrow-light/60  p-4 animate-in fade-in duration-300">
-          <div className="w-full max-w-lg bg-background-light rounded-2xl shadow-2xl border border-marrow-light/10 overflow-hidden animate-in zoom-in-95 duration-300">
-            {/* Modal Header */}
-            <div className="p-6 border-b border-marrow-light/10 flex items-center justify-between bg-marrow-light/5">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-white/40 border border-marrow-light/10">
-                  <BrainCircuit className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-marrow-light">DNA Analysis Engine</h3>
-                  <p className="text-xs text-marrow-light/40 uppercase tracking-wider font-semibold">
-                    {syncStatus.isSyncing ? 'Elaborazione in corso...' : 'Analisi Completata'}
-                  </p>
-                </div>
-              </div>
-              {!syncStatus.isSyncing && (
-                <button onClick={() => setShowProgressModal(false)} className="p-2 hover:bg-white/40 rounded-full transition-colors text-marrow-light/40">
-                  <X className="h-5 w-5" />
-                </button>
-              )}
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-8">
-              {syncStatus.isSyncing ? (
-                <div className="flex flex-col gap-6">
-                  <div className="flex items-center justify-between text-sm font-bold text-marrow-light">
-                    <span>Mappatura Catalogo</span>
-                    <span className="text-primary">{syncStatus.current} / {syncStatus.total}</span>
-                  </div>
-                  <div className="h-3 w-full bg-marrow-light/10 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-primary transition-all duration-500 ease-out" 
-                      style={{ width: `${Math.round((syncStatus.current / (syncStatus.total || 1)) * 100)}%` }}
-                    />
-                  </div>
-                  <p className="text-center text-sm text-marrow-light/60 italic">
-                    Stiamo analizzando i tuoi titoli per estrarre il tuo DNA cinofilo unico...
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <div className="inline-flex items-center justify-center p-4 rounded-full bg-secondary text-primary mb-4 border border-primary/10">
-                    <span className="material-symbols-outlined text-4xl">check_circle</span>
-                  </div>
-                  <h4 className="text-xl font-bold mb-2 text-marrow-light">Prendi il volo!</h4>
-                  <p className="text-sm text-marrow-light/60">I tuoi suggerimenti sono ora attivi nel sistema AI.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
