@@ -157,9 +157,11 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
 
       setLocalIsSyncing(status.isSyncing || false);
 
-      // Auto-show modal if syncing or if onboarding is pending with suggestions
+      // Auto-show modal if syncing, hide when sync completes
       if (status.isSyncing) {
         setShowProgressModal(true);
+      } else {
+        setShowProgressModal(false);
       }
     } catch (e) {
       console.error('Failed to fetch sync status', e);
@@ -552,9 +554,9 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                         Calcolo affinità puro (no LLM text query). Il tuo DNA viene forzato e iniettato direttamente nel calcolo matematico usando questi parametri TMDB:
                       </p>
                       <div className="w-full rounded-md p-3 text-left border border-marrow-light/10 bg-white/40">
-                        <p className="text-[9px] text-marrow-light/60 font-bold mb-2 uppercase tracking-wider font-mono">DNA INIETTATO (MAPPING SEMANTICO)</p>
+                        <p className="text-[9px] text-marrow-light/60 font-bold mb-3 uppercase tracking-wider font-mono">DNA INIETTATO (MAPPING SEMANTICO)</p>
                         {analytics?.baseDnaParams && Object.keys(analytics.baseDnaParams).length > 0 ? (
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-col gap-3">
                             {Object.entries(analytics.baseDnaParams).map(([key, rawValue]) => {
                               const ids = parseAndDeduplicateIds(rawValue);
                               if (ids.length === 0) return null;
@@ -565,29 +567,29 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                               const hasMore = ids.length > 15;
 
                               return (
-                                <div key={key} className="flex flex-wrap items-center gap-2 py-2 border-b border-marrow-light/10 last:border-b-0">
-                                  {displayIds.map((id, idx) => (
-                                    <div key={`${key}-${id}`} className="inline-flex items-center gap-2">
-                                      <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-black ${
+                                <div key={key} className="flex flex-col gap-1.5 py-1.5 border-b border-marrow-light/10 last:border-b-0 last:pb-0">
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-marrow-light/50 flex items-center gap-1 font-mono">
+                                    {badgeLabel.icon} {badgeLabel.name} ({ids.length})
+                                  </span>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {displayIds.map((id) => (
+                                      <span key={`${key}-${id}`} className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-bold ${
                                         badgeLabel.name === 'Genere' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
                                         badgeLabel.name === 'Keyword' ? 'bg-accent/15 text-marrow-deep border border-accent/20' : 
                                         'bg-primary/15 text-marrow-deep border border-primary/20'
                                       }`}>
-                                        {badgeLabel.icon} {getDnaName(`${key.startsWith('with_genres') ? 'g' : key.startsWith('with_keywords') ? 'k' : 'o'}:${id}`)}
+                                        {getDnaName(`${key.startsWith('with_genres') ? 'g' : key.startsWith('with_keywords') ? 'k' : 'o'}:${id}`)}
                                       </span>
-                                      {idx < displayIds.length - 1 && (
-                                        <span className="text-[9px] font-black uppercase tracking-wider text-marrow-light/60">&amp;</span>
-                                      )}
-                                    </div>
-                                  ))}
-                                  {hasMore && (
-                                    <button
-                                      onClick={() => setExpandedKeys(prev => ({ ...prev, [key]: !isExpanded }))}
-                                      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-black bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all cursor-pointer"
-                                    >
-                                      {isExpanded ? 'Mostra meno' : `Mostra altri (+${ids.length - 15})`}
-                                    </button>
-                                  )}
+                                    ))}
+                                    {hasMore && (
+                                      <button
+                                        onClick={() => setExpandedKeys(prev => ({ ...prev, [key]: !isExpanded }))}
+                                        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-bold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all cursor-pointer"
+                                      >
+                                        {isExpanded ? 'Mostra meno' : `+${ids.length - 15} altri`}
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}
@@ -645,31 +647,6 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                   </div>
                   <p className="text-center text-sm text-marrow-light/60 italic">
                     Stiamo analizzando i tuoi titoli per estrarre il tuo DNA cinofilo unico...
-                  </p>
-                </div>
-              ) : !syncStatus.onboardingCompleted ? (
-                <div className="flex flex-col gap-6">
-                  <div className="p-4 rounded-xl bg-white/40 border border-marrow-light/10 shadow-inner">
-                    <p className="text-sm text-marrow-light/80 mb-4 leading-relaxed font-medium">
-                      Abbiamo analizzato il tuo catalogo! Ecco i tratti principali che abbiamo individuato. Confermi che corrispondono ai tuoi gusti?
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {suggestedDNA.map((p) => (
-                        <span key={p.id} className="inline-flex items-center gap-1 rounded-full bg-secondary text-primary border border-primary/20 px-3 py-1 text-xs font-bold shadow-sm">
-                          {p.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <button 
-                    onClick={handleConfirmDNA}
-                    className="w-full py-4 rounded-xl bg-primary text-white font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20"
-                  >
-                    🚀 Conferma DNA e Inizia
-                  </button>
-                  <p className="text-[10px] text-center text-marrow-light/40 uppercase font-black tracking-widest">
-                    Potrai sempre modificare questi tratti nell&apos;editor manuale.
                   </p>
                 </div>
               ) : (
