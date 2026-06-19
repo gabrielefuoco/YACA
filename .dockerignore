@@ -12,5 +12,4 @@ Dockerfile
 tests
 docs
 eslint.config.js
-package-lock.json
 frontend/package-lock.json

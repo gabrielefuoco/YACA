@@ -15,14 +15,20 @@ RUN npm run build
 FROM node:20-slim AS runner
 WORKDIR /app
 
+# Install system fonts for SVG text rendering (sharp/librsvg needs fontconfig)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    fontconfig fonts-dejavu-core fonts-noto-core \
+    && rm -rf /var/lib/apt/lists/* \
+    && fc-cache -fv
+
 # Imposta NODE_ENV a production
 ENV NODE_ENV=production
 # Hugging Face Spaces richiede la porta 7860
 ENV PORT=7860
 
-# Copia le dipendenze del backend
-COPY package*.json ./
-RUN npm install --omit=dev
+# Copia le dipendenze del backend (include lockfile for deterministic installs)
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
 # Copia il resto dell'applicazione backend
 COPY . .
