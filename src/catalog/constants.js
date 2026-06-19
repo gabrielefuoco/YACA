@@ -5,6 +5,7 @@ const MAX_BADGE_CACHE_HYDRATION_ITEMS = 60;
 const EPISODE_CATALOG_IDS = new Set([
     'preset_new_series_eps',
     'preset_new_anime_eps',
+    'preset_new_anime',
     'preset_anime_simulcast',
     'yaca_anime_trending',
     'yaca_discover_series',

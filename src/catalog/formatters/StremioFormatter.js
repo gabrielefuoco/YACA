@@ -34,18 +34,36 @@ function getEpisodeBadgeText(item) {
         : `S ${season} Ep ${episode}`;
 }
 
-function getErdbId(id) {
+function getErdbId(id, type) {
     if (!id) return '';
     const strId = String(id);
+
+    // IMDb IDs: ERDB expects bare tt... format (NOT imdb:tt...)
     if (strId.startsWith('tt')) {
-        return `imdb:${strId}`;
-    }
-    if (strId.startsWith('tmdb:') || strId.startsWith('kitsu:') || strId.startsWith('imdb:')) {
         return strId;
     }
-    if (/^\d+$/.test(strId)) {
-        return `tmdb:${strId}`;
+
+    // Kitsu / AniList / MAL / already-qualified IDs: pass through
+    if (strId.startsWith('kitsu:') || strId.startsWith('anilist:') || strId.startsWith('mal:') || strId.startsWith('anidb:')) {
+        return strId;
     }
+
+    // TMDB with prefix: upgrade to typed format (tmdb:tv: or tmdb:movie:)
+    if (strId.startsWith('tmdb:')) {
+        const numericPart = strId.slice('tmdb:'.length);
+        if (/^\d+$/.test(numericPart)) {
+            const tmdbType = type === 'movie' ? 'movie' : 'tv';
+            return `tmdb:${tmdbType}:${numericPart}`;
+        }
+        return strId; // already has type (e.g. tmdb:tv:1399)
+    }
+
+    // Bare numeric TMDB IDs
+    if (/^\d+$/.test(strId)) {
+        const tmdbType = type === 'movie' ? 'movie' : 'tv';
+        return `tmdb:${tmdbType}:${strId}`;
+    }
+
     return strId;
 }
 
@@ -64,7 +82,7 @@ function sanitizeCatalogMeta(item, options = {}) {
 
     if (isLandscapeEnabled) {
         if (erdbConfig && item.id) {
-            const erdbId = getErdbId(item.id);
+            const erdbId = getErdbId(item.id, item.type);
             sourceImage = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
         } else {
             sourceImage = item.background || item.poster;
@@ -72,7 +90,7 @@ function sanitizeCatalogMeta(item, options = {}) {
         finalPosterShape = 'landscape';
     } else {
         if (erdbConfig && item.id) {
-            const erdbId = getErdbId(item.id);
+            const erdbId = getErdbId(item.id, item.type);
             sourceImage = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
         } else {
             sourceImage = item.poster;
@@ -81,7 +99,7 @@ function sanitizeCatalogMeta(item, options = {}) {
 
     let background = item.background;
     if (erdbConfig && item.id) {
-        const erdbId = getErdbId(item.id);
+        const erdbId = getErdbId(item.id, item.type);
         background = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
     }
 

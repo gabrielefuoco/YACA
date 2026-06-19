@@ -474,7 +474,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         return res.status(400).send('Invalid original image URL');
     }
 
-    const cacheKey = `${id}_${episode}_v2`;
+    const cacheKey = `${id}_${episode}_v3`;
 
     // Helper to perform the download and composition
     const generateBadgeImage = async (url, badgeText) => {
@@ -492,11 +492,12 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         const badgeWidth = Math.max(110, textLen * 17 + 32);
         const rx = badgeHeight / 2; // full pill shape
 
-        const svg = `<svg width="${badgeWidth}" height="${badgeHeight}" viewBox="0 0 ${badgeWidth} ${badgeHeight}" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="${rx}" fill="#0f172a" fill-opacity="0.92"/>
-            <rect x="2" y="2" width="${badgeWidth - 4}" height="${badgeHeight - 4}" rx="${rx - 2}" fill="none" stroke="#f59e0b" stroke-width="3"/>
-            <text x="${badgeWidth / 2}" y="${badgeHeight / 2 + fontSize * 0.36}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="${fontSize}" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">${badgeText}</text>
-          </svg>`;
+        // Simplified SVG for librsvg compatibility (server-side sharp renderer):
+        // - No letter-spacing (may not be supported)
+        // - No fill-opacity (use solid fill instead)
+        // - Plain sans-serif font (system fonts unavailable server-side)
+        // - font-weight="bold" (800 may not be supported)
+        const svg = `<svg width="${badgeWidth}" height="${badgeHeight}" viewBox="0 0 ${badgeWidth} ${badgeHeight}" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="${rx}" fill="#0f172a"/><rect x="2" y="2" width="${badgeWidth - 4}" height="${badgeHeight - 4}" rx="${rx - 2}" fill="none" stroke="#f59e0b" stroke-width="3"/><text x="${badgeWidth / 2}" y="${Math.round(badgeHeight / 2 + fontSize * 0.36)}" font-family="sans-serif" font-size="${fontSize}" font-weight="bold" fill="#ffffff" text-anchor="middle">${badgeText}</text></svg>`;
 
         // Bottom-center, slightly above the bottom edge
         const offsetBottom = Math.round(H * 0.05);
