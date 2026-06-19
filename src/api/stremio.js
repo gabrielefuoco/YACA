@@ -474,7 +474,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         return res.status(400).send('Invalid original image URL');
     }
 
-    const cacheKey = `${id}_${episode}_v6`;
+    const cacheKey = `${id}_${episode}_v7`;
 
     // Helper to perform the download and composition
     const generateBadgeImage = async (url, badgeText) => {
@@ -499,10 +499,10 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
             <text x="${badgeWidth / 2}" y="${badgeHeight / 2}" font-family="sans-serif" font-size="${fontSize}" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${badgeText}</text>
         </svg>`;
 
-        // Composite badge onto poster at bottom-center
-        const offsetBottom = Math.round(H * 0.05);
-        const badgeLeft = Math.max(0, Math.round((W - badgeWidth) / 2));
-        const badgeTop = Math.max(0, H - badgeHeight - offsetBottom);
+        // Composite badge onto poster at top-right
+        const offset = 12;
+        const badgeLeft = Math.max(0, W - badgeWidth - offset);
+        const badgeTop = offset;
 
         return await sharp(baseImageBuffer)
             .composite([{
