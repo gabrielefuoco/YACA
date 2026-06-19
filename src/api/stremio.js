@@ -14,11 +14,29 @@ const path = require('path');
 const TextToSVG = require('text-to-svg');
 
 let textToSVG = null;
+// Try bundled Noto Sans first, then text-to-svg's built-in default font (ipag.ttf)
 try {
     const fontPath = path.join(__dirname, '../assets/fonts/noto-sans.ttf');
     textToSVG = TextToSVG.loadSync(fontPath);
-} catch (e) {
-    console.error('Failed to load text-to-svg font:', e.message);
+    console.log('[Badge] Font loaded: noto-sans.ttf from', fontPath);
+} catch (e1) {
+    console.warn('[Badge] Could not load noto-sans.ttf:', e1.message);
+    try {
+        textToSVG = TextToSVG.loadSync(); // uses built-in ipag.ttf from text-to-svg package
+        console.log('[Badge] Font loaded: text-to-svg default (ipag.ttf)');
+    } catch (e2) {
+        console.error('[Badge] CRITICAL: No font available for badge rendering:', e2.message);
+    }
+}
+if (textToSVG) {
+    // Verify the font actually works
+    try {
+        const testPath = textToSVG.getPath('Test', { fontSize: 24, attributes: { fill: 'white' } });
+        console.log('[Badge] Font verification OK, test path length:', testPath.length);
+    } catch (ev) {
+        console.error('[Badge] Font verification FAILED:', ev.message);
+        textToSVG = null;
+    }
 }
 
 const badgeCache = new CacheManager('poster_badges', {
@@ -484,7 +502,8 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         return res.status(400).send('Invalid original image URL');
     }
 
-    const cacheKey = `${id}_${episode}_v10`;
+    const cacheKey = `${id}_${episode}_v11`;
+    console.log(`[Badge] Request: id=${id}, episode="${episode}", textToSVG=${!!textToSVG}`);
 
     // Helper to perform the download and composition
     const generateBadgeImage = async (url, badgeText) => {
