@@ -580,7 +580,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
             </summary>
             <div className="mt-4 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <div>
+                <div className={block.provider === 'kitsu' ? 'col-span-2' : ''}>
                   <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Ordina per</Label>
                   <Select value={block.sortBy} onValueChange={(v) => updateBlock(block.id, { sortBy: v })}>
                     <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-xs">
@@ -593,6 +593,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                     </SelectContent>
                   </Select>
                 </div>
+                {block.provider !== 'kitsu' && (
                 <div>
                   <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Lingua originale</Label>
                   <Select value={block.language || '__any'} onValueChange={(v) => updateBlock(block.id, { language: v === '__any' ? '' : v })}>
@@ -606,6 +607,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                     </SelectContent>
                   </Select>
                 </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -634,6 +636,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 </div>
               </div>
 
+              {block.provider !== 'kitsu' && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Durata min (min)</Label>
@@ -644,6 +647,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                   <Input value={block.runtimeLte} onChange={(e) => updateBlock(block.id, { runtimeLte: e.target.value })} placeholder="es. 180" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40" type="number" min="0" max="400" />
                 </div>
               </div>
+              )}
 
               <div>
                 <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Censura (Fino a)</Label>

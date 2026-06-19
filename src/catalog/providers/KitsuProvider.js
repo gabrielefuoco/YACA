@@ -67,6 +67,32 @@ async function getKitsuCatalogFromFilters(filters, type, skip) {
         kitsuParams['filter[seasonYear]'] = `1900..${currentYear}`;
     }
 
+    // Map TMDB vote average to Kitsu averageRating (0..100)
+    const voteMin = filters.voteMin !== undefined && filters.voteMin !== null ? filters.voteMin : (filters['vote_average.gte'] !== undefined ? filters['vote_average.gte'] : null);
+    const voteMax = filters.voteMax !== undefined && filters.voteMax !== null ? filters.voteMax : (filters['vote_average.lte'] !== undefined ? filters['vote_average.lte'] : null);
+    if (voteMin !== null || voteMax !== null) {
+        const minRating = voteMin !== null ? Math.round(Number(voteMin) * 10) : 0;
+        const maxRating = voteMax !== null ? Math.round(Number(voteMax) * 10) : 100;
+        if (minRating > 0 || maxRating < 100) {
+            kitsuParams['filter[averageRating]'] = `${minRating}..${maxRating}`;
+        }
+    }
+
+    // Map TMDB certification (Censura) to Kitsu ageRating
+    const certificationLte = filters.certificationLte || filters['certification.lte'];
+    if (certificationLte) {
+        if (certificationLte === 'G') {
+            kitsuParams['filter[ageRating]'] = 'G';
+        } else if (certificationLte === 'PG') {
+            kitsuParams['filter[ageRating]'] = 'G,PG';
+        } else if (certificationLte === 'PG-13' || certificationLte === 'R') {
+            kitsuParams['filter[ageRating]'] = 'G,PG,R';
+        } else if (certificationLte === 'NC-17') {
+            kitsuParams['filter[ageRating]'] = 'G,PG,R,R18';
+        }
+    }
+
+
     if (filters.sort_by) {
         const sortBy = filters.sort_by;
         if (sortBy === 'popularity.desc' || sortBy === 'popularityRank') {
