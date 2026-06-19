@@ -51,7 +51,6 @@ const getPresets = () => {
         { id: 'preset_new_series', name: 'Serie TV: Novità', emoji: '🆕', category: "🔥 Top & Trend", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', 'first_air_date.lte': todayStr, 'first_air_date.gte': sixMonthsAgoStr, sort_by: 'popularity.desc', 'vote_count.gte': 5, without_keywords: '210024' }] },
         { id: 'preset_new_series_eps', name: 'Serie: Episodi Recenti', emoji: '🆕', category: "🔥 Top & Trend", type: 'series', presentation_strategy: 'popularity', showEpisodeBadge: true, queries: [{ strategy: 'discovery', 'air_date.lte': todayStr, 'air_date.gte': twoWeeksAgoStr, sort_by: 'popularity.desc', without_keywords: '210024' }] },
         { id: 'preset_pop_anime', name: 'Anime Popolari', emoji: '🌟', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', sort_by: 'popularity.desc' }] },
-        { id: 'preset_new_anime', name: 'Anime: Novità', emoji: '🆕', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ provider: 'kitsu', strategy: 'discovery', sort_by: 'first_air_date.desc' }] },
 
         // =============================================
         // --- 🎬 CINEMA, REGISTI & AUTORI ---
