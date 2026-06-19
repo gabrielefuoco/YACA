@@ -158,12 +158,6 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
         }
     }
 
-    // Apply chronological sorting for simulcast/airing-date queries!
-    const hasAirDateFilter = queries.some(q => q['air_date.gte'] || q['air_date.lte']);
-    if (hasAirDateFilter && type === 'series' && finalResults && finalResults.length > 0) {
-        finalResults = await applySimulcastSorting(finalResults, tmdbClient);
-    }
-
     return finalResults;
 }
 
@@ -265,66 +259,6 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     return finalItems.slice(0, 20);
 }
 
-async function fetchAndCacheEpisodeDate(tmdbId, tmdbClient) {
-    try {
-        const res = await tmdbClient.get(`/tv/${tmdbId}`, {
-            params: { language: 'it-IT' }
-        });
-        const lastEp = res.data?.last_episode_to_air;
-        const nextEp = res.data?.next_episode_to_air;
-        let dateStr = null;
-        let epNum = null;
-        
-        const nowStr = new Date().toISOString().split('T')[0];
-        if (lastEp && lastEp.air_date) {
-            dateStr = lastEp.air_date;
-            epNum = lastEp.episode_number;
-        }
-        if (nextEp && nextEp.air_date && nextEp.air_date <= nowStr) {
-            dateStr = nextEp.air_date;
-            epNum = nextEp.episode_number;
-        }
-        
-        if (dateStr) {
-            await simulcastDatesCache.set(String(tmdbId), { latestAirDate: dateStr, episodeNumber: epNum });
-        }
-    } catch (e) {
-        // Fail silently
-    }
-}
-
-async function applySimulcastSorting(items, tmdbClient) {
-    if (!items || items.length === 0 || !tmdbClient) return items;
-    
-    // Esegui lookup in cache ed estrai ID TMDB
-    const itemsWithDates = await Promise.all(items.map(async (item) => {
-        const tmdbId = item.id.replace('tmdb:series:', '').replace('tmdb:', '');
-        if (!tmdbId || isNaN(tmdbId)) {
-            return { item, latestAirDate: null };
-        }
-        
-        const cached = await simulcastDatesCache.get(String(tmdbId));
-        if (cached && cached.latestAirDate) {
-            return { item, latestAirDate: cached.latestAirDate };
-        } else {
-            // Avvia fetch asincrono in background non-bloccante
-            fetchAndCacheEpisodeDate(tmdbId, tmdbClient).catch(() => {});
-            return { item, latestAirDate: null };
-        }
-    }));
-    
-    // Ordina in memoria: date decrescenti prima, poi i null mantenendo l'ordine di popolarità originale
-    itemsWithDates.sort((a, b) => {
-        if (a.latestAirDate && b.latestAirDate) {
-            return b.latestAirDate.localeCompare(a.latestAirDate);
-        }
-        if (a.latestAirDate) return -1;
-        if (b.latestAirDate) return 1;
-        return 0; // mantiene l'ordine relativo originale
-    });
-    
-    return itemsWithDates.map(x => x.item);
-}
 
 module.exports = {
     executeComplexStrategy,

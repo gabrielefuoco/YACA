@@ -137,6 +137,50 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 );
             }
 
+            // 3.8 SIMULCAST SORTING (se applicabile)
+            // Se il catalogo ha query basate su date di airing (es. Simulcast), ordiniamo per episodio più recente
+            const hasAirDateFilter = catalogMeta?.queries?.some(q => q['air_date.gte'] || q['air_date.lte']) || false;
+            if (hasAirDateFilter && type === 'series' && finalResults && finalResults.length > 0) {
+                const nowStr = new Date().toISOString().split('T')[0];
+                const nowMs = Date.now();
+                
+                finalResults.forEach(item => {
+                    let latestDateStr = null;
+                    
+                    // 1. Prova da TMDB raw metadata
+                    if (item.rawTMDB) {
+                        const nextEp = item.rawTMDB.next_episode_to_air;
+                        const lastEp = item.rawTMDB.last_episode_to_air;
+                        
+                        if (nextEp && nextEp.air_date && nextEp.air_date <= nowStr) {
+                            latestDateStr = nextEp.air_date;
+                        } else if (lastEp && lastEp.air_date && lastEp.air_date <= nowStr) {
+                            latestDateStr = lastEp.air_date;
+                        }
+                    }
+                    
+                    // 2. Fallback su episodes (Kitsu o TMDB cache)
+                    if (!latestDateStr && Array.isArray(item.videos) && item.videos.length > 0) {
+                        const airedEpisodes = item.videos.filter(v => v.released && new Date(v.released).getTime() <= nowMs);
+                        if (airedEpisodes.length > 0) {
+                            airedEpisodes.sort((a, b) => new Date(b.released) - new Date(a.released));
+                            latestDateStr = airedEpisodes[0].released.substring(0, 10);
+                        }
+                    }
+                    
+                    item._latestAirDate = latestDateStr;
+                });
+                
+                finalResults.sort((a, b) => {
+                    if (a._latestAirDate && b._latestAirDate) {
+                        return b._latestAirDate.localeCompare(a._latestAirDate);
+                    }
+                    if (a._latestAirDate) return -1;
+                    if (b._latestAirDate) return 1;
+                    return 0; // maintain original relative order
+                });
+            }
+
             // 4. FORMATTAZIONE (STREMIO)
             const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
             const formattedData = formatStremioCatalog(
