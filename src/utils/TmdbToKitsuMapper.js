@@ -49,6 +49,7 @@ async function translateAnimeIdsToKitsu(tmdbItems, tmdbApiKey) {
             const rawTmdbId = String(item.id).replace('tmdb:', '');
             const kitsuId = await getKitsuIdFromTmdb(rawTmdbId, apiKey);
             if (kitsuId) {
+                item.tmdbId = rawTmdbId; // Salviamo il TMDB originale per ERDB
                 item.id = `kitsu:${kitsuId}`; // Sovrascrive l'ID!
             }
         },
