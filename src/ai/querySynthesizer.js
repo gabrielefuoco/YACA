@@ -258,7 +258,7 @@ async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend',
         //     if (Array.isArray(cached) && cached.length > 0) return cached;
         // }
 
-        const client = new Mistral({ apiKey: mistralKey, timeout: MISTRAL_TIMEOUT_MS });
+        const client = new Mistral({ apiKey: activeMistralKey, timeout: MISTRAL_TIMEOUT_MS });
 
         const response = await client.chat.complete({
             model: 'mistral-large-latest',
