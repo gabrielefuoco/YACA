@@ -16,10 +16,11 @@ const TMDB_API_KEY = process.env.TMDB_API_KEY;
  * @param {Array} tmdbItems I risultati grezzi di TMDB prima del formatter
  * @returns {Array} Array con ID corretti
  */
-async function translateAnimeIdsToKitsu(tmdbItems) {
+async function translateAnimeIdsToKitsu(tmdbItems, tmdbApiKey) {
     if (!tmdbItems || !Array.isArray(tmdbItems)) return tmdbItems;
 
     const { rateLimitedMap } = require('./rateLimiter');
+    const apiKey = tmdbApiKey || TMDB_API_KEY;
 
     // Identifica quali item sono potenzialmente Anime e hanno un ID TMDB
     // Un item è anime se:
@@ -46,7 +47,7 @@ async function translateAnimeIdsToKitsu(tmdbItems) {
         animeItems,
         async (item) => {
             const rawTmdbId = String(item.id).replace('tmdb:', '');
-            const kitsuId = await getKitsuIdFromTmdb(rawTmdbId);
+            const kitsuId = await getKitsuIdFromTmdb(rawTmdbId, apiKey);
             if (kitsuId) {
                 item.id = `kitsu:${kitsuId}`; // Sovrascrive l'ID!
             }
@@ -61,7 +62,7 @@ async function translateAnimeIdsToKitsu(tmdbItems) {
  * Dato un TMDB ID (tv), cerca l'ID Kitsu corrispondente
  * Flusso: TMDB ID -> TVDB ID -> Kitsu ID
  */
-async function getKitsuIdFromTmdb(tmdbId) {
+async function getKitsuIdFromTmdb(tmdbId, tmdbApiKey) {
     const cacheKey = `tmdb_to_kitsu_${tmdbId}`;
     const cached = await mappingCache.get(cacheKey);
     if (cached) {
@@ -69,10 +70,16 @@ async function getKitsuIdFromTmdb(tmdbId) {
         return cached;
     }
 
+    const apiKey = tmdbApiKey || TMDB_API_KEY;
+    if (!apiKey) {
+        console.warn(`[getKitsuIdFromTmdb] Manca la TMDB API KEY.`);
+        return null;
+    }
+
     try {
         // 1. Chiedi External IDs a TMDB
         const extRes = await axios.get(`https://api.themoviedb.org/3/tv/${tmdbId}/external_ids`, {
-            params: { api_key: TMDB_API_KEY }
+            params: { api_key: apiKey }
         });
         const tvdbId = extRes.data.tvdb_id;
 

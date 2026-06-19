@@ -29,8 +29,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const tmdbClient = createTmdbClient(tmdbApiKey);
     const { cacheOptions: tmdbFetchOptions } = getCacheConfig(userConfig.ttl);
     
-    // Increment BADGE_CATALOG_VERSION whenever EPISODE_CATALOG_IDS changes to bust SWR cache
-    const BADGE_CATALOG_VERSION = 3;
+    // Increment BADGE_CATALOG_VERSION whenever badge logic changes to bust SWR cache
+    const BADGE_CATALOG_VERSION = 4;
 
     // Check Full CACHE Request
     const requestCacheKey = generateRequestHash(id, { 
@@ -41,7 +41,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
         profile: userConfig.activeProfileId, 
         kidsMode: activeProfileSettings.kidsMode,
         configVersion: userConfig.configVersion || userConfig.config?.configVersion,
-        badgeV: EPISODE_CATALOG_IDS.has(id?.replace('yaca_preset_', '') || id) ? BADGE_CATALOG_VERSION : 0
+        badgeV: type === 'series' ? BADGE_CATALOG_VERSION : 0
     }, skip, type);
     
     let catalogMeta = null;
@@ -109,12 +109,12 @@ async function catalogHandler(args, userConfig, hostUrl) {
             
             // 3.5 TRADUTTORE MAGICO (TMDB -> Kitsu per Anime)
             // Hydration MUST happen BEFORE Kitsu translation while IDs are still tmdb:
-            const shouldBadge = EPISODE_CATALOG_IDS.has(baseId);
-            if (shouldBadge && type === 'series') {
+            const shouldBadge = type === 'series';
+            if (shouldBadge) {
                 await hydrateEpisodeBadgesFromCache(finalResults, tmdbApiKey);
             }
             const { translateAnimeIdsToKitsu } = require('../utils/TmdbToKitsuMapper');
-            finalResults = await translateAnimeIdsToKitsu(finalResults);
+            finalResults = await translateAnimeIdsToKitsu(finalResults, tmdbApiKey);
 
             // After translation: hydrate Kitsu episodes for items that still lack videos
             // (covers preset_new_anime and other Kitsu-translated catalogs from AiDiscoveryProvider)

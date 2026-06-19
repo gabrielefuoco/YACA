@@ -20,10 +20,19 @@ function getEpisodeBadgeText(item) {
     if (!Array.isArray(item.videos) || item.videos.length === 0) return null;
 
     const now = new Date();
-    const airedEpisodes = item.videos.filter(v => v.released && new Date(v.released) <= now);
+    const airedEpisodes = item.videos.filter(v => {
+        if (!v.released) return true; // Fallback: assume aired if no release date is known (e.g. Kitsu null airdate)
+        return new Date(v.released) <= now;
+    });
     if (airedEpisodes.length === 0) return null;
 
-    airedEpisodes.sort((a, b) => new Date(b.released) - new Date(a.released));
+    airedEpisodes.sort((a, b) => {
+        if (a.released && b.released) {
+            const dateDiff = new Date(b.released) - new Date(a.released);
+            if (dateDiff !== 0) return dateDiff;
+        }
+        return (b.episode || 0) - (a.episode || 0);
+    });
     const latest = airedEpisodes[0];
     const isKitsu = item.id && (item.id.startsWith('kitsu:') || item.id.includes(':absolute:'));
     const season = latest.season || 0;
@@ -112,7 +121,7 @@ function sanitizeCatalogMeta(item, options = {}) {
 
     const baseName = item.name;
     const name = (badgeText && baseName)
-        ? `${baseName} • ${badgeText}`
+        ? `${baseName} - ${badgeText}`
         : baseName;
 
     return {
@@ -138,7 +147,7 @@ function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled,
     if (!Array.isArray(results)) return { metas: [] };
 
     const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
-    const shouldApplyEpisodeBadge = type === 'series' && EPISODE_CATALOG_IDS.has(baseId);
+    const shouldApplyEpisodeBadge = type === 'series';
 
     const sanitizeOptions = {
         shouldApplyEpisodeBadge,

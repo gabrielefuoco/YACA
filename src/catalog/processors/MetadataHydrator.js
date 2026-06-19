@@ -7,7 +7,7 @@ async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
     if (!tmdbApiKey || !Array.isArray(metas) || metas.length === 0) return;
 
     await Promise.all(
-        metas.slice(0, MAX_BADGE_CACHE_HYDRATION_ITEMS).map(async (item) => {
+        metas.slice(0, 20).map(async (item) => {
             const itemId = String(item?.id || '');
             if (!itemId || item.rawTMDB) return;
             // Accept both 'tmdb:123' and bare numeric IDs (from TMDB provider before Kitsu translation)
@@ -16,15 +16,13 @@ async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
 
             try {
                 const tmdbId = normalizeContentId(item.id);
-                const cachedDetails = await getTmdbMovieDetails(tmdbApiKey, tmdbId, 'tv', { cacheOnly: true });
-                if (cachedDetails) {
-                    item.rawTMDB = cachedDetails;
-                    return;
+                let details = await getTmdbMovieDetails(tmdbApiKey, tmdbId, 'tv', { cacheOnly: true });
+                if (!details) {
+                    details = await getTmdbMovieDetails(tmdbApiKey, tmdbId, 'tv');
                 }
-
-                getTmdbMovieDetails(tmdbApiKey, tmdbId, 'tv').catch((err) => {
-                    console.debug(`[BadgeBackground] Cache warmup fallita per ${tmdbId}: ${err?.message || 'Unknown error'}`);
-                });
+                if (details) {
+                    item.rawTMDB = details;
+                }
             } catch (_err) {
                 // Il recupero badge è best-effort: in caso di errore manteniamo il poster originale.
             }
