@@ -7,6 +7,7 @@ const { rateLimitedMap } = require('../../utils/rateLimiter');
 
 // Import from new modules
 const { applyKidsMode } = require('../../utils/kidsModeFilters');
+const { isAnimeProfile, applyAnimeMode } = require('../../utils/animeModeFilters');
 const { fetchTmdbResults, fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds } = require('./dataFetchers');
 const { extractDNAParams, resolveAiQueryToTmdbParams, twoTierScore, computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
 const ProfileScorer = require('../../profile/ProfileScorer');
@@ -34,7 +35,8 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
         delete params.strategy; 
 
         if (!params.sort_by) params.sort_by = 'popularity.desc';
-        const finalParams = isKidsMode ? applyKidsMode(params) : params;
+        let finalParams = isKidsMode ? applyKidsMode(params) : params;
+        if (isAnimeProfile(user, context)) finalParams = applyAnimeMode(finalParams);
 
         for (let page = 1; page <= 3; page++) {
             const results = await fetchTmdbResults(
@@ -87,7 +89,8 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     const isKidsMode = profile?.settings?.kidsMode;
 
     const fetchDiscoverPages = async (params, pages = 3) => {
-        const finalParams = isKidsMode ? applyKidsMode(params) : params;
+        let finalParams = isKidsMode ? applyKidsMode(params) : params;
+        if (isAnimeProfile(user, context)) finalParams = applyAnimeMode(finalParams);
         const results = [];
         for (let page = 1; page <= pages; page++) {
             const pageResults = await fetchTmdbResults(
@@ -176,7 +179,9 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
 
     const isKidsMode = profile?.settings?.kidsMode;
     const dnaParams = extractDNAParams(dnaFilters);
-    const safeDnaParams = isKidsMode ? applyKidsMode(dnaParams) : dnaParams;
+    let safeDnaParams = isKidsMode ? applyKidsMode(dnaParams) : dnaParams;
+    if (isAnimeProfile(user, context)) safeDnaParams = applyAnimeMode(safeDnaParams);
+    
     let dnaSeeds = [];
     if (Object.keys(safeDnaParams).length > 0) {
         try {
@@ -266,7 +271,8 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     const dnaFilters = getProfileDnaFilters(user, context);
     const dnaParams = extractDNAParams(dnaFilters);
     const isKidsMode = profile?.settings?.kidsMode;
-    const safeDnaParams = isKidsMode ? applyKidsMode(dnaParams) : dnaParams;
+    let safeDnaParams = isKidsMode ? applyKidsMode(dnaParams) : dnaParams;
+    if (isAnimeProfile(user, context)) safeDnaParams = applyAnimeMode(safeDnaParams);
 
     const topGenres = computeTopGenres(profile, 3);
 
