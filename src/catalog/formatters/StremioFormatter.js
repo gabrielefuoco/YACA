@@ -117,6 +117,12 @@ function sanitizeCatalogMeta(item, options = {}) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';
         poster = `${hostUrl}/images/poster/${typeParam}/${encodeURIComponent(idParam)}/${encodeURIComponent(badgeText)}?original=${encodeURIComponent(sourceImage)}`;
+    } else if (badgeText) {
+        // Log why poster URL wasn't rewritten (only first time to avoid spam)
+        if (!sanitizeCatalogMeta._loggedOnce) {
+            console.warn(`[Badge] Poster URL NOT rewritten! badgeText="${badgeText}", hostUrl="${hostUrl}", sourceImage="${sourceImage ? sourceImage.substring(0, 60) : 'null'}"`);
+            sanitizeCatalogMeta._loggedOnce = true;
+        }
     }
 
     const baseName = item.name;
@@ -148,6 +154,16 @@ function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled,
 
     const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
     const shouldApplyEpisodeBadge = type === 'series';
+
+    // One-shot diagnostic log
+    if (!formatStremioCatalog._loggedOnce && shouldApplyEpisodeBadge) {
+        console.log(`[Badge] formatStremioCatalog: id=${id}, type=${type}, hostUrl="${hostUrl}", shouldBadge=${shouldApplyEpisodeBadge}, resultsCount=${results.length}`);
+        if (results.length > 0) {
+            const sample = results[0];
+            console.log(`[Badge] Sample item: id=${sample.id}, hasRawTMDB=${!!sample.rawTMDB}, videosCount=${Array.isArray(sample.videos) ? sample.videos.length : 0}, poster=${sample.poster ? sample.poster.substring(0, 80) : 'null'}`);
+        }
+        formatStremioCatalog._loggedOnce = true;
+    }
 
     const sanitizeOptions = {
         shouldApplyEpisodeBadge,
