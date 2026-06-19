@@ -474,7 +474,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         return res.status(400).send('Invalid original image URL');
     }
 
-    const cacheKey = `${id}_${episode}_v5`;
+    const cacheKey = `${id}_${episode}_v6`;
 
     // Helper to perform the download and composition
     const generateBadgeImage = async (url, badgeText) => {
@@ -486,64 +486,30 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         const W = imgMeta.width || 342;
         const H = imgMeta.height || 513;
 
-        const padX = 18;
-        const padY = 10;
-        const fontSize = 26;
         const textLen = badgeText.length;
-        // Estimated badge width from text length; we'll adjust after rendering
-        const estBadgeWidth = Math.max(110, textLen * 16 + padX * 2);
-        const badgeHeight = fontSize + padY * 2; // ~46px
+        const fontSize = 24;
+        const badgeWidth = Math.max(110, textLen * 14 + 36);
+        const badgeHeight = 44;
         const rx = Math.round(badgeHeight / 2);
 
-        // Step 1: Render WHITE text using sharp's Pango renderer.
-        // Default sharp text is BLACK — use Pango markup to force white.
-        // Escape XML special chars to avoid Pango parse errors.
-        const escapedText = badgeText
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-        const textBuf = await sharp({
-            text: {
-                text: `<span foreground="white" font_desc="sans bold ${fontSize}">${escapedText}</span>`,
-                rgba: true,
-                dpi: 144,
-                height: fontSize + 4
-            }
-        }).png().toBuffer();
-        const textMeta = await sharp(textBuf).metadata();
-        const tW = textMeta.width || (textLen * 16);
-        const tH = textMeta.height || fontSize;
-        const badgeWidth = Math.max(110, tW + padX * 2);
+        // Render directly via single SVG (fully platform independent, no fontconfig/Pango issues, 100% correct baseline)
+        const svg = `<svg width="${badgeWidth}" height="${badgeHeight}" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="${rx}" fill="#0f172a"/>
+            <rect x="2" y="2" width="${badgeWidth - 4}" height="${badgeHeight - 4}" rx="${rx - 2}" fill="none" stroke="#f59e0b" stroke-width="3"/>
+            <text x="${badgeWidth / 2}" y="${badgeHeight / 2}" font-family="sans-serif" font-size="${fontSize}" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${badgeText}</text>
+        </svg>`;
 
-        // Step 2: Dark pill background (SVG shapes only — no text, always reliable)
-        const svgBg = [
-            `<svg width="${badgeWidth}" height="${badgeHeight}" xmlns="http://www.w3.org/2000/svg">`,
-            `<rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="${rx}" fill="#0f172a"/>`,
-            `<rect x="2" y="2" width="${badgeWidth - 4}" height="${badgeHeight - 4}" rx="${rx - 2}" fill="none" stroke="#f59e0b" stroke-width="3"/>`,
-            `</svg>`
-        ].join('');
-
-        const bgBuf = await sharp(Buffer.from(svgBg))
-            .png()
-            .toBuffer();
-
-        // Step 3: Overlay text (white) onto pill background
-        const badgeBuf = await sharp(bgBuf)
-            .composite([{
-                input: textBuf,
-                top: Math.round((badgeHeight - tH) / 2),
-                left: Math.round((badgeWidth - tW) / 2)
-            }])
-            .png()
-            .toBuffer();
-
-        // Step 4: Composite badge onto poster at bottom-center
+        // Composite badge onto poster at bottom-center
         const offsetBottom = Math.round(H * 0.05);
         const badgeLeft = Math.max(0, Math.round((W - badgeWidth) / 2));
         const badgeTop = Math.max(0, H - badgeHeight - offsetBottom);
 
         return await sharp(baseImageBuffer)
-            .composite([{ input: badgeBuf, top: badgeTop, left: badgeLeft }])
+            .composite([{
+                input: Buffer.from(svg),
+                top: badgeTop,
+                left: badgeLeft
+            }])
             .jpeg({ quality: 90 })
             .toBuffer();
     };
