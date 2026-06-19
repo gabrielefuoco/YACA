@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TraktAuthModal } from '@/components/modals/TraktAuthModal';
 import { Profile, AppConfig } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -60,6 +60,17 @@ export function SettingsPage({
   const [copied, setCopied] = useState(false);
   const [traktModalOpen, setTraktModalOpen] = useState(false);
 
+  const [tmdbKey, setTmdbKey] = useState(globalTmdbKey || '');
+  const [mistralKey, setMistralKey] = useState(globalMistralKey || '');
+
+  useEffect(() => {
+    setTmdbKey(globalTmdbKey || '');
+  }, [globalTmdbKey]);
+
+  useEffect(() => {
+    setMistralKey(globalMistralKey || '');
+  }, [globalMistralKey]);
+
   const handleSave = async () => {
     setLoading(true);
     setError('');
@@ -99,8 +110,8 @@ export function SettingsPage({
         traktToken,
         traktRefreshToken,
         configVersion,
-        tmdbKey: globalTmdbKey || settings.tmdbKey || '',
-        mistralKey: globalMistralKey || '',
+        tmdbKey: tmdbKey || '',
+        mistralKey: mistralKey || '',
       });
 
       if (data.userId) {
@@ -315,6 +326,44 @@ export function SettingsPage({
       </section>
 
 
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* API Keys                                                           */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-3 sm:p-5 space-y-3 sm:space-y-4 shadow-sm ">
+        <div className="flex items-center gap-2 text-primary">
+          <ShieldCheck className="h-5 w-5 text-primary" />
+          <h3 className="text-sm font-black uppercase tracking-widest">Chiavi API (Opzionali)</h3>
+        </div>
+        <p className="text-[10px] text-marrow-light/50 -mt-2 leading-relaxed">
+          Inserisci le tue chiavi API personali. Se non inserite, verranno utilizzate le chiavi globali dell&apos;addon (se disponibili).
+        </p>
+
+        <div className="space-y-3">
+          <div>
+            <Label htmlFor="tmdbKey" className="text-xs font-bold text-marrow-deep">Chiave API TMDB</Label>
+            <Input
+              id="tmdbKey"
+              type="password"
+              placeholder="Inserisci la tua chiave API TMDB..."
+              value={tmdbKey}
+              onChange={(e) => setTmdbKey(e.target.value)}
+              className="mt-1 bg-white/60 border border-marrow-light/10 focus:border-primary text-xs"
+            />
+          </div>
+          <div>
+            <Label htmlFor="mistralKey" className="text-xs font-bold text-marrow-deep">Chiave API Mistral (Necessaria per AI)</Label>
+            <Input
+              id="mistralKey"
+              type="password"
+              placeholder="Inserisci la tua chiave API Mistral..."
+              value={mistralKey}
+              onChange={(e) => setMistralKey(e.target.value)}
+              className="mt-1 bg-white/60 border border-marrow-light/10 focus:border-primary text-xs"
+            />
+          </div>
+        </div>
+      </section>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* Account                                                            */}

@@ -377,6 +377,8 @@ export default function Home() {
         // Restore tokens if returned (ensure state stays in sync)
         if (data.apiKeys?.trakt) setTraktToken(data.apiKeys.trakt);
         if (data.apiKeys?.traktRefreshToken) setTraktRefreshToken(data.apiKeys.traktRefreshToken);
+        if (data.apiKeys?.tmdb) setGlobalTmdbKey(data.apiKeys.tmdb);
+        if (data.apiKeys?.mistral) setGlobalMistralKey(data.apiKeys.mistral);
 
         // Auto-install addon in Stremio
         if (newStremioAuth?.authKey) {
