@@ -474,7 +474,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         return res.status(400).send('Invalid original image URL');
     }
 
-    const cacheKey = `${id}_${episode}_v4`;
+    const cacheKey = `${id}_${episode}_v5`;
 
     // Helper to perform the download and composition
     const generateBadgeImage = async (url, badgeText) => {
@@ -495,12 +495,16 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         const badgeHeight = fontSize + padY * 2; // ~46px
         const rx = Math.round(badgeHeight / 2);
 
-        // Step 1: Render text using sharp's built-in Pango renderer (always available)
-        // rgba:true gives us white text on transparent background
+        // Step 1: Render WHITE text using sharp's Pango renderer.
+        // Default sharp text is BLACK — use Pango markup to force white.
+        // Escape XML special chars to avoid Pango parse errors.
+        const escapedText = badgeText
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
         const textBuf = await sharp({
             text: {
-                text: badgeText,
-                font: 'sans',
+                text: `<span foreground="white" font_desc="sans bold ${fontSize}">${escapedText}</span>`,
                 rgba: true,
                 dpi: 144,
                 height: fontSize + 4

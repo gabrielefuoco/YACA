@@ -29,6 +29,9 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const tmdbClient = createTmdbClient(tmdbApiKey);
     const { cacheOptions: tmdbFetchOptions } = getCacheConfig(userConfig.ttl);
     
+    // Increment BADGE_CATALOG_VERSION whenever EPISODE_CATALOG_IDS changes to bust SWR cache
+    const BADGE_CATALOG_VERSION = 3;
+
     // Check Full CACHE Request
     const requestCacheKey = generateRequestHash(id, { 
         type, 
@@ -37,7 +40,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
         user: userConfig.userId, 
         profile: userConfig.activeProfileId, 
         kidsMode: activeProfileSettings.kidsMode,
-        configVersion: userConfig.configVersion || userConfig.config?.configVersion
+        configVersion: userConfig.configVersion || userConfig.config?.configVersion,
+        badgeV: EPISODE_CATALOG_IDS.has(id?.replace('yaca_preset_', '') || id) ? BADGE_CATALOG_VERSION : 0
     }, skip, type);
     
     let catalogMeta = null;
