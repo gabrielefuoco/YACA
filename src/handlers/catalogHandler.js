@@ -112,6 +112,26 @@ async function catalogHandler(args, userConfig, hostUrl) {
             const { translateAnimeIdsToKitsu } = require('../utils/TmdbToKitsuMapper');
             finalResults = await translateAnimeIdsToKitsu(finalResults);
 
+            // After translation: hydrate Kitsu episodes for items that still lack videos
+            // (covers preset_new_anime and other Kitsu-translated catalogs from AiDiscoveryProvider)
+            if (shouldBadge && type === 'series') {
+                const { fetchKitsuEpisodes } = require('../clients/kitsu');
+                const { rateLimitedMap } = require('../utils/rateLimiter');
+                await rateLimitedMap(
+                    finalResults.slice(0, 20).filter(item => {
+                        const itemId = String(item?.id || '');
+                        return itemId.startsWith('kitsu:') && (!Array.isArray(item.videos) || item.videos.length === 0);
+                    }),
+                    async (item) => {
+                        const kitsuId = String(item.id).replace('kitsu:', '');
+                        if (!kitsuId) return;
+                        const episodes = await fetchKitsuEpisodes(kitsuId);
+                        if (episodes && episodes.length > 0) item.videos = episodes;
+                    },
+                    { batchSize: 3, delayMs: 100 }
+                );
+            }
+
             // 4. FORMATTAZIONE (STREMIO)
             const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
             const formattedData = formatStremioCatalog(
