@@ -601,6 +601,9 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
     }
 });
 
+// Simple in-memory cache for HEAD requests to avoid spamming ERDB
+const fallbackHeadCache = new Map();
+
 // Fallback route for ERDB posters that might 404 (e.g. unmapped Kitsu items)
 router.get('/images/fallback', async (req, res) => {
     const { url, fallback } = req.query;
@@ -608,13 +611,20 @@ router.get('/images/fallback', async (req, res) => {
         return res.status(400).send('Missing url or fallback parameter');
     }
 
+    if (fallbackHeadCache.has(url)) {
+        const isOk = fallbackHeadCache.get(url);
+        return res.redirect(302, isOk ? url : fallback);
+    }
+
     try {
         // Fast HEAD request to check if the primary URL exists
         await axios.head(url, { timeout: 3000 });
-        // It exists! Redirect to the primary URL
+        // It exists! Cache and redirect to the primary URL
+        fallbackHeadCache.set(url, true);
         res.redirect(302, url);
     } catch (err) {
-        // Doesn't exist (404) or timeout. Redirect to fallback
+        // Doesn't exist (404) or timeout. Cache and redirect to fallback
+        fallbackHeadCache.set(url, false);
         console.warn(`[Fallback] Primary image failed (${err.message}), using fallback: ${fallback}`);
         res.redirect(302, fallback);
     }

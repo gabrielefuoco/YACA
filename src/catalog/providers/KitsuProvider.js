@@ -51,6 +51,10 @@ async function getKitsuCatalogFromFilters(filters, type, skip) {
         kitsuParams['filter[subtype]'] = 'TV';
     }
 
+    if (filters.status) {
+        kitsuParams['filter[status]'] = filters.status;
+    }
+
     // Map TMDB Date Filters to Kitsu seasonYear
     const gteDate = filters['first_air_date.gte'] || filters['primary_release_date.gte'];
     const lteDate = filters['first_air_date.lte'] || filters['primary_release_date.lte'];
@@ -111,15 +115,29 @@ async function getKitsuCatalogFromFilters(filters, type, skip) {
     }
 
     try {
-        let results = await fetchKitsuCatalog('/anime', skip, kitsuParams);
-        
-        // POST-FETCH FILTER: Kitsu API sometimes ignores filter[subtype] when combined with multiple filters (e.g. status + categories).
-        // To guarantee accuracy for Movie vs Series catalogs, we enforce it locally.
-        if (type === 'movie') {
-            results = results.filter(item => item._kitsu_subtype === 'movie' || item._kitsu_subtype === 'special');
-        } else if (type === 'series') {
-            results = results.filter(item => item._kitsu_subtype === 'TV' || item._kitsu_subtype === 'ONA' || item._kitsu_subtype === 'OVA');
+        let results = [];
+        let currentSkip = skip;
+        let maxPages = 3;
+
+        for (let i = 0; i < maxPages; i++) {
+            let pageResults = await fetchKitsuCatalog('/anime', currentSkip, kitsuParams);
+            if (pageResults.length === 0) break;
+            
+            // POST-FETCH FILTER: Kitsu API sometimes ignores filter[subtype] when combined with multiple filters (e.g. status + categories).
+            // To guarantee accuracy for Movie vs Series catalogs, we enforce it locally.
+            if (type === 'movie') {
+                pageResults = pageResults.filter(item => item._kitsu_subtype === 'movie' || item._kitsu_subtype === 'special');
+            } else if (type === 'series') {
+                pageResults = pageResults.filter(item => item._kitsu_subtype === 'TV' || item._kitsu_subtype === 'ONA' || item._kitsu_subtype === 'OVA');
+            }
+
+            results = results.concat(pageResults);
+            if (results.length >= 15) break; // We have enough for a decent row
+            currentSkip += 20; // Try next page
         }
+
+        // Limit to 20 just in case we overshot significantly
+        results = results.slice(0, 20);
 
         await rateLimitedMap(
             results,

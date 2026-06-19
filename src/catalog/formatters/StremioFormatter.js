@@ -101,8 +101,8 @@ function sanitizeCatalogMeta(item, options = {}) {
         let erdbId = erdbConfig ? getErdbId(item) : null;
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
-            if (erdbId.startsWith('kitsu:') && hostUrl) {
-                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.background || item.poster)}`;
+            if (hostUrl && !badgeText) {
+                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.background || item.poster || '')}`;
             } else {
                 sourceImage = erdbUrl;
             }
@@ -114,8 +114,8 @@ function sanitizeCatalogMeta(item, options = {}) {
         let erdbId = erdbConfig ? getErdbId(item) : null;
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
-            if (erdbId.startsWith('kitsu:') && hostUrl) {
-                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.poster)}`;
+            if (hostUrl && !badgeText) {
+                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.poster || '')}`;
             } else {
                 sourceImage = erdbUrl;
             }
