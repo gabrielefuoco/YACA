@@ -474,7 +474,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         return res.status(400).send('Invalid original image URL');
     }
 
-    const cacheKey = `${id}_${episode}_v7`;
+    const cacheKey = `${id}_${episode}_v8`;
 
     // Helper to perform the download and composition
     const generateBadgeImage = async (url, badgeText) => {
@@ -492,11 +492,12 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         const badgeHeight = 44;
         const rx = Math.round(badgeHeight / 2);
 
+        const xmlEscapedBadgeText = badgeText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         // Render directly via single SVG (fully platform independent, no fontconfig/Pango issues, 100% correct baseline)
         const svg = `<svg width="${badgeWidth}" height="${badgeHeight}" xmlns="http://www.w3.org/2000/svg">
             <rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="${rx}" fill="#0f172a"/>
             <rect x="2" y="2" width="${badgeWidth - 4}" height="${badgeHeight - 4}" rx="${rx - 2}" fill="none" stroke="#f59e0b" stroke-width="3"/>
-            <text x="${badgeWidth / 2}" y="${badgeHeight / 2}" font-family="sans-serif" font-size="${fontSize}" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${badgeText}</text>
+            <text x="${badgeWidth / 2}" y="${badgeHeight / 2}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${xmlEscapedBadgeText}</text>
         </svg>`;
 
         // Composite badge onto poster at top-right
