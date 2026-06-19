@@ -261,7 +261,7 @@ async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend',
         const client = new Mistral({ apiKey: mistralKey, timeout: MISTRAL_TIMEOUT_MS });
 
         const response = await client.chat.complete({
-            model: 'mistral-small-latest',
+            model: 'mistral-large-latest',
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: `Analyze this user's Taste DNA and generate discovery queries:\n${dnaDescription}` }
