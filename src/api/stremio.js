@@ -7,6 +7,16 @@ const { updateStremioAddonCollection } = require('../utils/stremioAddon');
 const UserConfig = require('../models/UserConfig');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
+const CacheManager = require('../cache/CacheManager');
+const sharp = require('sharp');
+const axios = require('axios');
+
+const badgeCache = new CacheManager('poster_badges', {
+    ramMax: 1000,
+    ramTtlMs: 1000 * 60 * 60 * 24, // 24 hours in RAM
+    mongoTtlMs: 1000 * 60 * 60 * 24 * 7, // 7 days in MongoDB
+    swrMs: 0
+});
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler } = require('../handlers/metaHandler');
 const { streamHandler } = require('../handlers/streamHandler');
@@ -432,6 +442,112 @@ router.get('/users/:userId/switch-profile/:profileId', async (req, res) => {
     } catch (err) {
         console.error(`Errore switch profile per user ${userId}:`, err.message);
         res.status(500).send('Internal validation error');
+    }
+});
+
+// Dynamic image overlay route for episode badges
+router.get('/images/poster/:type/:id/:episode', async (req, res) => {
+    const { type, id, episode } = req.params;
+    const originalUrl = req.query.original;
+
+    if (!originalUrl) {
+        return res.status(400).send('Original image URL is required');
+    }
+
+    // Security check: validate the original image URL host
+    try {
+        const parsedUrl = new URL(originalUrl);
+        const allowedHosts = [
+            'image.tmdb.org',
+            'easyratingsdb.com',
+            'media.kitsu.io'
+        ];
+        const isAllowed = allowedHosts.some(host => 
+            parsedUrl.hostname === host || parsedUrl.hostname.endsWith('.' + host)
+        );
+
+        if (!isAllowed) {
+            console.warn(`[BadgeCache] Rejected unauthorized domain: ${parsedUrl.hostname}`);
+            return res.status(403).send('Unauthorized image domain');
+        }
+    } catch (e) {
+        return res.status(400).send('Invalid original image URL');
+    }
+
+    const cacheKey = `${id}_${episode}`;
+
+    // Helper to perform the download and composition
+    const generateBadgeImage = async (url, badgeText) => {
+        const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 10000 });
+        const baseImageBuffer = Buffer.from(response.data);
+
+        // Get original dimensions to position the badge in the top-right corner
+        const metadata = await sharp(baseImageBuffer).metadata();
+        const W = metadata.width || 342;
+
+        const textLen = badgeText.length;
+        const badgeWidth = Math.max(80, textLen * 9 + 20);
+        const badgeHeight = 28;
+
+        const svg = `
+          <svg width="${badgeWidth}" height="${badgeHeight}" viewBox="0 0 ${badgeWidth} ${badgeHeight}" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="6" fill="#1e293b" fill-opacity="0.95" stroke="#f59e0b" stroke-width="2"/>
+            <text x="${badgeWidth / 2}" y="${badgeHeight / 2 + 4}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">
+              ${badgeText}
+            </text>
+          </svg>
+        `;
+
+        const offset = 12;
+        const badgeLeft = Math.max(0, W - badgeWidth - offset);
+        const badgeTop = offset;
+
+        return await sharp(baseImageBuffer)
+            .composite([{
+                input: Buffer.from(svg),
+                top: badgeTop,
+                left: badgeLeft
+            }])
+            .jpeg({ quality: 90 })
+            .toBuffer();
+    };
+
+    try {
+        // Retrieve from Cache (checks L1 RAM first, then L2 MongoDB)
+        const cachedBase64 = await badgeCache.get(cacheKey);
+        if (cachedBase64) {
+            const buffer = Buffer.from(cachedBase64, 'base64');
+            res.setHeader('Content-Type', 'image/jpeg');
+            res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hours client cache
+            return res.send(buffer);
+        }
+
+        // Cache miss: generate composite image
+        const processedBuffer = await generateBadgeImage(originalUrl, episode);
+
+        // Save to cache (persists to RAM and MongoDB)
+        await badgeCache.set(cacheKey, processedBuffer.toString('base64'));
+
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.send(processedBuffer);
+    } catch (err) {
+        console.error(`[BadgeCache] Error generating badge for ${id}:`, err.message);
+
+        // Fail-safe: redirect to original URL
+        res.redirect(302, originalUrl);
+
+        // Asynchronously retry generation in the background so it's ready next time
+        setTimeout(async () => {
+            try {
+                console.log(`[BadgeCache] Background retry generating badge for ${id}...`);
+                const retryBuffer = await generateBadgeImage(originalUrl, episode);
+                await badgeCache.set(cacheKey, retryBuffer.toString('base64'));
+                console.log(`[BadgeCache] Background retry success for ${id}!`);
+            } catch (retryErr) {
+                console.error(`[BadgeCache] Background retry failed for ${id}:`, retryErr.message);
+            }
+        }, 5000);
     }
 });
 

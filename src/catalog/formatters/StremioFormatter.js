@@ -34,23 +34,64 @@ function getEpisodeBadgeText(item) {
         : `S ${season} Ep ${episode}`;
 }
 
+function getErdbId(id) {
+    if (!id) return '';
+    const strId = String(id);
+    if (strId.startsWith('tt')) {
+        return `imdb:${strId}`;
+    }
+    if (strId.startsWith('tmdb:') || strId.startsWith('kitsu:') || strId.startsWith('imdb:')) {
+        return strId;
+    }
+    if (/^\d+$/.test(strId)) {
+        return `tmdb:${strId}`;
+    }
+    return strId;
+}
+
 function sanitizeCatalogMeta(item, options = {}) {
     if (!item) return item;
 
-    const { shouldApplyEpisodeBadge, isLandscapeEnabled } = options;
+    const { shouldApplyEpisodeBadge, isLandscapeEnabled, userConfig, hostUrl } = options;
     const badgeText = shouldApplyEpisodeBadge ? getEpisodeBadgeText(item) : null;
 
-    // Se è abilitato il formato landscape, usiamo il backdrop (background) invece del poster portrait
+    // Resolve ERDB config
+    const activeProfile = userConfig?.profiles?.find(p => p.id === userConfig.activeProfileId);
+    const erdbConfig = activeProfile?.settings?.erdbConfig || process.env.ERDB_CONFIG;
+
     let sourceImage = item.poster;
     let finalPosterShape = item.posterShape || 'poster';
 
     if (isLandscapeEnabled) {
-        // Fallback: se non c'è background, usiamo il poster ma forziamo il formato widescreen
-        sourceImage = item.background || item.poster;
+        if (erdbConfig && item.id) {
+            const erdbId = getErdbId(item.id);
+            sourceImage = `https://easyratingsdb.com/images/${erdbConfig}/backdrop/${erdbId}`;
+        } else {
+            sourceImage = item.background || item.poster;
+        }
         finalPosterShape = 'landscape';
+    } else {
+        if (erdbConfig && item.id) {
+            const erdbId = getErdbId(item.id);
+            sourceImage = `https://easyratingsdb.com/images/${erdbConfig}/poster/${erdbId}`;
+        } else {
+            sourceImage = item.poster;
+        }
     }
 
-    const poster = sourceImage;
+    let background = item.background;
+    if (erdbConfig && item.id) {
+        const erdbId = getErdbId(item.id);
+        background = `https://easyratingsdb.com/images/${erdbConfig}/backdrop/${erdbId}`;
+    }
+
+    let poster = sourceImage;
+    if (badgeText && hostUrl && sourceImage) {
+        const typeParam = item.type || 'series';
+        const idParam = item.id || 'unknown';
+        poster = `${hostUrl}/images/poster/${typeParam}/${encodeURIComponent(idParam)}/${encodeURIComponent(badgeText)}?original=${encodeURIComponent(sourceImage)}`;
+    }
+
     const baseName = item.name;
     const name = (badgeText && baseName)
         ? `${baseName} • ${badgeText}`
@@ -62,7 +103,7 @@ function sanitizeCatalogMeta(item, options = {}) {
         name,
         poster,
         posterShape: finalPosterShape,
-        background: item.background,
+        background: background,
         description: item.description,
         releaseInfo: item.releaseInfo,
         imdbRating: item.imdbRating,
@@ -75,7 +116,7 @@ function sanitizeCatalogMeta(item, options = {}) {
  * Funzione di formattazione finale pura: non esegue più fetch/hydrate (!).
  * Da richiamare DOPO che MetadataHydrator ha finito il suo lavoro.
  */
-function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled) {
+function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled, hostUrl) {
     if (!Array.isArray(results)) return { metas: [] };
 
     const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
@@ -83,7 +124,9 @@ function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled)
 
     const sanitizeOptions = {
         shouldApplyEpisodeBadge,
-        isLandscapeEnabled
+        isLandscapeEnabled,
+        userConfig,
+        hostUrl
     };
 
     return {

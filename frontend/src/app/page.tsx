@@ -194,7 +194,7 @@ export default function Home() {
     syncProfileVectors,
   } = useProfiles(initialProfiles, initialActiveProfileId);
 
-  const { presets, profileTemplates, categories } = usePresets();
+  const { presets, profileTemplates, categories, hasGlobalErdb } = usePresets();
 
   // Remove manual sessionStorage restoration since it's handled by useProfiles constructor/effect
 
@@ -542,6 +542,7 @@ export default function Home() {
                   userId={userId ?? undefined}
                   globalTmdbKey={globalTmdbKey}
                   globalMistralKey={globalMistralKey}
+                  hasGlobalErdb={hasGlobalErdb}
                   onUpdateProfile={updateProfile}
                   onLogout={handleLogout}
                   onDisconnectTrakt={handleDisconnectTrakt}

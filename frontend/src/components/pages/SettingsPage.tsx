@@ -26,6 +26,7 @@ interface SettingsPageProps {
   userId?: string;
   globalTmdbKey?: string;
   globalMistralKey?: string;
+  hasGlobalErdb?: boolean;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
   onLogout: () => void;
   onDisconnectTrakt: () => void;
@@ -44,6 +45,7 @@ export function SettingsPage({
   userId,
   globalTmdbKey,
   globalMistralKey,
+  hasGlobalErdb,
   onUpdateProfile,
   onLogout,
   onDisconnectTrakt,
@@ -62,6 +64,7 @@ export function SettingsPage({
 
   const [tmdbKey, setTmdbKey] = useState(globalTmdbKey || '');
   const [mistralKey, setMistralKey] = useState(globalMistralKey || '');
+  const [erdbConfig, setErdbConfig] = useState(settings?.erdbConfig || '');
 
   useEffect(() => {
     setTmdbKey(globalTmdbKey || '');
@@ -70,6 +73,10 @@ export function SettingsPage({
   useEffect(() => {
     setMistralKey(globalMistralKey || '');
   }, [globalMistralKey]);
+
+  useEffect(() => {
+    setErdbConfig(settings?.erdbConfig || '');
+  }, [settings?.erdbConfig]);
 
   const handleSave = async () => {
     setLoading(true);
@@ -81,6 +88,7 @@ export function SettingsPage({
     onUpdateProfile(activeProfileId, {
       settings: {
         ...settings,
+        erdbConfig,
         manualDNA: currentDNA,
         suggestedDNA: currentSuggestedDNA,
       },
@@ -94,6 +102,7 @@ export function SettingsPage({
           ...p,
           settings: {
             ...p.settings,
+            erdbConfig,
           },
         }
         : p
@@ -361,6 +370,20 @@ export function SettingsPage({
               onChange={(e) => setMistralKey(e.target.value)}
               className="mt-1 bg-white/60 border border-marrow-light/10 focus:border-primary text-xs"
             />
+          </div>
+          <div>
+            <Label htmlFor="erdbConfig" className="text-xs font-bold text-marrow-deep">Configurazione EasyRatingsDB (Opzionale)</Label>
+            <Input
+              id="erdbConfig"
+              type="text"
+              placeholder={hasGlobalErdb ? "Attivo a livello globale (lascia vuoto per usare il default)" : "Incolla il payload ERDB..."}
+              value={erdbConfig}
+              onChange={(e) => setErdbConfig(e.target.value)}
+              className="mt-1 bg-white/60 border border-marrow-light/10 focus:border-primary text-xs"
+            />
+            <p className="text-[10px] text-marrow-light/50 mt-1">
+              Ottieni questo payload configurando i badge e i voti su <a href="https://easyratingsdb.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">easyratingsdb.com</a>.
+            </p>
           </div>
         </div>
       </section>

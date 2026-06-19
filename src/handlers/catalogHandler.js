@@ -112,7 +112,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 baseId,
                 type,
                 userConfig,
-                isLandscape
+                isLandscape,
+                hostUrl
             );
 
             return formattedData;

@@ -116,7 +116,10 @@ app.get('/api/user/:userId', inputSanitizer, async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: "Utente non trovato" });
         }
-        res.json(user);
+        res.json({
+            ...user,
+            hasGlobalErdb: !!process.env.ERDB_CONFIG
+        });
     } catch (err) {
         console.error("Errore fetch utente:", err);
         res.status(500).json({ error: "Errore interno" });
@@ -124,7 +127,11 @@ app.get('/api/user/:userId', inputSanitizer, async (req, res) => {
 });
 
 app.get('/api/presets', (req, res) => {
-    res.json({ presets: getPresets(), profileTemplates });
+    res.json({
+        presets: getPresets(),
+        profileTemplates,
+        hasGlobalErdb: !!process.env.ERDB_CONFIG
+    });
 });
 
 

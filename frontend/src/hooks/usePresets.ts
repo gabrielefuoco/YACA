@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 export function usePresets() {
   const [presets, setPresets] = useState<Preset[]>([]);
   const [profileTemplates, setProfileTemplates] = useState<ProfileTemplate[]>([]);
+  const [hasGlobalErdb, setHasGlobalErdb] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,6 +16,7 @@ export function usePresets() {
       .then((data) => {
         setPresets(data.presets ?? []);
         setProfileTemplates(data.profileTemplates ?? []);
+        setHasGlobalErdb(!!data.hasGlobalErdb);
       })
       .catch(() => setError('Errore nel caricamento dei preset'))
       .finally(() => setLoading(false));
@@ -22,5 +24,5 @@ export function usePresets() {
 
   const categories = [...new Set(presets.map((p) => p.category))].filter(Boolean);
 
-  return { presets, profileTemplates, loading, error, categories };
+  return { presets, profileTemplates, hasGlobalErdb, loading, error, categories };
 }

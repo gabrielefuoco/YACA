@@ -46,6 +46,7 @@ const addonConfigSchema = new mongoose.Schema({
             fastPresetRefresh: Boolean,
             region: String,
             tmdbKey: String,
+            erdbConfig: String,
             manualDNA: [mongoose.Schema.Types.Mixed],
             suggestedDNA: [mongoose.Schema.Types.Mixed]
         },

@@ -9,6 +9,7 @@ export interface ProfileSettings {
   fastRefresh?: boolean;
   tmdbKey?: string;
   kidsMode?: boolean;
+  erdbConfig?: string;
   manualDNA?: DNAItem[];
   suggestedDNA?: DNAItem[];
 }
