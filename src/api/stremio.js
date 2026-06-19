@@ -10,6 +10,16 @@ const UserAccount = require('../db/models/UserAccount');
 const CacheManager = require('../cache/CacheManager');
 const sharp = require('sharp');
 const axios = require('axios');
+const path = require('path');
+const TextToSVG = require('text-to-svg');
+
+let textToSVG = null;
+try {
+    const fontPath = path.join(__dirname, '../assets/fonts/noto-sans.ttf');
+    textToSVG = TextToSVG.loadSync(fontPath);
+} catch (e) {
+    console.error('Failed to load text-to-svg font:', e.message);
+}
 
 const badgeCache = new CacheManager('poster_badges', {
     ramMax: 1000,
@@ -474,7 +484,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         return res.status(400).send('Invalid original image URL');
     }
 
-    const cacheKey = `${id}_${episode}_v8`;
+    const cacheKey = `${id}_${episode}_v9`;
 
     // Helper to perform the download and composition
     const generateBadgeImage = async (url, badgeText) => {
@@ -492,12 +502,29 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         const badgeHeight = 44;
         const rx = Math.round(badgeHeight / 2);
 
-        const xmlEscapedBadgeText = badgeText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        // Render directly via single SVG (fully platform independent, no fontconfig/Pango issues, 100% correct baseline)
+        let svgContent = '';
+        if (textToSVG) {
+            const metrics = textToSVG.getMetrics(badgeText, { fontSize });
+            const textWidth = metrics.width;
+            const x = (badgeWidth - textWidth) / 2;
+            const y = (badgeHeight / 2) + (metrics.ascender / 2) - 2;
+            const svgPath = textToSVG.getPath(badgeText, {
+                x: x,
+                y: y,
+                fontSize: fontSize,
+                attributes: { fill: '#ffffff', 'font-weight': 'bold' } // noto-sans doesn't have bold variant loaded, but we can try to pass attribute or just rely on its regular weight
+            });
+            svgContent = svgPath;
+        } else {
+            const xmlEscapedBadgeText = badgeText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            svgContent = `<text x="${badgeWidth / 2}" y="${badgeHeight / 2}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${xmlEscapedBadgeText}</text>`;
+        }
+
+        // Render directly via single SVG
         const svg = `<svg width="${badgeWidth}" height="${badgeHeight}" xmlns="http://www.w3.org/2000/svg">
             <rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="${rx}" fill="#0f172a"/>
             <rect x="2" y="2" width="${badgeWidth - 4}" height="${badgeHeight - 4}" rx="${rx - 2}" fill="none" stroke="#f59e0b" stroke-width="3"/>
-            <text x="${badgeWidth / 2}" y="${badgeHeight / 2}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${xmlEscapedBadgeText}</text>
+            ${svgContent}
         </svg>`;
 
         // Composite badge onto poster at top-right
