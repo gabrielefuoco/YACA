@@ -60,11 +60,6 @@ function getErdbId(item) {
         return strId;
     }
 
-    // Kitsu / AniList / MAL / already-qualified IDs: pass through
-    if (strId.startsWith('kitsu:') || strId.startsWith('anilist:') || strId.startsWith('mal:') || strId.startsWith('anidb:')) {
-        return strId;
-    }
-
     // TMDB with prefix: upgrade to typed format (tmdb:tv: or tmdb:movie:)
     if (strId.startsWith('tmdb:')) {
         const numericPart = strId.slice('tmdb:'.length);
@@ -81,7 +76,7 @@ function getErdbId(item) {
         return `tmdb:${tmdbType}:${strId}`;
     }
 
-    return strId;
+    return null; // Not supported by ERDB
 }
 
 function sanitizeCatalogMeta(item, options = {}) {
@@ -98,16 +93,16 @@ function sanitizeCatalogMeta(item, options = {}) {
     let finalPosterShape = item.posterShape || 'poster';
 
     if (isLandscapeEnabled) {
-        if (erdbConfig && (item.id || item.tmdbId)) {
-            const erdbId = getErdbId(item);
+        let erdbId = erdbConfig ? getErdbId(item) : null;
+        if (erdbConfig && erdbId) {
             sourceImage = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
         } else {
             sourceImage = item.background || item.poster;
         }
         finalPosterShape = 'landscape';
     } else {
-        if (erdbConfig && (item.id || item.tmdbId)) {
-            const erdbId = getErdbId(item);
+        let erdbId = erdbConfig ? getErdbId(item) : null;
+        if (erdbConfig && erdbId) {
             sourceImage = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
         } else {
             sourceImage = item.poster;
@@ -115,9 +110,9 @@ function sanitizeCatalogMeta(item, options = {}) {
     }
 
     let background = item.background;
-    if (erdbConfig && (item.id || item.tmdbId)) {
-        const erdbId = getErdbId(item);
-        background = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
+    let erdbBgId = erdbConfig ? getErdbId(item) : null;
+    if (erdbConfig && erdbBgId) {
+        background = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbBgId}.jpg`;
     }
 
     let poster = sourceImage;
