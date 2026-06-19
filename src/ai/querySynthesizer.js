@@ -234,7 +234,8 @@ function buildDnaDescription(profile, user, context, topN = 5) {
  * @returns {Array} Array of discovery query objects [{genre_ids, keyword, vibe}]
  */
 async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend', user = null, context = 'global', isBackgroundRefresh = false) {
-    if (!mistralKey || (!profile && !user)) return [];
+    const activeMistralKey = mistralKey || process.env.MISTRAL_API_KEY;
+    if (!activeMistralKey || (!profile && !user)) return [];
 
     const dnaDescription = buildDnaDescription(profile, user, context);
     if (!dnaDescription) return [];
