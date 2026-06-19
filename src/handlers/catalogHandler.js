@@ -109,7 +109,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             
             // 3.5 TRADUTTORE MAGICO (TMDB -> Kitsu per Anime)
             // Hydration MUST happen BEFORE Kitsu translation while IDs are still tmdb:
-            const shouldBadge = type === 'series';
+            const shouldBadge = type === 'series' && EPISODE_CATALOG_IDS.has(baseId);
             if (shouldBadge) {
                 await hydrateEpisodeBadgesFromCache(finalResults, tmdbApiKey);
             }
@@ -118,11 +118,12 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
             // After translation: hydrate Kitsu episodes for items that still lack videos
             // (covers preset_new_anime and other Kitsu-translated catalogs from AiDiscoveryProvider)
-            if (shouldBadge && type === 'series') {
+            if (shouldBadge) {
                 const { fetchKitsuEpisodes } = require('../clients/kitsu');
                 const { rateLimitedMap } = require('../utils/rateLimiter');
+                const { MAX_BADGE_CACHE_HYDRATION_ITEMS } = require('../catalog/constants');
                 await rateLimitedMap(
-                    finalResults.slice(0, 20).filter(item => {
+                    finalResults.slice(0, MAX_BADGE_CACHE_HYDRATION_ITEMS).filter(item => {
                         const itemId = String(item?.id || '');
                         return itemId.startsWith('kitsu:') && (!Array.isArray(item.videos) || item.videos.length === 0);
                     }),

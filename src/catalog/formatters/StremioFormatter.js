@@ -154,10 +154,10 @@ function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled,
     if (!Array.isArray(results)) return { metas: [] };
 
     const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
-    const shouldApplyEpisodeBadge = type === 'series';
+    const shouldApplyEpisodeBadge = type === 'series' && EPISODE_CATALOG_IDS.has(baseId);
 
     // One-shot diagnostic log
-    if (!formatStremioCatalog._loggedOnce && shouldApplyEpisodeBadge) {
+    if (!formatStremioCatalog._loggedOnce && type === 'series') {
         console.log(`[Badge] formatStremioCatalog: id=${id}, type=${type}, hostUrl="${hostUrl}", shouldBadge=${shouldApplyEpisodeBadge}, resultsCount=${results.length}`);
         if (results.length > 0) {
             const sample = results[0];

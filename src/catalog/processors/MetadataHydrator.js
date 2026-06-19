@@ -7,7 +7,7 @@ async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
     if (!tmdbApiKey || !Array.isArray(metas) || metas.length === 0) return;
 
     await Promise.all(
-        metas.slice(0, 20).map(async (item) => {
+        metas.slice(0, MAX_BADGE_CACHE_HYDRATION_ITEMS).map(async (item) => {
             const itemId = String(item?.id || '');
             if (!itemId || item.rawTMDB) return;
             // Accept both 'tmdb:123' and bare numeric IDs (from TMDB provider before Kitsu translation)
