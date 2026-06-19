@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { PosterRow } from '@/components/shared/PosterRow';
 import { Catalog, QueryBlock } from '@/types';
 import { GENRE_NAMES, SORT_OPTIONS, LANGUAGES } from '@/lib/constants';
@@ -132,6 +133,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
   const [name, setName] = useState('');
   const [type, setType] = useState<'movie' | 'series'>('movie');
   const [presentationStrategy, setPresentationStrategy] = useState<'popularity' | 'interleave'>('popularity');
+  const [showEpisodeBadge, setShowEpisodeBadge] = useState(false);
 
   // Block state
   const [blocks, setBlocks] = useState<BlockState[]>([]);
@@ -221,6 +223,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       setName(editCatalog.name || '');
       setType(editCatalog.type || 'movie');
       setPresentationStrategy(editCatalog.presentation_strategy || 'popularity');
+      setShowEpisodeBadge(editCatalog.showEpisodeBadge || false);
 
       let initialBlocks: BlockState[] = [];
       if (editCatalog.queries && editCatalog.queries.length > 0) {
@@ -392,6 +395,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       source: editCatalog ? editCatalog.source : 'manual',
       queries,
       presentation_strategy: presentationStrategy,
+      showEpisodeBadge: type === 'series' ? showEpisodeBadge : undefined,
       // For multi-query: put queries[] in filters so the backend normalizer picks them up
       // For single-query: flatten the block as a simple filters object
       filters: blocks.length > 1
@@ -903,6 +907,32 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
             ))}
           </div>
         </div>
+
+        {/* Row 3: Badge Settings (Only for Series) */}
+        {type === 'series' && (
+          <div className="flex flex-col sm:flex-row sm:items-center items-start gap-1 sm:gap-3 pt-1 border-t border-marrow-light/10 mt-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+              <span className="text-marrow-deep font-black uppercase tracking-wide text-[9px] sm:text-[10px] whitespace-nowrap">Badge Episodi</span>
+              <span className="relative group">
+                <Info className="h-3.5 w-3.5 text-marrow-light/60 cursor-help" />
+                <span className="absolute bottom-full left-0 sm:left-1/2 sm:-translate-x-1/2 mb-2 w-64 rounded-lg bg-primary-dark text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
+                  Se attivato, i poster mostreranno un badge in alto a destra con l'ultimo episodio andato in onda o in uscita. Ideale per cataloghi di "Nuovi Episodi" o "Simulcast". Rallenta leggermente il caricamento.
+                </span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-1 sm:mt-0">
+              <Switch 
+                checked={showEpisodeBadge} 
+                onCheckedChange={setShowEpisodeBadge} 
+                id="badge-toggle"
+              />
+              <Label htmlFor="badge-toggle" className="text-xs text-marrow-deep cursor-pointer">
+                Mostra Ultimo Episodio
+              </Label>
+            </div>
+          </div>
+        )}
       </section>
 
       <div className="space-y-3 sm:space-y-4">

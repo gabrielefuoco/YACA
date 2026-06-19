@@ -109,7 +109,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             
             // 3.5 TRADUTTORE MAGICO (TMDB -> Kitsu per Anime)
             // Hydration MUST happen BEFORE Kitsu translation while IDs are still tmdb:
-            const shouldBadge = type === 'series' && EPISODE_CATALOG_IDS.has(baseId);
+            const shouldBadge = type === 'series' && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId));
             if (shouldBadge) {
                 await hydrateEpisodeBadgesFromCache(finalResults, tmdbApiKey);
             }
@@ -145,7 +145,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 type,
                 userConfig,
                 isLandscape,
-                hostUrl
+                hostUrl,
+                catalogMeta
             );
 
             return formattedData;

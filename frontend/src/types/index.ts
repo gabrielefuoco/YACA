@@ -53,6 +53,7 @@ export interface Catalog {
   filters?: Record<string, unknown>;
   queries?: QueryBlock[];
   presentation_strategy?: 'popularity' | 'interleave';
+  showEpisodeBadge?: boolean;
   emoji?: string;
 }
 
@@ -79,6 +80,7 @@ export interface Preset {
   filters?: Record<string, unknown>;
   queries?: QueryBlock[];
   presentation_strategy?: 'popularity' | 'interleave';
+  showEpisodeBadge?: boolean;
   description?: string;
 }
 

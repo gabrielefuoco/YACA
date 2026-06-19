@@ -150,11 +150,11 @@ function sanitizeCatalogMeta(item, options = {}) {
  * Funzione di formattazione finale pura: non esegue più fetch/hydrate (!).
  * Da richiamare DOPO che MetadataHydrator ha finito il suo lavoro.
  */
-function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled, hostUrl) {
+function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled, hostUrl, catalogMeta) {
     if (!Array.isArray(results)) return { metas: [] };
 
     const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
-    const shouldApplyEpisodeBadge = type === 'series' && EPISODE_CATALOG_IDS.has(baseId);
+    const shouldApplyEpisodeBadge = type === 'series' && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId));
 
     // One-shot diagnostic log
     if (!formatStremioCatalog._loggedOnce && type === 'series') {
