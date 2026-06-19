@@ -20,7 +20,7 @@ function isAnimeProfile(user, context) {
     
     if (contentCatalogs.length === 0) return false; // Only has suggestion catalogs, cannot determine.
     
-    return contentCatalogs.every(c => c.id && c.id.toLowerCase().includes('anime'));
+    return contentCatalogs.every(c => c.id && (c.id.toLowerCase().includes('anime') || c.id.toLowerCase().includes('ghibli')));
 }
 
 function applyAnimeMode(params) {
