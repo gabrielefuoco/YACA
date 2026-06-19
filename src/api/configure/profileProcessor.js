@@ -70,6 +70,11 @@ function buildSuggestedDNAFromCatalogs(catalogs = []) {
             for (const id of splitOrIds(query.with_crew)) {
                 counts.director.set(id, (counts.director.get(id) || 0) + 1);
             }
+            
+            if (query.provider === 'kitsu') {
+                counts.genre.set('16', (counts.genre.get('16') || 0) + 1);
+                counts.keyword.set('210024', (counts.keyword.get('210024') || 0) + 1);
+            }
         }
     }
 
