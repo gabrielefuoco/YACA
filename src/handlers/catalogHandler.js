@@ -3,9 +3,11 @@ const { getCacheConfig } = require('../cache/CacheManager');
 const { catalogRequestCache } = require('../cache/cacheInstances');
 const { getPresets } = require('../data/presets');
 const { generateRequestHash } = require('../utils/requestHash');
+const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
 
 const { routeCatalogRequest } = require('../catalog/CatalogRouter');
 const { filterWatchedItems } = require('../catalog/processors/FilterWatched');
+const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
 const { formatStremioCatalog } = require('../catalog/formatters/StremioFormatter');
 
 /**
@@ -102,6 +104,11 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
             
             // 3.5 TRADUTTORE MAGICO (TMDB -> Kitsu per Anime)
+            // Hydration MUST happen BEFORE Kitsu translation while IDs are still tmdb:
+            const shouldBadge = EPISODE_CATALOG_IDS.has(baseId);
+            if (shouldBadge && type === 'series') {
+                await hydrateEpisodeBadgesFromCache(finalResults, tmdbApiKey);
+            }
             const { translateAnimeIdsToKitsu } = require('../utils/TmdbToKitsuMapper');
             finalResults = await translateAnimeIdsToKitsu(finalResults);
 
