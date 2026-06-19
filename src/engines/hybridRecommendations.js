@@ -157,16 +157,54 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         { batchSize: 5, delayMs: 50 }
     );
 
-    global.setImmediate(() => {
-        rateLimitedMap(pageIds, async (tmdbId) => {
-            try {
-                const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
-                await tmdb.getTmdbMovieDetails(tmdbApiKey, tmdbId.toString(), tmdbType);
-            } catch (_e) { }
-        }, { batchSize: 1, delayMs: 600 }).catch(() => { });
-    });
+    // Warm-up subsequent pages in the background (from the next item after the current page slice onwards)
+    const remainingIds = recommendationIds.slice(skip + ITEMS_PER_PAGE);
+    if (remainingIds.length > 0) {
+        global.setImmediate(() => {
+            rateLimitedMap(
+                remainingIds,
+                async (tmdbId) => {
+                    try {
+                        const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
+                        await tmdb.getTmdbMovieDetails(tmdbApiKey, tmdbId.toString(), tmdbType);
+                    } catch (_e) { }
+                },
+                { batchSize: 1, delayMs: 300 }
+            ).catch(err => console.error("[Background-Warmup] Error:", err.message));
+        });
+    }
 
-    return results.filter(Boolean);
+    const cleanResults = results.filter(Boolean);
+    if (skip === 0 && cleanResults.length > 0) {
+        const currentDateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const RecommendationImpression = require('../models/RecommendationImpression');
+        
+        const ops = cleanResults.map(item => {
+            const normalizedId = item.id.replace('tmdb:', '');
+            return {
+                updateOne: {
+                    filter: {
+                        owner: userId,
+                        profileId: context,
+                        catalogId: catalogId,
+                        tmdbId: normalizedId
+                    },
+                    update: {
+                        $addToSet: { seenDates: currentDateStr }
+                    },
+                    upsert: true
+                }
+            };
+        });
+
+        global.setImmediate(() => {
+            RecommendationImpression.bulkWrite(ops).catch(err => {
+                console.error("[Impression-Tracking] Error during bulkWrite:", err.message);
+            });
+        });
+    }
+
+    return cleanResults;
 }
 
 /**

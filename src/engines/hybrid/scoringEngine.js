@@ -171,20 +171,42 @@ async function twoTierScore(pool, profile, options) {
     });
 
     lightScored.sort((a, b) => b.lightScore - a.lightScore);
-    const survivors = lightScored.slice(0, Math.min(80, Math.ceil(lightScored.length / 2)));
+    const limit = (options && options.noLimit) ? lightScored.length : Math.min(80, Math.ceil(lightScored.length / 2));
+    const survivors = lightScored.slice(0, limit);
 
     const survivorIds = survivors.map(s => s.data.id);
     let scoringCache = new Map();
+    let impressionMap = new Map();
     try {
         const cached = await TmdbScoringData.find({ tmdbId: { $in: survivorIds }, type: types }).lean();
         for (const doc of cached) {
             scoringCache.set(doc.tmdbId, doc);
+        }
+
+        // Fetch seen days to apply aging penalty
+        if (options && options.userId && options.context && options.catalogId) {
+            const RecommendationImpression = require('../../models/RecommendationImpression');
+            const impressions = await RecommendationImpression.find({
+                owner: options.userId,
+                profileId: options.context,
+                catalogId: options.catalogId,
+                tmdbId: { $in: survivorIds.map(String) }
+            }).lean();
+            for (const imp of impressions) {
+                impressionMap.set(String(imp.tmdbId), imp.seenDates.length);
+            }
         }
     } catch (_e) { }
 
     const scored = await rateLimitedMap(
         survivors,
         async ({ data }) => {
+            const seenDays = impressionMap.get(String(data.id)) || 0;
+            let penaltyMultiplier = 1.0;
+            if (seenDays >= 3) {
+                penaltyMultiplier = Math.max(0.2, 1.0 - (seenDays - 2) * 0.2);
+            }
+
             const cachedScoring = scoringCache.get(data.id);
             if (cachedScoring) {
                 const syntheticData = {
@@ -199,7 +221,7 @@ async function twoTierScore(pool, profile, options) {
                     }
                 };
                 const score = ProfileScorer.calculateItemMatch(syntheticData, profile, { dnaFilters, globalProfile });
-                return { data, score };
+                return { data, score: score * penaltyMultiplier };
             }
 
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, data.id, types);
@@ -208,7 +230,7 @@ async function twoTierScore(pool, profile, options) {
             saveScoringData(details, types).catch(() => { });
 
             const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
-            return { data, score };
+            return { data, score: score * penaltyMultiplier };
         },
         { batchSize: 5, delayMs: 50 }
     );

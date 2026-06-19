@@ -29,14 +29,19 @@ async function getKitsuCatalog(id, skip) {
 }
 
 async function getKitsuCatalogFromFilters(filters, type, skip) {
-    let kitsuParams = { sort: '-popularityRank' };
+    let kitsuParams = { sort: 'popularityRank' };
     
     if (filters.text_search || filters.keyword) {
         kitsuParams['filter[text]'] = filters.text_search || filters.keyword;
     }
     
     if (filters._keywordNames) {
-        const categories = filters._keywordNames.replace(/\|/g, ',').replace(/ /g, '-').toLowerCase();
+        const categories = filters._keywordNames
+            .split(/[|,]/)
+            .map(c => c.trim().replace(/\s+/g, '-'))
+            .filter(Boolean)
+            .join(',')
+            .toLowerCase();
         kitsuParams['filter[categories]'] = categories;
     }
     
@@ -63,9 +68,20 @@ async function getKitsuCatalogFromFilters(filters, type, skip) {
     }
 
     if (filters.sort_by) {
-        if (filters.sort_by.includes('popularity')) kitsuParams.sort = 'popularityRank';
-        if (filters.sort_by.includes('first_air_date')) kitsuParams.sort = '-startDate';
-        if (filters.sort_by.includes('vote_average')) kitsuParams.sort = '-averageRating';
+        const sortBy = filters.sort_by;
+        if (sortBy === 'popularity.desc' || sortBy === 'popularityRank') {
+            kitsuParams.sort = 'popularityRank';
+        } else if (sortBy === 'popularity.asc' || sortBy === '-popularityRank') {
+            kitsuParams.sort = '-popularityRank';
+        } else if (sortBy === 'vote_average.desc' || sortBy === '-averageRating' || sortBy === 'ratingRank') {
+            kitsuParams.sort = '-averageRating';
+        } else if (sortBy === 'vote_average.asc' || sortBy === 'averageRating' || sortBy === '-ratingRank') {
+            kitsuParams.sort = 'averageRating';
+        } else if (sortBy === 'release_date.desc' || sortBy === 'first_air_date.desc' || sortBy === '-startDate') {
+            kitsuParams.sort = '-startDate';
+        } else if (sortBy === 'release_date.asc' || sortBy === 'first_air_date.asc' || sortBy === 'startDate') {
+            kitsuParams.sort = 'startDate';
+        }
     }
 
     try {

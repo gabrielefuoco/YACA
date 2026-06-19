@@ -20,6 +20,7 @@
   --color-marrow-deep: #4A0005;
   --color-marrow-light: #5E0006;
   --color-marrow-faded: color-mix(in srgb, #5E0006 40%, transparent);
+  --color-marrow-cream: #F5E2C3;
   
   /* Status & UI Components Colors */
   --color-primary-foreground: #EED9B9;

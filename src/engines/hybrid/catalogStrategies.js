@@ -135,7 +135,16 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
         });
     }
 
-    const scored = await twoTierScore(pool, profile, { tmdbApiKey, types, dnaFilters, globalProfile });
+    const catalogId = mediaType === 'movie' ? 'yaca_true_blend_movies' : 'yaca_true_blend_series';
+    const scored = await twoTierScore(pool, profile, {
+        tmdbApiKey,
+        types,
+        dnaFilters,
+        globalProfile,
+        userId,
+        context,
+        catalogId
+    });
 
     const genreCounts = new Map();
     const jittered = scored.map(item => {
@@ -241,12 +250,34 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
 
     candidates.sort((a, b) => b.hybridScore - a.hybridScore);
 
+    const candidateIds = candidates.slice(0, 80).map(c => String(c.data.id));
+    const catalogId = mediaType === 'movie' ? 'yaca_seed_network_movies' : 'yaca_seed_network_series';
+    let impressionMap = new Map();
+    try {
+        const RecommendationImpression = require('../../models/RecommendationImpression');
+        const impressions = await RecommendationImpression.find({
+            owner: userId,
+            profileId: context,
+            catalogId: catalogId,
+            tmdbId: { $in: candidateIds }
+        }).lean();
+        for (const imp of impressions) {
+            impressionMap.set(String(imp.tmdbId), imp.seenDates.length);
+        }
+    } catch (_e) { }
+
     const scored = await rateLimitedMap(
         candidates.slice(0, 80),
         async ({ data, hybridScore }) => {
+            const seenDays = impressionMap.get(String(data.id)) || 0;
+            let penaltyMultiplier = 1.0;
+            if (seenDays >= 3) {
+                penaltyMultiplier = Math.max(0.2, 1.0 - (seenDays - 2) * 0.2);
+            }
+
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, data.id, types);
             const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
-            return { data, score, hybridScore };
+            return { data, score: score * penaltyMultiplier, hybridScore: hybridScore * penaltyMultiplier };
         },
         { batchSize: 5, delayMs: 50 }
     );
@@ -330,7 +361,17 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
 
     pool = pool.filter(item => item.popularity == null || item.popularity <= 80);
 
-    const scored = await twoTierScore(pool, profile, { tmdbApiKey, types, dnaFilters, globalProfile, catalogContext: 'hidden_gems' });
+    const catalogId = mediaType === 'movie' ? 'yaca_hidden_gems_movies' : 'yaca_hidden_gems_series';
+    const scored = await twoTierScore(pool, profile, {
+        tmdbApiKey,
+        types,
+        dnaFilters,
+        globalProfile,
+        catalogContext: 'hidden_gems',
+        userId,
+        context,
+        catalogId
+    });
 
     return scored.slice(0, 100).map(i => String(i.data.id));
 }
@@ -355,13 +396,35 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
 
     if (traktTmdbIds.length === 0) return [];
 
+    const candidateIds = traktTmdbIds.slice(0, 100).map(String);
+    const catalogId = mediaType === 'movie' ? 'yaca_trakt_filtered_movies' : 'yaca_trakt_filtered_series';
+    let impressionMap = new Map();
+    try {
+        const RecommendationImpression = require('../../models/RecommendationImpression');
+        const impressions = await RecommendationImpression.find({
+            owner: userId,
+            profileId: context,
+            catalogId: catalogId,
+            tmdbId: { $in: candidateIds }
+        }).lean();
+        for (const imp of impressions) {
+            impressionMap.set(String(imp.tmdbId), imp.seenDates.length);
+        }
+    } catch (_e) { }
+
     const scored = await rateLimitedMap(
         traktTmdbIds.slice(0, 100),
         async (id) => {
+            const seenDays = impressionMap.get(String(id)) || 0;
+            let penaltyMultiplier = 1.0;
+            if (seenDays >= 3) {
+                penaltyMultiplier = Math.max(0.2, 1.0 - (seenDays - 2) * 0.2);
+            }
+
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, id, types);
             if (!details) return null;
             const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
-            return { data: details, score };
+            return { data: details, score: score * penaltyMultiplier };
         },
         { batchSize: 5, delayMs: 50 }
     );

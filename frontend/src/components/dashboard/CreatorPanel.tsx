@@ -15,6 +15,43 @@ import { generateId } from '@/lib/utils';
 
 const MAX_AI_CATALOG_NAME_LENGTH = 30;
 
+const KITSU_CATEGORIES = [
+  { value: 'action', label: 'Action (Azione)' },
+  { value: 'adventure', label: 'Adventure (Avventura)' },
+  { value: 'comedy', label: 'Comedy (Commedia)' },
+  { value: 'drama', label: 'Drama (Dramma)' },
+  { value: 'fantasy', label: 'Fantasy (Fantasy)' },
+  { value: 'romance', label: 'Romance (Romantico)' },
+  { value: 'sci-fi', label: 'Sci-Fi (Fantascienza)' },
+  { value: 'slice-of-life', label: 'Slice of Life' },
+  { value: 'supernatural', label: 'Supernatural (Soprannaturale)' },
+  { value: 'mystery', label: 'Mystery (Mistero)' },
+  { value: 'psychological', label: 'Psychological (Psicologico)' },
+  { value: 'thriller', label: 'Thriller (Thriller)' },
+  { value: 'horror', label: 'Horror (Horror)' },
+  { value: 'mecha', label: 'Mecha' },
+  { value: 'sports', label: 'Sports (Sport)' },
+  { value: 'music', label: 'Music (Musica)' },
+  { value: 'historical', label: 'Historical (Storico)' },
+  { value: 'shoujo', label: 'Shoujo' },
+  { value: 'shounen', label: 'Shounen' },
+  { value: 'seinen', label: 'Seinen' },
+  { value: 'josei', label: 'Josei' },
+  { value: 'cyberpunk', label: 'Cyberpunk' },
+  { value: 'martial-arts', label: 'Martial Arts (Arti Marziali)' },
+  { value: 'space', label: 'Space (Spaziale)' },
+  { value: 'super-power', label: 'Super Power (Superpoteri)' },
+  { value: 'military', label: 'Military (Militare)' },
+  { value: 'school', label: 'School (Scolastico)' },
+  { value: 'parody', label: 'Parody (Parodia)' },
+  { value: 'demons', label: 'Demons (Demoni)' },
+  { value: 'magic', label: 'Magic (Magia)' },
+  { value: 'game', label: 'Game (Gioco)' },
+  { value: 'kids', label: 'Kids (Bambini)' },
+  { value: 'isekai', label: 'Isekai' },
+  { value: 'post-apocalyptic', label: 'Post-Apocalyptic' }
+];
+
 interface CreatorPanelProps {
   onAddCatalog: (catalog: Catalog) => void;
   editCatalog?: Catalog;
@@ -631,14 +668,63 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
           {block.provider === 'kitsu' && block.strategy === 'discovery' && (
             <div className="mt-4 border-t border-marrow-light/10 pt-4">
               <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px] block mb-1">
-                Categorie Kitsu (separate da virgola)
+                Seleziona Categorie Kitsu
               </Label>
-              <Input
-                value={block.keywordNames || ''}
-                onChange={(e) => updateBlock(block.id, { keywordNames: e.target.value })}
-                placeholder="es. shounen, romance, isekai, kids"
-                className="bg-white border-marrow-light/20 text-marrow-deep font-bold text-xs"
-              />
+              <Select
+                value=""
+                onValueChange={(val) => {
+                  if (!val) return;
+                  const currentKws = block.keywordNames
+                    ? block.keywordNames.split(',').map(k => k.trim()).filter(Boolean)
+                    : [];
+                  if (!currentKws.includes(val)) {
+                    const newKws = [...currentKws, val].join(', ');
+                    updateBlock(block.id, { keywordNames: newKws });
+                  }
+                }}
+              >
+                <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-xs">
+                  <SelectValue placeholder="Scegli categorie anime..." />
+                </SelectTrigger>
+                <SelectContent className="max-h-[250px] bg-white border border-marrow-light/10 text-marrow-deep font-bold">
+                  {KITSU_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Render selected categories as badges */}
+              {block.keywordNames && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {block.keywordNames.split(',').map(k => k.trim()).filter(Boolean).map((catName) => {
+                    const foundCat = KITSU_CATEGORIES.find(c => c.value === catName);
+                    const displayLabel = foundCat ? foundCat.label : catName;
+                    return (
+                      <span
+                        key={catName}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-marrow-cream/80 text-marrow-deep border border-marrow-light/10 text-xs font-black uppercase tracking-wider shadow-sm"
+                      >
+                        {displayLabel}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentKws = block.keywordNames
+                              ? block.keywordNames.split(',').map(k => k.trim()).filter(Boolean)
+                              : [];
+                            const newKws = currentKws.filter(x => x !== catName).join(', ');
+                            updateBlock(block.id, { keywordNames: newKws });
+                          }}
+                          className="text-marrow-light hover:text-marrow-deep transition-colors ml-1 font-bold text-[10px]"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
