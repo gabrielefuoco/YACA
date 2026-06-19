@@ -47,10 +47,18 @@ const catalogRequestCache = new CacheManager('tmdb_catalog', {
     swrMs: ONE_HOUR_MS
 });
 
+const simulcastDatesCache = new CacheManager('simulcast_dates', {
+    ramMax: 300,
+    ramTtlMs: ONE_HOUR_MS * 12, // 12 ore RAM
+    mongoTtlMs: ONE_DAY_MS * 7,   // 7 giorni MongoDB cache
+    swrMs: ONE_HOUR_MS * 6      // 6 ore SWR
+});
+
 module.exports = {
     aiPromptCache,
     aiDiscoveryCache,
     hybridRecommendationsCache,
     catalogFallbackCache,
-    catalogRequestCache
+    catalogRequestCache,
+    simulcastDatesCache
 };

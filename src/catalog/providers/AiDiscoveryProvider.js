@@ -3,7 +3,7 @@ const { routeLiveStremioSearch } = require('../../ai/router');
 const { getProfileDnaFilters } = require('../../utils/helpers');
 const { normalizeContentId } = require('../../utils/contentId');
 const { interleaveMultipleResults, applyConsensusScoring } = require('../../utils/resultMerger');
-const { catalogFallbackCache } = require('../../cache/cacheInstances');
+const { catalogFallbackCache, simulcastDatesCache } = require('../../cache/cacheInstances');
 const TasteProfile = require('../../models/TasteProfile');
 const ProfileScorer = require('../../profile/ProfileScorer');
 const { buildDiscoveryParams, getTmdbVoteScore } = require('./TmdbProvider');
@@ -96,6 +96,8 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
 
     if (queries.length === 0) return [];
 
+    let finalResults = [];
+
     if (queries.length === 1) {
         const query = { ...queries[0] };
         if (!query.strategy) query.strategy = 'discovery';
@@ -113,48 +115,56 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
             primaryResults = await executeComplexStrategy(relaxedQuery, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions);
         }
 
-        return primaryResults;
-    }
-
-    const isFirstPage = skip === 0;
-    let perQuerySkip;
-    if (presentation_strategy === 'interleave') {
-        perQuerySkip = Math.floor(skip / queries.length);
+        finalResults = primaryResults || [];
     } else {
-        perQuerySkip = skip;
+        const isFirstPage = skip === 0;
+        let perQuerySkip;
+        if (presentation_strategy === 'interleave') {
+            perQuerySkip = Math.floor(skip / queries.length);
+        } else {
+            perQuerySkip = skip;
+        }
+
+        const queryResults = await Promise.all(
+            queries.map(async (queryDef) => {
+                const query = { ...queryDef };
+                if (!query.strategy) query.strategy = 'discovery';
+
+                const pagesToFetch = isFirstPage ? LOOKAHEAD_PAGES : 1;
+                const pagePromises = [];
+                for (let p = 0; p < pagesToFetch; p++) {
+                    const pageSkip = perQuerySkip + (p * PAGE_SIZE);
+                    pagePromises.push(
+                        executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions)
+                    );
+                }
+                const pageResults = await Promise.all(pagePromises);
+                return pageResults.flat();
+            })
+        );
+
+        if (presentation_strategy === 'interleave') {
+            finalResults = interleaveMultipleResults(queryResults, PAGE_SIZE);
+        } else {
+            const finalItems = applyConsensusScoring(queryResults);
+            
+            finalItems.sort((a, b) => {
+                const bonusDiff = (b.consensusBonus || 0) - (a.consensusBonus || 0);
+                if (bonusDiff !== 0) return bonusDiff;
+                return (b.popularity || 0) - (a.popularity || 0);
+            });
+
+            finalResults = finalItems.slice(0, PAGE_SIZE);
+        }
     }
 
-    const queryResults = await Promise.all(
-        queries.map(async (queryDef) => {
-            const query = { ...queryDef };
-            if (!query.strategy) query.strategy = 'discovery';
-
-            const pagesToFetch = isFirstPage ? LOOKAHEAD_PAGES : 1;
-            const pagePromises = [];
-            for (let p = 0; p < pagesToFetch; p++) {
-                const pageSkip = perQuerySkip + (p * PAGE_SIZE);
-                pagePromises.push(
-                    executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions)
-                );
-            }
-            const pageResults = await Promise.all(pagePromises);
-            return pageResults.flat();
-        })
-    );
-
-    if (presentation_strategy === 'interleave') {
-        return interleaveMultipleResults(queryResults, PAGE_SIZE);
+    // Apply chronological sorting for simulcast/airing-date queries!
+    const hasAirDateFilter = queries.some(q => q['air_date.gte'] || q['air_date.lte']);
+    if (hasAirDateFilter && type === 'series' && finalResults && finalResults.length > 0) {
+        finalResults = await applySimulcastSorting(finalResults, tmdbClient);
     }
 
-    const finalItems = applyConsensusScoring(queryResults);
-    
-    finalItems.sort((a, b) => {
-        const bonusDiff = (b.consensusBonus || 0) - (a.consensusBonus || 0);
-        if (bonusDiff !== 0) return bonusDiff;
-        return (b.popularity || 0) - (a.popularity || 0);
-    });
-
-    return finalItems.slice(0, PAGE_SIZE);
+    return finalResults;
 }
 
 // Automatic query injection from profile
@@ -253,6 +263,67 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     });
 
     return finalItems.slice(0, 20);
+}
+
+async function fetchAndCacheEpisodeDate(tmdbId, tmdbClient) {
+    try {
+        const res = await tmdbClient.get(`/tv/${tmdbId}`, {
+            params: { language: 'it-IT' }
+        });
+        const lastEp = res.data?.last_episode_to_air;
+        const nextEp = res.data?.next_episode_to_air;
+        let dateStr = null;
+        let epNum = null;
+        
+        const nowStr = new Date().toISOString().split('T')[0];
+        if (lastEp && lastEp.air_date) {
+            dateStr = lastEp.air_date;
+            epNum = lastEp.episode_number;
+        }
+        if (nextEp && nextEp.air_date && nextEp.air_date <= nowStr) {
+            dateStr = nextEp.air_date;
+            epNum = nextEp.episode_number;
+        }
+        
+        if (dateStr) {
+            await simulcastDatesCache.set(String(tmdbId), { latestAirDate: dateStr, episodeNumber: epNum });
+        }
+    } catch (e) {
+        // Fail silently
+    }
+}
+
+async function applySimulcastSorting(items, tmdbClient) {
+    if (!items || items.length === 0 || !tmdbClient) return items;
+    
+    // Esegui lookup in cache ed estrai ID TMDB
+    const itemsWithDates = await Promise.all(items.map(async (item) => {
+        const tmdbId = item.id.replace('tmdb:series:', '').replace('tmdb:', '');
+        if (!tmdbId || isNaN(tmdbId)) {
+            return { item, latestAirDate: null };
+        }
+        
+        const cached = await simulcastDatesCache.get(String(tmdbId));
+        if (cached && cached.latestAirDate) {
+            return { item, latestAirDate: cached.latestAirDate };
+        } else {
+            // Avvia fetch asincrono in background non-bloccante
+            fetchAndCacheEpisodeDate(tmdbId, tmdbClient).catch(() => {});
+            return { item, latestAirDate: null };
+        }
+    }));
+    
+    // Ordina in memoria: date decrescenti prima, poi i null mantenendo l'ordine di popolarità originale
+    itemsWithDates.sort((a, b) => {
+        if (a.latestAirDate && b.latestAirDate) {
+            return b.latestAirDate.localeCompare(a.latestAirDate);
+        }
+        if (a.latestAirDate) return -1;
+        if (b.latestAirDate) return 1;
+        return 0; // mantiene l'ordine relativo originale
+    });
+    
+    return itemsWithDates.map(x => x.item);
 }
 
 module.exports = {
