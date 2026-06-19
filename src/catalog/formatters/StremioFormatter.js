@@ -113,10 +113,11 @@ function sanitizeCatalogMeta(item, options = {}) {
     }
 
     let poster = sourceImage;
+    const BADGE_IMG_VERSION = 11; // Bump to force Stremio to re-download badge images
     if (badgeText && hostUrl && sourceImage) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';
-        poster = `${hostUrl}/images/poster/${typeParam}/${encodeURIComponent(idParam)}/${encodeURIComponent(badgeText)}?original=${encodeURIComponent(sourceImage)}`;
+        poster = `${hostUrl}/images/poster/${typeParam}/${encodeURIComponent(idParam)}/${encodeURIComponent(badgeText)}?original=${encodeURIComponent(sourceImage)}&bv=${BADGE_IMG_VERSION}`;
     } else if (badgeText) {
         // Log why poster URL wasn't rewritten (only first time to avoid spam)
         if (!sanitizeCatalogMeta._loggedOnce) {
