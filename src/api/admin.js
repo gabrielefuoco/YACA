@@ -112,7 +112,7 @@ router.get('/debug/trakt-community', async (req, res) => {
                 id: 'yaca_trakt_filtered_movies',
                 extra: { skip: 0 }
             };
-            const hostUrl = `https://gabriele-fuoco-yaca.hf.space`;
+            const hostUrl = process.env.HOST_URL || `https://<il-tuo-space>.hf.space`;
             const handlerRes = await catalogHandler(args, userConfig, hostUrl);
             logs.push(`catalogHandler pipeline OK, metas count=${handlerRes?.metas?.length}`);
         } catch (handlerErr) {

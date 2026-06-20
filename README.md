@@ -53,7 +53,7 @@ YACA utilizza un'architettura **Stateful** basata su **MongoDB**. Il cuore del s
 1. Clicca il link **Deploy to Hugging Face Spaces** qui sopra.
 2. Inserisci il tuo **HF_TOKEN** (con permessi di scrittura) e le altre API Key.
 3. Lo spazio si avvierà automaticamente usando il `Dockerfile` incluso.
-4. Una volta avviato, visita l'URL del tuo spazio (es. `https://gabriele-fuoco-yaca.hf.space`) per configurare l'addon.
+4. Una volta avviato, visita l'URL del tuo spazio (es. `https://<il-tuo-space>.hf.space`) per configurare l'addon.
 
 ---
 
@@ -61,7 +61,7 @@ YACA utilizza un'architettura **Stateful** basata su **MongoDB**. Il cuore del s
 
 I servizi gratuiti di Hugging Face vanno in sospensione (sleep) dopo un periodo di inattività. Usa **UptimeRobot** per mantenerlo attivo:
 1. Crea un monitor **HTTP(s)** su [UptimeRobot](https://uptimerobot.com/).
-2. URL: `https://gabriele-fuoco-yaca.hf.space/api/cron/warmup`.
+2. URL: `https://<il-tuo-space>.hf.space/api/cron/warmup`.
 3. Intervallo: **10 minuti** (consigliato) o **14 minuti**.
 
 ---
@@ -73,7 +73,7 @@ I servizi gratuiti di Hugging Face vanno in sospensione (sleep) dopo un periodo 
 - Necessaria per salvare profili e configurazioni.
 
 ### 2. `HOST_URL` (Altamente Consigliata)
-- L'URL pubblico del tuo servizio (es. `https://gabriele-fuoco-yaca.hf.space`).
+- L'URL pubblico del tuo servizio (es. `https://<il-tuo-space>.hf.space`).
 - Essenziale per la generazione corretta di poster, badge e manifest.
 
 ### 3. `JWT_SECRET` (Consigliata)
@@ -126,7 +126,7 @@ Visita `http://localhost:7000` nel browser.
 |`TMDB_API_KEY`|Sì*|API Key globale TMDB|
 |`MISTRAL_API_KEY`|No*|API Key di Mistral per funzioni AI|
 |`JWT_SECRET`|No|Consigliata. Chiave di sessione (genera fallback casuale al riavvio)|
-|`HOST_URL`|Sì|URL pubblico del server (es. `https://gabriele-fuoco-yaca.hf.space`)|
+|`HOST_URL`|Sì|URL pubblico del server (es. `https://<il-tuo-space>.hf.space`)|
 |`PORT`|No|Porta del server (Hugging Face usa 7860)|
 |`TRAKT_CLIENT_ID`|No|Client ID per Trakt.tv|
 |`TRAKT_CLIENT_SECRET`|No|Client Secret per Trakt.tv|
