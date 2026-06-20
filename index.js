@@ -89,6 +89,19 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Cron endpoint for background cache warming
+const { runCacheWarmer } = require('./src/utils/cacheWarmer');
+app.get('/api/cron/warmup', (req, res) => {
+    // Risponde immediatamente a Uptime Robot per non far scadere il timeout
+    res.json({ status: 'ok', message: 'Warmup scheduled' });
+    
+    // Costruisce l'hostUrl base per il catalogHandler
+    const hostUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Lancia in background
+    runCacheWarmer(hostUrl).catch(err => console.error('[CacheWarmer] Error:', err.message));
+});
+
 // Rate limiter for auth endpoints (brute-force protection)
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes

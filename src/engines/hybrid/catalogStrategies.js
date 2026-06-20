@@ -279,7 +279,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
             const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
             return { data, score: score * penaltyMultiplier, hybridScore: hybridScore * penaltyMultiplier };
         },
-        { batchSize: 5, delayMs: 50 }
+        { batchSize: 3, delayMs: 150 }
     );
 
     return scored.sort((a, b) => (b.score + b.hybridScore) - (a.score + a.hybridScore)).slice(0, 100).map(i => String(i.data.id));
@@ -426,7 +426,7 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
             const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
             return { data: details, score: score * penaltyMultiplier };
         },
-        { batchSize: 5, delayMs: 50 }
+        { batchSize: 3, delayMs: 150 }
     );
 
     return scored

@@ -205,6 +205,17 @@ async function catalogHandler(args, userConfig, hostUrl) {
         return await fetchCatalog();
     }
 
+    if (extra?.warmupMode) {
+        const cachedStatus = await catalogRequestCache.getWithStatus(requestCacheKey);
+        if (cachedStatus.status === 'fresh') {
+            return cachedStatus.value;
+        } else {
+            const freshData = await fetchCatalog();
+            await catalogRequestCache.set(requestCacheKey, freshData, ttl);
+            return freshData;
+        }
+    }
+
     return await catalogRequestCache.getOrFetch(requestCacheKey, fetchCatalog, ttl);
 }
 

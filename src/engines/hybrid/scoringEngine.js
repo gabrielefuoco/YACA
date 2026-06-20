@@ -232,7 +232,7 @@ async function twoTierScore(pool, profile, options) {
             const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
             return { data, score: score * penaltyMultiplier };
         },
-        { batchSize: 5, delayMs: 50 }
+        { batchSize: 3, delayMs: 150 }
     );
 
     return scored.sort((a, b) => b.score - a.score);

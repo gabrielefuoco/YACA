@@ -315,7 +315,7 @@ const profileTemplates = [
         name: '🎌 Otaku Hardcore (Anime)',
         description: 'Ogni sottogenere anime, dai classici al simulcast',
         presets: [
-            'preset_anime_simulcast', 'preset_pop_anime', 'preset_new_anime',
+            'preset_anime_simulcast', 'preset_pop_anime',
             'preset_anime_shonen', 'preset_anime_seinen', 'preset_anime_shoujo',
             'preset_anime_isekai', 'preset_anime_slice_of_life', 'preset_anime_action',
             'preset_anime_mecha', 'preset_anime_dark', 'preset_anime_sports',

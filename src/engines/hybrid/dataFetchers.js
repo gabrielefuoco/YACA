@@ -163,7 +163,7 @@ async function fetchTmdbSimilarCounts(seedTmdbIds, tmdbApiKey, mediaType = 'movi
     const results = await rateLimitedMap(
         seedTmdbIds,
         (id) => fetchTmdbResults(tmdbClient, `/${types}/${id}/recommendations`, {}, `Similar fetch (${types}/${id})`),
-        { batchSize: 5, delayMs: 50 }
+        { batchSize: 3, delayMs: 150 }
     );
 
     results.forEach(items => {

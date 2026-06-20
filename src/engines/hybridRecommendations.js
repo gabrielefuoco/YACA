@@ -154,7 +154,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                 return null;
             }
         },
-        { batchSize: 5, delayMs: 50 }
+        { batchSize: 3, delayMs: 150 }
     );
 
     // Warm-up subsequent pages in the background (from the next item after the current page slice onwards)
