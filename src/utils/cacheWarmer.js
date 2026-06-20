@@ -1,4 +1,5 @@
 const UserConfig = require('../models/UserConfig');
+const UserAccount = require('../db/models/UserAccount');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { rateLimitedMap } = require('./rateLimiter');
 
@@ -17,11 +18,13 @@ async function runCacheWarmer(hostUrl) {
 
     try {
         console.log('[CacheWarmer] Started sweeping all users...');
-        const users = await UserConfig.find({}).lean();
+        const accounts = await UserAccount.find({}).lean();
         
         // Estraiamo tutti i cataloghi da processare
         const catalogTasks = [];
-        for (const user of users) {
+        for (const account of accounts) {
+            const user = await UserConfig.resolveUserConfig(account.userId);
+            if (!user) continue;
             const activeProfile = user.profiles?.find(p => p.id === user.activeProfileId);
             if (!activeProfile || !activeProfile.catalogs) continue;
             
