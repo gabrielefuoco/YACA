@@ -364,6 +364,20 @@ router.get(['/:userHandle/meta/:type/:id.json', '/:userHandle/:configVersion/met
 
     try {
         const response = await metaHandler(args, userConfig);
+        
+        if (response && response.meta) {
+            const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
+            const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
+            
+            // Apply ERDB styling to meta response
+            response.meta = sanitizeCatalogMeta(response.meta, {
+                shouldApplyEpisodeBadge: false, // Do not badge the poster in detail view
+                isLandscapeEnabled: false, // Poster remains portrait
+                userConfig,
+                hostUrl
+            });
+        }
+
         res.setHeader('Cache-Control', type === 'series' ? 'max-age=1800, public' : 'max-age=86400, public');
         res.json(response);
     } catch (err) {

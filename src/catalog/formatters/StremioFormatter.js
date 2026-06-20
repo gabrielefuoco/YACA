@@ -126,8 +126,31 @@ function sanitizeCatalogMeta(item, options = {}) {
 
     let background = item.background;
     let erdbBgId = erdbConfig ? getErdbId(item) : null;
+    let logo = item.logo;
+    let videos = item.videos;
+
     if (erdbConfig && erdbBgId) {
         background = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbBgId}.jpg`;
+        const erdbLogoUrl = `https://easyratingsdb.com/${erdbConfig}/logo/${erdbBgId}.png`;
+        logo = erdbLogoUrl;
+
+        if (Array.isArray(videos) && videos.length > 0) {
+            videos = videos.map(v => {
+                if (v && v.season !== undefined && v.episode !== undefined) {
+                    let episodeErdbId;
+                    if (erdbBgId.startsWith('kitsu:')) {
+                        episodeErdbId = `${erdbBgId}:${v.episode}`;
+                    } else {
+                        episodeErdbId = `${erdbBgId}:${v.season}:${v.episode}`;
+                    }
+                    return {
+                        ...v,
+                        thumbnail: `https://easyratingsdb.com/${erdbConfig}/thumbnail/${episodeErdbId}.jpg`
+                    };
+                }
+                return v;
+            });
+        }
     }
 
     let poster = sourceImage;
@@ -151,17 +174,13 @@ function sanitizeCatalogMeta(item, options = {}) {
         : baseName;
 
     return {
-        id: item.id,
-        type: item.type,
+        ...item,
         name,
         poster,
         posterShape: finalPosterShape,
         background: background,
-        description: item.description,
-        releaseInfo: item.releaseInfo,
-        imdbRating: item.imdbRating,
-        genres: item.genres,
-        behaviorHints: item.behaviorHints
+        logo: logo,
+        videos: videos
     };
 }
 
@@ -198,5 +217,6 @@ function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled,
 }
 
 module.exports = {
-    formatStremioCatalog
+    formatStremioCatalog,
+    sanitizeCatalogMeta
 };
