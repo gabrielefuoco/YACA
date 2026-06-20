@@ -209,6 +209,47 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     try {
         if (mistralKey) {
             const routing = await routeLiveStremioSearch(search, mistralKey);
+            
+            if (routing?.filters?.strategy === 'static_list') {
+                const { getTmdbIdByName, getTmdbMovieDetails } = require('../../clients/tmdb');
+                const { rateLimitedMap } = require('../../utils/rateLimiter');
+                const titles = routing.filters.static_items || [];
+                const tmdbType = type === 'series' ? 'tv' : 'movie';
+
+                const resolvedMetas = await rateLimitedMap(titles, async (title) => {
+                    const tmdbId = await getTmdbIdByName(tmdbApiKey, tmdbType, title);
+                    if (!tmdbId) return null;
+                    const details = await getTmdbMovieDetails(tmdbApiKey, tmdbId, tmdbType);
+                    if (!details) return null;
+
+                    let name = details.title || details.name || 'Unknown';
+                    let poster = details.poster_path ? `https://image.tmdb.org/t/p/w342${details.poster_path}` : null;
+                    let background = details.backdrop_path ? `https://image.tmdb.org/t/p/w780${details.backdrop_path}` : null;
+
+                    if (details.images && Array.isArray(details.images.posters) && details.images.posters.length > 0) {
+                        poster = `https://image.tmdb.org/t/p/w342${details.images.posters[0].file_path}`;
+                    }
+                    if (details.images && Array.isArray(details.images.backdrops) && details.images.backdrops.length > 0) {
+                        background = `https://image.tmdb.org/t/p/w780${details.images.backdrops[0].file_path}`;
+                    }
+
+                    return {
+                        id: `tmdb:${tmdbId}`,
+                        type: type === 'series' ? 'series' : 'movie',
+                        name: name,
+                        poster: poster,
+                        background: background,
+                        releaseInfo: details.release_date || details.first_air_date ? (details.release_date || details.first_air_date).substring(0, 4) : null,
+                        imdbRating: details.vote_average ? String(details.vote_average.toFixed(1)) : null,
+                        genres: (details.genres || []).map(g => g.id),
+                        description: details.overview || null,
+                        rawTMDB: details
+                    };
+                }, { batchSize: 5, delayMs: 0 });
+
+                return resolvedMetas.filter(Boolean);
+            }
+
             const rawQueries = Array.isArray(routing?.filters?.queries) ? routing.filters.queries : [];
             plannedQueries = rawQueries.filter(query => !query?.target || query.target === 'tmdb');
         }

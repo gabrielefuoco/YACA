@@ -67,11 +67,14 @@ const BASE_RULES = `You are a TMDB Query Architect. Your job is to convert user 
 
 const SCHEMAS = {
     single_query: `### TASK:
-Return exactly one JSON object describing the best TMDB query.
+Return exactly one JSON object describing the best TMDB query or a static recommendation list.
+- If the user asks for a recommendation list of specific titles (e.g. "dammi i 10 film horror più spaventosi", "la lista dei tuoi film preferiti", "consigliami 5 serie tv di fantascienza"), use the "static_list" strategy and return the titles in "static_items".
+- Note: The type of list (movies or series) must be consistent. Avoid mixing them.
 
 ### RESPONSE FORMAT:
 {
-  "strategy": "discovery" | "multi_search" | "similar",
+  "strategy": "discovery" | "multi_search" | "similar" | "static_list",
+  "static_items": ["string"] | null,
   "similar_to": "string" | null,
   "text_search": "string" | null,
   "genre_ids": [12, 16] | null,
@@ -94,15 +97,17 @@ Return exactly one JSON object describing the best TMDB query.
   "target": "tmdb" | "kitsu" | "trakt"
 }`,
     multi_query: `### TASK:
-Act as a Query Planner. Return a JSON object with a "queries" array. Each item must be an independent TMDB task that can run in parallel.
+Act as a Query Planner. Return a JSON object with a "queries" array or a static list.
+- If the user asks for a recommendation list of specific titles (e.g. "dammi i 10 migliori film di sempre", "la lista dei tuoi film preferiti"), return a single query block with "strategy": "static_list" and a "static_items" array of plain movie/show titles.
 - Use "multi_search" ONLY for exact titles (e.g. "Breaking Bad", "Avatar").
-- NEVER use "multi_search" for a list of topics, genres, or keywords (like "anime isekai mecha", "vampiri anni 90"). Always use "discovery" for these.
+- NEVER use "multi_search" for a list of topics, genres, or keywords. Always use "discovery" for these.
 - Use "similar" when the user explicitly asks for works like another title.
 - Use "discovery" for vibe, cast, genre, year, plot, or provider constraints.
-- Generate between 1 and 4 queries depending on complexity.
 
 ### RESPONSE FORMAT:
 {
+  "strategy": "discovery" | "multi_search" | "similar" | "static_list",
+  "static_items": ["string"] | null,
   "queries": [
     {
       "strategy": "discovery" | "multi_search" | "similar",
@@ -135,7 +140,8 @@ const EXAMPLES = {
     single_query: `### EXAMPLES:
 - Query: "Film tipo Interstellar" -> { "strategy": "similar", "similar_to": "Interstellar", "target": "tmdb" }
 - Query: "Breaking Bad" -> { "strategy": "multi_search", "text_search": "Breaking Bad", "target": "tmdb" }
-- Query: "Film thriller anni 90 con Brad Pitt" -> { "strategy": "discovery", "genre_ids": [53], "people_list": ["Brad Pitt"], "year_from": "1990", "year_to": "1999", "target": "tmdb" }`,
+- Query: "Film thriller anni 90 con Brad Pitt" -> { "strategy": "discovery", "genre_ids": [53], "people_list": ["Brad Pitt"], "year_from": "1990", "year_to": "1999", "target": "tmdb" }
+- Query: "I 5 film di zombie migliori" -> { "strategy": "static_list", "static_items": ["Train to Busan", "28 Days Later", "Shaun of the Dead", "Zombieland", "Night of the Living Dead"] }`,
     multi_query: `### EXAMPLES:
 - Query: "Io amo Game of Thrones ma la mia ragazza Bridgerton" -> {
   "queries": [
@@ -154,6 +160,10 @@ const EXAMPLES = {
     { "strategy": "discovery", "genre_ids": [53], "people_list": ["Brad Pitt"], "year_from": "1990", "year_to": "1999", "target": "tmdb" },
     { "strategy": "discovery", "genre_ids": [53], "people_list": ["Morgan Freeman"], "year_from": "1990", "year_to": "1999", "target": "tmdb" }
   ]
+}
+- Query: "Le 3 serie tv sci-fi più famose di sempre" -> {
+  "strategy": "static_list",
+  "static_items": ["Star Trek: The Next Generation", "Doctor Who", "The X-Files"]
 }`
 };
 

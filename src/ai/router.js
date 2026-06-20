@@ -12,9 +12,9 @@ const { buildAiPrompt } = require('./prompts');
 const ALLOWED_AI_FIELDS = new Set([
     'strategy', 'similar_to', 'text_search', 'genre_ids', 'people_list',
     'year_from', 'year_to', 'runtime_lte', 'company_name', 'watch_provider',
-    'keyword', 'original_language', 'language', 'target'
+    'keyword', 'original_language', 'language', 'target', 'static_items'
 ]);
-const ALLOWED_STRATEGIES = new Set(['discovery', 'multi_search', 'similar']);
+const ALLOWED_STRATEGIES = new Set(['discovery', 'multi_search', 'similar', 'static_list']);
 const ALLOWED_TARGETS = new Set(['tmdb', 'kitsu', 'trakt']);
 
 function sanitizeSingleQuery(parsed, fallbackPrompt) {
@@ -28,6 +28,11 @@ function sanitizeSingleQuery(parsed, fallbackPrompt) {
 
     if (!ALLOWED_STRATEGIES.has(clean.strategy)) {
         clean.strategy = 'multi_search';
+    }
+    if (clean.strategy === 'static_list') {
+        if (!Array.isArray(clean.static_items) || !clean.static_items.every(item => typeof item === 'string')) {
+            clean.static_items = [];
+        }
     }
     if (clean.target && !ALLOWED_TARGETS.has(clean.target)) {
         clean.target = 'tmdb';
@@ -64,6 +69,12 @@ function parseMistralResponse(content, originalPrompt, taskType = 'single_query'
         const parsed = JSON.parse(jsonContent);
 
         if (taskType === 'multi_query') {
+            if (parsed && (parsed.strategy === 'static_list' || (Array.isArray(parsed.static_items) && parsed.static_items.length > 0))) {
+                return {
+                    strategy: 'static_list',
+                    static_items: Array.isArray(parsed.static_items) ? parsed.static_items : []
+                };
+            }
             const rawQueries = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.queries) ? parsed.queries : []);
             const queries = rawQueries
                 .filter(item => item && typeof item === 'object')

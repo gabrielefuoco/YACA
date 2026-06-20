@@ -1,16 +1,19 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Profile, Preset, Catalog, MyList, ProfileTemplate } from '@/types';
 import { ProfileManager } from '@/components/dashboard/ProfileManager';
 import { ActiveCatalogsPanel } from '@/components/dashboard/ActiveCatalogsPanel';
 import { ExplorePanel } from '@/components/dashboard/ExplorePanel';
 import { CreatorPanel } from '@/components/dashboard/CreatorPanel';
 import { DnaAndAiPanel } from '@/components/dashboard/DnaAndAiPanel';
+import { ListManagerPanel, UserList } from '@/components/dashboard/ListManagerPanel';
+import { ListEditorPanel } from '@/components/dashboard/ListEditorPanel';
 import { RenameProfileDialog } from '@/components/modals/RenameProfileDialog';
 import { EditCatalogModal } from '@/components/modals/EditCatalogModal';
 import { generateId } from '@/lib/utils';
+import { api } from '@/lib/api';
 
-type DashboardTab = 'active' | 'explore' | 'creator' | 'dna';
+type DashboardTab = 'active' | 'explore' | 'creator' | 'lists' | 'dna';
 
 interface DashboardPageProps {
   profiles: Profile[];
@@ -70,6 +73,48 @@ export function DashboardPage({
   const [editingCatalog, setEditingCatalog] = useState<Catalog | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const editingProfile = profiles.find((p) => p.id === editingProfileId) ?? profiles[0];
+
+  const [customLists, setCustomLists] = useState<UserList[]>([]);
+  const [editingList, setEditingList] = useState<UserList | null | undefined>(undefined);
+  const [listsLoading, setListsLoading] = useState(false);
+
+  const fetchCustomLists = async () => {
+    setListsLoading(true);
+    try {
+      const res = await api.getLists();
+      if (res.success && Array.isArray(res.lists)) {
+        setCustomLists(res.lists);
+      }
+    } catch (err) {
+      console.error('Error fetching custom lists:', err);
+    } finally {
+      setListsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'lists') {
+      fetchCustomLists();
+    }
+  }, [activeTab]);
+
+  const activeCatalogIds = editingProfile?.existingCatalogs?.map(c => c.id) || [];
+
+  const handleActivateList = (list: UserList) => {
+    onAddCatalog(editingProfileId, {
+      id: list.listId,
+      name: list.name,
+      type: list.type,
+      source: 'manual_items',
+      queries: list.queries,
+      presentation_strategy: list.presentation_strategy || 'popularity',
+      emoji: '📝'
+    });
+  };
+
+  const handleDeactivateList = (listId: string) => {
+    onRemoveCatalog(editingProfileId, listId);
+  };
 
   const handleEditCatalog = (catalog: Catalog) => {
     let catToEdit = { ...catalog };
@@ -148,6 +193,7 @@ export function DashboardPage({
     { id: 'active' as const, label: 'Cataloghi Attivi', icon: 'grid_view' },
     { id: 'explore' as const, label: 'Esplora', icon: 'explore' },
     { id: 'creator' as const, label: 'Creatore', icon: 'auto_fix' },
+    { id: 'lists' as const, label: 'Liste Custom', icon: 'playlist_play' },
     { id: 'dna' as const, label: 'DNA & AI Lab', icon: 'biotech' },
   ];
 
@@ -243,6 +289,32 @@ export function DashboardPage({
                   setActiveTab('active');
                 }}
               />
+            )}
+
+            {activeTab === 'lists' && editingProfile && (
+              editingList !== undefined ? (
+                <ListEditorPanel
+                  list={editingList}
+                  onSave={() => {
+                    setEditingList(undefined);
+                    fetchCustomLists();
+                  }}
+                  onCancel={() => {
+                    setEditingList(undefined);
+                  }}
+                />
+              ) : (
+                <ListManagerPanel
+                  lists={customLists}
+                  activeCatalogIds={activeCatalogIds}
+                  onRefresh={fetchCustomLists}
+                  onEdit={(list) => setEditingList(list)}
+                  onCreate={() => setEditingList(null)}
+                  onActivate={handleActivateList}
+                  onDeactivate={handleDeactivateList}
+                  currentProfileName={editingProfile.name}
+                />
+              )
             )}
 
             {activeTab === 'dna' && editingProfile && (

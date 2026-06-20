@@ -79,6 +79,39 @@ router.post('/preview-catalog', async (req, res) => {
                 return res.status(400).json({ error: 'Prompt non valido' });
             }
             aiFilters = await generateTmdbFiltersFromPrompt(sanitizedPrompt, reqMistralKey, 'multi_query', kidsMode);
+            
+            if (aiFilters?.strategy === 'static_list') {
+                const { getTmdbIdByName, getTmdbMovieDetails } = require('../clients/tmdb');
+                const { rateLimitedMap } = require('../utils/rateLimiter');
+                const titles = aiFilters.static_items || [];
+                const tmdbType = customType === 'series' ? 'tv' : 'movie';
+
+                const resolvedItems = await rateLimitedMap(titles, async (title) => {
+                    const tmdbId = await getTmdbIdByName(sanitizedTmdbKey, tmdbType, title);
+                    if (!tmdbId) return null;
+                    const details = await getTmdbMovieDetails(sanitizedTmdbKey, tmdbId, tmdbType);
+                    if (!details) return null;
+                    return {
+                        id: `tmdb:${tmdbId}`,
+                        title: details.title || details.name || title,
+                        poster: details.poster_path ? `https://image.tmdb.org/t/p/w342${details.poster_path}` : null,
+                        vote: details.vote_average || 0,
+                        year: details.release_date || details.first_air_date ? (details.release_date || details.first_air_date).substring(0, 4) : ''
+                    };
+                }, { batchSize: 5, delayMs: 0 });
+
+                const filteredResults = resolvedItems.filter(Boolean);
+
+                return res.json({
+                    name: sanitizedPrompt ? sanitizedPrompt.substring(0, MAX_PREVIEW_CATALOG_NAME_LENGTH) : null,
+                    type: customType || (aiType === 'series' ? 'series' : 'movie'),
+                    strategy: 'static_list',
+                    static_items: aiFilters.static_items,
+                    results: filteredResults,
+                    items: filteredResults
+                });
+            }
+
             const aiType = customType === 'series' || aiFilters.target === 'kitsu' ? 'series' : 'movie';
             discoverType = aiType === 'series' ? 'tv' : 'movie';
             strategy = aiFilters.strategy || 'discovery';

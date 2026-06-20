@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { PosterRow } from '@/components/shared/PosterRow';
 import { Catalog, QueryBlock } from '@/types';
 import { GENRE_NAMES, SORT_OPTIONS, LANGUAGES } from '@/lib/constants';
-import { Loader2, Wand2, Save, X, Eye, Plus, Layers, Info, Sparkles } from 'lucide-react';
+import { Loader2, Wand2, Save, X, Eye, Plus, Layers, Info, Sparkles, Film, Tv } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { generateId } from '@/lib/utils';
@@ -67,7 +67,7 @@ interface SelectedItem {
 interface BlockState {
   id: string;
   provider: 'tmdb' | 'kitsu';
-  strategy: 'discovery' | 'multi_search' | 'similar' | 'ai';
+  strategy: 'discovery' | 'multi_search' | 'similar' | 'ai' | 'static_list';
   aiPrompt?: string;
   aiLoading?: boolean;
   similarTo?: string;
@@ -303,6 +303,21 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
           setName(result?.name || trimmed.slice(0, MAX_AI_CATALOG_NAME_LENGTH));
       }
 
+      if (result?.strategy === 'static_list') {
+        setBlocks(prev => prev.map(b => {
+          if (b.id !== blockId) return b;
+          return {
+            ...b,
+            strategy: 'static_list',
+            rawProps: {
+              static_items: result.items || result.results || []
+            }
+          };
+        }));
+        updateBlock(blockId, { aiLoading: false });
+        return;
+      }
+
       // Support multi-query AI response, including nested payloads in filters.queries
       const rawFilters = result?.filters as Record<string, unknown> | undefined;
       const extractedQueries: Record<string, unknown>[] = Array.isArray(result?.queries)
@@ -386,7 +401,49 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
     }
   }, [presentationStrategy, type]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const staticBlock = blocks.find(b => b.strategy === 'static_list');
+    if (staticBlock) {
+      try {
+        const staticItems = (staticBlock.rawProps?.static_items as any[]) || [];
+        const res = await api.createList({
+          name: name.trim() || 'Lista Generata da AI',
+          type,
+          sourceType: 'ai_prompt',
+          items: staticItems.map(item => {
+            const rawId = String(item.id || '');
+            const tmdbId = parseInt(rawId.replace('tmdb:', ''), 10) || item.tmdbId;
+            return {
+              tmdbId,
+              type,
+              title: item.title,
+              poster: item.poster
+            };
+          })
+        });
+
+        if (res.success && res.list) {
+          const catalog: Catalog = {
+            id: res.list.listId,
+            name: res.list.name,
+            type: res.list.type,
+            source: 'manual_items',
+            emoji: '🤖',
+            queries: []
+          };
+          onAddCatalog(catalog);
+          setSaved(true);
+          setTimeout(() => setSaved(false), 3000);
+        } else {
+          alert(res.error || 'Errore nel salvataggio della lista.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Errore durante il salvataggio.');
+      }
+      return;
+    }
+
     const queries = blocks.map(buildQueryBlock);
     const catalog: Catalog = {
       id: editCatalog ? editCatalog.id : generateId(),
@@ -441,7 +498,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
           <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
           Query {index + 1}
           <span className="text-[10px] sm:text-xs font-medium normal-case text-marrow-light/70 hidden sm:inline">
-            — {block.strategy === 'ai' ? 'Genera con AI' : block.strategy === 'discovery' ? 'Discovery (Filtri)' : block.strategy === 'similar' ? 'Simili a...' : 'Ricerca Testuale'}
+            — {block.strategy === 'ai' ? 'Genera con AI' : block.strategy === 'static_list' ? 'Lista Statica AI' : block.strategy === 'discovery' ? 'Discovery (Filtri)' : block.strategy === 'similar' ? 'Simili a...' : 'Ricerca Testuale'}
           </span>
         </span>
         <span className="flex items-center gap-2">
@@ -574,7 +631,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
             )}
           </div>
 
-          {block.strategy !== 'ai' && (
+          {block.strategy !== 'ai' && block.strategy !== 'static_list' && (
             <>
           {/* Basic filters */}
           <details className="group [&_summary::-webkit-details-marker]:hidden" open>
@@ -832,10 +889,41 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
           )}
 
           {/* Per-block inline preview */}
-          {block.strategy !== 'ai' && (
+          {block.strategy !== 'ai' && block.strategy !== 'static_list' && (
             <div className="pt-3 border-t border-dashed border-marrow-light/15">
               <p className="text-[9px] font-black uppercase tracking-widest text-marrow-light/50 mb-2">Anteprima Query {index + 1}</p>
               <PosterRow filters={buildFiltersFromBlock(block)} type={type} />
+            </div>
+          )}
+
+          {block.strategy === 'static_list' && (
+            <div className="space-y-3 pt-3 border-t border-dashed border-marrow-light/15">
+              <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
+                <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
+                Lista Statica AI
+              </div>
+              <p className="text-xs text-marrow-light font-medium">
+                L'AI ha generato una lista statica di contenuti. Verrà salvata come lista personalizzata.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 pt-2">
+                {((block.rawProps?.static_items as any[]) || []).map((item, idx) => (
+                  <div key={item.id || idx} className="flex flex-col gap-1 items-center text-center">
+                    {item.poster ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.poster}
+                        alt={item.title}
+                        className="w-16 h-24 object-cover rounded shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-16 h-24 bg-marrow-light/10 border border-marrow-light/10 rounded flex items-center justify-center">
+                        {type === 'series' ? <Tv className="h-6 w-6 text-marrow-light/30" /> : <Film className="h-6 w-6 text-marrow-light/30" />}
+                      </div>
+                    )}
+                    <span className="text-[10px] font-bold text-marrow-deep line-clamp-2 leading-tight">{item.title}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

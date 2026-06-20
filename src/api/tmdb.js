@@ -6,6 +6,29 @@ const { sanitizeString } = require('../utils/helpers');
 const tmdbClient = createAxiosInstance('https://api.themoviedb.org/3');
 
 // TMDB Proxy Search endpoints per Autocomplete
+router.get('/tmdb/search/multi', async (req, res) => {
+    const query = req.query.query;
+    const tmdbKey = process.env.TMDB_API_KEY;
+    if (!tmdbKey) return res.status(500).json({ error: 'TMDB_API_KEY non configurata sul server' });
+    if (!query) return res.json({ results: [] });
+
+    try {
+        const response = await tmdbClient.get('/search/multi', {
+            params: {
+                api_key: sanitizeString(tmdbKey),
+                query: sanitizeString(query),
+                language: 'it-IT',
+                page: 1,
+                include_adult: false
+            },
+            timeout: 5000
+        });
+        return res.json({ results: response.data.results || [] });
+    } catch (err) {
+        console.error('Errore search multi:', err.message);
+        return res.status(500).json({ error: 'Errore durante la ricerca TMDB' });
+    }
+});
 router.get('/tmdb/search/keyword', async (req, res) => {
     const query = req.query.query;
     const tmdbKey = process.env.TMDB_API_KEY;

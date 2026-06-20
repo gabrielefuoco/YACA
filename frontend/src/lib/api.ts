@@ -25,6 +25,33 @@ async function get(url: string) {
   return res.json();
 }
 
+async function put(url: string, body?: object) {
+  const csrfToken = getCsrfTokenFromCookie();
+  const headers = csrfToken
+    ? { ...JSON_HEADERS, 'X-CSRF-Token': csrfToken }
+    : JSON_HEADERS;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers,
+    credentials: 'include',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return res.json();
+}
+
+async function del(url: string) {
+  const csrfToken = getCsrfTokenFromCookie();
+  const headers = csrfToken
+    ? { ...JSON_HEADERS, 'X-CSRF-Token': csrfToken }
+    : JSON_HEADERS;
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers,
+    credentials: 'include',
+  });
+  return res.json();
+}
+
 export const api = {
   // Auth endpoints (JWT HttpOnly Cookie)
   authLogin: (email: string, password: string) =>
@@ -85,4 +112,14 @@ export const api = {
     post('/api/tmdb/batch-details', { tmdbIds, type }),
   batchTmdbKeywords: (keywordIds: number[]) =>
     post('/api/tmdb/batch-keywords', { keywordIds }),
+  
+  // Custom Lists API
+  getLists: () => get('/api/lists'),
+  getList: (listId: string) => get(`/api/lists/${encodeURIComponent(listId)}`),
+  createList: (body: object) => post('/api/lists', body),
+  updateList: (listId: string, body: object) => put(`/api/lists/${encodeURIComponent(listId)}`, body),
+  deleteList: (listId: string) => del(`/api/lists/${encodeURIComponent(listId)}`),
+  cloneList: (listId: string) => post(`/api/lists/${encodeURIComponent(listId)}/clone`),
+  mergeLists: (body: object) => post('/api/lists/merge', body),
+  searchTmdbMulti: (query: string) => get(`/api/tmdb/search/multi?query=${encodeURIComponent(query)}`),
 };

@@ -20,6 +20,7 @@ const stremioRoutes = require('./src/api/stremio');
 const tmdbRoutes = require('./src/api/tmdb');
 const adminRoutes = require('./src/api/admin');
 const catalogRoutes = require('./src/api/catalog');
+const listRoutes = require('./src/api/lists');
 
 // Connessione MongoDB
 connectDB();
@@ -164,6 +165,7 @@ app.post('/api/ai/generate-merged-name', cookieParser(), generateMergedName);
 const profileRoutes = require('./src/api/profiles');
 const profileLimiter = rateLimit({ windowMs: 60 * 1000, limit: 100, standardHeaders: true, legacyHeaders: false });
 app.use('/api/profiles', profileLimiter, inputSanitizer, profileRoutes);
+app.use('/api/lists', profileLimiter, inputSanitizer, listRoutes);
 
 // Catch-all route per gestire il routing lato client di Next.js
 // Catch-all route per gestire il routing lato client di Next.js (Solo per richieste che sembrano pagine)
