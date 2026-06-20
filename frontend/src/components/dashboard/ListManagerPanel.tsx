@@ -48,6 +48,7 @@ interface ListManagerPanelProps {
   onActivate: (list: UserList) => void;
   onDeactivate: (listId: string) => void;
   currentProfileName: string;
+  userId?: string;
 }
 
 export function ListManagerPanel({ 
@@ -58,7 +59,8 @@ export function ListManagerPanel({
   onCreate,
   onActivate,
   onDeactivate,
-  currentProfileName
+  currentProfileName,
+  userId
 }: ListManagerPanelProps) {
   const [search, setSearch] = useState('');
   const [selectedType, setSelectedType] = useState<'all' | 'movie' | 'series'>('all');
@@ -94,7 +96,7 @@ export function ListManagerPanel({
   const handleDelete = async (listId: string) => {
     if (!confirm('Sei sicuro di voler eliminare questa lista?')) return;
     try {
-      const res = await api.deleteList(listId);
+      const res = await api.deleteList(listId, userId);
       if (res.success) {
         onRefresh();
         setSelectedIds(prev => prev.filter(id => id !== listId));
@@ -109,7 +111,7 @@ export function ListManagerPanel({
 
   const handleClone = async (listId: string) => {
     try {
-      const res = await api.cloneList(listId);
+      const res = await api.cloneList(listId, userId);
       if (res.success) {
         onRefresh();
       } else {
@@ -130,7 +132,8 @@ export function ListManagerPanel({
     try {
       const res = await api.mergeLists({
         sourceListIds: selectedIds,
-        targetListName: mergeName.trim()
+        targetListName: mergeName.trim(),
+        userId
       });
       if (res.success) {
         setIsMerging(false);

@@ -14,11 +14,14 @@ import {
   Save, 
   Film, 
   Tv, 
-  Star 
+  Star,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 interface ListEditorPanelProps {
   list?: UserList | null; // null if creating a new one
+  userId?: string;
   onSave: () => void;
   onCancel: () => void;
 }
@@ -34,7 +37,7 @@ interface SearchResult {
   vote_average?: number;
 }
 
-export function ListEditorPanel({ list, onSave, onCancel }: ListEditorPanelProps) {
+export function ListEditorPanel({ list, userId, onSave, onCancel }: ListEditorPanelProps) {
   const isEditing = !!list;
   const [name, setName] = useState(list?.name || '');
   const [type, setType] = useState<'movie' | 'series'>(list?.type || 'movie');
@@ -99,8 +102,7 @@ export function ListEditorPanel({ list, onSave, onCancel }: ListEditorPanelProps
     };
 
     setItems([...items, newItem]);
-    setSearchQuery('');
-    setSearchResults([]);
+    // Do NOT clear searchQuery and searchResults so user can keep adding
   };
 
   const handleRemoveItem = (tmdbId: number) => {
@@ -136,14 +138,16 @@ export function ListEditorPanel({ list, onSave, onCancel }: ListEditorPanelProps
       if (isEditing && list) {
         res = await api.updateList(list.listId, {
           name: name.trim(),
-          items
+          items,
+          userId
         });
       } else {
         res = await api.createList({
           name: name.trim(),
           type,
           sourceType: 'manual_items',
-          items
+          items,
+          userId
         });
       }
 
@@ -309,10 +313,11 @@ export function ListEditorPanel({ list, onSave, onCancel }: ListEditorPanelProps
                       </div>
                       <Button 
                         size="sm" 
+                        disabled={items.some(i => i.tmdbId === result.id)}
                         onClick={() => handleAddItem(result)}
-                        className="bg-primary/10 text-primary font-black hover:bg-primary hover:text-white rounded-lg px-2 h-7"
+                        className="bg-primary/10 text-primary font-black hover:bg-primary hover:text-white rounded-lg px-2 h-7 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Aggiungi
+                        {items.some(i => i.tmdbId === result.id) ? 'Aggiunto' : 'Aggiungi'}
                       </Button>
                     </div>
                   );
@@ -340,59 +345,59 @@ export function ListEditorPanel({ list, onSave, onCancel }: ListEditorPanelProps
                   La lista è vuota. Cerca dei titoli a sinistra e aggiungili.
                 </div>
               ) : (
-                <div className="space-y-2 max-h-[550px] overflow-y-auto pr-1">
+                <div className="flex flex-wrap gap-3 max-h-[550px] overflow-y-auto p-2">
                   {items.map((item, index) => (
-                    <div 
-                      key={item.tmdbId} 
-                      className="p-3 bg-white/80 hover:bg-white border border-marrow-light/10 hover:border-marrow-light/20 rounded-xl shadow-sm flex items-center justify-between gap-4 transition-all duration-300"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-black text-marrow-faded w-5 text-right">{index + 1}.</span>
-                        {item.poster ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img 
-                            src={item.poster} 
-                            alt={item.title}
-                            className="w-8 h-12 object-cover rounded shadow-sm shrink-0"
-                          />
-                        ) : (
-                          <div className="w-8 h-12 bg-marrow-light/10 border border-marrow-light/10 rounded flex items-center justify-center shrink-0">
-                            {type === 'series' ? <Tv className="h-4 w-4 text-marrow-light/40" /> : <Film className="h-4 w-4 text-marrow-light/40" />}
-                          </div>
-                        )}
-                        <span className="font-black text-marrow-deep text-sm line-clamp-2 leading-snug">{item.title}</span>
+                    <div key={item.tmdbId} className="group/poster relative shrink-0 cursor-pointer">
+                      {item.poster ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img 
+                          src={item.poster} 
+                          alt={item.title}
+                          className="h-[180px] w-[120px] rounded-lg object-cover shadow-md border border-marrow-light/10 transition-transform duration-300 group-hover/poster:scale-[1.02]"
+                        />
+                      ) : (
+                        <div className="flex flex-col h-[180px] w-[120px] items-center justify-center rounded-lg bg-marrow-light/5 text-xs text-marrow-light/60 border border-marrow-light/20 p-2 text-center">
+                          {type === 'series' ? <Tv className="h-6 w-6 mb-2 opacity-50" /> : <Film className="h-6 w-6 mb-2 opacity-50" />}
+                          {item.title}
+                        </div>
+                      )}
+                      
+                      {/* Number Badge */}
+                      <div className="absolute -top-2 -left-2 bg-primary text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center shadow-md z-10">
+                        {index + 1}
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Move Up */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={index === 0}
-                          onClick={() => moveItem(index, 'up')}
-                          className="h-8 w-8 text-marrow-light hover:text-primary hover:bg-primary/5 rounded-lg disabled:opacity-30"
-                        >
-                          <ChevronUp className="h-4 w-4" />
-                        </Button>
-                        {/* Move Down */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={index === items.length - 1}
-                          onClick={() => moveItem(index, 'down')}
-                          className="h-8 w-8 text-marrow-light hover:text-primary hover:bg-primary/5 rounded-lg disabled:opacity-30"
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                        {/* Delete */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveItem(item.tmdbId)}
-                          className="h-8 w-8 text-marrow-light hover:text-red-500 hover:bg-red-500/5 rounded-lg"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      {/* Overlay */}
+                      <div className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 opacity-0 transition-opacity duration-300 group-hover/poster:opacity-100">
+                        <p className="text-[11px] font-black text-white line-clamp-2 leading-tight drop-shadow-md uppercase tracking-tight mb-2">{item.title}</p>
+                        <div className="flex items-center justify-between gap-1 w-full bg-black/40 rounded-lg p-1 backdrop-blur-sm">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={index === 0}
+                            onClick={() => moveItem(index, 'up')}
+                            className="h-6 w-6 text-white hover:text-primary hover:bg-white/20 disabled:opacity-30 rounded-md"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveItem(item.tmdbId)}
+                            className="h-6 w-6 text-white hover:text-red-400 hover:bg-white/20 rounded-md"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={index === items.length - 1}
+                            onClick={() => moveItem(index, 'down')}
+                            className="h-6 w-6 text-white hover:text-primary hover:bg-white/20 disabled:opacity-30 rounded-md"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}

@@ -13,7 +13,7 @@ import { EditCatalogModal } from '@/components/modals/EditCatalogModal';
 import { generateId } from '@/lib/utils';
 import { api } from '@/lib/api';
 
-type DashboardTab = 'active' | 'explore' | 'creator' | 'lists' | 'dna';
+type DashboardTab = 'active' | 'explore' | 'creator' | 'dna';
 
 interface DashboardPageProps {
   profiles: Profile[];
@@ -69,6 +69,7 @@ export function DashboardPage({
   userId,
 }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('active');
+  const [creatorSubTab, setCreatorSubTab] = useState<'builder' | 'lists'>('builder');
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [editingCatalog, setEditingCatalog] = useState<Catalog | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -81,7 +82,7 @@ export function DashboardPage({
   const fetchCustomLists = async () => {
     setListsLoading(true);
     try {
-      const res = await api.getLists();
+      const res = await api.getLists(userId);
       if (res.success && Array.isArray(res.lists)) {
         setCustomLists(res.lists);
       }
@@ -93,10 +94,10 @@ export function DashboardPage({
   };
 
   useEffect(() => {
-    if (activeTab === 'lists') {
+    if (activeTab === 'creator' && creatorSubTab === 'lists') {
       fetchCustomLists();
     }
-  }, [activeTab]);
+  }, [activeTab, creatorSubTab]);
 
   const activeCatalogIds = editingProfile?.existingCatalogs?.map(c => c.id) || [];
 
@@ -193,7 +194,6 @@ export function DashboardPage({
     { id: 'active' as const, label: 'Cataloghi Attivi', icon: 'grid_view' },
     { id: 'explore' as const, label: 'Esplora', icon: 'explore' },
     { id: 'creator' as const, label: 'Creatore', icon: 'auto_fix' },
-    { id: 'lists' as const, label: 'Liste Custom', icon: 'playlist_play' },
     { id: 'dna' as const, label: 'DNA & AI Lab', icon: 'biotech' },
   ];
 
@@ -283,38 +283,69 @@ export function DashboardPage({
             )}
 
             {activeTab === 'creator' && (
-              <CreatorPanel
-                onAddCatalog={(catalog) => {
-                  onAddCatalog(editingProfileId, catalog);
-                  setActiveTab('active');
-                }}
-              />
-            )}
+              <div className="flex flex-col gap-6">
+                <div className="flex justify-center">
+                  <div className="flex p-1 bg-white/40 rounded-xl border border-marrow-light/20 shadow-sm gap-1">
+                    <button
+                      onClick={() => setCreatorSubTab('builder')}
+                      className={`px-4 py-2 text-[11px] sm:text-xs font-black rounded-lg transition-all ${
+                        creatorSubTab === 'builder'
+                          ? 'bg-primary text-white shadow-md'
+                          : 'text-marrow-light hover:text-primary hover:bg-white/50'
+                      }`}
+                    >
+                      Costruttore AI / Filtri
+                    </button>
+                    <button
+                      onClick={() => setCreatorSubTab('lists')}
+                      className={`px-4 py-2 text-[11px] sm:text-xs font-black rounded-lg transition-all ${
+                        creatorSubTab === 'lists'
+                          ? 'bg-primary text-white shadow-md'
+                          : 'text-marrow-light hover:text-primary hover:bg-white/50'
+                      }`}
+                    >
+                      Liste Manuali
+                    </button>
+                  </div>
+                </div>
 
-            {activeTab === 'lists' && editingProfile && (
-              editingList !== undefined ? (
-                <ListEditorPanel
-                  list={editingList}
-                  onSave={() => {
-                    setEditingList(undefined);
-                    fetchCustomLists();
-                  }}
-                  onCancel={() => {
-                    setEditingList(undefined);
-                  }}
-                />
-              ) : (
-                <ListManagerPanel
-                  lists={customLists}
-                  activeCatalogIds={activeCatalogIds}
-                  onRefresh={fetchCustomLists}
-                  onEdit={(list) => setEditingList(list)}
-                  onCreate={() => setEditingList(null)}
-                  onActivate={handleActivateList}
-                  onDeactivate={handleDeactivateList}
-                  currentProfileName={editingProfile.name}
-                />
-              )
+                {creatorSubTab === 'builder' ? (
+                  <CreatorPanel
+                    onAddCatalog={(catalog) => {
+                      onAddCatalog(editingProfileId, catalog);
+                      setActiveTab('active');
+                    }}
+                  />
+                ) : (
+                  editingProfile && (
+                    editingList !== undefined ? (
+                      <ListEditorPanel
+                        list={editingList}
+                        userId={userId}
+                        onSave={() => {
+                          setEditingList(undefined);
+                          fetchCustomLists();
+                        }}
+                        onCancel={() => {
+                          setEditingList(undefined);
+                        }}
+                      />
+                    ) : (
+                      <ListManagerPanel
+                        lists={customLists}
+                        userId={userId}
+                        activeCatalogIds={activeCatalogIds}
+                        onRefresh={fetchCustomLists}
+                        onEdit={(list) => setEditingList(list)}
+                        onCreate={() => setEditingList(null)}
+                        onActivate={handleActivateList}
+                        onDeactivate={handleDeactivateList}
+                        currentProfileName={editingProfile.name}
+                      />
+                    )
+                  )
+                )}
+              </div>
             )}
 
             {activeTab === 'dna' && editingProfile && (

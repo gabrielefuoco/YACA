@@ -35,8 +35,8 @@ function validateAuth(req) {
         }
     }
 
-    if (!req.user?.userId && req.body?.userId) {
-        req.user = { userId: req.body.userId };
+    if (!req.user?.userId && (req.body?.userId || req.query?.userId)) {
+        req.user = { userId: req.body?.userId || req.query?.userId };
     }
 
     if (!req.user?.userId) {
