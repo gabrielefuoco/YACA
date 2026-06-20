@@ -516,9 +516,9 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         const H = imgMeta.height || 513;
 
         const textLen = badgeText.length;
-        const fontSize = 30;
-        const badgeWidth = Math.max(120, textLen * 18 + 44);
-        const badgeHeight = 54;
+        const fontSize = 28;
+        const badgeWidth = Math.max(110, textLen * 16 + 40);
+        const badgeHeight = 48;
         const rx = Math.round(badgeHeight / 2);
 
         let svgContent = '';
@@ -531,7 +531,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
                 x: x,
                 y: y,
                 fontSize: fontSize,
-                attributes: { fill: '#ffffff', 'font-weight': 'bold' }
+                attributes: { fill: '#ffffff', stroke: '#ffffff', 'stroke-width': '0.8', 'font-weight': 'bold' }
             });
             svgContent = svgPath;
         } else {
@@ -541,8 +541,8 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
 
         // Render directly via single SVG - Glass Style
         const svg = `<svg width="${badgeWidth}" height="${badgeHeight}" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="${rx}" fill="rgba(0, 0, 0, 0.6)"/>
-            <rect x="1" y="1" width="${badgeWidth - 2}" height="${badgeHeight - 2}" rx="${rx - 1}" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2"/>
+            <rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="${rx}" fill="rgba(15, 15, 15, 0.85)"/>
+            <rect x="1" y="1" width="${badgeWidth - 2}" height="${badgeHeight - 2}" rx="${rx - 1}" fill="none" stroke="rgba(255, 255, 255, 0.1)" stroke-width="2"/>
             ${svgContent}
         </svg>`;
 
