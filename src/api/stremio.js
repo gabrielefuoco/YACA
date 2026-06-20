@@ -502,7 +502,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         return res.status(400).send('Invalid original image URL');
     }
 
-    const cacheKey = `${id}_${episode}_v11`;
+    const cacheKey = `${id}_${episode}_v12`;
     console.log(`[Badge] Request: id=${id}, episode="${episode}", textToSVG=${!!textToSVG}`);
 
     // Helper to perform the download and composition
@@ -516,9 +516,9 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         const H = imgMeta.height || 513;
 
         const textLen = badgeText.length;
-        const fontSize = 24;
-        const badgeWidth = Math.max(110, textLen * 14 + 36);
-        const badgeHeight = 44;
+        const fontSize = 30;
+        const badgeWidth = Math.max(120, textLen * 18 + 44);
+        const badgeHeight = 54;
         const rx = Math.round(badgeHeight / 2);
 
         let svgContent = '';
@@ -531,7 +531,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
                 x: x,
                 y: y,
                 fontSize: fontSize,
-                attributes: { fill: '#ffffff', 'font-weight': 'bold' } // noto-sans doesn't have bold variant loaded, but we can try to pass attribute or just rely on its regular weight
+                attributes: { fill: '#ffffff', 'font-weight': 'bold' }
             });
             svgContent = svgPath;
         } else {
@@ -539,10 +539,10 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
             svgContent = `<text x="${badgeWidth / 2}" y="${badgeHeight / 2}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${xmlEscapedBadgeText}</text>`;
         }
 
-        // Render directly via single SVG
+        // Render directly via single SVG - Glass Style
         const svg = `<svg width="${badgeWidth}" height="${badgeHeight}" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="${rx}" fill="#0f172a"/>
-            <rect x="2" y="2" width="${badgeWidth - 4}" height="${badgeHeight - 4}" rx="${rx - 2}" fill="none" stroke="#f59e0b" stroke-width="3"/>
+            <rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="${rx}" fill="rgba(0, 0, 0, 0.6)"/>
+            <rect x="1" y="1" width="${badgeWidth - 2}" height="${badgeHeight - 2}" rx="${rx - 1}" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2"/>
             ${svgContent}
         </svg>`;
 
