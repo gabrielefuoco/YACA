@@ -1,5 +1,5 @@
 require('dotenv').config();
-const tmdb = require('./src/clients/tmdb');
+const tmdb = require('../src/clients/tmdb');
 
 async function testCount(tmdbClient, endpoint, params) {
     try {

@@ -127,8 +127,7 @@ async function enhanceTraktItem(traktItem, tmdbApiKey) {
                 const bgUrl = `https://image.tmdb.org/t/p/original${tmdbenrich.data.backdrop_path}`;
                 baseMeta.background = bgUrl;
                 // Add blurred background hint for clients that support it
-                const host = process.env.HOST_URL || 'http://localhost:7000';
-                baseMeta.behaviorHints = { ...baseMeta.behaviorHints, backgroundBlur: `${host}/blur?url=${encodeURIComponent(bgUrl)}` };
+                baseMeta.behaviorHints = { ...baseMeta.behaviorHints, backgroundBlur: `https://wsrv.nl/?url=${encodeURIComponent(bgUrl)}&blur=20` };
             }
             // Fallback linguistico: se overview Trakt assente, usa TMDB italiano
             if (!baseMeta.description || baseMeta.description === "Metadati completi al click") {

@@ -1,9 +1,9 @@
 require('dotenv').config();
-const { getPresets } = require('./src/data/presets');
-const tmdb = require('./src/clients/tmdb');
+const { getPresets } = require('../src/data/presets');
+const tmdb = require('../src/clients/tmdb');
 const fs = require('fs');
 const path = require('path');
-const { rateLimitedMap } = require('./src/utils/rateLimiter');
+const { rateLimitedMap } = require('../src/utils/rateLimiter');
 
 function checkItemMatches(item, params, type) {
     const mismatches = [];
@@ -84,7 +84,6 @@ function checkItemMatches(item, params, type) {
     // 7. Keywords check
     if (params.with_keywords || params.without_keywords) {
         const itemKeywords = [];
-        // TV and Movie keywords endpoints are different on TMDB details response
         const keywordsList = item.keywords?.keywords || item.keywords?.results || [];
         keywordsList.forEach(k => itemKeywords.push(k.id));
 

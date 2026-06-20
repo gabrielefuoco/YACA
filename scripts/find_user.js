@@ -1,8 +1,8 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const UserAccount = require('./src/db/models/UserAccount');
-const AddonConfig = require('./src/db/models/AddonConfig');
-const TasteProfile = require('./src/models/TasteProfile');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
+const TasteProfile = require('../src/models/TasteProfile');
 
 async function run() {
     try {

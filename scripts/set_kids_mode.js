@@ -1,7 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const AddonConfig = require('./src/db/models/AddonConfig');
-const UserAccount = require('./src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
+const UserAccount = require('../src/db/models/UserAccount');
 
 async function test() {
   await mongoose.connect(process.env.MONGODB_URI);

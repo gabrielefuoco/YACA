@@ -1,8 +1,8 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { buildHybridCatalog } = require('./src/engines/hybrid/catalogStrategies');
-const tmdb = require('./src/clients/tmdb');
-const UserAccount = require('./src/db/models/UserAccount');
+const { buildHybridCatalog } = require('../src/engines/hybrid/catalogStrategies');
+const tmdb = require('../src/clients/tmdb');
+const UserAccount = require('../src/db/models/UserAccount');
 
 async function run() {
     try {
@@ -11,13 +11,12 @@ async function run() {
 
         // Find all users and check their addon configurations
         const users = await UserAccount.find().lean();
-        const AddonConfig = require('./src/db/models/AddonConfig');
+        const AddonConfig = require('../src/db/models/AddonConfig');
         const configs = await AddonConfig.find().lean();
         
         let targetUser = null;
         for (const config of configs) {
             if (config.profiles && config.profiles.some(p => p.id === 'global')) {
-                // Let's just pick the first config
                 console.log(`Found config for uuid: ${config.uuid}, presets: ${JSON.stringify(config.profiles.map(p => p.presets))}`);
             }
         }
@@ -27,12 +26,12 @@ async function run() {
         const userId = user.userId;
         const tmdbKey = user.apiKeys?.tmdb || process.env.TMDB_API_KEY;
         const traktToken = user.apiKeys?.trakt || user.apiKeys?.traktToken;
-        const { processProfiles } = require('./src/api/configure/profileProcessor');
+        const { processProfiles } = require('../src/api/configure/profileProcessor');
         
         // Mock profile input for Otaku Hardcore preset
         const mockInputProfiles = [{
             id: 'global',
-            selectedPresets: ['preset_pop_anime', 'preset_new_anime', 'preset_anime_classics'] // what tpl_otaku expands to
+            selectedPresets: ['preset_pop_anime', 'preset_new_anime', 'preset_anime_classics']
         }];
         
         // Run processProfiles to generate catalogs and suggestedDNA
@@ -46,7 +45,7 @@ async function run() {
             { $set: { "profiles.0.settings": processedProfiles[0].settings, "profiles.0.catalogs": processedProfiles[0].catalogs } }
         );
 
-        const strategies = require('./src/engines/hybrid/catalogStrategies');
+        const strategies = require('../src/engines/hybrid/catalogStrategies');
         
         console.log(`\nVerifying catalogs for user: ${userId}`);
 
@@ -66,7 +65,6 @@ async function run() {
             }
         };
 
-        // Otaku preset id is '5' or something like that, but let's just test with top genres for the user.
         await testStrategy("Top Genres Mix", () => strategies.buildTopGenresMixCatalog(userId, 'global', tmdbKey, 'movie'));
         await testStrategy("Hybrid Catalog (Rete Preferiti)", () => strategies.buildHybridCatalog(userId, 'global', traktToken, tmdbKey, 'movie'));
         await testStrategy("Hidden Gems", () => strategies.buildHiddenGemsCatalog(userId, 'global', tmdbKey, 'movie'));
