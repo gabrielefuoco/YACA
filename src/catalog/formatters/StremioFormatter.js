@@ -131,7 +131,7 @@ function sanitizeCatalogMeta(item, options = {}) {
     }
 
     let poster = sourceImage;
-    const BADGE_IMG_VERSION = 12; // Bump to force Stremio to re-download badge images
+    const BADGE_IMG_VERSION = 13; // Bump to force Stremio to re-download badge images
     if (badgeText && hostUrl && sourceImage) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';

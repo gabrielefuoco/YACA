@@ -516,9 +516,9 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         const H = imgMeta.height || 513;
 
         const textLen = badgeText.length;
-        const fontSize = 28;
-        const badgeWidth = Math.max(110, textLen * 16 + 40);
-        const badgeHeight = 48;
+        const fontSize = 26;
+        const badgeWidth = Math.max(100, textLen * 15 + 36);
+        const badgeHeight = 44;
         const rx = Math.round(badgeHeight / 2);
 
         let svgContent = '';
@@ -531,7 +531,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
                 x: x,
                 y: y,
                 fontSize: fontSize,
-                attributes: { fill: '#ffffff', stroke: '#ffffff', 'stroke-width': '0.8', 'font-weight': 'bold' }
+                attributes: { fill: '#ffffff', stroke: '#ffffff', 'stroke-width': '1.0', 'font-weight': 'bold' }
             });
             svgContent = svgPath;
         } else {
@@ -539,11 +539,44 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
             svgContent = `<text x="${badgeWidth / 2}" y="${badgeHeight / 2}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${xmlEscapedBadgeText}</text>`;
         }
 
-        // Render directly via single SVG - Glass Style
+        // Render directly via single SVG - Glass Style mirroring ERDB Apple Glass
         const svg = `<svg width="${badgeWidth}" height="${badgeHeight}" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="0" width="${badgeWidth}" height="${badgeHeight}" rx="${rx}" fill="rgba(15, 15, 15, 0.85)"/>
-            <rect x="1" y="1" width="${badgeWidth - 2}" height="${badgeHeight - 2}" rx="${rx - 1}" fill="none" stroke="rgba(255, 255, 255, 0.1)" stroke-width="2"/>
-            ${svgContent}
+            <defs>
+                <linearGradient id="apple-glass-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12" />
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0.04" />
+                </linearGradient>
+                <linearGradient id="apple-glass-border" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25" />
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0.10" />
+                </linearGradient>
+                <filter id="apple-glass-shadow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="2.8" />
+                    <feOffset dx="0" dy="3.2" result="offsetblur" />
+                    <feFlood flood-color="#000000" flood-opacity="0.54" result="glowcolor" />
+                    <feComposite in="glowcolor" in2="offsetblur" operator="in" result="glow" />
+                    <feMerge>
+                        <feMergeNode in="glow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <filter id="text-shadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="1.8" result="blur" />
+                    <feOffset dx="0" dy="1.2" in="blur" result="offsetBlur" />
+                    <feComponentTransfer in="offsetBlur" result="shadow">
+                        <feFuncA type="linear" slope="0.85" />
+                    </feComponentTransfer>
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+            <rect x="0.5" y="0.5" width="${badgeWidth - 1}" height="${badgeHeight - 1}" rx="${rx}" fill="url(#apple-glass-fill)" filter="url(#apple-glass-shadow)" />
+            <rect x="0.5" y="0.5" width="${badgeWidth - 1}" height="${badgeHeight - 1}" rx="${rx}" fill="none" stroke="url(#apple-glass-border)" stroke-width="1" />
+            <g filter="url(#text-shadow)">
+                ${svgContent}
+            </g>
         </svg>`;
 
         // Composite badge onto poster at top-right
