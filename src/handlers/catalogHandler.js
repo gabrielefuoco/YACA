@@ -181,6 +181,37 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 });
             }
 
+            // 3.9 ITA BADGE LOOKUP (Da StreamBadge)
+            const StreamBadge = require('../db/models/StreamBadge');
+            const itemIds = finalResults.map(item => {
+                const id = String(item.id);
+                if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
+                    const parts = id.split(':');
+                    return `${parts[0]}:${parts[1]}`;
+                }
+                return id;
+            });
+
+            if (itemIds.length > 0) {
+                try {
+                    const badges = await StreamBadge.find({ baseId: { $in: itemIds }, hasIta: true }).lean();
+                    const itaBaseIds = new Set(badges.map(b => b.baseId));
+                    finalResults.forEach(item => {
+                        const id = String(item.id);
+                        let baseId = id;
+                        if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
+                            const parts = id.split(':');
+                            baseId = `${parts[0]}:${parts[1]}`;
+                        }
+                        if (itaBaseIds.has(baseId)) {
+                            item._itaBadge = true;
+                        }
+                    });
+                } catch (badgeErr) {
+                    console.error('[Catalog] Error looking up StreamBadges:', badgeErr.message);
+                }
+            }
+
             // 4. FORMATTAZIONE (STREMIO)
             const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
             const formattedData = formatStremioCatalog(

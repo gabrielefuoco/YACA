@@ -88,7 +88,15 @@ function sanitizeCatalogMeta(item, options = {}) {
     if (!item) return item;
 
     const { shouldApplyEpisodeBadge, isLandscapeEnabled, userConfig, hostUrl } = options;
-    const badgeText = shouldApplyEpisodeBadge ? getEpisodeBadgeText(item) : null;
+    let badgeText = shouldApplyEpisodeBadge ? getEpisodeBadgeText(item) : null;
+
+    if (item._itaBadge) {
+        if (badgeText) {
+            badgeText = `ITA - ${badgeText}`;
+        } else {
+            badgeText = `ITA`;
+        }
+    }
 
     // Resolve ERDB config
     const activeProfile = userConfig?.profiles?.find(p => p.id === userConfig.activeProfileId);
