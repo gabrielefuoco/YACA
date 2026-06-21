@@ -30,6 +30,13 @@ function getAdditionalStremioId(originalId, additionalBaseId) {
     } else if (originalId.startsWith('tmdb:')) {
         // TMDB style: [tmdb, tmdbId, season, episode]
         return [additionalBaseId, ...parts.slice(2)].join(':');
+    } else if (originalId.startsWith('kitsu:')) {
+        // Kitsu style: [kitsu, kitsuId, season, episode] OR [kitsu, kitsuId, absoluteEpisode]
+        if (parts.length === 4) {
+            return [additionalBaseId, parts[2], parts[3]].join(':');
+        } else if (parts.length === 3) {
+            return [additionalBaseId, '1', parts[2]].join(':');
+        }
     }
     return null;
 }
@@ -95,6 +102,11 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                         proxyId = imdbId;
                     }
                 }
+            } else if (id.startsWith('kitsu:')) {
+                const parts = id.split(':');
+                if (parts.length === 4) {
+                    proxyId = `kitsu:${parts[1]}:${parts[3]}`;
+                }
             }
 
             const targetUrl = `${baseProxyUrl}/stream/${type}/${encodeURIComponent(proxyId)}.json`;
@@ -113,42 +125,94 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
             const isIta = hasItaKeywords(streams);
             const baseId = getBaseId(id);
 
-            let additionalBaseId = null;
+            const apiKey = userConfig?.apiKeys?.tmdb || userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
+            const badgeEntries = [
+                { stremioId: id, baseId: baseId }
+            ];
+
             if (baseId.startsWith('tt')) {
                 try {
                     const { translateImdbToTmdb } = require('../id_mapping/id_cache');
-                    const apiKey = userConfig?.apiKeys?.tmdb || userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
                     if (apiKey) {
                         const tmdbRes = await translateImdbToTmdb(baseId, apiKey);
                         if (tmdbRes && tmdbRes.id) {
-                            additionalBaseId = tmdbRes.id.startsWith('tmdb:') ? tmdbRes.id : `tmdb:${tmdbRes.id}`;
+                            const additionalBaseId = tmdbRes.id.startsWith('tmdb:') ? tmdbRes.id : `tmdb:${tmdbRes.id}`;
+                            const additionalStremioId = getAdditionalStremioId(id, additionalBaseId);
+                            if (additionalStremioId) {
+                                badgeEntries.push({ stremioId: additionalStremioId, baseId: additionalBaseId });
+                            }
                         }
                     }
                 } catch (e) {
                     console.error(`[StreamBadge] Could not translate ${baseId} to TMDB:`, e.message);
                 }
             } else if (baseId.startsWith('tmdb:')) {
+                const tmdbId = baseId.replace('tmdb:', '');
+                // 1. Translate to IMDb
                 try {
                     const { resolveImdbId } = require('../clients/tmdb');
-                    const apiKey = userConfig?.apiKeys?.tmdb || userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
                     if (apiKey) {
-                        const imdbId = await resolveImdbId(baseId.replace('tmdb:', ''), type, apiKey);
+                        const imdbId = await resolveImdbId(tmdbId, type, apiKey);
                         if (imdbId) {
-                            additionalBaseId = imdbId;
+                            const additionalStremioId = getAdditionalStremioId(id, imdbId);
+                            if (additionalStremioId) {
+                                badgeEntries.push({ stremioId: additionalStremioId, baseId: imdbId });
+                            }
                         }
                     }
                 } catch (e) {
                     console.error(`[StreamBadge] Could not translate ${baseId} to IMDB:`, e.message);
                 }
-            }
+                // 2. Translate to Kitsu (if it's an anime series)
+                try {
+                    const { getKitsuIdFromTmdbId, fetchKitsuEpisodes } = require('../clients/kitsu');
+                    const kitsuId = await getKitsuIdFromTmdbId(tmdbId, type === 'series' ? 'series' : 'movie');
+                    if (kitsuId) {
+                        const kitsuEps = await fetchKitsuEpisodes(kitsuId);
+                        if (Array.isArray(kitsuEps)) {
+                            const parts = id.split(':');
+                            const currentSeason = parts.length === 4 ? parseInt(parts[2], 10) : 1;
+                            const currentEpisode = parts.length === 4 ? parseInt(parts[3], 10) : 1;
+                            const matchedEp = kitsuEps.find(e => e.tmdbSeason === currentSeason && e.tmdbEpisode === currentEpisode);
+                            if (matchedEp) {
+                                badgeEntries.push({ stremioId: matchedEp.id, baseId: `kitsu:${kitsuId}` });
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error(`[StreamBadge] Could not translate ${baseId} to Kitsu:`, e.message);
+                }
+            } else if (baseId.startsWith('kitsu:')) {
+                try {
+                    const { getTmdbIdFromKitsuId, fetchKitsuEpisodes } = require('../clients/kitsu');
+                    const kitsuId = baseId.replace('kitsu:', '');
+                    const mapping = await getTmdbIdFromKitsuId(kitsuId);
+                    if (mapping && mapping.tmdbId) {
+                        const tmdbBaseId = `tmdb:${mapping.tmdbId}`;
+                        
+                        // Resolve the exact TMDB season and episode from the mapped kitsu episodes
+                        const kitsuEps = await fetchKitsuEpisodes(kitsuId);
+                        if (Array.isArray(kitsuEps)) {
+                            const currentEp = kitsuEps.find(e => e.id === id);
+                            if (currentEp && currentEp.tmdbSeason && currentEp.tmdbEpisode) {
+                                const tmdbStremioId = `${tmdbBaseId}:${currentEp.tmdbSeason}:${currentEp.tmdbEpisode}`;
+                                badgeEntries.push({ stremioId: tmdbStremioId, baseId: tmdbBaseId });
 
-            const badgeEntries = [
-                { stremioId: id, baseId: baseId }
-            ];
-            if (additionalBaseId) {
-                const additionalStremioId = getAdditionalStremioId(id, additionalBaseId);
-                if (additionalStremioId) {
-                    badgeEntries.push({ stremioId: additionalStremioId, baseId: additionalBaseId });
+                                // Also try to resolve IMDb ID for this TMDB ID and push it
+                                try {
+                                    const imdbId = await resolveImdbId(mapping.tmdbId, type, apiKey);
+                                    if (imdbId) {
+                                        const imdbStremioId = `${imdbId}:${currentEp.tmdbSeason}:${currentEp.tmdbEpisode}`;
+                                        badgeEntries.push({ stremioId: imdbStremioId, baseId: imdbId });
+                                    }
+                                } catch (imdbErr) {
+                                    // ignore
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error(`[StreamBadge] Could not translate ${baseId} to TMDB/IMDB:`, e.message);
                 }
             }
 
