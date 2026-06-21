@@ -6,12 +6,9 @@ import { ActiveCatalogsPanel } from '@/components/dashboard/ActiveCatalogsPanel'
 import { ExplorePanel } from '@/components/dashboard/ExplorePanel';
 import { CreatorPanel } from '@/components/dashboard/CreatorPanel';
 import { DnaAndAiPanel } from '@/components/dashboard/DnaAndAiPanel';
-import { ListManagerPanel, UserList } from '@/components/dashboard/ListManagerPanel';
-import { ListEditorPanel } from '@/components/dashboard/ListEditorPanel';
 import { RenameProfileDialog } from '@/components/modals/RenameProfileDialog';
 import { EditCatalogModal } from '@/components/modals/EditCatalogModal';
 import { generateId } from '@/lib/utils';
-import { api } from '@/lib/api';
 
 type DashboardTab = 'active' | 'explore' | 'creator' | 'dna';
 
@@ -69,53 +66,14 @@ export function DashboardPage({
   userId,
 }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('active');
-  const [creatorSubTab, setCreatorSubTab] = useState<'builder' | 'lists'>('builder');
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [editingCatalog, setEditingCatalog] = useState<Catalog | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const editingProfile = profiles.find((p) => p.id === editingProfileId) ?? profiles[0];
 
-  const [customLists, setCustomLists] = useState<UserList[]>([]);
-  const [editingList, setEditingList] = useState<UserList | null | undefined>(undefined);
-  const [listsLoading, setListsLoading] = useState(false);
-
-  const fetchCustomLists = async () => {
-    setListsLoading(true);
-    try {
-      const res = await api.getLists(userId);
-      if (res.success && Array.isArray(res.lists)) {
-        setCustomLists(res.lists);
-      }
-    } catch (err) {
-      console.error('Error fetching custom lists:', err);
-    } finally {
-      setListsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'creator' && creatorSubTab === 'lists') {
-      fetchCustomLists();
-    }
-  }, [activeTab, creatorSubTab]);
-
   const activeCatalogIds = editingProfile?.existingCatalogs?.map(c => c.id) || [];
 
-  const handleActivateList = (list: UserList) => {
-    onAddCatalog(editingProfileId, {
-      id: list.listId,
-      name: list.name,
-      type: list.type,
-      source: 'manual_items',
-      queries: list.queries,
-      presentation_strategy: list.presentation_strategy || 'popularity',
-      emoji: '📝'
-    });
-  };
 
-  const handleDeactivateList = (listId: string) => {
-    onRemoveCatalog(editingProfileId, listId);
-  };
 
   const handleEditCatalog = (catalog: Catalog) => {
     let catToEdit = { ...catalog };
@@ -283,69 +241,12 @@ export function DashboardPage({
             )}
 
             {activeTab === 'creator' && (
-              <div className="flex flex-col gap-6">
-                <div className="flex justify-center">
-                  <div className="flex p-1 bg-white/40 rounded-xl border border-marrow-light/20 shadow-sm gap-1">
-                    <button
-                      onClick={() => setCreatorSubTab('builder')}
-                      className={`px-4 py-2 text-[11px] sm:text-xs font-black rounded-lg transition-all ${
-                        creatorSubTab === 'builder'
-                          ? 'bg-primary text-white shadow-md'
-                          : 'text-marrow-light hover:text-primary hover:bg-white/50'
-                      }`}
-                    >
-                      Costruttore AI / Filtri
-                    </button>
-                    <button
-                      onClick={() => setCreatorSubTab('lists')}
-                      className={`px-4 py-2 text-[11px] sm:text-xs font-black rounded-lg transition-all ${
-                        creatorSubTab === 'lists'
-                          ? 'bg-primary text-white shadow-md'
-                          : 'text-marrow-light hover:text-primary hover:bg-white/50'
-                      }`}
-                    >
-                      Liste Manuali
-                    </button>
-                  </div>
-                </div>
-
-                {creatorSubTab === 'builder' ? (
-                  <CreatorPanel
-                    onAddCatalog={(catalog) => {
-                      onAddCatalog(editingProfileId, catalog);
-                      setActiveTab('active');
-                    }}
-                  />
-                ) : (
-                  editingProfile && (
-                    editingList !== undefined ? (
-                      <ListEditorPanel
-                        list={editingList}
-                        userId={userId}
-                        onSave={() => {
-                          setEditingList(undefined);
-                          fetchCustomLists();
-                        }}
-                        onCancel={() => {
-                          setEditingList(undefined);
-                        }}
-                      />
-                    ) : (
-                      <ListManagerPanel
-                        lists={customLists}
-                        userId={userId}
-                        activeCatalogIds={activeCatalogIds}
-                        onRefresh={fetchCustomLists}
-                        onEdit={(list) => setEditingList(list)}
-                        onCreate={() => setEditingList(null)}
-                        onActivate={handleActivateList}
-                        onDeactivate={handleDeactivateList}
-                        currentProfileName={editingProfile.name}
-                      />
-                    )
-                  )
-                )}
-              </div>
+              <CreatorPanel
+                onAddCatalog={(catalog) => {
+                  onAddCatalog(editingProfileId, catalog);
+                  setActiveTab('active');
+                }}
+              />
             )}
 
             {activeTab === 'dna' && editingProfile && (

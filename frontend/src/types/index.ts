@@ -15,7 +15,7 @@ export interface ProfileSettings {
 }
 
 export interface QueryBlock {
-  strategy?: 'discovery' | 'multi_search' | 'similar';
+  strategy?: 'discovery' | 'multi_search' | 'similar' | 'manual_list';
   similar_to?: string;
   text_search?: string;
   genre_ids?: number[];

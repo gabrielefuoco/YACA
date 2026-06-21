@@ -114,12 +114,5 @@ export const api = {
     post('/api/tmdb/batch-keywords', { keywordIds }),
   
   // Custom Lists API
-  getLists: (userId?: string) => get(`/api/lists${userId ? `?userId=${encodeURIComponent(userId)}` : ''}`),
-  getList: (listId: string, userId?: string) => get(`/api/lists/${encodeURIComponent(listId)}${userId ? `?userId=${encodeURIComponent(userId)}` : ''}`),
-  createList: (body: any) => post('/api/lists', body),
-  updateList: (listId: string, body: any) => put(`/api/lists/${encodeURIComponent(listId)}`, body),
-  deleteList: (listId: string, userId?: string) => del(`/api/lists/${encodeURIComponent(listId)}${userId ? `?userId=${encodeURIComponent(userId)}` : ''}`),
-  cloneList: (listId: string, userId?: string) => post(`/api/lists/${encodeURIComponent(listId)}/clone`, { userId }),
-  mergeLists: (body: any) => post('/api/lists/merge', body),
   searchTmdbMulti: (query: string) => get(`/api/tmdb/search/multi?query=${encodeURIComponent(query)}`),
 };

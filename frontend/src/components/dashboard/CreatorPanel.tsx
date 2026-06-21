@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { PosterRow } from '@/components/shared/PosterRow';
 import { Catalog, QueryBlock } from '@/types';
 import { GENRE_NAMES, SORT_OPTIONS, LANGUAGES } from '@/lib/constants';
-import { Loader2, Wand2, Save, X, Eye, Plus, Layers, Info, Sparkles, Film, Tv } from 'lucide-react';
+import { Loader2, Wand2, Save, X, Eye, Plus, Layers, Info, Sparkles, Film, Tv, ChevronLeft, ChevronRight, Trash2, ListMusic } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { generateId } from '@/lib/utils';
@@ -67,7 +67,7 @@ interface SelectedItem {
 interface BlockState {
   id: string;
   provider: 'tmdb' | 'kitsu';
-  strategy: 'discovery' | 'multi_search' | 'similar' | 'ai' | 'static_list';
+  strategy: 'discovery' | 'multi_search' | 'similar' | 'ai' | 'static_list' | 'manual_list';
   aiPrompt?: string;
   aiLoading?: boolean;
   similarTo?: string;
@@ -90,6 +90,7 @@ interface BlockState {
   collapsed: boolean;
   rawProps?: Record<string, unknown>;
   keywordNames?: string;
+  manualItems?: any[];
 }
 
 function createEmptyBlock(): BlockState {
@@ -118,6 +119,7 @@ function createEmptyBlock(): BlockState {
     runtimeLte: '',
     collapsed: false,
     rawProps: {},
+    manualItems: [],
   };
 }
 
@@ -214,6 +216,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       collapsed: false,
       rawProps,
       keywordNames: f._keywordNames as string || '',
+      manualItems: Array.isArray(f.items) ? f.items : [],
     };
   }, []);
 
@@ -370,6 +373,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       ...(block.certificationLte && { 'certification.lte': block.certificationLte }),
       ...(block.runtimeGte && { 'with_runtime.gte': Number(block.runtimeGte) }),
       ...(block.runtimeLte && { 'with_runtime.lte': Number(block.runtimeLte) }),
+      ...(block.strategy === 'manual_list' && block.manualItems && { items: block.manualItems }),
     };
 
     if (block.keywordNames && block.provider === 'kitsu') {
@@ -406,39 +410,34 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
     if (staticBlock) {
       try {
         const staticItems = (staticBlock.rawProps?.static_items as any[]) || [];
-        const res = await api.createList({
+        const catalog: Catalog = {
+          id: 'custom_' + generateId(),
           name: name.trim() || 'Lista Generata da AI',
           type,
-          sourceType: 'ai_prompt',
-          items: staticItems.map(item => {
-            const rawId = String(item.id || '');
-            const tmdbId = parseInt(rawId.replace('tmdb:', ''), 10) || item.tmdbId;
-            return {
-              tmdbId,
-              type,
-              title: item.title,
-              poster: item.poster
-            };
-          })
-        });
-
-        if (res.success && res.list) {
-          const catalog: Catalog = {
-            id: res.list.listId,
-            name: res.list.name,
-            type: res.list.type,
-            source: 'manual_items',
-            emoji: '🤖',
-            queries: []
-          };
-          onAddCatalog(catalog);
-          setSaved(true);
-          setTimeout(() => setSaved(false), 3000);
-        } else {
-          alert(res.error || 'Errore nel salvataggio della lista.');
-        }
+          source: 'manual',
+          queries: [{
+             strategy: 'manual_list',
+             items: staticItems.map(item => {
+               const rawId = String(item.id || '');
+               const tmdbId = parseInt(rawId.replace('tmdb:', ''), 10) || item.tmdbId;
+               return {
+                 tmdbId,
+                 type,
+                 title: item.title,
+                 poster: item.poster
+               };
+             })
+          }],
+          presentation_strategy: presentationStrategy,
+          emoji: '🤖'
+        };
+        onAddCatalog(catalog);
+        setName('');
+        setBlocks([createEmptyBlock()]);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+        return;
       } catch (err) {
-        console.error(err);
         alert('Errore durante il salvataggio.');
       }
       return;
@@ -498,7 +497,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
           <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
           Query {index + 1}
           <span className="text-[10px] sm:text-xs font-medium normal-case text-marrow-light/70 hidden sm:inline">
-            — {block.strategy === 'ai' ? 'Genera con AI' : block.strategy === 'static_list' ? 'Lista Statica AI' : block.strategy === 'discovery' ? 'Discovery (Filtri)' : block.strategy === 'similar' ? 'Simili a...' : 'Ricerca Testuale'}
+            — {block.strategy === 'ai' ? 'Genera con AI' : block.strategy === 'static_list' ? 'Lista Statica AI' : block.strategy === 'manual_list' ? 'Lista Manuale' : block.strategy === 'discovery' ? 'Discovery (Filtri)' : block.strategy === 'similar' ? 'Simili a...' : 'Ricerca Testuale'}
           </span>
         </span>
         <span className="flex items-center gap-2">
@@ -592,6 +591,18 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                   <Sparkles className="h-3.5 w-3.5" />
                   Simili a...
                 </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); updateBlock(block.id, { strategy: 'manual_list' }); }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                    block.strategy === 'manual_list'
+                    ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
+                    : 'bg-white/60 border-marrow-light/10 text-marrow-light hover:text-primary hover:border-primary/30'
+                  }`}
+                >
+                  <ListMusic className="h-3.5 w-3.5" />
+                  Lista Manuale
+                </button>
               </div>
             </div>
 
@@ -629,9 +640,124 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-black placeholder:text-marrow-light/40" />
               </div>
             )}
+
+            {block.strategy === 'manual_list' && (
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Cerca ed Aggiungi a TMDB</Label>
+                  <AutocompleteSearch
+                    placeholder="Cerca film o serie TV su TMDB..."
+                    searchFn={async (query) => {
+                      const res = await api.searchTmdbMulti(query);
+                      return {
+                        results: (res.results || []).map((r: any) => ({
+                          id: r.id,
+                          name: r.title || r.name,
+                          poster: r.poster_path ? `https://image.tmdb.org/t/p/w92${r.poster_path}` : null,
+                          media_type: r.media_type || type
+                        }))
+                      };
+                    }}
+                    onSelect={(item: any) => {
+                      const currentItems = block.manualItems || [];
+                      const exists = currentItems.some(i => String(i.tmdbId) === String(item.id));
+                      if (!exists) {
+                        updateBlock(block.id, {
+                          manualItems: [
+                            ...currentItems,
+                            {
+                              tmdbId: item.id,
+                              type: item.media_type === 'movie' ? 'movie' : 'series',
+                              title: item.name,
+                              poster: item.poster
+                            }
+                          ]
+                        });
+                      }
+                    }}
+                  />
+                </div>
+
+                {(block.manualItems && block.manualItems.length > 0) ? (
+                  <div className="mt-4">
+                    <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px] mb-3 block">
+                      Elementi in Lista ({block.manualItems.length})
+                    </Label>
+                    <div className="flex flex-wrap gap-4">
+                      {block.manualItems.map((item, i) => (
+                        <div key={item.tmdbId} className="relative group w-[100px] sm:w-[120px] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all">
+                          {item.poster ? (
+                            <img src={item.poster} alt={item.title} className="w-full aspect-[2/3] object-cover" />
+                          ) : (
+                            <div className="w-full aspect-[2/3] bg-marrow-light/20 flex items-center justify-center text-center p-2">
+                              <span className="text-xs font-bold text-marrow-deep/50">{item.title}</span>
+                            </div>
+                          )}
+                          
+                          {/* Hover Overlay */}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  if (i === 0) return;
+                                  const newItems = [...block.manualItems!];
+                                  const temp = newItems[i];
+                                  newItems[i] = newItems[i - 1];
+                                  newItems[i - 1] = temp;
+                                  updateBlock(block.id, { manualItems: newItems });
+                                }}
+                                disabled={i === 0}
+                                className="p-1.5 bg-white/20 hover:bg-white/40 disabled:opacity-30 rounded-full text-white transition-colors"
+                              >
+                                <ChevronLeft className="h-4 w-4" />
+                              </button>
+                              
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  if (i === block.manualItems!.length - 1) return;
+                                  const newItems = [...block.manualItems!];
+                                  const temp = newItems[i];
+                                  newItems[i] = newItems[i + 1];
+                                  newItems[i + 1] = temp;
+                                  updateBlock(block.id, { manualItems: newItems });
+                                }}
+                                disabled={i === block.manualItems!.length - 1}
+                                className="p-1.5 bg-white/20 hover:bg-white/40 disabled:opacity-30 rounded-full text-white transition-colors"
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </button>
+                            </div>
+                            
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                updateBlock(block.id, {
+                                  manualItems: block.manualItems!.filter((_, idx) => idx !== i)
+                                });
+                              }}
+                              className="p-1.5 bg-red-500/80 hover:bg-red-500 rounded-full text-white transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center text-marrow-faded glass-panel bg-white/20 border border-marrow-light/5 rounded-2xl">
+                    <ListMusic className="h-8 w-8 text-marrow-light/20 mb-2" />
+                    <p className="font-black text-sm">Lista Vuota</p>
+                    <p className="text-[10px] font-semibold max-w-[200px] mt-1">Cerca ed aggiungi elementi usando la barra qui sopra.</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {block.strategy !== 'ai' && block.strategy !== 'static_list' && (
+          {block.strategy !== 'ai' && block.strategy !== 'static_list' && block.strategy !== 'manual_list' && (
             <>
           {/* Basic filters */}
           <details className="group [&_summary::-webkit-details-marker]:hidden" open>

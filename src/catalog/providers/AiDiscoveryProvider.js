@@ -40,6 +40,44 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
         const ep = type === 'movie' ? '/search/movie' : '/search/tv';
         results = await fetchTmdbCatalog(tmdbClient, ep, skip, { query: filters.text_search || filters.keyword }, type, cacheOptions);
     }
+    else if (filters.strategy === "manual_list" && Array.isArray(filters.items)) {
+        const { getTmdbMovieDetails } = require('../../clients/tmdb');
+        const { rateLimitedMap } = require('../../utils/rateLimiter');
+        
+        const paginatedItems = filters.items.slice(skip, skip + PAGE_SIZE);
+        
+        const resolvedMetas = await rateLimitedMap(paginatedItems, async (item) => {
+            const itemType = item.type === 'series' ? 'tv' : 'movie';
+            const details = await getTmdbMovieDetails(tmdbApiKey, item.tmdbId, itemType);
+            if (!details) return null;
+            
+            let name = details.title || details.name || 'Unknown';
+            let poster = details.poster_path ? `https://image.tmdb.org/t/p/w342${details.poster_path}` : null;
+            let background = details.backdrop_path ? `https://image.tmdb.org/t/p/w780${details.backdrop_path}` : null;
+            
+            if (details.images && Array.isArray(details.images.posters) && details.images.posters.length > 0) {
+                poster = `https://image.tmdb.org/t/p/w342${details.images.posters[0].file_path}`;
+            }
+            if (details.images && Array.isArray(details.images.backdrops) && details.images.backdrops.length > 0) {
+                background = `https://image.tmdb.org/t/p/w780${details.images.backdrops[0].file_path}`;
+            }
+            
+            return {
+                id: `tmdb:${item.tmdbId}`,
+                type: item.type === 'series' ? 'series' : 'movie',
+                name: name,
+                poster: poster,
+                background: background,
+                releaseInfo: details.release_date || details.first_air_date ? (details.release_date || details.first_air_date).substring(0, 4) : null,
+                imdbRating: details.vote_average ? String(details.vote_average.toFixed(1)) : null,
+                genres: (details.genres || []).map(g => g.id),
+                description: details.overview || null,
+                rawTMDB: details
+            };
+        }, { batchSize: 10, delayMs: 0 });
+        
+        results = resolvedMetas.filter(Boolean);
+    }
     else {
         const tmdbParams = await buildDiscoveryParams(filters, tmdbApiKey, type, settings);
         const endpoint = `/discover/${searchType}`;
