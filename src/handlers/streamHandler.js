@@ -228,17 +228,12 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
             return { streams };
         } catch (e) {
             console.error(`[StreamProxy] Error fetching streams for ${id}:`, e.message);
-            return { streams: [] };
+            throw e;
         }
     };
 
-    try {
-        const result = await proxyStreamCache.getOrFetch(cacheKey, fetchAndProcessStreams, 15 * 60 * 1000);
-        return result || { streams: [] };
-    } catch (e) {
-        console.error(`[StreamProxy] Cache error for ${id}:`, e.message);
-        return { streams: [] };
-    }
+    const result = await proxyStreamCache.getOrFetch(cacheKey, fetchAndProcessStreams, 15 * 60 * 1000);
+    return result || { streams: [] };
 }
 
 module.exports = { streamHandler };

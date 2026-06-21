@@ -56,6 +56,14 @@ async function runCacheWarmer(hostUrl) {
         );
 
         console.log('[CacheWarmer] Sweeping completed.');
+
+        // Eseguiamo il processamento della coda in background per gli streaming pendenti
+        try {
+            const { processPendingScans } = require('./queueProcessor');
+            await processPendingScans(hostUrl);
+        } catch (queueErr) {
+            console.error('[CacheWarmer] Error running queueProcessor:', queueErr.message);
+        }
     } catch (e) {
         console.error('[CacheWarmer] Fatal error:', e);
     } finally {

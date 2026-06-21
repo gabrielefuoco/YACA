@@ -32,7 +32,35 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
 
         try {
             const StreamBadge = require('../db/models/StreamBadge');
-            const badges = await StreamBadge.find({ baseId: { $in: itemIds }, hasIta: true }).lean();
+            const allBadges = await StreamBadge.find({ baseId: { $in: itemIds } }).lean();
+            const badges = allBadges.filter(b => b.hasIta === true);
+            
+            const existingBaseIds = new Set(allBadges.map(b => b.baseId));
+            const missingBaseIds = itemIds.filter(id => !existingBaseIds.has(id));
+            
+            if (missingBaseIds.length > 0) {
+                const PendingScan = require('../db/models/PendingScan');
+                const queuePromises = missingBaseIds.map(bId => {
+                    const item = unbadgedMetas.find(m => {
+                        const mId = String(m.id);
+                        if (mId.startsWith('tmdb:') || mId.startsWith('kitsu:') || mId.startsWith('anilist:')) {
+                            const p = mId.split(':');
+                            return `${p[0]}:${p[1]}` === bId;
+                        }
+                        return mId === bId;
+                    });
+                    const itemType = item ? (item.type === 'series' ? 'series' : 'movie') : (type || 'movie');
+                    
+                    return PendingScan.findOneAndUpdate(
+                        { baseId: bId },
+                        { baseId: bId, type: itemType, status: 'pending' },
+                        { upsert: true }
+                    ).catch(err => console.error(`[PendingScan Queue] Error upserting ${bId}:`, err.message));
+                });
+                // Execute in background
+                Promise.all(queuePromises).catch(() => {});
+            }
+
             if (badges.length > 0) {
                 const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
                 const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
