@@ -216,9 +216,8 @@ async function syncCatalogData(catalogs, tmdbApiKey, settings = {}) {
             const safeListId = validateAndNormalizeSafeId(cat.id || '');
             let catalogMeta = presetMap.get(baseId);
 
-            if (!catalogMeta && safeListId) {
-                const UserList = require('../models/UserList');
-                catalogMeta = await UserList.findOne({ listId: safeListId }).lean();
+            if (!catalogMeta && cat.queries) {
+                catalogMeta = cat;
             }
 
             if (catalogMeta) {

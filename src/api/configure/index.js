@@ -1,5 +1,4 @@
 const UserConfig = require('../../models/UserConfig');
-const UserList = require('../../models/UserList');
 const { validateAuth, validateKeys } = require('./validators');
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');
 const { updateStremioAddonCollection } = require('../../utils/stremioAddon');
@@ -94,15 +93,7 @@ module.exports = async (req, res) => {
         // saveUser now handles both UserAccount + AddonConfig (Two-Table Split)
         const userDoc = await UserConfig.saveUser(updateData);
 
-        // Cleanup unreferenced lists
-        if (parsedProfiles) {
-            const referencedIds = new Set(parsedProfiles.flatMap(p => p.catalogs.map(c => String(c.id))));
-            await UserList.deleteMany({
-                owner: userId,
-                sourceType: { $in: ['ai_prompt', 'manual_filter'] },
-                listId: { $nin: Array.from(referencedIds) }
-            });
-        }
+        // UserList cleanup removed because UserList model is deleted
 
         const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
         const manifestUrl = `${hostUrl}/${userDoc.userId}/${userDoc.config?.configVersion}/manifest.json`;
