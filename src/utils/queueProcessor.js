@@ -42,7 +42,7 @@ async function processPendingScans(hostUrl) {
                     await PendingScan.updateOne({ _id: item._id }, { $set: { status: 'failed' } });
                 }
             },
-            { batchSize: 1, delayMs: 1000 }
+            { batchSize: 5, delayMs: 1000 }
         );
 
         console.log('[QueueProcessor] Queue processing completed.');
