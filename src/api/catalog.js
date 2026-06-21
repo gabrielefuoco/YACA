@@ -152,12 +152,12 @@ router.post('/preview-catalog', async (req, res) => {
                 'air_date.gte', 'air_date.lte',
                 'without_genres', 'without_keywords',
                 'with_runtime.gte', 'with_runtime.lte',
-                'certification.lte', 'queries'
+                'certification.lte', 'queries', 'items'
             ];
             
             for (const [key, value] of Object.entries(customFilters)) {
                 if (allowedFilterKeys.includes(key) && value !== undefined && value !== '') {
-                    if (key === 'queries') {
+                    if (key === 'queries' || key === 'items') {
                         discoverFilters[key] = value;
                     } else if (typeof value === 'string') {
                         discoverFilters[key] = sanitizeString(value);
