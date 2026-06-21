@@ -221,7 +221,7 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 await StreamBadge.findOneAndUpdate(
                     { stremioId: entry.stremioId },
                     { stremioId: entry.stremioId, baseId: entry.baseId, hasIta: isIta },
-                    { upsert: true, new: true }
+                    { upsert: true, returnDocument: 'after' }
                 );
             }
 

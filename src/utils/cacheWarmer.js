@@ -20,18 +20,50 @@ async function runCacheWarmer(hostUrl) {
         console.log('[CacheWarmer] Started sweeping all users...');
         const accounts = await UserAccount.find({}).lean();
         
-        // Estraiamo tutti i cataloghi da processare
+        const heroCatalogs = [
+            { id: 'yaca_true_blend_movies', type: 'movie' },
+            { id: 'yaca_true_blend_series', type: 'series' },
+            { id: 'yaca_seed_network_movies', type: 'movie' },
+            { id: 'yaca_seed_network_series', type: 'series' },
+            { id: 'yaca_hidden_gems_movies', type: 'movie' },
+            { id: 'yaca_hidden_gems_series', type: 'series' },
+            { id: 'yaca_trakt_filtered_movies', type: 'movie' },
+            { id: 'yaca_trakt_filtered_series', type: 'series' }
+        ];
+
+        // Estraiamo tutti i cataloghi da processare per tutti i profili di tutti gli utenti
         const catalogTasks = [];
         for (const account of accounts) {
             const user = await UserConfig.resolveUserConfig(account.userId);
-            if (!user) continue;
-            const activeProfile = user.profiles?.find(p => p.id === user.activeProfileId);
-            if (!activeProfile || !activeProfile.catalogs) continue;
+            if (!user || !user.profiles) continue;
             
-            for (const cat of activeProfile.catalogs) {
-                // Aggiungiamo sia movie che series. Il catalogHandler filtrerà o risponderà vuoto se non supportato.
-                catalogTasks.push({ user, catalogId: cat.id, type: 'movie' });
-                catalogTasks.push({ user, catalogId: cat.id, type: 'series' });
+            for (const profile of user.profiles) {
+                const selectedPresets = profile.raw_ui_state?.selectedPresets;
+                const activeHeroCatalogs = Array.isArray(selectedPresets)
+                    ? heroCatalogs.filter(c => selectedPresets.includes(c.id))
+                    : heroCatalogs;
+
+                for (const hero of activeHeroCatalogs) {
+                    catalogTasks.push({
+                        user,
+                        profileId: profile.id,
+                        catalogId: hero.id,
+                        type: hero.type
+                    });
+                }
+
+                if (profile.catalogs && Array.isArray(profile.catalogs)) {
+                    for (const cat of profile.catalogs) {
+                        if (cat.isActive !== false) {
+                            catalogTasks.push({
+                                user,
+                                profileId: profile.id,
+                                catalogId: cat.id,
+                                type: cat.type === 'series' ? 'series' : 'movie'
+                            });
+                        }
+                    }
+                }
             }
         }
 
@@ -43,16 +75,20 @@ async function runCacheWarmer(hostUrl) {
             catalogTasks,
             async (task) => {
                 try {
+                    const taskUser = {
+                        ...task.user,
+                        activeProfileId: task.profileId
+                    };
                     await catalogHandler(
                         { id: task.catalogId, type: task.type, extra: { warmupMode: true } }, 
-                        task.user, 
+                        taskUser, 
                         hostUrl
                     );
                 } catch (e) {
-                    // Ignoriamo gli errori silenziosamente per non bloccare il ciclo, molti cataloghi potrebbero non avere il tipo richiesto
+                    // Ignoriamo gli errori silenziosamente per non bloccare il ciclo
                 }
             },
-            { batchSize: 1, delayMs: 2000 }
+            { batchSize: 1, delayMs: 200 }
         );
 
         console.log('[CacheWarmer] Sweeping completed.');
