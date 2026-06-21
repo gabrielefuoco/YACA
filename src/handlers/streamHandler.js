@@ -43,7 +43,7 @@ function getAdditionalStremioId(originalId, additionalBaseId) {
 
 function hasItaKeywords(streams) {
     if (!Array.isArray(streams)) return false;
-    const itaRegex = /\b(?:ITA|ITALIAN|IT|🇮🇹)\b/i;
+    const itaRegex = /(?:\b(?:ITA|ITALIAN|IT)\b|🇮🇹)/i;
     for (const s of streams) {
         const textToSearch = `${s.title || ''} ${s.name || ''} ${s.description || ''}`;
         if (itaRegex.test(textToSearch)) {
