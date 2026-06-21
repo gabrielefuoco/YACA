@@ -30,7 +30,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const { cacheOptions: tmdbFetchOptions } = getCacheConfig(userConfig.ttl);
     
     // Increment BADGE_CATALOG_VERSION whenever badge logic changes to bust SWR cache
-    const BADGE_CATALOG_VERSION = 6;
+    const BADGE_CATALOG_VERSION = 7;
 
     // Check Full CACHE Request
     const requestCacheKey = generateRequestHash(id, { 
@@ -41,7 +41,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
         profile: userConfig.activeProfileId, 
         kidsMode: activeProfileSettings.kidsMode,
         configVersion: userConfig.configVersion || userConfig.config?.configVersion,
-        badgeV: type === 'series' ? BADGE_CATALOG_VERSION : 0
+        badgeV: BADGE_CATALOG_VERSION
     }, skip, type);
     
     let catalogMeta = null;

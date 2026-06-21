@@ -21,6 +21,19 @@ function getBaseId(stremioId) {
     return parts[0];
 }
 
+function getAdditionalStremioId(originalId, additionalBaseId) {
+    if (!additionalBaseId) return null;
+    const parts = originalId.split(':');
+    if (originalId.startsWith('tt')) {
+        // IMDb style: [imdbId, season, episode]
+        return [additionalBaseId, ...parts.slice(1)].join(':');
+    } else if (originalId.startsWith('tmdb:')) {
+        // TMDB style: [tmdb, tmdbId, season, episode]
+        return [additionalBaseId, ...parts.slice(2)].join(':');
+    }
+    return null;
+}
+
 function hasItaKeywords(streams) {
     if (!Array.isArray(streams)) return false;
     const itaRegex = /\b(?:ITA|ITALIAN|IT|🇮🇹)\b/i;
@@ -104,11 +117,11 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
             if (baseId.startsWith('tt')) {
                 try {
                     const { translateImdbToTmdb } = require('../id_mapping/id_cache');
-                    const apiKey = userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
+                    const apiKey = userConfig?.apiKeys?.tmdb || userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
                     if (apiKey) {
                         const tmdbRes = await translateImdbToTmdb(baseId, apiKey);
                         if (tmdbRes && tmdbRes.id) {
-                            additionalBaseId = `tmdb:${tmdbRes.id}`;
+                            additionalBaseId = tmdbRes.id.startsWith('tmdb:') ? tmdbRes.id : `tmdb:${tmdbRes.id}`;
                         }
                     }
                 } catch (e) {
@@ -117,7 +130,7 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
             } else if (baseId.startsWith('tmdb:')) {
                 try {
                     const { resolveImdbId } = require('../clients/tmdb');
-                    const apiKey = userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
+                    const apiKey = userConfig?.apiKeys?.tmdb || userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
                     if (apiKey) {
                         const imdbId = await resolveImdbId(baseId.replace('tmdb:', ''), type, apiKey);
                         if (imdbId) {
@@ -129,13 +142,21 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 }
             }
 
-            const baseIdsToSave = additionalBaseId ? [baseId, additionalBaseId] : [baseId];
+            const badgeEntries = [
+                { stremioId: id, baseId: baseId }
+            ];
+            if (additionalBaseId) {
+                const additionalStremioId = getAdditionalStremioId(id, additionalBaseId);
+                if (additionalStremioId) {
+                    badgeEntries.push({ stremioId: additionalStremioId, baseId: additionalBaseId });
+                }
+            }
 
-            for (const bId of baseIdsToSave) {
-                // Upsert StreamBadge for long-term storage
+            for (const entry of badgeEntries) {
+                // Upsert StreamBadge based on unique stremioId
                 await StreamBadge.findOneAndUpdate(
-                    { stremioId: id, baseId: bId },
-                    { baseId: bId, stremioId: id, hasIta: isIta },
+                    { stremioId: entry.stremioId },
+                    { stremioId: entry.stremioId, baseId: entry.baseId, hasIta: isIta },
                     { upsert: true, new: true }
                 );
             }
