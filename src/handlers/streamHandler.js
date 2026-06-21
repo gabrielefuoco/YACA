@@ -103,7 +103,7 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
             let additionalBaseId = null;
             if (baseId.startsWith('tt')) {
                 try {
-                    const { translateImdbToTmdb } = require('../clients/tmdb');
+                    const { translateImdbToTmdb } = require('../id_mapping/id_cache');
                     const apiKey = userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
                     if (apiKey) {
                         const tmdbRes = await translateImdbToTmdb(baseId, apiKey);
