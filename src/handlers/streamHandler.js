@@ -1,6 +1,7 @@
 const axios = require('axios');
 const CacheManager = require('../cache/CacheManager');
 const StreamBadge = require('../db/models/StreamBadge');
+const { resolveImdbId } = require('../clients/tmdb');
 
 // Proxy streams cache: 15 minutes TTL, 2 minutes SWR
 const proxyStreamCache = new CacheManager('proxy_streams', {
@@ -58,19 +59,42 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
     if (!proxyUrl) {
         return { streams: [] };
     }
+    
+    let baseProxyUrl = proxyUrl;
+    if (baseProxyUrl.endsWith('/manifest.json')) {
+        baseProxyUrl = baseProxyUrl.replace('/manifest.json', '');
+    }
 
     const cacheKey = `proxy_${type}_${id}`;
     
     const fetchAndProcessStreams = async () => {
         try {
-            const targetUrl = `${proxyUrl}/stream/${type}/${encodeURIComponent(id)}.json`;
+            let proxyId = id;
+            if (id.startsWith('tmdb:')) {
+                const parts = id.split(':');
+                const tmdbId = parts[1];
+                const imdbId = await resolveImdbId(tmdbId, type, userConfig?.apiKeys?.tmdb);
+                console.log("Resolved imdbId for tmdbId", tmdbId, "is", imdbId);
+                if (imdbId) {
+                    if (parts.length > 2) {
+                        proxyId = `${imdbId}:${parts.slice(2).join(':')}`;
+                    } else {
+                        proxyId = imdbId;
+                    }
+                }
+            }
+
+            const targetUrl = `${baseProxyUrl}/stream/${type}/${encodeURIComponent(proxyId)}.json`;
+            console.log("Fetching targetUrl:", targetUrl);
             let fetchUrl = targetUrl;
             
             if (process.env.CF_WORKER_URL) {
                 fetchUrl = `${process.env.CF_WORKER_URL}?url=${encodeURIComponent(targetUrl)}`;
             }
 
+            console.log("Fetching actual URL:", fetchUrl);
             const response = await axios.get(fetchUrl, { timeout: 15000 });
+            console.log("Response data keys:", Object.keys(response.data));
             const streams = response.data?.streams || [];
             
             const isIta = hasItaKeywords(streams);
