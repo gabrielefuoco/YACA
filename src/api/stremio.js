@@ -502,7 +502,8 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         const allowedHosts = [
             'image.tmdb.org',
             'easyratingsdb.com',
-            'media.kitsu.io'
+            'media.kitsu.io',
+            'media.kitsu.app'
         ];
         const isAllowed = allowedHosts.some(host => 
             parsedUrl.hostname === host || parsedUrl.hostname.endsWith('.' + host)
@@ -516,8 +517,9 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         return res.status(400).send('Invalid original image URL');
     }
 
-    const cacheKey = `${id}_${episode}_v14`;
-    console.log(`[Badge] Request: id=${id}, episode="${episode}", textToSVG=${!!textToSVG}`);
+    const bv = req.query.bv || 'v15';
+    const cacheKey = `${id}_${episode}_${bv}`;
+    console.log(`[Badge] Request: id=${id}, episode="${episode}", bv=${bv}, textToSVG=${!!textToSVG}`);
 
     // Helper to perform the download and composition
     const generateBadgeImage = async (url, badgeText) => {

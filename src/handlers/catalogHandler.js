@@ -10,6 +10,69 @@ const { filterWatchedItems } = require('../catalog/processors/FilterWatched');
 const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
 const { formatStremioCatalog } = require('../catalog/formatters/StremioFormatter');
 
+async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta, type, baseId) {
+    if (!cachedData || !Array.isArray(cachedData.metas) || cachedData.metas.length === 0) {
+        return cachedData || { metas: [] };
+    }
+
+    // Clone metas to avoid modifying cached objects in place
+    const metas = cachedData.metas.map(m => ({ ...m }));
+
+    // Find items that lack the badge in the cached catalog
+    const unbadgedMetas = metas.filter(m => !m._itaBadge);
+    if (unbadgedMetas.length > 0) {
+        const itemIds = unbadgedMetas.map(item => {
+            const id = String(item.id);
+            if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
+                const parts = id.split(':');
+                return `${parts[0]}:${parts[1]}`;
+            }
+            return id;
+        });
+
+        try {
+            const StreamBadge = require('../db/models/StreamBadge');
+            const badges = await StreamBadge.find({ baseId: { $in: itemIds }, hasIta: true }).lean();
+            if (badges.length > 0) {
+                const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
+                const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
+                const itaBaseIds = new Set(badges.map(b => b.baseId));
+                
+                const activeProfileSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
+                const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
+                const sanitizeOptions = {
+                    shouldApplyEpisodeBadge: type === 'series' && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId)),
+                    isLandscapeEnabled: isLandscape,
+                    userConfig,
+                    hostUrl
+                };
+
+                for (let i = 0; i < metas.length; i++) {
+                    const item = metas[i];
+                    if (item._itaBadge) continue;
+
+                    const id = String(item.id);
+                    let bId = id;
+                    if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
+                        const parts = id.split(':');
+                        bId = `${parts[0]}:${parts[1]}`;
+                    }
+
+                    if (itaBaseIds.has(bId)) {
+                        // Apply the badge!
+                        item._itaBadge = true;
+                        metas[i] = sanitizeCatalogMeta(item, sanitizeOptions);
+                    }
+                }
+            }
+        } catch (badgeErr) {
+            console.error('[Catalog Post-Cache] Error applying stream badges:', badgeErr.message);
+        }
+    }
+
+    return { metas };
+}
+
 /**
  * Funzione principale (Orchestrator) che riceve la richiesta da Stremio ed elabora il catalogo.
  * Utilizza il pattern Strategy deferendo a CatalogRouter, Processors e Formatters.
@@ -232,22 +295,23 @@ async function catalogHandler(args, userConfig, hostUrl) {
     };
 
     // SWR handling
+    let responseData;
     if (extra?.search || id === 'yaca-profiles' || baseId === 'yaca_search_history') {
-        return await fetchCatalog();
-    }
-
-    if (extra?.warmupMode) {
+        responseData = await fetchCatalog();
+    } else if (extra?.warmupMode) {
         const cachedStatus = await catalogRequestCache.getWithStatus(requestCacheKey);
         if (cachedStatus.status === 'fresh') {
-            return cachedStatus.value;
+            responseData = cachedStatus.value;
         } else {
             const freshData = await fetchCatalog();
             await catalogRequestCache.set(requestCacheKey, freshData, ttl);
-            return freshData;
+            responseData = freshData;
         }
+    } else {
+        responseData = await catalogRequestCache.getOrFetch(requestCacheKey, fetchCatalog, ttl);
     }
 
-    return await catalogRequestCache.getOrFetch(requestCacheKey, fetchCatalog, ttl);
+    return await applyPostCacheBadges(responseData, userConfig, hostUrl, catalogMeta, type, baseId);
 }
 
 module.exports = { catalogHandler };
