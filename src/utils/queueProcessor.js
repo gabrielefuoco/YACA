@@ -5,7 +5,7 @@ const { rateLimitedMap } = require('./rateLimiter');
 async function processPendingScans(hostUrl) {
     console.log('[QueueProcessor] Checking for pending scans...');
     try {
-        const pendingItems = await PendingScan.find({ status: 'pending' }).limit(30).lean();
+        const pendingItems = await PendingScan.find({ status: 'pending' }).limit(100).lean();
         if (pendingItems.length === 0) {
             console.log('[QueueProcessor] No pending items in queue.');
             return;
@@ -18,7 +18,7 @@ async function processPendingScans(hostUrl) {
             apiKeys: { tmdb: process.env.TMDB_API_KEY }
         };
 
-        // Process sequentially with a 2-second delay to avoid rate limit bans
+        // Process sequentially with a 1-second delay (Cloudflare Worker dynamically distributes IPs)
         await rateLimitedMap(
             pendingItems,
             async (item) => {
@@ -42,7 +42,7 @@ async function processPendingScans(hostUrl) {
                     await PendingScan.updateOne({ _id: item._id }, { $set: { status: 'failed' } });
                 }
             },
-            { batchSize: 1, delayMs: 2000 }
+            { batchSize: 1, delayMs: 1000 }
         );
 
         console.log('[QueueProcessor] Queue processing completed.');
