@@ -9,12 +9,13 @@ import { cn } from '@/lib/utils';
 interface TmdbItem {
     id: number;
     name: string;
+    [key: string]: any;
 }
 
 interface AutocompleteSearchProps {
     placeholder: string;
     searchFn: (query: string) => Promise<{ results: TmdbItem[] }>;
-    onSelect: (item: { id: string; name: string }) => void;
+    onSelect: (item: any) => void;
     className?: string;
 }
 
@@ -60,7 +61,7 @@ export function AutocompleteSearch({ placeholder, searchFn, onSelect, className 
     }, [query, searchFn]);
 
     const handleSelect = (item: TmdbItem) => {
-        onSelect({ id: String(item.id), name: item.name });
+        onSelect(item);
         setQuery('');
         setIsOpen(false);
     };
