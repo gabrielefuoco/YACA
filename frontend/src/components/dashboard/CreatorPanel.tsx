@@ -490,7 +490,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
         const staticItems = (staticBlock.rawProps?.static_items as any[]) || [];
         const catalog: Catalog = {
           id: 'custom_' + generateId(),
-          name: name.trim() || 'Lista Generata da AI',
+          name: name.trim() || 'Lista senza nome',
           type,
           source: 'manual',
           queries: [{
@@ -524,7 +524,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
     const queries = blocks.map(buildQueryBlock);
     const catalog: Catalog = {
       id: editCatalog ? editCatalog.id : generateId(),
-      name: name || 'Catalogo Personalizzato',
+      name: name.trim() || 'Lista senza nome',
       type,
       source: editCatalog ? editCatalog.source : 'manual',
       queries,
@@ -1255,7 +1255,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
 
           <Button
             onClick={handleSave}
-            disabled={!name.trim() || blocks.length === 0 || saved}
+            disabled={blocks.length === 0 || saved}
             className={`flex-1 font-black shadow-lg text-[10px] sm:text-sm h-10 sm:h-12 transition-all duration-300 ${saved
               ? 'bg-success hover:bg-success text-white shadow-success/30'
               : 'bg-primary hover:brightness-110 text-white shadow-primary/30'
