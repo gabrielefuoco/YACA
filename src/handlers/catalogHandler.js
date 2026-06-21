@@ -21,14 +21,16 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
     // Find items that lack the badge in the cached catalog
     const unbadgedMetas = metas.filter(m => !m._itaBadge);
     if (unbadgedMetas.length > 0) {
-        const itemIds = unbadgedMetas.map(item => {
-            const id = String(item.id);
-            if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
-                const parts = id.split(':');
-                return `${parts[0]}:${parts[1]}`;
-            }
-            return id;
-        });
+        const itemIds = unbadgedMetas
+            .map(item => {
+                const id = String(item.id);
+                if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
+                    const parts = id.split(':');
+                    return `${parts[0]}:${parts[1]}`;
+                }
+                return id;
+            })
+            .filter(id => id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:') || id.startsWith('tt'));
 
         try {
             const StreamBadge = require('../db/models/StreamBadge');
