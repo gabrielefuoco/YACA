@@ -100,12 +100,45 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
             const isIta = hasItaKeywords(streams);
             const baseId = getBaseId(id);
 
-            // Upsert StreamBadge for long-term storage
-            await StreamBadge.findOneAndUpdate(
-                { stremioId: id },
-                { baseId, stremioId: id, hasIta: isIta },
-                { upsert: true, new: true }
-            );
+            let additionalBaseId = null;
+            if (baseId.startsWith('tt')) {
+                try {
+                    const { translateImdbToTmdb } = require('../clients/tmdb');
+                    const apiKey = userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
+                    if (apiKey) {
+                        const tmdbRes = await translateImdbToTmdb(baseId, apiKey);
+                        if (tmdbRes && tmdbRes.id) {
+                            additionalBaseId = `tmdb:${tmdbRes.id}`;
+                        }
+                    }
+                } catch (e) {
+                    console.error(`[StreamBadge] Could not translate ${baseId} to TMDB:`, e.message);
+                }
+            } else if (baseId.startsWith('tmdb:')) {
+                try {
+                    const { resolveImdbId } = require('../clients/tmdb');
+                    const apiKey = userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
+                    if (apiKey) {
+                        const imdbId = await resolveImdbId(baseId.replace('tmdb:', ''), type, apiKey);
+                        if (imdbId) {
+                            additionalBaseId = imdbId;
+                        }
+                    }
+                } catch (e) {
+                    console.error(`[StreamBadge] Could not translate ${baseId} to IMDB:`, e.message);
+                }
+            }
+
+            const baseIdsToSave = additionalBaseId ? [baseId, additionalBaseId] : [baseId];
+
+            for (const bId of baseIdsToSave) {
+                // Upsert StreamBadge for long-term storage
+                await StreamBadge.findOneAndUpdate(
+                    { stremioId: id, baseId: bId },
+                    { baseId: bId, stremioId: id, hasIta: isIta },
+                    { upsert: true, new: true }
+                );
+            }
 
             return { streams };
         } catch (e) {
