@@ -17,8 +17,8 @@ async function clearCaches() {
         console.log(`Cancellati ${cacheResult.deletedCount} elementi da cacheentries.`);
         
         // 2. Svuota cache delle chiamate TMDB
-        const tmdbResult = await TmdbRequestCache.deleteMany({});
-        console.log(`Cancellati ${tmdbResult.deletedCount} elementi da tmdbrequestcaches.`);
+        await TmdbRequestCache.clear();
+        console.log(`Cancellata cache TMDB.`);
         
         await mongoose.disconnect();
         console.log("Disconnesso.");
