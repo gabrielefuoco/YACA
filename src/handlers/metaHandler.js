@@ -62,7 +62,8 @@ async function resolveAnimeEpisodes(metaObj, tmdbId, tmdbApiKey) {
  */
 async function metaHandler(args, userConfig) {
     try {
-        const { type, id } = args;
+        const { type, id: originalId } = args;
+        const id = typeof originalId === 'string' ? originalId.replace('_ita_offset', '') : originalId;
 
         if (!userConfig) throw new Error("Configurazione utente mancante");
 
@@ -177,6 +178,9 @@ async function metaHandler(args, userConfig) {
                 // Per kitsu: e altri ID (non tradotti), forziamo l'ID originale
                 meta.id = id;
             }
+
+            // Ripristina l'ID richiesto originale per Stremio (incluso eventuale _ita_offset)
+            meta.id = originalId;
 
             return { meta };
         }

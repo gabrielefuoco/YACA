@@ -1,6 +1,76 @@
 const PendingScan = require('../db/models/PendingScan');
+const StreamBadge = require('../db/models/StreamBadge');
 const { streamHandler } = require('../handlers/streamHandler');
 const { rateLimitedMap } = require('./rateLimiter');
+
+function getSeriesBaseId(stremioId) {
+    if (!stremioId) return '';
+    const parts = stremioId.split(':');
+    if (stremioId.startsWith('tmdb:tv:')) {
+        return parts.slice(0, 3).join(':'); // tmdb:tv:1234
+    }
+    return parts.slice(0, 2).join(':'); // kitsu:1234 or tt12345
+}
+
+async function triggerBinarySearch(baseId, testUserConfig, hostUrl) {
+    console.log(`[BinarySearch] Checking for offset on series ${baseId}...`);
+    try {
+        const badges = await StreamBadge.find({ baseId }).lean();
+        const itaBadges = badges.filter(b => b.hasIta === true);
+        const noItaBadges = badges.filter(b => b.hasIta === false);
+
+        if (itaBadges.length === 0 || noItaBadges.length === 0) {
+            console.log(`[BinarySearch] No offset possible for ${baseId} yet (need both ITA and NO ITA episodes).`);
+            return;
+        }
+
+        const getEpNum = (stremioId) => {
+            const parts = stremioId.split(':');
+            return parseInt(parts[parts.length - 1]) || 0;
+        };
+
+        const sortedIta = itaBadges.map(b => getEpNum(b.stremioId)).sort((a, b) => a - b);
+        const sortedNoIta = noItaBadges.map(b => getEpNum(b.stremioId)).sort((a, b) => a - b);
+
+        const maxIta = sortedIta[sortedIta.length - 1];
+        const nextNoIta = sortedNoIta.find(ep => ep > maxIta);
+
+        if (!nextNoIta) {
+            console.log(`[BinarySearch] No gap found for ${baseId} (all checked episodes after E${maxIta} are ITA).`);
+            return;
+        }
+
+        if (nextNoIta - maxIta <= 1) {
+            console.log(`[BinarySearch] Boundary found! Last ITA is E${maxIta}, first NO ITA is E${nextNoIta}.`);
+            return;
+        }
+
+        const midEp = Math.floor((maxIta + nextNoIta) / 2);
+        
+        // Ricostruiamo lo stremioId per midEp sostituendo l'ultimo frammento dell'ID dell'episodio nextNoIta
+        const templateBadge = noItaBadges.find(b => getEpNum(b.stremioId) === nextNoIta);
+        const parts = templateBadge.stremioId.split(':');
+        parts[parts.length - 1] = String(midEp);
+        const midStremioId = parts.join(':');
+
+        console.log(`[BinarySearch] Gap detected between E${maxIta} and E${nextNoIta}. Checking midpoint E${midEp} (${midStremioId})...`);
+
+        // Ritardo di 1 secondo per evitare rate limiting sui server upstream
+        await new Promise(r => setTimeout(r, 1000));
+
+        await streamHandler(
+            { id: midStremioId, type: 'series' },
+            testUserConfig,
+            hostUrl
+        );
+
+        // Ricorsione per continuare a dimezzare l'intervallo
+        await triggerBinarySearch(baseId, testUserConfig, hostUrl);
+
+    } catch (err) {
+        console.error(`[BinarySearch] Error in triggerBinarySearch for ${baseId}:`, err.message);
+    }
+}
 
 async function processPendingScans(hostUrl) {
     console.log('[QueueProcessor] Checking for pending scans...');
@@ -18,11 +88,12 @@ async function processPendingScans(hostUrl) {
             apiKeys: { tmdb: process.env.TMDB_API_KEY }
         };
 
-        // Process sequentially with a 1-second delay (Cloudflare Worker dynamically distributes IPs)
+        // Process sequentially with a 1-second delay
         await rateLimitedMap(
             pendingItems,
             async (item) => {
-                const testId = item.type === 'series' ? `${item.baseId}:1:1` : item.baseId;
+                const parts = item.baseId.split(':');
+                const testId = parts.length >= 3 ? item.baseId : (item.type === 'series' ? `${item.baseId}:1:1` : item.baseId);
                 console.log(`[QueueProcessor] Scanning streams for ${testId} (type: ${item.type})...`);
 
                 try {
@@ -32,6 +103,12 @@ async function processPendingScans(hostUrl) {
                         testUserConfig,
                         hostUrl
                     );
+                    
+                    // Se è una serie, controlliamo se c'è bisogno di una ricerca binaria in background
+                    if (item.type === 'series') {
+                        const baseSeriesId = getSeriesBaseId(testId);
+                        await triggerBinarySearch(baseSeriesId, testUserConfig, hostUrl);
+                    }
                     
                     // Delete from pending scans on success
                     await PendingScan.deleteOne({ _id: item._id });

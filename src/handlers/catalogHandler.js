@@ -10,6 +10,44 @@ const { filterWatchedItems } = require('../catalog/processors/FilterWatched');
 const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
 const { formatStremioCatalog } = require('../catalog/formatters/StremioFormatter');
 
+function getLatestEpisodeInfo(item) {
+    if (!item) return null;
+    
+    // Check rawTMDB
+    if (item.rawTMDB && (item.type === 'series' || item.type === 'anime')) {
+        const nextEp = item.rawTMDB.next_episode_to_air;
+        const lastEp = item.rawTMDB.last_episode_to_air;
+        if (nextEp?.episode_number) {
+            return { season: nextEp.season_number || 1, episode: nextEp.episode_number };
+        }
+        if (lastEp?.episode_number) {
+            return { season: lastEp.season_number || 1, episode: lastEp.episode_number };
+        }
+    }
+    
+    // Check item.videos
+    if (Array.isArray(item.videos) && item.videos.length > 0) {
+        const now = new Date();
+        const airedEpisodes = item.videos.filter(v => {
+            if (!v.released) return true;
+            return new Date(v.released) <= now;
+        });
+        if (airedEpisodes.length > 0) {
+            airedEpisodes.sort((a, b) => {
+                if (a.released && b.released) {
+                    const dateDiff = new Date(b.released) - new Date(a.released);
+                    if (dateDiff !== 0) return dateDiff;
+                }
+                return (b.episode || 0) - (a.episode || 0);
+            });
+            const latest = airedEpisodes[0];
+            return { season: latest.season || 1, episode: latest.episode || 1 };
+        }
+    }
+    
+    return null;
+}
+
 async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta, type, baseId) {
     if (!cachedData || !Array.isArray(cachedData.metas) || cachedData.metas.length === 0) {
         return cachedData || { metas: [] };
@@ -35,14 +73,15 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
         try {
             const StreamBadge = require('../db/models/StreamBadge');
             const allBadges = await StreamBadge.find({ baseId: { $in: itemIds } }).lean();
-            const badges = allBadges.filter(b => b.hasIta === true);
             
             const existingBaseIds = new Set(allBadges.map(b => b.baseId));
             const missingBaseIds = itemIds.filter(id => !existingBaseIds.has(id));
             
             if (missingBaseIds.length > 0) {
                 const PendingScan = require('../db/models/PendingScan');
-                const queuePromises = missingBaseIds.map(bId => {
+                const queuePromises = [];
+                
+                missingBaseIds.forEach(bId => {
                     const item = unbadgedMetas.find(m => {
                         const mId = String(m.id);
                         if (mId.startsWith('tmdb:') || mId.startsWith('kitsu:') || mId.startsWith('anilist:')) {
@@ -53,48 +92,142 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                     });
                     const itemType = item ? (item.type === 'series' ? 'series' : 'movie') : (type || 'movie');
                     
-                    return PendingScan.findOneAndUpdate(
-                        { baseId: bId },
-                        { baseId: bId, type: itemType, status: 'pending' },
-                        { upsert: true }
-                    ).catch(err => console.error(`[PendingScan Queue] Error upserting ${bId}:`, err.message));
+                    if (itemType === 'series') {
+                        // Accoda Episodio 1
+                        const ep1Id = `${bId}:1:1`;
+                        queuePromises.push(
+                            PendingScan.findOneAndUpdate(
+                                { baseId: ep1Id },
+                                { baseId: ep1Id, type: 'series', status: 'pending' },
+                                { upsert: true }
+                            ).catch(err => console.error(`[PendingScan Queue] Error upserting ${ep1Id}:`, err.message))
+                        );
+                        
+                        // Accoda Ultimo Episodio
+                        const latestInfo = getLatestEpisodeInfo(item);
+                        if (latestInfo) {
+                            const latestId = `${bId}:${latestInfo.season}:${latestInfo.episode}`;
+                            queuePromises.push(
+                                PendingScan.findOneAndUpdate(
+                                    { baseId: latestId },
+                                    { baseId: latestId, type: 'series', status: 'pending' },
+                                    { upsert: true }
+                                ).catch(err => console.error(`[PendingScan Queue] Error upserting ${latestId}:`, err.message))
+                            );
+                        }
+                    } else {
+                        queuePromises.push(
+                            PendingScan.findOneAndUpdate(
+                                { baseId: bId },
+                                { baseId: bId, type: itemType, status: 'pending' },
+                                { upsert: true }
+                            ).catch(err => console.error(`[PendingScan Queue] Error upserting ${bId}:`, err.message))
+                        );
+                    }
                 });
+                
                 // Execute in background
                 Promise.all(queuePromises).catch(() => {});
             }
 
-            if (badges.length > 0) {
-                const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
-                const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
-                const itaBaseIds = new Set(badges.map(b => b.baseId));
-                
-                const activeProfileSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
-                const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
-                const sanitizeOptions = {
-                    shouldApplyEpisodeBadge: type === 'series' && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId)),
-                    isLandscapeEnabled: isLandscape,
-                    userConfig,
-                    hostUrl
-                };
+            const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
+            const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
+            
+            const activeProfileSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
+            const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
+            const sanitizeOptions = {
+                shouldApplyEpisodeBadge: type === 'series' && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId)),
+                isLandscapeEnabled: isLandscape,
+                userConfig,
+                hostUrl
+            };
 
-                for (let i = 0; i < metas.length; i++) {
-                    const item = metas[i];
-                    if (item._itaBadge) continue;
+            const getEpNum = (stremioId) => {
+                const parts = stremioId.split(':');
+                return parseInt(parts[parts.length - 1]) || 0;
+            };
 
-                    const id = String(item.id);
-                    let bId = id;
-                    if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
-                        const parts = id.split(':');
-                        bId = `${parts[0]}:${parts[1]}`;
-                    }
+            const processedMetas = [];
 
-                    if (itaBaseIds.has(bId)) {
-                        // Apply the badge!
+            for (let i = 0; i < metas.length; i++) {
+                const item = metas[i];
+                if (item._itaBadge) {
+                    processedMetas.push(item);
+                    continue;
+                }
+
+                const id = String(item.id);
+                let bId = id;
+                if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
+                    const parts = id.split(':');
+                    bId = `${parts[0]}:${parts[1]}`;
+                }
+
+                const itemBadges = allBadges.filter(b => b.baseId === bId);
+                const itaBadges = itemBadges.filter(b => b.hasIta === true);
+                const noItaBadges = itemBadges.filter(b => b.hasIta === false);
+
+                if (itaBadges.length > 0) {
+                    // Troviamo maxItaEp e maxNoItaEp per calcolare l'offset
+                    const sortedIta = itaBadges.map(b => getEpNum(b.stremioId)).sort((a, b) => a - b);
+                    const sortedNoIta = noItaBadges.map(b => getEpNum(b.stremioId)).sort((a, b) => a - b);
+
+                    const maxIta = sortedIta[sortedIta.length - 1];
+                    const maxNoIta = sortedNoIta.find(ep => ep > maxIta);
+
+                    const hasOffset = maxNoIta && (maxNoIta > maxIta);
+
+                    if (hasOffset && item.type === 'series') {
+                        // 1. Elemento originale (Sub): badge ITA disattivato
+                        const subItem = { ...item };
+                        subItem._itaBadge = false;
+                        if (sanitizeOptions.shouldApplyEpisodeBadge) {
+                            processedMetas.push(sanitizeCatalogMeta(subItem, sanitizeOptions));
+                        } else {
+                            processedMetas.push(subItem);
+                        }
+
+                        // 2. Elemento clone (Dub): badge ITA attivato, forziamo stagione ed episodio
+                        const dubItem = { ...item };
+                        dubItem.id = `${item.id}_ita_offset`;
+                        dubItem._itaBadge = true;
+
+                        // Troviamo il badge specifico per recuperare stagione ed episodio originali
+                        const maxItaBadge = itaBadges.find(b => getEpNum(b.stremioId) === maxIta);
+                        let maxItaSeason = 1;
+                        let maxItaEpisode = maxIta;
+                        
+                        if (maxItaBadge) {
+                            const parts = maxItaBadge.stremioId.split(':');
+                            if (maxItaBadge.stremioId.startsWith('tmdb:tv:')) {
+                                maxItaSeason = parseInt(parts[3]) || 1;
+                                maxItaEpisode = parseInt(parts[4]) || maxIta;
+                            } else if (parts.length === 4) {
+                                maxItaSeason = parseInt(parts[2]) || 1;
+                                maxItaEpisode = parseInt(parts[3]) || maxIta;
+                            }
+                        }
+                        
+                        dubItem._forceSeason = maxItaSeason;
+                        dubItem._forceEpisode = maxItaEpisode;
+
+                        processedMetas.push(sanitizeCatalogMeta(dubItem, sanitizeOptions));
+                    } else {
+                        // Nessun offset: badge ITA standard
                         item._itaBadge = true;
-                        metas[i] = sanitizeCatalogMeta(item, sanitizeOptions);
+                        processedMetas.push(sanitizeCatalogMeta(item, sanitizeOptions));
+                    }
+                } else {
+                    // Nessun badge ITA
+                    if (sanitizeOptions.shouldApplyEpisodeBadge) {
+                        processedMetas.push(sanitizeCatalogMeta(item, sanitizeOptions));
+                    } else {
+                        processedMetas.push(item);
                     }
                 }
             }
+
+            return { metas: processedMetas };
         } catch (badgeErr) {
             console.error('[Catalog Post-Cache] Error applying stream badges:', badgeErr.message);
         }

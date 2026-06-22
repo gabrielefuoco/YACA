@@ -3,6 +3,15 @@ const { EPISODE_CATALOG_IDS } = require('../constants');
 function getEpisodeBadgeText(item) {
     if (!item?.poster) return null;
 
+    if (item._forceEpisode) {
+        const isKitsu = item.id && (item.id.startsWith('kitsu:') || item.id.includes(':absolute:'));
+        const season = item._forceSeason || 1;
+        const episode = item._forceEpisode;
+        return (isKitsu || season <= 1)
+            ? `Ep ${episode}`
+            : `S${season} E${episode}`;
+    }
+
     if (item.rawTMDB && (item.type === 'series' || item.type === 'anime')) {
         const nextEp = item.rawTMDB.next_episode_to_air;
         const lastEp = item.rawTMDB.last_episode_to_air;

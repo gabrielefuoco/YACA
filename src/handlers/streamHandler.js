@@ -43,10 +43,31 @@ function getAdditionalStremioId(originalId, additionalBaseId) {
 
 function hasItaKeywords(streams) {
     if (!Array.isArray(streams)) return false;
-    const itaRegex = /(?:\b(?:ITA|ITALIAN|IT)\b|🇮🇹)/i;
+    
+    // Rimuove sezioni esplicitamente dedicate ai sottotitoli per evitare falsi positivi
+    const subFilters = [
+        /\[[^\]]*?subs?[^\]]*?\]/gi,                       // [Subs: Eng, Ita] o [Multi-Subs]
+        /\([^)]*?subs?[^)]*?\)/gi,                         // (Subs: Eng, Ita) o (Multi-Subs)
+        /\b(?:SUB\s*ITA|ITA\s*SUB)\b/gi,                    // SUB ITA, ITA SUB
+        /\b(?:SUBTITLES?|SUBS?)[\s\-_]*(?:ITA|ITALIANO?)\b/gi, // Subtitles Ita, Sub-Ita
+        /\b(?:ITA|ITALIANO?)[\s\-_]*(?:SUBTITLES?|SUBS?)\b/gi  // Ita-Subs, Italian-Sub
+    ];
+
+    const itaRegex = /(?:\b(?:ITA|ITALIAN|ITALIANO)\b|🇮🇹)/i;
+
     for (const s of streams) {
-        const textToSearch = `${s.title || ''} ${s.name || ''} ${s.description || ''}`;
-        if (itaRegex.test(textToSearch)) {
+        // Prendi solo la prima riga del titolo (il nome del file originale del torrent)
+        // per evitare le bandierine proxy-iniettate nelle righe successive
+        const titleFirstLine = (s.title || '').split('\n')[0];
+        
+        let text = `${titleFirstLine} ${s.name || ''} ${s.description || ''}`;
+        
+        // Applica i filtri per rimuovere i sottotitoli prima di cercare la traccia audio
+        for (const regex of subFilters) {
+            text = text.replace(regex, '');
+        }
+        
+        if (itaRegex.test(text)) {
             return true;
         }
     }
