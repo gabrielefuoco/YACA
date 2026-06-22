@@ -178,7 +178,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
 
                     const hasOffset = maxNoIta && (maxNoIta > maxIta);
 
-                    if (hasOffset && (item.type === 'series' || item.type === 'anime')) {
+                    if (hasOffset && sanitizeOptions.shouldApplyEpisodeBadge && (item.type === 'series' || item.type === 'anime')) {
                         // 1. Elemento originale (Sub): badge ITA disattivato
                         const subItem = { ...item };
                         subItem._itaBadge = false;
