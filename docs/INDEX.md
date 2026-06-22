@@ -59,11 +59,11 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 
 ### 5. 🔀 Logica dei Cataloghi e Ciclo di Vita
 *   **[CATALOG_LOGIC.md](CATALOG_LOGIC.md)**
-    *   *Descrizione*: Spiega il ciclo di vita di una richiesta di catalogo proveniente da Stremio. Dettaglia l'algoritmo di unione dei cataloghi di film e serie, l'interleaving dei canali per mescolare i risultati, e le strategie di presentazione delle locandine.
+    *   *Descrizione*: Spiega il ciclo di vita di una richiesta di catalogo proveniente da Stremio. Dettaglia l'algoritmo di unione dei cataloghi di film e serie, l'interleaving dei canali per mescolare i risultati, le strategie di presentazione delle locandine e il sistema di scansione in background dei badge ITA.
 
 ### 6. ⚙️ Internals di Stremio e Mapping Anime
 *   **[STREMIO_INTERNALS.md](STREMIO_INTERNALS.md)**
-    *   *Descrizione*: Analizza le logiche interne dell'addon e i workaround applicati per superare le limitazioni di Stremio. Copre il sistema di sincronizzazione dei profili multipli tramite URL dinamici e il *Hybrid Anime Mapping* che unisce TMDB e Kitsu per correggere i metadati degli episodi degli anime.
+    *   *Descrizione*: Analizza le logiche interne dell'addon e i workaround applicati per superare le limitazioni di Stremio. Copre il sistema di sincronizzazione dei profili multipli tramite URL dinamici, l'ordinamento TMDB per popolarità nei fallback e il *Hybrid Anime Mapping* con recupero flussi dual-query parallelo (Kitsu + IMDb).
 
 ### 7. 🔄 Integrazioni Esterne e Sincronizzazione
 *   **[INTEGRATIONS.md](INTEGRATIONS.md)**
@@ -75,7 +75,8 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 
 ### 9. 🧪 Testing e Strumenti di Amministrazione
 *   **[TESTING_UTILITIES.md](TESTING_UTILITIES.md)**
-    *   *Descrizione*: Manuale per sviluppatori e amministratori del sistema. Copre l'esecuzione dei test di unità/integrazione tramite Jest (`tests/`), la validazione della rilevanza dei preset (`scripts/test_relevance_all_presets.js`), e l'uso dei tool di manutenzione del database (es. pulizia cache, ispezione profili e forzatura Kids Mode).
+    *   *Descrizione*: Manuale per sviluppatori e amministratori del sistema. Copre l'esecuzione dei test di unità/integrazione tramite Jest (`tests/`), la validazione della rilevanza dei preset (`scripts/test_relevance_all_presets.js`) e una rassegna completa di tutti i 10 script amministrativi/migrazione nella cartella `scripts/`.
+
 
 ---
 

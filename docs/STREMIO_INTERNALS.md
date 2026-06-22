@@ -105,6 +105,19 @@ All'interno di `normalizeAnimeEpisodes` in [metaHandler.js](../src/handlers/meta
 - YACA scarica l'intera lista di episodi da Kitsu (/episodes in batch tramite paginazione asincrona).
 - Qualora Kitsu non fornisca un numero di stagione valido (`seasonNumber`), YACA normalizza gli episodi forzando la mappatura corretta dell'ID (es. `kitsu:{kitsuId}:{season}:{episode}`) mantenendo la coerenza con i tracker di streaming.
 
+#### 4. Risoluzione Fallback per Titolo e Ordinamento per Popolarità
+Qualora Kitsu non esponga mapping diretti verso TMDB o TVDB per un determinato anime, YACA effettua una ricerca testuale di ripiego (fallback) tramite l'endpoint `/search/tv` (o `/search/movie`) di TMDB, pulendo il titolo da suffissi di stagione (es. *Season 2*, *2nd Season*).
+- **Problema di accuratezza:** Spesso TMDB contiene schede duplicate, strambe o orfane inserite dagli utenti con popolarità prossima allo zero (es. *325627* per *The Apothecary Diaries*), che compaiono al primo posto della ricerca per via della corrispondenza esatta del titolo inglese, oscurando la scheda ufficiale localizzata in italiano.
+- **Risoluzione:** I risultati restituiti dalla ricerca TMDB vengono ordinati per popolarità decrescente (`popularity`). Questo assicura che YACA mappi sempre l'anime alla scheda ufficiale principale (es. *220542* - *Il monologo della Speziale*) che contiene descrizioni in italiano, poster e sfondi corretti.
+
+#### 5. Doppia Query in Parallelo e De-duplicazione dei Flussi (Stream Proxying)
+Nel proxy dei flussi ([streamHandler.js](../src/handlers/streamHandler.js)), sorge un problema analogo a livello di tracker torrent (es. Torrentio o il Corsaro Viola):
+- **Problema dei flussi Kitsu:** I torrent italiani (con doppiaggio o sub ITA) vengono caricati e associati dagli indexer quasi esclusivamente sotto l'ID IMDb della serie (es. `tt4508902`). Interrogando il proxy esclusivamente con l'ID Kitsu (`kitsu:10740:1`), si ottenevano pochissimi risultati internazionali sub-eng e zero risultati italiani, causando il mancato badge **ITA** (falso negativo salvato in cache).
+- **Risoluzione parallela:** Quando YACA riceve una richiesta di stream per un ID Kitsu (`kitsu:id:season:episode`), traduce preventivamente l'ID Kitsu nel rispettivo ID IMDb (ricavando la stagione e l'episodio TMDB corrispondenti) e avvia due richieste asincrone parallele al proxy: una per l'ID Kitsu e una per l'ID IMDb.
+- **Fusione e De-duplicazione:** I flussi restituiti da entrambe le query vengono fusi in RAM ed eliminati i duplicati basandosi sull'identificatore univoco del torrent (`infoHash`) o sul link (`url` / `externalUrl`). Questa unione garantisce il massimo assortimento di flussi (sia le release subbate specifiche per anime indicizzate su Kitsu, sia i doppiaggi italiani tradizionali indicizzati su IMDb) e permette a YACA di applicare correttamente il badge **ITA** sui cataloghi anime in base alla presenza reale di tracce italiane.
+- **Negative Caching ed Eviction dei Falsi Negativi:** L'esito della rilevazione della lingua italiana viene persistito a lungo termine nella collezione `streambadges` su MongoDB. Se un anime riceveva precedentemente un esito negativo (`hasIta: false`), la logica del catalogo evitava di inserirlo nuovamente in coda di scansione per ottimizzare le risorse. A seguito del cambio di logica (da query singola a query parallela), è stato necessario ripulire i vecchi documenti `hasIta: false` relativi a Kitsu (colonna `baseId` che inizia con `kitsu:`) per permettere al background scanner di ri-analizzarli alla luce della nuova architettura dual-query (vedi dettagli in [CATALOG_LOGIC.md](CATALOG_LOGIC.md#5-il-sistema-di-scansione-dei-badge-ita-background-stream-scanner)).
+
+
 ---
 
 ## 3. Workaround per le Limitazioni di Stremio

@@ -101,7 +101,7 @@ La risoluzione fisica dei dati è delegata ai provider dedicati in `src/catalog/
 *   **[TmdbProvider.js](../src/catalog/providers/TmdbProvider.js)**: 
     Costruisce dinamicamente i parametri di ricerca per TMDB (`buildDiscoveryParams`). Gestisce la conversione dei generi da film a serie TV (es. genere Azione *28* convertito in Action & Adventure *10759* per le serie) e integra filtri avanzati per keywords, attori, lingue originali e streaming provider italiani (`with_watch_providers`).
 *   **[KitsuProvider.js](../src/catalog/providers/KitsuProvider.js)** e **[kitsu.js](../src/clients/kitsu.js)**:
-    Fornisce cataloghi anime nativi (Trending, ONA, OVA, Speciali) interrogando direttamente le API di Kitsu. Implementa l'arricchimento asincrono `enrichWithTmdb` per recuperare descrizioni e poster italiani da TMDB a partire dall'ID Kitsu.
+    Fornisce cataloghi anime nativi (Trending, ONA, OVA, Speciali) interrogando direttamente le API di Kitsu. Implementa l'arricchimento asincrono `enrichWithTmdb` per recuperare descrizioni e poster italiani da TMDB a partire dall'ID Kitsu (avvalendosi di un ordinamento per popolarità per evitare l'associazione a schede orfane, vedi dettagli in [STREMIO_INTERNALS.md](STREMIO_INTERNALS.md#4-risoluzione-fallback-per-titolo-e-ordinamento-per-popolarità)).
 *   **[TraktProvider.js](../src/catalog/providers/TraktProvider.js)**:
     Consente di importare le liste utente di Trakt (Watchlist, Raccolte, Liste Personali) traducendone i riferimenti in ID TMDB idonei per Stremio.
 *   **[HybridProvider.js](../src/catalog/providers/HybridProvider.js)**:
@@ -132,7 +132,61 @@ Per evitare di superare i rate limit delle API esterne (TMDB, Kitsu, Trakt) e ga
 
 ---
 
-## 5. Variabili d'Ambiente Rilevanti
+## 5. Il Sistema di Scansione dei Badge ITA (Background Stream Scanner)
+
+Per indicare visivamente all'utente la disponibilità del doppiaggio o dei sottotitoli in italiano direttamente all'interno delle locandine dei cataloghi di Stremio, YACA implementa un sistema asincrono di scansione dei flussi in background. Questo evita di rallentare il caricamento iniziale dei cataloghi ed evita chiamate massive e sincrone ai proxy torrent.
+
+### Flusso di Scansione ed Idratazione del Badge
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client as Stremio Client
+    participant CH as catalogHandler.js
+    participant DB as MongoDB (StreamBadge & PendingScan)
+    participant W as Cache Warmer / QueueProcessor
+    participant P as Stream Proxy (Torrentio / ICV)
+
+    Client->>CH: Richiesta Catalogo
+    CH->>DB: Cerca record in 'streambadges' per gli ID restituiti
+    DB-->>CH: Ritorna record trovati (hasIta: true/false)
+    Note over CH: Applica badge grafici '_itaBadge' a chi ha hasIta: true
+    Note over CH: Identifica ID non presenti nel DB (missingBaseIds)
+    CH->>DB: Inserisce in 'pendingscans' (status: 'pending')
+    CH-->>Client: Ritorna Catalogo (Idratato con i badge esistenti)
+    
+    Note over W: Esecuzione asincrona (Tick del Cache Warmer)
+    W->>DB: Estrae fino a 100 scansioni in stato 'pending'
+    loop Per ogni elemento in coda (con rate limit di 1s)
+        W->>P: Interroga lo streamHandler (richiesta fittizia S1E1 o Film)
+        P-->>W: Ritorna i torrent disponibili
+        Note over W: Analizza titoli dei torrent alla ricerca di tracce "ITA" o "ITALIAN"
+        W->>DB: Upsert record in 'streambadges' (hasIta: true/false)
+        W->>DB: Elimina elemento da 'pendingscans' (o lo marca 'failed' se errore)
+    end
+```
+
+### Componenti del Sistema:
+
+1. **Rilevamento e Accodamento (`catalogHandler.js`)**:
+   Nella funzione `applyPostCacheBadges`, YACA filtra gli elementi del catalogo privi di badge. Per ciascuno di essi:
+   - Verifica se esiste già una scansione pregressa nella collezione `streambadges`.
+   - Se l'ID non è mai stato scansionato (non è presente nel DB), crea un record nella collezione `pendingscans` con stato `pending`.
+2. **Coda e Rate Limiting (`queueProcessor.js` / `rateLimiter.js`)**:
+   La funzione `processPendingScans` in [queueProcessor.js](../src/utils/queueProcessor.js) viene periodicamente invocata dal `cacheWarmer.js`. Essa:
+   - Estrae fino a 100 elementi `pending`.
+   - Utilizza `rateLimitedMap` per eseguire le scansioni in parallelo (in lotti da 5 elementi alla volta) distanziate di almeno 1000ms, per prevenire il ban o il rate-limit da parte dei provider torrent e dei proxy (come Torrentio).
+   - Genera una chiamata a `streamHandler` simulando la richiesta del primo episodio (se serie TV) o del film (se film).
+3. **Analisi e Risoluzione dei Flussi (`streamHandler.js`)**:
+   La funzione analizza i titoli dei flussi torrent risultanti. Se un flusso contiene parole chiave come `ita`, `italian`, `ita/eng` nel nome del file torrent, l'anime o il film viene qualificato come avente tracce in italiano.
+   Il risultato viene memorizzato in `StreamBadge` con `hasIta: true` (se trovato) o `hasIta: false` (se non trovato).
+4. **Negative Caching e Resubmission**:
+   Gli elementi marcati con `hasIta: false` fungono da cache negativa. La pipeline del catalogo li esclude dalle scansioni successive per evitare cicli di query infiniti su contenuti privi di doppiaggio italiano.
+   - *Nota operativa:* In caso di aggiornamento delle logiche di scraping o mapping (come l'introduzione della query parallela Kitsu + IMDb), è necessario eliminare manualmente dal DB le voci `hasIta: false` obsolete per costringere il sistema a rieseguire la scansione.
+
+---
+
+## 6. Variabili d'Ambiente Rilevanti
 
 I comportamenti di caching e di interconnessione con i provider sono influenzati dalle seguenti chiavi d'ambiente definite nel file di configurazione globale:
 
@@ -140,3 +194,4 @@ I comportamenti di caching e di interconnessione con i provider sono influenzati
 *   `TMDB_API_KEY`: API Key utilizzata per interrogare TMDB e per arricchire i cataloghi anime.
 *   `MISTRAL_API_KEY`: Chiave API per Mistral AI, necessaria per abilitare la Universal Pipeline basata su AI Discovery.
 *   `KITSU_ENDPOINT`: Endpoint dell'API di Kitsu (default: `https://kitsu.io/api/edge`).
+
