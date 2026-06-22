@@ -89,7 +89,9 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
     
     const fetchAndProcessStreams = async () => {
         try {
-            let proxyId = id;
+            let kitsuProxyId = null;
+            let imdbProxyId = null;
+
             if (id.startsWith('tmdb:')) {
                 const parts = id.split(':');
                 const tmdbId = parts[1];
@@ -97,9 +99,9 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 console.log("Resolved imdbId for tmdbId", tmdbId, "is", imdbId);
                 if (imdbId) {
                     if (parts.length > 2) {
-                        proxyId = `${imdbId}:${parts.slice(2).join(':')}`;
+                        imdbProxyId = `${imdbId}:${parts.slice(2).join(':')}`;
                     } else {
-                        proxyId = imdbId;
+                        imdbProxyId = imdbId;
                     }
                 }
             } else if (id.startsWith('kitsu:')) {
@@ -108,6 +110,12 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 const isMovieType = type === 'movie';
                 const apiKey = userConfig?.apiKeys?.tmdb || userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
                 
+                if (parts.length === 4) {
+                    kitsuProxyId = `kitsu:${parts[1]}:${parts[3]}`;
+                } else {
+                    kitsuProxyId = id;
+                }
+
                 try {
                     const { getTmdbIdFromKitsuId, fetchKitsuEpisodes } = require('../clients/kitsu');
                     const mapping = await getTmdbIdFromKitsuId(kitsuId);
@@ -115,46 +123,74 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                         const imdbId = await resolveImdbId(mapping.tmdbId, isMovieType ? 'movie' : 'tv', apiKey);
                         if (imdbId) {
                             if (isMovieType) {
-                                proxyId = imdbId;
+                                imdbProxyId = imdbId;
                             } else {
                                 const kitsuEps = await fetchKitsuEpisodes(kitsuId);
                                 if (Array.isArray(kitsuEps)) {
                                     const currentEp = kitsuEps.find(e => e.id === id);
                                     if (currentEp && currentEp.tmdbSeason !== undefined && currentEp.tmdbEpisode !== undefined) {
-                                        proxyId = `${imdbId}:${currentEp.tmdbSeason}:${currentEp.tmdbEpisode}`;
+                                        imdbProxyId = `${imdbId}:${currentEp.tmdbSeason}:${currentEp.tmdbEpisode}`;
                                     } else {
                                         const currentSeason = parts.length === 4 ? parseInt(parts[2], 10) : 1;
                                         const currentEpisode = parts.length === 4 ? parseInt(parts[3], 10) : (parts.length === 3 ? parseInt(parts[2], 10) : 1);
-                                        proxyId = `${imdbId}:${currentSeason}:${currentEpisode}`;
+                                        imdbProxyId = `${imdbId}:${currentSeason}:${currentEpisode}`;
                                     }
                                 }
                             }
-                            console.log(`[StreamProxy] Translated kitsu ID ${id} to IMDb ID ${proxyId} for proxy query.`);
+                            console.log(`[StreamProxy] Resolved IMDb ID ${imdbProxyId} for kitsu ID ${id}`);
                         }
                     }
                 } catch (err) {
                     console.error(`[StreamProxy] Failed to translate kitsu ID ${id} to IMDb:`, err.message);
                 }
+            }
 
-                if (proxyId === id) {
-                    if (parts.length === 4) {
-                        proxyId = `kitsu:${parts[1]}:${parts[3]}`;
-                    }
+            const fetchPromises = [];
+            
+            if (kitsuProxyId) {
+                const kitsuUrl = `${baseProxyUrl}/stream/${type}/${encodeURIComponent(kitsuProxyId)}.json`;
+                const kitsuFetchUrl = process.env.CF_WORKER_URL ? `${process.env.CF_WORKER_URL}?url=${encodeURIComponent(kitsuUrl)}` : kitsuUrl;
+                console.log("[StreamProxy] Fetching Kitsu URL:", kitsuFetchUrl);
+                fetchPromises.push(
+                    axios.get(kitsuFetchUrl, { timeout: 15000 })
+                        .then(r => r.data?.streams || [])
+                        .catch(e => {
+                            console.error(`[StreamProxy] Kitsu fetch failed:`, e.message);
+                            return [];
+                        })
+                );
+            }
+
+            const mainQueryId = imdbProxyId || (!kitsuProxyId ? id : null);
+            if (mainQueryId) {
+                const mainUrl = `${baseProxyUrl}/stream/${type}/${encodeURIComponent(mainQueryId)}.json`;
+                const mainFetchUrl = process.env.CF_WORKER_URL ? `${process.env.CF_WORKER_URL}?url=${encodeURIComponent(mainUrl)}` : mainUrl;
+                console.log("[StreamProxy] Fetching Main URL:", mainFetchUrl);
+                fetchPromises.push(
+                    axios.get(mainFetchUrl, { timeout: 15000 })
+                        .then(r => r.data?.streams || [])
+                        .catch(e => {
+                            console.error(`[StreamProxy] Main fetch failed:`, e.message);
+                            return [];
+                        })
+                );
+            }
+
+            const results = await Promise.all(fetchPromises);
+            const mergedStreams = results.flat();
+
+            // De-duplicate streams
+            const streams = [];
+            const seen = new Set();
+            for (const s of mergedStreams) {
+                if (!s) continue;
+                const key = s.infoHash || s.url || s.externalUrl || JSON.stringify(s);
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    streams.push(s);
                 }
             }
-
-            const targetUrl = `${baseProxyUrl}/stream/${type}/${encodeURIComponent(proxyId)}.json`;
-            console.log("Fetching targetUrl:", targetUrl);
-            let fetchUrl = targetUrl;
-            
-            if (process.env.CF_WORKER_URL) {
-                fetchUrl = `${process.env.CF_WORKER_URL}?url=${encodeURIComponent(targetUrl)}`;
-            }
-
-            console.log("Fetching actual URL:", fetchUrl);
-            const response = await axios.get(fetchUrl, { timeout: 15000 });
-            console.log("Response data keys:", Object.keys(response.data));
-            const streams = response.data?.streams || [];
+            console.log(`[StreamProxy] Combined and de-duplicated to ${streams.length} total streams.`);
             
             const isIta = hasItaKeywords(streams);
             const baseId = getBaseId(id);
