@@ -52,7 +52,13 @@ async function enrichWithTmdb(item, kitsuId) {
 
         if (tmdbData) {
             const title = tmdbData.title || tmdbData.name;
-            if (title) item.name = title;
+            if (title) {
+                if (mapping.type === 'tv' && mapping.inferredSeason > 1) {
+                    item.name = `${title} - Stagione ${mapping.inferredSeason}`;
+                } else {
+                    item.name = title;
+                }
+            }
 
             let bestPoster = tmdbData.poster_path;
             if (tmdbData.images && Array.isArray(tmdbData.images.posters)) {

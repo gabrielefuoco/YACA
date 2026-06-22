@@ -305,6 +305,20 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 }
             }
 
+            // De-duplicate finalResults by ID
+            if (Array.isArray(finalResults) && finalResults.length > 0) {
+                const seenIds = new Set();
+                finalResults = finalResults.filter(item => {
+                    const itemId = String(item.id || item.stremioId || '');
+                    if (!itemId) return true;
+                    if (seenIds.has(itemId)) {
+                        return false;
+                    }
+                    seenIds.add(itemId);
+                    return true;
+                });
+            }
+
             // 4. FORMATTAZIONE (STREMIO)
             const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
             const formattedData = formatStremioCatalog(
