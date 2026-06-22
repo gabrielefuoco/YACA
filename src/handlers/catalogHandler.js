@@ -56,45 +56,44 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
     // Clone metas to avoid modifying cached objects in place
     const metas = cachedData.metas.map(m => ({ ...m }));
 
-    // Find items that lack the badge in the cached catalog
-    const unbadgedMetas = metas.filter(m => !m._itaBadge);
-    if (unbadgedMetas.length > 0) {
-        const itemIds = unbadgedMetas
-            .map(item => {
-                const id = String(item.id);
-                if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
-                    const parts = id.split(':');
-                    return `${parts[0]}:${parts[1]}`;
-                }
-                return id;
-            })
-            .filter(id => id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:') || id.startsWith('tt'));
+    const itemIds = metas
+        .map(item => {
+            const id = String(item.id);
+            if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
+                const parts = id.split(':');
+                return `${parts[0]}:${parts[1]}`;
+            }
+            return id;
+        })
+        .filter(id => id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:') || id.startsWith('tt'));
 
+    if (itemIds.length > 0) {
         try {
             const StreamBadge = require('../db/models/StreamBadge');
             const allBadges = await StreamBadge.find({ baseId: { $in: itemIds } }).lean();
             
-            const existingBaseIds = new Set(allBadges.map(b => b.baseId));
-            const missingBaseIds = itemIds.filter(id => !existingBaseIds.has(id));
+            const existingStremioIds = new Set(allBadges.map(b => b.stremioId));
+            const PendingScan = require('../db/models/PendingScan');
+            const queuePromises = [];
             
-            if (missingBaseIds.length > 0) {
-                const PendingScan = require('../db/models/PendingScan');
-                const queuePromises = [];
+            metas.forEach(item => {
+                const id = String(item.id);
+                let bId = id;
+                if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
+                    const parts = id.split(':');
+                    bId = `${parts[0]}:${parts[1]}`;
+                }
+
+                if (!bId.startsWith('tmdb:') && !bId.startsWith('kitsu:') && !bId.startsWith('anilist:') && !bId.startsWith('tt')) {
+                    return;
+                }
+
+                const itemType = item.type === 'series' || item.type === 'anime' ? 'series' : 'movie';
                 
-                missingBaseIds.forEach(bId => {
-                    const item = unbadgedMetas.find(m => {
-                        const mId = String(m.id);
-                        if (mId.startsWith('tmdb:') || mId.startsWith('kitsu:') || mId.startsWith('anilist:')) {
-                            const p = mId.split(':');
-                            return `${p[0]}:${p[1]}` === bId;
-                        }
-                        return mId === bId;
-                    });
-                    const itemType = item ? (item.type === 'series' || item.type === 'anime' ? 'series' : 'movie') : (type === 'series' || type === 'anime' ? 'series' : 'movie');
-                    
-                    if (itemType === 'series') {
-                        // Accoda Episodio 1
-                        const ep1Id = `${bId}:1:1`;
+                if (itemType === 'series') {
+                    // Accoda Episodio 1 se non ha badge nel DB
+                    const ep1Id = `${bId}:1:1`;
+                    if (!existingStremioIds.has(ep1Id)) {
                         queuePromises.push(
                             PendingScan.findOneAndUpdate(
                                 { baseId: ep1Id },
@@ -102,11 +101,13 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                                 { upsert: true }
                             ).catch(err => console.error(`[PendingScan Queue] Error upserting ${ep1Id}:`, err.message))
                         );
-                        
-                        // Accoda Ultimo Episodio
-                        const latestInfo = getLatestEpisodeInfo(item);
-                        if (latestInfo) {
-                            const latestId = `${bId}:${latestInfo.season}:${latestInfo.episode}`;
+                    }
+                    
+                    // Accoda Ultimo Episodio se non ha badge nel DB
+                    const latestInfo = getLatestEpisodeInfo(item);
+                    if (latestInfo) {
+                        const latestId = `${bId}:${latestInfo.season}:${latestInfo.episode}`;
+                        if (!existingStremioIds.has(latestId)) {
                             queuePromises.push(
                                 PendingScan.findOneAndUpdate(
                                     { baseId: latestId },
@@ -115,18 +116,23 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                                 ).catch(err => console.error(`[PendingScan Queue] Error upserting ${latestId}:`, err.message))
                             );
                         }
-                    } else {
+                    }
+                } else {
+                    // Accoda Film se non ha badge nel DB
+                    if (!existingStremioIds.has(bId)) {
                         queuePromises.push(
                             PendingScan.findOneAndUpdate(
                                 { baseId: bId },
-                                { baseId: bId, type: itemType, status: 'pending' },
+                                { baseId: bId, type: 'movie', status: 'pending' },
                                 { upsert: true }
                             ).catch(err => console.error(`[PendingScan Queue] Error upserting ${bId}:`, err.message))
                         );
                     }
-                });
-                
-                // Execute in background
+                }
+            });
+            
+            // Execute in background
+            if (queuePromises.length > 0) {
                 Promise.all(queuePromises).catch(() => {});
             }
 
@@ -151,11 +157,6 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
 
             for (let i = 0; i < metas.length; i++) {
                 const item = metas[i];
-                if (item._itaBadge) {
-                    processedMetas.push(item);
-                    continue;
-                }
-
                 const id = String(item.id);
                 let bId = id;
                 if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
@@ -407,36 +408,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 });
             }
 
-            // 3.9 ITA BADGE LOOKUP (Da StreamBadge)
-            const StreamBadge = require('../db/models/StreamBadge');
-            const itemIds = finalResults.map(item => {
-                const id = String(item.id);
-                if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
-                    const parts = id.split(':');
-                    return `${parts[0]}:${parts[1]}`;
-                }
-                return id;
-            });
 
-            if (itemIds.length > 0) {
-                try {
-                    const badges = await StreamBadge.find({ baseId: { $in: itemIds }, hasIta: true }).lean();
-                    const itaBaseIds = new Set(badges.map(b => b.baseId));
-                    finalResults.forEach(item => {
-                        const id = String(item.id);
-                        let baseId = id;
-                        if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
-                            const parts = id.split(':');
-                            baseId = `${parts[0]}:${parts[1]}`;
-                        }
-                        if (itaBaseIds.has(baseId)) {
-                            item._itaBadge = true;
-                        }
-                    });
-                } catch (badgeErr) {
-                    console.error('[Catalog] Error looking up StreamBadges:', badgeErr.message);
-                }
-            }
 
             // De-duplicate finalResults by ID
             if (Array.isArray(finalResults) && finalResults.length > 0) {
