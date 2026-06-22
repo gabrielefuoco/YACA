@@ -104,8 +104,42 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 }
             } else if (id.startsWith('kitsu:')) {
                 const parts = id.split(':');
-                if (parts.length === 4) {
-                    proxyId = `kitsu:${parts[1]}:${parts[3]}`;
+                const kitsuId = parts[1];
+                const isMovieType = type === 'movie';
+                const apiKey = userConfig?.apiKeys?.tmdb || userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
+                
+                try {
+                    const { getTmdbIdFromKitsuId, fetchKitsuEpisodes } = require('../clients/kitsu');
+                    const mapping = await getTmdbIdFromKitsuId(kitsuId);
+                    if (mapping && mapping.tmdbId) {
+                        const imdbId = await resolveImdbId(mapping.tmdbId, isMovieType ? 'movie' : 'tv', apiKey);
+                        if (imdbId) {
+                            if (isMovieType) {
+                                proxyId = imdbId;
+                            } else {
+                                const kitsuEps = await fetchKitsuEpisodes(kitsuId);
+                                if (Array.isArray(kitsuEps)) {
+                                    const currentEp = kitsuEps.find(e => e.id === id);
+                                    if (currentEp && currentEp.tmdbSeason !== undefined && currentEp.tmdbEpisode !== undefined) {
+                                        proxyId = `${imdbId}:${currentEp.tmdbSeason}:${currentEp.tmdbEpisode}`;
+                                    } else {
+                                        const currentSeason = parts.length === 4 ? parseInt(parts[2], 10) : 1;
+                                        const currentEpisode = parts.length === 4 ? parseInt(parts[3], 10) : (parts.length === 3 ? parseInt(parts[2], 10) : 1);
+                                        proxyId = `${imdbId}:${currentSeason}:${currentEpisode}`;
+                                    }
+                                }
+                            }
+                            console.log(`[StreamProxy] Translated kitsu ID ${id} to IMDb ID ${proxyId} for proxy query.`);
+                        }
+                    }
+                } catch (err) {
+                    console.error(`[StreamProxy] Failed to translate kitsu ID ${id} to IMDb:`, err.message);
+                }
+
+                if (proxyId === id) {
+                    if (parts.length === 4) {
+                        proxyId = `kitsu:${parts[1]}:${parts[3]}`;
+                    }
                 }
             }
 
