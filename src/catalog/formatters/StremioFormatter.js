@@ -62,7 +62,7 @@ function getErdbId(item) {
     }
 
     if (!item.id) return '';
-    const strId = String(item.id);
+    const strId = String(item.id).replace('_ita_offset', '');
 
     // IMDb IDs: ERDB expects bare tt... format (NOT imdb:tt...)
     if (strId.startsWith('tt')) {
