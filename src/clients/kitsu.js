@@ -489,6 +489,8 @@ async function getTmdbIdFromKitsuId(kitsuId) {
                     });
                     const results = searchRes.data?.results || [];
                     if (results.length > 0) {
+                        // Sort by popularity descending to prioritize active/main entries over duplicate stubs or spin-offs
+                        results.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
                         tmdbId = results[0].id.toString();
                         break;
                     }
