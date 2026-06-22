@@ -306,8 +306,24 @@ async function getKitsuMetaDetails(id) {
                 meta.trailers = [{ source: item.attributes.youtubeVideoId, type: 'Trailer' }];
             }
             if (item.attributes.subtype !== 'movie') {
-                meta.videos = await fetchKitsuEpisodes(kitsuId);
+                meta.videos = await resolveAllSeasonsEpisodes(kitsuId);
                 meta.type = 'series';
+
+                // Se sono state risolte più stagioni, usa il titolo base di TMDB per rappresentare la serie unificata
+                const seasons = new Set(meta.videos.map(v => v.season));
+                if (seasons.size > 1) {
+                    const mapping = await getTmdbIdFromKitsuId(kitsuId);
+                    if (mapping && mapping.tmdbId) {
+                        const cacheKey = `${mapping.type}:${mapping.tmdbId}`;
+                        const cachedTmdb = await kitsuTmdbBasicCache.get(cacheKey);
+                        if (cachedTmdb) {
+                            const baseTitle = cachedTmdb.title || cachedTmdb.name;
+                            if (baseTitle) {
+                                meta.name = baseTitle;
+                            }
+                        }
+                    }
+                }
             }
             await kitsuMetaCache.set(kitsuId, meta);
         }
@@ -511,10 +527,150 @@ async function getTmdbIdFromKitsuId(kitsuId) {
     return null;
 }
 
+/**
+ * Risolve tutti gli ID Kitsu collegati (stagioni/sequel/prequel) per un dato kitsuId.
+ * Usa sia la cache di MongoDB (corrispondenza TMDB ID) sia l'API `/media-relationships` di Kitsu ricorsivamente.
+ */
+async function resolveAllSeasonsForKitsu(kitsuId) {
+    const visited = new Set();
+    const queue = [kitsuId];
+    
+    // 1. Cerca il mapping TMDB per il kitsuId di partenza per interrogare il DB
+    let tmdbId = null;
+    try {
+        const mapping = await getTmdbIdFromKitsuId(kitsuId);
+        if (mapping && mapping.tmdbId) {
+            tmdbId = mapping.tmdbId;
+        }
+    } catch (e) {
+        console.error(`[resolveAllSeasons] Errore nel recuperare TMDB ID per ${kitsuId}:`, e.message);
+    }
+
+    // 2. Se abbiamo un TMDB ID, interroga MongoDB per trovare altri mapping associati
+    if (tmdbId) {
+        try {
+            const CacheEntry = require('../models/CacheEntry');
+            const cachedMappings = await CacheEntry.find({
+                namespace: 'kitsu_mapping',
+                'value.tmdbId': tmdbId
+            });
+            for (const entry of cachedMappings) {
+                // key è formato da 'kitsu_mapping:12345'
+                const match = entry.key.match(/^kitsu_mapping:(\d+)$/);
+                if (match) {
+                    const foundId = match[1];
+                    if (!visited.has(foundId)) {
+                        queue.push(foundId);
+                    }
+                }
+            }
+        } catch (dbErr) {
+            console.error(`[resolveAllSeasons] Errore lookup MongoDB:`, dbErr.message);
+        }
+    }
+
+    // 3. Attraversa le relazioni ricorsivamente (BFS)
+    const allIds = new Set();
+    let steps = 0;
+    const maxSteps = 15; // limite di sicurezza per prevenire troppe richieste API
+
+    while (queue.length > 0 && steps < maxSteps) {
+        const currentId = queue.shift();
+        if (visited.has(currentId)) continue;
+        visited.add(currentId);
+        allIds.add(currentId);
+        steps++;
+
+        try {
+            const relUrl = `/anime/${currentId}/media-relationships`;
+            const relRes = await kitsuClient.get(relUrl, {
+                params: { include: 'destination' }
+            });
+            
+            const data = relRes.data?.data || [];
+
+            for (const rel of data) {
+                const role = rel.attributes?.role;
+                // Ci interessano solo i sequel e i prequel per le stagioni
+                if (role === 'sequel' || role === 'prequel') {
+                    const destData = rel.relationships?.destination?.data;
+                    if (destData && destData.type === 'anime' && destData.id) {
+                        if (!visited.has(destData.id)) {
+                            queue.push(destData.id);
+                        }
+                    }
+                }
+            }
+        } catch (apiErr) {
+            console.error(`[resolveAllSeasons] Errore Kitsu relationships API per ${currentId}:`, apiErr.message);
+        }
+    }
+
+    return Array.from(allIds);
+}
+
+/**
+ * Recupera e raggruppa gli episodi di tutti gli ID Kitsu collegati nelle rispettive stagioni.
+ */
+async function resolveAllSeasonsEpisodes(kitsuId) {
+    const relatedIds = await resolveAllSeasonsForKitsu(kitsuId);
+    console.log(`[resolveAllSeasonsEpisodes] ID Kitsu correlati per ${kitsuId}:`, relatedIds);
+    
+    let allEpisodes = [];
+    
+    for (const relId of relatedIds) {
+        // Recupera gli episodi per questo ID Kitsu
+        const eps = await fetchKitsuEpisodes(relId);
+        if (!eps || eps.length === 0) continue;
+        
+        // Determina il numero di stagione per Stremio
+        let seasonNum = 1;
+        try {
+            const mapping = await getTmdbIdFromKitsuId(relId);
+            if (mapping && mapping.inferredSeason) {
+                seasonNum = mapping.inferredSeason;
+            } else {
+                // Tenta di rilevarlo dai dettagli anime di Kitsu
+                const animeRes = await kitsuClient.get(`/anime/${relId}`);
+                const attrs = animeRes.data?.data?.attributes;
+                if (attrs) {
+                    const title = attrs.titles?.en || attrs.titles?.en_jp || attrs.canonicalTitle || '';
+                    seasonNum = detectSeasonFromTitle(title);
+                }
+            }
+        } catch (err) {
+            console.error(`[resolveAllSeasonsEpisodes] Errore risoluzione stagione per ID Kitsu ${relId}:`, err.message);
+        }
+        
+        // Mappa gli oggetti episodio
+        const mappedEps = eps.map(e => ({
+            ...e,
+            season: seasonNum
+        }));
+        
+        allEpisodes = allEpisodes.concat(mappedEps);
+    }
+    
+    // De-duplica per ID per sicurezza
+    const seenEpIds = new Set();
+    allEpisodes = allEpisodes.filter(e => {
+        if (seenEpIds.has(e.id)) return false;
+        seenEpIds.add(e.id);
+        return true;
+    });
+
+    // Ordina gli episodi per stagione e numero di episodio
+    allEpisodes.sort((a, b) => (a.season - b.season) || (a.episode - b.episode));
+    
+    return allEpisodes;
+}
+
 module.exports = {
     fetchKitsuCatalog,
     getKitsuMetaDetails,
     getKitsuIdFromTmdbId,
     getTmdbIdFromKitsuId,
-    fetchKitsuEpisodes
+    fetchKitsuEpisodes,
+    resolveAllSeasonsForKitsu,
+    resolveAllSeasonsEpisodes
 };

@@ -62,7 +62,7 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
 
     // SCENARIO 4: KITSU (ANIME)
     if (id === 'yaca_anime_trending' || id === 'yaca_anime_ova' || id === 'yaca_anime_ona' || id === 'yaca_anime_specials') {
-        return await getKitsuCatalog(id, skip);
+        return await getKitsuCatalog(id, skip, extra.shouldBadge);
     }
     
 
@@ -107,7 +107,7 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
         }
 
         const noFallback = extra.noFallback || false;
-        return await executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, skip, { ...activeProfileSettings, noFallback }, tmdbFetchOptions);
+        return await executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, skip, { ...activeProfileSettings, noFallback, shouldBadge: extra.shouldBadge }, tmdbFetchOptions);
     }
 
     return [];

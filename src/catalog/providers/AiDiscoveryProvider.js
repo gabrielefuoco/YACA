@@ -17,7 +17,7 @@ const PAGE_SIZE = 20;
 async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, settings = {}, cacheOptions = {}) {
     if (filters.provider === 'kitsu') {
         const { getKitsuCatalogFromFilters } = require('./KitsuProvider');
-        return await getKitsuCatalogFromFilters(filters, type, skip);
+        return await getKitsuCatalogFromFilters(filters, type, skip, settings.shouldBadge);
     }
 
     let results = [];

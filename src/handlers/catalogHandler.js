@@ -53,6 +53,11 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
         return cachedData || { metas: [] };
     }
 
+    const getEpNum = (stremioId) => {
+        const parts = stremioId.split(':');
+        return parseInt(parts[parts.length - 1]) || 0;
+    };
+
     // Clone metas to avoid modifying cached objects in place
     const metas = cachedData.metas.map(m => ({ ...m }));
 
@@ -167,7 +172,9 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                     // Accoda Ultimo Episodio se non ha badge nel DB
                     const latestInfo = getLatestEpisodeInfo(item);
                     if (latestInfo) {
-                        const latestId = `${bId}:${latestInfo.season}:${latestInfo.episode}`;
+                        const latest = latestInfo.episode;
+                        const latestSeason = latestInfo.season;
+                        const latestId = `${bId}:${latestSeason}:${latest}`;
                         if (!existingStremioIds.has(latestId)) {
                             queuePromises.push(
                                 PendingScan.findOneAndUpdate(
@@ -176,6 +183,60 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                                     { upsert: true }
                                 ).catch(err => console.error(`[PendingScan Queue] Error upserting ${latestId}:`, err.message))
                             );
+                        }
+
+                        // CODA DI SCANSIONE PROGRESSIVA PER DIVARIO DUB/SUB
+                        const itemBadges = allBadges.filter(b => b.baseId === bId);
+                        const itaBadges = itemBadges.filter(b => b.hasIta === true);
+                        if (itaBadges.length > 0) {
+                            const sortedIta = itaBadges.map(b => getEpNum(b.stremioId)).sort((a, b) => a - b);
+                            const maxIta = sortedIta[sortedIta.length - 1];
+
+                            if (latest > maxIta) {
+                                // 1. Controlla latest - 1
+                                const prev1Ep = latest - 1;
+                                const prev1Id = `${bId}:${latestSeason}:${prev1Ep}`;
+                                if (prev1Ep > maxIta && !existingStremioIds.has(prev1Id)) {
+                                    queuePromises.push(
+                                        PendingScan.findOneAndUpdate(
+                                            { baseId: prev1Id },
+                                            { baseId: prev1Id, type: 'series', status: 'pending' },
+                                            { upsert: true }
+                                        ).catch(err => console.error(`[PendingScan Queue] Error upserting ${prev1Id}:`, err.message))
+                                    );
+                                } else {
+                                    // 2. Controlla latest - 2
+                                    const prev2Ep = latest - 2;
+                                    const prev2Id = `${bId}:${latestSeason}:${prev2Ep}`;
+                                    if (prev2Ep > maxIta && !existingStremioIds.has(prev2Id)) {
+                                        queuePromises.push(
+                                            PendingScan.findOneAndUpdate(
+                                                { baseId: prev2Id },
+                                                { baseId: prev2Id, type: 'series', status: 'pending' },
+                                                { upsert: true }
+                                            ).catch(err => console.error(`[PendingScan Queue] Error upserting ${prev2Id}:`, err.message))
+                                        );
+                                    } else {
+                                        // 3. Fallback su ricerca binaria nel gap rimanente: (maxIta + (latest - 3)) / 2
+                                        const endGap = latest - 3;
+                                        if (endGap > maxIta) {
+                                            const probeEp = Math.floor((maxIta + endGap) / 2);
+                                            if (probeEp > maxIta && probeEp < latest) {
+                                                const probeId = `${bId}:${latestSeason}:${probeEp}`;
+                                                if (!existingStremioIds.has(probeId)) {
+                                                    queuePromises.push(
+                                                        PendingScan.findOneAndUpdate(
+                                                            { baseId: probeId },
+                                                            { baseId: probeId, type: 'series', status: 'pending' },
+                                                            { upsert: true }
+                                                        ).catch(err => console.error(`[PendingScan Queue] Error upserting ${probeId}:`, err.message))
+                                                    );
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 } else {
@@ -209,11 +270,6 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                 hostUrl
             };
 
-            const getEpNum = (stremioId) => {
-                const parts = stremioId.split(':');
-                return parseInt(parts[parts.length - 1]) || 0;
-            };
-
             const processedMetas = [];
 
             for (let i = 0; i < metas.length; i++) {
@@ -237,7 +293,21 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                     const maxIta = sortedIta[sortedIta.length - 1];
                     const maxNoIta = sortedNoIta.find(ep => ep > maxIta);
 
-                    const hasOffset = maxNoIta && (maxNoIta > maxIta);
+                    // Detective Conan Fix: controlliamo la data dell'ultimo episodio doppiato in italiano
+                    let isItaRecent = true;
+                    if (Array.isArray(item.videos) && item.videos.length > 0) {
+                        const epMaxIta = item.videos.find(v => v.episode === maxIta);
+                        if (epMaxIta && epMaxIta.released) {
+                            const releasedDate = new Date(epMaxIta.released);
+                            const ageMs = Date.now() - releasedDate.getTime();
+                            const ageDays = ageMs / (1000 * 60 * 60 * 24);
+                            if (ageDays > 45) {
+                                isItaRecent = false;
+                            }
+                        }
+                    }
+
+                    const hasOffset = maxNoIta && (maxNoIta > maxIta) && isItaRecent;
 
                     if (hasOffset && sanitizeOptions.shouldApplyEpisodeBadge && (item.type === 'series' || item.type === 'anime')) {
                         // 1. Elemento originale (Sub): badge ITA disattivato

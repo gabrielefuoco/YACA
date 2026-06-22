@@ -33,19 +33,28 @@ function normalizeAnimeEpisodes(seriesId, episodes) {
 
 async function resolveAnimeEpisodes(metaObj, tmdbId, tmdbApiKey) {
     let kitsuEpisodesResolved = false;
-    const kitsuId = await getKitsuIdFromTmdbId(tmdbId, 'series');
-    if (kitsuId) {
-        console.log(`[HybridAnime] Mapping Kitsu ${kitsuId} per TMDB ${tmdbId}. Carico episodi...`);
-        const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
-        if (kitsuEpisodes && kitsuEpisodes.length > 0) {
-            metaObj.videos = normalizeAnimeEpisodes(metaObj.id, kitsuEpisodes);
-            kitsuEpisodesResolved = true;
+    
+    // Se la serie TV anime ha più di una stagione su TMDB, bypassiamo la mappatura Kitsu
+    // per preservare il menu a tendina multi-stagione di TMDB.
+    const isMultiSeason = metaObj._numberOfSeasons > 1;
+    
+    if (!isMultiSeason) {
+        const kitsuId = await getKitsuIdFromTmdbId(tmdbId, 'series');
+        if (kitsuId) {
+            console.log(`[HybridAnime] Mapping Kitsu ${kitsuId} per TMDB ${tmdbId}. Carico episodi...`);
+            const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
+            if (kitsuEpisodes && kitsuEpisodes.length > 0) {
+                metaObj.videos = normalizeAnimeEpisodes(metaObj.id, kitsuEpisodes);
+                kitsuEpisodesResolved = true;
+            }
         }
+    } else {
+        console.log(`[HybridAnime] Serie TV multi-stagione (${metaObj._numberOfSeasons} stagioni) rilevata. Usiamo direttamente TMDB per preservare il layout.`);
     }
 
-    // Fallback to TMDB episodes if Kitsu mapping failed or no episodes found
+    // Fallback/Default to TMDB episodes if Kitsu mapping failed, no episodes found, or multi-season
     if (!kitsuEpisodesResolved && metaObj._numberOfSeasons) {
-        console.log(`[HybridAnime] Fallback: Carico episodi TMDB per Anime ${tmdbId}`);
+        console.log(`[HybridAnime] Fallback/Default: Carico episodi TMDB per Anime ${tmdbId}`);
         const tmdbClient = createTmdbClient(tmdbApiKey);
         metaObj.videos = await fetchTmdbEpisodes(
             tmdbClient,
