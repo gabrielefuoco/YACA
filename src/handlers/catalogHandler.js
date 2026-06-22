@@ -56,6 +56,67 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
     // Clone metas to avoid modifying cached objects in place
     const metas = cachedData.metas.map(m => ({ ...m }));
 
+    // Pre-resolve tmdbId for any Kitsu items that lack it to ensure correct EasyRatingsDB posters
+    try {
+        const kitsuResolvePromises = [];
+        metas.forEach(item => {
+            const id = String(item.id || '');
+            if (id.startsWith('kitsu:') && !item.tmdbId) {
+                const kitsuId = id.split(':')[1].replace('_ita_offset', '');
+                if (kitsuId) {
+                    const { getTmdbIdFromKitsuId } = require('../clients/kitsu');
+                    kitsuResolvePromises.push(
+                        getTmdbIdFromKitsuId(kitsuId)
+                            .then(mapping => {
+                                if (mapping && mapping.tmdbId) {
+                                    item.tmdbId = mapping.tmdbId;
+                                }
+                            })
+                            .catch(err => console.error(`[Catalog Post-Cache] Error resolving Kitsu mapping for ${kitsuId}:`, err.message))
+                    );
+                }
+            }
+        });
+        if (kitsuResolvePromises.length > 0) {
+            await Promise.allSettled(kitsuResolvePromises);
+        }
+    } catch (resolveErr) {
+        console.error('[Catalog Post-Cache] Pre-resolve kitsu tmdbId failed:', resolveErr.message);
+    }
+
+    // Helper to de-duplicate different seasons of the same show by TMDB ID
+    const deduplicateMetasByTmdb = (metasToDedup) => {
+        if (!Array.isArray(metasToDedup)) return metasToDedup;
+        const seenTmdbIds = new Map(); // tmdbId -> cleanedBaseId
+        const finalMetas = [];
+
+        for (const item of metasToDedup) {
+            let tmdbId = item.tmdbId;
+            if (!tmdbId) {
+                const idStr = String(item.id || '');
+                if (idStr.startsWith('tmdb:')) {
+                    const parts = idStr.split(':');
+                    tmdbId = parts[parts.length - 1].replace('_ita_offset', '');
+                }
+            }
+
+            if (tmdbId && /^\d+$/.test(tmdbId)) {
+                const cleanedBaseId = String(item.id || '').replace('_ita_offset', '');
+                if (seenTmdbIds.has(tmdbId)) {
+                    const existingCleanedId = seenTmdbIds.get(tmdbId);
+                    if (existingCleanedId !== cleanedBaseId) {
+                        // Same TMDB ID but different Kitsu/base ID => different seasons, skip
+                        continue;
+                    }
+                } else {
+                    seenTmdbIds.set(tmdbId, cleanedBaseId);
+                }
+            }
+            finalMetas.push(item);
+        }
+        return finalMetas;
+    };
+
     const itemIds = metas
         .map(item => {
             const id = String(item.id);
@@ -228,13 +289,13 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                 }
             }
 
-            return { metas: processedMetas };
+            return { metas: deduplicateMetasByTmdb(processedMetas) };
         } catch (badgeErr) {
             console.error('[Catalog Post-Cache] Error applying stream badges:', badgeErr.message);
         }
     }
 
-    return { metas };
+    return { metas: deduplicateMetasByTmdb(metas) };
 }
 
 /**
@@ -257,7 +318,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const { cacheOptions: tmdbFetchOptions } = getCacheConfig(userConfig.ttl);
     
     // Increment BADGE_CATALOG_VERSION whenever badge logic changes to bust SWR cache
-    const BADGE_CATALOG_VERSION = 7;
+    const BADGE_CATALOG_VERSION = 8;
 
     // Check Full CACHE Request
     const requestCacheKey = generateRequestHash(id, { 

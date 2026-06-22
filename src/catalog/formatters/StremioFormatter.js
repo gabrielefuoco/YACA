@@ -96,6 +96,14 @@ function getErdbId(item) {
 function sanitizeCatalogMeta(item, options = {}) {
     if (!item) return item;
 
+    // Cache original properties to support multiple formatting passes safely
+    if (item._originalName === undefined) {
+        item._originalName = item.name || '';
+    }
+    if (item._originalPoster === undefined) {
+        item._originalPoster = item.poster || '';
+    }
+
     const { shouldApplyEpisodeBadge, isLandscapeEnabled, userConfig, hostUrl } = options;
     let badgeText = shouldApplyEpisodeBadge ? getEpisodeBadgeText(item) : null;
 
@@ -111,7 +119,7 @@ function sanitizeCatalogMeta(item, options = {}) {
     const activeProfile = userConfig?.profiles?.find(p => p.id === userConfig.activeProfileId);
     const erdbConfig = activeProfile?.settings?.erdbConfig || process.env.ERDB_CONFIG;
 
-    let sourceImage = item.poster;
+    let sourceImage = item._originalPoster;
     let finalPosterShape = item.posterShape || 'poster';
 
     if (isLandscapeEnabled) {
@@ -119,12 +127,12 @@ function sanitizeCatalogMeta(item, options = {}) {
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
             if (hostUrl && !badgeText) {
-                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.background || item.poster || '')}`;
+                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.background || item._originalPoster || '')}`;
             } else {
                 sourceImage = erdbUrl;
             }
         } else {
-            sourceImage = item.background || item.poster;
+            sourceImage = item.background || item._originalPoster;
         }
         finalPosterShape = 'landscape';
     } else {
@@ -132,12 +140,12 @@ function sanitizeCatalogMeta(item, options = {}) {
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
             if (hostUrl && !badgeText) {
-                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.poster || '')}`;
+                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item._originalPoster || '')}`;
             } else {
                 sourceImage = erdbUrl;
             }
         } else {
-            sourceImage = item.poster;
+            sourceImage = item._originalPoster;
         }
     }
 
@@ -171,11 +179,11 @@ function sanitizeCatalogMeta(item, options = {}) {
     }
 
     let poster = sourceImage;
-    const BADGE_IMG_VERSION = 15; // Bump to force Stremio to re-download badge images
+    const BADGE_IMG_VERSION = 16; // Bump to force Stremio to re-download badge images
     if (badgeText && hostUrl && sourceImage) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';
-        const fallbackPoster = encodeURIComponent(item.poster || sourceImage);
+        const fallbackPoster = encodeURIComponent(item._originalPoster || sourceImage);
         poster = `${hostUrl}/images/poster/${typeParam}/${encodeURIComponent(idParam)}/${encodeURIComponent(badgeText)}?original=${encodeURIComponent(sourceImage)}&fallback=${fallbackPoster}&bv=${BADGE_IMG_VERSION}`;
     } else if (badgeText) {
         // Log why poster URL wasn't rewritten (only first time to avoid spam)
@@ -185,7 +193,7 @@ function sanitizeCatalogMeta(item, options = {}) {
         }
     }
 
-    const baseName = item.name;
+    const baseName = item._originalName;
     const name = (badgeText && baseName)
         ? `${baseName} - ${badgeText}`
         : baseName;

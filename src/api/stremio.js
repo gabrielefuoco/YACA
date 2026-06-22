@@ -517,7 +517,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         return res.status(400).send('Invalid original image URL');
     }
 
-    const bv = req.query.bv || 'v15';
+    const bv = req.query.bv || 'v16';
     const cacheKey = `${id}_${episode}_${bv}`;
     console.log(`[Badge] Request: id=${id}, episode="${episode}", bv=${bv}, textToSVG=${!!textToSVG}`);
 
