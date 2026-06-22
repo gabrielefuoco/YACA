@@ -90,7 +90,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                         }
                         return mId === bId;
                     });
-                    const itemType = item ? (item.type === 'series' ? 'series' : 'movie') : (type || 'movie');
+                    const itemType = item ? (item.type === 'series' || item.type === 'anime' ? 'series' : 'movie') : (type === 'series' || type === 'anime' ? 'series' : 'movie');
                     
                     if (itemType === 'series') {
                         // Accoda Episodio 1
@@ -136,7 +136,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
             const activeProfileSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
             const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
             const sanitizeOptions = {
-                shouldApplyEpisodeBadge: type === 'series' && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId)),
+                shouldApplyEpisodeBadge: (type === 'series' || type === 'anime') && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId)),
                 isLandscapeEnabled: isLandscape,
                 userConfig,
                 hostUrl
@@ -177,7 +177,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
 
                     const hasOffset = maxNoIta && (maxNoIta > maxIta);
 
-                    if (hasOffset && item.type === 'series') {
+                    if (hasOffset && (item.type === 'series' || item.type === 'anime')) {
                         // 1. Elemento originale (Sub): badge ITA disattivato
                         const subItem = { ...item };
                         subItem._itaBadge = false;
