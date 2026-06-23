@@ -472,7 +472,13 @@ async function resolveAllSeasonsEpisodes(kitsuId) {
     return allEpisodes;
 }
 
-async function getKitsuMetaDetails(kitsuId, type = 'series') {
+async function getKitsuMetaDetails(rawId, type = 'series') {
+    const kitsuId = String(rawId).replace('kitsu:', '').trim();
+    if (!/^\d+$/.test(kitsuId)) {
+        console.error(`ID Kitsu non valido: ${kitsuId}`);
+        return null;
+    }
+    
     const mapping = await getTmdbIdFromKitsuId(kitsuId, type);
     
     let allEpisodes = [];
