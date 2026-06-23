@@ -489,10 +489,12 @@ async function resolveAllSeasonsEpisodes(kitsuId) {
             eps.sort((a, b) => a.episode - b.episode);
             
             eps.forEach(e => {
+                const mergedEpisode = e.episode + episodeOffset;
                 const mappedEpisode = { 
                     ...e, 
+                    id: `kitsu:${kitsuId}:${seasonNum}:${mergedEpisode}`,
                     season: seasonNum, 
-                    episode: e.episode + episodeOffset 
+                    episode: mergedEpisode 
                 };
                 if (mappedEpisode.title.match(/^(Episode|Episodio)\s*\d+$/i)) {
                     mappedEpisode.title = `Episodio ${mappedEpisode.episode}`;
