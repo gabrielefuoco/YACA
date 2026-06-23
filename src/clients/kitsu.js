@@ -396,17 +396,27 @@ async function getTmdbIdFromKitsuId(kitsuId, type = 'series') {
                         let searchRes = await tmdbClient.get(endpoint, { params });
                         let results = searchRes.data?.results || [];
 
+                        if (results.length === 0) {
+                            // Try original uncleaned title first (e.g. "Attack on Titan: The Final Season" instead of "Attack on Titan: The")
+                            params.query = title;
+                            if (year) {
+                                delete params.primary_release_year;
+                                delete params.first_air_date_year;
+                            }
+                            searchRes = await tmdbClient.get(endpoint, { params });
+                            results = searchRes.data?.results || [];
+                        }
+                        
                         if (results.length === 0 && year) {
-                            // Retry without year, because sequels on Kitsu have a different year than the main TV show on TMDB
-                            delete params.primary_release_year;
-                            delete params.first_air_date_year;
+                            // Last resort: cleaned title without year
+                            params.query = cleanTitle;
                             searchRes = await tmdbClient.get(endpoint, { params });
                             results = searchRes.data?.results || [];
                         }
 
                         if (results.length > 0) {
                             const tmdbId = results[0].id.toString();
-                            const result = { tmdbId, type: type === 'movie' ? 'movie' : 'tv', inferredSeason };
+                            const result = { tmdbId, type: type === 'movie' ? 'movie' : 'tv', inferredSeason: detectSeasonFromTitle(title) };
                             await kitsuMappingCache.set(cacheKey, result);
                             return result;
                         }
@@ -424,25 +434,29 @@ async function getTmdbIdFromKitsuId(kitsuId, type = 'series') {
 }
 
 async function resolveAllSeasonsEpisodes(kitsuId) {
-    const relatedIds = await resolveAllSeasonsForKitsu(kitsuId);
+    const relations = await resolveAllSeasonsForKitsu(kitsuId);
     
-    const fetchPromises = relatedIds.map(async (relId) => {
-        const eps = await fetchKitsuEpisodes(relId);
-        if (!eps || eps.length === 0) return [];
-        
+    const branches = await Promise.all(relations.map(async (relId) => {
         let seasonNum = 1;
+        let startDate = '1900-01-01';
+        let tmdbId = null;
         try {
             const mapping = await getTmdbIdFromKitsuId(relId);
-            if (mapping && mapping.inferredSeason) {
-                seasonNum = mapping.inferredSeason;
-            } else {
-                const animeRes = await kitsuClient.get(`/anime/${relId}`);
-                const attrs = animeRes.data?.data?.attributes;
-                if (attrs) {
-                    const title = attrs.titles?.en || attrs.titles?.en_jp || attrs.canonicalTitle || '';
+            const animeRes = await kitsuClient.get(`/anime/${relId}`);
+            const attrs = animeRes.data?.data?.attributes;
+            
+            if (attrs) {
+                startDate = attrs.startDate || '1900-01-01';
+                const title = attrs.titles?.en || attrs.titles?.en_jp || attrs.canonicalTitle || '';
+                
+                if (mapping && mapping.inferredSeason) {
+                    seasonNum = mapping.inferredSeason;
+                    tmdbId = mapping.tmdbId;
+                } else {
                     seasonNum = detectSeasonFromTitle(title);
                 }
             }
+            
             if (seasonNum === 999 && mapping && mapping.tmdbId) {
                 const tmdbKey = process.env.TMDB_API_KEY;
                 if (tmdbKey) {
@@ -455,11 +469,44 @@ async function resolveAllSeasonsEpisodes(kitsuId) {
             }
         } catch (err) {}
         
-        return eps.map(e => ({ ...e, season: seasonNum }));
+        return { relId, seasonNum, startDate, tmdbId };
+    }));
+
+    const seasonGroups = {};
+    branches.forEach(b => {
+        if (!seasonGroups[b.seasonNum]) seasonGroups[b.seasonNum] = [];
+        seasonGroups[b.seasonNum].push(b);
     });
+
+    let allEpisodes = [];
+    for (const [seasonStr, group] of Object.entries(seasonGroups)) {
+        const seasonNum = parseInt(seasonStr, 10);
+        group.sort((a, b) => a.startDate.localeCompare(b.startDate));
+        
+        let episodeOffset = 0;
+        for (const branch of group) {
+            const eps = await fetchKitsuEpisodes(branch.relId);
+            eps.sort((a, b) => a.episode - b.episode);
+            
+            eps.forEach(e => {
+                const mappedEpisode = { 
+                    ...e, 
+                    season: seasonNum, 
+                    episode: e.episode + episodeOffset 
+                };
+                if (mappedEpisode.title.match(/^(Episode|Episodio)\s*\d+$/i)) {
+                    mappedEpisode.title = `Episodio ${mappedEpisode.episode}`;
+                }
+                allEpisodes.push(mappedEpisode);
+            });
+            
+            if (eps.length > 0) {
+                episodeOffset += eps.length;
+            }
+        }
+    }
     
-    const results = await Promise.all(fetchPromises);
-    let allEpisodes = results.flat();
+    allEpisodes.sort((a, b) => (a.season - b.season) || (a.episode - b.episode));
     
     const seenEpIds = new Set();
     allEpisodes = allEpisodes.filter(e => {
