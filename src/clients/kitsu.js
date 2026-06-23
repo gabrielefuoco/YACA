@@ -2,6 +2,7 @@ const { createAxiosInstance } = require('../utils/httpClient');
 const { KITSU_ENDPOINT, ITEMS_PER_PAGE } = require('../config');
 const CacheManager = require('../cache/CacheManager');
 const { createTmdbClient, prioritizeLocalizedImages } = require('./tmdb');
+const { rateLimitedMap } = require('../utils/rateLimiter');
 
 // Crea l'istanza client qui
 const kitsuClient = createAxiosInstance(KITSU_ENDPOINT || 'https://kitsu.io/api/edge');
