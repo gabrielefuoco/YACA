@@ -540,7 +540,50 @@ async function getKitsuMetaDetails(kitsuId, type = 'series') {
     }
 }
 
+/**
+ * Fetch cataloghi Anime da Kitsu con Offset basato su skip.
+ */
+async function fetchKitsuCatalog(endpoint, skip = 0, customParams = {}) {
+    try {
+        const params = {
+            'page[limit]': 20, // Kitsu Max is 20
+            'page[offset]': skip,
+            ...customParams
+        };
+
+        const res = await kitsuClient.get(endpoint, { params });
+
+        let items = [];
+        if (res.data && res.data.data) {
+            items = res.data.data.map(kitsuItem => {
+                const attrs = kitsuItem.attributes;
+                if (!attrs) return null;
+                const title = attrs.titles?.en || attrs.titles?.en_jp || attrs.canonicalTitle || '';
+                const year = attrs.startDate ? attrs.startDate.split('-')[0] : '';
+                return {
+                    id: `kitsu:${kitsuItem.id}`,
+                    type: attrs.subtype === 'movie' ? 'movie' : 'series',
+                    name: title,
+                    poster: attrs.posterImage ? attrs.posterImage.original : null,
+                    background: attrs.coverImage ? attrs.coverImage.original : null,
+                    posterShape: 'poster',
+                    description: attrs.synopsis,
+                    releaseInfo: year,
+                    imdbRating: attrs.averageRating ? (parseFloat(attrs.averageRating) / 10).toFixed(1) : null,
+                    _kitsu_subtype: attrs.subtype
+                };
+            }).filter(i => i !== null);
+        }
+
+        return items;
+    } catch (err) {
+        console.error(`Errore Kitsu Catalog (${endpoint}):`, err.message);
+        return [];
+    }
+}
+
 module.exports = {
+    fetchKitsuCatalog,
     fetchKitsuEpisodes,
     getTmdbIdFromKitsuId,
     getKitsuIdByTitle,
