@@ -95,7 +95,8 @@ function mapAnilistToMeta(m, overrideId) {
         description: desc,
         genres: m.genres || [],
         releaseInfo: year,
-        imdbRating: m.averageScore ? (m.averageScore / 10).toFixed(1) : undefined
+        imdbRating: m.averageScore ? (m.averageScore / 10).toFixed(1) : undefined,
+        _nextAiringEpisode: m.nextAiringEpisode
     };
 }
 

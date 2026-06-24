@@ -25,6 +25,10 @@ function getLatestEpisodeInfo(item) {
         }
     }
     
+    if (item._nextAiringEpisode && item._nextAiringEpisode.episode > 1) {
+        return { season: 1, episode: item._nextAiringEpisode.episode - 1 };
+    }
+
     // Check item.videos
     if (Array.isArray(item.videos) && item.videos.length > 0) {
         const now = new Date();

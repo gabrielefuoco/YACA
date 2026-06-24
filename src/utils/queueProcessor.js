@@ -119,11 +119,12 @@ async function processPendingScans(hostUrl) {
                     console.log(`[QueueProcessor] Successfully processed and removed ${item.baseId}`);
                 } catch (err) {
                     console.error(`[QueueProcessor] Error processing ${item.baseId}:`, err.message);
-                    // Mark as failed so it doesn't block the queue
-                    await PendingScan.updateOne({ _id: item._id }, { $set: { status: 'failed' } });
+                    // DELETE failed items so they don't bloat the DB. 
+                    // They will be re-queued naturally by the next catalog request.
+                    await PendingScan.deleteOne({ _id: item._id });
                 }
             },
-            { batchSize: 5, delayMs: 1000 }
+            { batchSize: 2, delayMs: 1500 }
         );
 
         console.log('[QueueProcessor] Queue processing completed.');
