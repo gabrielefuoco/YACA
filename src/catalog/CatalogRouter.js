@@ -60,7 +60,7 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
     }
 
     // SCENARIO 4: ANILIST / KITSU (ANIME)
-    if (baseId.startsWith('anilist') || id.startsWith('yaca_anime_')) {
+    if (baseId.startsWith('anilist') || (id && id.startsWith('yaca_anime_'))) {
         const { fetchAnilistCatalog, mapAnilistToMeta } = require('../clients/anilist');
         const media = await fetchAnilistCatalog(baseId.startsWith('anilist') ? baseId : id, skip);
         return media.map(m => mapAnilistToMeta(m));
