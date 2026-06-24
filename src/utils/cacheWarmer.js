@@ -69,8 +69,8 @@ async function runCacheWarmer(hostUrl) {
 
         console.log(`[CacheWarmer] Found ${catalogTasks.length} catalog permutations to check.`);
 
-        // Eseguiamo il map lento. Se ci sono richieste utente, il Node event loop le servirà comunque tra un async e l'altro.
-        // delayMs a 2000 per garantire che le operazioni siano dilazionate su un arco di tempo morbido.
+        // Eseguiamo il map lento.
+        // delayMs a 1500 per garantire che le operazioni siano dilazionate su un arco di tempo morbido ed evitare rate limit (Anilist max 90/min).
         await rateLimitedMap(
             catalogTasks,
             async (task) => {
@@ -88,7 +88,7 @@ async function runCacheWarmer(hostUrl) {
                     // Ignoriamo gli errori silenziosamente per non bloccare il ciclo
                 }
             },
-            { batchSize: 1, delayMs: 200 }
+            { batchSize: 1, delayMs: 1500 }
         );
 
         console.log('[CacheWarmer] Sweeping completed.');

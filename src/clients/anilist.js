@@ -48,26 +48,42 @@ function getAnilistClient() {
     });
 }
 
+// Utilities per ritardo
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Proxied via CF Worker se process.env.CF_WORKER_URL è impostato
-async function executeGraphQL(query, variables) {
+async function executeGraphQL(query, variables, retries = 2) {
     const payload = { query, variables };
     
-    // Check se la route del proxy è configurata
-    if (process.env.CF_WORKER_URL) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
         try {
-            const proxyUrl = `${process.env.CF_WORKER_URL.replace(/\/$/, '')}?url=https://graphql.anilist.co&method=POST`;
-            const client = createAxiosInstance(proxyUrl, { timeout: 20000 });
+            // Check se la route del proxy è configurata
+            if (process.env.CF_WORKER_URL) {
+                try {
+                    const proxyUrl = `${process.env.CF_WORKER_URL.replace(/\/$/, '')}?url=https://graphql.anilist.co&method=POST`;
+                    const client = createAxiosInstance(proxyUrl, { timeout: 20000 });
+                    const res = await client.post('', payload);
+                    return res.data;
+                } catch (e) {
+                    if (e.response && e.response.status === 429) throw e;
+                    console.error('CF Proxy AniList Error, falling back to direct:', e.message);
+                }
+            }
+
+            // Direct fetch
+            const client = getAnilistClient();
             const res = await client.post('', payload);
             return res.data;
         } catch (e) {
-            console.error('CF Proxy AniList Error, falling back to direct:', e.message);
+            if (e.response && e.response.status === 429 && attempt < retries) {
+                const retryAfter = e.response.headers['retry-after'] || 30; // Anilist di solito blocca per 1 min, ma retry-after aiuta
+                console.warn(`[Anilist] 429 Too Many Requests. Waiting ${retryAfter}s prima del retry ${attempt + 1}/${retries}...`);
+                await wait(retryAfter * 1000);
+                continue;
+            }
+            throw e;
         }
     }
-
-    // Direct fetch
-    const client = getAnilistClient();
-    const res = await client.post('', payload);
-    return res.data;
 }
 
 /**
