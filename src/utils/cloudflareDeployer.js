@@ -2,6 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const axios = require('axios');
+const https = require('https');
+
+// Forza IPv4 per bypassare problemi di rete IPv6 su Hugging Face Spaces
+const httpsAgent = new https.Agent({ family: 4 });
 
 /**
  * Esegue una richiesta HTTP utilizzando curl (utile per aggirare i blocchi TLS di Cloudflare 
@@ -9,7 +13,8 @@ const axios = require('axios');
  */
 function curlRequest(url, method = 'GET', headers = {}, body = null) {
     try {
-        let command = `curl -s -X ${method} "${url}"`;
+        // Aggiungiamo -4 per forzare IPv4 in curl
+        let command = `curl -4 -s -X ${method} "${url}"`;
         
         for (const [key, value] of Object.entries(headers)) {
             // Rimuoviamo eventuali doppi apici che spaccherebbero bash
@@ -79,7 +84,8 @@ async function deployCloudflareWorker() {
                     'Authorization': `Bearer ${apiToken}`,
                     'Accept': 'application/json'
                 },
-                timeout: 8000
+                timeout: 8000,
+                httpsAgent
             });
             if (subRes.data && subRes.data.success && subRes.data.result) {
                 subdomain = subRes.data.result.subdomain;
@@ -151,7 +157,7 @@ async function deployCloudflareWorker() {
                 const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}`;
                 
                 try {
-                    await axios.put(uploadUrl, scriptContent, { headers, timeout: 30000 });
+                    await axios.put(uploadUrl, scriptContent, { headers, timeout: 30000, httpsAgent });
                 } catch (e) {
                     console.warn(`[CF-Deployer] Axios PUT fallito (${e.message}), provo con curl...`);
                     const uploadRes = curlRequest(uploadUrl, 'PUT', headers, scriptContent);
@@ -167,7 +173,8 @@ async function deployCloudflareWorker() {
                 try {
                     await axios.post(enableDevUrl, { enabled: true }, { 
                         headers: { ...headers, 'Content-Type': 'application/json' },
-                        timeout: 15000 
+                        timeout: 15000,
+                        httpsAgent
                     });
                 } catch (e) {
                     console.warn(`[CF-Deployer] Axios POST fallito (${e.message}), provo con curl...`);
@@ -183,7 +190,7 @@ async function deployCloudflareWorker() {
                 
                 let subdomain = null;
                 try {
-                    const subRes = await axios.get(subdomainUrl, { headers, timeout: 15000 });
+                    const subRes = await axios.get(subdomainUrl, { headers, timeout: 15000, httpsAgent });
                     subdomain = subRes.data?.result?.subdomain;
                 } catch (e) {
                     console.warn(`[CF-Deployer] Axios GET fallito (${e.message}), provo con curl...`);
