@@ -114,6 +114,27 @@ async function metaHandler(args, userConfig) {
             meta = await getKitsuMetaDetails(id);
         }
 
+        // Caso 2: È un ID di Anilist (Anime) - Prova a mappare su Kitsu per episodi giocabili
+        else if (id.startsWith('anilist:')) {
+            const anilistId = id.replace('anilist:', '');
+            const { getAnilistMeta, mapAnilistToMeta } = require('../clients/anilist');
+            const { getKitsuIdByMalId } = require('../clients/kitsu');
+            
+            const anilistMeta = await getAnilistMeta(anilistId);
+            
+            if (anilistMeta && anilistMeta.idMal) {
+                const kitsuId = await getKitsuIdByMalId(anilistMeta.idMal);
+                if (kitsuId) {
+                    meta = await getKitsuMetaDetails(`kitsu:${kitsuId}`);
+                }
+            }
+            
+            // Fallback se Kitsu fallisce
+            if (!meta && anilistMeta) {
+                meta = mapAnilistToMeta(anilistMeta);
+            }
+        }
+
         // Fetch metadata via TMDB
         if (id.startsWith('tmdb:') || id.startsWith('tt')) {
             const tmdbIdResult = id.startsWith('tmdb:') ? { id: id.replace('tmdb:', '') } : await translateImdbToTmdb(id, tmdbApiKey);

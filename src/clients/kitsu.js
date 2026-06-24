@@ -86,6 +86,40 @@ async function getKitsuIdByTitle(title, year = null, expectedType = 'tv') {
 }
 
 /**
+ * Trova l'ID Kitsu usando il MAL ID.
+ */
+async function getKitsuIdByMalId(malId) {
+    if (!malId) return null;
+    const cacheKey = `kitsu_mal_${malId}`;
+    const cached = await kitsuMappingCache.get(cacheKey);
+    if (cached) return cached;
+
+    try {
+        const mapRes = await kitsuClient.get('/mappings', {
+            params: {
+                'filter[externalSite]': 'myanimelist/anime',
+                'filter[externalId]': malId
+            }
+        });
+
+        const mappings = mapRes.data?.data || [];
+        if (mappings.length > 0) {
+            const mappingId = mappings[0].id;
+            const itemRes = await kitsuClient.get(`/mappings/${mappingId}/item`);
+            const kitsuId = itemRes.data?.data?.id;
+            if (kitsuId) {
+                await kitsuMappingCache.set(cacheKey, kitsuId);
+                return kitsuId;
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error(`Errore ricerca Kitsu per MAL ID "${malId}":`, error.message);
+        return null;
+    }
+}
+
+/**
  * Ricava tutti i Kitsu ID legati da prequels/sequels partendo da un ID di base.
  * @param {string} startKitsuId L'ID Kitsu di partenza
  * @returns {Promise<string[]>} Array di ID Kitsu correlati
@@ -627,6 +661,8 @@ module.exports = {
     getTmdbIdFromKitsuId,
     getKitsuIdByTitle,
     getKitsuIdFromAnilist,
+    getKitsuIdFromTmdbId,
+    getKitsuIdByMalId,
     getKitsuMetaDetails,
     resolveAllSeasonsForKitsu,
     resolveAllSeasonsEpisodes,
