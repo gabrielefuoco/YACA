@@ -1,5 +1,37 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
+
+/**
+ * Esegue una richiesta HTTP utilizzando curl (utile per aggirare i blocchi TLS di Cloudflare 
+ * contro l'impronta JA3 di Node.js su alcuni datacenter come HuggingFace).
+ */
+function curlRequest(url, method = 'GET', headers = {}, body = null) {
+    try {
+        let command = `curl -s -X ${method} "${url}"`;
+        
+        for (const [key, value] of Object.entries(headers)) {
+            // Rimuoviamo eventuali doppi apici che spaccherebbero bash
+            const safeValue = value.replace(/"/g, '\\"');
+            command += ` -H "${key}: ${safeValue}"`;
+        }
+
+        if (body) {
+            const bodyStr = typeof body === 'object' ? JSON.stringify(body) : body;
+            const safeBody = bodyStr.replace(/'/g, "'\\''");
+            command += ` -d '${safeBody}'`;
+        }
+
+        const output = execSync(command, { encoding: 'utf8', maxBuffer: 1024 * 1024 * 10 });
+        try {
+            return JSON.parse(output);
+        } catch {
+            return output; // Ritorna stringa se non è JSON
+        }
+    } catch (e) {
+        throw new Error(`CURL Error: ${e.message}`);
+    }
+}
 
 /**
  * Verifica se il Worker è già raggiungibile con un semplice health-check.
@@ -35,17 +67,12 @@ async function deployCloudflareWorker() {
         let subdomain = null;
         try {
             const subdomainUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`;
-            const subRes = await fetch(subdomainUrl, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${apiToken}`,
-                    'Accept': 'application/json'
-                },
-                signal: AbortSignal.timeout(8000)
+            const subData = curlRequest(subdomainUrl, 'GET', {
+                'Authorization': `Bearer ${apiToken}`,
+                'Accept': 'application/json'
             });
-            if (subRes.ok) {
-                const subData = await subRes.json();
-                subdomain = subData?.result?.subdomain;
+            if (subData && subData.success && subData.result) {
+                subdomain = subData.result.subdomain;
             }
         } catch {
             // API non raggiungibile - proviamo col subdomain hardcoded dal .env o pattern noto
@@ -101,50 +128,29 @@ async function deployCloudflareWorker() {
                 console.log(`[CF-Deployer] Eseguo l'upload del worker '${scriptName}' (tentativo ${attempt}/${maxRetries})...`);
                 const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}`;
                 
-                let res = await fetch(uploadUrl, {
-                    method: 'PUT',
-                    headers: headers,
-                    body: scriptContent,
-                    signal: AbortSignal.timeout(30000)
-                });
-                
-                if (!res.ok) {
-                    const text = await res.text();
-                    throw new Error(`Upload fallito: ${res.status} ${text}`);
+                const uploadRes = curlRequest(uploadUrl, 'PUT', headers, scriptContent);
+                if (uploadRes && uploadRes.success === false) {
+                    throw new Error(`Upload fallito: ${JSON.stringify(uploadRes.errors)}`);
                 }
 
                 // 2. Abilita l'accesso su .workers.dev
                 console.log(`[CF-Deployer] Abilito il routing su .workers.dev...`);
                 const enableDevUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/subdomain`;
                 
-                res = await fetch(enableDevUrl, {
-                    method: 'POST',
-                    headers: { ...headers, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ enabled: true }),
-                    signal: AbortSignal.timeout(15000)
-                });
-
-                if (!res.ok) {
-                    const text = await res.text();
-                    throw new Error(`Enable subdomain fallito: ${res.status} ${text}`);
+                const enableRes = curlRequest(enableDevUrl, 'POST', { ...headers, 'Content-Type': 'application/json' }, { enabled: true });
+                if (enableRes && enableRes.success === false) {
+                    throw new Error(`Enable subdomain fallito: ${JSON.stringify(enableRes.errors)}`);
                 }
 
                 // 3. Scopri il dominio .workers.dev dell'utente
                 console.log(`[CF-Deployer] Recupero il sottodominio dell'account...`);
                 const subdomainUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`;
                 
-                res = await fetch(subdomainUrl, {
-                    method: 'GET',
-                    headers: headers,
-                    signal: AbortSignal.timeout(15000)
-                });
-
-                if (!res.ok) {
-                    const text = await res.text();
-                    throw new Error(`Get subdomain fallito: ${res.status} ${text}`);
+                const subData = curlRequest(subdomainUrl, 'GET', headers);
+                if (subData && subData.success === false) {
+                    throw new Error(`Get subdomain fallito: ${JSON.stringify(subData.errors)}`);
                 }
 
-                const subData = await res.json();
                 const subdomain = subData?.result?.subdomain;
 
                 if (!subdomain) {
