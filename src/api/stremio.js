@@ -283,16 +283,7 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
             });
         }
 
-        const anilistExtra = [{ name: 'skip' }];
-        const anilistGenreExtra = [{ name: 'skip' }, { name: 'genre', options: ['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Mecha', 'Music', 'Mystery', 'Psychological', 'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller'] }];
-        
-        catalogs.push(
-            { id: 'anilist-trending', type: 'series', name: '🔥 Anime Trending', extra: anilistExtra },
-            { id: 'anilist-popular', type: 'series', name: '👑 Anime Popolari', extra: anilistExtra },
-            { id: 'anilist-simulcast', type: 'series', name: '📺 Anime Simulcast', extra: anilistExtra },
-            { id: 'anilist-genres', type: 'series', name: '🎭 Anime per Genere', extra: anilistGenreExtra },
-            { id: 'anilist-movies', type: 'movie', name: '🎬 Top Anime Film', extra: anilistExtra }
-        );
+    // Removed hardcoded anilist catalogs as requested by user.
 
         const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
         const manifest = {
