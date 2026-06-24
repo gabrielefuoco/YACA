@@ -188,8 +188,12 @@ if (!process.env.CF_WORKER_URL && process.env.CLOUDFLARE_API_TOKEN && process.en
         if (url) {
             process.env.CF_WORKER_URL = url;
             console.log(`[Init] CF_WORKER_URL impostato dinamicamente su: ${url}`);
+        } else {
+            console.warn('[Init] ⚠️ CF Worker non disponibile. Le richieste Anilist e stream andranno dirette.');
         }
     });
+} else if (process.env.CF_WORKER_URL) {
+    console.log(`[Init] CF_WORKER_URL già configurato: ${process.env.CF_WORKER_URL}`);
 }
 
 // Graceful shutdown
