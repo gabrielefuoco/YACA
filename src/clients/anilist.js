@@ -51,12 +51,26 @@ function getAnilistClient() {
 // Utilities per ritardo
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Esegue una richiesta GraphQL ad Anilist
+// Proxied via CF Worker se process.env.CF_WORKER_URL è impostato
 async function executeGraphQL(query, variables, retries = 2) {
     const payload = { query, variables };
     
     for (let attempt = 0; attempt <= retries; attempt++) {
         try {
+            // Check se la route del proxy è configurata
+            if (process.env.CF_WORKER_URL) {
+                try {
+                    const proxyUrl = `${process.env.CF_WORKER_URL.replace(/\/$/, '')}?url=https://graphql.anilist.co&method=POST`;
+                    const client = createAxiosInstance(proxyUrl, { timeout: 20000 });
+                    const res = await client.post('', payload);
+                    return res.data;
+                } catch (e) {
+                    if (e.response && e.response.status === 429) throw e;
+                    console.error('CF Proxy AniList Error, falling back to direct:', e.message);
+                }
+            }
+
+            // Direct fetch
             const client = getAnilistClient();
             const res = await client.post('', payload);
             return res.data;
