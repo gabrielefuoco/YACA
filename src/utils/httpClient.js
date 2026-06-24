@@ -16,8 +16,8 @@ const PROXY_CONFIG = {
 };
 
 function createAxiosInstance(baseURL, additionalConfig = {}) {
-    const defaultHttpsAgent = new https.Agent({ keepAlive: true, maxSockets: 250 });
-    const defaultHttpAgent = new http.Agent({ keepAlive: true, maxSockets: 250 });
+    const defaultHttpsAgent = new https.Agent({ keepAlive: true, maxSockets: 250, family: 4 });
+    const defaultHttpAgent = new http.Agent({ keepAlive: true, maxSockets: 250, family: 4 });
 
     const config = {
         baseURL,
@@ -37,9 +37,9 @@ function createAxiosInstance(baseURL, additionalConfig = {}) {
 
         config.proxy = proxyConfig;
         if (PROXY_CONFIG.protocol === 'https') {
-            config.httpsAgent = new https.Agent({ rejectUnauthorized: false, keepAlive: true, maxSockets: 250 });
+            config.httpsAgent = new https.Agent({ rejectUnauthorized: false, keepAlive: true, maxSockets: 250, family: 4 });
         } else {
-            config.httpAgent = new http.Agent({ keepAlive: true, maxSockets: 250 });
+            config.httpAgent = new http.Agent({ keepAlive: true, maxSockets: 250, family: 4 });
         }
     }
 
