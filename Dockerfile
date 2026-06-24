@@ -17,7 +17,7 @@ WORKDIR /app
 
 # Install system fonts for SVG text rendering (sharp/librsvg needs fontconfig)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    fontconfig fonts-dejavu-core fonts-noto-core \
+    fontconfig fonts-dejavu-core fonts-noto-core curl ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && fc-cache -fv
 
