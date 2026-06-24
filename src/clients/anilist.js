@@ -6,9 +6,9 @@ const anilistMetaCache = new CacheManager('anilist_meta', { ramMax: 200, ramTtlM
 
 // GraphQL Queries
 const CATALOG_QUERY = `
-query ($page: Int, $perPage: Int, $sort: [MediaSort], $season: MediaSeason, $seasonYear: Int, $format: MediaFormat, $format_in: [MediaFormat], $genre: String, $genre_in: [String], $search: String, $status: MediaStatus, $averageScore_greater: Int, $averageScore_lesser: Int, $startDate_greater: FuzzyDateInt, $startDate_lesser: FuzzyDateInt) {
+query ($page: Int, $perPage: Int, $sort: [MediaSort], $season: MediaSeason, $seasonYear: Int, $format: MediaFormat, $format_in: [MediaFormat], $genre: String, $genre_in: [String], $tag_in: [String], $search: String, $status: MediaStatus, $averageScore_greater: Int, $averageScore_lesser: Int, $startDate_greater: FuzzyDateInt, $startDate_lesser: FuzzyDateInt) {
     Page(page: $page, perPage: $perPage) {
-        media(type: ANIME, sort: $sort, season: $season, seasonYear: $seasonYear, format: $format, format_in: $format_in, genre: $genre, genre_in: $genre_in, search: $search, status: $status, averageScore_greater: $averageScore_greater, averageScore_lesser: $averageScore_lesser, startDate_greater: $startDate_greater, startDate_lesser: $startDate_lesser, isAdult: false) {
+        media(type: ANIME, sort: $sort, season: $season, seasonYear: $seasonYear, format: $format, format_in: $format_in, genre: $genre, genre_in: $genre_in, tag_in: $tag_in, search: $search, status: $status, averageScore_greater: $averageScore_greater, averageScore_lesser: $averageScore_lesser, startDate_greater: $startDate_greater, startDate_lesser: $startDate_lesser, isAdult: false) {
             id
             idMal
             title { romaji english native }
@@ -183,14 +183,34 @@ async function getAnilistCatalogFromFilters(filters, type, skip) {
         variables.sort = ['SEARCH_MATCH'];
     }
 
-    // Genres (TMDB keywords)
+    // Genres and Tags (TMDB keywords / preset keywords)
     if (filters._keywordNames) {
-        const genres = filters._keywordNames
+        const keywords = filters._keywordNames
             .split(/[|,]/)
             .map(c => c.trim())
             .filter(Boolean);
+            
+        const ANILIST_GENRES = new Set([
+            'action', 'adventure', 'comedy', 'drama', 'ecchi', 'fantasy', 'horror', 
+            'mahou shoujo', 'mecha', 'music', 'mystery', 'psychological', 'romance', 
+            'sci-fi', 'slice of life', 'sports', 'supernatural', 'thriller'
+        ]);
+
+        const genres = [];
+        const tags = [];
+        for (const kw of keywords) {
+            if (ANILIST_GENRES.has(kw.toLowerCase())) {
+                genres.push(kw);
+            } else {
+                tags.push(kw);
+            }
+        }
+
         if (genres.length > 0) {
             variables.genre_in = genres;
+        }
+        if (tags.length > 0) {
+            variables.tag_in = tags;
         }
     }
 
