@@ -311,7 +311,8 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                         }
                     }
 
-                    const hasOffset = maxNoIta && (maxNoIta > maxIta) && isItaRecent;
+                    const isSimulcastCatalog = baseId && baseId.includes('preset_anime_simulcast');
+                    const hasOffset = isSimulcastCatalog && maxNoIta && (maxNoIta > maxIta) && isItaRecent;
 
                     if (hasOffset && sanitizeOptions.shouldApplyEpisodeBadge && (item.type === 'series' || item.type === 'anime')) {
                         // 1. Elemento originale (Sub): badge ITA disattivato
@@ -349,12 +350,22 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
 
                         processedMetas.push(sanitizeCatalogMeta(dubItem, sanitizeOptions));
                     } else {
-                        // Nessun offset: badge ITA standard
+                        // Nessun offset: logica badge standard (una singola locandina)
+                        // Nel catalogo simulcast, applichiamo [SUB] di default a meno che non ci sia certezza, 
+                        // ma se ha almeno un badge ITA (come dimostra itaBadges.length > 0) e non ha offset, gli diamo ITA.
+                        // Tuttavia l'utente vuole: negli altri cataloghi se è dub metti badge ITA, altrimenti no.
+                        // Essendo entrati qui perchè itaBadges.length > 0, significa che E' doppiato!
                         item._itaBadge = true;
                         processedMetas.push(sanitizeCatalogMeta(item, sanitizeOptions));
                     }
                 } else {
-                    // Nessun badge ITA
+                    // Nessun badge ITA: non è mai stato doppiato
+                    // Se siamo in simulcast, mettiamo SUB per chiarire che è un simulcast.
+                    // Altrimenti (altri cataloghi) NESSUN badge.
+                    const isSimulcastCatalog = baseId && baseId.includes('preset_anime_simulcast');
+                    if (isSimulcastCatalog && sanitizeOptions.shouldApplyEpisodeBadge) {
+                        item._subBadge = true;
+                    }
                     if (sanitizeOptions.shouldApplyEpisodeBadge) {
                         processedMetas.push(sanitizeCatalogMeta(item, sanitizeOptions));
                     } else {
