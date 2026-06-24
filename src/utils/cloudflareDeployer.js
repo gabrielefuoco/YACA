@@ -1,6 +1,7 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
 
 async function isWorkerAlive(url) {
     try {
@@ -11,6 +12,41 @@ async function isWorkerAlive(url) {
             return true;
         }
         return false;
+    }
+}
+
+async function getCachedSubdomainFromDB() {
+    try {
+        // Attendi che la connessione MongoDB sia pronta (max 5 secondi)
+        let retries = 5;
+        while (mongoose.connection.readyState !== 1 && retries > 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            retries--;
+        }
+        if (mongoose.connection.readyState === 1) {
+            const collection = mongoose.connection.db.collection('system_settings');
+            const doc = await collection.findOne({ key: 'cf_subdomain' });
+            return doc ? doc.value : null;
+        }
+    } catch (e) {
+        console.log(`[CF-Deployer] Errore lettura sottodominio da DB: ${e.message}`);
+    }
+    return null;
+}
+
+async function saveSubdomainToDB(subdomain) {
+    try {
+        if (mongoose.connection.readyState === 1) {
+            const collection = mongoose.connection.db.collection('system_settings');
+            await collection.updateOne(
+                { key: 'cf_subdomain' },
+                { $set: { value: subdomain, updatedAt: new Date() } },
+                { upsert: true }
+            );
+            console.log(`[CF-Deployer] Sottodominio '${subdomain}' salvato nel database MongoDB.`);
+        }
+    } catch (e) {
+        console.log(`[CF-Deployer] Errore salvataggio sottodominio nel DB: ${e.message}`);
     }
 }
 
@@ -25,23 +61,48 @@ async function deployCloudflareWorker() {
     const scriptName = 'yaca-proxy-worker';
     const cacheFilePath = path.join(__dirname, '.cf_worker_url.json');
 
-    // 1. Prova a verificare l'URL salvato in cache
+    // 1. Prova a verificare l'URL da variabile d'ambiente CF_WORKER_SUBDOMAIN
+    if (process.env.CF_WORKER_SUBDOMAIN) {
+        const envUrl = `https://${scriptName}.${process.env.CF_WORKER_SUBDOMAIN}.workers.dev`;
+        console.log(`[CF-Deployer] CF_WORKER_SUBDOMAIN configurato da env. Verifico se è online...`);
+        if (await isWorkerAlive(envUrl)) {
+            console.log(`[CF-Deployer] ✅ Worker già online (via CF_WORKER_SUBDOMAIN)! Salto il deploy. URL: ${envUrl}`);
+            return envUrl;
+        }
+    }
+
+    // 2. Prova a verificare l'URL salvato in cache locale
     if (fs.existsSync(cacheFilePath)) {
         try {
             const cacheData = JSON.parse(fs.readFileSync(cacheFilePath, 'utf8'));
             if (cacheData && cacheData.url) {
-                console.log(`[CF-Deployer] Trovato URL in cache: ${cacheData.url}. Verifico se è online...`);
+                console.log(`[CF-Deployer] Trovato URL in cache locale: ${cacheData.url}. Verifico se è online...`);
                 if (await isWorkerAlive(cacheData.url)) {
-                    console.log(`[CF-Deployer] ✅ Worker già online (cache)! Salto il deploy. URL: ${cacheData.url}`);
+                    console.log(`[CF-Deployer] ✅ Worker già online (cache locale)! Salto il deploy. URL: ${cacheData.url}`);
                     return cacheData.url;
                 }
             }
         } catch (e) {
-            // ignore cache errors
+            // ignore
         }
     }
 
-    // 2. Se offline o non in cache, prova a recuperare il sottodominio e testarlo
+    // 3. Prova a verificare l'URL memorizzato nel database MongoDB
+    const dbSubdomain = await getCachedSubdomainFromDB();
+    if (dbSubdomain) {
+        const dbUrl = `https://${scriptName}.${dbSubdomain}.workers.dev`;
+        console.log(`[CF-Deployer] Trovato sottodominio nel database MongoDB: ${dbSubdomain}. Verifico se è online...`);
+        if (await isWorkerAlive(dbUrl)) {
+            console.log(`[CF-Deployer] ✅ Worker già online (via MongoDB)! Salto il deploy. URL: ${dbUrl}`);
+            // Ripristina la cache locale per velocizzare i prossimi riavvii
+            try {
+                fs.writeFileSync(cacheFilePath, JSON.stringify({ url: dbUrl }), 'utf8');
+            } catch (e) {}
+            return dbUrl;
+        }
+    }
+
+    // 4. Se offline o non trovato, prova a recuperare il sottodominio dalle API Cloudflare
     const headers = {
         'Authorization': `Bearer ${apiToken}`,
         'Content-Type': 'application/javascript'
@@ -49,12 +110,13 @@ async function deployCloudflareWorker() {
 
     let subdomain = null;
     try {
-        console.log('[CF-Deployer] Recupero il sottodominio per verificare lo stato del worker...');
+        console.log('[CF-Deployer] Recupero il sottodominio via API per verificare lo stato del worker...');
         const subdomainUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`;
-        const subRes = await axios.get(subdomainUrl, { headers, timeout: 10000 });
+        const subRes = await axios.get(subdomainUrl, { headers, timeout: 8000 });
         subdomain = subRes.data?.result?.subdomain;
 
         if (subdomain) {
+            await saveSubdomainToDB(subdomain);
             const expectedUrl = `https://${scriptName}.${subdomain}.workers.dev`;
             console.log(`[CF-Deployer] Verifico lo stato su: ${expectedUrl}`);
             if (await isWorkerAlive(expectedUrl)) {
@@ -69,7 +131,7 @@ async function deployCloudflareWorker() {
         console.log(`[CF-Deployer] Impossibile verificare lo stato del worker tramite API (${error.message}). Procedo al deploy...`);
     }
 
-    // 3. Esegui il deploy completo se offline
+    // 5. Esegui il deploy completo
     try {
         console.log('[CF-Deployer] Inizio auto-deploy del Worker...');
         
@@ -94,6 +156,9 @@ async function deployCloudflareWorker() {
             const subdomainUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`;
             const subRes = await axios.get(subdomainUrl, { headers });
             subdomain = subRes.data?.result?.subdomain;
+            if (subdomain) {
+                await saveSubdomainToDB(subdomain);
+            }
         }
 
         if (!subdomain) {
@@ -115,4 +180,3 @@ async function deployCloudflareWorker() {
 }
 
 module.exports = { deployCloudflareWorker };
-
