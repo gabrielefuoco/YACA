@@ -100,8 +100,8 @@ La risoluzione fisica dei dati è delegata ai provider dedicati in `src/catalog/
 
 *   **[TmdbProvider.js](../src/catalog/providers/TmdbProvider.js)**: 
     Costruisce dinamicamente i parametri di ricerca per TMDB (`buildDiscoveryParams`). Gestisce la conversione dei generi da film a serie TV (es. genere Azione *28* convertito in Action & Adventure *10759* per le serie) e integra filtri avanzati per keywords, attori, lingue originali e streaming provider italiani (`with_watch_providers`).
-*   **[KitsuProvider.js](../src/catalog/providers/KitsuProvider.js)** e **[kitsu.js](../src/clients/kitsu.js)**:
-    Fornisce cataloghi anime nativi (Trending, ONA, OVA, Speciali) interrogando direttamente le API di Kitsu. Implementa l'arricchimento asincrono `enrichWithTmdb` per recuperare descrizioni e poster italiani da TMDB a partire dall'ID Kitsu (avvalendosi di un ordinamento per popolarità per evitare l'associazione a schede orfane, vedi dettagli in [STREMIO_INTERNALS.md](STREMIO_INTERNALS.md#4-risoluzione-fallback-per-titolo-e-ordinamento-per-popolarità)).
+*   **[AiDiscoveryProvider.js](../src/catalog/providers/AiDiscoveryProvider.js)** e **[anilist.js](../src/clients/anilist.js)**:
+    Fornisce cataloghi anime nativi (Trending, Popolari, ecc.) interrogando direttamente l'API GraphQL di AniList. La logica mappa l'output di AniList convertendolo dinamicamente in ID Kitsu per garantire la compatibilità dei flussi video di Stremio. Implementa filtri complessi per generi, tag e formati e una potente cache multi-livello per prevenire latenza. Kitsu è utilizzato solo in fase di "idratazione" (`kitsu.js`) per recuperare la mappatura esatta degli episodi.
 *   **[TraktProvider.js](../src/catalog/providers/TraktProvider.js)**:
     Consente di importare le liste utente di Trakt (Watchlist, Raccolte, Liste Personali) traducendone i riferimenti in ID TMDB idonei per Stremio.
 *   **[HybridProvider.js](../src/catalog/providers/HybridProvider.js)**:

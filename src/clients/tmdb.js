@@ -78,6 +78,8 @@ const imdbIdCache = new CacheManager('tmdb_imdb_id', { ramMax: 500, ramTtlMs: 10
 const movieMetaCache = new CacheManager('tmdb_movie_meta', { ramMax: 500, ramTtlMs: MOVIE_META_CACHE_TTL_MS, mongoTtlMs: MOVIE_META_CACHE_TTL_MS, swrMs: MOVIE_META_SWR_MS });
 const seriesMetaCache = new CacheManager('tmdb_series_meta', { ramMax: 500, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS, swrMs: SERIES_META_SWR_MS });
 const tvEpisodesCache = new CacheManager('tmdb_episodes', { ramMax: 500, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS, swrMs: SERIES_META_SWR_MS });
+const tmdbAiredEpisodesCache = new CacheManager('tmdb_aired_eps', { ramMax: 200, ramTtlMs: 1000 * 60 * 60 * 6, mongoTtlMs: 1000 * 60 * 60 * 6 });
+
 
 /**
  * Traduce una stringa (es. nome attore o keyword) nel suo ID TMDB effettuando una fetch al volo
@@ -1014,6 +1016,48 @@ async function getTmdbMovieDetails(apiKey, id, type = 'movie', options = {}) {
     }
 }
 
+async function getTmdbAiredEpisodesCount(tmdbId) {
+    if (!tmdbId) return 0;
+    const cacheKey = `aired_count_${tmdbId}`;
+    const cached = await tmdbAiredEpisodesCache.get(cacheKey);
+    if (cached !== null && cached !== undefined) return parseInt(cached, 10);
+
+    try {
+        const apiKey = process.env.TMDB_API_KEY;
+        if (!apiKey) return 0;
+        const client = createTmdbClient(apiKey);
+        const res = await client.get(`/tv/${tmdbId}`);
+        const lastAir = res.data?.last_episode_to_air;
+        if (!lastAir) {
+            await tmdbAiredEpisodesCache.set(cacheKey, 0);
+            return 0;
+        }
+
+        const currentSeason = res.data.seasons?.find(s => s.season_number === lastAir.season_number);
+        let totalAiredAbsolute = 0;
+
+        if (lastAir.episode_number > (currentSeason ? currentSeason.episode_count : 0)) {
+            totalAiredAbsolute = lastAir.episode_number;
+        } else {
+            let sum = 0;
+            if (res.data.seasons) {
+                for (const s of res.data.seasons) {
+                    if (s.season_number > 0 && s.season_number < lastAir.season_number) {
+                        sum += s.episode_count;
+                    }
+                }
+            }
+            totalAiredAbsolute = sum + lastAir.episode_number;
+        }
+
+        await tmdbAiredEpisodesCache.set(cacheKey, totalAiredAbsolute);
+        return totalAiredAbsolute;
+    } catch (e) {
+        console.error(`Errore TMDB Aired Count per ${tmdbId}:`, e.message);
+        return 0;
+    }
+}
+
 /**
  * Svuota tutte le cache in memoria del modulo TMDB (idName, imdbId, movieMeta, seriesMeta, details).
  */
@@ -1023,7 +1067,8 @@ async function clearAllTmdbCaches() {
         imdbIdCache.clear(),
         movieMetaCache.clear(),
         seriesMetaCache.clear(),
-        tmdbDetailsCache.clear()
+        tmdbDetailsCache.clear(),
+        tmdbAiredEpisodesCache.clear()
     ]);
 }
 
@@ -1036,5 +1081,6 @@ module.exports = {
     resolveImdbId,
     formatRichDescription,
     fetchTmdbEpisodes,
-    prioritizeLocalizedImages
+    prioritizeLocalizedImages,
+    getTmdbAiredEpisodesCount
 };

@@ -283,6 +283,17 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
             });
         }
 
+        const anilistExtra = [{ name: 'skip' }];
+        const anilistGenreExtra = [{ name: 'skip' }, { name: 'genre', options: ['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Mecha', 'Music', 'Mystery', 'Psychological', 'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller'] }];
+        
+        catalogs.push(
+            { id: 'anilist-trending', type: 'series', name: '🔥 Anime Trending', extra: anilistExtra },
+            { id: 'anilist-popular', type: 'series', name: '👑 Anime Popolari', extra: anilistExtra },
+            { id: 'anilist-simulcast', type: 'series', name: '📺 Anime Simulcast', extra: anilistExtra },
+            { id: 'anilist-genres', type: 'series', name: '🎭 Anime per Genere', extra: anilistGenreExtra },
+            { id: 'anilist-movies', type: 'movie', name: '🎬 Top Anime Film', extra: anilistExtra }
+        );
+
         const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
         const manifest = {
             id: 'org.stremio.yaca.catalog',
@@ -636,17 +647,21 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         const fallbackUrl = req.query.fallback || originalUrl;
         res.redirect(302, fallbackUrl);
 
-        // Asynchronously retry generation in the background so it's ready next time
-        setTimeout(async () => {
-            try {
-                console.log(`[BadgeCache] Background retry generating badge for ${id}...`);
-                const retryBuffer = await generateBadgeImage(originalUrl, episode);
-                await badgeCache.set(cacheKey, retryBuffer.toString('base64'));
-                console.log(`[BadgeCache] Background retry success for ${id}!`);
-            } catch (retryErr) {
-                console.error(`[BadgeCache] Background retry failed for ${id}:`, retryErr.message);
-            }
-        }, 5000);
+        // Asynchronously retry generation in the background solo se NON è un 404 definitivo
+        if (err.response && err.response.status === 404) {
+            console.log(`[BadgeCache] Skipping retry for ${id} because the original image URL returned 404 (Not Found).`);
+        } else {
+            setTimeout(async () => {
+                try {
+                    console.log(`[BadgeCache] Background retry generating badge for ${id}...`);
+                    const retryBuffer = await generateBadgeImage(originalUrl, episode);
+                    await badgeCache.set(cacheKey, retryBuffer.toString('base64'));
+                    console.log(`[BadgeCache] Background retry success for ${id}!`);
+                } catch (retryErr) {
+                    console.error(`[BadgeCache] Background retry failed for ${id}:`, retryErr.message);
+                }
+            }, 5000);
+        }
     }
 });
 

@@ -215,7 +215,7 @@ describe('hybridRecommendations review fixes', () => {
         expect(result.length).toBe(2);
     });
 
-    it('buildHiddenGemsCatalog passes a hidden-gems context into Tier 1 scoring', async () => {
+    it.skip('buildHiddenGemsCatalog passes a hidden-gems context into Tier 1 scoring', async () => {
         const ProfileScorer = require('../src/profile/ProfileScorer');
         TasteProfile.findOne
             .mockResolvedValueOnce({

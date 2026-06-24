@@ -11,10 +11,7 @@ jest.mock('../src/ai/router', () => ({
     generateTmdbFiltersFromPrompt: jest.fn()
 }));
 
-jest.mock('../src/models/UserList', () => ({
-    findOneAndUpdate: jest.fn().mockResolvedValue({}),
-    deleteMany: jest.fn().mockResolvedValue({ deletedCount: 0 })
-}));
+
 
 jest.mock('../src/data/presets', () => ({
     getPresets: () => [

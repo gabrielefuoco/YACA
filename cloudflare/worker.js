@@ -33,11 +33,20 @@ async function handleRequest(request) {
   }
 
   try {
-    const response = await fetch(targetUrl, {
+    const fetchOptions = {
+      method: request.method,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       }
-    });
+    };
+
+    if (request.method === 'POST') {
+      fetchOptions.body = await request.text();
+      fetchOptions.headers['Content-Type'] = request.headers.get('Content-Type') || 'application/json';
+      fetchOptions.headers['Accept'] = request.headers.get('Accept') || 'application/json';
+    }
+
+    const response = await fetch(targetUrl, fetchOptions);
     
     const data = await response.text();
     

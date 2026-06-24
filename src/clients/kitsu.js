@@ -1,6 +1,6 @@
 const { createAxiosInstance } = require('../utils/httpClient');
 const CacheManager = require('../cache/CacheManager');
-const { createTmdbClient, prioritizeLocalizedImages } = require('./tmdb');
+const { createTmdbClient, prioritizeLocalizedImages, getTmdbAiredEpisodesCount } = require('./tmdb');
 const { rateLimitedMap } = require('../utils/rateLimiter');
 
 // Cache persistenti su DB
@@ -121,15 +121,68 @@ async function resolveAllSeasonsForKitsu(startKitsuId) {
 }
 
 /**
+ * Traduce un ID AniList (o MAL) nel corrispondente ID Kitsu.
+ */
+async function getKitsuIdFromAnilist(anilistId, malId) {
+    const cacheKey = `anilist_to_kitsu_${anilistId}`;
+    const cached = await kitsuMappingCache.get(cacheKey);
+    if (cached) return cached;
+
+    let kitsuId = null;
+
+    try {
+        // Tentativo 1: tramite mapping anilist/anime
+        const aRes = await kitsuClient.get(`/mappings`, {
+            params: {
+                'filter[externalSite]': 'anilist/anime',
+                'filter[externalId]': anilistId
+            }
+        });
+        if (aRes.data?.data?.length > 0) {
+            const relUrl = aRes.data.data[0].relationships?.item?.links?.related;
+            if (relUrl) {
+                const relRes = await kitsuClient.get(relUrl.replace('https://kitsu.io/api/edge', ''));
+                kitsuId = relRes.data?.data?.id;
+            }
+        }
+
+        // Tentativo 2: tramite mapping myanimelist/anime se fornito
+        if (!kitsuId && malId) {
+            const mRes = await kitsuClient.get(`/mappings`, {
+                params: {
+                    'filter[externalSite]': 'myanimelist/anime',
+                    'filter[externalId]': malId
+                }
+            });
+            if (mRes.data?.data?.length > 0) {
+                const relUrl = mRes.data.data[0].relationships?.item?.links?.related;
+                if (relUrl) {
+                    const relRes = await kitsuClient.get(relUrl.replace('https://kitsu.io/api/edge', ''));
+                    kitsuId = relRes.data?.data?.id;
+                }
+            }
+        }
+        
+        if (kitsuId) {
+            await kitsuMappingCache.set(cacheKey, kitsuId);
+        }
+    } catch (e) {
+        console.error(`Errore nel mapping anilist->kitsu per ${anilistId}:`, e.message);
+    }
+
+    return kitsuId;
+}
+
+/**
  * Recupera gli episodi da Kitsu per un dato anime (paginando se necessario oltre i primi 20).
  * Ritorna array mappato per standard meta.
  */
 async function fetchKitsuEpisodes(kitsuId) {
-    const cacheKey = `eps:${kitsuId}`;
-    const { value: cached, status: cacheStatus } = await kitsuEpisodesCache.getWithStatus(cacheKey);
-    if (cacheStatus !== 'miss') return cached;
-
     try {
+        const cacheKey = `kitsu_eps_${kitsuId}`;
+        const cached = await kitsuEpisodesCache.get(cacheKey);
+        if (cached) return cached;
+
         let allData = [];
         const limit = 20;
         let totalEpisodes = 0;
@@ -173,7 +226,9 @@ async function fetchKitsuEpisodes(kitsuId) {
                 season: a.seasonNumber || 1,
                 episode: a.number,
                 overview: a.synopsis || '',
-                thumbnail: a.thumbnail ? a.thumbnail.original : null
+                thumbnail: a.thumbnail ? a.thumbnail.original : null,
+                _rawTitles: a.titles,
+                _canonicalTitle: a.canonicalTitle
             };
         });
 
@@ -333,6 +388,7 @@ async function getTmdbIdFromKitsuId(kitsuId, type = 'series') {
                         }
 
                         if (results.length > 0) {
+                            results.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
                             const tmdbId = results[0].id.toString();
                             const result = { tmdbId, type: type === 'movie' ? 'movie' : 'tv', inferredSeason: detectSeasonFromTitle(title) };
                             await kitsuMappingCache.set(cacheKey, result);
@@ -460,6 +516,31 @@ async function getKitsuMetaDetails(rawId, type = 'series') {
     if (type !== 'movie') {
         try { episodes = await resolveAllSeasonsEpisodes(kitsuId); } catch (e) {}
         if (episodes.length === 0) try { episodes = await fetchKitsuEpisodes(kitsuId); } catch (e) {}
+        
+        if (episodes.length > 0) {
+            let airedCount = 0;
+            if (mapping?.tmdbId) {
+                airedCount = await getTmdbAiredEpisodesCount(mapping.tmdbId);
+            }
+
+            episodes = episodes.filter(ep => {
+                if (airedCount > 0) {
+                    return ep.episode <= airedCount;
+                } else {
+                    // Fallback to dummy heuristic if we couldn't get TMDB aired count
+                    const hasRealRawTitle = ep._rawTitles && Object.keys(ep._rawTitles).some(k => ep._rawTitles[k] && !/^(Episode|Episodio)\s*\d+$/i.test(ep._rawTitles[k]));
+                    const isCanonicalDummy = !ep._canonicalTitle || /^(Episode|Episodio)\s*\d+$/i.test(ep._canonicalTitle);
+                    const hasValidTitle = hasRealRawTitle || (!isCanonicalDummy);
+                    return hasValidTitle || ep.released || ep.overview;
+                }
+            }).map(ep => {
+                // Puliamo le props usate per l'euristica
+                const cleanEp = { ...ep };
+                delete cleanEp._rawTitles;
+                delete cleanEp._canonicalTitle;
+                return cleanEp;
+            });
+        }
     }
 
     let title = attrs.titles?.en || attrs.titles?.en_jp || attrs.canonicalTitle || `Kitsu ${kitsuId}`;
@@ -479,9 +560,10 @@ async function getKitsuMetaDetails(rawId, type = 'series') {
                 if (d.overview) description = d.overview;
                 const tmdbTitle = mapping.type === 'movie' ? d.title : d.name;
                 if (tmdbTitle) title = tmdbTitle;
-                const images = prioritizeLocalizedImages(d.images);
-                if (images.backdrop) background = `https://image.tmdb.org/t/p/original${images.backdrop}`;
-                if (images.poster) poster = `https://image.tmdb.org/t/p/w500${images.poster}`;
+                const posters = prioritizeLocalizedImages(d.images?.posters || []);
+                const backdrops = prioritizeLocalizedImages(d.images?.backdrops || []);
+                if (backdrops.length > 0) background = `https://image.tmdb.org/t/p/original${backdrops[0].file_path}`;
+                if (posters.length > 0) poster = `https://image.tmdb.org/t/p/w500${posters[0].file_path}`;
             }
         } catch (e) {}
     }
@@ -544,6 +626,7 @@ module.exports = {
     fetchKitsuEpisodes,
     getTmdbIdFromKitsuId,
     getKitsuIdByTitle,
+    getKitsuIdFromAnilist,
     getKitsuMetaDetails,
     resolveAllSeasonsForKitsu,
     resolveAllSeasonsEpisodes,

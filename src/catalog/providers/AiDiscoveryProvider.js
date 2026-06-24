@@ -15,9 +15,10 @@ const LOOKAHEAD_PAGES = 3;
 const PAGE_SIZE = 20;
 
 async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, settings = {}, cacheOptions = {}) {
-    if (filters.provider === 'kitsu') {
-        const { getKitsuCatalogFromFilters } = require('./KitsuProvider');
-        return await getKitsuCatalogFromFilters(filters, type, skip, settings.shouldBadge);
+    if (filters.provider === 'kitsu' || filters.provider === 'anilist') {
+        const { getAnilistCatalogFromFilters, mapAnilistToMeta } = require('../../clients/anilist');
+        const media = await getAnilistCatalogFromFilters(filters, type, skip);
+        return media.map(m => mapAnilistToMeta(m));
     }
 
     let results = [];

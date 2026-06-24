@@ -474,6 +474,23 @@ async function catalogHandler(args, userConfig, hostUrl) {
             const { translateAnimeIdsToKitsu } = require('../utils/TmdbToKitsuMapper');
             finalResults = await translateAnimeIdsToKitsu(finalResults, tmdbApiKey);
 
+            // 3.6 TRADUTTORE MAGICO 2 (AniList -> Kitsu)
+            const { getKitsuIdFromAnilist } = require('../clients/kitsu');
+            const { rateLimitedMap } = require('../utils/rateLimiter');
+            await rateLimitedMap(finalResults, async (item) => {
+                if (String(item.id).startsWith('anilist:')) {
+                    const anilistId = String(item.id).replace('anilist:', '');
+                    const kitsuId = await getKitsuIdFromAnilist(anilistId, item.malId);
+                    if (kitsuId) {
+                        item.id = `kitsu:${kitsuId}`;
+                    }
+                }
+            }, { batchSize: 5 });
+
+            // Rimuovi gli item che sono rimasti anilist: perché non riusciamo a mapparli a kitsu
+            // E siccome Stremio Addon non li gestisce nativamente e non avremmo video/metadata
+            finalResults = finalResults.filter(item => !String(item.id).startsWith('anilist:'));
+
             // After translation: hydrate Kitsu episodes for items that still lack videos
             // (covers preset_new_anime and other Kitsu-translated catalogs from AiDiscoveryProvider)
             if (shouldBadge) {

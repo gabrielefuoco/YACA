@@ -19,9 +19,6 @@ jest.mock('../src/clients/trakt', () => ({
     }
 }));
 
-jest.mock('../src/models/UserList', () => ({
-    findOne: jest.fn(() => ({ lean: jest.fn().mockResolvedValue(null) }))
-}));
 
 const { calculateHybridScore, recommendationsCache } = require('../src/engines/hybridRecommendations');
 

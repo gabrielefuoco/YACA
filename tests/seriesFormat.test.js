@@ -16,9 +16,6 @@ jest.mock('../src/catalog/providers/TraktProvider', () => ({
     getTraktCatalog: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/KitsuProvider', () => ({
-    getKitsuCatalog: jest.fn()
-}));
 
 jest.mock('../src/catalog/providers/TmdbProvider', () => ({
     getTmdbDiscoverCatalog: jest.fn(),

@@ -1,5 +1,4 @@
 const { getTraktCatalog } = require('./providers/TraktProvider');
-const { getKitsuCatalog } = require('./providers/KitsuProvider');
 const { getTmdbDiscoverCatalog, executeStandardSearch } = require('./providers/TmdbProvider');
 const { getEngineHybridCatalog, getHybridPopularCatalog, TASTE_BASED_IDS } = require('./providers/HybridProvider');
 const { executeCombinedSearch, executeUniversalPipeline } = require('./providers/AiDiscoveryProvider');
@@ -60,12 +59,12 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
         return await getTraktCatalog(baseId, skip, userConfig, tmdbApiKey, extra.hostUrl);
     }
 
-    // SCENARIO 4: KITSU (ANIME)
-    if (id === 'yaca_anime_trending' || id === 'yaca_anime_ova' || id === 'yaca_anime_ona' || id === 'yaca_anime_specials') {
-        return await getKitsuCatalog(id, skip, extra.shouldBadge);
+    // SCENARIO 4: ANILIST / KITSU (ANIME)
+    if (baseId.startsWith('anilist') || id.startsWith('yaca_anime_')) {
+        const { fetchAnilistCatalog, mapAnilistToMeta } = require('../clients/anilist');
+        const media = await fetchAnilistCatalog(baseId.startsWith('anilist') ? baseId : id, skip);
+        return media.map(m => mapAnilistToMeta(m));
     }
-    
-
 
     // SCENARIO 5: UNIVERSAL PIPELINE (AI/PRESETS Custom)
     if (catalogMeta || directFilters) {
