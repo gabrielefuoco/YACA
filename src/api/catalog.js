@@ -225,7 +225,7 @@ router.post('/preview-catalog', async (req, res) => {
 
             const previewData = await catalogHandler(
                 {
-                    type: discoverType === 'tv' ? 'series' : 'movie',
+                    type: discoverType === 'tv' ? 'series' : discoverType,
                     id: null,
                     filters: singleQueryFilters,
                     extra: { skip: 0 }
@@ -241,9 +241,17 @@ router.post('/preview-catalog', async (req, res) => {
                 vote: item.vote_average || item.imdbRating || 0,
                 year: item.releaseInfo || ''
             }));
+            console.log(`[DEBUG-PREVIEW] Endpoint /preview-catalog hit with id=${id}. Resolved preset=${!!(id && id.startsWith('yaca_preset_'))}. Items mapped: ${items.length}`);
+            if (items.length > 0) {
+                console.log(`[DEBUG-PREVIEW] First item: id=${items[0].id}, title="${items[0].title}", poster="${items[0].poster}"`);
+            } else {
+                console.log(`[DEBUG-PREVIEW] singleQueryFilters was:`, JSON.stringify(singleQueryFilters));
+                console.log(`[DEBUG-PREVIEW] previewData.metas length:`, previewData.metas ? previewData.metas.length : 'undefined');
+            }
 
             return res.json({
                 items,
+                results: items,
                 filters: discoverFilters,
                 type: discoverType,
                 name: sanitizedPrompt ? sanitizedPrompt.substring(0, MAX_PREVIEW_CATALOG_NAME_LENGTH) : null

@@ -113,6 +113,12 @@ function sanitizeCatalogMeta(item, options = {}) {
         } else {
             badgeText = `ITA`;
         }
+    } else if (item._subBadge) {
+        if (badgeText) {
+            badgeText = `SUB - ${badgeText}`;
+        } else {
+            badgeText = `SUB`;
+        }
     }
 
     // Resolve ERDB config
