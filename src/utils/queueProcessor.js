@@ -12,31 +12,27 @@ function getSeriesBaseId(stremioId) {
     return parts.slice(0, 2).join(':'); // kitsu:1234 or tt12345
 }
 
-async function triggerBinarySearch(baseId, testUserConfig, hostUrl) {
-    console.log(`[BinarySearch] Checking for offset on series ${baseId}...`);
+async function triggerBinarySearch(baseId, testUserConfig, hostUrl, iteration = 0) {
+    if (iteration === 0) console.log(`[BinarySearch] Checking for offset on series ${baseId}...`);
+    
     try {
         const badges = await StreamBadge.find({ baseId }).lean();
         const itaBadges = badges.filter(b => b.hasIta === true);
         const noItaBadges = badges.filter(b => b.hasIta === false);
 
         if (itaBadges.length === 0 || noItaBadges.length === 0) {
-            console.log(`[BinarySearch] No offset possible for ${baseId} yet (need both ITA and NO ITA episodes).`);
+            if (iteration === 0) console.log(`[BinarySearch] No offset possible for ${baseId} yet (need both ITA and NO ITA episodes).`);
             return;
         }
 
-        const getEpNum = (stremioId) => {
-            const parts = stremioId.split(':');
-            return parseInt(parts[parts.length - 1]) || 0;
-        };
+        const getEpNum = (stremioId) => parseInt(stremioId.split(':').pop()) || 0;
 
-        const sortedIta = itaBadges.map(b => getEpNum(b.stremioId)).sort((a, b) => a - b);
+        const maxIta = Math.max(...itaBadges.map(b => getEpNum(b.stremioId)));
         const sortedNoIta = noItaBadges.map(b => getEpNum(b.stremioId)).sort((a, b) => a - b);
-
-        const maxIta = sortedIta[sortedIta.length - 1];
         const nextNoIta = sortedNoIta.find(ep => ep > maxIta);
 
         if (!nextNoIta) {
-            console.log(`[BinarySearch] No gap found for ${baseId} (all checked episodes after E${maxIta} are ITA).`);
+            if (iteration === 0) console.log(`[BinarySearch] No gap found for ${baseId} (all checked episodes after E${maxIta} are ITA).`);
             return;
         }
 
@@ -45,28 +41,36 @@ async function triggerBinarySearch(baseId, testUserConfig, hostUrl) {
             return;
         }
 
-        const midEp = Math.floor((maxIta + nextNoIta) / 2);
+        const gap = nextNoIta - maxIta;
+        // Max iterations = log2(gap) + 3 (per sicurezza sui fallback iniziali)
+        const maxIterations = Math.ceil(Math.log2(gap)) + 3;
         
-        // Ricostruiamo lo stremioId per midEp sostituendo l'ultimo frammento dell'ID dell'episodio nextNoIta
+        if (iteration > maxIterations) {
+            console.error(`[BinarySearch] Max iterations (${maxIterations}) reached for ${baseId} (gap: ${gap}). Aborting.`);
+            return;
+        }
+
+        let midEp;
+        // Euristiche per simulcast: il doppiaggio di solito è indietro di 1 o 2 episodi rispetto al sub
+        if (iteration === 0 && gap > 1) {
+            midEp = nextNoIta - 1;
+        } else if (iteration === 1 && gap > 2) {
+            midEp = nextNoIta - 2;
+        } else {
+            // Normale ricerca binaria matematica
+            midEp = Math.floor((maxIta + nextNoIta) / 2);
+        }
+        
         const templateBadge = noItaBadges.find(b => getEpNum(b.stremioId) === nextNoIta);
         const parts = templateBadge.stremioId.split(':');
         parts[parts.length - 1] = String(midEp);
         const midStremioId = parts.join(':');
 
-        console.log(`[BinarySearch] Gap detected between E${maxIta} and E${nextNoIta}. Checking midpoint E${midEp} (${midStremioId})...`);
+        if (iteration === 0) console.log(`[BinarySearch] Gap detected between E${maxIta} and E${nextNoIta}. Checking midpoint E${midEp}...`);
 
-        // Ritardo di 1 secondo per evitare rate limiting sui server upstream
         await new Promise(r => setTimeout(r, 1000));
-
-        await streamHandler(
-            { id: midStremioId, type: 'series' },
-            testUserConfig,
-            hostUrl
-        );
-
-        // Ricorsione per continuare a dimezzare l'intervallo
-        await triggerBinarySearch(baseId, testUserConfig, hostUrl);
-
+        await streamHandler({ id: midStremioId, type: 'series' }, testUserConfig, hostUrl);
+        await triggerBinarySearch(baseId, testUserConfig, hostUrl, iteration + 1);
     } catch (err) {
         console.error(`[BinarySearch] Error in triggerBinarySearch for ${baseId}:`, err.message);
     }
