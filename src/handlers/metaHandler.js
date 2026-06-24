@@ -114,24 +114,39 @@ async function metaHandler(args, userConfig) {
             meta = await getKitsuMetaDetails(id);
         }
 
-        // Caso 2: È un ID di Anilist (Anime) - Prova a mappare su Kitsu per episodi giocabili
+        // Caso 2: È un ID di Anilist (Anime) - Mantiene metadati Anilist ma inietta episodi Kitsu
         else if (id.startsWith('anilist:')) {
             const anilistId = id.replace('anilist:', '');
             const { getAnilistMeta, mapAnilistToMeta } = require('../clients/anilist');
-            const { getKitsuIdByMalId } = require('../clients/kitsu');
+            const { getKitsuIdByMalId, fetchKitsuEpisodes } = require('../clients/kitsu');
             
             const anilistMeta = await getAnilistMeta(anilistId);
             
-            if (anilistMeta && anilistMeta.idMal) {
-                const kitsuId = await getKitsuIdByMalId(anilistMeta.idMal);
-                if (kitsuId) {
-                    meta = await getKitsuMetaDetails(`kitsu:${kitsuId}`);
+            if (anilistMeta) {
+                // Costruisce i metadati base da Anilist
+                meta = mapAnilistToMeta(anilistMeta, id);
+                
+                // Cerca di risolvere gli episodi giocabili tramite Kitsu
+                if (anilistMeta.idMal) {
+                    const kitsuId = await getKitsuIdByMalId(anilistMeta.idMal);
+                    if (kitsuId) {
+                        const kitsuEps = await fetchKitsuEpisodes(kitsuId);
+                        if (kitsuEps && kitsuEps.length > 0) {
+                            // Normalizza gli episodi Kitsu per Stremio
+                            let absoluteIndex = 1;
+                            meta.videos = kitsuEps.map(ep => {
+                                const season = Number(ep.season) > 0 ? Number(ep.season) : 1;
+                                const episodeNumber = Number(ep.episode) > 0 ? Number(ep.episode) : absoluteIndex++;
+                                return {
+                                    ...ep,
+                                    id: ep.id, // Mantiene kitsu:ID:EPISODIO intatto per Torrentio
+                                    season,
+                                    episode: episodeNumber
+                                };
+                            }).sort((a, b) => (a.season - b.season) || (a.episode - b.episode));
+                        }
+                    }
                 }
-            }
-            
-            // Fallback se Kitsu fallisce
-            if (!meta && anilistMeta) {
-                meta = mapAnilistToMeta(anilistMeta);
             }
         }
 

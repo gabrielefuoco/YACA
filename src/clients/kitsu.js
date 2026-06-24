@@ -120,6 +120,34 @@ async function getKitsuIdByMalId(malId) {
 }
 
 /**
+ * Trova l'ID Kitsu usando il TMDB ID.
+ */
+async function getKitsuIdFromTmdbId(tmdbId, type = 'series') {
+    const cacheKey = `tmdb_mapping:${tmdbId}`;
+    const { value: cached, status: cacheStatus } = await kitsuMappingCache.getWithStatus(cacheKey);
+    if (cacheStatus !== 'miss') return cached;
+
+    try {
+        const site = type === 'movie' ? 'themoviedb/movie' : 'themoviedb/tv';
+        const res = await kitsuClient.get('/mappings', {
+            params: {
+                'filter[externalSite]': site,
+                'filter[externalId]': tmdbId
+            }
+        });
+
+        const kitsuId = res.data?.data?.[0]?.relationships?.item?.data?.id;
+        if (kitsuId) {
+            await kitsuMappingCache.set(cacheKey, kitsuId);
+            return kitsuId;
+        }
+    } catch (e) {
+        console.error(`Errore mapping Kitsu per TMDB ${tmdbId}:`, e.message);
+    }
+    return null;
+}
+
+/**
  * Ricava tutti i Kitsu ID legati da prequels/sequels partendo da un ID di base.
  * @param {string} startKitsuId L'ID Kitsu di partenza
  * @returns {Promise<string[]>} Array di ID Kitsu correlati
