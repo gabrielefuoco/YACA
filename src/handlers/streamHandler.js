@@ -11,27 +11,23 @@ const proxyStreamCache = new CacheManager('proxy_streams', {
     swrMs: 2 * 60 * 1000 
 });
 
-async function fetchStreamsWithFallback(targetUrl) {
-    const workerUrl = process.env.CF_WORKER_URL 
-        ? `${process.env.CF_WORKER_URL.replace(/\/$/, '')}?url=${encodeURIComponent(targetUrl)}` 
-        : null;
-
-    if (workerUrl) {
+async function fetchStreams(targetUrl) {
+    if (process.env.CF_WORKER_URL) {
+        const workerUrl = `${process.env.CF_WORKER_URL.replace(/\/$/, '')}?url=${encodeURIComponent(targetUrl)}`;
         try {
             console.log("[StreamProxy] Fetching via CF Worker:", workerUrl);
-            const response = await axios.get(workerUrl, { timeout: 12000 });
-            if (response.data && Array.isArray(response.data.streams)) {
-                return response.data.streams;
-            }
+            const response = await axios.get(workerUrl, { timeout: 30000 });
+            return response.data?.streams || [];
         } catch (e) {
-            console.warn(`[StreamProxy] CF Worker fetch failed (${e.message}). Falling back to direct fetch...`);
+            console.error(`[StreamProxy] CF Worker fetch failed:`, e.message);
+            return [];
         }
     }
 
-    // Direct fallback
+    // Direct fallback ONLY if worker is NOT configured
     try {
-        console.log("[StreamProxy] Fetching directly:", targetUrl);
-        const response = await axios.get(targetUrl, { timeout: 12000 });
+        console.log("[StreamProxy] Fetching directly (Worker not configured):", targetUrl);
+        const response = await axios.get(targetUrl, { timeout: 15000 });
         return response.data?.streams || [];
     } catch (e) {
         console.error(`[StreamProxy] Direct fetch failed:`, e.message);
@@ -198,13 +194,13 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
             
             if (kitsuProxyId) {
                 const kitsuUrl = `${baseProxyUrl}/stream/${type}/${encodeURIComponent(kitsuProxyId)}.json`;
-                fetchPromises.push(fetchStreamsWithFallback(kitsuUrl));
+                fetchPromises.push(fetchStreams(kitsuUrl));
             }
 
             const mainQueryId = imdbProxyId || (!kitsuProxyId ? id : null);
             if (mainQueryId) {
                 const mainUrl = `${baseProxyUrl}/stream/${type}/${encodeURIComponent(mainQueryId)}.json`;
-                fetchPromises.push(fetchStreamsWithFallback(mainUrl));
+                fetchPromises.push(fetchStreams(mainUrl));
             }
 
             const results = await Promise.all(fetchPromises);
