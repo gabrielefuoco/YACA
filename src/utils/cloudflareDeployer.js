@@ -2,12 +2,16 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const https = require('https');
+
+const ipv4HttpsAgent = new https.Agent({ family: 4, keepAlive: false });
 
 async function isWorkerAlive(url) {
     try {
         const res = await axios.get(url, { 
             timeout: 5000,
-            headers: { 'Connection': 'close' }
+            headers: { 'Connection': 'close' },
+            httpsAgent: ipv4HttpsAgent
         });
         return res.status === 400 || res.status === 200 || res.status === 404;
     } catch (e) {

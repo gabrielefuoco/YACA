@@ -3,6 +3,8 @@ const CacheManager = require('../cache/CacheManager');
 const StreamBadge = require('../db/models/StreamBadge');
 const { resolveImdbId } = require('../clients/tmdb');
 
+const ipv4HttpsAgent = new https.Agent({ family: 4, keepAlive: false });
+
 // Proxy streams cache: 15 minutes TTL, 2 minutes SWR
 const proxyStreamCache = new CacheManager('proxy_streams', {
     ramMax: 500,
@@ -18,7 +20,8 @@ async function fetchStreams(targetUrl) {
             console.log("[StreamProxy] Fetching via CF Worker:", workerUrl);
             const response = await axios.get(workerUrl, { 
                 timeout: 30000,
-                headers: { 'Connection': 'close' }
+                headers: { 'Connection': 'close' },
+                httpsAgent: ipv4HttpsAgent
             });
             return response.data?.streams || [];
         } catch (e) {
@@ -32,7 +35,8 @@ async function fetchStreams(targetUrl) {
         console.log("[StreamProxy] Fetching directly (Worker not configured):", targetUrl);
         const response = await axios.get(targetUrl, { 
             timeout: 15000,
-            headers: { 'Connection': 'close' }
+            headers: { 'Connection': 'close' },
+            httpsAgent: ipv4HttpsAgent
         });
         return response.data?.streams || [];
     } catch (e) {
