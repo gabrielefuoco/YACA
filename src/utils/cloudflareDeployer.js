@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 
+const IS_HF_SPACE = !!process.env.SPACE_ID;
+
 const defaultHeaders = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 };
@@ -58,31 +60,27 @@ async function deployCloudflareWorker() {
     const scriptName = 'yaca-proxy-worker';
     const cacheFilePath = path.join(__dirname, '.cf_worker_url.json');
 
-    // 1. Forza l'utilizzo della variabile d'ambiente anche se il server non riesce a raggiungerla (Cloudflare block su HF)
+    // 1. Forza l'utilizzo della variabile d'ambiente CF_WORKER_SUBDOMAIN
+    //    Su HF, il worker non è raggiungibile dal server ma lo è dai client Stremio
     if (process.env.CF_WORKER_SUBDOMAIN) {
         const envUrl = `https://${scriptName}.${process.env.CF_WORKER_SUBDOMAIN}.workers.dev`;
-        console.log(`[CF-Deployer] CF_WORKER_SUBDOMAIN configurato da env. Verifico se è online...`);
         const isAlive = await isWorkerAlive(envUrl);
         if (isAlive) {
             console.log(`[CF-Deployer] ✅ Worker online (via CF_WORKER_SUBDOMAIN)! URL: ${envUrl}`);
         } else {
-            console.log(`[CF-Deployer] ⚠️ Worker non raggiungibile dal server (possibile blocco IP), ma verrà utilizzato comunque per i client. URL: ${envUrl}`);
+            console.log(`[CF-Deployer] ⚠️ Worker non raggiungibile dal server (possibile blocco IP datacenter), ma verrà usato per i client. URL: ${envUrl}`);
         }
         return envUrl;
     }
 
-    if (!apiToken || !accountId) {
-        return null;
-    }
-
-    // 2. Prova a verificare l'URL salvato in cache locale
+    // 2. Prova cache locale
     if (fs.existsSync(cacheFilePath)) {
         try {
             const cacheData = JSON.parse(fs.readFileSync(cacheFilePath, 'utf8'));
             if (cacheData && cacheData.url) {
-                console.log(`[CF-Deployer] Trovato URL in cache locale: ${cacheData.url}. Verifico se è online...`);
+                console.log(`[CF-Deployer] Trovato URL in cache locale: ${cacheData.url}. Verifico...`);
                 if (await isWorkerAlive(cacheData.url)) {
-                    console.log(`[CF-Deployer] ✅ Worker già online (cache locale)! Salto il deploy. URL: ${cacheData.url}`);
+                    console.log(`[CF-Deployer] ✅ Worker già online (cache locale)! URL: ${cacheData.url}`);
                     return cacheData.url;
                 }
             }
@@ -91,21 +89,39 @@ async function deployCloudflareWorker() {
         }
     }
 
-    // 3. Prova a verificare l'URL memorizzato nel database MongoDB
+    // 3. Prova MongoDB
     const dbSubdomain = await getCachedSubdomainFromDB();
     if (dbSubdomain) {
         const dbUrl = `https://${scriptName}.${dbSubdomain}.workers.dev`;
-        console.log(`[CF-Deployer] Trovato sottodominio nel database MongoDB: ${dbSubdomain}. Verifico se è online...`);
+        console.log(`[CF-Deployer] Trovato sottodominio nel database MongoDB: ${dbSubdomain}. Verifico...`);
         if (await isWorkerAlive(dbUrl)) {
-            console.log(`[CF-Deployer] ✅ Worker già online (via MongoDB)! Salto il deploy. URL: ${dbUrl}`);
-            try {
-                fs.writeFileSync(cacheFilePath, JSON.stringify({ url: dbUrl }), 'utf8');
-            } catch (e) {}
+            console.log(`[CF-Deployer] ✅ Worker già online (via MongoDB)! URL: ${dbUrl}`);
+            try { fs.writeFileSync(cacheFilePath, JSON.stringify({ url: dbUrl }), 'utf8'); } catch (e) {}
+            return dbUrl;
+        }
+
+        // Su HF Spaces: il worker potrebbe non essere raggiungibile dal server
+        // ma funziona perfettamente per i client Stremio (che lo chiamano da reti domestiche).
+        // Usiamo l'URL dal DB senza tentare il deploy (che fallirebbe comunque).
+        if (IS_HF_SPACE) {
+            console.log(`[CF-Deployer] ⚠️ Worker non raggiungibile da HF Spaces (blocco IP datacenter), ma verrà usato per i client Stremio. URL: ${dbUrl}`);
             return dbUrl;
         }
     }
 
-    // 4. Se offline o non trovato, prova a recuperare il sottodominio dalle API Cloudflare
+    // Su HF Spaces senza sottodominio nel DB: le API Cloudflare sono bloccate dal firewall
+    if (IS_HF_SPACE && (!apiToken || !accountId)) {
+        console.warn('[CF-Deployer] ❌ Su HF Spaces senza CLOUDFLARE_API_TOKEN/ACCOUNT_ID.');
+        console.warn('[CF-Deployer] ℹ️ Configura la GitHub Action "deploy-cf-worker.yml" per deployare il worker automaticamente.');
+        console.warn('[CF-Deployer] ℹ️ Oppure imposta CF_WORKER_SUBDOMAIN nei secrets dello Space.');
+        return null;
+    }
+
+    if (!apiToken || !accountId) {
+        return null;
+    }
+
+    // 4. Recupera sottodominio dalle API Cloudflare
     const headers = {
         'Authorization': `Bearer ${apiToken}`,
         'Content-Type': 'application/javascript'
@@ -113,7 +129,7 @@ async function deployCloudflareWorker() {
 
     let subdomain = null;
     try {
-        console.log('[CF-Deployer] Recupero il sottodominio via API per verificare lo stato del worker...');
+        console.log('[CF-Deployer] Recupero il sottodominio via API...');
         const subdomainUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`;
         const subRes = await fetch(subdomainUrl, { headers, signal: AbortSignal.timeout(8000) });
         if (subRes.ok) {
@@ -125,17 +141,27 @@ async function deployCloudflareWorker() {
                 const expectedUrl = `https://${scriptName}.${subdomain}.workers.dev`;
                 console.log(`[CF-Deployer] Verifico lo stato su: ${expectedUrl}`);
                 if (await isWorkerAlive(expectedUrl)) {
-                    console.log(`[CF-Deployer] ✅ Worker già online su Cloudflare! Salto il deploy. URL: ${expectedUrl}`);
+                    console.log(`[CF-Deployer] ✅ Worker già online! URL: ${expectedUrl}`);
                     try { fs.writeFileSync(cacheFilePath, JSON.stringify({ url: expectedUrl }), 'utf8'); } catch (e) {}
                     return expectedUrl;
                 }
             }
         }
     } catch (error) {
-        console.log(`[CF-Deployer] Impossibile verificare lo stato del worker tramite API (${error.message}). Procedo al deploy...`);
+        console.log(`[CF-Deployer] Impossibile contattare API Cloudflare (${error.message}).`);
+        // Su HF Spaces le API sono bloccate: guida l'utente
+        if (IS_HF_SPACE) {
+            console.warn('[CF-Deployer] ℹ️ HF Spaces blocca api.cloudflare.com. Usa la GitHub Action per il deploy del worker.');
+            if (dbSubdomain) {
+                const fallbackUrl = `https://${scriptName}.${dbSubdomain}.workers.dev`;
+                console.log(`[CF-Deployer] ⚠️ Uso l'ultimo URL noto dal DB: ${fallbackUrl}`);
+                return fallbackUrl;
+            }
+            return null;
+        }
     }
 
-    // 5. Esegui il deploy completo
+    // 5. Deploy completo (solo ambienti non-HF o se le API funzionano)
     try {
         console.log('[CF-Deployer] Inizio auto-deploy del Worker...');
         
@@ -170,17 +196,17 @@ async function deployCloudflareWorker() {
         if (!subdomain) throw new Error('Impossibile recuperare il sottodominio .workers.dev');
 
         const finalUrl = `https://${scriptName}.${subdomain}.workers.dev`;
-        console.log(`[CF-Deployer] ✅ Deploy completato con successo! URL: ${finalUrl}`);
+        console.log(`[CF-Deployer] ✅ Deploy completato! URL: ${finalUrl}`);
         
         try { fs.writeFileSync(cacheFilePath, JSON.stringify({ url: finalUrl }), 'utf8'); } catch (e) {}
 
         return finalUrl;
     } catch (error) {
         console.error('[CF-Deployer] ❌ Errore durante il deploy automatico:', error.message);
-        // Fallback: se il db o la cache hanno un dominio, e il deploy fallisce per blocchi IP, restituiamo quello in cache
         if (dbSubdomain) {
-            console.log(`[CF-Deployer] ⚠️ Restituisco l'ultimo URL noto dal DB come fallback: https://${scriptName}.${dbSubdomain}.workers.dev`);
-            return `https://${scriptName}.${dbSubdomain}.workers.dev`;
+            const fallbackUrl = `https://${scriptName}.${dbSubdomain}.workers.dev`;
+            console.log(`[CF-Deployer] ⚠️ Uso l'ultimo URL noto dal DB: ${fallbackUrl}`);
+            return fallbackUrl;
         }
         return null;
     }

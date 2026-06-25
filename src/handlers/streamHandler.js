@@ -1,10 +1,6 @@
-const axios = require('axios');
 const CacheManager = require('../cache/CacheManager');
 const StreamBadge = require('../db/models/StreamBadge');
 const { resolveImdbId } = require('../clients/tmdb');
-
-const https = require('https');
-const ipv4HttpsAgent = new https.Agent({ family: 4, keepAlive: false });
 
 // Proxy streams cache: 15 minutes TTL, 2 minutes SWR
 const proxyStreamCache = new CacheManager('proxy_streams', {
@@ -14,31 +10,78 @@ const proxyStreamCache = new CacheManager('proxy_streams', {
     swrMs: 2 * 60 * 1000 
 });
 
+// Circuit breaker per il CF Worker: evita di perdere tempo se *.workers.dev è irraggiungibile
+const workerCircuit = {
+    failures: 0,
+    lastFailure: 0,
+    THRESHOLD: 3,       // Dopo 3 fallimenti consecutivi, apri il circuito
+    COOLDOWN_MS: 5 * 60 * 1000,  // Riprova dopo 5 minuti
+    isOpen() {
+        if (this.failures < this.THRESHOLD) return false;
+        // Se il cooldown è passato, permetti un tentativo di test
+        if (Date.now() - this.lastFailure > this.COOLDOWN_MS) {
+            this.failures = 0; // Reset per tentare di nuovo
+            return false;
+        }
+        return true;
+    },
+    recordSuccess() { this.failures = 0; },
+    recordFailure() { this.failures++; this.lastFailure = Date.now(); }
+};
+
+const WORKER_HEADERS = {
+    'Connection': 'close',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+};
+
+async function fetchViaWorker(workerUrl, targetUrl, timeoutMs = 20000) {
+    const response = await fetch(workerUrl, {
+        signal: AbortSignal.timeout(timeoutMs),
+        headers: { ...WORKER_HEADERS, 'X-Target-Url': targetUrl }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    const data = await response.json();
+    return data?.streams || [];
+}
+
 async function fetchStreams(targetUrl) {
     if (process.env.CF_WORKER_URL) {
         const workerUrl = process.env.CF_WORKER_URL.replace(/\/$/, '');
-        try {
-            console.log(`[StreamProxy] Fetching via CF Worker (Header Mode): ${workerUrl} for ${targetUrl}`);
-            const response = await fetch(workerUrl, { 
-                signal: AbortSignal.timeout(30000),
-                headers: { 
-                    'Connection': 'close',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'X-Target-Url': targetUrl
-                }
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
-            const data = await response.json();
-            return data?.streams || [];
-        } catch (e) {
-            console.error(`[StreamProxy] CF Worker fetch failed for ${targetUrl}:`, e.message, e.cause || '');
-            console.log(`[StreamProxy] Falling back to direct fetch for ${targetUrl}`);
+
+        // Circuit breaker: se il worker è irraggiungibile, salta subito
+        if (workerCircuit.isOpen()) {
+            console.log(`[StreamProxy] ⚡ Circuit breaker OPEN — skipping CF Worker, returning null for ${targetUrl}`);
+            return null;
         }
+
+        // Retry: fino a 2 tentativi (utile su connessioni HF instabili verso *.workers.dev)
+        const MAX_RETRIES = 2;
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                console.log(`[StreamProxy] Fetching via CF Worker (attempt ${attempt}/${MAX_RETRIES}): ${workerUrl} for ${targetUrl}`);
+                const streams = await fetchViaWorker(workerUrl, targetUrl);
+                workerCircuit.recordSuccess();
+                return streams;
+            } catch (e) {
+                const isLastAttempt = attempt === MAX_RETRIES;
+                const causeMsg = e.cause ? ` | Cause: ${e.cause.code || e.cause.message || e.cause}` : '';
+                console.error(`[StreamProxy] CF Worker attempt ${attempt}/${MAX_RETRIES} failed: ${e.message}${causeMsg}`);
+                if (!isLastAttempt) {
+                    await new Promise(r => setTimeout(r, 1000)); // Aspetta 1s prima del retry
+                }
+            }
+        }
+
+        // Tutti i retry falliti: registra nel circuit breaker
+        workerCircuit.recordFailure();
+        console.error(`[StreamProxy] ❌ CF Worker irraggiungibile dopo ${MAX_RETRIES} tentativi. Circuit failures: ${workerCircuit.failures}/${workerCircuit.THRESHOLD}`);
+        // MAI fallback diretto quando il worker è configurato — protegge l'IP di HF dal ban
+        return null;
     }
 
-    // Direct fallback
+    // Direct fetch SOLO se nessun worker è configurato (self-hosted, localhost, ecc.)
     try {
-        console.log("[StreamProxy] Fetching directly (Worker not configured):", targetUrl);
+        console.log("[StreamProxy] Fetching directly (no CF Worker configured):", targetUrl);
         const response = await fetch(targetUrl, { 
             signal: AbortSignal.timeout(15000),
             headers: { 'Connection': 'close' }
