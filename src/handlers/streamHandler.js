@@ -1,6 +1,7 @@
 const CacheManager = require('../cache/CacheManager');
 const StreamBadge = require('../db/models/StreamBadge');
 const { resolveImdbId } = require('../clients/tmdb');
+const { createAxiosInstance } = require('../utils/httpClient');
 
 // Proxy streams cache: 15 minutes TTL, 2 minutes SWR
 const proxyStreamCache = new CacheManager('proxy_streams', {
@@ -34,14 +35,14 @@ const WORKER_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 };
 
+const streamClient = createAxiosInstance('');
+
 async function fetchViaWorker(workerUrl, targetUrl, timeoutMs = 20000) {
-    const response = await fetch(workerUrl, {
-        signal: AbortSignal.timeout(timeoutMs),
+    const response = await streamClient.get(workerUrl, {
+        timeout: timeoutMs,
         headers: { ...WORKER_HEADERS, 'X-Target-Url': targetUrl }
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
-    const data = await response.json();
-    return data?.streams || [];
+    return response.data?.streams || [];
 }
 
 async function fetchStreams(targetUrl) {
@@ -82,13 +83,11 @@ async function fetchStreams(targetUrl) {
     // Direct fetch SOLO se nessun worker è configurato (self-hosted, localhost, ecc.)
     try {
         console.log("[StreamProxy] Fetching directly (no CF Worker configured):", targetUrl);
-        const response = await fetch(targetUrl, { 
-            signal: AbortSignal.timeout(15000),
+        const response = await streamClient.get(targetUrl, { 
+            timeout: 15000,
             headers: { 'Connection': 'close' }
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
-        const data = await response.json();
-        return data?.streams || [];
+        return response.data?.streams || [];
     } catch (e) {
         console.error(`[StreamProxy] Direct fetch failed for ${targetUrl}:`, e.message);
         return null;
