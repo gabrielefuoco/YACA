@@ -19,15 +19,16 @@ async function fetchStreams(targetUrl) {
         const workerUrl = process.env.CF_WORKER_URL.replace(/\/$/, '');
         try {
             console.log(`[StreamProxy] Fetching via CF Worker (Header Mode): ${workerUrl} for ${targetUrl}`);
-            const response = await axios.get(workerUrl, { 
-                timeout: 30000,
+            const response = await fetch(workerUrl, { 
+                signal: AbortSignal.timeout(30000),
                 headers: { 
                     'Connection': 'close',
                     'X-Target-Url': targetUrl
-                },
-                httpsAgent: ipv4HttpsAgent
+                }
             });
-            return response.data?.streams || [];
+            if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
+            const data = await response.json();
+            return data?.streams || [];
         } catch (e) {
             console.error(`[StreamProxy] CF Worker fetch failed for ${targetUrl}:`, e.message);
             return null;
@@ -37,12 +38,13 @@ async function fetchStreams(targetUrl) {
     // Direct fallback ONLY if worker is NOT configured
     try {
         console.log("[StreamProxy] Fetching directly (Worker not configured):", targetUrl);
-        const response = await axios.get(targetUrl, { 
-            timeout: 15000,
-            headers: { 'Connection': 'close' },
-            httpsAgent: ipv4HttpsAgent
+        const response = await fetch(targetUrl, { 
+            signal: AbortSignal.timeout(15000),
+            headers: { 'Connection': 'close' }
         });
-        return response.data?.streams || [];
+        if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
+        const data = await response.json();
+        return data?.streams || [];
     } catch (e) {
         console.error(`[StreamProxy] Direct fetch failed for ${targetUrl}:`, e.message);
         return null;
