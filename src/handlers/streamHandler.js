@@ -3,6 +3,7 @@ const CacheManager = require('../cache/CacheManager');
 const StreamBadge = require('../db/models/StreamBadge');
 const { resolveImdbId } = require('../clients/tmdb');
 
+const https = require('https');
 const ipv4HttpsAgent = new https.Agent({ family: 4, keepAlive: false });
 
 // Proxy streams cache: 15 minutes TTL, 2 minutes SWR
