@@ -23,6 +23,7 @@ async function fetchStreams(targetUrl) {
                 signal: AbortSignal.timeout(30000),
                 headers: { 
                     'Connection': 'close',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'X-Target-Url': targetUrl
                 }
             });
@@ -30,12 +31,12 @@ async function fetchStreams(targetUrl) {
             const data = await response.json();
             return data?.streams || [];
         } catch (e) {
-            console.error(`[StreamProxy] CF Worker fetch failed for ${targetUrl}:`, e.message);
-            return null;
+            console.error(`[StreamProxy] CF Worker fetch failed for ${targetUrl}:`, e.message, e.cause || '');
+            console.log(`[StreamProxy] Falling back to direct fetch for ${targetUrl}`);
         }
     }
 
-    // Direct fallback ONLY if worker is NOT configured
+    // Direct fallback
     try {
         console.log("[StreamProxy] Fetching directly (Worker not configured):", targetUrl);
         const response = await fetch(targetUrl, { 
