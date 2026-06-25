@@ -19,8 +19,8 @@ async function fetchStreams(targetUrl) {
             const response = await axios.get(workerUrl, { timeout: 30000 });
             return response.data?.streams || [];
         } catch (e) {
-            console.error(`[StreamProxy] CF Worker fetch failed:`, e.message);
-            return [];
+            console.error(`[StreamProxy] CF Worker fetch failed for ${targetUrl}:`, e.message);
+            return null;
         }
     }
 
@@ -30,8 +30,8 @@ async function fetchStreams(targetUrl) {
         const response = await axios.get(targetUrl, { timeout: 15000 });
         return response.data?.streams || [];
     } catch (e) {
-        console.error(`[StreamProxy] Direct fetch failed:`, e.message);
-        return [];
+        console.error(`[StreamProxy] Direct fetch failed for ${targetUrl}:`, e.message);
+        return null;
     }
 }
 
@@ -204,7 +204,13 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
             }
 
             const results = await Promise.all(fetchPromises);
-            const mergedStreams = results.flat();
+            
+            // Se tutte le fetch sono fallite per errori di rete, lancia eccezione per non farle cacciare
+            if (fetchPromises.length > 0 && results.every(r => r === null)) {
+                throw new Error("All stream fetches failed due to network or upstream errors.");
+            }
+
+            const mergedStreams = results.filter(r => r !== null).flat();
 
             // De-duplicate streams
             const streams = [];
