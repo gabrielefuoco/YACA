@@ -135,3 +135,6 @@ node_modules/
 
 # Antigravity Agent
 .agent/
+
+# Secrets file (mai committare!)
+secrets.env

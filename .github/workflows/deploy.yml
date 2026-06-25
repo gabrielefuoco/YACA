@@ -78,7 +78,7 @@ jobs:
       - name: 🔐 Sync Secrets to HF Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE_ID: ${{ vars.HF_SPACE_ID }}
+          HF_SPACE_ID: ${{ secrets.HF_SPACE_ID }}
           # ── Secrets dell'app da sincronizzare ──
           SECRET_MONGODB_URI: ${{ secrets.MONGODB_URI }}
           SECRET_TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
@@ -159,7 +159,7 @@ jobs:
       - name: 📦 Push to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE_ID: ${{ vars.HF_SPACE_ID }}
+          HF_SPACE_ID: ${{ secrets.HF_SPACE_ID }}
         run: |
           if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE_ID" ]; then
             echo "❌ HF_TOKEN o HF_SPACE_ID mancanti. Impossibile pushare."
