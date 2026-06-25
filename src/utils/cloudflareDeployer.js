@@ -1,28 +1,25 @@
-const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
-const https = require('https');
 
+const defaultHeaders = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+};
 
 async function isWorkerAlive(url) {
     try {
-        const res = await axios.get(url, { 
-            timeout: 5000,
-            headers: { 'Connection': 'close' }
+        const res = await fetch(url, { 
+            headers: defaultHeaders,
+            signal: AbortSignal.timeout(5000)
         });
         return res.status === 400 || res.status === 200 || res.status === 404;
     } catch (e) {
-        if (e.response && (e.response.status === 400 || e.response.status === 200 || e.response.status === 404)) {
-            return true;
-        }
         return false;
     }
 }
 
 async function getCachedSubdomainFromDB() {
     try {
-        // Attendi che la connessione MongoDB sia pronta (max 5 secondi)
         let retries = 5;
         while (mongoose.connection.readyState !== 1 && retries > 0) {
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -58,22 +55,24 @@ async function saveSubdomainToDB(subdomain) {
 async function deployCloudflareWorker() {
     const apiToken = process.env.CLOUDFLARE_API_TOKEN;
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-
-    if (!apiToken || !accountId) {
-        return null;
-    }
-
     const scriptName = 'yaca-proxy-worker';
     const cacheFilePath = path.join(__dirname, '.cf_worker_url.json');
 
-    // 1. Prova a verificare l'URL da variabile d'ambiente CF_WORKER_SUBDOMAIN
+    // 1. Forza l'utilizzo della variabile d'ambiente anche se il server non riesce a raggiungerla (Cloudflare block su HF)
     if (process.env.CF_WORKER_SUBDOMAIN) {
         const envUrl = `https://${scriptName}.${process.env.CF_WORKER_SUBDOMAIN}.workers.dev`;
         console.log(`[CF-Deployer] CF_WORKER_SUBDOMAIN configurato da env. Verifico se è online...`);
-        if (await isWorkerAlive(envUrl)) {
-            console.log(`[CF-Deployer] ✅ Worker già online (via CF_WORKER_SUBDOMAIN)! Salto il deploy. URL: ${envUrl}`);
-            return envUrl;
+        const isAlive = await isWorkerAlive(envUrl);
+        if (isAlive) {
+            console.log(`[CF-Deployer] ✅ Worker online (via CF_WORKER_SUBDOMAIN)! URL: ${envUrl}`);
+        } else {
+            console.log(`[CF-Deployer] ⚠️ Worker non raggiungibile dal server (possibile blocco IP), ma verrà utilizzato comunque per i client. URL: ${envUrl}`);
         }
+        return envUrl;
+    }
+
+    if (!apiToken || !accountId) {
+        return null;
     }
 
     // 2. Prova a verificare l'URL salvato in cache locale
@@ -99,7 +98,6 @@ async function deployCloudflareWorker() {
         console.log(`[CF-Deployer] Trovato sottodominio nel database MongoDB: ${dbSubdomain}. Verifico se è online...`);
         if (await isWorkerAlive(dbUrl)) {
             console.log(`[CF-Deployer] ✅ Worker già online (via MongoDB)! Salto il deploy. URL: ${dbUrl}`);
-            // Ripristina la cache locale per velocizzare i prossimi riavvii
             try {
                 fs.writeFileSync(cacheFilePath, JSON.stringify({ url: dbUrl }), 'utf8');
             } catch (e) {}
@@ -110,26 +108,28 @@ async function deployCloudflareWorker() {
     // 4. Se offline o non trovato, prova a recuperare il sottodominio dalle API Cloudflare
     const headers = {
         'Authorization': `Bearer ${apiToken}`,
-        'Content-Type': 'application/javascript'
+        'Content-Type': 'application/javascript',
+        ...defaultHeaders
     };
 
     let subdomain = null;
     try {
         console.log('[CF-Deployer] Recupero il sottodominio via API per verificare lo stato del worker...');
         const subdomainUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`;
-        const subRes = await axios.get(subdomainUrl, { headers, timeout: 8000 });
-        subdomain = subRes.data?.result?.subdomain;
+        const subRes = await fetch(subdomainUrl, { headers, signal: AbortSignal.timeout(8000) });
+        if (subRes.ok) {
+            const data = await subRes.json();
+            subdomain = data?.result?.subdomain;
 
-        if (subdomain) {
-            await saveSubdomainToDB(subdomain);
-            const expectedUrl = `https://${scriptName}.${subdomain}.workers.dev`;
-            console.log(`[CF-Deployer] Verifico lo stato su: ${expectedUrl}`);
-            if (await isWorkerAlive(expectedUrl)) {
-                console.log(`[CF-Deployer] ✅ Worker già online su Cloudflare! Salto il deploy. URL: ${expectedUrl}`);
-                try {
-                    fs.writeFileSync(cacheFilePath, JSON.stringify({ url: expectedUrl }), 'utf8');
-                } catch (e) {}
-                return expectedUrl;
+            if (subdomain) {
+                await saveSubdomainToDB(subdomain);
+                const expectedUrl = `https://${scriptName}.${subdomain}.workers.dev`;
+                console.log(`[CF-Deployer] Verifico lo stato su: ${expectedUrl}`);
+                if (await isWorkerAlive(expectedUrl)) {
+                    console.log(`[CF-Deployer] ✅ Worker già online su Cloudflare! Salto il deploy. URL: ${expectedUrl}`);
+                    try { fs.writeFileSync(cacheFilePath, JSON.stringify({ url: expectedUrl }), 'utf8'); } catch (e) {}
+                    return expectedUrl;
+                }
             }
         }
     } catch (error) {
@@ -143,43 +143,46 @@ async function deployCloudflareWorker() {
         const workerScriptPath = path.join(__dirname, '../../cloudflare/worker.js');
         const scriptContent = fs.readFileSync(workerScriptPath, 'utf8');
 
-        // 1. Carica lo script
         console.log(`[CF-Deployer] Eseguo l'upload del worker '${scriptName}'...`);
         const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}`;
-        await axios.put(uploadUrl, scriptContent, { headers });
+        const uploadRes = await fetch(uploadUrl, { method: 'PUT', headers, body: scriptContent });
+        if (!uploadRes.ok) throw new Error(`Upload fallito: ${uploadRes.status} ${uploadRes.statusText}`);
 
-        // 2. Abilita l'accesso su .workers.dev
         console.log(`[CF-Deployer] Abilito il routing su .workers.dev...`);
         const enableDevUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/subdomain`;
-        await axios.post(enableDevUrl, { enabled: true }, { 
-            headers: { ...headers, 'Content-Type': 'application/json' }
+        const enableRes = await fetch(enableDevUrl, { 
+            method: 'POST', 
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: true })
         });
+        if (!enableRes.ok) throw new Error(`Enable fallito: ${enableRes.status} ${enableRes.statusText}`);
 
-        // 3. Scopri il dominio .workers.dev dell'utente se non recuperato prima
         if (!subdomain) {
             console.log(`[CF-Deployer] Recupero il sottodominio dell'account...`);
             const subdomainUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`;
-            const subRes = await axios.get(subdomainUrl, { headers });
-            subdomain = subRes.data?.result?.subdomain;
-            if (subdomain) {
-                await saveSubdomainToDB(subdomain);
+            const subRes = await fetch(subdomainUrl, { headers });
+            if (subRes.ok) {
+                const data = await subRes.json();
+                subdomain = data?.result?.subdomain;
+                if (subdomain) await saveSubdomainToDB(subdomain);
             }
         }
 
-        if (!subdomain) {
-            throw new Error('Impossibile recuperare il sottodominio .workers.dev');
-        }
+        if (!subdomain) throw new Error('Impossibile recuperare il sottodominio .workers.dev');
 
         const finalUrl = `https://${scriptName}.${subdomain}.workers.dev`;
         console.log(`[CF-Deployer] ✅ Deploy completato con successo! URL: ${finalUrl}`);
         
-        try {
-            fs.writeFileSync(cacheFilePath, JSON.stringify({ url: finalUrl }), 'utf8');
-        } catch (e) {}
+        try { fs.writeFileSync(cacheFilePath, JSON.stringify({ url: finalUrl }), 'utf8'); } catch (e) {}
 
         return finalUrl;
     } catch (error) {
-        console.error('[CF-Deployer] ❌ Errore durante il deploy automatico:', error.response?.data || error.message);
+        console.error('[CF-Deployer] ❌ Errore durante il deploy automatico:', error.message);
+        // Fallback: se il db o la cache hanno un dominio, e il deploy fallisce per blocchi IP, restituiamo quello in cache
+        if (dbSubdomain) {
+            console.log(`[CF-Deployer] ⚠️ Restituisco l'ultimo URL noto dal DB come fallback: https://${scriptName}.${dbSubdomain}.workers.dev`);
+            return `https://${scriptName}.${dbSubdomain}.workers.dev`;
+        }
         return null;
     }
 }
