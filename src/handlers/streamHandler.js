@@ -16,12 +16,15 @@ const proxyStreamCache = new CacheManager('proxy_streams', {
 
 async function fetchStreams(targetUrl) {
     if (process.env.CF_WORKER_URL) {
-        const workerUrl = `${process.env.CF_WORKER_URL.replace(/\/$/, '')}?url=${encodeURIComponent(targetUrl)}`;
+        const workerUrl = process.env.CF_WORKER_URL.replace(/\/$/, '');
         try {
-            console.log("[StreamProxy] Fetching via CF Worker:", workerUrl);
+            console.log(`[StreamProxy] Fetching via CF Worker (Header Mode): ${workerUrl} for ${targetUrl}`);
             const response = await axios.get(workerUrl, { 
                 timeout: 30000,
-                headers: { 'Connection': 'close' },
+                headers: { 
+                    'Connection': 'close',
+                    'X-Target-Url': targetUrl
+                },
                 httpsAgent: ipv4HttpsAgent
             });
             return response.data?.streams || [];

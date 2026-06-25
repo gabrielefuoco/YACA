@@ -12,7 +12,8 @@ addEventListener('fetch', event => {
 
 async function handleRequest(request) {
   const url = new URL(request.url);
-  const targetUrl = url.searchParams.get('url');
+  // Support either query param or custom header
+  const targetUrl = request.headers.get('x-target-url') || url.searchParams.get('url');
 
   // CORS preflight
   if (request.method === 'OPTIONS') {
