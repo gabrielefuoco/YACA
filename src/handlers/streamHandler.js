@@ -16,7 +16,10 @@ async function fetchStreams(targetUrl) {
         const workerUrl = `${process.env.CF_WORKER_URL.replace(/\/$/, '')}?url=${encodeURIComponent(targetUrl)}`;
         try {
             console.log("[StreamProxy] Fetching via CF Worker:", workerUrl);
-            const response = await axios.get(workerUrl, { timeout: 30000 });
+            const response = await axios.get(workerUrl, { 
+                timeout: 30000,
+                headers: { 'Connection': 'close' }
+            });
             return response.data?.streams || [];
         } catch (e) {
             console.error(`[StreamProxy] CF Worker fetch failed for ${targetUrl}:`, e.message);
@@ -27,7 +30,10 @@ async function fetchStreams(targetUrl) {
     // Direct fallback ONLY if worker is NOT configured
     try {
         console.log("[StreamProxy] Fetching directly (Worker not configured):", targetUrl);
-        const response = await axios.get(targetUrl, { timeout: 15000 });
+        const response = await axios.get(targetUrl, { 
+            timeout: 15000,
+            headers: { 'Connection': 'close' }
+        });
         return response.data?.streams || [];
     } catch (e) {
         console.error(`[StreamProxy] Direct fetch failed for ${targetUrl}:`, e.message);

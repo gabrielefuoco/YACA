@@ -5,7 +5,10 @@ const mongoose = require('mongoose');
 
 async function isWorkerAlive(url) {
     try {
-        const res = await axios.get(url, { timeout: 5000 });
+        const res = await axios.get(url, { 
+            timeout: 5000,
+            headers: { 'Connection': 'close' }
+        });
         return res.status === 400 || res.status === 200 || res.status === 404;
     } catch (e) {
         if (e.response && (e.response.status === 400 || e.response.status === 200 || e.response.status === 404)) {
