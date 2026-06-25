@@ -108,8 +108,7 @@ async function deployCloudflareWorker() {
     // 4. Se offline o non trovato, prova a recuperare il sottodominio dalle API Cloudflare
     const headers = {
         'Authorization': `Bearer ${apiToken}`,
-        'Content-Type': 'application/javascript',
-        ...defaultHeaders
+        'Content-Type': 'application/javascript'
     };
 
     let subdomain = null;
