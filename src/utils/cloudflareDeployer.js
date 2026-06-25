@@ -119,7 +119,7 @@ async function deployCloudflareWorker() {
     try {
         console.log('[CF-Deployer] Recupero il sottodominio via API per verificare lo stato del worker...');
         const subdomainUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`;
-        const subRes = await axios.get(subdomainUrl, { headers, timeout: 8000 });
+        const subRes = await axios.get(subdomainUrl, { headers, timeout: 8000, httpsAgent: ipv4HttpsAgent });
         subdomain = subRes.data?.result?.subdomain;
 
         if (subdomain) {
@@ -148,20 +148,21 @@ async function deployCloudflareWorker() {
         // 1. Carica lo script
         console.log(`[CF-Deployer] Eseguo l'upload del worker '${scriptName}'...`);
         const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}`;
-        await axios.put(uploadUrl, scriptContent, { headers });
+        await axios.put(uploadUrl, scriptContent, { headers, httpsAgent: ipv4HttpsAgent });
 
         // 2. Abilita l'accesso su .workers.dev
         console.log(`[CF-Deployer] Abilito il routing su .workers.dev...`);
         const enableDevUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/subdomain`;
         await axios.post(enableDevUrl, { enabled: true }, { 
-            headers: { ...headers, 'Content-Type': 'application/json' } 
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            httpsAgent: ipv4HttpsAgent
         });
 
         // 3. Scopri il dominio .workers.dev dell'utente se non recuperato prima
         if (!subdomain) {
             console.log(`[CF-Deployer] Recupero il sottodominio dell'account...`);
             const subdomainUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`;
-            const subRes = await axios.get(subdomainUrl, { headers });
+            const subRes = await axios.get(subdomainUrl, { headers, httpsAgent: ipv4HttpsAgent });
             subdomain = subRes.data?.result?.subdomain;
             if (subdomain) {
                 await saveSubdomainToDB(subdomain);
