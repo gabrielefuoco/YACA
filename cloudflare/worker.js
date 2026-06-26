@@ -6,12 +6,9 @@
  * e aggirando i Rate Limit.
  */
 
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request))
-})
-
-async function handleRequest(request) {
-  const url = new URL(request.url);
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
   // Support either query param or custom header
   const targetUrl = request.headers.get('x-target-url') || url.searchParams.get('url');
 
@@ -72,3 +69,4 @@ async function handleRequest(request) {
     });
   }
 }
+};
