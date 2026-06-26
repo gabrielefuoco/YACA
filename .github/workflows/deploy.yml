@@ -21,56 +21,45 @@ jobs:
       # ════════════════════════════════════════════════════════════
       # STEP 1: Deploy Cloudflare Worker (se configurato)
       # ════════════════════════════════════════════════════════════
-      - name: 🔧 Deploy Cloudflare Worker
+      - name: 🔧 Deploy Cloudflare Pages Proxy
         id: cf-worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "ℹ️ CLOUDFLARE_API_TOKEN o CLOUDFLARE_ACCOUNT_ID non configurati. Skipping CF Worker deploy."
-            echo "subdomain=" >> $GITHUB_OUTPUT
+            echo "ℹ️ CLOUDFLARE_API_TOKEN o CLOUDFLARE_ACCOUNT_ID non configurati. Skipping CF Proxy deploy."
+            echo "cf_url=" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          SCRIPT_NAME="yaca-proxy-worker"
-          API_BASE="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}"
+          # Creiamo un nome progetto univoco per account usando i primi 8 caratteri dell'account ID
+          PROJECT_NAME="yaca-proxy-${CLOUDFLARE_ACCOUNT_ID:0:8}"
+          
+          # Setup directory per Cloudflare Pages (Advanced Mode: _worker.js gestisce tutto il traffico)
+          mkdir -p cf-pages-deploy
+          cp cloudflare/worker.js cf-pages-deploy/_worker.js
 
-          echo "📤 Upload del worker '${SCRIPT_NAME}'..."
-          UPLOAD_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X PUT "${API_BASE}/workers/scripts/${SCRIPT_NAME}" \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            -H "Content-Type: application/javascript" \
-            --data-binary @cloudflare/worker.js)
+          echo "📦 Installazione Wrangler..."
+          npm install -g wrangler
 
-          if [ "$UPLOAD_STATUS" != "200" ]; then
-            echo "❌ Upload fallito (HTTP $UPLOAD_STATUS)"
-            echo "subdomain=" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          echo "✅ Worker uploadato."
+          echo "🏗️ Creazione progetto Pages (ignora errori se esiste)..."
+          export CI=true
+          npx wrangler pages project create "$PROJECT_NAME" --production-branch main || true
 
-          echo "🌐 Abilitazione routing su .workers.dev..."
-          curl -s -o /dev/null \
-            -X POST "${API_BASE}/workers/scripts/${SCRIPT_NAME}/subdomain" \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d '{"enabled": true}'
+          echo "🚀 Deploy del proxy su Cloudflare Pages..."
+          DEPLOY_OUTPUT=$(npx wrangler pages deploy cf-pages-deploy --project-name "$PROJECT_NAME" --branch main)
+          echo "$DEPLOY_OUTPUT"
 
-          echo "🔍 Recupero sottodominio..."
-          SUBDOMAIN=$(curl -s \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            "${API_BASE}/workers/subdomain" \
-            | python3 -c "import sys,json; print(json.load(sys.stdin).get('result',{}).get('subdomain',''))" 2>/dev/null || echo "")
-
-          if [ -z "$SUBDOMAIN" ]; then
-            echo "⚠️ Impossibile recuperare il sottodominio."
-            echo "subdomain=" >> $GITHUB_OUTPUT
-            exit 0
+          # Estrai l'URL del deploy
+          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | grep -o 'https://[^"]*\.pages\.dev' | head -1)
+          
+          if [ -z "$DEPLOY_URL" ]; then
+            DEPLOY_URL="https://${PROJECT_NAME}.pages.dev"
           fi
 
-          echo "✅ CF Worker deployato: https://${SCRIPT_NAME}.${SUBDOMAIN}.workers.dev"
-          echo "subdomain=${SUBDOMAIN}" >> $GITHUB_OUTPUT
+          echo "✅ CF Proxy deployato su Pages: $DEPLOY_URL"
+          echo "cf_url=${DEPLOY_URL}" >> $GITHUB_OUTPUT
 
       # ════════════════════════════════════════════════════════════
       # STEP 2: Sincronizza Secrets GitHub → HF Space
@@ -92,7 +81,7 @@ jobs:
           SECRET_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SECRET_HOST_URL: ${{ secrets.HOST_URL }}
           # ── Auto-generato dallo step precedente ──
-          CF_SUBDOMAIN: ${{ steps.cf-worker.outputs.subdomain }}
+          CF_URL: ${{ steps.cf-worker.outputs.cf_url }}
         run: |
           if [ -z "$HF_TOKEN" ]; then
             echo "❌ HF_TOKEN non configurato. Impossibile sincronizzare i secrets."
@@ -145,9 +134,9 @@ jobs:
           sync_secret "CLOUDFLARE_ACCOUNT_ID" "$SECRET_CLOUDFLARE_ACCOUNT_ID"
           sync_secret "HOST_URL" "$SECRET_HOST_URL"
 
-          # CF_WORKER_SUBDOMAIN auto-generato dal deploy del worker
-          if [ -n "$CF_SUBDOMAIN" ]; then
-            sync_secret "CF_WORKER_SUBDOMAIN" "$CF_SUBDOMAIN"
+          # CF_WORKER_URL auto-generato dal deploy su Pages
+          if [ -n "$CF_URL" ]; then
+            sync_secret "CF_WORKER_URL" "$CF_URL"
           fi
 
           echo ""
