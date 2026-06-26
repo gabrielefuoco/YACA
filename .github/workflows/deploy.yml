@@ -39,6 +39,7 @@ jobs:
           # Setup directory per Cloudflare Pages (Advanced Mode: _worker.js gestisce tutto il traffico)
           mkdir -p cf-pages-deploy
           cp cloudflare/worker.js cf-pages-deploy/_worker.js
+          echo "YACA Proxy is running" > cf-pages-deploy/index.html
 
           echo "📦 Installazione Wrangler..."
           npm install -g wrangler
