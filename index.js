@@ -148,8 +148,8 @@ app.get('/api/presets', (req, res) => {
 
 app.get('/test-cf', async (req, res) => {
     const { exec } = require('child_process');
-    const url = process.env.CF_WORKER_URL || 'https://yaca-proxy-worker.gabriele-fuoco99.workers.dev';
-    exec(`curl -v -I -s ${url} 2>&1`, (error, stdout, stderr) => {
+    const url = req.query.url || process.env.CF_WORKER_URL || 'https://yaca-proxy-worker.gabriele-fuoco99.workers.dev';
+    exec(`curl -v -I -s "${url}" 2>&1`, (error, stdout, stderr) => {
         res.type('text/plain').send(`URL: ${url}\n\nSTDOUT/STDERR:\n${stdout}\n${stderr}\n\nERROR:\n${error ? error.message : 'none'}`);
     });
 });
