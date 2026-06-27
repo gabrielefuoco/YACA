@@ -216,6 +216,7 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
             // ==========================================
             // LOGICA IBRIDA: TORRENTIO (Primary) -> ICV (Fallback)
             // ==========================================
+            const mainQueryId = imdbProxyId || id;
             const torrentioBaseUrl = process.env.TORRENTIO_URL || 'https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,horriblesubs,nyaasi,tokyotosho,anidex,nekobt,ilcorsaronero|language=italian';
             let isIta = false;
             let streamsForParsing = [];
