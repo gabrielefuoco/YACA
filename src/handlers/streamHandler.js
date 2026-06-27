@@ -1,6 +1,7 @@
 const CacheManager = require('../cache/CacheManager');
 const StreamBadge = require('../db/models/StreamBadge');
 const { resolveImdbId } = require('../clients/tmdb');
+const { hasItaLanguage } = require('../utils/languageParser');
 const { createAxiosInstance } = require('../utils/httpClient');
 
 // Proxy streams cache: 15 minutes TTL, 2 minutes SWR
@@ -123,39 +124,7 @@ function getAdditionalStremioId(originalId, additionalBaseId) {
     return null;
 }
 
-function hasItaKeywords(streams) {
-    if (!Array.isArray(streams)) return false;
-    
-    // Rimuove sezioni esplicitamente dedicate ai sottotitoli per evitare falsi positivi
-    const subFilters = [
-        /\[[^\]]*?subs?[^\]]*?\]/gi,                       // [Subs: Eng, Ita] o [Multi-Subs]
-        /\([^)]*?subs?[^)]*?\)/gi,                         // (Subs: Eng, Ita) o (Multi-Subs)
-        /\b(?:SUB\s*ITA|ITA\s*SUB)\b/gi,                    // SUB ITA, ITA SUB
-        /\b(?:SUBTITLES?|SUBS?)[\s\-_]*(?:ITA|ITALIANO?)\b/gi, // Subtitles Ita, Sub-Ita
-        /\b(?:ITA|ITALIANO?)[\s\-_]*(?:SUBTITLES?|SUBS?)\b/gi  // Ita-Subs, Italian-Sub
-    ];
-
-    const itaRegex = /(?:\b(?:ITA|ITALIAN|ITALIANO)\b|🇮🇹)/i;
-
-    for (const s of streams) {
-        // Prendi solo la prima riga del titolo (il nome del file originale del torrent)
-        // per evitare le bandierine proxy-iniettate nelle righe successive
-        const titleFirstLine = (s.title || '').split('\n')[0];
-        
-        let text = `${titleFirstLine} ${s.name || ''} ${s.description || ''}`;
-        
-        // Applica i filtri per rimuovere i sottotitoli prima di cercare la traccia audio
-        for (const regex of subFilters) {
-            text = text.replace(regex, '');
-        }
-        
-        if (itaRegex.test(text)) {
-            return true;
-        }
-    }
-    return false;
-}
-
+// Local hasItaKeywords removed, using languageParser.js
 /**
  * Gestisce la logica di stream per Stremio.
  * Funziona sia da Proxy Aggregator che da Profile Switcher.
@@ -179,11 +148,7 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
 
     // Proxy Stream Logic
     const proxyUrl = process.env.PROXY_ADDON_URL;
-    if (!proxyUrl) {
-        return { streams: [] };
-    }
-    
-    let baseProxyUrl = proxyUrl;
+    let baseProxyUrl = proxyUrl || '';
     if (baseProxyUrl.endsWith('/manifest.json')) {
         baseProxyUrl = baseProxyUrl.replace('/manifest.json', '');
     }
@@ -248,42 +213,51 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 }
             }
 
-            const fetchPromises = [];
-            
+            // ==========================================
+            // LOGICA IBRIDA: TORRENTIO (Primary) -> ICV (Fallback)
+            // ==========================================
+            const torrentioBaseUrl = process.env.TORRENTIO_URL || 'https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,horriblesubs,nyaasi,tokyotosho,anidex,nekobt,ilcorsaronero|language=italian';
+            let isIta = false;
+            let streamsForParsing = [];
+
+            // 1. Fetch Torrentio
+            const torrentioPromises = [];
             if (kitsuProxyId) {
-                const kitsuUrl = `${baseProxyUrl}/stream/${type}/${encodeURIComponent(kitsuProxyId)}.json`;
-                fetchPromises.push(fetchStreams(kitsuUrl));
+                torrentioPromises.push(fetchStreams(`${torrentioBaseUrl}/stream/${type}/${encodeURIComponent(kitsuProxyId)}.json`));
             }
-
-            const mainQueryId = imdbProxyId || (!kitsuProxyId ? id : null);
             if (mainQueryId) {
-                const mainUrl = `${baseProxyUrl}/stream/${type}/${encodeURIComponent(mainQueryId)}.json`;
-                fetchPromises.push(fetchStreams(mainUrl));
+                torrentioPromises.push(fetchStreams(`${torrentioBaseUrl}/stream/${type}/${encodeURIComponent(mainQueryId)}.json`));
             }
-
-            const results = await Promise.all(fetchPromises);
             
-            // Se tutte le fetch sono fallite per errori di rete, lancia eccezione per non farle cacciare
-            if (fetchPromises.length > 0 && results.every(r => r === null)) {
-                throw new Error("All stream fetches failed due to network or upstream errors.");
-            }
+            const torrentioResults = await Promise.all(torrentioPromises);
+            const torrentioStreams = torrentioResults.filter(r => r !== null).flat();
+            
+            console.log(`[StreamProxy] Torrentio found ${torrentioStreams.length} streams for ${id}. Checking language...`);
+            isIta = hasItaLanguage(torrentioStreams);
 
-            const mergedStreams = results.filter(r => r !== null).flat();
-
-            // De-duplicate streams
-            const streams = [];
-            const seen = new Set();
-            for (const s of mergedStreams) {
-                if (!s) continue;
-                const key = s.infoHash || s.url || s.externalUrl || JSON.stringify(s);
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    streams.push(s);
+            // 2. Fetch ICV Fallback (only if proxyUrl is configured and Torrentio didn't find ITA)
+            if (!isIta && baseProxyUrl) {
+                console.log(`[StreamProxy] ⚠️ Torrentio NON ha trovato ITA per ${id}. Attivazione Fallback su ICV...`);
+                const icvPromises = [];
+                if (kitsuProxyId) {
+                    icvPromises.push(fetchStreams(`${baseProxyUrl}/stream/${type}/${encodeURIComponent(kitsuProxyId)}.json`));
                 }
+                if (mainQueryId) {
+                    icvPromises.push(fetchStreams(`${baseProxyUrl}/stream/${type}/${encodeURIComponent(mainQueryId)}.json`));
+                }
+                
+                const icvResults = await Promise.all(icvPromises);
+                const icvStreams = icvResults.filter(r => r !== null).flat();
+                
+                console.log(`[StreamProxy] ICV Fallback found ${icvStreams.length} streams for ${id}.`);
+                if (hasItaLanguage(icvStreams)) {
+                    isIta = true;
+                    console.log(`[StreamProxy] ICV Fallback successfully found ITA for ${id}!`);
+                }
+            } else if (isIta) {
+                console.log(`[StreamProxy] Torrentio successfully found ITA for ${id}! Skipping ICV.`);
             }
-            console.log(`[StreamProxy] Combined and de-duplicated to ${streams.length} total streams.`);
-            
-            const isIta = hasItaKeywords(streams);
+
             const baseId = getBaseId(id);
 
             const apiKey = userConfig?.apiKeys?.tmdb || userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
@@ -386,7 +360,9 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 );
             }
 
-            return { streams };
+            // Return an empty array. YACA is now a metadata-only addon!
+            // We just need the badge parsing side-effects above.
+            return { streams: [] };
         } catch (e) {
             console.error(`[StreamProxy] Error fetching streams for ${id}:`, e.message);
             throw e;

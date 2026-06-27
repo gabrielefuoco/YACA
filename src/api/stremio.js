@@ -295,7 +295,7 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
             resources: [
                 'catalog',
                 'meta',
-                { name: 'stream', types: ['movie', 'series', 'other'], idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'yaca-profile-'] }
+                { name: 'stream', types: ['other'], idPrefixes: ['yaca-profile-'] }
             ],
             types: ['movie', 'series', 'other'],
             catalogs: catalogs,
