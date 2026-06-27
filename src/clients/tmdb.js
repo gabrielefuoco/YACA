@@ -36,7 +36,6 @@ const KEY_CREW_ROLES = ['Director', 'Writer', 'Screenplay', 'Author', 'Creator']
 
 const TMDB_MIRRORS = [
     TMDB_ENDPOINT,
-    'https://tmdb.org/3',
     'https://api.tmdb.org/3'
 ];
 let currentMirrorIdx = 0;
