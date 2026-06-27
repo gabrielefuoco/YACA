@@ -133,7 +133,8 @@ function sanitizeCatalogMeta(item, options = {}) {
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
             if (hostUrl && !badgeText) {
-                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.background || item._originalPoster || '')}`;
+                // Use wsrv.nl public proxy to offload ERDB fallback checks from Hugging Face Spaces (prevents 429 DDoS bans)
+                sourceImage = `https://wsrv.nl/?url=${encodeURIComponent(erdbUrl)}&default=${encodeURIComponent(item.background || item._originalPoster || '')}`;
             } else {
                 sourceImage = erdbUrl;
             }
@@ -146,7 +147,8 @@ function sanitizeCatalogMeta(item, options = {}) {
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
             if (hostUrl && !badgeText) {
-                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item._originalPoster || '')}`;
+                // Use wsrv.nl public proxy to offload ERDB fallback checks from Hugging Face Spaces (prevents 429 DDoS bans)
+                sourceImage = `https://wsrv.nl/?url=${encodeURIComponent(erdbUrl)}&default=${encodeURIComponent(item._originalPoster || '')}`;
             } else {
                 sourceImage = erdbUrl;
             }
@@ -161,9 +163,10 @@ function sanitizeCatalogMeta(item, options = {}) {
     let videos = item.videos;
 
     if (erdbConfig && erdbBgId) {
-        background = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbBgId}.jpg`;
+        const erdbBgUrl = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbBgId}.jpg`;
+        background = `https://wsrv.nl/?url=${encodeURIComponent(erdbBgUrl)}&default=${encodeURIComponent(item.background || '')}`;
         const erdbLogoUrl = `https://easyratingsdb.com/${erdbConfig}/logo/${erdbBgId}.png`;
-        logo = erdbLogoUrl;
+        logo = `https://wsrv.nl/?url=${encodeURIComponent(erdbLogoUrl)}&default=${encodeURIComponent(item.logo || '')}`;
 
         if (Array.isArray(videos) && videos.length > 0) {
             videos = videos.map(v => {

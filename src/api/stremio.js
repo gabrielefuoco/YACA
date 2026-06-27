@@ -646,6 +646,201 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
                 try {
                     console.log(`[BadgeCache] Background retry generating badge for ${id}...`);
                     const retryBuffer = await generateBadgeImage(originalUrl, episode);
+});
+
+// Switch Profile
+router.get('/users/:userId/switch-profile/:profileId', async (req, res) => {
+    const { userId, profileId } = req.params;
+
+    try {
+        const userConfig = await UserConfig.resolveUserConfig(userId);
+        if (!userConfig) return res.status(404).send('User not found');
+
+        const profileExists = userConfig.profiles && userConfig.profiles.some(p => p.id === profileId);
+        if (!profileExists) return res.status(400).send('Profile not found');
+
+        const newConfigVersion = Date.now().toString(36);
+        await UserConfig.saveUser({
+            userId,
+            config: {
+                activeProfileId: profileId,
+                configVersion: newConfigVersion
+            }
+        });
+
+        const stremioAuthKey = userConfig.apiKeys?.stremio;
+        if (stremioAuthKey) {
+            const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
+            const manifestUrl = `${hostUrl}/${userId}/${newConfigVersion}/manifest.json`;
+            updateStremioAddonCollection(stremioAuthKey, manifestUrl)
+                .then(r => console.log(`[Profile Switch] Sync Stremio completato per utente ${userId}: ${r.success}`))
+                .catch(e => console.error(`[Profile Switch] Errore sync Stremio utente ${userId}:`, e));
+        }
+
+        res.redirect('/assets/profile_updated.mp4');
+    } catch (err) {
+        console.error(`Errore switch profile per user ${userId}:`, err.message);
+        res.status(500).send('Internal validation error');
+    }
+});
+
+// Dynamic image overlay route for episode badges
+router.get('/images/poster/:type/:id/:episode', async (req, res) => {
+    const { type, id, episode } = req.params;
+    const originalUrl = req.query.original;
+
+    if (!originalUrl) {
+        return res.status(400).send('Original image URL is required');
+    }
+
+    // Security check: validate the original image URL host
+    try {
+        const parsedUrl = new URL(originalUrl);
+        const allowedHosts = [
+            'image.tmdb.org',
+            'easyratingsdb.com',
+            'media.kitsu.io',
+            'media.kitsu.app'
+        ];
+        const isAllowed = allowedHosts.some(host => 
+            parsedUrl.hostname === host || parsedUrl.hostname.endsWith('.' + host)
+        );
+
+        if (!isAllowed) {
+            console.warn(`[BadgeCache] Rejected unauthorized domain: ${parsedUrl.hostname}`);
+            return res.status(403).send('Unauthorized image domain');
+        }
+    } catch (e) {
+        return res.status(400).send('Invalid original image URL');
+    }
+
+    const bv = req.query.bv || 'v16';
+    const cacheKey = `${id}_${episode}_${bv}`;
+    // console.log(`[Badge] Request: id=${id}, episode="${episode}", bv=${bv}, textToSVG=${!!textToSVG}`);
+
+    // Helper to perform the download and composition
+    const generateBadgeImage = async (url, badgeText) => {
+        const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 10000 });
+        const baseImageBuffer = Buffer.from(response.data);
+
+        // Get original dimensions
+        const imgMeta = await sharp(baseImageBuffer).metadata();
+        const W = imgMeta.width || 342;
+        const H = imgMeta.height || 513;
+
+        const textLen = badgeText.length;
+        const fontSize = 30; // +15% from 26
+        const badgeWidth = Math.max(115, Math.round(textLen * 17.5 + 42)); // +15% proportional
+        const badgeHeight = 50; // +15% from 44
+        const rx = Math.round(badgeHeight / 2);
+
+        let svgContent = '';
+        if (textToSVG) {
+            const metrics = textToSVG.getMetrics(badgeText, { fontSize });
+            const textWidth = metrics.width;
+            const x = (badgeWidth - textWidth) / 2;
+            const y = (badgeHeight / 2) + (metrics.ascender / 2) - 2;
+            const svgPath = textToSVG.getPath(badgeText, {
+                x: x,
+                y: y,
+                fontSize: fontSize,
+                attributes: { fill: '#ffffff', stroke: '#ffffff', 'stroke-width': '1.0', 'font-weight': 'bold' }
+            });
+            svgContent = svgPath;
+        } else {
+            const xmlEscapedBadgeText = badgeText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            svgContent = `<text x="${badgeWidth / 2}" y="${badgeHeight / 2}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${xmlEscapedBadgeText}</text>`;
+        }
+
+        // Render directly via single SVG - Glass Style mirroring ERDB Apple Glass
+        const svg = `<svg width="${badgeWidth}" height="${badgeHeight}" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="apple-glass-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12" />
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0.04" />
+                </linearGradient>
+                <linearGradient id="apple-glass-border" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25" />
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0.10" />
+                </linearGradient>
+                <filter id="apple-glass-shadow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="2.8" />
+                    <feOffset dx="0" dy="3.2" result="offsetblur" />
+                    <feFlood flood-color="#000000" flood-opacity="0.54" result="glowcolor" />
+                    <feComposite in="glowcolor" in2="offsetblur" operator="in" result="glow" />
+                    <feMerge>
+                        <feMergeNode in="glow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <filter id="text-shadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="1.8" result="blur" />
+                    <feOffset dx="0" dy="1.2" in="blur" result="offsetBlur" />
+                    <feComponentTransfer in="offsetBlur" result="shadow">
+                        <feFuncA type="linear" slope="0.85" />
+                    </feComponentTransfer>
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+            <rect x="0.5" y="0.5" width="${badgeWidth - 1}" height="${badgeHeight - 1}" rx="${rx}" fill="url(#apple-glass-fill)" filter="url(#apple-glass-shadow)" />
+            <rect x="0.5" y="0.5" width="${badgeWidth - 1}" height="${badgeHeight - 1}" rx="${rx}" fill="none" stroke="url(#apple-glass-border)" stroke-width="1" />
+            <g filter="url(#text-shadow)">
+                ${svgContent}
+            </g>
+        </svg>`;
+
+        // Composite badge onto poster at top-right
+        const badgeTop = 24; // Moved slightly lower
+        const badgeRightOffset = 16;
+        const badgeLeft = Math.max(0, W - badgeWidth - badgeRightOffset);
+
+        return await sharp(baseImageBuffer)
+            .composite([{
+                input: Buffer.from(svg),
+                top: badgeTop,
+                left: badgeLeft
+            }])
+            .jpeg({ quality: 90 })
+            .toBuffer();
+    };
+
+    try {
+        // Retrieve from Cache (checks L1 RAM first, then L2 MongoDB)
+        const cachedBase64 = await badgeCache.get(cacheKey);
+        if (cachedBase64) {
+            const buffer = Buffer.from(cachedBase64, 'base64');
+            res.setHeader('Content-Type', 'image/jpeg');
+            res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hours client cache
+            return res.send(buffer);
+        }
+
+        // Cache miss: generate composite image
+        const processedBuffer = await generateBadgeImage(originalUrl, episode);
+
+        // Save to cache (persists to RAM and MongoDB)
+        await badgeCache.set(cacheKey, processedBuffer.toString('base64'));
+
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.send(processedBuffer);
+    } catch (err) {
+        console.error(`[BadgeCache] Error generating badge for ${id}:`, err.message);
+
+        // Fail-safe: redirect to original URL or fallback
+        const fallbackUrl = req.query.fallback || originalUrl;
+        res.redirect(302, fallbackUrl);
+
+        // Asynchronously retry generation in the background solo se NON è un 404 definitivo
+        if (err.response && err.response.status === 404) {
+            console.log(`[BadgeCache] Skipping retry for ${id} because the original image URL returned 404 (Not Found).`);
+        } else {
+            setTimeout(async () => {
+                try {
+                    console.log(`[BadgeCache] Background retry generating badge for ${id}...`);
+                    const retryBuffer = await generateBadgeImage(originalUrl, episode);
                     await badgeCache.set(cacheKey, retryBuffer.toString('base64'));
                     console.log(`[BadgeCache] Background retry success for ${id}!`);
                 } catch (retryErr) {
@@ -653,35 +848,6 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
                 }
             }, 5000);
         }
-    }
-});
-
-// Simple in-memory cache for HEAD requests to avoid spamming ERDB
-const fallbackHeadCache = new Map();
-
-// Fallback route for ERDB posters that might 404 (e.g. unmapped Kitsu items)
-router.get('/images/fallback', async (req, res) => {
-    const { url, fallback } = req.query;
-    if (!url || !fallback) {
-        return res.status(400).send('Missing url or fallback parameter');
-    }
-
-    if (fallbackHeadCache.has(url)) {
-        const isOk = fallbackHeadCache.get(url);
-        return res.redirect(302, isOk ? url : fallback);
-    }
-
-    try {
-        // Fast HEAD request to check if the primary URL exists
-        await axios.head(url, { timeout: 8000 });
-        // It exists! Cache and redirect to the primary URL
-        fallbackHeadCache.set(url, true);
-        res.redirect(302, url);
-    } catch (err) {
-        // Doesn't exist (404) or timeout. Cache and redirect to fallback
-        fallbackHeadCache.set(url, false);
-        console.warn(`[Fallback] Primary image failed (${err.message}), using fallback: ${fallback}`);
-        res.redirect(302, fallback);
     }
 });
 
