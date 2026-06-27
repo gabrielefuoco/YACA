@@ -589,7 +589,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
             // 4. FORMATTAZIONE (STREMIO)
             const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
-            const formattedData = formatStremioCatalog(
+            const formattedData = await formatStremioCatalog(
                 finalResults,
                 baseId,
                 type,

@@ -1,4 +1,5 @@
 const { EPISODE_CATALOG_IDS } = require('../constants');
+const { checkErdbExists } = require('../../utils/erdbCache');
 
 function getEpisodeBadgeText(item) {
     if (!item?.poster) return null;
@@ -93,7 +94,7 @@ function getErdbId(item) {
     return strId;
 }
 
-function sanitizeCatalogMeta(item, options = {}) {
+async function sanitizeCatalogMeta(item, options = {}) {
     if (!item) return item;
 
     // Cache original properties to support multiple formatting passes safely
@@ -133,8 +134,8 @@ function sanitizeCatalogMeta(item, options = {}) {
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
             if (hostUrl && !badgeText) {
-                // Use direct ERDB URL. Stremio Web proxy breaks on wsrv.nl query params.
-                sourceImage = erdbUrl;
+                const isValid = await checkErdbExists(erdbUrl);
+                sourceImage = isValid ? erdbUrl : (item.background || item._originalPoster);
             } else {
                 sourceImage = erdbUrl;
             }
@@ -147,8 +148,8 @@ function sanitizeCatalogMeta(item, options = {}) {
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
             if (hostUrl && !badgeText) {
-                // Use direct ERDB URL. Stremio Web proxy breaks on wsrv.nl query params.
-                sourceImage = erdbUrl;
+                const isValid = await checkErdbExists(erdbUrl);
+                sourceImage = isValid ? erdbUrl : item._originalPoster;
             } else {
                 sourceImage = erdbUrl;
             }
@@ -164,9 +165,12 @@ function sanitizeCatalogMeta(item, options = {}) {
 
     if (erdbConfig && erdbBgId) {
         const erdbBgUrl = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbBgId}.jpg`;
-        background = erdbBgUrl;
+        const bgExists = await checkErdbExists(erdbBgUrl);
+        background = bgExists ? erdbBgUrl : item.background;
+        
         const erdbLogoUrl = `https://easyratingsdb.com/${erdbConfig}/logo/${erdbBgId}.png`;
-        logo = erdbLogoUrl;
+        const logoExists = await checkErdbExists(erdbLogoUrl);
+        logo = logoExists ? erdbLogoUrl : item.logo;
 
         if (Array.isArray(videos) && videos.length > 0) {
             videos = videos.map(v => {
@@ -222,7 +226,7 @@ function sanitizeCatalogMeta(item, options = {}) {
  * Funzione di formattazione finale pura: non esegue più fetch/hydrate (!).
  * Da richiamare DOPO che MetadataHydrator ha finito il suo lavoro.
  */
-function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled, hostUrl, catalogMeta) {
+async function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled, hostUrl, catalogMeta) {
     if (!Array.isArray(results)) return { metas: [] };
 
     const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
@@ -245,9 +249,11 @@ function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled,
         hostUrl
     };
 
-    return {
-        metas: results.map(item => sanitizeCatalogMeta(item, sanitizeOptions))
-    };
+    const metas = await Promise.all(
+        results.map(item => sanitizeCatalogMeta(item, sanitizeOptions))
+    );
+
+    return { metas };
 }
 
 module.exports = {
