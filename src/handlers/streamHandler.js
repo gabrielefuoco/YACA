@@ -12,39 +12,8 @@ const proxyStreamCache = new CacheManager('proxy_streams', {
     swrMs: 2 * 60 * 1000 
 });
 
-// Circuit breaker per il CF Worker: evita di perdere tempo se *.workers.dev è irraggiungibile
-const workerCircuit = {
-    failures: 0,
-    lastFailure: 0,
-    THRESHOLD: 3,       // Dopo 3 fallimenti consecutivi, apri il circuito
-    COOLDOWN_MS: 5 * 60 * 1000,  // Riprova dopo 5 minuti
-    isOpen() {
-        if (this.failures < this.THRESHOLD) return false;
-        // Se il cooldown è passato, permetti un tentativo di test
-        if (Date.now() - this.lastFailure > this.COOLDOWN_MS) {
-            this.failures = 0; // Reset per tentare di nuovo
-            return false;
-        }
-        return true;
-    },
-    recordSuccess() { this.failures = 0; },
-    recordFailure() { this.failures++; this.lastFailure = Date.now(); }
-};
-
-const WORKER_HEADERS = {
-    'Connection': 'close',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-};
-
 const streamClient = createAxiosInstance('');
 
-async function fetchViaWorker(workerUrl, targetUrl, timeoutMs = 20000) {
-    const response = await streamClient.get(workerUrl, {
-        timeout: timeoutMs,
-        headers: { ...WORKER_HEADERS, 'X-Target-Url': targetUrl }
-    });
-    return response.data?.streams || [];
-}
 
 async function fetchStreams(targetUrl) {
     // Backend Stream Fetching (for badges): Always fetch directly.

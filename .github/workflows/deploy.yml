@@ -19,52 +19,9 @@ jobs:
           lfs: false
 
       # ════════════════════════════════════════════════════════════
-      # STEP 1: Deploy Cloudflare Worker (se configurato)
+      # STEP 1: Sincronizza Secrets GitHub → HF Space
       # ════════════════════════════════════════════════════════════
-      - name: 🔧 Deploy Cloudflare Pages Proxy
-        id: cf-worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "ℹ️ CLOUDFLARE_API_TOKEN o CLOUDFLARE_ACCOUNT_ID non configurati. Skipping CF Proxy deploy."
-            echo "cf_url=" >> $GITHUB_OUTPUT
-            exit 0
-          fi
 
-          # Creiamo un nome progetto univoco per account usando i primi 8 caratteri dell'account ID
-          PROJECT_NAME="yaca-proxy-${CLOUDFLARE_ACCOUNT_ID:0:8}"
-          
-          # Setup directory per Cloudflare Pages (Advanced Mode: _worker.js gestisce tutto il traffico)
-          mkdir -p cf-pages-deploy
-          cp cloudflare/worker.js cf-pages-deploy/_worker.js
-          echo "YACA Proxy is running" > cf-pages-deploy/index.html
-
-          echo "📦 Installazione Wrangler..."
-          npm install -g wrangler
-
-          echo "🏗️ Creazione progetto Pages (ignora errori se esiste)..."
-          export CI=true
-          npx wrangler pages project create "$PROJECT_NAME" --production-branch main || true
-
-          echo "🚀 Deploy del proxy su Cloudflare Pages..."
-          DEPLOY_OUTPUT=$(npx wrangler pages deploy cf-pages-deploy --project-name "$PROJECT_NAME" --branch main)
-          echo "$DEPLOY_OUTPUT"
-
-          # Estrai l'URL del deploy
-          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | grep -o 'https://[^"]*\.pages\.dev' | head -1)
-          
-          if [ -z "$DEPLOY_URL" ]; then
-            DEPLOY_URL="https://${PROJECT_NAME}.pages.dev"
-          fi
-
-          echo "✅ CF Proxy deployato su Pages: $DEPLOY_URL"
-          echo "cf_url=${DEPLOY_URL}" >> $GITHUB_OUTPUT
-
-      # ════════════════════════════════════════════════════════════
-      # STEP 2: Sincronizza Secrets GitHub → HF Space
-      # ════════════════════════════════════════════════════════════
       - name: 🔐 Sync Secrets to HF Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -78,12 +35,8 @@ jobs:
           SECRET_MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           SECRET_TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
           SECRET_TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
-          SECRET_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          SECRET_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SECRET_HOST_URL: ${{ secrets.HOST_URL }}
           SECRET_TORRENTIO_URL: ${{ secrets.TORRENTIO_URL }}
-          # ── Auto-generato dallo step precedente ──
-          CF_URL: ${{ steps.cf-worker.outputs.cf_url }}
         run: |
           if [ -z "$HF_TOKEN" ]; then
             echo "❌ HF_TOKEN non configurato. Impossibile sincronizzare i secrets."
@@ -132,21 +85,14 @@ jobs:
           sync_secret "MISTRAL_API_KEY" "$SECRET_MISTRAL_API_KEY"
           sync_secret "TRAKT_CLIENT_ID" "$SECRET_TRAKT_CLIENT_ID"
           sync_secret "TRAKT_CLIENT_SECRET" "$SECRET_TRAKT_CLIENT_SECRET"
-          sync_secret "CLOUDFLARE_API_TOKEN" "$SECRET_CLOUDFLARE_API_TOKEN"
-          sync_secret "CLOUDFLARE_ACCOUNT_ID" "$SECRET_CLOUDFLARE_ACCOUNT_ID"
           sync_secret "HOST_URL" "$SECRET_HOST_URL"
           sync_secret "TORRENTIO_URL" "$SECRET_TORRENTIO_URL"
-
-          # CF_WORKER_URL auto-generato dal deploy su Pages
-          if [ -n "$CF_URL" ]; then
-            sync_secret "CF_WORKER_URL" "$CF_URL"
-          fi
 
           echo ""
           echo "📊 Sincronizzati: $SYNCED | Saltati (non configurati): $SKIPPED"
 
       # ════════════════════════════════════════════════════════════
-      # STEP 3: Push codice su HF Space
+      # STEP 2: Push codice su HF Space
       # ════════════════════════════════════════════════════════════
       - name: 📦 Push to Hugging Face Space
         env:

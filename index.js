@@ -146,22 +146,6 @@ app.get('/api/presets', (req, res) => {
     });
 });
 
-app.get('/test-cf', async (req, res) => {
-    const { exec } = require('child_process');
-    const url = req.query.url || process.env.CF_WORKER_URL || 'https://yaca-proxy-worker.gabriele-fuoco99.workers.dev';
-    exec(`curl -v -I -s "${url}" 2>&1`, (error, stdout, stderr) => {
-        res.type('text/plain').send(`URL: ${url}\n\nSTDOUT/STDERR:\n${stdout}\n${stderr}\n\nERROR:\n${error ? error.message : 'none'}`);
-    });
-});
-
-
-
-
-
-
-
-
-
 // 2. Registra endpoint configuration (Frontend Web)
 const configureLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
 app.post('/api/configure', cookieParser(), configureLimiter, configureRoute);
@@ -201,20 +185,6 @@ const server = app.listen(PORT, () => {
     }
 });
 
-// Auto-deploy Cloudflare Worker (se configurato)
-const { deployCloudflareWorker } = require('./src/utils/cloudflareDeployer');
-if (!process.env.CF_WORKER_URL && process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ACCOUNT_ID) {
-    deployCloudflareWorker().then(url => {
-        if (url) {
-            process.env.CF_WORKER_URL = url;
-            console.log(`[Init] CF_WORKER_URL impostato dinamicamente su: ${url}`);
-        } else {
-            console.warn('[Init] ⚠️ CF Worker non disponibile. Le richieste Anilist e stream andranno dirette.');
-        }
-    });
-} else if (process.env.CF_WORKER_URL) {
-    console.log(`[Init] CF_WORKER_URL già configurato: ${process.env.CF_WORKER_URL}`);
-}
 
 // Graceful shutdown
 const shutdown = (signal) => {
