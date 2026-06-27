@@ -126,7 +126,12 @@ async function sanitizeCatalogMeta(item, options = {}) {
     const activeProfile = userConfig?.profiles?.find(p => p.id === userConfig.activeProfileId);
     const erdbConfig = activeProfile?.settings?.erdbConfig || process.env.ERDB_CONFIG;
 
-    let sourceImage = item._originalPoster;
+    const baseNameFallback = item._originalName || 'Title';
+    const placeholderUrl = `https://via.placeholder.com/300x450/1c1c24/8a5aeb?text=${encodeURIComponent(baseNameFallback)}`;
+    const originalPosterSafe = item._originalPoster || placeholderUrl;
+    const backgroundSafe = item.background || placeholderUrl;
+
+    let sourceImage = originalPosterSafe;
     let finalPosterShape = item.posterShape || 'poster';
 
     if (isLandscapeEnabled) {
@@ -135,12 +140,12 @@ async function sanitizeCatalogMeta(item, options = {}) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
             if (hostUrl && !badgeText) {
                 const isValid = await checkErdbExists(erdbUrl);
-                sourceImage = isValid ? erdbUrl : (item.background || item._originalPoster);
+                sourceImage = isValid ? erdbUrl : backgroundSafe;
             } else {
                 sourceImage = erdbUrl;
             }
         } else {
-            sourceImage = item.background || item._originalPoster;
+            sourceImage = backgroundSafe;
         }
         finalPosterShape = 'landscape';
     } else {
@@ -149,12 +154,12 @@ async function sanitizeCatalogMeta(item, options = {}) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
             if (hostUrl && !badgeText) {
                 const isValid = await checkErdbExists(erdbUrl);
-                sourceImage = isValid ? erdbUrl : item._originalPoster;
+                sourceImage = isValid ? erdbUrl : originalPosterSafe;
             } else {
                 sourceImage = erdbUrl;
             }
         } else {
-            sourceImage = item._originalPoster;
+            sourceImage = originalPosterSafe;
         }
     }
 
@@ -196,7 +201,7 @@ async function sanitizeCatalogMeta(item, options = {}) {
     if (badgeText && hostUrl && sourceImage) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';
-        const fallbackPoster = encodeURIComponent(item._originalPoster || sourceImage);
+        const fallbackPoster = encodeURIComponent(originalPosterSafe || sourceImage);
         poster = `${hostUrl}/images/poster/${typeParam}/${encodeURIComponent(idParam)}/${encodeURIComponent(badgeText)}?original=${encodeURIComponent(sourceImage)}&fallback=${fallbackPoster}&bv=${BADGE_IMG_VERSION}`;
     } else if (badgeText) {
         // Log why poster URL wasn't rewritten (only first time to avoid spam)
