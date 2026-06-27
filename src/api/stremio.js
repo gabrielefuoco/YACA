@@ -673,7 +673,7 @@ router.get('/images/fallback', async (req, res) => {
 
     try {
         // Fast HEAD request to check if the primary URL exists
-        await axios.head(url, { timeout: 3000 });
+        await axios.head(url, { timeout: 8000 });
         // It exists! Cache and redirect to the primary URL
         fallbackHeadCache.set(url, true);
         res.redirect(302, url);

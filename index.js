@@ -184,6 +184,18 @@ app.use(errorMiddleware);
 // Avvia il server
 const server = app.listen(PORT, () => {
     console.log(`🚀 YACA Server in esecuzione su http://localhost:${PORT}`);
+    
+    // Fallback locale in caso non sia configurato nell'env
+    const hostUrl = process.env.HOST_URL || `http://localhost:${PORT}`;
+    
+    // Background queue processor: runs every 30 seconds
+    const { processPendingScans } = require('./src/utils/queueProcessor');
+    setInterval(() => {
+        processPendingScans(hostUrl).catch(err => {
+            console.error('[BackgroundQueue] Error in periodic sweep:', err.message);
+        });
+    }, 30000);
+
     if (!process.env.HOST_URL && !process.env.RENDER_EXTERNAL_URL) {
         console.warn('⚠️ HOST_URL non configurato nel file .env. Verranno usati gli header proxy (X-Forwarded-Host/X-Forwarded-Proto) quando disponibili.');
     }
