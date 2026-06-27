@@ -81,6 +81,7 @@ jobs:
           SECRET_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           SECRET_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SECRET_HOST_URL: ${{ secrets.HOST_URL }}
+          SECRET_TORRENTIO_URL: ${{ secrets.TORRENTIO_URL }}
           # ── Auto-generato dallo step precedente ──
           CF_URL: ${{ steps.cf-worker.outputs.cf_url }}
         run: |
@@ -134,6 +135,7 @@ jobs:
           sync_secret "CLOUDFLARE_API_TOKEN" "$SECRET_CLOUDFLARE_API_TOKEN"
           sync_secret "CLOUDFLARE_ACCOUNT_ID" "$SECRET_CLOUDFLARE_ACCOUNT_ID"
           sync_secret "HOST_URL" "$SECRET_HOST_URL"
+          sync_secret "TORRENTIO_URL" "$SECRET_TORRENTIO_URL"
 
           # CF_WORKER_URL auto-generato dal deploy su Pages
           if [ -n "$CF_URL" ]; then
