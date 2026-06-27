@@ -47,40 +47,9 @@ async function fetchViaWorker(workerUrl, targetUrl, timeoutMs = 20000) {
 }
 
 async function fetchStreams(targetUrl) {
-    if (process.env.CF_WORKER_URL) {
-        const workerUrl = process.env.CF_WORKER_URL.replace(/\/$/, '');
-
-        // Circuit breaker: se il worker è irraggiungibile, salta subito
-        if (workerCircuit.isOpen()) {
-            console.log(`[StreamProxy] ⚡ Circuit breaker OPEN — skipping CF Worker, returning null for ${targetUrl}`);
-            return null;
-        } else {
-            // Retry: fino a 2 tentativi (utile su connessioni HF instabili verso *.workers.dev)
-            const MAX_RETRIES = 2;
-            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-                try {
-                    console.log(`[StreamProxy] Fetching via CF Worker (attempt ${attempt}/${MAX_RETRIES}): ${workerUrl} for ${targetUrl}`);
-                    const streams = await fetchViaWorker(workerUrl, targetUrl);
-                    workerCircuit.recordSuccess();
-                    return streams;
-                } catch (e) {
-                    const isLastAttempt = attempt === MAX_RETRIES;
-                    const causeMsg = e.cause ? ` | Cause: ${e.cause.code || e.cause.message || e.cause}` : '';
-                    console.error(`[StreamProxy] CF Worker attempt ${attempt}/${MAX_RETRIES} failed: ${e.message}${causeMsg}`);
-                    if (!isLastAttempt) {
-                        await new Promise(r => setTimeout(r, 1000)); // Aspetta 1s prima del retry
-                    }
-                }
-            }
-
-            // Tutti i retry falliti: registra nel circuit breaker
-            workerCircuit.recordFailure();
-            console.error(`[StreamProxy] ❌ CF Worker irraggiungibile dopo ${MAX_RETRIES} tentativi. Circuit failures: ${workerCircuit.failures}/${workerCircuit.THRESHOLD}. Fallback diretto DISABILITATO dall'utente per evitare ban.`);
-            return null;
-        }
-    }
-
-    // Direct fetch SOLO se nessun worker è configurato (self-hosted, localhost, ecc.)
+    // Backend Stream Fetching (for badges): Always fetch directly.
+    // The CF Worker is causing ECONNRESET from Hugging Face Spaces.
+    // Since this is server-to-server and not returning streams to the user, direct fetch is safe.
     try {
         console.log("[StreamProxy] Fetching directly (no CF proxy configured):", targetUrl);
         const response = await streamClient.get(targetUrl, { 
