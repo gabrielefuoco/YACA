@@ -133,7 +133,7 @@ async function sanitizeCatalogMeta(item, options = {}) {
         let erdbId = erdbConfig ? getErdbId(item) : null;
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
-            if (hostUrl) {
+            if (hostUrl && !badgeText) {
                 const isValid = await checkErdbExists(erdbUrl);
                 sourceImage = isValid ? erdbUrl : (item.background || item._originalPoster);
             } else {
@@ -147,7 +147,7 @@ async function sanitizeCatalogMeta(item, options = {}) {
         let erdbId = erdbConfig ? getErdbId(item) : null;
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
-            if (hostUrl) {
+            if (hostUrl && !badgeText) {
                 const isValid = await checkErdbExists(erdbUrl);
                 sourceImage = isValid ? erdbUrl : item._originalPoster;
             } else {
