@@ -2,12 +2,14 @@ const { getTmdbMovieDetails } = require('../../clients/tmdb');
 const { normalizeContentId } = require('../../utils/contentId');
 const TmdbScoringData = require('../../models/TmdbScoringData');
 const { MAX_BADGE_CACHE_HYDRATION_ITEMS } = require('../constants');
+const { rateLimitedMap } = require('../../utils/rateLimiter');
 
 async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
     if (!tmdbApiKey || !Array.isArray(metas) || metas.length === 0) return;
 
-    await Promise.all(
-        metas.slice(0, MAX_BADGE_CACHE_HYDRATION_ITEMS).map(async (item) => {
+    await rateLimitedMap(
+        metas.slice(0, MAX_BADGE_CACHE_HYDRATION_ITEMS),
+        async (item) => {
             const itemId = String(item?.id || '');
             if (!itemId || item.rawTMDB) return;
             // Accept both 'tmdb:123' and bare numeric IDs (from TMDB provider before Kitsu translation)
@@ -26,7 +28,8 @@ async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
             } catch (_err) {
                 // Il recupero badge è best-effort: in caso di errore manteniamo il poster originale.
             }
-        })
+        },
+        { batchSize: 3, delayMs: 150 }
     );
 }
 
