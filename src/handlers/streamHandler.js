@@ -20,7 +20,7 @@ async function fetchStreams(targetUrl) {
     // The CF Worker is causing ECONNRESET from Hugging Face Spaces.
     // Since this is server-to-server and not returning streams to the user, direct fetch is safe.
     try {
-        console.log("[StreamProxy] Fetching directly (no CF proxy configured):", targetUrl);
+        // console.log("[StreamProxy] Fetching directly (no CF proxy configured):", targetUrl);
         const response = await streamClient.get(targetUrl, { 
             timeout: 15000,
             headers: { 'Connection': 'close' }
@@ -102,7 +102,7 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 const parts = id.split(':');
                 const tmdbId = parts[1];
                 const imdbId = await resolveImdbId(tmdbId, type, userConfig?.apiKeys?.tmdb);
-                console.log("Resolved imdbId for tmdbId", tmdbId, "is", imdbId);
+                // console.log("Resolved imdbId for tmdbId", tmdbId, "is", imdbId);
                 if (imdbId) {
                     if (parts.length > 2) {
                         imdbProxyId = `${imdbId}:${parts.slice(2).join(':')}`;
@@ -143,7 +143,7 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                                     }
                                 }
                             }
-                            console.log(`[StreamProxy] Resolved IMDb ID ${imdbProxyId} for kitsu ID ${id}`);
+                            // console.log(`[StreamProxy] Resolved IMDb ID ${imdbProxyId} for kitsu ID ${id}`);
                         }
                     }
                 } catch (err) {
@@ -171,12 +171,12 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
             const torrentioResults = await Promise.all(torrentioPromises);
             const torrentioStreams = torrentioResults.filter(r => r !== null).flat();
             
-            console.log(`[StreamProxy] Torrentio found ${torrentioStreams.length} streams for ${id}. Checking language...`);
+            // console.log(`[StreamProxy] Torrentio found ${torrentioStreams.length} streams for ${id}. Checking language...`);
             isIta = hasItaLanguage(torrentioStreams);
 
             // 2. Fetch ICV Fallback (only if proxyUrl is configured and Torrentio didn't find ITA)
             if (!isIta && baseProxyUrl) {
-                console.log(`[StreamProxy] ⚠️ Torrentio NON ha trovato ITA per ${id}. Attivazione Fallback su ICV...`);
+                // console.log(`[StreamProxy] ⚠️ Torrentio NON ha trovato ITA per ${id}. Attivazione Fallback su ICV...`);
                 const icvPromises = [];
                 if (kitsuProxyId) {
                     icvPromises.push(fetchStreams(`${baseProxyUrl}/stream/${type}/${encodeURIComponent(kitsuProxyId)}.json`));
@@ -188,13 +188,13 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 const icvResults = await Promise.all(icvPromises);
                 const icvStreams = icvResults.filter(r => r !== null).flat();
                 
-                console.log(`[StreamProxy] ICV Fallback found ${icvStreams.length} streams for ${id}.`);
+                // console.log(`[StreamProxy] ICV Fallback found ${icvStreams.length} streams for ${id}.`);
                 if (hasItaLanguage(icvStreams)) {
                     isIta = true;
-                    console.log(`[StreamProxy] ICV Fallback successfully found ITA for ${id}!`);
+                    // console.log(`[StreamProxy] ICV Fallback successfully found ITA for ${id}!`);
                 }
             } else if (isIta) {
-                console.log(`[StreamProxy] Torrentio successfully found ITA for ${id}! Skipping ICV.`);
+                // console.log(`[StreamProxy] Torrentio successfully found ITA for ${id}! Skipping ICV.`);
             }
 
             const baseId = getBaseId(id);

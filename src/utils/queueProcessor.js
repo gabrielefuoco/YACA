@@ -13,7 +13,7 @@ function getSeriesBaseId(stremioId) {
 }
 
 async function triggerBinarySearch(baseId, testUserConfig, hostUrl, iteration = 0) {
-    if (iteration === 0) console.log(`[BinarySearch] Checking for offset on series ${baseId}...`);
+    // if (iteration === 0) console.log(`[BinarySearch] Checking for offset on series ${baseId}...`);
     
     try {
         const badges = await StreamBadge.find({ baseId }).lean();
@@ -21,7 +21,7 @@ async function triggerBinarySearch(baseId, testUserConfig, hostUrl, iteration = 
         const noItaBadges = badges.filter(b => b.hasIta === false);
 
         if (itaBadges.length === 0 || noItaBadges.length === 0) {
-            if (iteration === 0) console.log(`[BinarySearch] No offset possible for ${baseId} yet (need both ITA and NO ITA episodes).`);
+            // if (iteration === 0) console.log(`[BinarySearch] No offset possible for ${baseId} yet (need both ITA and NO ITA episodes).`);
             return;
         }
 
@@ -32,12 +32,12 @@ async function triggerBinarySearch(baseId, testUserConfig, hostUrl, iteration = 
         const nextNoIta = sortedNoIta.find(ep => ep > maxIta);
 
         if (!nextNoIta) {
-            if (iteration === 0) console.log(`[BinarySearch] No gap found for ${baseId} (all checked episodes after E${maxIta} are ITA).`);
+            // if (iteration === 0) console.log(`[BinarySearch] No gap found for ${baseId} (all checked episodes after E${maxIta} are ITA).`);
             return;
         }
 
         if (nextNoIta - maxIta <= 1) {
-            console.log(`[BinarySearch] Boundary found! Last ITA is E${maxIta}, first NO ITA is E${nextNoIta}.`);
+            // console.log(`[BinarySearch] Boundary found! Last ITA is E${maxIta}, first NO ITA is E${nextNoIta}.`);
             return;
         }
 
@@ -66,7 +66,7 @@ async function triggerBinarySearch(baseId, testUserConfig, hostUrl, iteration = 
         parts[parts.length - 1] = String(midEp);
         const midStremioId = parts.join(':');
 
-        if (iteration === 0) console.log(`[BinarySearch] Gap detected between E${maxIta} and E${nextNoIta}. Checking midpoint E${midEp}...`);
+        // if (iteration === 0) console.log(`[BinarySearch] Gap detected between E${maxIta} and E${nextNoIta}. Checking midpoint E${midEp}...`);
 
         await new Promise(r => setTimeout(r, 1000));
         await streamHandler({ id: midStremioId, type: 'series' }, testUserConfig, hostUrl);
@@ -77,15 +77,15 @@ async function triggerBinarySearch(baseId, testUserConfig, hostUrl, iteration = 
 }
 
 async function processPendingScans(hostUrl) {
-    console.log('[QueueProcessor] Checking for pending scans...');
+    // console.log('[QueueProcessor] Checking for pending scans...');
     try {
         const pendingItems = await PendingScan.find({ status: 'pending' }).limit(100).lean();
         if (pendingItems.length === 0) {
-            console.log('[QueueProcessor] No pending items in queue.');
+            // console.log('[QueueProcessor] No pending items in queue.');
             return;
         }
 
-        console.log(`[QueueProcessor] Processing ${pendingItems.length} pending items...`);
+        // console.log(`[QueueProcessor] Processing ${pendingItems.length} pending items...`);
 
         const testUserConfig = {
             userId: 'cache_warmer',
@@ -98,7 +98,7 @@ async function processPendingScans(hostUrl) {
             async (item) => {
                 const parts = item.baseId.split(':');
                 const testId = parts.length >= 3 ? item.baseId : (item.type === 'series' ? `${item.baseId}:1:1` : item.baseId);
-                console.log(`[QueueProcessor] Scanning streams for ${testId} (type: ${item.type})...`);
+                // console.log(`[QueueProcessor] Scanning streams for ${testId} (type: ${item.type})...`);
 
                 try {
                     // Call streamHandler to fetch streams, detect ITA, and save badge
@@ -116,7 +116,7 @@ async function processPendingScans(hostUrl) {
                     
                     // Delete from pending scans on success
                     await PendingScan.deleteOne({ _id: item._id });
-                    console.log(`[QueueProcessor] Successfully processed and removed ${item.baseId}`);
+                    // console.log(`[QueueProcessor] Successfully processed and removed ${item.baseId}`);
                 } catch (err) {
                     console.error(`[QueueProcessor] Error processing ${item.baseId}:`, err.message);
                     // DELETE failed items so they don't bloat the DB. 
@@ -127,7 +127,7 @@ async function processPendingScans(hostUrl) {
             { batchSize: 2, delayMs: 1500 }
         );
 
-        console.log('[QueueProcessor] Queue processing completed.');
+        // console.log('[QueueProcessor] Queue processing completed.');
     } catch (e) {
         console.error('[QueueProcessor] Fatal error in QueueProcessor:', e.message);
     }
