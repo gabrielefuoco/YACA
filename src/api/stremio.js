@@ -646,6 +646,14 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
                 try {
                     console.log(`[BadgeCache] Background retry generating badge for ${id}...`);
                     const retryBuffer = await generateBadgeImage(originalUrl, episode);
+                    await badgeCache.set(cacheKey, retryBuffer.toString('base64'));
+                    // console.log(`[BadgeCache] Background retry success for ${id}!`);
+                } catch (retryErr) {
+                    console.error(`[BadgeCache] Background retry failed for ${id}:`, retryErr.message);
+                }
+            }, 5000);
+        }
+    }
 });
 
 // Switch Profile
