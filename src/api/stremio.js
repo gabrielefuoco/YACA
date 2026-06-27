@@ -521,7 +521,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
 
     const bv = req.query.bv || 'v16';
     const cacheKey = `${id}_${episode}_${bv}`;
-    console.log(`[Badge] Request: id=${id}, episode="${episode}", bv=${bv}, textToSVG=${!!textToSVG}`);
+    // console.log(`[Badge] Request: id=${id}, episode="${episode}", bv=${bv}, textToSVG=${!!textToSVG}`);
 
     // Helper to perform the download and composition
     const generateBadgeImage = async (url, badgeText) => {

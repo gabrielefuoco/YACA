@@ -227,10 +227,10 @@ function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled,
 
     // One-shot diagnostic log
     if (!formatStremioCatalog._loggedOnce && (type === 'series' || type === 'anime')) {
-        console.log(`[Badge] formatStremioCatalog: id=${id}, type=${type}, hostUrl="${hostUrl}", shouldBadge=${shouldApplyEpisodeBadge}, resultsCount=${results.length}`);
+        // console.log(`[Badge] formatStremioCatalog: id=${id}, type=${type}, hostUrl="${hostUrl}", shouldBadge=${shouldApplyEpisodeBadge}, resultsCount=${results.length}`);
         if (results.length > 0) {
             const sample = results[0];
-            console.log(`[Badge] Sample item: id=${sample.id}, hasRawTMDB=${!!sample.rawTMDB}, videosCount=${Array.isArray(sample.videos) ? sample.videos.length : 0}, poster=${sample.poster ? sample.poster.substring(0, 80) : 'null'}`);
+            // console.log(`[Badge] Sample item: id=${sample.id}, hasRawTMDB=${!!sample.rawTMDB}, videosCount=${Array.isArray(sample.videos) ? sample.videos.length : 0}, poster=${sample.poster ? sample.poster.substring(0, 80) : 'null'}`);
         }
         formatStremioCatalog._loggedOnce = true;
     }
