@@ -105,7 +105,7 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
                 }
 
                 if (changed) {
-                    console.log('--- fetchTmdbCatalog PARAMS ---', tmdbParams);
+                    // console.log('--- fetchTmdbCatalog PARAMS ---', tmdbParams);
                     const extraResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
                     const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
                     for (const item of extraResults) {

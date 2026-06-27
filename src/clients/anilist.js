@@ -265,7 +265,7 @@ async function getAnilistCatalogFromFilters(filters, type, skip) {
         else if (sortBy === 'release_date.asc' || sortBy === 'first_air_date.asc') variables.sort = ['START_DATE'];
     }
 
-    console.log("Anilist Variables:", variables);
+    // console.log("Anilist Variables:", variables);
 
     try {
         const res = await executeGraphQL(CATALOG_QUERY, variables);
