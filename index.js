@@ -181,16 +181,7 @@ const server = app.listen(PORT, () => {
     }
 });
 
-// Auto-deploy Cloudflare Worker (se configurato)
-const { deployCloudflareWorker } = require('./src/utils/cloudflareDeployer');
-if (!process.env.CF_WORKER_URL && process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ACCOUNT_ID) {
-    deployCloudflareWorker().then(url => {
-        if (url) {
-            process.env.CF_WORKER_URL = url;
-            console.log(`[Init] CF_WORKER_URL impostato dinamicamente su: ${url}`);
-        }
-    });
-}
+// L'auto-deploy del Cloudflare Worker è stato spostato nelle GitHub Actions (.github/workflows/deploy.yml)
 
 // Graceful shutdown
 const shutdown = (signal) => {
