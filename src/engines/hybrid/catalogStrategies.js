@@ -381,7 +381,7 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
  */
 async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    console.log(`[TraktFiltered] userId=${userId}, context=${context}, hasProfile=${!!profile}, hasUser=${!!user}, hasTraktToken=${!!traktToken}, tokenFirst10=${traktToken?.substring(0,10)}`);
+    // console.log(`[TraktFiltered] userId=${userId}, context=${context}, hasProfile=${!!profile}, hasUser=${!!user}, hasTraktToken=${!!traktToken}, tokenFirst10=${traktToken?.substring(0,10)}`);
     if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
@@ -392,7 +392,7 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
         .map(item => item.movie?.ids?.tmdb || item.show?.ids?.tmdb || item.ids?.tmdb)
         .filter(Boolean);
 
-    console.log(`[TraktFiltered] traktTmdbIds count: ${traktTmdbIds.length}`);
+    // console.log(`[TraktFiltered] traktTmdbIds count: ${traktTmdbIds.length}`);
 
     if (traktTmdbIds.length === 0) return [];
 

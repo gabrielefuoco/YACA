@@ -31,7 +31,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         const now = new Date();
         const isStale = (now - profile.lastUpdated) > (1000 * 60 * 60 * 12);
         if (isStale) {
-            console.log(`[Hybrid] Sincronizzazione profilo per ${userId} (${context})...`);
+            // console.log(`[Hybrid] Sincronizzazione profilo per ${userId} (${context})...`);
             syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context).then(async (synced) => {
                 if (synced) {
                     await hybridRecommendationsCache.delete(cacheKey);

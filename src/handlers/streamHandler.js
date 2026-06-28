@@ -158,7 +158,7 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                                     }
                                 }
                             }
-                            console.log(`[StreamProxy] Resolved IMDb ID ${imdbProxyId} for kitsu ID ${id}`);
+                            // console.log(`[StreamProxy] Resolved IMDb ID ${imdbProxyId} for kitsu ID ${id}`);
                         }
                     }
                 } catch (err) {

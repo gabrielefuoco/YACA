@@ -621,7 +621,7 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
                 });
                 return res.data;
             } catch (e) {
-                console.error(`[Episodes] append_to_response batch failed for tv/${tmdbId}:`, e.message);
+                // console.error(`[Episodes] append_to_response batch failed for tv/${tmdbId}:`, e.message);
                 return null;
             }
         }, { batchSize: 2, delayMs: 200 });
