@@ -9,7 +9,6 @@ const { routeCatalogRequest } = require('../catalog/CatalogRouter');
 const { filterWatchedItems } = require('../catalog/processors/FilterWatched');
 const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
 const { formatStremioCatalog } = require('../catalog/formatters/StremioFormatter');
-const { findProfile } = require('../data/profiles');
 function getLatestEpisodeInfo(item) {
     if (!item) return null;
     
@@ -341,8 +340,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 await hydrateEpisodeBadgesFromCache(finalResults, tmdbApiKey);
             }
             const { translateAnimeIdsToKitsu, translateAnimeIdsToImdb } = require('../utils/TmdbToKitsuMapper');
-            const userProfile = await findProfile(userConfig.activeProfile);
-            const animeIdMode = userProfile?.settings?.animeIdMode || 'kitsu';
+            const animeIdMode = activeProfileSettings?.animeIdMode || 'kitsu';
 
             if (animeIdMode === 'imdb') {
                 // Prima converte i TMDB in Kitsu (se ci sono) in modo uniforme
