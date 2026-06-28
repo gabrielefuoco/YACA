@@ -66,7 +66,7 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
     }
 
     // SCENARIO 4.5: ANILIST SIMULCAST -> KITSU MAPPER (Prioritario)
-    if (id === 'yaca_preset_new_anime') {
+    if (baseId === 'preset_anime_simulcast' || id === 'preset_anime_simulcast' || id === 'yaca_preset_anime_simulcast') {
         return await getKitsuCatalogFromAnilist('anilist-simulcast', skip);
     }
     
