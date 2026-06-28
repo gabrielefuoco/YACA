@@ -18,12 +18,12 @@ let textToSVG = null;
 try {
     const fontPath = path.join(__dirname, '../assets/fonts/noto-sans.ttf');
     textToSVG = TextToSVG.loadSync(fontPath);
-    console.log('[Badge] Font loaded: noto-sans.ttf from', fontPath);
+    // console.log('[Badge] Font loaded: noto-sans.ttf from', fontPath);
 } catch (e1) {
     console.warn('[Badge] Could not load noto-sans.ttf:', e1.message);
     try {
         textToSVG = TextToSVG.loadSync(); // uses built-in ipag.ttf from text-to-svg package
-        console.log('[Badge] Font loaded: text-to-svg default (ipag.ttf)');
+        // console.log('[Badge] Font loaded: text-to-svg default (ipag.ttf)');
     } catch (e2) {
         console.error('[Badge] CRITICAL: No font available for badge rendering:', e2.message);
     }
@@ -32,7 +32,7 @@ if (textToSVG) {
     // Verify the font actually works
     try {
         const testPath = textToSVG.getPath('Test', { fontSize: 24, attributes: { fill: 'white' } });
-        console.log('[Badge] Font verification OK, test path length:', testPath.length);
+        // console.log('Badge] Font verification OK, test path length:', testPath.length);
     } catch (ev) {
         console.error('[Badge] Font verification FAILED:', ev.message);
         textToSVG = null;
@@ -519,7 +519,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
 
     const bv = req.query.bv || 'v15';
     const cacheKey = `${id}_${episode}_${bv}`;
-    console.log(`[Badge] Request: id=${id}, episode="${episode}", bv=${bv}, textToSVG=${!!textToSVG}`);
+    // console.log(`[Badge] Request: id=${id}, episode="${episode}", bv=${bv}, textToSVG=${!!textToSVG}`);
 
     // Helper to perform the download and composition
     const generateBadgeImage = async (url, badgeText) => {
@@ -630,7 +630,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         res.setHeader('Cache-Control', 'public, max-age=86400');
         return res.send(processedBuffer);
     } catch (err) {
-        console.error(`[BadgeCache] Error generating badge for ${id}:`, err.message);
+        // console.error(`[BadgeCache] Error generating badge for ${id}:`, err.message);
 
         // Fail-safe: redirect to original URL or fallback
         const fallbackUrl = req.query.fallback || originalUrl;
@@ -639,10 +639,10 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         // Asynchronously retry generation in the background so it's ready next time
         setTimeout(async () => {
             try {
-                console.log(`[BadgeCache] Background retry generating badge for ${id}...`);
+                // console.log(`[BadgeCache] Background retry generating badge for ${id}...`);
                 const retryBuffer = await generateBadgeImage(originalUrl, episode);
                 await badgeCache.set(cacheKey, retryBuffer.toString('base64'));
-                console.log(`[BadgeCache] Background retry success for ${id}!`);
+                // console.log(`[BadgeCache] Background retry success for ${id}!`);
             } catch (retryErr) {
                 console.error(`[BadgeCache] Background retry failed for ${id}:`, retryErr.message);
             }
@@ -674,7 +674,7 @@ router.get('/images/fallback', async (req, res) => {
     } catch (err) {
         // Doesn't exist (404) or timeout. Cache and redirect to fallback
         fallbackHeadCache.set(url, false);
-        console.warn(`[Fallback] Primary image failed (${err.message}), using fallback: ${fallback}`);
+        // console.warn(`[Fallback] Primary image failed (${err.message}), using fallback: ${fallback}`);
         res.redirect(302, fallback);
     }
 });
