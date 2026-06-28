@@ -321,6 +321,30 @@ async function getKitsuMetaDetails(id) {
 /**
  * Risolve un ID Kitsu partendo da un ID TMDB usando l'endpoint mappings.
  */
+async function getKitsuIdFromMalId(malId) {
+    const cacheKey = `mal_mapping:${malId}`;
+    const { value: cached, status: cacheStatus } = await kitsuMappingCache.getWithStatus(cacheKey);
+    if (cacheStatus !== 'miss') return cached;
+
+    try {
+        const res = await kitsuClient.get('/mappings', {
+            params: {
+                'filter[externalSite]': 'myanimelist/anime',
+                'filter[externalId]': malId
+            }
+        });
+
+        const kitsuId = res.data?.data?.[0]?.relationships?.item?.data?.id;
+        if (kitsuId) {
+            await kitsuMappingCache.set(cacheKey, kitsuId);
+            return kitsuId;
+        }
+    } catch (e) {
+        console.error(`Errore mapping Kitsu per MAL ${malId}:`, e.message);
+    }
+    return null;
+}
+
 async function getKitsuIdFromTmdbId(tmdbId, type = 'series') {
     const cacheKey = `tmdb_mapping:${tmdbId}`;
     const { value: cached, status: cacheStatus } = await kitsuMappingCache.getWithStatus(cacheKey);
@@ -516,5 +540,9 @@ module.exports = {
     getKitsuMetaDetails,
     getKitsuIdFromTmdbId,
     getTmdbIdFromKitsuId,
-    fetchKitsuEpisodes
+    fetchKitsuEpisodes,
+    getKitsuIdFromMalId,
+    kitsuClient,
+    toStremioMetaItem,
+    enrichWithTmdb
 };

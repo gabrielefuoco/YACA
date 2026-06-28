@@ -1,26 +1,114 @@
-name: Sync to Hugging Face Hub
+name: 🚀 Deploy YACA
+
+# Workflow unificato: deploya CF Worker + sincronizza secrets su HF + push codice a HF Space
+# Per usarlo: fork della repo → aggiungi secrets su GitHub → esegui l'action → tutto online!
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 jobs:
-  sync-to-hub:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: false
 
-      - name: Prepare and Push to Hugging Face
+      # ════════════════════════════════════════════════════════════
+      # STEP 1: Sincronizza Secrets GitHub → HF Space
+      # ════════════════════════════════════════════════════════════
+
+      - name: 🔐 Sync Secrets to HF Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE_ID: ${{ secrets.HF_SPACE_ID }}
+          # ── Secrets dell'app da sincronizzare ──
+          SECRET_MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          SECRET_TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          SECRET_PROXY_ADDON_URL: ${{ secrets.PROXY_ADDON_URL }}
+          SECRET_JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SECRET_ERDB_CONFIG: ${{ secrets.ERDB_CONFIG }}
+          SECRET_MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          SECRET_TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
+          SECRET_TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
+          SECRET_HOST_URL: ${{ secrets.HOST_URL }}
+          SECRET_TORRENTIO_URL: ${{ secrets.TORRENTIO_URL }}
         run: |
-          set -e
+          if [ -z "$HF_TOKEN" ]; then
+            echo "❌ HF_TOKEN non configurato. Impossibile sincronizzare i secrets."
+            exit 1
+          fi
 
-          echo "Pulizia dei file non necessari per la produzione..."
+          if [ -z "$HF_SPACE_ID" ]; then
+            echo "❌ HF_SPACE_ID non configurato."
+            echo "   Vai su Settings → Secrets and variables → Variables → New repository variable"
+            echo "   Nome: HF_SPACE_ID   Valore: il-tuo-username/YACA"
+            exit 1
+          fi
+
+          API_URL="https://huggingface.co/api/spaces/${HF_SPACE_ID}/secrets"
+          SYNCED=0
+          SKIPPED=0
+
+          sync_secret() {
+            local KEY="$1"
+            local VALUE="$2"
+            if [ -n "$VALUE" ]; then
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+                -X POST "$API_URL" \
+                -H "Authorization: Bearer ${HF_TOKEN}" \
+                -H "Content-Type: application/json" \
+                -d "{\"key\": \"${KEY}\", \"value\": \"${VALUE}\"}")
+              if [ "$STATUS" = "200" ] || [ "$STATUS" = "201" ]; then
+                echo "  ✅ ${KEY}"
+                SYNCED=$((SYNCED + 1))
+              else
+                echo "  ⚠️ ${KEY} (HTTP $STATUS)"
+              fi
+            else
+              SKIPPED=$((SKIPPED + 1))
+            fi
+          }
+
+          echo "🔐 Sincronizzazione secrets su HF Space: ${HF_SPACE_ID}"
+          echo ""
+
+          sync_secret "MONGODB_URI" "$SECRET_MONGODB_URI"
+          sync_secret "TMDB_API_KEY" "$SECRET_TMDB_API_KEY"
+          sync_secret "PROXY_ADDON_URL" "$SECRET_PROXY_ADDON_URL"
+          sync_secret "JWT_SECRET" "$SECRET_JWT_SECRET"
+          sync_secret "ERDB_CONFIG" "$SECRET_ERDB_CONFIG"
+          sync_secret "MISTRAL_API_KEY" "$SECRET_MISTRAL_API_KEY"
+          sync_secret "TRAKT_CLIENT_ID" "$SECRET_TRAKT_CLIENT_ID"
+          sync_secret "TRAKT_CLIENT_SECRET" "$SECRET_TRAKT_CLIENT_SECRET"
+          sync_secret "HOST_URL" "$SECRET_HOST_URL"
+          sync_secret "TORRENTIO_URL" "$SECRET_TORRENTIO_URL"
+
+          echo ""
+          echo "📊 Sincronizzati: $SYNCED | Saltati (non configurati): $SKIPPED"
+
+      # ════════════════════════════════════════════════════════════
+      # STEP 2: Push codice su HF Space
+      # ════════════════════════════════════════════════════════════
+      - name: 📦 Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE_ID: ${{ secrets.HF_SPACE_ID }}
+        run: |
+          if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE_ID" ]; then
+            echo "❌ HF_TOKEN o HF_SPACE_ID mancanti. Impossibile pushare."
+            exit 1
+          fi
+
+          echo "🧹 Pulizia dei file non necessari..."
           rm -f frontend/lint_output.json || true
+
+          # Estrai username dal HF_SPACE_ID (formato: username/repo)
+          HF_USERNAME=$(echo "$HF_SPACE_ID" | cut -d'/' -f1)
 
           rm -rf .git
           git init
@@ -29,21 +117,41 @@ jobs:
           git config user.name "GitHub Action"
           git config user.email "actions@github.com"
 
-          echo "Configurazione di Git LFS per immagini e video..."
+          echo "📦 Configurazione Git LFS..."
           git lfs install
           git lfs track "*.mp4"
           git lfs track "*.png"
           git lfs track "*.jpg"
           git lfs track "*.jpeg"
 
-          echo "Creazione del pacchetto di deploy..."
+          echo "📦 Creazione pacchetto di deploy..."
           git add .gitattributes
           git add .
           git commit -m "🚀 Auto-deploy from GitHub Actions"
 
-          git remote add hf "https://Gabriele-fuoco:${HF_TOKEN}@huggingface.co/spaces/Gabriele-fuoco/YACA"
+          git remote add hf "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_ID}"
           git config http.postBuffer 1048576000
           git config http.version HTTP/1.1
 
-          echo "Inviando codice e file multimediali LFS a Hugging Face..."
-          git -c protocol.version=0 push -f hf main || { echo "Force push to Hugging Face failed. Check HF_TOKEN and remote connectivity."; exit 1; }
+          echo "🚀 Push a Hugging Face Space: ${HF_SPACE_ID}..."
+          git -c protocol.version=0 push -f hf main || { echo "❌ Push fallito. Verifica HF_TOKEN e HF_SPACE_ID."; exit 1; }
+
+          echo "✅ Deploy completato su https://huggingface.co/spaces/${HF_SPACE_ID}"
+
+      # ════════════════════════════════════════════════════════════
+      # STEP 3: Deploy Cloudflare Worker Proxy
+      # ════════════════════════════════════════════════════════════
+      - name: 🚀 Deploy Cloudflare Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "⚠️ Credenziali Cloudflare mancanti. Skip deploy del Worker."
+            exit 0
+          fi
+          echo "🔧 Installazione Wrangler..."
+          npm install -g wrangler
+          echo "🚀 Deploy del Worker su Cloudflare..."
+          cd cloudflare
+          wrangler deploy

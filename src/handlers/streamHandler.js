@@ -166,54 +166,49 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 }
             }
 
-            const fetchPromises = [];
-            
-            if (kitsuProxyId) {
-                const kitsuUrl = `${baseProxyUrl}/stream/${type}/${encodeURIComponent(kitsuProxyId)}.json`;
-                const kitsuFetchUrl = process.env.CF_WORKER_URL ? `${process.env.CF_WORKER_URL}?url=${encodeURIComponent(kitsuUrl)}` : kitsuUrl;
-                console.log("[StreamProxy] Fetching Kitsu URL:", kitsuFetchUrl);
-                fetchPromises.push(
-                    axios.get(kitsuFetchUrl, { timeout: 15000 })
-                        .then(r => r.data?.streams || [])
-                        .catch(e => {
-                            console.error(`[StreamProxy] Kitsu fetch failed:`, e.message);
-                            return [];
-                        })
-                );
-            }
+            const torrentioBaseUrl = process.env.TORRENTIO_URL || 'https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,horriblesubs,nyaasi,tokyotosho,anidex|language=italian';
+            const fetchStreams = async (url) => {
+                const fetchUrl = process.env.CF_WORKER_URL ? `${process.env.CF_WORKER_URL}?url=${encodeURIComponent(url)}` : url;
+                try {
+                    const r = await axios.get(fetchUrl, { timeout: 15000 });
+                    return r.data?.streams || [];
+                } catch (e) {
+                    return [];
+                }
+            };
 
             const mainQueryId = imdbProxyId || (!kitsuProxyId ? id : null);
-            if (mainQueryId) {
-                const mainUrl = `${baseProxyUrl}/stream/${type}/${encodeURIComponent(mainQueryId)}.json`;
-                const mainFetchUrl = process.env.CF_WORKER_URL ? `${process.env.CF_WORKER_URL}?url=${encodeURIComponent(mainUrl)}` : mainUrl;
-                console.log("[StreamProxy] Fetching Main URL:", mainFetchUrl);
-                fetchPromises.push(
-                    axios.get(mainFetchUrl, { timeout: 15000 })
-                        .then(r => r.data?.streams || [])
-                        .catch(e => {
-                            console.error(`[StreamProxy] Main fetch failed:`, e.message);
-                            return [];
-                        })
-                );
+            const torrentioPromises = [];
+            
+            if (kitsuProxyId) {
+                torrentioPromises.push(fetchStreams(`${torrentioBaseUrl}/stream/${type}/${encodeURIComponent(kitsuProxyId)}.json`));
             }
+            if (mainQueryId) {
+                torrentioPromises.push(fetchStreams(`${torrentioBaseUrl}/stream/${type}/${encodeURIComponent(mainQueryId)}.json`));
+            }
+            
+            const torrentioResults = await Promise.all(torrentioPromises);
+            const torrentioStreams = torrentioResults.flat();
+            
+            let isIta = hasItaKeywords(torrentioStreams);
 
-            const results = await Promise.all(fetchPromises);
-            const mergedStreams = results.flat();
-
-            // De-duplicate streams
-            const streams = [];
-            const seen = new Set();
-            for (const s of mergedStreams) {
-                if (!s) continue;
-                const key = s.infoHash || s.url || s.externalUrl || JSON.stringify(s);
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    streams.push(s);
+            // 2. Fetch ICV Fallback
+            if (!isIta && baseProxyUrl) {
+                const icvPromises = [];
+                if (kitsuProxyId) {
+                    icvPromises.push(fetchStreams(`${baseProxyUrl}/stream/${type}/${encodeURIComponent(kitsuProxyId)}.json`));
+                }
+                if (mainQueryId) {
+                    icvPromises.push(fetchStreams(`${baseProxyUrl}/stream/${type}/${encodeURIComponent(mainQueryId)}.json`));
+                }
+                
+                const icvResults = await Promise.all(icvPromises);
+                const icvStreams = icvResults.flat();
+                
+                if (hasItaKeywords(icvStreams)) {
+                    isIta = true;
                 }
             }
-            console.log(`[StreamProxy] Combined and de-duplicated to ${streams.length} total streams.`);
-            
-            const isIta = hasItaKeywords(streams);
             const baseId = getBaseId(id);
 
             const apiKey = userConfig?.apiKeys?.tmdb || userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
@@ -316,7 +311,7 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 );
             }
 
-            return { streams };
+            return { streams: [] };
         } catch (e) {
             console.error(`[StreamProxy] Error fetching streams for ${id}:`, e.message);
             throw e;

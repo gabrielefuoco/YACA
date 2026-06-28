@@ -1,4 +1,5 @@
-const { fetchKitsuCatalog, fetchKitsuEpisodes } = require('../../clients/kitsu');
+const { fetchKitsuCatalog, fetchKitsuEpisodes, getKitsuIdFromMalId, kitsuClient, toStremioMetaItem, enrichWithTmdb } = require('../../clients/kitsu');
+const { fetchAnilistCatalog } = require('../../clients/anilist');
 const { rateLimitedMap } = require('../../utils/rateLimiter');
 
 async function getKitsuCatalog(id, skip) {
@@ -156,4 +157,39 @@ async function getKitsuCatalogFromFilters(filters, type, skip) {
     }
 }
 
-module.exports = { getKitsuCatalog, getKitsuCatalogFromFilters };
+async function getKitsuCatalogFromAnilist(catalogId, skip) {
+    try {
+        const anilistItems = await fetchAnilistCatalog(catalogId, skip);
+        if (!anilistItems || anilistItems.length === 0) return [];
+        
+        const results = [];
+        await rateLimitedMap(
+            anilistItems,
+            async (item) => {
+                if (!item.idMal) return;
+                const kitsuId = await getKitsuIdFromMalId(item.idMal);
+                if (!kitsuId) return;
+                
+                try {
+                    const res = await kitsuClient.get(`/anime/${kitsuId}`);
+                    const kitsuItem = res.data.data;
+                    const meta = toStremioMetaItem(kitsuItem);
+                    if (meta) {
+                        await enrichWithTmdb(meta, kitsuId);
+                        const episodes = await fetchKitsuEpisodes(kitsuId);
+                        meta.videos = episodes || [];
+                        results.push(meta);
+                    }
+                } catch(e) { }
+            },
+            { batchSize: 5, delayMs: 100 }
+        );
+        
+        return results;
+    } catch (e) {
+        console.error('Errore getKitsuCatalogFromAnilist:', e.message);
+        return [];
+    }
+}
+
+module.exports = { getKitsuCatalog, getKitsuCatalogFromFilters, getKitsuCatalogFromAnilist };
