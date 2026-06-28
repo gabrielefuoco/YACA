@@ -674,7 +674,7 @@ router.get('/images/fallback', async (req, res) => {
     } catch (err) {
         // Doesn't exist (404) or timeout. Cache and redirect to fallback
         fallbackHeadCache.set(url, false);
-        // console.warn(`[Fallback] Primary image failed (${err.message}), using fallback: ${fallback}`);
+        console.warn(`[Fallback] Primary image failed (${err.message}), using fallback: \n${fallback}`);
         res.redirect(302, fallback);
     }
 });
