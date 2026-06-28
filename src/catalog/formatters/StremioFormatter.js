@@ -185,9 +185,25 @@ function sanitizeCatalogMeta(item, options = {}) {
         }
     }
 
-    const baseName = item.name;
-    const name = (badgeText && baseName)
-        ? `${baseName} - ${badgeText}`
+    let baseName = item.name;
+    const isKitsu = item.id && (item.id.startsWith('kitsu:') || item.id.includes(':absolute:'));
+    if (isKitsu && Array.isArray(item.videos) && item.videos.length > 0) {
+        const sampleVideo = item.videos.find(v => v.tmdbSeason) || item.videos[0];
+        const actualSeason = sampleVideo.tmdbSeason || sampleVideo.season;
+        if (actualSeason && !baseName.toLowerCase().includes('stagione')) {
+            baseName = `${baseName} (Stagione ${actualSeason})`;
+        }
+    }
+
+    let nameSuffix = badgeText;
+    if (nameSuffix && nameSuffix.startsWith('ITA - ')) {
+        nameSuffix = nameSuffix.substring(6);
+    } else if (nameSuffix === 'ITA') {
+        nameSuffix = null;
+    }
+
+    const name = (nameSuffix && baseName)
+        ? `${baseName} - ${nameSuffix}`
         : baseName;
 
     return {
