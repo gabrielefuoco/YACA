@@ -223,14 +223,16 @@ async function fetchKitsuEpisodes(kitsuId) {
                         let targetSeason = inferredSeason;
                         let episodeOffset = 0;
                         
+                        let mappingSafe = true;
                         if (!tmdbHasInferredSeason && inferredSeason > 1) {
-                            // If TMDB does not have the inferred season, it means seasons are likely combined under Season 1
-                            targetSeason = 1;
-                            // Assume standard 12 episodes per season for anime
-                            episodeOffset = (inferredSeason - 1) * 12;
+                            // TMDB combined seasons into Season 1, but we don't know the exact offset (assuming 12/24 is dangerous).
+                            // We abort TMDB episode matching for this season to prevent mixing wrong streams in Torrentio.
+                            mappingSafe = false;
                         }
                         
                         episodes.forEach(kitsuEp => {
+                            if (!mappingSafe) return;
+
                             // 1. Try matching by target season and episode number (with offset)
                             let match = sortedTmdb.find(t => t.season === targetSeason && t.episode === (kitsuEp.episode + episodeOffset));
                             
