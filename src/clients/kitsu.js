@@ -411,6 +411,51 @@ function cleanTitleForSearch(title) {
 }
 
 /**
+ * Inferisce la stagione TMDB corretta confrontando la startDate di Kitsu
+ * con le air_date delle stagioni TMDB. Tolleranza di 365 giorni.
+ * Fallback a detectSeasonFromTitle se non trova corrispondenza.
+ */
+async function inferSeasonFromAirDate(tmdbId, kitsuStartDate, titleFallback, tmdbKey) {
+    if (!kitsuStartDate || !tmdbKey) return detectSeasonFromTitle(titleFallback);
+
+    try {
+        const { createTmdbClient } = require('./tmdb');
+        const tmdbClient = createTmdbClient(tmdbKey);
+        const showRes = await tmdbClient.get(`/tv/${tmdbId}`);
+        const seasons = showRes.data?.seasons;
+        if (!seasons || seasons.length === 0) return detectSeasonFromTitle(titleFallback);
+
+        const kitsuDate = new Date(kitsuStartDate);
+        if (isNaN(kitsuDate.getTime())) return detectSeasonFromTitle(titleFallback);
+
+        let bestSeason = null;
+        let bestDiff = Infinity;
+
+        for (const season of seasons) {
+            if (season.season_number === 0) continue; // skip specials
+            if (!season.air_date) continue;
+
+            const seasonDate = new Date(season.air_date);
+            if (isNaN(seasonDate.getTime())) continue;
+
+            const diffDays = Math.abs(kitsuDate - seasonDate) / (1000 * 60 * 60 * 24);
+            if (diffDays < bestDiff) {
+                bestDiff = diffDays;
+                bestSeason = season.season_number;
+            }
+        }
+
+        if (bestSeason !== null && bestDiff <= 365) {
+            return bestSeason;
+        }
+
+        return detectSeasonFromTitle(titleFallback);
+    } catch (e) {
+        return detectSeasonFromTitle(titleFallback);
+    }
+}
+
+/**
  * Risolve un ID TMDB partendo da un ID Kitsu usando l'endpoint mappings.
  */
 async function getTmdbIdFromKitsuId(kitsuId) {
@@ -424,6 +469,8 @@ async function getTmdbIdFromKitsuId(kitsuId) {
         let titlesToTry = [];
         let isMovie = false;
         let inferredSeason = 1;
+        let kitsuStartDate = null;
+        const tmdbKey = process.env.TMDB_API_KEY;
 
         try {
             const animeRes = await kitsuClient.get(`/anime/${kitsuId}`);
@@ -434,6 +481,7 @@ async function getTmdbIdFromKitsuId(kitsuId) {
                 if (attrs.canonicalTitle) titlesToTry.push(attrs.canonicalTitle);
                 
                 canonicalTitle = attrs.titles?.en || attrs.titles?.en_jp || attrs.canonicalTitle || '';
+                kitsuStartDate = attrs.startDate || null;
                 inferredSeason = detectSeasonFromTitle(canonicalTitle);
                 isMovie = attrs.subtype === 'movie';
             }
@@ -454,6 +502,9 @@ async function getTmdbIdFromKitsuId(kitsuId) {
         if (tmdbMapping) {
             const tmdbId = tmdbMapping.attributes.externalId;
             const type = tmdbMapping.attributes.externalSite.includes('tv') ? 'tv' : 'movie';
+            if (type === 'tv' && tmdbKey) {
+                inferredSeason = await inferSeasonFromAirDate(tmdbId, kitsuStartDate, canonicalTitle, tmdbKey);
+            }
             const result = { tmdbId, type, inferredSeason };
             await kitsuMappingCache.set(cacheKey, result);
             return result;
@@ -471,7 +522,6 @@ async function getTmdbIdFromKitsuId(kitsuId) {
                 tvdbId = tvdbId.split('/')[0];
             }
 
-            const tmdbKey = process.env.TMDB_API_KEY;
             if (tmdbKey && tvdbId) {
                 const { createTmdbClient } = require('./tmdb');
                 const tmdbClient = createTmdbClient(tmdbKey);
@@ -492,6 +542,9 @@ async function getTmdbIdFromKitsuId(kitsuId) {
                 }
 
                 if (tmdbId) {
+                    if (type === 'tv' && tmdbKey) {
+                        inferredSeason = await inferSeasonFromAirDate(tmdbId, kitsuStartDate, canonicalTitle, tmdbKey);
+                    }
                     const result = { tmdbId, type, inferredSeason };
                     await kitsuMappingCache.set(cacheKey, result);
                     return result;
@@ -501,7 +554,6 @@ async function getTmdbIdFromKitsuId(kitsuId) {
 
         // Fallback to searching TMDB by title (using canonicalTitle or english title cleaned)
         const cleanedTitles = Array.from(new Set(titlesToTry.map(cleanTitleForSearch))).filter(t => t.length > 0);
-        const tmdbKey = process.env.TMDB_API_KEY;
         if (tmdbKey && cleanedTitles.length > 0) {
             const { createTmdbClient } = require('./tmdb');
             const tmdbClient = createTmdbClient(tmdbKey);
@@ -526,6 +578,9 @@ async function getTmdbIdFromKitsuId(kitsuId) {
             }
             
             if (tmdbId) {
+                if (searchType === 'tv' && tmdbKey) {
+                    inferredSeason = await inferSeasonFromAirDate(tmdbId, kitsuStartDate, canonicalTitle, tmdbKey);
+                }
                 const result = { tmdbId, type: searchType, inferredSeason };
                 await kitsuMappingCache.set(cacheKey, result);
                 return result;

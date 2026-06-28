@@ -9,6 +9,7 @@ export interface ProfileSettings {
   fastRefresh?: boolean;
   tmdbKey?: string;
   kidsMode?: boolean;
+  animeIdMode?: 'kitsu' | 'imdb';
   erdbConfig?: string;
   manualDNA?: DNAItem[];
   suggestedDNA?: DNAItem[];

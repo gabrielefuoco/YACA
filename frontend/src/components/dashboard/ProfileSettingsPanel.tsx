@@ -80,6 +80,28 @@ export function ProfileSettingsPanel({
                         />
                     </div>
                 )}
+
+                <div className="flex items-center justify-between p-4 rounded-xl bg-primary/5 border border-primary/10">
+                    <div className="space-y-0.5">
+                        <Label className="text-sm font-bold text-marrow-deep">
+                            <span className="mr-1.5">🎌</span>ID Anime: {profile.settings?.animeIdMode === 'imdb' ? 'IMDb' : 'Kitsu'}
+                        </Label>
+                        <p className="text-xs text-marrow-light">
+                            {profile.settings?.animeIdMode === 'imdb' 
+                                ? 'Ottimale per IlCorsaroViola e Torrentio (torrent).'
+                                : 'Ottimale per EasyStreams, AnimeUnity, AnimeWorld (streaming diretto).'
+                            }
+                        </p>
+                    </div>
+                    <Switch
+                        checked={profile.settings?.animeIdMode === 'imdb'}
+                        onCheckedChange={(checked) => {
+                            onUpdateProfile(profile.id, {
+                                settings: { ...profile.settings, animeIdMode: checked ? 'imdb' : 'kitsu' },
+                            });
+                        }}
+                    />
+                </div>
             </div>
 
         </div>

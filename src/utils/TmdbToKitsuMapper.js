@@ -136,7 +136,56 @@ async function getKitsuIdFromTmdb(tmdbId, tmdbApiKey) {
     }
 }
 
+/**
+ * Funzione inversa: per tutti gli item con ID kitsu:, li traduce in ID IMDb (tt) o tmdb:.
+ * Usata quando l'utente preferisce la modalità IMDb per compatibilità con ICV/Torrentio.
+ * @param {Array} items I risultati del catalogo con potenziali ID kitsu:
+ * @param {string} tmdbApiKey La chiave API TMDB
+ * @returns {Array} Array con ID tradotti in tt/tmdb:
+ */
+async function translateAnimeIdsToImdb(items, tmdbApiKey) {
+    if (!items || !Array.isArray(items)) return items;
+
+    const { rateLimitedMap } = require('./rateLimiter');
+    const { getTmdbIdFromKitsuId } = require('../clients/kitsu');
+    const { resolveImdbId } = require('../clients/tmdb');
+
+    const kitsuItems = items.filter(item => String(item.id).startsWith('kitsu:'));
+    if (kitsuItems.length === 0) return items;
+
+    await rateLimitedMap(
+        kitsuItems,
+        async (item) => {
+            const kitsuId = String(item.id).replace('kitsu:', '').replace('_ita_offset', '');
+            if (!kitsuId) return;
+
+            try {
+                const mapping = await getTmdbIdFromKitsuId(kitsuId);
+                if (!mapping || !mapping.tmdbId) return; // Mantiene kitsu: se mapping fallisce
+
+                // Salva il TMDB ID per ERDB poster
+                item.tmdbId = mapping.tmdbId;
+
+                // Prova a risolvere l'IMDb ID (preferito dagli addon generalisti)
+                const imdbId = await resolveImdbId(mapping.tmdbId, 'tv', tmdbApiKey);
+                if (imdbId) {
+                    item.id = imdbId; // es. tt5607616
+                } else {
+                    item.id = `tmdb:${mapping.tmdbId}`; // fallback
+                }
+            } catch (err) {
+                // In caso di errore, mantiene l'ID kitsu: originale
+                console.error(`[translateAnimeIdsToImdb] Errore per kitsu:${kitsuId}:`, err.message);
+            }
+        },
+        { batchSize: 5, delayMs: 100 }
+    );
+
+    return items;
+}
+
 module.exports = {
     translateAnimeIdsToKitsu,
+    translateAnimeIdsToImdb,
     getKitsuIdFromTmdb
 };

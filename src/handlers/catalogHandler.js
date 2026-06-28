@@ -9,7 +9,7 @@ const { routeCatalogRequest } = require('../catalog/CatalogRouter');
 const { filterWatchedItems } = require('../catalog/processors/FilterWatched');
 const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
 const { formatStremioCatalog } = require('../catalog/formatters/StremioFormatter');
-
+const { findProfile } = require('../data/profiles');
 function getLatestEpisodeInfo(item) {
     if (!item) return null;
     
@@ -334,14 +334,25 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 );
             }
             
-            // 3.5 TRADUTTORE MAGICO (TMDB -> Kitsu per Anime)
+            // 3.5 TRADUTTORE MAGICO (TMDB -> Kitsu/IMDb per Anime)
             // Hydration MUST happen BEFORE Kitsu translation while IDs are still tmdb:
             const shouldBadge = type === 'series' && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId));
             if (shouldBadge) {
                 await hydrateEpisodeBadgesFromCache(finalResults, tmdbApiKey);
             }
-            const { translateAnimeIdsToKitsu } = require('../utils/TmdbToKitsuMapper');
-            finalResults = await translateAnimeIdsToKitsu(finalResults, tmdbApiKey);
+            const { translateAnimeIdsToKitsu, translateAnimeIdsToImdb } = require('../utils/TmdbToKitsuMapper');
+            const userProfile = await findProfile(userConfig.activeProfile);
+            const animeIdMode = userProfile?.settings?.animeIdMode || 'kitsu';
+
+            if (animeIdMode === 'imdb') {
+                // Prima converte i TMDB in Kitsu (se ci sono) in modo uniforme
+                finalResults = await translateAnimeIdsToKitsu(finalResults, tmdbApiKey);
+                // Poi converte tutti i Kitsu (sia quelli appena convertiti che quelli nativi di KitsuProvider) in IMDb
+                finalResults = await translateAnimeIdsToImdb(finalResults, tmdbApiKey);
+            } else {
+                // Converte i TMDB in Kitsu, ignorando quelli che sono già Kitsu
+                finalResults = await translateAnimeIdsToKitsu(finalResults, tmdbApiKey);
+            }
 
             // After translation: hydrate Kitsu episodes for items that still lack videos
             // (covers preset_new_anime and other Kitsu-translated catalogs from AiDiscoveryProvider)

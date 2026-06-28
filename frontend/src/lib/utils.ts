@@ -27,6 +27,7 @@ export interface BackendProfile {
     fastPresetRefresh?: boolean;
     tmdbKey?: string;
     kidsMode?: boolean;
+    animeIdMode?: 'kitsu' | 'imdb';
     manualDNA?: unknown[];
     suggestedDNA?: unknown[];
   };
@@ -63,6 +64,7 @@ export function profilesToApiPayload(profiles: Profile[]) {
       fastPresetRefresh: p.settings?.fastRefresh ?? false,
       tmdbKey: p.settings?.tmdbKey,
       kidsMode: p.settings?.kidsMode ?? false,
+      animeIdMode: p.settings?.animeIdMode ?? 'kitsu',
       manualDNA: p.settings?.manualDNA ?? [],
       suggestedDNA: p.settings?.suggestedDNA ?? [],
     },
@@ -129,6 +131,7 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
       fastRefresh: Boolean(bSettings.fastPresetRefresh),
       tmdbKey: bSettings.tmdbKey ?? '',
       kidsMode: Boolean(bSettings.kidsMode),
+      animeIdMode: (bSettings.animeIdMode === 'imdb' ? 'imdb' : 'kitsu') as 'kitsu' | 'imdb',
       manualDNA: Array.isArray(bSettings.manualDNA) ? bSettings.manualDNA as import('@/types').DNAItem[] : [],
       suggestedDNA: Array.isArray(bSettings.suggestedDNA) ? bSettings.suggestedDNA as import('@/types').DNAItem[] : [],
     },
