@@ -59,9 +59,10 @@ function getErdbId(item) {
 
     // 1. Kitsu IDs MUST use kitsu for ERDB for seasons > 1 to avoid "thumbnail cloning" 
     // when multiple Kitsu seasons map to a single TMDB ID.
-    // For Season 1, we let it use TMDB ID so ERDB thumbnails work perfectly.
+    // Actually, since ERDB blindly clones TMDB Season 1 for all Kitsu IDs mapped to it,
+    // we must completely BYPASS ERDB for Season 2+ by returning null!
     if (strId.startsWith('kitsu:') && item.tmdbSeason > 1) {
-        return strId;
+        return null;
     }
 
     // 2. Prefer explicitly saved tmdbId (useful for TMDB native items)
@@ -125,8 +126,8 @@ function sanitizeCatalogMeta(item, options = {}) {
         let erdbId = erdbConfig ? getErdbId(item) : null;
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
-            if (hostUrl && !badgeText) {
-                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.background || item.poster || '')}`;
+            if (options.hostUrl && !badgeText) {
+                sourceImage = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.background || item.poster || '')}`;
             } else {
                 sourceImage = erdbUrl;
             }
@@ -138,8 +139,8 @@ function sanitizeCatalogMeta(item, options = {}) {
         let erdbId = erdbConfig ? getErdbId(item) : null;
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
-            if (hostUrl && !badgeText) {
-                sourceImage = `${hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.poster || '')}`;
+            if (options.hostUrl && !badgeText) {
+                sourceImage = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.poster || '')}`;
             } else {
                 sourceImage = erdbUrl;
             }
