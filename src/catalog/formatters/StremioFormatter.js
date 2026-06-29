@@ -174,13 +174,31 @@ function sanitizeCatalogMeta(item, options = {}) {
         }
     }
 
+    let tlBadge = null;
+    let baseName = item.name || '';
+    const isKitsu = item.id && (item.id.startsWith('kitsu:') || item.id.includes(':absolute:'));
+    if (isKitsu && Array.isArray(item.videos) && item.videos.length > 0) {
+        const sampleVideo = item.videos.find(v => v.tmdbSeason) || item.videos[0];
+        const actualSeason = sampleVideo.tmdbSeason || sampleVideo.season;
+        if (actualSeason > 1 || baseName.toLowerCase().includes('stagione') || baseName.toLowerCase().includes('season')) {
+            tlBadge = `S${actualSeason}`;
+        }
+    }
+
+    // Clean up baseName to remove "(Stagione X)" if present, since we use badges now
+    baseName = baseName.replace(/\s*\(\s*(Stagione|Season)\s*\d+\s*\)\s*/gi, '').trim();
+
     let poster = sourceImage;
-    const BADGE_IMG_VERSION = 15; // Bump to force Stremio to re-download badge images
-    if (badgeText && hostUrl && sourceImage) {
+    const BADGE_IMG_VERSION = 16; // Bump to force Stremio to re-download badge images
+    if ((badgeText || tlBadge) && hostUrl && sourceImage) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';
         const fallbackPoster = encodeURIComponent(item.poster || sourceImage);
-        poster = `${hostUrl}/images/poster/${typeParam}/${encodeURIComponent(idParam)}/${encodeURIComponent(badgeText)}?original=${encodeURIComponent(sourceImage)}&fallback=${fallbackPoster}&bv=${BADGE_IMG_VERSION}`;
+        const episodeParam = badgeText ? encodeURIComponent(badgeText) : '_';
+        poster = `${hostUrl}/images/poster/${typeParam}/${encodeURIComponent(idParam)}/${episodeParam}?original=${encodeURIComponent(sourceImage)}&fallback=${fallbackPoster}&bv=${BADGE_IMG_VERSION}`;
+        if (tlBadge) {
+            poster += `&tlBadge=${encodeURIComponent(tlBadge)}`;
+        }
     } else if (badgeText) {
         // Log why poster URL wasn't rewritten (only first time to avoid spam)
         if (!sanitizeCatalogMeta._loggedOnce) {
@@ -189,15 +207,7 @@ function sanitizeCatalogMeta(item, options = {}) {
         }
     }
 
-    let baseName = item.name;
-    const isKitsu = item.id && (item.id.startsWith('kitsu:') || item.id.includes(':absolute:'));
-    if (isKitsu && Array.isArray(item.videos) && item.videos.length > 0) {
-        const sampleVideo = item.videos.find(v => v.tmdbSeason) || item.videos[0];
-        const actualSeason = sampleVideo.tmdbSeason || sampleVideo.season;
-        if (actualSeason && !baseName.toLowerCase().includes('stagione')) {
-            baseName = `${baseName} (Stagione ${actualSeason})`;
-        }
-    }
+
 
     let nameSuffix = badgeText;
     if (nameSuffix && nameSuffix.startsWith('ITA - ')) {

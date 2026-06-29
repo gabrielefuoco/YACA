@@ -489,7 +489,10 @@ router.get('/users/:userId/switch-profile/:profileId', async (req, res) => {
 
 // Dynamic image overlay route for episode badges
 router.get('/images/poster/:type/:id/:episode', async (req, res) => {
-    const { type, id, episode } = req.params;
+    const { type, id } = req.params;
+    let episode = req.params.episode;
+    if (episode === '_') episode = null;
+    const tlBadge = req.query.tlBadge;
     const originalUrl = req.query.original;
 
     if (!originalUrl) {
@@ -517,12 +520,45 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         return res.status(400).send('Invalid original image URL');
     }
 
-    const bv = req.query.bv || 'v15';
-    const cacheKey = `${id}_${episode}_${bv}`;
+    const bv = req.query.bv || 'v16';
+    const cacheKey = `${id}_${episode}_${tlBadge}_${bv}`;
     // console.log(`[Badge] Request: id=${id}, episode="${episode}", bv=${bv}, textToSVG=${!!textToSVG}`);
 
+    const createBadgeSvg = (text, isTopLeft) => {
+        const textLen = text.length;
+        const fontSize = 30; // +15% from 26
+        const badgeWidth = Math.max(isTopLeft ? 80 : 115, Math.round(textLen * 17.5 + 42)); // +15% proportional
+        const badgeHeight = 50; // +15% from 44
+        const rx = Math.round(badgeHeight / 2);
+
+        let svgContent = '';
+        if (textToSVG) {
+            const metrics = textToSVG.getMetrics(text, { fontSize });
+            const textWidth = metrics.width;
+            const x = (badgeWidth - textWidth) / 2;
+            const y = (badgeHeight / 2) + (metrics.ascender / 2) - 2;
+            const svgPath = textToSVG.getPath(text, {
+                x: x,
+                y: y,
+                fontSize: fontSize,
+                attributes: { fill: '#ffffff', stroke: '#ffffff', 'stroke-width': '1.0', 'font-weight': 'bold' }
+            });
+            svgContent = svgPath;
+        } else {
+            const xmlEscapedBadgeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            svgContent = `<text x="${badgeWidth / 2}" y="${badgeHeight / 2}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${xmlEscapedBadgeText}</text>`;
+        }
+        
+        return {
+            width: badgeWidth,
+            height: badgeHeight,
+            rx: rx,
+            content: svgContent
+        };
+    };
+
     // Helper to perform the download and composition
-    const generateBadgeImage = async (url, badgeText) => {
+    const generateBadgeImage = async (url, badgeText, topLeftBadgeText) => {
         const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 10000 });
         const baseImageBuffer = Buffer.from(response.data);
 
@@ -531,32 +567,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         const W = imgMeta.width || 342;
         const H = imgMeta.height || 513;
 
-        const textLen = badgeText.length;
-        const fontSize = 30; // +15% from 26
-        const badgeWidth = Math.max(115, Math.round(textLen * 17.5 + 42)); // +15% proportional
-        const badgeHeight = 50; // +15% from 44
-        const rx = Math.round(badgeHeight / 2);
-
-        let svgContent = '';
-        if (textToSVG) {
-            const metrics = textToSVG.getMetrics(badgeText, { fontSize });
-            const textWidth = metrics.width;
-            const x = (badgeWidth - textWidth) / 2;
-            const y = (badgeHeight / 2) + (metrics.ascender / 2) - 2;
-            const svgPath = textToSVG.getPath(badgeText, {
-                x: x,
-                y: y,
-                fontSize: fontSize,
-                attributes: { fill: '#ffffff', stroke: '#ffffff', 'stroke-width': '1.0', 'font-weight': 'bold' }
-            });
-            svgContent = svgPath;
-        } else {
-            const xmlEscapedBadgeText = badgeText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-            svgContent = `<text x="${badgeWidth / 2}" y="${badgeHeight / 2}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${xmlEscapedBadgeText}</text>`;
-        }
-
-        // Render directly via single SVG - Glass Style mirroring ERDB Apple Glass
-        const svg = `<svg width="${badgeWidth}" height="${badgeHeight}" xmlns="http://www.w3.org/2000/svg">
+        const buildSvg = (badgeData) => `<svg width="${badgeData.width}" height="${badgeData.height}" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <linearGradient id="apple-glass-fill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12" />
@@ -588,26 +599,45 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
                     </feMerge>
                 </filter>
             </defs>
-            <rect x="0.5" y="0.5" width="${badgeWidth - 1}" height="${badgeHeight - 1}" rx="${rx}" fill="url(#apple-glass-fill)" filter="url(#apple-glass-shadow)" />
-            <rect x="0.5" y="0.5" width="${badgeWidth - 1}" height="${badgeHeight - 1}" rx="${rx}" fill="none" stroke="url(#apple-glass-border)" stroke-width="1" />
+            <rect x="0.5" y="0.5" width="${badgeData.width - 1}" height="${badgeData.height - 1}" rx="${badgeData.rx}" fill="url(#apple-glass-fill)" filter="url(#apple-glass-shadow)" />
+            <rect x="0.5" y="0.5" width="${badgeData.width - 1}" height="${badgeData.height - 1}" rx="${badgeData.rx}" fill="none" stroke="url(#apple-glass-border)" stroke-width="1" />
             <g filter="url(#text-shadow)">
-                ${svgContent}
+                ${badgeData.content}
             </g>
         </svg>`;
 
-        // Composite badge onto poster at top-right
-        const badgeTop = 24; // Moved slightly lower
-        const badgeRightOffset = 16;
-        const badgeLeft = Math.max(0, W - badgeWidth - badgeRightOffset);
+        const composites = [];
+        const badgeTop = 24;
 
-        return await sharp(baseImageBuffer)
-            .composite([{
-                input: Buffer.from(svg),
+        if (badgeText && badgeText !== 'undefined' && badgeText !== 'null') {
+            const rightBadge = createBadgeSvg(badgeText, false);
+            const badgeRightOffset = 16;
+            const badgeLeft = Math.max(0, W - rightBadge.width - badgeRightOffset);
+            composites.push({
+                input: Buffer.from(buildSvg(rightBadge)),
                 top: badgeTop,
                 left: badgeLeft
-            }])
-            .jpeg({ quality: 90 })
-            .toBuffer();
+            });
+        }
+        
+        if (topLeftBadgeText && topLeftBadgeText !== 'undefined' && topLeftBadgeText !== 'null') {
+            const leftBadge = createBadgeSvg(topLeftBadgeText, true);
+            const badgeLeftOffset = 16;
+            composites.push({
+                input: Buffer.from(buildSvg(leftBadge)),
+                top: badgeTop,
+                left: badgeLeftOffset
+            });
+        }
+
+        if (composites.length > 0) {
+            return await sharp(baseImageBuffer)
+                .composite(composites)
+                .jpeg({ quality: 90 })
+                .toBuffer();
+        } else {
+            return await sharp(baseImageBuffer).jpeg({ quality: 90 }).toBuffer();
+        }
     };
 
     try {
@@ -621,7 +651,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         }
 
         // Cache miss: generate composite image
-        const processedBuffer = await generateBadgeImage(originalUrl, episode);
+        const processedBuffer = await generateBadgeImage(originalUrl, episode, tlBadge);
 
         // Save to cache (persists to RAM and MongoDB)
         await badgeCache.set(cacheKey, processedBuffer.toString('base64'));
