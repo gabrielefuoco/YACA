@@ -177,19 +177,32 @@ function sanitizeCatalogMeta(item, options = {}) {
     let tlBadge = null;
     let baseName = item.name || '';
     const isKitsu = item.id && (item.id.startsWith('kitsu:') || item.id.includes(':absolute:'));
-    if (isKitsu && Array.isArray(item.videos) && item.videos.length > 0) {
-        const sampleVideo = item.videos.find(v => v.tmdbSeason) || item.videos[0];
-        const actualSeason = sampleVideo.tmdbSeason || sampleVideo.season;
+    
+    if (isKitsu) {
+        let actualSeason = null;
+        if (Array.isArray(item.videos) && item.videos.length > 0) {
+            const sampleVideo = item.videos.find(v => v.tmdbSeason) || item.videos[0];
+            actualSeason = sampleVideo.tmdbSeason || sampleVideo.season;
+        }
+
+        // Se non abbiamo trovato la stagione nei video (es. serie in arrivo senza episodi), proviamo dal titolo
+        if (!actualSeason) {
+            const seasonMatch = baseName.match(/(?:Stagione|Season)\s*(\d+)/i);
+            if (seasonMatch) {
+                actualSeason = parseInt(seasonMatch[1], 10);
+            }
+        }
+
         if (actualSeason > 1 || baseName.toLowerCase().includes('stagione') || baseName.toLowerCase().includes('season')) {
             tlBadge = `S${actualSeason}`;
         }
     }
 
-    // Clean up baseName to remove "(Stagione X)" if present, since we use badges now
-    baseName = baseName.replace(/\s*\(\s*(Stagione|Season)\s*\d+\s*\)\s*/gi, '').trim();
+    // Clean up baseName to remove "- Stagione X" or "(Stagione X)" if present, since we use badges now
+    baseName = baseName.replace(/\s*(?:-|–|—)?\s*\(?\s*(Stagione|Season)\s*\d+\s*\)?\s*/gi, '').trim();
 
     let poster = sourceImage;
-    const BADGE_IMG_VERSION = 16; // Bump to force Stremio to re-download badge images
+    const BADGE_IMG_VERSION = 17; // Bump to force Stremio to re-download badge images
     if ((badgeText || tlBadge) && hostUrl && sourceImage) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';
