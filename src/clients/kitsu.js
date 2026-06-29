@@ -60,19 +60,24 @@ async function enrichWithTmdb(item, kitsuId) {
                 }
             }
 
-            let bestPoster = tmdbData.poster_path;
-            if (tmdbData.images && Array.isArray(tmdbData.images.posters)) {
-                const localizedPosters = prioritizeLocalizedImages(tmdbData.images.posters);
-                if (localizedPosters.length > 0) bestPoster = localizedPosters[0].file_path;
-            }
-            if (bestPoster) item.poster = `https://image.tmdb.org/t/p/w500${bestPoster}`;
+            // Sovrascriviamo poster e background solo se è la Stagione 1.
+            // Se è una Stagione 2+ (e TMDB non ha stagioni separate), evitiamo di clonare
+            // il poster della Stagione 1 su tutte le stagioni Kitsu, mantenendo la loro identità visiva.
+            if (!mapping.inferredSeason || mapping.inferredSeason <= 1) {
+                let bestPoster = tmdbData.poster_path;
+                if (tmdbData.images && Array.isArray(tmdbData.images.posters)) {
+                    const localizedPosters = prioritizeLocalizedImages(tmdbData.images.posters);
+                    if (localizedPosters.length > 0) bestPoster = localizedPosters[0].file_path;
+                }
+                if (bestPoster) item.poster = `https://image.tmdb.org/t/p/w500${bestPoster}`;
 
-            let bestBg = tmdbData.backdrop_path;
-            if (tmdbData.images && Array.isArray(tmdbData.images.backdrops)) {
-                const localizedBgs = prioritizeLocalizedImages(tmdbData.images.backdrops);
-                if (localizedBgs.length > 0) bestBg = localizedBgs[0].file_path;
+                let bestBg = tmdbData.backdrop_path;
+                if (tmdbData.images && Array.isArray(tmdbData.images.backdrops)) {
+                    const localizedBgs = prioritizeLocalizedImages(tmdbData.images.backdrops);
+                    if (localizedBgs.length > 0) bestBg = localizedBgs[0].file_path;
+                }
+                if (bestBg) item.background = `https://image.tmdb.org/t/p/w1280${bestBg}`;
             }
-            if (bestBg) item.background = `https://image.tmdb.org/t/p/w1280${bestBg}`;
 
             if (tmdbData.overview && tmdbData.overview.trim().length > 0) {
                 item.description = tmdbData.overview;
@@ -318,6 +323,11 @@ async function getKitsuMetaDetails(id) {
         console.error("Errore Kitsu Meta:", err.message);
         return null;
     }
+}
+
+async function invalidateKitsuMappingForMal(malId) {
+    const cacheKey = `mal_mapping:${malId}`;
+    await kitsuMappingCache.delete(cacheKey);
 }
 
 /**
@@ -599,6 +609,7 @@ module.exports = {
     getTmdbIdFromKitsuId,
     fetchKitsuEpisodes,
     getKitsuIdFromMalId,
+    invalidateKitsuMappingForMal,
     kitsuClient,
     toStremioMetaItem,
     enrichWithTmdb

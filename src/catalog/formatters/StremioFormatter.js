@@ -55,7 +55,15 @@ function getEpisodeBadgeText(item) {
 function getErdbId(item) {
     if (!item) return '';
 
-    // Prefer explicitly saved tmdbId (useful for Kitsu items mapped to TMDB)
+    const strId = String(item.id || '').replace('_ita_offset', '');
+
+    // 1. Kitsu IDs MUST use kitsu for ERDB to avoid "thumbnail cloning" 
+    // when multiple Kitsu seasons map to a single TMDB ID
+    if (strId.startsWith('kitsu:')) {
+        return strId;
+    }
+
+    // 2. Prefer explicitly saved tmdbId (useful for TMDB native items)
     if (item.tmdbId) {
         const tmdbType = item.type === 'movie' ? 'movie' : 'tv';
         return `tmdb:${tmdbType}:${item.tmdbId}`;
