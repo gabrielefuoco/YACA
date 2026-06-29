@@ -50,7 +50,9 @@ jobs:
             exit 1
           fi
 
-          API_URL="https://huggingface.co/api/spaces/${HF_SPACE_ID}/secrets"
+          # Install hf CLI
+          curl -LsSf https://hf.co/cli/install.sh | bash -s
+          
           SYNCED=0
           SKIPPED=0
 
@@ -58,16 +60,11 @@ jobs:
             local KEY="$1"
             local VALUE="$2"
             if [ -n "$VALUE" ]; then
-              STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-                -X POST "$API_URL" \
-                -H "Authorization: Bearer ${HF_TOKEN}" \
-                -H "Content-Type: application/json" \
-                -d "{\"key\": \"${KEY}\", \"value\": \"${VALUE}\"}")
-              if [ "$STATUS" = "200" ] || [ "$STATUS" = "201" ]; then
+              if hf spaces secrets add "$HF_SPACE_ID" --secrets "${KEY}=${VALUE}"; then
                 echo "  ✅ ${KEY}"
                 SYNCED=$((SYNCED + 1))
               else
-                echo "  ⚠️ ${KEY} (HTTP $STATUS)"
+                echo "  ⚠️ ${KEY} (Errore HF CLI)"
               fi
             else
               SKIPPED=$((SKIPPED + 1))
