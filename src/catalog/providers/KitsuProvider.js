@@ -180,9 +180,16 @@ async function getKitsuCatalogFromAnilist(catalogId, skip) {
                         meta.videos = episodes || [];
                         results.push(meta);
                     }
-                } catch(e) { }
+                } catch(e) {
+                    // Fallback: se Kitsu dà errore 404 o simile per quell'ID, invalidiamo il mapping.
+                    if (e.response && e.response.status === 404) {
+                        console.log(`[KitsuProvider] 404 for Kitsu ID ${kitsuId}. Invalidating mapping for MAL ID ${item.idMal}.`);
+                        const { invalidateKitsuMappingForMal } = require('../../clients/kitsu');
+                        await invalidateKitsuMappingForMal(item.idMal);
+                    }
+                }
             },
-            { batchSize: 5, delayMs: 100 }
+            { batchSize: 10, delayMs: 100 }
         );
         
         return results;

@@ -1,8 +1,8 @@
 const { createAxiosInstance } = require('../utils/httpClient');
 const CacheManager = require('../cache/CacheManager');
 
-const anilistCatalogCache = new CacheManager('anilist_catalog', { ramMax: 50, ramTtlMs: 1000 * 60 * 60, mongoTtlMs: 1000 * 60 * 60 * 12 });
-const anilistMetaCache = new CacheManager('anilist_meta', { ramMax: 200, ramTtlMs: 1000 * 60 * 60 * 24, mongoTtlMs: 1000 * 60 * 60 * 24 * 7 });
+const anilistCatalogCache = new CacheManager('anilist_catalog', { ramMax: 50, ramTtlMs: 1000 * 60 * 60, mongoTtlMs: 7 * 24 * 60 * 60 * 1000, swrMs: 1000 * 60 * 60 });
+const anilistMetaCache = new CacheManager('anilist_meta', { ramMax: 200, ramTtlMs: 1000 * 60 * 60 * 24, mongoTtlMs: 14 * 24 * 60 * 60 * 1000, swrMs: 1000 * 60 * 60 * 24 });
 
 // GraphQL Queries
 const CATALOG_QUERY = `
@@ -103,12 +103,12 @@ function mapAnilistToMeta(m, overrideId) {
 }
 
 async function fetchAnilistCatalog(catalogId, skip = 0) {
-    const limit = catalogId === 'anilist-simulcast' ? 50 : 20;
+    const limit = 20; // Abbassato da 50 a 20 per evitare timeout su Stremio
     const page = Math.floor(skip / limit) + 1;
     const cacheKey = `anilist_catalog_${catalogId}_${page}`;
     
     const cached = await anilistCatalogCache.get(cacheKey);
-    if (cached) return cached;
+    if (cached) return cached.slice(0, limit);
 
     const variables = { page, perPage: limit };
 
