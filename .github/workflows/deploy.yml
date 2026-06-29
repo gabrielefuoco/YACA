@@ -131,7 +131,26 @@ jobs:
           git config http.version HTTP/1.1
 
           echo "🚀 Push a Hugging Face Space: ${HF_SPACE_ID}..."
-          git -c protocol.version=0 push -f hf main || { echo "❌ Push fallito. Verifica HF_TOKEN e HF_SPACE_ID."; exit 1; }
+          
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          SUCCESS=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if git -c protocol.version=0 push -f hf main; then
+              SUCCESS=1
+              break
+            else
+              echo "⚠️ Push fallito (probabile errore 429 Rate Limit). Ritento tra 20 secondi..."
+              sleep 20
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+            fi
+          done
+          
+          if [ $SUCCESS -eq 0 ]; then
+            echo "❌ Push fallito dopo $MAX_RETRIES tentativi. Verifica HF_TOKEN, HF_SPACE_ID o riprova più tardi."
+            exit 1
+          fi
 
           echo "✅ Deploy completato su https://huggingface.co/spaces/${HF_SPACE_ID}"
 
