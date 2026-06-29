@@ -508,6 +508,12 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
             'media.kitsu.io',
             'media.kitsu.app'
         ];
+        
+        const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
+        try {
+            allowedHosts.push(new URL(hostUrl).hostname);
+        } catch(e) {}
+        
         const isAllowed = allowedHosts.some(host => 
             parsedUrl.hostname === host || parsedUrl.hostname.endsWith('.' + host)
         );
