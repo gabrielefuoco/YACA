@@ -343,11 +343,12 @@ async function getKitsuIdFromMalId(malId) {
         const res = await kitsuClient.get('/mappings', {
             params: {
                 'filter[externalSite]': 'myanimelist/anime',
-                'filter[externalId]': malId
+                'filter[externalId]': malId,
+                'include': 'item'
             }
         });
 
-        const kitsuId = res.data?.data?.[0]?.relationships?.item?.data?.id;
+        const kitsuId = res.data?.included?.[0]?.id;
         if (kitsuId) {
             await kitsuMappingCache.set(cacheKey, kitsuId);
             return kitsuId;
@@ -368,11 +369,12 @@ async function getKitsuIdFromTmdbId(tmdbId, type = 'series') {
         const res = await kitsuClient.get('/mappings', {
             params: {
                 'filter[externalSite]': site,
-                'filter[externalId]': tmdbId
+                'filter[externalId]': tmdbId,
+                'include': 'item'
             }
         });
 
-        const kitsuId = res.data?.data?.[0]?.relationships?.item?.data?.id;
+        const kitsuId = res.data?.included?.[0]?.id;
         if (kitsuId) {
             await kitsuMappingCache.set(cacheKey, kitsuId);
             return kitsuId;
