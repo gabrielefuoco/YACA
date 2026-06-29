@@ -57,9 +57,10 @@ function getErdbId(item) {
 
     const strId = String(item.id || '').replace('_ita_offset', '');
 
-    // 1. Kitsu IDs MUST use kitsu for ERDB to avoid "thumbnail cloning" 
-    // when multiple Kitsu seasons map to a single TMDB ID
-    if (strId.startsWith('kitsu:')) {
+    // 1. Kitsu IDs MUST use kitsu for ERDB for seasons > 1 to avoid "thumbnail cloning" 
+    // when multiple Kitsu seasons map to a single TMDB ID.
+    // For Season 1, we let it use TMDB ID so ERDB thumbnails work perfectly.
+    if (strId.startsWith('kitsu:') && item.tmdbSeason > 1) {
         return strId;
     }
 

@@ -23,6 +23,7 @@ async function enrichWithTmdb(item, kitsuId) {
         if (!mapping) return;
 
         item.tmdbId = mapping.tmdbId; // Salviamo l'ID TMDB per ERDB
+        item.tmdbSeason = mapping.inferredSeason;
 
         const cacheKey = `${mapping.type}:${mapping.tmdbId}`;
         const { value: cached, status } = await kitsuTmdbBasicCache.getWithStatus(cacheKey);
