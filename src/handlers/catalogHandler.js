@@ -256,7 +256,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const { cacheOptions: tmdbFetchOptions } = getCacheConfig(userConfig.ttl);
     
     // Increment BADGE_CATALOG_VERSION whenever badge logic changes to bust SWR cache
-    const BADGE_CATALOG_VERSION = 7;
+    const BADGE_CATALOG_VERSION = 8;
 
     // Check Full CACHE Request
     const requestCacheKey = generateRequestHash(id, { 

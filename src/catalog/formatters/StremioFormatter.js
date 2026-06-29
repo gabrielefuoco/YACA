@@ -138,10 +138,14 @@ function sanitizeCatalogMeta(item, options = {}) {
             }
         }
 
-        if (actualSeason > 1 || baseName.toLowerCase().includes('stagione') || baseName.toLowerCase().includes('season')) {
+        if (actualSeason > 1) {
             tlBadge = `S${actualSeason}`;
         } else if (actualSeason === 1 && item.tmdbTotalSeasons > 1) {
             tlBadge = `S1`;
+        } else if (!actualSeason && (baseName.toLowerCase().includes('stagione') || baseName.toLowerCase().includes('season'))) {
+            // Se non c'è numero ma c'è scritto season (es. Final Season), mettiamo un badge generico o nulla
+            // Preferibile non mettere nulla per evitare "Snull"
+            tlBadge = null;
         }
     }
 
@@ -206,7 +210,7 @@ function sanitizeCatalogMeta(item, options = {}) {
 
 
     let poster = sourceImage;
-    const BADGE_IMG_VERSION = 18; // Bump to force Stremio to re-download badge images
+    const BADGE_IMG_VERSION = 19; // Bump to force Stremio to re-download badge images
     if ((badgeText || tlBadge) && hostUrl && sourceImage) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';
