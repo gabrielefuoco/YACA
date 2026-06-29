@@ -161,12 +161,7 @@ function sanitizeCatalogMeta(item, options = {}) {
         if (Array.isArray(videos) && videos.length > 0) {
             videos = videos.map(v => {
                 if (v && v.season !== undefined && v.episode !== undefined) {
-                    let episodeErdbId;
-                    if (erdbBgId.startsWith('kitsu:')) {
-                        episodeErdbId = `${erdbBgId}:${v.episode}`;
-                    } else {
-                        episodeErdbId = `${erdbBgId}:${v.season}:${v.episode}`;
-                    }
+                    let episodeErdbId = `${erdbBgId}:${v.season}:${v.episode}`;
                     let thumbnail = `https://easyratingsdb.com/${erdbConfig}/thumbnail/${episodeErdbId}.jpg`;
                     if (options.hostUrl && v.thumbnail) {
                         thumbnail = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(thumbnail)}&fallback=${encodeURIComponent(v.thumbnail)}`;
