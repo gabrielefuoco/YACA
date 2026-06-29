@@ -195,6 +195,8 @@ function sanitizeCatalogMeta(item, options = {}) {
 
         if (actualSeason > 1 || baseName.toLowerCase().includes('stagione') || baseName.toLowerCase().includes('season')) {
             tlBadge = `S${actualSeason}`;
+        } else if (actualSeason === 1 && item.tmdbTotalSeasons > 1) {
+            tlBadge = `S1`;
         }
     }
 
@@ -202,7 +204,7 @@ function sanitizeCatalogMeta(item, options = {}) {
     baseName = baseName.replace(/\s*(?:-|–|—)?\s*\(?\s*(Stagione|Season)\s*\d+\s*\)?\s*/gi, '').trim();
 
     let poster = sourceImage;
-    const BADGE_IMG_VERSION = 17; // Bump to force Stremio to re-download badge images
+    const BADGE_IMG_VERSION = 18; // Bump to force Stremio to re-download badge images
     if ((badgeText || tlBadge) && hostUrl && sourceImage) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';

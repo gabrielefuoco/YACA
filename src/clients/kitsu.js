@@ -53,6 +53,8 @@ async function enrichWithTmdb(item, kitsuId) {
 
         if (tmdbData) {
             const title = tmdbData.title || tmdbData.name;
+            item.tmdbTotalSeasons = tmdbData.number_of_seasons || 1;
+            
             if (title) {
                 if (mapping.type === 'tv' && mapping.inferredSeason > 1) {
                     item.name = `${title} - Stagione ${mapping.inferredSeason}`;
