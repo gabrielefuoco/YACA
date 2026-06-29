@@ -166,9 +166,13 @@ function sanitizeCatalogMeta(item, options = {}) {
                     } else {
                         episodeErdbId = `${erdbBgId}:${v.season}:${v.episode}`;
                     }
+                    let thumbnail = `https://easyratingsdb.com/${erdbConfig}/thumbnail/${episodeErdbId}.jpg`;
+                    if (options.hostUrl && v.thumbnail) {
+                        thumbnail = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(thumbnail)}&fallback=${encodeURIComponent(v.thumbnail)}`;
+                    }
                     return {
                         ...v,
-                        thumbnail: `https://easyratingsdb.com/${erdbConfig}/thumbnail/${episodeErdbId}.jpg`
+                        thumbnail: thumbnail
                     };
                 }
                 return v;
