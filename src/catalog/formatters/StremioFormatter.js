@@ -153,16 +153,25 @@ function sanitizeCatalogMeta(item, options = {}) {
             tlBadge = null;
         }
 
-        const partMatch = baseName.match(/(?:-|–|—)?\s*(?:Parte|Part|Cour)\s*(\d+)/i);
-        if (partMatch) {
-            const partBadge = `Pt${partMatch[1]}`;
+        if (item._kitsuPart) {
+            const partBadge = `Pt${item._kitsuPart}`;
             if (tlBadge) {
                 tlBadge = `${tlBadge} - ${partBadge}`;
             } else {
                 tlBadge = partBadge;
             }
-            // Rimuoviamo "Parte X" dal titolo
-            baseName = baseName.replace(/(?:-|–|—)?\s*(?:Parte|Part|Cour)\s*\d+/i, '').trim();
+        } else {
+            const partMatch = baseName.match(/(?:-|–|—)?\s*(?:Parte|Part|Cour)\s*(\d+)/i);
+            if (partMatch) {
+                const partBadge = `Pt${partMatch[1]}`;
+                if (tlBadge) {
+                    tlBadge = `${tlBadge} - ${partBadge}`;
+                } else {
+                    tlBadge = partBadge;
+                }
+                // Rimuoviamo "Parte X" dal titolo
+                baseName = baseName.replace(/(?:-|–|—)?\s*(?:Parte|Part|Cour)\s*\d+/i, '').trim();
+            }
         }
     }
 

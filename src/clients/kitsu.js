@@ -62,11 +62,33 @@ async function enrichWithTmdb(item, kitsuId) {
                     finalName = `${finalName} - Stagione ${mapping.inferredSeason}`;
                 }
                 
-                // Preserve "Part X" or "Cour X" from the original Kitsu title to avoid visual duplicates
+                // Preserve "Part X" or "Cour X" or trailing " 2" from the original Kitsu title to avoid visual duplicates
                 const originalName = item.name || '';
-                partMatch = originalName.match(/(?:Part|Cour|Parte)\s*(\d+)/i);
-                if (partMatch) {
-                    finalName = `${finalName} - Parte ${partMatch[1]}`;
+                let partNum = null;
+                const explicitPartMatch = originalName.match(/(?:Part|Cour|Parte)\s*(\d+)/i);
+                if (explicitPartMatch) {
+                    partNum = parseInt(explicitPartMatch[1], 10);
+                } else {
+                    const trailingNumMatch = originalName.match(/\s(\d+)$/);
+                    if (trailingNumMatch) {
+                        partNum = parseInt(trailingNumMatch[1], 10);
+                    }
+                }
+
+                if (partNum && partNum > 1) {
+                    item._kitsuPart = partNum;
+                } else if (mapping.kitsuParentId) {
+                    // Se non ha trovato un numero nel titolo, ma è stato mappato tramite franchise,
+                    // verifichiamo se condivide la stessa stagione TMDB del genitore.
+                    // Se sì, è sicuramente una "Parte" successiva di quella stagione!
+                    try {
+                        const parentMapping = await getTmdbIdFromKitsuId(mapping.kitsuParentId);
+                        if (parentMapping && parentMapping.tmdbId === mapping.tmdbId && parentMapping.inferredSeason === mapping.inferredSeason) {
+                            item._kitsuPart = 2; // Forziamo a Part 2 come fallback generico
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
                 }
                 
                 item.name = finalName;
@@ -75,7 +97,7 @@ async function enrichWithTmdb(item, kitsuId) {
             // Sovrascriviamo poster e background solo se è la Stagione 1 (e non è una Parte 2+).
             // Se è una Stagione 2+ (e TMDB non ha stagioni separate), evitiamo di clonare
             // il poster della Stagione 1 su tutte le stagioni Kitsu, mantenendo la loro identità visiva.
-            if (!mapping.inferredSeason || (mapping.inferredSeason <= 1 && !partMatch)) {
+            if (!mapping.inferredSeason || (mapping.inferredSeason <= 1 && (!item._kitsuPart || item._kitsuPart <= 1))) {
                 let bestPoster = tmdbData.poster_path;
                 if (tmdbData.images && Array.isArray(tmdbData.images.posters)) {
                     const localizedPosters = prioritizeLocalizedImages(tmdbData.images.posters);
@@ -240,19 +262,16 @@ async function fetchKitsuEpisodes(kitsuId) {
                         let targetSeason = inferredSeason;
                         let episodeOffset = 0;
                         
-                        // FIX: Attempt to calculate an offset for "Part 2" or "Cour X" if individual episode airdates are missing
+                        // FIX: Attempt to calculate an offset for split-cours if individual episode airdates are missing
                         try {
                             const animeRes = await kitsuClient.get(`/anime/${kitsuId}`);
                             const animeAttrs = animeRes.data?.data?.attributes;
-                            const originalTitle = animeAttrs?.titles?.it || animeAttrs?.titles?.en || animeAttrs?.titles?.en_jp || animeAttrs?.canonicalTitle || '';
-                            const partMatch = originalTitle.match(/(?:Part|Cour|Parte)\s*(\d+)/i);
-                            if (partMatch && parseInt(partMatch[1], 10) > 1) {
-                                const startDate = animeAttrs?.startDate;
-                                if (startDate) {
-                                    const matchingTmdb = sortedTmdb.find(t => t.released && t.released.split('T')[0] === startDate && t.season === inferredSeason);
-                                    if (matchingTmdb) {
-                                        episodeOffset = matchingTmdb.episode - 1; // Since Kitsu episode usually starts at 1
-                                    }
+                            const startDate = animeAttrs?.startDate;
+                            
+                            if (startDate) {
+                                const matchingTmdb = sortedTmdb.find(t => t.released && t.released.split('T')[0] === startDate && t.season === inferredSeason);
+                                if (matchingTmdb && matchingTmdb.episode > 1) {
+                                    episodeOffset = matchingTmdb.episode - 1; // Since Kitsu episode usually starts at 1
                                 }
                             }
                         } catch (err) {
@@ -508,6 +527,60 @@ async function inferSeasonFromAirDate(tmdbId, kitsuStartDate, titleFallback, tmd
 }
 
 /**
+ * Esplora le relazioni Kitsu (prequel, parent_story, full_story) per trovare un ID TMDB genitore.
+ * Profondità massima 2 livelli per evitare loop infiniti o query eccessive.
+ */
+async function resolveTmdbFromFranchise(kitsuId, depth = 0, visited = new Set()) {
+    if (depth > 2) return null;
+    if (visited.has(kitsuId)) return null;
+    visited.add(kitsuId);
+
+    try {
+        const res = await kitsuClient.get(`/anime/${kitsuId}/media-relationships?include=destination`);
+        const relationships = res.data?.data || [];
+
+        const validRoles = ['parent_story', 'full_story', 'prequel'];
+        const parents = relationships.filter(r => validRoles.includes(r.attributes?.role));
+
+        for (const rel of parents) {
+            const destId = rel.relationships?.destination?.data?.id;
+            if (destId && !visited.has(destId)) {
+                const destMapRes = await kitsuClient.get(`/anime/${destId}/mappings`);
+                const destMappings = destMapRes.data?.data || [];
+                
+                const tmdbMapping = destMappings.find(m => 
+                    m.attributes?.externalSite === 'themoviedb/tv' || 
+                    m.attributes?.externalSite === 'themoviedb/movie'
+                );
+
+                if (tmdbMapping) {
+                    const tmdbId = tmdbMapping.attributes.externalId;
+                    const type = tmdbMapping.attributes.externalSite.includes('tv') ? 'tv' : 'movie';
+                    return { tmdbId, type, kitsuParentId: destId };
+                }
+
+                const tvdbMapping = destMappings.find(m => 
+                    m.attributes?.externalSite === 'thetvdb/series' || 
+                    m.attributes?.externalSite === 'thetvdb'
+                );
+                
+                if (tvdbMapping) {
+                    let tvdbId = tvdbMapping.attributes.externalId;
+                    if (tvdbId && typeof tvdbId === 'string' && tvdbId.includes('/')) tvdbId = tvdbId.split('/')[0];
+                    return { tvdbId, kitsuParentId: destId };
+                }
+
+                const deepRes = await resolveTmdbFromFranchise(destId, depth + 1, visited);
+                if (deepRes) return deepRes;
+            }
+        }
+    } catch (e) {
+        // ignora gli errori di navigazione e continua
+    }
+    return null;
+}
+
+/**
  * Risolve un ID TMDB partendo da un ID Kitsu usando l'endpoint mappings.
  */
 async function getTmdbIdFromKitsuId(kitsuId) {
@@ -602,6 +675,43 @@ async function getTmdbIdFromKitsuId(kitsuId) {
                     return result;
                 }
             }
+        }
+
+        // NEW: Fallback to traversing franchise (prequel, parent_story, full_story)
+        try {
+            const franchiseRes = await resolveTmdbFromFranchise(kitsuId);
+            if (franchiseRes) {
+                let tmdbId = franchiseRes.tmdbId;
+                let type = franchiseRes.type;
+
+                // Resolve TVDB to TMDB se abbiamo trovato solo TVDB
+                if (!tmdbId && franchiseRes.tvdbId && tmdbKey) {
+                    const { createTmdbClient } = require('./tmdb');
+                    const tmdbClient = createTmdbClient(tmdbKey);
+                    const findRes = await tmdbClient.get(`/find/${franchiseRes.tvdbId}`, {
+                        params: { external_source: 'tvdb_id' }
+                    });
+                    const data = findRes.data;
+                    if (data.tv_results?.length > 0) {
+                        tmdbId = data.tv_results[0].id.toString();
+                        type = 'tv';
+                    } else if (data.movie_results?.length > 0) {
+                        tmdbId = data.movie_results[0].id.toString();
+                        type = 'movie';
+                    }
+                }
+
+                if (tmdbId) {
+                    if (type === 'tv' && tmdbKey) {
+                        inferredSeason = await inferSeasonFromAirDate(tmdbId, kitsuStartDate, canonicalTitle, tmdbKey);
+                    }
+                    const result = { tmdbId, type, inferredSeason };
+                    await kitsuMappingCache.set(cacheKey, result);
+                    return result;
+                }
+            }
+        } catch (e) {
+            console.error(`Errore durante traverse franchise per ${kitsuId}:`, e.message);
         }
 
         // Fallback to searching TMDB by title (using canonicalTitle or english title cleaned)
