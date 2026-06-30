@@ -239,6 +239,25 @@ async function fetchKitsuEpisodes(kitsuId) {
                         let targetSeason = inferredSeason;
                         let episodeOffset = 0;
                         
+                        // FIX: Attempt to calculate an offset for "Part 2" or "Cour X" if individual episode airdates are missing
+                        try {
+                            const animeRes = await kitsuClient.get(`/anime/${kitsuId}`);
+                            const animeAttrs = animeRes.data?.data?.attributes;
+                            const originalTitle = animeAttrs?.titles?.it || animeAttrs?.titles?.en || animeAttrs?.titles?.en_jp || animeAttrs?.canonicalTitle || '';
+                            const partMatch = originalTitle.match(/(?:Part|Cour|Parte)\s*(\d+)/i);
+                            if (partMatch && parseInt(partMatch[1], 10) > 1) {
+                                const startDate = animeAttrs?.startDate;
+                                if (startDate) {
+                                    const matchingTmdb = sortedTmdb.find(t => t.released && t.released.split('T')[0] === startDate && t.season === inferredSeason);
+                                    if (matchingTmdb) {
+                                        episodeOffset = matchingTmdb.episode - 1; // Since Kitsu episode usually starts at 1
+                                    }
+                                }
+                            }
+                        } catch (err) {
+                            console.error(`Error calculating episodeOffset for ${kitsuId}:`, err.message);
+                        }
+                        
                         let mappingSafe = true;
                         if (!tmdbHasInferredSeason && inferredSeason > 1) {
                             // TMDB combined seasons into Season 1, but we don't know the exact offset (assuming 12/24 is dangerous).

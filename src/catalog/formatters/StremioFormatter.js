@@ -152,6 +152,18 @@ function sanitizeCatalogMeta(item, options = {}) {
             // Preferibile non mettere nulla per evitare "Snull"
             tlBadge = null;
         }
+
+        const partMatch = baseName.match(/(?:-|–|—)?\s*Parte\s*(\d+)/i);
+        if (partMatch) {
+            const partBadge = `Pt${partMatch[1]}`;
+            if (tlBadge) {
+                tlBadge = `${tlBadge} - ${partBadge}`;
+            } else {
+                tlBadge = partBadge;
+            }
+            // Rimuoviamo "Parte X" dal titolo
+            baseName = baseName.replace(/(?:-|–|—)?\s*Parte\s*\d+/i, '').trim();
+        }
     }
 
     // Clean up baseName to remove "- Stagione X" or "(Stagione X)" if present, since we use badges now
