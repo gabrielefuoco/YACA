@@ -33,7 +33,8 @@ function getEpisodeBadgeText(item) {
         if (!v.released) {
             // Ignoriamo episodi "fantasma" vuoti (senza trama, senza thumbnail e con titolo generico o assente)
             const isGenericTitle = !v.title || /^episod(e|io)\s+\d+$/i.test(v.title);
-            if (!v.overview && !v.thumbnail && isGenericTitle) {
+            const hasRealThumbnail = v.thumbnail && !v.thumbnail.includes('easyratingsdb.com');
+            if (!v.overview && !hasRealThumbnail && isGenericTitle) {
                 return false;
             }
             return true; // Fallback: assume aired if no release date is known but it has some real metadata
@@ -127,7 +128,7 @@ function sanitizeCatalogMeta(item, options = {}) {
     let finalPosterShape = item.posterShape || 'poster';
 
     let tlBadge = null;
-    let baseName = item.name || '';
+    let baseName = item._rawName || item.name || '';
     const isKitsu = item.id && (item.id.startsWith('kitsu:') || item.id.includes(':absolute:'));
     
     if (isKitsu) {
@@ -278,6 +279,7 @@ function sanitizeCatalogMeta(item, options = {}) {
 
     return {
         ...item,
+        _rawName: baseName, // Save raw base name for idempotency in applyPostCacheBadges
         name,
         poster,
         posterShape: finalPosterShape,

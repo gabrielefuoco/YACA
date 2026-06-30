@@ -180,7 +180,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                         const subItem = { ...item };
                         subItem._itaBadge = false;
                         if (sanitizeOptions.shouldApplyEpisodeBadge) {
-                            processedMetas.push(subItem);
+                            processedMetas.push(sanitizeCatalogMeta(subItem, sanitizeOptions));
                         } else {
                             processedMetas.push(subItem);
                         }
@@ -209,19 +209,19 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                         dubItem._forceSeason = maxItaSeason;
                         dubItem._forceEpisode = maxItaEpisode;
 
-                        processedMetas.push(dubItem);
+                        processedMetas.push(sanitizeCatalogMeta(dubItem, sanitizeOptions));
                     } else {
                         // Nessun offset: badge ITA standard
                         const standardItem = { ...item };
                         standardItem._itaBadge = true;
-                        processedMetas.push(standardItem);
+                        processedMetas.push(sanitizeCatalogMeta(standardItem, sanitizeOptions));
                     }
                 } else {
                     // Non ci sono flussi ita, disattiva il badge
                     const subItem = { ...item };
                     subItem._itaBadge = false;
                     if (sanitizeOptions.shouldApplyEpisodeBadge) {
-                        processedMetas.push(subItem);
+                        processedMetas.push(sanitizeCatalogMeta(subItem, sanitizeOptions));
                     } else {
                         processedMetas.push(subItem);
                     }
