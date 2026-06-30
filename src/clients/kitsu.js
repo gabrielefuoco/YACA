@@ -71,10 +71,10 @@ async function enrichWithTmdb(item, kitsuId) {
                 item.name = finalName;
             }
 
-            // Sovrascriviamo poster e background solo se è la Stagione 1.
+            // Sovrascriviamo poster e background solo se è la Stagione 1 (e non è una Parte 2+).
             // Se è una Stagione 2+ (e TMDB non ha stagioni separate), evitiamo di clonare
             // il poster della Stagione 1 su tutte le stagioni Kitsu, mantenendo la loro identità visiva.
-            if (!mapping.inferredSeason || mapping.inferredSeason <= 1) {
+            if (!mapping.inferredSeason || (mapping.inferredSeason <= 1 && !partMatch)) {
                 let bestPoster = tmdbData.poster_path;
                 if (tmdbData.images && Array.isArray(tmdbData.images.posters)) {
                     const localizedPosters = prioritizeLocalizedImages(tmdbData.images.posters);
@@ -249,8 +249,17 @@ async function fetchKitsuEpisodes(kitsuId) {
                         episodes.forEach(kitsuEp => {
                             if (!mappingSafe) return;
 
+                            // 0. Try matching by exact airdate (most reliable for split-cours where Kitsu resets to episode 1)
+                            let match = null;
+                            if (kitsuEp.released) {
+                                const kitsuDate = kitsuEp.released.split('T')[0];
+                                match = sortedTmdb.find(t => t.released && t.released.split('T')[0] === kitsuDate && t.season === targetSeason);
+                            }
+
                             // 1. Try matching by target season and episode number (with offset)
-                            let match = sortedTmdb.find(t => t.season === targetSeason && t.episode === (kitsuEp.episode + episodeOffset));
+                            if (!match) {
+                                match = sortedTmdb.find(t => t.season === targetSeason && t.episode === (kitsuEp.episode + episodeOffset));
+                            }
                             
                             // 2. Try matching by absolute index
                             if (!match) {
