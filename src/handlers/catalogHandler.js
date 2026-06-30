@@ -135,9 +135,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                 Promise.all(queuePromises).catch(() => {});
             }
 
-            const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
             const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
-            
             const activeProfileSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
             const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
             const sanitizeOptions = {
@@ -182,7 +180,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                         const subItem = { ...item };
                         subItem._itaBadge = false;
                         if (sanitizeOptions.shouldApplyEpisodeBadge) {
-                            processedMetas.push(sanitizeCatalogMeta(subItem, sanitizeOptions));
+                            processedMetas.push(subItem);
                         } else {
                             processedMetas.push(subItem);
                         }
@@ -211,19 +209,19 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                         dubItem._forceSeason = maxItaSeason;
                         dubItem._forceEpisode = maxItaEpisode;
 
-                        processedMetas.push(sanitizeCatalogMeta(dubItem, sanitizeOptions));
+                        processedMetas.push(dubItem);
                     } else {
                         // Nessun offset: badge ITA standard
                         const standardItem = { ...item };
                         standardItem._itaBadge = true;
-                        processedMetas.push(sanitizeCatalogMeta(standardItem, sanitizeOptions));
+                        processedMetas.push(standardItem);
                     }
                 } else {
                     // Non ci sono flussi ita, disattiva il badge
                     const subItem = { ...item };
                     subItem._itaBadge = false;
                     if (sanitizeOptions.shouldApplyEpisodeBadge) {
-                        processedMetas.push(sanitizeCatalogMeta(subItem, sanitizeOptions));
+                        processedMetas.push(subItem);
                     } else {
                         processedMetas.push(subItem);
                     }
