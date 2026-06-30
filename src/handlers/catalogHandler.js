@@ -8,7 +8,7 @@ const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
 const { routeCatalogRequest } = require('../catalog/CatalogRouter');
 const { filterWatchedItems } = require('../catalog/processors/FilterWatched');
 const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
-const { formatStremioCatalog } = require('../catalog/formatters/StremioFormatter');
+const { formatStremioCatalog, sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
 function getLatestEpisodeInfo(item) {
     if (!item) return null;
     

@@ -87,7 +87,13 @@ async function enrichWithTmdb(item, kitsuId) {
                     item._kitsuPart = partNum;
                 }
                 
-                item.name = finalName;
+                // Evita di sovrascrivere un titolo leggibile (es. Romaji/English da Anilist) con un titolo in Giapponese da TMDB
+                const hasJapanese = (str) => /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(str || '');
+                if (hasJapanese(finalName) && !hasJapanese(item.name)) {
+                    // Manteniamo il titolo corrente che è più leggibile
+                } else {
+                    item.name = finalName;
+                }
             }
 
             // Sovrascriviamo poster e background solo se è la Stagione 1 (e non è una Parte 2+).
@@ -281,6 +287,8 @@ async function fetchKitsuEpisodes(kitsuId) {
                             mappingSafe = false;
                         }
                         
+                        const matchedTmdbIds = new Set();
+                        
                         episodes.forEach(kitsuEp => {
                             if (!mappingSafe) return;
 
@@ -321,8 +329,33 @@ async function fetchKitsuEpisodes(kitsuId) {
                                 }
                                 kitsuEp.tmdbSeason = match.season;
                                 kitsuEp.tmdbEpisode = match.episode;
+                                matchedTmdbIds.add(`${match.season}_${match.episode}`);
                             }
                         });
+
+                        // Add remaining TMDB episodes that weren't matched
+                        if (mappingSafe) {
+                            const unmatchedTmdb = sortedTmdb.filter(t => !matchedTmdbIds.has(`${t.season}_${t.episode}`));
+                            if (unmatchedTmdb.length > 0) {
+                                let maxKitsuEpNumber = episodes.length > 0 ? Math.max(...episodes.map(e => e.episode)) : 0;
+                                const kitsuSeason = episodes.length > 0 ? episodes[0].season : 1;
+                                
+                                unmatchedTmdb.forEach(t => {
+                                    maxKitsuEpNumber++;
+                                    episodes.push({
+                                        id: `kitsu:${kitsuId}:${kitsuSeason}:${maxKitsuEpNumber}`,
+                                        title: t.title || `Episodio ${maxKitsuEpNumber}`,
+                                        released: t.released,
+                                        season: kitsuSeason,
+                                        episode: maxKitsuEpNumber,
+                                        overview: t.overview || '',
+                                        thumbnail: t.thumbnail || null,
+                                        tmdbSeason: t.season,
+                                        tmdbEpisode: t.episode
+                                    });
+                                });
+                            }
+                        }
                     }
                 }
             }
