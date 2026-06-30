@@ -140,8 +140,13 @@ function sanitizeCatalogMeta(item, options = {}) {
 
         if (actualSeason > 1) {
             tlBadge = `S${actualSeason}`;
-        } else if (actualSeason === 1 && item.tmdbTotalSeasons > 1) {
-            tlBadge = `S1`;
+        } else if (actualSeason === 1) {
+            // Heuristic for Kitsu: if it has <= 50 episodes, it's likely a seasonal anime (so S1 makes sense to distinguish it from S2).
+            // If it has > 50 episodes, it's a long-running anime (like Hunter x Hunter, One Piece) and shouldn't get S1.
+            const isLongRunning = Array.isArray(item.videos) && item.videos.length > 50;
+            if (item.tmdbTotalSeasons > 1 || (!isLongRunning && item.type !== 'movie')) {
+                tlBadge = `S1`;
+            }
         } else if (!actualSeason && (baseName.toLowerCase().includes('stagione') || baseName.toLowerCase().includes('season'))) {
             // Se non c'è numero ma c'è scritto season (es. Final Season), mettiamo un badge generico o nulla
             // Preferibile non mettere nulla per evitare "Snull"
