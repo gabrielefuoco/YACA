@@ -71,7 +71,12 @@ async function enrichWithTmdb(item, kitsuId) {
                 } else {
                     const trailingNumMatch = originalName.match(/\s(\d+)$/);
                     if (trailingNumMatch) {
-                        partNum = parseInt(trailingNumMatch[1], 10);
+                        const tNum = parseInt(trailingNumMatch[1], 10);
+                        // Se il numero finale è UGUALE alla stagione inferita (es. "Oshi no Ko Season 2" -> 2),
+                        // allora NON è una parte (Pt2), ma sta solo indicando la Stagione 2!
+                        if (tNum !== mapping.inferredSeason) {
+                            partNum = tNum;
+                        }
                     }
                 }
 
