@@ -55,6 +55,7 @@ async function enrichWithTmdb(item, kitsuId) {
             const title = tmdbData.title || tmdbData.name;
             item.tmdbTotalSeasons = tmdbData.number_of_seasons || 1;
             
+            let partMatch = null;
             if (title) {
                 let finalName = title;
                 if (mapping.type === 'tv' && mapping.inferredSeason > 1) {
@@ -63,7 +64,7 @@ async function enrichWithTmdb(item, kitsuId) {
                 
                 // Preserve "Part X" or "Cour X" from the original Kitsu title to avoid visual duplicates
                 const originalName = item.name || '';
-                const partMatch = originalName.match(/(?:Part|Cour|Parte)\s*(\d+)/i);
+                partMatch = originalName.match(/(?:Part|Cour|Parte)\s*(\d+)/i);
                 if (partMatch) {
                     finalName = `${finalName} - Parte ${partMatch[1]}`;
                 }

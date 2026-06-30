@@ -153,7 +153,7 @@ function sanitizeCatalogMeta(item, options = {}) {
             tlBadge = null;
         }
 
-        const partMatch = baseName.match(/(?:-|–|—)?\s*Parte\s*(\d+)/i);
+        const partMatch = baseName.match(/(?:-|–|—)?\s*(?:Parte|Part|Cour)\s*(\d+)/i);
         if (partMatch) {
             const partBadge = `Pt${partMatch[1]}`;
             if (tlBadge) {
@@ -162,7 +162,7 @@ function sanitizeCatalogMeta(item, options = {}) {
                 tlBadge = partBadge;
             }
             // Rimuoviamo "Parte X" dal titolo
-            baseName = baseName.replace(/(?:-|–|—)?\s*Parte\s*\d+/i, '').trim();
+            baseName = baseName.replace(/(?:-|–|—)?\s*(?:Parte|Part|Cour)\s*\d+/i, '').trim();
         }
     }
 
