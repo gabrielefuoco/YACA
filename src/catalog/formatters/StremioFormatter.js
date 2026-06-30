@@ -66,7 +66,11 @@ function getErdbId(item, context = 'default') {
 
     const strId = String(item.id || '').replace('_ita_offset', '');
 
-    // The user explicitly requested to always pass the Kitsu ID to ERDB for all Kitsu items
+    // Per gli item Kitsu, usiamo sempre il Kitsu ID per ERDB:
+    // ERDB indicizza i poster Kitsu per stagione con copertine localizzate e specifiche.
+    // Usare il TMDB ID darebbe il poster dell'ultima stagione (serie-wide), non quello
+    // della stagione specifica. Casi sporadici di poster errati (es. Pokémon Horizons)
+    // sono limitazioni del database ERDB, non risolvibili lato nostro.
     if (strId.startsWith('kitsu:')) {
         return strId;
     }
@@ -106,6 +110,7 @@ function getErdbId(item, context = 'default') {
 
     return strId;
 }
+
 
 function sanitizeCatalogMeta(item, options = {}) {
     if (!item) return item;

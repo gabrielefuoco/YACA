@@ -47,6 +47,7 @@ async function run() {
     let stdout = false;
     let nocache = false;
     let fetchStreams = false;
+    let useLocal = false;
     
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--pages' && args[i+1]) pages = parseInt(args[++i], 10);
@@ -56,6 +57,7 @@ async function run() {
         else if (args[i] === '--stdout') stdout = true;
         else if (args[i] === '--nocache') nocache = true;
         else if (args[i] === '--streams') fetchStreams = true;
+        else if (args[i] === '--local') useLocal = true;
     }
     
     if (!config) {
@@ -68,7 +70,7 @@ async function run() {
         process.exit(1);
     }
     
-    const baseUrl = 'https://gabriele-fuoco-yaca.hf.space';
+    const baseUrl = useLocal ? 'http://127.0.0.1:7000' : 'https://gabriele-fuoco-yaca.hf.space';
     let targetCatalogs = [];
     
     try {
