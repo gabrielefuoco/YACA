@@ -56,11 +56,19 @@ async function enrichWithTmdb(item, kitsuId) {
             item.tmdbTotalSeasons = tmdbData.number_of_seasons || 1;
             
             if (title) {
+                let finalName = title;
                 if (mapping.type === 'tv' && mapping.inferredSeason > 1) {
-                    item.name = `${title} - Stagione ${mapping.inferredSeason}`;
-                } else {
-                    item.name = title;
+                    finalName = `${finalName} - Stagione ${mapping.inferredSeason}`;
                 }
+                
+                // Preserve "Part X" or "Cour X" from the original Kitsu title to avoid visual duplicates
+                const originalName = item.name || '';
+                const partMatch = originalName.match(/(?:Part|Cour|Parte)\s*(\d+)/i);
+                if (partMatch) {
+                    finalName = `${finalName} - Parte ${partMatch[1]}`;
+                }
+                
+                item.name = finalName;
             }
 
             // Sovrascriviamo poster e background solo se è la Stagione 1.
