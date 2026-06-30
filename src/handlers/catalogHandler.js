@@ -214,15 +214,18 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                         processedMetas.push(sanitizeCatalogMeta(dubItem, sanitizeOptions));
                     } else {
                         // Nessun offset: badge ITA standard
-                        item._itaBadge = true;
-                        processedMetas.push(sanitizeCatalogMeta(item, sanitizeOptions));
+                        const standardItem = { ...item };
+                        standardItem._itaBadge = true;
+                        processedMetas.push(sanitizeCatalogMeta(standardItem, sanitizeOptions));
                     }
                 } else {
-                    // Nessun badge ITA
+                    // Non ci sono flussi ita, disattiva il badge
+                    const subItem = { ...item };
+                    subItem._itaBadge = false;
                     if (sanitizeOptions.shouldApplyEpisodeBadge) {
-                        processedMetas.push(sanitizeCatalogMeta(item, sanitizeOptions));
+                        processedMetas.push(sanitizeCatalogMeta(subItem, sanitizeOptions));
                     } else {
-                        processedMetas.push(item);
+                        processedMetas.push(subItem);
                     }
                 }
             }
@@ -298,6 +301,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
             // 1. ROUTING: Determina il catalogo grezzo passando attraverso il Router
             let results = await routeCatalogRequest(routerArgs, userConfig, tmdbClient, tmdbApiKey, activeProfileSettings, tmdbFetchOptions, catalogMeta);
+            console.log('ROUTE RESULTS:', results?.length);
             
             if (!results || results.length === 0) {
                 return { metas: [] };
@@ -314,6 +318,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 });
             }
 
+            console.log('POST MEDIA TYPE RESULTS:', results?.length);
             // 2.5 FILTRAGGIO POST-FETCH: Modalità Bambini Fallback
             if (activeProfileSettings?.kidsMode) {
                 results = results.filter(i => {
@@ -333,6 +338,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 );
             }
             
+            console.log('POST FILTER WATCHED RESULTS:', finalResults?.length);
             // 3.5 TRADUTTORE MAGICO (TMDB -> Kitsu/IMDb per Anime)
             // Hydration MUST happen BEFORE Kitsu translation while IDs are still tmdb:
             const shouldBadge = type === 'series' && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId));
@@ -352,6 +358,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 finalResults = await translateAnimeIdsToKitsu(finalResults, tmdbApiKey);
             }
 
+            console.log('POST KITSU/IMDB RESULTS:', finalResults?.length);
             // After translation: hydrate Kitsu episodes for items that still lack videos
             // (covers preset_new_anime and other Kitsu-translated catalogs from AiDiscoveryProvider)
             if (shouldBadge) {
@@ -419,6 +426,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
 
 
+            console.log('PRE DEDUPLICATION RESULTS:', finalResults?.length);
             // De-duplicate finalResults by ID
             if (Array.isArray(finalResults) && finalResults.length > 0) {
                 const seenIds = new Set();
@@ -433,6 +441,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 });
             }
 
+            console.log('POST DEDUPLICATION RESULTS:', finalResults?.length);
             // 4. FORMATTAZIONE (STREMIO)
             const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
             const formattedData = formatStremioCatalog(

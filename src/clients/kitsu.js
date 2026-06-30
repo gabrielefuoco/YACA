@@ -77,23 +77,14 @@ async function enrichWithTmdb(item, kitsuId) {
                         if (tNum !== mapping.inferredSeason) {
                             partNum = tNum;
                         }
+                    } else if (/\s2$/i.test(originalName)) {
+                        // Se finisce con uno spazio e "2" (es. "Haikyuu!! TO THE TOP 2")
+                        partNum = 2;
                     }
                 }
-
+                
                 if (partNum && partNum > 1) {
                     item._kitsuPart = partNum;
-                } else if (mapping.kitsuParentId) {
-                    // Se non ha trovato un numero nel titolo, ma è stato mappato tramite franchise,
-                    // verifichiamo se condivide la stessa stagione TMDB del genitore.
-                    // Se sì, è sicuramente una "Parte" successiva di quella stagione!
-                    try {
-                        const parentMapping = await getTmdbIdFromKitsuId(mapping.kitsuParentId);
-                        if (parentMapping && parentMapping.tmdbId === mapping.tmdbId && parentMapping.inferredSeason === mapping.inferredSeason) {
-                            item._kitsuPart = 2; // Forziamo a Part 2 come fallback generico
-                        }
-                    } catch (e) {
-                        // ignore
-                    }
                 }
                 
                 item.name = finalName;
@@ -205,22 +196,22 @@ async function fetchKitsuEpisodes(kitsuId) {
         const totalCount = firstRes.data.meta?.count || 0;
 
         if (totalCount > 20) {
-            const promises = [];
-            // Cap to reasonable max to avoid abusing API (e.g. 1000 episodes)
-            const maxOffsets = Math.min(totalCount, 1000);
-            for (let offset = 20; offset < maxOffsets; offset += 20) {
-                promises.push(
-                    kitsuClient.get(`/anime/${kitsuId}/episodes`, {
-                        params: { 'page[limit]': 20, 'page[offset]': offset }
-                    }).then(r => r.data?.data || []).catch(e => {
-                        console.error(`Errore offset ${offset} episodi Kitsu ${kitsuId}:`, e.message);
-                        return [];
-                    })
-                );
+            const fetchFns = [];
+            for (let offset = 20; offset < totalCount; offset += 20) {
+                fetchFns.push(() => kitsuClient.get(`/anime/${kitsuId}/episodes`, {
+                    params: { 'page[limit]': 20, 'page[offset]': offset }
+                }).then(r => r.data?.data || []).catch(e => {
+                    console.error(`Errore offset ${offset} episodi Kitsu ${kitsuId}:`, e.message);
+                    return [];
+                }));
             }
-            const results = await Promise.all(promises);
-            for (const resData of results) {
-                allData = allData.concat(resData);
+            // Execute in chunks of 10 to avoid rate limits
+            for (let i = 0; i < fetchFns.length; i += 10) {
+                const chunk = fetchFns.slice(i, i + 10);
+                const results = await Promise.all(chunk.map(fn => fn()));
+                for (const resData of results) {
+                    allData = allData.concat(resData);
+                }
             }
         }
 

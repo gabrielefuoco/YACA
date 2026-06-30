@@ -32,7 +32,7 @@ function getEpisodeBadgeText(item) {
     const airedEpisodes = item.videos.filter(v => {
         if (!v.released) {
             // Ignoriamo episodi "fantasma" vuoti (senza trama, senza thumbnail e con titolo generico o assente)
-            const isGenericTitle = !v.title || /^episod[eo]\s+\d+$/i.test(v.title);
+            const isGenericTitle = !v.title || /^episod(e|io)\s+\d+$/i.test(v.title);
             if (!v.overview && !v.thumbnail && isGenericTitle) {
                 return false;
             }
