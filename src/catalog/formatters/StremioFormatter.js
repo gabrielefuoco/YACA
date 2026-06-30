@@ -60,7 +60,7 @@ function getEpisodeBadgeText(item) {
         : `S ${season} Ep ${episode}`;
 }
 
-function getErdbId(item) {
+function getErdbId(item, context = 'default') {
     if (!item) return '';
 
     const strId = String(item.id || '').replace('_ita_offset', '');
@@ -187,34 +187,38 @@ function sanitizeCatalogMeta(item, options = {}) {
     baseName = baseName.replace(/\s*(?:-|–|—)?\s*\(?\s*(Stagione|Season)\s*\d+\s*\)?\s*/gi, '').trim();
 
     if (isLandscapeEnabled) {
-        let erdbId = erdbConfig ? getErdbId(item) : null;
+        let erdbId = erdbConfig ? getErdbId(item, 'backdrop') : null;
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
             if (options.hostUrl && !badgeText && !tlBadge) {
-                sourceImage = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.background || item.poster || '')}`;
+                sourceImage = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item._rawPoster || item.background || item.poster || '')}`;
             } else {
                 sourceImage = erdbUrl;
             }
         } else {
-            sourceImage = item.background || item.poster;
+            sourceImage = item._rawPoster || item.background || item.poster;
         }
         finalPosterShape = 'landscape';
     } else {
-        let erdbId = erdbConfig ? getErdbId(item) : null;
+        let erdbId = erdbConfig ? getErdbId(item, 'poster') : null;
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
             if (options.hostUrl && !badgeText && !tlBadge) {
-                sourceImage = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item.poster || '')}`;
+                sourceImage = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item._rawPoster || item.poster || '')}`;
             } else {
                 sourceImage = erdbUrl;
             }
         } else {
-            sourceImage = item.poster;
+            sourceImage = item._rawPoster || item.poster;
         }
     }
 
+    // Save _rawPoster for idempotency on repeated formats (e.g. applyPostCacheBadges)
+    const rawPoster = item._rawPoster || sourceImage;
+
+
     let background = item.background;
-    let erdbBgId = erdbConfig ? getErdbId(item) : null;
+    let erdbBgId = erdbConfig ? getErdbId(item, 'backdrop') : null;
     let logo = item.logo;
     let videos = item.videos;
 
@@ -248,7 +252,7 @@ function sanitizeCatalogMeta(item, options = {}) {
     if ((badgeText || tlBadge) && hostUrl && sourceImage) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';
-        const fallbackPoster = encodeURIComponent(item.poster || sourceImage);
+        const fallbackPoster = encodeURIComponent(item._rawPoster || item.poster || sourceImage);
         const episodeParam = badgeText ? encodeURIComponent(badgeText) : '_';
         
         // Put BADGE_IMG_VERSION in the path so Stremio doesn't ignore query params for image caching
@@ -266,20 +270,12 @@ function sanitizeCatalogMeta(item, options = {}) {
 
 
 
-    let nameSuffix = badgeText;
-    if (nameSuffix && nameSuffix.startsWith('ITA - ')) {
-        nameSuffix = nameSuffix.substring(6);
-    } else if (nameSuffix === 'ITA') {
-        nameSuffix = null;
-    }
-
-    const name = (nameSuffix && baseName)
-        ? `${baseName} - ${nameSuffix}`
-        : baseName;
+    const name = baseName;
 
     return {
         ...item,
         _rawName: baseName, // Save raw base name for idempotency in applyPostCacheBadges
+        _rawPoster: rawPoster, // Save raw poster to prevent nested proxies
         name,
         poster,
         posterShape: finalPosterShape,

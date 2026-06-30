@@ -175,13 +175,7 @@ async function getKitsuCatalogFromAnilist(catalogId, skip) {
                     const kitsuItem = res.data.data;
                     const meta = toStremioMetaItem(kitsuItem);
                     if (meta) {
-                        // Kitsu's canonicalTitle is often Japanese for anime. Anilist's romaji/english is better.
-                        if (item.title) {
-                            const betterTitle = item.title.romaji || item.title.english;
-                            if (betterTitle) {
-                                meta.name = betterTitle;
-                            }
-                        }
+                        // Use Kitsu's canonical title, which might be English, then enrichWithTmdb will add Italian if available
                         
                         await enrichWithTmdb(meta, kitsuId);
                         const episodes = await fetchKitsuEpisodes(kitsuId);
