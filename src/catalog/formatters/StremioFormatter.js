@@ -30,7 +30,14 @@ function getEpisodeBadgeText(item) {
 
     const now = new Date();
     const airedEpisodes = item.videos.filter(v => {
-        if (!v.released) return true; // Fallback: assume aired if no release date is known (e.g. Kitsu null airdate)
+        if (!v.released) {
+            // Ignoriamo episodi "fantasma" vuoti (senza trama, senza thumbnail e con titolo generico o assente)
+            const isGenericTitle = !v.title || /^episod[eo]\s+\d+$/i.test(v.title);
+            if (!v.overview && !v.thumbnail && isGenericTitle) {
+                return false;
+            }
+            return true; // Fallback: assume aired if no release date is known but it has some real metadata
+        }
         return new Date(v.released) <= now;
     });
     if (airedEpisodes.length === 0) return null;

@@ -118,16 +118,7 @@ async function fetchAnilistCatalog(catalogId, skip = 0) {
         variables.sort = ['POPULARITY_DESC'];
     } else if (catalogId === 'anilist-simulcast') {
         variables.sort = ['POPULARITY_DESC'];
-        // Trova la stagione corrente (approssimazione)
-        const month = new Date().getMonth() + 1;
-        const year = new Date().getFullYear();
-        let season = 'WINTER';
-        if (month >= 4 && month <= 6) season = 'SPRING';
-        else if (month >= 7 && month <= 9) season = 'SUMMER';
-        else if (month >= 10 && month <= 12) season = 'FALL';
-        
-        variables.season = season;
-        variables.seasonYear = year;
+        variables.status = 'RELEASING';
     } else if (catalogId === 'anilist-movies') {
         variables.sort = ['POPULARITY_DESC'];
         variables.format = 'MOVIE';
