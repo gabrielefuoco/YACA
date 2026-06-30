@@ -30,13 +30,14 @@ function getEpisodeBadgeText(item) {
 
     const now = new Date();
     const airedEpisodes = item.videos.filter(v => {
+        // Ignoriamo episodi "fantasma" vuoti (senza trama, senza thumbnail e con titolo generico o assente)
+        const isGenericTitle = !v.title || /^episod(e|io)\s+\d+$/i.test(v.title);
+        const hasRealThumbnail = v.thumbnail && !v.thumbnail.includes('easyratingsdb.com') && !v.thumbnail.includes('poster-placeholder');
+        if (!v.overview && !hasRealThumbnail && isGenericTitle) {
+            return false;
+        }
+
         if (!v.released) {
-            // Ignoriamo episodi "fantasma" vuoti (senza trama, senza thumbnail e con titolo generico o assente)
-            const isGenericTitle = !v.title || /^episod(e|io)\s+\d+$/i.test(v.title);
-            const hasRealThumbnail = v.thumbnail && !v.thumbnail.includes('easyratingsdb.com');
-            if (!v.overview && !hasRealThumbnail && isGenericTitle) {
-                return false;
-            }
             return true; // Fallback: assume aired if no release date is known but it has some real metadata
         }
         return new Date(v.released) <= now;

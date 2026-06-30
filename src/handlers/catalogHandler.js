@@ -28,6 +28,11 @@ function getLatestEpisodeInfo(item) {
     if (Array.isArray(item.videos) && item.videos.length > 0) {
         const now = new Date();
         const airedEpisodes = item.videos.filter(v => {
+            const isGenericTitle = !v.title || /^episod(e|io)\s+\d+$/i.test(v.title);
+            const hasRealThumbnail = v.thumbnail && !v.thumbnail.includes('easyratingsdb.com') && !v.thumbnail.includes('poster-placeholder');
+            if (!v.overview && !hasRealThumbnail && isGenericTitle) {
+                return false;
+            }
             if (!v.released) return true;
             return new Date(v.released) <= now;
         });
