@@ -488,7 +488,7 @@ router.get('/users/:userId/switch-profile/:profileId', async (req, res) => {
 });
 
 // Dynamic image overlay route for episode badges
-router.get('/images/poster/:type/:id/:episode', async (req, res) => {
+router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:type/:id/:episode'], async (req, res) => {
     const { type, id } = req.params;
     let episode = req.params.episode;
     if (episode === '_') episode = null;
@@ -526,7 +526,7 @@ router.get('/images/poster/:type/:id/:episode', async (req, res) => {
         return res.status(400).send('Invalid original image URL');
     }
 
-    const bv = req.query.bv || 'v16';
+    const bv = req.params.cacheBuster || req.query.bv || 'v16';
     const cacheKey = `${id}_${episode}_${tlBadge}_${bv}`;
     // console.log(`[Badge] Request: id=${id}, episode="${episode}", bv=${bv}, textToSVG=${!!textToSVG}`);
 

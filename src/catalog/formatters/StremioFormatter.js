@@ -227,13 +227,15 @@ function sanitizeCatalogMeta(item, options = {}) {
 
 
     let poster = sourceImage;
-    const BADGE_IMG_VERSION = 19; // Bump to force Stremio to re-download badge images
+    const BADGE_IMG_VERSION = 21; // Bump to force Stremio to re-download badge images
     if ((badgeText || tlBadge) && hostUrl && sourceImage) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';
         const fallbackPoster = encodeURIComponent(item.poster || sourceImage);
         const episodeParam = badgeText ? encodeURIComponent(badgeText) : '_';
-        poster = `${hostUrl}/images/poster/${typeParam}/${encodeURIComponent(idParam)}/${episodeParam}?original=${encodeURIComponent(sourceImage)}&fallback=${fallbackPoster}&bv=${BADGE_IMG_VERSION}`;
+        
+        // Put BADGE_IMG_VERSION in the path so Stremio doesn't ignore query params for image caching
+        poster = `${hostUrl}/images/poster/${typeParam}/${encodeURIComponent(idParam)}/${episodeParam}/${BADGE_IMG_VERSION}?original=${encodeURIComponent(sourceImage)}&fallback=${fallbackPoster}`;
         if (tlBadge) {
             poster += `&tlBadge=${encodeURIComponent(tlBadge)}`;
         }
