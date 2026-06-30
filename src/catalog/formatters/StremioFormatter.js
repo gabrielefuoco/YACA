@@ -124,8 +124,8 @@ function sanitizeCatalogMeta(item, options = {}) {
     const isKitsu = item.id && (item.id.startsWith('kitsu:') || item.id.includes(':absolute:'));
     
     if (isKitsu) {
-        let actualSeason = null;
-        if (Array.isArray(item.videos) && item.videos.length > 0) {
+        let actualSeason = item.tmdbSeason || null;
+        if (!actualSeason && Array.isArray(item.videos) && item.videos.length > 0) {
             const sampleVideo = item.videos.find(v => v.tmdbSeason) || item.videos[0];
             actualSeason = sampleVideo.tmdbSeason || sampleVideo.season;
         }
