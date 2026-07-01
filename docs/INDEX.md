@@ -77,6 +77,9 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 *   **[TESTING_UTILITIES.md](TESTING_UTILITIES.md)**
     *   *Descrizione*: Manuale per sviluppatori e amministratori del sistema. Copre l'esecuzione dei test di unità/integrazione tramite Jest (`tests/`), la validazione della rilevanza dei preset (`scripts/test_relevance_all_presets.js`) e una rassegna completa di tutti i 10 script amministrativi/migrazione nella cartella `scripts/`.
 
+### 10. 📝 Changelog
+*   **[CHANGELOG.md](CHANGELOG.md)**
+    *   *Descrizione*: Storico delle modifiche, aggiornamenti e nuove feature implementate nel progetto YACA.
 
 ---
 
