@@ -38,7 +38,18 @@ const addonConfigSchema = new mongoose.Schema({
         id: { type: String, required: true },
         name: { type: String, required: true },
         // Catalogs are objects created by profileProcessor: { id, name, type }
-        catalogs: [catalogSchema],
+        catalogs: {
+            type: [catalogSchema],
+            validate: {
+                validator: function (v) {
+                    if (!v || !Array.isArray(v)) return true;
+                    const ids = v.map(c => c.id).filter(Boolean);
+                    const uniqueIds = new Set(ids);
+                    return ids.length === uniqueIds.size;
+                },
+                message: 'I cataloghi all\'interno di un profilo devono avere ID univoci.'
+            }
+        },
         settings: {
             language: String,
             includeAdult: Boolean,

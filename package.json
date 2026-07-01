@@ -7,8 +7,7 @@
     "dev": "node index.js",
     "build": "cd frontend && npm run build",
     "test": "jest",
-    "lint": "eslint .",
-    "deploy:worker": "cd cloudflare && npx wrangler deploy"
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",

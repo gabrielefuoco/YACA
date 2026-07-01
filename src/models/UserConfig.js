@@ -118,11 +118,33 @@ const UserConfig = {
                             mergedSettings.suggestedDNA = existing.settings.suggestedDNA;
                         }
 
+                        // Deduplicate catalogs by ID
+                        const mergedCatalogs = incoming.catalogs || existing.catalogs || [];
+                        const catalogsMap = new Map();
+                        mergedCatalogs.forEach(c => {
+                            if (c && c.id) {
+                                catalogsMap.set(c.id, c);
+                            }
+                        });
+                        const finalCatalogs = Array.from(catalogsMap.values());
+
+                        // Deduplicate raw_ui_state arrays
+                        const mergedRawUi = {
+                            ...(existing.raw_ui_state || {}),
+                            ...(incoming.raw_ui_state || {})
+                        };
+                        if (Array.isArray(mergedRawUi.selectedPresets)) {
+                            mergedRawUi.selectedPresets = [...new Set(mergedRawUi.selectedPresets)];
+                        }
+                        if (Array.isArray(mergedRawUi.catalogOrder)) {
+                            mergedRawUi.catalogOrder = [...new Set(mergedRawUi.catalogOrder)];
+                        }
+
                         return { 
                             ...existing, 
                             ...incoming, 
-                            catalogs: incoming.catalogs || existing.catalogs || [],
-                            raw_ui_state: incoming.raw_ui_state || existing.raw_ui_state || {},
+                            catalogs: finalCatalogs,
+                            raw_ui_state: mergedRawUi,
                             settings: mergedSettings,
                             // CRITICAL: Always preserve DNA scores (server-calculated)
                             dna: existing.dna || incoming.dna 

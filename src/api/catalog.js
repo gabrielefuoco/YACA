@@ -26,7 +26,7 @@ router.post('/preview-catalog', async (req, res) => {
         if (token) {
             try {
                 const jwt = require('jsonwebtoken');
-                const { getJwtSecret } = require('../auth/index');
+                const { getJwtSecret } = require('./auth/index');
                 const decoded = jwt.verify(token, getJwtSecret());
                 if (decoded?.userId) {
                     const UserConfig = require('../models/UserConfig');

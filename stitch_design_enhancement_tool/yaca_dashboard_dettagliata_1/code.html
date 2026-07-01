@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+
+<html class="light" lang="it"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#ffb4a8",
+                        "tertiary": "#003321",
+                        "on-background": "#221a0f",
+                        "primary": "#610000",
+                        "on-secondary-container": "#6f6254",
+                        "on-error": "#ffffff",
+                        "on-tertiary-container": "#7ebc9c",
+                        "surface-container-low": "#fff2e2",
+                        "inverse-surface": "#372f22",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed": "#231a0f",
+                        "tertiary-container": "#064c33",
+                        "surface-variant": "#efe0cd",
+                        "surface-dim": "#e6d8c5",
+                        "on-primary-container": "#ff907f",
+                        "on-primary-fixed": "#410000",
+                        "outline": "#8e706b",
+                        "secondary-container": "#f1e0cd",
+                        "on-primary-fixed-variant": "#920703",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed": "#f1e0cd",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#8b0000",
+                        "on-tertiary-fixed-variant": "#0e5138",
+                        "surface-container": "#fbecd9",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed-dim": "#d4c4b2",
+                        "tertiary-fixed": "#b1f0ce",
+                        "primary-fixed-dim": "#ffb4a8",
+                        "on-secondary-fixed-variant": "#504538",
+                        "on-surface-variant": "#5a403c",
+                        "tertiary-fixed-dim": "#95d4b3",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#fff8f3",
+                        "inverse-on-surface": "#feefdb",
+                        "surface-bright": "#fff8f3",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-high": "#f5e6d3",
+                        "on-surface": "#221a0f",
+                        "outline-variant": "#e3beb8",
+                        "surface-tint": "#b52619",
+                        "background": "#fff8f3",
+                        "primary-fixed": "#ffdad4",
+                        "on-tertiary-fixed": "#002114",
+                        "secondary": "#695c4e",
+                        "surface-container-highest": "#efe0cd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "48px",
+                        "stack-md": "24px",
+                        "container-padding": "32px",
+                        "stack-sm": "12px",
+                        "gutter": "24px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "label-lg": ["Manrope"],
+                        "body-lg": ["Manrope"],
+                        "body-md": ["Manrope"],
+                        "display-lg": ["Manrope"],
+                        "headline-md": ["Manrope"],
+                        "label-sm": ["Manrope"],
+                        "headline-lg": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #fff8f3;
+            color: #221a0f;
+            font-family: 'Manrope', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .custom-shadow {
+            box-shadow: 0px 0px 20px 0px rgba(97, 0, 0, 0.05);
+        }
+        .active-glow {
+            box-shadow: 0 0 15px rgba(0, 163, 108, 0.2);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .poster-card:hover .poster-overlay {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- Top Navigation Bar -->
+<header class="bg-surface sticky top-0 z-50">
+<div class="flex justify-between items-center w-full px-container-padding py-base max-w-[1280px] mx-auto">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+<div class="flex flex-col">
+<span class="font-display-lg text-headline-md text-primary uppercase tracking-tighter">YACA</span>
+<span class="text-[10px] uppercase font-bold tracking-widest text-secondary opacity-70">Yet Another Catalog Addon</span>
+</div>
+</div>
+<nav class="flex items-center gap-4">
+<a class="text-on-primary bg-primary rounded-full px-6 py-2 shadow-sm font-label-lg text-label-lg scale-95 transition-transform active:scale-95" href="#">Dashboard</a>
+<a class="text-secondary hover:text-primary px-4 py-2 font-label-lg text-label-lg transition-colors duration-200" href="#">Settings</a>
+<div class="ml-4 px-3 py-1 rounded-full border border-outline-variant bg-surface-container-low text-primary-container font-label-sm text-label-sm">
+                    v2.4.0-beta
+                </div>
+</nav>
+</div>
+</header>
+<main class="max-w-[1280px] mx-auto px-container-padding pb-stack-lg">
+<!-- Header Text -->
+<div class="mt-stack-md mb-stack-md">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Dashboard</h1>
+<p class="font-body-md text-body-md text-secondary">Gestisci i tuoi profili e personalizza i cataloghi multimediali</p>
+</div>
+<!-- Profiles Section -->
+<section class="bg-surface-container-high rounded-[24px] p-stack-md border border-outline-variant/30 custom-shadow mb-stack-md">
+<div class="flex justify-between items-center mb-stack-sm">
+<div class="flex items-center gap-3">
+<h2 class="font-headline-md text-headline-md">I tuoi Profili</h2>
+<span class="bg-primary/10 text-primary px-3 py-0.5 rounded-full text-label-sm font-label-lg">3 Profili</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 bg-surface/50 p-1.5 rounded-lg border border-outline-variant/20">
+<button class="p-1.5 hover:bg-surface-variant/50 rounded-md transition-colors text-secondary hover:text-primary">
+<span class="material-symbols-outlined text-xl">cleaning_services</span>
+</button>
+<button class="p-1.5 hover:bg-surface-variant/50 rounded-md transition-colors text-secondary hover:text-primary">
+<span class="material-symbols-outlined text-xl">edit</span>
+</button>
+<button class="p-1.5 hover:bg-surface-variant/50 rounded-md transition-colors text-secondary hover:text-error">
+<span class="material-symbols-outlined text-xl">delete</span>
+</button>
+</div>
+<div class="w-[1px] h-8 bg-outline-variant/30"></div>
+<button class="flex items-center gap-2 bg-primary-container text-on-primary font-label-lg text-label-lg px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined">add</span>
+                        Nuovo Profilo
+                    </button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter mt-stack-md">
+<!-- Profile Card 1 -->
+<div class="bg-surface-container-low rounded-xl p-8 flex flex-col items-center justify-center gap-4 border border-outline-variant/20 hover:border-primary/20 transition-all cursor-pointer group">
+<div class="w-16 h-16 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant font-bold text-2xl group-hover:scale-110 transition-transform">G</div>
+<span class="font-label-lg text-label-lg text-on-surface">Generale</span>
+</div>
+<!-- Profile Card 2 -->
+<div class="bg-surface-container-low rounded-xl p-8 flex flex-col items-center justify-center gap-4 border border-outline-variant/20 hover:border-primary/20 transition-all cursor-pointer group">
+<div class="w-16 h-16 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant font-bold text-2xl group-hover:scale-110 transition-transform">G</div>
+<span class="font-label-lg text-label-lg text-on-surface">Generale (Tutto)</span>
+</div>
+<!-- Profile Card Active -->
+<div class="bg-surface rounded-xl p-8 flex flex-col items-center justify-center gap-4 border-2 border-green-500 active-glow relative cursor-default">
+<div class="w-16 h-16 rounded-full bg-[#00a36c] flex items-center justify-center text-white text-2xl">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">face_retouching_natural</span>
+</div>
+<div class="text-center">
+<span class="block font-label-lg text-label-lg text-[#00a36c] leading-tight">✨ Otaku Hardco...</span>
+<span class="text-[10px] font-extrabold text-[#00a36c] uppercase tracking-widest mt-1 block">ATTIVO</span>
+</div>
+</div>
+<!-- Add Placeholder -->
+<div class="border-2 border-dashed border-outline-variant/30 rounded-xl p-8 flex flex-col items-center justify-center gap-4 hover:border-primary/30 transition-all cursor-pointer">
+<div class="w-16 h-16 rounded-full bg-surface-variant/30 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-3xl">add</span>
+</div>
+<span class="font-label-lg text-label-lg text-secondary">Aggiungi</span>
+</div>
+</div>
+</section>
+<!-- Centered Pill Nav -->
+<nav class="flex flex-row justify-center items-center gap-base w-fit mx-auto p-2 bg-surface-container-highest rounded-full shadow-sm mb-stack-md mt-stack-md">
+<a class="bg-primary text-on-primary rounded-full px-8 py-3 flex items-center gap-2 font-label-lg text-label-lg scale-98" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+                CATALOGHI ATTIVI
+            </a>
+<a class="text-secondary hover:text-primary flex items-center gap-2 px-6 py-3 font-label-lg text-label-lg transition-all" href="#">
+<span class="material-symbols-outlined">explore</span>
+                ESPLORA
+            </a>
+<a class="text-secondary hover:text-primary flex items-center gap-2 px-6 py-3 font-label-lg text-label-lg transition-all" href="#">
+<span class="material-symbols-outlined">edit_note</span>
+                CREATORE
+            </a>
+<a class="text-secondary hover:text-primary flex items-center gap-2 px-6 py-3 font-label-lg text-label-lg transition-all" href="#">
+<span class="material-symbols-outlined">biotech</span>
+                DNA &amp; AI LAB
+            </a>
+</nav>
+<!-- Catalog List Container -->
+<section class="bg-surface-container-high rounded-[24px] p-stack-md border border-outline-variant/30 custom-shadow flex flex-col gap-gutter">
+<div class="flex justify-between items-center">
+<div>
+<h2 class="font-headline-md text-headline-md inline-flex items-center gap-2">
+                        I tuoi Cataloghi <span class="text-secondary text-body-lg font-normal">(11)</span>
+</h2>
+<p class="text-[11px] font-bold uppercase tracking-widest text-secondary mt-1">GESTISCI E ORDINA LA TUA ESPERIENZA</p>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full border border-outline-variant/20 text-secondary">
+<span class="material-symbols-outlined text-xl">info</span>
+<span class="text-label-sm font-label-lg uppercase">TRASCINA PER RIORDINARE</span>
+</div>
+</div>
+<!-- Single Catalog Entry: Simulcast -->
+<div class="bg-surface rounded-[20px] overflow-hidden border border-outline-variant/20 flex flex-col">
+<div class="flex justify-between items-center px-4 pt-4 pb-2">
+<div class="flex items-center gap-4">
+<div class="p-2 bg-surface-container rounded-lg cursor-grab">
+<span class="material-symbols-outlined text-secondary opacity-50">drag_indicator</span>
+</div>
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary-container text-2xl" style="font-variation-settings: 'FILL' 1;">tv</span>
+</div>
+<div>
+<h3 class="font-headline-md text-body-lg">Simulcast (Nuovi Episodi)</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="bg-primary/5 text-primary px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 border border-primary/10">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                                    PRESET
+                                </span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 hover:bg-surface-variant/50 rounded-lg text-secondary transition-colors">
+<span class="material-symbols-outlined">content_copy</span>
+</button>
+<button class="p-2 hover:bg-error/10 rounded-lg text-error transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<div class="px-4 mb-4">
+<p class="text-label-sm text-secondary italic">Catalogo basato su filtri e preferenze personalizzate.</p>
+</div>
+<!-- Posters Scroll Area -->
+<div class="flex overflow-x-auto gap-gutter pb-6 px-4 hide-scrollbar">
+<!-- Poster 1 -->
+<div class="min-w-[160px] h-[240px] relative rounded-xl overflow-hidden group poster-card shadow-sm">
+<img alt="Poster" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLOTKemRKxKnF2Ab5pi2RU45RzwncwFI58U6M4EnQtRX-9FIC3NhRWe1KyKHsRAb376kqkotTdfE0HTAyn4SG2EvXbxDqnKkkWoBAsTlAE79kfzUnvwh_Au5xl8YZOZ-cveHNOGydUJfv8uSELIzJ0B9Ip6brFDqrPDMiccLTF2IoJPc1gBAis8jlwwIF4TRAJqYxzAXnbk5QYIHsk6fOADUrZWxG3cDossZWenk1AXvbyOzmkBUxWnrGM8C3DAX-CkrrURMIAf2A"/>
+<div class="absolute top-2 right-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded">1080p</span>
+</div>
+<div class="absolute bottom-2 left-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">★ 7.6</span>
+</div>
+</div>
+<!-- Poster 2 -->
+<div class="min-w-[160px] h-[240px] relative rounded-xl overflow-hidden group poster-card shadow-sm">
+<img alt="Poster" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCv2GJbqzBmaroOFczposX7RdzLuSG8JGmMT34Mjl_cK9FmPT8FlHZlgN9xgAbRngpIkc-k7xo7KCFlbiF-HhjmFEjkOofd6Fao1g2mdbX9KaC5d2R8wMF6vzwVtfPNOnQ_-9egITFagude4Tm_EZcksBKTaxHcovq3FOZF0R7wJomDRqlmdJeCfYUrTXm5BOAw2ARxXaHmke1HYqskJ_oO7O9lt_admi3ZFt7W2JPh7OQ2SwGLqlZTN1aIZ-kRToHK6Y0DELzgihE"/>
+<div class="absolute top-2 right-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded">1080p</span>
+</div>
+<div class="absolute bottom-2 left-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">★ 8.2</span>
+</div>
+</div>
+<!-- Poster 3 -->
+<div class="min-w-[160px] h-[240px] relative rounded-xl overflow-hidden group poster-card shadow-sm">
+<img alt="Poster" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXgwyZJp2kSAaRQsLnYsBqyfponf-WBmkzMLxMRljHUSuBcL6iQvFt5crANuLRsY6R5HXvz8tJ_tibWFAjAYo89TX9Ha1jBAimJTlqIDSKug68LohQNr1WJnXy3IdjceHg1CHZkqMIL2r4o2WeAhTfGPMUwlEJ_FcNwmqup-ntfEe4qFmKz9Mc25p6fS3VyNtqqcZTbL9iaig1C-YosIxDgdalW9V_YzHiV1yU7xNjc9AO6qmsYHeDJXKHp5btBR1d5YoNlwpSSVs"/>
+<div class="absolute top-2 right-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded">1080p</span>
+</div>
+<div class="absolute bottom-2 left-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">★ 8.0</span>
+</div>
+</div>
+<!-- Poster 4 -->
+<div class="min-w-[160px] h-[240px] relative rounded-xl overflow-hidden group poster-card shadow-sm">
+<img alt="Poster" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6XDUrx-ghUOYbwFeoxX_G6Lbg87a94l3GUHJcjGOJWDeuNt57KnxOM8PSqEWE9iJWmEQCQhJVv52x38EofyY1fUPro2843eiYCMd0WGSJZLCNqZ3BFaAGopqwyTmmjSztgER6E3AwegVu6D0XPsZQeMS8wJMBy1_Npesi_lohlQK2escaidbjEwZlecQB2w17gLi4aMcPJRQ3LDFSt7VUzYXO_Lk-A3UJh9RIbprQXd-5avJw6LLpom4aPQNauvOGiHKePrH7R_4"/>
+<div class="absolute top-2 right-2">
+<span class="bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded">4K HDR</span>
+</div>
+<div class="absolute bottom-2 left-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">★ 8.5</span>
+</div>
+</div>
+<!-- Poster 5 -->
+<div class="min-w-[160px] h-[240px] relative rounded-xl overflow-hidden group poster-card shadow-sm">
+<img alt="Poster" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXi2Z2QjTLtkwpz1dxe2xblsPe451KO-Q9IuIO8qQUMqpOPyipsvAwVQ9EzsIPkc0NPgQOX11FFREFHg9Ld9Q5028hKigoqWp1MnvzCAiq85sZskxVIo6phtse9xiFqOaJuqbX78wPv4ZLwnwAiwlCTiiXQ6NkcNdqGj2a6M9ul3hGPfTz-jq3AYqshBOtwVKk18Knie4Dw5VAqkpu-d2J_gOqTxbeeBsP8hWEQHsbCYOjgo_gUFKOFSmKOkBNUSwSFV6YWXhpg-4"/>
+<div class="absolute top-2 right-2">
+<span class="bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded">4K</span>
+</div>
+<div class="absolute bottom-2 left-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">★ 8.7</span>
+</div>
+</div>
+<!-- Poster 6 -->
+<div class="min-w-[160px] h-[240px] relative rounded-xl overflow-hidden group poster-card shadow-sm">
+<img alt="Poster" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtBMOsHvZBAbhw8f7qVA7K2kKeytnYwSqxMRZ4rwzsOuWK-QnOW4zLYk1XOtebUmpde8Bmoe8FtFEfI2jTeDtjy5ynQIo660nvn1ZRD8PHnbjwr2BkAcP9n9fo7cUtBpd2yeRlpJ_LniiOq6HFm59KnxRUKjFJ-UE4XvoUNo5c-xb_kV41OGpPCPQhJqrlmRx3MiMhYkq2VnDuvW7seb0F97zuVt777jZqp15ihbhpM7cWMdqyeA3WuBIzSYejBIQ4DTvEhW5pL_w"/>
+<div class="absolute top-2 right-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded">1080p</span>
+</div>
+<div class="absolute bottom-2 left-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">★ 7.4</span>
+</div>
+</div>
+</div>
+<!-- Bottom Action Bar -->
+<div class="mt-auto bg-surface-container-low border-t border-outline-variant/20 px-6 py-3 flex items-center justify-between">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-lg">tv</span>
+<span class="text-label-sm font-bold text-secondary uppercase tracking-wider">SERIE</span>
+</div>
+<div class="w-[1px] h-4 bg-outline-variant/30"></div>
+<div class="flex items-center gap-2 group cursor-pointer">
+<span class="text-label-sm font-bold text-secondary uppercase tracking-wider">2 Filtri</span>
+<span class="material-symbols-outlined text-secondary text-sm group-hover:text-primary transition-colors">edit</span>
+</div>
+</div>
+<button class="flex items-center gap-2 hover:bg-surface-variant/50 px-3 py-1.5 rounded-lg transition-colors group">
+<span class="text-label-sm font-bold text-secondary group-hover:text-primary uppercase tracking-wider">FONDI</span>
+<span class="material-symbols-outlined text-secondary text-lg group-hover:text-primary">tune</span>
+</button>
+</div>
+</div>
+<!-- Single Catalog Entry: Anime Popolari -->
+<div class="bg-surface rounded-[20px] overflow-hidden border border-outline-variant/20 flex flex-col">
+<div class="flex justify-between items-center px-4 pt-4 pb-2">
+<div class="flex items-center gap-4">
+<div class="p-2 bg-surface-container rounded-lg cursor-grab">
+<span class="material-symbols-outlined text-secondary opacity-50">drag_indicator</span>
+</div>
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary-container text-2xl" style="font-variation-settings: 'FILL' 1;">wb_sunny</span>
+</div>
+<div>
+<h3 class="font-headline-md text-body-lg">Anime Popolari</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="bg-primary/5 text-primary px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 border border-primary/10">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                                    PRESET
+                                </span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 hover:bg-surface-variant/50 rounded-lg text-secondary transition-colors">
+<span class="material-symbols-outlined">content_copy</span>
+</button>
+<button class="p-2 hover:bg-error/10 rounded-lg text-error transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<div class="px-4 mb-4">
+<p class="text-label-sm text-secondary italic">I contenuti più visti dalla community in questo momento.</p>
+</div>
+<!-- Posters Scroll Area -->
+<div class="flex overflow-x-auto gap-gutter pb-6 px-4 hide-scrollbar">
+<!-- Placeholder Anime Posters with ratings -->
+<div class="min-w-[160px] h-[240px] relative rounded-xl overflow-hidden group poster-card shadow-sm">
+<img alt="Poster" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXi2Z2QjTLtkwpz1dxe2xblsPe451KO-Q9IuIO8qQUMqpOPyipsvAwVQ9EzsIPkc0NPgQOX11FFREFHg9Ld9Q5028hKigoqWp1MnvzCAiq85sZskxVIo6phtse9xiFqOaJuqbX78wPv4ZLwnwAiwlCTiiXQ6NkcNdqGj2a6M9ul3hGPfTz-jq3AYqshBOtwVKk18Knie4Dw5VAqkpu-d2J_gOqTxbeeBsP8hWEQHsbCYOjgo_gUFKOFSmKOkBNUSwSFV6YWXhpg-4"/>
+<div class="absolute bottom-2 left-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">★ 8.7</span>
+</div>
+</div>
+<div class="min-w-[160px] h-[240px] relative rounded-xl overflow-hidden group poster-card shadow-sm">
+<img alt="Poster" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtBMOsHvZBAbhw8f7qVA7K2kKeytnYwSqxMRZ4rwzsOuWK-QnOW4zLYk1XOtebUmpde8Bmoe8FtFEfI2jTeDtjy5ynQIo660nvn1ZRD8PHnbjwr2BkAcP9n9fo7cUtBpd2yeRlpJ_LniiOq6HFm59KnxRUKjFJ-UE4XvoUNo5c-xb_kV41OGpPCPQhJqrlmRx3MiMhYkq2VnDuvW7seb0F97zuVt777jZqp15ihbhpM7cWMdqyeA3WuBIzSYejBIQ4DTvEhW5pL_w"/>
+<div class="absolute bottom-2 left-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">★ 7.9</span>
+</div>
+</div>
+<div class="min-w-[160px] h-[240px] relative rounded-xl overflow-hidden group poster-card shadow-sm">
+<img alt="Poster" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWTSGwfmdxUPDFjz6vE08sSff-PbJR1dtncPQcNvywwAdSFfzU01fmWOZniXQWwn8TR_Msg42nuCtoOSF8EErehaURgME_YhIY3vHCaCRYkPo7GLQ_ronUy_FMCyTr182lVdQkwEn8gekfYSj1qOOqngVk5HjKtPTqukJz1zlyiGV4Tvk0m7PmKZ9mt-QENCtNwO9WyCR3GDl1BVsGqS4yjoGG-0BTcrlKVXpNzHkbsHAOlJtAzE53oe8v2wZiMOppmi3yKIaNjEE"/>
+<div class="absolute bottom-2 left-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">★ 8.0</span>
+</div>
+</div>
+<div class="min-w-[160px] h-[240px] relative rounded-xl overflow-hidden group poster-card shadow-sm">
+<img alt="Poster" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCv2GJbqzBmaroOFczposX7RdzLuSG8JGmMT34Mjl_cK9FmPT8FlHZlgN9xgAbRngpIkc-k7xo7KCFlbiF-HhjmFEjkOofd6Fao1g2mdbX9KaC5d2R8wMF6vzwVtfPNOnQ_-9egITFagude4Tm_EZcksBKTaxHcovq3FOZF0R7wJomDRqlmdJeCfYUrTXm5BOAw2ARxXaHmke1HYqskJ_oO7O9lt_admi3ZFt7W2JPh7OQ2SwGLqlZTN1aIZ-kRToHK6Y0DELzgihE"/>
+<div class="absolute bottom-2 left-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">★ 8.2</span>
+</div>
+</div>
+<div class="min-w-[160px] h-[240px] relative rounded-xl overflow-hidden group poster-card shadow-sm">
+<img alt="Poster" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLOTKemRKxKnF2Ab5pi2RU45RzwncwFI58U6M4EnQtRX-9FIC3NhRWe1KyKHsRAb376kqkotTdfE0HTAyn4SG2EvXbxDqnKkkWoBAsTlAE79kfzUnvwh_Au5xl8YZOZ-cveHNOGydUJfv8uSELIzJ0B9Ip6brFDqrPDMiccLTF2IoJPc1gBAis8jlwwIF4TRAJqYxzAXnbk5QYIHsk6fOADUrZWxG3cDossZWenk1AXvbyOzmkBUxWnrGM8C3DAX-CkrrURMIAf2A"/>
+<div class="absolute bottom-2 left-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">★ 8.0</span>
+</div>
+</div>
+<div class="min-w-[160px] h-[240px] relative rounded-xl overflow-hidden group poster-card shadow-sm">
+<img alt="Poster" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXgwyZJp2kSAaRQsLnYsBqyfponf-WBmkzMLxMRljHUSuBcL6iQvFt5crANuLRsY6R5HXvz8tJ_tibWFAjAYo89TX9Ha1jBAimJTlqIDSKug68LohQNr1WJnXy3IdjceHg1CHZkqMIL2r4o2WeAhTfGPMUwlEJ_FcNwmqup-ntfEe4qFmKz9Mc25p6fS3VyNtqqcZTbL9iaig1C-YosIxDgdalW9V_YzHiV1yU7xNjc9AO6qmsYHeDJXKHp5btBR1d5YoNlwpSSVs"/>
+<div class="absolute bottom-2 left-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">★ 8.3</span>
+</div>
+</div>
+</div>
+<!-- Bottom Action Bar -->
+<div class="mt-auto bg-surface-container-low border-t border-outline-variant/20 px-6 py-3 flex items-center justify-between">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-lg">tv</span>
+<span class="text-label-sm font-bold text-secondary uppercase tracking-wider">SERIE</span>
+</div>
+<div class="w-[1px] h-4 bg-outline-variant/30"></div>
+<div class="flex items-center gap-2 group cursor-pointer">
+<span class="text-label-sm font-bold text-secondary uppercase tracking-wider">0 Filtri</span>
+<span class="material-symbols-outlined text-secondary text-sm group-hover:text-primary transition-colors">edit</span>
+</div>
+</div>
+<button class="flex items-center gap-2 hover:bg-surface-variant/50 px-3 py-1.5 rounded-lg transition-colors group">
+<span class="text-label-sm font-bold text-secondary group-hover:text-primary uppercase tracking-wider">FONDI</span>
+<span class="material-symbols-outlined text-secondary text-lg group-hover:text-primary">tune</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer Identity -->
+<footer class="max-w-[1280px] mx-auto px-container-padding py-stack-md flex justify-between items-center opacity-50">
+<span class="text-label-sm font-label-lg">YACA Dashboard © 2024</span>
+<div class="flex gap-4">
+<a class="text-label-sm font-label-lg hover:text-primary transition-colors" href="#">Documentation</a>
+<a class="text-label-sm font-label-lg hover:text-primary transition-colors" href="#">Support</a>
+</div>
+</footer>
+<script>
+        // Micro-interactions for profile selection
+        document.querySelectorAll('.profiles-grid > div').forEach(card => {
+            card.addEventListener('click', function() {
+                if(this.classList.contains('border-green-500')) return;
+                console.log('Profile selected');
+            });
+        });
+
+        // Horizontal scroll with mouse wheel for the posters
+        document.querySelectorAll('.hide-scrollbar').forEach(container => {
+            container.addEventListener('wheel', (evt) => {
+                evt.preventDefault();
+                container.scrollLeft += evt.deltaY;
+            });
+        });
+    </script>
+</body></html>

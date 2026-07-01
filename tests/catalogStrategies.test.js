@@ -14,7 +14,9 @@ jest.mock('../src/engines/hybrid/dataFetchers', () => ({
     fetchTmdbResults: jest.fn(),
     fetchTraktRecommendationsRaw: jest.fn(),
     fetchPopularFallbackIds: jest.fn(),
-    fetchRecentHistory: jest.fn()
+    fetchRecentHistory: jest.fn(),
+    getImpressionMap: jest.fn().mockResolvedValue(new Map()),
+    calculateImpressionPenalty: jest.fn().mockReturnValue(1.0)
 }));
 
 jest.mock('../src/profile/ProfileScorer', () => ({

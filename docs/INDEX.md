@@ -91,7 +91,7 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 
 ## 🔑 Tabella delle Variabili d'Ambiente Utilizzate
 
-Di seguito sono elencate le variabili d'ambiente effettivamente supportate ed esaminate nel codice di YACA. Per ragioni di sicurezza e pulizia del codice, le vecchie chiavi obsolete (es. ImageKit, NextAuth, Master Encryption) sono state rimosse e non devono essere configurate.
+Di seguito sono elencate le variabili d'ambiente effettivamente supportate ed esaminate nel codice di YACA.
 
 | **Variabile** | **Obbligatoria** | **Descrizione** |
 |---|---|---|

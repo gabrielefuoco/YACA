@@ -1,5 +1,40 @@
 const { EPISODE_CATALOG_IDS } = require('../constants');
 
+function findLatestAiredEpisode(videos) {
+    if (!Array.isArray(videos) || videos.length === 0) return null;
+
+    const now = new Date();
+    const airedEpisodes = videos.filter(v => {
+        const isGenericTitle = !v.title || /^episod(e|io)\s+\d+$/i.test(v.title);
+        const hasRealThumbnail = v.thumbnail && !v.thumbnail.includes('easyratingsdb.com') && !v.thumbnail.includes('poster-placeholder');
+        if (!v.overview && !hasRealThumbnail && isGenericTitle) {
+            return false;
+        }
+
+        if (!v.released) {
+            // No release date? Include it and sort by episode number as fallback
+            return true;
+        }
+
+        const releasedDate = new Date(v.released);
+        return releasedDate <= now;
+    });
+
+    if (airedEpisodes.length === 0) {
+        return null;
+    }
+
+    airedEpisodes.sort((a, b) => {
+        if (a.released && b.released) {
+            const dateDiff = new Date(b.released) - new Date(a.released);
+            if (dateDiff !== 0) return dateDiff;
+        }
+        return (b.episode || 0) - (a.episode || 0);
+    });
+
+    return airedEpisodes[0];
+}
+
 function getEpisodeBadgeText(item) {
     if (!item?.poster) return null;
 
@@ -26,39 +61,12 @@ function getEpisodeBadgeText(item) {
         }
     }
 
-    if (!Array.isArray(item.videos) || item.videos.length === 0) return null;
+    const latest = findLatestAiredEpisode(item.videos);
+    if (!latest) return null;
 
-    const now = new Date();
-    const airedEpisodes = item.videos.filter(v => {
-        // Ignoriamo episodi "fantasma" vuoti (senza trama, senza thumbnail e con titolo generico o assente)
-        const isGenericTitle = !v.title || /^episod(e|io)\s+\d+$/i.test(v.title);
-        const hasRealThumbnail = v.thumbnail && !v.thumbnail.includes('easyratingsdb.com') && !v.thumbnail.includes('poster-placeholder');
-        if (!v.overview && !hasRealThumbnail && isGenericTitle) {
-            return false;
-        }
-
-        if (!v.released) {
-            return true; // Fallback: assume aired if no release date is known but it has some real metadata
-        }
-        return new Date(v.released) <= now;
-    });
-    if (airedEpisodes.length === 0) return null;
-
-    airedEpisodes.sort((a, b) => {
-        if (a.released && b.released) {
-            const dateDiff = new Date(b.released) - new Date(a.released);
-            if (dateDiff !== 0) return dateDiff;
-        }
-        return (b.episode || 0) - (a.episode || 0);
-    });
-    const latest = airedEpisodes[0];
-    const isKitsu = item.id && (item.id.startsWith('kitsu:') || item.id.includes(':absolute:'));
-    const season = latest.season || 0;
-    const episode = latest.episode || 1;
-
-    return (isKitsu || season <= 1)
-        ? `Ep ${episode}`
-        : `S ${season} Ep ${episode}`;
+    return (item.type === 'anime' || (latest.season && latest.season <= 1))
+        ? `Ep ${latest.episode || 1}`
+        : `S${latest.season || 1} E${latest.episode || 1}`;
 }
 
 function getErdbId(item, context = 'default') {
@@ -328,5 +336,6 @@ function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled,
 
 module.exports = {
     formatStremioCatalog,
-    sanitizeCatalogMeta
+    sanitizeCatalogMeta,
+    findLatestAiredEpisode
 };

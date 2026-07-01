@@ -1,6 +1,0 @@
-name = "yaca-proxy-worker"
-main = "worker.js"
-compatibility_date = "2024-03-20"
-
-# Imposta questo a false in modo che venga servito sul dominio .workers.dev gratuito
-workers_dev = true

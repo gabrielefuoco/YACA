@@ -340,8 +340,6 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
 
 
 module.exports = {
-    executeComplexStrategy,
     executeUniversalPipeline,
-    executeCombinedSearch,
-    injectProfilePreferences
+    executeCombinedSearch
 };

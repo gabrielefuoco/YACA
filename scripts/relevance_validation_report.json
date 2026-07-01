@@ -1,0 +1,1677 @@
+{
+  "preset_pop_movies": {
+    "name": "Film Popolari",
+    "params": {
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_pop_series": {
+    "name": "Serie TV Popolari",
+    "params": {
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_top_rated_movies": {
+    "name": "Film Più Votati (All Time)",
+    "params": {
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 1000
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_top_rated_series": {
+    "name": "Serie Più Votate (All Time)",
+    "params": {
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 500,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_new_movies": {
+    "name": "Film: Nuove Uscite",
+    "params": {
+      "primary_release_date.lte": "2026-07-01",
+      "primary_release_date.gte": "2026-05-01",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_new_series": {
+    "name": "Serie TV: Novità",
+    "params": {
+      "first_air_date.lte": "2026-07-01",
+      "first_air_date.gte": "2026-01-01",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_new_series_eps": {
+    "name": "Serie: Episodi Recenti",
+    "params": {
+      "air_date.lte": "2026-07-01",
+      "air_date.gte": "2026-06-17",
+      "sort_by": "popularity.desc",
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_pop_anime": {
+    "name": "Anime Popolari",
+    "params": {
+      "provider": "kitsu",
+      "sort_by": "popularity.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_nolan": {
+    "name": "Regia: Christopher Nolan",
+    "params": {
+      "with_crew": 525,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_tarantino": {
+    "name": "Regia: Quentin Tarantino",
+    "params": {
+      "with_crew": 138,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_scorsese": {
+    "name": "Regia: Martin Scorsese",
+    "params": {
+      "with_crew": 224,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_spielberg": {
+    "name": "Regia: Steven Spielberg",
+    "params": {
+      "with_crew": 488,
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_kubrick": {
+    "name": "Regia: Stanley Kubrick",
+    "params": {
+      "with_crew": 240,
+      "sort_by": "vote_average.desc"
+    },
+    "checked": 18,
+    "mismatches": []
+  },
+  "preset_villeneuve": {
+    "name": "Regia: Denis Villeneuve",
+    "params": {
+      "with_crew": 137427,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 10,
+    "mismatches": []
+  },
+  "preset_fincher": {
+    "name": "Regia: David Fincher",
+    "params": {
+      "with_crew": 1341,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 16,
+    "mismatches": []
+  },
+  "preset_burton": {
+    "name": "Regia: Tim Burton",
+    "params": {
+      "with_crew": 510,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_wesanderson": {
+    "name": "Regia: Wes Anderson",
+    "params": {
+      "with_crew": 5655,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_lynch": {
+    "name": "Regia: David Lynch",
+    "params": {
+      "with_crew": 5602,
+      "sort_by": "vote_average.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_scott": {
+    "name": "Regia: Ridley Scott",
+    "params": {
+      "with_crew": 578,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_actor_dicaprio": {
+    "name": "Starring: Leonardo DiCaprio",
+    "params": {
+      "with_cast": 6193,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_actor_cruise": {
+    "name": "Starring: Tom Cruise",
+    "params": {
+      "with_cast": 500,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_actor_reeves": {
+    "name": "Starring: Keanu Reeves",
+    "params": {
+      "with_cast": 6384,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_brad_pitt": {
+    "name": "Starring: Brad Pitt",
+    "params": {
+      "with_cast": 287,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_de_niro": {
+    "name": "Starring: Robert De Niro",
+    "params": {
+      "with_cast": 380,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_johnny_depp": {
+    "name": "Starring: Johnny Depp",
+    "params": {
+      "with_cast": 85,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_denzel": {
+    "name": "Starring: Denzel Washington",
+    "params": {
+      "with_cast": 882,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_nicolas_cage": {
+    "name": "La Follia di Nicolas Cage",
+    "params": {
+      "with_cast": 2963,
+      "sort_by": "popularity.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_ghibli": {
+    "name": "Studio Ghibli",
+    "params": {
+      "with_companies": 10342,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_pixar": {
+    "name": "Disney Pixar",
+    "params": {
+      "with_companies": 3,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_a24": {
+    "name": "A24: Cinema Indipendente",
+    "params": {
+      "with_companies": 41077,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_marvel": {
+    "name": "Marvel Cinematic Universe",
+    "params": {
+      "with_companies": 420,
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_dc": {
+    "name": "DC Comics (Film)",
+    "params": {
+      "with_companies": 128064,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 16,
+    "mismatches": []
+  },
+  "preset_blumhouse": {
+    "name": "Blumhouse Horror",
+    "params": {
+      "with_companies": 3172,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_dreamworks": {
+    "name": "DreamWorks Animation",
+    "params": {
+      "with_companies": 521,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_disney_animation": {
+    "name": "Disney Classici & Animazione",
+    "params": {
+      "with_companies": 2,
+      "with_genres": 16,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_kdrama_romance": {
+    "name": "K-Drama: Romantici",
+    "params": {
+      "with_original_language": "ko",
+      "with_genres": "35,18",
+      "with_keywords": "9840",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_kdrama_thriller": {
+    "name": "K-Drama: Thriller & Mistero",
+    "params": {
+      "with_original_language": "ko",
+      "with_genres": "80,9648",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_asian_action": {
+    "name": "Azione Asiatica (JP, KR, HK)",
+    "params": {
+      "with_original_language": "ja|ko|zh",
+      "with_genres": "28",
+      "with_keywords": "779|2073|18034|9826",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_cinema_coreano": {
+    "name": "Cinema Coreano (Film)",
+    "params": {
+      "with_original_language": "ko",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_nordic_noir": {
+    "name": "Nordic Noir (Gialli Scandinavi)",
+    "params": {
+      "with_original_language": "sv|da|no",
+      "with_genres": 80,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_spanish_thriller": {
+    "name": "Thriller Spagnoli",
+    "params": {
+      "with_original_language": "es",
+      "with_genres": "53|9648",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_british_crime": {
+    "name": "Gialli & Crime Inglesi (UK)",
+    "params": {
+      "with_origin_country": "GB",
+      "with_genres": "80|9648",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_bollywood": {
+    "name": "Bollywood & Cinema Indiano",
+    "params": {
+      "with_original_language": "hi",
+      "with_origin_country": "IN",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_french_cinema": {
+    "name": "Cinema Francese d'Autore",
+    "params": {
+      "with_original_language": "fr",
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 7,
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_italian_cinema": {
+    "name": "Cinema Italiano",
+    "params": {
+      "with_original_language": "it",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_german_dark": {
+    "name": "Serie Tedesche (Dark & Thriller)",
+    "params": {
+      "with_original_language": "de",
+      "with_genres": "18|9648",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_80s_movies": {
+    "name": "Cult Anni '80",
+    "params": {
+      "primary_release_date.gte": "1980-01-01",
+      "primary_release_date.lte": "1989-12-31",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_90s_movies": {
+    "name": "Classici Anni '90",
+    "params": {
+      "primary_release_date.gte": "1990-01-01",
+      "primary_release_date.lte": "1999-12-31",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_00s_movies": {
+    "name": "I favolosi Anni 2000",
+    "params": {
+      "primary_release_date.gte": "2000-01-01",
+      "primary_release_date.lte": "2009-12-31",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_oscar_winners": {
+    "name": "Grandi Film Premiati",
+    "params": {
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 8,
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_cult_classics": {
+    "name": "Film Cult (Venerati dai fan)",
+    "params": {
+      "with_keywords": "11800",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_blockbusters": {
+    "name": "Blockbusters (Campioni d'Incasso)",
+    "params": {
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_mindfuck": {
+    "name": "Mindfuck & Plot Twists",
+    "params": {
+      "with_genres": "9648|53",
+      "with_keywords": "362567|275311",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 7,
+    "mismatches": []
+  },
+  "preset_feel_good": {
+    "name": "Feel-Good (Umore Leggero)",
+    "params": {
+      "with_genres": "35,10751",
+      "without_genres": "18,27",
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 6.5,
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_pure_comedy": {
+    "name": "Commedia Pura (No Dramma)",
+    "params": {
+      "with_genres": 35,
+      "without_genres": "18,10749",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_horror_all": {
+    "name": "Horror: I Migliori",
+    "params": {
+      "with_genres": 27,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200,
+      "vote_average.gte": 6.5
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_scary_horror": {
+    "name": "Horror Atmosferico & Soprannaturali",
+    "params": {
+      "with_genres": 27,
+      "with_keywords": "3335|9706|6152|10224",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_slasher_gore": {
+    "name": "Slasher, Zombie & Gore",
+    "params": {
+      "with_genres": 27,
+      "with_keywords": "12335|12377|3133|200424",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_whodunit": {
+    "name": "Whodunit & Indagini",
+    "params": {
+      "with_genres": "9648",
+      "with_keywords": "11134|10391|191199",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 4,
+    "mismatches": []
+  },
+  "preset_apocalypse_survival": {
+    "name": "Apocalisse & Sopravvivenza",
+    "params": {
+      "with_keywords": "285366|4564|12377|241725",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_cyberpunk": {
+    "name": "Cyberpunk & Futuro Distopico",
+    "params": {
+      "with_genres": "878|28",
+      "with_keywords": "12190|4565|156556|210086",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_sad_romance": {
+    "name": "Storie d'Amore Drammatiche",
+    "params": {
+      "with_genres": "18,10749",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200,
+      "vote_average.gte": 7
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_heist": {
+    "name": "Rapine & Colpi Grossi (Heist)",
+    "params": {
+      "with_genres": "80|28",
+      "with_keywords": "10051",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_true_story": {
+    "name": "Biopic: Grandi Storie Vere",
+    "params": {
+      "with_keywords": "9672|5564|200155",
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 7,
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_videogame_movies": {
+    "name": "Tratti da Videogiochi (Film)",
+    "params": {
+      "with_keywords": "41645|282",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_stand_up": {
+    "name": "Stand-Up Comedy",
+    "params": {
+      "with_keywords": "9716",
+      "with_genres": 35,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_musical": {
+    "name": "Musical & Film Musicali",
+    "params": {
+      "with_genres": 10402,
+      "with_keywords": "4344",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_war_movies": {
+    "name": "Film di Guerra",
+    "params": {
+      "with_genres": 10752,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_western": {
+    "name": "Western",
+    "params": {
+      "with_genres": 37,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_epic_historical": {
+    "name": "Kolossal & Epopee Storiche",
+    "params": {
+      "with_genres": "36|28",
+      "with_keywords": "10084|302011|15167|2968",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_spy_action": {
+    "name": "Spionaggio & Agenti Segreti",
+    "params": {
+      "with_genres": "28|53",
+      "with_keywords": "470|3230|10410",
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_neo_noir": {
+    "name": "Neo-Noir & Detective Oscuri",
+    "params": {
+      "with_genres": "80|9648",
+      "with_keywords": "1471|207317|209210",
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 6.5,
+      "vote_count.gte": 200
+    },
+    "checked": 19,
+    "mismatches": []
+  },
+  "preset_space_hard_scifi": {
+    "name": "Hard Sci-Fi & Spazio Profondo",
+    "params": {
+      "with_genres": 878,
+      "with_keywords": "3801|161176|3388|157675",
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 6.5,
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_disaster_movies": {
+    "name": "Disaster Movies",
+    "params": {
+      "with_genres": "28|878",
+      "with_keywords": "5686|10483|10364",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_martial_arts": {
+    "name": "Arti Marziali & Kung Fu",
+    "params": {
+      "with_genres": 28,
+      "with_keywords": "779|18034",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_time_travel_movies": {
+    "name": "Viaggi nel Tempo (Film)",
+    "params": {
+      "with_genres": 878,
+      "with_keywords": "4379",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_tv_mafia": {
+    "name": "Mafia, Cartelli & Gangster",
+    "params": {
+      "with_genres": "80|18",
+      "with_keywords": "10398|3149|2463",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100,
+      "without_keywords": "210024"
+    },
+    "checked": 17,
+    "mismatches": []
+  },
+  "preset_tv_high_fantasy": {
+    "name": "High Fantasy (Spade & Draghi)",
+    "params": {
+      "with_genres": 10765,
+      "with_keywords": "11024|12554|3205",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_tv_dystopia": {
+    "name": "Futuri Distopici",
+    "params": {
+      "with_genres": 10765,
+      "with_keywords": "10053|4565",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_tv_politics": {
+    "name": "Intrighi Politici & Potere",
+    "params": {
+      "with_genres": "10768|18",
+      "with_keywords": "6078|34038|41282|10410|298532",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_tv_superheroes_dark": {
+    "name": "Supereroi (Toni Oscuri)",
+    "params": {
+      "with_genres": "10759|80|18",
+      "with_keywords": "9715|180734|7002",
+      "sort_by": "vote_average.desc",
+      "vote_average.gte": 7,
+      "vote_count.gte": 100,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_tv_horror": {
+    "name": "Serie Horror & Soprannaturali",
+    "params": {
+      "with_genres": 18,
+      "with_keywords": "6152|3335",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_nature_docs": {
+    "name": "Documentari: Natura e Animali",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "18330|18165|9902|221355|284176",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 30
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_nature_series_docs": {
+    "name": "Docuserie: Natura e Animali",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "18330|18165|9902|221355|284176",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 30
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_space_docs": {
+    "name": "Documentari: Cosmo e Spazio",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "9882|3801|15325|41608|160330|252634",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 10
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_sea_movie_docs": {
+    "name": "Documentari: Abissi e Oceani",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "270|658|240494|4676|15066|155529|15097|14785|240075|232412|3343|2769|348851|367878|195857",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 15
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_sea_series_docs": {
+    "name": "Docuserie: Abissi e Oceani",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "270|658|240494|4676|15066|155529|15097|14785|240075|232412|3343|2769|348851|367878|195857",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 5
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_true_crime": {
+    "name": "Docuserie: True Crime",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "33722",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_sports_docs": {
+    "name": "Docuserie: Sport e Atleti",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "6075|258273",
+      "sort_by": "popularity.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_doc_music_legends": {
+    "name": "Leggende della Musica",
+    "params": {
+      "with_genres": "99,10402",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_doc_food_travel": {
+    "name": "Cibo, Viaggi & Alta Cucina",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "1918|9935|10637|233721|6513",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_doc_history_war": {
+    "name": "Storia & Guerre Mondiali",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "1956|2504|258077|221689|282633",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 10
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_doc_tech_future": {
+    "name": "Tecnologia, AI & Futuro",
+    "params": {
+      "with_genres": 99,
+      "with_keywords": "1576|2964|41666|362282|310",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "checked": 12,
+    "mismatches": []
+  },
+  "preset_big_sagas": {
+    "name": "Le Grandi Saghe (Franchises)",
+    "params": {
+      "with_keywords": "363309|364043|180547|306278|368218|361758|161176|9663",
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_miniseries": {
+    "name": "Miniserie di Qualità",
+    "params": {
+      "with_genres": 18,
+      "with_keywords": "11162",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anthology": {
+    "name": "Serie Antologiche",
+    "params": {
+      "with_keywords": "9706",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_sketch_comedy": {
+    "name": "Sketch Comedy",
+    "params": {
+      "with_genres": 35,
+      "with_keywords": "156203",
+      "sort_by": "popularity.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_sitcoms": {
+    "name": "Sitcom Americane",
+    "params": {
+      "with_genres": 35,
+      "with_keywords": "9840|193171|9713",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_medical_drama": {
+    "name": "Medical Drama",
+    "params": {
+      "with_genres": 18,
+      "with_keywords": "208788|11612|13005",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_crime_procedural": {
+    "name": "Procedurali (Crime)",
+    "params": {
+      "with_genres": 80,
+      "with_keywords": "207694|268067|298849|191199",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_teen_drama": {
+    "name": "Teen Drama & Coming of Age",
+    "params": {
+      "with_genres": 18,
+      "with_keywords": "6270|10683|11156|315570",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_time_travel": {
+    "name": "Viaggi nel Tempo (Serie)",
+    "params": {
+      "with_genres": 10765,
+      "with_keywords": "4379|196984",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_legal_drama": {
+    "name": "Legal Drama & Tribunali",
+    "params": {
+      "with_genres": 18,
+      "with_keywords": "222517|10909|33519",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_tv_thriller": {
+    "name": "Thriller & Suspense (Serie)",
+    "params": {
+      "with_genres": "18|9648",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100,
+      "vote_average.gte": 7.5,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_simulcast": {
+    "name": "Simulcast (Nuovi Episodi)",
+    "params": {
+      "provider": "tmdb",
+      "with_original_language": "ja",
+      "with_genres": 16,
+      "sort_by": "popularity.desc",
+      "air_date.gte": "2026-06-29",
+      "air_date.lte": "2026-07-01"
+    },
+    "checked": 15,
+    "mismatches": []
+  },
+  "preset_anime_shonen": {
+    "name": "Anime: Battle Shōnen",
+    "params": {
+      "provider": "kitsu",
+      "_keywordNames": "shounen",
+      "sort_by": "popularity.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_seinen": {
+    "name": "Anime: Seinen (Maturi)",
+    "params": {
+      "provider": "kitsu",
+      "_keywordNames": "seinen",
+      "sort_by": "vote_average.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_shoujo": {
+    "name": "Anime: Shōjo (Romantico)",
+    "params": {
+      "provider": "kitsu",
+      "_keywordNames": "shoujo",
+      "sort_by": "popularity.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_slice_of_life": {
+    "name": "Anime: Slice of Life",
+    "params": {
+      "provider": "kitsu",
+      "_keywordNames": "slice of life",
+      "sort_by": "vote_average.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_mecha": {
+    "name": "Anime: Mecha & Robot",
+    "params": {
+      "provider": "kitsu",
+      "_keywordNames": "mecha",
+      "sort_by": "popularity.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_isekai": {
+    "name": "Anime: Isekai & Fantasy",
+    "params": {
+      "provider": "kitsu",
+      "_keywordNames": "isekai",
+      "sort_by": "popularity.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_dark": {
+    "name": "Anime: Dark & Psicologico",
+    "params": {
+      "provider": "kitsu",
+      "_keywordNames": "dark|psychological",
+      "sort_by": "vote_average.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_action": {
+    "name": "Anime: Azione & Combattimento",
+    "params": {
+      "provider": "kitsu",
+      "_keywordNames": "action",
+      "sort_by": "popularity.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_sports": {
+    "name": "Anime: Sport & Competizione",
+    "params": {
+      "provider": "kitsu",
+      "_keywordNames": "sports",
+      "sort_by": "vote_average.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_classic": {
+    "name": "Anime Classici ('80/'90)",
+    "params": {
+      "provider": "kitsu",
+      "first_air_date.gte": "1980-01-01",
+      "first_air_date.lte": "1999-12-31",
+      "sort_by": "vote_average.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_00s": {
+    "name": "Anime Anni 2000",
+    "params": {
+      "provider": "kitsu",
+      "first_air_date.gte": "2000-01-01",
+      "first_air_date.lte": "2009-12-31",
+      "sort_by": "vote_average.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_movies_top": {
+    "name": "Capolavori Anime (Film)",
+    "params": {
+      "provider": "kitsu",
+      "sort_by": "vote_average.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_movies_romance": {
+    "name": "Film Anime Romantici",
+    "params": {
+      "provider": "kitsu",
+      "_keywordNames": "romance",
+      "sort_by": "popularity.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_hbo": {
+    "name": "Produzione HBO",
+    "params": {
+      "with_networks": 49,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_netflix": {
+    "name": "Originali Netflix",
+    "params": {
+      "with_networks": 213,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_amazon": {
+    "name": "Amazon Prime Video",
+    "params": {
+      "with_networks": 1024,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_disney_plus": {
+    "name": "Disney+",
+    "params": {
+      "with_networks": 2739,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_apple_tv": {
+    "name": "Apple TV+",
+    "params": {
+      "with_networks": 2552,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_a24_horror": {
+    "name": "A24: Horror & Thriller",
+    "params": {
+      "with_companies": 41077,
+      "with_genres": "27|53",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_vampires_werewolves": {
+    "name": "Vampiri & Lupi Mannari",
+    "params": {
+      "with_keywords": "3133|12377|12564|12377",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_cyberpunk_series": {
+    "name": "Cyberpunk & Distopia (Serie)",
+    "params": {
+      "with_genres": 10765,
+      "with_keywords": "12190|4565|156556|210086",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_top_current_year": {
+    "name": "Il meglio dell'anno",
+    "params": {
+      "primary_release_year": 2026,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_romcom": {
+    "name": "Commedie Romantiche",
+    "params": {
+      "with_genres": "35,10749",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_action_blockbusters": {
+    "name": "Azione, Motori & Esplosioni",
+    "params": {
+      "with_genres": 28,
+      "with_keywords": "10051|208035|4565|1701",
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_psych_thriller": {
+    "name": "Thriller Psicologici",
+    "params": {
+      "with_genres": 53,
+      "with_keywords": "15001|12377|12988|10391",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_reality_shows": {
+    "name": "Reality Show & Competizioni",
+    "params": {
+      "with_genres": 10764,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_fantasy_magic": {
+    "name": "Grandi Saghe Fantasy & Magia",
+    "params": {
+      "with_genres": "14,12",
+      "with_keywords": "12554|6092|3205",
+      "sort_by": "revenue.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_italian_comedy": {
+    "name": "Commedie Italiane",
+    "params": {
+      "with_original_language": "it",
+      "with_genres": 35,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_original_language": "ko|zh|th|hi|te|ta"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_turkish_dizi": {
+    "name": "Serie Turche (Dizi)",
+    "params": {
+      "with_original_language": "tr",
+      "with_genres": "18|10766",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 5,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_teen_drama_comedy": {
+    "name": "High School & Teen Drama",
+    "params": {
+      "with_genres": "35|18",
+      "with_keywords": "6270|10683|11156|315570",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_zombies": {
+    "name": "Zombie & Infezioni",
+    "params": {
+      "with_keywords": "12377|4565|10483",
+      "with_genres": "27|10765",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_treasure_hunters": {
+    "name": "Cacciatori di Tesori & Avventurieri",
+    "params": {
+      "with_genres": 12,
+      "with_keywords": "10084|156525|4328",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_adult_animation": {
+    "name": "Animazione per Adulti",
+    "params": {
+      "with_genres": "16,35",
+      "with_keywords": "158536|187056",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50,
+      "without_keywords": "210024"
+    },
+    "checked": 0,
+    "mismatches": []
+  },
+  "preset_giant_monsters": {
+    "name": "Squali & Mostri Giganti",
+    "params": {
+      "with_keywords": "10466|156095|257007|12335",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_slapstick_comedy": {
+    "name": "Commedia Demenziale",
+    "params": {
+      "with_genres": 35,
+      "with_keywords": "364753|9253|11931|9755",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 100
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_extreme_survival": {
+    "name": "Sopravvivenza Estrema",
+    "params": {
+      "with_keywords": "4564|285366|3335",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_sports_underdog": {
+    "name": "Storie di Sport & Riscatto",
+    "params": {
+      "with_keywords": "6075|10505|22822",
+      "with_genres": 18,
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_netflix_movies": {
+    "name": "Film su Netflix",
+    "params": {
+      "with_watch_providers": 8,
+      "watch_region": "US",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_amazon_movies": {
+    "name": "Film su Prime Video",
+    "params": {
+      "with_watch_providers": 119,
+      "watch_region": "US",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "checked": 0,
+    "mismatches": []
+  },
+  "preset_disney_movies": {
+    "name": "Film su Disney+",
+    "params": {
+      "with_watch_providers": 337,
+      "watch_region": "US",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_hbo_max_movies": {
+    "name": "Film su Max",
+    "params": {
+      "with_watch_providers": 384,
+      "watch_region": "US",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "checked": 0,
+    "mismatches": []
+  },
+  "preset_hbo_max_series": {
+    "name": "Serie su Max",
+    "params": {
+      "with_networks": 3186,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_hulu_series": {
+    "name": "Serie su Hulu",
+    "params": {
+      "with_networks": 453,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_paramount_series": {
+    "name": "Serie su Paramount+",
+    "params": {
+      "with_networks": 4330,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_family_movies_live": {
+    "name": "Film per Famiglie (Live)",
+    "params": {
+      "with_genres": 10751,
+      "without_genres": 16,
+      "without_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_kids_series": {
+    "name": "Cartoni in TV & Serie Kids",
+    "params": {
+      "with_genres": 10762,
+      "without_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_teen_preteen_tv": {
+    "name": "Teen & Pre-Teen TV (Live)",
+    "params": {
+      "with_genres": 10762,
+      "without_genres": 16,
+      "without_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_fairy_tales": {
+    "name": "Fiabe, Castelli & Principesse",
+    "params": {
+      "with_genres": 10751,
+      "with_keywords": "3205|3095|12554",
+      "without_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_animal_protagonists": {
+    "name": "Animali Protagonisti",
+    "params": {
+      "with_genres": 10751,
+      "with_keywords": "10574|6054|11303",
+      "without_keywords": "210024",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_kids_series": {
+    "name": "Anime per Bambini (Serie)",
+    "params": {
+      "provider": "kitsu",
+      "_keywordNames": "kids",
+      "sort_by": "popularity.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_anime_kids_movies": {
+    "name": "Anime per Bambini (Film)",
+    "params": {
+      "provider": "kitsu",
+      "_keywordNames": "kids",
+      "sort_by": "popularity.desc"
+    },
+    "checked": 20,
+    "mismatches": []
+  }
+}

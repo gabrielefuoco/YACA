@@ -15,14 +15,20 @@ for (let i = 0; i < lines.length; i++) {
         continue;
     }
 
-    // Skip if it already has without_original_language
+    // Always strip without_original_language if present
     if (line.includes('without_original_language:')) {
+        line = line.replace(/,\s*without_original_language:\s*'[^']+'/, '');
+    }
+
+    // Skip if it already has with_original_language
+    if (line.includes('with_original_language:')) {
         continue;
     }
 
     // Inject the filter right before the end of the query object
     // Match the end of the query object: `}] }` or `}] },`
-    line = line.replace(/\s*\}\]\s*\}\s*,?$/, ", without_original_language: 'ko|zh|th|hi|te|ta' }] },");
+    line = line.replace(/\s*\}\]\s*\}\s*,?$/, ", with_original_language: 'en|it|es|fr|de|pt' }] },");
+
 
     // Special fix: If the line ended up missing a comma because of previous scripts, it's already fixed, 
     // but the regex replaces the comma at the end and re-adds it. `}] },` is standard.

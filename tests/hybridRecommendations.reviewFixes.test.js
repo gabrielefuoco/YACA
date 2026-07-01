@@ -15,6 +15,10 @@ jest.mock('../src/models/TmdbScoringData', () => ({
     updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
 }));
 
+jest.mock('../src/models/RecommendationImpression', () => ({
+    find: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([]) })
+}));
+
 jest.mock('../src/profile/ProfileBuilder', () => ({
     syncUserHistory: jest.fn().mockResolvedValue(true)
 }));
@@ -27,7 +31,8 @@ jest.mock('../src/profile/ProfileScorer', () => ({
 jest.mock('../src/clients/tmdb', () => ({
     getTmdbIdByName: jest.fn(),
     getTmdbMovieDetails: jest.fn().mockResolvedValue(null),
-    createTmdbClient: jest.fn()
+    createTmdbClient: jest.fn(),
+    getTmdbResults: jest.fn()
 }));
 
 jest.mock('../src/utils/rateLimiter', () => ({
@@ -68,10 +73,11 @@ const {
 } = require('../src/engines/hybridRecommendations');
 
 describe('hybridRecommendations review fixes', () => {
-    const tmdbGet = jest.fn();
+    let tmdbGet;
 
     beforeEach(() => {
         jest.clearAllMocks();
+        tmdbGet = jest.fn().mockResolvedValue({ data: { results: [] } });
         tmdb.createTmdbClient.mockReturnValue({ get: tmdbGet });
     });
 

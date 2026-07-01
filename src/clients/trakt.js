@@ -375,6 +375,5 @@ module.exports = {
     refreshTraktTokens,
     syncTraktTokensToDb,
     syncTraktRatings,
-    syncTraktHistory,
     traktClient
 };

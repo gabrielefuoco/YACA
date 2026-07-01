@@ -19,9 +19,7 @@ jest.mock('../src/clients/trakt', () => ({
     }
 }));
 
-jest.mock('../src/models/UserList', () => ({
-    findOne: jest.fn(() => ({ lean: jest.fn().mockResolvedValue(null) }))
-}));
+
 
 const { calculateHybridScore, recommendationsCache } = require('../src/engines/hybridRecommendations');
 
@@ -189,9 +187,9 @@ describe('recommendationsCache', () => {
 });
 
 describe('config RECOMMENDATIONS_CACHE_TTL_MS', () => {
-    it('should be 4 hours (14400000 ms)', () => {
+    it('should be 7 days (604800000 ms)', () => {
         const config = require('../src/config');
-        expect(config.RECOMMENDATIONS_CACHE_TTL_MS).toBe(4 * 60 * 60 * 1000);
+        expect(config.RECOMMENDATIONS_CACHE_TTL_MS).toBe(7 * 24 * 60 * 60 * 1000);
     });
 });
 

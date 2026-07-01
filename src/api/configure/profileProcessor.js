@@ -141,8 +141,8 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
             name: isGlobal ? 'Generale' : (input.name || 'Nuovo Profilo'),
             catalogs: Array.isArray(input.existingCatalogs) ? [...input.existingCatalogs] : [],
             raw_ui_state: {
-                selectedPresets: Array.isArray(input.selectedPresets) ? input.selectedPresets : [],
-                catalogOrder: Array.isArray(input.catalogOrder) ? input.catalogOrder : [],
+                selectedPresets: Array.isArray(input.selectedPresets) ? [...new Set(input.selectedPresets)] : [],
+                catalogOrder: Array.isArray(input.catalogOrder) ? [...new Set(input.catalogOrder)] : [],
                 newPrompts: Array.isArray(input.newPrompts) ? input.newPrompts : [],
                 heroPresetsInitialized: input.heroPresetsInitialized ?? false
             },
@@ -151,24 +151,31 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
             }
         };
 
-        // 2. Resolve Presets to Catalogs
+        // 2. Resolve Presets to Catalogs (Upsert Logic)
         if (profile.raw_ui_state.selectedPresets.length > 0) {
+            // Usa una Map per prevenire duplicati storici e permettere l'upsert
+            const catalogsMap = new Map();
+            profile.catalogs.forEach(c => catalogsMap.set(c.id, c));
+
             for (const presetId of profile.raw_ui_state.selectedPresets) {
                 const preset = presetMap.get(presetId);
                 if (preset) {
-                    const exists = profile.catalogs.some(c => c.id === `yaca_preset_${presetId}`);
-                    if (!exists) {
-                        profile.catalogs.push({
-                            id: `yaca_preset_${presetId}`,
-                            name: preset.name,
-                            type: preset.type,
-                            queries: preset.queries || []
-                        });
-                    }
+                    const expectedId = `yaca_preset_${presetId}`;
+                    // Upsert: se esiste lo sovrascriviamo coi dati aggiornati dal preset
+                    catalogsMap.set(expectedId, {
+                        id: expectedId,
+                        name: preset.name,
+                        type: preset.type,
+                        emoji: preset.emoji,
+                        category: preset.category,
+                        queries: preset.queries || []
+                    });
                 } else {
                     warnings.push(`Preset non riconosciuto: ${presetId}`);
                 }
             }
+            // Riconvertiamo la Map pulita in Array
+            profile.catalogs = Array.from(catalogsMap.values());
         }
 
         // 3. Build suggestedDNA from installed catalogs

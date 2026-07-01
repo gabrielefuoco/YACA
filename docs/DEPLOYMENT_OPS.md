@@ -74,9 +74,6 @@ La connessione viene avviata all'inizializzazione del server in [index.js](../in
 
 Le seguenti variabili d'ambiente devono essere impostate nella sezione **Settings > Variables and Secrets** del proprio Hugging Face Space.
 
-> [!WARNING]
-> Le chiavi obsolete come `MDBLIST_API_KEY`, `IMAGEKIT_API_KEY`, `IMAGEKIT_PUBLIC_KEY`, `IMAGEKIT_PRIVATE_KEY`, `NEXTAUTH_SECRET`, `AUTH_SECRET`, `DATABASE_ENCRYPTION_KEY` e `MASTER_ENCRYPTION_KEY` **non sono più utilizzate** dal codice di YACA e non devono essere configurate. I token OAuth e le informazioni utente vengono scritti in chiaro e gestiti direttamente dall'architettura interna a due tabelle (*UserAccount* e *AddonConfig*).
-
 ### Lista Variabili Reali ed Attive
 
 | Variabile | Tipo | Obbligatoria | Descrizione |

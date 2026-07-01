@@ -1,10 +1,10 @@
-const { createAxiosInstance } = require('../utils/httpClient');
+const { createAxiosClient } = require('../utils/axiosClient');
 const { KITSU_ENDPOINT, ITEMS_PER_PAGE } = require('../config');
 const CacheManager = require('../cache/CacheManager');
 const { createTmdbClient, prioritizeLocalizedImages } = require('./tmdb');
 
 // Crea l'istanza client qui
-const kitsuClient = createAxiosInstance(KITSU_ENDPOINT || 'https://kitsu.io/api/edge');
+const kitsuClient = createAxiosClient(KITSU_ENDPOINT || 'https://kitsu.io/api/edge', {}, 2);
 
 
 // Cache per Kitsu

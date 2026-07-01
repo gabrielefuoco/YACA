@@ -227,7 +227,6 @@ function getTmdbVoteScore(item) {
 
 module.exports = {
     buildDiscoveryParams,
-    resolveGenreIds,
     executeStandardSearch,
     getTmdbDiscoverCatalog,
     getTmdbVoteScore

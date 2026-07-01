@@ -1,0 +1,1719 @@
+{
+  "timestamp": "2026-07-01T20:41:38.912Z",
+  "totalChecked": 160,
+  "totalCritical": 30,
+  "criticalList": [
+    {
+      "id": "preset_nolan",
+      "name": "Regia: Christopher Nolan",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 21,
+      "isLow": true
+    },
+    {
+      "id": "preset_tarantino",
+      "name": "Regia: Quentin Tarantino",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 32,
+      "isLow": true
+    },
+    {
+      "id": "preset_scorsese",
+      "name": "Regia: Martin Scorsese",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 27,
+      "isLow": true
+    },
+    {
+      "id": "preset_kubrick",
+      "name": "Regia: Stanley Kubrick",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 18,
+      "isLow": true
+    },
+    {
+      "id": "preset_villeneuve",
+      "name": "Regia: Denis Villeneuve",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 10,
+      "isLow": true
+    },
+    {
+      "id": "preset_fincher",
+      "name": "Regia: David Fincher",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 16,
+      "isLow": true
+    },
+    {
+      "id": "preset_wesanderson",
+      "name": "Regia: Wes Anderson",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 22,
+      "isLow": true
+    },
+    {
+      "id": "preset_burton",
+      "name": "Regia: Tim Burton",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 34,
+      "isLow": true
+    },
+    {
+      "id": "preset_actor_cruise",
+      "name": "Starring: Tom Cruise",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 59,
+      "isLow": true
+    },
+    {
+      "id": "preset_actor_dicaprio",
+      "name": "Starring: Leonardo DiCaprio",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 33,
+      "isLow": true
+    },
+    {
+      "id": "preset_brad_pitt",
+      "name": "Starring: Brad Pitt",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 54,
+      "isLow": true
+    },
+    {
+      "id": "preset_denzel",
+      "name": "Starring: Denzel Washington",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 22,
+      "isLow": true
+    },
+    {
+      "id": "preset_a24",
+      "name": "A24: Cinema Indipendente",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 50,
+      "isLow": true
+    },
+    {
+      "id": "preset_ghibli",
+      "name": "Studio Ghibli",
+      "category": "🏮 Solo Anime",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 25,
+      "isLow": true
+    },
+    {
+      "id": "preset_dc",
+      "name": "DC Comics (Film)",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 16,
+      "isLow": true
+    },
+    {
+      "id": "preset_disney_animation",
+      "name": "Disney Classici & Animazione",
+      "category": "👨‍👩‍👧‍👦 Bambini & Famiglia",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 59,
+      "isLow": true
+    },
+    {
+      "id": "preset_cult_classics",
+      "name": "Film Cult (Venerati dai fan)",
+      "category": "🔥 Top & Trend",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 32,
+      "isLow": true
+    },
+    {
+      "id": "preset_space_hard_scifi",
+      "name": "Hard Sci-Fi & Spazio Profondo",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 59,
+      "isLow": true
+    },
+    {
+      "id": "preset_neo_noir_series",
+      "name": "Neo-Noir & Detective Oscuri (Serie)",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 17,
+      "isLow": true
+    },
+    {
+      "id": "preset_tv_mafia",
+      "name": "Mafia, Cartelli & Gangster",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 47,
+      "isLow": true
+    },
+    {
+      "id": "preset_disaster_movies",
+      "name": "Disaster Movies",
+      "category": "💥 Adrenalina & Avventura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 57,
+      "isLow": true
+    },
+    {
+      "id": "preset_tv_high_fantasy",
+      "name": "High Fantasy (Spade & Draghi)",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 47,
+      "isLow": true
+    },
+    {
+      "id": "preset_tv_dystopia",
+      "name": "Futuri Distopici",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 38,
+      "isLow": true
+    },
+    {
+      "id": "preset_space_docs",
+      "name": "Documentari: Cosmo e Spazio",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 53,
+      "isLow": true
+    },
+    {
+      "id": "preset_sea_series_docs",
+      "name": "Docuserie: Abissi e Oceani",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 22,
+      "isLow": true
+    },
+    {
+      "id": "preset_doc_music_legends",
+      "name": "Leggende della Musica",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 45,
+      "isLow": true
+    },
+    {
+      "id": "preset_doc_tech_future",
+      "name": "Tecnologia, AI & Futuro",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 12,
+      "isLow": true
+    },
+    {
+      "id": "preset_doc_history_war",
+      "name": "Storia & Guerre Mondiali",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 53,
+      "isLow": true
+    },
+    {
+      "id": "preset_a24_horror",
+      "name": "A24: Horror & Thriller",
+      "category": "👻 Brivido & Paura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 24,
+      "isLow": true
+    },
+    {
+      "id": "preset_paramount_series",
+      "name": "Serie su Paramount+",
+      "category": "📺 Network & Piattaforme",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 56,
+      "isLow": true
+    }
+  ],
+  "allResults": [
+    {
+      "id": "preset_pop_movies",
+      "name": "Film Popolari",
+      "category": "🔥 Top & Trend",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 22841,
+      "isLow": false
+    },
+    {
+      "id": "preset_pop_series",
+      "name": "Serie TV Popolari",
+      "category": "🔥 Top & Trend",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 5681,
+      "isLow": false
+    },
+    {
+      "id": "preset_top_rated_movies",
+      "name": "Film Più Votati (All Time)",
+      "category": "🔥 Top & Trend",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 4872,
+      "isLow": false
+    },
+    {
+      "id": "preset_top_rated_series",
+      "name": "Serie Più Votate (All Time)",
+      "category": "🔥 Top & Trend",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 964,
+      "isLow": false
+    },
+    {
+      "id": "preset_new_movies",
+      "name": "Film: Nuove Uscite",
+      "category": "🔥 Top & Trend",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 112,
+      "isLow": false
+    },
+    {
+      "id": "preset_new_series",
+      "name": "Serie TV: Novità",
+      "category": "🔥 Top & Trend",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 396,
+      "isLow": false
+    },
+    {
+      "id": "preset_new_series_eps",
+      "name": "Serie: Episodi Recenti",
+      "category": "🔥 Top & Trend",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 1719,
+      "isLow": false
+    },
+    {
+      "id": "preset_pop_anime",
+      "name": "Anime Popolari",
+      "category": "🏮 Solo Anime",
+      "type": "series",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_nolan",
+      "name": "Regia: Christopher Nolan",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 21,
+      "isLow": true
+    },
+    {
+      "id": "preset_tarantino",
+      "name": "Regia: Quentin Tarantino",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 32,
+      "isLow": true
+    },
+    {
+      "id": "preset_scorsese",
+      "name": "Regia: Martin Scorsese",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 27,
+      "isLow": true
+    },
+    {
+      "id": "preset_spielberg",
+      "name": "Regia: Steven Spielberg",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 130,
+      "isLow": false
+    },
+    {
+      "id": "preset_kubrick",
+      "name": "Regia: Stanley Kubrick",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 18,
+      "isLow": true
+    },
+    {
+      "id": "preset_villeneuve",
+      "name": "Regia: Denis Villeneuve",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 10,
+      "isLow": true
+    },
+    {
+      "id": "preset_fincher",
+      "name": "Regia: David Fincher",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 16,
+      "isLow": true
+    },
+    {
+      "id": "preset_burton",
+      "name": "Regia: Tim Burton",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 34,
+      "isLow": true
+    },
+    {
+      "id": "preset_wesanderson",
+      "name": "Regia: Wes Anderson",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 22,
+      "isLow": true
+    },
+    {
+      "id": "preset_lynch",
+      "name": "Regia: David Lynch",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 88,
+      "isLow": false
+    },
+    {
+      "id": "preset_scott",
+      "name": "Regia: Ridley Scott",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 94,
+      "isLow": false
+    },
+    {
+      "id": "preset_actor_dicaprio",
+      "name": "Starring: Leonardo DiCaprio",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 33,
+      "isLow": true
+    },
+    {
+      "id": "preset_actor_cruise",
+      "name": "Starring: Tom Cruise",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 59,
+      "isLow": true
+    },
+    {
+      "id": "preset_actor_reeves",
+      "name": "Starring: Keanu Reeves",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 93,
+      "isLow": false
+    },
+    {
+      "id": "preset_brad_pitt",
+      "name": "Starring: Brad Pitt",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 54,
+      "isLow": true
+    },
+    {
+      "id": "preset_de_niro",
+      "name": "Starring: Robert De Niro",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 90,
+      "isLow": false
+    },
+    {
+      "id": "preset_johnny_depp",
+      "name": "Starring: Johnny Depp",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 87,
+      "isLow": false
+    },
+    {
+      "id": "preset_denzel",
+      "name": "Starring: Denzel Washington",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 22,
+      "isLow": true
+    },
+    {
+      "id": "preset_nicolas_cage",
+      "name": "La Follia di Nicolas Cage",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 147,
+      "isLow": false
+    },
+    {
+      "id": "preset_ghibli",
+      "name": "Studio Ghibli",
+      "category": "🏮 Solo Anime",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 25,
+      "isLow": true
+    },
+    {
+      "id": "preset_pixar",
+      "name": "Disney Pixar",
+      "category": "👨‍👩‍👧‍👦 Bambini & Famiglia",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 74,
+      "isLow": false
+    },
+    {
+      "id": "preset_a24",
+      "name": "A24: Cinema Indipendente",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 50,
+      "isLow": true
+    },
+    {
+      "id": "preset_marvel",
+      "name": "Marvel Cinematic Universe",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 84,
+      "isLow": false
+    },
+    {
+      "id": "preset_dc",
+      "name": "DC Comics (Film)",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 16,
+      "isLow": true
+    },
+    {
+      "id": "preset_blumhouse",
+      "name": "Blumhouse Horror",
+      "category": "👻 Brivido & Paura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 134,
+      "isLow": false
+    },
+    {
+      "id": "preset_dreamworks",
+      "name": "DreamWorks Animation",
+      "category": "👨‍👩‍👧‍👦 Bambini & Famiglia",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 72,
+      "isLow": false
+    },
+    {
+      "id": "preset_disney_animation",
+      "name": "Disney Classici & Animazione",
+      "category": "👨‍👩‍👧‍👦 Bambini & Famiglia",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 59,
+      "isLow": true
+    },
+    {
+      "id": "preset_kdrama_romance",
+      "name": "K-Drama: Romantici",
+      "category": "🌏 K-Drama, Dizi & Asia",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 249,
+      "isLow": false
+    },
+    {
+      "id": "preset_kdrama_thriller",
+      "name": "K-Drama: Thriller & Mistero",
+      "category": "🌏 K-Drama, Dizi & Asia",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 105,
+      "isLow": false
+    },
+    {
+      "id": "preset_asian_action",
+      "name": "Azione Asiatica (JP, KR, HK)",
+      "category": "🌏 K-Drama, Dizi & Asia",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 313,
+      "isLow": false
+    },
+    {
+      "id": "preset_cinema_coreano",
+      "name": "Cinema Coreano (Film)",
+      "category": "🌏 K-Drama, Dizi & Asia",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 177,
+      "isLow": false
+    },
+    {
+      "id": "preset_nordic_noir",
+      "name": "Nordic Noir (Gialli Scandinavi)",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 108,
+      "isLow": false
+    },
+    {
+      "id": "preset_spanish_thriller",
+      "name": "Thriller Spagnoli",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 202,
+      "isLow": false
+    },
+    {
+      "id": "preset_british_crime",
+      "name": "Gialli & Crime Inglesi (UK)",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 441,
+      "isLow": false
+    },
+    {
+      "id": "preset_bollywood",
+      "name": "Bollywood & Cinema Indiano",
+      "category": "🌏 K-Drama, Dizi & Asia",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 1725,
+      "isLow": false
+    },
+    {
+      "id": "preset_french_cinema",
+      "name": "Cinema Francese d'Autore",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 502,
+      "isLow": false
+    },
+    {
+      "id": "preset_italian_cinema",
+      "name": "Cinema Italiano",
+      "category": "🎬 Cinema d'Autore & Registi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 636,
+      "isLow": false
+    },
+    {
+      "id": "preset_german_dark",
+      "name": "Serie Tedesche (Dark & Thriller)",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 104,
+      "isLow": false
+    },
+    {
+      "id": "preset_80s_movies",
+      "name": "Cult Anni '80",
+      "category": "🔥 Top & Trend",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 1016,
+      "isLow": false
+    },
+    {
+      "id": "preset_90s_movies",
+      "name": "Classici Anni '90",
+      "category": "🔥 Top & Trend",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 1576,
+      "isLow": false
+    },
+    {
+      "id": "preset_00s_movies",
+      "name": "I favolosi Anni 2000",
+      "category": "🔥 Top & Trend",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 2967,
+      "isLow": false
+    },
+    {
+      "id": "preset_oscar_winners",
+      "name": "Grandi Film Premiati",
+      "category": "🔥 Top & Trend",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 428,
+      "isLow": false
+    },
+    {
+      "id": "preset_cult_classics",
+      "name": "Film Cult (Venerati dai fan)",
+      "category": "🔥 Top & Trend",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 32,
+      "isLow": true
+    },
+    {
+      "id": "preset_blockbusters",
+      "name": "Blockbusters (Campioni d'Incasso)",
+      "category": "🔥 Top & Trend",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 64991,
+      "isLow": false
+    },
+    {
+      "id": "preset_mindfuck",
+      "name": "Mindfuck & Plot Twists",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 180,
+      "isLow": false
+    },
+    {
+      "id": "preset_mindfuck_series",
+      "name": "Mindfuck & Plot Twists (Serie)",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 65,
+      "isLow": false
+    },
+    {
+      "id": "preset_feel_good",
+      "name": "Feel-Good (Umore Leggero)",
+      "category": "🍿 Serata Leggera & Risate",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 437,
+      "isLow": false
+    },
+    {
+      "id": "preset_pure_comedy",
+      "name": "Commedia Pura (No Dramma)",
+      "category": "🍿 Serata Leggera & Risate",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 12857,
+      "isLow": false
+    },
+    {
+      "id": "preset_horror_all",
+      "name": "Horror: I Migliori",
+      "category": "👻 Brivido & Paura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 640,
+      "isLow": false
+    },
+    {
+      "id": "preset_scary_horror",
+      "name": "Horror Atmosferico & Soprannaturali",
+      "category": "👻 Brivido & Paura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 282,
+      "isLow": false
+    },
+    {
+      "id": "preset_slasher_gore",
+      "name": "Slasher & Splatter Gore",
+      "category": "👻 Brivido & Paura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 774,
+      "isLow": false
+    },
+    {
+      "id": "preset_whodunit",
+      "name": "Whodunit & Indagini",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 173,
+      "isLow": false
+    },
+    {
+      "id": "preset_whodunit_series",
+      "name": "Whodunit & Indagini (Serie)",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 92,
+      "isLow": false
+    },
+    {
+      "id": "preset_apocalypse_survival",
+      "name": "Apocalisse & Sopravvivenza",
+      "category": "👻 Brivido & Paura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 707,
+      "isLow": false
+    },
+    {
+      "id": "preset_cyberpunk",
+      "name": "Cyberpunk & Futuro Distopico",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 337,
+      "isLow": false
+    },
+    {
+      "id": "preset_sad_romance",
+      "name": "Storie d'Amore Drammatiche",
+      "category": "🍿 Serata Leggera & Risate",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 636,
+      "isLow": false
+    },
+    {
+      "id": "preset_heist",
+      "name": "Rapine & Colpi Grossi (Heist)",
+      "category": "💥 Adrenalina & Avventura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 113,
+      "isLow": false
+    },
+    {
+      "id": "preset_true_story",
+      "name": "Biopic: Grandi Storie Vere",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 384,
+      "isLow": false
+    },
+    {
+      "id": "preset_videogame_movies",
+      "name": "Tratti da Videogiochi (Film)",
+      "category": "🔥 Altri Cataloghi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 231,
+      "isLow": false
+    },
+    {
+      "id": "preset_stand_up",
+      "name": "Stand-Up Comedy",
+      "category": "🍿 Serata Leggera & Risate",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 316,
+      "isLow": false
+    },
+    {
+      "id": "preset_musical",
+      "name": "Musical & Film Musicali",
+      "category": "🍿 Serata Leggera & Risate",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 94,
+      "isLow": false
+    },
+    {
+      "id": "preset_war_movies",
+      "name": "Film di Guerra",
+      "category": "💥 Adrenalina & Avventura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 474,
+      "isLow": false
+    },
+    {
+      "id": "preset_western",
+      "name": "Western",
+      "category": "💥 Adrenalina & Avventura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 235,
+      "isLow": false
+    },
+    {
+      "id": "preset_epic_historical",
+      "name": "Kolossal & Epopee Storiche",
+      "category": "🔥 Altri Cataloghi",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 93,
+      "isLow": false
+    },
+    {
+      "id": "preset_spy_action",
+      "name": "Spionaggio & Agenti Segreti",
+      "category": "💥 Adrenalina & Avventura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 315,
+      "isLow": false
+    },
+    {
+      "id": "preset_neo_noir",
+      "name": "Neo-Noir & Detective Oscuri",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 68,
+      "isLow": false
+    },
+    {
+      "id": "preset_neo_noir_series",
+      "name": "Neo-Noir & Detective Oscuri (Serie)",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 17,
+      "isLow": true
+    },
+    {
+      "id": "preset_space_hard_scifi",
+      "name": "Hard Sci-Fi & Spazio Profondo",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 59,
+      "isLow": true
+    },
+    {
+      "id": "preset_disaster_movies",
+      "name": "Disaster Movies",
+      "category": "💥 Adrenalina & Avventura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 57,
+      "isLow": true
+    },
+    {
+      "id": "preset_martial_arts",
+      "name": "Arti Marziali & Kung Fu",
+      "category": "💥 Adrenalina & Avventura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 380,
+      "isLow": false
+    },
+    {
+      "id": "preset_time_travel_movies",
+      "name": "Viaggi nel Tempo (Film)",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 132,
+      "isLow": false
+    },
+    {
+      "id": "preset_tv_mafia",
+      "name": "Mafia, Cartelli & Gangster",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 47,
+      "isLow": true
+    },
+    {
+      "id": "preset_tv_high_fantasy",
+      "name": "High Fantasy (Spade & Draghi)",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 47,
+      "isLow": true
+    },
+    {
+      "id": "preset_tv_dystopia",
+      "name": "Futuri Distopici",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 38,
+      "isLow": true
+    },
+    {
+      "id": "preset_tv_politics",
+      "name": "Intrighi Politici & Potere",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 226,
+      "isLow": false
+    },
+    {
+      "id": "preset_tv_superheroes_dark",
+      "name": "Supereroi (Toni Oscuri)",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 111,
+      "isLow": false
+    },
+    {
+      "id": "preset_tv_horror",
+      "name": "Serie Horror & Soprannaturali",
+      "category": "👻 Brivido & Paura",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 78,
+      "isLow": false
+    },
+    {
+      "id": "preset_nature_docs",
+      "name": "Documentari: Natura e Animali",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 100,
+      "isLow": false
+    },
+    {
+      "id": "preset_nature_series_docs",
+      "name": "Docuserie: Natura e Animali",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 64,
+      "isLow": false
+    },
+    {
+      "id": "preset_space_docs",
+      "name": "Documentari: Cosmo e Spazio",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 53,
+      "isLow": true
+    },
+    {
+      "id": "preset_sea_movie_docs",
+      "name": "Documentari: Abissi e Oceani",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 67,
+      "isLow": false
+    },
+    {
+      "id": "preset_sea_series_docs",
+      "name": "Docuserie: Abissi e Oceani",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 22,
+      "isLow": true
+    },
+    {
+      "id": "preset_true_crime",
+      "name": "Docuserie: True Crime",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 310,
+      "isLow": false
+    },
+    {
+      "id": "preset_sports_docs",
+      "name": "Docuserie: Sport e Atleti",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 221,
+      "isLow": false
+    },
+    {
+      "id": "preset_doc_music_legends",
+      "name": "Leggende della Musica",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 45,
+      "isLow": true
+    },
+    {
+      "id": "preset_doc_food_travel",
+      "name": "Cibo, Viaggi & Alta Cucina",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 104,
+      "isLow": false
+    },
+    {
+      "id": "preset_doc_history_war",
+      "name": "Storia & Guerre Mondiali",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 53,
+      "isLow": true
+    },
+    {
+      "id": "preset_doc_tech_future",
+      "name": "Tecnologia, AI & Futuro",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 12,
+      "isLow": true
+    },
+    {
+      "id": "preset_big_sagas",
+      "name": "Le Grandi Saghe (Franchises)",
+      "category": "💥 Adrenalina & Avventura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 1339,
+      "isLow": false
+    },
+    {
+      "id": "preset_miniseries",
+      "name": "Miniserie di Qualità",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 225,
+      "isLow": false
+    },
+    {
+      "id": "preset_anthology",
+      "name": "Serie Antologiche",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 301,
+      "isLow": false
+    },
+    {
+      "id": "preset_sketch_comedy",
+      "name": "Sketch Comedy",
+      "category": "🍿 Serata Leggera & Risate",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 391,
+      "isLow": false
+    },
+    {
+      "id": "preset_sitcoms",
+      "name": "Sitcom Americane",
+      "category": "🍿 Serata Leggera & Risate",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 556,
+      "isLow": false
+    },
+    {
+      "id": "preset_medical_drama",
+      "name": "Medical Drama",
+      "category": "🍿 Serata Leggera & Risate",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 143,
+      "isLow": false
+    },
+    {
+      "id": "preset_crime_procedural",
+      "name": "Procedurali (Crime)",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 86,
+      "isLow": false
+    },
+    {
+      "id": "preset_teen_drama",
+      "name": "Teen Drama & Coming of Age",
+      "category": "🍿 Serata Leggera & Risate",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 146,
+      "isLow": false
+    },
+    {
+      "id": "preset_time_travel",
+      "name": "Viaggi nel Tempo (Serie)",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 73,
+      "isLow": false
+    },
+    {
+      "id": "preset_legal_drama",
+      "name": "Legal Drama & Tribunali",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 130,
+      "isLow": false
+    },
+    {
+      "id": "preset_tv_thriller",
+      "name": "Thriller & Suspense (Serie)",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 1261,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_simulcast",
+      "name": "Simulcast (Nuovi Episodi)",
+      "category": "🏮 Solo Anime",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 61,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_shonen",
+      "name": "Anime: Battle Shōnen",
+      "category": "🏮 Solo Anime",
+      "type": "series",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_seinen",
+      "name": "Anime: Seinen (Maturi)",
+      "category": "🏮 Solo Anime",
+      "type": "series",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_shoujo",
+      "name": "Anime: Shōjo (Romantico)",
+      "category": "🏮 Solo Anime",
+      "type": "series",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_slice_of_life",
+      "name": "Anime: Slice of Life",
+      "category": "🏮 Solo Anime",
+      "type": "series",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_mecha",
+      "name": "Anime: Mecha & Robot",
+      "category": "🏮 Solo Anime",
+      "type": "series",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_isekai",
+      "name": "Anime: Isekai & Fantasy",
+      "category": "🏮 Solo Anime",
+      "type": "series",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_dark",
+      "name": "Anime: Dark & Psicologico",
+      "category": "🏮 Solo Anime",
+      "type": "series",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_action",
+      "name": "Anime: Azione & Combattimento",
+      "category": "🏮 Solo Anime",
+      "type": "series",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_sports",
+      "name": "Anime: Sport & Competizione",
+      "category": "🏮 Solo Anime",
+      "type": "series",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_classic",
+      "name": "Anime Classici ('80/'90)",
+      "category": "🏮 Solo Anime",
+      "type": "series",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_00s",
+      "name": "Anime Anni 2000",
+      "category": "🏮 Solo Anime",
+      "type": "series",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_movies_top",
+      "name": "Capolavori Anime (Film)",
+      "category": "🏮 Solo Anime",
+      "type": "movie",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_movies_romance",
+      "name": "Film Anime Romantici",
+      "category": "🏮 Solo Anime",
+      "type": "movie",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_hbo",
+      "name": "Produzione HBO",
+      "category": "📺 Network & Piattaforme",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 111,
+      "isLow": false
+    },
+    {
+      "id": "preset_netflix",
+      "name": "Originali Netflix",
+      "category": "📺 Network & Piattaforme",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 1593,
+      "isLow": false
+    },
+    {
+      "id": "preset_amazon",
+      "name": "Amazon Prime Video",
+      "category": "📺 Network & Piattaforme",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 651,
+      "isLow": false
+    },
+    {
+      "id": "preset_disney_plus",
+      "name": "Disney+",
+      "category": "📺 Network & Piattaforme",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 329,
+      "isLow": false
+    },
+    {
+      "id": "preset_apple_tv",
+      "name": "Apple TV+",
+      "category": "📺 Network & Piattaforme",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 79,
+      "isLow": false
+    },
+    {
+      "id": "preset_a24_horror",
+      "name": "A24: Horror & Thriller",
+      "category": "👻 Brivido & Paura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 24,
+      "isLow": true
+    },
+    {
+      "id": "preset_vampires_werewolves",
+      "name": "Vampiri & Lupi Mannari",
+      "category": "👻 Brivido & Paura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 686,
+      "isLow": false
+    },
+    {
+      "id": "preset_cyberpunk_series",
+      "name": "Cyberpunk & Distopia (Serie)",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 84,
+      "isLow": false
+    },
+    {
+      "id": "preset_top_current_year",
+      "name": "Il meglio dell'anno",
+      "category": "🔥 Top & Trend",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 109,
+      "isLow": false
+    },
+    {
+      "id": "preset_romcom",
+      "name": "Commedie Romantiche",
+      "category": "🍿 Serata Leggera & Risate",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 1919,
+      "isLow": false
+    },
+    {
+      "id": "preset_action_blockbusters",
+      "name": "Azione, Motori & Esplosioni",
+      "category": "💥 Adrenalina & Avventura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 347,
+      "isLow": false
+    },
+    {
+      "id": "preset_psych_thriller",
+      "name": "Thriller Psicologici",
+      "category": "🕵️ Crimine, Mistero & Thriller",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 155,
+      "isLow": false
+    },
+    {
+      "id": "preset_reality_shows",
+      "name": "Reality Show & Competizioni",
+      "category": "🌍 Documentari & Storie Vere",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 2072,
+      "isLow": false
+    },
+    {
+      "id": "preset_fantasy_magic",
+      "name": "Grandi Saghe Fantasy & Magia",
+      "category": "🐉 Fantascienza & Fantasy",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 88,
+      "isLow": false
+    },
+    {
+      "id": "preset_italian_comedy",
+      "name": "Commedie Italiane",
+      "category": "🍿 Serata Leggera & Risate",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 1482,
+      "isLow": false
+    },
+    {
+      "id": "preset_turkish_dizi",
+      "name": "Serie Turche (Dizi)",
+      "category": "🌏 K-Drama, Dizi & Asia",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 365,
+      "isLow": false
+    },
+    {
+      "id": "preset_teen_drama_comedy",
+      "name": "High School & Teen Drama",
+      "category": "🍿 Serata Leggera & Risate",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 208,
+      "isLow": false
+    },
+    {
+      "id": "preset_zombies",
+      "name": "Zombie & Infezioni",
+      "category": "👻 Brivido & Paura",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 67,
+      "isLow": false
+    },
+    {
+      "id": "preset_zombies_movies",
+      "name": "Zombie & Infezioni (Film)",
+      "category": "👻 Brivido & Paura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 298,
+      "isLow": false
+    },
+    {
+      "id": "preset_treasure_hunters",
+      "name": "Cacciatori di Tesori & Avventurieri",
+      "category": "💥 Adrenalina & Avventura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 70,
+      "isLow": false
+    },
+    {
+      "id": "preset_adult_animation",
+      "name": "Animazione per Adulti",
+      "category": "🔥 Altri Cataloghi",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 63,
+      "isLow": false
+    },
+    {
+      "id": "preset_giant_monsters",
+      "name": "Squali & Mostri Giganti",
+      "category": "👻 Brivido & Paura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 99,
+      "isLow": false
+    },
+    {
+      "id": "preset_slapstick_comedy",
+      "name": "Commedia Demenziale",
+      "category": "🍿 Serata Leggera & Risate",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 287,
+      "isLow": false
+    },
+    {
+      "id": "preset_extreme_survival",
+      "name": "Sopravvivenza Estrema",
+      "category": "💥 Adrenalina & Avventura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 117,
+      "isLow": false
+    },
+    {
+      "id": "preset_sports_underdog",
+      "name": "Storie di Sport & Riscatto",
+      "category": "💥 Adrenalina & Avventura",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 175,
+      "isLow": false
+    },
+    {
+      "id": "preset_netflix_movies",
+      "name": "Film su Netflix",
+      "category": "📺 Network & Piattaforme",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 2704,
+      "isLow": false
+    },
+    {
+      "id": "preset_amazon_movies",
+      "name": "Film su Prime Video",
+      "category": "📺 Network & Piattaforme",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 3652,
+      "isLow": false
+    },
+    {
+      "id": "preset_disney_movies",
+      "name": "Film su Disney+",
+      "category": "📺 Network & Piattaforme",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 1312,
+      "isLow": false
+    },
+    {
+      "id": "preset_hbo_max_movies",
+      "name": "Film su Max",
+      "category": "📺 Network & Piattaforme",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 990,
+      "isLow": false
+    },
+    {
+      "id": "preset_hbo_max_series",
+      "name": "Serie su Max",
+      "category": "📺 Network & Piattaforme",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 76,
+      "isLow": false
+    },
+    {
+      "id": "preset_hulu_series",
+      "name": "Serie su Hulu",
+      "category": "📺 Network & Piattaforme",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 153,
+      "isLow": false
+    },
+    {
+      "id": "preset_paramount_series",
+      "name": "Serie su Paramount+",
+      "category": "📺 Network & Piattaforme",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 56,
+      "isLow": true
+    },
+    {
+      "id": "preset_family_movies_live",
+      "name": "Film per Famiglie (Live)",
+      "category": "👨‍👩‍👧‍👦 Bambini & Famiglia",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 1648,
+      "isLow": false
+    },
+    {
+      "id": "preset_kids_series",
+      "name": "Cartoni in TV & Serie Kids",
+      "category": "👨‍👩‍👧‍👦 Bambini & Famiglia",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 1010,
+      "isLow": false
+    },
+    {
+      "id": "preset_teen_preteen_tv",
+      "name": "Teen & Pre-Teen TV (Live)",
+      "category": "👨‍👩‍👧‍👦 Bambini & Famiglia",
+      "type": "series",
+      "provider": "tmdb",
+      "totalItems": 134,
+      "isLow": false
+    },
+    {
+      "id": "preset_fairy_tales",
+      "name": "Fiabe, Castelli & Principesse",
+      "category": "👨‍👩‍👧‍👦 Bambini & Famiglia",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 110,
+      "isLow": false
+    },
+    {
+      "id": "preset_animal_protagonists",
+      "name": "Animali Protagonisti",
+      "category": "👨‍👩‍👧‍👦 Bambini & Famiglia",
+      "type": "movie",
+      "provider": "tmdb",
+      "totalItems": 172,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_kids_series",
+      "name": "Anime per Bambini (Serie)",
+      "category": "👨‍👩‍👧‍👦 Bambini & Famiglia",
+      "type": "series",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    },
+    {
+      "id": "preset_anime_kids_movies",
+      "name": "Anime per Bambini (Film)",
+      "category": "👨‍👩‍👧‍👦 Bambini & Famiglia",
+      "type": "movie",
+      "provider": "kitsu",
+      "totalItems": 22206,
+      "isLow": false
+    }
+  ]
+}

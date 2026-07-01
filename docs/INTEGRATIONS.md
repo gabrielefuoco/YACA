@@ -1,6 +1,6 @@
-# Integrazioni Esterne e Flussi di Sincronizzazione (Trakt.tv & Imagekit Removal)
+# Integrazioni Esterne e Flussi di Sincronizzazione (Trakt.tv)
 
-Questo documento analizza le integrazioni con le piattaforme esterne integrate in YACA, focalizzandosi in particolare sul protocollo di sincronizzazione bidirezionale con **Trakt.tv** e la dismissione dell'integrazione con **Imagekit**.
+Questo documento analizza le integrazioni con le piattaforme esterne integrate in YACA, focalizzandosi in particolare sul protocollo di sincronizzazione bidirezionale con **Trakt.tv**.
 
 ---
 
@@ -128,18 +128,3 @@ YACA non include una libreria interna di cron (come `node-cron`) che consumerebb
 *   **Keep-Alive**: Le richieste costanti all'endpoint impediscono all'Hugging Face Space gratuito di andare in stato di "Sleep" per inattività.
 *   **Cache Warmer**: Avvia la funzione `runCacheWarmer` in [src/utils/cacheWarmer.js](../src/utils/cacheWarmer.js) che cicla tutti gli utenti e pre-carica (warmup) nei database di cache L2 i primi elementi dei cataloghi attivi dei profili, azzerando i tempi di caricamento per l'utente al click su Stremio.
 
----
-
-## Rimozione e Dismissione di Imagekit
-
-Nelle versioni precedenti, YACA si appoggiava al servizio **Imagekit** per caricare, ottimizzare e memorizzare i loghi e i poster dei film e delle serie tv prima di servirli a Stremio. 
-
-Questa integrazione è stata **completamente rimossa** per i seguenti motivi:
-1.  **Latenza di upload**: Il processo di caricamento delle immagini su server di terze parti durante la generazione dinamica rallentava notevolmente la risposta delle API dei cataloghi di Stremio (spesso causando timeout sui client).
-2.  **Costi e Limiti**: I piani gratuiti di Imagekit imponevano limiti rigidi di banda e storage, facilmente superabili con cataloghi ad alto traffico.
-3.  **Complessità di Gestione**: Richiedeva la configurazione di ben tre variabili d'ambiente (`IMAGEKIT_PUBLIC_KEY`, `IMAGEKIT_PRIVATE_KEY`, `IMAGEKIT_URL_ENDPOINT`) e la gestione dei file orfani nel cloud.
-
-### Soluzione Alternativa Implementata
-
-*   **URL Diretti TMDB**: YACA ora serve i poster e le immagini di sfondo sfruttando direttamente la CDN globale di TMDB (`https://image.tmdb.org/t/p/w500/...` e `https://image.tmdb.org/t/p/original/...`), che garantisce tempi di risposta minimi ed è già pre-approvata dai client Stremio.
-*   **Blur tramite Proxy Esterno**: Nel caso in cui il client richieda una versione sfocata dello sfondo (background blur), YACA non effettua upload su storage remoti e non sovraccarica la CPU locale del server per l'elaborazione dell'immagine. Utilizza invece direttamente il servizio gratuito ed efficiente di image proxy **`wsrv.nl`** (es. `https://wsrv.nl/?url=...&blur=20`) per delegare la sfocatura in cache di CDN, riducendo al minimo la latenza per il client Stremio.

@@ -239,12 +239,12 @@ async function twoTierScore(pool, profile, options) {
 }
 
 module.exports = {
-    extractVectorByPrefix,
     computeTopGenres,
     computeTopKeywords,
     calculateHybridScore,
     extractDNAParams,
     resolveAiQueryToTmdbParams,
     saveScoringData,
-    twoTierScore
+    twoTierScore,
+    extractVectorByPrefix
 };

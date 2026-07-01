@@ -186,6 +186,5 @@ async function translateAnimeIdsToImdb(items, tmdbApiKey) {
 
 module.exports = {
     translateAnimeIdsToKitsu,
-    translateAnimeIdsToImdb,
-    getKitsuIdFromTmdb
+    translateAnimeIdsToImdb
 };

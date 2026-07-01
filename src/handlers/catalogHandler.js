@@ -8,7 +8,7 @@ const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
 const { routeCatalogRequest } = require('../catalog/CatalogRouter');
 const { filterWatchedItems } = require('../catalog/processors/FilterWatched');
 const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
-const { formatStremioCatalog, sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
+const { formatStremioCatalog, sanitizeCatalogMeta, findLatestAiredEpisode } = require('../catalog/formatters/StremioFormatter');
 function getLatestEpisodeInfo(item) {
     if (!item) return null;
     
@@ -25,28 +25,9 @@ function getLatestEpisodeInfo(item) {
     }
     
     // Check item.videos
-    if (Array.isArray(item.videos) && item.videos.length > 0) {
-        const now = new Date();
-        const airedEpisodes = item.videos.filter(v => {
-            const isGenericTitle = !v.title || /^episod(e|io)\s+\d+$/i.test(v.title);
-            const hasRealThumbnail = v.thumbnail && !v.thumbnail.includes('easyratingsdb.com') && !v.thumbnail.includes('poster-placeholder');
-            if (!v.overview && !hasRealThumbnail && isGenericTitle) {
-                return false;
-            }
-            if (!v.released) return true;
-            return new Date(v.released) <= now;
-        });
-        if (airedEpisodes.length > 0) {
-            airedEpisodes.sort((a, b) => {
-                if (a.released && b.released) {
-                    const dateDiff = new Date(b.released) - new Date(a.released);
-                    if (dateDiff !== 0) return dateDiff;
-                }
-                return (b.episode || 0) - (a.episode || 0);
-            });
-            const latest = airedEpisodes[0];
-            return { season: latest.season || 1, episode: latest.episode || 1 };
-        }
+    const latest = findLatestAiredEpisode(item.videos);
+    if (latest) {
+        return { season: latest.season || 1, episode: latest.episode || 1 };
     }
     
     return null;

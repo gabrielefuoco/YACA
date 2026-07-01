@@ -177,6 +177,30 @@ async function fetchTmdbSimilarCounts(seedTmdbIds, tmdbApiKey, mediaType = 'movi
     return counts;
 }
 
+async function getImpressionMap(userId, context, catalogId, candidateIds) {
+    const impressionMap = new Map();
+    try {
+        const RecommendationImpression = require('../../models/RecommendationImpression');
+        const impressions = await RecommendationImpression.find({
+            owner: userId,
+            profileId: context,
+            catalogId: catalogId,
+            tmdbId: { $in: candidateIds }
+        }).lean();
+        for (const imp of impressions) {
+            impressionMap.set(String(imp.tmdbId), imp.seenDates.length);
+        }
+    } catch (_e) { }
+    return impressionMap;
+}
+
+function calculateImpressionPenalty(seenDays) {
+    if (seenDays >= 3) {
+        return Math.max(0.2, 1.0 - (seenDays - 2) * 0.2);
+    }
+    return 1.0;
+}
+
 module.exports = {
     fetchProfileContext,
     fetchTmdbResults,
@@ -186,5 +210,7 @@ module.exports = {
     fetchTraktRecommendationsRaw,
     fetchPopularFallbackIds,
     fetchHiddenGemsFallbackIds,
-    fetchTmdbSimilarCounts
+    fetchTmdbSimilarCounts,
+    getImpressionMap,
+    calculateImpressionPenalty
 };

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+
+<html class="light" lang="it"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>YACA Dashboard - Mobile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed-variant": "#0e5138",
+                    "tertiary-fixed": "#b1f0ce",
+                    "tertiary-container": "#064c33",
+                    "surface-container-high": "#f5e6d3",
+                    "on-tertiary": "#ffffff",
+                    "inverse-surface": "#372f22",
+                    "background": "#fff8f3",
+                    "inverse-primary": "#ffb4a8",
+                    "tertiary-fixed-dim": "#95d4b3",
+                    "secondary": "#695c4e",
+                    "surface-bright": "#fff8f3",
+                    "surface-container": "#fbecd9",
+                    "on-secondary-fixed": "#231a0f",
+                    "on-primary-container": "#ff907f",
+                    "on-tertiary-container": "#7ebc9c",
+                    "surface": "#fff8f3",
+                    "primary-fixed": "#ffdad4",
+                    "surface-tint": "#b52619",
+                    "primary-fixed-dim": "#ffb4a8",
+                    "outline": "#8e706b",
+                    "error": "#ba1a1a",
+                    "surface-container-low": "#fff2e2",
+                    "secondary-fixed-dim": "#d4c4b2",
+                    "on-primary-fixed-variant": "#920703",
+                    "on-surface": "#221a0f",
+                    "surface-container-highest": "#efe0cd",
+                    "surface-container-lowest": "#ffffff",
+                    "outline-variant": "#e3beb8",
+                    "surface-variant": "#efe0cd",
+                    "on-secondary-container": "#6f6254",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "primary-container": "#8b0000",
+                    "secondary-container": "#f1e0cd",
+                    "on-error-container": "#93000a",
+                    "tertiary": "#003321",
+                    "inverse-on-surface": "#feefdb",
+                    "on-error": "#ffffff",
+                    "on-background": "#221a0f",
+                    "surface-dim": "#e6d8c5",
+                    "secondary-fixed": "#f1e0cd",
+                    "on-tertiary-fixed": "#002114",
+                    "primary": "#610000",
+                    "on-primary-fixed": "#410000",
+                    "on-secondary": "#ffffff",
+                    "on-surface-variant": "#5a403c",
+                    "on-secondary-fixed-variant": "#504538"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-md": "24px",
+                    "gutter": "24px",
+                    "base": "8px",
+                    "stack-sm": "12px",
+                    "stack-lg": "48px",
+                    "container-padding": "32px"
+            },
+            "fontFamily": {
+                    "body-md": ["Manrope"],
+                    "label-sm": ["Manrope"],
+                    "display-lg": ["Manrope"],
+                    "label-lg": ["Manrope"],
+                    "headline-md": ["Manrope"],
+                    "headline-lg": ["Manrope"],
+                    "body-lg": ["Manrope"]
+            },
+            "fontSize": {
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #fff8f3;
+            font-family: 'Manrope', sans-serif;
+            color: #221a0f;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .crimson-shadow {
+            box-shadow: 0px 10px 30px rgba(139, 0, 0, 0.08);
+        }
+
+        .scroll-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scroll-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .card-ambient {
+            background: #fff2e2;
+            border: 1px solid #e3beb8;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .active-nav-pill {
+            background: #8b0000;
+            color: #ff907f;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background min-h-screen pb-24">
+<!-- Top App Bar -->
+<header class="bg-background dark:bg-surface shadow-[0px_0px_20px_rgba(139,0,0,0.05)] fixed top-0 w-full z-50 px-8 h-16 flex justify-between items-center">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary cursor-pointer active:scale-95 transition-transform" data-icon="menu">menu</span>
+<h1 class="font-headline-lg text-headline-lg font-extrabold text-primary dark:text-primary-fixed tracking-tight">YACA</h1>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-outline-variant overflow-hidden bg-secondary-container/50 active:scale-95 transition-transform">
+<img class="w-full h-auto" data-alt="A professional high-resolution profile portrait of a modern media curator in a minimalist workspace. The lighting is warm and cinematic, reflecting the premium parchment and oxblood brand colors. The person has a friendly yet scholarly expression, set against a blurred background of organized book collections and sleek digital screens." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVscSMV-9ufx1XZ7NV9JONDe9peBp8SHhBH9938RPRVhnBuwnGBBUf054tg5LZpzNtj-SWuZBYNY52ApVkxAzZL4wnXU_FPAspBR-fhMg8qTZpLnFhtyYE9pbc9GrZUokChTsZ5rGApLb2acJaccKYjgWVPsNHghpSEyPT1MXIQThgCiAQyO2dsU-11OrgBmRSzXsMTzs6lFKUxYH4kvWpuyDZIA38as4uoie2cCgw9ePfwEb25zONn0GpdfBwa8urlV2HBffSS90"/>
+</div>
+</header>
+<main class="pt-20 px-4 flex flex-col gap-8">
+<!-- I tuoi Profili -->
+<section>
+<div class="flex justify-between items-center mb-4 px-2">
+<h2 class="font-headline-md text-headline-md text-primary">I tuoi Profili</h2>
+<span class="material-symbols-outlined text-secondary" data-icon="arrow_forward">arrow_forward</span>
+</div>
+<div class="flex gap-4 overflow-x-auto scroll-hide pb-2 px-2">
+<!-- Profile Card 1 -->
+<div class="flex-shrink-0 w-32 h-40 card-ambient rounded-xl flex flex-col items-center justify-center gap-3 crimson-shadow cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary text-3xl" data-icon="person">person</span>
+</div>
+<span class="font-label-lg text-label-lg text-center text-on-surface">Generale</span>
+</div>
+<!-- Profile Card 2 -->
+<div class="flex-shrink-0 w-32 h-40 card-ambient rounded-xl flex flex-col items-center justify-center gap-3 crimson-shadow border-primary/30 cursor-pointer">
+<div class="w-16 h-16 rounded-full bg-tertiary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-tertiary text-3xl" data-icon="all_inclusive">all_inclusive</span>
+</div>
+<span class="font-label-lg text-label-lg text-center text-on-surface">Generale (Tutto)</span>
+</div>
+<!-- Profile Card 3 -->
+<div class="flex-shrink-0 w-32 h-40 card-ambient rounded-xl flex flex-col items-center justify-center gap-3 crimson-shadow cursor-pointer">
+<div class="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="flare">flare</span>
+</div>
+<span class="font-label-lg text-label-lg text-center text-on-surface">Otaku Hardcore</span>
+</div>
+<!-- Add New -->
+<div class="flex-shrink-0 w-32 h-40 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center gap-3 cursor-pointer opacity-60">
+<div class="w-16 h-16 rounded-full border-2 border-dashed border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" data-icon="add">add</span>
+</div>
+<span class="font-label-lg text-label-lg text-center">Nuovo</span>
+</div>
+</div>
+</section>
+<!-- I tuoi Cataloghi -->
+<section class="flex flex-col gap-10">
+<h2 class="font-headline-md text-headline-md text-primary px-2">I tuoi Cataloghi</h2>
+<!-- Catalog Section: Simulcast -->
+<div class="flex flex-col gap-4">
+<div class="flex justify-between items-center px-2">
+<h3 class="font-label-lg text-label-lg uppercase tracking-widest text-secondary flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+                        Simulcast
+                    </h3>
+<span class="text-label-sm font-label-sm text-primary underline">VEDI TUTTI</span>
+</div>
+<div class="flex gap-4 overflow-x-auto scroll-hide px-2">
+<!-- Media Item 1 -->
+<div class="flex-shrink-0 w-44 group cursor-pointer">
+<div class="relative h-64 w-full rounded-xl overflow-hidden crimson-shadow mb-3">
+<img class="w-full h-full object-cover" data-alt="A vibrant, cinematic anime poster featuring a futuristic city under a neon-lit sky. The art style is crisp and detailed, reminiscent of modern high-budget animation studios, with a focus on dramatic perspective and rich, saturated colors that fit the burgundy and warm parchment theme. A quality 4K HDR badge is visible in the corner." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSA1IORHxeLWmz7DwHq5gXPY5eNIzrmKeEi3bmSHom9G3HbpAypclPPsFF8XH2S420uBSmPC_3UgeNiQ37teXtOjGSBSlP30x9B4f7wv3YQ_PdEqL5SITg8Te3RJcA8it8fgzjm002suIoN1JiaNsV1tfOoZSXJLfgu5ZYPnVv0IUVwdHEoSLjTCJ3Yqah6-5FE6DSl_SG3juzAGXrmRk6CnndYMrKZHSDa8sH3vxnQhCnAwodx_rl65GhPiu1DG-BaWRRn5QkaCE"/>
+<div class="absolute top-2 left-2 flex gap-1">
+<span class="bg-primary/90 text-white text-[10px] font-bold px-2 py-0.5 rounded">4K HDR</span>
+</div>
+<div class="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-yellow-500" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-white text-[10px] font-bold">8.4</span>
+</div>
+</div>
+<h4 class="font-label-lg text-label-lg text-on-surface truncate">Solo Leveling</h4>
+<p class="font-label-sm text-label-sm text-secondary truncate">Azione, Fantasy</p>
+</div>
+<!-- Media Item 2 -->
+<div class="flex-shrink-0 w-44 group cursor-pointer">
+<div class="relative h-64 w-full rounded-xl overflow-hidden crimson-shadow mb-3">
+<img class="w-full h-full object-cover" data-alt="A lush, ethereal anime scene of a tranquil forest with floating magical elements. The lighting is soft and golden, suggesting a magical time of day. The composition is balanced and elegant, featuring a mysterious character in the distance. The overall mood is serene and scholarly, aligning with the warm-mode foundational palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBU8ykOXWKFHua9JnlfqwqFF7MBxyFZ158XkDKG4n3Za5ns6I8xWm5r5eQcNMbnxbsLaRgxHgziUeZuYUX0VrU5xR77EkFpg75cyf91Dj5xpYxz9b2mTt2ZHTv0aRlDP15CQcuGH08FYHGTXQXCPmST8iNKGPExByARJRKp4t6GfwLfZLKLQI9G7U5NtgTuQW4SkAMvkmqWjuQyUzwtYWMxUjqiKzF2z-gHg24eP1NLeBKeeBt2BvE4IbcCkreee-JI_thqpBj5bgg"/>
+<div class="absolute top-2 left-2 flex gap-1">
+<span class="bg-secondary/90 text-white text-[10px] font-bold px-2 py-0.5 rounded">1080p</span>
+</div>
+<div class="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-yellow-500" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-white text-[10px] font-bold">9.1</span>
+</div>
+</div>
+<h4 class="font-label-lg text-label-lg text-on-surface truncate">Frieren</h4>
+<p class="font-label-sm text-label-sm text-secondary truncate">Adventure, Drama</p>
+</div>
+<!-- Media Item 3 -->
+<div class="flex-shrink-0 w-44 group cursor-pointer">
+<div class="relative h-64 w-full rounded-xl overflow-hidden crimson-shadow mb-3">
+<img class="w-full h-full object-cover" data-alt="Intense close-up anime-style illustration of a protagonist's eyes, reflecting a burning fire. High contrast lighting with deep shadows and warm ember highlights. The aesthetic is gritty yet polished, fitting the oxblood-tinted shadow theme of the brand. A rating badge glows subtly in the corner." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCs_q5mViEVlVz-0ei12wALQcPkqzs3VthAp3x7J5m7rygJHZxQFnYkM7bsijg8c-jO-T6TObblfdPPrswFym_xQ-kpueFFeAfw7PjGzEARPqkacd2ZC6W9z0gbr0ldRoJ2Myp4qut9wSJ7yWRzJXKyEMS82PS38Li1EDFq9GvPu9ufzp6kwukKxjA-MfN7oROjMbjoX3hAEycmgCXOaaSVELYvFlMMYCsj3SbDc1sdNupDpjjjGG266NFna6rFHEOhwKBDKQP__ug"/>
+<div class="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-yellow-500" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-white text-[10px] font-bold">7.9</span>
+</div>
+</div>
+<h4 class="font-label-lg text-label-lg text-on-surface truncate">Undead Unluck</h4>
+<p class="font-label-sm text-label-sm text-secondary truncate">Comedy, Supernatural</p>
+</div>
+</div>
+<!-- Functional Bar -->
+<div class="mx-2 mt-2 h-12 bg-surface-container flex items-center justify-between px-4 rounded-xl border border-outline-variant/30">
+<div class="flex items-center gap-2">
+<span class="font-label-lg text-primary font-bold">SERIE</span>
+<div class="w-1 h-4 bg-outline-variant/50"></div>
+<span class="font-label-sm text-secondary">248 RISULTATI</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="filter_list">filter_list</span>
+<div class="w-1 h-4 bg-outline-variant/50"></div>
+<span class="font-label-lg text-primary font-bold">FONDI</span>
+</div>
+</div>
+</div>
+<!-- Catalog Section: Anime Popolari -->
+<div class="flex flex-col gap-4">
+<div class="flex justify-between items-center px-2">
+<h3 class="font-label-lg text-label-lg uppercase tracking-widest text-secondary flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-on-tertiary-container"></span>
+                        Anime Popolari
+                    </h3>
+<span class="text-label-sm font-label-sm text-primary underline">VEDI TUTTI</span>
+</div>
+<div class="flex gap-4 overflow-x-auto scroll-hide px-2">
+<!-- Media Item 4 -->
+<div class="flex-shrink-0 w-44 group cursor-pointer">
+<div class="relative h-64 w-full rounded-xl overflow-hidden crimson-shadow mb-3">
+<img class="w-full h-full object-cover" data-alt="A grand, cinematic scene of a pirate ship sailing into a sunset with golden clouds. The art style is iconic and bold, with a sense of epic adventure. The color palette emphasizes warm golds, oranges, and deep crimson, perfectly complementing the brand's parchment theme. High detail in the water reflections and sky textures." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjNKMgpAey8nAcnCkg6tbggdlr8UstgeIfsFcRUm1gHqcqBbZ4Z7OHwycZc7TpfO-oojWLqbXAP0FjMoAlMJT6oDepdJ0vEgt2p8_GJebhRA9coG5F3vjMIgUwbi4V4s-95MEK7KOClrPXXZWEcGUU3yypmzGPYj6PgvPKiJZsDCWUnmMR44unUlDRRoLZX0EkB9y8AsmwfDLzWK80Kwxlajgdou5iASAJATtTfDkBPofAArIEo5fgZHinGmAbxx74AVl0nX6seOA"/>
+<div class="absolute top-2 left-2 flex gap-1">
+<span class="bg-primary/90 text-white text-[10px] font-bold px-2 py-0.5 rounded">4K</span>
+</div>
+<div class="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-yellow-500" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-white text-[10px] font-bold">9.8</span>
+</div>
+</div>
+<h4 class="font-label-lg text-label-lg text-on-surface truncate">One Piece</h4>
+<p class="font-label-sm text-label-sm text-secondary truncate">Avventura, Shonen</p>
+</div>
+<!-- Media Item 5 -->
+<div class="flex-shrink-0 w-44 group cursor-pointer">
+<div class="relative h-64 w-full rounded-xl overflow-hidden crimson-shadow mb-3">
+<img class="w-full h-full object-cover" data-alt="Dark, atmospheric scene of a sorcerer casting a brilliant purple shadow technique. The lighting is moody and high-contrast, with light sources coming from the magical effect. The background is a detailed urban alleyway in Tokyo at night. The color palette uses deep blacks and vibrant energy colors to create a premium digital look." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2NcMw53bq44nVH4MbGN5h5ecNrwR43elNAiHVCRqw1xm6Jn6A1eu7NR2N390Eytiz8dVc26pLu0D_cSkz5dHyoApadEUu3kVOOSz0h3KQMiJNAuXyd_XKH95PO7TGnqLXUz2Vd9hI7WwoKc_AZ2irvrTT8BTdZrKQwt73Nl5jOXajNVWF9a40m55eaDtdBYDceR2a5y7_tsu2tNhx2aDsp2nuCIFC73ZLMSHDYbJlfqdYf-8Ywt1-l5chTpzYbhpwMim6eQcspCM"/>
+<div class="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-yellow-500" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-white text-[10px] font-bold">8.7</span>
+</div>
+</div>
+<h4 class="font-label-lg text-label-lg text-on-surface truncate">Jujutsu Kaisen</h4>
+<p class="font-label-sm text-label-sm text-secondary truncate">Azione, Soprannaturale</p>
+</div>
+</div>
+<!-- Functional Bar -->
+<div class="mx-2 mt-2 h-12 bg-surface-container flex items-center justify-between px-4 rounded-xl border border-outline-variant/30">
+<div class="flex items-center gap-2">
+<span class="font-label-lg text-primary font-bold">SERIE</span>
+<div class="w-1 h-4 bg-outline-variant/50"></div>
+<span class="font-label-sm text-secondary">1,240 RISULTATI</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="filter_list">filter_list</span>
+<div class="w-1 h-4 bg-outline-variant/50"></div>
+<span class="font-label-lg text-primary font-bold">FONDI</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-surface-container-low dark:bg-surface-dim shadow-[0px_-4px_20px_rgba(139,0,0,0.05)] rounded-t-xl flex justify-around items-center px-4 py-2 border-t border-outline-variant/30">
+<!-- Catalogs (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="folder_open">folder_open</span>
+<span class="font-label-sm text-label-sm">Catalogs</span>
+</a>
+<!-- Explore -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+<span class="font-label-sm text-label-sm">Explore</span>
+</a>
+<!-- Creator -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-label-sm text-label-sm">Creator</span>
+</a>
+<!-- Lab -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="biotech">biotech</span>
+<span class="font-label-sm text-label-sm">Lab</span>
+</a>
+</nav>
+<!-- Simple interaction script for visual feedback -->
+<script>
+        document.querySelectorAll('.cursor-pointer').forEach(el => {
+            el.addEventListener('click', () => {
+                el.classList.add('opacity-80');
+                setTimeout(() => el.classList.remove('opacity-80'), 100);
+            });
+        });
+    </script>
+</body></html>

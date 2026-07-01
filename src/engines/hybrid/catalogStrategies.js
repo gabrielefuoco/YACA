@@ -7,7 +7,7 @@ const { rateLimitedMap } = require('../../utils/rateLimiter');
 
 // Import from new modules
 const { applyKidsMode } = require('../../utils/kidsModeFilters');
-const { fetchTmdbResults, fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds } = require('./dataFetchers');
+const { fetchTmdbResults, fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds, getImpressionMap, calculateImpressionPenalty } = require('./dataFetchers');
 const { extractDNAParams, resolveAiQueryToTmdbParams, twoTierScore, computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
 const ProfileScorer = require('../../profile/ProfileScorer');
 
@@ -252,28 +252,13 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
 
     const candidateIds = candidates.slice(0, 80).map(c => String(c.data.id));
     const catalogId = mediaType === 'movie' ? 'yaca_seed_network_movies' : 'yaca_seed_network_series';
-    let impressionMap = new Map();
-    try {
-        const RecommendationImpression = require('../../models/RecommendationImpression');
-        const impressions = await RecommendationImpression.find({
-            owner: userId,
-            profileId: context,
-            catalogId: catalogId,
-            tmdbId: { $in: candidateIds }
-        }).lean();
-        for (const imp of impressions) {
-            impressionMap.set(String(imp.tmdbId), imp.seenDates.length);
-        }
-    } catch (_e) { }
+    const impressionMap = await getImpressionMap(userId, context, catalogId, candidateIds);
 
     const scored = await rateLimitedMap(
         candidates.slice(0, 80),
         async ({ data, hybridScore }) => {
             const seenDays = impressionMap.get(String(data.id)) || 0;
-            let penaltyMultiplier = 1.0;
-            if (seenDays >= 3) {
-                penaltyMultiplier = Math.max(0.2, 1.0 - (seenDays - 2) * 0.2);
-            }
+            const penaltyMultiplier = calculateImpressionPenalty(seenDays);
 
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, data.id, types);
             const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
@@ -398,28 +383,13 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
 
     const candidateIds = traktTmdbIds.slice(0, 100).map(String);
     const catalogId = mediaType === 'movie' ? 'yaca_trakt_filtered_movies' : 'yaca_trakt_filtered_series';
-    let impressionMap = new Map();
-    try {
-        const RecommendationImpression = require('../../models/RecommendationImpression');
-        const impressions = await RecommendationImpression.find({
-            owner: userId,
-            profileId: context,
-            catalogId: catalogId,
-            tmdbId: { $in: candidateIds }
-        }).lean();
-        for (const imp of impressions) {
-            impressionMap.set(String(imp.tmdbId), imp.seenDates.length);
-        }
-    } catch (_e) { }
+    const impressionMap = await getImpressionMap(userId, context, catalogId, candidateIds);
 
     const scored = await rateLimitedMap(
         traktTmdbIds.slice(0, 100),
         async (id) => {
             const seenDays = impressionMap.get(String(id)) || 0;
-            let penaltyMultiplier = 1.0;
-            if (seenDays >= 3) {
-                penaltyMultiplier = Math.max(0.2, 1.0 - (seenDays - 2) * 0.2);
-            }
+            const penaltyMultiplier = calculateImpressionPenalty(seenDays);
 
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, id, types);
             if (!details) return null;

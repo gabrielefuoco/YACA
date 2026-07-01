@@ -91,63 +91,14 @@ class ProfileBuilder {
      * Esegue in background l'estrazione del DNA dall'item guardato, 
      * lo somma al V_active e ricalcola il V_final.
      */
-    static async _updateVectorsAsync(owner, context, tmdbId, type) {
-        // Cerca i dati in cache
-        const tmdbData = await TmdbScoringData.findOne({ tmdbId, type }).lean();
-        if (!tmdbData) return; // Se non abbiamo i dati TMDB pronti in cache, lo farà il sync globale
-
-        const itemDNA = extractActiveDNAFromTmdbData(tmdbData, 100);
-        if (Object.keys(itemDNA).length === 0) return;
-
-        const profile = await TasteProfile.findOne({ owner, context }).lean();
-        if (!profile) return;
-
-        const vActive = profile.compiledVectors?.V_active || {};
-        const vStatic = profile.compiledVectors?.V_static || {};
-        
-        // Aggiungi pesi al V_active
-        for (const [key, value] of Object.entries(itemDNA)) {
-            vActive[key] = (vActive[key] || 0) + value;
-        }
-
-        // Recuperiamo il conteggio totale dello storico per pesare V_final
-        const totalInteractions = await WatchHistory.countDocuments({ owner, context });
-        
-        const vFinal = computeFinalDNA(vStatic, vActive, totalInteractions);
-
-        await TasteProfile.updateOne(
-            { owner, context },
-            { 
-                $set: { 
-                    "compiledVectors.V_active": vActive,
-                    "compiledVectors.V_final": vFinal
-                } 
-            }
-        );
-    }
-
-    static async _bulkUpdateVectorsAsync(owner, context, items) {
-        if (!items || items.length === 0) return;
-
+    static async _updateAndSaveActiveVectors(owner, context, dnaList) {
         const profile = await TasteProfile.findOne({ owner, context }).lean();
         if (!profile) return;
 
         const vActive = profile.compiledVectors?.V_active || {};
         const vStatic = profile.compiledVectors?.V_static || {};
 
-        // Fetch all TMDB data in one query to avoid N+1
-        const queries = items.map(item => ({ tmdbId: item.tmdbId, type: item.type }));
-        // Se la lista è enorme, splittiamo la query per evitare BSON limits
-        const chunkSize = 1000;
-        let tmdbDataList = [];
-        for (let i = 0; i < queries.length; i += chunkSize) {
-            const chunk = queries.slice(i, i + chunkSize);
-            const chunkData = await TmdbScoringData.find({ $or: chunk }).lean();
-            tmdbDataList = tmdbDataList.concat(chunkData);
-        }
-
-        for (const tmdbData of tmdbDataList) {
-            const itemDNA = extractActiveDNAFromTmdbData(tmdbData, 100);
+        for (const itemDNA of dnaList) {
             for (const [key, value] of Object.entries(itemDNA)) {
                 vActive[key] = (vActive[key] || 0) + value;
             }
@@ -165,6 +116,38 @@ class ProfileBuilder {
                 } 
             }
         );
+    }
+
+    /**
+     * Aggiorna V_active e V_final in background (singolo elemento).
+     */
+    static async _updateVectorsAsync(owner, context, tmdbId, type) {
+        const tmdbData = await TmdbScoringData.findOne({ tmdbId, type }).lean();
+        if (!tmdbData) return;
+
+        const itemDNA = extractActiveDNAFromTmdbData(tmdbData, 100);
+        if (Object.keys(itemDNA).length === 0) return;
+
+        await ProfileBuilder._updateAndSaveActiveVectors(owner, context, [itemDNA]);
+    }
+
+    /**
+     * Aggiorna V_active e V_final in background (bulk elementi).
+     */
+    static async _bulkUpdateVectorsAsync(owner, context, items) {
+        if (!items || items.length === 0) return;
+
+        const queries = items.map(item => ({ tmdbId: item.tmdbId, type: item.type }));
+        const chunkSize = 1000;
+        let tmdbDataList = [];
+        for (let i = 0; i < queries.length; i += chunkSize) {
+            const chunk = queries.slice(i, i + chunkSize);
+            const chunkData = await TmdbScoringData.find({ $or: chunk }).lean();
+            tmdbDataList = tmdbDataList.concat(chunkData);
+        }
+
+        const dnaList = tmdbDataList.map(data => extractActiveDNAFromTmdbData(data, 100));
+        await ProfileBuilder._updateAndSaveActiveVectors(owner, context, dnaList);
     }
 
     /**

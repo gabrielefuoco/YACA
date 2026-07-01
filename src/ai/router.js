@@ -1,5 +1,6 @@
 const { Mistral } = require('@mistralai/mistralai');
 const { buildAiPrompt } = require('./prompts');
+const { aiPromptCache } = require('../cache/cacheInstances');
 
 // ============================================
 // FUNCTIONS
@@ -106,6 +107,19 @@ function parseMistralResponse(content, originalPrompt, taskType = 'single_query'
  * @returns Object (Filtri JSON intelligenti)
  */
 async function generateTmdbFiltersFromPrompt(prompt, mistralKey, taskType = 'single_query', kidsMode = false) {
+    if (!prompt) return buildFallbackResponse(prompt, taskType);
+
+    const cacheKey = `prompt:${kidsMode ? 'kids:' : ''}${taskType}:${prompt.trim().toLowerCase()}`;
+    try {
+        const cached = await aiPromptCache.get(cacheKey);
+        if (cached) {
+            console.log(`[AI Search] Cache HIT per: "${prompt}"`);
+            return cached;
+        }
+    } catch (cacheErr) {
+        console.warn("[AI Search] Errore lettura cache:", cacheErr.message);
+    }
+
     if (!mistralKey) {
         return buildFallbackResponse(prompt, taskType);
     }
@@ -133,6 +147,14 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, taskType = 'sin
             return buildFallbackResponse(prompt, taskType);
         }
         const parsed = parseMistralResponse(rawJson, prompt, taskType);
+
+        if (parsed && parsed.strategy !== 'multi_search') {
+            try {
+                await aiPromptCache.set(cacheKey, parsed);
+            } catch (cacheErr) {
+                console.warn("[AI Search] Errore scrittura cache:", cacheErr.message);
+            }
+        }
 
         return parsed;
     } catch (err) {

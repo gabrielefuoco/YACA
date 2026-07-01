@@ -122,10 +122,7 @@ describe('Mongoose findOneAndUpdate options', () => {
         const saveUser = jest.fn().mockResolvedValueOnce({ userId: 'generated_user_id' });
         const generateTmdbFiltersFromPrompt = jest.fn().mockResolvedValueOnce({ target: 'tmdb' });
 
-        jest.doMock('../src/models/UserList', () => ({
-            findOneAndUpdate: jest.fn(),
-            deleteMany: userListDeleteMany
-        }));
+
         jest.doMock('../src/models/UserConfig', () => ({
             saveUser,
             resolveUserConfig: jest.fn().mockResolvedValue({ userId: 'generated_user_id', apiKeys: {} })

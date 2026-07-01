@@ -1,4 +1,4 @@
-const { createAxiosInstance } = require('../utils/httpClient');
+const { createAxiosClient } = require('../utils/axiosClient');
 const {
     TMDB_ENDPOINT,
     DEFAULT_LANGUAGE,
@@ -44,8 +44,7 @@ const MAX_MIRROR_RETRIES = TMDB_MIRRORS.length;
 
 // Helper interno per costruire oggetti request TMDB con failover
 const createTmdbClient = (apiKey) => {
-    const client = createAxiosInstance(TMDB_ENDPOINT, {
-        baseURL: TMDB_MIRRORS[currentMirrorIdx],
+    const client = createAxiosClient(TMDB_MIRRORS[currentMirrorIdx], {
         params: {
             api_key: apiKey,
             language: DEFAULT_LANGUAGE,
@@ -1034,7 +1033,6 @@ module.exports = {
     getTmdbMovieDetails,
     getTmdbIdByName,
     resolveImdbId,
-    formatRichDescription,
     fetchTmdbEpisodes,
     prioritizeLocalizedImages
 };

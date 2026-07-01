@@ -1,4 +1,4 @@
-const { createAxiosInstance } = require('../utils/httpClient');
+const { createAxiosClient } = require('../utils/axiosClient');
 const CacheManager = require('../cache/CacheManager');
 
 const anilistCatalogCache = new CacheManager('anilist_catalog', { ramMax: 50, ramTtlMs: 1000 * 60 * 60, mongoTtlMs: 7 * 24 * 60 * 60 * 1000, swrMs: 1000 * 60 * 60 });
@@ -18,6 +18,7 @@ query ($page: Int, $perPage: Int, $sort: [MediaSort], $season: MediaSeason, $sea
             status
             genres
             episodes
+            duration
             averageScore
             nextAiringEpisode { episode airingAt }
         }
@@ -48,28 +49,12 @@ function getAnilistClient() {
     });
 }
 
-// Utilities per ritardo
-const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
 // Esegue una richiesta GraphQL ad Anilist
-async function executeGraphQL(query, variables, retries = 2) {
+async function executeGraphQL(query, variables) {
     const payload = { query, variables };
-    
-    for (let attempt = 0; attempt <= retries; attempt++) {
-        try {
-            const client = getAnilistClient();
-            const res = await client.post('', payload);
-            return res.data;
-        } catch (e) {
-            if (e.response && e.response.status === 429 && attempt < retries) {
-                const retryAfter = e.response.headers['retry-after'] || 30; // Anilist di solito blocca per 1 min, ma retry-after aiuta
-                console.warn(`[Anilist] 429 Too Many Requests. Waiting ${retryAfter}s prima del retry ${attempt + 1}/${retries}...`);
-                await wait(retryAfter * 1000);
-                continue;
-            }
-            throw e;
-        }
-    }
+    const client = getAnilistClient();
+    const res = await client.post('', payload);
+    return res.data;
 }
 
 /**
@@ -102,14 +87,14 @@ function mapAnilistToMeta(m, overrideId) {
     };
 }
 
+/**
+ * Recupera un catalogo AniList e lo mappa
+ */
 async function fetchAnilistCatalog(catalogId, skip = 0) {
     const limit = 20; // Abbassato da 50 a 20 per evitare timeout su Stremio
     const page = Math.floor(skip / limit) + 1;
     const cacheKey = `anilist_catalog_${catalogId}_${page}`;
     
-    const cached = await anilistCatalogCache.get(cacheKey);
-    if (cached) return cached.slice(0, limit);
-
     const variables = { page, perPage: limit };
 
     if (catalogId === 'anilist-trending' || catalogId === 'yaca_anime_trending') {
@@ -136,15 +121,15 @@ async function fetchAnilistCatalog(catalogId, skip = 0) {
         variables.format = 'SPECIAL';
     }
 
-    try {
-        const res = await executeGraphQL(CATALOG_QUERY, variables);
-        const media = res.data?.Page?.media || [];
-        await anilistCatalogCache.set(cacheKey, media);
-        return media;
-    } catch (e) {
-        console.error('Errore fetchAnilistCatalog:', e.message);
-        return [];
-    }
+    return anilistCatalogCache.getOrFetch(cacheKey, async () => {
+        try {
+            const res = await executeGraphQL(CATALOG_QUERY, variables);
+            return res.data?.Page?.media || [];
+        } catch (e) {
+            console.error('Errore fetchAnilistCatalog:', e.message);
+            throw e;
+        }
+    });
 }
 
 async function getAnilistMeta(anilistId) {
@@ -268,9 +253,5 @@ async function getAnilistCatalogFromFilters(filters, type, skip) {
 }
 
 module.exports = {
-    fetchAnilistCatalog,
-    getAnilistMeta,
-    getAnilistCatalogFromFilters,
-    mapAnilistToMeta,
-    executeGraphQL
+    fetchAnilistCatalog
 };
