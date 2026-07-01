@@ -158,20 +158,3 @@ jobs:
 
           echo "✅ Deploy completato su https://huggingface.co/spaces/${HF_SPACE_ID}"
 
-      # ════════════════════════════════════════════════════════════
-      # STEP 3: Deploy Cloudflare Worker Proxy
-      # ════════════════════════════════════════════════════════════
-      - name: 🚀 Deploy Cloudflare Worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "⚠️ Credenziali Cloudflare mancanti. Skip deploy del Worker."
-            exit 0
-          fi
-          echo "🔧 Installazione Wrangler..."
-          npm install -g wrangler
-          echo "🚀 Deploy del Worker su Cloudflare..."
-          cd cloudflare
-          wrangler deploy
