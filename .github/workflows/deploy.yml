@@ -37,6 +37,8 @@ jobs:
           SECRET_TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
           SECRET_HOST_URL: ${{ secrets.HOST_URL }}
           SECRET_TORRENTIO_URL: ${{ secrets.TORRENTIO_URL }}
+          SECRET_HF_BUCKET_NAME: ${{ secrets.HF_BUCKET_NAME }}
+          SECRET_HF_ACCESS_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           if [ -z "$HF_TOKEN" ]; then
             echo "❌ HF_TOKEN non configurato. Impossibile sincronizzare i secrets."
@@ -84,6 +86,8 @@ jobs:
           sync_secret "TRAKT_CLIENT_SECRET" "$SECRET_TRAKT_CLIENT_SECRET"
           sync_secret "HOST_URL" "$SECRET_HOST_URL"
           sync_secret "TORRENTIO_URL" "$SECRET_TORRENTIO_URL"
+          sync_secret "HF_BUCKET_NAME" "$SECRET_HF_BUCKET_NAME"
+          sync_secret "HF_ACCESS_TOKEN" "$SECRET_HF_ACCESS_TOKEN"
 
           echo ""
           echo "📊 Sincronizzati: $SYNCED | Saltati (non configurati): $SKIPPED"
