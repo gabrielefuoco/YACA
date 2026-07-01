@@ -138,3 +138,8 @@ Consente di attivare forzatamente la modalità bambini (`kidsMode`) su uno speci
 - Rimuove la cache delle richieste per costringere l'addon a ricalcolare i cataloghi applicando i filtri di protezione.
 *   **Esecuzione**: `node scripts/set_kids_mode.js`
 
+### [fetch_catalogs.js](../scripts/fetch_catalogs.js)
+Utility unificata (che combina i vecchi `fetch_state.js` e `fetch_all_catalogs.js`) per generare dump completi dello stato del catalogo o estrarre rappresentazioni testuali veloci per il debug dei metadati e dei badge degli episodi. Supporta l'esecuzione in locale o sul server live bypassando le cache di Stremio.
+* **Esecuzione Formato Testuale Log**: `node scripts/fetch_catalogs.js --text`
+* **Esecuzione Formato JSON Locale (senza cache)**: `node scripts/fetch_catalogs.js --local --nocache --catalogs yaca_preset_preset_anime_simulcast`
+

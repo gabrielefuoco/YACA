@@ -43,6 +43,10 @@ Abbiamo creato una documentazione dettagliata per ogni aspetto del progetto. **I
 - **Badge Episodi**: Visualizza il numero dell&apos;episodio direttamente sul poster nei cataloghi "In Corso".
 - **Ottimizzato per Hugging Face**: Funziona su Spaces (Docker) con gestione intelligente della cache.
 
+## 🆕 Recenti Novità
+- **Fix Badge Episodi Kitsu**: La logica di generazione dei badge è stata ottimizzata. YACA ora gestisce perfettamente gli *episodi fantasma* (non ancora trasmessi) di Kitsu, importando fedelmente le date di messa in onda da TMDB. Questo previene il conteggio errato degli episodi "già usciti" sulle serie divise in più cour o con stagioni miste (es. "Ascendance of a Bookworm S4").
+- **Script Unificati**: Introdotto `scripts/fetch_catalogs.js` per scaricare e debbuggare lo stato dei cataloghi in locale sia in JSON minimizzato che in formato tabellare leggibile.
+
 ## Architettura
 YACA utilizza un'architettura **Stateful** basata su **MongoDB**. Il cuore del sistema è il **Taste Profile** globale dell'utente, alimentato continuamente da Stremio e Trakt. Sopra questo profilo, ogni **Profilo** YACA applica un **DNA** (filtro contestuale) per estrarre solo i contenuti rilevanti.
 
