@@ -344,15 +344,28 @@ async function fetchKitsuEpisodes(kitsuId) {
                                 if (match.thumbnail) {
                                     kitsuEp.thumbnail = match.thumbnail;
                                 }
+                                if (match.released) {
+                                    kitsuEp.released = match.released;
+                                }
                                 kitsuEp.tmdbSeason = match.season;
                                 kitsuEp.tmdbEpisode = match.episode;
                                 matchedTmdbIds.add(`${match.season}_${match.episode}`);
                             }
+
                         });
 
                         // Add remaining TMDB episodes that weren't matched
                         if (mappingSafe) {
-                            const unmatchedTmdb = sortedTmdb.filter(t => !matchedTmdbIds.has(`${t.season}_${t.episode}`));
+                            let unmatchedTmdb = sortedTmdb.filter(t => !matchedTmdbIds.has(`${t.season}_${t.episode}`));
+                            
+                            // Se la stagione inferita è > 1, aggiungiamo solo gli episodi non matchati
+                            // della STESSA stagione target. Gli episodi di altre stagioni TMDB appartengono
+                            // ad altri entry Kitsu e non vanno duplicati qui.
+                            // (es. Bookworm Kitsu S4 = TMDB S2: non aggiungere gli ep di TMDB S1)
+                            if (inferredSeason > 1) {
+                                unmatchedTmdb = unmatchedTmdb.filter(t => t.season === targetSeason);
+                            }
+                            
                             if (unmatchedTmdb.length > 0) {
                                 let maxKitsuEpNumber = episodes.length > 0 ? Math.max(...episodes.map(e => e.episode)) : 0;
                                 const kitsuSeason = episodes.length > 0 ? episodes[0].season : 1;
@@ -373,6 +386,7 @@ async function fetchKitsuEpisodes(kitsuId) {
                                 });
                             }
                         }
+
                     }
                 }
             }
