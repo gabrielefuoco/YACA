@@ -646,7 +646,11 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
         const filePath = await HFStorageClient.exists(cacheKey);
         if (filePath) {
             // Express sets ETag, Cache-Control and streams the file natively
-            return res.sendFile(filePath, { maxAge: 86400000 }); // 24h HTTP cache
+            return res.sendFile(filePath, { maxAge: 86400000 }, (err) => {
+                if (err && !res.headersSent) {
+                    res.redirect(302, req.query.fallback || originalUrl);
+                }
+            });
         }
 
         // Cache miss: generate composite image
@@ -656,7 +660,11 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
         const newFilePath = await HFStorageClient.upload(cacheKey, processedBuffer);
 
         if (newFilePath) {
-            return res.sendFile(newFilePath, { maxAge: 86400000 });
+            return res.sendFile(newFilePath, { maxAge: 86400000 }, (err) => {
+                if (err && !res.headersSent) {
+                    res.redirect(302, req.query.fallback || originalUrl);
+                }
+            });
         }
 
         // Fallback: se le credentials HF non ci sono, inviamo il buffer

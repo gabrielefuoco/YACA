@@ -7,9 +7,9 @@ const path = require('path');
  */
 class LocalStorageClient {
     constructor() {
-        // HF Spaces mounted buckets are typically in /data.
-        // We use ./.cache/badges as fallback for local dev.
-        this.basePath = process.env.HF_SPACE_ID ? '/data/badges' : path.resolve(__dirname, '../../.cache/badges');
+        // Controllo robusto: se esiste la cartella /data (mounted in HF Spaces), la usiamo.
+        // Altrimenti (es. dev locale) usiamo .cache locale
+        this.basePath = fs.existsSync('/data') ? '/data/badges' : path.resolve(__dirname, '../../.cache/badges');
         
         this._ensureDirectory();
     }
@@ -26,10 +26,12 @@ class LocalStorageClient {
     }
 
     /**
-     * Helper to get the absolute path of a cached badge
+     * Helper to get the absolute path of a cached badge, sanificando caratteri non validi
      */
     _getFilePath(cacheKey) {
-        return path.join(this.basePath, `${cacheKey}.jpg`);
+        // Rimuove i due punti ":" per evitare corruzioni FS su Windows/Express e usa un underscore
+        const safeKey = cacheKey.replace(/:/g, '_');
+        return path.join(this.basePath, `${safeKey}.jpg`);
     }
 
     /**
