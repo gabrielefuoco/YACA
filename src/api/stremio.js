@@ -39,12 +39,7 @@ if (textToSVG) {
     }
 }
 
-const badgeCache = new CacheManager('poster_badges', {
-    ramMax: 1000,
-    ramTtlMs: 1000 * 60 * 60 * 24, // 24 hours in RAM
-    mongoTtlMs: 1000 * 60 * 60 * 24 * 7, // 7 days in MongoDB
-    swrMs: 0
-});
+const HFStorageClient = require('../utils/HFStorageClient');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler } = require('../handlers/metaHandler');
 const { streamHandler } = require('../handlers/streamHandler');
@@ -647,21 +642,23 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
     };
 
     try {
-        // Retrieve from Cache (checks L1 RAM first, then L2 MongoDB)
-        const cachedBase64 = await badgeCache.get(cacheKey);
-        if (cachedBase64) {
-            const buffer = Buffer.from(cachedBase64, 'base64');
-            res.setHeader('Content-Type', 'image/jpeg');
-            res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hours client cache
-            return res.send(buffer);
+        // Check if image exists in Hugging Face Storage Bucket CDN
+        const hfUrl = await HFStorageClient.exists(cacheKey);
+        if (hfUrl) {
+            return res.redirect(302, hfUrl);
         }
 
         // Cache miss: generate composite image
         const processedBuffer = await generateBadgeImage(originalUrl, episode, tlBadge);
 
-        // Save to cache (persists to RAM and MongoDB)
-        await badgeCache.set(cacheKey, processedBuffer.toString('base64'));
+        // Save to HF Bucket (CDN)
+        const uploadedUrl = await HFStorageClient.upload(cacheKey, processedBuffer);
 
+        if (uploadedUrl) {
+            return res.redirect(302, uploadedUrl);
+        }
+
+        // Fallback: se le credentials HF non ci sono, inviamo il buffer
         res.setHeader('Content-Type', 'image/jpeg');
         res.setHeader('Cache-Control', 'public, max-age=86400');
         return res.send(processedBuffer);
@@ -675,10 +672,8 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
         // Asynchronously retry generation in the background so it's ready next time
         setTimeout(async () => {
             try {
-                // console.log(`[BadgeCache] Background retry generating badge for ${id}...`);
-                const retryBuffer = await generateBadgeImage(originalUrl, episode);
-                await badgeCache.set(cacheKey, retryBuffer.toString('base64'));
-                // console.log(`[BadgeCache] Background retry success for ${id}!`);
+                const retryBuffer = await generateBadgeImage(originalUrl, episode, tlBadge);
+                await HFStorageClient.upload(cacheKey, retryBuffer);
             } catch (retryErr) {
                 console.error(`[BadgeCache] Background retry failed for ${id}:`, retryErr.message);
             }
