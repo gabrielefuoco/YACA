@@ -138,7 +138,10 @@ function sanitizeCatalogMeta(item, options = {}) {
     const isKitsu = item.id && (item.id.startsWith('kitsu:') || item.id.includes(':absolute:'));
     
     if (isKitsu) {
-        let actualSeason = item.tmdbSeason || null;
+        // Per il badge visivo preferiamo la stagione Kitsu (dal titolo originale)
+        // che riflette la numerazione più nota all'utente (es. "Season 4" di Bookworm),
+        // rispetto alla stagione TMDB che può avere una struttura diversa (es. TMDB S2 = Kitsu S4)
+        let actualSeason = item.kitsuSeason || item.tmdbSeason || null;
         if (!actualSeason && Array.isArray(item.videos) && item.videos.length > 0) {
             const sampleVideo = item.videos.find(v => v.tmdbSeason) || item.videos[0];
             actualSeason = sampleVideo.tmdbSeason || sampleVideo.season;

@@ -25,6 +25,14 @@ async function enrichWithTmdb(item, kitsuId) {
         item.tmdbId = mapping.tmdbId; // Salviamo l'ID TMDB per ERDB
         item.tmdbSeason = mapping.inferredSeason;
 
+        // Estraiamo la stagione dal titolo Kitsu originale (es. "Season 4", "4th Season")
+        // per usarla nel badge visivo, che può divergere dalla stagione TMDB
+        const kitsuName = item.name || '';
+        const kitsuSeasonMatch = kitsuName.match(/(?:Season\s*(\d+)|(\d+)(?:st|nd|rd|th)\s*Season)/i);
+        if (kitsuSeasonMatch) {
+            item.kitsuSeason = parseInt(kitsuSeasonMatch[1] || kitsuSeasonMatch[2], 10);
+        }
+
         const cacheKey = `${mapping.type}:${mapping.tmdbId}`;
         const { value: cached, status } = await kitsuTmdbBasicCache.getWithStatus(cacheKey);
 
@@ -59,7 +67,10 @@ async function enrichWithTmdb(item, kitsuId) {
             if (title) {
                 let finalName = title;
                 if (mapping.type === 'tv' && mapping.inferredSeason > 1) {
-                    finalName = `${finalName} - Stagione ${mapping.inferredSeason}`;
+                    // Usiamo la stagione Kitsu per il titolo (es. "Stagione 4" per Bookworm)
+                    // perché è più nota all'utente rispetto alla numerazione TMDB
+                    const displaySeason = item.kitsuSeason || mapping.inferredSeason;
+                    finalName = `${finalName} - Stagione ${displaySeason}`;
                 }
                 
                 // Preserve "Part X" or "Cour X" or trailing " 2" from the original Kitsu title to avoid visual duplicates
@@ -69,19 +80,25 @@ async function enrichWithTmdb(item, kitsuId) {
                 if (explicitPartMatch) {
                     partNum = parseInt(explicitPartMatch[1], 10);
                 } else {
-                    const trailingNumMatch = originalName.match(/\s(\d+)$/);
-                    if (trailingNumMatch) {
-                        const tNum = parseInt(trailingNumMatch[1], 10);
-                        // Se il numero finale è UGUALE alla stagione inferita (es. "Oshi no Ko Season 2" -> 2),
-                        // allora NON è una parte (Pt2), ma sta solo indicando la Stagione 2!
-                        if (tNum !== mapping.inferredSeason) {
-                            partNum = tNum;
+                    // Controlla se il numero finale fa parte di un pattern di stagione
+                    // (es. "Season 4", "4th Season", "2nd Season") — in tal caso NON è una parte
+                    const isSeasonPattern = /(?:Season\s*\d+|\d+(?:st|nd|rd|th)\s*Season)\s*$/i.test(originalName);
+                    if (!isSeasonPattern) {
+                        const trailingNumMatch = originalName.match(/\s(\d+)$/);
+                        if (trailingNumMatch) {
+                            const tNum = parseInt(trailingNumMatch[1], 10);
+                            // Se il numero finale è UGUALE alla stagione inferita (es. "Oshi no Ko Season 2" -> 2),
+                            // allora NON è una parte (Pt2), ma sta solo indicando la Stagione 2!
+                            if (tNum !== mapping.inferredSeason) {
+                                partNum = tNum;
+                            }
+                        } else if (/\s2$/i.test(originalName)) {
+                            // Se finisce con uno spazio e "2" (es. "Haikyuu!! TO THE TOP 2")
+                            partNum = 2;
                         }
-                    } else if (/\s2$/i.test(originalName)) {
-                        // Se finisce con uno spazio e "2" (es. "Haikyuu!! TO THE TOP 2")
-                        partNum = 2;
                     }
                 }
+
                 
                 if (partNum && partNum > 1) {
                     item._kitsuPart = partNum;
