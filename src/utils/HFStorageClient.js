@@ -12,7 +12,42 @@ class LocalStorageClient {
         this.basePath = fs.existsSync('/data') ? '/data/badges' : path.resolve(__dirname, '../../.cache/badges');
         
         this._ensureDirectory();
+
+        // Avvia il Garbage Collector in background (ritardato di 5 minuti per non pesare sul bootup)
+        setTimeout(() => this._startGarbageCollector(), 5 * 60 * 1000);
+        // Eseguilo periodicamente ogni 24 ore
+        setInterval(() => this._startGarbageCollector(), 24 * 60 * 60 * 1000);
     }
+
+    async _startGarbageCollector() {
+        try {
+            console.log(`[LocalStorageClient] Starting Garbage Collection in ${this.basePath}...`);
+            const files = await fsPromises.readdir(this.basePath);
+            const now = Date.now();
+            const maxAgeMs = 7 * 24 * 60 * 60 * 1000; // 7 giorni in ms
+            let deletedCount = 0;
+
+            for (const file of files) {
+                if (!file.endsWith('.jpg')) continue;
+
+                const filePath = path.join(this.basePath, file);
+                try {
+                    const stats = await fsPromises.stat(filePath);
+                    if (now - stats.mtimeMs > maxAgeMs) {
+                        await fsPromises.unlink(filePath);
+                        deletedCount++;
+                    }
+                } catch (err) {
+                    console.error(`[LocalStorageClient] Failed to check/delete file ${file}:`, err.message);
+                }
+            }
+
+            if (deletedCount > 0) {
+                console.log(`[LocalStorageClient] GC completed. Deleted ${deletedCount} old badges.`);
+            }
+        } catch (error) {
+            console.error(`[LocalStorageClient] Garbage Collection error:`, error.message);
+        }
 
     _ensureDirectory() {
         try {
