@@ -48,6 +48,7 @@ class LocalStorageClient {
         } catch (error) {
             console.error(`[LocalStorageClient] Garbage Collection error:`, error.message);
         }
+    }
 
     _ensureDirectory() {
         try {
