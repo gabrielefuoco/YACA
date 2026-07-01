@@ -75,9 +75,15 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 
 ### 9. 🧪 Testing e Strumenti di Amministrazione
 *   **[TESTING_UTILITIES.md](TESTING_UTILITIES.md)**
-    *   *Descrizione*: Manuale per sviluppatori e amministratori del sistema. Copre l'esecuzione dei test di unità/integrazione tramite Jest (`tests/`), la validazione della rilevanza dei preset (`scripts/test_relevance_all_presets.js`) e una rassegna completa di tutti i 10 script amministrativi/migrazione nella cartella `scripts/`.
+    *   *Descrizione*: Manuale per sviluppatori e amministratori del sistema. Copre l'esecuzione dei test di unità/integrazione tramite Jest, la validazione della rilevanza dei preset e script amministrativi.
 
-### 10. 📝 Changelog
+### 10. 📝 Guide e Logica Specifica
+*   **[EPISODE_BADGES.md](EPISODE_BADGES.md)**
+    *   *Descrizione*: Logica dinamica di calcolo e visualizzazione dei badge degli episodi sui poster di Stremio.
+*   **[KITSU_MAPPING.md](KITSU_MAPPING.md)**
+    *   *Descrizione*: Dettagli dell'algoritmo ibrido per la mappatura tra Kitsu e TMDB, con strategie anti-mescolamento per le multi-stagioni.
+
+### 11. 📝 Changelog
 *   **[CHANGELOG.md](CHANGELOG.md)**
     *   *Descrizione*: Storico delle modifiche, aggiornamenti e nuove feature implementate nel progetto YACA.
 
