@@ -1,95 +1,83 @@
-const { S3Client, PutObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
+const fs = require('fs');
+const fsPromises = require('fs/promises');
+const path = require('path');
 
 /**
- * Client proxy for Hugging Face Storage Buckets via S3 API
+ * Client proxy for Local/Mounted Storage (e.g. Hugging Face Space /data volume)
  */
-class HFStorageClient {
+class LocalStorageClient {
     constructor() {
-        this.bucketName = process.env.HF_BUCKET_NAME;
+        // HF Spaces mounted buckets are typically in /data.
+        // We use ./.cache/badges as fallback for local dev.
+        this.basePath = process.env.HF_SPACE_ID ? '/data/badges' : path.resolve(__dirname, '../../.cache/badges');
         
-        // Setup S3 Client pointing to Hugging Face
-        // HF typically uses 'us-east-1' as a placeholder region for S3 compatibility
-        this.s3Client = new S3Client({
-            endpoint: 'https://s3.us.huggingface.co', // S3 Endpoint for Hugging Face (US region)
-            region: 'us-east-1',
-            credentials: {
-                accessKeyId: process.env.HF_S3_ACCESS_KEY_ID || process.env.HF_ACCESS_TOKEN, // In some setups, token works, but HMAC keys are safer
-                secretAccessKey: process.env.HF_S3_SECRET_ACCESS_KEY || process.env.HF_ACCESS_TOKEN
-            },
-            forcePathStyle: true // Needed for many alternative S3 providers
-        });
-        
-        this.enabled = !!(this.bucketName && (process.env.HF_S3_ACCESS_KEY_ID || process.env.HF_ACCESS_TOKEN));
-        
-        if (!this.enabled) {
-            console.warn('[HFStorageClient] Warning: S3 credentials (HF_BUCKET_NAME / HF_S3_ACCESS_KEY_ID) not found. Bucket proxy is disabled.');
+        this._ensureDirectory();
+    }
+
+    _ensureDirectory() {
+        try {
+            if (!fs.existsSync(this.basePath)) {
+                fs.mkdirSync(this.basePath, { recursive: true });
+                console.log(`[LocalStorageClient] Created cache directory at ${this.basePath}`);
+            }
+        } catch (err) {
+            console.error(`[LocalStorageClient] Error creating directory ${this.basePath}:`, err.message);
         }
     }
 
     /**
-     * Get the public URL for an object (HF buckets CDN URL)
+     * Helper to get the absolute path of a cached badge
      */
-    getPublicUrl(objectKey) {
-        // HF bucket public URLs look like:
-        // https://tuo-bucket.s3.us.huggingface.co/chiave (Virtual Hosted Style)
-        // or https://s3.us.huggingface.co/tuo-bucket/chiave (Path Style)
-        // Sticking to path style for safety, or HF might have a dedicated resolver:
-        return `https://s3.us.huggingface.co/${this.bucketName}/${objectKey}`;
+    _getFilePath(cacheKey) {
+        return path.join(this.basePath, `${cacheKey}.jpg`);
     }
 
     /**
-     * Check if an object exists in the bucket
+     * Check if an object exists in the local mount
      * @param {string} cacheKey 
-     * @returns {string|null} The public URL if exists, null otherwise
+     * @returns {string|null} The absolute file path if exists, null otherwise
      */
     async exists(cacheKey) {
-        if (!this.enabled) return null;
-        
-        const objectKey = `badges/${cacheKey}.jpg`;
-        
+        const filePath = this._getFilePath(cacheKey);
         try {
-            const command = new HeadObjectCommand({
-                Bucket: this.bucketName,
-                Key: objectKey,
-            });
-            await this.s3Client.send(command);
-            return this.getPublicUrl(objectKey);
+            await fsPromises.stat(filePath);
+            return filePath;
         } catch (error) {
-            if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
-                return null;
+            if (error.code === 'ENOENT') {
+                return null; // non esiste
             }
-            console.error(`[HFStorageClient] Check exists error for ${objectKey}:`, error.message);
+            console.error(`[LocalStorageClient] Check exists error for ${filePath}:`, error.message);
             return null;
         }
     }
 
     /**
-     * Upload an image buffer to the bucket
+     * Save an image buffer to the local mount
      * @param {string} cacheKey 
      * @param {Buffer} buffer 
-     * @returns {string|null} The public URL of the uploaded image
+     * @returns {string|null} The absolute file path of the uploaded image
      */
     async upload(cacheKey, buffer) {
-        if (!this.enabled) return null;
-        
-        const objectKey = `badges/${cacheKey}.jpg`;
-        
+        const filePath = this._getFilePath(cacheKey);
         try {
-            const command = new PutObjectCommand({
-                Bucket: this.bucketName,
-                Key: objectKey,
-                Body: buffer,
-                ContentType: 'image/jpeg',
-                CacheControl: 'public, max-age=31536000, immutable' // Aggressive caching for generated badge posters
-            });
-            
-            await this.s3Client.send(command);
-            return this.getPublicUrl(objectKey);
+            await fsPromises.writeFile(filePath, buffer);
+            return filePath;
         } catch (error) {
-            console.error(`[HFStorageClient] Upload error for ${objectKey}:`, error.message);
+            // Se la directory non esisteva (es. cancellata in runtime), ricreiamola e riproviamo
+            if (error.code === 'ENOENT') {
+                try {
+                    this._ensureDirectory();
+                    await fsPromises.writeFile(filePath, buffer);
+                    return filePath;
+                } catch (retryErr) {
+                    console.error(`[LocalStorageClient] Retry upload failed for ${filePath}:`, retryErr.message);
+                    return null;
+                }
+            }
+            console.error(`[LocalStorageClient] Upload error for ${filePath}:`, error.message);
             return null;
         }
     }
 }
 
-module.exports = new HFStorageClient();
+module.exports = new LocalStorageClient();

@@ -642,20 +642,21 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
     };
 
     try {
-        // Check if image exists in Hugging Face Storage Bucket CDN
-        const hfUrl = await HFStorageClient.exists(cacheKey);
-        if (hfUrl) {
-            return res.redirect(302, hfUrl);
+        // Check if image exists in Local/Mounted Storage
+        const filePath = await HFStorageClient.exists(cacheKey);
+        if (filePath) {
+            // Express sets ETag, Cache-Control and streams the file natively
+            return res.sendFile(filePath, { maxAge: 86400000 }); // 24h HTTP cache
         }
 
         // Cache miss: generate composite image
         const processedBuffer = await generateBadgeImage(originalUrl, episode, tlBadge);
 
-        // Save to HF Bucket (CDN)
-        const uploadedUrl = await HFStorageClient.upload(cacheKey, processedBuffer);
+        // Save to Local/Mounted Storage synchronously
+        const newFilePath = await HFStorageClient.upload(cacheKey, processedBuffer);
 
-        if (uploadedUrl) {
-            return res.redirect(302, uploadedUrl);
+        if (newFilePath) {
+            return res.sendFile(newFilePath, { maxAge: 86400000 });
         }
 
         // Fallback: se le credentials HF non ci sono, inviamo il buffer
