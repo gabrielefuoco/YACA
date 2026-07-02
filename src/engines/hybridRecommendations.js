@@ -32,7 +32,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         const isStale = (now - profile.lastUpdated) > (1000 * 60 * 60 * 12);
         if (isStale) {
             // console.log(`[Hybrid] Sincronizzazione profilo per ${userId} (${context})...`);
-            syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context).then(async (synced) => {
+            syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context, userConfig).then(async (synced) => {
                 if (synced) {
                     await hybridRecommendationsCache.delete(cacheKey);
                 }
@@ -210,14 +210,14 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 /**
  * Incremental user profile synchronization from Trakt history.
  */
-async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context = 'global') {
+async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context = 'global', userConfig = null) {
     if (!userId || !traktToken || !tmdbApiKey) return false;
 
     try {
         const traktType = mediaType === 'movie' ? 'movies' : 'shows';
         const [history, ratings] = await Promise.all([
-            fetchRecentHistory(traktToken, traktType, 40),
-            fetchRecentRatings(traktToken, traktType, 40)
+            fetchRecentHistory(traktToken, traktType, 40, userConfig),
+            fetchRecentRatings(traktToken, traktType, 40, userConfig)
         ]);
         await ProfileBuilder.syncUserHistory(userId, context, [...history, ...ratings], tmdbApiKey);
         return true;
