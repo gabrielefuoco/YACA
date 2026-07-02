@@ -88,18 +88,8 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Cron endpoint for background cache warming
-const { runCacheWarmer } = require('./src/utils/cacheWarmer');
-app.get('/api/cron/warmup', (req, res) => {
-    // Risponde immediatamente a Uptime Robot per non far scadere il timeout
-    res.json({ status: 'ok', message: 'Warmup scheduled' });
-    
-    // Costruisce l'hostUrl base per il catalogHandler
-    const hostUrl = `${req.protocol}://${req.get('host')}`;
-    
-    // Lancia in background
-    runCacheWarmer(hostUrl).catch(err => console.error('[CacheWarmer] Error:', err.message));
-});
+// Cron endpoint dismesso: ora il Cache Warmer gira come Demone Continuo in background.
+// (Vedi app.listen)
 
 // Rate limiter for auth endpoints (brute-force protection)
 const authLimiter = rateLimit({
@@ -179,6 +169,11 @@ const server = app.listen(PORT, () => {
     if (!process.env.HOST_URL && !process.env.RENDER_EXTERNAL_URL) {
         console.warn('⚠️ HOST_URL non configurato nel file .env. Verranno usati gli header proxy (X-Forwarded-Host/X-Forwarded-Proto) quando disponibili.');
     }
+
+    // Avvia il Demone Continuo del Cache Warmer
+    const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+    const { runCacheWarmer } = require('./src/utils/cacheWarmer');
+    runCacheWarmer(hostUrl).catch(err => console.error('[CacheWarmer Daemon] Startup Error:', err.message));
 });
 
 // L'auto-deploy del Cloudflare Worker è stato spostato nelle GitHub Actions (.github/workflows/deploy.yml)
