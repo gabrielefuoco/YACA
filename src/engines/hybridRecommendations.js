@@ -15,7 +15,7 @@ const { buildDirectPresetCatalog, buildTopGenresMixCatalog, buildHybridCatalog, 
 /**
  * Main endpoint: handles request for a profiled hybrid catalog.
  */
-async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId, activeProfileId = 'global') {
+async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId, activeProfileId = 'global', userConfig = null) {
     const presetsList = getPresets();
     const matchedPreset = presetsList.find(p => p.id === catalogId);
     let mediaType = (catalogId.includes('series') || catalogId.includes('tv')) ? 'series' : 'movie';

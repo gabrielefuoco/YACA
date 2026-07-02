@@ -20,7 +20,7 @@ async function getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey
     const parallelPages = (userConfig?.config?.hideWatched) ? 3 : 1;
     const promises = [];
     for (let i = 0; i < parallelPages; i++) {
-        promises.push(getHybridCatalog(baseId, skip + (i * 20), traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId));
+        promises.push(getHybridCatalog(baseId, skip + (i * 20), traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId, userConfig));
     }
 
     const pagesResults = await Promise.all(promises);
