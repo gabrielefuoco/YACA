@@ -88,8 +88,11 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Cron endpoint dismesso: ora il Cache Warmer gira come Demone Continuo in background.
-// (Vedi app.listen)
+// Endpoint per mitigare l'ibernazione (Scale to Zero) su Hugging Face Spaces.
+// Uptime Robot chiama questa rotta per fare Keep-Alive e prevenire il cold start.
+app.get('/api/cron/warmup', (req, res) => {
+    res.json({ status: 'ok', message: 'Uptime Robot Keep-Alive. Il demone CacheWarmer gestisce la cache in background.' });
+});
 
 // Rate limiter for auth endpoints (brute-force protection)
 const authLimiter = rateLimit({
