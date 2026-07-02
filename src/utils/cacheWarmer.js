@@ -112,6 +112,9 @@ async function runCacheWarmerDaemon(hostUrl) {
 
         console.log(`[CacheWarmer] Daemon executing ${executionQueue.length} catalog permutations (including retries).`);
 
+        let successCount = 0;
+        let failCount = 0;
+
         await rateLimitedMap(
             executionQueue,
             async (task) => {
@@ -129,7 +132,10 @@ async function runCacheWarmerDaemon(hostUrl) {
                         taskUser, 
                         hostUrl
                     );
+                    successCount++;
                 } catch (e) {
+                    failCount++;
+                    console.error(`[CacheWarmer] Error on catalog: ${task.catalogId} (skip: ${task.skip}) - ${e.message}`);
                     // Accoda per retry se non ha superato i 3 tentativi
                     if (task.retryCount < 3) {
                         task.retryCount++;
@@ -140,7 +146,7 @@ async function runCacheWarmerDaemon(hostUrl) {
             { batchSize: 1, delayMs: 250 } // Rate Limit molto gentile (4 fetch al sec) per salvaguardare TMDB
         );
 
-        console.log('[CacheWarmer] Sweep Cycle Completed.');
+        console.log(`[CacheWarmer] Sweep Cycle Completed. Success: ${successCount}, Failed: ${failCount}`);
 
         // Eseguiamo il processamento della coda video in background per gli streaming pendenti
         try {
