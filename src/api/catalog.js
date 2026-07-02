@@ -174,8 +174,6 @@ router.post('/preview-catalog', async (req, res) => {
                     }
                 }
             }
-                }
-            }
         } else if (id) {
             targetCatalogId = id;
         } else {
