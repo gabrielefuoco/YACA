@@ -43,6 +43,7 @@ router.post('/preview-catalog', async (req, res) => {
         }
 
         const sanitizedTmdbKey = String(reqTmdbKey || '').trim();
+        let targetCatalogId = null;
         let discoverFilters = null;
         let discoverType = null;
         let strategy = null;
@@ -60,6 +61,7 @@ router.post('/preview-catalog', async (req, res) => {
 
         if (id && id.startsWith('yaca_preset_')) {
             const presetId = id.replace('yaca_preset_', '');
+            targetCatalogId = presetId;
             const preset = getPresets().find(p => p.id === presetId);
             if (!preset) return res.status(404).json({ error: 'Preset non trovato' });
             
@@ -172,6 +174,10 @@ router.post('/preview-catalog', async (req, res) => {
                     }
                 }
             }
+                }
+            }
+        } else if (id) {
+            targetCatalogId = id;
         } else {
             return res.status(400).json({ error: 'id, filters o prompt obbligatori' });
         }
@@ -181,7 +187,7 @@ router.post('/preview-catalog', async (req, res) => {
                 const previewData = await catalogHandler(
                     {
                         type: discoverType === 'tv' ? 'series' : 'movie',
-                        id: null,
+                        id: targetCatalogId,
                         filters: (discoverFilters && Object.keys(discoverFilters).length > 0) ? discoverFilters : customFilters,
                         extra: { skip: 0 }
                     },
@@ -226,7 +232,7 @@ router.post('/preview-catalog', async (req, res) => {
             const previewData = await catalogHandler(
                 {
                     type: discoverType === 'tv' ? 'series' : 'movie',
-                    id: null,
+                    id: targetCatalogId,
                     filters: singleQueryFilters,
                     extra: { skip: 0 }
                 },
