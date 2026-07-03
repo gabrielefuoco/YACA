@@ -15,21 +15,21 @@ module.exports = {
 
     // ─── Catalog Page Cache (L1 RAM + L2 MongoDB) ───
     // Fast catalogs (New Releases, Anime Trending)
-    FAST_CATALOG_PAGE1_L2_TTL_MS: 7 * 24 * 60 * 60 * 1000,  // 7 days
+    FAST_CATALOG_PAGE1_L2_TTL_MS: 2 * 24 * 60 * 60 * 1000,  // 2 days
     FAST_CATALOG_PAGE1_SWR_MS: 15 * 60 * 1000,              // 15 min SWR
-    FAST_CATALOG_DEEP_L2_TTL_MS: 7 * 24 * 60 * 60 * 1000,   // 7 days
+    FAST_CATALOG_DEEP_L2_TTL_MS: 2 * 24 * 60 * 60 * 1000,   // 2 days
     FAST_CATALOG_DEEP_SWR_MS: 15 * 60 * 1000,               // 15 min SWR
     // Slow catalogs (Top Rated, Oscar, Decades)
-    SLOW_CATALOG_L2_TTL_MS: 14 * 24 * 60 * 60 * 1000,       // 14 days
+    SLOW_CATALOG_L2_TTL_MS: 3 * 24 * 60 * 60 * 1000,       // 3 days
     SLOW_CATALOG_SWR_MS: 12 * 60 * 60 * 1000,               // 12 hours SWR
 
     // Legacy aliases (kept for backward compat)
-    CACHE_TTL_MS: 14 * 24 * 60 * 60 * 1000, // 14 giorni (default)
+    CACHE_TTL_MS: 3 * 24 * 60 * 60 * 1000, // 3 giorni (default)
 
     // ─── Metadata Cache (single items) ───
     // Movies (completed)
-    MOVIE_META_CACHE_TTL_MS: 14 * 24 * 60 * 60 * 1000,     // 14 days L2
-    MOVIE_META_SWR_MS: 7 * 24 * 60 * 60 * 1000,             // 7 days SWR
+    MOVIE_META_CACHE_TTL_MS: 3 * 24 * 60 * 60 * 1000,     // 3 days L2
+    MOVIE_META_SWR_MS: 3 * 24 * 60 * 60 * 1000,             // 3 days SWR
     // Series (ongoing / anime)
     SERIES_META_CACHE_TTL_MS: 6 * 60 * 60 * 1000,           // 6 hours L2
     SERIES_META_SWR_MS: 30 * 60 * 1000,                     // 30 min SWR
@@ -38,13 +38,13 @@ module.exports = {
     SERIES_FINISHED_META_SWR_MS: 24 * 60 * 60 * 1000,       // 24 hours SWR
 
     // Cache Hybrid Recommendations
-    RECOMMENDATIONS_CACHE_TTL_MS: 7 * 24 * 60 * 60 * 1000,  // 7 giorni
+    RECOMMENDATIONS_CACHE_TTL_MS: 2 * 24 * 60 * 60 * 1000,  // 2 giorni
     RECOMMENDATIONS_SWR_MS: 60 * 60 * 1000,                 // 1 ora SWR
 
     // Deep Enrichment Settings (Fase 9)
 
-    MOVIE_PRESENTATION_TTL_MS: 14 * 24 * 60 * 60 * 1000,  // 14 days base TTL for movies
-    MOVIE_PRESENTATION_SWR_MS: 7 * 24 * 60 * 60 * 1000,   // 7 days SWR window for movies
+    MOVIE_PRESENTATION_TTL_MS: 3 * 24 * 60 * 60 * 1000,  // 3 days base TTL for movies
+    MOVIE_PRESENTATION_SWR_MS: 3 * 24 * 60 * 60 * 1000,   // 3 days SWR window for movies
     SERIES_FINISHED_PRESENTATION_TTL_MS: 24 * 60 * 60 * 1000,     // 1 day
     SERIES_FINISHED_PRESENTATION_SWR_MS: 24 * 60 * 60 * 1000,     // 1 day SWR for ended series
     SERIES_ONGOING_PRESENTATION_TTL_MS: 12 * 60 * 60 * 1000,      // 12 hours for ongoing series
