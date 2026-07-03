@@ -5,7 +5,7 @@ const { stremioClient } = require('../clients/stremio');
 const { createTmdbClient } = require('../clients/tmdb');
 const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
 
-const BATCH_SIZE = 5; // Start with 5 for testing. We can increase it later.
+const BATCH_SIZE = 500; // Process all items
 
 class LibraryConverterService {
     static async convertAll(userId, hostUrl) {
@@ -39,10 +39,12 @@ class LibraryConverterService {
                 try {
                     let tmdbId = item.tmdbId;
                     let tmdbData = null;
-                    const isImdb = item._id.startsWith('tt');
+                    const strId = String(item._id);
+                    const isImdb = strId.startsWith('tt');
+                    const isTmdb = strId.startsWith('tmdb:');
                     
                     if (isImdb && !tmdbId) {
-                        const searchRes = await tmdbClient.get(`/find/${item._id}`, {
+                        const searchRes = await tmdbClient.get(`/find/${strId}`, {
                             params: { external_source: 'imdb_id', language: 'it-IT' }
                         });
                         if (searchRes.data.movie_results?.length > 0) {
@@ -52,28 +54,33 @@ class LibraryConverterService {
                             tmdbData = searchRes.data.tv_results[0];
                             tmdbId = tmdbData.id;
                         }
+                    } else if (isTmdb && !tmdbId) {
+                        tmdbId = strId.split(':').pop();
                     }
 
-                    if (tmdbId || tmdbData) {
-                        // We need the full detail for best results, but summary might be enough
-                        if (!tmdbData) {
+                    if (tmdbId && !tmdbData) {
+                        try {
                             const endpoint = item.type === 'series' ? `/tv/${tmdbId}` : `/movie/${tmdbId}`;
                             const detailRes = await tmdbClient.get(endpoint, { params: { language: 'it-IT' } });
                             tmdbData = detailRes.data;
+                        } catch (e) {
+                            console.warn(`[LibraryConverter] Failed to fetch TMDB details for ${tmdbId}`);
                         }
+                    }
 
-                        let meta = {
-                            id: item._id, // Keep the original stremio id (tt... or kitsu:...)
-                            tmdbId: tmdbId,
-                            type: item.type,
-                            name: tmdbData.title || tmdbData.name || item.name,
-                            poster: tmdbData.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}` : item.poster,
-                            posterShape: 'poster',
-                            background: tmdbData.backdrop_path ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path}` : item.background,
-                            releaseInfo: (tmdbData.release_date || tmdbData.first_air_date || item.year || '').split('-')[0],
-                            _itaBadge: true, // Force Italian badge
-                            rawTMDB: tmdbData // Pass to formatter
-                        };
+                    // We proceed even if tmdbData is null, to apply badges to Kitsu or fallback items!
+                    let meta = {
+                        id: item._id, // Keep the original stremio id
+                        tmdbId: tmdbId,
+                        type: item.type,
+                        name: tmdbData?.title || tmdbData?.name || item.name,
+                        poster: tmdbData?.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}` : item.poster,
+                        posterShape: 'poster',
+                        background: tmdbData?.backdrop_path ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path}` : item.background,
+                        releaseInfo: (tmdbData?.release_date || tmdbData?.first_air_date || item.year || '').split('-')[0],
+                        _itaBadge: true, // Force Italian badge
+                        rawTMDB: tmdbData // Pass to formatter
+                    };
 
                         const sanitizeOptions = {
                             userConfig,
@@ -113,12 +120,6 @@ class LibraryConverterService {
                         item.name = meta.name;
                         item.poster = meta.poster;
                         await item.save();
-                    } else {
-                        // Mark as mapped even if failed, so we don't retry forever
-                        console.warn(`[LibraryConverter] Could not map ${item._id}`);
-                        item.mapped = true;
-                        await item.save();
-                    }
                     
                     // Small delay to avoid rate limit
                     await new Promise(r => setTimeout(r, 200));

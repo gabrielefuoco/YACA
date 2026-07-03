@@ -17,7 +17,11 @@ router.post('/:id/convert-library', async (req, res) => {
     const userId = req.body.userId;
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
-    const hostUrl = req.protocol + '://' + req.get('host');
+    let hostUrl = process.env.BASE_URL;
+    if (!hostUrl) {
+        const fwdHost = req.headers['x-forwarded-host'];
+        hostUrl = fwdHost ? `https://${fwdHost}` : `${req.protocol}://${req.get('host')}`;
+    }
     
     // Fire and forget
     LibraryConverterService.convertAll(userId, hostUrl).catch(e => console.error('[ConvertLibrary] Error:', e));
