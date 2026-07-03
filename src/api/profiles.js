@@ -503,7 +503,7 @@ router.put('/:id/library/reorder', async (req, res) => {
             const itemId = itemIds[i];
             // each subsequent item gets a slightly older _ctime
             const newCtime = new Date(baseTime - (i * 1000));
-            const newMtime = new Date();
+            const newMtime = newCtime;
             
             const updated = await UserLibraryItem.findOneAndUpdate(
                 { addonUuid: account.addonUuid, _id: itemId },
