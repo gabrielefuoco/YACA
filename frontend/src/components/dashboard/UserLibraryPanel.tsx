@@ -4,7 +4,7 @@ import { api } from '@/lib/api';
 import { InlineTmdbSearch } from '@/components/shared/InlineTmdbSearch';
 import { Button } from '@/components/ui/button';
 import { generateId } from '@/lib/utils';
-import { Loader2, Library, CheckSquare, Square, Trash2, ArrowUpDown } from 'lucide-react';
+import { Loader2, Library, CheckSquare, Square, Trash2, ArrowUpDown, RefreshCw } from 'lucide-react';
 import { MyList } from '@/types';
 
 interface UserLibraryPanelProps {
@@ -148,12 +148,30 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
           <p className="text-xs text-marrow-light mt-1">Gestisci i contenuti aggiunti manualmente</p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              try {
+                if (userId) {
+                  await api.convertLibrary(profileId, userId);
+                  alert("Lavorazione avviata in background!");
+                }
+              } catch (e) {
+                alert("Errore nell'avvio della conversione");
+              }
+            }}
+            className="text-xs font-bold text-primary border-primary/20 bg-primary/5 hover:bg-primary/10"
+          >
+            <RefreshCw className="h-3.5 w-3.5 mr-1" /> 
+            Sincronizza su Stremio
+          </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setSortMode(s => s === 'date_desc' ? 'name_asc' : s === 'name_asc' ? 'date_asc' : 'date_desc')}
-            className="text-xs font-bold"
+            className="text-xs font-bold text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white"
           >
             <ArrowUpDown className="h-4 w-4 mr-1" />
             Ordina: {sortMode === 'date_desc' ? 'Più Recenti' : sortMode === 'name_asc' ? 'A-Z' : 'Meno Recenti'}
@@ -165,7 +183,7 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
               setIsSelectionMode(!isSelectionMode);
               if (isSelectionMode) setSelectedIds(new Set());
             }}
-            className="text-xs font-bold"
+            className={`text-xs font-bold ${isSelectionMode ? '' : 'text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white'}`}
           >
             {isSelectionMode ? 'Annulla Selezione' : 'Seleziona Elementi'}
           </Button>
