@@ -515,9 +515,17 @@ router.put('/:id/library/reorder', async (req, res) => {
                 changes.push({
                     _id: updated._id,
                     type: updated.type,
-                    name: updated.name,
+                    name: updated.name || '',
+                    poster: updated.poster || null,
+                    posterShape: updated.posterShape || 'poster',
+                    background: updated.background || null,
+                    logo: updated.logo || null,
+                    year: updated.year || null,
+                    removed: updated.removed || false,
+                    temp: updated.temp || false,
                     _ctime: newCtime,
-                    _mtime: newMtime
+                    _mtime: newMtime,
+                    state: updated.state
                 });
             }
         }
