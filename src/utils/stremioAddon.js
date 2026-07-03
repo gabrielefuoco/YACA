@@ -4,6 +4,7 @@ const AddonConfig = require('../db/models/AddonConfig');
 const { executeUniversalPipeline } = require('../catalog/providers/AiDiscoveryProvider');
 const { createTmdbClient } = require('../clients/tmdb');
 const { getPresets } = require('../data/presets');
+const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
 const { isAllowedUrl } = require('./helpers');
 
 const ADDON_ID = 'org.stremio.yaca.catalog';
@@ -92,7 +93,7 @@ async function syncAllStremioData(userId, authKey, profileId = 'global') {
         console.log(`[StremioSync] Starting full sync for user ${safeUserId}...`);
 
         const addonKeyRes = await stremioLikesClient.get(`/getAddonKey?key=${authKey}`);
-        const addonKey = addonKeyRes.data;
+        const addonKey = addonKeyRes.data?.key || addonKeyRes.data;
         if (!addonKey) throw new Error('Failed to retrieve Stremio AddonKey');
 
         const [likedMovies, likedSeries, lovedMovies, lovedSeries, library] = await Promise.all([
@@ -167,6 +168,84 @@ async function fetchStremioLibrary(authKey) {
     } catch (err) {
         console.warn(`[StremioSync] Failed to fetch library:`, err.message);
         return [];
+    }
+}
+
+async function pushToStremioLibrary(authKey, itemsToAdd, sanitizeOptions = {}) {
+    if (!authKey || !Array.isArray(itemsToAdd) || itemsToAdd.length === 0) {
+        return { success: false, error: 'Invalid input' };
+    }
+
+    try {
+        // 1. Fetch current library to avoid overwriting existing items state
+        const currentLibrary = await fetchStremioLibrary(authKey);
+        const existingMap = new Map(currentLibrary.map(item => [item._id, item]));
+
+        const changes = [];
+        const now = new Date().toISOString();
+
+        for (let meta of itemsToAdd) {
+            if (!meta || !meta.id) continue;
+            
+            const existingItem = existingMap.get(meta.id);
+            if (existingItem) {
+                // To be safe, skip to prevent overriding any user state like progress/times
+                continue;
+            }
+
+            // Apply ERDB and badges if sanitizeOptions are provided
+            if (sanitizeOptions) {
+                // Ensure shouldApplyEpisodeBadge defaults to true for series/anime if not explicitly false
+                if (sanitizeOptions.shouldApplyEpisodeBadge === undefined && (meta.type === 'series' || meta.type === 'anime')) {
+                    sanitizeOptions.shouldApplyEpisodeBadge = true;
+                }
+                meta = sanitizeCatalogMeta(meta, sanitizeOptions);
+            }
+
+            // Stremio library item format
+            changes.push({
+                _id: meta.id,
+                name: meta.name || '',
+                type: meta.type || 'movie',
+                poster: meta.poster || null,
+                posterShape: meta.posterShape || 'poster',
+                background: meta.background || null,
+                logo: meta.logo || null,
+                year: meta.releaseInfo ? meta.releaseInfo.toString() : null,
+                removed: false,
+                temp: false,
+                _ctime: now,
+                _mtime: now,
+                state: {
+                    timeOffset: 0,
+                    video_id: null,
+                    season: 1,
+                    episode: 1,
+                    timeAsPercentage: 0,
+                    noNotifs: false
+                }
+            });
+        }
+
+        if (changes.length === 0) {
+            return { success: true, message: 'No new items to add' };
+        }
+
+        const res = await stremioClient.post('/api/datastorePut', {
+            type: 'DatastorePut',
+            authKey,
+            collection: 'libraryItem',
+            changes
+        }, { timeout: STREMIO_TIMEOUT });
+
+        if (res.data?.result?.success || res.data?.result === true) {
+            console.log(`[StremioSync] Successfully pushed ${changes.length} items to library.`);
+            return { success: true, added: changes.length };
+        }
+        return { success: false, error: res.data?.result?.error || 'Failed to update library' };
+    } catch (err) {
+        console.error(`[StremioSync] Error pushing to library:`, err.message);
+        return { success: false, error: err.message };
     }
 }
 
@@ -275,5 +354,7 @@ async function updateSyncTimestamp(userId, profileId) {
 
 module.exports = {
     updateStremioAddonCollection,
-    syncAllStremioData
+    syncAllStremioData,
+    pushToStremioLibrary,
+    fetchStremioLibrary
 };
