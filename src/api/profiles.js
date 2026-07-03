@@ -413,7 +413,7 @@ router.post('/:id/library', async (req, res) => {
         await UserLibraryItem.findOneAndUpdate(
             { addonUuid: account.addonUuid, _id: item.id },
             { $set: doc },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         let hostUrl = process.env.BASE_URL;
@@ -503,7 +503,7 @@ router.put('/:id/library/reorder', async (req, res) => {
             const updated = await UserLibraryItem.findOneAndUpdate(
                 { addonUuid: account.addonUuid, _id: itemId },
                 { $set: { _ctime: newCtime, _mtime: newMtime } },
-                { new: true }
+                { returnDocument: 'after' }
             );
 
             if (updated) {
