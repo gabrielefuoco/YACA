@@ -289,7 +289,7 @@ function sanitizeCatalogMeta(item, options = {}) {
 
     const name = baseName;
 
-    return {
+    const baseItem = {
         id: item.id,
         type: item.type,
         name,
@@ -307,6 +307,20 @@ function sanitizeCatalogMeta(item, options = {}) {
         _rawName: baseName, // Save raw base name for idempotency in applyPostCacheBadges
         _rawPoster: rawPoster, // Save raw poster to prevent nested proxies
     };
+
+    if (options.isMetaDetail) {
+        if (videos) baseItem.videos = videos;
+        if (item.behaviorHints) baseItem.behaviorHints = item.behaviorHints;
+        if (item.links) baseItem.links = item.links;
+        if (item.trailers) baseItem.trailers = item.trailers;
+        if (item.runtime) baseItem.runtime = item.runtime;
+        if (item.certification) baseItem.certification = item.certification;
+        if (item.website) baseItem.website = item.website;
+        if (item.writer) baseItem.writer = item.writer;
+        if (item.inTheaters !== undefined) baseItem.inTheaters = item.inTheaters;
+    }
+
+    return baseItem;
 }
 
 /**

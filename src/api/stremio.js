@@ -369,7 +369,8 @@ router.get(['/:userHandle/meta/:type/:id.json', '/:userHandle/:configVersion/met
                 shouldApplyEpisodeBadge: false, // Do not badge the poster in detail view
                 isLandscapeEnabled: false, // Poster remains portrait
                 userConfig,
-                hostUrl
+                hostUrl,
+                isMetaDetail: true
             });
         }
 
