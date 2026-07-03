@@ -10,7 +10,9 @@ import { RenameProfileDialog } from '@/components/modals/RenameProfileDialog';
 import { EditCatalogModal } from '@/components/modals/EditCatalogModal';
 import { generateId } from '@/lib/utils';
 
-type DashboardTab = 'active' | 'explore' | 'creator' | 'dna';
+import { UserLibraryPanel } from '@/components/dashboard/UserLibraryPanel';
+
+type DashboardTab = 'active' | 'explore' | 'creator' | 'dna' | 'library';
 
 interface DashboardPageProps {
   profiles: Profile[];
@@ -153,6 +155,7 @@ export function DashboardPage({
     { id: 'explore' as const, label: 'Esplora', icon: 'explore' },
     { id: 'creator' as const, label: 'Creatore', icon: 'auto_fix' },
     { id: 'dna' as const, label: 'DNA & AI Lab', icon: 'biotech' },
+    { id: 'library' as const, label: 'Libreria Utente', icon: 'library_books' },
   ];
 
   return (
@@ -256,6 +259,17 @@ export function DashboardPage({
                 syncStatus={syncStatus}
                 userId={userId}
                 syncProfileVectors={syncProfileVectors}
+              />
+            )}
+
+            {activeTab === 'library' && editingProfile && userId && (
+              <UserLibraryPanel
+                profileId={editingProfile.id}
+                userId={userId}
+                onCreateCatalog={(list) => {
+                  onSaveMyList(list);
+                  setActiveTab('active');
+                }}
               />
             )}
           </div>

@@ -337,4 +337,194 @@ router.post('/:id/sync-vectors', async (req, res) => {
     }
 });
 
+/**
+ * GET /api/profiles/:id/library
+ * Fetch the user's library items
+ */
+router.get('/:id/library', async (req, res) => {
+    const userId = req.query.userId;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    try {
+        const account = await UserAccount.findOne({ userId }).lean();
+        if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
+
+        const items = await require('../db/models/UserLibraryItem').find({
+            addonUuid: account.addonUuid,
+            removed: false
+        }).sort({ _ctime: -1 }).lean();
+
+        res.json(items);
+    } catch (err) {
+        console.error(`[ProfileAPI] Error fetching library:`, err.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * POST /api/profiles/:id/library
+ * Add a new item to the library
+ */
+router.post('/:id/library', async (req, res) => {
+    const userId = req.body.userId;
+    const { item } = req.body;
+    if (!userId || !item || !item.id || !item.type) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    try {
+        const account = await UserAccount.findOne({ userId }).lean();
+        if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
+
+        const now = new Date();
+        const doc = {
+            addonUuid: account.addonUuid,
+            _id: item.id,
+            type: item.type,
+            name: item.name || '',
+            poster: item.poster || '',
+            posterShape: item.posterShape || 'poster',
+            background: item.background || '',
+            year: item.year ? item.year.toString() : '',
+            removed: false,
+            temp: false,
+            _ctime: now,
+            _mtime: now,
+            mapped: false // Force converter to pick it up later
+        };
+
+        const UserLibraryItem = require('../db/models/UserLibraryItem');
+        await UserLibraryItem.findOneAndUpdate(
+            { addonUuid: account.addonUuid, _id: item.id },
+            { $set: doc },
+            { upsert: true, new: true }
+        );
+
+        // Also push to Stremio
+        if (account.apiKeys?.stremio) {
+            const { stremioClient } = require('../clients/stremio');
+            await stremioClient.post('/api/datastorePut', {
+                authKey: account.apiKeys.stremio,
+                collection: 'libraryItem',
+                changes: [doc]
+            });
+        }
+
+        res.json({ success: true, item: doc });
+    } catch (err) {
+        console.error(`[ProfileAPI] Error adding to library:`, err.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * DELETE /api/profiles/:id/library/:itemId
+ * Remove an item from the library
+ */
+router.delete('/:id/library/:itemId', async (req, res) => {
+    const userId = req.query.userId;
+    const itemId = req.params.itemId;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    try {
+        const account = await UserAccount.findOne({ userId }).lean();
+        if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
+
+        const UserLibraryItem = require('../db/models/UserLibraryItem');
+        const item = await UserLibraryItem.findOne({ addonUuid: account.addonUuid, _id: itemId });
+        
+        if (item) {
+            item.removed = true;
+            item._mtime = new Date();
+            await item.save();
+
+            if (account.apiKeys?.stremio) {
+                const { stremioClient } = require('../clients/stremio');
+                await stremioClient.post('/api/datastorePut', {
+                    authKey: account.apiKeys.stremio,
+                    collection: 'libraryItem',
+                    changes: [{
+                        _id: item._id,
+                        removed: true,
+                        _mtime: item._mtime
+                    }]
+                });
+            }
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(`[ProfileAPI] Error removing from library:`, err.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * PUT /api/profiles/:id/library/reorder
+ * Reorder library items by manipulating _ctime
+ */
+router.put('/:id/library/reorder', async (req, res) => {
+    const userId = req.body.userId;
+    const { itemIds } = req.body; // Array of _ids in the desired new order (first is newest)
+    if (!userId || !Array.isArray(itemIds)) return res.status(400).json({ error: 'Invalid payload' });
+
+    try {
+        const account = await UserAccount.findOne({ userId }).lean();
+        if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
+
+        const UserLibraryItem = require('../db/models/UserLibraryItem');
+        
+        // Find current max _ctime to start from
+        const newestItem = await UserLibraryItem.findOne({ addonUuid: account.addonUuid }).sort({ _ctime: -1 });
+        let baseTime = newestItem && newestItem._ctime ? new Date(newestItem._ctime).getTime() : Date.now();
+        
+        // Add 1 hour to ensure the reordered block stays at the top
+        baseTime += 3600000; 
+
+        const changes = [];
+        // itemIds are passed in visual order (index 0 is top left, so it should have the highest _ctime)
+        for (let i = 0; i < itemIds.length; i++) {
+            const itemId = itemIds[i];
+            // each subsequent item gets a slightly older _ctime
+            const newCtime = new Date(baseTime - (i * 1000));
+            const newMtime = new Date();
+            
+            const updated = await UserLibraryItem.findOneAndUpdate(
+                { addonUuid: account.addonUuid, _id: itemId },
+                { $set: { _ctime: newCtime, _mtime: newMtime } },
+                { new: true }
+            );
+
+            if (updated) {
+                changes.push({
+                    _id: updated._id,
+                    type: updated.type,
+                    name: updated.name,
+                    _ctime: newCtime,
+                    _mtime: newMtime
+                });
+            }
+        }
+
+        if (changes.length > 0 && account.apiKeys?.stremio) {
+            const { stremioClient } = require('../clients/stremio');
+            // Batch push to Stremio
+            const chunkSize = 100;
+            for (let i = 0; i < changes.length; i += chunkSize) {
+                const chunk = changes.slice(i, i + chunkSize);
+                await stremioClient.post('/api/datastorePut', {
+                    authKey: account.apiKeys.stremio,
+                    collection: 'libraryItem',
+                    changes: chunk
+                });
+            }
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(`[ProfileAPI] Error reordering library:`, err.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;

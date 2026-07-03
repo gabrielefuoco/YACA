@@ -98,6 +98,17 @@ export const api = {
     post(`/api/profiles/${encodeURIComponent(profileId)}/dna/confirm`, { userId }),
   refreshSync: (profileId: string, userId: string) =>
     post(`/api/profiles/${encodeURIComponent(profileId)}/sync/refresh`, { userId }),
+  
+  // Library methods
+  getLibrary: (profileId: string, userId: string) =>
+    get(`/api/profiles/${encodeURIComponent(profileId)}/library?userId=${encodeURIComponent(userId)}`),
+  addToLibrary: (profileId: string, userId: string, item: any) =>
+    post(`/api/profiles/${encodeURIComponent(profileId)}/library`, { userId, item }),
+  removeFromLibrary: (profileId: string, userId: string, itemId: string) =>
+    del(`/api/profiles/${encodeURIComponent(profileId)}/library/${encodeURIComponent(itemId)}?userId=${encodeURIComponent(userId)}`),
+  reorderLibrary: (profileId: string, userId: string, itemIds: string[]) =>
+    put(`/api/profiles/${encodeURIComponent(profileId)}/library/reorder`, { userId, itemIds }),
+  
   convertLibrary: (profileId: string, userId: string) =>
     post(`/api/profiles/${encodeURIComponent(profileId)}/convert-library`, { userId }),
   getGlobalSyncQueue: (limit = 20) => 
