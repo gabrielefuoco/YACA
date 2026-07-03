@@ -290,15 +290,22 @@ function sanitizeCatalogMeta(item, options = {}) {
     const name = baseName;
 
     return {
-        ...item,
-        _rawName: baseName, // Save raw base name for idempotency in applyPostCacheBadges
-        _rawPoster: rawPoster, // Save raw poster to prevent nested proxies
+        id: item.id,
+        type: item.type,
         name,
         poster,
         posterShape: finalPosterShape,
         background: background,
         logo: logo,
-        videos: videos
+        description: item.description,
+        releaseInfo: item.releaseInfo,
+        imdbRating: item.imdbRating,
+        genre_ids: item.genre_ids,
+        genres: item.genres,
+        cast: item.cast,
+        director: item.director,
+        _rawName: baseName, // Save raw base name for idempotency in applyPostCacheBadges
+        _rawPoster: rawPoster, // Save raw poster to prevent nested proxies
     };
 }
 
