@@ -7,6 +7,8 @@ import { generateId } from '@/lib/utils';
 import { Loader2, Library, CheckSquare, Square, Trash2, ArrowUpDown, RefreshCw } from 'lucide-react';
 import { MyList } from '@/types';
 
+import { SyncLibraryModal } from '@/components/modals/SyncLibraryModal';
+
 interface UserLibraryPanelProps {
   profileId: string;
   userId: string;
@@ -21,6 +23,11 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   
+  // Sync Modal State
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [isSyncProcessing, setIsSyncProcessing] = useState(false);
+  const [syncProcessingCount, setSyncProcessingCount] = useState<number | null>(null);
+
   const fetchLibrary = async () => {
     setIsLoading(true);
     try {
@@ -36,6 +43,30 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
   useEffect(() => {
     fetchLibrary();
   }, [profileId, userId]);
+
+  const handleSyncConfirm = async () => {
+    if (!userId) return;
+    setIsSyncProcessing(true);
+    try {
+      const res = await api.convertLibrary(profileId, userId);
+      if (res && typeof res.processingCount === 'number') {
+        setSyncProcessingCount(res.processingCount);
+        // We wait a few seconds before closing to let the user read the count
+        setTimeout(() => {
+          setIsSyncModalOpen(false);
+          setIsSyncProcessing(false);
+          setSyncProcessingCount(null);
+        }, 3000);
+      } else {
+        setIsSyncModalOpen(false);
+        setIsSyncProcessing(false);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Errore nell'avvio della conversione");
+      setIsSyncProcessing(false);
+    }
+  };
 
   const handleAdd = async (tmdbItem: any) => {
     const libraryItem = {
@@ -152,20 +183,11 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
           <Button
             variant="outline"
             size="sm"
-            onClick={async () => {
-              try {
-                if (userId) {
-                  await api.convertLibrary(profileId, userId);
-                  alert("Lavorazione avviata in background!");
-                }
-              } catch (e) {
-                alert("Errore nell'avvio della conversione");
-              }
-            }}
-            className="text-xs font-bold text-primary border-primary/20 bg-primary/5 hover:bg-primary/10"
+            onClick={() => setIsSyncModalOpen(true)}
+            className="text-xs font-bold text-white border-primary/20 bg-primary hover:bg-primary/90 shadow-sm shadow-primary/20"
           >
             <RefreshCw className="h-3.5 w-3.5 mr-1" /> 
-            Sincronizza su Stremio
+            Converti in YACA
           </Button>
           <Button
             variant="outline"
@@ -275,6 +297,16 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
           )}
         </div>
       )}
+
+      <SyncLibraryModal
+        open={isSyncModalOpen}
+        onOpenChange={(open) => {
+          if (!isSyncProcessing) setIsSyncModalOpen(open);
+        }}
+        onConfirm={handleSyncConfirm}
+        isProcessing={isSyncProcessing}
+        processingCount={syncProcessingCount}
+      />
     </div>
   );
 }

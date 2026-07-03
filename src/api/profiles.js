@@ -8,6 +8,7 @@ const { syncAllStremioData } = require('../utils/stremioAddon');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const { buildDnaDescription, generateDiscoveryQueries } = require('../ai/querySynthesizer');
 const LibraryConverterService = require('../services/LibraryConverterService');
+const UserLibraryItem = require('../db/models/UserLibraryItem');
 
 /**
  * POST /api/profiles/:id/convert-library
@@ -23,10 +24,25 @@ router.post('/:id/convert-library', async (req, res) => {
         hostUrl = fwdHost ? `https://${fwdHost}` : `${req.protocol}://${req.get('host')}`;
     }
     
-    // Fire and forget
-    LibraryConverterService.convertAll(userId, hostUrl).catch(e => console.error('[ConvertLibrary] Error:', e));
-    
-    res.status(202).json({ message: 'Lavorazione in corso' });
+    try {
+        const user = await UserAccount.findOne({ userId });
+        let count = 0;
+        if (user && user.addonUuid) {
+            count = await UserLibraryItem.countDocuments({
+                addonUuid: user.addonUuid,
+                mapped: false,
+                removed: false
+            });
+        }
+        
+        // Fire and forget
+        LibraryConverterService.convertAll(userId, hostUrl).catch(e => console.error('[ConvertLibrary] Error:', e));
+        
+        res.status(202).json({ message: 'Lavorazione in corso', processingCount: count });
+    } catch (e) {
+        console.error('[ConvertLibrary] Error initiating conversion:', e);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 /**
