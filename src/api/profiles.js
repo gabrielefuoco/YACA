@@ -7,7 +7,23 @@ const WatchHistory = require('../models/WatchHistory');
 const { syncAllStremioData } = require('../utils/stremioAddon');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const { buildDnaDescription, generateDiscoveryQueries } = require('../ai/querySynthesizer');
+const LibraryConverterService = require('../services/LibraryConverterService');
 
+/**
+ * POST /api/profiles/:id/convert-library
+ * Triggers the conversion of the user's Stremio library metadata.
+ */
+router.post('/:id/convert-library', async (req, res) => {
+    const userId = req.body.userId;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    const hostUrl = req.protocol + '://' + req.get('host');
+    
+    // Fire and forget
+    LibraryConverterService.convertAll(userId, hostUrl).catch(e => console.error('[ConvertLibrary] Error:', e));
+    
+    res.status(202).json({ message: 'Lavorazione in corso' });
+});
 
 /**
  * GET /api/profiles/:id/sync-status

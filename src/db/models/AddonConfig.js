@@ -80,7 +80,8 @@ const addonConfigSchema = new mongoose.Schema({
         isSyncing: { type: Boolean, default: false },
         total: { type: Number, default: 0 },
         current: { type: Number, default: 0 },
-        lastSync: Date
+        lastSync: Date,
+        lastLibrarySync: Date
     }
 }, { timestamps: true });
 

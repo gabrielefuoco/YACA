@@ -261,6 +261,9 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
             { id: 'yaca_search_standard', type: 'series', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
             { id: 'yaca_search_ai', type: 'movie', name: 'YACA: Deep AI Search', extra: searchExtra },
             { id: 'yaca_search_ai', type: 'series', name: 'YACA: Deep AI Search', extra: searchExtra },
+            { id: 'yaca_watchlist_movies', type: 'movie', name: '🎬 I Film della tua Watchlist', extra: [{ name: 'skip' }] },
+            { id: 'yaca_watchlist_series', type: 'series', name: '📺 Le Serie della tua Watchlist', extra: [{ name: 'skip' }] },
+            { id: 'yaca_watchlist_anime', type: 'anime', name: '🎌 Gli Anime della tua Watchlist', extra: [{ name: 'skip' }] },
             ...activeHeroCatalogs
         ];
 
@@ -290,7 +293,7 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
                 'meta',
                 { name: 'stream', types: ['movie', 'series', 'other'], idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'yaca-profile-'] }
             ],
-            types: ['movie', 'series', 'other'],
+            types: ['movie', 'series', 'anime', 'other'],
             catalogs: catalogs,
             idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'yaca-profile-'],
             behaviorHints: {

@@ -337,6 +337,42 @@ export function SettingsPage({
 
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* Avanzate & Libreria                                                */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-3 sm:p-5 space-y-3 sm:space-y-4 shadow-sm ">
+        <div className="flex items-center gap-2 text-primary">
+          <Server className="h-5 w-5 text-primary" />
+          <h3 className="text-sm font-black uppercase tracking-widest">Avanzate & Libreria</h3>
+        </div>
+        
+        <div className="space-y-3 border-t border-marrow-light/10 pt-3">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <p className="text-sm font-bold text-marrow-deep">Aggiorna Libreria Stremio con Badge YACA</p>
+              <p className="text-xs text-marrow-light">Sovrascrive i metadati della tua libreria su Stremio con le versioni arricchite e i badge ERDB. Operazione asincrona.</p>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={async () => {
+                try {
+                  if (userId) {
+                    await api.convertLibrary(activeProfileId, userId);
+                    alert("Lavorazione avviata in background!");
+                  }
+                } catch (e) {
+                  alert("Errore nell'avvio della conversione");
+                }
+              }}
+              className="text-xs font-bold shrink-0"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Avvia Conversione
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* API Keys                                                           */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-3 sm:p-5 space-y-3 sm:space-y-4 shadow-sm ">

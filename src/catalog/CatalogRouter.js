@@ -6,6 +6,7 @@ const { executeCombinedSearch, executeUniversalPipeline } = require('./providers
 const { normalizeToUniversalSchema } = require('../utils/resultMerger');
 const { normalizeContentId } = require('../utils/contentId');
 const { getPresets } = require('../data/presets');
+const { getWatchlistCatalog } = require('./providers/WatchlistProvider');
 
 async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, activeProfileSettings, tmdbFetchOptions, catalogMeta) {
     const { id, type, extra, filters: directFilters } = args;
@@ -58,6 +59,11 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
     // SCENARIO 3: TRAKT
     if (baseId.startsWith('trakt_')) {
         return await getTraktCatalog(baseId, skip, userConfig, tmdbApiKey, extra.hostUrl);
+    }
+
+    // SCENARIO 4: YACA WATCHLIST (Library Sync)
+    if (id === 'yaca_watchlist_movies' || id === 'yaca_watchlist_series' || id === 'yaca_watchlist_anime') {
+        return await getWatchlistCatalog(id, type, skip, userConfig, activeProfileSettings);
     }
 
     // SCENARIO 4: KITSU (ANIME)

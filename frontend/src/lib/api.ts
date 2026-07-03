@@ -98,6 +98,8 @@ export const api = {
     post(`/api/profiles/${encodeURIComponent(profileId)}/dna/confirm`, { userId }),
   refreshSync: (profileId: string, userId: string) =>
     post(`/api/profiles/${encodeURIComponent(profileId)}/sync/refresh`, { userId }),
+  convertLibrary: (profileId: string, userId: string) =>
+    post(`/api/profiles/${encodeURIComponent(profileId)}/convert-library`, { userId }),
   getGlobalSyncQueue: (limit = 20) => 
     get(`/api/sync/global-queue?limit=${limit}`),
   enrichSyncItem: (body: { tmdbId: string, type: string, rawTMDB: any, userId?: string }) => 
