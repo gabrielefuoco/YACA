@@ -490,12 +490,7 @@ router.put('/:id/library/reorder', async (req, res) => {
 
         const UserLibraryItem = require('../db/models/UserLibraryItem');
         
-        // Find current max _ctime to start from
-        const newestItem = await UserLibraryItem.findOne({ addonUuid: account.addonUuid }).sort({ _ctime: -1 });
-        let baseTime = newestItem && newestItem._ctime ? new Date(newestItem._ctime).getTime() : Date.now();
-        
-        // Add 1 hour to ensure the reordered block stays at the top
-        baseTime += 3600000; 
+        let baseTime = Date.now();
 
         const changes = [];
         // itemIds are passed in visual order (index 0 is top left, so it should have the highest _ctime)
