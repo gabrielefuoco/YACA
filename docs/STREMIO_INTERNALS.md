@@ -142,3 +142,19 @@ Per evitare leak del token dell'utente (UUID) nei log o nei referral del browser
 *   `FRONTEND_URL`: L'URL dell'applicazione frontend di YACA (Next.js/React) utilizzato per i redirect sicuri dalla schermata di configurazione di Stremio.
 *   `TMDB_API_KEY`: Necessaria per richiedere gli External ID e convertire gli ID in Kitsu.
 *   `ERDB_CONFIG`: Stringa di configurazione di Easy Ratings DB, utilizzata per arricchire i certificati dell'età (ad es. per il Kids Mode).
+
+---
+
+## 5. Ottimizzazione Payload: Cataloghi vs Dettagli Meta (BSON Constraint)
+
+### Il Problema
+Stremio utilizza lo stesso formato per la visualizzazione delle locandine in griglia (Catalogo) e per la pagina dedicata del singolo film/serie (Meta). Tuttavia, i dati restituiti da TMDB sono estremamente voluminosi (es. cast completo, keyword, decine di episodi in `videos`, deep link a YouTube o IMDB). 
+In passato, l'uso indiscriminato dello spread operator (`...item`) per generare gli elementi del catalogo causava la serializzazione di interi oggetti TMDB raw nella cache MongoDB (`catalogRequestCache`). Questo portava rapidamente a documenti BSON giganteschi e, nei casi limite, allo sforamento del limite di 16MB di MongoDB, oltre a sprecare una quantità enorme di RAM.
+
+### La Soluzione: `isMetaDetail`
+YACA implementa una divisione netta del payload inviato a Stremio tramite la funzione `sanitizeCatalogMeta` (situata in `StremioFormatter.js`):
+
+- **Per i Cataloghi**: Il formatter esegue uno strict-mapping. Conserva solo lo stretto necessario (ID, nome, locandina visiva e poche altre info chiave). Tutti gli array voluminosi (come `videos` o `links`) e gli oggetti raw (es. `rawTMDB`) vengono intenzionalmente scartati.
+- **Per i Dettagli (Meta)**: Quando l'utente clicca su una specifica locandina, l'endpoint `/meta/` di `stremio.js` richiama il formatter passando il flag `isMetaDetail: true`. Questo flag "sblocca" l'inclusione controllata di campi pesanti: `videos` (essenziale per mostrare le stagioni e gli episodi), `behaviorHints`, `links`, e `trailers`.
+
+Questo approccio ibrido garantisce che i cataloghi siano "iper-digeribili" dal database e velocissimi da scorrere, pur restituendo i dati completi (inclusi i badge ITA o Kitsu applicati) quando l'utente si aspetta di guardare gli episodi o cliccare su un trailer.
