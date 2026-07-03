@@ -70,10 +70,10 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
 
   const handleAdd = async (tmdbItem: any) => {
     const libraryItem = {
-      id: `tmdb:${tmdbItem.media_type || 'movie'}:${tmdbItem.id}`,
+      id: `tmdb:${tmdbItem.id}`,
       type: tmdbItem.media_type || 'movie',
-      name: tmdbItem.name,
-      poster: tmdbItem.poster,
+      name: tmdbItem.name || tmdbItem.title,
+      poster: tmdbItem.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbItem.poster_path}` : tmdbItem.poster,
     };
     try {
       await api.addToLibrary(profileId, userId, libraryItem);

@@ -416,15 +416,15 @@ router.post('/:id/library', async (req, res) => {
             { upsert: true, new: true }
         );
 
-        // Also push to Stremio
-        if (account.apiKeys?.stremio) {
-            const { stremioClient } = require('../clients/stremio');
-            await stremioClient.post('/api/datastorePut', {
-                authKey: account.apiKeys.stremio,
-                collection: 'libraryItem',
-                changes: [doc]
-            });
+        let hostUrl = process.env.BASE_URL;
+        if (!hostUrl) {
+            const fwdHost = req.headers['x-forwarded-host'];
+            hostUrl = fwdHost ? `https://${fwdHost}` : `${req.protocol}://${req.get('host')}`;
         }
+
+        // Fire background converter instead of pushing raw doc
+        // This ensures the item gets its badge and proper format on Stremio immediately
+        LibraryConverterService.convertAll(userId, hostUrl).catch(e => console.error('[POST /library] Convert error:', e));
 
         res.json({ success: true, item: doc });
     } catch (err) {
