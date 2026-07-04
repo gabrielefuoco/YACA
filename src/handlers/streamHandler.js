@@ -117,13 +117,14 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 const parts = id.split(':');
                 const tmdbId = parts[1];
                 const imdbId = await resolveImdbId(tmdbId, type, userConfig?.apiKeys?.tmdb);
-                console.log("Resolved imdbId for tmdbId", tmdbId, "is", imdbId);
                 if (imdbId) {
                     if (parts.length > 2) {
                         imdbProxyId = `${imdbId}:${parts.slice(2).join(':')}`;
                     } else {
                         imdbProxyId = imdbId;
                     }
+                } else {
+                    console.warn(`[StreamProxy] Fallimento: Impossibile risolvere IMDb ID per TMDB ID ${tmdbId}`);
                 }
             } else if (id.startsWith('kitsu:')) {
                 const parts = id.split(':');
