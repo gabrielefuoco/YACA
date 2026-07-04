@@ -112,7 +112,7 @@ app.post('/api/auth/logout', cookieParser(), logoutHandler);
 
 // --- CONFIG & UTILITY ROUTES ---
 app.use('/api', tmdbRoutes);
-app.use('/api', adminRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api', catalogRoutes);
 
 app.get('/api/user/:userId', inputSanitizer, async (req, res) => {

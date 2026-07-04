@@ -22,7 +22,9 @@ const {
 } = require('../config');
 const { rateLimitedMap } = require('../utils/rateLimiter');
 const { generateRequestHash } = require('../utils/requestHash');
-const TmdbRequestCache = require('../models/TmdbRequestCache');
+const { CacheEntry, TmdbRequestCache } = require('../models');
+const { getTmdbClient } = require('./tmdbConfig');
+const { logError } = require('../utils/logger');
 
 
 const CacheManager = require('../cache/CacheManager');
@@ -773,6 +775,8 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
                 await tmdbDetailsCache.set(cacheKey, data);
             }
         } catch (err) {
+            logError('TMDB', `Richiesta fallita: ${endpoint}`, { params: { append_to_response: 'videos,credits,images,external_ids,release_dates,content_ratings,keywords', include_image_language: 'it,en,null' }, status: err.response?.status, data: err.response?.data });
+
             if (err.response?.status === 404) {
                 await tmdbDetailsCache.set(cacheKey, null, 86400000); // Negative cache 24h
             }

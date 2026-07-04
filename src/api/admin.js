@@ -5,26 +5,40 @@ const { clearAllTmdbCaches } = require('../clients/tmdb');
 const { clearIdCache } = require('../id_mapping/id_cache');
 const TmdbRequestCache = require('../models/TmdbRequestCache');
 const { aiPromptCache, aiDiscoveryCache, hybridRecommendationsCache } = require('../cache/cacheInstances');
+const UserAccount = require('../db/models/UserAccount');
+const SystemLog = require('../models/SystemLog');
+const adminAuth = require('../middleware/adminAuth');
+const { runCacheWarmer } = require('../utils/cacheWarmer');
+const { exec } = require('child_process');
+const path = require('path');
 
+// Applica il middleware di autenticazione a tutte le rotte admin
+router.use(adminAuth);
 
-// Endpoint per estrarre le statistiche di tutte le cache
-router.get('/cache/stats', async (req, res) => {
+// Endpoint per estrarre le statistiche (cache e metriche di base)
+router.get('/metrics', async (req, res) => {
     try {
         const stats = await CacheManager.getAllStats();
+        const activeUsersCount = await UserAccount.countDocuments();
+        
+        // Ultime 50 righe del SystemLog
+        const recentLogs = await SystemLog.find().sort({ createdAt: -1 }).limit(50).lean();
 
         res.json({
             success: true,
             redisAvailable: false,
-            stats
+            activeUsersCount,
+            cacheStats: stats,
+            recentLogs
         });
     } catch (err) {
-        console.error('Errore stats cache:', err);
-        res.status(500).json({ error: 'Errore durante il recupero delle statistiche.' });
+        console.error('Errore stats admin:', err);
+        res.status(500).json({ error: 'Errore durante il recupero delle metriche.' });
     }
 });
 
-// Endpoint per svuotare una specifica categoria o tutte
-router.post('/cache/clear', async (req, res) => {
+// Endpoint unificato per svuotare cache
+router.post('/system/flush', async (req, res) => {
     const { namespace } = req.body;
     try {
         if (!namespace || namespace === 'all') {
@@ -50,82 +64,33 @@ router.post('/cache/clear', async (req, res) => {
     }
 });
 
-// TEMP DIAGNOSTIC: Test Trakt Community catalog
-router.get('/debug/trakt-community', async (req, res) => {
-    const logs = [];
-    const origLog = console.log;
-    const origErr = console.error;
-    console.log = (...args) => { logs.push('[LOG] ' + args.join(' ')); origLog(...args); };
-    console.error = (...args) => { logs.push('[ERR] ' + args.join(' ')); origErr(...args); };
-
+// Trigger per eseguire utility in background
+router.post('/scripts/trigger', async (req, res) => {
+    const { action } = req.body;
+    
     try {
-        const UserAccount = require('../db/models/UserAccount');
-        const { buildTraktFilteredCatalog } = require('../engines/hybrid/catalogStrategies');
-        const { fetchTraktRecommendationsRaw } = require('../engines/hybrid/dataFetchers');
-        const { traktClient } = require('../clients/trakt');
-
-        const account = await UserAccount.findOne({}).lean();
-        if (!account) return res.json({ error: 'No account found', logs });
-
-        const userId = account.userId;
-        const traktToken = account.apiKeys?.trakt;
-        const tmdbApiKey = account.apiKeys?.tmdb || process.env.TMDB_API_KEY;
-        const context = account.activeProfileId || 'global';
-
-        logs.push(`userId=${userId}, hasToken=${!!traktToken}, tokenFirst10=${traktToken?.substring(0,10)}, context=${context}`);
-
-        // Test 1: Direct Trakt API call
-        try {
-            const directRes = await traktClient.get('/recommendations/movies', {
-                headers: {
-                    'trakt-api-version': '2',
-                    'trakt-api-key': process.env.TRAKT_CLIENT_ID,
-                    'Authorization': `Bearer ${traktToken}`
-                },
-                params: { limit: 3, page: 1 },
-                timeout: 10000
+        if (action === 'warmup') {
+            const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 7000}`;
+            // Non attendiamo la fine per non bloccare
+            runCacheWarmer(hostUrl).catch(e => console.error(e));
+            return res.json({ success: true, message: 'Cache Warmer innescato con successo.' });
+        }
+        
+        if (action === 'analyze_presets') {
+            const scriptPath = path.join(__dirname, '../../scripts/analyze_presets.js');
+            exec(`node "${scriptPath}"`, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`analyze_presets exec error: ${error}`);
+                }
+                // Idealmente potremmo leggere il json di report, ma per ora confermiamo il via.
             });
-            logs.push(`Direct Trakt call OK, count=${directRes.data?.length}`);
-        } catch (e) {
-            logs.push(`Direct Trakt call FAILED: status=${e.response?.status}, msg=${e.message}`);
+            return res.json({ success: true, message: 'Analisi preset avviata in background.' });
         }
 
-        // Test 2: fetchTraktRecommendationsRaw
-        const raw = await fetchTraktRecommendationsRaw(traktToken, 'movies', 5);
-        logs.push(`fetchTraktRecommendationsRaw result count=${raw.length}`);
-        if (raw.length > 0) {
-            logs.push(`raw[0] keys: ${Object.keys(raw[0]).join(', ')}`);
-            logs.push(`raw[0] JSON: ${JSON.stringify(raw[0])}`);
-        }
-
-        // Test 3: Full buildTraktFilteredCatalog
-        const ids = await buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, 'movie');
-        logs.push(`buildTraktFilteredCatalog result count=${ids.length}`);
-
-        // Test 4: Full catalogHandler pipeline
-        try {
-            const { catalogHandler } = require('../handlers/catalogHandler');
-            const UserConfig = require('../models/UserConfig');
-            const userConfig = await UserConfig.resolveUserConfig(account.addonUuid);
-            const args = {
-                type: 'movie',
-                id: 'yaca_trakt_filtered_movies',
-                extra: { skip: 0 }
-            };
-            const hostUrl = process.env.HOST_URL || `https://<il-tuo-space>.hf.space`;
-            const handlerRes = await catalogHandler(args, userConfig, hostUrl);
-            logs.push(`catalogHandler pipeline OK, metas count=${handlerRes?.metas?.length}`);
-        } catch (handlerErr) {
-            logs.push(`catalogHandler pipeline FAILED: msg=${handlerErr.message}\n${handlerErr.stack}`);
-        }
-
-        res.json({ success: true, idsCount: ids.length, firstIds: ids.slice(0, 5), logs });
+        return res.status(400).json({ error: 'Azione non riconosciuta.' });
     } catch (err) {
-        logs.push(`FATAL: ${err.message}\n${err.stack}`);
-        res.json({ error: err.message, logs });
-    } finally {
-        console.log = origLog;
-        console.error = origErr;
+        console.error('Errore trigger script:', err);
+        res.status(500).json({ error: 'Errore durante innesco script.' });
     }
 });
 
