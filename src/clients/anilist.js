@@ -1,5 +1,9 @@
 const { createAxiosClient } = require('../utils/axiosClient');
 const { createAxiosInstance } = require('../utils/httpClient');
+const { logError } = require('../utils/logger');
+
+// Estraiamo sleep per usarlo nei retry
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const CacheManager = require('../cache/CacheManager');
 
 const anilistCatalogCache = new CacheManager('anilist_catalog', { ramMax: 50, ramTtlMs: 1000 * 60 * 60, mongoTtlMs: 7 * 24 * 60 * 60 * 1000, swrMs: 1000 * 60 * 60 });
@@ -50,12 +54,29 @@ function getAnilistClient() {
     });
 }
 
-// Esegue una richiesta GraphQL ad Anilist
-async function executeGraphQL(query, variables) {
+// Esegue una richiesta GraphQL ad Anilist con Retry (Exponential Backoff su 429)
+async function executeGraphQL(query, variables, retries = 3) {
     const payload = { query, variables };
     const client = getAnilistClient();
-    const res = await client.post('', payload);
-    return res.data;
+    
+    for (let i = 0; i < retries; i++) {
+        try {
+            const res = await client.post('', payload);
+            return res.data;
+        } catch (error) {
+            if (error.response?.status === 429 && i < retries - 1) {
+                const retryAfter = error.response.headers['retry-after'] 
+                    ? parseInt(error.response.headers['retry-after']) * 1000 
+                    : Math.pow(2, i) * 1000;
+                
+                console.warn(`[AniList] Rate limit (429) hit. Retrying in ${retryAfter}ms (Attempt ${i + 1}/${retries})...`);
+                await sleep(retryAfter);
+            } else {
+                logError('Anilist', `GraphQL Request Failed: ${error.message}`, { variables, status: error.response?.status, data: error.response?.data });
+                throw error;
+            }
+        }
+    }
 }
 
 /**
