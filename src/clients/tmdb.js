@@ -23,7 +23,6 @@ const {
 const { rateLimitedMap } = require('../utils/rateLimiter');
 const { generateRequestHash } = require('../utils/requestHash');
 const TmdbRequestCache = require('../models/TmdbRequestCache');
-const { getTmdbClient } = require('./tmdbConfig');
 const { logError } = require('../utils/logger');
 
 
