@@ -290,7 +290,9 @@ async function fetchKitsuEpisodes(kitsuId) {
                         
                         // FIX: Attempt to calculate an offset for split-cours if individual episode airdates are missing
                         try {
-                            const animeRes = await kitsuClient.get(`/anime/${kitsuId}`);
+                            const animeRes = await kitsuClient.get(`/anime/${kitsuId}`, {
+                                params: { 'fields[anime]': 'startDate' }
+                            });
                             const animeAttrs = animeRes.data?.data?.attributes;
                             const startDate = animeAttrs?.startDate;
                             
@@ -426,7 +428,9 @@ async function getKitsuMetaDetails(id) {
     if (cacheStatus !== 'miss') return cached;
 
     try {
-        const res = await kitsuClient.get(`/anime/${kitsuId}`);
+        const res = await kitsuClient.get(`/anime/${kitsuId}`, {
+            params: { 'fields[anime]': 'titles,canonicalTitle,synopsis,posterImage,coverImage,subtype,youtubeVideoId,averageRating,startDate,status' }
+        });
         const item = res.data.data;
         const meta = toStremioMetaItem(item);
 
@@ -731,7 +735,9 @@ async function getTmdbIdFromKitsuId(kitsuId) {
         const tmdbKey = process.env.TMDB_API_KEY;
 
         try {
-            const animeRes = await kitsuClient.get(`/anime/${kitsuId}`);
+            const animeRes = await kitsuClient.get(`/anime/${kitsuId}`, {
+                params: { 'fields[anime]': 'titles,canonicalTitle,startDate,subtype' }
+            });
             const attrs = animeRes.data?.data?.attributes;
             if (attrs) {
                 if (attrs.titles?.en) titlesToTry.push(attrs.titles.en);
