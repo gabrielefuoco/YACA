@@ -22,7 +22,7 @@ const {
 } = require('../config');
 const { rateLimitedMap } = require('../utils/rateLimiter');
 const { generateRequestHash } = require('../utils/requestHash');
-const TmdbRequestCache = require('../models/TmdbRequestCache');
+const { TmdbRequestCache } = require('../cache/cacheInstances');
 const { logError } = require('../utils/logger');
 
 

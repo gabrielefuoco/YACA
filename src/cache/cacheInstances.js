@@ -1,55 +1,61 @@
 const CacheManager = require('./CacheManager');
-const { RECOMMENDATIONS_CACHE_TTL_MS } = require('../config');
+const { 
+    RECOMMENDATIONS_CACHE_TTL_MS,
+    FAST_CATALOG_PAGE1_L2_TTL_MS,
+    FAST_CATALOG_PAGE1_SWR_MS
+} = require('../config');
 
 const ONE_DAY_MS = 1000 * 60 * 60 * 24;
 const TEN_MINUTES_MS = 1000 * 60 * 10;
 const ONE_HOUR_MS = 1000 * 60 * 60;
-
 const ONE_MINUTE_MS = 1000 * 60;
 
-// 1 minute TTL to allow users to quickly retry AI generation if results are poor
 const aiPromptCache = new CacheManager('ai_prompt_cache', {
     ramMax: 100,
     ramTtlMs: ONE_MINUTE_MS,
-    mongoTtlMs: ONE_MINUTE_MS
+    redisTtlMs: ONE_MINUTE_MS
 });
 
 const aiDiscoveryCache = new CacheManager('ai_discovery_queries', {
     ramMax: 100,
     ramTtlMs: ONE_MINUTE_MS,
-    mongoTtlMs: ONE_MINUTE_MS
+    redisTtlMs: ONE_MINUTE_MS
 });
 
 const hybridRecommendationsCache = new CacheManager('recommendation_cache', {
     ramMax: 30,
     ramTtlMs: RECOMMENDATIONS_CACHE_TTL_MS,
-    mongoTtlMs: RECOMMENDATIONS_CACHE_TTL_MS,
+    redisTtlMs: RECOMMENDATIONS_CACHE_TTL_MS,
     swrMs: require('../config').RECOMMENDATIONS_SWR_MS
 });
 
 const catalogFallbackCache = new CacheManager('catalog_fallback', {
     ramMax: 500,
     ramTtlMs: TEN_MINUTES_MS,
-    mongoTtlMs: 14 * ONE_DAY_MS,
+    redisTtlMs: 14 * ONE_DAY_MS,
     swrMs: ONE_HOUR_MS
 });
 
-/**
- * Cache for refined/processed catalog requests (the high-level orchestrator cache)
- * Uses the same namespace as preWarm to leverage pre-filled data.
- */
 const catalogRequestCache = new CacheManager('tmdb_catalog', {
     ramMax: 500,
     ramTtlMs: TEN_MINUTES_MS,
-    mongoTtlMs: 14 * ONE_DAY_MS,
+    redisTtlMs: 14 * ONE_DAY_MS,
     swrMs: 12 * ONE_HOUR_MS
+});
+
+// Sostituisce il vecchio src/models/TmdbRequestCache.js
+const TmdbRequestCache = new CacheManager('tmdb_catalog_raw', {
+    ramMax: 50,
+    ramTtlMs: FAST_CATALOG_PAGE1_L2_TTL_MS,
+    redisTtlMs: FAST_CATALOG_PAGE1_L2_TTL_MS,
+    swrMs: FAST_CATALOG_PAGE1_SWR_MS
 });
 
 const simulcastDatesCache = new CacheManager('simulcast_dates', {
     ramMax: 300,
-    ramTtlMs: ONE_HOUR_MS * 12, // 12 ore RAM
-    mongoTtlMs: ONE_DAY_MS * 7,   // 7 giorni MongoDB cache
-    swrMs: ONE_HOUR_MS * 6      // 6 ore SWR
+    ramTtlMs: ONE_HOUR_MS * 12,
+    redisTtlMs: ONE_DAY_MS * 7,
+    swrMs: ONE_HOUR_MS * 6
 });
 
 module.exports = {
@@ -58,5 +64,6 @@ module.exports = {
     hybridRecommendationsCache,
     catalogFallbackCache,
     catalogRequestCache,
+    TmdbRequestCache,
     simulcastDatesCache
 };

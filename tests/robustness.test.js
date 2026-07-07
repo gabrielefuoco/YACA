@@ -6,6 +6,13 @@ jest.mock('../src/cache/CacheManager', () => {
     }));
 });
 
+jest.mock('../src/db/models/ImdbToTmdbMapping', () => ({
+    findOne: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue(null)
+    }),
+    updateOne: jest.fn().mockResolvedValue(true)
+}));
+
 const { translateImdbToTmdb } = require('../src/id_mapping/id_cache');
 
 describe('Input validation - IMDB ID format', () => {

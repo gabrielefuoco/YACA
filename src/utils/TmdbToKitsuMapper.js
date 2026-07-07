@@ -1,12 +1,8 @@
 const axios = require('axios');
-const CacheManager = require('../cache/CacheManager');
+const TmdbToKitsuMapping = require('../db/models/TmdbToKitsuMapping');
 
-// 30 days TTL per il mapping (raramente cambia)
-const mappingCache = new CacheManager('tmdb_to_kitsu', {
-    ramMax: 5000,
-    ramTtlMs: 2592000000, // 30 giorni in ram (se sopravvive)
-    mongoTtlMs: 2592000000 // 30 giorni
-});
+// Semplice cache in RAM per risparmiare query a Mongo nel ciclo di vita
+const localCache = new Map();
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
@@ -22,14 +18,9 @@ async function translateAnimeIdsToKitsu(tmdbItems, tmdbApiKey) {
     const { rateLimitedMap } = require('./rateLimiter');
     const apiKey = tmdbApiKey || TMDB_API_KEY;
 
-    // Identifica quali item sono potenzialmente Anime e hanno un ID TMDB
-    // Un item è anime se:
-    // - Ha with_keywords con 210024 (Anime)
-    // - Oppure nei genre_ids c'è 16 (Animation) E origin_country include 'JP'
-    // Dato che qui tmdbItems sono i RISULTATI (oggetti movie/tv), controlliamo i loro attributi.
     const isAnime = (item) => {
         if (!item) return false;
-        if (String(item.id).startsWith('kitsu:')) return false; // Già Kitsu
+        if (String(item.id).startsWith('kitsu:')) return false;
         
         const isAnimation = item.genre_ids && item.genre_ids.includes(16);
         const isJapanese = item.origin_country && item.origin_country.includes('JP');
@@ -42,18 +33,17 @@ async function translateAnimeIdsToKitsu(tmdbItems, tmdbApiKey) {
 
     if (animeItems.length === 0) return tmdbItems;
 
-    // Traduzione in batch per non sovraccaricare le API
     await rateLimitedMap(
         animeItems,
         async (item) => {
             const rawTmdbId = String(item.id).replace('tmdb:', '');
             const kitsuId = await getKitsuIdFromTmdb(rawTmdbId, apiKey);
             if (kitsuId) {
-                item.tmdbId = rawTmdbId; // Salviamo il TMDB originale per ERDB
-                item.id = `kitsu:${kitsuId}`; // Sovrascrive l'ID!
+                item.tmdbId = rawTmdbId;
+                item.id = `kitsu:${kitsuId}`;
             }
         },
-        { batchSize: 5, delayMs: 100 } // Massimo rispetto per rate limit TMDB e Kitsu
+        { batchSize: 5, delayMs: 100 }
     );
 
     return tmdbItems;
@@ -61,87 +51,88 @@ async function translateAnimeIdsToKitsu(tmdbItems, tmdbApiKey) {
 
 /**
  * Dato un TMDB ID (tv), cerca l'ID Kitsu corrispondente
- * Flusso: TMDB ID -> TVDB ID -> Kitsu ID
  */
 async function getKitsuIdFromTmdb(tmdbId, tmdbApiKey) {
-    const cacheKey = `tmdb_to_kitsu_${tmdbId}`;
-    const cached = await mappingCache.get(cacheKey);
-    if (cached) {
-        if (cached === 'NOT_FOUND') return null;
-        return cached;
+    const key = String(tmdbId);
+    
+    // 1. In-memory
+    if (localCache.has(key)) {
+        const val = localCache.get(key);
+        return val === 'NOT_FOUND' ? null : val;
+    }
+
+    // 2. MongoDB
+    try {
+        const dbMapping = await TmdbToKitsuMapping.findOne({ tmdbId: key }).lean();
+        if (dbMapping) {
+            localCache.set(key, dbMapping.kitsuId);
+            return dbMapping.kitsuId === 'NOT_FOUND' ? null : dbMapping.kitsuId;
+        }
+    } catch (err) {
+        console.warn(`[TmdbToKitsuMapper] Errore DB per ${key}:`, err.message);
     }
 
     const apiKey = tmdbApiKey || TMDB_API_KEY;
-    if (!apiKey) {
-        console.warn(`[getKitsuIdFromTmdb] Manca la TMDB API KEY.`);
-        return null;
-    }
+    if (!apiKey) return null;
+
+    let kitsuId = null;
 
     try {
-        // 1. Chiedi External IDs a TMDB
         const extRes = await axios.get(`https://api.themoviedb.org/3/tv/${tmdbId}/external_ids`, {
             params: { api_key: apiKey }
         });
         const tvdbId = extRes.data.tvdb_id;
 
-        if (!tvdbId) {
-            await mappingCache.set(cacheKey, 'NOT_FOUND');
-            return null;
-        }
-
-        // 2. Chiedi Mapping a Kitsu (usiamo thetvdb come ponte)
-        const mapRes = await axios.get(`https://kitsu.io/api/edge/mappings`, {
-            params: {
-                'filter[externalSite]': 'thetvdb',
-                'filter[externalId]': tvdbId,
-                'include': 'item'
-            }
-        });
-
-        if (mapRes.data && mapRes.data.data && mapRes.data.data.length > 0) {
-            const mappedItem = mapRes.data.data[0];
-            const kitsuId = mappedItem.relationships?.item?.data?.id;
-            
-            if (kitsuId) {
-                await mappingCache.set(cacheKey, kitsuId);
-                return kitsuId;
-            }
-        }
-
-        // Se non trova il mapping, prova con thetvdb/series o thetvdb/season
-        const fallbackSites = ['thetvdb/series', 'thetvdb/season'];
-        for (const site of fallbackSites) {
-            const fbRes = await axios.get(`https://kitsu.io/api/edge/mappings`, {
+        if (tvdbId) {
+            const mapRes = await axios.get(`https://kitsu.io/api/edge/mappings`, {
                 params: {
-                    'filter[externalSite]': site,
+                    'filter[externalSite]': 'thetvdb',
                     'filter[externalId]': tvdbId,
                     'include': 'item'
                 }
             });
-            if (fbRes.data && fbRes.data.data && fbRes.data.data.length > 0) {
-                const kitsuId = fbRes.data.data[0].relationships?.item?.data?.id;
-                if (kitsuId) {
-                    await mappingCache.set(cacheKey, kitsuId);
-                    return kitsuId;
+
+            if (mapRes.data && mapRes.data.data && mapRes.data.data.length > 0) {
+                kitsuId = mapRes.data.data[0].relationships?.item?.data?.id;
+            } else {
+                const fallbackSites = ['thetvdb/series', 'thetvdb/season'];
+                for (const site of fallbackSites) {
+                    const fbRes = await axios.get(`https://kitsu.io/api/edge/mappings`, {
+                        params: {
+                            'filter[externalSite]': site,
+                            'filter[externalId]': tvdbId,
+                            'include': 'item'
+                        }
+                    });
+                    if (fbRes.data && fbRes.data.data && fbRes.data.data.length > 0) {
+                        kitsuId = fbRes.data.data[0].relationships?.item?.data?.id;
+                        if (kitsuId) break;
+                    }
                 }
             }
         }
 
-        // Non trovato
-        await mappingCache.set(cacheKey, 'NOT_FOUND');
-        return null;
+        const finalResult = kitsuId || 'NOT_FOUND';
+        localCache.set(key, finalResult);
+        
+        try {
+            await TmdbToKitsuMapping.updateOne(
+                { tmdbId: key },
+                { $set: { kitsuId: finalResult } },
+                { upsert: true }
+            );
+        } catch (e) {}
+
+        return kitsuId;
+
     } catch (err) {
-        console.error(`[TmdbToKitsuMapper] Errore conversione ID per TMDB ${tmdbId}:`, err.message);
+        console.error(`[TmdbToKitsuMapper] Errore API per TMDB ${tmdbId}:`, err.message);
         return null;
     }
 }
 
 /**
  * Funzione inversa: per tutti gli item con ID kitsu:, li traduce in ID IMDb (tt) o tmdb:.
- * Usata quando l'utente preferisce la modalità IMDb per compatibilità con ICV/Torrentio.
- * @param {Array} items I risultati del catalogo con potenziali ID kitsu:
- * @param {string} tmdbApiKey La chiave API TMDB
- * @returns {Array} Array con ID tradotti in tt/tmdb:
  */
 async function translateAnimeIdsToImdb(items, tmdbApiKey) {
     if (!items || !Array.isArray(items)) return items;
@@ -161,20 +152,17 @@ async function translateAnimeIdsToImdb(items, tmdbApiKey) {
 
             try {
                 const mapping = await getTmdbIdFromKitsuId(kitsuId);
-                if (!mapping || !mapping.tmdbId) return; // Mantiene kitsu: se mapping fallisce
+                if (!mapping || !mapping.tmdbId) return;
 
-                // Salva il TMDB ID per ERDB poster
                 item.tmdbId = mapping.tmdbId;
 
-                // Prova a risolvere l'IMDb ID (preferito dagli addon generalisti)
                 const imdbId = await resolveImdbId(mapping.tmdbId, 'tv', tmdbApiKey);
                 if (imdbId) {
-                    item.id = imdbId; // es. tt5607616
+                    item.id = imdbId;
                 } else {
-                    item.id = `tmdb:${mapping.tmdbId}`; // fallback
+                    item.id = `tmdb:${mapping.tmdbId}`;
                 }
             } catch (err) {
-                // In caso di errore, mantiene l'ID kitsu: originale
                 console.error(`[translateAnimeIdsToImdb] Errore per kitsu:${kitsuId}:`, err.message);
             }
         },

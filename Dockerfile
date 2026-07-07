@@ -15,9 +15,9 @@ RUN npm run build
 FROM node:20-slim AS runner
 WORKDIR /app
 
-# Install system fonts for SVG text rendering (sharp/librsvg needs fontconfig)
+# Install system fonts for SVG text rendering and redis-server for cache
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    fontconfig fonts-dejavu-core fonts-noto-core \
+    fontconfig fonts-dejavu-core fonts-noto-core redis-server \
     && rm -rf /var/lib/apt/lists/* \
     && fc-cache -fv
 
@@ -26,7 +26,7 @@ ENV NODE_ENV=production
 # Hugging Face Spaces richiede la porta 7860
 ENV PORT=7860
 
-# Copia le dipendenze del backend (include lockfile for deterministic installs)
+# Copia le dipendenze del backend
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
@@ -34,11 +34,13 @@ RUN npm ci --omit=dev
 COPY . .
 
 # Copia il frontend buildato dalla cartella 'out' generata nel primo stage
-# L'index.js serve questi file da /frontend/out
 COPY --from=frontend-builder /app/frontend/out ./frontend/out
+
+# Rendi lo script di avvio eseguibile
+RUN chmod +x start.sh
 
 # Esponi la porta richiesta
 EXPOSE 7860
 
-# Start the Node app directly
-CMD ["node", "--expose-gc", "index.js"]
+# Start Redis and Node app via script
+CMD ["./start.sh"]

@@ -1,5 +1,5 @@
 const LRUCache = require('../utils/LRUCache');
-const CacheEntry = require('../models/CacheEntry');
+const redisClient = require('./redisClient');
 
 const NEGATIVE_CACHE_MARKER = '__NULL__';
 
@@ -9,21 +9,30 @@ class CacheManager {
     /**
      * @param {string} namespace
      * @param {object} opts
-     * @param {number} opts.ramMax      - Max items in LRU cache
+     * @param {number} opts.ramMax      - Max items in L1 cache
      * @param {number} opts.ramTtlMs    - L1 TTL in ms
-     * @param {number} opts.mongoTtlMs  - L2 TTL in ms (MongoDB expiration)
-     * @param {number} opts.swrMs       - Stale-While-Revalidate window in ms (0 = disabled)
+     * @param {number} opts.redisTtlMs  - L2 TTL in ms (Redis expiration)
+     * @param {number} opts.swrMs       - Stale-While-Revalidate window in ms
+     * 
+     * Note: "mongoTtlMs" parameter is supported for backwards compatibility.
      */
-    constructor(namespace, { ramMax = 1000, ramTtlMs = 300000, mongoTtlMs = 86400000, swrMs = 0 } = {}) {
+    constructor(namespace, { ramMax = 1000, ramTtlMs = 300000, redisTtlMs, mongoTtlMs, swrMs = 0 } = {}) {
         this.namespace = namespace;
         this.ramTtlMs = ramTtlMs;
-        this.mongoTtlMs = mongoTtlMs;
+        this.redisTtlMs = redisTtlMs || mongoTtlMs || 86400000;
         this.swrMs = swrMs;
 
-        // LRU in-memory cache as L1
+        // L1: Fast in-memory buffer to absorb burst requests
         this.lruFallback = new LRUCache({ max: ramMax, ttl: ramTtlMs + swrMs });
+        
+        // Prevents thundering herd on cache miss
         this.activePromises = new Map();
+        
         CacheManager.instances.push(this);
+    }
+
+    _getRedisKey(key) {
+        return `${this.namespace}:${key}`;
     }
 
     // ─── L1 helpers (Pure In-Memory LRU) ───
@@ -50,66 +59,50 @@ class CacheManager {
 
     // ─── Public API ───
 
-    /**
-     * Retrieves a value from cache (L1 → L2).
-     * Returns { value, status } where status is 'fresh' | 'stale' | 'miss'.
-     * For backward compat, bare `get()` returns the raw value (fresh or stale).
-     */
     async getWithStatus(key) {
-        // 1. Check L1 (Redis / LRU)
+        // 1. Check L1
         const envelope = await this._l1Get(key);
         if (envelope !== undefined && envelope !== null) {
-            // Envelope format: { v: <value>, t: <storedAtMs> }
-            if (envelope && typeof envelope === 'object' && 't' in envelope && 'v' in envelope) {
+            if (typeof envelope === 'object' && 't' in envelope && 'v' in envelope) {
                 const age = Date.now() - envelope.t;
                 if (age <= this.ramTtlMs) {
-                    const finalValue = envelope.v === NEGATIVE_CACHE_MARKER ? null : envelope.v;
-                    return { value: finalValue, status: 'fresh' };
+                    return { value: envelope.v === NEGATIVE_CACHE_MARKER ? null : envelope.v, status: 'fresh' };
                 }
                 if (this.swrMs > 0 && age <= this.ramTtlMs + this.swrMs) {
-                    const finalValue = envelope.v === NEGATIVE_CACHE_MARKER ? null : envelope.v;
-                    return { value: finalValue, status: 'stale' };
+                    return { value: envelope.v === NEGATIVE_CACHE_MARKER ? null : envelope.v, status: 'stale' };
                 }
-                // Beyond SWR window — treat as miss, but we can still use L2
             } else {
-                // Legacy format (plain value without envelope) — treat as fresh
-                const finalValue = envelope === NEGATIVE_CACHE_MARKER ? null : envelope;
-                return { value: finalValue, status: 'fresh' };
+                return { value: envelope === NEGATIVE_CACHE_MARKER ? null : envelope, status: 'fresh' };
             }
         }
 
-        // 2. Check L2 (MongoDB)
-        try {
-            const entry = await CacheEntry.findOne({
-                namespace: this.namespace,
-                key: key,
-                expiresAt: { $gt: new Date() }
-            });
+        // 2. Check L2 (Redis)
+        if (redisClient.isAvailable) {
+            try {
+                const rawData = await redisClient.get(this._getRedisKey(key));
+                if (rawData) {
+                    const parsed = JSON.parse(rawData);
+                    if (parsed && typeof parsed === 'object' && 't' in parsed && 'v' in parsed) {
+                        const originalTimestamp = parsed.t;
+                        const age = Date.now() - originalTimestamp;
+                        
+                        // Promote to L1
+                        const l1Ttl = this.ramTtlMs + this.swrMs;
+                        await this._l1Set(key, parsed, l1Ttl);
 
-            if (entry) {
-                // Promote to L1 preserving the original storage timestamp
-                const originalTimestamp = entry.updatedAt ? new Date(entry.updatedAt).getTime() : Date.now();
-                const freshEnvelope = { v: entry.value, t: originalTimestamp };
-                const l1Ttl = this.ramTtlMs + this.swrMs;
-                await this._l1Set(key, freshEnvelope, l1Ttl);
-                const age = Date.now() - originalTimestamp;
-                const status = age <= this.ramTtlMs ? 'fresh' : (this.swrMs > 0 && age <= this.ramTtlMs + this.swrMs ? 'stale' : 'miss');
-                
-                // Handle negative cache marker
-                const finalValue = entry.value === NEGATIVE_CACHE_MARKER ? null : entry.value;
-                return { value: finalValue, status };
+                        const status = age <= this.ramTtlMs ? 'fresh' : (this.swrMs > 0 && age <= this.ramTtlMs + this.swrMs ? 'stale' : 'miss');
+                        const finalValue = parsed.v === NEGATIVE_CACHE_MARKER ? null : parsed.v;
+                        return { value: finalValue, status };
+                    }
+                }
+            } catch (error) {
+                console.error(`[CacheManager:${this.namespace}] L2 Redis get error:`, error.message);
             }
-        } catch (error) {
-            console.error(`[CacheManager:${this.namespace}] L2 get error:`, error.message);
         }
 
         return { value: undefined, status: 'miss' };
     }
 
-    /**
-     * Backward-compatible get: returns value or undefined.
-     * Stale data is still returned (SWR consumer should use getWithStatus for revalidation).
-     */
     async get(key) {
         const { value } = await this.getWithStatus(key);
         return value;
@@ -122,19 +115,16 @@ class CacheManager {
             return value;
         }
 
-        // Evita il Thundering Herd (SWR Stampede) tramite memoizzazione della Promise
         if (this.activePromises.has(key)) {
-            if (status === 'stale') {
-                return value; // fetch in background già avviato
-            }
-            return this.activePromises.get(key); // Miss: attendi fetch in corso
+            if (status === 'stale') return value;
+            return this.activePromises.get(key);
         }
 
         const fetchPromise = (async () => {
             try {
                 const fresh = await fetchFn();
                 if (fresh !== undefined) {
-                    await this.set(key, fresh, ttlMs || this.mongoTtlMs, options);
+                    await this.set(key, fresh, ttlMs || this.redisTtlMs, options);
                 }
                 return fresh;
             } catch (err) {
@@ -147,110 +137,93 @@ class CacheManager {
 
         this.activePromises.set(key, fetchPromise);
 
-        if (status === 'stale') {
-            // Stale: ritorna il valore vecchio subito, la fetchPromise procede in background
-            return value;
-        }
-
-        // Miss: attendi il risultato della fetch
+        if (status === 'stale') return value;
         return fetchPromise;
     }
 
-    /**
-     * Saves a value to both L1 (Redis) and L2 (MongoDB).
-     * @param {string} key
-     * @param {any} value
-     * @param {number} ttlMs - Optional override for L2 TTL
-     * @param {object} options - { useRam: boolean }
-     */
     async set(key, value, ttlMs = null, options = { useRam: true }) {
         if (!key) return;
 
-        const effectiveTtl = ttlMs || this.mongoTtlMs;
+        const effectiveTtl = ttlMs || this.redisTtlMs;
         const useRam = options.useRam !== false;
-
-        // Use marker for null values to distinguish from cache miss
         const storageValue = value === null ? NEGATIVE_CACHE_MARKER : value;
+        const envelope = { v: storageValue, t: Date.now() };
 
-        // 1. L1 (Redis / LRU)
+        // 1. L1 (RAM)
         if (useRam) {
-            const envelope = { v: storageValue, t: Date.now() };
             const l1Ttl = this.ramTtlMs + this.swrMs;
             await this._l1Set(key, envelope, l1Ttl);
         }
 
-        // 2. L2 (MongoDB)
-        try {
-            // Apply TTL jitter (+/- 5%) to mitigate thundering herd
-            const jitter = effectiveTtl * 0.05 * (Math.random() * 2 - 1);
-            const jitteredTtl = Math.max(0, effectiveTtl + jitter);
+        // 2. L2 (Redis)
+        if (redisClient.isAvailable) {
+            try {
+                const jitter = effectiveTtl * 0.05 * (Math.random() * 2 - 1);
+                const jitteredTtl = Math.max(0, effectiveTtl + jitter);
+                const expireMs = Math.round(jitteredTtl + this.swrMs); // Keep alive during SWR
 
-            await CacheEntry.findOneAndUpdate(
-                { key, namespace: this.namespace },
-                {
-                    value: storageValue,
-                    expiresAt: new Date(Date.now() + jitteredTtl)
-                },
-                { upsert: true, returnDocument: 'after' }
-            );
-        } catch (err) {
-            console.error(`[CacheManager:${this.namespace}] Errore set MongoDB:`, err.message);
+                await redisClient.set(
+                    this._getRedisKey(key),
+                    JSON.stringify(envelope),
+                    'PX',
+                    expireMs
+                );
+            } catch (err) {
+                console.error(`[CacheManager:${this.namespace}] Redis set error:`, err.message);
+            }
         }
     }
 
-    /**
-     * Remove from both L1 and L2.
-     */
     async delete(key) {
         await this._l1Delete(key);
-        try {
-            await CacheEntry.deleteOne({ namespace: this.namespace, key: key });
-        } catch (error) {
-            console.error(`[CacheManager:${this.namespace}] L2 delete error:`, error.message);
+        if (redisClient.isAvailable) {
+            try {
+                await redisClient.del(this._getRedisKey(key));
+            } catch (error) {
+                console.error(`[CacheManager:${this.namespace}] Redis delete error:`, error.message);
+            }
         }
     }
 
-    /**
-     * Clear entire namespace from L1 and L2.
-     */
     async clear() {
         await this._l1Clear();
-        try {
-            await CacheEntry.deleteMany({ namespace: this.namespace });
-        } catch (error) {
-            console.error(`[CacheManager:${this.namespace}] L2 clear error:`, error.message);
+        if (redisClient.isAvailable) {
+            try {
+                const keys = await redisClient.keys(`${this.namespace}:*`);
+                if (keys.length > 0) {
+                    await redisClient.del(keys);
+                }
+            } catch (error) {
+                console.error(`[CacheManager:${this.namespace}] Redis clear error:`, error.message);
+            }
         }
     }
 
-    /**
-     * Usage statistics for this namespace.
-     */
     async getStats() {
-        try {
-            const l1Count = await this._l1Size();
-            const l2Count = await CacheEntry.countDocuments({ namespace: this.namespace });
-            return {
-                namespace: this.namespace,
-                l1Count,
-                l2Count
-            };
-        } catch (e) {
-            return { namespace: this.namespace, l1Count: this.lruFallback.size, l2Count: 'error' };
+        let l2Count = 0;
+        if (redisClient.isAvailable) {
+            try {
+                const keys = await redisClient.keys(`${this.namespace}:*`);
+                l2Count = keys.length;
+            } catch (e) {
+                l2Count = 'error';
+            }
+        } else {
+            l2Count = 'offline';
         }
+
+        return {
+            namespace: this.namespace,
+            l1Count: await this._l1Size(),
+            l2Count
+        };
     }
 
-    /**
-     * Aggregate stats across all active CacheManager instances.
-     */
     static async getAllStats() {
         return Promise.all(CacheManager.instances.map(instance => instance.getStats()));
     }
 }
 
-/**
- * Determines the appropriate TTL and fetch options for a catalog request
- * based on the requested TTL tier or numeric value.
- */
 function getCacheConfig(requestedTtl) {
     const { 
         FAST_CATALOG_PAGE1_L2_TTL_MS, 

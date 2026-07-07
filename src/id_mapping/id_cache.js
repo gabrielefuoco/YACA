@@ -1,25 +1,30 @@
 const { createTmdbClient } = require('../clients/tmdb');
-const CacheManager = require('../cache/CacheManager');
+const ImdbToTmdbMapping = require('../db/models/ImdbToTmdbMapping');
 
-// Cache limitata per evitare di chiamare /find troppe volte per gli stessi ID
-const memoryCache = new CacheManager('imdb_to_tmdb', {
-    ramMax: 50,
-    ramTtlMs: 1000 * 60 * 60 * 24, // 24h RAM
-    mongoTtlMs: 1000 * 60 * 60 * 24 * 7 // 7d MongoDB
-});
+const localCache = new Map();
 
 /**
  * Traduce un imdb_id (es. tt1234567) in un tmdb_id usando l'API TMDB /find
  */
 async function translateImdbToTmdb(imdbId, tmdbApiKey) {
-    // Validate IMDB ID format (tt followed by digits)
     if (!imdbId || !/^tt\d+$/.test(imdbId)) {
         return null;
     }
 
-    const cached = await memoryCache.get(imdbId);
-    if (cached) {
-        return cached;
+    if (localCache.has(imdbId)) {
+        const val = localCache.get(imdbId);
+        return val === 'NOT_FOUND' ? null : val;
+    }
+
+    try {
+        const dbMapping = await ImdbToTmdbMapping.findOne({ imdbId }).lean();
+        if (dbMapping) {
+            const result = { id: dbMapping.tmdbId, type: dbMapping.type };
+            localCache.set(imdbId, result);
+            return result.id === 'NOT_FOUND' ? null : result;
+        }
+    } catch (err) {
+        console.warn(`[translateImdbToTmdb] Errore DB per ${imdbId}:`, err.message);
     }
 
     try {
@@ -42,9 +47,27 @@ async function translateImdbToTmdb(imdbId, tmdbApiKey) {
 
         if (tmdbId) {
             const result = { id: `tmdb:${tmdbId}`, type };
-            await memoryCache.set(imdbId, result);
+            localCache.set(imdbId, result);
+            
+            try {
+                await ImdbToTmdbMapping.updateOne(
+                    { imdbId },
+                    { $set: { tmdbId: result.id, type } },
+                    { upsert: true }
+                );
+            } catch(e) {}
+
             return result;
         }
+
+        localCache.set(imdbId, 'NOT_FOUND');
+        try {
+            await ImdbToTmdbMapping.updateOne(
+                { imdbId },
+                { $set: { tmdbId: 'NOT_FOUND', type: 'unknown' } },
+                { upsert: true }
+            );
+        } catch(e) {}
 
         return null;
     } catch (err) {
@@ -54,7 +77,7 @@ async function translateImdbToTmdb(imdbId, tmdbApiKey) {
 }
 
 async function clearIdCache() {
-    await memoryCache.clear();
+    localCache.clear();
 }
 
 module.exports = { translateImdbToTmdb, clearIdCache };
