@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { adminApi } from '@/lib/adminApi';
+import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import {
     Database,
@@ -28,11 +30,10 @@ export default function CacheAdminPage() {
 
     const fetchStats = async () => {
         try {
-            const res = await fetch('/api/cache/stats');
-            const data = await res.json();
-            if (data.success) {
-                setStats(data.stats);
-                setRedisAvailable(data.redisAvailable);
+            const res = await adminApi.getMetrics();
+            if (res.success) {
+                setStats(res.cacheStats || []);
+                setRedisAvailable(res.redisAvailable || false);
             }
         } catch (err) {
             console.error('Failed to fetch cache stats:', err);
@@ -90,6 +91,9 @@ export default function CacheAdminPage() {
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
+                            <Link href="/admin" className="text-sm font-bold text-marrow-light/60 hover:text-primary transition-colors flex items-center gap-1 mb-2">
+                                ← Torna alla Dashboard
+                            </Link>
                             <h1 className="text-3xl font-black tracking-tight text-gray-900 flex items-center gap-3">
                                 <Database className="w-8 h-8 text-primary" />
                                 Gestione Cache

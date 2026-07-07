@@ -101,6 +101,13 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         </p>
                     </div>
                     <div className="flex gap-3">
+                        <a
+                            href="/admin/cache"
+                            className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-900 transition-all font-bold"
+                        >
+                            <Database className="w-4 h-4 text-emerald-500" />
+                            Dettaglio Cache
+                        </a>
                         <button
                             onClick={fetchMetrics}
                             disabled={loading}
