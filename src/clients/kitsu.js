@@ -1,4 +1,5 @@
 const { createAxiosClient } = require('../utils/axiosClient');
+const axios = require('axios');
 const { KITSU_ENDPOINT, ITEMS_PER_PAGE } = require('../config');
 const CacheManager = require('../cache/CacheManager');
 const { createTmdbClient, prioritizeLocalizedImages } = require('./tmdb');
@@ -209,54 +210,56 @@ async function fetchKitsuEpisodes(kitsuId) {
     if (cacheStatus !== 'miss') return cached;
 
     try {
-        const firstRes = await kitsuClient.get(`/anime/${kitsuId}/episodes`, {
-            params: { 'page[limit]': 20, 'page[offset]': 0 }
+        const query = `
+        {
+            findAnimeById(id: "${kitsuId}") {
+                episodes(first: 2000) {
+                    nodes {
+                        number
+                        titles { localized }
+                        description
+                        thumbnail { original { url } }
+                        releasedAt
+                    }
+                }
+            }
+        }`;
+        
+        const res = await axios.post('https://kitsu.io/api/graphql', { query }, {
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            timeout: 10000
         });
-
-        if (!firstRes.data || !firstRes.data.data) return [];
-
-        let allData = [...firstRes.data.data];
-        const totalCount = firstRes.data.meta?.count || 0;
-
-        if (totalCount > 20) {
-            const fetchFns = [];
-            for (let offset = 20; offset < totalCount; offset += 20) {
-                fetchFns.push(() => kitsuClient.get(`/anime/${kitsuId}/episodes`, {
-                    params: { 'page[limit]': 20, 'page[offset]': offset }
-                }).then(r => r.data?.data || []).catch(e => {
-                    console.error(`Errore offset ${offset} episodi Kitsu ${kitsuId}:`, e.message);
-                    return [];
-                }));
-            }
-            // Execute in chunks of 5 to avoid rate limits and add delay between chunks
-            for (let i = 0; i < fetchFns.length; i += 5) {
-                const chunk = fetchFns.slice(i, i + 5);
-                const results = await Promise.all(chunk.map(fn => fn()));
-                for (const resData of results) {
-                    allData = allData.concat(resData);
-                }
-                // Attendi 1 secondo tra un blocco e l'altro per evitare HTTP 429 da Kitsu
-                if (i + 5 < fetchFns.length) {
-                    await new Promise(r => setTimeout(r, 1000));
-                }
-            }
+        
+        if (res.data?.errors) {
+            console.error(`GraphQL Errors for episodes Kitsu ${kitsuId}:`, JSON.stringify(res.data.errors));
+            return [];
         }
+        
+        const nodes = res.data?.data?.findAnimeById?.episodes?.nodes || [];
 
-        const episodes = allData.map(ep => {
-            const attrs = ep.attributes;
-            // Kitsu often lists episodes with a seasonNumber or we can infer it if strictly mapped
-            // However, for Stremio, we need to decide if we keep absolute or split.
-            // By default, Kitsu returns absolute numbers. We keep them but allow future season mapping.
-            const season = attrs.seasonNumber || 1; 
+        const episodes = nodes.map(ep => {
+            // GraphQL non espone la season, di default Kitsu REST restituiva quasi sempre null o 1. Usiamo 1.
+            const season = 1; 
+            
+            const titlesMap = ep.titles?.localized || {};
+            const title = titlesMap.it || titlesMap.en || titlesMap.en_us || titlesMap.en_jp || titlesMap.ja_jp || `Episodio ${ep.number}`;
+            
+            // In alcuni casi description è una stringa su GraphQL, in altri una mappa. Gestiamolo safely.
+            let overview = '';
+            if (typeof ep.description === 'string') {
+                overview = ep.description;
+            } else if (ep.description && typeof ep.description === 'object') {
+                overview = ep.description.it || ep.description.en || ep.description.en_us || '';
+            }
             
             return {
-                id: `kitsu:${kitsuId}:${season}:${attrs.number}`,
-                title: attrs.titles?.it || attrs.titles?.en || attrs.titles?.en_jp || `Episodio ${attrs.number}`,
-                released: attrs.airdate ? new Date(attrs.airdate).toISOString() : null,
+                id: `kitsu:${kitsuId}:${season}:${ep.number}`,
+                title: title,
+                released: ep.releasedAt ? new Date(ep.releasedAt).toISOString() : null,
                 season: season,
-                episode: attrs.number,
-                overview: attrs.synopsis || '',
-                thumbnail: attrs.thumbnail ? attrs.thumbnail.original : null
+                episode: ep.number,
+                overview: overview,
+                thumbnail: ep.thumbnail?.original?.url || null
             };
         });
 
@@ -432,6 +435,25 @@ async function getKitsuMetaDetails(id) {
             await enrichWithTmdb(meta, kitsuId);
 
             meta.genres = [];
+            
+            // Arricchimento VSM (Categorie Kitsu) tramite GraphQL
+            try {
+                const query = `{ findAnimeById(id: "${kitsuId}") { categories(first: 10) { nodes { slug } } } }`;
+                const gqlRes = await axios.post('https://kitsu.io/api/graphql', { query }, {
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    timeout: 5000
+                });
+                const cats = gqlRes.data?.data?.findAnimeById?.categories?.nodes;
+                if (cats && cats.length > 0) {
+                    // Formattiamo gli slug in modo leggibile per Stremio (es. "science-fiction" -> "Science Fiction")
+                    meta.genres = cats.map(c => {
+                        return c.slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                    });
+                }
+            } catch (e) {
+                console.error(`Errore fetch categorie GraphQL per Kitsu ${kitsuId}:`, e.message);
+            }
+
             if (item.attributes.youtubeVideoId) {
                 meta.trailers = [{ source: item.attributes.youtubeVideoId, type: 'Trailer' }];
             }
