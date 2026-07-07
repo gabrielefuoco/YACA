@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const CacheManager = require('../cache/CacheManager');
+const redisClient = require('../cache/redisClient');
 const { clearAllTmdbCaches } = require('../clients/tmdb');
 const { clearIdCache } = require('../id_mapping/id_cache');
 const { aiPromptCache, aiDiscoveryCache, hybridRecommendationsCache, TmdbRequestCache } = require('../cache/cacheInstances');
@@ -25,7 +26,7 @@ router.get('/metrics', async (req, res) => {
 
         res.json({
             success: true,
-            redisAvailable: false,
+            redisAvailable: redisClient.isAvailable,
             activeUsersCount,
             cacheStats: stats,
             recentLogs
