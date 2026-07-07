@@ -12,16 +12,9 @@ async function getKitsuCatalog(id, skip) {
     try {
         const results = await fetchKitsuCatalog('/anime', skip, kitsuParams);
         
-        await rateLimitedMap(
-            results,
-            async (item) => {
-                const kitsuId = item?.id?.replace('kitsu:', '');
-                if (!kitsuId) return;
-                const episodes = await fetchKitsuEpisodes(kitsuId);
-                item.videos = episodes || [];
-            },
-            { batchSize: 3, delayMs: 100 }
-        );
+        // REMOVED rateLimitedMap for fetchKitsuEpisodes to avoid latency and API rate limits.
+        // Catalog payload does not need episodes unless it's an episode badge catalog.
+        // If it is, catalogHandler.js will lazily hydrate them anyway.
 
         return results;
     } catch (e) {
@@ -140,16 +133,9 @@ async function getKitsuCatalogFromFilters(filters, type, skip) {
         // Limit to 20 just in case we overshot significantly
         results = results.slice(0, 20);
 
-        await rateLimitedMap(
-            results,
-            async (item) => {
-                const kitsuId = item?.id?.replace('kitsu:', '');
-                if (!kitsuId) return;
-                const episodes = await fetchKitsuEpisodes(kitsuId);
-                item.videos = episodes || [];
-            },
-            { batchSize: 3, delayMs: 100 }
-        );
+        // REMOVED rateLimitedMap for fetchKitsuEpisodes to avoid 8-second latency.
+        // Catalog payload does not need episodes unless it's an episode badge catalog.
+        // If it is, catalogHandler.js will lazily hydrate them anyway.
 
         return results;
     } catch (e) {
@@ -178,8 +164,8 @@ async function getKitsuCatalogFromAnilist(catalogId, skip) {
                         // Use Kitsu's canonical title, which might be English, then enrichWithTmdb will add Italian if available
                         
                         await enrichWithTmdb(meta, kitsuId);
-                        const episodes = await fetchKitsuEpisodes(kitsuId);
-                        meta.videos = episodes || [];
+                        // REMOVED fetchKitsuEpisodes to avoid latency and API rate limits.
+                        // Catalog payload does not need episodes unless it's an episode badge catalog.
                         results.push(meta);
                     }
                 } catch(e) {
