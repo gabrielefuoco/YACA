@@ -342,6 +342,18 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 finalResults = await translateAnimeIdsToKitsu(finalResults, tmdbApiKey);
             }
 
+            // DEDUPLICATION: KitsuProvider and TMDBProvider might return the same anime.
+            // After translation, both will have the same kitsu/imdb ID.
+            // If we don't deduplicate, Stremio UI will freeze or glitch with duplicate IDs.
+            const uniqueMetas = new Map();
+            for (const meta of finalResults) {
+                if (!meta || !meta.id) continue;
+                if (!uniqueMetas.has(meta.id)) {
+                    uniqueMetas.set(meta.id, meta);
+                }
+            }
+            finalResults = Array.from(uniqueMetas.values());
+
             // console.log('POST KITSU/IMDB RESULTS:', finalResults?.length);
             // After translation: hydrate Kitsu episodes for items that still lack videos
             // (covers preset_new_anime and other Kitsu-translated catalogs from AiDiscoveryProvider)
