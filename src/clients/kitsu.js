@@ -616,48 +616,95 @@ async function inferSeasonFromAirDate(tmdbId, kitsuStartDate, titleFallback, tmd
  * Esplora le relazioni Kitsu (prequel, parent_story, full_story) per trovare un ID TMDB genitore.
  * Profondità massima 2 livelli per evitare loop infiniti o query eccessive.
  */
-async function resolveTmdbFromFranchise(kitsuId, depth = 0, visited = new Set()) {
-    if (depth > 2) return null;
-    if (visited.has(kitsuId)) return null;
-    visited.add(kitsuId);
-
+async function resolveTmdbFromFranchise(kitsuId) {
     try {
-        const res = await kitsuClient.get(`/anime/${kitsuId}/media-relationships?include=destination`);
-        const relationships = res.data?.data || [];
+        const query = `
+        {
+          findAnimeById(id: "${kitsuId}") {
+            relationships(first: 10) {
+              nodes {
+                kind
+                destination {
+                  ... on Anime {
+                    id
+                    mappings(first: 5) {
+                      nodes { externalId externalSite }
+                    }
+                    relationships(first: 10) {
+                      nodes {
+                        kind
+                        destination {
+                          ... on Anime {
+                            id
+                            mappings(first: 5) { nodes { externalId externalSite } }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        `;
+        
+        const res = await axios.post('https://kitsu.io/api/graphql', { query }, {
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            timeout: 5000
+        });
 
-        const validRoles = ['parent_story', 'full_story', 'prequel'];
-        const parents = relationships.filter(r => validRoles.includes(r.attributes?.role));
-
-        for (const rel of parents) {
-            const destId = rel.relationships?.destination?.data?.id;
-            if (destId && !visited.has(destId)) {
-                const destMapRes = await kitsuClient.get(`/anime/${destId}/mappings`);
-                const destMappings = destMapRes.data?.data || [];
+        const relationships = res.data?.data?.findAnimeById?.relationships?.nodes || [];
+        const validRoles = ['PARENT_STORY', 'FULL_STORY', 'PREQUEL'];
+        
+        for (const rel of relationships) {
+            if (!validRoles.includes(rel.kind)) continue;
+            
+            const destId = rel.destination?.id;
+            if (!destId) continue;
+            
+            // Mappings del genitore diretto
+            const mappings = rel.destination?.mappings?.nodes || [];
+            let tmdbMap = mappings.find(m => m.externalSite === 'THEMOVIEDB_TV' || m.externalSite === 'THEMOVIEDB_MOVIE');
+            if (tmdbMap) {
+                return { 
+                    tmdbId: tmdbMap.externalId, 
+                    type: tmdbMap.externalSite.includes('TV') ? 'tv' : 'movie', 
+                    kitsuParentId: destId 
+                };
+            }
+            
+            let tvdbMap = mappings.find(m => m.externalSite === 'THETVDB_SERIES' || m.externalSite === 'THETVDB');
+            if (tvdbMap) {
+                let tvdbId = tvdbMap.externalId;
+                if (tvdbId && typeof tvdbId === 'string' && tvdbId.includes('/')) tvdbId = tvdbId.split('/')[0];
+                return { tvdbId, kitsuParentId: destId };
+            }
+            
+            // Mappings del nonno (Livello 2)
+            const grandRels = rel.destination?.relationships?.nodes || [];
+            for (const grel of grandRels) {
+                if (!validRoles.includes(grel.kind)) continue;
                 
-                const tmdbMapping = destMappings.find(m => 
-                    m.attributes?.externalSite === 'themoviedb/tv' || 
-                    m.attributes?.externalSite === 'themoviedb/movie'
-                );
-
-                if (tmdbMapping) {
-                    const tmdbId = tmdbMapping.attributes.externalId;
-                    const type = tmdbMapping.attributes.externalSite.includes('tv') ? 'tv' : 'movie';
-                    return { tmdbId, type, kitsuParentId: destId };
+                const gDestId = grel.destination?.id;
+                if (!gDestId) continue;
+                
+                const gMappings = grel.destination?.mappings?.nodes || [];
+                tmdbMap = gMappings.find(m => m.externalSite === 'THEMOVIEDB_TV' || m.externalSite === 'THEMOVIEDB_MOVIE');
+                if (tmdbMap) {
+                    return { 
+                        tmdbId: tmdbMap.externalId, 
+                        type: tmdbMap.externalSite.includes('TV') ? 'tv' : 'movie', 
+                        kitsuParentId: gDestId 
+                    };
                 }
 
-                const tvdbMapping = destMappings.find(m => 
-                    m.attributes?.externalSite === 'thetvdb/series' || 
-                    m.attributes?.externalSite === 'thetvdb'
-                );
-                
-                if (tvdbMapping) {
-                    let tvdbId = tvdbMapping.attributes.externalId;
+                tvdbMap = gMappings.find(m => m.externalSite === 'THETVDB_SERIES' || m.externalSite === 'THETVDB');
+                if (tvdbMap) {
+                    let tvdbId = tvdbMap.externalId;
                     if (tvdbId && typeof tvdbId === 'string' && tvdbId.includes('/')) tvdbId = tvdbId.split('/')[0];
-                    return { tvdbId, kitsuParentId: destId };
+                    return { tvdbId, kitsuParentId: gDestId };
                 }
-
-                const deepRes = await resolveTmdbFromFranchise(destId, depth + 1, visited);
-                if (deepRes) return deepRes;
             }
         }
     } catch (e) {
