@@ -289,7 +289,7 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
             }
 
             const rawQueries = Array.isArray(routing?.filters?.queries) ? routing.filters.queries : [];
-            plannedQueries = rawQueries.filter(query => !query?.target || query.target === 'tmdb');
+            plannedQueries = rawQueries.filter(query => !query?.target || query.target === 'tmdb' || query.target === 'kitsu');
         }
     } catch (e) {
         console.error("Errore AI Search (Mistral down):", e.message);
