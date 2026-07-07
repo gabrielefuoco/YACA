@@ -34,13 +34,13 @@ export default function AdminPage() {
             <>
                 <Header />
                 <main className="flex flex-1 items-center justify-center py-8">
-                    <div className="w-full max-w-md p-8 rounded-2xl bg-[#0f1115] border border-white/5 shadow-2xl">
+                    <div className="w-full max-w-md p-8 rounded-2xl bg-white shadow-xl border border-gray-100 shadow-2xl">
                         <div className="flex flex-col items-center text-center mb-8">
                             <div className="p-4 rounded-full bg-red-500/10 text-red-500 mb-4">
                                 <LockKeyhole className="w-8 h-8" />
                             </div>
-                            <h1 className="text-2xl font-black text-white tracking-tight">Accesso Riservato</h1>
-                            <p className="text-sm text-marrow-light/60 mt-2">
+                            <h1 className="text-2xl font-black text-gray-900 tracking-tight">Accesso Riservato</h1>
+                            <p className="text-sm text-gray-500 mt-2">
                                 Inserisci la Master Password definita nel server per accedere alla console di amministrazione.
                             </p>
                         </div>
@@ -51,13 +51,13 @@ export default function AdminPage() {
                                 value={passwordInput}
                                 onChange={(e) => setPasswordInput(e.target.value)}
                                 placeholder="Master Password"
-                                className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-red-500/50 transition-colors"
+                                className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500/50 transition-colors"
                                 autoFocus
                             />
                             <button
                                 type="submit"
                                 disabled={!passwordInput.trim()}
-                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition-all disabled:opacity-50"
+                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-gray-900 font-bold transition-all disabled:opacity-50"
                             >
                                 Sblocca
                                 <ArrowRight className="w-4 h-4" />
