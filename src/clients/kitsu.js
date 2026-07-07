@@ -228,12 +228,16 @@ async function fetchKitsuEpisodes(kitsuId) {
                     return [];
                 }));
             }
-            // Execute in chunks of 10 to avoid rate limits
-            for (let i = 0; i < fetchFns.length; i += 10) {
-                const chunk = fetchFns.slice(i, i + 10);
+            // Execute in chunks of 5 to avoid rate limits and add delay between chunks
+            for (let i = 0; i < fetchFns.length; i += 5) {
+                const chunk = fetchFns.slice(i, i + 5);
                 const results = await Promise.all(chunk.map(fn => fn()));
                 for (const resData of results) {
                     allData = allData.concat(resData);
+                }
+                // Attendi 1 secondo tra un blocco e l'altro per evitare HTTP 429 da Kitsu
+                if (i + 5 < fetchFns.length) {
+                    await new Promise(r => setTimeout(r, 1000));
                 }
             }
         }
