@@ -75,6 +75,39 @@ async function syncTraktTokensToDb(userId, newAccessToken, newRefreshToken) {
 }
 
 /**
+ * Rigenera i token Trakt gestendo le race conditions (LOCK) se più richieste
+ * falliscono simultaneamente. Restituisce i token e si assicura che il DB
+ * venga aggiornato solo dal primo processo.
+ * @param {string} userId - ID univoco dell'utente
+ * @param {string} refreshToken - Il refresh_token corrente
+ * @returns {Promise<{access_token: string, refresh_token: string}|null>}
+ */
+async function smartTraktRefresh(userId, refreshToken) {
+    if (!userId || !refreshToken) return null;
+
+    if (ongoingRefreshes.has(userId)) {
+        console.log(`Trakt (smart): refresh già in corso per l'utente ${userId}, attendo il risultato...`);
+        return await ongoingRefreshes.get(userId);
+    }
+
+    console.log(`Trakt (smart): avvio procedura di refresh per ${userId}...`);
+    const refreshPromise = refreshTraktTokens(refreshToken).then(async (newTokens) => {
+        if (newTokens && newTokens.access_token) {
+            await syncTraktTokensToDb(userId, newTokens.access_token, newTokens.refresh_token);
+        }
+        return newTokens;
+    }).catch(err => {
+        console.error(`Trakt (smart): refresh fallito per ${userId}:`, err.message);
+        return null;
+    }).finally(() => {
+        ongoingRefreshes.delete(userId);
+    });
+
+    ongoingRefreshes.set(userId, refreshPromise);
+    return await refreshPromise;
+}
+
+/**
  * Trasforma l'item Trakt nel formato Meta Stremio e recupera Poster/Sfondo da TMDB se necessario.
  * @param {Object} traktItem - L'item raw da Trakt
  * @param {string} [tmdbApiKey] - Chiave TMDB dell'utente per l'arricchimento immagini
@@ -246,46 +279,10 @@ async function fetchTraktCatalog(endpoint, skip = 0, traktToken = null, tmdbApiK
             const userId = refreshContext.userConfig.userId;
             
             try {
-                // LOCK: Se un refresh è già in corso per questo utente, attendiamo quella Promise
-                if (userId && ongoingRefreshes.has(userId)) {
-                    console.log(`Trakt: refresh già in corso per l'utente ${userId}, attendo il risultato...`);
-                    const sharedTokens = await ongoingRefreshes.get(userId);
-                    
-                    if (sharedTokens) {
-                        // Riprova la richiesta originale con il token appena rigenerato
-                        try {
-                            const sharedRetryResults = await executeTraktRequest(endpoint, page, sharedTokens.access_token);
-                            return await deduplicateAndEnrich(sharedRetryResults, tmdbApiKey);
-                        } catch (sharedRetryErr) {
-                            console.error(`Trakt: retry fallito dopo aver atteso il lock per ${endpoint}:`, sharedRetryErr.message);
-                            return [];
-                        }
-                    }
-                    return [];
-                }
+                const newTokens = await smartTraktRefresh(userId, refreshContext.userConfig.apiKeys.traktRefreshToken);
 
-                console.log(`Trakt: token scaduto per ${endpoint}, tentativo di auto-refresh...`);
-                
-                // Creiamo e registriamo la Promise del refresh
-                const refreshPromise = refreshTraktTokens(refreshContext.userConfig.apiKeys.traktRefreshToken);
-                if (userId) ongoingRefreshes.set(userId, refreshPromise);
-
-                const newTokens = await refreshPromise;
-                
-                // Pulizia del lock a prescindere dall'esito
-                if (userId) ongoingRefreshes.delete(userId);
-
-                if (newTokens) {
-                    console.log(`Trakt: auto-refresh riuscito per ${endpoint}.`);
-                    // Sincronizza i nuovi token su MongoDB se l'utente è stateful
-                    if (userId) {
-                        await syncTraktTokensToDb(
-                            userId,
-                            newTokens.access_token,
-                            newTokens.refresh_token
-                        );
-                    }
-
+                if (newTokens && newTokens.access_token) {
+                    console.log(`Trakt: auto-refresh/lock risolto per ${endpoint}. Riprovo la richiesta.`);
                     // Riprova la richiesta con il nuovo token
                     try {
                         const retryResults = await executeTraktRequest(endpoint, page, newTokens.access_token);
@@ -295,13 +292,11 @@ async function fetchTraktCatalog(endpoint, skip = 0, traktToken = null, tmdbApiK
                         return [];
                     }
                 } else {
-                    console.error(`Trakt: auto-refresh fallito per ${endpoint}.`);
+                    console.error(`Trakt: impossibile ottenere nuovi token per ${endpoint}.`);
                     return [];
                 }
             } catch (refreshErr) {
                 console.error(`Trakt: errore durante auto-refresh per ${endpoint}:`, refreshErr.message);
-                // Assicuriamoci di pulire il lock anche in caso di eccezione imprevista
-                if (userId) ongoingRefreshes.delete(userId);
                 return [];
             }
         }
@@ -375,5 +370,6 @@ module.exports = {
     refreshTraktTokens,
     syncTraktTokensToDb,
     syncTraktRatings,
-    traktClient
+    traktClient,
+    smartTraktRefresh
 };
