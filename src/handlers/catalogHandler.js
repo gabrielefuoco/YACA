@@ -464,7 +464,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
     } else if (extra?.warmupMode) {
         const cachedStatus = await catalogRequestCache.getWithStatus(requestCacheKey);
         if (cachedStatus.status === 'fresh') {
-            responseData = cachedStatus.value;
+            // [OTTIMIZZAZIONE] Se il catalogo è intatto (fresh) e il demone sta solo riscaldando,
+            // non ci serve eseguire applyPostCacheBadges (che costa migliaia di letture/scritture al DB).
+            // Usciamo immediatamente restituendo il catalogo dalla cache.
+            return cachedStatus.value;
         } else {
             const freshData = await fetchCatalog();
             await catalogRequestCache.set(requestCacheKey, freshData, ttl);

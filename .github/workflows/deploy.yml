@@ -77,6 +77,15 @@ jobs:
           echo "🔐 Sincronizzazione secrets su HF Space: ${HF_SPACE_ID}"
           echo ""
 
+          # Se HOST_URL non è definito nei secrets di GitHub, lo calcoliamo automaticamente dall'HF_SPACE_ID
+          if [ -z "$SECRET_HOST_URL" ]; then
+            # Sostituisci "/" con "-" e converti in minuscolo (es: gabrielefuoco/YACA -> gabrielefuoco-yaca)
+            # Rimuovi anche punti e underscores convertendoli in trattini per il subdominio HF
+            CLEANED_SPACE=$(echo "$HF_SPACE_ID" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr '_' '-' | tr '.' '-')
+            SECRET_HOST_URL="https://${CLEANED_SPACE}.hf.space"
+            echo "ℹ️ HOST_URL non configurato nei secrets. Calcolato automaticamente: $SECRET_HOST_URL"
+          fi
+
           sync_secret "MONGODB_URI" "$SECRET_MONGODB_URI"
           sync_secret "TMDB_API_KEY" "$SECRET_TMDB_API_KEY"
           sync_secret "PROXY_ADDON_URL" "$SECRET_PROXY_ADDON_URL"
