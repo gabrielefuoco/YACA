@@ -1,10 +1,45 @@
 const { getTmdbMetaDetails, fetchTmdbEpisodes, createTmdbClient } = require('../clients/tmdb');
-const { getKitsuMetaDetails, getKitsuIdFromTmdbId, fetchKitsuEpisodes } = require('../clients/kitsu');
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const CacheManager = require('../cache/CacheManager');
+const animeMappingStore = require('../data/animeMappingStore');
+const { resolveFallbackKitsuId } = require('../utils/tvdbBridgeFallback');
 
 // Cache per l'oggetto meta finale combinato
 const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 2000, ramTtlMs: 3600000, swrMs: 600000 });
+
+async function applyKitsuMappingToMeta(meta, tmdbId) {
+    if (!meta) return;
+
+    if (meta.type === 'movie') {
+        const kitsuId = animeMappingStore.resolveKitsuMovie(tmdbId);
+        if (kitsuId) {
+            meta.behaviorHints = meta.behaviorHints || {};
+            meta.behaviorHints.defaultVideoId = `kitsu:${kitsuId}`;
+        } else if (meta._isAnime) {
+             const fallbackId = await resolveFallbackKitsuId(tmdbId, 1, 1);
+             if (fallbackId) {
+                 meta.behaviorHints = meta.behaviorHints || {};
+                 meta.behaviorHints.defaultVideoId = fallbackId;
+             }
+        }
+        return;
+    }
+
+    if (meta.type === 'series' && Array.isArray(meta.videos)) {
+        for (const video of meta.videos) {
+            const mapped = animeMappingStore.resolveKitsu(tmdbId, video.season, video.episode);
+            
+            if (mapped && mapped.success) {
+                video.id = `kitsu:${mapped.kitsuId}:${mapped.kitsuEpisode}`;
+            } else if (meta._isAnime) {
+                const fallbackId = await resolveFallbackKitsuId(tmdbId, video.season, video.episode);
+                if (fallbackId) {
+                    video.id = fallbackId;
+                }
+            }
+        }
+    }
+}
 
 function normalizeAnimeEpisodes(seriesId, episodes) {
     if (!seriesId || !Array.isArray(episodes)) return [];
@@ -32,20 +67,8 @@ function normalizeAnimeEpisodes(seriesId, episodes) {
 }
 
 async function resolveAnimeEpisodes(metaObj, tmdbId, tmdbApiKey) {
-    let kitsuEpisodesResolved = false;
-    const kitsuId = await getKitsuIdFromTmdbId(tmdbId, 'series');
-    if (kitsuId) {
-        console.log(`[HybridAnime] Mapping Kitsu ${kitsuId} per TMDB ${tmdbId}. Carico episodi...`);
-        const kitsuEpisodes = await fetchKitsuEpisodes(kitsuId);
-        if (kitsuEpisodes && kitsuEpisodes.length > 0) {
-            metaObj.videos = normalizeAnimeEpisodes(metaObj.id, kitsuEpisodes);
-            kitsuEpisodesResolved = true;
-        }
-    }
-
-    // Fallback to TMDB episodes if Kitsu mapping failed or no episodes found
-    if (!kitsuEpisodesResolved && metaObj._numberOfSeasons) {
-        console.log(`[HybridAnime] Fallback: Carico episodi TMDB per Anime ${tmdbId}`);
+    if (metaObj._numberOfSeasons) {
+        console.log(`[Anime] Carico episodi TMDB per Anime ${tmdbId}`);
         const tmdbClient = createTmdbClient(tmdbApiKey);
         metaObj.videos = await fetchTmdbEpisodes(
             tmdbClient,
@@ -100,15 +123,19 @@ async function metaHandler(args, userConfig) {
             return { meta };
         }
 
-        // Caso 1: È un ID di Kitsu (Anime)
-        else if (id.startsWith('kitsu:')) {
-            meta = await getKitsuMetaDetails(id);
-        }
-
         // Fetch metadata via TMDB
-        if (id.startsWith('tmdb:') || id.startsWith('tt')) {
-            const tmdbIdResult = id.startsWith('tmdb:') ? { id: id.replace('tmdb:', '') } : await translateImdbToTmdb(id, tmdbApiKey);
-            const tmdbId = tmdbIdResult?.id;
+        if (id.startsWith('tmdb:') || id.startsWith('tt') || id.startsWith('kitsu:')) {
+            let tmdbId = null;
+            if (id.startsWith('tmdb:')) {
+                tmdbId = id.replace('tmdb:', '');
+            } else if (id.startsWith('tt')) {
+                const tmdbIdResult = await translateImdbToTmdb(id, tmdbApiKey);
+                tmdbId = tmdbIdResult?.id;
+            } else if (id.startsWith('kitsu:')) {
+                const animeMappingStore = require('../data/animeMappingStore');
+                const kitsuId = id.split(':')[1];
+                tmdbId = animeMappingStore.resolveTmdbFromKitsu(kitsuId);
+            }
 
             if (tmdbId) {
                 const cacheKey = `meta_${tmdbId}_${type}`;
@@ -135,6 +162,9 @@ async function metaHandler(args, userConfig) {
                                     }
                                     // Aggiornamento silente scoring cache (voti freschi)
                                     updateScoringCache(Number(tmdbId), type === 'series' ? 'tv' : type, bgMeta).catch(() => { });
+                                    
+                                    await applyKitsuMappingToMeta(bgMeta, tmdbId);
+
                                     delete bgMeta._keywordNames;
                                     delete bgMeta._isAnime;
                                     delete bgMeta._numberOfSeasons;
@@ -153,6 +183,8 @@ async function metaHandler(args, userConfig) {
 
                             // Aggiornamento silente scoring cache (voti freschi)
                             updateScoringCache(Number(tmdbId), type === 'series' ? 'tv' : type, meta).catch(() => { });
+
+                            await applyKitsuMappingToMeta(meta, tmdbId);
 
                             // Clean internal properties before caching/sending to Stremio
                             delete meta._keywordNames;

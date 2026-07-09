@@ -323,28 +323,13 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
             
             // console.log('POST FILTER WATCHED RESULTS:', finalResults?.length);
-            // 3.5 TRADUTTORE MAGICO (TMDB -> Kitsu/IMDb per Anime)
-            // Hydration MUST happen BEFORE Kitsu translation while IDs are still tmdb:
+            
             const shouldBadge = type === 'series' && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId));
             if (shouldBadge) {
                 await hydrateEpisodeBadgesFromCache(finalResults, tmdbApiKey);
             }
-            const { translateAnimeIdsToKitsu, translateAnimeIdsToImdb } = require('../utils/TmdbToKitsuMapper');
-            const animeIdMode = activeProfileSettings?.animeIdMode || 'kitsu';
 
-            if (animeIdMode === 'imdb') {
-                // Prima converte i TMDB in Kitsu (se ci sono) in modo uniforme
-                finalResults = await translateAnimeIdsToKitsu(finalResults, tmdbApiKey);
-                // Poi converte tutti i Kitsu (sia quelli appena convertiti che quelli nativi di KitsuProvider) in IMDb
-                finalResults = await translateAnimeIdsToImdb(finalResults, tmdbApiKey);
-            } else {
-                // Converte i TMDB in Kitsu, ignorando quelli che sono già Kitsu
-                finalResults = await translateAnimeIdsToKitsu(finalResults, tmdbApiKey);
-            }
-
-            // DEDUPLICATION: KitsuProvider and TMDBProvider might return the same anime.
-            // After translation, both will have the same kitsu/imdb ID.
-            // If we don't deduplicate, Stremio UI will freeze or glitch with duplicate IDs.
+            // DEDUPLICATION: TMDBProvider might return the same anime from different pages
             const uniqueMetas = new Map();
             for (const meta of finalResults) {
                 if (!meta || !meta.id) continue;
@@ -353,28 +338,6 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 }
             }
             finalResults = Array.from(uniqueMetas.values());
-
-            // console.log('POST KITSU/IMDB RESULTS:', finalResults?.length);
-            // After translation: hydrate Kitsu episodes for items that still lack videos
-            // (covers preset_new_anime and other Kitsu-translated catalogs from AiDiscoveryProvider)
-            if (shouldBadge) {
-                const { fetchKitsuEpisodes } = require('../clients/kitsu');
-                const { rateLimitedMap } = require('../utils/rateLimiter');
-                const { MAX_BADGE_CACHE_HYDRATION_ITEMS } = require('../catalog/constants');
-                await rateLimitedMap(
-                    finalResults.slice(0, MAX_BADGE_CACHE_HYDRATION_ITEMS).filter(item => {
-                        const itemId = String(item?.id || '');
-                        return itemId.startsWith('kitsu:') && (!Array.isArray(item.videos) || item.videos.length === 0);
-                    }),
-                    async (item) => {
-                        const kitsuId = String(item.id).replace('kitsu:', '');
-                        if (!kitsuId) return;
-                        const episodes = await fetchKitsuEpisodes(kitsuId);
-                        if (episodes && episodes.length > 0) item.videos = episodes;
-                    },
-                    { batchSize: 3, delayMs: 100 }
-                );
-            }
 
             // 3.8 SIMULCAST SORTING (se applicabile)
             // Se il catalogo ha query basate su date di airing (es. Simulcast), ordiniamo per episodio più recente

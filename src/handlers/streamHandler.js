@@ -113,6 +113,8 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
             let kitsuProxyId = null;
             let imdbProxyId = null;
 
+            const animeMappingStore = require('../data/animeMappingStore');
+
             if (id.startsWith('tmdb:')) {
                 const parts = id.split(':');
                 const tmdbId = parts[1];
@@ -129,41 +131,32 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
             } else if (id.startsWith('kitsu:')) {
                 const parts = id.split(':');
                 const kitsuId = parts[1];
-                const isMovieType = type === 'movie';
                 const apiKey = userConfig?.apiKeys?.tmdb || userConfig?.settings?.tmdbKey || process.env.TMDB_API_KEY;
                 
+                // Torrentio expects kitsu:1234:5 for anime episodes
                 if (parts.length === 4) {
-                    kitsuProxyId = `kitsu:${parts[1]}:${parts[3]}`;
+                    kitsuProxyId = `kitsu:${parts[1]}:${parts[3]}`; // [kitsu, id, absEpisode]
                 } else {
                     kitsuProxyId = id;
                 }
 
                 try {
-                    const { getTmdbIdFromKitsuId, fetchKitsuEpisodes } = require('../clients/kitsu');
-                    const mapping = await getTmdbIdFromKitsuId(kitsuId);
-                    if (mapping && mapping.tmdbId) {
-                        const imdbId = await resolveImdbId(mapping.tmdbId, isMovieType ? 'movie' : 'tv', apiKey);
+                    const tmdbId = animeMappingStore.resolveTmdbFromKitsu(kitsuId);
+                    if (tmdbId) {
+                        const imdbId = await resolveImdbId(tmdbId, type === 'movie' ? 'movie' : 'tv', apiKey);
                         if (imdbId) {
-                            if (isMovieType) {
+                            if (type === 'movie') {
                                 imdbProxyId = imdbId;
                             } else {
-                                const kitsuEps = await fetchKitsuEpisodes(kitsuId);
-                                if (Array.isArray(kitsuEps)) {
-                                    const currentEp = kitsuEps.find(e => e.id === id);
-                                    if (currentEp && currentEp.tmdbSeason !== undefined && currentEp.tmdbEpisode !== undefined) {
-                                        imdbProxyId = `${imdbId}:${currentEp.tmdbSeason}:${currentEp.tmdbEpisode}`;
-                                    } else {
-                                        const currentSeason = parts.length === 4 ? parseInt(parts[2], 10) : 1;
-                                        const currentEpisode = parts.length === 4 ? parseInt(parts[3], 10) : (parts.length === 3 ? parseInt(parts[2], 10) : 1);
-                                        imdbProxyId = `${imdbId}:${currentSeason}:${currentEpisode}`;
-                                    }
-                                }
+                                // Backward compatibility: dual query on IMDb if we can derive the season/episode
+                                const currentSeason = parts.length === 4 ? parseInt(parts[2], 10) : 1;
+                                const currentEpisode = parts.length === 4 ? parseInt(parts[3], 10) : (parts.length === 3 ? parseInt(parts[2], 10) : 1);
+                                imdbProxyId = `${imdbId}:${currentSeason}:${currentEpisode}`;
                             }
-                            // console.log(`[StreamProxy] Resolved IMDb ID ${imdbProxyId} for kitsu ID ${id}`);
                         }
                     }
                 } catch (err) {
-                    console.error(`[StreamProxy] Failed to translate kitsu ID ${id} to IMDb:`, err.message);
+                    console.error(`[StreamProxy] Failed to translate kitsu ID ${id} to IMDb using animeMappingStore:`, err.message);
                 }
             }
 
@@ -252,18 +245,26 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 }
                 // 2. Translate to Kitsu (if it's an anime series)
                 try {
-                    const { getKitsuIdFromTmdbId, fetchKitsuEpisodes } = require('../clients/kitsu');
-                    const kitsuId = await getKitsuIdFromTmdbId(tmdbId, type === 'series' ? 'series' : 'movie');
-                    if (kitsuId) {
-                        const kitsuEps = await fetchKitsuEpisodes(kitsuId);
-                        if (Array.isArray(kitsuEps)) {
-                            const parts = id.split(':');
-                            const currentSeason = parts.length === 4 ? parseInt(parts[2], 10) : 1;
-                            const currentEpisode = parts.length === 4 ? parseInt(parts[3], 10) : 1;
-                            const matchedEp = kitsuEps.find(e => e.tmdbSeason === currentSeason && e.tmdbEpisode === currentEpisode);
-                            if (matchedEp) {
-                                badgeEntries.push({ stremioId: matchedEp.id, baseId: `kitsu:${kitsuId}` });
+                    const parts = id.split(':');
+                    const animeMappingStore = require('../data/animeMappingStore');
+                    
+                    if (type === 'series' && parts.length > 2) {
+                        const currentSeason = parts[2];
+                        const currentEpisode = parts[3];
+                        const kitsuRes = animeMappingStore.resolveKitsu(tmdbId, currentSeason, currentEpisode);
+                        if (kitsuRes.success) {
+                            badgeEntries.push({ stremioId: `kitsu:${kitsuRes.kitsuId}:${kitsuRes.kitsuEpisode}`, baseId: `kitsu:${kitsuRes.kitsuId}` });
+                        } else {
+                            const { tvdbBridgeFallback } = require('../utils/tvdbBridgeFallback');
+                            const fallbackRes = await tvdbBridgeFallback(tmdbId, currentSeason, currentEpisode, apiKey);
+                            if (fallbackRes && fallbackRes.success) {
+                                badgeEntries.push({ stremioId: `kitsu:${fallbackRes.kitsuId}:${fallbackRes.kitsuEpisode}`, baseId: `kitsu:${fallbackRes.kitsuId}` });
                             }
+                        }
+                    } else if (type === 'movie') {
+                        const kitsuMovieId = animeMappingStore.resolveKitsuMovie(tmdbId);
+                        if (kitsuMovieId) {
+                            badgeEntries.push({ stremioId: `kitsu:${kitsuMovieId}`, baseId: `kitsu:${kitsuMovieId}` });
                         }
                     }
                 } catch (e) {
@@ -271,32 +272,20 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 }
             } else if (baseId.startsWith('kitsu:')) {
                 try {
-                    const { getTmdbIdFromKitsuId, fetchKitsuEpisodes } = require('../clients/kitsu');
+                    const animeMappingStore = require('../data/animeMappingStore');
                     const kitsuId = baseId.replace('kitsu:', '');
-                    const mapping = await getTmdbIdFromKitsuId(kitsuId);
-                    if (mapping && mapping.tmdbId) {
-                        const tmdbBaseId = `tmdb:${mapping.tmdbId}`;
+                    const tmdbId = animeMappingStore.resolveTmdbFromKitsu(kitsuId);
+                    
+                    if (tmdbId) {
+                        const tmdbBaseId = `tmdb:${tmdbId}`;
+                        badgeEntries.push({ stremioId: id, baseId: tmdbBaseId });
                         
-                        // Resolve the exact TMDB season and episode from the mapped kitsu episodes
-                        const kitsuEps = await fetchKitsuEpisodes(kitsuId);
-                        if (Array.isArray(kitsuEps)) {
-                            const currentEp = kitsuEps.find(e => e.id === id);
-                            if (currentEp && currentEp.tmdbSeason && currentEp.tmdbEpisode) {
-                                const tmdbStremioId = `${tmdbBaseId}:${currentEp.tmdbSeason}:${currentEp.tmdbEpisode}`;
-                                badgeEntries.push({ stremioId: tmdbStremioId, baseId: tmdbBaseId });
-
-                                // Also try to resolve IMDb ID for this TMDB ID and push it
-                                try {
-                                    const imdbId = await resolveImdbId(mapping.tmdbId, type, apiKey);
-                                    if (imdbId) {
-                                        const imdbStremioId = `${imdbId}:${currentEp.tmdbSeason}:${currentEp.tmdbEpisode}`;
-                                        badgeEntries.push({ stremioId: imdbStremioId, baseId: imdbId });
-                                    }
-                                } catch (imdbErr) {
-                                    // ignore
-                                }
+                        try {
+                            const imdbId = await resolveImdbId(tmdbId, type === 'movie' ? 'movie' : 'tv', apiKey);
+                            if (imdbId) {
+                                badgeEntries.push({ stremioId: id, baseId: imdbId });
                             }
-                        }
+                        } catch (imdbErr) {}
                     }
                 } catch (e) {
                     console.error(`[StreamBadge] Could not translate ${baseId} to TMDB/IMDB:`, e.message);

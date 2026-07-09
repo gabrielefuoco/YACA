@@ -23,6 +23,10 @@ const catalogRoutes = require('./src/api/catalog');
 // Connessione MongoDB
 connectDB();
 
+// Inizializza Anime Mapping in RAM
+const animeMappingStore = require('./src/data/animeMappingStore');
+animeMappingStore.init().catch(err => console.error('[AnimeMappingStore] Init Error:', err.message));
+
 // 1. Inizializza Express
 const app = express();
 app.set('trust proxy', 1);
