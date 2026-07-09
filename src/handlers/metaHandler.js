@@ -2,7 +2,7 @@ const { getTmdbMetaDetails, fetchTmdbEpisodes, createTmdbClient } = require('../
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const CacheManager = require('../cache/CacheManager');
 const animeMappingStore = require('../data/animeMappingStore');
-const { resolveFallbackKitsuId } = require('../utils/tvdbBridgeFallback');
+const { tvdbBridgeFallback } = require('../utils/tvdbBridgeFallback');
 
 // Cache per l'oggetto meta finale combinato
 const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 2000, ramTtlMs: 3600000, swrMs: 600000 });
@@ -16,10 +16,10 @@ async function applyKitsuMappingToMeta(meta, tmdbId) {
             meta.behaviorHints = meta.behaviorHints || {};
             meta.behaviorHints.defaultVideoId = `kitsu:${kitsuId}`;
         } else if (meta._isAnime) {
-             const fallbackId = await resolveFallbackKitsuId(tmdbId, 1, 1);
-             if (fallbackId) {
+             const fallbackRes = await tvdbBridgeFallback(tmdbId, 1, 1);
+             if (fallbackRes && fallbackRes.success) {
                  meta.behaviorHints = meta.behaviorHints || {};
-                 meta.behaviorHints.defaultVideoId = fallbackId;
+                 meta.behaviorHints.defaultVideoId = `kitsu:${fallbackRes.kitsuId}:${fallbackRes.kitsuEpisode}`;
              }
         }
         return;
@@ -32,9 +32,9 @@ async function applyKitsuMappingToMeta(meta, tmdbId) {
             if (mapped && mapped.success) {
                 video.id = `kitsu:${mapped.kitsuId}:${mapped.kitsuEpisode}`;
             } else if (meta._isAnime) {
-                const fallbackId = await resolveFallbackKitsuId(tmdbId, video.season, video.episode);
-                if (fallbackId) {
-                    video.id = fallbackId;
+                const fallbackRes = await tvdbBridgeFallback(tmdbId, video.season, video.episode);
+                if (fallbackRes && fallbackRes.success) {
+                    video.id = `kitsu:${fallbackRes.kitsuId}:${fallbackRes.kitsuEpisode}`;
                 }
             }
         }
