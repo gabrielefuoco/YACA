@@ -98,13 +98,18 @@ class AnimeMappingStore {
                 if (item.mal_id) newIndex.mal.set(String(item.mal_id), item.kitsu_id);
                 
                 if (item.themoviedb_id) {
-                    newKitsuToTmdb.set(String(item.kitsu_id), String(item.themoviedb_id));
-                    if (item.mal_id) {
-                        newMalToTmdb.set(String(item.mal_id), String(item.themoviedb_id));
-                    }
-                    // Fribb list ha anche type = "Movie" per i film? mini non ce l'ha, ma se mappiamo 1:1 va bene per i movie
-                    if (item.type === 'Movie') {
-                        newTmdbToKitsuMovie.set(String(item.themoviedb_id), item.kitsu_id);
+                    const tmdbVal = typeof item.themoviedb_id === 'object' && item.themoviedb_id !== null
+                        ? (item.themoviedb_id.tv || item.themoviedb_id.movie)
+                        : item.themoviedb_id;
+
+                    if (tmdbVal) {
+                        newKitsuToTmdb.set(String(item.kitsu_id), String(tmdbVal));
+                        if (item.mal_id) {
+                            newMalToTmdb.set(String(item.mal_id), String(tmdbVal));
+                        }
+                        if (item.type === 'Movie' || (typeof item.themoviedb_id === 'object' && item.themoviedb_id.movie)) {
+                            newTmdbToKitsuMovie.set(String(tmdbVal), item.kitsu_id);
+                        }
                     }
                 }
             }
