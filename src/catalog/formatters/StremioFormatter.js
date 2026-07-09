@@ -247,7 +247,13 @@ function sanitizeCatalogMeta(item, options = {}) {
         if (Array.isArray(videos) && videos.length > 0) {
             videos = videos.map(v => {
                 if (v && v.season !== undefined && v.episode !== undefined) {
-                    let episodeErdbId = `${erdbBgId}:${v.season}:${v.episode}`;
+                    let baseErdbId = erdbBgId;
+                    if (baseErdbId.startsWith('tmdb:tv:')) {
+                        baseErdbId = 'tmdb:' + baseErdbId.slice(8);
+                    } else if (baseErdbId.startsWith('tmdb:movie:')) {
+                        baseErdbId = 'tmdb:' + baseErdbId.slice(11);
+                    }
+                    let episodeErdbId = `${baseErdbId}:${v.season}:${v.episode}`;
                     let thumbnail = `https://easyratingsdb.com/${erdbConfig}/thumbnail/${episodeErdbId}.jpg`;
                     if (options.hostUrl && v.thumbnail) {
                         thumbnail = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(thumbnail)}&fallback=${encodeURIComponent(v.thumbnail)}`;
