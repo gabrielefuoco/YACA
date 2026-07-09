@@ -232,6 +232,10 @@ class AnimeMappingStore {
         if (!this.isReady) return null;
         return this.malToTmdb.get(String(malId)) || null;
     }
+
+    resolveKitsuFromMal(malId) {
+        return this.fribbIndex.mal.get(String(malId));
+    }
 }
 
 // Esporta un singleton

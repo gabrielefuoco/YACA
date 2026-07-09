@@ -7,18 +7,29 @@ async function getAnilistSimulcastCatalog(skip = 0, tmdbApiKey) {
         // Fetch raw AniList media (RELEASING)
         const anilistMedia = await fetchAnilistCatalog('anilist-simulcast', skip);
         
-        const validTmdbIds = new Set();
+        const itemsToFetch = [];
         
         for (const media of anilistMedia) {
             if (media.idMal) {
                 const tmdbId = animeMappingStore.resolveTmdbFromMal(media.idMal);
                 if (tmdbId) {
-                    validTmdbIds.add(tmdbId);
+                    const kitsuId = animeMappingStore.resolveKitsuFromMal(media.idMal);
+                    itemsToFetch.push({ tmdbId, kitsuId });
                 }
             }
         }
 
-        const promises = Array.from(validTmdbIds).map(async (tmdbId) => {
+        // Deduplicate by TMDB ID
+        const uniqueItems = [];
+        const seen = new Set();
+        for (const item of itemsToFetch) {
+            if (!seen.has(item.tmdbId)) {
+                seen.add(item.tmdbId);
+                uniqueItems.push(item);
+            }
+        }
+
+        const promises = uniqueItems.map(async ({ tmdbId, kitsuId }) => {
             try {
                 // Fetch TMDB meta details directly to ensure perfect consistency
                 // Use lightMode equivalent or full fetch? Stremio catalogs prefer light metas.
@@ -33,6 +44,11 @@ async function getAnilistSimulcastCatalog(skip = 0, tmdbApiKey) {
                     delete meta.writer;
                     delete meta.website;
                     delete meta.behaviorHints?.hasScheduledVideos;
+                    
+                    // Override ID with Kitsu ID so Stremio routes the Meta request to YACA's Kitsu handler!
+                    if (kitsuId) {
+                        meta.id = `kitsu:${kitsuId}`;
+                    }
                 }
                 return meta;
             } catch (err) {
