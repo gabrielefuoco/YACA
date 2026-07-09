@@ -4,10 +4,6 @@ jest.mock('../src/clients/tmdb', () => ({
     getTmdbIdByName: jest.fn()
 }));
 
-jest.mock('../src/clients/kitsu', () => ({
-    fetchKitsuCatalog: jest.fn()
-}));
-
 jest.mock('../src/clients/trakt', () => ({
     fetchTraktCatalog: jest.fn()
 }));
@@ -16,9 +12,7 @@ jest.mock('../src/catalog/providers/TraktProvider', () => ({
     getTraktCatalog: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/KitsuProvider', () => ({
-    getKitsuCatalog: jest.fn()
-}));
+
 
 jest.mock('../src/catalog/providers/TmdbProvider', () => ({
     getTmdbDiscoverCatalog: jest.fn(),

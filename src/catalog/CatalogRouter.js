@@ -1,8 +1,9 @@
 const { getTraktCatalog } = require('./providers/TraktProvider');
-const { getKitsuCatalog, getKitsuCatalogFromAnilist } = require('./providers/KitsuProvider');
+
 const { getTmdbDiscoverCatalog, executeStandardSearch } = require('./providers/TmdbProvider');
 const { getEngineHybridCatalog, getHybridPopularCatalog, TASTE_BASED_IDS } = require('./providers/HybridProvider');
 const { executeCombinedSearch, executeUniversalPipeline } = require('./providers/AiDiscoveryProvider');
+const { getAnilistSimulcastCatalog } = require('./providers/AnilistProvider');
 const { normalizeToUniversalSchema } = require('../utils/resultMerger');
 const { normalizeContentId } = require('../utils/contentId');
 const { getPresets } = require('../data/presets');
@@ -66,17 +67,10 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
         return await getWatchlistCatalog(id, type, skip, userConfig, activeProfileSettings);
     }
 
-    // SCENARIO 4: KITSU (ANIME)
-    if (id === 'yaca_anime_trending' || id === 'yaca_anime_ova' || id === 'yaca_anime_ona' || id === 'yaca_anime_specials') {
-        return await getKitsuCatalog(id, skip);
+    // SCENARIO 4.5: ANILIST SIMULCAST
+    if (baseId === 'preset_anime_simulcast') {
+        return await getAnilistSimulcastCatalog(skip, tmdbApiKey);
     }
-
-    // SCENARIO 4.5: ANILIST SIMULCAST -> KITSU MAPPER (Prioritario)
-    if (baseId === 'preset_anime_simulcast' || id === 'preset_anime_simulcast' || id === 'yaca_preset_anime_simulcast') {
-        return await getKitsuCatalogFromAnilist('anilist-simulcast', skip);
-    }
-    
-
 
     // SCENARIO 5: UNIVERSAL PIPELINE (AI/PRESETS Custom)
     if (catalogMeta || directFilters) {
