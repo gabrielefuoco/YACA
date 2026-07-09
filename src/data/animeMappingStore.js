@@ -1,5 +1,5 @@
 const axios = require('axios');
-const logger = require('../utils/logger'); // Assumendo esista un logger, lo adatterò se non c'è
+// Logger non standard rimosso, usiamo console
 
 const ANIBRIDGE_URL = 'https://github.com/anibridge/anibridge-mappings/releases/download/v3/mappings.min.json';
 const FRIBB_MINI_URL = 'https://raw.githubusercontent.com/Fribb/anime-lists/master/anime-list-mini.json';
@@ -23,7 +23,7 @@ class AnimeMappingStore {
     }
 
     async init() {
-        logger.info('[AnimeMappingStore] Inizializzazione in corso...');
+        console.log('[AnimeMappingStore] Inizializzazione in corso...');
         await this.sync();
         
         // Avvia il polling in background ogni 12 ore
@@ -33,7 +33,7 @@ class AnimeMappingStore {
 
     async sync() {
         try {
-            logger.info('[AnimeMappingStore] Avvio sincronizzazione mapping...');
+            console.log('[AnimeMappingStore] Avvio sincronizzazione mapping...');
             let anibridgeUpdated = false;
             let fribbUpdated = false;
             let anibridgeData = null;
@@ -47,12 +47,12 @@ class AnimeMappingStore {
                     anibridgeData = aniRes.data;
                     this.etags.anibridge = aniRes.headers['etag'];
                     anibridgeUpdated = true;
-                    logger.info('[AnimeMappingStore] Anibridge mappings scaricati (Nuova versione)');
+                    console.log('[AnimeMappingStore] Anibridge mappings scaricati (Nuova versione)');
                 } else {
-                    logger.info('[AnimeMappingStore] Anibridge mappings non modificati (304 Not Modified)');
+                    console.log('[AnimeMappingStore] Anibridge mappings non modificati (304 Not Modified)');
                 }
             } catch (err) {
-                logger.error(`[AnimeMappingStore] Errore fetch Anibridge: ${err.message}`);
+                console.error(`[AnimeMappingStore] Errore fetch Anibridge: ${err.message}`);
             }
 
             // 2. Fetch Fribb (Conditional)
@@ -63,12 +63,12 @@ class AnimeMappingStore {
                     fribbData = fribbRes.data;
                     this.etags.fribb = fribbRes.headers['etag'];
                     fribbUpdated = true;
-                    logger.info('[AnimeMappingStore] Fribb-mini scaricato (Nuova versione)');
+                    console.log('[AnimeMappingStore] Fribb-mini scaricato (Nuova versione)');
                 } else {
-                    logger.info('[AnimeMappingStore] Fribb-mini non modificato (304 Not Modified)');
+                    console.log('[AnimeMappingStore] Fribb-mini non modificato (304 Not Modified)');
                 }
             } catch (err) {
-                logger.error(`[AnimeMappingStore] Errore fetch Fribb: ${err.message}`);
+                console.error(`[AnimeMappingStore] Errore fetch Fribb: ${err.message}`);
             }
 
             // 3. Rebuild Indexes if needed
@@ -79,9 +79,9 @@ class AnimeMappingStore {
                 this.buildAnibridgeIndex(anibridgeData);
             }
             
-            logger.info(`[AnimeMappingStore] Sincronizzazione completata. TMDB chiavi: ${this.tmdbToAnimeNode.size}`);
+            console.log(`[AnimeMappingStore] Sincronizzazione completata. TMDB chiavi: ${this.tmdbToAnimeNode.size}`);
         } catch (error) {
-            logger.error(`[AnimeMappingStore] Errore critico durante il sync: ${error.message}`);
+            console.error(`[AnimeMappingStore] Errore critico durante il sync: ${error.message}`);
         }
     }
 
@@ -98,13 +98,18 @@ class AnimeMappingStore {
                 if (item.mal_id) newIndex.mal.set(String(item.mal_id), item.kitsu_id);
                 
                 if (item.themoviedb_id) {
-                    newKitsuToTmdb.set(String(item.kitsu_id), String(item.themoviedb_id));
-                    if (item.mal_id) {
-                        newMalToTmdb.set(String(item.mal_id), String(item.themoviedb_id));
-                    }
-                    // Fribb list ha anche type = "Movie" per i film? mini non ce l'ha, ma se mappiamo 1:1 va bene per i movie
-                    if (item.type === 'Movie') {
-                        newTmdbToKitsuMovie.set(String(item.themoviedb_id), item.kitsu_id);
+                    const tmdbVal = typeof item.themoviedb_id === 'object' && item.themoviedb_id !== null
+                        ? (item.themoviedb_id.tv || item.themoviedb_id.movie)
+                        : item.themoviedb_id;
+
+                    if (tmdbVal) {
+                        newKitsuToTmdb.set(String(item.kitsu_id), String(tmdbVal));
+                        if (item.mal_id) {
+                            newMalToTmdb.set(String(item.mal_id), String(tmdbVal));
+                        }
+                        if (item.type === 'Movie' || (typeof item.themoviedb_id === 'object' && item.themoviedb_id.movie)) {
+                            newTmdbToKitsuMovie.set(String(tmdbVal), item.kitsu_id);
+                        }
                     }
                 }
             }
