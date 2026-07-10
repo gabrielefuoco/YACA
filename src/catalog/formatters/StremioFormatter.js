@@ -244,28 +244,10 @@ function sanitizeCatalogMeta(item, options = {}) {
         const erdbLogoUrl = `https://easyratingsdb.com/${erdbConfig}/logo/${erdbBgId}.png`;
         logo = erdbLogoUrl;
 
-        if (Array.isArray(videos) && videos.length > 0) {
-            videos = videos.map(v => {
-                if (v && v.season !== undefined && v.episode !== undefined) {
-                    let baseErdbId = erdbBgId;
-                    if (baseErdbId.startsWith('tmdb:tv:')) {
-                        baseErdbId = 'tmdb:' + baseErdbId.slice(8);
-                    } else if (baseErdbId.startsWith('tmdb:movie:')) {
-                        baseErdbId = 'tmdb:' + baseErdbId.slice(11);
-                    }
-                    let episodeErdbId = `${baseErdbId}:${v.season}:${v.episode}`;
-                    let thumbnail = `https://easyratingsdb.com/${erdbConfig}/thumbnail/${episodeErdbId}.jpg`;
-                    if (options.hostUrl && v.thumbnail) {
-                        thumbnail = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(thumbnail)}&fallback=${encodeURIComponent(v.thumbnail)}`;
-                    }
-                    return {
-                        ...v,
-                        thumbnail: thumbnail
-                    };
-                }
-                return v;
-            });
-        }
+        // Rimosso il mapping delle thumbnail degli episodi su ERDB.
+        // ERDB non supporta le still degli episodi, il che causava un 404 costante.
+        // Il conseguente fallback generava un redirect 302 che veniva ignorato da molti client Stremio, 
+        // rompendo il 90% delle thumbnail. Ora usiamo le thumbnail native TMDB dirette.
     }
 
 
