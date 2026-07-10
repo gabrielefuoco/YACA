@@ -244,10 +244,32 @@ function sanitizeCatalogMeta(item, options = {}) {
         const erdbLogoUrl = `https://easyratingsdb.com/${erdbConfig}/logo/${erdbBgId}.png`;
         logo = erdbLogoUrl;
 
-        // Rimosso il mapping delle thumbnail degli episodi su ERDB.
-        // ERDB non supporta le still degli episodi, il che causava un 404 costante.
-        // Il conseguente fallback generava un redirect 302 che veniva ignorato da molti client Stremio, 
-        // rompendo il 90% delle thumbnail. Ora usiamo le thumbnail native TMDB dirette.
+        if (Array.isArray(videos) && videos.length > 0) {
+            videos = videos.map(v => {
+                if (v && v.season !== undefined && v.episode !== undefined) {
+                    // ERDB richiede l'ID nativo TMDB per le thumbnail degli episodi.
+                    // Evitiamo di usare getErdbId() perché preferisce l'IMDb ID (tt...), che
+                    // raggruppa gli anime in una singola stagione e causa 404 (fallback).
+                    let rawTmdbId = item.rawTMDB ? item.rawTMDB.id : null;
+                    if (!rawTmdbId && item.id && item.id.startsWith('tmdb:')) {
+                        rawTmdbId = item.id.split(':')[1];
+                    }
+
+                    if (rawTmdbId) {
+                        let episodeErdbId = `tmdb:${rawTmdbId}:${v.season}:${v.episode}`;
+                        let thumbnail = `https://easyratingsdb.com/${erdbConfig}/thumbnail/${episodeErdbId}.jpg`;
+                        if (options.hostUrl && v.thumbnail) {
+                            thumbnail = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(thumbnail)}&fallback=${encodeURIComponent(v.thumbnail)}`;
+                        }
+                        return {
+                            ...v,
+                            thumbnail: thumbnail
+                        };
+                    }
+                }
+                return v;
+            });
+        }
     }
 
 
