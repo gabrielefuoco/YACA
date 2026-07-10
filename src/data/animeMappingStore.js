@@ -187,13 +187,6 @@ class AnimeMappingStore {
         const tSeason = Number(season);
         const tEpisode = Number(episode);
 
-        // Gli speciali (Stagione 0) causano spesso discrepanze massicce con Kitsu (es. OVA mappati 
-        // alla serie principale al posto che a film o spin-off separati).
-        // Ignoriamo intenzionalmente la Stagione 0 per delegarla sempre ai scraper occidentali (TMDB nativo).
-        if (tSeason === 0) {
-            return { error: 'Season 0 (Specials) ignorata intenzionalmente per evitare conflitti con Kitsu.' };
-        }
-
         const key = `${tmdbId}:${tSeason}`;
         const nodeMappings = this.tmdbToAnimeNode.get(key);
 
@@ -201,29 +194,81 @@ class AnimeMappingStore {
             return { error: `TMDB ID ${key} non presente in Anibridge` };
         }
 
-        // Cerca il match più specifico (range TMDB più stretto) tra tutti i mapping
-        let bestMatch = null;
+        // Cerca i match più specifici (range TMDB più stretto) tra tutti i mapping
         let bestWidth = Infinity;
+        let candidates = [];
 
         for (const mapping of nodeMappings) {
             for (const rule of mapping.rules) {
                 if (tEpisode >= rule.start && tEpisode <= rule.end) {
                     const width = rule.end - rule.start;
-                    if (width < bestWidth) {
+                    if (width <= bestWidth) {
                         const mapToUse = this.fribbIndex[mapping.bridgeNode.p];
                         const kitsuId = mapToUse?.get(mapping.bridgeNode.id);
                         if (kitsuId) {
-                            bestMatch = { success: true, kitsuId, kitsuEpisode: tEpisode + rule.offset };
-                            bestWidth = width;
+                            if (width < bestWidth) {
+                                // Trovata una regola più stringente, resetta i candidati
+                                candidates = [];
+                                bestWidth = width;
+                            }
+                            candidates.push({
+                                provider: mapping.bridgeNode.p,
+                                kitsuId,
+                                kitsuEpisode: tEpisode + rule.offset
+                            });
                         }
                     }
                 }
             }
         }
 
-        if (bestMatch) return bestMatch;
-        
-        return { error: `Episodio ${tEpisode} non coperto dai mapping per ${key}` };
+        if (candidates.length === 0) {
+            return { error: `Episodio ${tEpisode} non coperto dai mapping per ${key}` };
+        }
+
+        // Sistema di Votazione (Consensus)
+        // Raggruppa per stringa unica "kitsuId:kitsuEpisode"
+        const votes = {};
+        for (const cand of candidates) {
+            const voteKey = `${cand.kitsuId}:${cand.kitsuEpisode}`;
+            if (!votes[voteKey]) {
+                votes[voteKey] = {
+                    count: 0,
+                    providers: [],
+                    kitsuId: cand.kitsuId,
+                    kitsuEpisode: cand.kitsuEpisode
+                };
+            }
+            votes[voteKey].count++;
+            votes[voteKey].providers.push(cand.provider);
+        }
+
+        // Gerarchia di affidabilità in caso di parità
+        const providerWeights = {
+            'anilist': 5,
+            'mal': 4,
+            'anidb': 3,
+            'livechart': 2,
+            'kitsu': 1
+        };
+
+        let bestCandidate = null;
+        let maxScore = -1; // Usato per calcolare (Voti * 100) + provider score del migliore
+
+        for (const key in votes) {
+            const v = votes[key];
+            // Calcoliamo lo score del miglior provider in questo gruppo per eventuali spareggi
+            const bestProviderScore = Math.max(...v.providers.map(p => providerWeights[p] || 0));
+            // Punteggio: diamo priorità enorme al numero di voti, e usiamo il providerScore come decimale
+            const score = (v.count * 100) + bestProviderScore;
+
+            if (score > maxScore) {
+                maxScore = score;
+                bestCandidate = v;
+            }
+        }
+
+        return { success: true, kitsuId: bestCandidate.kitsuId, kitsuEpisode: bestCandidate.kitsuEpisode };
     }
 
     /**
