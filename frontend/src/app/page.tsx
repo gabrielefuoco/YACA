@@ -12,7 +12,7 @@ import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
-import { MyList, StremioAuth, Profile } from '@/types';
+import { MyList, StremioAuth, Profile, Catalog } from '@/types';
 import { LOCAL_STORAGE_KEYS, SESSION_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 import { api } from '@/lib/api';
 import { usePathname } from 'next/navigation';
