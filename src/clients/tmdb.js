@@ -597,7 +597,7 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
     if (status === 'fresh') return cached;
 
     const fetchAllSeasonEpisodes = async () => {
-        const startSeason = 1;
+        const startSeason = 0; // Inizia da 0 per includere gli episodi Speciali (Stagione 0 su TMDB)
         const maxSeasonsToFetch = Math.min(totalSeasons, 50);
         const APPEND_BATCH_SIZE = 20; // TMDB limit for append_to_response
 
