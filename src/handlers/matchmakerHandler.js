@@ -190,7 +190,7 @@ async function analyzeMatchmakerSession(req, res) {
             .slice(0, CARDS_PER_BATCH).map(c => ({
                 id: c.id,
                 title: c.title || c.name,
-                poster: c.poster_path ? \`https://image.tmdb.org/t/p/w500\${c.poster_path}\` : null,
+                poster: c.poster_path ? `https://image.tmdb.org/t/p/w500${c.poster_path}` : null,
                 year: (c.release_date || c.first_air_date || '').split('-')[0],
                 overview: c.overview,
                 genre_ids: c.genre_ids,
