@@ -22,11 +22,21 @@ async function applyKitsuMappingToMeta(meta, tmdbId) {
 
     if (meta.type === 'series' && Array.isArray(meta.videos)) {
         let fallbackCount = 0;
+        const usedKitsuIds = new Set();
+        
         for (const video of meta.videos) {
             const mapped = animeMappingStore.resolveKitsu(tmdbId, video.season, video.episode);
             
             if (mapped && mapped.success) {
-                video.id = `kitsu:${mapped.kitsuId}:${mapped.kitsuEpisode}`;
+                const targetId = `kitsu:${mapped.kitsuId}:${mapped.kitsuEpisode}`;
+                // Se questo Kitsu ID è già stato assegnato a un altro episodio TMDB, c'è una collisione in Anibridge.
+                // Invece di far sparire l'episodio da Stremio (che deduplica gli id), facciamo fallback all'ID TMDB nativo.
+                if (usedKitsuIds.has(targetId)) {
+                    fallbackCount++;
+                } else {
+                    usedKitsuIds.add(targetId);
+                    video.id = targetId;
+                }
             } else if (meta._isAnime) {
                 fallbackCount++;
             }
