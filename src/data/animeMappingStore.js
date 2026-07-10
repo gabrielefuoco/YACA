@@ -186,6 +186,14 @@ class AnimeMappingStore {
 
         const tSeason = Number(season);
         const tEpisode = Number(episode);
+
+        // Gli speciali (Stagione 0) causano spesso discrepanze massicce con Kitsu (es. OVA mappati 
+        // alla serie principale al posto che a film o spin-off separati).
+        // Ignoriamo intenzionalmente la Stagione 0 per delegarla sempre ai scraper occidentali (TMDB nativo).
+        if (tSeason === 0) {
+            return { error: 'Season 0 (Specials) ignorata intenzionalmente per evitare conflitti con Kitsu.' };
+        }
+
         const key = `${tmdbId}:${tSeason}`;
         const nodeMappings = this.tmdbToAnimeNode.get(key);
 
