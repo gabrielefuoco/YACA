@@ -73,7 +73,10 @@ function getEpisodeBadgeText(item) {
 function getErdbId(item, context = 'default') {
     if (!item) return '';
 
-    const strId = String(item.id || '').replace('_ita_offset', '');
+    let strId = String(item.id || '');
+    if (!strId || strId.startsWith('yaca-')) return null;
+
+    strId = strId.replace('_ita_offset', '');
 
     // Per gli item Kitsu, usiamo sempre il Kitsu ID per ERDB:
     // ERDB indicizza i poster Kitsu per stagione con copertine localizzate e specifiche.
@@ -117,7 +120,8 @@ function getErdbId(item, context = 'default') {
         return `tmdb:${tmdbType}:${strId}`;
     }
 
-    return strId;
+    // Se non è un ID riconosciuto, restituiamo null per evitare chiamate a vuoto (che generano 404)
+    return null;
 }
 
 
