@@ -43,8 +43,8 @@ function normalizeAnimeEpisodes(seriesId, episodes) {
     let absoluteIndex = 1;
     return episodes
         .map((episode) => {
-            const season = Number(episode?.season) > 0 ? Number(episode.season) : 1;
-            const episodeNumber = Number(episode?.episode) > 0 ? Number(episode.episode) : absoluteIndex++;
+            const season = (episode?.season !== undefined && episode?.season !== null && Number(episode.season) >= 0) ? Number(episode.season) : 1;
+            const episodeNumber = (episode?.episode !== undefined && episode?.episode !== null && Number(episode.episode) >= 0) ? Number(episode.episode) : absoluteIndex++;
 
             // If we have an IMDB seriesId (tt...), we want to force its use for better stream compatibility
             // otherwise we preserve full IDs (like kitsu: absolute ones).
