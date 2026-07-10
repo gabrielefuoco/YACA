@@ -58,6 +58,12 @@ const simulcastDatesCache = new CacheManager('simulcast_dates', {
     swrMs: ONE_HOUR_MS * 6
 });
 
+const matchmakerSessionCache = new CacheManager('matchmaker_sessions', {
+    ramMax: 50,
+    ramTtlMs: ONE_HOUR_MS,
+    redisTtlMs: ONE_HOUR_MS
+});
+
 module.exports = {
     aiPromptCache,
     aiDiscoveryCache,
@@ -65,5 +71,6 @@ module.exports = {
     catalogFallbackCache,
     catalogRequestCache,
     TmdbRequestCache,
-    simulcastDatesCache
+    simulcastDatesCache,
+    matchmakerSessionCache
 };

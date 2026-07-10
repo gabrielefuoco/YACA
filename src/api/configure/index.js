@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
     try {
         validateAuth(req);
 
-        const { activeProfileId, profiles: bodyProfiles } = req.body;
+        const { activeProfileId, profiles: bodyProfiles, customCatalogs } = req.body;
         const userId = req.user.userId;
 
         // Read existing data from both tables via resolveUserConfig
@@ -88,6 +88,7 @@ module.exports = async (req, res) => {
 
         if (hasApiKeys) updateData.apiKeys = apiKeys;
         if (parsedProfiles !== undefined) updateData.profiles = parsedProfiles;
+        if (customCatalogs !== undefined) updateData.customCatalogs = customCatalogs;
         if (stremioEmail) updateData.email = stremioEmail;
 
         // saveUser now handles both UserAccount + AddonConfig (Two-Table Split)

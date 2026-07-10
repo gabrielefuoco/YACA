@@ -8,6 +8,8 @@ import { CreatorPanel } from '@/components/dashboard/CreatorPanel';
 import { DnaAndAiPanel } from '@/components/dashboard/DnaAndAiPanel';
 import { RenameProfileDialog } from '@/components/modals/RenameProfileDialog';
 import { EditCatalogModal } from '@/components/modals/EditCatalogModal';
+import { MatchmakerModal } from '@/components/modals/MatchmakerModal';
+import { useMatchmaker } from '@/hooks/useMatchmaker';
 import { generateId } from '@/lib/utils';
 
 import { UserLibraryPanel } from '@/components/dashboard/UserLibraryPanel';
@@ -22,6 +24,7 @@ interface DashboardPageProps {
   categories: string[];
   profileTemplates: ProfileTemplate[];
   myLists: MyList[];
+  customCatalogs?: Catalog[];
   onSelectEditing: (id: string) => void;
   onSetActive: (id: string) => void;
   onAddProfile: (name: string) => Profile;
@@ -49,6 +52,7 @@ export function DashboardPage({
   categories,
   profileTemplates,
   myLists,
+  customCatalogs,
   onSelectEditing,
   onSetActive,
   onAddProfile,
@@ -74,6 +78,8 @@ export function DashboardPage({
   const editingProfile = profiles.find((p) => p.id === editingProfileId) ?? profiles[0];
 
   const activeCatalogIds = editingProfile?.existingCatalogs?.map(c => c.id) || [];
+
+  const matchmaker = useMatchmaker(userId ?? null, editingProfileId ?? null);
 
 
 
@@ -231,6 +237,7 @@ export function DashboardPage({
                 presets={presets}
                 myLists={myListCatalogs}
                 onRemoveMyList={onRemoveMyList}
+                onOpenMatchmaker={() => matchmaker.initMatchmaker('movie', 'random')}
               />
             )}
 
@@ -239,7 +246,10 @@ export function DashboardPage({
                 presets={presets}
                 categories={categories}
                 profile={editingProfile}
+                customCatalogs={customCatalogs}
                 onTogglePreset={(presetId) => onTogglePreset(editingProfileId, presetId)}
+                onAddCatalog={(cat) => onAddCatalog(editingProfileId, cat)}
+                onEditCatalog={handleEditCatalog}
               />
             )}
 
@@ -294,6 +304,8 @@ export function DashboardPage({
         onRemoveCatalog={(id) => onRemoveCatalog(editingProfileId, id)}
         onUpdateCatalog={(cat) => onUpdateCatalog(editingProfileId, cat)}
       />
+
+      <MatchmakerModal matchmaker={matchmaker} />
     </div>
   );
 }

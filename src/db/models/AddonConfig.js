@@ -69,9 +69,9 @@ const addonConfigSchema = new mongoose.Schema({
             genres: { type: Map, of: Number },
             keywords: { type: Map, of: Number },
             networks: { type: Map, of: Number },
-            companies: { type: Map, of: Number }
         }
     }],
+    customCatalogs: [catalogSchema],
     config: {
         activeProfileId: String,
         configVersion: String

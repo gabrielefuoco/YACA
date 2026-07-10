@@ -57,6 +57,7 @@ export default function Home() {
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'settings'>('dashboard');
   const [myLists, setMyLists] = useState<MyList[]>([]);
+  const [customCatalogs, setCustomCatalogs] = useState<Catalog[]>([]);
   const [configVersion, setConfigVersion] = useState<string | undefined>();
   const [initialProfiles, setInitialProfiles] = useState<Profile[] | undefined>(undefined);
   const [initialActiveProfileId, setInitialActiveProfileId] = useState<string | undefined>(undefined);
@@ -107,6 +108,7 @@ export default function Home() {
           if (data && Array.isArray(data.profiles) && data.profiles.length > 0) {
             const mappedProfiles = (data.profiles as BackendProfile[]).map(mapBackendProfile);
             setInitialProfiles(mappedProfiles);
+            if (data.customCatalogs) setCustomCatalogs(data.customCatalogs as Catalog[]);
             if (data.configVersion) setConfigVersion(String(data.configVersion));
             if (data.apiKeys) {
               if (data.apiKeys.tmdb) setGlobalTmdbKey(data.apiKeys.tmdb);
@@ -145,6 +147,7 @@ export default function Home() {
         if (data && Array.isArray(data.profiles) && data.profiles.length > 0) {
           const mappedProfiles = (data.profiles as BackendProfile[]).map(mapBackendProfile);
           setInitialProfiles(mappedProfiles);
+          if (data.customCatalogs) setCustomCatalogs(data.customCatalogs as Catalog[]);
           if (data.configVersion) setConfigVersion(String(data.configVersion));
 
           if (data.activeProfileId && typeof data.activeProfileId === 'string') {
@@ -510,6 +513,7 @@ export default function Home() {
                   categories={categories}
                   profileTemplates={profileTemplates}
                   myLists={myLists}
+                  customCatalogs={customCatalogs}
                   onSelectEditing={setEditingProfileId}
                   onSetActive={setActiveProfileId}
                   onAddProfile={addProfile}

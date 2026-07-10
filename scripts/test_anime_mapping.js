@@ -24,7 +24,7 @@ const TEST_CASES = [
         season: 2,
         totalSeasons: 2,
         expectedMapping: {
-            // Cour 1: TMDB Ep 1-12 → AniList 145064 (Kitsu 45857) Ep 1-12
+            // Cour 1: TMDB Ep 1-12 → AniList 145064 (Kitsu 45950) Ep 1-12
             // Cour 2: TMDB Ep 13-24 → AniList 166873 (Kitsu 47694) Ep 1-12
             cour1KitsuId: 45950,
             cour2KitsuId: 47694,
@@ -43,6 +43,48 @@ const TEST_CASES = [
         tmdbId: '72636',
         season: 2,
         totalSeasons: 2,
+        expectedMapping: null
+    },
+    {
+        name: 'One Piece',
+        tmdbId: '37854',
+        season: 1,
+        totalSeasons: 1, // TMDB One Piece is generally considered to have season 1 as the main series
+        expectedMapping: null
+    },
+    {
+        name: 'Attack on Titan S4 (The Final Season)',
+        tmdbId: '1429',
+        season: 4,
+        totalSeasons: 4, // Final season has 3 parts/cours
+        expectedMapping: null
+    },
+    {
+        name: 'Demon Slayer S2',
+        tmdbId: '85937',
+        season: 2,
+        totalSeasons: 4,
+        expectedMapping: null
+    },
+    {
+        name: 'My Hero Academia S2 (Offset Test)',
+        tmdbId: '65930',
+        season: 2,
+        totalSeasons: 7,
+        expectedMapping: null
+    },
+    {
+        name: 'Sword Art Online S3 (Alicization multi-cour)',
+        tmdbId: '45782',
+        season: 3,
+        totalSeasons: 3,
+        expectedMapping: null
+    },
+    {
+        name: 'FLCL (OVA Short Series)',
+        tmdbId: '32168',
+        season: 1,
+        totalSeasons: 1,
         expectedMapping: null
     }
 ];

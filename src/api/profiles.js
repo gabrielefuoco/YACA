@@ -9,6 +9,7 @@ const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const { buildDnaDescription, generateDiscoveryQueries } = require('../ai/querySynthesizer');
 const LibraryConverterService = require('../services/LibraryConverterService');
 const UserLibraryItem = require('../db/models/UserLibraryItem');
+const { initMatchmakerSession, analyzeMatchmakerSession, finishMatchmakerSession } = require('../handlers/matchmakerHandler');
 
 /**
  * POST /api/profiles/:id/convert-library
@@ -352,6 +353,24 @@ router.post('/:id/sync-vectors', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+/**
+ * POST /api/profiles/:id/matchmaker/init
+ * Initializes a Tinder-style discovery session
+ */
+router.post('/:id/matchmaker/init', initMatchmakerSession);
+
+/**
+ * POST /api/profiles/:id/matchmaker/analyze
+ * Batch-evaluates swipes and fetches new cards
+ */
+router.post('/:id/matchmaker/analyze', analyzeMatchmakerSession);
+
+/**
+ * POST /api/profiles/:id/matchmaker/finish
+ * Force-ends the session and saves the custom catalog
+ */
+router.post('/:id/matchmaker/finish', finishMatchmakerSession);
 
 /**
  * GET /api/profiles/:id/library

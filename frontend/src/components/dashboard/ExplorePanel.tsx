@@ -11,10 +11,13 @@ interface ExplorePanelProps {
   presets: Preset[];
   categories: string[];
   profile: Profile;
+  customCatalogs?: Catalog[];
   onTogglePreset: (presetId: string) => void;
+  onAddCatalog?: (catalog: Catalog) => void;
+  onEditCatalog?: (catalog: Catalog) => void;
 }
 
-export function ExplorePanel({ presets, categories, profile, onTogglePreset }: ExplorePanelProps) {
+export function ExplorePanel({ presets, categories, profile, customCatalogs = [], onTogglePreset, onAddCatalog, onEditCatalog }: ExplorePanelProps) {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Tutti');
   const [showSearch, setShowSearch] = useState(false);
@@ -22,8 +25,31 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
 
   const selectedPresets = profile.raw_ui_state.selectedPresets;
 
+  const allCategories = ['Tutti', 'Le Mie Creazioni', ...categories];
+
+  const combinedItems = useMemo(() => {
+    const list: any[] = [...presets.map(p => ({...p, isCustom: false}))];
+    
+    customCatalogs.forEach(c => {
+      list.push({
+        id: c.id,
+        name: c.name,
+        type: c.type,
+        category: 'Le Mie Creazioni',
+        emoji: c.emoji || '💖',
+        description: c.source === 'custom' ? 'Creato tramite Matchmaker' : 'Catalogo Custom',
+        filters: c.filters,
+        queries: c.queries,
+        isCustom: true,
+        originalCatalog: c
+      });
+    });
+
+    return list;
+  }, [presets, customCatalogs]);
+
   const filtered = useMemo(() => {
-    let list = presets;
+    let list = combinedItems;
     if (selectedCategory !== 'Tutti') {
       list = list.filter((p) => p.category === selectedCategory);
     }
@@ -32,9 +58,7 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
       list = list.filter((p) => p.name.toLowerCase().includes(q));
     }
     return list;
-  }, [presets, selectedCategory, search]);
-
-  const allCategories = ['Tutti', ...categories];
+  }, [combinedItems, selectedCategory, search]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -95,8 +119,10 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
           </div>
         )}
         {filtered.map((preset) => {
-          const isSelected = selectedPresets.includes(preset.id);
-          // calculate rough filter count from the first query object if exists
+          const isSelected = preset.isCustom 
+            ? profile.existingCatalogs.some(c => c.id === preset.id)
+            : selectedPresets.includes(preset.id);
+
           const filterCount = preset.queries?.[0] ? Object.keys(preset.queries[0]).length - 1 : 0; 
 
           return (
@@ -129,10 +155,27 @@ export function ExplorePanel({ presets, categories, profile, onTogglePreset }: E
                         ? 'bg-success/20 text-success hover:bg-success/30 border border-success/20' 
                         : 'bg-primary text-white hover:bg-marrow-deep hover:shadow-lg hover:-translate-y-0.5'
                     }`}
-                    onClick={() => onTogglePreset(preset.id)}
+                    onClick={() => {
+                      if (preset.isCustom && onAddCatalog) {
+                        onAddCatalog(preset.originalCatalog);
+                      } else {
+                        onTogglePreset(preset.id);
+                      }
+                    }}
                   >
                     {isSelected ? <><Check className="w-3 h-3 mr-1" /> Aggiunto</> : 'Aggiungi'}
                   </Button>
+                  
+                  {preset.isCustom && onEditCatalog && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 transition-all shadow-sm border border-primary/20 ml-2"
+                      onClick={() => onEditCatalog(preset.originalCatalog)}
+                    >
+                      Modifica
+                    </Button>
+                  )}
                 </div>
               </div>
 

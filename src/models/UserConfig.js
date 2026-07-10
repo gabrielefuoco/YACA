@@ -216,6 +216,9 @@ const UserConfig = {
 
                 // Set profiles directly (synchronized)
                 configUpdateOp.$set.profiles = finalizedProfiles;
+                if (localData.customCatalogs !== undefined) {
+                    configUpdateOp.$set.customCatalogs = localData.customCatalogs;
+                }
 
                 if (Object.keys(configUpdateOp.$set).length === 0) delete configUpdateOp.$set;
 
@@ -297,6 +300,7 @@ const UserConfig = {
             addonUuid: addonConfig?.uuid || account?.addonUuid || null,
             apiKeys: this._decryptApiKeys(account?.apiKeys?.toObject?.() || account?.apiKeys || {}),
             profiles: resolvedProfiles,
+            customCatalogs: addonConfig?.customCatalogs || [],
             activeProfileId: addonConfig?.config?.activeProfileId,
             configVersion: addonConfig?.config?.configVersion,
             syncStatus: addonConfig?.syncStatus
@@ -316,6 +320,7 @@ const UserConfig = {
             addonUuid: accountObj.addonUuid,
             apiKeys: this._decryptApiKeys(accountObj.apiKeys || {}),
             profiles: configObj.profiles || [],
+            customCatalogs: configObj.customCatalogs || [],
             config: configObj.config || {},
             syncStatus: configObj.syncStatus || {}
         };

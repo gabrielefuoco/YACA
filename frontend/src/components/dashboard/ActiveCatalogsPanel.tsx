@@ -15,6 +15,7 @@ interface ActiveCatalogsPanelProps {
   onRemoveMyList: (id: string) => void;
   onEdit: (catalog: Catalog) => void;
   onDuplicate: (catalog: Catalog) => void;
+  onOpenMatchmaker?: () => void;
 }
 
 export function ActiveCatalogsPanel({
@@ -27,6 +28,7 @@ export function ActiveCatalogsPanel({
   onRemoveMyList,
   onEdit,
   onDuplicate,
+  onOpenMatchmaker,
 }: ActiveCatalogsPanelProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [mergeSource, setMergeSource] = useState<Catalog | null>(null);
@@ -115,6 +117,27 @@ export function ActiveCatalogsPanel({
            </div>
         )}
       </div>
+
+      {/* Matchmaker Pill */}
+      {onOpenMatchmaker && !isSelectionMode && (
+        <button 
+          onClick={onOpenMatchmaker}
+          className="w-full flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-marrow-deep text-marrow-light border-2 border-primary transition-all duration-300 hover:bg-[#5E0006] hover:text-[#EED9B9] hover:shadow-[0_0_20px_rgba(94,0,6,0.4)] group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/40 transition-colors">
+              <span className="material-symbols-outlined text-primary group-hover:text-white">favorite</span>
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="text-sm font-black uppercase tracking-widest leading-none mb-1 group-hover:text-white transition-colors">YACA Matchmaker</span>
+              <span className="text-xs font-bold opacity-70">Esplora e swipa per scoprire nuovi contenuti.</span>
+            </div>
+          </div>
+          <div className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest group-hover:bg-white/10 group-hover:border-white/20 transition-all">
+            Gioca Ora
+          </div>
+        </button>
+      )}
 
       {/* Merge Selection Bar */}
       {isSelectionMode && (
