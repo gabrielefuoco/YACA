@@ -153,11 +153,13 @@ class AnimeMappingStore {
 
                     const key = `${tmdbId}:${season}`;
                     const rules = [];
-                    for (const [targetRange, sourceRange] of Object.entries(episodesMap)) {
-                        const target = parseRange(targetRange); 
-                        const source = parseRange(sourceRange); 
-                        const offset = source.start - target.start;
-                        rules.push({ start: target.start, end: target.end, offset });
+                    for (const [animeRange, tmdbRange] of Object.entries(episodesMap)) {
+                        const anime = parseRange(animeRange);  // Range episodi dell'anime
+                        const tmdb = parseRange(tmdbRange);    // Range episodi su TMDB
+                        // Offset per convertire TMDB ep → Anime ep: animeEp = tmdbEp + offset
+                        const offset = anime.start - tmdb.start;
+                        // Le boundaries usano lo spazio TMDB (perché resolveKitsu riceve ep TMDB)
+                        rules.push({ start: tmdb.start, end: tmdb.end, offset });
                     }
 
                     if (!newIndex.has(key)) {
@@ -191,21 +193,27 @@ class AnimeMappingStore {
             return { error: `TMDB ID ${key} non presente in Anibridge` };
         }
 
+        // Cerca il match più specifico (range TMDB più stretto) tra tutti i mapping
+        let bestMatch = null;
+        let bestWidth = Infinity;
+
         for (const mapping of nodeMappings) {
             for (const rule of mapping.rules) {
                 if (tEpisode >= rule.start && tEpisode <= rule.end) {
-                    const animeEpisode = tEpisode + rule.offset;
-                    const mapToUse = this.fribbIndex[mapping.bridgeNode.p];
-                    const kitsuId = mapToUse.get(mapping.bridgeNode.id);
-                    
-                    if (!kitsuId) {
-                        return { error: `Nodo ponte ${mapping.bridgeNode.p}:${mapping.bridgeNode.id} non trovato in Fribb` };
+                    const width = rule.end - rule.start;
+                    if (width < bestWidth) {
+                        const mapToUse = this.fribbIndex[mapping.bridgeNode.p];
+                        const kitsuId = mapToUse?.get(mapping.bridgeNode.id);
+                        if (kitsuId) {
+                            bestMatch = { success: true, kitsuId, kitsuEpisode: tEpisode + rule.offset };
+                            bestWidth = width;
+                        }
                     }
-
-                    return { success: true, kitsuId, kitsuEpisode: animeEpisode };
                 }
             }
         }
+
+        if (bestMatch) return bestMatch;
         
         return { error: `Episodio ${tEpisode} non coperto dai mapping per ${key}` };
     }

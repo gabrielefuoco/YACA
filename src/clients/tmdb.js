@@ -642,16 +642,11 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
 
         const buildEpisodesFromSeason = async (seasonData, fallbackMaps = {}) => {
             if (!seasonData?.episodes) return [];
-            
-            // Filtra l'Episodio 0 (spesso usato per special e recap intra-stagionali su TMDB)
-            // per evitare di sfasare il conteggio degli offset nel mapping (es. AniBridge / Fribb)
-            const validEpisodes = seasonData.episodes.filter(ep => ep.episode_number > 0);
-
             const enOverviewByEpisode = fallbackMaps.enOverviewByEpisode || new Map();
             const originalOverviewByEpisode = fallbackMaps.originalOverviewByEpisode || new Map();
             
             // Limit mapping to avoid processing huge arrays synchronously if possible
-            return rateLimitedMap(validEpisodes, async (ep) => {
+            return rateLimitedMap(seasonData.episodes, async (ep) => {
                 let overview = ep.overview || '';
                 
                 // Use English or original overview as fallback if Italian is missing
