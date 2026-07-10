@@ -14,17 +14,25 @@ async function applyKitsuMappingToMeta(meta, tmdbId) {
         if (kitsuId) {
             meta.behaviorHints = meta.behaviorHints || {};
             meta.behaviorHints.defaultVideoId = `kitsu:${kitsuId}`;
+        } else if (meta._isAnime) {
+            console.log(`[Mapping Fallback] Film Anime TMDB ${tmdbId} non ha Kitsu ID. Usa ID TMDB nativo.`);
         }
         return;
     }
 
     if (meta.type === 'series' && Array.isArray(meta.videos)) {
+        let fallbackCount = 0;
         for (const video of meta.videos) {
             const mapped = animeMappingStore.resolveKitsu(tmdbId, video.season, video.episode);
             
             if (mapped && mapped.success) {
                 video.id = `kitsu:${mapped.kitsuId}:${mapped.kitsuEpisode}`;
+            } else if (meta._isAnime) {
+                fallbackCount++;
             }
+        }
+        if (fallbackCount > 0) {
+             console.log(`[Mapping Fallback] Serie Anime TMDB ${tmdbId} ha ${fallbackCount} episodi non mappati (mantenuto ID nativo).`);
         }
     }
 }
