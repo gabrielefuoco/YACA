@@ -1,4 +1,5 @@
 const { EPISODE_CATALOG_IDS } = require('../constants');
+const { TMDB_API_KEY } = require('../../config');
 
 function findLatestAiredEpisode(videos) {
     if (!Array.isArray(videos) || videos.length === 0) return null;
@@ -256,8 +257,9 @@ function sanitizeCatalogMeta(item, options = {}) {
                     }
 
                     if (rawTmdbId) {
-                        let episodeErdbId = `tmdb:${rawTmdbId}:${v.season}:${v.episode}`;
-                        let thumbnail = `https://easyratingsdb.com/${erdbConfig}/thumbnail/${episodeErdbId}.jpg`;
+                        let type = item.type === 'movie' ? 'movie' : 'tv';
+                        let episodeErdbId = `tmdb:${type}:${rawTmdbId}:${v.season}:${v.episode}`;
+                        let thumbnail = `https://easyratingsdb.com/${erdbConfig}/thumbnail/${episodeErdbId}.jpg?tmdbKey=${TMDB_API_KEY}`;
                         if (options.hostUrl && v.thumbnail) {
                             thumbnail = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(thumbnail)}&fallback=${encodeURIComponent(v.thumbnail)}`;
                         }
