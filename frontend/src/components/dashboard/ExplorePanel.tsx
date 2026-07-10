@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useRef } from 'react';
-import { Preset, Profile } from '@/types';
+import { Preset, Profile, Catalog } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
