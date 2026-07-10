@@ -17,8 +17,12 @@ async function clearCaches() {
             console.log("Redis non disponibile, impossibile svuotare la cache.");
         }
 
-        console.log("Disconnessione...");
-        await redisClient.quit();
+        if (redisClient.isAvailable) {
+            console.log("Disconnessione da Redis...");
+            try {
+                await redisClient.quit();
+            } catch (err) {}
+        }
         process.exit(0);
     } catch (e) {
         console.error("Errore durante la pulizia della cache:", e);

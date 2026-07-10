@@ -227,6 +227,7 @@ function toStremioMetaItem(tmdbItem, type) {
     const meta = {
         id,
         imdb_id: imdbId, // Native flag for badges
+        _tmdbId: tmdbItem.id,
         type: type === 'movie' ? 'movie' : 'series',
         name: name,
         inTheaters: isTheatrical,

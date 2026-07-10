@@ -1,5 +1,4 @@
 const { EPISODE_CATALOG_IDS } = require('../constants');
-const { TMDB_API_KEY } = require('../../config');
 
 function findLatestAiredEpisode(videos) {
     if (!Array.isArray(videos) || videos.length === 0) return null;
@@ -73,10 +72,7 @@ function getEpisodeBadgeText(item) {
 function getErdbId(item, context = 'default') {
     if (!item) return '';
 
-    let strId = String(item.id || '');
-    if (!strId || strId.startsWith('yaca-')) return null;
-
-    strId = strId.replace('_ita_offset', '');
+    const strId = String(item.id || '').replace('_ita_offset', '');
 
     // Per gli item Kitsu, usiamo sempre il Kitsu ID per ERDB:
     // ERDB indicizza i poster Kitsu per stagione con copertine localizzate e specifiche.
@@ -120,8 +116,7 @@ function getErdbId(item, context = 'default') {
         return `tmdb:${tmdbType}:${strId}`;
     }
 
-    // Se non è un ID riconosciuto, restituiamo null per evitare chiamate a vuoto (che generano 404)
-    return null;
+    return strId;
 }
 
 
@@ -255,7 +250,7 @@ function sanitizeCatalogMeta(item, options = {}) {
                     // ERDB richiede l'ID nativo TMDB per le thumbnail degli episodi.
                     // Evitiamo di usare getErdbId() perché preferisce l'IMDb ID (tt...), che
                     // raggruppa gli anime in una singola stagione e causa 404 (fallback).
-                    let rawTmdbId = item.rawTMDB ? item.rawTMDB.id : null;
+                    let rawTmdbId = item.rawTMDB ? item.rawTMDB.id : (item._tmdbId || null);
                     if (!rawTmdbId && item.id && item.id.startsWith('tmdb:')) {
                         rawTmdbId = item.id.split(':')[1];
                     }
@@ -263,7 +258,8 @@ function sanitizeCatalogMeta(item, options = {}) {
                     if (rawTmdbId) {
                         let type = item.type === 'movie' ? 'movie' : 'tv';
                         let episodeErdbId = `tmdb:${type}:${rawTmdbId}:${v.season}:${v.episode}`;
-                        let thumbnail = `https://easyratingsdb.com/${erdbConfig}/thumbnail/${episodeErdbId}.jpg?tmdbKey=${TMDB_API_KEY}`;
+                        let tmdbKey = process.env.TMDB_API_KEY || '';
+                        let thumbnail = `https://easyratingsdb.com/${erdbConfig}/thumbnail/${episodeErdbId}.jpg?tmdbKey=${tmdbKey}`;
                         if (options.hostUrl && v.thumbnail) {
                             thumbnail = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(thumbnail)}&fallback=${encodeURIComponent(v.thumbnail)}`;
                         }
