@@ -55,6 +55,7 @@ async function initMatchmakerSession(req, res) {
         let initialParams = {};
         const account = await UserAccount.findOne({ userId }).lean();
         const activeMistralKey = account?.apiKeys?.mistral || process.env.MISTRAL_API_KEY;
+        const tmdbApiKey = account?.apiKeys?.tmdb || process.env.TMDB_API_KEY;
 
         if (vibeOrRandom !== 'random' && activeMistralKey) {
             const client = new Mistral({ apiKey: activeMistralKey });
@@ -78,7 +79,7 @@ async function initMatchmakerSession(req, res) {
         await matchmakerSessionCache.set(sessionId, sessionState);
 
         // Fetch prime carte (10)
-        const tmdbClient = createTmdbClient();
+        const tmdbClient = createTmdbClient(tmdbApiKey);
         const baseParams = {
             ...initialParams,
             language: 'it-IT',
@@ -148,6 +149,7 @@ async function analyzeMatchmakerSession(req, res) {
 
         const account = await UserAccount.findOne({ userId }).lean();
         const activeMistralKey = account?.apiKeys?.mistral || process.env.MISTRAL_API_KEY;
+        const tmdbApiKey = account?.apiKeys?.tmdb || process.env.TMDB_API_KEY;
         let newParams = sessionState.localDnaParams;
 
         // Mistral Re-Evaluation every N swipes
@@ -172,7 +174,7 @@ async function analyzeMatchmakerSession(req, res) {
         sessionState.localDnaParams = newParams;
         await matchmakerSessionCache.set(sessionId, sessionState);
 
-        const tmdbClient = createTmdbClient();
+        const tmdbClient = createTmdbClient(tmdbApiKey);
         const baseParams = {
             ...sessionState.localDnaParams,
             ...newParams,
