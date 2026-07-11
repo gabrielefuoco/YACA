@@ -22,7 +22,6 @@ const MATCHMAKER_SYSTEM_PROMPT = `You are the YACA Matchmaker AI, a cinematic so
    - GOAL: Target vibes the user likes. Avoid vibes tied to dislikes.
 
 ### PARAMETER EXTRACTION RULES:
-- KEYWORDS: descriptive English nouns. Do NOT use numerical IDs.
 - GENRES: Map to TMDB numerical IDs (Action → 28, Adventure → 12, Animation → 16, Comedy → 35, Crime → 80, Documentary → 99, Drama → 18, Family → 10751, Fantasy → 14, History → 36, Horror → 27, Music → 10402, Mystery → 9648, Romance → 10749, Sci-Fi → 878, TV Movie → 10770, Thriller → 53, War → 10752, Western → 37)
 - LOGIC OPERATORS: pipe (|) = OR, comma (,) = AND. Prefer pipe for broad discovery.
 
@@ -31,12 +30,12 @@ User liked: "Inception" (Sci-Fi, Action), "Interstellar" (Drama, Sci-Fi)
 User disliked: "The Notebook" (Romance, Drama)
 → Output:
 [
-  { "vibe": "Mind-bending Sci-Fi", "genre_ids": [878, 28], "keyword": "dream|simulation|time travel" },
-  { "vibe": "Epic Space Drama", "genre_ids": [878, 18], "keyword": "space|astronaut" }
+  { "vibe": "Mind-bending Sci-Fi", "genre_ids": [878, 28] },
+  { "vibe": "Epic Space Drama", "genre_ids": [878, 18] }
 ]
 
 ### RESPONSE FORMAT (JSON ARRAY ONLY):
-[{ "vibe": "string", "genre_ids": [int] | null, "keyword": "string" | null }]`;
+[{ "vibe": "string", "genre_ids": [int] | null }]`;
 
 
 /**
@@ -182,7 +181,7 @@ async function initMatchmakerSession(req, res) {
         
         // Fallback queries in case Mistral fails or is disabled
         if (parsedQueries.length === 0) {
-            parsedQueries = [{ vibe: 'Popular', genre_ids: null, keyword: null }];
+            parsedQueries = [{ vibe: 'Popular', genre_ids: null }];
         }
 
         console.log(`[Matchmaker] Init session ${sessionId}, user ${userId}, type: ${type}, mode: ${vibeOrRandom}`);
@@ -194,7 +193,6 @@ async function initMatchmakerSession(req, res) {
             queries: parsedQueries.map(q => {
                 let query = { strategy: 'discovery' };
                 if (q.genre_ids) query.with_genres = q.genre_ids;
-                if (q.keyword) query.with_keywords = q.keyword;
                 
                 // Merge overrides anime se presenti
                 if (sessionState.animeOverrides.with_genres) {
@@ -319,7 +317,7 @@ async function analyzeMatchmakerSession(req, res) {
         }
 
         if (parsedQueries.length === 0) {
-            parsedQueries = [{ vibe: 'Popular Continuation', genre_ids: null, keyword: null }];
+            parsedQueries = [{ vibe: 'Popular Continuation', genre_ids: null }];
         }
         
         await matchmakerSessionCache.set(sessionId, sessionState);
@@ -328,7 +326,6 @@ async function analyzeMatchmakerSession(req, res) {
             queries: parsedQueries.map(q => {
                 let query = { strategy: 'discovery' };
                 if (q.genre_ids) query.with_genres = q.genre_ids;
-                if (q.keyword) query.with_keywords = q.keyword;
                 
                 // Merge overrides anime
                 if (sessionState.animeOverrides?.with_genres) {
