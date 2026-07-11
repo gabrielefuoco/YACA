@@ -90,6 +90,29 @@ async function sortByDnaAffinity(items, userId, profileId) {
     }
 }
 
+/**
+ * Helper con exponential backoff per Rate Limits (429) di Mistral.
+ */
+async function callMistralWithRetry(client, messages, maxRetries = 3) {
+    let delay = 1000;
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await client.chat.complete({
+                model: 'mistral-small-latest',
+                messages: messages,
+                response_format: { type: 'json_object' }
+            });
+        } catch (err) {
+            if (err.statusCode === 429 && i < maxRetries - 1) {
+                console.warn(`[Matchmaker] Rate limit 429, retrying in ${delay}ms... (Attempt ${i + 1} of ${maxRetries - 1})`);
+                await new Promise(res => setTimeout(res, delay));
+                delay *= 2;
+            } else {
+                throw err;
+            }
+        }
+    }
+}
 
 /**
  * Inizializza una sessione di Matchmaker.
@@ -147,14 +170,10 @@ async function initMatchmakerSession(req, res) {
             }
 
             try {
-                const response = await client.chat.complete({
-                    model: 'mistral-large-latest',
-                    messages: [
-                        { role: 'system', content: MATCHMAKER_SYSTEM_PROMPT },
-                        { role: 'user', content: userPrompt }
-                    ],
-                    response_format: { type: 'json_object' }
-                });
+                const response = await callMistralWithRetry(client, [
+                    { role: 'system', content: MATCHMAKER_SYSTEM_PROMPT },
+                    { role: 'user', content: userPrompt }
+                ]);
                 parsedQueries = parseQuerySynthesizerResponse(response.choices?.[0]?.message?.content);
             } catch (err) {
                 console.error('[Matchmaker] Init Mistral error:', err);
@@ -288,14 +307,10 @@ async function analyzeMatchmakerSession(req, res) {
             const prompt = `The user liked: ${likedTitles || 'nothing yet'}. The user disliked: ${dislikedTitles || 'nothing yet'}. Generate 2-3 discovery queries to find better matches.`;
             
             try {
-                const response = await client.chat.complete({
-                    model: 'mistral-large-latest',
-                    messages: [
-                        { role: 'system', content: MATCHMAKER_SYSTEM_PROMPT },
-                        { role: 'user', content: prompt }
-                    ],
-                    response_format: { type: 'json_object' }
-                });
+                const response = await callMistralWithRetry(client, [
+                    { role: 'system', content: MATCHMAKER_SYSTEM_PROMPT },
+                    { role: 'user', content: prompt }
+                ]);
                 parsedQueries = parseQuerySynthesizerResponse(response.choices?.[0]?.message?.content);
                 console.log(`[Matchmaker] Mistral output iterazione ${sessionState.iteration}:`, JSON.stringify(parsedQueries));
             } catch (err) {

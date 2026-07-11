@@ -60,13 +60,13 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                             <Sparkles className="w-8 h-8 text-primary" />
                         </div>
                         <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2">YACA Matchmaker</h2>
-                        <p className="text-marrow-light/70 text-sm mb-10">Cosa vuoi esplorare oggi?</p>
+                        <p className="text-white/80 font-bold text-sm mb-10">Cosa vuoi esplorare oggi?</p>
 
                         <div className="flex flex-col gap-4 w-full max-w-[240px]">
                             <button 
                                 onClick={() => initMatchmaker('movie', 'random')}
                                 disabled={isLoading}
-                                className="flex items-center justify-center gap-3 w-full py-4 bg-white/5 border border-primary/30 rounded-xl text-white font-bold hover:bg-primary/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                className="flex items-center justify-center gap-3 w-full py-4 bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                             >
                                 <Film className="w-5 h-5 text-primary" />
                                 Film
@@ -74,7 +74,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                             <button 
                                 onClick={() => initMatchmaker('series', 'random')}
                                 disabled={isLoading}
-                                className="flex items-center justify-center gap-3 w-full py-4 bg-white/5 border border-primary/30 rounded-xl text-white font-bold hover:bg-primary/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                className="flex items-center justify-center gap-3 w-full py-4 bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                             >
                                 <Tv className="w-5 h-5 text-primary" />
                                 Serie TV
@@ -82,7 +82,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                             <button 
                                 onClick={() => initMatchmaker('anime', 'random')}
                                 disabled={isLoading}
-                                className="flex items-center justify-center gap-3 w-full py-4 bg-white/5 border border-primary/30 rounded-xl text-white font-bold hover:bg-primary/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                className="flex items-center justify-center gap-3 w-full py-4 bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                             >
                                 <PlaySquare className="w-5 h-5 text-primary" />
                                 Anime
@@ -92,7 +92,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                         {isLoading && (
                             <div className="mt-8 flex flex-col items-center gap-2">
                                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                <span className="text-[10px] uppercase font-bold text-marrow-light/50 tracking-widest">Inizializzazione DNA...</span>
+                                <span className="text-[10px] uppercase font-bold text-white/80 tracking-widest">Inizializzazione DNA...</span>
                             </div>
                         )}
                     </div>

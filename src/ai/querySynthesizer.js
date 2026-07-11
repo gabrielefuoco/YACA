@@ -293,5 +293,6 @@ async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend',
 
 module.exports = {
     generateDiscoveryQueries,
-    buildDnaDescription
+    buildDnaDescription,
+    parseQuerySynthesizerResponse
 };
