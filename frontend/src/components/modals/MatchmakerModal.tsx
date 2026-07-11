@@ -59,10 +59,10 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                             <p className="mt-4 text-xs font-black uppercase text-white/70 tracking-widest">Sintonizzazione DNA...</p>
                         </div>
                     ) : currentCard ? (
-                        <div className="flex-1 relative w-full h-full flex flex-col">
+                        <div className="flex-1 relative w-full h-full flex flex-col items-center justify-center">
                             {/* The Card */}
                             <div 
-                                className="relative w-full flex-1 rounded-2xl overflow-hidden shadow-2xl cursor-pointer group transition-all duration-500 preserve-3d"
+                                className="relative h-full w-full max-w-[280px] sm:max-w-[320px] max-h-[80vh] aspect-[2/3] rounded-3xl overflow-hidden shadow-2xl cursor-pointer group transition-all duration-500 preserve-3d"
                                 style={{ transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
                                 onClick={() => setFlipped(!flipped)}
                             >

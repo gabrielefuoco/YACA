@@ -182,7 +182,19 @@ async function analyzeMatchmakerSession(req, res) {
             include_adult: false
         };
         const endpoint = sessionState.type === 'movie' ? '/discover/movie' : '/discover/tv';
-        const results = await fetchTmdbCatalogDirect(tmdbClient, endpoint, sessionState.iteration + 1, baseParams, sessionState.type, 1);
+        let results = await fetchTmdbCatalogDirect(tmdbClient, endpoint, sessionState.iteration + 1, baseParams, sessionState.type, 1);
+        
+        // Fallback: se Mistral ha generato parametri troppo restrittivi o keyword inesistenti
+        if (!results?.items || results.items.length === 0) {
+            console.log('[Matchmaker] TMDB returned 0 results. Fallback to looser params.');
+            const fallbackParams = { language: 'it-IT', include_adult: false, with_genres: baseParams.with_genres };
+            results = await fetchTmdbCatalogDirect(tmdbClient, endpoint, sessionState.iteration + 1, fallbackParams, sessionState.type, 1);
+            if (!results?.items || results.items.length === 0) {
+                // Extreme fallback
+                results = await fetchTmdbCatalogDirect(tmdbClient, endpoint, sessionState.iteration + 1, { language: 'it-IT', include_adult: false }, sessionState.type, 1);
+            }
+        }
+
         
         // Evitiamo dupes
         const seenIds = new Set([...sessionState.likedIds, ...sessionState.dislikedIds, ...sessionState.watchlistIds]);
