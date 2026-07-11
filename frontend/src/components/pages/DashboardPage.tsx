@@ -200,7 +200,7 @@ export function DashboardPage({
               key={tab.id}
               onClick={() => {
                 if (tab.id === 'matchmaker') {
-                  matchmaker.initMatchmaker('movie', 'random');
+                  matchmaker.openMatchmaker();
                   return;
                 }
                 if (tab.id !== 'creator') {
@@ -211,7 +211,7 @@ export function DashboardPage({
               className={`
                 flex items-center justify-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:px-6 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-black transition-all duration-300 whitespace-nowrap flex-auto sm:flex-none
                 ${tab.id === 'matchmaker'
-                  ? 'bg-primary text-white shadow-lg shadow-primary/40 hover:scale-105 hover:bg-primary/90 ring-2 ring-primary/20'
+                  ? 'bg-primary/10 text-primary border border-primary/30 hover:bg-primary hover:text-white shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:scale-105'
                   : activeTab === tab.id
                     ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-105'
                     : 'text-marrow-light hover:text-primary hover:bg-primary/5'
