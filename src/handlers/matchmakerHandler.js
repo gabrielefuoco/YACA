@@ -13,16 +13,20 @@ const CARDS_PER_BATCH = 10; // Quanti film ritorna Mistral/TMDB ogni giro
 
 // Prompt Mistral per il Matchmaker
 const MATCHMAKER_SYSTEM_PROMPT = `You are the YACA Matchmaker AI, a cinematic sommelier. Current Year: ${new Date().getFullYear()}.
-Your goal is to output exactly ONE JSON object containing TMDB discovery parameters based on what the user liked and disliked so far.
-You MUST reply with JSON ONLY. No markdown, no prose.
+Your goal is to output exactly ONE JSON object containing TMDB discovery parameters based on the user's swipe history (likes, dislikes, watchlist).
+Use ONLY valid TMDB Discover parameters. Do NOT use keywords since you do not have their exact TMDB IDs.
+Valid Genres IDs: 28 (Action), 12 (Adventure), 16 (Animation), 35 (Comedy), 80 (Crime), 99 (Documentary), 18 (Drama), 10751 (Family), 14 (Fantasy), 36 (History), 27 (Horror), 10402 (Music), 9648 (Mystery), 10749 (Romance), 878 (Sci-Fi), 10770 (TV Movie), 53 (Thriller), 10752 (War), 37 (Western).
 
 JSON Format:
 {
-  "with_genres": "string (comma or pipe separated TMDB genre IDs)",
-  "without_genres": "string",
-  "with_keywords": "string (comma or pipe separated English keyword strings)",
-  "without_keywords": "string"
-}`;
+  "with_genres": "string (e.g. '28,12' for Action AND Adventure, or '28|12' for Action OR Adventure. Max 2-3)",
+  "without_genres": "string (IDs to exclude)",
+  "primary_release_date.gte": "string (YYYY-MM-DD)",
+  "primary_release_date.lte": "string (YYYY-MM-DD)",
+  "vote_average.gte": "number (0-10)",
+  "with_original_language": "string (e.g. 'en|it|es|fr|ko|ja')"
+}
+You MUST reply with JSON ONLY. No markdown, no prose. Keep filters loose to avoid 0 results.`;
 
 /**
  * Inizializza una sessione di Matchmaker.
@@ -166,6 +170,7 @@ async function analyzeMatchmakerSession(req, res) {
                     response_format: { type: 'json_object' }
                 });
                 newParams = safeJsonParse(response.choices?.[0]?.message?.content) || newParams;
+                console.log(`[Matchmaker] Mistral output per iterazione ${sessionState.iteration + 1}:`, newParams);
             } catch (err) {
                 console.error('[Matchmaker] Analyze Mistral error:', err);
             }
@@ -182,16 +187,20 @@ async function analyzeMatchmakerSession(req, res) {
             include_adult: false
         };
         const endpoint = sessionState.type === 'movie' ? '/discover/movie' : '/discover/tv';
-        let results = await fetchTmdbCatalogDirect(tmdbClient, endpoint, sessionState.iteration + 1, baseParams, sessionState.type, 1);
+        let pageToFetch = sessionState.iteration + 1;
+        
+        console.log(`[Matchmaker] Fetching TMDB ${endpoint} page ${pageToFetch} with params:`, baseParams);
+        let results = await fetchTmdbCatalogDirect(tmdbClient, endpoint, pageToFetch, baseParams, sessionState.type, 1);
         
         // Fallback: se Mistral ha generato parametri troppo restrittivi o keyword inesistenti
         if (!results?.items || results.items.length === 0) {
-            console.log('[Matchmaker] TMDB returned 0 results. Fallback to looser params.');
+            console.log(`[Matchmaker] TMDB returned 0 results. Fallback to looser params.`);
             const fallbackParams = { language: 'it-IT', include_adult: false, with_genres: baseParams.with_genres };
-            results = await fetchTmdbCatalogDirect(tmdbClient, endpoint, sessionState.iteration + 1, fallbackParams, sessionState.type, 1);
+            results = await fetchTmdbCatalogDirect(tmdbClient, endpoint, pageToFetch, fallbackParams, sessionState.type, 1);
             if (!results?.items || results.items.length === 0) {
-                // Extreme fallback
-                results = await fetchTmdbCatalogDirect(tmdbClient, endpoint, sessionState.iteration + 1, { language: 'it-IT', include_adult: false }, sessionState.type, 1);
+                console.log(`[Matchmaker] Extreme fallback for page 1.`);
+                // Extreme fallback and restarting from page 1 since pageToFetch may be too high for these limits
+                results = await fetchTmdbCatalogDirect(tmdbClient, endpoint, 1, { language: 'it-IT', include_adult: false }, sessionState.type, 1);
             }
         }
 
