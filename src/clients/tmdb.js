@@ -1033,6 +1033,7 @@ async function clearAllTmdbCaches() {
 module.exports = {
     createTmdbClient, // Esportato in caso serva passare chiavi specifiche
     fetchTmdbCatalog,
+    fetchTmdbCatalogDirect,
     getTmdbMetaDetails,
     getTmdbMovieDetails,
     getTmdbIdByName,
