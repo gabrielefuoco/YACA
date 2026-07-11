@@ -89,11 +89,11 @@ async function initMatchmakerSession(req, res) {
         
         // Return 10
         const cards = (results?.items || []).slice(0, CARDS_PER_BATCH).map(c => ({
-            id: c.id,
-            title: c.title || c.name,
-            poster: c.poster_path ? `https://image.tmdb.org/t/p/w500${c.poster_path}` : null,
-            year: (c.release_date || c.first_air_date || '').split('-')[0],
-            overview: c.overview,
+            id: String(c.id).replace('tmdb:', ''),
+            title: c.name,
+            poster: c.poster,
+            year: c.releaseInfo,
+            overview: c.description,
             genre_ids: c.genre_ids,
             type
         }));
@@ -186,13 +186,14 @@ async function analyzeMatchmakerSession(req, res) {
         const seenIds = new Set([...sessionState.likedIds, ...sessionState.dislikedIds, ...sessionState.watchlistIds]);
         
         const cards = (results?.items || [])
-            .filter(c => !seenIds.has(String(c.id)))
+            .map(c => ({ ...c, rawId: String(c.id).replace('tmdb:', '') }))
+            .filter(c => !seenIds.has(c.rawId))
             .slice(0, CARDS_PER_BATCH).map(c => ({
-                id: c.id,
-                title: c.title || c.name,
-                poster: c.poster_path ? `https://image.tmdb.org/t/p/w500${c.poster_path}` : null,
-                year: (c.release_date || c.first_air_date || '').split('-')[0],
-                overview: c.overview,
+                id: c.rawId,
+                title: c.name,
+                poster: c.poster,
+                year: c.releaseInfo,
+                overview: c.description,
                 genre_ids: c.genre_ids,
                 type: sessionState.type
             }));

@@ -162,6 +162,7 @@ export function DashboardPage({
     { id: 'creator' as const, label: 'Creatore', icon: 'auto_fix' },
     { id: 'dna' as const, label: 'DNA & AI Lab', icon: 'biotech' },
     { id: 'library' as const, label: 'Libreria Utente', icon: 'library_books' },
+    { id: 'matchmaker' as const, label: 'Matchmaker', icon: 'style' },
   ];
 
   return (
@@ -198,6 +199,10 @@ export function DashboardPage({
             <button
               key={tab.id}
               onClick={() => {
+                if (tab.id === 'matchmaker') {
+                  matchmaker.initMatchmaker('movie', 'random');
+                  return;
+                }
                 if (tab.id !== 'creator') {
                   setEditingCatalog(null);
                 }
@@ -205,13 +210,15 @@ export function DashboardPage({
               }}
               className={`
                 flex items-center justify-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:px-6 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-black transition-all duration-300 whitespace-nowrap flex-auto sm:flex-none
-                ${activeTab === tab.id
-                  ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-105'
-                  : 'text-marrow-light hover:text-primary hover:bg-primary/5'
+                ${tab.id === 'matchmaker'
+                  ? 'bg-primary text-white shadow-lg shadow-primary/40 hover:scale-105 hover:bg-primary/90 ring-2 ring-primary/20'
+                  : activeTab === tab.id
+                    ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-105'
+                    : 'text-marrow-light hover:text-primary hover:bg-primary/5'
                 }
               `}
             >
-              <span className={`material-symbols-outlined text-sm sm:text-lg ${activeTab === tab.id ? 'animate-pulse' : ''}`}>{tab.icon}</span>
+              <span className={`material-symbols-outlined text-sm sm:text-lg ${tab.id === 'matchmaker' ? 'animate-pulse text-amber-200' : ''}`}>{tab.icon}</span>
               <span className="uppercase tracking-wider">{tab.label}</span>
             </button>
           ))}

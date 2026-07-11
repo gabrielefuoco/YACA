@@ -39,10 +39,10 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                 {/* Topbar */}
                 <div className="flex items-center justify-between p-4 bg-black/40 text-marrow-light">
                     <div className="flex flex-col">
-                        <span className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-1">
+                        <span className="text-xs font-black uppercase tracking-widest text-amber-200 flex items-center gap-1">
                             <Sparkles className="w-3 h-3"/> Matchmaker
                         </span>
-                        <span className="text-[10px] uppercase font-bold opacity-70">
+                        <span className="text-[10px] uppercase font-bold text-white/70">
                             Fase {iteration + 1} di {maxIterations}
                         </span>
                     </div>
@@ -55,8 +55,8 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                 <div className="flex-1 h-full flex flex-col relative p-4 bg-marrow-deep">
                     {isLoading && !currentCard ? (
                         <div className="flex-1 flex flex-col items-center justify-center">
-                            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                            <p className="mt-4 text-xs font-black uppercase text-marrow-light/60 tracking-widest">Sintonizzazione DNA...</p>
+                            <div className="w-8 h-8 border-4 border-amber-200 border-t-transparent rounded-full animate-spin"></div>
+                            <p className="mt-4 text-xs font-black uppercase text-white/70 tracking-widest">Sintonizzazione DNA...</p>
                         </div>
                     ) : currentCard ? (
                         <div className="flex-1 relative w-full h-full flex flex-col">
@@ -116,9 +116,9 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                         </div>
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-                            <Sparkles className="w-12 h-12 text-primary mb-4" />
-                            <h3 className="text-xl font-black text-marrow-light mb-2">Non ci sono altre carte</h3>
-                            <p className="text-sm text-marrow-light/60 mb-6">Abbiamo esplorato abbastanza per ora. Salva il catalogo per vedere i risultati!</p>
+                            <Sparkles className="w-12 h-12 text-amber-200 mb-4" />
+                            <h3 className="text-xl font-black text-white mb-2">Non ci sono altre carte</h3>
+                            <p className="text-sm text-white/70 mb-6">Abbiamo esplorato abbastanza per ora. Salva il catalogo per vedere i risultati!</p>
                         </div>
                     )}
                 </div>
