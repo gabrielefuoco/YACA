@@ -4,7 +4,7 @@ const { Mistral } = require('@mistralai/mistralai');
 const TasteProfile = require('../models/TasteProfile');
 const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
-const { UniversalPipeline } = require('../catalog/UniversalPipeline');
+const { createTmdbClient, fetchTmdbCatalogDirect } = require('../clients/tmdb');
 const { safeJsonParse } = require('../utils/jsonParser');
 
 const MAX_ITERATIONS = 8;
@@ -78,17 +78,17 @@ async function initMatchmakerSession(req, res) {
         await matchmakerSessionCache.set(sessionId, sessionState);
 
         // Fetch prime carte (10)
-        const pipeline = new UniversalPipeline();
+        const tmdbClient = createTmdbClient();
         const baseParams = {
             ...initialParams,
             language: 'it-IT',
-            include_adult: false,
-            page: 1
+            include_adult: false
         };
-        const results = await pipeline.fetchDiscovery(type, baseParams, 1);
+        const endpoint = type === 'movie' ? '/discover/movie' : '/discover/tv';
+        const results = await fetchTmdbCatalogDirect(tmdbClient, endpoint, 1, baseParams, type, 1);
         
         // Return 10
-        const cards = (results?.results || []).slice(0, CARDS_PER_BATCH).map(c => ({
+        const cards = (results?.items || []).slice(0, CARDS_PER_BATCH).map(c => ({
             id: c.id,
             title: c.title || c.name,
             poster: c.poster_path ? `https://image.tmdb.org/t/p/w500${c.poster_path}` : null,
@@ -172,20 +172,20 @@ async function analyzeMatchmakerSession(req, res) {
         sessionState.localDnaParams = newParams;
         await matchmakerSessionCache.set(sessionId, sessionState);
 
-        const pipeline = new UniversalPipeline();
+        const tmdbClient = createTmdbClient();
         const baseParams = {
+            ...sessionState.localDnaParams,
             ...newParams,
             language: 'it-IT',
-            include_adult: false,
-            // Per variare i risultati, cambiamo un po' la pagina se necessario o basandoci sull'iterazione
-            page: sessionState.iteration + 1
+            include_adult: false
         };
-        const results = await pipeline.fetchDiscovery(sessionState.type, baseParams, 1);
+        const endpoint = sessionState.type === 'movie' ? '/discover/movie' : '/discover/tv';
+        const results = await fetchTmdbCatalogDirect(tmdbClient, endpoint, sessionState.iteration + 1, baseParams, sessionState.type, 1);
         
         // Evitiamo dupes
         const seenIds = new Set([...sessionState.likedIds, ...sessionState.dislikedIds, ...sessionState.watchlistIds]);
         
-        const cards = (results?.results || [])
+        const cards = (results?.items || [])
             .filter(c => !seenIds.has(String(c.id)))
             .slice(0, CARDS_PER_BATCH).map(c => ({
                 id: c.id,
