@@ -38,33 +38,18 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
     
     const [flipped, setFlipped] = useState(false);
     const [selectedType, setSelectedType] = useState<'movie' | 'series' | 'anime' | null>(null);
-    const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
+    const [selectedVibe, setSelectedVibe] = useState<string | null>(null);
     
     const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
     const [isLoadingTrailer, setIsLoadingTrailer] = useState(false);
 
-    const POPULAR_GENRES = [
-        { id: 28, name: 'Azione' },
-        { id: 12, name: 'Avventura' },
-        { id: 16, name: 'Animazione' },
-        { id: 35, name: 'Commedia' },
-        { id: 80, name: 'Crime' },
-        { id: 18, name: 'Dramma' },
-        { id: 14, name: 'Fantasy' },
-        { id: 27, name: 'Horror' },
-        { id: 9648, name: 'Mistero' },
-        { id: 10749, name: 'Romance' },
-        { id: 878, name: 'Fantascienza' },
-        { id: 53, name: 'Thriller' }
+    const VIBES = [
+        { id: 'Intenso & Ricco d\\'Azione', label: 'Intenso & Azione', icon: '🔥', desc: 'Adrenalina, battaglie, thriller' },
+        { id: 'Rilassante & Leggero', label: 'Rilassante & Leggero', icon: '🍃', desc: 'Slice of Life, commedie, feel-good' },
+        { id: 'Psicologico & Misterioso', label: 'Psicologico & Mistero', icon: '🧠', desc: 'Mind-bending, gialli, oscuro' },
+        { id: 'Drammatico & Emozionante', label: 'Dramma & Emozione', icon: '😭', desc: 'Storie profonde, toccanti' },
+        { id: 'Epico & Avventuroso', label: 'Epico & Avventura', icon: '🌍', desc: 'Viaggi, magia, fantascienza' }
     ];
-
-    const toggleGenre = (id: number) => {
-        setSelectedGenres(prev => {
-            if (prev.includes(id)) return prev.filter(g => g !== id);
-            if (prev.length >= 3) return prev;
-            return [...prev, id];
-        });
-    };
 
     // Early return rimosso per rispettare le Rules of Hooks
 
@@ -83,7 +68,12 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
         if (!currentCard) return;
         setFlipped(false);
         setTrailerUrl(null);
-        handleSwipe(currentCard.id, 'answered', option.label, option.genre_ids);
+        
+        const discarded = currentCard.question_options
+            ?.filter(opt => opt.label !== option.label)
+            .map(opt => opt.label) || [];
+            
+        handleSwipe(currentCard.id, 'answered', option.label, option.genre_ids, currentCard.question_text, discarded);
     };
 
     const handleFlip = () => {
@@ -188,33 +178,37 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                             </>
                         ) : (
                             <>
-                                <p className="text-white/80 font-bold text-sm mb-6">Scegli fino a 3 generi (opzionale)</p>
-                                <div className="flex flex-wrap justify-center gap-2 max-w-[300px] mb-8">
-                                    {POPULAR_GENRES.map(g => (
+                                <p className="text-white/80 font-bold text-sm mb-4">Qual è il tuo Mood?</p>
+                                <div className="flex flex-col gap-2 w-full max-w-[280px] mb-6 max-h-[300px] overflow-y-auto pr-1">
+                                    {VIBES.map(v => (
                                         <button 
-                                            key={g.id}
-                                            onClick={() => toggleGenre(g.id)}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
-                                                selectedGenres.includes(g.id) 
-                                                    ? 'bg-primary text-white border-primary shadow-[0_0_10px_rgba(220,38,38,0.3)]' 
-                                                    : 'bg-white/5 text-white/60 border-white/10 hover:border-white/30'
+                                            key={v.id}
+                                            onClick={() => setSelectedVibe(v.id)}
+                                            className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all border-2 ${
+                                                selectedVibe === v.id 
+                                                    ? 'bg-primary/20 border-primary shadow-[0_0_15px_rgba(220,38,38,0.2)]' 
+                                                    : 'bg-white/5 border-white/10 hover:border-white/30'
                                             }`}
                                         >
-                                            {g.name}
+                                            <span className="text-2xl">{v.icon}</span>
+                                            <div>
+                                                <div className="text-white font-bold text-sm leading-tight">{v.label}</div>
+                                                <div className="text-white/50 text-[10px] uppercase font-black tracking-wider mt-0.5">{v.desc}</div>
+                                            </div>
                                         </button>
                                     ))}
                                 </div>
                                 <div className="flex gap-3 w-full max-w-[280px]">
                                     <button 
-                                        onClick={() => { setSelectedType(null); setSelectedGenres([]); }}
+                                        onClick={() => { setSelectedType(null); setSelectedVibe(null); }}
                                         className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-white/70 font-bold hover:bg-white/10"
                                     >
                                         Indietro
                                     </button>
                                     <button 
-                                        onClick={() => initMatchmaker(selectedType, 'random', selectedGenres.length > 0 ? selectedGenres : undefined)}
-                                        disabled={isLoading}
-                                        className="flex-[2] py-3 bg-primary border-2 border-primary/40 rounded-xl text-white font-black hover:brightness-110 disabled:opacity-50 shadow-[0_0_15px_rgba(220,38,38,0.15)]"
+                                        onClick={() => initMatchmaker(selectedType, selectedVibe || 'random')}
+                                        disabled={isLoading || !selectedVibe}
+                                        className="flex-[2] py-3 bg-primary border-2 border-primary/40 rounded-xl text-white font-black hover:brightness-110 disabled:opacity-50 shadow-[0_0_15px_rgba(220,38,38,0.15)] transition-all"
                                     >
                                         {isLoading ? 'Avvio...' : 'Esplora'}
                                     </button>
@@ -240,12 +234,21 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                     <Sparkles className="w-3 h-3"/> Matchmaker
                                 </span>
                                 <span className="text-[10px] uppercase font-bold text-white/70">
-                                    Fase {iteration + 1} di {maxIterations} • {cardsLeft} carte
+                                    Ciclo {iteration + 1} • {cardsLeft} carte nel mazzo
                                 </span>
                             </div>
-                            <button onClick={transitionToResults} className="px-3 py-1.5 bg-white/10 text-white rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-white/20 transition-all">
-                                Termina
-                            </button>
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => handleSwipe(null, 'steer')}
+                                    disabled={isLoading}
+                                    className="px-3 py-1.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-red-500/40 hover:text-red-300 transition-all disabled:opacity-50"
+                                >
+                                    Cambia Rotta
+                                </button>
+                                <button onClick={transitionToResults} className="px-3 py-1.5 bg-white/10 text-white rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-white/20 transition-all">
+                                    Salva Catalogo
+                                </button>
+                            </div>
                         </div>
 
                         <div className="flex-1 relative p-4 flex flex-col items-center justify-center overflow-hidden">

@@ -21,6 +21,8 @@ export type SwipeItem = {
     action: SwipeAction;
     title: string;
     genre_ids: number[];
+    question_text?: string;
+    discarded_options?: string[];
 };
 
 export type MatchmakerPhase = 'choosing' | 'playing' | 'results';
@@ -80,19 +82,23 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
         }
     }, [userId, profileId]);
 
-    const handleSwipe = useCallback(async (cardId: string, action: SwipeAction, overrideTitle?: string, overrideGenres?: number[]) => {
+    const handleSwipe = useCallback(async (cardId: string | null, action: SwipeAction, overrideTitle?: string, overrideGenres?: number[], questionText?: string, discardedOptions?: string[]) => {
         if (!userId || !profileId) return;
         
-        const card = cards.find(c => c.id === cardId);
-        if (!card) return;
+        const card = cardId ? cards.find(c => c.id === cardId) : null;
+        if (!card && action !== 'steer') return;
 
-        setCards(prev => prev.filter(c => c.id !== cardId));
+        if (cardId) {
+            setCards(prev => prev.filter(c => c.id !== cardId));
+        }
         
         const newQueue = [...swipesQueue, { 
-            id: cardId, 
+            id: cardId || 'steer', 
             action, 
-            title: overrideTitle || card.title, 
-            genre_ids: overrideGenres || card.genre_ids 
+            title: overrideTitle || card?.title || 'Steer', 
+            genre_ids: overrideGenres || card?.genre_ids || [],
+            question_text: questionText,
+            discarded_options: discardedOptions
         }];
         setSwipesQueue(newQueue);
 
@@ -111,8 +117,10 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
 
         const remainingCards = cards.length - 1;
 
-        // Analyze after 12 swipes or if running out of cards
-        if ((newQueue.length >= 12 || remainingCards <= 1) && sessionId && iteration < maxIterations) {
+        // Analyze after 12 swipes, running out of cards, or explicit steering
+        const shouldAnalyze = newQueue.length >= 12 || remainingCards <= 1 || action === 'answered' || action === 'steer';
+        
+        if (shouldAnalyze && sessionId) {
             if (isAnalyzingRef.current) return;
             isAnalyzingRef.current = true;
             setIsLoading(true);
@@ -127,8 +135,11 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
                     if (data.endOfGame) {
                         setPhase('results');
                     } else {
-                        // Append new cards to the remaining ones
-                        setCards(prev => [...prev, ...(data.cards || [])]);
+                        if (action === 'steer' || action === 'answered') {
+                            setCards(data.cards || []);
+                        } else {
+                            setCards(prev => [...prev, ...(data.cards || [])]);
+                        }
                         setIteration(data.iteration);
                         setSwipesQueue([]);
                     }
@@ -139,11 +150,11 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
                 setIsLoading(false);
                 isAnalyzingRef.current = false;
             }
-        } else if (remainingCards === 0 && iteration >= maxIterations) {
-             setPhase('results');
+        } else if (remainingCards === 0) {
+             setPhase('results'); // fallback (should rarely hit now)
         }
 
-    }, [userId, profileId, sessionId, swipesQueue, iteration, maxIterations, cards]);
+    }, [userId, profileId, sessionId, swipesQueue, iteration, cards]);
 
     const fetchTrailer = useCallback(async (type: 'movie' | 'series' | 'anime', id: string) => {
         if (!userId || !profileId) return null;
