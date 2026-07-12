@@ -29,6 +29,21 @@ const GENRE_MAP: Record<number, string> = {
     10770: 'TV Movie', 53: 'Thriller', 10752: 'Guerra', 37: 'Western'
 };
 
+const POPULAR_GENRES = [
+    { id: 28, name: 'Azione' },
+    { id: 12, name: 'Avventura' },
+    { id: 16, name: 'Animazione' },
+    { id: 35, name: 'Commedia' },
+    { id: 80, name: 'Crime' },
+    { id: 18, name: 'Dramma' },
+    { id: 14, name: 'Fantasy' },
+    { id: 27, name: 'Horror' },
+    { id: 9648, name: 'Mistero' },
+    { id: 10749, name: 'Romance' },
+    { id: 878, name: 'Fantascienza' },
+    { id: 53, name: 'Thriller' }
+];
+
 export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
     const { 
         isOpen, isLoading, phase, cards, matchedCards, 
@@ -39,6 +54,17 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
     const [flipped, setFlipped] = useState(false);
     const [selectedType, setSelectedType] = useState<'movie' | 'series' | 'anime' | null>(null);
     const [selectedVibe, setSelectedVibe] = useState<string | null>(null);
+    const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
+    
+    const toggleGenre = (id: number) => {
+        if (selectedGenres.includes(id)) {
+            setSelectedGenres(prev => prev.filter(x => x !== id));
+        } else {
+            if (selectedGenres.length < 3) {
+                setSelectedGenres(prev => [...prev, id]);
+            }
+        }
+    };
     
     const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
     const [isLoadingTrailer, setIsLoadingTrailer] = useState(false);
@@ -178,35 +204,59 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                             </>
                         ) : (
                             <>
-                                <p className="text-white/80 font-bold text-sm mb-4">Qual è il tuo Mood?</p>
-                                <div className="flex flex-col gap-2 w-full max-w-[280px] mb-6 max-h-[300px] overflow-y-auto pr-1">
-                                    {VIBES.map(v => (
-                                        <button 
-                                            key={v.id}
-                                            onClick={() => setSelectedVibe(v.id)}
-                                            className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all border-2 ${
-                                                selectedVibe === v.id 
-                                                    ? 'bg-primary/20 border-primary shadow-[0_0_15px_rgba(220,38,38,0.2)]' 
-                                                    : 'bg-white/5 border-white/10 hover:border-white/30'
-                                            }`}
-                                        >
-                                            <span className="text-2xl">{v.icon}</span>
-                                            <div>
-                                                <div className="text-white font-bold text-sm leading-tight">{v.label}</div>
-                                                <div className="text-white/50 text-[10px] uppercase font-black tracking-wider mt-0.5">{v.desc}</div>
-                                            </div>
-                                        </button>
-                                    ))}
+                                <div className="flex-1 w-full max-w-[320px] overflow-y-auto pr-1 mb-6 flex flex-col gap-4 custom-scrollbar">
+                                    <div>
+                                        <p className="text-white/80 font-bold text-sm mb-3">1. Qual è il tuo Mood? (richiesto)</p>
+                                        <div className="flex flex-col gap-2">
+                                            {VIBES.map(v => (
+                                                <button 
+                                                    key={v.id}
+                                                    onClick={() => setSelectedVibe(v.id)}
+                                                    className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all border-2 ${
+                                                        selectedVibe === v.id 
+                                                            ? 'bg-primary/20 border-primary shadow-[0_0_15px_rgba(220,38,38,0.2)]' 
+                                                            : 'bg-white/5 border-white/10 hover:border-white/30'
+                                                    }`}
+                                                >
+                                                    <span className="text-2xl">{v.icon}</span>
+                                                    <div>
+                                                        <div className="text-white font-bold text-sm leading-tight">{v.label}</div>
+                                                        <div className="text-white/50 text-[10px] uppercase font-black tracking-wider mt-0.5">{v.desc}</div>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-white/80 font-bold text-sm mb-3">2. Scegli fino a 3 generi (opzionale)</p>
+                                        <div className="flex flex-wrap justify-center gap-2">
+                                            {POPULAR_GENRES.map(g => (
+                                                <button 
+                                                    key={g.id}
+                                                    onClick={() => toggleGenre(g.id)}
+                                                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                                                        selectedGenres.includes(g.id) 
+                                                            ? 'bg-primary text-white border-primary shadow-[0_0_10px_rgba(220,38,38,0.3)]' 
+                                                            : 'bg-white/5 text-white/60 border-white/10 hover:border-white/30'
+                                                    }`}
+                                                >
+                                                    {g.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex gap-3 w-full max-w-[280px]">
+                                
+                                <div className="flex gap-3 w-full max-w-[320px] mt-auto">
                                     <button 
-                                        onClick={() => { setSelectedType(null); setSelectedVibe(null); }}
+                                        onClick={() => { setSelectedType(null); setSelectedVibe(null); setSelectedGenres([]); }}
                                         className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-white/70 font-bold hover:bg-white/10"
                                     >
                                         Indietro
                                     </button>
                                     <button 
-                                        onClick={() => initMatchmaker(selectedType, selectedVibe || 'random')}
+                                        onClick={() => initMatchmaker(selectedType, selectedVibe || 'random', selectedGenres.length > 0 ? selectedGenres : undefined)}
                                         disabled={isLoading || !selectedVibe}
                                         className="flex-[2] py-3 bg-primary border-2 border-primary/40 rounded-xl text-white font-black hover:brightness-110 disabled:opacity-50 shadow-[0_0_15px_rgba(220,38,38,0.15)] transition-all"
                                     >
