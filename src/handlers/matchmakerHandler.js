@@ -378,8 +378,64 @@ async function analyzeMatchmakerSession(req, res) {
                 else if (c.action === 'answered') text += `EXPLICITLY CHOSE THIS PATH`;
                 return text;
             }).join('\n');
+            const tmdbClient = createTmdbClient(tmdbApiKey);
+            let sessionMicroDna = null;
+
+            const likedItems = sessionState.cardHistory.filter(c => c.action === 'like' || c.action === 'watchlist');
+            if (likedItems.length > 0) {
+                const keywordPromises = likedItems.map(async (item) => {
+                    if (item.keywords && Array.isArray(item.keywords)) return item.keywords;
+                    try {
+                        const isTv = sessionState.type === 'series' || sessionState.type === 'anime';
+                        const rawId = String(item.id).replace('tmdb:', '');
+                        const endpoint = isTv ? `/tv/${rawId}/keywords` : `/movie/${rawId}/keywords`;
+                        const res = await tmdbClient.get(endpoint);
+                        const kws = isTv ? (res.data.results || []) : (res.data.keywords || []);
+                        const kwNames = kws.map(k => k.name).filter(Boolean);
+                        item.keywords = kwNames;
+                        return kwNames;
+                    } catch (e) {
+                        console.warn(`[Matchmaker] Failed to fetch keywords for ${item.id}`);
+                        return [];
+                    }
+                });
+
+                const allKeywords = await Promise.all(keywordPromises);
+                
+                const kwFreq = {};
+                allKeywords.flat().forEach(kw => {
+                    kwFreq[kw] = (kwFreq[kw] || 0) + 1;
+                });
+                const topKeywords = Object.entries(kwFreq)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5)
+                    .map(e => e[0]);
+                
+                const genreFreq = {};
+                likedItems.forEach(item => {
+                    if (item.genre_ids) {
+                        item.genre_ids.forEach(gid => {
+                            genreFreq[gid] = (genreFreq[gid] || 0) + 1;
+                        });
+                    }
+                });
+                const topGenresIds = Object.entries(genreFreq)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3)
+                    .map(e => Number(e[0]));
+                
+                const topGenresNames = genreIdsToNames(topGenresIds);
+
+                if (topKeywords.length > 0 || topGenresNames) {
+                    sessionMicroDna = `[Session Micro-DNA - Based on recent Likes]:\n` +
+                        `Emerging Genres: ${topGenresNames}\n` +
+                        `Emerging Official TMDB Keywords: ${topKeywords.join(', ')}\n` +
+                        `CRITICAL: Prefer USING THESE official TMDB keywords in your queries instead of inventing new ones!`;
+                }
+            }
                 
             let prompt = `Here is the user's chronological swipe history from the beginning of the session to the most recent swipe:\n${historyStr}\n\n`;
+            if (sessionMicroDna) prompt += `${sessionMicroDna}\n\n`;
             prompt += `Analyze this evolution in taste. What are they leaning towards NOW based on the most recent swipes? Generate EXACTLY 2 new discovery queries to find better matches. If their recent choices are conflicting or unclear, generate a 3rd Question object to steer them.`;
             
             try {
