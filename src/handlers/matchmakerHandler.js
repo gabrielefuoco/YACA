@@ -17,9 +17,9 @@ const MATCHMAKER_SYSTEM_PROMPT = `You are the YACA Matchmaker AI, a cinematic so
 
 ### DECISION LOGIC (FOLLOW STRICTLY):
 1. STRATEGY: "matchmaker_refinement"
-   - INPUT: User swipe history (liked/disliked titles with genres) + optional Taste DNA
-   - OUTPUT: ARRAY of 4-5 "discovery" query objects. Optionally, ONE of these objects can be a "Question" if you need to resolve a dilemma in the user's taste.
-   - GOAL: Target vibes the user likes. Avoid vibes tied to dislikes.
+   - INPUT: User swipe history (liked/disliked titles with genres) in chronological order.
+   - OUTPUT: ARRAY of EXACTLY 2 "discovery" query objects. Optionally, ONE of these objects can be a "Question" if you need to resolve a dilemma in the user's taste.
+   - GOAL: Target vibes the user likes based on their MOST RECENT choices. Avoid vibes tied to dislikes.
 
 ### PARAMETER EXTRACTION RULES:
 - GENRES: Map to TMDB numerical IDs (Action → 28, Adventure → 12, Animation → 16, Comedy → 35, Crime → 80, Documentary → 99, Drama → 18, Family → 10751, Fantasy → 14, History → 36, Horror → 27, Music → 10402, Mystery → 9648, Romance → 10749, Sci-Fi → 878, TV Movie → 10770, Thriller → 53, War → 10752, Western → 37)
@@ -216,10 +216,8 @@ async function initMatchmakerSession(req, res) {
                     { role: 'user', content: userPrompt }
                 ]);
                 parsedQueries = parseQuerySynthesizerResponse(response.choices?.[0]?.message?.content);
-                if (parsedQueries.length > 2) {
-                    sessionState.mistralQueryBuffer = parsedQueries.slice(2);
-                    parsedQueries = parsedQueries.slice(0, 2);
-                }
+                // Buffer eliminato: Mistral agirà ad ogni round in tempo reale
+                sessionState.mistralQueryBuffer = [];
             } catch (err) {
                 console.error('[Matchmaker] Init Mistral error:', err);
             }
@@ -357,46 +355,30 @@ async function analyzeMatchmakerSession(req, res) {
         const tmdbApiKey = account?.apiKeys?.tmdb || process.env.TMDB_API_KEY;
         let parsedQueries = [];
 
-        if (sessionState.mistralQueryBuffer && sessionState.mistralQueryBuffer.length >= 2) {
-            parsedQueries = sessionState.mistralQueryBuffer.slice(0, 2);
-            sessionState.mistralQueryBuffer = sessionState.mistralQueryBuffer.slice(2);
-            console.log(`[Matchmaker] Using 2 queries from Buffer. Remaining: ${sessionState.mistralQueryBuffer.length}`);
-        } else if (activeMistralKey && swipes && swipes.length > 0) {
+        if (activeMistralKey && swipes && swipes.length > 0) {
             const client = new Mistral({ apiKey: activeMistralKey });
             
-            const likedTitles = sessionState.cardHistory
-                .filter(c => c.action === 'like' || c.action === 'watchlist')
-                .map(c => `"${c.title}" (${genreIdsToNames(c.genre_ids)})`)
-                .join(', ');
-
-            const dislikedTitles = sessionState.cardHistory
-                .filter(c => c.action === 'dislike')
-                .map(c => `"${c.title}" (${genreIdsToNames(c.genre_ids)})`)
-                .join(', ');
+            // Format cronologico della history per dare a Mistral il senso del tempo/evoluzione
+            const historyStr = sessionState.cardHistory.map((c, i) => {
+                let text = `[Swipe ${i+1}] Title: "${c.title}" (Genres: ${genreIdsToNames(c.genre_ids)}) -> `;
+                if (c.action === 'like') text += `LIKED`;
+                else if (c.action === 'dislike') text += `DISLIKED`;
+                else if (c.action === 'watchlist') text += `SAVED TO WATCHLIST`;
+                else if (c.action === 'answered') text += `EXPLICITLY CHOSE THIS PATH`;
+                return text;
+            }).join('\n');
                 
-            const explicitAnswers = sessionState.cardHistory
-                .filter(c => c.action === 'answered')
-                .map(c => `User explicitly chose: "${c.title}" (Genres: ${c.genre_ids?.join(',')})`)
-                .join(', ');
-                
-            let prompt = `The user liked: ${likedTitles || 'nothing yet'}. The user disliked: ${dislikedTitles || 'nothing yet'}.`;
-            if (explicitAnswers) prompt += `\nCRITICAL CONTEXT: ${explicitAnswers}.`;
-            prompt += ` Generate 4-5 discovery queries to find better matches.`;
+            let prompt = `Here is the user's chronological swipe history from the beginning of the session to the most recent swipe:\n${historyStr}\n\n`;
+            prompt += `Analyze this evolution in taste. What are they leaning towards NOW based on the most recent swipes? Generate EXACTLY 2 new discovery queries to find better matches. If their recent choices are conflicting or unclear, generate a 3rd Question object to steer them.`;
             
             try {
                 const response = await callMistralWithRetry(client, [
                     { role: 'system', content: MATCHMAKER_SYSTEM_PROMPT },
                     { role: 'user', content: prompt }
                 ]);
-                let newQueries = parseQuerySynthesizerResponse(response.choices?.[0]?.message?.content);
-                if (newQueries.length > 2) {
-                    parsedQueries = newQueries.slice(0, 2);
-                    sessionState.mistralQueryBuffer = newQueries.slice(2);
-                } else {
-                    parsedQueries = newQueries;
-                    sessionState.mistralQueryBuffer = [];
-                }
-                console.log(`[Matchmaker] Mistral generated ${newQueries.length} queries. Buffer has ${sessionState.mistralQueryBuffer.length}`);
+                parsedQueries = parseQuerySynthesizerResponse(response.choices?.[0]?.message?.content);
+                sessionState.mistralQueryBuffer = [];
+                console.log(`[Matchmaker] Mistral generated ${parsedQueries.length} fresh queries based on real-time history.`);
             } catch (err) {
                 console.error('[Matchmaker] Analyze Mistral error:', err);
             }
