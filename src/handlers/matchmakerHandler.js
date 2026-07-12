@@ -24,7 +24,7 @@ const MATCHMAKER_SYSTEM_PROMPT = `You are the YACA Matchmaker AI, a cinematic so
 ### PARAMETER EXTRACTION RULES:
 - GENRES: Map to TMDB numerical IDs (Action → 28, Adventure → 12, Animation → 16, Comedy → 35, Crime → 80, Documentary → 99, Drama → 18, Family → 10751, Fantasy → 14, History → 36, Horror → 27, Music → 10402, Mystery → 9648, Romance → 10749, Sci-Fi → 878, TV Movie → 10770, Thriller → 53, War → 10752, Western → 37)
 - LOGIC OPERATORS: USE PIPE (|) for OR combinations to ensure broad, high-quality results. (e.g. "878|28"). DO NOT use arrays.
-- KEYWORDS: You can optionally include a "keyword" string to target specific themes (e.g., "cyberpunk", "space opera").
+- KEYWORDS: You can optionally include ONE simple, broad "keyword" string (e.g., "magic", "alien", "martial arts", "elf"). DO NOT invent complex, abstract, or multi-word vibes as keywords (like "grimdark fantasy"). TMDB keyword matching is extremely strict.
 - CRITICAL: NEVER leave "genre_ids" null. You MUST infer and provide the closest numerical TMDB genre IDs for EVERY Vibe Object.
 
 ### EXAMPLES (FEW-SHOT):
@@ -527,7 +527,7 @@ async function analyzeMatchmakerSession(req, res) {
         
         // Paginazione: incrementiamo lo skip in base all'iterazione
         const skip = sessionState.iteration * CARDS_PER_BATCH;
-        const rawItems = await executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, sessionState.type, skip, { noFallback: false }, {});
+        const rawItems = await executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, sessionState.type, skip, { noFallback: false, deepFetch: true }, {});
         console.log(`[Matchmaker] Iteration ${sessionState.iteration} - Pipeline returned ${rawItems?.length || 0} items`);
         
         // Ordina per DNA

@@ -191,7 +191,7 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                 if (!query.strategy) query.strategy = 'discovery';
                 query = applyAiQualityFilters(query);
 
-                const pagesToFetch = isFirstPage ? LOOKAHEAD_PAGES : 1;
+                const pagesToFetch = (isFirstPage || settings?.deepFetch) ? LOOKAHEAD_PAGES : 1;
                 const pagePromises = [];
                 for (let p = 0; p < pagesToFetch; p++) {
                     const pageSkip = perQuerySkip + (p * PAGE_SIZE);
