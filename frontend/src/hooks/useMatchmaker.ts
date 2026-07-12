@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { api } from '@/lib/api';
 
 export type MatchmakerCard = {
@@ -37,6 +37,7 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
     
     const [iteration, setIteration] = useState(0);
     const [maxIterations, setMaxIterations] = useState(8);
+    const isAnalyzingRef = useRef(false);
 
     const openMatchmaker = useCallback(() => {
         setPhase('choosing');
@@ -46,6 +47,7 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
         setSwipesQueue([]);
         setMatchedCards([]);
         setIteration(0);
+        isAnalyzingRef.current = false;
     }, []);
 
     const initMatchmaker = useCallback(async (type: 'movie' | 'series' | 'anime' = 'movie', vibeOrRandom: string = 'random', initialGenres?: number[]) => {
@@ -53,6 +55,7 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
         setIsLoading(true);
         setPhase('playing');
         setMatchedCards([]);
+        isAnalyzingRef.current = false;
         try {
             const res = await fetch(`/api/profiles/${profileId}/matchmaker/init`, {
                 method: 'POST',
@@ -110,6 +113,8 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
 
         // Analyze after 12 swipes or if running out of cards
         if ((newQueue.length >= 12 || remainingCards <= 1) && sessionId && iteration < maxIterations) {
+            if (isAnalyzingRef.current) return;
+            isAnalyzingRef.current = true;
             setIsLoading(true);
             try {
                 const res = await fetch(`/api/profiles/${profileId}/matchmaker/analyze`, {
@@ -132,6 +137,7 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
                 console.error('Analyze error', error);
             } finally {
                 setIsLoading(false);
+                isAnalyzingRef.current = false;
             }
         } else if (remainingCards === 0 && iteration >= maxIterations) {
              setPhase('results');

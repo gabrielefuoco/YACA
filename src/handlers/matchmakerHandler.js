@@ -381,7 +381,9 @@ async function analyzeMatchmakerSession(req, res) {
             const tmdbClient = createTmdbClient(tmdbApiKey);
             let sessionMicroDna = null;
 
-            const likedItems = sessionState.cardHistory.filter(c => c.action === 'like' || c.action === 'watchlist');
+            // Preleviamo solo gli ultimissimi 3 like per evitare di impantanarci (echo chamber) sulle prime keyword in assoluto
+            const likedItems = sessionState.cardHistory.filter(c => c.action === 'like' || c.action === 'watchlist').slice(-3);
+            
             if (likedItems.length > 0) {
                 const keywordPromises = likedItems.map(async (item) => {
                     if (item.keywords && Array.isArray(item.keywords)) return item.keywords;
@@ -427,10 +429,10 @@ async function analyzeMatchmakerSession(req, res) {
                 const topGenresNames = genreIdsToNames(topGenresIds);
 
                 if (topKeywords.length > 0 || topGenresNames) {
-                    sessionMicroDna = `[Session Micro-DNA - Based on recent Likes]:\n` +
+                    sessionMicroDna = `[Session Micro-DNA - Based ONLY on the LAST 3 Likes]:\n` +
                         `Emerging Genres: ${topGenresNames}\n` +
                         `Emerging Official TMDB Keywords: ${topKeywords.join(', ')}\n` +
-                        `CRITICAL: Prefer USING THESE official TMDB keywords in your queries instead of inventing new ones!`;
+                        `IMPORTANT: Use these keywords as INSPIRATION to explore adjacent/similar vibes. DO NOT repeat the exact same keywords over and over across iterations. Mix them up!`;
                 }
             }
                 
