@@ -12,7 +12,7 @@ interface MatchmakerModalProps {
         matchedCards: MatchmakerCard[];
         iteration: number;
         maxIterations: number;
-        initMatchmaker: (t: 'movie'|'series'|'anime', v: string) => void;
+        initMatchmaker: (t: 'movie'|'series'|'anime', v: string, initialGenres?: number[]) => void;
         handleSwipe: (id: string, action: SwipeAction) => void;
         fetchTrailer: (type: 'movie'|'series'|'anime', id: string) => Promise<string | null>;
         transitionToResults: () => void;
@@ -337,7 +337,8 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                                 ))}
                                             </div>
                                         </div>
-                                    </div>
+                                        </div>
+                                    )}
 
                                     {/* Actions */}
                                     {!currentCard.is_question && (
