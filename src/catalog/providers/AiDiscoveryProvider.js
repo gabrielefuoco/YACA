@@ -169,9 +169,10 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
             ? query.with_genres.map(String)
             : String(query.with_genres ?? '').split(/[|,]/);
         // Universally relax keywords if primaryResults are empty to prevent 0 items bugs
-        if (!settings?.noFallback && (!primaryResults || primaryResults.length === 0) && query.with_keywords) {
+        if (!settings?.noFallback && (!primaryResults || primaryResults.length === 0) && (query.with_keywords || query.keyword)) {
             const relaxedQuery = { ...query };
             delete relaxedQuery.with_keywords;
+            delete relaxedQuery.keyword;
             primaryResults = await executeComplexStrategy(relaxedQuery, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions);
         }
 
@@ -203,9 +204,10 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                 let flatResults = pageResults.flat();
                 
                 // Fallback morbido se le keyword di Mistral sono allucinate o inesistenti
-                if (!settings?.noFallback && flatResults.length === 0 && query.with_keywords) {
+                if (!settings?.noFallback && flatResults.length === 0 && (query.with_keywords || query.keyword)) {
                     const relaxedQuery = { ...query };
                     delete relaxedQuery.with_keywords;
+                    delete relaxedQuery.keyword;
                     
                     const relaxedPromises = [];
                     for (let p = 0; p < pagesToFetch; p++) {
