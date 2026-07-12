@@ -26,6 +26,7 @@ const MATCHMAKER_SYSTEM_PROMPT = `You are the YACA Matchmaker AI, a cinematic so
 - LOGIC OPERATORS: USE PIPE (|) for OR combinations to ensure broad, high-quality results. (e.g. "878|28"). DO NOT use arrays.
 - KEYWORDS: You can optionally include ONE simple, broad "keyword" string (e.g., "magic", "alien", "martial arts", "elf"). DO NOT invent complex, abstract, or multi-word vibes as keywords (like "grimdark fantasy"). TMDB keyword matching is extremely strict.
 - CRITICAL: NEVER leave "genre_ids" null. You MUST infer and provide the closest numerical TMDB genre IDs for EVERY Vibe Object.
+- ITALIAN LOCALIZATION: The "text" and "label" fields in the Question object MUST be written in conversational Italian (e.g., "Quale mondo ti affascina di più?").
 
 ### EXAMPLES (FEW-SHOT):
 User liked: "Inception" (Sci-Fi, Action), "Interstellar" (Drama, Sci-Fi)
@@ -33,7 +34,7 @@ User disliked: "The Notebook" (Romance, Drama)
 → Output:
 [
   { "vibe": "Mind-bending Sci-Fi", "genre_ids": "878|28", "keyword": "mindfuck" },
-  { "is_question": true, "text": "Are we looking for deep space or cyberpunk streets?", "options": [{ "label": "Deep Space", "genre_ids": "878" }, { "label": "Cyberpunk", "genre_ids": "878|28" }] },
+  { "is_question": true, "text": "Stiamo cercando lo spazio profondo o le strade di una città cyberpunk?", "options": [{ "label": "Spazio Profondo", "genre_ids": "878" }, { "label": "Città Cyberpunk", "genre_ids": "878|28" }] },
   { "vibe": "Epic Space Drama", "genre_ids": "878|18" }
 ]
 
@@ -181,6 +182,7 @@ async function initMatchmakerSession(req, res) {
             type: tmdbType,
             originalType: type,
             iteration: 0,
+            initialVibe: vibeOrRandom,
             likedIds: [], dislikedIds: [], watchlistIds: [],
             cardHistory: [],
             animeOverrides,
@@ -195,20 +197,12 @@ async function initMatchmakerSession(req, res) {
         let parsedQueries = [];
         const dnaContext = await getMatchmakerDnaContext(userId, profileId);
 
-        // BYPASS Mistral al turno 0 se siamo in modalità esplorativa, per un avvio fulmineo.
-        // Mistral subentrerà in analyzeMatchmakerSession con lo storico reale.
-        if (vibeOrRandom === 'random') {
-            parsedQueries = [
-                { vibe: 'Esplorazione Iniziale', genre_ids: (initialGenres && initialGenres.length > 0) ? initialGenres : null },
-                { vibe: 'Popolari & Rilevanti', genre_ids: (initialGenres && initialGenres.length > 0) ? initialGenres : null }
-            ];
-            sessionState.mistralQueryBuffer = [];
-            console.log(`[Matchmaker] Init Fast Boot: Bypassed Mistral at Turn 0 for immediate start.`);
-        }
-        else if (activeMistralKey) {
+        // BYPASS REMOVED: Ask Mistral immediately at Turn 0 using the selected Vibe.
+        if (activeMistralKey) {
             const client = new Mistral({ apiKey: activeMistralKey });
             
-            let userPrompt = `User vibe request: "${vibeOrRandom}". Generate discovery queries.`;
+            let formatText = type === 'series' ? 'Serie TV' : type === 'anime' ? 'Anime giapponese' : 'Film';
+            let userPrompt = `L'utente ha avviato una sessione Matchmaker per trovare un ${formatText}. Il Mood (Vibe) iniziale richiesto è: "${vibeOrRandom}". Genera 2 discovery queries che uniscano questo Mood ai generi e keyword più adatti.`;
             
             if (initialGenres && initialGenres.length > 0) {
                 const genreNames = genreIdsToNames(initialGenres);
@@ -225,7 +219,6 @@ async function initMatchmakerSession(req, res) {
                     { role: 'user', content: userPrompt }
                 ]);
                 parsedQueries = parseQuerySynthesizerResponse(response.choices?.[0]?.message?.content);
-                // Buffer eliminato: Mistral agirà ad ogni round in tempo reale
                 sessionState.mistralQueryBuffer = [];
             } catch (err) {
                 console.error('[Matchmaker] Init Mistral error:', err);
@@ -386,7 +379,12 @@ async function analyzeMatchmakerSession(req, res) {
                 if (c.action === 'like') text += `LIKED`;
                 else if (c.action === 'dislike') text += `DISLIKED`;
                 else if (c.action === 'watchlist') text += `SAVED TO WATCHLIST`;
-                else if (c.action === 'answered') text += `EXPLICITLY CHOSE THIS PATH`;
+                else if (c.action === 'answered') {
+                    text = `[Swipe ${i+1}] DOMANDA POSTA: "${c.question_text}" -> L'UTENTE HA SCELTO: "${c.title}" (Scartando: ${c.discarded_options?.join(', ') || 'altre opzioni'})`;
+                }
+                else if (c.action === 'steer') {
+                    text = `[Swipe ${i+1}] PANIC BUTTON: L'utente ha chiesto un CAMBIO ROTTA drastico rispetto agli ultimi risultati.`;
+                }
                 return text;
             }).join('\n');
             const tmdbClient = createTmdbClient(tmdbApiKey);
@@ -447,10 +445,17 @@ async function analyzeMatchmakerSession(req, res) {
                 }
             }
                 
+            const isPanic = swipes.some(s => s.action === 'steer');
+
             let prompt = `Here is the user's chronological swipe history from the beginning of the session to the most recent swipe:\n${historyStr}\n\n`;
             if (sessionMicroDna) prompt += `${sessionMicroDna}\n\n`;
             
-            if (shouldAskQuestion) {
+            if (isPanic) {
+                prompt += `PANIC: The user explicitly pressed the "Cambia Rotta" (Steer) button. They are hating the recent results! 
+Make a TOTAL PIVOT away from the most recently shown genres/vibes.
+IMPORTANT REMINDER: The user's INITIAL VIBE requested at the start of the session was: "${sessionState.initialVibe}".
+Try to reconnect with this initial mood but from a completely different angle. Generate EXACTLY 2 new discovery queries.`;
+            } else if (shouldAskQuestion) {
                 prompt += `Analyze this evolution. YOU MUST generate EXACTLY 1 Question object to steer the user, providing 4 options that dive deep into specific sub-genres or vibes they might want based on their recent likes. DO NOT generate standard discovery queries, ONLY the Question object.`;
             } else {
                 prompt += `Analyze this evolution in taste. What are they leaning towards NOW based on the most recent swipes? Generate EXACTLY 2 new discovery queries to find better matches.`;
