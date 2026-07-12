@@ -131,7 +131,7 @@ function parseQuerySynthesizerResponse(content) {
 
     if (!Array.isArray(queries)) return [];
 
-    const ALLOWED_FIELDS = new Set(['vibe', 'genre_ids', 'keyword', 'is_question', 'text', 'options']);
+    const ALLOWED_FIELDS = new Set(['vibe', 'genre_ids', 'keyword', 'fallback_keywords', 'is_question', 'text', 'options']);
 
     return queries
         .filter(item => item && typeof item === 'object')
