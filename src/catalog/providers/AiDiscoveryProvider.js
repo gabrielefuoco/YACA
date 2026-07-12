@@ -23,28 +23,29 @@ function applyAiQualityFilters(query) {
 const LOOKAHEAD_PAGES = 3;
 const PAGE_SIZE = 20;
 
-function getKeywordFallbackSequence(originalKeyword) {
-    if (!originalKeyword || typeof originalKeyword !== 'string') return [];
-    
-    // Rileva l'intento di Mistral: se ha usato | vuole un OR, altrimenti AND (,)
-    const isOr = originalKeyword.includes('|');
-    const separator = isOr ? '|' : ',';
-
-    const keys = originalKeyword.split(/[|,]/).map(k => k.trim()).filter(Boolean);
-    if (keys.length <= 1) {
-        return [null];
-    }
-
+function getKeywordFallbackSequence(originalKeyword, fallbackArray = []) {
     const sequence = [];
     
-    // 1. Degradazione progressiva mantenendo l'operatore logico scelto da Mistral
-    for (let i = keys.length - 1; i >= 1; i--) {
-        sequence.push(keys.slice(0, i).join(separator));
+    if (originalKeyword && typeof originalKeyword === 'string') {
+        const isOr = originalKeyword.includes('|');
+        const separator = isOr ? '|' : ',';
+        const keys = originalKeyword.split(/[|,]/).map(k => k.trim()).filter(Boolean);
+        
+        if (keys.length > 1) {
+            for (let i = keys.length - 1; i >= 1; i--) {
+                sequence.push(keys.slice(0, i).join(separator));
+            }
+        }
     }
 
-    // ELIMINATO: L'espansione forzata a OR (che causava l'effetto Cenerentola fuori contesto)
-    
-    // 2. Fallback finale (rimozione totale)
+    if (Array.isArray(fallbackArray)) {
+        for (const kw of fallbackArray) {
+            if (kw && typeof kw === 'string') {
+                sequence.push(kw.trim());
+            }
+        }
+    }
+
     sequence.push(null);
 
     return sequence;
@@ -197,7 +198,7 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
             : String(query.with_genres ?? '').split(/[|,]/);
         // Universally relax keywords if primaryResults are empty to prevent 0 items bugs
         if (!settings?.noFallback && (!primaryResults || primaryResults.length === 0) && (query.with_keywords || query.keyword)) {
-            const fallbackKeywords = getKeywordFallbackSequence(query.keyword || query.with_keywords);
+            const fallbackKeywords = getKeywordFallbackSequence(query.keyword || query.with_keywords, query.fallback_keywords);
             let relaxedResults = [];
             for (const fallbackKw of fallbackKeywords) {
                 const relaxedQuery = { ...query };
@@ -245,7 +246,7 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                 
                 // Fallback morbido se le keyword di Mistral sono allucinate o inesistenti
                 if (!settings?.noFallback && flatResults.length === 0 && (query.with_keywords || query.keyword)) {
-                    const fallbackKeywords = getKeywordFallbackSequence(query.keyword || query.with_keywords);
+                    const fallbackKeywords = getKeywordFallbackSequence(query.keyword || query.with_keywords, query.fallback_keywords);
                     let relaxedResults = [];
                     for (const fallbackKw of fallbackKeywords) {
                         const relaxedQuery = { ...query };

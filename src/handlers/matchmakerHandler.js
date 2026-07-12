@@ -24,8 +24,9 @@ const MATCHMAKER_SYSTEM_PROMPT = `You are the YACA Matchmaker AI, a cinematic so
 ### PARAMETER EXTRACTION RULES:
 - GENRES: Map to TMDB numerical IDs (Action → 28, Adventure → 12, Animation → 16, Comedy → 35, Crime → 80, Documentary → 99, Drama → 18, Family → 10751, Fantasy → 14, History → 36, Horror → 27, Music → 10402, Mystery → 9648, Romance → 10749, Sci-Fi → 878, TV Movie → 10770, Thriller → 53, War → 10752, Western → 37)
 - LOGIC OPERATORS: You can combine genres using either PIPE (|) for OR combinations (broad search, e.g., "35|18" for Comedy OR Drama) or COMMA (,) for AND combinations (strict filter, e.g., "14,18" for Fantasy AND Drama). Use COMMA (,) when you want to enforce a combined theme (e.g., "Drammatico Fantasy" -> "14,18"), and PIPE (|) when you want to offer alternative genres. DO NOT use arrays.
-- KEYWORDS: You can optionally include up to 3 simple, broad keyword strings separated by comma (e.g., "magic, alien, elf"). Place them in order of importance (first is the main vibe, next are secondary details). DO NOT invent complex, abstract, or multi-word vibes as keywords (like "grimdark fantasy"). TMDB keyword matching is extremely strict.
-- KEYWORDS LANGUAGE: The "keyword" strings MUST always be in English (e.g., "tragedy, cyberpunk, revenge"). Never translate keywords to Italian, as TMDB API searches only support English keywords.
+- KEYWORDS: You can optionally include ONE simple, broad "keyword" string (e.g., "magic", "alien", "martial arts", "elf"). DO NOT invent complex, abstract, or multi-word vibes as keywords (like "grimdark fantasy"). TMDB keyword matching is extremely strict.
+- FALLBACK KEYWORDS: Along with the main "keyword", you MUST provide an array "fallback_keywords" containing 3-5 SYNONYMOUS or RELATED plot tags (e.g., if keyword is 'epic', fallback_keywords could be ['heroic', 'mythical', 'legendary']). These will be used if the main keyword fails on TMDB.
+- KEYWORDS LANGUAGE: The "keyword" and "fallback_keywords" MUST always be in English. Never translate keywords to Italian.
 - CRITICAL: NEVER leave "genre_ids" null. You MUST infer and provide the closest numerical TMDB genre IDs for EVERY Vibe Object.
 - ITALIAN LOCALIZATION: The "text" and "label" fields in the Question object MUST be written in conversational Italian (e.g., "Quale mondo ti affascina di più?").
 
@@ -34,13 +35,13 @@ User liked: "Inception" (Sci-Fi, Action), "Interstellar" (Drama, Sci-Fi)
 User disliked: "The Notebook" (Romance, Drama)
 → Output:
 [
-  { "vibe": "Mind-bending Sci-Fi", "genre_ids": "878|28", "keyword": "mindfuck" },
+  { "vibe": "Mind-bending Sci-Fi", "genre_ids": "878|28", "keyword": "mindfuck", "fallback_keywords": ["reality", "illusion", "dream"] },
   { "is_question": true, "text": "Stiamo cercando lo spazio profondo o le strade di una città cyberpunk?", "options": [{ "label": "Spazio Profondo", "genre_ids": "878" }, { "label": "Città Cyberpunk", "genre_ids": "878|28" }] },
   { "vibe": "Epic Space Drama", "genre_ids": "878|18" }
 ]
 
 ### RESPONSE FORMAT (JSON ARRAY ONLY):
-Array containing mix of Vibe Objects: { "vibe": "string", "genre_ids": "string", "keyword": "string" | null }
+Array containing mix of Vibe Objects: { "vibe": "string", "genre_ids": "string", "keyword": "string" | null, "fallback_keywords": ["string"] }
 (NOTE: "genre_ids" is REQUIRED for every Vibe Object. Do not omit it.)
 AND (optionally) ONE Question Object: { "is_question": true, "text": "string", "options": [{ "label": "string", "genre_ids": "string" }] }`;
 
@@ -249,6 +250,9 @@ async function initMatchmakerSession(req, res) {
                 }
                 if (q.keyword && String(q.keyword).trim() !== "null" && String(q.keyword).trim() !== "undefined") {
                     query.keyword = String(q.keyword);
+                }
+                if (Array.isArray(q.fallback_keywords) && q.fallback_keywords.length > 0) {
+                    query.fallback_keywords = q.fallback_keywords.map(String).filter(Boolean);
                 }
                 
                 // Merge overrides anime se presenti
