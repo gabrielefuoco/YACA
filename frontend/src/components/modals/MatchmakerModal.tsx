@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { MatchmakerCard, SwipeAction, MatchmakerPhase } from '@/hooks/useMatchmaker';
-import { useState } from 'react';
-import { Sparkles, Heart, X, Bookmark, Info, Film, Tv, PlaySquare } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Sparkles, Heart, X, Bookmark, Info, Film, Tv, PlaySquare, PlayCircle } from 'lucide-react';
 
 interface MatchmakerModalProps {
     matchmaker: {
@@ -14,6 +14,7 @@ interface MatchmakerModalProps {
         maxIterations: number;
         initMatchmaker: (t: 'movie'|'series'|'anime', v: string) => void;
         handleSwipe: (id: string, action: SwipeAction) => void;
+        fetchTrailer: (type: 'movie'|'series'|'anime', id: string) => Promise<string | null>;
         transitionToResults: () => void;
         closeAndSave: (save: boolean) => void;
         setIsOpen: (o: boolean) => void;
@@ -32,10 +33,38 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
     const { 
         isOpen, isLoading, phase, cards, matchedCards, 
         iteration, maxIterations, initMatchmaker, handleSwipe, 
-        transitionToResults, closeAndSave, setIsOpen 
+        fetchTrailer, transitionToResults, closeAndSave, setIsOpen 
     } = matchmaker;
     
     const [flipped, setFlipped] = useState(false);
+    const [selectedType, setSelectedType] = useState<'movie' | 'series' | 'anime' | null>(null);
+    const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
+    
+    const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
+    const [isLoadingTrailer, setIsLoadingTrailer] = useState(false);
+
+    const POPULAR_GENRES = [
+        { id: 28, name: 'Azione' },
+        { id: 12, name: 'Avventura' },
+        { id: 16, name: 'Animazione' },
+        { id: 35, name: 'Commedia' },
+        { id: 80, name: 'Crime' },
+        { id: 18, name: 'Dramma' },
+        { id: 14, name: 'Fantasy' },
+        { id: 27, name: 'Horror' },
+        { id: 9648, name: 'Mistero' },
+        { id: 10749, name: 'Romance' },
+        { id: 878, name: 'Fantascienza' },
+        { id: 53, name: 'Thriller' }
+    ];
+
+    const toggleGenre = (id: number) => {
+        setSelectedGenres(prev => {
+            if (prev.includes(id)) return prev.filter(g => g !== id);
+            if (prev.length >= 3) return prev;
+            return [...prev, id];
+        });
+    };
 
     if (!isOpen) return null;
 
@@ -45,8 +74,76 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
     const onSwipe = (action: SwipeAction) => {
         if (!currentCard) return;
         setFlipped(false);
+        setTrailerUrl(null);
         handleSwipe(currentCard.id, action);
     };
+
+    const handleAnswer = (e: React.MouseEvent, option: { label: string; genre_ids: number[] }) => {
+        e.stopPropagation();
+        if (!currentCard) return;
+        setFlipped(false);
+        setTrailerUrl(null);
+        currentCard.genre_ids = option.genre_ids;
+        currentCard.title = option.label;
+        handleSwipe(currentCard.id, 'answered');
+    };
+
+    const handleFlip = () => {
+        if (!flipped) setTrailerUrl(null);
+        setFlipped(!flipped);
+    };
+
+    const handleFetchTrailer = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!currentCard || !selectedType) return;
+        setIsLoadingTrailer(true);
+        const url = await fetchTrailer(selectedType, currentCard.id);
+        if (url) setTrailerUrl(url);
+        setIsLoadingTrailer(false);
+    };
+
+    const [dragX, setDragX] = useState(0);
+    const dragStartRef = useRef<number | null>(null);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        dragStartRef.current = e.touches[0].clientX;
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (dragStartRef.current === null) return;
+        const currentX = e.touches[0].clientX;
+        setDragX(currentX - dragStartRef.current);
+    };
+
+    const handleTouchEnd = () => {
+        if (currentCard?.is_question) {
+            setDragX(0);
+            dragStartRef.current = null;
+            return;
+        }
+        if (dragX > 100) {
+            onSwipe('like');
+        } else if (dragX < -100) {
+            onSwipe('dislike');
+        }
+        setDragX(0);
+        dragStartRef.current = null;
+    };
+
+    useEffect(() => {
+        if (!isOpen || phase !== 'playing' || !currentCard || isLoading || currentCard.is_question) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowRight') onSwipe('like');
+            else if (e.key === 'ArrowLeft') onSwipe('dislike');
+            else if (e.key === 'ArrowUp') onSwipe('watchlist');
+            else if (e.key === ' ') {
+                e.preventDefault();
+                handleFlip();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, phase, currentCard, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && closeAndSave(false)}>
@@ -60,36 +157,74 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                             <Sparkles className="w-8 h-8 text-primary" />
                         </div>
                         <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2">YACA Matchmaker</h2>
-                        <p className="text-white/80 font-bold text-sm mb-10">Cosa vuoi esplorare oggi?</p>
-
-                        <div className="flex flex-col gap-4 w-full max-w-[240px]">
-                            <button 
-                                onClick={() => initMatchmaker('movie', 'random')}
-                                disabled={isLoading}
-                                className="flex items-center justify-center gap-3 w-full py-4 bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
-                            >
-                                <Film className="w-5 h-5 text-primary" />
-                                Film
-                            </button>
-                            <button 
-                                onClick={() => initMatchmaker('series', 'random')}
-                                disabled={isLoading}
-                                className="flex items-center justify-center gap-3 w-full py-4 bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
-                            >
-                                <Tv className="w-5 h-5 text-primary" />
-                                Serie TV
-                            </button>
-                            <button 
-                                onClick={() => initMatchmaker('anime', 'random')}
-                                disabled={isLoading}
-                                className="flex items-center justify-center gap-3 w-full py-4 bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
-                            >
-                                <PlaySquare className="w-5 h-5 text-primary" />
-                                Anime
-                            </button>
-                        </div>
                         
-                        {isLoading && (
+                        {!selectedType ? (
+                            <>
+                                <p className="text-white/80 font-bold text-sm mb-10">Cosa vuoi esplorare oggi?</p>
+                                <div className="flex flex-col gap-4 w-full max-w-[240px]">
+                                    <button 
+                                        onClick={() => setSelectedType('movie')}
+                                        disabled={isLoading}
+                                        className="flex items-center justify-center gap-3 w-full py-4 bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                    >
+                                        <Film className="w-5 h-5 text-primary" />
+                                        Film
+                                    </button>
+                                    <button 
+                                        onClick={() => setSelectedType('series')}
+                                        disabled={isLoading}
+                                        className="flex items-center justify-center gap-3 w-full py-4 bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                    >
+                                        <Tv className="w-5 h-5 text-primary" />
+                                        Serie TV
+                                    </button>
+                                    <button 
+                                        onClick={() => setSelectedType('anime')}
+                                        disabled={isLoading}
+                                        className="flex items-center justify-center gap-3 w-full py-4 bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                    >
+                                        <PlaySquare className="w-5 h-5 text-primary" />
+                                        Anime
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-white/80 font-bold text-sm mb-6">Scegli fino a 3 generi (opzionale)</p>
+                                <div className="flex flex-wrap justify-center gap-2 max-w-[300px] mb-8">
+                                    {POPULAR_GENRES.map(g => (
+                                        <button 
+                                            key={g.id}
+                                            onClick={() => toggleGenre(g.id)}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                                                selectedGenres.includes(g.id) 
+                                                    ? 'bg-primary text-white border-primary shadow-[0_0_10px_rgba(220,38,38,0.3)]' 
+                                                    : 'bg-white/5 text-white/60 border-white/10 hover:border-white/30'
+                                            }`}
+                                        >
+                                            {g.name}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex gap-3 w-full max-w-[280px]">
+                                    <button 
+                                        onClick={() => { setSelectedType(null); setSelectedGenres([]); }}
+                                        className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-white/70 font-bold hover:bg-white/10"
+                                    >
+                                        Indietro
+                                    </button>
+                                    <button 
+                                        onClick={() => initMatchmaker(selectedType, 'random', selectedGenres.length > 0 ? selectedGenres : undefined)}
+                                        disabled={isLoading}
+                                        className="flex-[2] py-3 bg-primary border-2 border-primary/40 rounded-xl text-white font-black hover:brightness-110 disabled:opacity-50 shadow-[0_0_15px_rgba(220,38,38,0.15)]"
+                                    >
+                                        {isLoading ? 'Avvio...' : 'Esplora'}
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                        
+                        {isLoading && !selectedType && (
                             <div className="mt-8 flex flex-col items-center gap-2">
                                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                                 <span className="text-[10px] uppercase font-bold text-white/80 tracking-widest">Inizializzazione DNA...</span>
@@ -126,11 +261,36 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                 </div>
                             ) : currentCard ? (
                                 <div className="flex flex-col items-center w-full max-w-[280px] sm:max-w-[320px]">
-                                    <div 
-                                        className="relative w-full aspect-[2/3] max-h-[65vh] rounded-3xl overflow-hidden shadow-2xl cursor-pointer group transition-all duration-500 preserve-3d"
-                                        style={{ transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
-                                        onClick={() => setFlipped(!flipped)}
-                                    >
+                                    {currentCard.is_question ? (
+                                        <div className="w-full aspect-[2/3] max-h-[65vh] bg-gradient-to-br from-indigo-900 to-purple-900 rounded-3xl flex flex-col justify-center items-center p-8 text-center border-2 border-indigo-400/50 shadow-2xl">
+                                            <Sparkles className="w-12 h-12 text-indigo-300 mb-6 animate-pulse" />
+                                            <h2 className="text-2xl font-black text-white mb-10 leading-tight">
+                                                {currentCard.question_text}
+                                            </h2>
+                                            <div className="w-full flex flex-col gap-4">
+                                                {currentCard.question_options?.map((opt, i) => (
+                                                    <button 
+                                                        key={i} 
+                                                        onClick={(e) => handleAnswer(e, opt)}
+                                                        className="w-full bg-indigo-600/30 hover:bg-indigo-500/50 border border-indigo-300/30 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 text-lg"
+                                                    >
+                                                        {opt.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div 
+                                            className="relative w-full aspect-[2/3] max-h-[65vh] rounded-3xl overflow-hidden shadow-2xl cursor-pointer group transition-all duration-300 preserve-3d"
+                                            style={{ 
+                                                transform: `rotateY(${flipped ? 180 : 0}deg) translateX(${dragX}px) rotate(${dragX * 0.05}deg)`,
+                                                opacity: 1 - Math.abs(dragX) / 400
+                                            }}
+                                            onClick={handleFlip}
+                                            onTouchStart={handleTouchStart}
+                                            onTouchMove={handleTouchMove}
+                                            onTouchEnd={handleTouchEnd}
+                                        >
                                         {/* Front */}
                                         <div className="absolute inset-0 backface-hidden bg-[#111]">
                                             {currentCard.poster ? (
@@ -152,10 +312,24 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                         </div>
                                         
                                         {/* Back */}
-                                        <div className="absolute inset-0 backface-hidden bg-marrow-deep border border-primary/30 p-6 overflow-y-auto" style={{ transform: 'rotateY(180deg)' }}>
+                                        <div className="absolute inset-0 backface-hidden bg-marrow-deep border border-primary/30 p-6 overflow-y-auto flex flex-col" style={{ transform: 'rotateY(180deg)' }}>
                                             <h3 className="text-xl font-black text-white mb-4">{currentCard.title}</h3>
-                                            <p className="text-sm text-marrow-light/80 leading-relaxed mb-6">{currentCard.overview || "Trama non disponibile."}</p>
-                                            <div className="flex flex-wrap gap-2">
+                                            
+                                            {trailerUrl ? (
+                                                <div className="w-full aspect-video rounded-lg overflow-hidden bg-black mb-6 shrink-0 relative shadow-2xl">
+                                                    <iframe src={trailerUrl} className="w-full h-full" allow="autoplay; encrypted-media" allowFullScreen></iframe>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <button onClick={handleFetchTrailer} disabled={isLoadingTrailer} className="w-full flex items-center justify-center gap-2 mb-6 px-4 py-3 bg-red-600 hover:bg-red-500 rounded-lg text-white font-black text-sm uppercase tracking-wide transition-all shadow-lg active:scale-95 shrink-0">
+                                                        {isLoadingTrailer ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <PlayCircle className="w-5 h-5" />}
+                                                        {isLoadingTrailer ? 'Ricerca...' : 'Guarda Trailer'}
+                                                    </button>
+                                                    <p className="text-sm text-marrow-light/80 leading-relaxed mb-6 flex-1 overflow-y-auto">{currentCard.overview || "Trama non disponibile."}</p>
+                                                </>
+                                            )}
+
+                                            <div className="flex flex-wrap gap-2 mt-auto shrink-0 pt-4">
                                                 {currentCard.genre_ids?.map(g => (
                                                     <span key={g} className="px-2 py-1 bg-primary/20 text-primary border border-primary/30 rounded-md text-[10px] font-bold uppercase">
                                                         {GENRE_MAP[g] || g}
@@ -166,28 +340,30 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex items-center justify-center gap-6 mt-6 shrink-0 w-full">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <button onClick={(e) => { e.stopPropagation(); onSwipe('dislike'); }} className="w-14 h-14 bg-white/5 border-2 border-red-500/30 rounded-full flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all shadow-lg active:scale-95">
-                                                <X className="w-6 h-6" />
-                                            </button>
-                                            <span className="text-[10px] font-bold text-white/50 uppercase">Scarta</span>
+                                    {!currentCard.is_question && (
+                                        <div className="flex items-center justify-center gap-6 mt-6 shrink-0 w-full">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <button onClick={(e) => { e.stopPropagation(); onSwipe('dislike'); }} className="w-14 h-14 bg-white/5 border-2 border-red-500/30 rounded-full flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all shadow-lg active:scale-95">
+                                                    <X className="w-6 h-6" />
+                                                </button>
+                                                <span className="text-[10px] font-bold text-white/50 uppercase">Scarta</span>
+                                            </div>
+                                            
+                                            <div className="flex flex-col items-center gap-2">
+                                                <button onClick={(e) => { e.stopPropagation(); onSwipe('watchlist'); }} className="w-12 h-12 bg-white/5 border-2 border-blue-400/30 rounded-full flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all -translate-y-2 shadow-lg active:scale-95">
+                                                    <Bookmark className="w-5 h-5" />
+                                                </button>
+                                                <span className="text-[10px] font-bold text-white/50 uppercase -translate-y-2">Libreria</span>
+                                            </div>
+                                            
+                                            <div className="flex flex-col items-center gap-2">
+                                                <button onClick={(e) => { e.stopPropagation(); onSwipe('like'); }} className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white hover:bg-primary/80 transition-all shadow-[0_0_20px_rgba(220,38,38,0.4)] active:scale-95">
+                                                    <Heart className="w-6 h-6" fill="currentColor" />
+                                                </button>
+                                                <span className="text-[10px] font-bold text-white/50 uppercase">Mi piace</span>
+                                            </div>
                                         </div>
-                                        
-                                        <div className="flex flex-col items-center gap-2">
-                                            <button onClick={(e) => { e.stopPropagation(); onSwipe('watchlist'); }} className="w-12 h-12 bg-white/5 border-2 border-blue-400/30 rounded-full flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all -translate-y-2 shadow-lg active:scale-95">
-                                                <Bookmark className="w-5 h-5" />
-                                            </button>
-                                            <span className="text-[10px] font-bold text-white/50 uppercase -translate-y-2">Libreria</span>
-                                        </div>
-                                        
-                                        <div className="flex flex-col items-center gap-2">
-                                            <button onClick={(e) => { e.stopPropagation(); onSwipe('like'); }} className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white hover:bg-primary/80 transition-all shadow-[0_0_20px_rgba(220,38,38,0.4)] active:scale-95">
-                                                <Heart className="w-6 h-6" fill="currentColor" />
-                                            </button>
-                                            <span className="text-[10px] font-bold text-white/50 uppercase">Mi piace</span>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center text-center p-6">

@@ -8,10 +8,13 @@ export type MatchmakerCard = {
     year: string;
     overview: string;
     genre_ids: number[];
-    type: 'movie' | 'series';
+    type: 'movie' | 'series' | 'anime' | 'question';
+    is_question?: boolean;
+    question_text?: string;
+    question_options?: { label: string; genre_ids: number[] }[];
 };
 
-export type SwipeAction = 'like' | 'dislike' | 'watchlist';
+export type SwipeAction = 'like' | 'dislike' | 'watchlist' | 'answered';
 
 export type SwipeItem = {
     id: string;
@@ -45,7 +48,7 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
         setIteration(0);
     }, []);
 
-    const initMatchmaker = useCallback(async (type: 'movie' | 'series' | 'anime' = 'movie', vibeOrRandom: string = 'random') => {
+    const initMatchmaker = useCallback(async (type: 'movie' | 'series' | 'anime' = 'movie', vibeOrRandom: string = 'random', initialGenres?: number[]) => {
         if (!userId || !profileId) return;
         setIsLoading(true);
         setPhase('playing');
@@ -54,7 +57,7 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
             const res = await fetch(`/api/profiles/${profileId}/matchmaker/init`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, type, vibeOrRandom })
+                body: JSON.stringify({ userId, type, vibeOrRandom, initialGenres })
             });
             const data = await res.json();
             if (data.success) {
@@ -105,8 +108,8 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
 
         const remainingCards = cards.length - 1;
 
-        // Analyze after 8 swipes or if running out of cards
-        if ((newQueue.length >= 8 || remainingCards <= 1) && sessionId && iteration < maxIterations) {
+        // Analyze after 12 swipes or if running out of cards
+        if ((newQueue.length >= 12 || remainingCards <= 1) && sessionId && iteration < maxIterations) {
             setIsLoading(true);
             try {
                 const res = await fetch(`/api/profiles/${profileId}/matchmaker/analyze`, {
@@ -135,6 +138,21 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
         }
 
     }, [userId, profileId, sessionId, swipesQueue, iteration, maxIterations, cards]);
+
+    const fetchTrailer = useCallback(async (type: 'movie' | 'series' | 'anime', id: string) => {
+        if (!userId || !profileId) return null;
+        try {
+            const res = await fetch(`/api/profiles/${profileId}/matchmaker/trailer/${type}/${id}?userId=${userId}`);
+            const data = await res.json();
+            if (data.success && data.trailerUrl) {
+                return data.trailerUrl;
+            }
+            return null;
+        } catch (err) {
+            console.error('[Matchmaker] Error fetching trailer:', err);
+            return null;
+        }
+    }, [userId, profileId]);
 
     const transitionToResults = useCallback(() => {
         setPhase('results');
@@ -191,6 +209,7 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
         initMatchmaker,
         handleSwipe,
         transitionToResults,
+        fetchTrailer,
         closeAndSave,
         setIsOpen
     };

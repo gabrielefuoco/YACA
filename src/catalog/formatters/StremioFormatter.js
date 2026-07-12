@@ -320,11 +320,14 @@ function sanitizeCatalogMeta(item, options = {}) {
         _rawPoster: rawPoster, // Save raw poster to prevent nested proxies
     };
 
+    if (item.trailers) {
+        baseItem.trailers = item.trailers;
+    }
+
     if (options.isMetaDetail) {
         if (videos) baseItem.videos = videos;
         if (item.behaviorHints) baseItem.behaviorHints = item.behaviorHints;
         if (item.links) baseItem.links = item.links;
-        if (item.trailers) baseItem.trailers = item.trailers;
         if (item.runtime) baseItem.runtime = item.runtime;
         if (item.certification) baseItem.certification = item.certification;
         if (item.website) baseItem.website = item.website;

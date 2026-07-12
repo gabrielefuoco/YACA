@@ -9,7 +9,7 @@ const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const { buildDnaDescription, generateDiscoveryQueries } = require('../ai/querySynthesizer');
 const LibraryConverterService = require('../services/LibraryConverterService');
 const UserLibraryItem = require('../db/models/UserLibraryItem');
-const { initMatchmakerSession, analyzeMatchmakerSession, finishMatchmakerSession } = require('../handlers/matchmakerHandler');
+const { initMatchmakerSession, analyzeMatchmakerSession, finishMatchmakerSession, getMatchmakerTrailer } = require('../handlers/matchmakerHandler');
 
 /**
  * POST /api/profiles/:id/convert-library
@@ -371,6 +371,12 @@ router.post('/:id/matchmaker/analyze', analyzeMatchmakerSession);
  * Force-ends the session and saves the custom catalog
  */
 router.post('/:id/matchmaker/finish', finishMatchmakerSession);
+
+/**
+ * GET /api/profiles/:id/matchmaker/trailer/:type/:itemId
+ * Fetches the YouTube trailer for the Matchmaker UI
+ */
+router.get('/:id/matchmaker/trailer/:type/:itemId', getMatchmakerTrailer);
 
 /**
  * GET /api/profiles/:id/library

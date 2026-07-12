@@ -131,7 +131,7 @@ function parseQuerySynthesizerResponse(content) {
 
     if (!Array.isArray(queries)) return [];
 
-    const ALLOWED_FIELDS = new Set(['vibe', 'genre_ids', 'keyword']);
+    const ALLOWED_FIELDS = new Set(['vibe', 'genre_ids', 'keyword', 'is_question', 'text', 'options']);
 
     return queries
         .filter(item => item && typeof item === 'object')
@@ -154,7 +154,7 @@ function parseQuerySynthesizerResponse(content) {
 
             return clean;
         })
-        .filter(item => item.genre_ids || item.keyword || item.vibe); // Must have at least one useful field or vibe
+        .filter(item => item.genre_ids || item.keyword || item.vibe || item.is_question); // Must have at least one useful field, vibe, or be a question
 }
 
 /**

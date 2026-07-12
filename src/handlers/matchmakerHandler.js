@@ -10,7 +10,7 @@ const { parseQuerySynthesizerResponse, buildDnaDescription } = require('../ai/qu
 const ProfileScorer = require('../profile/ProfileScorer');
 
 const MAX_ITERATIONS = 8;
-const CARDS_PER_BATCH = 10;
+const CARDS_PER_BATCH = 12;
 
 // Prompt Mistral per il Matchmaker strutturato come querySynthesizer
 const MATCHMAKER_SYSTEM_PROMPT = `You are the YACA Matchmaker AI, a cinematic sommelier. Current Year: ${new Date().getFullYear()}.
@@ -18,7 +18,7 @@ const MATCHMAKER_SYSTEM_PROMPT = `You are the YACA Matchmaker AI, a cinematic so
 ### DECISION LOGIC (FOLLOW STRICTLY):
 1. STRATEGY: "matchmaker_refinement"
    - INPUT: User swipe history (liked/disliked titles with genres) + optional Taste DNA
-   - OUTPUT: ARRAY of 2-3 "discovery" query objects
+   - OUTPUT: ARRAY of 4-5 "discovery" query objects. Optionally, ONE of these objects can be a "Question" if you need to resolve a dilemma in the user's taste.
    - GOAL: Target vibes the user likes. Avoid vibes tied to dislikes.
 
 ### PARAMETER EXTRACTION RULES:
@@ -31,12 +31,38 @@ User disliked: "The Notebook" (Romance, Drama)
 → Output:
 [
   { "vibe": "Mind-bending Sci-Fi", "genre_ids": [878, 28] },
+  { "is_question": true, "text": "Are we looking for deep space or cyberpunk streets?", "options": [{ "label": "Deep Space", "genre_ids": [878] }, { "label": "Cyberpunk", "genre_ids": [878, 28] }] },
   { "vibe": "Epic Space Drama", "genre_ids": [878, 18] }
 ]
 
 ### RESPONSE FORMAT (JSON ARRAY ONLY):
-[{ "vibe": "string", "genre_ids": [int] | null }]`;
+Array containing mix of Vibe Objects: { "vibe": "string", "genre_ids": [int] | null }
+AND (optionally) ONE Question Object: { "is_question": true, "text": "string", "options": [{ "label": "string", "genre_ids": [int] }] }`;
 
+
+/**
+ * Estrae una QuestionCard (se presente) dalle queries generate da Mistral.
+ */
+function extractQuestionCard(queries) {
+    if (!Array.isArray(queries)) return null;
+    const qIndex = queries.findIndex(q => q.is_question);
+    if (qIndex !== -1) {
+        const q = queries.splice(qIndex, 1)[0];
+        return {
+            id: 'question_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+            type: 'question',
+            is_question: true,
+            title: 'Interactive Question',
+            question_text: q.text || q.vibe || 'Question',
+            question_options: q.options || [],
+            poster: null,
+            overview: '',
+            year: '',
+            genre_ids: []
+        };
+    }
+    return null;
+}
 
 /**
  * Helper per tradurre array di ID genere nei nomi (per il prompt)
@@ -118,7 +144,7 @@ async function callMistralWithRetry(client, messages, maxRetries = 3) {
  */
 async function initMatchmakerSession(req, res) {
     const { id: profileId } = req.params;
-    const { userId, type = 'movie', vibeOrRandom = 'random' } = req.body;
+    const { userId, type = 'movie', vibeOrRandom = 'random', initialGenres } = req.body;
 
     if (!userId) return res.status(400).json({ error: 'userId required' });
 
@@ -145,7 +171,9 @@ async function initMatchmakerSession(req, res) {
             iteration: 0,
             likedIds: [], dislikedIds: [], watchlistIds: [],
             cardHistory: [],
-            animeOverrides
+            animeOverrides,
+            mistralQueryBuffer: [],
+            lastIterationItems: []
         };
 
         const account = await UserAccount.findOne({ userId }).lean();
@@ -159,14 +187,18 @@ async function initMatchmakerSession(req, res) {
             const client = new Mistral({ apiKey: activeMistralKey });
             
             let userPrompt = '';
-            if (vibeOrRandom !== 'random') {
-                userPrompt = `User vibe request: "${vibeOrRandom}". Generate discovery queries.`;
-                if (dnaContext) userPrompt += `\n\nUser's Taste DNA for context:\n${dnaContext}`;
-            } else {
-                userPrompt = dnaContext 
-                    ? `User's Taste DNA:\n${dnaContext}\n\nGenerate diverse initial discovery queries for ${tmdbType} content based on this DNA.`
-                    : `Generate diverse initial discovery queries for ${tmdbType} content.`;
+            let basePrompt = vibeOrRandom !== 'random' 
+                ? `User vibe request: "${vibeOrRandom}". Generate discovery queries.`
+                : `Generate diverse initial discovery queries for ${tmdbType} content.`;
+            
+            if (initialGenres && initialGenres.length > 0) {
+                const genreNames = genreIdsToNames(initialGenres);
+                basePrompt += `\nThe user explicitly selected these starting genres: ${genreNames} (IDs: ${initialGenres.join(', ')}). You MUST include these in your discovery queries.`;
             }
+
+            userPrompt = dnaContext 
+                ? `${basePrompt}\n\nUser's Taste DNA for context:\n${dnaContext}`
+                : basePrompt;
 
             try {
                 const response = await callMistralWithRetry(client, [
@@ -174,6 +206,10 @@ async function initMatchmakerSession(req, res) {
                     { role: 'user', content: userPrompt }
                 ]);
                 parsedQueries = parseQuerySynthesizerResponse(response.choices?.[0]?.message?.content);
+                if (parsedQueries.length > 2) {
+                    sessionState.mistralQueryBuffer = parsedQueries.slice(2);
+                    parsedQueries = parsedQueries.slice(0, 2);
+                }
             } catch (err) {
                 console.error('[Matchmaker] Init Mistral error:', err);
             }
@@ -181,12 +217,17 @@ async function initMatchmakerSession(req, res) {
         
         // Fallback queries in case Mistral fails or is disabled
         if (parsedQueries.length === 0) {
-            parsedQueries = [{ vibe: 'Popular', genre_ids: null }];
+            parsedQueries = [{ vibe: 'Popular', genre_ids: (initialGenres && initialGenres.length > 0) ? initialGenres : null }];
         }
 
         console.log(`[Matchmaker] Init session ${sessionId}, user ${userId}, type: ${type}, mode: ${vibeOrRandom}`);
         console.log(`[Matchmaker] DNA: "${dnaContext || 'none'}"`);
         console.log(`[Matchmaker] Mistral response (${parsedQueries.length} queries):`, JSON.stringify(parsedQueries));
+
+        const questionCard = extractQuestionCard(parsedQueries);
+        if (questionCard && parsedQueries.length === 0) {
+            parsedQueries = [{ vibe: 'Popular Continuation', genre_ids: null }];
+        }
 
         // Costruisci catalogo universale
         const universalCatalog = {
@@ -234,6 +275,11 @@ async function initMatchmakerSession(req, res) {
             type: tmdbType
         }));
         
+        if (questionCard) {
+            if (cards.length >= 2) cards.splice(2, 0, questionCard);
+            else cards.push(questionCard);
+        }
+        
         console.log(`[Matchmaker] After DNA sort + dedup: ${cards.length} cards sent`);
 
         res.json({
@@ -266,12 +312,20 @@ async function analyzeMatchmakerSession(req, res) {
         if (!sessionState) return res.status(404).json({ error: 'Session expired or not found' });
 
         // Update local session arrays & history
-        (swipes || []).forEach(s => {
-            sessionState.cardHistory.push({ id: s.id, title: s.title, genre_ids: s.genre_ids, action: s.action });
-            if (s.action === 'like') sessionState.likedIds.push(s.id);
-            if (s.action === 'dislike') sessionState.dislikedIds.push(s.id);
-            if (s.action === 'watchlist') sessionState.watchlistIds.push(s.id);
-        });
+        if (swipes && Array.isArray(swipes)) {
+            sessionState.cardHistory.push(...swipes);
+            
+            const answered = swipes.filter(s => s.action === 'answered');
+            if (answered.length > 0) {
+                // Svuotiamo il buffer per forzare una rigenerazione con il nuovo contesto esplicito
+                sessionState.mistralQueryBuffer = [];
+            }
+            swipes.forEach(s => {
+                if (s.action === 'like') sessionState.likedIds.push(s.id);
+                if (s.action === 'dislike') sessionState.dislikedIds.push(s.id);
+                if (s.action === 'watchlist') sessionState.watchlistIds.push(s.id);
+            });
+        }
 
         sessionState.iteration += 1;
 
@@ -289,7 +343,11 @@ async function analyzeMatchmakerSession(req, res) {
         const tmdbApiKey = account?.apiKeys?.tmdb || process.env.TMDB_API_KEY;
         let parsedQueries = [];
 
-        if (activeMistralKey && swipes && swipes.length > 0) {
+        if (sessionState.mistralQueryBuffer && sessionState.mistralQueryBuffer.length >= 2) {
+            parsedQueries = sessionState.mistralQueryBuffer.slice(0, 2);
+            sessionState.mistralQueryBuffer = sessionState.mistralQueryBuffer.slice(2);
+            console.log(`[Matchmaker] Using 2 queries from Buffer. Remaining: ${sessionState.mistralQueryBuffer.length}`);
+        } else if (activeMistralKey && swipes && swipes.length > 0) {
             const client = new Mistral({ apiKey: activeMistralKey });
             
             const likedTitles = sessionState.cardHistory
@@ -302,21 +360,40 @@ async function analyzeMatchmakerSession(req, res) {
                 .map(c => `"${c.title}" (${genreIdsToNames(c.genre_ids)})`)
                 .join(', ');
                 
-            const prompt = `The user liked: ${likedTitles || 'nothing yet'}. The user disliked: ${dislikedTitles || 'nothing yet'}. Generate 2-3 discovery queries to find better matches.`;
+            const explicitAnswers = sessionState.cardHistory
+                .filter(c => c.action === 'answered')
+                .map(c => `User explicitly chose: "${c.title}" (Genres: ${c.genre_ids?.join(',')})`)
+                .join(', ');
+                
+            let prompt = `The user liked: ${likedTitles || 'nothing yet'}. The user disliked: ${dislikedTitles || 'nothing yet'}.`;
+            if (explicitAnswers) prompt += `\nCRITICAL CONTEXT: ${explicitAnswers}.`;
+            prompt += ` Generate 4-5 discovery queries to find better matches.`;
             
             try {
                 const response = await callMistralWithRetry(client, [
                     { role: 'system', content: MATCHMAKER_SYSTEM_PROMPT },
                     { role: 'user', content: prompt }
                 ]);
-                parsedQueries = parseQuerySynthesizerResponse(response.choices?.[0]?.message?.content);
-                console.log(`[Matchmaker] Mistral output iterazione ${sessionState.iteration}:`, JSON.stringify(parsedQueries));
+                let newQueries = parseQuerySynthesizerResponse(response.choices?.[0]?.message?.content);
+                if (newQueries.length > 2) {
+                    parsedQueries = newQueries.slice(0, 2);
+                    sessionState.mistralQueryBuffer = newQueries.slice(2);
+                } else {
+                    parsedQueries = newQueries;
+                    sessionState.mistralQueryBuffer = [];
+                }
+                console.log(`[Matchmaker] Mistral generated ${newQueries.length} queries. Buffer has ${sessionState.mistralQueryBuffer.length}`);
             } catch (err) {
                 console.error('[Matchmaker] Analyze Mistral error:', err);
             }
         }
 
         if (parsedQueries.length === 0) {
+            parsedQueries = [{ vibe: 'Popular Continuation', genre_ids: null }];
+        }
+        
+        const questionCard = extractQuestionCard(parsedQueries);
+        if (questionCard && parsedQueries.length === 0) {
             parsedQueries = [{ vibe: 'Popular Continuation', genre_ids: null }];
         }
         
@@ -359,9 +436,11 @@ async function analyzeMatchmakerSession(req, res) {
         // Evitiamo dupes
         const seenIds = new Set([...sessionState.likedIds, ...sessionState.dislikedIds, ...sessionState.watchlistIds]);
         
-        const cards = sortedItems
+        sessionState.lastIterationItems = sortedItems
             .map(c => ({ ...c, rawId: String(c.id).replace('tmdb:', '') }))
-            .filter(c => !seenIds.has(c.rawId))
+            .filter(c => !seenIds.has(c.rawId));
+
+        const cards = sessionState.lastIterationItems
             .slice(0, CARDS_PER_BATCH).map(c => ({
                 id: c.rawId,
                 title: c.name,
@@ -371,6 +450,14 @@ async function analyzeMatchmakerSession(req, res) {
                 genre_ids: c.genre_ids,
                 type: sessionState.type
             }));
+
+        if (questionCard) {
+            if (cards.length >= 2) cards.splice(2, 0, questionCard);
+            else cards.push(questionCard);
+        }
+
+        // Salvo la sessione qui per aggiornare lastIterationItems
+        await matchmakerSessionCache.set(sessionId, sessionState);
 
         res.json({
             success: true,
@@ -408,24 +495,34 @@ async function finishMatchmakerSession(req, res) {
 
         // Genera il Custom Catalog
         const winningIds = Array.from(new Set([...sessionState.likedIds, ...sessionState.watchlistIds]));
+        let expandedIds = [...winningIds];
         let savedCatalog = null;
         
+        const account = await UserAccount.findOne({ userId }).lean();
+
         if (winningIds.length > 0) {
+            // Expanded catalog logic using lastIterationItems
+            const extraIds = (sessionState.lastIterationItems || [])
+                .map(c => c.rawId || String(c.id).replace('tmdb:', ''))
+                .filter(id => !expandedIds.includes(id))
+                .slice(0, 40);
+            
+            expandedIds = [...expandedIds, ...extraIds];
+
             const catalogId = `custom_matchmaker_${nanoid(8)}`;
             const newCatalog = {
                 id: catalogId,
-                name: `Matchmaker (${new Date().toLocaleDateString()})`,
+                name: `Matchmaker Mix (${new Date().toLocaleDateString()})`,
                 type: sessionState.type,
                 source: 'custom',
                 emoji: '💖',
                 presentation_strategy: 'popularity',
-                queries: winningIds.map(id => ({
+                queries: expandedIds.map(id => ({
                     strategy: 'manual_list',
                     params: { with_id: id }
                 }))
             };
 
-            const account = await UserAccount.findOne({ userId }).lean();
             if (account?.addonUuid) {
                 await AddonConfig.updateOne(
                     { uuid: account.addonUuid },
@@ -435,7 +532,7 @@ async function finishMatchmakerSession(req, res) {
                 savedCatalog = {
                     id: catalogId,
                     name: newCatalog.name,
-                    itemCount: winningIds.length,
+                    itemCount: expandedIds.length,
                     type: sessionState.originalType || sessionState.type // 'anime' se applicabile
                 };
             }
@@ -454,8 +551,46 @@ async function finishMatchmakerSession(req, res) {
     }
 }
 
+/**
+ * Fetch YouTube trailer on demand per il Matchmaker UI
+ */
+async function getMatchmakerTrailer(req, res) {
+    const { type, itemId } = req.params;
+    const { userId } = req.query; // opzionale
+    
+    try {
+        let tmdbApiKey = process.env.TMDB_API_KEY;
+        if (userId) {
+            const account = await UserAccount.findOne({ userId }).lean();
+            if (account?.apiKeys?.tmdb) tmdbApiKey = account.apiKeys.tmdb;
+        }
+        
+        const tmdbClient = createTmdbClient(tmdbApiKey);
+        const cleanId = String(itemId).replace('tmdb:', '');
+        const endpointType = type === 'series' ? 'tv' : (type === 'anime' ? 'tv' : 'movie');
+        
+        const { data } = await tmdbClient.get(`/${endpointType}/${cleanId}`, {
+            params: { append_to_response: 'videos' }
+        });
+        
+        const videos = data.videos?.results || [];
+        const trailer = videos.find(v => v.site === 'YouTube' && v.type === 'Trailer') ||
+                        videos.find(v => v.site === 'YouTube' && v.type === 'Teaser') ||
+                        videos.find(v => v.site === 'YouTube');
+        
+        if (trailer) {
+            return res.json({ success: true, trailerUrl: `https://www.youtube.com/embed/${trailer.key}?autoplay=1&controls=0&modestbranding=1` });
+        }
+        res.json({ success: false, message: 'No trailer found' });
+    } catch (err) {
+        console.error('[Matchmaker] Error fetching trailer:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
 module.exports = {
     initMatchmakerSession,
     analyzeMatchmakerSession,
-    finishMatchmakerSession
+    finishMatchmakerSession,
+    getMatchmakerTrailer
 };
