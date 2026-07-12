@@ -24,8 +24,8 @@ const MATCHMAKER_SYSTEM_PROMPT = `You are the YACA Matchmaker AI, a cinematic so
 ### PARAMETER EXTRACTION RULES:
 - GENRES: Map to TMDB numerical IDs (Action → 28, Adventure → 12, Animation → 16, Comedy → 35, Crime → 80, Documentary → 99, Drama → 18, Family → 10751, Fantasy → 14, History → 36, Horror → 27, Music → 10402, Mystery → 9648, Romance → 10749, Sci-Fi → 878, TV Movie → 10770, Thriller → 53, War → 10752, Western → 37)
 - LOGIC OPERATORS: You can combine genres using either PIPE (|) for OR combinations (broad search, e.g., "35|18" for Comedy OR Drama) or COMMA (,) for AND combinations (strict filter, e.g., "14,18" for Fantasy AND Drama). Use COMMA (,) when you want to enforce a combined theme (e.g., "Drammatico Fantasy" -> "14,18"), and PIPE (|) when you want to offer alternative genres. DO NOT use arrays.
-- KEYWORDS: You can optionally include ONE simple, broad "keyword" string (e.g., "magic", "alien", "martial arts", "elf"). DO NOT invent complex, abstract, or multi-word vibes as keywords (like "grimdark fantasy"). TMDB keyword matching is extremely strict.
-- KEYWORDS LANGUAGE: The "keyword" string MUST always be in English (e.g., "tragedy", "cyberpunk", "revenge", "friendship"). Never translate keywords to Italian, as TMDB API searches only support English keywords.
+- KEYWORDS: You can optionally include up to 3 simple, broad keyword strings separated by comma (e.g., "magic, alien, elf"). Place them in order of importance (first is the main vibe, next are secondary details). DO NOT invent complex, abstract, or multi-word vibes as keywords (like "grimdark fantasy"). TMDB keyword matching is extremely strict.
+- KEYWORDS LANGUAGE: The "keyword" strings MUST always be in English (e.g., "tragedy, cyberpunk, revenge"). Never translate keywords to Italian, as TMDB API searches only support English keywords.
 - CRITICAL: NEVER leave "genre_ids" null. You MUST infer and provide the closest numerical TMDB genre IDs for EVERY Vibe Object.
 - ITALIAN LOCALIZATION: The "text" and "label" fields in the Question object MUST be written in conversational Italian (e.g., "Quale mondo ti affascina di più?").
 

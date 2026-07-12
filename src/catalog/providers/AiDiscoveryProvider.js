@@ -23,6 +23,30 @@ function applyAiQualityFilters(query) {
 const LOOKAHEAD_PAGES = 3;
 const PAGE_SIZE = 20;
 
+function getKeywordFallbackSequence(originalKeyword) {
+    if (!originalKeyword || typeof originalKeyword !== 'string') return [];
+    
+    const keys = originalKeyword.split(/[|,]/).map(k => k.trim()).filter(Boolean);
+    if (keys.length <= 1) {
+        return [null];
+    }
+
+    const sequence = [];
+    
+    // 1. Degradazione progressiva dell'AND: togliamo le ultime (meno importanti)
+    for (let i = keys.length - 1; i >= 1; i--) {
+        sequence.push(keys.slice(0, i).join(','));
+    }
+
+    // 2. Espansione OR (allargamento a ventaglio)
+    sequence.push(keys.join('|'));
+
+    // 3. Fallback finale (rimozione totale)
+    sequence.push(null);
+
+    return sequence;
+}
+
 async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, settings = {}, cacheOptions = {}) {
     if (filters.provider === 'kitsu') {
         const { getKitsuCatalogFromFilters } = require('./KitsuProvider');
@@ -170,10 +194,23 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
             : String(query.with_genres ?? '').split(/[|,]/);
         // Universally relax keywords if primaryResults are empty to prevent 0 items bugs
         if (!settings?.noFallback && (!primaryResults || primaryResults.length === 0) && (query.with_keywords || query.keyword)) {
-            const relaxedQuery = { ...query };
-            delete relaxedQuery.with_keywords;
-            delete relaxedQuery.keyword;
-            primaryResults = await executeComplexStrategy(relaxedQuery, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions);
+            const fallbackKeywords = getKeywordFallbackSequence(query.keyword || query.with_keywords);
+            let relaxedResults = [];
+            for (const fallbackKw of fallbackKeywords) {
+                const relaxedQuery = { ...query };
+                if (fallbackKw === null) {
+                    delete relaxedQuery.with_keywords;
+                    delete relaxedQuery.keyword;
+                } else {
+                    relaxedQuery.keyword = fallbackKw;
+                    delete relaxedQuery.with_keywords;
+                }
+                relaxedResults = await executeComplexStrategy(relaxedQuery, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions);
+                if (relaxedResults && relaxedResults.length > 0) {
+                    break;
+                }
+            }
+            primaryResults = relaxedResults;
         }
 
         finalResults = primaryResults || [];
@@ -205,17 +242,30 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                 
                 // Fallback morbido se le keyword di Mistral sono allucinate o inesistenti
                 if (!settings?.noFallback && flatResults.length === 0 && (query.with_keywords || query.keyword)) {
-                    const relaxedQuery = { ...query };
-                    delete relaxedQuery.with_keywords;
-                    delete relaxedQuery.keyword;
-                    
-                    const relaxedPromises = [];
-                    for (let p = 0; p < pagesToFetch; p++) {
-                        const pageSkip = perQuerySkip + (p * PAGE_SIZE);
-                        relaxedPromises.push(executeComplexStrategy(relaxedQuery, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions));
+                    const fallbackKeywords = getKeywordFallbackSequence(query.keyword || query.with_keywords);
+                    let relaxedResults = [];
+                    for (const fallbackKw of fallbackKeywords) {
+                        const relaxedQuery = { ...query };
+                        if (fallbackKw === null) {
+                            delete relaxedQuery.with_keywords;
+                            delete relaxedQuery.keyword;
+                        } else {
+                            relaxedQuery.keyword = fallbackKw;
+                            delete relaxedQuery.with_keywords;
+                        }
+                        
+                        const relaxedPromises = [];
+                        for (let p = 0; p < pagesToFetch; p++) {
+                            const pageSkip = perQuerySkip + (p * PAGE_SIZE);
+                            relaxedPromises.push(executeComplexStrategy(relaxedQuery, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions));
+                        }
+                        const pageResults = await Promise.all(relaxedPromises);
+                        relaxedResults = pageResults.flat();
+                        if (relaxedResults && relaxedResults.length > 0) {
+                            break;
+                        }
                     }
-                    pageResults = await Promise.all(relaxedPromises);
-                    flatResults = pageResults.flat();
+                    flatResults = relaxedResults;
                 }
 
                 return flatResults;
