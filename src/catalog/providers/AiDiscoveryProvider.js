@@ -214,7 +214,9 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                     break;
                 }
             }
-            primaryResults = relaxedResults;
+            primaryResults = relaxedResults.map(item => ({ ...item, _sourceKeyword: query.keyword || queryDef?.keyword, _sourceGenres: query.with_genres || queryDef?.with_genres }));
+        } else if (primaryResults) {
+            primaryResults = primaryResults.map(item => ({ ...item, _sourceKeyword: query.keyword || queryDef?.keyword, _sourceGenres: query.with_genres || queryDef?.with_genres }));
         }
 
         finalResults = primaryResults || [];
@@ -242,7 +244,7 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                     );
                 }
                 let pageResults = await Promise.all(pagePromises);
-                let flatResults = pageResults.flat();
+                let flatResults = pageResults.flat().map(item => ({ ...item, _sourceKeyword: query.keyword || queryDef.keyword, _sourceGenres: query.with_genres || queryDef.with_genres }));
                 
                 // Fallback morbido se le keyword di Mistral sono allucinate o inesistenti
                 if (!settings?.noFallback && flatResults.length === 0 && (query.with_keywords || query.keyword)) {
@@ -266,6 +268,7 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                         const pageResults = await Promise.all(relaxedPromises);
                         relaxedResults = pageResults.flat();
                         if (relaxedResults && relaxedResults.length > 0) {
+                            relaxedResults = relaxedResults.map(item => ({ ...item, _sourceKeyword: fallbackKw || queryDef.keyword, _sourceGenres: query.with_genres || queryDef.with_genres }));
                             break;
                         }
                     }

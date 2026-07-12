@@ -112,16 +112,29 @@ async function getMatchmakerDnaContext(userId, profileId) {
 /**
  * [DNA LAYER - OPZIONALE]
  * Carica il TasteProfile dell'utente e ordina gli item per affinità usando calculateLightScore.
+ * Applica inoltre un "Live Sort" basato sul Session Micro-DNA (Generi e Keyword dominanti).
  */
-async function sortByDnaAffinity(items, userId, profileId) {
+async function sortByDnaAffinity(items, userId, profileId, sessionState = {}) {
     try {
         if (!items || items.length === 0) return items;
         const profile = await TasteProfile.findOne({ userId, context: profileId }).lean();
         if (!profile?.compiledVectors?.V_final) return items; // No DNA → keep original order
         
         return [...items].sort((a, b) => {
-            const scoreB = ProfileScorer.calculateLightScore(b, profile);
-            const scoreA = ProfileScorer.calculateLightScore(a, profile);
+            let scoreB = ProfileScorer.calculateLightScore(b, profile);
+            let scoreA = ProfileScorer.calculateLightScore(a, profile);
+            
+            // Live Bayesian Sort: boost in base al micro-dna della sessione corrente
+            if (sessionState.sessionTopGenresIds && sessionState.sessionTopGenresIds.length > 0) {
+                if (b.genre_ids && b.genre_ids.some(gid => sessionState.sessionTopGenresIds.includes(gid))) scoreB += 5;
+                if (a.genre_ids && a.genre_ids.some(gid => sessionState.sessionTopGenresIds.includes(gid))) scoreA += 5;
+            }
+            if (sessionState.sessionTopKeyword) {
+                const kw = sessionState.sessionTopKeyword.toLowerCase();
+                if (b._sourceKeyword && b._sourceKeyword.toLowerCase().includes(kw)) scoreB += 10;
+                if (a._sourceKeyword && a._sourceKeyword.toLowerCase().includes(kw)) scoreA += 10;
+            }
+
             return scoreB - scoreA;
         });
     } catch (err) {
@@ -335,7 +348,21 @@ async function analyzeMatchmakerSession(req, res) {
 
         // Update local session arrays & history
         if (swipes && Array.isArray(swipes)) {
-            sessionState.cardHistory.push(...swipes);
+            swipes.forEach(s => {
+                const itemId = String(s.id).replace('tmdb:', '');
+                const targetItem = sessionState.lastIterationItems?.find(i => i.rawId === itemId);
+
+                const newCard = { 
+                    id: `tmdb:${itemId}`, 
+                    action: s.action, 
+                    title: s.title, 
+                    genre_ids: s.genre_ids, 
+                    timestamp: new Date().toISOString(),
+                    mistral_keyword: targetItem?.mistral_keyword,
+                    mistral_genres: targetItem?.mistral_genres
+                };
+                sessionState.cardHistory.push(newCard);
+            });
             
             const answered = swipes.filter(s => s.action === 'answered');
             if (answered.length > 0) {
@@ -428,6 +455,10 @@ async function analyzeMatchmakerSession(req, res) {
                     .slice(0, 5)
                     .map(e => e[0]);
                 
+                if (topKeywords.length > 0) {
+                    sessionState.sessionTopKeyword = topKeywords[0];
+                }
+                
                 const genreFreq = {};
                 likedItems.forEach(item => {
                     if (item.genre_ids) {
@@ -441,13 +472,101 @@ async function analyzeMatchmakerSession(req, res) {
                     .slice(0, 3)
                     .map(e => Number(e[0]));
                 
+                if (topGenresIds.length > 0) {
+                    sessionState.sessionTopGenresIds = topGenresIds;
+                }
+                
                 const topGenresNames = genreIdsToNames(topGenresIds);
 
-                if (topKeywords.length > 0 || topGenresNames) {
-                    sessionMicroDna = `[Session Micro-DNA - Based on ALL Likes from this session]:\n` +
-                        `Emerging Genres: ${topGenresNames}\n` +
-                        `Emerging Official TMDB Keywords: ${topKeywords.join(', ')}\n` +
-                        `IMPORTANT: Use these keywords as INSPIRATION to explore adjacent/similar vibes. DO NOT repeat the exact same keywords over and over across iterations. Mix them up!`;
+                // Calcolo Tossicità (Win Rate) per Generi
+                const genreStats = {};
+                sessionState.cardHistory.forEach(item => {
+                    if (item.action !== 'like' && item.action !== 'watchlist' && item.action !== 'dislike') return;
+                    if (item.genre_ids) {
+                        item.genre_ids.forEach(gid => {
+                            if (!genreStats[gid]) genreStats[gid] = { likes: 0, dislikes: 0 };
+                            if (item.action === 'dislike') genreStats[gid].dislikes++;
+                            else genreStats[gid].likes++;
+                        });
+                    }
+                });
+                
+                const initialGenresIds = sessionState.initialGenres ? sessionState.initialGenres.map(Number) : [];
+                const toxicGenresIds = [];
+                for (const [gid, stats] of Object.entries(genreStats)) {
+                    const total = stats.likes + stats.dislikes;
+                    if (total >= 4 && !initialGenresIds.includes(Number(gid))) {
+                        const winRate = stats.likes / total;
+                        if (winRate < 0.20) toxicGenresIds.push(Number(gid));
+                    }
+                }
+                const toxicGenresNames = genreIdsToNames(toxicGenresIds);
+
+                // Calcolo Tossicità (Win Rate) per Mistral Keywords
+                const kwStats = {};
+                sessionState.cardHistory.forEach(item => {
+                    if (item.action !== 'like' && item.action !== 'watchlist' && item.action !== 'dislike') return;
+                    if (item.mistral_keyword) {
+                        const kw = item.mistral_keyword.toLowerCase().trim();
+                        if (!kwStats[kw]) kwStats[kw] = { likes: 0, dislikes: 0 };
+                        if (item.action === 'dislike') kwStats[kw].dislikes++;
+                        else kwStats[kw].likes++;
+                    }
+                });
+
+                const toxicKeywords = [];
+                for (const [kw, stats] of Object.entries(kwStats)) {
+                    const total = stats.likes + stats.dislikes;
+                    if (total >= 4) {
+                        const winRate = stats.likes / total;
+                        if (winRate < 0.20) toxicKeywords.push(kw);
+                    }
+                }
+
+                if (topKeywords.length > 0 || topGenresNames || toxicGenresNames || toxicKeywords.length > 0) {
+                    sessionMicroDna = `[Session Micro-DNA - Based on ALL Swipes from this session]:\n` +
+                        (topGenresNames ? `Emerging Genres: ${topGenresNames}\n` : '') +
+                        (topKeywords.length > 0 ? `Emerging Official TMDB Keywords: ${topKeywords.join(', ')}\n` : '') +
+                        `IMPORTANT: Use Emerging keywords as INSPIRATION to explore adjacent/similar vibes. DO NOT repeat the exact same keywords over and over across iterations. Mix them up!\n` +
+                        (toxicGenresNames || toxicKeywords.length > 0 ? `\n[CRITICAL: NEGATIVE DNA - AVOID THESE AT ALL COSTS]\n` : '') +
+                        (toxicGenresNames ? `Toxic Genres: ${toxicGenresNames}\n` : '') +
+                        (toxicKeywords.length > 0 ? `Toxic Keywords: ${toxicKeywords.join(', ')}\n` : '');
+                }
+            } else {
+                // Anche senza Likes, se l'utente odia solo (solo Dislike), calcoliamo il Negative DNA
+                const genreStats = {};
+                const kwStats = {};
+                sessionState.cardHistory.forEach(item => {
+                    if (item.action !== 'dislike') return;
+                    if (item.genre_ids) {
+                        item.genre_ids.forEach(gid => {
+                            if (!genreStats[gid]) genreStats[gid] = { dislikes: 0 };
+                            genreStats[gid].dislikes++;
+                        });
+                    }
+                    if (item.mistral_keyword) {
+                        const kw = item.mistral_keyword.toLowerCase().trim();
+                        if (!kwStats[kw]) kwStats[kw] = { dislikes: 0 };
+                        kwStats[kw].dislikes++;
+                    }
+                });
+
+                const initialGenresIds = sessionState.initialGenres ? sessionState.initialGenres.map(Number) : [];
+                const toxicGenresIds = [];
+                for (const [gid, stats] of Object.entries(genreStats)) {
+                    if (stats.dislikes >= 4 && !initialGenresIds.includes(Number(gid))) toxicGenresIds.push(Number(gid));
+                }
+                const toxicGenresNames = genreIdsToNames(toxicGenresIds);
+
+                const toxicKeywords = [];
+                for (const [kw, stats] of Object.entries(kwStats)) {
+                    if (stats.dislikes >= 4) toxicKeywords.push(kw);
+                }
+
+                if (toxicGenresNames || toxicKeywords.length > 0) {
+                    sessionMicroDna = `[CRITICAL: NEGATIVE DNA - AVOID THESE AT ALL COSTS]\n` +
+                        (toxicGenresNames ? `Toxic Genres: ${toxicGenresNames}\n` : '') +
+                        (toxicKeywords.length > 0 ? `Toxic Keywords: ${toxicKeywords.join(', ')}\n` : '');
                 }
             }
                 
@@ -506,6 +625,12 @@ Try to reconnect with this initial mood but from a completely different angle. G
                     query.keyword = String(q.keyword);
                 }
                 
+                // Rete di Salvataggio VSM: Aggiungiamo la keyword più forte della sessione come ultimissimo fallback
+                query.fallback_keywords = Array.isArray(q.fallback_keywords) ? [...q.fallback_keywords] : [];
+                if (sessionState.sessionTopKeyword && !query.fallback_keywords.includes(sessionState.sessionTopKeyword)) {
+                    query.fallback_keywords.push(sessionState.sessionTopKeyword);
+                }
+                
                 // Fallback di sicurezza: se Mistral ha omesso i generi (generando solo keyword o roba vuota), peschiamo gli ultimi generi piaciuti
                 if (!query.with_genres && sessionState.cardHistory) {
                     const lastLiked = sessionState.cardHistory.filter(c => c.action === 'like' || c.action === 'watchlist').pop();
@@ -545,13 +670,18 @@ Try to reconnect with this initial mood but from a completely different angle. G
         console.log(`[Matchmaker] Iteration ${sessionState.iteration} - Pipeline returned ${rawItems?.length || 0} items`);
         
         // Ordina per DNA
-        const sortedItems = await sortByDnaAffinity(rawItems || [], userId, profileId);
+        const sortedItems = await sortByDnaAffinity(rawItems || [], userId, profileId, sessionState);
         
         // Evitiamo dupes
         const seenIds = new Set([...sessionState.likedIds, ...sessionState.dislikedIds, ...sessionState.watchlistIds]);
         
         sessionState.lastIterationItems = sortedItems
-            .map(c => ({ ...c, rawId: String(c.id).replace('tmdb:', '') }))
+            .map(c => ({ 
+                ...c, 
+                rawId: String(c.id).replace('tmdb:', ''),
+                mistral_keyword: c._sourceKeyword,
+                mistral_genres: c._sourceGenres
+            }))
             .filter(c => !seenIds.has(c.rawId));
 
         const cards = sessionState.lastIterationItems
