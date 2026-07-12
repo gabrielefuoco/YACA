@@ -185,6 +185,7 @@ async function initMatchmakerSession(req, res) {
             originalType: type,
             iteration: 0,
             initialVibe: vibeOrRandom,
+            initialGenres: initialGenres || null,
             likedIds: [], dislikedIds: [], watchlistIds: [],
             cardHistory: [],
             animeOverrides,
@@ -364,15 +365,15 @@ async function analyzeMatchmakerSession(req, res) {
         const tmdbApiKey = account?.apiKeys?.tmdb || process.env.TMDB_API_KEY;
         let parsedQueries = [];
 
-        // Randomly plan the next question (between 1 and 2 iterations = 12 to 24 cards)
+        // Randomly plan the next question (between 2 and 3 iterations)
         if (!sessionState.nextQuestionIteration) {
-            sessionState.nextQuestionIteration = sessionState.iteration + Math.floor(Math.random() * 2); // 0 or 1 iterations from now
+            sessionState.nextQuestionIteration = sessionState.iteration + 2 + Math.floor(Math.random() * 2); // 2 or 3 iterations from now
         }
 
         let shouldAskQuestion = false;
         if (sessionState.iteration >= sessionState.nextQuestionIteration) {
             shouldAskQuestion = true;
-            sessionState.nextQuestionIteration = sessionState.iteration + Math.floor(Math.random() * 2) + 1; // 1 or 2 iterations from now
+            sessionState.nextQuestionIteration = sessionState.iteration + 2 + Math.floor(Math.random() * 2); // 2 or 3 iterations from now
         }
 
         if (activeMistralKey && swipes && swipes.length > 0) {
@@ -461,7 +462,7 @@ Make a TOTAL PIVOT away from the most recently shown genres/vibes.
 IMPORTANT REMINDER: The user's INITIAL VIBE requested at the start of the session was: "${sessionState.initialVibe}".
 Try to reconnect with this initial mood but from a completely different angle. Generate EXACTLY 2 new discovery queries.`;
             } else if (shouldAskQuestion) {
-                prompt += `Analyze this evolution. YOU MUST generate EXACTLY 1 Question object to steer the user, providing 4 options that dive deep into specific sub-genres or vibes they might want based on their recent likes. DO NOT generate standard discovery queries, ONLY the Question object.`;
+                prompt += `Analyze this evolution. YOU MUST generate EXACTLY 1 Question object to steer the user AND EXACTLY 1 standard discovery query to keep the recommendations flowing behind the question.`;
             } else {
                 prompt += `Analyze this evolution in taste. What are they leaning towards NOW based on the most recent swipes? Generate EXACTLY 2 new discovery queries to find better matches.`;
             }
