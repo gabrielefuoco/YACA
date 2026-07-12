@@ -13,7 +13,7 @@ interface MatchmakerModalProps {
         iteration: number;
         maxIterations: number;
         initMatchmaker: (t: 'movie'|'series'|'anime', v: string, initialGenres?: number[]) => void;
-        handleSwipe: (id: string, action: SwipeAction) => void;
+        handleSwipe: (id: string, action: SwipeAction, overrideTitle?: string, overrideGenres?: number[]) => void;
         fetchTrailer: (type: 'movie'|'series'|'anime', id: string) => Promise<string | null>;
         transitionToResults: () => void;
         closeAndSave: (save: boolean) => void;
