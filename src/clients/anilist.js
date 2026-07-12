@@ -65,9 +65,14 @@ async function executeGraphQL(query, variables, retries = 3) {
             return res.data;
         } catch (error) {
             if (error.response?.status === 429 && i < retries - 1) {
-                const retryAfter = error.response.headers['retry-after'] 
+                let retryAfter = error.response.headers['retry-after'] 
                     ? parseInt(error.response.headers['retry-after']) * 1000 
-                    : Math.pow(2, i) * 1000;
+                    : 0;
+                
+                // Fallback to exponential backoff if retry-after is 0 or NaN
+                if (isNaN(retryAfter) || retryAfter <= 0) {
+                    retryAfter = Math.pow(2, i) * 1000;
+                }
                 
                 console.warn(`[AniList] Rate limit (429) hit. Retrying in ${retryAfter}ms (Attempt ${i + 1}/${retries})...`);
                 await sleep(retryAfter);

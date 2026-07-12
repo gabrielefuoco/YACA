@@ -137,7 +137,11 @@ class CacheManager {
 
         this.activePromises.set(key, fetchPromise);
 
-        if (status === 'stale') return value;
+        if (status === 'stale') {
+            // Prevent unhandled promise rejection for background SWR fetch
+            fetchPromise.catch(() => {});
+            return value;
+        }
         return fetchPromise;
     }
 
