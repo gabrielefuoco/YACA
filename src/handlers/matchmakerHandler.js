@@ -39,6 +39,7 @@ User disliked: "The Notebook" (Romance, Drama)
 
 ### RESPONSE FORMAT (JSON ARRAY ONLY):
 Array containing mix of Vibe Objects: { "vibe": "string", "genre_ids": "string", "keyword": "string" | null }
+(NOTE: "genre_ids" is REQUIRED for every Vibe Object. Do not omit it.)
 AND (optionally) ONE Question Object: { "is_question": true, "text": "string", "options": [{ "label": "string", "genre_ids": "string" }] }`;
 
 
@@ -415,8 +416,8 @@ async function analyzeMatchmakerSession(req, res) {
                     query.with_keywords = String(q.keyword);
                 }
                 
-                // Fallback di sicurezza: se Mistral ha generato una query vuota, peschiamo l'ultimo genere piaciuto
-                if (!query.with_genres && !query.with_keywords && sessionState.cardHistory) {
+                // Fallback di sicurezza: se Mistral ha omesso i generi (generando solo keyword o roba vuota), peschiamo l'ultimo genere piaciuto
+                if (!query.with_genres && sessionState.cardHistory) {
                     const lastLiked = sessionState.cardHistory.filter(c => c.action === 'like' || c.action === 'watchlist').pop();
                     if (lastLiked && lastLiked.genre_ids && lastLiked.genre_ids.length > 0) {
                         query.with_genres = String(lastLiked.genre_ids[0]);
