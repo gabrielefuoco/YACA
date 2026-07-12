@@ -366,6 +366,17 @@ async function analyzeMatchmakerSession(req, res) {
         const tmdbApiKey = account?.apiKeys?.tmdb || process.env.TMDB_API_KEY;
         let parsedQueries = [];
 
+        // Randomly plan the next question (between 1 and 2 iterations = 12 to 24 cards)
+        if (!sessionState.nextQuestionIteration) {
+            sessionState.nextQuestionIteration = sessionState.iteration + Math.floor(Math.random() * 2); // 0 or 1 iterations from now
+        }
+
+        let shouldAskQuestion = false;
+        if (sessionState.iteration >= sessionState.nextQuestionIteration) {
+            shouldAskQuestion = true;
+            sessionState.nextQuestionIteration = sessionState.iteration + Math.floor(Math.random() * 2) + 1; // 1 or 2 iterations from now
+        }
+
         if (activeMistralKey && swipes && swipes.length > 0) {
             const client = new Mistral({ apiKey: activeMistralKey });
             
@@ -381,8 +392,8 @@ async function analyzeMatchmakerSession(req, res) {
             const tmdbClient = createTmdbClient(tmdbApiKey);
             let sessionMicroDna = null;
 
-            // Preleviamo solo gli ultimissimi 3 like per evitare di impantanarci (echo chamber) sulle prime keyword in assoluto
-            const likedItems = sessionState.cardHistory.filter(c => c.action === 'like' || c.action === 'watchlist').slice(-3);
+            // Preleviamo tutti i like della sessione in toto per estrarre le keyword
+            const likedItems = sessionState.cardHistory.filter(c => c.action === 'like' || c.action === 'watchlist');
             
             if (likedItems.length > 0) {
                 const keywordPromises = likedItems.map(async (item) => {
@@ -429,7 +440,7 @@ async function analyzeMatchmakerSession(req, res) {
                 const topGenresNames = genreIdsToNames(topGenresIds);
 
                 if (topKeywords.length > 0 || topGenresNames) {
-                    sessionMicroDna = `[Session Micro-DNA - Based ONLY on the LAST 3 Likes]:\n` +
+                    sessionMicroDna = `[Session Micro-DNA - Based on ALL Likes from this session]:\n` +
                         `Emerging Genres: ${topGenresNames}\n` +
                         `Emerging Official TMDB Keywords: ${topKeywords.join(', ')}\n` +
                         `IMPORTANT: Use these keywords as INSPIRATION to explore adjacent/similar vibes. DO NOT repeat the exact same keywords over and over across iterations. Mix them up!`;
@@ -438,7 +449,12 @@ async function analyzeMatchmakerSession(req, res) {
                 
             let prompt = `Here is the user's chronological swipe history from the beginning of the session to the most recent swipe:\n${historyStr}\n\n`;
             if (sessionMicroDna) prompt += `${sessionMicroDna}\n\n`;
-            prompt += `Analyze this evolution in taste. What are they leaning towards NOW based on the most recent swipes? Generate EXACTLY 2 new discovery queries to find better matches. If their recent choices are conflicting or unclear, generate a 3rd Question object to steer them.`;
+            
+            if (shouldAskQuestion) {
+                prompt += `Analyze this evolution. YOU MUST generate EXACTLY 1 Question object to steer the user, providing 4 options that dive deep into specific sub-genres or vibes they might want based on their recent likes. DO NOT generate standard discovery queries, ONLY the Question object.`;
+            } else {
+                prompt += `Analyze this evolution in taste. What are they leaning towards NOW based on the most recent swipes? Generate EXACTLY 2 new discovery queries to find better matches.`;
+            }
             
             try {
                 const response = await callMistralWithRetry(client, [

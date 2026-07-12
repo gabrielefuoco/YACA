@@ -95,10 +95,24 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
         const fallbackFlag = !settings.noFallback ? await catalogFallbackCache.get(paramsKey) : null;
 
 
+        const fetchDeep = async (params) => {
+            const [p1, p2] = await Promise.all([
+                fetchTmdbCatalog(tmdbClient, endpoint, skip, params, type, cacheOptions),
+                fetchTmdbCatalog(tmdbClient, endpoint, skip + 20, params, type, cacheOptions)
+            ]);
+            const seenIds = new Set();
+            return [...p1, ...p2].filter(item => {
+                const nid = normalizeContentId(item.id);
+                if (seenIds.has(nid)) return false;
+                seenIds.add(nid);
+                return true;
+            });
+        };
+
         if (fallbackFlag) {
-            results = await fetchTmdbCatalog(tmdbClient, endpoint, skip, fallbackFlag.relaxedParams, type, cacheOptions);
+            results = await fetchDeep(fallbackFlag.relaxedParams);
         } else {
-            results = await fetchTmdbCatalog(tmdbClient, endpoint, skip, tmdbParams, type, cacheOptions);
+            results = await fetchDeep(tmdbParams);
 
             if (results.length === 0 && !settings.noFallback) {
                 let relaxedParams = { ...tmdbParams };
@@ -113,8 +127,7 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
                 }
 
                 if (changed) {
-                    // console.log('--- fetchTmdbCatalog PARAMS ---', tmdbParams);
-                    const extraResults = await fetchTmdbCatalog(tmdbClient, endpoint, skip, relaxedParams, type, cacheOptions);
+                    const extraResults = await fetchDeep(relaxedParams);
                     const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
                     for (const item of extraResults) {
                         const normalizedItemId = normalizeContentId(item.id);
