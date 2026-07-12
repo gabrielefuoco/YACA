@@ -14,7 +14,7 @@ export type MatchmakerCard = {
     question_options?: { label: string; genre_ids: number[] }[];
 };
 
-export type SwipeAction = 'like' | 'dislike' | 'watchlist' | 'answered';
+export type SwipeAction = 'like' | 'dislike' | 'watchlist' | 'answered' | 'steer';
 
 export type SwipeItem = {
     id: string;
@@ -102,11 +102,11 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
         }];
         setSwipesQueue(newQueue);
 
-        if (action === 'like' || action === 'watchlist') {
+        if ((action === 'like' || action === 'watchlist') && card) {
             setMatchedCards(prev => [...prev, card]);
         }
 
-        if (action === 'watchlist') {
+        if (action === 'watchlist' && card) {
             api.addToLibrary(profileId, userId, {
                 id: `tmdb:${card.id}`,
                 type: card.type,
