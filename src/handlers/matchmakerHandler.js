@@ -25,6 +25,7 @@ const MATCHMAKER_SYSTEM_PROMPT = `You are the YACA Matchmaker AI, a cinematic so
 - GENRES: Map to TMDB numerical IDs (Action → 28, Adventure → 12, Animation → 16, Comedy → 35, Crime → 80, Documentary → 99, Drama → 18, Family → 10751, Fantasy → 14, History → 36, Horror → 27, Music → 10402, Mystery → 9648, Romance → 10749, Sci-Fi → 878, TV Movie → 10770, Thriller → 53, War → 10752, Western → 37)
 - LOGIC OPERATORS: USE PIPE (|) for OR combinations to ensure broad, high-quality results. (e.g. "878|28"). DO NOT use arrays.
 - KEYWORDS: You can optionally include a "keyword" string to target specific themes (e.g., "cyberpunk", "space opera").
+- CRITICAL: NEVER leave "genre_ids" null. You MUST infer and provide the closest numerical TMDB genre IDs for EVERY Vibe Object.
 
 ### EXAMPLES (FEW-SHOT):
 User liked: "Inception" (Sci-Fi, Action), "Interstellar" (Drama, Sci-Fi)
@@ -37,8 +38,8 @@ User disliked: "The Notebook" (Romance, Drama)
 ]
 
 ### RESPONSE FORMAT (JSON ARRAY ONLY):
-Array containing mix of Vibe Objects: { "vibe": "string", "genre_ids": "string" | null, "keyword": "string" | null }
-AND (optionally) ONE Question Object: { "is_question": true, "text": "string", "options": [{ "label": "string", "genre_ids": "string" | [int] }] }`;
+Array containing mix of Vibe Objects: { "vibe": "string", "genre_ids": "string", "keyword": "string" | null }
+AND (optionally) ONE Question Object: { "is_question": true, "text": "string", "options": [{ "label": "string", "genre_ids": "string" }] }`;
 
 
 /**
@@ -248,10 +249,12 @@ async function initMatchmakerSession(req, res) {
         const universalCatalog = {
             queries: parsedQueries.map(q => {
                 let query = { strategy: 'discovery' };
-                if (q.genre_ids) {
+                if (q.genre_ids && String(q.genre_ids).trim() !== "null" && String(q.genre_ids).trim() !== "undefined") {
                     query.with_genres = Array.isArray(q.genre_ids) ? q.genre_ids.join('|') : String(q.genre_ids);
                 }
-                if (q.keyword) query.with_keywords = String(q.keyword);
+                if (q.keyword && String(q.keyword).trim() !== "null" && String(q.keyword).trim() !== "undefined") {
+                    query.with_keywords = String(q.keyword);
+                }
                 
                 // Merge overrides anime se presenti
                 if (sessionState.animeOverrides.with_genres) {
@@ -385,7 +388,7 @@ async function analyzeMatchmakerSession(req, res) {
                 ]);
                 parsedQueries = parseQuerySynthesizerResponse(response.choices?.[0]?.message?.content);
                 sessionState.mistralQueryBuffer = [];
-                console.log(`[Matchmaker] Mistral generated ${parsedQueries.length} fresh queries based on real-time history.`);
+                console.log(`[Matchmaker] Mistral generated ${parsedQueries.length} fresh queries:`, JSON.stringify(parsedQueries));
             } catch (err) {
                 console.error('[Matchmaker] Analyze Mistral error:', err);
             }
@@ -405,10 +408,20 @@ async function analyzeMatchmakerSession(req, res) {
         const universalCatalog = {
             queries: parsedQueries.map(q => {
                 let query = { strategy: 'discovery' };
-                if (q.genre_ids) {
+                if (q.genre_ids && String(q.genre_ids).trim() !== "null" && String(q.genre_ids).trim() !== "undefined") {
                     query.with_genres = Array.isArray(q.genre_ids) ? q.genre_ids.join('|') : String(q.genre_ids);
                 }
-                if (q.keyword) query.with_keywords = String(q.keyword);
+                if (q.keyword && String(q.keyword).trim() !== "null" && String(q.keyword).trim() !== "undefined") {
+                    query.with_keywords = String(q.keyword);
+                }
+                
+                // Fallback di sicurezza: se Mistral ha generato una query vuota, peschiamo l'ultimo genere piaciuto
+                if (!query.with_genres && !query.with_keywords && sessionState.cardHistory) {
+                    const lastLiked = sessionState.cardHistory.filter(c => c.action === 'like' || c.action === 'watchlist').pop();
+                    if (lastLiked && lastLiked.genre_ids && lastLiked.genre_ids.length > 0) {
+                        query.with_genres = String(lastLiked.genre_ids[0]);
+                    }
+                }
                 
                 // Merge overrides anime
                 if (sessionState.animeOverrides?.with_genres) {
