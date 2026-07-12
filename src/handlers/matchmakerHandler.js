@@ -351,6 +351,7 @@ async function analyzeMatchmakerSession(req, res) {
         // Paginazione: incrementiamo lo skip in base all'iterazione
         const skip = sessionState.iteration * CARDS_PER_BATCH;
         const rawItems = await executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, sessionState.type, skip, { noFallback: false }, {});
+        console.log(`[Matchmaker] Iteration ${sessionState.iteration} - Pipeline returned ${rawItems?.length || 0} items`);
         
         // Ordina per DNA
         const sortedItems = await sortByDnaAffinity(rawItems || [], userId, profileId);
