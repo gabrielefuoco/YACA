@@ -44,7 +44,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
     const [isLoadingTrailer, setIsLoadingTrailer] = useState(false);
 
     const VIBES = [
-        { id: 'Intenso & Ricco d\\'Azione', label: 'Intenso & Azione', icon: '🔥', desc: 'Adrenalina, battaglie, thriller' },
+        { id: "Intenso & Ricco d'Azione", label: 'Intenso & Azione', icon: '🔥', desc: 'Adrenalina, battaglie, thriller' },
         { id: 'Rilassante & Leggero', label: 'Rilassante & Leggero', icon: '🍃', desc: 'Slice of Life, commedie, feel-good' },
         { id: 'Psicologico & Misterioso', label: 'Psicologico & Mistero', icon: '🧠', desc: 'Mind-bending, gialli, oscuro' },
         { id: 'Drammatico & Emozionante', label: 'Dramma & Emozione', icon: '😭', desc: 'Storie profonde, toccanti' },
