@@ -485,12 +485,12 @@ Try to reconnect with this initial mood but from a completely different angle. G
         }
 
         if (parsedQueries.length === 0) {
-            parsedQueries = [{ vibe: 'Popular Continuation', genre_ids: null }];
+            parsedQueries = [{ vibe: 'Session Continuation', genre_ids: sessionState.initialGenres || null }];
         }
         
         const questionCard = extractQuestionCard(parsedQueries);
         if (questionCard && parsedQueries.length === 0) {
-            parsedQueries = [{ vibe: 'Popular Continuation', genre_ids: null }];
+            parsedQueries = [{ vibe: 'Background Mood', genre_ids: sessionState.initialGenres || null }];
         }
         
         await matchmakerSessionCache.set(sessionId, sessionState);
@@ -505,11 +505,14 @@ Try to reconnect with this initial mood but from a completely different angle. G
                     query.keyword = String(q.keyword);
                 }
                 
-                // Fallback di sicurezza: se Mistral ha omesso i generi (generando solo keyword o roba vuota), peschiamo l'ultimo genere piaciuto
+                // Fallback di sicurezza: se Mistral ha omesso i generi (generando solo keyword o roba vuota), peschiamo gli ultimi generi piaciuti
                 if (!query.with_genres && sessionState.cardHistory) {
                     const lastLiked = sessionState.cardHistory.filter(c => c.action === 'like' || c.action === 'watchlist').pop();
-                    if (lastLiked && lastLiked.genre_ids && lastLiked.genre_ids.length > 0) {
-                        query.with_genres = String(lastLiked.genre_ids[0]);
+                    if (lastLiked) {
+                        const sourceGenres = lastLiked.genres || lastLiked.genre_ids || [];
+                        if (sourceGenres.length > 0) {
+                            query.with_genres = sourceGenres.slice(0, 2).join(',');
+                        }
                     }
                 }
                 
