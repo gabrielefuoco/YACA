@@ -29,7 +29,7 @@ async function buildDiscoveryParams(filters, tmdbApiKey, type, baseSettings = {}
         company_name, genre_ids, year_from, year_to, runtime_lte, 
         runtime_gte, watch_provider, original_language, target,
         sort_by, language, without_genre_ids, without_keyword,
-        certification_lte, vote_average_gte, vote_average_lte,
+        certification_lte, vote_average_gte, vote_average_lte, fallback_keywords,
         ...tmdbParams
     } = filters;
 
