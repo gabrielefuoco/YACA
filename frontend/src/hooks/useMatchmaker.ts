@@ -96,7 +96,7 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
         }];
         setSwipesQueue(newQueue);
 
-        if (action === 'like' || action === 'watchlist' || action === 'answered') {
+        if (action === 'like' || action === 'watchlist') {
             setMatchedCards(prev => [...prev, card]);
         }
 
