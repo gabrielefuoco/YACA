@@ -456,6 +456,11 @@ async function analyzeMatchmakerSession(req, res) {
                 prompt += `Analyze this evolution in taste. What are they leaning towards NOW based on the most recent swipes? Generate EXACTLY 2 new discovery queries to find better matches.`;
             }
             
+            console.log('\n================ MISTRAL PROMPT INPUT ================');
+            console.log(historyStr);
+            if (sessionMicroDna) console.log('\n' + sessionMicroDna);
+            console.log('======================================================\n');
+            
             try {
                 const response = await callMistralWithRetry(client, [
                     { role: 'system', content: MATCHMAKER_SYSTEM_PROMPT },

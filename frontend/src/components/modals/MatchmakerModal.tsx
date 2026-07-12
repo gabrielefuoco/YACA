@@ -83,9 +83,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
         if (!currentCard) return;
         setFlipped(false);
         setTrailerUrl(null);
-        currentCard.genre_ids = option.genre_ids;
-        currentCard.title = option.label;
-        handleSwipe(currentCard.id, 'answered');
+        handleSwipe(currentCard.id, 'answered', option.label, option.genre_ids);
     };
 
     const handleFlip = () => {

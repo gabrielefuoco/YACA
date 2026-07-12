@@ -80,7 +80,7 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
         }
     }, [userId, profileId]);
 
-    const handleSwipe = useCallback(async (cardId: string, action: SwipeAction) => {
+    const handleSwipe = useCallback(async (cardId: string, action: SwipeAction, overrideTitle?: string, overrideGenres?: number[]) => {
         if (!userId || !profileId) return;
         
         const card = cards.find(c => c.id === cardId);
@@ -91,12 +91,12 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
         const newQueue = [...swipesQueue, { 
             id: cardId, 
             action, 
-            title: card.title, 
-            genre_ids: card.genre_ids 
+            title: overrideTitle || card.title, 
+            genre_ids: overrideGenres || card.genre_ids 
         }];
         setSwipesQueue(newQueue);
 
-        if (action === 'like' || action === 'watchlist') {
+        if (action === 'like' || action === 'watchlist' || action === 'answered') {
             setMatchedCards(prev => [...prev, card]);
         }
 
