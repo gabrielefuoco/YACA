@@ -143,8 +143,16 @@ function parseQuerySynthesizerResponse(content) {
             }
 
             // Validate genre_ids
-            if (clean.genre_ids && (!Array.isArray(clean.genre_ids) || !clean.genre_ids.every(id => Number.isInteger(id)))) {
-                delete clean.genre_ids;
+            if (clean.genre_ids !== undefined && clean.genre_ids !== null) {
+                if (typeof clean.genre_ids === 'string') {
+                    // Valid string (e.g. "14|28")
+                } else if (typeof clean.genre_ids === 'number') {
+                    clean.genre_ids = String(clean.genre_ids);
+                } else if (Array.isArray(clean.genre_ids)) {
+                    clean.genre_ids = clean.genre_ids.join('|');
+                } else {
+                    delete clean.genre_ids;
+                }
             }
 
             // Validate keyword is a string
