@@ -11,6 +11,15 @@ const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataH
 
 const { computeTopGenres, computeTopKeywords } = require('../../engines/hybridRecommendations');
 
+function applyAiQualityFilters(query) {
+    if (query.strategy === 'discovery') {
+        if (query.include_adult === undefined) query.include_adult = false;
+        if (query['vote_count.gte'] === undefined) query['vote_count.gte'] = 75; // taglia via i b-movie fake amatoriali e porno low budget
+        if (query.original_language === undefined) query.original_language = 'en|it|es|fr|de|ja|ko'; // whitelist lingue principali + anime/kdrama
+    }
+    return query;
+}
+
 const LOOKAHEAD_PAGES = 3;
 const PAGE_SIZE = 20;
 
@@ -137,8 +146,9 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
     let finalResults = [];
 
     if (queries.length === 1) {
-        const query = { ...queries[0] };
+        let query = { ...queries[0] };
         if (!query.strategy) query.strategy = 'discovery';
+        query = applyAiQualityFilters(query);
 
         let primaryResults = await executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions);
 
@@ -165,8 +175,9 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
 
         const queryResults = await Promise.all(
             queries.map(async (queryDef) => {
-                const query = { ...queryDef };
+                let query = { ...queryDef };
                 if (!query.strategy) query.strategy = 'discovery';
+                query = applyAiQualityFilters(query);
 
                 const pagesToFetch = isFirstPage ? LOOKAHEAD_PAGES : 1;
                 const pagePromises = [];
