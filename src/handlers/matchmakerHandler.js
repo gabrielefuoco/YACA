@@ -193,22 +193,29 @@ async function initMatchmakerSession(req, res) {
         let parsedQueries = [];
         const dnaContext = await getMatchmakerDnaContext(userId, profileId);
 
-        if (activeMistralKey) {
+        // BYPASS Mistral al turno 0 se siamo in modalità esplorativa, per un avvio fulmineo.
+        // Mistral subentrerà in analyzeMatchmakerSession con lo storico reale.
+        if (vibeOrRandom === 'random') {
+            parsedQueries = [
+                { vibe: 'Esplorazione Iniziale', genre_ids: (initialGenres && initialGenres.length > 0) ? initialGenres : null },
+                { vibe: 'Popolari & Rilevanti', genre_ids: (initialGenres && initialGenres.length > 0) ? initialGenres : null }
+            ];
+            sessionState.mistralQueryBuffer = [];
+            console.log(`[Matchmaker] Init Fast Boot: Bypassed Mistral at Turn 0 for immediate start.`);
+        }
+        else if (activeMistralKey) {
             const client = new Mistral({ apiKey: activeMistralKey });
             
-            let userPrompt = '';
-            let basePrompt = vibeOrRandom !== 'random' 
-                ? `User vibe request: "${vibeOrRandom}". Generate discovery queries.`
-                : `Generate diverse initial discovery queries for ${tmdbType} content.`;
+            let userPrompt = `User vibe request: "${vibeOrRandom}". Generate discovery queries.`;
             
             if (initialGenres && initialGenres.length > 0) {
                 const genreNames = genreIdsToNames(initialGenres);
-                basePrompt += `\nThe user explicitly selected these starting genres: ${genreNames} (IDs: ${initialGenres.join(', ')}). You MUST include these in your discovery queries.`;
+                userPrompt += `\nThe user explicitly selected these starting genres: ${genreNames} (IDs: ${initialGenres.join(', ')}). You MUST include these in your discovery queries.`;
             }
 
             userPrompt = dnaContext 
-                ? `${basePrompt}\n\nUser's Taste DNA for context:\n${dnaContext}`
-                : basePrompt;
+                ? `${userPrompt}\n\nUser's Taste DNA for context:\n${dnaContext}`
+                : userPrompt;
 
             try {
                 const response = await callMistralWithRetry(client, [

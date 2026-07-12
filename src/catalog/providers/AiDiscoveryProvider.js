@@ -155,9 +155,8 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
         const withGenres = Array.isArray(query.with_genres)
             ? query.with_genres.map(String)
             : String(query.with_genres ?? '').split(/[|,]/);
-        const isDocumentaryQuery = withGenres.includes('99');
-
-        if (!settings?.noFallback && (!primaryResults || primaryResults.length === 0) && isDocumentaryQuery && query.with_keywords) {
+        // Universally relax keywords if primaryResults are empty to prevent 0 items bugs
+        if (!settings?.noFallback && (!primaryResults || primaryResults.length === 0) && query.with_keywords) {
             const relaxedQuery = { ...query };
             delete relaxedQuery.with_keywords;
             primaryResults = await executeComplexStrategy(relaxedQuery, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions);
@@ -187,8 +186,24 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                         executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions)
                     );
                 }
-                const pageResults = await Promise.all(pagePromises);
-                return pageResults.flat();
+                let pageResults = await Promise.all(pagePromises);
+                let flatResults = pageResults.flat();
+                
+                // Fallback morbido se le keyword di Mistral sono allucinate o inesistenti
+                if (!settings?.noFallback && flatResults.length === 0 && query.with_keywords) {
+                    const relaxedQuery = { ...query };
+                    delete relaxedQuery.with_keywords;
+                    
+                    const relaxedPromises = [];
+                    for (let p = 0; p < pagesToFetch; p++) {
+                        const pageSkip = perQuerySkip + (p * PAGE_SIZE);
+                        relaxedPromises.push(executeComplexStrategy(relaxedQuery, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions));
+                    }
+                    pageResults = await Promise.all(relaxedPromises);
+                    flatResults = pageResults.flat();
+                }
+
+                return flatResults;
             })
         );
 
