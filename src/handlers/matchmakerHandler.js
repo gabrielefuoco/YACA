@@ -23,21 +23,22 @@ const MATCHMAKER_SYSTEM_PROMPT = `You are the YACA Matchmaker AI, a cinematic so
 
 ### PARAMETER EXTRACTION RULES:
 - GENRES: Map to TMDB numerical IDs (Action → 28, Adventure → 12, Animation → 16, Comedy → 35, Crime → 80, Documentary → 99, Drama → 18, Family → 10751, Fantasy → 14, History → 36, Horror → 27, Music → 10402, Mystery → 9648, Romance → 10749, Sci-Fi → 878, TV Movie → 10770, Thriller → 53, War → 10752, Western → 37)
-- LOGIC OPERATORS: pipe (|) = OR, comma (,) = AND. Prefer pipe for broad discovery.
+- LOGIC OPERATORS: USE PIPE (|) for OR combinations to ensure broad, high-quality results. (e.g. "878|28"). DO NOT use arrays.
+- KEYWORDS: You can optionally include a "keyword" string to target specific themes (e.g., "cyberpunk", "space opera").
 
 ### EXAMPLES (FEW-SHOT):
 User liked: "Inception" (Sci-Fi, Action), "Interstellar" (Drama, Sci-Fi)
 User disliked: "The Notebook" (Romance, Drama)
 → Output:
 [
-  { "vibe": "Mind-bending Sci-Fi", "genre_ids": [878, 28] },
-  { "is_question": true, "text": "Are we looking for deep space or cyberpunk streets?", "options": [{ "label": "Deep Space", "genre_ids": [878] }, { "label": "Cyberpunk", "genre_ids": [878, 28] }] },
-  { "vibe": "Epic Space Drama", "genre_ids": [878, 18] }
+  { "vibe": "Mind-bending Sci-Fi", "genre_ids": "878|28", "keyword": "mindfuck" },
+  { "is_question": true, "text": "Are we looking for deep space or cyberpunk streets?", "options": [{ "label": "Deep Space", "genre_ids": "878" }, { "label": "Cyberpunk", "genre_ids": "878|28" }] },
+  { "vibe": "Epic Space Drama", "genre_ids": "878|18" }
 ]
 
 ### RESPONSE FORMAT (JSON ARRAY ONLY):
-Array containing mix of Vibe Objects: { "vibe": "string", "genre_ids": [int] | null }
-AND (optionally) ONE Question Object: { "is_question": true, "text": "string", "options": [{ "label": "string", "genre_ids": [int] }] }`;
+Array containing mix of Vibe Objects: { "vibe": "string", "genre_ids": "string" | null, "keyword": "string" | null }
+AND (optionally) ONE Question Object: { "is_question": true, "text": "string", "options": [{ "label": "string", "genre_ids": "string" | [int] }] }`;
 
 
 /**
@@ -48,13 +49,22 @@ function extractQuestionCard(queries) {
     const qIndex = queries.findIndex(q => q.is_question);
     if (qIndex !== -1) {
         const q = queries.splice(qIndex, 1)[0];
+        
+        const normalizedOptions = (q.options || []).map(opt => {
+            let g = opt.genre_ids;
+            if (typeof g === 'string') {
+                g = g.split(/[|,]/).map(Number).filter(n => !isNaN(n));
+            }
+            return { ...opt, genre_ids: Array.isArray(g) ? g.map(Number) : [] };
+        });
+
         return {
             id: 'question_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
             type: 'question',
             is_question: true,
             title: 'Interactive Question',
             question_text: q.text || q.vibe || 'Question',
-            question_options: q.options || [],
+            question_options: normalizedOptions,
             poster: null,
             overview: '',
             year: '',
@@ -233,13 +243,17 @@ async function initMatchmakerSession(req, res) {
         const universalCatalog = {
             queries: parsedQueries.map(q => {
                 let query = { strategy: 'discovery' };
-                if (q.genre_ids) query.with_genres = q.genre_ids;
+                if (q.genre_ids) {
+                    query.with_genres = Array.isArray(q.genre_ids) ? q.genre_ids.join('|') : String(q.genre_ids);
+                }
+                if (q.keyword) query.with_keywords = String(q.keyword);
                 
                 // Merge overrides anime se presenti
                 if (sessionState.animeOverrides.with_genres) {
-                    query.with_genres = query.with_genres 
-                        ? [...new Set([...query.with_genres, ...sessionState.animeOverrides.with_genres])]
-                        : sessionState.animeOverrides.with_genres;
+                    let currentGenres = query.with_genres 
+                        ? query.with_genres.split(/[|,]/)
+                        : [];
+                    query.with_genres = [...new Set([...currentGenres, ...sessionState.animeOverrides.with_genres])].join('|');
                 }
                 if (sessionState.animeOverrides.with_keywords) {
                     query.with_keywords = query.with_keywords 
@@ -402,13 +416,17 @@ async function analyzeMatchmakerSession(req, res) {
         const universalCatalog = {
             queries: parsedQueries.map(q => {
                 let query = { strategy: 'discovery' };
-                if (q.genre_ids) query.with_genres = q.genre_ids;
+                if (q.genre_ids) {
+                    query.with_genres = Array.isArray(q.genre_ids) ? q.genre_ids.join('|') : String(q.genre_ids);
+                }
+                if (q.keyword) query.with_keywords = String(q.keyword);
                 
                 // Merge overrides anime
                 if (sessionState.animeOverrides?.with_genres) {
-                    query.with_genres = query.with_genres 
-                        ? [...new Set([...query.with_genres, ...sessionState.animeOverrides.with_genres])]
-                        : sessionState.animeOverrides.with_genres;
+                    let currentGenres = query.with_genres 
+                        ? query.with_genres.split(/[|,]/)
+                        : [];
+                    query.with_genres = [...new Set([...currentGenres, ...sessionState.animeOverrides.with_genres])].join('|');
                 }
                 if (sessionState.animeOverrides?.with_keywords) {
                     query.with_keywords = query.with_keywords 
