@@ -26,6 +26,10 @@ const PAGE_SIZE = 20;
 function getKeywordFallbackSequence(originalKeyword) {
     if (!originalKeyword || typeof originalKeyword !== 'string') return [];
     
+    // Rileva l'intento di Mistral: se ha usato | vuole un OR, altrimenti AND (,)
+    const isOr = originalKeyword.includes('|');
+    const separator = isOr ? '|' : ',';
+
     const keys = originalKeyword.split(/[|,]/).map(k => k.trim()).filter(Boolean);
     if (keys.length <= 1) {
         return [null];
@@ -33,15 +37,14 @@ function getKeywordFallbackSequence(originalKeyword) {
 
     const sequence = [];
     
-    // 1. Degradazione progressiva dell'AND: togliamo le ultime (meno importanti)
+    // 1. Degradazione progressiva mantenendo l'operatore logico scelto da Mistral
     for (let i = keys.length - 1; i >= 1; i--) {
-        sequence.push(keys.slice(0, i).join(','));
+        sequence.push(keys.slice(0, i).join(separator));
     }
 
-    // 2. Espansione OR (allargamento a ventaglio)
-    sequence.push(keys.join('|'));
-
-    // 3. Fallback finale (rimozione totale)
+    // ELIMINATO: L'espansione forzata a OR (che causava l'effetto Cenerentola fuori contesto)
+    
+    // 2. Fallback finale (rimozione totale)
     sequence.push(null);
 
     return sequence;
