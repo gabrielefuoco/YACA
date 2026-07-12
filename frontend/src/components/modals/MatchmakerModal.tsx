@@ -66,7 +66,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
         });
     };
 
-    if (!isOpen) return null;
+    // Early return rimosso per rispettare le Rules of Hooks
 
     const currentCard = cards[0];
     const cardsLeft = cards.length;
