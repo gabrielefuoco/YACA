@@ -105,7 +105,7 @@ function genreIdsToNames(ids) {
  */
 async function getMatchmakerDnaContext(userId, profileId) {
     try {
-        const profile = await TasteProfile.findOne({ userId, context: profileId }).lean();
+        const profile = await TasteProfile.findOne({ owner: userId, context: profileId }).lean();
         const user = await UserAccount.findOne({ userId }).lean();
         
         if (!profile && !user) return null;
@@ -124,7 +124,7 @@ async function getMatchmakerDnaContext(userId, profileId) {
 async function sortByDnaAffinity(items, userId, profileId, sessionState = {}) {
     try {
         if (!items || items.length === 0) return items;
-        const profile = await TasteProfile.findOne({ userId, context: profileId }).lean();
+        const profile = await TasteProfile.findOne({ owner: userId, context: profileId }).lean();
         const scoredItems = items.map(item => {
             let score = 0;
             if (profile?.compiledVectors?.V_final) {
