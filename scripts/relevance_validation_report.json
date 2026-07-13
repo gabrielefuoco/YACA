@@ -40,8 +40,8 @@
   "preset_new_movies": {
     "name": "Film: Nuove Uscite",
     "params": {
-      "primary_release_date.lte": "2026-07-01",
-      "primary_release_date.gte": "2026-05-01",
+      "primary_release_date.lte": "2026-07-13",
+      "primary_release_date.gte": "2026-05-13",
       "sort_by": "popularity.desc",
       "vote_count.gte": 10
     },
@@ -51,8 +51,8 @@
   "preset_new_series": {
     "name": "Serie TV: Novità",
     "params": {
-      "first_air_date.lte": "2026-07-01",
-      "first_air_date.gte": "2026-01-01",
+      "first_air_date.lte": "2026-07-13",
+      "first_air_date.gte": "2026-01-13",
       "sort_by": "popularity.desc",
       "vote_count.gte": 5,
       "without_keywords": "210024"
@@ -63,8 +63,8 @@
   "preset_new_series_eps": {
     "name": "Serie: Episodi Recenti",
     "params": {
-      "air_date.lte": "2026-07-01",
-      "air_date.gte": "2026-06-17",
+      "air_date.lte": "2026-07-13",
+      "air_date.gte": "2026-06-29",
       "sort_by": "popularity.desc",
       "without_keywords": "210024"
     },
@@ -74,8 +74,11 @@
   "preset_pop_anime": {
     "name": "Anime Popolari",
     "params": {
-      "provider": "kitsu",
-      "sort_by": "popularity.desc"
+      "with_original_language": "ja",
+      "with_genres": 16,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 100,
+      "without_keywords": "198385,353318,214564,360629,284535,256466,356759"
     },
     "checked": 20,
     "mismatches": []
@@ -508,9 +511,9 @@
   "preset_oscar_winners": {
     "name": "Grandi Film Premiati",
     "params": {
-      "sort_by": "vote_average.desc",
-      "vote_average.gte": 8,
-      "vote_count.gte": 200
+      "sort_by": "popularity.desc",
+      "vote_average.gte": 7.8,
+      "vote_count.gte": 1000
     },
     "checked": 20,
     "mismatches": []
@@ -537,12 +540,24 @@
   "preset_mindfuck": {
     "name": "Mindfuck & Plot Twists",
     "params": {
-      "with_genres": "9648|53",
-      "with_keywords": "362567|275311",
-      "sort_by": "vote_average.desc",
-      "vote_count.gte": 200
+      "with_genres": "9648|53|878",
+      "with_keywords": "275311|374835|174089|335567|1453|169411|3298|6262|243230|362568|10854",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 100
     },
-    "checked": 7,
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_mindfuck_series": {
+    "name": "Mindfuck & Plot Twists (Serie)",
+    "params": {
+      "with_genres": "10765|9648|18",
+      "with_keywords": "275311|374835|174089|335567|1453|169411|3298|6262|243230|362568|10854",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 20,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
     "mismatches": []
   },
   "preset_feel_good": {
@@ -591,12 +606,13 @@
     "mismatches": []
   },
   "preset_slasher_gore": {
-    "name": "Slasher, Zombie & Gore",
+    "name": "Slasher & Splatter Gore",
     "params": {
       "with_genres": 27,
-      "with_keywords": "12335|12377|3133|200424",
+      "with_keywords": "12339|10714|10292|14546|12394",
       "sort_by": "popularity.desc",
-      "vote_count.gte": 50
+      "vote_count.gte": 50,
+      "without_keywords": "12377|3133"
     },
     "checked": 20,
     "mismatches": []
@@ -604,20 +620,33 @@
   "preset_whodunit": {
     "name": "Whodunit & Indagini",
     "params": {
-      "with_genres": "9648",
-      "with_keywords": "11134|10391|191199",
-      "sort_by": "vote_average.desc",
-      "vote_count.gte": 200
+      "with_genres": "9648|80",
+      "with_keywords": "12570|207046",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
     },
-    "checked": 4,
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_whodunit_series": {
+    "name": "Whodunit & Indagini (Serie)",
+    "params": {
+      "with_genres": "9648|80",
+      "with_keywords": "12570|207046",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 15,
+      "without_keywords": "210024"
+    },
+    "checked": 20,
     "mismatches": []
   },
   "preset_apocalypse_survival": {
     "name": "Apocalisse & Sopravvivenza",
     "params": {
-      "with_keywords": "285366|4564|12377|241725",
+      "with_keywords": "10349|12332|10150|359337|4565",
       "sort_by": "popularity.desc",
-      "vote_count.gte": 50
+      "vote_count.gte": 50,
+      "without_keywords": "12377"
     },
     "checked": 20,
     "mismatches": []
@@ -745,11 +774,22 @@
     "params": {
       "with_genres": "80|9648",
       "with_keywords": "1471|207317|209210",
-      "sort_by": "vote_average.desc",
-      "vote_average.gte": 6.5,
-      "vote_count.gte": 200
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
     },
-    "checked": 19,
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_neo_noir_series": {
+    "name": "Neo-Noir & Detective Oscuri (Serie)",
+    "params": {
+      "with_genres": "80|18",
+      "with_keywords": "1471|207317|209210",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 15,
+      "without_keywords": "210024"
+    },
+    "checked": 17,
     "mismatches": []
   },
   "preset_space_hard_scifi": {
@@ -802,20 +842,20 @@
     "params": {
       "with_genres": "80|18",
       "with_keywords": "10398|3149|2463",
-      "sort_by": "vote_average.desc",
-      "vote_count.gte": 100,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10,
       "without_keywords": "210024"
     },
-    "checked": 17,
+    "checked": 20,
     "mismatches": []
   },
   "preset_tv_high_fantasy": {
     "name": "High Fantasy (Spade & Draghi)",
     "params": {
       "with_genres": 10765,
-      "with_keywords": "11024|12554|3205",
+      "with_keywords": "11024|12554|3205|41270|11305",
       "sort_by": "popularity.desc",
-      "vote_count.gte": 20,
+      "vote_count.gte": 10,
       "without_keywords": "210024"
     },
     "checked": 20,
@@ -826,8 +866,8 @@
     "params": {
       "with_genres": 10765,
       "with_keywords": "10053|4565",
-      "sort_by": "vote_average.desc",
-      "vote_count.gte": 100,
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10,
       "without_keywords": "210024"
     },
     "checked": 20,
@@ -1070,6 +1110,7 @@
     "name": "Teen Drama & Coming of Age",
     "params": {
       "with_genres": 18,
+      "without_genres": "35",
       "with_keywords": "6270|10683|11156|315570",
       "sort_by": "popularity.desc",
       "vote_count.gte": 20,
@@ -1117,21 +1158,17 @@
   "preset_anime_simulcast": {
     "name": "Simulcast (Nuovi Episodi)",
     "params": {
-      "provider": "tmdb",
-      "with_original_language": "ja",
-      "with_genres": 16,
-      "sort_by": "popularity.desc",
-      "air_date.gte": "2026-06-29",
-      "air_date.lte": "2026-07-01"
+      "provider": "anilist"
     },
-    "checked": 15,
+    "checked": 20,
     "mismatches": []
   },
   "preset_anime_shonen": {
     "name": "Anime: Battle Shōnen",
     "params": {
-      "provider": "kitsu",
-      "_keywordNames": "shounen",
+      "with_genres": 16,
+      "with_keywords": "207826",
+      "with_original_language": "ja",
       "sort_by": "popularity.desc"
     },
     "checked": 20,
@@ -1140,9 +1177,11 @@
   "preset_anime_seinen": {
     "name": "Anime: Seinen (Maturi)",
     "params": {
-      "provider": "kitsu",
-      "_keywordNames": "seinen",
-      "sort_by": "vote_average.desc"
+      "with_genres": 16,
+      "with_keywords": "195668",
+      "with_original_language": "ja",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 50
     },
     "checked": 20,
     "mismatches": []
@@ -1150,8 +1189,9 @@
   "preset_anime_shoujo": {
     "name": "Anime: Shōjo (Romantico)",
     "params": {
-      "provider": "kitsu",
-      "_keywordNames": "shoujo",
+      "with_genres": 16,
+      "with_keywords": "206437",
+      "with_original_language": "ja",
       "sort_by": "popularity.desc"
     },
     "checked": 20,
@@ -1160,9 +1200,11 @@
   "preset_anime_slice_of_life": {
     "name": "Anime: Slice of Life",
     "params": {
-      "provider": "kitsu",
-      "_keywordNames": "slice of life",
-      "sort_by": "vote_average.desc"
+      "with_genres": 16,
+      "with_keywords": "9914",
+      "with_original_language": "ja",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 50
     },
     "checked": 20,
     "mismatches": []
@@ -1170,8 +1212,9 @@
   "preset_anime_mecha": {
     "name": "Anime: Mecha & Robot",
     "params": {
-      "provider": "kitsu",
-      "_keywordNames": "mecha",
+      "with_genres": 16,
+      "with_keywords": "10046",
+      "with_original_language": "ja",
       "sort_by": "popularity.desc"
     },
     "checked": 20,
@@ -1180,8 +1223,9 @@
   "preset_anime_isekai": {
     "name": "Anime: Isekai & Fantasy",
     "params": {
-      "provider": "kitsu",
-      "_keywordNames": "isekai",
+      "with_genres": 16,
+      "with_keywords": "237451",
+      "with_original_language": "ja",
       "sort_by": "popularity.desc"
     },
     "checked": 20,
@@ -1190,9 +1234,11 @@
   "preset_anime_dark": {
     "name": "Anime: Dark & Psicologico",
     "params": {
-      "provider": "kitsu",
-      "_keywordNames": "dark|psychological",
-      "sort_by": "vote_average.desc"
+      "with_genres": 16,
+      "with_keywords": "259094|272553",
+      "with_original_language": "ja",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 50
     },
     "checked": 20,
     "mismatches": []
@@ -1200,9 +1246,11 @@
   "preset_anime_action": {
     "name": "Anime: Azione & Combattimento",
     "params": {
-      "provider": "kitsu",
-      "_keywordNames": "action",
-      "sort_by": "popularity.desc"
+      "with_genres": "16,10759",
+      "with_original_language": "ja",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 100,
+      "without_keywords": "198385,353318,214564,360629,284535,256466,356759"
     },
     "checked": 20,
     "mismatches": []
@@ -1210,9 +1258,11 @@
   "preset_anime_sports": {
     "name": "Anime: Sport & Competizione",
     "params": {
-      "provider": "kitsu",
-      "_keywordNames": "sports",
-      "sort_by": "vote_average.desc"
+      "with_genres": 16,
+      "with_keywords": "6075",
+      "with_original_language": "ja",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 50
     },
     "checked": 20,
     "mismatches": []
@@ -1220,10 +1270,12 @@
   "preset_anime_classic": {
     "name": "Anime Classici ('80/'90)",
     "params": {
-      "provider": "kitsu",
+      "with_genres": 16,
+      "with_original_language": "ja",
       "first_air_date.gte": "1980-01-01",
       "first_air_date.lte": "1999-12-31",
-      "sort_by": "vote_average.desc"
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 50
     },
     "checked": 20,
     "mismatches": []
@@ -1231,10 +1283,12 @@
   "preset_anime_00s": {
     "name": "Anime Anni 2000",
     "params": {
-      "provider": "kitsu",
+      "with_genres": 16,
+      "with_original_language": "ja",
       "first_air_date.gte": "2000-01-01",
       "first_air_date.lte": "2009-12-31",
-      "sort_by": "vote_average.desc"
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 50
     },
     "checked": 20,
     "mismatches": []
@@ -1242,8 +1296,10 @@
   "preset_anime_movies_top": {
     "name": "Capolavori Anime (Film)",
     "params": {
-      "provider": "kitsu",
-      "sort_by": "vote_average.desc"
+      "with_genres": 16,
+      "with_original_language": "ja",
+      "sort_by": "vote_average.desc",
+      "vote_count.gte": 200
     },
     "checked": 20,
     "mismatches": []
@@ -1251,9 +1307,11 @@
   "preset_anime_movies_romance": {
     "name": "Film Anime Romantici",
     "params": {
-      "provider": "kitsu",
-      "_keywordNames": "romance",
-      "sort_by": "popularity.desc"
+      "with_genres": 16,
+      "with_keywords": "9840",
+      "with_original_language": "ja",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
     },
     "checked": 20,
     "mismatches": []
@@ -1313,8 +1371,8 @@
     "params": {
       "with_companies": 41077,
       "with_genres": "27|53",
-      "sort_by": "vote_average.desc",
-      "vote_count.gte": 200
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10
     },
     "checked": 20,
     "mismatches": []
@@ -1333,7 +1391,7 @@
     "name": "Cyberpunk & Distopia (Serie)",
     "params": {
       "with_genres": 10765,
-      "with_keywords": "12190|4565|156556|210086",
+      "with_keywords": "12190|156556|210086|803|679|310|4563|9685",
       "sort_by": "popularity.desc",
       "vote_count.gte": 20,
       "without_keywords": "210024"
@@ -1447,8 +1505,19 @@
       "with_keywords": "12377|4565|10483",
       "with_genres": "27|10765",
       "sort_by": "popularity.desc",
-      "vote_count.gte": 50,
+      "vote_count.gte": 10,
       "without_keywords": "210024"
+    },
+    "checked": 20,
+    "mismatches": []
+  },
+  "preset_zombies_movies": {
+    "name": "Zombie & Infezioni (Film)",
+    "params": {
+      "with_keywords": "12377|4564|10483",
+      "with_genres": "27|878",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 50
     },
     "checked": 20,
     "mismatches": []
@@ -1468,12 +1537,12 @@
     "name": "Animazione per Adulti",
     "params": {
       "with_genres": "16,35",
-      "with_keywords": "158536|187056",
+      "with_keywords": "161919|315444",
       "sort_by": "popularity.desc",
       "vote_count.gte": 50,
       "without_keywords": "210024"
     },
-    "checked": 0,
+    "checked": 20,
     "mismatches": []
   },
   "preset_giant_monsters": {
@@ -1522,7 +1591,7 @@
     "name": "Film su Netflix",
     "params": {
       "with_watch_providers": 8,
-      "watch_region": "US",
+      "watch_region": "IT",
       "sort_by": "popularity.desc",
       "vote_count.gte": 50
     },
@@ -1533,18 +1602,18 @@
     "name": "Film su Prime Video",
     "params": {
       "with_watch_providers": 119,
-      "watch_region": "US",
+      "watch_region": "IT",
       "sort_by": "popularity.desc",
       "vote_count.gte": 50
     },
-    "checked": 0,
+    "checked": 20,
     "mismatches": []
   },
   "preset_disney_movies": {
     "name": "Film su Disney+",
     "params": {
       "with_watch_providers": 337,
-      "watch_region": "US",
+      "watch_region": "IT",
       "sort_by": "popularity.desc",
       "vote_count.gte": 50
     },
@@ -1554,12 +1623,12 @@
   "preset_hbo_max_movies": {
     "name": "Film su Max",
     "params": {
-      "with_watch_providers": 384,
+      "with_watch_providers": 1899,
       "watch_region": "US",
       "sort_by": "popularity.desc",
       "vote_count.gte": 50
     },
-    "checked": 0,
+    "checked": 20,
     "mismatches": []
   },
   "preset_hbo_max_series": {
@@ -1657,9 +1726,10 @@
   "preset_anime_kids_series": {
     "name": "Anime per Bambini (Serie)",
     "params": {
-      "provider": "kitsu",
-      "_keywordNames": "kids",
-      "sort_by": "popularity.desc"
+      "with_genres": "16,10762",
+      "with_original_language": "ja",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10
     },
     "checked": 20,
     "mismatches": []
@@ -1667,11 +1737,13 @@
   "preset_anime_kids_movies": {
     "name": "Anime per Bambini (Film)",
     "params": {
-      "provider": "kitsu",
-      "_keywordNames": "kids",
-      "sort_by": "popularity.desc"
+      "with_genres": 16,
+      "with_keywords": "208349",
+      "with_original_language": "ja",
+      "sort_by": "popularity.desc",
+      "vote_count.gte": 10
     },
-    "checked": 20,
+    "checked": 3,
     "mismatches": []
   }
 }

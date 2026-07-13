@@ -214,9 +214,9 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                     break;
                 }
             }
-            primaryResults = relaxedResults.map(item => ({ ...item, _sourceKeyword: query.keyword || queryDef?.keyword, _sourceGenres: query.with_genres || queryDef?.with_genres }));
+            primaryResults = relaxedResults.map(item => ({ ...item, _sourceKeyword: query.keyword || queries[0]?.keyword, _sourceGenres: query.with_genres || queries[0]?.with_genres }));
         } else if (primaryResults) {
-            primaryResults = primaryResults.map(item => ({ ...item, _sourceKeyword: query.keyword || queryDef?.keyword, _sourceGenres: query.with_genres || queryDef?.with_genres }));
+            primaryResults = primaryResults.map(item => ({ ...item, _sourceKeyword: query.keyword || queries[0]?.keyword, _sourceGenres: query.with_genres || queries[0]?.with_genres }));
         }
 
         finalResults = primaryResults || [];
