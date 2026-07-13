@@ -125,11 +125,15 @@ async function sortByDnaAffinity(items, userId, profileId, sessionState = {}) {
     try {
         if (!items || items.length === 0) return items;
         const profile = await TasteProfile.findOne({ userId, context: profileId }).lean();
-        if (!profile?.compiledVectors?.V_final) return items; // No DNA → keep original order
-        
-        // Calculate score for each item and attach it
         const scoredItems = items.map(item => {
-            let score = ProfileScorer.calculateLightScore(item, profile);
+            let score = 0;
+            if (profile?.compiledVectors?.V_final) {
+                 score = ProfileScorer.calculateLightScore(item, profile);
+            } else {
+                 const voteAvg = item.vote_average || 0;
+                 const voteCount = item.vote_count || 0;
+                 score = ((voteCount / (voteCount + 500)) * voteAvg) + ((500 / (voteCount + 500)) * 6.5);
+            }
             
             // Live Bayesian Sort: boost in base al micro-dna della sessione corrente
             if (sessionState.sessionTopGenresIds && sessionState.sessionTopGenresIds.length > 0) {
