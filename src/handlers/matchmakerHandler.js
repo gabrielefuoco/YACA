@@ -63,6 +63,13 @@ function extractQuestionCard(queries) {
             return { ...opt, genre_ids: Array.isArray(g) ? g.map(Number) : [] };
         });
 
+        // Aggiungiamo l'opzione di testo libero
+        normalizedOptions.push({
+            label: "Scrivi tu...",
+            genre_ids: [],
+            is_free_text: true
+        });
+
         return {
             id: 'question_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
             type: 'question',
@@ -478,15 +485,16 @@ async function analyzeMatchmakerSession(req, res) {
                 
                 const topGenresNames = genreIdsToNames(topGenresIds);
 
-                // Calcolo Tossicità (Win Rate) per Generi
+                // Calcolo Tossicità (Score Ponderato) per Generi
                 const genreStats = {};
                 sessionState.cardHistory.forEach(item => {
                     if (item.action !== 'like' && item.action !== 'watchlist' && item.action !== 'dislike') return;
                     if (item.genre_ids) {
                         item.genre_ids.forEach(gid => {
-                            if (!genreStats[gid]) genreStats[gid] = { likes: 0, dislikes: 0 };
-                            if (item.action === 'dislike') genreStats[gid].dislikes++;
-                            else genreStats[gid].likes++;
+                            if (!genreStats[gid]) genreStats[gid] = { score: 0, interactions: 0 };
+                            if (item.action === 'dislike') genreStats[gid].score -= 1;
+                            else genreStats[gid].score += 10;
+                            genreStats[gid].interactions++;
                         });
                     }
                 });
@@ -494,32 +502,29 @@ async function analyzeMatchmakerSession(req, res) {
                 const initialGenresIds = sessionState.initialGenres ? sessionState.initialGenres.map(Number) : [];
                 const toxicGenresIds = [];
                 for (const [gid, stats] of Object.entries(genreStats)) {
-                    const total = stats.likes + stats.dislikes;
-                    if (total >= 4 && !initialGenresIds.includes(Number(gid))) {
-                        const winRate = stats.likes / total;
-                        if (winRate < 0.20) toxicGenresIds.push(Number(gid));
+                    if (stats.interactions >= 4 && stats.score < 0 && !initialGenresIds.includes(Number(gid))) {
+                        toxicGenresIds.push(Number(gid));
                     }
                 }
                 const toxicGenresNames = genreIdsToNames(toxicGenresIds);
 
-                // Calcolo Tossicità (Win Rate) per Mistral Keywords
+                // Calcolo Tossicità (Score Ponderato) per Mistral Keywords
                 const kwStats = {};
                 sessionState.cardHistory.forEach(item => {
                     if (item.action !== 'like' && item.action !== 'watchlist' && item.action !== 'dislike') return;
                     if (item.mistral_keyword) {
                         const kw = item.mistral_keyword.toLowerCase().trim();
-                        if (!kwStats[kw]) kwStats[kw] = { likes: 0, dislikes: 0 };
-                        if (item.action === 'dislike') kwStats[kw].dislikes++;
-                        else kwStats[kw].likes++;
+                        if (!kwStats[kw]) kwStats[kw] = { score: 0, interactions: 0 };
+                        if (item.action === 'dislike') kwStats[kw].score -= 1;
+                        else kwStats[kw].score += 6;
+                        kwStats[kw].interactions++;
                     }
                 });
 
                 const toxicKeywords = [];
                 for (const [kw, stats] of Object.entries(kwStats)) {
-                    const total = stats.likes + stats.dislikes;
-                    if (total >= 4) {
-                        const winRate = stats.likes / total;
-                        if (winRate < 0.20) toxicKeywords.push(kw);
+                    if (stats.interactions >= 4 && stats.score < 0) {
+                        toxicKeywords.push(kw);
                     }
                 }
 
@@ -533,34 +538,40 @@ async function analyzeMatchmakerSession(req, res) {
                         (toxicKeywords.length > 0 ? `Toxic Keywords: ${toxicKeywords.join(', ')}\n` : '');
                 }
             } else {
-                // Anche senza Likes, se l'utente odia solo (solo Dislike), calcoliamo il Negative DNA
+                // Anche senza Likes, se l'utente odia solo (solo Dislike), calcoliamo il Negative DNA con lo score
                 const genreStats = {};
                 const kwStats = {};
                 sessionState.cardHistory.forEach(item => {
                     if (item.action !== 'dislike') return;
                     if (item.genre_ids) {
                         item.genre_ids.forEach(gid => {
-                            if (!genreStats[gid]) genreStats[gid] = { dislikes: 0 };
-                            genreStats[gid].dislikes++;
+                            if (!genreStats[gid]) genreStats[gid] = { score: 0, interactions: 0 };
+                            genreStats[gid].score -= 1;
+                            genreStats[gid].interactions++;
                         });
                     }
                     if (item.mistral_keyword) {
                         const kw = item.mistral_keyword.toLowerCase().trim();
-                        if (!kwStats[kw]) kwStats[kw] = { dislikes: 0 };
-                        kwStats[kw].dislikes++;
+                        if (!kwStats[kw]) kwStats[kw] = { score: 0, interactions: 0 };
+                        kwStats[kw].score -= 1;
+                        kwStats[kw].interactions++;
                     }
                 });
 
                 const initialGenresIds = sessionState.initialGenres ? sessionState.initialGenres.map(Number) : [];
                 const toxicGenresIds = [];
                 for (const [gid, stats] of Object.entries(genreStats)) {
-                    if (stats.dislikes >= 4 && !initialGenresIds.includes(Number(gid))) toxicGenresIds.push(Number(gid));
+                    if (stats.interactions >= 4 && stats.score < 0 && !initialGenresIds.includes(Number(gid))) {
+                        toxicGenresIds.push(Number(gid));
+                    }
                 }
                 const toxicGenresNames = genreIdsToNames(toxicGenresIds);
 
                 const toxicKeywords = [];
                 for (const [kw, stats] of Object.entries(kwStats)) {
-                    if (stats.dislikes >= 4) toxicKeywords.push(kw);
+                    if (stats.interactions >= 4 && stats.score < 0) {
+                        toxicKeywords.push(kw);
+                    }
                 }
 
                 if (toxicGenresNames || toxicKeywords.length > 0) {
@@ -571,6 +582,15 @@ async function analyzeMatchmakerSession(req, res) {
             }
                 
             const isPanic = swipes.some(s => s.action === 'steer');
+
+            if (isPanic) {
+                console.log(`[Matchmaker] Steer detected for session ${sessionId}. Resetting dislikes to clear toxic lists.`);
+                sessionState.cardHistory = sessionState.cardHistory.filter(c => c.action === 'like' || c.action === 'watchlist');
+                sessionState.dislikedIds = [];
+                if (sessionMicroDna) {
+                    sessionMicroDna = sessionMicroDna.split('[CRITICAL: NEGATIVE DNA')[0].trim();
+                }
+            }
 
             let prompt = `Here is the user's chronological swipe history from the beginning of the session to the most recent swipe:\n${historyStr}\n\n`;
             if (sessionMicroDna) prompt += `${sessionMicroDna}\n\n`;
