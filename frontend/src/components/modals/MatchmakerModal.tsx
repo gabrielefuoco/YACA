@@ -55,6 +55,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
     const [selectedType, setSelectedType] = useState<'movie' | 'series' | 'anime' | null>(null);
     const [selectedVibe, setSelectedVibe] = useState<string | null>(null);
     const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
+    const [freeText, setFreeText] = useState("");
     
     const toggleGenre = (id: number) => {
         if (selectedGenres.includes(id)) {
@@ -86,6 +87,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
         if (!currentCard) return;
         setFlipped(false);
         setTrailerUrl(null);
+        setFreeText("");
         handleSwipe(currentCard.id, action);
     };
 
@@ -94,6 +96,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
         if (!currentCard) return;
         setFlipped(false);
         setTrailerUrl(null);
+        setFreeText("");
         
         const discarded = currentCard.question_options
             ?.filter(opt => opt.label !== option.label)
@@ -319,15 +322,47 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                                 {currentCard.question_text}
                                             </h2>
                                             <div className="w-full flex flex-col gap-4">
-                                                {currentCard.question_options?.map((opt, i) => (
-                                                    <button 
-                                                        key={i} 
-                                                        onClick={(e) => handleAnswer(e, opt)}
-                                                        className="w-full bg-indigo-600/30 hover:bg-indigo-500/50 border border-indigo-300/30 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 text-lg"
-                                                    >
-                                                        {opt.label}
-                                                    </button>
-                                                ))}
+                                                {currentCard.question_options?.map((opt, i) => {
+                                                    if (opt.is_free_text) {
+                                                        return (
+                                                            <div className="flex w-full gap-2" key={i}>
+                                                                <input 
+                                                                    type="text" 
+                                                                    placeholder="Scrivi tu..." 
+                                                                    value={freeText}
+                                                                    onChange={e => setFreeText(e.target.value)}
+                                                                    onKeyDown={e => {
+                                                                        if (e.key === 'Enter' && freeText.trim()) {
+                                                                            handleAnswer(e as any, { label: freeText.trim(), genre_ids: [] });
+                                                                            setFreeText('');
+                                                                        }
+                                                                    }}
+                                                                    className="flex-1 bg-indigo-900/50 border border-indigo-300/30 text-white placeholder-white/50 font-bold px-4 py-4 rounded-xl focus:outline-none focus:border-indigo-400"
+                                                                />
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        if (freeText.trim()) {
+                                                                            handleAnswer(e, { label: freeText.trim(), genre_ids: [] });
+                                                                            setFreeText('');
+                                                                        }
+                                                                    }}
+                                                                    className="bg-indigo-600/80 hover:bg-indigo-500 text-white font-bold px-6 py-4 rounded-xl transition-all shadow-lg active:scale-95"
+                                                                >
+                                                                    Vai
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <button 
+                                                            key={i} 
+                                                            onClick={(e) => handleAnswer(e, opt)}
+                                                            className="w-full bg-indigo-600/30 hover:bg-indigo-500/50 border border-indigo-300/30 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 text-lg"
+                                                        >
+                                                            {opt.label}
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     ) : (

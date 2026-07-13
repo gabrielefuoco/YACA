@@ -4,7 +4,7 @@ const { Mistral } = require('@mistralai/mistralai');
 const TasteProfile = require('../models/TasteProfile');
 const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
-const { createTmdbClient } = require('../clients/tmdb');
+const { createTmdbClient, fetchTmdbCatalog } = require('../clients/tmdb');
 const { executeUniversalPipeline } = require('../catalog/providers/AiDiscoveryProvider');
 const { parseQuerySynthesizerResponse, buildDnaDescription } = require('../ai/querySynthesizer');
 const ProfileScorer = require('../profile/ProfileScorer');
@@ -127,23 +127,28 @@ async function sortByDnaAffinity(items, userId, profileId, sessionState = {}) {
         const profile = await TasteProfile.findOne({ userId, context: profileId }).lean();
         if (!profile?.compiledVectors?.V_final) return items; // No DNA → keep original order
         
-        return [...items].sort((a, b) => {
-            let scoreB = ProfileScorer.calculateLightScore(b, profile);
-            let scoreA = ProfileScorer.calculateLightScore(a, profile);
+        // Calculate score for each item and attach it
+        const scoredItems = items.map(item => {
+            let score = ProfileScorer.calculateLightScore(item, profile);
             
             // Live Bayesian Sort: boost in base al micro-dna della sessione corrente
             if (sessionState.sessionTopGenresIds && sessionState.sessionTopGenresIds.length > 0) {
-                if (b.genre_ids && b.genre_ids.some(gid => sessionState.sessionTopGenresIds.includes(gid))) scoreB += 5;
-                if (a.genre_ids && a.genre_ids.some(gid => sessionState.sessionTopGenresIds.includes(gid))) scoreA += 5;
+                if (item.genre_ids && item.genre_ids.some(gid => sessionState.sessionTopGenresIds.includes(gid))) score += 5;
             }
             if (sessionState.sessionTopKeyword) {
                 const kw = sessionState.sessionTopKeyword.toLowerCase();
-                if (b._sourceKeyword && b._sourceKeyword.toLowerCase().includes(kw)) scoreB += 10;
-                if (a._sourceKeyword && a._sourceKeyword.toLowerCase().includes(kw)) scoreA += 10;
+                if (item._sourceKeyword && item._sourceKeyword.toLowerCase().includes(kw)) score += 10;
             }
 
-            return scoreB - scoreA;
+            // Aggiungiamo il bonus di consenso se presente
+            if (item.consensusBonus) {
+                score += item.consensusBonus * 5; 
+            }
+
+            return { ...item, matchmakerScore: score };
         });
+
+        return scoredItems.sort((a, b) => b.matchmakerScore - a.matchmakerScore);
     } catch (err) {
         console.warn('[Matchmaker] DNA sort unavailable:', err.message);
         return items; // Graceful degradation
@@ -366,7 +371,9 @@ async function analyzeMatchmakerSession(req, res) {
                     genre_ids: s.genre_ids, 
                     timestamp: new Date().toISOString(),
                     mistral_keyword: targetItem?.mistral_keyword,
-                    mistral_genres: targetItem?.mistral_genres
+                    mistral_genres: targetItem?.mistral_genres,
+                    question_text: s.question_text,
+                    discarded_options: s.discarded_options
                 };
                 sessionState.cardHistory.push(newCard);
             });
@@ -686,11 +693,52 @@ Try to reconnect with this initial mood but from a completely different angle. G
         
         // Paginazione: incrementiamo lo skip in base all'iterazione
         const skip = sessionState.iteration * CARDS_PER_BATCH;
-        const rawItems = await executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, sessionState.type, skip, { noFallback: false, deepFetch: true }, {});
+        let rawItems = await executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, sessionState.type, skip, { noFallback: false, deepFetch: true }, {});
         console.log(`[Matchmaker] Iteration ${sessionState.iteration} - Pipeline returned ${rawItems?.length || 0} items`);
         
+        // Fase "Calderone Dopato": recuperiamo i simili per i Like recenti
+        let recommendedItems = [];
+        const recentLikes = (swipes || []).filter(s => s.action === 'like' || s.action === 'watchlist');
+        if (recentLikes.length > 0) {
+            console.log(`[Matchmaker] Fetching TMDB recommendations for ${recentLikes.length} recent likes...`);
+            const recPromises = recentLikes.map(async s => {
+                const itemId = String(s.id).replace('tmdb:', '');
+                const ep = sessionState.type === 'series' || sessionState.type === 'anime' ? `/tv/${itemId}/recommendations` : `/movie/${itemId}/recommendations`;
+                try {
+                    return await fetchTmdbCatalog(tmdbClient, ep, 0, { language: 'it-IT' }, sessionState.type, {});
+                } catch (err) {
+                    console.warn(`[Matchmaker] Failed recommendations for ${itemId}`, err.message);
+                    return [];
+                }
+            });
+            const recResults = await Promise.all(recPromises);
+            // Limitiamo a 20 simili per ogni film likato per non annegare Mistral
+            recommendedItems = recResults.map(res => res.slice(0, 20)).flat().map(item => ({...item, _sourceKeyword: 'TMDB Similar', _isSimilar: true }));
+        }
+
+        // Deduplication and consensus scoring
+        const pooledMap = new Map();
+        [...(rawItems || []), ...recommendedItems].forEach(item => {
+            if (!item || !item.id) return;
+            const nid = String(item.id).replace('tmdb:', '');
+            if (pooledMap.has(nid)) {
+                const existing = pooledMap.get(nid);
+                existing.consensusCount = (existing.consensusCount || 1) + 1;
+                existing.consensusBonus = (existing.consensusBonus || 0) + 1;
+                // Preserve Mistral genres/keywords if any
+                if (!existing._sourceKeyword && item._sourceKeyword) existing._sourceKeyword = item._sourceKeyword;
+            } else {
+                item.consensusCount = 1;
+                item.consensusBonus = 0;
+                pooledMap.set(nid, item);
+            }
+        });
+
+        const pooledItems = Array.from(pooledMap.values());
+        console.log(`[Matchmaker] Pooled Mistral (${rawItems?.length || 0}) + TMDB Similar (${recommendedItems.length}) -> ${pooledItems.length} unique items`);
+        
         // Ordina per DNA
-        const sortedItems = await sortByDnaAffinity(rawItems || [], userId, profileId, sessionState);
+        const sortedItems = await sortByDnaAffinity(pooledItems, userId, profileId, sessionState);
         
         // Evitiamo dupes
         const seenIds = new Set([...sessionState.likedIds, ...sessionState.dislikedIds, ...sessionState.watchlistIds]);
@@ -704,8 +752,16 @@ Try to reconnect with this initial mood but from a completely different angle. G
             }))
             .filter(c => !seenIds.has(c.rawId));
 
-        const cards = sessionState.lastIterationItems
-            .slice(0, CARDS_PER_BATCH).map(c => ({
+        console.log(`\n--- [Matchmaker] Mini-Classifica VSM (Top 5) ---`);
+        sessionState.lastIterationItems.slice(0, 5).forEach((c, i) => {
+            console.log(` ${i+1}. ${c.name} | Score: ${c.matchmakerScore?.toFixed(2) || 'N/A'} | Fonte: ${c._sourceKeyword || 'Mistral'} | Consenso: ${c.consensusCount || 1}`);
+        });
+        console.log(`------------------------------------------------\n`);
+
+        let cards = sessionState.lastIterationItems
+            .filter(c => c.matchmakerScore === undefined || c.matchmakerScore >= 6.5) // Threshold per includere fino a 30 carte
+            .slice(0, 30)
+            .map(c => ({
                 id: c.rawId,
                 title: c.name,
                 poster: c.poster,
@@ -714,6 +770,21 @@ Try to reconnect with this initial mood but from a completely different angle. G
                 genre_ids: c.genre_ids,
                 type: sessionState.type
             }));
+
+        // Se filtrando per score rimaniamo con poche carte, facciamo un fallback per garantire il flusso
+        if (cards.length < CARDS_PER_BATCH) {
+            cards = sessionState.lastIterationItems
+                .slice(0, CARDS_PER_BATCH)
+                .map(c => ({
+                    id: c.rawId,
+                    title: c.name,
+                    poster: c.poster,
+                    year: c.releaseInfo,
+                    overview: c.description,
+                    genre_ids: c.genre_ids,
+                    type: sessionState.type
+                }));
+        }
 
         if (questionCard) {
             if (cards.length >= 2) cards.splice(2, 0, questionCard);

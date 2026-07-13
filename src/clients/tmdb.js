@@ -1031,7 +1031,7 @@ async function clearAllTmdbCaches() {
 }
 
 module.exports = {
-    createTmdbClient, // Esportato in caso serva passare chiavi specifiche
+    createTmdbClient,
     fetchTmdbCatalog,
     fetchTmdbCatalogDirect,
     getTmdbMetaDetails,

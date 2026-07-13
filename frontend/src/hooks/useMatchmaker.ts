@@ -11,7 +11,7 @@ export type MatchmakerCard = {
     type: 'movie' | 'series' | 'anime' | 'question';
     is_question?: boolean;
     question_text?: string;
-    question_options?: { label: string; genre_ids: number[] }[];
+    question_options?: { label: string; genre_ids: number[]; is_free_text?: boolean }[];
 };
 
 export type SwipeAction = 'like' | 'dislike' | 'watchlist' | 'answered' | 'steer';
