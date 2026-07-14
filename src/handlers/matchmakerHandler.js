@@ -128,7 +128,28 @@ async function sortByDnaAffinity(items, userId, profileId, sessionState = {}) {
         const scoredItems = items.map(item => {
             let score = 0;
             if (profile?.compiledVectors?.V_final) {
-                 score = ProfileScorer.calculateLightScore(item, profile);
+                let hybridProfile = profile;
+                
+                // [QUERY DNA INJECTION]
+                // Se l'elemento è stato fetchato grazie a una query Mistral con generi specifici,
+                // iniettiamo quei generi come pesi massicci nel V_final temporaneo.
+                if (item._sourceGenres) {
+                    hybridProfile = { 
+                        ...profile, 
+                        compiledVectors: { 
+                            ...profile.compiledVectors, 
+                            V_final: { ...profile.compiledVectors.V_final } 
+                        } 
+                    };
+                    const queryGenres = item._sourceGenres.split(/[|,]/).map(Number).filter(Boolean);
+                    queryGenres.forEach(gid => {
+                        const key = `g:${gid}`;
+                        // +20 punti netti per ogni genere esplicitamente richiesto dalla query
+                        hybridProfile.compiledVectors.V_final[key] = (hybridProfile.compiledVectors.V_final[key] || 0) + 20;
+                    });
+                }
+                
+                score = ProfileScorer.calculateLightScore(item, hybridProfile);
             } else {
                  const voteAvg = item.vote_average || 0;
                  const voteCount = item.vote_count || 0;
