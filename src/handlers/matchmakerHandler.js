@@ -128,28 +128,22 @@ async function sortByDnaAffinity(items, userId, profileId, sessionState = {}) {
         const scoredItems = items.map(item => {
             let score = 0;
             if (profile?.compiledVectors?.V_final) {
-                let hybridProfile = profile;
+                let historicalScore = ProfileScorer.calculateLightScore(item, profile);
+                let intentScore = 0;
                 
-                // [QUERY DNA INJECTION]
-                // Se l'elemento è stato fetchato grazie a una query Mistral con generi specifici,
-                // iniettiamo quei generi come pesi massicci nel V_final temporaneo.
-                if (item._sourceGenres) {
-                    hybridProfile = { 
-                        ...profile, 
-                        compiledVectors: { 
-                            ...profile.compiledVectors, 
-                            V_final: { ...profile.compiledVectors.V_final } 
-                        } 
-                    };
+                // [QUERY DNA BLEND]
+                // Valutiamo quanto il film rispetta i generi esplicitamente richiesti dalla query
+                if (item._sourceGenres && item.genre_ids) {
                     const queryGenres = item._sourceGenres.split(/[|,]/).map(Number).filter(Boolean);
-                    queryGenres.forEach(gid => {
-                        const key = `g:${gid}`;
-                        // +20 punti netti per ogni genere esplicitamente richiesto dalla query
-                        hybridProfile.compiledVectors.V_final[key] = (hybridProfile.compiledVectors.V_final[key] || 0) + 20;
-                    });
+                    if (queryGenres.length > 0) {
+                        const matchCount = item.genre_ids.filter(gid => queryGenres.includes(gid)).length;
+                        // Score da 0 a 10 in base alla percentuale di match
+                        intentScore = (matchCount / queryGenres.length) * 10;
+                    }
                 }
                 
-                score = ProfileScorer.calculateLightScore(item, hybridProfile);
+                // Media Pesata: 40% Storico (VSM), 60% Intento Immediato (Query Mistral)
+                score = (historicalScore * 0.4) + (intentScore * 0.6);
             } else {
                  const voteAvg = item.vote_average || 0;
                  const voteCount = item.vote_count || 0;
