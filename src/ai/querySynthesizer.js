@@ -221,8 +221,12 @@ function buildDnaDescription(profile, user, context, topN = 5) {
         if (topKeywords.length > 0) {
             const kwNames = topKeywords.map(([key, score]) => {
                 const id = key.split(':')[1];
-                const name = profile.idNames ? (typeof profile.idNames.get === 'function' ? profile.idNames.get(String(id)) : profile.idNames[String(id)]) : `Keyword ${id}`;
-                return `${name}`;
+                let name = null;
+                if (profile.idNames) {
+                    name = typeof profile.idNames.get === 'function' ? profile.idNames.get(String(id)) : profile.idNames[String(id)];
+                }
+                if (!name) name = `Keyword ${id}`;
+                return name;
             });
             parts.push(`Inferred Preferred Keywords: ${kwNames.join(', ')}`);
         }

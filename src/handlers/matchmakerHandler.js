@@ -242,7 +242,7 @@ async function initMatchmakerSession(req, res) {
             }
 
             userPrompt = dnaContext 
-                ? `${userPrompt}\n\nUser's Taste DNA for context:\n${dnaContext}`
+                ? `${userPrompt}\n\nCRITICAL: The requested Vibe ("${vibeOrRandom}") is your PRIMARY directive. You MUST strictly adhere to this mood (e.g. if the vibe is "Epico & Avventuroso", you MUST generate epic/adventure queries). Use the user's Taste DNA ONLY as a secondary flavor to personalize the vibe, but NEVER let the DNA override the main vibe!\n\nUser's Taste DNA:\n${dnaContext}`
                 : userPrompt;
 
             try {
