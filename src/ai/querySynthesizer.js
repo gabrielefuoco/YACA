@@ -175,14 +175,30 @@ function parseQuerySynthesizerResponse(content) {
  * @param {number} topN Number of top items to include
  * @returns {string} DNA description string
  */
-function buildDnaDescription(profile, user, context, topN = 5) {
+async function buildDnaDescription(profile, user, context, topN = 5) {
     const parts = [];
     const { getProfileDnaFilters } = require('../utils/helpers');
+    const { createTmdbClient } = require('../clients/tmdb');
+    const tmdbClient = createTmdbClient();
 
     // 1. Collect Manual DNA (Highest Priority)
     const dnaFilters = getProfileDnaFilters(user, context);
     const manualGenres = dnaFilters.filter(f => f.type === 'genre').map(f => f.name || `Genre ${f.id}`);
-    const manualKeywords = dnaFilters.filter(f => f.type === 'keyword').map(f => f.name || `Keyword ${f.id}`);
+    
+    // Process Manual Keywords
+    const manualKeywords = [];
+    for (const f of dnaFilters.filter(f => f.type === 'keyword')) {
+        let name = f.name;
+        if (!name) {
+            try {
+                const res = await tmdbClient.get(`/keyword/${f.id}`);
+                name = res.data.name;
+            } catch (err) {
+                name = `Keyword ${f.id}`;
+            }
+        }
+        manualKeywords.push(name);
+    }
 
     if (manualGenres.length > 0) parts.push(`User Manual Genres: ${manualGenres.join(', ')}`);
     if (manualKeywords.length > 0) parts.push(`User Manual Keywords: ${manualKeywords.join(', ')}`);
@@ -219,15 +235,23 @@ function buildDnaDescription(profile, user, context, topN = 5) {
             .slice(0, topN);
         
         if (topKeywords.length > 0) {
-            const kwNames = topKeywords.map(([key, score]) => {
+            const kwNames = [];
+            for (const [key, score] of topKeywords) {
                 const id = key.split(':')[1];
                 let name = null;
                 if (profile.idNames) {
                     name = typeof profile.idNames.get === 'function' ? profile.idNames.get(String(id)) : profile.idNames[String(id)];
                 }
-                if (!name) name = `Keyword ${id}`;
-                return name;
-            });
+                if (!name) {
+                    try {
+                        const res = await tmdbClient.get(`/keyword/${id}`);
+                        name = res.data.name;
+                    } catch (err) {
+                        name = `Keyword ${id}`;
+                    }
+                }
+                kwNames.push(name);
+            }
             parts.push(`Inferred Preferred Keywords: ${kwNames.join(', ')}`);
         }
     }
@@ -249,7 +273,7 @@ async function generateDiscoveryQueries(profile, mistralKey, mode = 'trueBlend',
     const activeMistralKey = mistralKey || process.env.MISTRAL_API_KEY;
     if (!activeMistralKey || (!profile && !user)) return [];
 
-    const dnaDescription = buildDnaDescription(profile, user, context);
+    const dnaDescription = await buildDnaDescription(profile, user, context);
     if (!dnaDescription) return [];
 
     let systemPrompt = mode === 'hiddenGems' ? HIDDEN_GEMS_SYSTEM_PROMPT : TRUE_BLEND_SYSTEM_PROMPT;

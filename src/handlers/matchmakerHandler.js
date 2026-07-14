@@ -109,7 +109,7 @@ async function getMatchmakerDnaContext(userId, profileId) {
         const user = await UserAccount.findOne({ userId }).lean();
         
         if (!profile && !user) return null;
-        return buildDnaDescription(profile, user, profileId);
+        return await buildDnaDescription(profile, user, profileId);
     } catch (err) {
         console.warn('[Matchmaker] DNA context unavailable:', err.message);
         return null; // Graceful degradation
@@ -511,12 +511,11 @@ async function analyzeMatchmakerSession(req, res) {
                 });
                 
                 const initialGenresIds = sessionState.initialGenres ? sessionState.initialGenres.map(Number) : [];
-                const toxicGenresIds = [];
-                for (const [gid, stats] of Object.entries(genreStats)) {
-                    if (stats.interactions >= 4 && stats.score < 0 && !initialGenresIds.includes(Number(gid))) {
-                        toxicGenresIds.push(Number(gid));
-                    }
-                }
+                const toxicGenresIds = Object.entries(genreStats)
+                    .filter(([gid, stats]) => stats.score <= -10 && !initialGenresIds.includes(Number(gid)))
+                    .sort((a, b) => a[1].score - b[1].score)
+                    .slice(0, 3)
+                    .map(e => Number(e[0]));
                 const toxicGenresNames = genreIdsToNames(toxicGenresIds);
 
                 // Calcolo Tossicità (Score Ponderato) per Mistral Keywords
@@ -532,12 +531,11 @@ async function analyzeMatchmakerSession(req, res) {
                     }
                 });
 
-                const toxicKeywords = [];
-                for (const [kw, stats] of Object.entries(kwStats)) {
-                    if (stats.interactions >= 4 && stats.score < 0) {
-                        toxicKeywords.push(kw);
-                    }
-                }
+                const toxicKeywords = Object.entries(kwStats)
+                    .filter(([kw, stats]) => stats.score <= -3)
+                    .sort((a, b) => a[1].score - b[1].score)
+                    .slice(0, 3)
+                    .map(e => e[0]);
 
                 if (topKeywords.length > 0 || topGenresNames || toxicGenresNames || toxicKeywords.length > 0) {
                     sessionMicroDna = `[Session Micro-DNA - Based on ALL Swipes from this session]:\n` +
@@ -570,20 +568,18 @@ async function analyzeMatchmakerSession(req, res) {
                 });
 
                 const initialGenresIds = sessionState.initialGenres ? sessionState.initialGenres.map(Number) : [];
-                const toxicGenresIds = [];
-                for (const [gid, stats] of Object.entries(genreStats)) {
-                    if (stats.interactions >= 4 && stats.score < 0 && !initialGenresIds.includes(Number(gid))) {
-                        toxicGenresIds.push(Number(gid));
-                    }
-                }
+                const toxicGenresIds = Object.entries(genreStats)
+                    .filter(([gid, stats]) => stats.score <= -10 && !initialGenresIds.includes(Number(gid)))
+                    .sort((a, b) => a[1].score - b[1].score)
+                    .slice(0, 3)
+                    .map(e => Number(e[0]));
                 const toxicGenresNames = genreIdsToNames(toxicGenresIds);
 
-                const toxicKeywords = [];
-                for (const [kw, stats] of Object.entries(kwStats)) {
-                    if (stats.interactions >= 4 && stats.score < 0) {
-                        toxicKeywords.push(kw);
-                    }
-                }
+                const toxicKeywords = Object.entries(kwStats)
+                    .filter(([kw, stats]) => stats.score <= -3)
+                    .sort((a, b) => a[1].score - b[1].score)
+                    .slice(0, 3)
+                    .map(e => e[0]);
 
                 if (toxicGenresNames || toxicKeywords.length > 0) {
                     sessionMicroDna = `[CRITICAL: NEGATIVE DNA - AVOID THESE AT ALL COSTS]\n` +

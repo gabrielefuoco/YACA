@@ -222,7 +222,7 @@ router.get('/:id/analytics', async (req, res) => {
 
         const aiLogs = {};
         if (profile || account) {
-            const dnaDescription = buildDnaDescription(profile, account, profileId);
+            const dnaDescription = await buildDnaDescription(profile, account, profileId);
             if (dnaDescription) {
                 const modes = new Set(Object.values(CATALOG_MODES).filter(Boolean));
                 const modeResults = {};
