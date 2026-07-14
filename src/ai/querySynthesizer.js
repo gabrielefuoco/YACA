@@ -179,7 +179,7 @@ async function buildDnaDescription(profile, user, context, topN = 5) {
     const parts = [];
     const { getProfileDnaFilters } = require('../utils/helpers');
     const { createTmdbClient } = require('../clients/tmdb');
-    const tmdbClient = createTmdbClient();
+    const tmdbClient = createTmdbClient(process.env.TMDB_API_KEY);
 
     // 1. Collect Manual DNA (Highest Priority)
     const dnaFilters = getProfileDnaFilters(user, context);
