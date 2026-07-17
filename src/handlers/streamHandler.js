@@ -160,11 +160,18 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                 }
             }
 
+            const http = require('http');
+            const https = require('https');
+            
             const torrentioBaseUrl = process.env.TORRENTIO_URL || 'https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,horriblesubs,nyaasi,tokyotosho,anidex|language=italian';
             const fetchStreams = async (url) => {
                 const fetchUrl = process.env.CF_WORKER_URL ? `${process.env.CF_WORKER_URL}?url=${encodeURIComponent(url)}` : url;
                 try {
-                    const r = await axios.get(fetchUrl, { timeout: 15000 });
+                    const r = await axios.get(fetchUrl, { 
+                        timeout: 15000,
+                        httpAgent: new http.Agent({ family: 4 }),
+                        httpsAgent: new https.Agent({ family: 4 })
+                    });
                     return r.data?.streams || [];
                 } catch (e) {
                     return [];
