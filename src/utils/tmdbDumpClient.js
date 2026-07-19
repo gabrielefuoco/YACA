@@ -69,8 +69,9 @@ class TmdbDumpClient {
     async fetchMovie(id) {
         const data = await this.fetchWithRetry(`${this.baseUrl}/movie/${id}`, {
             language: 'it-IT',
-            append_to_response: 'keywords,credits,videos,images',
-            include_image_language: 'it,en,null'
+            append_to_response: 'keywords,credits,videos,images,recommendations',
+            include_image_language: 'it,en,null',
+            include_video_language: 'it,en,null'
         });
         
         if (!data || data.vote_count < 10) return null;
@@ -79,6 +80,7 @@ class TmdbDumpClient {
         const cast = (data.credits?.cast || []).slice(0, 20).map(c => ({id: c.id, name: c.name, character: c.character, order: c.order}));
         const keywords = (data.keywords?.keywords || []).map(k => ({id: k.id, name: k.name}));
         const trailer = (data.videos?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube');
+        const recommendations = (data.recommendations?.results || []).slice(0, 10).map(r => r.id);
 
         return {
             id: data.id,
@@ -100,6 +102,10 @@ class TmdbDumpClient {
             cast: JSON.stringify(cast),
             directors: JSON.stringify(directors),
             trailer_key: trailer ? trailer.key : null,
+            tagline: data.tagline || null,
+            collection_id: data.belongs_to_collection ? data.belongs_to_collection.id : null,
+            collection_name: data.belongs_to_collection ? data.belongs_to_collection.name : null,
+            recommendations: JSON.stringify(recommendations),
             _fetched_at: new Date().toISOString()
         };
     }
@@ -107,8 +113,9 @@ class TmdbDumpClient {
     async fetchTv(id) {
         const data = await this.fetchWithRetry(`${this.baseUrl}/tv/${id}`, {
             language: 'it-IT',
-            append_to_response: 'keywords,credits,videos,images',
-            include_image_language: 'it,en,null'
+            append_to_response: 'keywords,credits,videos,images,recommendations',
+            include_image_language: 'it,en,null',
+            include_video_language: 'it,en,null'
         });
         
         if (!data || data.vote_count < 10) return null;
@@ -118,6 +125,7 @@ class TmdbDumpClient {
         const trailer = (data.videos?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube');
         const created_by = (data.created_by || []).map(c => ({id: c.id, name: c.name}));
         const networks = (data.networks || []).map(n => ({id: n.id, name: n.name}));
+        const recommendations = (data.recommendations?.results || []).slice(0, 10).map(r => r.id);
 
         return {
             id: data.id,
@@ -142,6 +150,8 @@ class TmdbDumpClient {
             created_by: JSON.stringify(created_by),
             networks: JSON.stringify(networks),
             trailer_key: trailer ? trailer.key : null,
+            tagline: data.tagline || null,
+            recommendations: JSON.stringify(recommendations),
             _fetched_at: new Date().toISOString()
         };
     }
