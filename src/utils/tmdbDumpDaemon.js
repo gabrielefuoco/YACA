@@ -21,6 +21,29 @@ async function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
 
+async function convertAndReloadDuckDb() {
+    dumpStatus.currentTask = 'Converting Parquet and Reloading DuckDB...';
+    console.log('[TmdbDump] Esecuzione conversione in Parquet...');
+    try {
+        const { spawn } = require('child_process');
+        const path = require('path');
+        await new Promise((resolve, reject) => {
+            const script = path.join(__dirname, '..', '..', 'scripts', 'convert_to_parquet.js');
+            const proc = spawn('node', [script], { stdio: 'inherit' });
+            proc.on('close', (code) => code === 0 ? resolve() : reject(new Error(`Code ${code}`)));
+        });
+
+        console.log('[TmdbDump] Riavvio modulo DuckDB in RAM...');
+        const duckDbStore = require('../db/duckDbStore');
+        duckDbStore.close();
+        duckDbStore.isInitialized = false;
+        await duckDbStore.init();
+        console.log('[TmdbDump] DuckDB riavviato con successo e connesso ai nuovi Parquet.');
+    } catch (convertErr) {
+        console.error('[TmdbDump] Errore durante la conversione Parquet / Reload DuckDB:', convertErr);
+    }
+}
+
 /**
  * Cold Start: scarica tutti gli ID dal Daily Export e fetcha i metadati completi.
  * Il cursor non salva gli ID (sono ~87K), ma solo l'indice di progresso.
@@ -96,6 +119,13 @@ async function coldStart(store, client) {
                 
                 const percent = ((cursor.index / allIds.length) * 100).toFixed(1);
                 console.log(`[TmdbDump] [${mediaType.toUpperCase()}] Progress: ${cursor.index}/${allIds.length} (${percent}%)`);
+                
+                // Conversione parziale in background ogni 5000 item (10 flush)
+                if (cursor.index % 5000 === 0 && cursor.index > 0) {
+                    console.log(`[TmdbDump] Triggering intermediate Parquet conversion at ${cursor.index}...`);
+                    // Non usiamo await così non fermiamo il download
+                    convertAndReloadDuckDb().catch(e => console.error(e));
+                }
             }
 
             // Rate limiting: ~3.5 req/sec
@@ -223,6 +253,12 @@ async function runTmdbDumpDaemon() {
     try {
         const store = new TmdbDumpStore();
         const client = new TmdbDumpClient(apiKey);
+        
+        // Conversione al boot se esistono file jsonl (scalda subito la cache se la macchina è stata riavviata e ha perso la RAM)
+        if (store.storeExists('movies') || store.storeExists('tv')) {
+            console.log('[TmdbDump] Pre-existing JSONL detected. Running boot conversion...');
+            await convertAndReloadDuckDb();
+        }
 
         const cursor = store.loadCursor();
         const moviesExist = store.storeExists('movies');
@@ -236,26 +272,7 @@ async function runTmdbDumpDaemon() {
         }
         
         // Conversione DuckDB e Hot-Reload (Eseguito sempre alla fine del sync)
-        dumpStatus.currentTask = 'Converting to Parquet and Reloading DuckDB...';
-        console.log('[TmdbDump] Esecuzione conversione in Parquet...');
-        try {
-            const { spawn } = require('child_process');
-            const path = require('path');
-            await new Promise((resolve, reject) => {
-                const script = path.join(__dirname, '..', '..', 'scripts', 'convert_to_parquet.js');
-                const proc = spawn('node', [script], { stdio: 'inherit' });
-                proc.on('close', (code) => code === 0 ? resolve() : reject(new Error(`Code ${code}`)));
-            });
-
-            console.log('[TmdbDump] Riavvio modulo DuckDB in RAM...');
-            const duckDbStore = require('../db/duckDbStore');
-            duckDbStore.close();
-            duckDbStore.isInitialized = false;
-            await duckDbStore.init();
-            console.log('[TmdbDump] DuckDB riavviato con successo e connesso ai nuovi Parquet.');
-        } catch (convertErr) {
-            console.error('[TmdbDump] Errore durante la conversione Parquet / Reload DuckDB:', convertErr);
-        }
+        await convertAndReloadDuckDb();
         
         dumpStatus.phase = 'idle';
         dumpStatus.currentTask = 'Waiting for next sync...';

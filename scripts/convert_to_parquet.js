@@ -24,13 +24,14 @@ async function convert() {
             continue;
         }
 
+        const tmpParquetFile = path.join(basePath, `${type}_tmp.parquet`);
+
         console.log(`[DuckDB Convert] Copia di ${type}...`);
         
-        // Usiamo read_json_auto per inferire automaticamente lo schema del JSONL.
         const query = `
             COPY (
                 SELECT * FROM read_json_auto('${jsonlFile.replace(/\\/g, '/')}')
-            ) TO '${parquetFile.replace(/\\/g, '/')}' (FORMAT PARQUET, COMPRESSION 'ZSTD');
+            ) TO '${tmpParquetFile.replace(/\\/g, '/')}' (FORMAT PARQUET, COMPRESSION 'ZSTD');
         `;
 
         try {
@@ -41,12 +42,15 @@ async function convert() {
                 });
             });
 
-            if (fs.existsSync(parquetFile)) {
+            if (fs.existsSync(tmpParquetFile)) {
+                // Sostituzione atomica per evitare file corrompi in lettura
+                fs.renameSync(tmpParquetFile, parquetFile);
                 const stats = fs.statSync(parquetFile);
-                console.log(`[DuckDB Convert] ✅ Successo: ${type}.parquet creato (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
+                console.log(`[DuckDB Convert] ✅ Successo: ${type}.parquet aggiornato (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
             }
         } catch (err) {
             console.error(`[DuckDB Convert] ❌ Errore durante conversione ${type}:`, err);
+            if (fs.existsSync(tmpParquetFile)) fs.unlinkSync(tmpParquetFile);
         }
     }
 
