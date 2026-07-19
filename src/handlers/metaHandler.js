@@ -180,19 +180,28 @@ async function metaHandler(args, userConfig) {
                             } catch (_e) { /* silent background revalidation */ }
                         })();
                     } else {
-                        meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, {});
+                        const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
+                        meta = await getDuckDbMetaDetails(tmdbId, type);
+                        
+                        // Fallback API live SOLO se non lo troviamo nel DB offline e i fallback non sono disabilitati.
+                        if (!meta) {
+                             meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, {});
+                        }
+                        
                         if (meta) {
                             // Anime series: fetch Kitsu episodes (TMDB episodes were skipped)
-                            if (meta._isAnime && type === 'series') {
+                            if (meta.rawTMDB && meta.rawTMDB._isAnime && type === 'series') {
                                 await resolveAnimeEpisodes(meta, tmdbId, tmdbApiKey);
+                            } else if (type === 'series') {
+                                // Lazy fetch episodi per serie tv normali
+                                await resolveAnimeEpisodes(meta, tmdbId, tmdbApiKey); // funziona anche per tv show, vedi la logica
                             }
 
                             // Aggiornamento silente scoring cache (voti freschi)
-                            updateScoringCache(Number(tmdbId), type === 'series' ? 'tv' : type, meta).catch(() => { });
+                            updateScoringCache(Number(tmdbId), type === 'series' ? 'tv' : type, meta.rawTMDB || {}).catch(() => { });
 
                             await applyKitsuMappingToMeta(meta, tmdbId);
 
-                            // Clean internal properties before caching/sending to Stremio
                             delete meta._keywordNames;
                             delete meta._isAnime;
                             delete meta._numberOfSeasons;

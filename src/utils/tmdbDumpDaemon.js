@@ -235,14 +235,36 @@ async function runTmdbDumpDaemon() {
             await dailySync(store, client);
         }
         
+        // Conversione DuckDB e Hot-Reload (Eseguito sempre alla fine del sync)
+        dumpStatus.currentTask = 'Converting to Parquet and Reloading DuckDB...';
+        console.log('[TmdbDump] Esecuzione conversione in Parquet...');
+        try {
+            const { spawn } = require('child_process');
+            const path = require('path');
+            await new Promise((resolve, reject) => {
+                const script = path.join(__dirname, '..', '..', 'scripts', 'convert_to_parquet.js');
+                const proc = spawn('node', [script], { stdio: 'inherit' });
+                proc.on('close', (code) => code === 0 ? resolve() : reject(new Error(`Code ${code}`)));
+            });
+
+            console.log('[TmdbDump] Riavvio modulo DuckDB in RAM...');
+            const duckDbStore = require('../db/duckDbStore');
+            duckDbStore.close();
+            duckDbStore.isInitialized = false;
+            await duckDbStore.init();
+            console.log('[TmdbDump] DuckDB riavviato con successo e connesso ai nuovi Parquet.');
+        } catch (convertErr) {
+            console.error('[TmdbDump] Errore durante la conversione Parquet / Reload DuckDB:', convertErr);
+        }
+        
         dumpStatus.phase = 'idle';
         dumpStatus.currentTask = 'Waiting for next sync...';
-        console.log('[TmdbDump] Waiting 6 hours for next sync cycle...');
+        console.log('[TmdbDump] Waiting 1 hour for next sync cycle...');
         
         // Attesa interrompibile (controlla ogni minuto se il daemon è stato stoppato)
         let waited = 0;
-        const SIX_HOURS = 6 * 60 * 60 * 1000;
-        while (waited < SIX_HOURS && daemonRunning) {
+        const ONE_HOUR = 1 * 60 * 60 * 1000;
+        while (waited < ONE_HOUR && daemonRunning) {
             await sleep(60000);
             waited += 60000;
         }

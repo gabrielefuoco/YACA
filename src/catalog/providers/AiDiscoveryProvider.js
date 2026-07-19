@@ -116,64 +116,11 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
         results = resolvedMetas.filter(Boolean);
     }
     else {
-        const tmdbParams = await buildDiscoveryParams(filters, tmdbApiKey, type, settings);
-        const endpoint = `/discover/${searchType}`;
-
-        const paramsKey = JSON.stringify(tmdbParams);
-        const fallbackFlag = !settings.noFallback ? await catalogFallbackCache.get(paramsKey) : null;
-
-
-        const fetchDeep = async (params) => {
-            const [p1, p2] = await Promise.all([
-                fetchTmdbCatalog(tmdbClient, endpoint, skip, params, type, cacheOptions),
-                fetchTmdbCatalog(tmdbClient, endpoint, skip + 20, params, type, cacheOptions)
-            ]);
-            const seenIds = new Set();
-            return [...p1, ...p2].filter(item => {
-                const nid = normalizeContentId(item.id);
-                if (seenIds.has(nid)) return false;
-                seenIds.add(nid);
-                return true;
-            });
-        };
-
-        if (fallbackFlag) {
-            results = await fetchDeep(fallbackFlag.relaxedParams);
-        } else {
-            results = await fetchDeep(tmdbParams);
-
-            if (results.length === 0 && !settings.noFallback) {
-                let relaxedParams = { ...tmdbParams };
-                let changed = false;
-
-                if (relaxedParams['vote_count.gte'] > 5) {
-                    relaxedParams['vote_count.gte'] = 5;
-                    changed = true;
-                } else if (relaxedParams['vote_count.gte'] > 0) {
-                    relaxedParams['vote_count.gte'] = 0;
-                    changed = true;
-                }
-
-                if (changed) {
-                    const extraResults = await fetchDeep(relaxedParams);
-                    const existingIds = new Set(results.map(r => normalizeContentId(r.id)));
-                    for (const item of extraResults) {
-                        const normalizedItemId = normalizeContentId(item.id);
-                        if (!existingIds.has(normalizedItemId)) {
-                            results.push(item);
-                            existingIds.add(normalizedItemId);
-                        }
-                    }
-                }
-
-                if (changed) {
-                    await catalogFallbackCache.set(paramsKey, { relaxedParams });
-                }
-            }
-        }
+        // Usa DuckDB per tutti i cataloghi discovery nativi (inclusi preset e hybrid fallback)
+        // Passiamo i filters crudi così che tmdbToSqlTranslator faccia la magia offline
+        const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
+        return await getDuckDbCatalogFromFilters(filters, type, skip, PAGE_SIZE, settings);
     }
-
-    return results;
 }
 
 // Fase 2: Processa qualsiasi catalogo tramite array "queries" (LookAhead, Consensus)

@@ -144,5 +144,7 @@ offline_graph_builder/venv/
 offline_graph_builder/__pycache__/
 offline_graph_builder/.env
 offline_graph_builder/cache/
-.cache/tmdb/
 tmdb_worker/
+*.parquet
+*.jsonl
+

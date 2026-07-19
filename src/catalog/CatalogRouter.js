@@ -4,6 +4,7 @@ const { getTmdbDiscoverCatalog, executeStandardSearch } = require('./providers/T
 const { getEngineHybridCatalog, getHybridPopularCatalog, TASTE_BASED_IDS } = require('./providers/HybridProvider');
 const { executeCombinedSearch, executeUniversalPipeline } = require('./providers/AiDiscoveryProvider');
 const { getAnilistSimulcastCatalog } = require('./providers/AnilistProvider');
+const { getDuckDbCatalogFromFilters } = require('./providers/DuckDbProvider');
 const { normalizeToUniversalSchema } = require('../utils/resultMerger');
 const { normalizeContentId } = require('../utils/contentId');
 const { getPresets } = require('../data/presets');
@@ -38,15 +39,14 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
 
     // SCENARIO 1: RICERCA VIVA TESTUALE
     if (search) {
-        if (baseId === 'yaca_search_standard') {
-            return await executeStandardSearch(search, userConfig, type, skip, tmdbFetchOptions);
-        }
-        return await executeCombinedSearch(search, userConfig, type, skip, activeProfileSettings, tmdbFetchOptions);
+        return await getDuckDbCatalogFromFilters({ _search: search }, type, skip, 50, activeProfileSettings);
     }
 
     // SCENARIO 2: CATALOGHI TMDB STANDARD
     if (id === 'yaca_discover_movies' || id === 'yaca_discover_series') {
-        return await getTmdbDiscoverCatalog(id, type, skip, userConfig, tmdbClient, activeProfileSettings, tmdbFetchOptions, sortBy);
+        const filters = {};
+        if (sortBy) filters.sort_by = sortBy;
+        return await getDuckDbCatalogFromFilters(filters, type, skip, 50, activeProfileSettings);
     }
 
     // SCENARIO 2.5 e 2.6: HYBRID RECOMMENDATIONS
