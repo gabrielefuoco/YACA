@@ -9,6 +9,7 @@ const UserAccount = require('../db/models/UserAccount');
 const SystemLog = require('../models/SystemLog');
 const adminAuth = require('../middleware/adminAuth');
 const { runCacheWarmer } = require('../utils/cacheWarmer');
+const { getDumpStatus } = require('../utils/tmdbDumpDaemon');
 const { exec } = require('child_process');
 const path = require('path');
 
@@ -92,6 +93,28 @@ router.post('/scripts/trigger', async (req, res) => {
         console.error('Errore trigger script:', err);
         res.status(500).json({ error: 'Errore durante innesco script.' });
     }
+});
+
+// Endpoint per controllare lo stato del daemon TMDB Dump
+router.get('/tmdb-dump/status', async (req, res) => {
+    try {
+        const status = getDumpStatus();
+        res.json({ success: true, status });
+    } catch (err) {
+        console.error('Errore status tmdb dump:', err);
+        res.status(500).json({ error: 'Errore server' });
+    }
+});
+
+// Endpoint per innescare un backup su HF Dataset
+router.post('/tmdb-dump/backup', async (req, res) => {
+    // Il backup effettivo userebbe huggingface_hub in uno script python 
+    // lanciato in child_process. Per ora ritorniamo istruzioni per CLI.
+    res.json({ 
+        success: true, 
+        message: 'Backup function requires hf CLI.',
+        cli_command: 'hf sync hf://buckets/Gabriele-fuoco/YACA-storage/tmdb/ ./backup_tmdb/'
+    });
 });
 
 module.exports = router;
