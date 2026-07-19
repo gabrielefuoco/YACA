@@ -7,21 +7,24 @@ class DuckDbStore {
         this.db = null;
         this.con = null;
         this.isInitialized = false;
-        this.parquetPath = path.join(__dirname, '../../movies.parquet');
+        
+        // Determina il percorso della cache usando lo stesso pattern di tmdbDumpStore
+        this.basePath = fs.existsSync('/data') 
+            ? '/data/tmdb' 
+            : path.resolve(__dirname, '../../.cache/tmdb');
+            
+        this.moviesParquetPath = path.join(this.basePath, 'movies.parquet');
+        this.tvParquetPath = path.join(this.basePath, 'tv.parquet');
     }
 
     async init() {
         if (this.isInitialized) return;
 
-        // In futuro: qui aggiungeremo la logica per scaricare il parquet dal Bucket 
-        // se non esiste in locale, usando il demone / SDK HF.
-        
-        if (!fs.existsSync(this.parquetPath)) {
-            console.warn(`[DuckDB Store] Attenzione: File ${this.parquetPath} non trovato.`);
-            console.warn(`[DuckDB Store] DuckDB è avviato in memoria vuota. Per favore lancia scripts/convert_to_parquet.js`);
-        }
-
         console.log(`[DuckDB Store] Inizializzazione in corso...`);
+        if (!fs.existsSync(this.moviesParquetPath) && !fs.existsSync(this.tvParquetPath)) {
+            console.warn(`[DuckDB Store] Attenzione: File Parquet non trovati in ${this.basePath}.`);
+            console.warn(`[DuckDB Store] DuckDB è avviato in memoria vuota. Per favore attendi la fine del sync o lancia scripts/convert_to_parquet.js`);
+        }
         
         return new Promise((resolve, reject) => {
             // Avvio con limite di memoria per sicurezza su HF
@@ -30,20 +33,22 @@ class DuckDbStore {
                 
                 this.con = this.db.connect();
                 
-                if (fs.existsSync(this.parquetPath)) {
-                    // Creiamo una VIEW (Tabella Virtuale) che mappa direttamente il file Parquet
-                    // Questo permette query istantanee senza caricare l'intero file in RAM
-                    const createViewQuery = `
-                        CREATE VIEW movies AS 
-                        SELECT * FROM read_parquet('${this.parquetPath.replace(/\\/g, '/')}');
-                    `;
-                    
-                    this.con.exec(createViewQuery, (errView) => {
+                let viewsToCreate = [];
+                if (fs.existsSync(this.moviesParquetPath)) {
+                    viewsToCreate.push(`CREATE VIEW movies AS SELECT * FROM read_parquet('${this.moviesParquetPath.replace(/\\/g, '/')}');`);
+                }
+                
+                if (fs.existsSync(this.tvParquetPath)) {
+                    viewsToCreate.push(`CREATE VIEW tv AS SELECT * FROM read_parquet('${this.tvParquetPath.replace(/\\/g, '/')}');`);
+                }
+
+                if (viewsToCreate.length > 0) {
+                    this.con.exec(viewsToCreate.join('\n'), (errView) => {
                         if (errView) {
                             console.error(`[DuckDB Store] Errore creazione view:`, errView);
                             return reject(errView);
                         }
-                        console.log(`[DuckDB Store] View 'movies' creata con successo mappando il Parquet.`);
+                        console.log(`[DuckDB Store] View create con successo: ${viewsToCreate.length} file Parquet mappati.`);
                         this.isInitialized = true;
                         resolve();
                     });
@@ -61,8 +66,11 @@ class DuckDbStore {
         }
 
         return new Promise((resolve, reject) => {
-            // Se non c'è la view (manca il file), ritorniamo vuoto per non far crashare l'app
-            if (!fs.existsSync(this.parquetPath) && sql.includes('movies')) {
+            // Protezione query a tabelle vuote
+            if (sql.includes('movies') && !fs.existsSync(this.moviesParquetPath)) {
+                return resolve([]); 
+            }
+            if (sql.includes('tv') && !fs.existsSync(this.tvParquetPath)) {
                 return resolve([]); 
             }
             
