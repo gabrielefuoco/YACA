@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YACA Graph Explorer</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style type="text/css">
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #0d1117; 
+            color: #c9d1d9; 
+            overflow: hidden;
+        }
+        #header { 
+            padding: 15px 20px; 
+            background-color: #161b22; 
+            border-bottom: 1px solid #30363d;
+            display: flex; 
+            gap: 15px; 
+            align-items: center; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 10;
+            position: relative;
+        }
+        #header h2 { margin: 0; color: #58a6ff; font-size: 20px; font-weight: 600;}
+        input { 
+            padding: 8px 12px; 
+            font-size: 14px; 
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            width: 250px;
+        }
+        input:focus { outline: none; border-color: #58a6ff; }
+        button { 
+            padding: 8px 16px; 
+            font-size: 14px; 
+            border-radius: 6px;
+            border: 1px solid #238636;
+            background-color: #238636;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover { background-color: #2ea043; }
+        #info { margin-left: auto; font-size: 13px; color: #8b949e; }
+        #mynetwork {
+            width: 100vw;
+            height: calc(100vh - 65px);
+            background-color: #0d1117;
+        }
+        #tips {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(22, 27, 34, 0.8);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            font-size: 13px;
+            color: #8b949e;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h2>YACA Explorer</h2>
+        <input type="text" id="searchInput" placeholder="Cerca keyword (es. fantasy, magic, space)..." onkeydown="if(event.key === 'Enter') searchKeyword()" style="width: 300px;" />
+        <button onclick="searchKeyword()">Esplora</button>
+        <button onclick="drawFullGraph()" style="background-color: #d73a49; border-color: #cb2431; margin-left: 10px;">Vedi Tutto il Grafo</button>
+        <button onclick="drawNSFWGraph()" style="background-color: #6e40c9; border-color: #8a63d2; margin-left: 10px;">Vedi Quarantena NSFW</button>
+        <span id="info">Caricamento grafo...</span>
+    </div>
+    
+    <div id="mynetwork"></div>
+    
+    <div id="tips">
+        💡 <b>Tip:</b> Cerca più keyword separandole con la virgola (es. <code>fantasy, magic</code>) per vederle fondersi. Fai <b>Doppio Click</b> sui nodi blu per viaggiare nel grafo!
+    </div>
+
+    <script type="text/javascript">
+        let graphData = null;
+        let network = null;
+        let edgeWeightMin = Infinity;
+        let edgeWeightMax = -Infinity;
+
+        // Fetch JSON data
+        fetch('/src/data/graph_data.json')
+            .then(response => response.json())
+            .then(data => {
+                graphData = data;
+                // Calcola min/max REALI dei pesi nel grafo
+                for (const cId of Object.keys(data.cluster_adjacency)) {
+                    for (const w of Object.values(data.cluster_adjacency[cId])) {
+                        if (w < edgeWeightMin) edgeWeightMin = w;
+                        if (w > edgeWeightMax) edgeWeightMax = w;
+                    }
+                }
+                console.log(`Edge weights: min=${edgeWeightMin.toFixed(3)}, max=${edgeWeightMax.toFixed(3)}`);
+                document.getElementById('info').innerHTML = `✅ Grafo Caricato: <b>${Object.keys(data.cluster_members).length} Cluster</b> / <b>${Object.keys(data.keyword_to_cluster).length} Keyword</b>`;
+                document.getElementById('searchInput').value = 'space';
+                searchKeyword();
+            })
+            .catch(err => {
+                document.getElementById('info').innerHTML = `<span style="color:#f85149">❌ Errore caricamento grafo. Servi da HTTP root?</span>`;
+                console.error(err);
+            });
+
+        function searchKeyword() {
+            if(!graphData) return;
+            const rawInput = document.getElementById('searchInput').value.toLowerCase().trim();
+            if(!rawInput) return;
+
+            const kws = rawInput.split(',').map(s => s.trim()).filter(s => s);
+            const clusterIds = [];
+            const validKws = [];
+            
+            for(const kw of kws) {
+                const cId = graphData.keyword_to_cluster[kw];
+                if(cId) {
+                    clusterIds.push(cId);
+                    validKws.push(kw.toUpperCase());
+                } else {
+                    alert(`Keyword '${kw}' non trovata nel grafo!`);
+                }
+            }
+
+            if(clusterIds.length === 1) {
+                drawNetwork(clusterIds[0]);
+            } else if (clusterIds.length > 1) {
+                // Generazione Super-Nodo Virtuale (Vector Merge Simulation)
+                const virtualId = "VIRTUAL_" + clusterIds.join('_');
+                const combinedAdj = {};
+                
+                for (const cId of clusterIds) {
+                    const adj = graphData.cluster_adjacency[cId] || {};
+                    for (const [nId, weight] of Object.entries(adj)) {
+                        if (clusterIds.includes(nId)) continue; // Evita loop sui nodi d'origine
+                        
+                        if (!combinedAdj[nId]) combinedAdj[nId] = 0;
+                        combinedAdj[nId] += weight; // Somma l'energia vettoriale!
+                    }
+                }
+                
+                // Inietta temporaneamente nel dataset
+                graphData.cluster_members[virtualId] = [validKws.join(' + ')];
+                graphData.cluster_adjacency[virtualId] = combinedAdj;
+                
+                drawNetwork(virtualId);
+            }
+        }
+
+        function drawNetwork(centerClusterIds) {
+            if (!Array.isArray(centerClusterIds)) centerClusterIds = [centerClusterIds];
+
+            const nodesData = new Map(); // id -> { minDistance, sources: Set }
+            const edgesData = new Map(); // edgeId -> { from, to, weight, hop }
+
+            // Initialize centers
+            for(const cId of centerClusterIds) {
+                nodesData.set(cId, { minDistance: 0, sources: new Set([cId]) });
+            }
+
+            const maxHops = 3;
+            const branchingLimits = [12, 6, 3]; 
+
+            // Esegue una BFS INDIPENDENTE per ogni nodo centrale
+            for(const startCId of centerClusterIds) {
+                let currentLevel = new Set([startCId]);
+                for(let hop = 0; hop < maxHops; hop++) {
+                    let nextLevel = new Set();
+                    const limit = branchingLimits[hop];
+
+                    for(const nodeId of currentLevel) {
+                        const adj = graphData.cluster_adjacency[nodeId] || {};
+                        const neighbors = Object.entries(adj).sort((a,b) => b[1] - a[1]).slice(0, limit);
+
+                        for(const [nId, weight] of neighbors) {
+                            // Aggiorna dati Nodo
+                            if(!nodesData.has(nId)) {
+                                nodesData.set(nId, { minDistance: hop + 1, sources: new Set() });
+                            }
+                            const nData = nodesData.get(nId);
+                            nData.sources.add(startCId);
+                            nData.minDistance = Math.min(nData.minDistance, hop + 1);
+
+                            // Aggiorna dati Arco
+                            const edgeId = [nodeId, nId].sort().join('-');
+                            if(!edgesData.has(edgeId)) {
+                                edgesData.set(edgeId, { from: nodeId, to: nId, weight: weight, hop: hop });
+                            } else {
+                                edgesData.get(edgeId).hop = Math.min(edgesData.get(edgeId).hop, hop);
+                            }
+
+                            nextLevel.add(nId);
+                        }
+                    }
+                    currentLevel = nextLevel;
+                }
+            }
+
+            // Costruisci array vis.js
+            const nodes = [];
+            const edges = [];
+            const keptNodes = new Set();
+            
+            for(const [id, data] of nodesData.entries()) {
+                const members = graphData.cluster_members[id];
+                let label = members[0].toUpperCase();
+                const isCenter = centerClusterIds.includes(id);
+                const isMultiSearch = centerClusterIds.length > 1;
+                const isIntersection = !isCenter && data.sources.size > 1;
+                const isDust = isMultiSearch && !isCenter && !isIntersection;
+                
+                // Oscuriamo la polvere troppo distante (> 1 hop) per sfoltire drasticamente il grafo
+                if (isDust && data.minDistance >= 2) continue;
+
+                if (isDust) label = ''; // Nascondi il testo del rumore di fondo
+                keptNodes.add(id);
+                
+                const titleElement = document.createElement('div');
+                titleElement.innerHTML = `
+                    <div style="padding: 10px; font-family: sans-serif; background: #161b22; color: #c9d1d9; border-radius: 8px; border: 1px solid #30363d; box-shadow: 0 4px 6px rgba(0,0,0,0.5);">
+                        <b style="color: ${isIntersection ? '#e3b341' : '#58a6ff'}; font-size: 16px;">${members[0].toUpperCase()}</b><br>
+                        <hr style="border-color: #30363d;">
+                        <b>Cluster ID:</b> ${id}<br>
+                        ${isIntersection ? `<b style="color:#e3b341">PONTE SEMANTICO:</b> Connesso a ${data.sources.size} keyword cercate.<br>` : ''}
+                        <b>Sinonimi:</b><br>
+                        <span style="color:#8b949e;">${members.join(', ')}</span>
+                    </div>
+                `;
+
+                let bgColor, borderColor, size, fontCol, fontSize, strokeW, opac;
+                const dist = data.minDistance;
+                opac = isDust ? 0.15 : 1.0;
+                
+                if(isCenter) {
+                    bgColor = `rgba(255, 71, 87, ${opac})`; borderColor = `rgba(255, 107, 129, ${opac})`; size = 35; 
+                    fontCol = '#ffffff'; fontSize = 22; strokeW = 2;
+                } 
+                else if(isIntersection) {
+                    // PONTE D'ORO
+                    bgColor = `rgba(227, 179, 65, ${opac})`; borderColor = `rgba(241, 224, 90, ${opac})`; size = 30; 
+                    fontCol = '#000000'; fontSize = 20; strokeW = 3;
+                }
+                else {
+                    size = isDust ? 10 : Math.max(10, 25 - (dist * 5));
+                    fontCol = isDust ? 'rgba(255,255,255,0)' : '#ffffff'; fontSize = dist === 1 ? 16 : 12; strokeW = isDust ? 0 : 2;
+                    if(dist === 1) { bgColor = `rgba(30, 144, 255, ${opac})`; borderColor = `rgba(112, 161, 255, ${opac})`; }
+                    else if(dist === 2) { bgColor = `rgba(155, 89, 182, ${opac})`; borderColor = `rgba(175, 122, 197, ${opac})`; }
+                    else { bgColor = `rgba(46, 213, 115, ${opac})`; borderColor = `rgba(123, 237, 159, ${opac})`; }
+                }
+
+                nodes.push({
+                    id: id,
+                    label: label,
+                    title: titleElement,
+                    color: {
+                        background: bgColor,
+                        border: borderColor,
+                        highlight: { border: '#ffffff', background: bgColor }
+                    },
+                    font: {
+                        color: fontCol, 
+                        face: 'Segoe UI', 
+                        size: fontSize,
+                        strokeWidth: strokeW,
+                        strokeColor: isIntersection ? '#ffffff' : '#000000',
+                        bold: isIntersection
+                    },
+                    shape: 'dot', 
+                    size: size,
+                    borderWidth: isCenter || isIntersection ? 4 : (isDust ? 1 : 2),
+                    shadow: { enabled: !isDust, color: bgColor, size: isIntersection ? 15 : 10, x: 0, y: 0 } 
+                });
+            }
+
+            // === RANKING PER-NODO ===
+            // Per ogni nodo, calcoliamo il rango degli archi (il più pesante = rango 0)
+            // Così il "miglior vicino" di ogni nodo avrà opacità piena, e si scala verso il basso.
+            const nodeEdgeRanks = new Map(); // edgeId -> t (0=debole, 1=forte)
+
+            // Raccogliamo tutti gli archi validi per nodo
+            const edgesByNode = new Map();
+            for(const [edgeId, edgeInfo] of edgesData.entries()) {
+                if (!keptNodes.has(edgeInfo.from) || !keptNodes.has(edgeInfo.to)) continue;
+                for(const nodeId of [edgeInfo.from, edgeInfo.to]) {
+                    if(!edgesByNode.has(nodeId)) edgesByNode.set(nodeId, []);
+                    edgesByNode.get(nodeId).push({ edgeId, weight: edgeInfo.weight });
+                }
+            }
+
+            // Per ogni nodo, ordina per peso desc e assegna un t da 1.0 (primo) a 0.0 (ultimo)
+            for(const [nodeId, nodeEdges] of edgesByNode.entries()) {
+                nodeEdges.sort((a, b) => b.weight - a.weight);
+                const n = nodeEdges.length;
+                nodeEdges.forEach((e, rank) => {
+                    const t = n > 1 ? 1.0 - (rank / (n - 1)) : 1.0;
+                    // Tieni il t PEGGIORE (Math.min): un arco è luminoso solo se è top per ENTRAMBI i nodi
+                    const prev = nodeEdgeRanks.has(e.edgeId) ? nodeEdgeRanks.get(e.edgeId) : 1.0;
+                    nodeEdgeRanks.set(e.edgeId, Math.min(prev, t));
+                });
+            }
+
+            for(const [edgeId, edgeInfo] of edgesData.entries()) {
+                const isMultiSearch = centerClusterIds.length > 1;
+                if (!keptNodes.has(edgeInfo.from) || !keptNodes.has(edgeInfo.to)) continue;
+
+                const fromData = nodesData.get(edgeInfo.from);
+                const toData = nodesData.get(edgeInfo.to);
+                const fromDust = isMultiSearch && !centerClusterIds.includes(edgeInfo.from) && fromData.sources.size === 1;
+                const toDust = isMultiSearch && !centerClusterIds.includes(edgeInfo.to) && toData.sources.size === 1;
+                const isDustEdge = fromDust || toDust;
+
+                const fromDist = fromData.minDistance;
+                const toDist = toData.minDistance;
+                const isCenterEdge = fromDist === 0 || toDist === 0;
+                const isLateral = fromDist === toDist && !isCenterEdge;
+                
+                // t: rango mutuale [0=debole, 1=forte] + curva di potenza per massimizzare il contrasto
+                const tRaw = nodeEdgeRanks.get(edgeId) || 0;
+                const t = Math.pow(tRaw, 2.5); // curva esponenziale: top connessioni brillano, le altre svaniscono
+                
+                let r, g, b, baseWidth;
+                if (isCenterEdge) {
+                    r=255; g=71; b=87; baseWidth = 5.0;
+                } else if (!isLateral && (fromDist === 1 || toDist === 1)) {
+                    r=30; g=144; b=255; baseWidth = 3.0;
+                } else if (!isLateral) {
+                    r=155; g=89; b=182; baseWidth = 1.5;
+                } else {
+                    r=139; g=148; b=158; baseWidth = 0.3;
+                }
+                
+                const opacity = (isDustEdge || isLateral) ? 0.02 : Math.max(0.10, t);
+                const edgeWidth = (isDustEdge || isLateral) ? 0.1 : baseWidth * (0.15 + t * 0.85);
+                
+                const rgbaColor = `rgba(${r}, ${g}, ${b}, ${opacity.toFixed(3)})`;
+                
+                edges.push({
+                    from: edgeInfo.from,
+                    to: edgeInfo.to,
+                    title: `Peso: ${edgeInfo.weight.toFixed(2)} | Rango: ${t.toFixed(2)}`,
+                    color: { color: rgbaColor, highlight: '#ffffff' },
+                    width: edgeWidth,
+                    smooth: false
+                });
+            }
+
+            const container = document.getElementById('mynetwork');
+            const data = { nodes: nodes, edges: edges };
+            const options = {
+                physics: {
+                    barnesHut: { 
+                        springLength: 400, // Molto lungo per dare respiro alla galassia
+                        springConstant: 0.03,
+                        centralGravity: 0.05, // Gravità minima per non ammassarli al centro
+                        damping: 0.09,
+                        avoidOverlap: 1 // Forza vis.js a non sovrapporre i nodi
+                    },
+                    stabilization: { iterations: 200 }
+                },
+                interaction: { hover: true, tooltipDelay: 100 }
+            };
+            
+            if(network) network.destroy();
+            network = new vis.Network(container, data, options);
+            
+            network.on("doubleClick", function (params) {
+                if(params.nodes.length > 0) {
+                    const clickedNode = params.nodes[0];
+                    const members = graphData.cluster_members[clickedNode];
+                    if(members && members.length > 0) {
+                        document.getElementById('searchInput').value = members[0];
+                        drawNetwork(clickedNode);
+                    }
+                }
+            });
+            
+            network.on("hoverNode", function (e) { network.canvas.body.container.style.cursor = 'pointer'; });
+            network.on("blurNode", function (e) { network.canvas.body.container.style.cursor = 'default'; });
+        }
+
+        function drawFullGraph() {
+            if(!graphData) return;
+            if(!confirm("Attenzione: stiamo per renderizzare tutti i 1.266 cluster contemporaneamente. Questo attiverà una simulazione fisica pesante che durerà qualche secondo e potrebbe far laggare il browser temporaneamente. Procedere?")) return;
+
+            document.getElementById('info').innerHTML = `<span style="color:#e3b341">⚙️ Calcolo fisica in corso... attendere...</span>`;
+            
+            const nodes = [];
+            const edges = [];
+            const addedEdges = new Set();
+
+            // Aggiungiamo tutti i nodi
+            for(const id in graphData.cluster_members) {
+                const members = graphData.cluster_members[id];
+                // Titolo compatto per la vista globale
+                let label = members[0];
+                const size = Math.min(10 + (members.length * 2), 40);
+
+                nodes.push({
+                    id: id,
+                    label: label,
+                    title: `Cluster ${id}\n${members.join(', ')}`,
+                    color: { background: '#1f6feb', border: '#388bfd' },
+                    font: {color: '#c9d1d9', face: 'monospace', size: 12},
+                    shape: 'dot',
+                    size: size
+                });
+            }
+
+            // Aggiungiamo gli archi (Limitati a Top 3 per nodo per evitare una macchia nera illeggibile)
+            for(const id in graphData.cluster_adjacency) {
+                const adj = graphData.cluster_adjacency[id];
+                const neighbors = Object.entries(adj).sort((a,b) => b[1] - a[1]).slice(0, 3);
+                
+                for(const [nId, weight] of neighbors) {
+                    const edgeId = [id, nId].sort().join('-'); // Evita bidirezionali
+                    if(!addedEdges.has(edgeId)) {
+                        addedEdges.add(edgeId);
+                        edges.push({
+                            from: id,
+                            to: nId,
+                            value: weight,
+                            color: {color: 'rgba(139, 148, 158, 0.2)'},
+                            smooth: false // Linee rette per performance migliori nel globale
+                        });
+                    }
+                }
+            }
+
+            const container = document.getElementById('mynetwork');
+            const data = { nodes: nodes, edges: edges };
+            const options = {
+                physics: {
+                    barnesHut: { 
+                        gravitationalConstant: -2000, 
+                        centralGravity: 0.1, 
+                        springLength: 150, 
+                        springConstant: 0.04, 
+                        damping: 0.2 
+                    },
+                    stabilization: { iterations: 300, updateInterval: 25 },
+                    maxVelocity: 50
+                },
+                interaction: { hover: true, hideEdgesOnDrag: true }
+            };
+            
+            if(network) network.destroy();
+            network = new vis.Network(container, data, options);
+            
+            network.on("stabilizationProgress", function(params) {
+                const prog = Math.round((params.iterations/params.total)*100);
+                document.getElementById('info').innerHTML = `<span style="color:#e3b341">⚙️ Stabilizzazione rete: ${prog}%</span>`;
+            });
+            
+            network.on("stabilizationIterationsDone", function() {
+                document.getElementById('info').innerHTML = `✅ <b>Visualizzazione Globale Attiva</b> (Fisica disabilitata per risparmiare CPU).`;
+                // Ferma la fisica dopo la stabilizzazione per evitare che la CPU esploda
+                network.setOptions( { physics: false } );
+            });
+
+            network.on("doubleClick", function (params) {
+                if(params.nodes.length > 0) {
+                    const clickedNode = params.nodes[0];
+                    const members = graphData.cluster_members[clickedNode];
+                    if(members && members.length > 0) {
+                        document.getElementById('searchInput').value = members[0];
+                        drawNetwork(clickedNode);
+                    }
+                }
+            });
+        }
+
+        function drawNSFWGraph() {
+            if(!graphData) return;
+            document.getElementById('info').innerHTML = `<span style="color:#e3b341">⚙️ Renderizzazione Quarantena NSFW in corso... attendere...</span>`;
+            
+            const nodes = [];
+            const edges = [];
+            const addedEdges = new Set();
+            const nsfwSet = new Set();
+
+            // Aggiungiamo tutti i nodi NSFW
+            for(const id in graphData.cluster_members) {
+                if(!graphData.cluster_nsfw[id]) continue;
+                nsfwSet.add(id);
+
+                const members = graphData.cluster_members[id];
+                let label = members[0];
+                const size = Math.min(10 + (members.length * 2), 40);
+
+                nodes.push({
+                    id: id,
+                    label: label,
+                    title: `Cluster ${id} (NSFW)\n${members.join(', ')}`,
+                    color: { background: '#6e40c9', border: '#8a63d2' },
+                    font: {color: '#ffffff', face: 'monospace', size: 14},
+                    shape: 'dot',
+                    size: size
+                });
+            }
+
+            // Aggiungiamo gli archi SOLO tra nodi NSFW per mostrare come sono collegati tra loro
+            for(const id in graphData.cluster_adjacency) {
+                if(!nsfwSet.has(id)) continue;
+                
+                const neighbors = graphData.cluster_adjacency[id];
+                let count = 0;
+                for(const nId in neighbors) {
+                    if(!nsfwSet.has(nId)) continue; // Solo archi interni alla quarantena
+                    if(count >= 5) break; // Mostriamo fino a 5 collegamenti
+                    
+                    const edgeId = [id, nId].sort().join('-');
+                    if(!addedEdges.has(edgeId)) {
+                        addedEdges.add(edgeId);
+                        edges.push({
+                            from: id,
+                            to: nId,
+                            color: { color: '#8a63d2', opacity: 0.5 },
+                            width: 1,
+                            smooth: false
+                        });
+                        count++;
+                    }
+                }
+            }
+
+            const container = document.getElementById('mynetwork');
+            const data = { nodes: nodes, edges: edges };
+            const options = {
+                physics: {
+                    barnesHut: { 
+                        springLength: 200, // Meno ammassati del grafo totale
+                        springConstant: 0.04,
+                        centralGravity: 0.1,
+                        damping: 0.09,
+                        avoidOverlap: 1
+                    },
+                    stabilization: { iterations: 150 }
+                },
+                interaction: { hover: true, tooltipDelay: 100 }
+            };
+
+            const network = new vis.Network(container, data, options);
+            
+            network.on("stabilizationIterationsDone", function() {
+                document.getElementById('info').innerHTML = `✅ <b>Quarantena NSFW: ${nsfwSet.size} Cluster Isolati</b>`;
+                network.setOptions( { physics: false } );
+            });
+
+            network.on("doubleClick", function (params) {
+                if(params.nodes.length > 0) {
+                    const clickedNode = params.nodes[0];
+                    const members = graphData.cluster_members[clickedNode];
+                    if(members && members.length > 0) {
+                        document.getElementById('searchInput').value = members[0];
+                        drawNetwork(clickedNode);
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -137,3 +137,9 @@ node_modules/
 .agent/
 
 secrets.env
+
+# YACA Graph Builder Offline
+TMDB_movie_dataset_v11.csv
+offline_graph_builder/venv/
+offline_graph_builder/__pycache__/
+offline_graph_builder/.env

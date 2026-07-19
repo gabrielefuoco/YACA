@@ -1,0 +1,9 @@
+pandas
+numpy
+scipy
+networkx
+igraph
+leidenalg
+cdlib
+sentence-transformers
+tqdm
