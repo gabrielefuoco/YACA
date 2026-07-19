@@ -69,7 +69,7 @@ class TmdbDumpClient {
     async fetchMovie(id) {
         const data = await this.fetchWithRetry(`${this.baseUrl}/movie/${id}`, {
             language: 'it-IT',
-            append_to_response: 'keywords,credits,videos,images,recommendations',
+            append_to_response: 'keywords,credits,videos,images,recommendations,watch/providers,release_dates',
             include_image_language: 'it,en,null',
             include_video_language: 'it,en,null'
         });
@@ -81,6 +81,13 @@ class TmdbDumpClient {
         const keywords = (data.keywords?.keywords || []).map(k => ({id: k.id, name: k.name}));
         const trailer = (data.videos?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube');
         const recommendations = (data.recommendations?.results || []).slice(0, 10).map(r => r.id);
+        const watch_providers_it = data['watch/providers']?.results?.IT || null;
+        const production_companies = (data.production_companies || []).map(c => ({id: c.id, name: c.name}));
+        const production_countries = (data.production_countries || []).map(c => c.iso_3166_1);
+        
+        const itRelease = (data.release_dates?.results || []).find(r => r.iso_3166_1 === 'IT');
+        const usRelease = (data.release_dates?.results || []).find(r => r.iso_3166_1 === 'US');
+        const content_rating = itRelease?.release_dates?.[0]?.certification || usRelease?.release_dates?.[0]?.certification || null;
 
         return {
             id: data.id,
@@ -101,11 +108,15 @@ class TmdbDumpClient {
             keywords: JSON.stringify(keywords),
             cast: JSON.stringify(cast),
             directors: JSON.stringify(directors),
+            production_companies: JSON.stringify(production_companies),
+            production_countries: JSON.stringify(production_countries),
             trailer_key: trailer ? trailer.key : null,
             tagline: data.tagline || null,
             collection_id: data.belongs_to_collection ? data.belongs_to_collection.id : null,
             collection_name: data.belongs_to_collection ? data.belongs_to_collection.name : null,
             recommendations: JSON.stringify(recommendations),
+            watch_providers_it: watch_providers_it ? JSON.stringify(watch_providers_it) : null,
+            content_rating: content_rating,
             _fetched_at: new Date().toISOString()
         };
     }
@@ -113,7 +124,7 @@ class TmdbDumpClient {
     async fetchTv(id) {
         const data = await this.fetchWithRetry(`${this.baseUrl}/tv/${id}`, {
             language: 'it-IT',
-            append_to_response: 'keywords,credits,videos,images,recommendations',
+            append_to_response: 'keywords,credits,videos,images,recommendations,watch/providers,content_ratings',
             include_image_language: 'it,en,null',
             include_video_language: 'it,en,null'
         });
@@ -126,6 +137,13 @@ class TmdbDumpClient {
         const created_by = (data.created_by || []).map(c => ({id: c.id, name: c.name}));
         const networks = (data.networks || []).map(n => ({id: n.id, name: n.name}));
         const recommendations = (data.recommendations?.results || []).slice(0, 10).map(r => r.id);
+        const watch_providers_it = data['watch/providers']?.results?.IT || null;
+        const production_companies = (data.production_companies || []).map(c => ({id: c.id, name: c.name}));
+        const production_countries = (data.production_countries || []).map(c => c.iso_3166_1);
+
+        const itRating = (data.content_ratings?.results || []).find(r => r.iso_3166_1 === 'IT');
+        const usRating = (data.content_ratings?.results || []).find(r => r.iso_3166_1 === 'US');
+        const content_rating = itRating?.rating || usRating?.rating || null;
 
         return {
             id: data.id,
@@ -149,9 +167,13 @@ class TmdbDumpClient {
             cast: JSON.stringify(cast),
             created_by: JSON.stringify(created_by),
             networks: JSON.stringify(networks),
+            production_companies: JSON.stringify(production_companies),
+            production_countries: JSON.stringify(production_countries),
             trailer_key: trailer ? trailer.key : null,
             tagline: data.tagline || null,
             recommendations: JSON.stringify(recommendations),
+            watch_providers_it: watch_providers_it ? JSON.stringify(watch_providers_it) : null,
+            content_rating: content_rating,
             _fetched_at: new Date().toISOString()
         };
     }
