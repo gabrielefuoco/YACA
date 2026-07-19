@@ -179,8 +179,9 @@ const server = app.listen(PORT, () => {
 
     // Avvia il Demone Continuo del Cache Warmer
     const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-    const { runCacheWarmer } = require('./src/utils/cacheWarmer');
-    runCacheWarmer(hostUrl).catch(err => console.error('[CacheWarmer Daemon] Startup Error:', err.message));
+    // TEMPORANEAMENTE DISABILITATO PER FAVORIRE TMDB DUMP COLD START
+    // const { runCacheWarmer } = require('./src/utils/cacheWarmer');
+    // runCacheWarmer(hostUrl).catch(err => console.error('[CacheWarmer Daemon] Startup Error:', err.message));
 
     // Avvia il Demone TMDB Dump
     const { runTmdbDumpDaemon } = require('./src/utils/tmdbDumpDaemon');
