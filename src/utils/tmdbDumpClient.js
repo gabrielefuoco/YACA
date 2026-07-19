@@ -77,6 +77,7 @@ class TmdbDumpClient {
         if (!data || data.vote_count < 10) return null;
 
         const directors = (data.credits?.crew || []).filter(c => c.job === 'Director').map(c => ({id: c.id, name: c.name}));
+        const writers = (data.credits?.crew || []).filter(c => ['Screenplay', 'Writer'].includes(c.job)).map(c => ({id: c.id, name: c.name}));
         const cast = (data.credits?.cast || []).slice(0, 20).map(c => ({id: c.id, name: c.name, character: c.character, order: c.order}));
         const keywords = (data.keywords?.keywords || []).map(k => ({id: k.id, name: k.name}));
         const trailer = (data.videos?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube');
@@ -84,6 +85,7 @@ class TmdbDumpClient {
         const watch_providers_it = data['watch/providers']?.results?.IT || null;
         const production_companies = (data.production_companies || []).map(c => ({id: c.id, name: c.name}));
         const production_countries = (data.production_countries || []).map(c => c.iso_3166_1);
+        const spoken_languages = (data.spoken_languages || []).map(l => l.iso_639_1);
         
         const itRelease = (data.release_dates?.results || []).find(r => r.iso_3166_1 === 'IT');
         const usRelease = (data.release_dates?.results || []).find(r => r.iso_3166_1 === 'US');
@@ -108,8 +110,10 @@ class TmdbDumpClient {
             keywords: JSON.stringify(keywords),
             cast: JSON.stringify(cast),
             directors: JSON.stringify(directors),
+            writers: JSON.stringify(writers),
             production_companies: JSON.stringify(production_companies),
             production_countries: JSON.stringify(production_countries),
+            spoken_languages: JSON.stringify(spoken_languages),
             trailer_key: trailer ? trailer.key : null,
             tagline: data.tagline || null,
             collection_id: data.belongs_to_collection ? data.belongs_to_collection.id : null,
@@ -117,6 +121,9 @@ class TmdbDumpClient {
             recommendations: JSON.stringify(recommendations),
             watch_providers_it: watch_providers_it ? JSON.stringify(watch_providers_it) : null,
             content_rating: content_rating,
+            adult: data.adult || false,
+            budget: data.budget || 0,
+            revenue: data.revenue || 0,
             _fetched_at: new Date().toISOString()
         };
     }
@@ -124,7 +131,7 @@ class TmdbDumpClient {
     async fetchTv(id) {
         const data = await this.fetchWithRetry(`${this.baseUrl}/tv/${id}`, {
             language: 'it-IT',
-            append_to_response: 'keywords,credits,videos,images,recommendations,watch/providers,content_ratings',
+            append_to_response: 'keywords,credits,videos,images,recommendations,watch/providers,content_ratings,external_ids',
             include_image_language: 'it,en,null',
             include_video_language: 'it,en,null'
         });
@@ -140,6 +147,13 @@ class TmdbDumpClient {
         const watch_providers_it = data['watch/providers']?.results?.IT || null;
         const production_companies = (data.production_companies || []).map(c => ({id: c.id, name: c.name}));
         const production_countries = (data.production_countries || []).map(c => c.iso_3166_1);
+        const spoken_languages = (data.spoken_languages || []).map(l => l.iso_639_1);
+        
+        // Runtime della serie (prende il primo, se disponibile, altrimenti media, altrimenti null)
+        let runtime = null;
+        if (data.episode_run_time && data.episode_run_time.length > 0) {
+            runtime = data.episode_run_time[0]; // Spesso è il valore primario
+        }
 
         const itRating = (data.content_ratings?.results || []).find(r => r.iso_3166_1 === 'IT');
         const usRating = (data.content_ratings?.results || []).find(r => r.iso_3166_1 === 'US');
@@ -147,6 +161,8 @@ class TmdbDumpClient {
 
         return {
             id: data.id,
+            imdb_id: data.external_ids?.imdb_id || null,
+            tvdb_id: data.external_ids?.tvdb_id || null,
             name: data.name,
             original_name: data.original_name,
             original_language: data.original_language,
@@ -159,6 +175,7 @@ class TmdbDumpClient {
             vote_count: data.vote_count,
             popularity: data.popularity,
             status: data.status,
+            in_production: data.in_production || false,
             type: data.type,
             poster_path: data.poster_path,
             backdrop_path: data.backdrop_path,
@@ -169,11 +186,14 @@ class TmdbDumpClient {
             networks: JSON.stringify(networks),
             production_companies: JSON.stringify(production_companies),
             production_countries: JSON.stringify(production_countries),
+            spoken_languages: JSON.stringify(spoken_languages),
             trailer_key: trailer ? trailer.key : null,
             tagline: data.tagline || null,
             recommendations: JSON.stringify(recommendations),
             watch_providers_it: watch_providers_it ? JSON.stringify(watch_providers_it) : null,
             content_rating: content_rating,
+            adult: data.adult || false,
+            runtime: runtime,
             _fetched_at: new Date().toISOString()
         };
     }
