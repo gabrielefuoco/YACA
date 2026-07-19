@@ -30,7 +30,7 @@ async function convert() {
         
         const query = `
             COPY (
-                SELECT * FROM read_json_auto('${jsonlFile.replace(/\\/g, '/')}')
+                SELECT * FROM read_json_auto('${jsonlFile.replace(/\\/g, '/')}') ORDER BY popularity DESC
             ) TO '${tmpParquetFile.replace(/\\/g, '/')}' (FORMAT PARQUET, COMPRESSION 'ZSTD');
         `;
 

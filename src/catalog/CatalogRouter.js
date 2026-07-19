@@ -39,7 +39,12 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
 
     // SCENARIO 1: RICERCA VIVA TESTUALE
     if (search) {
-        return await getDuckDbCatalogFromFilters({ _search: search }, type, skip, 50, activeProfileSettings);
+        if (baseId === 'yaca_search_standard') {
+            return await getDuckDbCatalogFromFilters({ _search: search }, type, skip, 50, activeProfileSettings);
+        }
+        // Il fallback o la ricerca AI profonda rimangono sulla vecchia pipeline
+        const { executeCombinedSearch } = require('./providers/AiDiscoveryProvider');
+        return await executeCombinedSearch(search, userConfig, type, skip, activeProfileSettings, tmdbFetchOptions);
     }
 
     // SCENARIO 2: CATALOGHI TMDB STANDARD
