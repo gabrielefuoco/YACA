@@ -81,6 +81,9 @@ class TmdbDumpClient {
         const cast = (data.credits?.cast || []).slice(0, 20).map(c => ({id: c.id, name: c.name, character: c.character, order: c.order}));
         const keywords = (data.keywords?.keywords || []).map(k => ({id: k.id, name: k.name}));
         const trailer = (data.videos?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube');
+        const logo = (data.images?.logos || []).find(l => l.iso_639_1 === 'it') || 
+                     (data.images?.logos || []).find(l => l.iso_639_1 === 'en') || 
+                     (data.images?.logos || []).find(l => l.iso_639_1 === null);
         const recommendations = (data.recommendations?.results || []).slice(0, 10).map(r => r.id);
         const watch_providers_it = data['watch/providers']?.results?.IT || null;
         const production_companies = (data.production_companies || []).map(c => ({id: c.id, name: c.name}));
@@ -115,6 +118,7 @@ class TmdbDumpClient {
             production_countries: JSON.stringify(production_countries),
             spoken_languages: JSON.stringify(spoken_languages),
             trailer_key: trailer ? trailer.key : null,
+            logo_path: logo ? logo.file_path : null,
             tagline: data.tagline || null,
             collection_id: data.belongs_to_collection ? data.belongs_to_collection.id : null,
             collection_name: data.belongs_to_collection ? data.belongs_to_collection.name : null,
@@ -141,6 +145,9 @@ class TmdbDumpClient {
         const cast = (data.credits?.cast || []).slice(0, 20).map(c => ({id: c.id, name: c.name, character: c.character, order: c.order}));
         const keywords = (data.keywords?.results || []).map(k => ({id: k.id, name: k.name}));
         const trailer = (data.videos?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube');
+        const logo = (data.images?.logos || []).find(l => l.iso_639_1 === 'it') || 
+                     (data.images?.logos || []).find(l => l.iso_639_1 === 'en') || 
+                     (data.images?.logos || []).find(l => l.iso_639_1 === null);
         const created_by = (data.created_by || []).map(c => ({id: c.id, name: c.name}));
         const networks = (data.networks || []).map(n => ({id: n.id, name: n.name}));
         const recommendations = (data.recommendations?.results || []).slice(0, 10).map(r => r.id);
@@ -188,6 +195,7 @@ class TmdbDumpClient {
             production_countries: JSON.stringify(production_countries),
             spoken_languages: JSON.stringify(spoken_languages),
             trailer_key: trailer ? trailer.key : null,
+            logo_path: logo ? logo.file_path : null,
             tagline: data.tagline || null,
             recommendations: JSON.stringify(recommendations),
             watch_providers_it: watch_providers_it ? JSON.stringify(watch_providers_it) : null,
