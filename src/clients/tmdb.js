@@ -366,117 +366,6 @@ function toStremioMetaItem(tmdbItem, type) {
  * releaseInfo, imdbRating, genre_ids) per azzerare la latenza.
  * L'arricchimento completo avviene in background per le pagine principali.
  */
-async function fetchTmdbCatalogDirect(client, endpoint, startPage = 1, customParams = {}, type = 'movie', pagesToFetch = 1, opts = {}) {
-    const promises = [];
-
-    for (let i = 0; i < pagesToFetch; i++) {
-        const pageParams = { ...customParams, page: startPage + i };
-        promises.push(client.get(endpoint, { params: pageParams }));
-    }
-
-    try {
-        const results = await Promise.allSettled(promises);
-        const items = [];
-
-        // Uniamo e deduplichiamo
-        const seenIds = new Set();
-
-        const hotQueue = [];
-        const coldQueue = [];
-        results.forEach((res, pageIndex) => {
-            if (res.status === 'fulfilled' && res.value?.data?.results) {
-                for (const item of res.value.data.results) {
-                    if (!seenIds.has(item.id)) {
-                        seenIds.add(item.id);
-                        const queueItem = { item, type };
-                        items.push(queueItem);
-                        if (pageIndex === 0) {
-                            hotQueue.push(queueItem);
-                        } else {
-                            coldQueue.push(queueItem);
-                        }
-                    }
-                }
-            } else if (res.status === 'rejected') {
-                console.error(`Errore in una sub-query TMDB (${endpoint}):`, res.reason?.message);
-            }
-        });
-
-        if (!opts.lightMode && items.length > 0) {
-            const apiKey = client.defaults.params.api_key;
-            
-            if (hotQueue.length > 0) {
-                // Fetch hotQueue synchronously to ensure the first page has localized covers!
-                await rateLimitedMap(hotQueue, async ({ item, type: t }) => {
-                    try {
-                        await getTmdbMovieDetails(apiKey, item.id.toString(), t === 'series' ? 'tv' : 'movie');
-                    } catch (_e) { }
-                }, { batchSize: 5, delayMs: 0 });
-            }
-
-            if (coldQueue.length > 0) {
-                setImmediate(() => {
-                    const enrichQueue = (queue) => rateLimitedMap(queue, async ({ item, type: t }) => {
-                        try {
-                            await getTmdbMovieDetails(apiKey, item.id.toString(), t === 'series' ? 'tv' : 'movie');
-                        } catch (_e) { }
-                    }, { batchSize: 1, delayMs: 600 });
-                    enrichQueue(coldQueue).catch(() => {});
-                });
-            }
-        }
-
-        const lightMetas = await Promise.all(items.map(async ({ item, type: t }) => {
-            let name = item.title || item.name || 'Unknown';
-            let poster = item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null;
-            let background = item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null;
-            
-            const tmdbId = item.id.toString();
-            const tmdbType = t === 'series' ? 'tv' : 'movie';
-            const cacheKey = `v2:${tmdbType}:${tmdbId}`;
-            
-            // Try cache (it will hit immediately for hotQueue since we just fetched it)
-            const { value: cachedData } = await tmdbDetailsCache.getWithStatus(cacheKey);
-
-            if (cachedData) {
-                if (cachedData.title) name = cachedData.title;
-                if (cachedData.name) name = cachedData.name;
-                
-                let bestPoster = cachedData.poster_path;
-                let bestBackdrop = cachedData.backdrop_path;
-
-                if (cachedData.images && Array.isArray(cachedData.images.posters) && cachedData.images.posters.length > 0) {
-                    bestPoster = cachedData.images.posters[0].file_path;
-                }
-                if (cachedData.images && Array.isArray(cachedData.images.backdrops) && cachedData.images.backdrops.length > 0) {
-                    bestBackdrop = cachedData.images.backdrops[0].file_path;
-                }
-
-                if (bestPoster) poster = `https://image.tmdb.org/t/p/w342${bestPoster}`;
-                if (bestBackdrop) background = `https://image.tmdb.org/t/p/w780${bestBackdrop}`;
-            }
-
-            return {
-                id: `tmdb:${item.id}`,
-                type: t === 'series' ? 'series' : 'movie',
-                name,
-                poster,
-                posterShape: 'poster',
-                background,
-                description: item.overview || '',
-                releaseInfo: (item.release_date || item.first_air_date || '').substring(0, 4),
-                imdbRating: item.vote_average ? item.vote_average.toFixed(1) : undefined,
-                genre_ids: item.genre_ids || [],
-                popularity: item.popularity || 0
-            };
-        }));
-
-        return { items: lightMetas, nextPageFetched: startPage + pagesToFetch };
-    } catch (err) {
-        console.error(`Errore fetchTmdbCatalog ${endpoint}:`, err.message);
-        return { items: [], nextPageFetched: startPage };
-    }
-}
 
 /**
  * Generates a per-page cache key for isolated page caching.
@@ -515,77 +404,6 @@ function getPageCacheTtl(pageNum, options = {}) {
  *   - Page 1: full enrichment.
  *   - Deep pages (>1) on total miss: Fast-Pass (light mode, no enrichment).
  */
-async function fetchTmdbCatalog(client, endpoint, skip, customParams = {}, type = 'movie', options = {}) {
-    const normalizedSkip = skip ?? 0;
-    const fetchSize = ITEMS_PER_PAGE;
-    // Stremio page number (1-based)
-    const pageNum = Math.floor(normalizedSkip / fetchSize) + 1;
-    const intraPageOffset = normalizedSkip % fetchSize;
-
-    // Se lo skip non è allineato alla pagina, potremmo aver bisogno di 2 pagine TMDB per coprire la richiesta
-    const needsTwoPages = intraPageOffset > 0;
-    const pagesToFetchForSlice = needsTwoPages ? 2 : 1;
-
-    const cacheKey = getPageCacheKey(endpoint, customParams, type, pageNum);
-    const cacheTtl = getPageCacheTtl(pageNum, options);
-
-    try {
-        const { value: cached, status } = await TmdbRequestCache.getWithStatus(cacheKey);
-
-        if (cached && status !== 'miss' && !needsTwoPages) {
-            const cachedItems = Array.isArray(cached.stremioData) ? cached.stremioData : [];
-
-            // SWR: if stale, trigger background revalidation
-            if (status === 'stale') {
-                const tmdbStartPage = (pageNum - 1) * (fetchSize / ITEMS_PER_PAGE) + 1;
-                fetchTmdbCatalogDirect(client, endpoint, tmdbStartPage, customParams, type, 1)
-                    .then(({ items: newItems }) => {
-                        if (newItems.length > 0) {
-                            TmdbRequestCache.set(cacheKey, { stremioData: newItems }, cacheTtl, options);
-                        }
-                    })
-                    .catch(e => console.error('[SWR Revalidate] Error:', e.message));
-            }
-
-            if (cachedItems.length > 0) {
-                return cachedItems.slice(0, fetchSize);
-            }
-        }
-    } catch (_e) {
-        // Fall through to fresh fetch
-    }
-
-    // ─── Cache Miss or Misaligned Skip: fetch from TMDB ───
-    const isFirstPage = pageNum === 1 && !needsTwoPages;
-    const tmdbStartPage = pageNum;
-    const pagesToFetch = isFirstPage ? PAGES_PER_REQUEST : pagesToFetchForSlice;
-
-    const lightMode = !isFirstPage && !options.disableLightMode;
-
-    const { items: results, nextPageFetched } = await fetchTmdbCatalogDirect(
-        client, endpoint, tmdbStartPage, customParams, type, pagesToFetch, { lightMode }
-    );
-
-    // Save results per-page (only for aligned requests to keep cache clean)
-    if (!needsTwoPages) {
-        if (isFirstPage && results.length > 0) {
-            for (let p = 0; p < PAGES_PER_REQUEST; p++) {
-                const pageSlice = results.slice(p * ITEMS_PER_PAGE, (p + 1) * ITEMS_PER_PAGE);
-                if (pageSlice.length > 0) {
-                    const pageKey = getPageCacheKey(endpoint, customParams, type, p + 1);
-                    const pageTtl = getPageCacheTtl(p + 1, options);
-                    TmdbRequestCache.set(pageKey, { stremioData: pageSlice }, pageTtl, options)
-                        .catch(e => console.error('[Cache Save] Error:', e.message));
-                }
-            }
-        } else if (results.length > 0) {
-            TmdbRequestCache.set(cacheKey, { stremioData: results }, cacheTtl, options)
-                .catch(e => console.error('[Cache Save] Error:', e.message));
-        }
-    }
-
-    return results.slice(intraPageOffset, intraPageOffset + fetchSize);
-}
 
 /**
  * Recupera le stagioni e gli episodi per una Serie TV da TMDB.
@@ -1032,8 +850,6 @@ async function clearAllTmdbCaches() {
 
 module.exports = {
     createTmdbClient,
-    fetchTmdbCatalog,
-    fetchTmdbCatalogDirect,
     getTmdbMetaDetails,
     getTmdbMovieDetails,
     getTmdbIdByName,

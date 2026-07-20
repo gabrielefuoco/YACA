@@ -33,22 +33,22 @@ async function fetchProfileContext(userId, context) {
     return { profile, user, globalProfile };
 }
 
-/**
- * Executes a TMDB query through the standardized client and always returns an array.
- * On failure it logs the issue and returns [] to keep the flow best-effort.
- */
 async function fetchTmdbResults(tmdbClient, endpoint, params = {}, errorLabel = endpoint) {
     try {
-        const withoutOriginalLanguage = params.without_original_language;
-        const cleanParams = { ...params };
-        delete cleanParams.without_original_language;
+        const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
+        const type = endpoint.includes('tv') || endpoint.includes('series') ? 'series' : 'movie';
+        
+        let filters = { ...params };
+        const recMatch = endpoint.match(/\/(\d+)\/recommendations/);
+        if (recMatch) {
+            filters.similar_to = recMatch[1];
+        }
 
-        const res = await tmdbClient.get(endpoint, { params: cleanParams, timeout: 5000 });
-        let results = res.data?.results || [];
-
-        if (withoutOriginalLanguage && results.length > 0) {
-            const excludedLangs = String(withoutOriginalLanguage).split('|');
-            results = results.filter(item => !excludedLangs.includes(item.original_language));
+        const results = await getDuckDbCatalogFromFilters(filters, type, 0, 40, {});
+        
+        if (params.without_original_language && results.length > 0) {
+            const excludedLangs = String(params.without_original_language).split('|');
+            return results.filter(item => !excludedLangs.includes(item.original_language));
         }
 
         return results;

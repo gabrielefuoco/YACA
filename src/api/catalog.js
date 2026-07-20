@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { catalogHandler } = require('../handlers/catalogHandler');
-const { buildDiscoveryParams } = require('../catalog/providers/TmdbProvider');
+const { resolveAiQueryToTmdbParams } = require('../engines/hybrid/scoringEngine');
 const { generateTmdbFiltersFromPrompt } = require('../ai/router');
 const { getPresets } = require('../data/presets');
 const { sanitizeString } = require('../utils/helpers');
@@ -124,7 +124,7 @@ router.post('/preview-catalog', async (req, res) => {
                 aiFilters.queries = await Promise.all(aiFilters.queries.map(async (q) => {
                     if (q.strategy === 'discovery') {
                         const qKeywords = q.keyword || null;
-                        const tmdbParams = await buildDiscoveryParams(q, sanitizedTmdbKey, aiType, { kidsMode });
+                        const tmdbParams = await resolveAiQueryToTmdbParams(q, sanitizedTmdbKey, aiType);
                         if (qKeywords) tmdbParams._keywordNames = qKeywords;
                         return tmdbParams;
                     }
@@ -135,7 +135,7 @@ router.post('/preview-catalog', async (req, res) => {
                 // Single query processing
                 originalAiKeywords = aiFilters.keyword || null;
                 discoverFilters = strategy === 'discovery'
-                    ? await buildDiscoveryParams(aiFilters, sanitizedTmdbKey, aiType, { kidsMode })
+                    ? await resolveAiQueryToTmdbParams(aiFilters, sanitizedTmdbKey, aiType)
                     : aiFilters;
                 if (originalAiKeywords) discoverFilters._keywordNames = originalAiKeywords;
             }

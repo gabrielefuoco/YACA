@@ -97,7 +97,7 @@ function extractDNAParams(manualDNA = []) {
 }
 
 async function resolveAiQueryToTmdbParams(aiQuery, tmdbApiKey, types) {
-    const params = { api_key: tmdbApiKey };
+    const params = { ...aiQuery, api_key: tmdbApiKey };
 
     if (aiQuery.genre_ids && aiQuery.genre_ids.length > 0) {
         params.with_genres = aiQuery.genre_ids.join('|');

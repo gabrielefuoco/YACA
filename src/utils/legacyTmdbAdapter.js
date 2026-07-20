@@ -1,11 +1,6 @@
 const { F, S, SortExpr, desc, asc } = require('../data/filters');
 
-function mapSortBy(s, yacaSort) {
-    if (yacaSort) {
-        if (yacaSort.includes('LOG10')) return S.BAYESIAN;
-        if (yacaSort.includes('ASC')) return asc(SortExpr.roi);
-        if (yacaSort.includes('DESC')) return desc(SortExpr.roi);
-    }
+function mapSortBy(s) {
     if (!s) return S.POPULAR;
     if (s === 'popularity.desc') return S.POPULAR;
     if (s === 'vote_average.desc') return S.TOP_RATED;
@@ -25,12 +20,6 @@ function processTmdbQueryToPreset(q, type) {
         where.push({ _similar: true, tmdbId: q.similar_to });
     }
 
-    if (q.yaca_sql_where) {
-        if (q.yaca_sql_where.includes('anime_mappings')) where.push(F.anime);
-        if (q.yaca_sql_where.includes('revenue > 1000000')) where.push(F.validBoxOffice);
-        if (q.yaca_sql_where.includes('runtime BETWEEN')) where.push(F.shortFilm);
-        if (q.yaca_sql_where.includes('collection_id')) where.push(F.franchise);
-    }
 
     if (q['vote_count.gte']) where.push(F.minVotes(q['vote_count.gte']));
     if (q['vote_average.gte']) where.push(F.minScore(q['vote_average.gte']));
@@ -88,7 +77,7 @@ function processTmdbQueryToPreset(q, type) {
     return {
         type,
         where,
-        orderBy: mapSortBy(q.sort_by, q.yaca_sql_sort)
+        orderBy: mapSortBy(q.sort_by)
     };
 }
 
