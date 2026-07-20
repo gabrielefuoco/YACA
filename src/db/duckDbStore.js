@@ -52,7 +52,7 @@ class DuckDbStore {
                         
                         if (fs.existsSync(this.tvParquetPath)) {
                             await execPromise(`CREATE TABLE tv AS SELECT * FROM read_parquet('${this.tvParquetPath.replace(/\\/g, '/')}');`);
-                            await execPromise(`PRAGMA create_fts_index('tv', 'id', 'title', 'original_title');`);
+                            await execPromise(`PRAGMA create_fts_index('tv', 'id', 'name', 'original_name');`);
                         }
 
                         console.log(`[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.`);

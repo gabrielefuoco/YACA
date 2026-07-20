@@ -16,7 +16,7 @@ async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 50) {
         
         return rows.map(item => {
             const isMovie = preset.type === 'movie';
-            let name = item.title || item.original_title || 'Unknown';
+            let name = item.title || item.name || item.original_title || item.original_name || 'Unknown';
             let poster = item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null;
             let background = item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null;
             
@@ -27,8 +27,8 @@ async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 50) {
 
             const rawTMDB = {
                 id: item.id,
-                title: item.title,
-                original_title: item.original_title,
+                title: item.title || item.name,
+                original_title: item.original_title || item.original_name,
                 overview: item.overview,
                 poster_path: item.poster_path,
                 backdrop_path: item.backdrop_path,
@@ -70,7 +70,7 @@ async function getDuckDbCatalogFromFilters(filters, type = 'movie', skip = 0, li
         // 3. Mappatura nel formato base Stremio (stile TMDB "lightMeta")
         const lightMetas = rows.map(item => {
             const isMovie = type === 'movie';
-            let name = item.title || item.original_title || 'Unknown';
+            let name = item.title || item.name || item.original_title || item.original_name || 'Unknown';
             let poster = item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null;
             let background = item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null;
             
@@ -84,8 +84,8 @@ async function getDuckDbCatalogFromFilters(filters, type = 'movie', skip = 0, li
             // Ricostruiamo un rawTMDB "fittizio" ma ultra-ricco usando i nostri dati estratti
             const rawTMDB = {
                 id: item.id,
-                title: item.title,
-                original_title: item.original_title,
+                title: item.title || item.name,
+                original_title: item.original_title || item.original_name,
                 overview: item.overview,
                 poster_path: item.poster_path,
                 backdrop_path: item.backdrop_path,
@@ -119,7 +119,7 @@ async function getDuckDbCatalogFromFilters(filters, type = 'movie', skip = 0, li
                 id: `tmdb:${item.id}`,
                 _tmdbId: item.id,
                 type: isMovie ? 'movie' : 'series',
-                name: item.title || item.original_title || 'Unknown',
+                name: item.title || item.name || item.original_title || item.original_name || 'Unknown',
                 poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
                 posterShape: 'poster',
                 background: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
@@ -149,7 +149,7 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
         
         const item = rows[0];
         const isMovie = type === 'movie';
-        let name = item.title || item.original_title || 'Unknown';
+        let name = item.title || item.name || item.original_title || item.original_name || 'Unknown';
         let poster = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null;
         let background = item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null;
 
@@ -168,8 +168,8 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
 
         const rawTMDB = {
             id: item.id,
-            title: item.title,
-            original_title: item.original_title,
+            title: item.title || item.name,
+            original_title: item.original_title || item.original_name,
             overview: item.overview,
             poster_path: item.poster_path,
             backdrop_path: item.backdrop_path,
