@@ -1,6 +1,6 @@
 const { getTraktCatalog } = require('./providers/TraktProvider');
 
-const { getTmdbDiscoverCatalog, executeStandardSearch } = require('./providers/TmdbProvider');
+
 const { getEngineHybridCatalog, getHybridPopularCatalog, TASTE_BASED_IDS } = require('./providers/HybridProvider');
 const { executeCombinedSearch, executeUniversalPipeline } = require('./providers/AiDiscoveryProvider');
 const { getAnilistSimulcastCatalog } = require('./providers/AnilistProvider');

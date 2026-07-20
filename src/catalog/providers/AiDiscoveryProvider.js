@@ -6,8 +6,13 @@ const { interleaveMultipleResults, applyConsensusScoring } = require('../../util
 const { catalogFallbackCache, simulcastDatesCache } = require('../../cache/cacheInstances');
 const TasteProfile = require('../../models/TasteProfile');
 const ProfileScorer = require('../../profile/ProfileScorer');
-const { buildDiscoveryParams, getTmdbVoteScore } = require('./TmdbProvider');
 const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataHydrator');
+
+function getTmdbVoteScore(item) {
+    const rawVote = item?.rawTMDB?.vote_average ?? item?.vote_average ?? item?.imdbRating;
+    const vote = Number.parseFloat(rawVote);
+    return Number.isFinite(vote) ? vote : 0;
+}
 
 const { computeTopGenres, computeTopKeywords } = require('../../engines/hybridRecommendations');
 
@@ -63,19 +68,13 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
     if (filters.strategy === "similar" && filters.similar_to) {
         const targetId = await getTmdbIdByName(tmdbApiKey, searchType, filters.similar_to);
         if (targetId) {
-            results = await fetchTmdbCatalog(
-                tmdbClient,
-                `/${searchType}/${targetId}/recommendations`,
-                skip,
-                { language: 'it-IT' },
-                type,
-                cacheOptions
-            );
+            const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
+            results = await getDuckDbCatalogFromFilters({ similar_to: targetId }, type, skip, PAGE_SIZE, settings);
         }
     }
     else if (filters.strategy === "multi_search") {
-        const ep = type === 'movie' ? '/search/movie' : '/search/tv';
-        results = await fetchTmdbCatalog(tmdbClient, ep, skip, { query: filters.text_search || filters.keyword }, type, cacheOptions);
+        const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
+        results = await getDuckDbCatalogFromFilters({ text_search: filters.text_search || filters.keyword }, type, skip, PAGE_SIZE, settings);
     }
     else if (filters.strategy === "manual_list" && Array.isArray(filters.items)) {
         const { getTmdbMovieDetails } = require('../../clients/tmdb');

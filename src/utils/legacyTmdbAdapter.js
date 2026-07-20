@@ -17,8 +17,12 @@ function processTmdbQueryToPreset(q, type) {
     const where = [];
     if (!q) return { type, where, orderBy: S.POPULAR };
 
-    if (q._search) {
-        where.push({ _fts: q._search });
+    if (q._search || q.text_search) {
+        where.push({ _fts: q._search || q.text_search });
+    }
+    
+    if (q.similar_to) {
+        where.push({ _similar: true, tmdbId: q.similar_to });
     }
 
     if (q.yaca_sql_where) {

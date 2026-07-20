@@ -1,5 +1,5 @@
 const { getHybridCatalog } = require('../../engines/hybridRecommendations');
-const { fetchTmdbCatalog } = require('../../clients/tmdb');
+
 const { fetchTraktCatalog } = require('../../clients/trakt');
 const { filterWatchedItems } = require('../processors/FilterWatched');
 const { normalizeContentId } = require('../../utils/contentId');
@@ -44,9 +44,10 @@ async function getHybridPopularCatalog(baseId, type, skip, userConfig, tmdbClien
         ? Array.from({ length: MAX_DEPTH }, (_, i) => skip + (i * 20))
         : [skip];
 
+    const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
     const pagesResults = await Promise.all(pageSkips.map((pageSkip) =>
         Promise.all([
-            fetchTmdbCatalog(tmdbClient, tmdbEp, pageSkip, { sort_by: 'popularity.desc', 'vote_count.gte': 50 }, contentType, tmdbFetchOptions),
+            getDuckDbCatalogFromFilters({ sort_by: 'popularity.desc', 'vote_count.gte': 50 }, type, pageSkip, 20, {}),
             fetchTraktCatalog(traktEp, pageSkip, null, tmdbApiKey).catch(() => [])
         ])
     ));
