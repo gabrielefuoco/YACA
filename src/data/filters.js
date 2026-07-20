@@ -2,20 +2,20 @@ const fs = require('fs');
 const path = require('path');
 
 // === HELPER INTERNI ===
-const jsonHas = (col, id) => `${col} LIKE '%"id":${id}%'`;
-const jsonHasStr = (col, val) => `${col} LIKE '%"${val}"%'`;
+const jsonHas = (col, id) => `"${col}" LIKE '%"id":${id}%'`;
+const jsonHasStr = (col, val) => `"${col}" LIKE '%"${val}"%'`;
 
 // === FILTRI CONTENUTO (F) ===
 const F = {
     // --- Generi ---
     genre: (...ids) => `(${ids.map(id => jsonHas('genres', id)).join(' OR ')})`,
     allGenres: (...ids) => `(${ids.map(id => jsonHas('genres', id)).join(' AND ')})`,
-    notGenre: (...ids) => `(${ids.map(id => `genres NOT LIKE '%"id":${id}%'`).join(' AND ')})`,
+    notGenre: (...ids) => `(${ids.map(id => `"genres" NOT LIKE '%"id":${id}%'`).join(' AND ')})`,
     
     // --- Keywords ---
     keyword: (...ids) => `(${ids.map(id => jsonHas('keywords', id)).join(' OR ')})`,
     allKeywords: (...ids) => `(${ids.map(id => jsonHas('keywords', id)).join(' AND ')})`,
-    notKeyword: (...ids) => `(${ids.map(id => `keywords NOT LIKE '%"id":${id}%'`).join(' AND ')})`,
+    notKeyword: (...ids) => `(${ids.map(id => `"keywords" NOT LIKE '%"id":${id}%'`).join(' AND ')})`,
     
     // --- Persone ---
     director: (id) => jsonHas('directors', id),
@@ -25,30 +25,30 @@ const F = {
     network: (id) => jsonHas('networks', id),
     
     // --- Lingua e Paese ---
-    lang: (code) => `original_language = '${code}'`,
-    notLang: (...codes) => codes.map(c => `original_language != '${c}'`).join(' AND '),
+    lang: (code) => `"original_language" = '${code}'`,
+    notLang: (...codes) => codes.map(c => `"original_language" != '${c}'`).join(' AND '),
     country: (code) => jsonHasStr('production_countries', code),
     
     // --- Soglie ---
-    minVotes: (n) => `vote_count >= ${n}`,
-    minScore: (n) => `vote_average >= ${n}`,
+    minVotes: (n) => `"vote_count" >= ${n}`,
+    minScore: (n) => `"vote_average" >= ${n}`,
     
     // --- Date ---
-    releasedAfter: (d) => `release_date >= '${d}'`,
-    releasedBefore: (d) => `release_date <= '${d}'`,
-    releasedBetween: (from, to) => `release_date BETWEEN '${from}' AND '${to}'`,
-    airedAfter: (d) => `first_air_date >= '${d}'`,
-    airedBefore: (d) => `first_air_date <= '${d}'`,
-    releasedInYear: (y) => `release_date LIKE '${y}%'`,
+    releasedAfter: (d) => `"release_date" >= '${d}'`,
+    releasedBefore: (d) => `"release_date" <= '${d}'`,
+    releasedBetween: (from, to) => `"release_date" BETWEEN '${from}' AND '${to}'`,
+    airedAfter: (d) => `"first_air_date" >= '${d}'`,
+    airedBefore: (d) => `"first_air_date" <= '${d}'`,
+    releasedInYear: (y) => `"release_date" LIKE '${y}%'`,
     
     // --- Watch Providers ---
-    provider: (id) => `watch_providers_it LIKE '%"provider_id":${id}%'`,
+    provider: (id) => `"watch_providers_it" LIKE '%"provider_id":${id}%'`,
     
     // --- Identity / Speciali ---
-    anime: 'id IN (SELECT tmdb_id FROM anime_mappings)',
-    franchise: 'collection_id IS NOT NULL',
-    validBoxOffice: 'revenue > 1000000 AND budget > 500000',
-    shortFilm: 'runtime BETWEEN 1 AND 45',
+    anime: '"id" IN (SELECT "tmdb_id" FROM anime_mappings)',
+    franchise: '"collection_id" IS NOT NULL',
+    validBoxOffice: '"revenue" > 1000000 AND "budget" > 500000',
+    shortFilm: '"runtime" BETWEEN 1 AND 45',
 
     // --- Speciali Pipeline (FTS, Similar, ecc) ---
     search: (query) => ({ _fts: true, query: query.replace(/'/g, "''") }),
@@ -60,13 +60,13 @@ const F = {
 
 // === ORDINAMENTI (bidirezionali) ===
 const SortExpr = {
-    popular: 'popularity',
-    score: 'vote_average DESC, vote_count',
-    bayesian: '(vote_average * LOG10(vote_count))',
-    release: 'release_date',
-    airDate: 'first_air_date',
-    revenue: 'revenue',
-    roi: 'TRY_CAST(revenue AS DOUBLE) / NULLIF(TRY_CAST(budget AS DOUBLE), 0)',
+    popular: '"popularity"',
+    score: '"vote_average" DESC, "vote_count"',
+    bayesian: '("vote_average" * LOG10("vote_count"))',
+    release: '"release_date"',
+    airDate: '"first_air_date"',
+    revenue: '"revenue"',
+    roi: 'TRY_CAST("revenue" AS DOUBLE) / NULLIF(TRY_CAST("budget" AS DOUBLE), 0)',
 };
 
 const desc = (expr) => `${expr} DESC NULLS LAST`;
