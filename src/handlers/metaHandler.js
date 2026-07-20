@@ -160,22 +160,30 @@ async function metaHandler(args, userConfig) {
                         // Fire-and-forget background revalidation
                         (async () => {
                             try {
-                                const bgMeta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, {});
-                                if (bgMeta) {
-                                    // Anime series: fetch Kitsu episodes (TMDB episodes were skipped)
-                                    if (bgMeta._isAnime && type === 'series') {
-                                        await resolveAnimeEpisodes(bgMeta, tmdbId, tmdbApiKey);
-                                    }
-                                    // Aggiornamento silente scoring cache (voti freschi)
-                                    updateScoringCache(Number(tmdbId), type === 'series' ? 'tv' : type, bgMeta).catch(() => { });
-                                    
-                                    await applyKitsuMappingToMeta(bgMeta, tmdbId);
+                                const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
+                                const bgMeta = await getDuckDbMetaDetails(tmdbId, type);
+                                
+                                // Fallback live TMDB solo se DuckDB fallisce
+                                let finalBgMeta = bgMeta;
+                                if (!finalBgMeta) {
+                                    finalBgMeta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, {});
+                                }
 
-                                    delete bgMeta._keywordNames;
-                                    delete bgMeta._isAnime;
-                                    delete bgMeta._numberOfSeasons;
-                                    delete bgMeta._originalLanguage;
-                                    await finalMetaCache.set(cacheKey, bgMeta);
+                                if (finalBgMeta) {
+                                    if (type === 'series') {
+                                        await resolveAnimeEpisodes(finalBgMeta, tmdbId, tmdbApiKey);
+                                    }
+                                    
+                                    // Aggiornamento silente scoring cache (voti freschi)
+                                    updateScoringCache(Number(tmdbId), type === 'series' ? 'tv' : type, finalBgMeta.rawTMDB || finalBgMeta).catch(() => { });
+                                    
+                                    await applyKitsuMappingToMeta(finalBgMeta, tmdbId);
+
+                                    delete finalBgMeta._keywordNames;
+                                    delete finalBgMeta._isAnime;
+                                    delete finalBgMeta._numberOfSeasons;
+                                    delete finalBgMeta._originalLanguage;
+                                    await finalMetaCache.set(cacheKey, finalBgMeta);
                                 }
                             } catch (_e) { /* silent background revalidation */ }
                         })();
@@ -190,11 +198,9 @@ async function metaHandler(args, userConfig) {
                         
                         if (meta) {
                             // Anime series: fetch Kitsu episodes (TMDB episodes were skipped)
-                            if (meta.rawTMDB && meta.rawTMDB._isAnime && type === 'series') {
+                            if (type === 'series') {
+                                // Lazy fetch episodi per serie tv normali e anime
                                 await resolveAnimeEpisodes(meta, tmdbId, tmdbApiKey);
-                            } else if (type === 'series') {
-                                // Lazy fetch episodi per serie tv normali
-                                await resolveAnimeEpisodes(meta, tmdbId, tmdbApiKey); // funziona anche per tv show, vedi la logica
                             }
 
                             // Aggiornamento silente scoring cache (voti freschi)

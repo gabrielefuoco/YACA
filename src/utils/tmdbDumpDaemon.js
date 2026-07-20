@@ -16,6 +16,7 @@ const dumpStatus = {
 };
 
 let daemonRunning = false;
+let isFirstRun = true;
 
 async function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
@@ -233,7 +234,12 @@ async function dailySync(store, client) {
         dumpStatus.stats[mediaType] = finalCount;
     }
 
-    console.log('[TmdbDump] Daily Sync COMPLETED.');
+    console.log('[TmdbDump] Daily Sync COMPLETED. Triggering Parquet rebuild...');
+    try {
+        await convertAndReloadDuckDb();
+    } catch (err) {
+        console.error('[TmdbDump] Error rebuilding Parquet after Daily Sync:', err);
+    }
     dumpStatus.lastSync = new Date().toISOString();
 }
 
@@ -241,7 +247,7 @@ async function runTmdbDumpDaemon() {
     if (daemonRunning) return;
     
     if (!apiKey) {
-        console.warn('[TmdbDump] Missing TMDB_API_KEY. Daemon will not start.');
+        console.error('[TmdbDump] TMDB_API_KEY non definita in .env. Il demone non partirà.');
         dumpStatus.error = 'Missing TMDB_API_KEY';
         return;
     }
@@ -255,10 +261,12 @@ async function runTmdbDumpDaemon() {
         const client = new TmdbDumpClient(apiKey);
         
         // Conversione al boot se esistono file jsonl (scalda subito la cache se la macchina è stata riavviata e ha perso la RAM)
-        if (store.storeExists('movies') || store.storeExists('tv')) {
+        // Lo eseguiamo solo al primo giro (isFirstRun), altrimenti nei loop successivi ripete la conversione inutilmente
+        if (isFirstRun && (store.storeExists('movies') || store.storeExists('tv'))) {
             console.log('[TmdbDump] Pre-existing JSONL detected. Running boot conversion...');
             await convertAndReloadDuckDb();
         }
+        isFirstRun = false;
 
         const cursor = store.loadCursor();
         const moviesExist = store.storeExists('movies');

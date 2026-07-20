@@ -73,11 +73,17 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
     }
 
     // SCENARIO 4.5: ANILIST SIMULCAST
-    if (baseId === 'preset_anime_simulcast') {
-        return await getAnilistSimulcastCatalog(skip, tmdbApiKey);
+    if (baseId === 'preset_anime_simulcast' || catalogMeta?._provider === 'anilist_simulcast') {
+        return await getAnilistSimulcastCatalog(skip);
     }
 
-    // SCENARIO 5: UNIVERSAL PIPELINE (AI/PRESETS Custom)
+    // SCENARIO 5: SQL NATIVO (Nuova architettura DuckDB diretta)
+    if (catalogMeta?.where) {
+        const { getDuckDbCatalogFromPreset } = require('./providers/DuckDbProvider');
+        return await getDuckDbCatalogFromPreset(catalogMeta, skip);
+    }
+
+    // SCENARIO 6: UNIVERSAL PIPELINE (AI/PRESETS Custom legacy)
     if (catalogMeta || directFilters) {
         const universalCatalog = normalizeToUniversalSchema(catalogMeta, directFilters);
         

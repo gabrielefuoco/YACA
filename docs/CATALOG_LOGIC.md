@@ -98,13 +98,12 @@ Quando non viene richiesto l'interleaving, YACA combina i risultati di query mul
 
 La risoluzione fisica dei dati è delegata ai provider dedicati in `src/catalog/providers/`:
 
-*   **[TmdbProvider.js](../src/catalog/providers/TmdbProvider.js)**: 
-    Costruisce dinamicamente i parametri di ricerca per TMDB (`buildDiscoveryParams`). Gestisce la conversione dei generi da film a serie TV (es. genere Azione *28* convertito in Action & Adventure *10759* per le serie) e integra filtri avanzati per keywords, attori, lingue originali e streaming provider italiani (`with_watch_providers`).
-*   **[KitsuProvider.js](../src/catalog/providers/KitsuProvider.js)** e **[kitsu.js](../src/clients/kitsu.js)**:
-    Fornisce cataloghi anime nativi (Trending, ONA, OVA, Speciali) interrogando direttamente le API di Kitsu. Implementa l'arricchimento asincrono `enrichWithTmdb` per recuperare descrizioni e poster italiani da TMDB a partire dall'ID Kitsu (avvalendosi di un ordinamento per popolarità per evitare l'associazione a schede orfane, vedi dettagli in [STREMIO_INTERNALS.md](STREMIO_INTERNALS.md#4-risoluzione-fallback-per-titolo-e-ordinamento-per-popolarità)).
-*   **[TraktProvider.js](../src/catalog/providers/TraktProvider.js)**:
-    Consente di importare le liste utente di Trakt (Watchlist, Raccolte, Liste Personali) traducendone i riferimenti in ID TMDB idonei per Stremio.
-*   **[HybridProvider.js](../src/catalog/providers/HybridProvider.js)**:
+- **DuckDbProvider.js**: Motore principale. Genera risultati analitici a latenza zero partendo da file Parquet TMDB off-grid. Utilizza il modulo `queryBuilder.js` per risolvere i filtri in codice SQL nativo (inclusa la Full-Text Search).
+- **AiDiscoveryProvider.js**: Si occupa dei task generativi (Universal Pipeline). Sebbene elabori query intelligenti, alla base demanda a `DuckDbProvider` la vera e propria interrogazione (grazie all'intercettore `legacyTmdbAdapter.js` per compatibilità VSM).
+- **TmdbProvider.js / KitsuProvider.js**: Provider legacy o di fallback per risoluzioni via rete API nei casi dove il DB locale non dispone dei dati.
+- **TraktProvider.js**: Provider specifico per la piattaforma Trakt.tv.
+- **AnilistProvider.js**: Costruisce cataloghi per gli Anime sfruttando simulcast ed endpoint dedicati AniList, per poi re-iniettare i risultati elaborati nel pipeline DuckDB.
+- **HybridProvider.js**:
     Collega il motore di raccomandazione ibrido generatore di cataloghi speciali basati sul profilo psicofisico dei gusti dell'utente (Taste Profile) come *True Blend* o *Hidden Gems*.
 
 ---

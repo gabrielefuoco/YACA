@@ -1,4 +1,5 @@
 const axios = require('axios');
+const duckDbStore = require('../db/duckDbStore');
 // Logger non standard rimosso, usiamo console
 
 const ANIBRIDGE_URL = 'https://github.com/anibridge/anibridge-mappings/releases/download/v3/mappings.min.json';
@@ -80,6 +81,15 @@ class AnimeMappingStore {
             }
             
             console.log(`[AnimeMappingStore] Sincronizzazione completata. TMDB chiavi: ${this.tmdbToAnimeNode.size}`);
+            
+            // POPOLIAMO LA TABELLA ANIME IN DUCKDB PER LE QUERY SQL
+            if (this.tmdbToAnimeNode.size > 0) {
+                const allTmdbAnimeIds = Array.from(this.tmdbToAnimeNode.keys());
+                await duckDbStore.updateAnimeMapping(allTmdbAnimeIds).catch(e => {
+                    console.error('[AnimeMappingStore] Impossibile aggiornare DuckDB:', e.message);
+                });
+            }
+            
         } catch (error) {
             console.error(`[AnimeMappingStore] Errore critico durante il sync: ${error.message}`);
         }

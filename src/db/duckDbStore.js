@@ -33,29 +33,67 @@ class DuckDbStore {
                 
                 this.con = this.db.connect();
                 
-                let viewsToCreate = [];
+                let commands = [
+                    "INSTALL fts;",
+                    "LOAD fts;"
+                ];
+                
                 if (fs.existsSync(this.moviesParquetPath)) {
-                    viewsToCreate.push(`CREATE VIEW movies AS SELECT * FROM read_parquet('${this.moviesParquetPath.replace(/\\/g, '/')}');`);
+                    commands.push(`CREATE TABLE movies AS SELECT * FROM read_parquet('${this.moviesParquetPath.replace(/\\/g, '/')}');`);
+                    commands.push(`PRAGMA create_fts_index('movies', 'id', 'title', 'original_title');`);
                 }
                 
                 if (fs.existsSync(this.tvParquetPath)) {
-                    viewsToCreate.push(`CREATE VIEW tv AS SELECT * FROM read_parquet('${this.tvParquetPath.replace(/\\/g, '/')}');`);
+                    commands.push(`CREATE TABLE tv AS SELECT * FROM read_parquet('${this.tvParquetPath.replace(/\\/g, '/')}');`);
+                    commands.push(`PRAGMA create_fts_index('tv', 'id', 'title', 'original_title');`);
                 }
 
-                if (viewsToCreate.length > 0) {
-                    this.con.exec(viewsToCreate.join('\n'), (errView) => {
-                        if (errView) {
-                            console.error(`[DuckDB Store] Errore creazione view:`, errView);
-                            return reject(errView);
+                if (commands.length > 2) {
+                    // commands contiene INSTALL e LOAD + le create table/index
+                    const sql = commands.join('\n');
+                    this.con.exec(sql, (errExec) => {
+                        if (errExec) {
+                            console.error(`[DuckDB Store] Errore inizializzazione tabelle/FTS:`, errExec);
+                            return reject(errExec);
                         }
-                        console.log(`[DuckDB Store] View create con successo: ${viewsToCreate.length} file Parquet mappati.`);
+                        console.log(`[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.`);
                         this.isInitialized = true;
                         resolve();
                     });
                 } else {
+                    console.warn(`[DuckDB Store] Nessun Parquet da caricare in memoria. Avvio a vuoto completato.`);
                     this.isInitialized = true;
                     resolve();
                 }
+            });
+        });
+    }
+
+    async updateAnimeMapping(tmdbIds) {
+        if (!this.isInitialized) {
+            console.warn('[DuckDB Store] DB non inizializzato, ignoro updateAnimeMapping.');
+            return;
+        }
+        
+        return new Promise((resolve, reject) => {
+            let sql = `
+                DROP TABLE IF EXISTS anime_mappings;
+                CREATE TABLE anime_mappings (tmdb_id INTEGER PRIMARY KEY);
+            `;
+            
+            if (tmdbIds && tmdbIds.length > 0) {
+                // Generiamo una singola INSERT enorme, in memoria è rapidissimo
+                const values = tmdbIds.map(id => `(${id})`).join(',');
+                sql += `\nINSERT INTO anime_mappings VALUES ${values};`;
+            }
+            
+            this.con.exec(sql, (err) => {
+                if (err) {
+                    console.error('[DuckDB Store] Errore aggiornamento tabella anime_mappings:', err);
+                    return reject(err);
+                }
+                console.log(`[DuckDB Store] Tabella anime_mappings creata in RAM con ${tmdbIds ? tmdbIds.length : 0} anime certificati.`);
+                resolve();
             });
         });
     }

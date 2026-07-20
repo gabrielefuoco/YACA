@@ -6,12 +6,63 @@
  */
 
 const duckDbStore = require('../../db/duckDbStore');
-const { buildSqlFromTmdbQuery } = require('../../utils/tmdbToSqlTranslator');
+const { processTmdbQueryToPreset } = require('../../utils/legacyTmdbAdapter');
+const { buildCatalogQuery } = require('../../db/queryBuilder');
+
+async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 50) {
+    try {
+        const sql = await buildCatalogQuery(preset, skip, limit);
+        const rows = await duckDbStore.query(sql);
+        
+        return rows.map(item => {
+            const isMovie = preset.type === 'movie';
+            let name = item.title || item.original_title || 'Unknown';
+            let poster = item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null;
+            let background = item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null;
+            
+            let parsedGenres = [];
+            let parsedProviders = null;
+            try { if (item.genres) parsedGenres = JSON.parse(item.genres); } catch(e){}
+            try { if (item.watch_providers_it) parsedProviders = JSON.parse(item.watch_providers_it); } catch(e){}
+
+            const rawTMDB = {
+                id: item.id,
+                title: item.title,
+                original_title: item.original_title,
+                overview: item.overview,
+                poster_path: item.poster_path,
+                backdrop_path: item.backdrop_path,
+                vote_average: item.vote_average,
+                popularity: item.popularity,
+                release_date: item.release_date,
+                original_language: item.original_language,
+                genres: parsedGenres,
+                'watch/providers': { results: { IT: parsedProviders } }
+            };
+
+            return {
+                id: `tmdb:${item.id}`,
+                type: isMovie ? 'movie' : 'series',
+                name: name,
+                poster: poster,
+                background: background,
+                releaseInfo: (item.release_date || item.first_air_date || '').substring(0, 4) || null,
+                imdbRating: item.vote_average ? String(item.vote_average.toFixed(1)) : null,
+                genres: parsedGenres.map(g => g.name || g),
+                description: item.overview || null,
+                rawTMDB: rawTMDB
+            };
+        });
+    } catch (e) {
+        console.error('[DuckDbProvider] Error in getDuckDbCatalogFromPreset:', e);
+        return [];
+    }
+}
 
 async function getDuckDbCatalogFromFilters(filters, type = 'movie', skip = 0, limit = 50, options = {}) {
     try {
-        // 1. Traduzione da preset TMDB a query SQL
-        const sql = buildSqlFromTmdbQuery(filters, type, skip, limit);
+        const preset = processTmdbQueryToPreset(filters, type);
+        const sql = await buildCatalogQuery(preset, skip, limit);
         
         // 2. Esecuzione query in millisecondi
         const rows = await duckDbStore.query(sql);
@@ -177,5 +228,6 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
 
 module.exports = {
     getDuckDbCatalogFromFilters,
+    getDuckDbCatalogFromPreset,
     getDuckDbMetaDetails
 };

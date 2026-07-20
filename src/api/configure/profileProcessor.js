@@ -49,31 +49,21 @@ function buildSuggestedDNAFromCatalogs(catalogs = []) {
     };
 
     for (const catalog of catalogs) {
-        if (!catalog.queries || !Array.isArray(catalog.queries)) continue;
+        if (!catalog.where || !Array.isArray(catalog.where)) continue;
 
-        for (const query of catalog.queries) {
-            for (const id of splitOrIds(query.with_genres || query.genre_ids)) {
-                counts.genre.set(id, (counts.genre.get(id) || 0) + 1);
-            }
-            for (const id of splitOrIds(query.with_keywords || query.keyword)) {
-                counts.keyword.set(id, (counts.keyword.get(id) || 0) + 1);
-            }
-            for (const id of splitOrIds(query.with_networks)) {
-                counts.network.set(id, (counts.network.get(id) || 0) + 1);
-            }
-            for (const id of splitOrIds(query.with_companies)) {
-                counts.company.set(id, (counts.company.get(id) || 0) + 1);
-            }
-            for (const id of splitOrIds(query.with_cast)) {
-                counts.actor.set(id, (counts.actor.get(id) || 0) + 1);
-            }
-            for (const id of splitOrIds(query.with_crew)) {
-                counts.director.set(id, (counts.director.get(id) || 0) + 1);
-            }
-            
-            if (query.provider === 'kitsu') {
-                counts.genre.set('16', (counts.genre.get('16') || 0) + 1);
-                counts.keyword.set('210024', (counts.keyword.get('210024') || 0) + 1);
+        for (const w of catalog.where) {
+            const strW = String(w);
+            const matches = strW.match(/"id":(\d+)/g);
+            if (matches) {
+                for (const m of matches) {
+                    const id = m.replace(/[^0-9]/g, '');
+                    if (strW.includes('genres')) counts.genre.set(id, (counts.genre.get(id) || 0) + 1);
+                    if (strW.includes('keywords')) counts.keyword.set(id, (counts.keyword.get(id) || 0) + 1);
+                    if (strW.includes('networks')) counts.network.set(id, (counts.network.get(id) || 0) + 1);
+                    if (strW.includes('production_companies')) counts.company.set(id, (counts.company.get(id) || 0) + 1);
+                    if (strW.includes('cast')) counts.actor.set(id, (counts.actor.get(id) || 0) + 1);
+                    if (strW.includes('directors') || strW.includes('writers')) counts.director.set(id, (counts.director.get(id) || 0) + 1);
+                }
             }
         }
     }
@@ -168,7 +158,9 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
                         type: preset.type,
                         emoji: preset.emoji,
                         category: preset.category,
-                        queries: preset.queries || []
+                        where: preset.where || [],
+                        orderBy: preset.orderBy || null,
+                        _provider: preset._provider || null
                     });
                 } else {
                     warnings.push(`Preset non riconosciuto: ${presetId}`);

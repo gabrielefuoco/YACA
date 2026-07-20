@@ -95,6 +95,9 @@ Dove:
 
 Lo score finale fonde l'affinità calcolata dall'utente con la qualità bayesiana dell'opera secondo i pesi definiti nel profilo (es. `traktWeight` per l'affinità, `tmdbWeight` per la qualità globale).
 
+> [!NOTE]  
+> **DuckDB In-Memory Bayesian**: A differenza dei calcoli VSM che avvengono su Node.js per candidati filtrati, i preset nativi (`DuckDbProvider.js`) delegano questa esatta formula matematica direttamente al motore SQL DuckDB. Ordinando con `orderBy: S.BAYESIAN`, l'intero database locale viene ordinato matematicamente in frazioni di secondo senza l'onere del fetching in Tier 1.
+
 ---
 
 ## 4. Algoritmo di Rotazione e Invecchiamento (Aging Penalty)
