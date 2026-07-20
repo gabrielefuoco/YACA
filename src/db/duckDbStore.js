@@ -33,38 +33,36 @@ class DuckDbStore {
                 
                 this.con = this.db.connect();
                 
-                let commands = [
-                    "INSTALL fts;",
-                    "LOAD fts;"
-                ];
-                
-                if (fs.existsSync(this.moviesParquetPath)) {
-                    commands.push(`CREATE TABLE movies AS SELECT * FROM read_parquet('${this.moviesParquetPath.replace(/\\/g, '/')}');`);
-                    commands.push(`PRAGMA create_fts_index('movies', 'id', 'title', 'original_title');`);
-                }
-                
-                if (fs.existsSync(this.tvParquetPath)) {
-                    commands.push(`CREATE TABLE tv AS SELECT * FROM read_parquet('${this.tvParquetPath.replace(/\\/g, '/')}');`);
-                    commands.push(`PRAGMA create_fts_index('tv', 'id', 'title', 'original_title');`);
-                }
+                const execPromise = (sql) => new Promise((resolve, reject) => {
+                    this.con.exec(sql, (err) => {
+                        if (err) reject(err);
+                        else resolve();
+                    });
+                });
 
-                if (commands.length > 2) {
-                    // commands contiene INSTALL e LOAD + le create table/index
-                    const sql = commands.join('\n');
-                    this.con.exec(sql, (errExec) => {
-                        if (errExec) {
-                            console.error(`[DuckDB Store] Errore inizializzazione tabelle/FTS:`, errExec);
-                            return reject(errExec);
+                (async () => {
+                    try {
+                        await execPromise("INSTALL fts;");
+                        await execPromise("LOAD fts;");
+                        
+                        if (fs.existsSync(this.moviesParquetPath)) {
+                            await execPromise(`CREATE TABLE movies AS SELECT * FROM read_parquet('${this.moviesParquetPath.replace(/\\/g, '/')}');`);
+                            await execPromise(`PRAGMA create_fts_index('movies', 'id', 'title', 'original_title');`);
                         }
+                        
+                        if (fs.existsSync(this.tvParquetPath)) {
+                            await execPromise(`CREATE TABLE tv AS SELECT * FROM read_parquet('${this.tvParquetPath.replace(/\\/g, '/')}');`);
+                            await execPromise(`PRAGMA create_fts_index('tv', 'id', 'title', 'original_title');`);
+                        }
+
                         console.log(`[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.`);
                         this.isInitialized = true;
                         resolve();
-                    });
-                } else {
-                    console.warn(`[DuckDB Store] Nessun Parquet da caricare in memoria. Avvio a vuoto completato.`);
-                    this.isInitialized = true;
-                    resolve();
-                }
+                    } catch (errExec) {
+                        console.error(`[DuckDB Store] Errore inizializzazione tabelle/FTS:`, errExec);
+                        reject(errExec);
+                    }
+                })();
             });
         });
     }
