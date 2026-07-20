@@ -76,10 +76,10 @@ function processTmdbQueryToPreset(q, type) {
     if (q.with_companies) where.push(F.company(q.with_companies));
     if (q.with_networks) where.push(F.network(q.with_networks));
 
-    if (q['primary_release_date.gte']) where.push(`release_date >= '${q['primary_release_date.gte']}'`);
-    if (q['primary_release_date.lte']) where.push(`release_date <= '${q['primary_release_date.lte']}'`);
-    if (q['first_air_date.gte']) where.push(`first_air_date >= '${q['first_air_date.gte']}'`);
-    if (q['first_air_date.lte']) where.push(`first_air_date <= '${q['first_air_date.lte']}'`);
+    if (q['primary_release_date.gte']) where.push(`"release_date" >= '${q['primary_release_date.gte']}'`);
+    if (q['primary_release_date.lte']) where.push(`"release_date" <= '${q['primary_release_date.lte']}'`);
+    if (q['first_air_date.gte']) where.push(`"first_air_date" >= '${q['first_air_date.gte']}'`);
+    if (q['first_air_date.lte']) where.push(`"first_air_date" <= '${q['first_air_date.lte']}'`);
 
     return {
         type,
