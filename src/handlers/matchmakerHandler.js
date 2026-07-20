@@ -4,7 +4,7 @@ const { Mistral } = require('@mistralai/mistralai');
 const TasteProfile = require('../models/TasteProfile');
 const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
-const { createTmdbClient, fetchTmdbCatalog } = require('../clients/tmdb');
+const { createTmdbClient } = require('../clients/tmdb');
 const { executeUniversalPipeline } = require('../catalog/providers/AiDiscoveryProvider');
 const { parseQuerySynthesizerResponse, buildDnaDescription } = require('../ai/querySynthesizer');
 const ProfileScorer = require('../profile/ProfileScorer');
@@ -718,9 +718,9 @@ Try to reconnect with this initial mood but from a completely different angle. G
             console.log(`[Matchmaker] Fetching TMDB recommendations for ${recentLikes.length} recent likes...`);
             const recPromises = recentLikes.map(async s => {
                 const itemId = String(s.id).replace('tmdb:', '');
-                const ep = sessionState.type === 'series' || sessionState.type === 'anime' ? `/tv/${itemId}/recommendations` : `/movie/${itemId}/recommendations`;
                 try {
-                    return await fetchTmdbCatalog(tmdbClient, ep, 0, { language: 'it-IT' }, sessionState.type, {});
+                    const { getDuckDbCatalogFromFilters } = require('../catalog/providers/DuckDbProvider');
+                    return await getDuckDbCatalogFromFilters({ similar_to: itemId }, sessionState.type, 0, 50, {});
                 } catch (err) {
                     console.warn(`[Matchmaker] Failed recommendations for ${itemId}`, err.message);
                     return [];
