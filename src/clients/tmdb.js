@@ -835,18 +835,6 @@ async function getTmdbMovieDetails(apiKey, id, type = 'movie', options = {}) {
     }
 }
 
-/**
- * Svuota tutte le cache in memoria del modulo TMDB (idName, imdbId, movieMeta, seriesMeta, details).
- */
-async function clearAllTmdbCaches() {
-    await Promise.all([
-        idNameCache.clear(),
-        imdbIdCache.clear(),
-        movieMetaCache.clear(),
-        seriesMetaCache.clear(),
-        tmdbDetailsCache.clear()
-    ]);
-}
 
 module.exports = {
     createTmdbClient,
