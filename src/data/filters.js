@@ -31,7 +31,9 @@ const F = {
     
     // --- Soglie ---
     minVotes: (n) => `"vote_count" >= ${n}`,
+    maxVotes: (n) => `"vote_count" <= ${n}`,
     minScore: (n) => `"vote_average" >= ${n}`,
+    minRuntime: (m) => `"runtime" >= ${m}`,
     
     // --- Date ---
     releasedAfter: (d) => `"release_date" >= '${d}'`,
