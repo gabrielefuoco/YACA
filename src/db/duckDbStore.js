@@ -18,7 +18,8 @@ class DuckDbStore {
     }
 
     async init() {
-        if (this.isInitialized) return;
+        if (this.isInitialized) return this.initPromise;
+        if (this.initPromise) return this.initPromise;
 
         console.log(`[DuckDB Store] Inizializzazione in corso...`);
         if (!fs.existsSync(this.moviesParquetPath) && !fs.existsSync(this.tvParquetPath)) {
@@ -26,10 +27,13 @@ class DuckDbStore {
             console.warn(`[DuckDB Store] DuckDB è avviato in memoria vuota. Per favore attendi la fine del sync o lancia scripts/convert_to_parquet.js`);
         }
         
-        return new Promise((resolve, reject) => {
+        this.initPromise = new Promise((resolve, reject) => {
             // Avvio con limite di memoria per sicurezza su HF
             this.db = new duckdb.Database(':memory:', { max_memory: '2GB' }, (err) => {
-                if (err) return reject(err);
+                if (err) {
+                    this.initPromise = null;
+                    return reject(err);
+                }
                 
                 this.con = this.db.connect();
                 
@@ -46,11 +50,13 @@ class DuckDbStore {
                         await execPromise("LOAD fts;");
                         
                         if (fs.existsSync(this.moviesParquetPath)) {
+                            await execPromise(`DROP TABLE IF EXISTS movies;`);
                             await execPromise(`CREATE TABLE movies AS SELECT * FROM read_parquet('${this.moviesParquetPath.replace(/\\/g, '/')}');`);
                             await execPromise(`PRAGMA create_fts_index('movies', 'id', 'title', 'original_title');`);
                         }
                         
                         if (fs.existsSync(this.tvParquetPath)) {
+                            await execPromise(`DROP TABLE IF EXISTS tv;`);
                             await execPromise(`CREATE TABLE tv AS SELECT * FROM read_parquet('${this.tvParquetPath.replace(/\\/g, '/')}');`);
                             await execPromise(`PRAGMA create_fts_index('tv', 'id', 'name', 'original_name');`);
                         }
@@ -60,11 +66,13 @@ class DuckDbStore {
                         resolve();
                     } catch (errExec) {
                         console.error(`[DuckDB Store] Errore inizializzazione tabelle/FTS:`, errExec);
+                        this.initPromise = null;
                         reject(errExec);
                     }
                 })();
             });
         });
+        return this.initPromise;
     }
 
     async updateAnimeMapping(tmdbIds) {

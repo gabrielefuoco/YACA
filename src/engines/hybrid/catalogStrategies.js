@@ -95,21 +95,29 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const catalogId = mediaType === 'movie' ? 'yaca_true_blend_movies' : 'yaca_true_blend_series';
     
+    const topGenres = computeTopGenres(profile, 3, user, context);
     const topL2Ids = getTopL2Ids(profile, 2);
-    const kwIds = getKeywordsForL2Ids(topL2Ids);
+    let kwIds = getKeywordsForL2Ids(topL2Ids);
     console.log(`[Catalog Debug] True Blend - profile context=${context}, topL2Ids=${topL2Ids.join(',')}, kwIds count=${kwIds.length}`);
     
     // Fallback if no L2 Topoi
     if (kwIds.length === 0) {
-        return fetchPopularFallbackIds(tmdbApiKey, mediaType);
+        kwIds = computeTopKeywords(profile, 10, user, context);
     }
     
     const dnaFilters = getProfileDnaFilters(user, context);
     const filters = {
-        with_keywords: kwIds.join('|'), // OR Query on top L2 keywords
         'vote_count.gte': 1000,         // Scelti per te = blockbuster / popular
         sort_by: 'popularity.desc'
     };
+    
+    if (kwIds.length > 0) {
+        filters.with_keywords = kwIds.join('|');
+    } else if (topGenres.length > 0) {
+        filters.with_genres = topGenres.join('|');
+    } else {
+        return fetchPopularFallbackIds(tmdbApiKey, mediaType);
+    }
     
     // Use DuckDB for instant local querying
     const lightMetas = await getDuckDbCatalogFromFilters(filters, types, 0, 500, {});
@@ -183,10 +191,23 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     if (dnaSeeds.length === 0) {
         // Fallback: Use dynamic VSM top keywords if no manual DNA is set
         const topL2Ids = getTopL2Ids(profile, 2);
-        const kwIds = getKeywordsForL2Ids(topL2Ids);
-        if (kwIds.length > 0) {
+        let kwIds = getKeywordsForL2Ids(topL2Ids);
+        
+        if (kwIds.length === 0) {
+            kwIds = computeTopKeywords(profile, 10, user, context);
+        }
+        
+        const topGenres = computeTopGenres(profile, 3, user, context);
+        
+        if (kwIds.length > 0 || topGenres.length > 0) {
             try {
-                const dynamicFilters = { with_keywords: kwIds.join('|'), sort_by: 'popularity.desc' };
+                const dynamicFilters = { sort_by: 'popularity.desc' };
+                if (kwIds.length > 0) {
+                    dynamicFilters.with_keywords = kwIds.join('|');
+                } else if (topGenres.length > 0) {
+                    dynamicFilters.with_genres = topGenres.join('|');
+                }
+                
                 const discoverRes = await fetchTmdbResults(tmdbClient, `/discover/${types}`, dynamicFilters, `VSM Discover seeds (${types})`);
                 if (discoverRes && discoverRes.length > 0) {
                     dnaSeeds = discoverRes.slice(0, 5).map(item => ({ id: String(item.id), weight: 4 }));
@@ -279,21 +300,29 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const catalogId = mediaType === 'movie' ? 'yaca_hidden_gems_movies' : 'yaca_hidden_gems_series';
     
+    const topGenres = computeTopGenres(profile, 3, user, context);
     const topL2Ids = getTopL2Ids(profile, 2);
-    const kwIds = getKeywordsForL2Ids(topL2Ids);
+    let kwIds = getKeywordsForL2Ids(topL2Ids);
     
     if (kwIds.length === 0) {
-        return fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
+        kwIds = computeTopKeywords(profile, 10, user, context);
     }
 
     const dnaFilters = getProfileDnaFilters(user, context);
     const filters = {
-        with_keywords: kwIds.join('|'),
         'vote_average.gte': 6.5,
         'vote_count.gte': 50,
         'vote_count.lte': 1000,         // Hidden gems = low popularity
         sort_by: 'popularity.desc'
     };
+    
+    if (kwIds.length > 0) {
+        filters.with_keywords = kwIds.join('|');
+    } else if (topGenres.length > 0) {
+        filters.with_genres = topGenres.join('|');
+    } else {
+        return fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
+    }
     
     if (types === 'movie') filters['with_runtime.gte'] = 60; 
 
