@@ -163,9 +163,7 @@ class ProfileScorer {
         finalScore *= genreAlignmentMultiplier;
 
         const finalClamped = clampScore(finalScore);
-        if (Math.random() < 0.05) { // Log 5% of the items to avoid flooding
-            console.log(`[Score Debug] TMDB:${tmdbData.id} '${tmdbData.title || tmdbData.name}' - vFinal Keys: ${Object.keys(vFinal).length}, thematic: ${thematicScore.toFixed(2)}, profileMatch: ${profileMatch.toFixed(2)}, bayesian: ${bayesianScore.toFixed(2)}, final: ${finalClamped.toFixed(2)}`);
-        }
+        console.log(`[Score Debug] TMDB:${tmdbData.id} '${tmdbData.title || tmdbData.name}' - vFinal Keys: ${Object.keys(vFinal).length}, thematic: ${thematicScore.toFixed(2)}, profileMatch: ${profileMatch.toFixed(2)}, bayesian: ${bayesianScore.toFixed(2)}, final: ${finalClamped.toFixed(2)}`);
         return finalClamped;
     }
 

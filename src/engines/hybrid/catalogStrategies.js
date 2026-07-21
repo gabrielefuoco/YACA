@@ -130,7 +130,15 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
         orderBy: S.POPULAR
     };
 
+    console.log(`\n======================================================`);
     console.log(`[Catalog Debug] True Blend Native SQL - profile context=${context}`);
+    console.log(`[Catalog Debug] Profile DNA:`);
+    console.log(` - Top Genres: ${JSON.stringify(topGenres)}`);
+    console.log(` - Top L2 Node IDs: ${JSON.stringify(topL2Ids)}`);
+    console.log(` - Direct Keyword IDs: ${JSON.stringify(directKwIds)}`);
+    console.log(`[Catalog Debug] Generated Pre-filtering Rules (DuckDB WHERE):`);
+    where.forEach((rule, idx) => console.log(`   ${idx + 1}. ${rule}`));
+    console.log(`======================================================\n`);
 
     // Use DuckDB for instant local querying
     const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 500);
@@ -192,6 +200,11 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     
     if (where.length > 0) {
         const preset = { type: types, where, orderBy: S.POPULAR };
+        console.log(`\n======================================================`);
+        console.log(`[Catalog Debug] Seed Network - profile context=${context}`);
+        console.log(`[Catalog Debug] DNA Rules:`);
+        where.forEach((rule, idx) => console.log(`   ${idx + 1}. ${rule}`));
+        console.log(`======================================================\n`);
         const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 10);
         if (lightMetas && lightMetas.length > 0) {
             dnaSeeds = lightMetas.slice(0, 5).map(item => ({ id: String(item._tmdbId || item.id.split(':')[1]), weight: 4 }));
@@ -202,6 +215,8 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     [...lovedIds, ...likedIds, ...traktIds, ...dnaSeeds].forEach(({ id, weight }) => {
         allSeedsMap.set(id, (allSeedsMap.get(id) || 0) + weight);
     });
+
+    console.log(`[Catalog Debug] Seed Network - Collected Seeds: Loved=${lovedIds.length}, Liked=${likedIds.length}, Trakt=${traktIds.length}, DNA=${dnaSeeds.length}`);
 
     if (allSeedsMap.size === 0) {
         return fetchPopularFallbackIds(tmdbApiKey, mediaType);
@@ -317,6 +332,16 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
         where: where,
         orderBy: S.POPULAR
     };
+
+    console.log(`\n======================================================`);
+    console.log(`[Catalog Debug] Hidden Gems - profile context=${context}`);
+    console.log(`[Catalog Debug] Profile DNA:`);
+    console.log(` - Top Genres: ${JSON.stringify(topGenres)}`);
+    console.log(` - Top L2 Node IDs: ${JSON.stringify(topL2Ids)}`);
+    console.log(` - Direct Keyword IDs: ${JSON.stringify(directKwIds)}`);
+    console.log(`[Catalog Debug] Generated Pre-filtering Rules (DuckDB WHERE):`);
+    where.forEach((rule, idx) => console.log(`   ${idx + 1}. ${rule}`));
+    console.log(`======================================================\n`);
 
     // Use DuckDB for instant local querying
     const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 500);
