@@ -80,8 +80,9 @@ class DuckDbStore {
             `;
             
             if (tmdbIds && tmdbIds.length > 0) {
-                // Generiamo una singola INSERT enorme, in memoria è rapidissimo
-                const values = tmdbIds.map(id => `(${id})`).join(',');
+                // Generiamo una singola INSERT enorme, estraendo solo il tmdbId ed evitando duplicati
+                const uniqueIds = Array.from(new Set(tmdbIds.map(id => String(id).split(':')[0])));
+                const values = uniqueIds.map(id => `(${id})`).join(',');
                 sql += `\nINSERT INTO anime_mappings VALUES ${values};`;
             }
             

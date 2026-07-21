@@ -119,7 +119,7 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
         const fallbackResults = await fetchTmdbResults(
             tmdbClient,
             `/discover/${types}`,
-            { sort_by: 'popularity.desc', 'vote_count.gte': 50 },
+            filters, // Pass DNA filters instead of generic popular
             `Popular fallback (${mediaType})`
         );
         const scored = fallbackResults.map(item => {
@@ -177,6 +177,22 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
                 dnaSeeds = discoverRes.slice(0, 5).map(item => ({ id: String(item.id), weight: 4 }));
             }
         } catch(e) { }
+    }
+
+    if (dnaSeeds.length === 0) {
+        // Fallback: Use dynamic VSM top keywords if no manual DNA is set
+        const { getTopL2Ids, getKeywordsForL2Ids } = require('../../profile/ProfileBuilder');
+        const topL2Ids = getTopL2Ids(profile, 2);
+        const kwIds = getKeywordsForL2Ids(topL2Ids, profile);
+        if (kwIds.length > 0) {
+            try {
+                const dynamicFilters = { with_keywords: kwIds.join('|'), sort_by: 'popularity.desc' };
+                const discoverRes = await fetchTmdbResults(tmdbClient, `/discover/${types}`, dynamicFilters, `VSM Discover seeds (${types})`);
+                if (discoverRes && discoverRes.length > 0) {
+                    dnaSeeds = discoverRes.slice(0, 5).map(item => ({ id: String(item.id), weight: 4 }));
+                }
+            } catch(e) { }
+        }
     }
 
     const allSeedsMap = new Map();
@@ -284,7 +300,24 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     // Use DuckDB for instant local querying
     const lightMetas = await getDuckDbCatalogFromFilters(filters, types, 0, 500, {});
     if (!lightMetas || lightMetas.length === 0) {
-        return fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
+        // Fallback: fetch from TMDB directly and score them
+        const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+        const { fetchTmdbResults } = require('./dataFetchers');
+        const fallbackResults = await fetchTmdbResults(
+            tmdbClient,
+            `/discover/${types}`,
+            filters, // Pass DNA filters instead of generic hidden gems
+            `Hidden Gems fallback (${mediaType})`
+        );
+        const scored = fallbackResults.map(item => {
+            const score = ProfileScorer.calculateItemMatch(item, profile, { dnaFilters, globalProfile });
+            return { data: item, score };
+        });
+        return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ 
+            id: String(i.data.id), 
+            matchScore: Math.min(100, Math.max(1, Math.round(i.score))),
+            rawTMDB: i.data 
+        }));
     }
     
     const impressionMap = await getImpressionMap(userId, context, catalogId, lightMetas.map(m => String(m._tmdbId)));
