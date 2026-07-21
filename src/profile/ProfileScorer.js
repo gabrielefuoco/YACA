@@ -97,10 +97,20 @@ class ProfileScorer {
         // --- 1.1 Calcolo penalità per disallineamento di genere (Alien Ratio) ---
         let genreAlignmentMultiplier = 1.0;
         if (genreIds.length > 0) {
-            const alienRatio = unalignedGenres / genreIds.length;
-            if (alienRatio >= 0.5) {
+            let effectiveAlienRatio = unalignedGenres / genreIds.length;
+            
+            // Perdono basato sull'affinità massima: se il film ha un genere molto amato, riduciamo la penalità
+            if (maxAffinity > 4.0) {
+                effectiveAlienRatio *= 0.1;
+            } else if (maxAffinity > 2.0) {
+                effectiveAlienRatio *= 0.4;
+            } else if (maxAffinity > 1.0) {
+                effectiveAlienRatio *= 0.7;
+            }
+
+            if (effectiveAlienRatio >= 0.5) {
                 genreAlignmentMultiplier = 0.3; // 50%+ dei generi sono alieni al DNA: penalità severa
-            } else if (alienRatio >= 0.3) {
+            } else if (effectiveAlienRatio >= 0.3) {
                 genreAlignmentMultiplier = 0.6; // 30%+ dei generi sono alieni: penalità moderata
             }
         }
@@ -127,8 +137,11 @@ class ProfileScorer {
 
         // --- 3. Final Affinity Weighting (Thematic 98%, Authorial 2%) ---
         // Authorial weight is minimized as per user feedback: "non sono così importanti"
-        const scaledThematicScore = thematicScore / 10.0;
-        const profileMatch = ((scaledThematicScore * 0.98) + (authorialScore * 0.02)) * genreAlignmentMultiplier;
+        // Usa una curva logaritmica (soft-cap) per permettere ai film con alti thematicScore di raggiungere score elevati
+        const scaledThematicScore = 10.0 * (1 - Math.exp(-thematicScore / 25.0));
+        
+        // Rimosso il moltiplicatore genreAlignmentMultiplier da qui per evitare doppia penalità
+        const profileMatch = (scaledThematicScore * 0.98) + (authorialScore * 0.02);
 
         // --- Phase 1.3: Bayesian Weighted Rating (IMDb formula) ---
         // WR = ((v/(v+m)) * R) + ((m/(v+m)) * C)
