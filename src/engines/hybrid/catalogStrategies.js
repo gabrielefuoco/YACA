@@ -87,10 +87,20 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
     return pool.slice(0, 100).map(id => ({ id: String(id), matchScore: null }));
 }
 
-function getAnimeProportion(profile) {
-    if (!profile.catalogs || profile.catalogs.length === 0) return 0;
-    const animeCount = profile.catalogs.filter(c => c.isAnime).length;
-    return animeCount / profile.catalogs.length;
+const ANIME_KEYWORDS = ['210024', '287501', '290894', '290895', '310214', '288390'];
+
+function getAnimeProportion(profile, directKwIds = [], topGenres = []) {
+    if (profile.catalogs && profile.catalogs.length > 0) {
+        const animeCount = profile.catalogs.filter(c => c.isAnime).length;
+        return animeCount / profile.catalogs.length;
+    }
+    
+    // Se non ci sono cataloghi pinati, cerchiamo il DNA
+    if (topGenres.includes('16') || topGenres.includes(16)) {
+        const hasAnimeKw = directKwIds.some(kw => ANIME_KEYWORDS.includes(String(kw)));
+        if (hasAnimeKw) return 1.0;
+    }
+    return 0;
 }
 
 /**
@@ -100,15 +110,16 @@ function getAnimeProportion(profile) {
 async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [], limitPerQuery = 50) {
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     
-    // 1. Calcolo Proporzione Anime
-    const animeRatio = getAnimeProportion(profile);
     const { user, context } = profile;
     const globalProfile = null; // not strictly needed for the fetch, used later for scoring
-    
+
     // 2. Estrazione DNA
     const topGenres = computeTopGenres(profile, 3, user, context);
     const topL2Ids = getTopNodeIds(profile, 'L2', 3);
     let directKwIds = computeTopKeywords(profile, 10, user, context);
+
+    // 1. Calcolo Proporzione Anime
+    const animeRatio = getAnimeProportion(profile, directKwIds, topGenres);
     
     // Costruiamo i cluster (Topoi + Keywords)
     const clusters = [];
