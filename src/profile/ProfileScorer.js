@@ -179,7 +179,6 @@ class ProfileScorer {
         finalScore *= genreAlignmentMultiplier;
 
         const finalClamped = clampScore(finalScore);
-        console.log(`[Score Debug] TMDB:${tmdbData.id} '${tmdbData.title || tmdbData.name}' - vFinal Keys: ${Object.keys(vFinal).length}, thematic: ${thematicScore.toFixed(2)}, profileMatch: ${profileMatch.toFixed(2)}, bayesian: ${bayesianScore.toFixed(2)}, final: ${finalClamped.toFixed(2)}`);
         return finalClamped;
     }
 
