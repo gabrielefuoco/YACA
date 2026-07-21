@@ -90,12 +90,25 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
 const ANIME_KEYWORDS = ['210024', '287501', '290894', '290895', '310214', '288390'];
 
 function getAnimeProportion(profile, directKwIds = [], topGenres = []) {
-    if (profile.catalogs && profile.catalogs.length > 0) {
-        const animeCount = profile.catalogs.filter(c => c.isAnime).length;
-        return animeCount / profile.catalogs.length;
+    const activeSubProfile = profile?.user?.profiles?.find(p => p.id === profile.context);
+    const pinnedCatalogs = activeSubProfile?.catalogs || [];
+    
+    if (pinnedCatalogs.length > 0) {
+        const presetsList = getPresets();
+        const presetMap = new Map(presetsList.map(p => [`yaca_preset_${p.id}`, p]));
+        
+        let animeCount = 0;
+        for (const cat of pinnedCatalogs) {
+            const preset = presetMap.get(cat.id);
+            if (cat.isAnime || (preset && preset.isAnime)) {
+                animeCount++;
+            }
+        }
+        const ratio = animeCount / pinnedCatalogs.length;
+        if (ratio > 0) return ratio;
     }
     
-    // Se non ci sono cataloghi pinati, cerchiamo il DNA
+    // Se non ci sono cataloghi pinati (o nessuno è anime), cerchiamo il DNA
     if (topGenres.includes('16') || topGenres.includes(16)) {
         const hasAnimeKw = directKwIds.some(kw => ANIME_KEYWORDS.includes(String(kw)));
         if (hasAnimeKw) return 1.0;

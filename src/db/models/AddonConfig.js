@@ -26,7 +26,8 @@ const catalogSchema = new mongoose.Schema({
     presentation_strategy: { type: String, enum: ['popularity', 'interleave'] },
     raw_prompt: String,
     emoji: String,
-    mergedFrom: [String]
+    mergedFrom: [String],
+    isAnime: Boolean
 }, { _id: false });
 
 const addonConfigSchema = new mongoose.Schema({
