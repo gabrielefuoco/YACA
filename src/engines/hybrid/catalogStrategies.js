@@ -184,7 +184,7 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
         
         // Applichiamo la Quota Anime
         if (index < animeQueriesLimit) {
-            where.push(F.anime()); // Deve essere strettamente anime
+            where.push(F.anime); // Deve essere strettamente anime
         }
         
         const preset = { type: types, where, orderBy: S.POPULAR };
