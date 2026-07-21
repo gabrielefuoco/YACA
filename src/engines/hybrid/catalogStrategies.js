@@ -245,7 +245,7 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     
     return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ 
         id: String(i.data.id), 
-        matchScore: Math.min(100, Math.max(1, Math.round(i.score))), 
+        matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))), 
         rawTMDB: i.data 
     }));
 }
@@ -375,7 +375,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         { batchSize: 3, delayMs: 150 }
     );
 
-    return scored.sort((a, b) => (b.score + b.hybridScore) - (a.score + a.hybridScore)).slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score))) }));
+    return scored.sort((a, b) => (b.score + b.hybridScore) - (a.score + a.hybridScore)).slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
 }
 
 /**
@@ -418,7 +418,7 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     
     return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ 
         id: String(i.data.id), 
-        matchScore: Math.min(100, Math.max(1, Math.round(i.score))), 
+        matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))), 
         rawTMDB: i.data 
     }));
 }
@@ -465,7 +465,7 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
         .filter(Boolean)
         .sort((a, b) => b.score - a.score)
         .slice(0, 100)
-        .map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score))) }));
+        .map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
 }
 
 module.exports = {
