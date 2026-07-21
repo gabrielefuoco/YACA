@@ -15,7 +15,7 @@ const tmdbClient = createTmdbClient();
 
 router.post('/preview-catalog', async (req, res) => {
     try {
-        const { id, type: customType, filters: customFilters, prompt, tmdbKey } = req.body;
+        const { id, type: customType, filters: customFilters, prompt, tmdbKey, profileId: reqProfileId, userId: reqUserId } = req.body;
         
         let reqMistralKey = req.body.mistralKey || process.env.MISTRAL_API_KEY;
         let reqTmdbKey = tmdbKey || process.env.TMDB_API_KEY;
@@ -41,6 +41,11 @@ router.post('/preview-catalog', async (req, res) => {
                 // silently ignore auth errors in preview
             }
         }
+        
+        // If JWT didn't provide a userId, use the one from the request body
+        if (!fullUserConfig.userId && reqUserId) {
+            fullUserConfig.userId = reqUserId;
+        }
 
         const sanitizedTmdbKey = String(reqTmdbKey || '').trim();
         let targetCatalogId = null;
@@ -51,9 +56,12 @@ router.post('/preview-catalog', async (req, res) => {
         let aiFilters = null;
         let kidsMode = false;
 
-        const activeProfileId = fullUserConfig.activeProfileId || 'global';
+        const activeProfileId = reqProfileId || fullUserConfig.activeProfileId || 'global';
         const activeProfile = fullUserConfig.profiles?.find(p => p.id === activeProfileId) || (fullUserConfig.profiles?.[0] || {});
         kidsMode = activeProfile.settings?.kidsMode || false;
+        
+        // Override activeProfileId in fullUserConfig so catalogHandler uses it
+        fullUserConfig.activeProfileId = activeProfileId;
 
         if (!sanitizedTmdbKey) {
             return res.status(400).json({ error: 'TMDB API key non configurata sul server' });

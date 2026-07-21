@@ -181,9 +181,8 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
 
     if (dnaSeeds.length === 0) {
         // Fallback: Use dynamic VSM top keywords if no manual DNA is set
-        const { getTopL2Ids, getKeywordsForL2Ids } = require('../../profile/ProfileBuilder');
         const topL2Ids = getTopL2Ids(profile, 2);
-        const kwIds = getKeywordsForL2Ids(topL2Ids, profile);
+        const kwIds = getKeywordsForL2Ids(topL2Ids);
         if (kwIds.length > 0) {
             try {
                 const dynamicFilters = { with_keywords: kwIds.join('|'), sort_by: 'popularity.desc' };
