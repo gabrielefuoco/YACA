@@ -1,6 +1,5 @@
 const tmdb = require('../../clients/tmdb');
 const { getPresets } = require('../../data/presets');
-const { generateDiscoveryQueries } = require('../../ai/querySynthesizer');
 const { normalizeContentId } = require('../../utils/contentId');
 const { getProfileDnaFilters } = require('../../utils/helpers');
 const { rateLimitedMap } = require('../../utils/rateLimiter');
@@ -10,6 +9,36 @@ const { applyKidsMode } = require('../../utils/kidsModeFilters');
 const { fetchTmdbResults, fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds, getImpressionMap, calculateImpressionPenalty } = require('./dataFetchers');
 const { extractDNAParams, resolveAiQueryToTmdbParams, twoTierScore, computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
 const ProfileScorer = require('../../profile/ProfileScorer');
+const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
+const graph = require('../graph/HierarchicalGraph');
+
+function getTopL2Ids(profile, limit = 2) {
+    if (!profile || !profile.compiledVectors || !profile.compiledVectors.V_final) return [];
+    return Object.entries(profile.compiledVectors.V_final)
+        .filter(([k]) => k.startsWith('L2:'))
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit)
+        .map(([k]) => k.split(':')[1]);
+}
+
+function getKeywordsForL2Ids(l2Ids) {
+    if (!graph.isLoaded || !graph.data || !graph.data.L2) return [];
+    const kwIds = new Set();
+    for (const l2Id of l2Ids) {
+        const l1s = graph.data.L2[l2Id]?.children_L1 || [];
+        for (const l1 of l1s) {
+            for (const [kwId, targetL1] of Object.entries(graph.data.kw_to_L1 || {})) {
+                if (targetL1 === l1) kwIds.add(kwId);
+            }
+        }
+    }
+    let kwArray = Array.from(kwIds);
+    // Limit to max 50 keywords for SQL performance
+    if (kwArray.length > 50) {
+        kwArray = kwArray.sort(() => 0.5 - Math.random()).slice(0, 50);
+    }
+    return kwArray;
+}
 
 /**
  * 🎯 Direct Preset Catalog Builder (Bug 1.3 Fix: Preset Fall-through)
@@ -53,7 +82,7 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
         }
     }
 
-    return pool.slice(0, 100);
+    return pool.slice(0, 100).map(id => ({ id: String(id), matchScore: null }));
 }
 
 /**
@@ -64,102 +93,39 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-    const dnaFilters = getProfileDnaFilters(user, context);
-    const dnaParams = extractDNAParams(dnaFilters);
-
-    const topGenres = computeTopGenres(profile, 5, user, context);
-    const topKeywords = computeTopKeywords(profile, 5, user, context);
-
-    const existingIds = new Set();
-    let pool = [];
-
-    const addResults = (items) => {
-        for (const item of (items || [])) {
-            const normalizedItemId = normalizeContentId(item?.id);
-            if (item && !existingIds.has(normalizedItemId)) {
-                pool.push(item);
-                existingIds.add(normalizedItemId);
-            }
-        }
-    };
-
-    const isKidsMode = profile?.settings?.kidsMode;
-
-    const fetchDiscoverPages = async (params, pages = 3) => {
-        const finalParams = isKidsMode ? applyKidsMode(params) : params;
-        const results = [];
-        for (let page = 1; page <= pages; page++) {
-            const pageResults = await fetchTmdbResults(
-                tmdbClient,
-                `/discover/${types}`,
-                { ...finalParams, sort_by: 'popularity.desc', page },
-                `Top Genres Mix discover (${types})`
-            );
-            results.push(...pageResults);
-        }
-        return results;
-    };
-
-    const mistralKey = user?.apiKeys?.mistral;
-    let aiQueries = [];
-    if (mistralKey) {
-        try {
-            aiQueries = await generateDiscoveryQueries(profile, mistralKey, 'trueBlend', user, context);
-        } catch (_e) { }
-    }
-
-    if (aiQueries.length > 0) {
-        const queryPromises = aiQueries.map(async (q) => {
-            const tmdbParams = await resolveAiQueryToTmdbParams(q, tmdbApiKey, types);
-            return fetchDiscoverPages({ ...dnaParams, ...tmdbParams }, 3);
-        });
-        const allResults = await Promise.all(queryPromises);
-        allResults.forEach(results => addResults(results));
-    } else {
-        const discoveryParams = { ...dnaParams };
-        if (topGenres.length) discoveryParams.with_genres = topGenres.join('|');
-        if (topKeywords.length) discoveryParams.with_keywords = topKeywords.join('|');
-        addResults(await fetchDiscoverPages(discoveryParams, 3));
-    }
-
-    const lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 5);
-    if (lovedIds.length > 0) {
-        const similarResults = await rateLimitedMap(
-            lovedIds,
-            (id) => fetchTmdbResults(tmdbClient, `/${types}/${id}/recommendations`, {}, `Top Genres Mix recommendations (${types}/${id})`),
-            { batchSize: 5, delayMs: 50 }
-        );
-        similarResults.forEach(items => {
-            addResults(items);
-        });
-    }
-
     const catalogId = mediaType === 'movie' ? 'yaca_true_blend_movies' : 'yaca_true_blend_series';
-    const scored = await twoTierScore(pool, profile, {
-        tmdbApiKey,
-        types,
-        dnaFilters,
-        globalProfile,
-        userId,
-        context,
-        catalogId
-    });
+    
+    const topL2Ids = getTopL2Ids(profile, 2);
+    const kwIds = getKeywordsForL2Ids(topL2Ids);
+    
+    // Fallback if no L2 Topoi
+    if (kwIds.length === 0) {
+        return fetchPopularFallbackIds(tmdbApiKey, mediaType);
+    }
+    
+    const dnaFilters = getProfileDnaFilters(user, context);
+    const filters = {
+        with_keywords: kwIds.join('|'), // OR Query on top L2 keywords
+        'vote_count.gte': 1000,         // Scelti per te = blockbuster / popular
+        sort_by: 'popularity.desc'
+    };
+    
+    // Use DuckDB for instant local querying
+    const lightMetas = await getDuckDbCatalogFromFilters(filters, types, 0, 500, {});
+    if (!lightMetas || lightMetas.length === 0) {
+        return fetchPopularFallbackIds(tmdbApiKey, mediaType);
+    }
+    
+    const impressionMap = await getImpressionMap(userId, context, catalogId, lightMetas.map(m => String(m._tmdbId)));
 
-    const genreCounts = new Map();
-    const jittered = scored.map(item => {
-        const genres = item.data.genre_ids || [];
-        let penalty = 0;
-        for (const g of genres) {
-            const count = genreCounts.get(g) || 0;
-            if (count > 5) penalty += 0.15 * (count - 5);
-            genreCounts.set(g, count + 1);
-        }
-        const jitter = (Math.random() - 0.5) * 0.3;
-        return { ...item, score: item.score + jitter - penalty };
+    const scored = lightMetas.map(item => {
+        const seenDays = impressionMap.get(String(item._tmdbId)) || 0;
+        const penaltyMultiplier = calculateImpressionPenalty(seenDays);
+        const score = ProfileScorer.calculateItemMatch(item.rawTMDB, profile, { dnaFilters, globalProfile });
+        return { data: item.rawTMDB, score: score * penaltyMultiplier };
     });
-
-    return jittered.sort((a, b) => b.score - a.score).slice(0, 100).map(i => String(i.data.id));
+    
+    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score))) }));
 }
 
 /**
@@ -267,7 +233,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         { batchSize: 3, delayMs: 150 }
     );
 
-    return scored.sort((a, b) => (b.score + b.hybridScore) - (a.score + a.hybridScore)).slice(0, 100).map(i => String(i.data.id));
+    return scored.sort((a, b) => (b.score + b.hybridScore) - (a.score + a.hybridScore)).slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score))) }));
 }
 
 /**
@@ -278,87 +244,42 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     if (!profile) return fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
 
     const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-    const dnaFilters = getProfileDnaFilters(user, context);
-    const dnaParams = extractDNAParams(dnaFilters);
-    const isKidsMode = profile?.settings?.kidsMode;
-    const safeDnaParams = isKidsMode ? applyKidsMode(dnaParams) : dnaParams;
-
-    const topGenres = computeTopGenres(profile, 3);
-
-    const qualityFilters = {
-        sort_by: 'vote_average.desc',
-        'vote_count.gte': 100,
-        'vote_count.lte': 3000,
-        'vote_average.gte': 7.0,
-        'popularity.lte': 80 
-    };
-    if (types === 'movie') qualityFilters['with_runtime.gte'] = 60; 
-
-    const existingIds = new Set();
-    let pool = [];
-
-    const addResults = (items) => {
-        for (const item of (items || [])) {
-            const normalizedItemId = normalizeContentId(item?.id);
-            if (item && !existingIds.has(normalizedItemId)) {
-                pool.push(item);
-                existingIds.add(normalizedItemId);
-            }
-        }
-    };
-
-    const fetchDiscoverPages = async (params, pages = 2) => {
-        const finalParams = isKidsMode ? applyKidsMode(params) : params;
-        const results = [];
-        for (let page = 1; page <= pages; page++) {
-            const pageResults = await fetchTmdbResults(
-                tmdbClient,
-                `/discover/${types}`,
-                { ...finalParams, page },
-                `Hidden Gems discover (${types})`
-            );
-            results.push(...pageResults);
-        }
-        return results;
-    };
-
-    const mistralKey = user?.apiKeys?.mistral;
-    let aiQueries = [];
-    if (mistralKey) {
-        try {
-            aiQueries = await generateDiscoveryQueries(profile, mistralKey, 'hiddenGems', user, context);
-        } catch (_e) { }
-    }
-
-    if (aiQueries.length > 0) {
-        const queryPromises = aiQueries.map(async (q) => {
-            const tmdbParams = await resolveAiQueryToTmdbParams(q, tmdbApiKey, types);
-            return fetchDiscoverPages({ ...safeDnaParams, ...qualityFilters, ...tmdbParams }, 2);
-        });
-        const allResults = await Promise.all(queryPromises);
-        allResults.forEach(results => addResults(results));
-    } else {
-        const discoveryParams = { ...safeDnaParams, ...qualityFilters };
-        if (topGenres.length) discoveryParams.with_genres = topGenres.join('|');
-        addResults(await fetchDiscoverPages(discoveryParams, 2));
-    }
-
-    pool = pool.filter(item => item.popularity == null || item.popularity <= 80);
-
     const catalogId = mediaType === 'movie' ? 'yaca_hidden_gems_movies' : 'yaca_hidden_gems_series';
-    const scored = await twoTierScore(pool, profile, {
-        tmdbApiKey,
-        types,
-        dnaFilters,
-        globalProfile,
-        catalogContext: 'hidden_gems',
-        userId,
-        context,
-        catalogId
+    
+    const topL2Ids = getTopL2Ids(profile, 2);
+    const kwIds = getKeywordsForL2Ids(topL2Ids);
+    
+    if (kwIds.length === 0) {
+        return fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
+    }
+
+    const dnaFilters = getProfileDnaFilters(user, context);
+    const filters = {
+        with_keywords: kwIds.join('|'),
+        'vote_average.gte': 6.5,
+        'vote_count.gte': 50,
+        'vote_count.lte': 1000,         // Hidden gems = low popularity
+        sort_by: 'popularity.desc'
+    };
+    
+    if (types === 'movie') filters['with_runtime.gte'] = 60; 
+
+    // Use DuckDB for instant local querying
+    const lightMetas = await getDuckDbCatalogFromFilters(filters, types, 0, 500, {});
+    if (!lightMetas || lightMetas.length === 0) {
+        return fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
+    }
+    
+    const impressionMap = await getImpressionMap(userId, context, catalogId, lightMetas.map(m => String(m._tmdbId)));
+
+    const scored = lightMetas.map(item => {
+        const seenDays = impressionMap.get(String(item._tmdbId)) || 0;
+        const penaltyMultiplier = calculateImpressionPenalty(seenDays);
+        const score = ProfileScorer.calculateItemMatch(item.rawTMDB, profile, { dnaFilters, globalProfile });
+        return { data: item.rawTMDB, score: score * penaltyMultiplier };
     });
 
-    return scored.slice(0, 100).map(i => String(i.data.id));
+    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score))) }));
 }
 
 /**
@@ -403,7 +324,7 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
         .filter(Boolean)
         .sort((a, b) => b.score - a.score)
         .slice(0, 100)
-        .map(i => String(i.data.id));
+        .map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score))) }));
 }
 
 module.exports = {

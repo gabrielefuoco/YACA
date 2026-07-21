@@ -267,51 +267,256 @@ def main():
         for node in nodes:
             id_to_cluster[node] = str(cluster_id)
             
-    # 10. Estrazione Adiacenza Cluster e JSON
-    print("10. Compattazione del grafo a livello Cluster e Sparsificazione...")
+    # 10. Estrazione Adiacenza Cluster L1 (Micro-Cluster)
+    print("10. Compattazione del grafo a livello L1 e Sparsificazione...")
     cluster_adj = defaultdict(float)
     
     cx = PPMI_matrix.tocoo()
-    for i, j, v in tqdm(zip(cx.row, cx.col, cx.data), desc="Accumulo archi cluster", total=len(cx.data)):
-        c_i = id_to_cluster[i]
-        c_j = id_to_cluster[j]
+    for i, j, v in tqdm(zip(cx.row, cx.col, cx.data), desc="Accumulo archi L1", total=len(cx.data)):
+        c_i = int(id_to_cluster[i])
+        c_j = int(id_to_cluster[j])
         if c_i != c_j:
             edge = tuple(sorted([c_i, c_j]))
             cluster_adj[edge] += v
             
-    adj_list = defaultdict(list)
+    # Sparsificazione L1 (Top 50 per output legacy se necessario, o per visualizzazione)
+    adj_list_l1 = defaultdict(list)
     for (c1, c2), weight in cluster_adj.items():
-        adj_list[c1].append((c2, weight))
-        adj_list[c2].append((c1, weight))
+        adj_list_l1[c1].append((c2, weight))
+        adj_list_l1[c2].append((c1, weight))
         
-    final_adjacency = {}
-    for c, neighbors in adj_list.items():
+    final_adjacency_l1 = {}
+    for c, neighbors in adj_list_l1.items():
         neighbors.sort(key=lambda x: x[1], reverse=True)
-        # Qui potremmo esportare top 50, o top 20
         top_neighbors = neighbors[:50]
-        final_adjacency[c] = {n: round(w, 4) for n, w in top_neighbors}
-        
-    print("10.5. Marcatura Quarantena NSFW dei cluster...")
+        final_adjacency_l1[f'c_{c}'] = {f'c_{n}': round(w, 4) for n, w in top_neighbors}
+
+    # 11. Generazione L2 (Topoi Narrativi)
+    print("11. Esecuzione Leiden su L1 per generare L2 (Resolution: 10.0)...")
+    N_L1 = len(clusters)
+    l1_edges = list(cluster_adj.keys())
+    l1_weights = list(cluster_adj.values())
+    
+    ig_G_L1 = ig.Graph(n=N_L1, edges=l1_edges, directed=False)
+    partition_L2 = leidenalg.find_partition(
+        ig_G_L1, 
+        leidenalg.RBConfigurationVertexPartition, 
+        weights=l1_weights, 
+        resolution_parameter=10.0
+    )
+    clusters_L2 = list(partition_L2)
+    print(f"   [OK] Trovati {len(clusters_L2)} Topoi L2.")
+    
+    id_to_L2 = {}
+    for l2_id, l1_nodes in enumerate(clusters_L2):
+        for l1_node in l1_nodes:
+            id_to_L2[l1_node] = l2_id
+
+    # 12. Generazione L3 (Macro-Vibes)
+    print("12. Compattazione L2 ed esecuzione Leiden per generare L3 (Resolution: 1.0)...")
+    l2_adj = defaultdict(float)
+    for (c1, c2), w in cluster_adj.items():
+        l2_1 = id_to_L2[c1]
+        l2_2 = id_to_L2[c2]
+        if l2_1 != l2_2:
+            edge = tuple(sorted([l2_1, l2_2]))
+            l2_adj[edge] += w
+            
+    N_L2 = len(clusters_L2)
+    l2_edges = list(l2_adj.keys())
+    l2_weights = list(l2_adj.values())
+    
+    ig_G_L2 = ig.Graph(n=N_L2, edges=l2_edges, directed=False)
+    partition_L3 = leidenalg.find_partition(
+        ig_G_L2, 
+        leidenalg.RBConfigurationVertexPartition, 
+        weights=l2_weights, 
+        resolution_parameter=1.0
+    )
+    clusters_L3 = list(partition_L3)
+    print(f"   [OK] Trovati {len(clusters_L3)} Macro-Vibes L3.\n")
+    
+    id_to_L3 = {}
+    for l3_id, l2_nodes in enumerate(clusters_L3):
+        for l2_node in l2_nodes:
+            id_to_L3[l2_node] = l3_id
+
+    # 12.1 Generazione L4 (Macro-Generi)
+    print("12.1. Compattazione L3 ed esecuzione Leiden per generare L4 (Resolution: 0.1)...")
+    l3_adj = defaultdict(float)
+    for (l2_1, l2_2), w in l2_adj.items():
+        l3_1 = id_to_L3[l2_1]
+        l3_2 = id_to_L3[l2_2]
+        if l3_1 != l3_2:
+            edge = tuple(sorted([l3_1, l3_2]))
+            l3_adj[edge] += w
+            
+    N_L3 = len(clusters_L3)
+    l3_edges = list(l3_adj.keys())
+    l3_weights = list(l3_adj.values())
+    
+    ig_G_L3 = ig.Graph(n=N_L3, edges=l3_edges, directed=False)
+    partition_L4 = leidenalg.find_partition(
+        ig_G_L3, 
+        leidenalg.RBConfigurationVertexPartition, 
+        weights=l3_weights, 
+        resolution_parameter=0.1
+    )
+    clusters_L4 = list(partition_L4)
+    print(f"   [OK] Trovati {len(clusters_L4)} Macro-Generi L4.\n")
+    
+    id_to_L4 = {}
+    for l4_id, l3_nodes in enumerate(clusters_L4):
+        for l3_node in l3_nodes:
+            id_to_L4[l3_node] = l4_id
+
+    # 12.2 Generazione L5 (Radici)
+    print("12.2. Compattazione L4 ed esecuzione Leiden per generare L5 (Resolution: 0.01)...")
+    l4_adj = defaultdict(float)
+    for (l3_1, l3_2), w in l3_adj.items():
+        l4_1 = id_to_L4[l3_1]
+        l4_2 = id_to_L4[l3_2]
+        if l4_1 != l4_2:
+            edge = tuple(sorted([l4_1, l4_2]))
+            l4_adj[edge] += w
+            
+    N_L4 = len(clusters_L4)
+    l4_edges = list(l4_adj.keys())
+    l4_weights = list(l4_adj.values())
+    
+    ig_G_L4 = ig.Graph(n=N_L4, edges=l4_edges, directed=False)
+    partition_L5 = leidenalg.find_partition(
+        ig_G_L4, 
+        leidenalg.RBConfigurationVertexPartition, 
+        weights=l4_weights, 
+        resolution_parameter=0.01
+    )
+    clusters_L5 = list(partition_L5)
+    print(f"   [OK] Trovati {len(clusters_L5)} Radici Universali L5.\n")
+    
+    id_to_L5 = {}
+    for l5_id, l4_nodes in enumerate(clusters_L5):
+        for l4_node in l4_nodes:
+            id_to_L5[l4_node] = l5_id
+
+    print("13. Marcatura Quarantena NSFW dei cluster...")
     cluster_nsfw_flags = {}
     for c_id, nodes in enumerate(clusters):
-        # Dato che abbiamo amputato gli archi ibridi, il cluster sarà puro. 
-        # Basta che un nodo sia NSFW affinché tutto il cluster isolato sia NSFW.
         is_nsfw = any(is_node_nsfw[n] for n in nodes)
         cluster_nsfw_flags[str(c_id)] = bool(is_nsfw)
         
+    print("14. Strutturazione JSON Gerarchico...")
+    
+    kw_to_L1 = {kw: f"c_{id_to_cluster[kw_to_id[kw]]}" for kw in valid_keywords}
+    
+    # L1 dict
+    L1_dict = {}
+    for c_id, nodes in enumerate(clusters):
+        l2_parent = id_to_L2[c_id]
+        L1_dict[f"c_{c_id}"] = {
+            "keywords": [id_to_kw[n] for n in nodes],
+            "parent": f"t_{l2_parent}",
+            "is_nsfw": cluster_nsfw_flags[str(c_id)]
+        }
+        
+    # L2 dict
+    L2_dict = {}
+    for l2_id, l1_nodes in enumerate(clusters_L2):
+        l3_parent = id_to_L3[l2_id]
+        l2_kws = []
+        for l1 in l1_nodes:
+            l2_kws.extend([id_to_kw[n] for n in clusters[l1]])
+        
+        counts = Counter(l2_kws)
+        top_kws = [k for k,v in counts.most_common(20)]
+        
+        L2_dict[f"t_{l2_id}"] = {
+            "top_keywords": top_kws,
+            "children_L1": [f"c_{l1}" for l1 in l1_nodes],
+            "parent": f"v_{l3_parent}"
+        }
+        
+    # L3 dict
+    L3_dict = {}
+    for l3_id, l2_nodes in enumerate(clusters_L3):
+        l4_parent = id_to_L4[l3_id]
+        l3_kws = []
+        for l2 in l2_nodes:
+            for l1 in clusters_L2[l2]:
+                l3_kws.extend([id_to_kw[n] for n in clusters[l1]])
+                
+        counts = Counter(l3_kws)
+        top_kws = [k for k,v in counts.most_common(25)]
+        
+        L3_dict[f"v_{l3_id}"] = {
+            "top_keywords": top_kws,
+            "children_L2": [f"t_{l2}" for l2 in l2_nodes],
+            "parent": f"m_{l4_parent}"
+        }
+
+    # L4 dict
+    L4_dict = {}
+    for l4_id, l3_nodes in enumerate(clusters_L4):
+        l5_parent = id_to_L5[l4_id]
+        l4_kws = []
+        for l3 in l3_nodes:
+            for l2 in clusters_L3[l3]:
+                for l1 in clusters_L2[l2]:
+                    l4_kws.extend([id_to_kw[n] for n in clusters[l1]])
+                    
+        counts = Counter(l4_kws)
+        top_kws = [k for k,v in counts.most_common(30)]
+        
+        L4_dict[f"m_{l4_id}"] = {
+            "top_keywords": top_kws,
+            "children_L3": [f"v_{l3}" for l3 in l3_nodes],
+            "parent": f"r_{l5_parent}"
+        }
+
+    # L5 dict
+    L5_dict = {}
+    for l5_id, l4_nodes in enumerate(clusters_L5):
+        l5_kws = []
+        for l4 in l4_nodes:
+            for l3 in clusters_L4[l4]:
+                for l2 in clusters_L3[l3]:
+                    for l1 in clusters_L2[l2]:
+                        l5_kws.extend([id_to_kw[n] for n in clusters[l1]])
+                        
+        counts = Counter(l5_kws)
+        top_kws = [k for k,v in counts.most_common(35)]
+        
+        L5_dict[f"r_{l5_id}"] = {
+            "top_keywords": top_kws,
+            "children_L4": [f"m_{l4}" for l4 in l4_nodes]
+        }
+        
     output_data = {
-        'keyword_to_cluster': {kw: id_to_cluster[kw_to_id[kw]] for kw in valid_keywords},
-        'cluster_adjacency': final_adjacency,
-        'cluster_members': {str(c_id): [id_to_kw[n] for n in nodes] for c_id, nodes in enumerate(clusters)},
-        'cluster_nsfw': cluster_nsfw_flags
+        "metadata": {
+            "version": "2.0",
+            "total_keywords": len(valid_keywords),
+            "L1_count": len(clusters),
+            "L2_count": len(clusters_L2),
+            "L3_count": len(clusters_L3),
+            "L4_count": len(clusters_L4),
+            "L5_count": len(clusters_L5)
+        },
+        "kw_to_L1": kw_to_L1,
+        "L1": L1_dict,
+        "L1_adjacency": final_adjacency_l1,
+        "L2": L2_dict,
+        "L3": L3_dict,
+        "L4": L4_dict,
+        "L5": L5_dict
     }
     
-    print("\n11. Esportazione JSON finale...")
+    print("\n15. Esportazione JSON finale...")
+    OUTPUT_JSON = '../src/data/hierarchical_graph.json'
     os.makedirs(os.path.dirname(OUTPUT_JSON), exist_ok=True)
     with open(OUTPUT_JSON, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, ensure_ascii=False)
         
-    print(f"[DONE] Finito! Il grafo offline è stato generato e salvato in: {OUTPUT_JSON}")
+    print(f"[DONE] Finito! Il grafo gerarchico offline è stato generato e salvato in: {OUTPUT_JSON}")
 
 if __name__ == "__main__":
     main()

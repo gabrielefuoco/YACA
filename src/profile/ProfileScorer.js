@@ -73,19 +73,37 @@ class ProfileScorer {
         // --- 1. Assi Tematici (VSM: Vector Space Model) ---
         // Generi
         const genreIds = tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id) : []);
+        let unalignedGenres = 0;
         genreIds.forEach(gid => {
             if (gid !== undefined && gid !== null) {
-                thematicScore += this.getVectorScore(vFinal, 'g', gid);
+                const affinity = this.getVectorScore(vFinal, 'g', gid);
+                thematicScore += affinity;
+                if (affinity < 0.05) unalignedGenres++;
             }
         });
 
-        // Keywords
-        const keywords = tmdbData.keywords?.keywords || tmdbData.keywords?.results || [];
-        keywords.forEach(kw => {
-            if (kw && kw.id) {
-                thematicScore += this.getVectorScore(vFinal, 'k', kw.id);
+        // Keywords (VSM Gerarchico: L1, L2, L3)
+        const keywordItems = tmdbData.keywords?.keywords || tmdbData.keywords?.results || [];
+        const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
+        const hVector = HierarchicalGraph.vectorizeKeywords(keywordItems);
+        
+        for (const [nodeKey, movieNodeWeight] of Object.entries(hVector)) {
+            const userAffinity = vFinal[nodeKey];
+            if (userAffinity) {
+                thematicScore += (userAffinity * movieNodeWeight);
             }
-        });
+        }
+        
+        // --- 1.1 Calcolo penalità per disallineamento di genere (Alien Ratio) ---
+        let genreAlignmentMultiplier = 1.0;
+        if (genreIds.length > 0) {
+            const alienRatio = unalignedGenres / genreIds.length;
+            if (alienRatio >= 0.5) {
+                genreAlignmentMultiplier = 0.3; // 50%+ dei generi sono alieni al DNA: penalità severa
+            } else if (alienRatio >= 0.3) {
+                genreAlignmentMultiplier = 0.6; // 30%+ dei generi sono alieni: penalità moderata
+            }
+        }
 
         // --- 2. Assi Autoriali (Precision Bonus) ---
         // Registi
@@ -119,12 +137,32 @@ class ProfileScorer {
         const C = BAYESIAN_MEAN_VOTE;
         const bayesianScore = ((voteCount / (voteCount + m)) * voteAvg) + ((m / (voteCount + m)) * C);
 
-        // --- 4. Formula Finale Bilanciata dai Pesi ---
-        const totalWeight = tmdbWeight + traktWeight;
-        if (totalWeight === 0) return 0;
+        // --- 4. Formula Finale: Mitigazione Blockbuster e Decadimento Dinamico ---
+        // 4.1 Decadimento Dinamico del Voto: più il match VSM è alto, meno conta la massa
+        // Calcoliamo un fattore di decadimento (es. se profileMatch è 8.0, decayFactor = 1 - 0.8 = 0.2)
+        // Usiamo un tetto massimo di decadimento per non azzerarlo completamente (min 0.1)
+        const matchRatio = Math.min(profileMatch / 10.0, 0.9); 
+        const dynamicTmdbWeight = tmdbWeight * (1 - matchRatio);
+        
+        const totalDynamicWeight = dynamicTmdbWeight + traktWeight;
+        let finalScore = 0;
+        
+        if (totalDynamicWeight > 0) {
+            finalScore = ((profileMatch * traktWeight) + (bayesianScore * dynamicTmdbWeight)) / totalDynamicWeight;
+        }
 
-        const normalizedScore = ((profileMatch * traktWeight) + (bayesianScore * tmdbWeight)) / totalWeight;
-        return clampScore(normalizedScore);
+        // 4.2 Hidden Gem Boost (Moltiplicatore Coda Lunga)
+        // Se un film è poco popolare (sotto i 1000 voti) ma ha un buon match (es. >= 4.0), applichiamo un bonus.
+        if (voteCount < 1000 && profileMatch >= 4.0) {
+            // Bonus proporzionale alla "mancanza" di voti (max +25% di bonus)
+            const indieBonus = 1.0 + (0.25 * (1 - (voteCount / 1000)));
+            finalScore *= indieBonus;
+        }
+        
+        // 4.3 Applica Penalità di Genere Finale (Evita che il Bayesian Rating salvi film fuori target)
+        finalScore *= genreAlignmentMultiplier;
+
+        return clampScore(finalScore);
     }
 
     /**
@@ -181,24 +219,42 @@ class ProfileScorer {
         // Genre match score
         const vFinal = profile.compiledVectors?.V_final || {};
         let genreScore = 0;
+        let unalignedGenres = 0;
         const genreIds = lightData.genre_ids || [];
         genreIds.forEach(gid => {
             if (gid !== undefined && gid !== null) {
-                genreScore += this.getVectorScore(vFinal, 'g', gid);
+                const affinity = this.getVectorScore(vFinal, 'g', gid);
+                genreScore += affinity;
+                if (affinity < 0.05) unalignedGenres++;
             }
         });
 
+        // Keywords (VSM Gerarchico: L1, L2, L3)
         const keywordItems = lightData.keywords?.keywords || lightData.keywords?.results || lightData.keywords || [];
         let keywordScore = 0;
-        keywordItems.forEach((kw) => {
-            if (kw && kw.id) {
-                keywordScore += this.getVectorScore(vFinal, 'k', kw.id);
+        const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
+        const hVector = HierarchicalGraph.vectorizeKeywords(keywordItems);
+        
+        for (const [nodeKey, movieNodeWeight] of Object.entries(hVector)) {
+            const userAffinity = vFinal[nodeKey];
+            if (userAffinity) {
+                keywordScore += (userAffinity * movieNodeWeight);
             }
-        });
+        }
 
         const nicheGenreBonus = genreIds.reduce((bonus, gid) => (
             NICHE_GENRE_IDS.has(gid?.toString()) ? bonus + 0.75 : bonus
         ), 0);
+        
+        let genreAlignmentMultiplier = 1.0;
+        if (genreIds.length > 0) {
+            const alienRatio = unalignedGenres / genreIds.length;
+            if (alienRatio >= 0.5) {
+                genreAlignmentMultiplier = 0.3;
+            } else if (alienRatio >= 0.3) {
+                genreAlignmentMultiplier = 0.6;
+            }
+        }
 
         // Bayesian Weighted Rating
         const voteAvg = lightData.vote_average || 0;
@@ -211,12 +267,12 @@ class ProfileScorer {
             const credibilityMultiplier = (voteCount > 0 && voteCount < NICHE_MIN_REAL_VOTES) ? 0.15 : 1;
             const nicheVoteBonus = this.calculateNicheVoteBonus(voteCount);
             const thematicScore = genreScore + (keywordScore * 0.35) + nicheGenreBonus;
-            const combined = ((thematicScore * 0.8) + (nicheVoteBonus * 0.2)) * credibilityMultiplier;
+            const combined = (((thematicScore * 0.8) + (nicheVoteBonus * 0.2)) * credibilityMultiplier) * genreAlignmentMultiplier;
             return clampScore(combined);
         }
 
         // Combine: genre affinity (70%) + bayesian quality (30%)
-        const combined = (genreScore * 0.7) + (bayesianScore * 0.3);
+        const combined = ((genreScore * 0.7) + (bayesianScore * 0.3)) * genreAlignmentMultiplier;
         return clampScore(combined);
     }
 

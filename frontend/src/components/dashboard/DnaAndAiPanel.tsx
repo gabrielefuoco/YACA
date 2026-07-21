@@ -6,6 +6,8 @@ import { X, BrainCircuit, Terminal, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { DnaRadarChart } from './DnaRadarChart';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
+import { OrbitalDnaGraph } from './OrbitalDnaGraph';
+import { CatalogLivePreview } from './CatalogLivePreview';
 
 const HERO_CATALOGS_BASE = [
   { idBase: 'yaca_true_blend', label: 'True Blend', emoji: '🎯', type: 'ai', desc: 'Ricerca semantica AI + Scoring algoritmico.' },
@@ -67,7 +69,6 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
   const [compiledVectors, setCompiledVectors] = useState<(CompiledVector & { idNames?: Record<string, string> }) | null>(null);
   const [manualScore, setManualScore] = useState<number>(200);
   const [localIsSyncing, setLocalIsSyncing] = useState<boolean>(false);
-  const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
 
   const getDnaName = (vectorKey: string) => {
     const prefix = vectorKey.charAt(0);
@@ -117,14 +118,6 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
       },
     });
   };
-
-  const parseAndDeduplicateIds = (rawValue: unknown) => {
-    if (typeof rawValue !== 'string' && typeof rawValue !== 'number') {
-      return [];
-    }
-    return [...new Set(String(rawValue).split('|').map((v) => v.trim()).filter(Boolean))];
-  };
-
 
   const fetchAnalytics = useCallback(async () => {
     setAnalyticsLoading(true);
@@ -249,57 +242,12 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
               />
             </div>
 
-            {/* Dettagli DNA (Liste di badge) */}
+            {/* Dettagli DNA (Orbital Graph) */}
             <div className="w-full lg:w-1/2 flex flex-col gap-4">
-              <div className="glass-panel p-3 sm:p-5 border border-marrow-light/10 flex-grow">
-                <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">DNA Base (Dai Preset)</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {Object.entries(compiledVectors.V_static || {})
-                    .sort(([,a], [,b]) => (b as number) - (a as number))
-                    .slice(0, 10)
-                    .map(([key, weight]) => {
-                      const type = key.charAt(0);
-                      const name = getDnaName(key);
-                      return (
-                        <span key={key} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                          type === 'g' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
-                          type === 'k' ? 'bg-accent/15 text-marrow-deep border border-accent/20' : 
-                          'bg-primary/15 text-marrow-deep border border-primary/20'
-                        }`}>
-                          {name} <span className="opacity-50 ml-1">({Math.round(weight as number)})</span>
-                        </span>
-                      )
-                    })
-                  }
-                  {Object.keys(compiledVectors.V_static || {}).length === 0 && (
-                    <p className="text-xs text-marrow-light/40 italic">Nessun DNA base. Aggiungi dei preset.</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="glass-panel p-3 sm:p-5 border border-marrow-light/10 relative overflow-hidden flex-grow">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-accent opacity-50"></div>
-                <p className="text-xs font-bold text-marrow-light/60 mb-3 uppercase tracking-wider">DNA Evoluto (Base + Storico)</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {Object.entries(compiledVectors.V_final || {})
-                    .sort(([,a], [,b]) => (b as number) - (a as number))
-                    .slice(0, 12)
-                    .map(([key, weight]) => {
-                      const type = key.charAt(0);
-                      const name = getDnaName(key);
-                      return (
-                        <span key={key} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                          type === 'g' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
-                          type === 'k' ? 'bg-accent/15 text-marrow-deep border border-accent/20' : 
-                          'bg-primary/15 text-marrow-deep border border-primary/20'
-                        }`}>
-                          {name} <span className="opacity-50 ml-1">({Math.round(weight as number)})</span>
-                        </span>
-                      )
-                    })
-                  }
-                </div>
-              </div>
+               <OrbitalDnaGraph 
+                 compiledVectors={compiledVectors}
+                 getDnaName={getDnaName}
+               />
             </div>
           </div>
         ) : (
@@ -429,11 +377,11 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
 
       </section>
 
-      {/* ── Section 2: AI Inspector (Hero Catalogs) ── */}
+      {/* ── Section 2: DNA Engine ── */}
       <section className="flex flex-col gap-4 sm:gap-6">
         <div className="flex items-center gap-2 sm:gap-3 text-primary">
           <Terminal className="h-5 w-5 sm:h-6 sm:w-6" />
-          <h2 className="text-sm sm:text-lg font-black uppercase tracking-widest">Ispettore AI (Hero Catalogs)</h2>
+          <h2 className="text-sm sm:text-lg font-black uppercase tracking-widest">DNA Engine</h2>
         </div>
 
         <div className="flex flex-col gap-4 sm:gap-6">
@@ -446,22 +394,33 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
             const isMoviesEnabled = selectedPresets.includes(idMovies);
             const isSeriesEnabled = selectedPresets.includes(idSeries);
             const isCatalogDisabled = !isMoviesEnabled && !isSeriesEnabled;
-            const movieLog = analytics?.aiLogs?.[idMovies];
-            const seriesLog = analytics?.aiLogs?.[idSeries];
-            const preferredLog = isSeriesEnabled && !isMoviesEnabled ? seriesLog : movieLog;
-            const fallbackLog = preferredLog === movieLog ? seriesLog : movieLog;
-            const aiLog = preferredLog ?? fallbackLog;
+            
+            // Tolerance Meter logic
+            let toleranceColor = 'bg-primary';
+            let toleranceLabel = 'Bilanciata';
+            let toleranceDesc = 'Mantiene un buon equilibrio tra il tuo DNA e titoli molto popolari.';
+            let activeId = isMoviesEnabled ? idMovies : idSeries;
+
+            if (catalog.idBase.includes('hidden_gems')) {
+              toleranceColor = 'bg-red-500';
+              toleranceLabel = 'Severità Alta (0.3x)';
+              toleranceDesc = 'Scarta quasi tutto ciò che non fa match esatto col tuo DNA. Mostra solo veri "diamanti grezzi".';
+            } else if (catalog.idBase.includes('true_blend')) {
+              toleranceColor = 'bg-orange-500';
+              toleranceLabel = 'Severità Media (0.6x)';
+              toleranceDesc = 'Penalizza i generi che non ti piacciono ma conserva grandi classici e blockbuster affini.';
+            }
 
             return (
               <div
                 key={catalog.idBase}
-                className="glass-panel overflow-hidden flex flex-col shadow-lg shadow-marrow-light/5"
+                className="bg-[#0A0A0B] rounded-xl border border-white/5 overflow-hidden flex flex-col shadow-lg shadow-black/50"
               >
-                <div className="px-4 py-3 border-b border-marrow-light/10 bg-marrow-light/5">
+                <div className="px-4 py-3 border-b border-white/5 bg-[#121214]">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{catalog.emoji}</span>
-                      <span className="text-xs font-bold text-marrow-light">{catalog.label}</span>
+                      <span className="text-sm font-bold text-marrow-light">{catalog.label}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <label htmlFor={movieSwitchId} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-marrow-light/60 font-mono">
@@ -474,100 +433,50 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                       </label>
                     </div>
                   </div>
-                  <p className="text-[10px] text-marrow-light/40 mt-1 leading-relaxed italic">
+                  <p className="text-xs text-marrow-light/50 mt-1 leading-relaxed">
                     {catalog.desc}
                   </p>
                 </div>
-                <div className="p-3 flex-grow">
+                <div className="p-4 flex-grow flex flex-col gap-4">
                   {isCatalogDisabled ? (
-                    <div className="rounded-lg bg-marrow-light/5 border border-marrow-light/10 p-6 min-h-[140px] flex flex-col items-center justify-center text-center opacity-70">
+                    <div className="rounded-lg bg-white/5 border border-white/10 p-6 min-h-[140px] flex flex-col items-center justify-center text-center opacity-70">
                       <EyeOff className="h-8 w-8 text-marrow-light/20 mb-2" />
                       <p className="text-xs font-bold uppercase tracking-wider text-marrow-light/40">
-                        Ispettore disattivato
+                        Catalogo disattivato
                       </p>
                       <p className="text-[10px] text-marrow-light/40 mt-1">
-                        Attiva Film o Serie per visualizzare log e dettagli del catalogo.
+                        Attiva Film o Serie per visualizzare l'anteprima dal vivo.
                       </p>
-                    </div>
-                  ) : catalog.type === 'ai' ? (
-                    <div className="flex flex-col h-full gap-2">
-                       <div className="flex items-center gap-2 text-[10px] text-marrow-light/40 font-bold uppercase tracking-wider mb-1">
-                        <span className="bg-primary/20 text-primary px-2 py-0.5 rounded border border-primary/10">Fase 1: AI Prompt</span>
-                        <span className="text-xs">➔</span>
-                        <span className="bg-marrow-deep text-white/90 px-2 py-0.5 rounded border border-white/5">Fase 2: Scoring</span>
-                      </div>
-                      <div className="rounded-lg bg-marrow-deep p-4 flex-grow overflow-auto border border-black/20 shadow-[inset_0_2px_10px_rgba(0,0,0,0.3)]">
-                        <p className="text-[9px] text-white/60 font-bold mb-2 uppercase tracking-wider">
-                          Log Query Synthesizer (Mistral):
-                        </p>
-                        {analyticsLoading ? (
-                          <p className="text-secondary text-xs font-mono animate-pulse">Caricamento log AI in corso...</p>
-                        ) : aiLog && Array.isArray(aiLog) && aiLog.length > 0 ? (
-                          <pre className="text-white text-xs font-mono whitespace-pre-wrap break-words">
-                            {JSON.stringify(aiLog, null, 2)}
-                          </pre>
-                        ) : (
-                          <p className="text-white/40 text-xs font-mono">Nessun log AI generato. Configura una chiave API Mistral o forza l&apos;aggiornamento.</p>
-                        )}
-                      </div>
                     </div>
                   ) : (
-                    <div className="rounded-lg bg-marrow-light/5 border border-marrow-light/10 p-4 min-h-[140px] flex flex-col items-center justify-center text-center h-full">
-                      <span className="material-symbols-outlined text-3xl text-marrow-light/20 mb-2 opacity-60">
-                        {catalog.idBase.includes('seed_network') ? 'hub' : 'forum'}
-                      </span>
-                      <p className="text-xs text-marrow-light/60 font-bold uppercase tracking-wider mb-1">
-                        Analisi Motore Algoritmico
-                      </p>
-                      <p className="text-[10px] text-marrow-light/40 max-w-[90%] leading-relaxed mb-4">
-                        Calcolo affinità puro (no LLM text query). Il tuo DNA viene forzato e iniettato direttamente nel calcolo matematico usando questi parametri TMDB:
-                      </p>
-                      <div className="w-full rounded-md p-3 text-left border border-marrow-light/10 bg-white/40">
-                        <p className="text-[9px] text-marrow-light/60 font-bold mb-3 uppercase tracking-wider font-mono">DNA INIETTATO (MAPPING SEMANTICO)</p>
-                        {analytics?.baseDnaParams && Object.keys(analytics.baseDnaParams).length > 0 ? (
-                          <div className="flex flex-col gap-3">
-                            {Object.entries(analytics.baseDnaParams).map(([key, rawValue]) => {
-                              const ids = parseAndDeduplicateIds(rawValue);
-                              if (ids.length === 0) return null;
-                              const badgeLabel = TMDB_KEY_BADGE_LABEL[key] ?? { icon: '🧬', name: key };
-                              
-                              const isExpanded = expandedKeys[key] || false;
-                              const displayIds = isExpanded ? ids : ids.slice(0, 15);
-                              const hasMore = ids.length > 15;
-
-                              return (
-                                <div key={key} className="flex flex-col gap-1.5 py-1.5 border-b border-marrow-light/10 last:border-b-0 last:pb-0">
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-marrow-light/50 flex items-center gap-1 font-mono">
-                                    {badgeLabel.icon} {badgeLabel.name} ({ids.length})
-                                  </span>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {displayIds.map((id) => (
-                                      <span key={`${key}-${id}`} className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-bold ${
-                                        badgeLabel.name === 'Genere' ? 'bg-secondary text-marrow-deep border border-primary/20' : 
-                                        badgeLabel.name === 'Keyword' ? 'bg-accent/15 text-marrow-deep border border-accent/20' : 
-                                        'bg-primary/15 text-marrow-deep border border-primary/20'
-                                      }`}>
-                                        {getDnaName(`${key.startsWith('with_genres') ? 'g' : key.startsWith('with_keywords') ? 'k' : 'o'}:${id}`)}
-                                      </span>
-                                    ))}
-                                    {hasMore && (
-                                      <button
-                                        onClick={() => setExpandedKeys(prev => ({ ...prev, [key]: !isExpanded }))}
-                                        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-bold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all cursor-pointer"
-                                      >
-                                        {isExpanded ? 'Mostra meno' : `+${ids.length - 15} altri`}
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <p className="text-[10px] text-marrow-light/40 italic font-mono">Nessun filtro DNA attualmente attivo sul profilo.</p>
-                        )}
+                    <>
+                      {/* Tolerance Meter */}
+                      <div className="w-full bg-[#1A1A1E] border border-white/5 rounded-lg p-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[10px] font-bold text-marrow-light/60 uppercase tracking-widest">Filtro Alien Ratio</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded text-black ${toleranceColor}`}>{toleranceLabel}</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-black rounded-full overflow-hidden mb-2">
+                          <div className={`h-full ${toleranceColor}`} style={{ width: catalog.idBase.includes('hidden_gems') ? '90%' : catalog.idBase.includes('true_blend') ? '50%' : '20%' }} />
+                        </div>
+                        <p className="text-[10px] text-marrow-light/40">{toleranceDesc}</p>
                       </div>
-                    </div>
+
+                      {/* Live Preview */}
+                      <div className="flex flex-col gap-2">
+                         <div className="flex items-center justify-between">
+                           <span className="text-[10px] font-bold text-marrow-light/60 uppercase tracking-widest">Anteprima (DuckDB + VSM)</span>
+                           {isMoviesEnabled && isSeriesEnabled && (
+                             <span className="text-[9px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">Mostrando: {activeId.includes('movies') ? 'Film' : 'Serie'}</span>
+                           )}
+                         </div>
+                         <CatalogLivePreview 
+                           catalogId={activeId} 
+                           userId={activeUserId!} 
+                           profileId={profile.id} 
+                         />
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

@@ -320,6 +320,10 @@ function sanitizeCatalogMeta(item, options = {}) {
         _rawPoster: rawPoster, // Save raw poster to prevent nested proxies
     };
 
+    if (item._yacaMatch !== undefined) {
+        baseItem._yacaMatch = item._yacaMatch;
+    }
+
     if (item.trailers) {
         baseItem.trailers = item.trailers;
     }

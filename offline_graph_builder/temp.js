@@ -1,97 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>YACA Graph Explorer</title>
-    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-    <style type="text/css">
-        body { 
-            margin: 0; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: #0d1117; 
-            color: #c9d1d9; 
-            overflow: hidden;
-        }
-        #header { 
-            padding: 15px 20px; 
-            background-color: #161b22; 
-            border-bottom: 1px solid #30363d;
-            display: flex; 
-            gap: 15px; 
-            align-items: center; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            z-index: 10;
-            position: relative;
-        }
-        #header h2 { margin: 0; color: #58a6ff; font-size: 20px; font-weight: 600;}
-        input { 
-            padding: 8px 12px; 
-            font-size: 14px; 
-            border-radius: 6px;
-            border: 1px solid #30363d;
-            background-color: #0d1117;
-            color: #c9d1d9;
-            width: 250px;
-        }
-        input:focus { outline: none; border-color: #58a6ff; }
-        button { 
-            padding: 8px 16px; 
-            font-size: 14px; 
-            border-radius: 6px;
-            border: 1px solid #238636;
-            background-color: #238636;
-            color: white;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        button:hover { background-color: #2ea043; }
-        .nav-btn { background-color: #1f6feb; border-color: #388bfd; }
-        .nav-btn:hover { background-color: #388bfd; }
-        #info { margin-left: auto; font-size: 13px; color: #8b949e; }
-        #mynetwork {
-            width: 100vw;
-            height: calc(100vh - 65px);
-            background-color: #0d1117;
-        }
-        #tips {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(22, 27, 34, 0.8);
-            padding: 10px 15px;
-            border-radius: 8px;
-            border: 1px solid #30363d;
-            font-size: 13px;
-            color: #8b949e;
-            pointer-events: none;
-            z-index: 10;
-        }
-        #activeLevel {
-            font-size: 18px;
-            font-weight: bold;
-            color: #e3b341;
-            margin-left: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div id="header">
-        <h2>YACA Explorer</h2>
-        <input type="text" id="searchInput" placeholder="Cerca keyword (es. fantasy, magic)..." onkeydown="if(event.key === 'Enter') searchKeyword()" style="width: 300px;" />
-        <button onclick="searchKeyword()">Cerca</button>
-        <button class="nav-btn" onclick="navigateUp()">⬆️ Sali (Genitore)</button>
-        <button class="nav-btn" onclick="navigateDown()">⬇️ Scendi (Figli)</button>
-        <span id="activeLevel">L1 (Micro-Cluster)</span>
-        <span id="info">Caricamento grafo...</span>
-    </div>
-    
-    <div id="mynetwork"></div>
-    
-    <div id="tips">
-        💡 <b>Tip:</b> Usa Sali/Scendi per aggregare la galassia in <b>Topoi</b> (L2) o <b>Macro-Vibes</b> (L3). <b>Doppio Click</b> sui nodi blu per esplorare!
-    </div>
 
-    <script type="text/javascript">
         let rawData = null;
         let graphData = null;
         let network = null;
@@ -101,7 +8,7 @@
         let currentCenter = null;
         let currentLevel = 1; // 1=L1, 2=L2, 3=L3
 
-        fetch('/src/data/hierarchical_graph.json?v=' + Date.now())
+        fetch('/src/data/hierarchical_graph.json')
             .then(response => {
                 if(!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.json();
@@ -496,6 +403,4 @@
             network.on("hoverNode", function (e) { network.canvas.body.container.style.cursor = 'pointer'; });
             network.on("blurNode", function (e) { network.canvas.body.container.style.cursor = 'default'; });
         }
-    </script>
-</body>
-</html>
+    

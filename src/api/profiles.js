@@ -6,7 +6,6 @@ const AddonConfig = require('../db/models/AddonConfig');
 const WatchHistory = require('../models/WatchHistory');
 const { syncAllStremioData } = require('../utils/stremioAddon');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
-const { buildDnaDescription, generateDiscoveryQueries } = require('../ai/querySynthesizer');
 const LibraryConverterService = require('../services/LibraryConverterService');
 const UserLibraryItem = require('../db/models/UserLibraryItem');
 const { initMatchmakerSession, analyzeMatchmakerSession, finishMatchmakerSession, getMatchmakerTrailer } = require('../handlers/matchmakerHandler');
@@ -220,29 +219,8 @@ router.get('/:id/analytics', async (req, res) => {
             yaca_hidden_gems_series: 'hiddenGems',
         };
 
+        // Rimosse chiamate a Mistral per le query dinamiche, ritorniamo solo i parametri VSM di base.
         const aiLogs = {};
-        if (profile || account) {
-            const dnaDescription = await buildDnaDescription(profile, account, profileId);
-            if (dnaDescription) {
-                const modes = new Set(Object.values(CATALOG_MODES).filter(Boolean));
-                const modeResults = {};
-                const mistralKey = account?.apiKeys?.mistral;
-                for (const mode of modes) {
-                    try {
-                        const generated = await generateDiscoveryQueries(profile, mistralKey, mode, account, profileId);
-                        if (Array.isArray(generated) && generated.length > 0) {
-                            modeResults[mode] = generated;
-                        }
-                    } catch (err) {
-                        console.warn(`[Analytics] AI log resolution failed for mode ${mode}:`, err.message);
-                    }
-                }
-
-                for (const [catalogId, mode] of Object.entries(CATALOG_MODES)) {
-                    aiLogs[catalogId] = (mode && modeResults[mode]) ? modeResults[mode] : [];
-                }
-            }
-        }
 
         return res.json({ aiLogs, baseDnaParams });
     } catch (err) {

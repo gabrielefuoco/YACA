@@ -107,8 +107,13 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     let tmdbClient;
     const results = await rateLimitedMap(
         pageIds,
-        async (tmdbId) => {
+        async (recItem) => {
             try {
+                // Support both legacy string IDs (if cached) and new object format { id, matchScore }
+                const isObj = typeof recItem === 'object' && recItem !== null;
+                const tmdbId = isObj ? recItem.id : recItem;
+                const matchScore = isObj ? recItem.matchScore : null;
+
                 const normalizedId = normalizeContentId(tmdbId);
                 const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
                 let item = await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType, { cacheOnly: true });
@@ -148,7 +153,8 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                     description: item.overview || '',
                     releaseInfo: (item.release_date || item.first_air_date || '').substring(0, 4),
                     imdbRating: item.vote_average ? item.vote_average.toFixed(1) : undefined,
-                    genre_ids: item.genre_ids || (item.genres ? item.genres.map(g => g.id) : [])
+                    genre_ids: item.genre_ids || (item.genres ? item.genres.map(g => g.id) : []),
+                    _yacaMatch: matchScore
                 };
             } catch (_e) {
                 return null;
@@ -163,8 +169,10 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         global.setImmediate(() => {
             rateLimitedMap(
                 remainingIds,
-                async (tmdbId) => {
+                async (recItem) => {
                     try {
+                        const isObj = typeof recItem === 'object' && recItem !== null;
+                        const tmdbId = isObj ? recItem.id : recItem;
                         const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
                         await tmdb.getTmdbMovieDetails(tmdbApiKey, tmdbId.toString(), tmdbType);
                     } catch (_e) { }

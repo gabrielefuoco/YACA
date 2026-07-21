@@ -13,11 +13,12 @@ function extractStaticDNAFromQueries(queries) {
             });
         }
         if (query.with_keywords) {
-            query.with_keywords.toString().split(/[,|]/).forEach(id => {
-                if (!id.trim()) return;
-                const k = `k:${id.trim()}`;
-                V_static[k] = (V_static[k] || 0) + baseWeight;
-            });
+            const kwIds = query.with_keywords.toString().split(/[,|]/).map(id => id.trim()).filter(Boolean);
+            const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
+            const hVector = HierarchicalGraph.vectorizeKeywords(kwIds);
+            for (const [k, weight] of Object.entries(hVector)) {
+                V_static[k] = (V_static[k] || 0) + (baseWeight * weight);
+            }
         }
         if (query.keyword) {
             query.keyword.toString().split(/[,|]/).forEach(kwd => {
@@ -86,10 +87,15 @@ function extractActiveDNAFromTmdbData(tmdbData, baseWeight = 100) {
     const genreIds = tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id) : []);
     genreIds.forEach(id => addKey('g', id));
 
-    // Keyword
+    // Keyword (Gerarchiche tramite HierarchicalGraph)
     const keywordIds = tmdbData.keyword_ids || 
         (tmdbData.keywords?.keywords || tmdbData.keywords?.results || []).map(k => k.id);
-    keywordIds.forEach(id => addKey('k', id));
+    
+    const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
+    const hVector = HierarchicalGraph.vectorizeKeywords(keywordIds);
+    for (const [k, weight] of Object.entries(hVector)) {
+        dna[k] = (dna[k] || 0) + (baseWeight * weight);
+    }
 
     // Registi
     const directorIds = tmdbData.director_ids || 
