@@ -94,18 +94,23 @@ class ProfileScorer {
             }
         }
         
-        // --- 1.1 Calcolo penalità per disallineamento di genere (Alien Ratio) ---
+        // --- 1.1 Curva Logaritmica del Thematic Score (Soft-cap) ---
+        // Calcolato subito per poterlo usare nel filtro alieno (inclusivo dei topoi)
+        const scaledThematicScore = 10.0 * (1 - Math.exp(-thematicScore / 25.0));
+
+        // --- 1.2 Calcolo penalità per disallineamento di genere (Alien Ratio) ---
         let genreAlignmentMultiplier = 1.0;
         if (genreIds.length > 0) {
             let effectiveAlienRatio = unalignedGenres / genreIds.length;
             
-            // Perdono basato sull'affinità massima: se il film ha un genere molto amato, riduciamo la penalità
-            if (maxAffinity > 4.0) {
-                effectiveAlienRatio *= 0.1;
-            } else if (maxAffinity > 2.0) {
-                effectiveAlienRatio *= 0.4;
-            } else if (maxAffinity > 1.0) {
-                effectiveAlienRatio *= 0.7;
+            // Perdono basato sul Thematic Score: se il film risuona fortemente con il DNA 
+            // (grazie alle keyword e ai topoi), riduciamo la penalità dei generi alieni.
+            if (scaledThematicScore >= 7.0) {
+                effectiveAlienRatio *= 0.1; // Match fortissimo: perdona quasi tutto
+            } else if (scaledThematicScore >= 5.0) {
+                effectiveAlienRatio *= 0.4; // Match alto: perdona parzialmente
+            } else if (scaledThematicScore >= 3.0) {
+                effectiveAlienRatio *= 0.7; // Match moderato: perdono leggero
             }
 
             if (effectiveAlienRatio >= 0.5) {
@@ -137,9 +142,6 @@ class ProfileScorer {
 
         // --- 3. Final Affinity Weighting (Thematic 98%, Authorial 2%) ---
         // Authorial weight is minimized as per user feedback: "non sono così importanti"
-        // Usa una curva logaritmica (soft-cap) per permettere ai film con alti thematicScore di raggiungere score elevati
-        const scaledThematicScore = 10.0 * (1 - Math.exp(-thematicScore / 25.0));
-        
         // Rimosso il moltiplicatore genreAlignmentMultiplier da qui per evitare doppia penalità
         const profileMatch = (scaledThematicScore * 0.98) + (authorialScore * 0.02);
 
