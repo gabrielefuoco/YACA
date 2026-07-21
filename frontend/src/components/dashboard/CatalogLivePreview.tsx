@@ -85,18 +85,18 @@ export function CatalogLivePreview({ catalogId, userId, profileId }: CatalogLive
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={meta.poster}
-                alt={meta.name}
+                alt={meta.name || meta.title}
                 className="h-[210px] w-[140px] rounded-lg object-cover transition-all duration-300 group-hover/poster:scale-105 group-hover/poster:shadow-2xl group-hover/poster:shadow-primary/30 shadow-md shadow-marrow-light/20"
               />
             ) : (
               <div className="flex h-[210px] w-[140px] items-center justify-center rounded-lg bg-marrow-light/5 text-xs text-marrow-light/60 border border-marrow-light/20">
-                {meta.name?.slice(0, 2)}
+                {(meta.name || meta.title || 'Senza titolo').slice(0, 2)}
               </div>
             )}
             
             <div className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-primary-dark/90 via-primary-dark/30 to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover/poster:opacity-100 pointer-events-none">
-              <p className="text-[12px] font-black text-white line-clamp-2 leading-tight drop-shadow-md uppercase tracking-tight">{meta.name}</p>
-              {meta.releaseInfo && <p className="text-[10px] text-accent font-bold mt-0.5">{meta.releaseInfo}</p>}
+              <p className="text-[12px] font-black text-white line-clamp-2 leading-tight drop-shadow-md uppercase tracking-tight">{meta.name || meta.title}</p>
+              {(meta.releaseInfo || meta.year) && <p className="text-[10px] text-accent font-bold mt-0.5">{meta.releaseInfo || meta.year}</p>}
             </div>
             
             {/* YACA Match Badge */}

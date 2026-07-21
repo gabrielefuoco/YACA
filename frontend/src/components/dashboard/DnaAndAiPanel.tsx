@@ -4,7 +4,6 @@ import { Profile, DNAItem, AnalyticsData, SyncStatus, CompiledVector } from '@/t
 import { api } from '@/lib/api';
 import { X, BrainCircuit, Terminal, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { DnaRadarChart } from './DnaRadarChart';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { OrbitalDnaGraph } from './OrbitalDnaGraph';
 import { CatalogLivePreview } from './CatalogLivePreview';
@@ -232,18 +231,8 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
 
         {/* DNA Dinamico (V_static e V_final) */}
         {compiledVectors && (Object.keys(compiledVectors.V_static || {}).length > 0 || Object.keys(compiledVectors.V_final || {}).length > 0) ? (
-          <div className="flex flex-col lg:flex-row gap-6 items-center">
-            {/* Grafico Radar in primo piano */}
-            <div className="w-full lg:w-1/2 flex justify-center py-2">
-              <DnaRadarChart
-                V_static={compiledVectors.V_static || {}}
-                V_final={compiledVectors.V_final || {}}
-                getDnaName={getDnaName}
-              />
-            </div>
-
-            {/* Dettagli DNA (Orbital Graph) */}
-            <div className="w-full lg:w-1/2 flex flex-col gap-4">
+          <div className="flex flex-col gap-6 items-center w-full">
+            <div className="w-full flex justify-center py-2">
                <OrbitalDnaGraph 
                  compiledVectors={compiledVectors}
                  getDnaName={getDnaName}
@@ -414,9 +403,9 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
             return (
               <div
                 key={catalog.idBase}
-                className="bg-[#0A0A0B] rounded-xl border border-white/5 overflow-hidden flex flex-col shadow-lg shadow-black/50"
+                className="glass-panel rounded-xl overflow-hidden flex flex-col shadow-lg shadow-marrow-light/5"
               >
-                <div className="px-4 py-3 border-b border-white/5 bg-[#121214]">
+                <div className="px-4 py-3 border-b border-marrow-light/10 bg-marrow-light/5">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{catalog.emoji}</span>
@@ -439,7 +428,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                 </div>
                 <div className="p-4 flex-grow flex flex-col gap-4">
                   {isCatalogDisabled ? (
-                    <div className="rounded-lg bg-white/5 border border-white/10 p-6 min-h-[140px] flex flex-col items-center justify-center text-center opacity-70">
+                    <div className="rounded-lg bg-marrow-light/5 border border-marrow-light/10 p-6 min-h-[140px] flex flex-col items-center justify-center text-center opacity-70">
                       <EyeOff className="h-8 w-8 text-marrow-light/20 mb-2" />
                       <p className="text-xs font-bold uppercase tracking-wider text-marrow-light/40">
                         Catalogo disattivato
@@ -451,12 +440,12 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                   ) : (
                     <>
                       {/* Tolerance Meter */}
-                      <div className="w-full bg-[#1A1A1E] border border-white/5 rounded-lg p-3">
+                      <div className="w-full bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3">
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-[10px] font-bold text-marrow-light/60 uppercase tracking-widest">Filtro Alien Ratio</span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded text-black ${toleranceColor}`}>{toleranceLabel}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded text-white ${toleranceColor}`}>{toleranceLabel}</span>
                         </div>
-                        <div className="w-full h-1.5 bg-black rounded-full overflow-hidden mb-2">
+                        <div className="w-full h-1.5 bg-marrow-light/20 rounded-full overflow-hidden mb-2">
                           <div className={`h-full ${toleranceColor}`} style={{ width: catalog.idBase.includes('hidden_gems') ? '90%' : catalog.idBase.includes('true_blend') ? '50%' : '20%' }} />
                         </div>
                         <p className="text-[10px] text-marrow-light/40">{toleranceDesc}</p>
