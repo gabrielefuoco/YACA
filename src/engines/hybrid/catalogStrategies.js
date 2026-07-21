@@ -283,62 +283,62 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     const catalogId = mediaType === 'movie' ? 'yaca_hidden_gems_movies' : 'yaca_hidden_gems_series';
     
     const topGenres = computeTopGenres(profile, 3, user, context);
-    const topL2Ids = getTopL2Ids(profile, 2);
-    const expandedKwIds = getKeywordsForL2Ids(topL2Ids);
+    const topL2Ids = getTopNodeIds(profile, 'L2', 2);
     const directKwIds = computeTopKeywords(profile, 10, user, context);
-    const kwIds = Array.from(new Set([...directKwIds, ...expandedKwIds])).slice(0, 50);
-
-    const dnaFilters = getProfileDnaFilters(user, context);
-    const filters = {
-        'vote_average.gte': 6.5,
-        'vote_count.gte': 50,
-        'vote_count.lte': 1000,         // Hidden gems = low popularity
-        sort_by: 'popularity.desc'
-    };
     
-    if (kwIds.length > 0) {
-        filters.with_keywords = kwIds.join('|');
-    } else if (topGenres.length > 0) {
-        filters.with_genres = topGenres.join('|');
-    } else {
+    const where = [
+        F.minScore(6.5),
+        F.minVotes(50),
+        F.maxVotes(1000)
+    ];
+    if (types === 'movie') {
+        where.push(F.minRuntime(60));
+    }
+
+    if (topGenres.length > 0) {
+        where.push(F.any(...topGenres.map(g => F.genre(Number(g)))));
+    }
+    if (directKwIds.length > 0) {
+        where.push(F.keyword(...directKwIds.map(Number)));
+    }
+    for (const l2Id of topL2Ids) {
+        const toposKwIds = getKeywordsForNodeIds([l2Id], 'L2');
+        if (toposKwIds.length > 0) {
+            where.push(F.keyword(...toposKwIds.map(Number)));
+        }
+    }
+    
+    if (where.length <= 4) { // solo i 3-4 threshold filtri = nessun sapore profilato
         return fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
     }
     
-    if (types === 'movie') filters['with_runtime.gte'] = 60; 
+    const preset = {
+        type: types,
+        where: where,
+        orderBy: S.POPULAR
+    };
 
     // Use DuckDB for instant local querying
-    const lightMetas = await getDuckDbCatalogFromFilters(filters, types, 0, 500, {});
+    const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 500);
     if (!lightMetas || lightMetas.length === 0) {
-        // Fallback: fetch from TMDB directly and score them
-        const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-        const { fetchTmdbResults } = require('./dataFetchers');
-        const fallbackResults = await fetchTmdbResults(
-            tmdbClient,
-            `/discover/${types}`,
-            filters, // Pass DNA filters instead of generic hidden gems
-            `Hidden Gems fallback (${mediaType})`
-        );
-        const scored = fallbackResults.map(item => {
-            const score = ProfileScorer.calculateItemMatch(item, profile, { dnaFilters, globalProfile });
-            return { data: item, score };
-        });
-        return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ 
-            id: String(i.data.id), 
-            matchScore: Math.min(100, Math.max(1, Math.round(i.score))),
-            rawTMDB: i.data 
-        }));
+        return [];
     }
-    
-    const impressionMap = await getImpressionMap(userId, context, catalogId, lightMetas.map(m => String(m._tmdbId)));
 
+    const impressionMap = await getImpressionMap(userId, context, catalogId, lightMetas.map(m => String(m._tmdbId || m.id.split(':')[1])));
+
+    const dnaFilters = getProfileDnaFilters(user, context);
     const scored = lightMetas.map(item => {
-        const seenDays = impressionMap.get(String(item._tmdbId)) || 0;
+        const seenDays = impressionMap.get(String(item._tmdbId || item.id.split(':')[1])) || 0;
         const penaltyMultiplier = calculateImpressionPenalty(seenDays);
-        const score = ProfileScorer.calculateItemMatch(item.rawTMDB, profile, { dnaFilters, globalProfile });
-        return { data: item.rawTMDB, score: score * penaltyMultiplier };
+        const baseScore = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profile, { dnaFilters, globalProfile });
+        return { data: item, score: baseScore * penaltyMultiplier };
     });
-
-    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score))) }));
+    
+    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ 
+        id: String(i.data._tmdbId || i.data.id.split(':')[1]), 
+        matchScore: Math.min(100, Math.max(1, Math.round(i.score))),
+        rawTMDB: i.data.rawTMDB || i.data 
+    }));
 }
 
 /**

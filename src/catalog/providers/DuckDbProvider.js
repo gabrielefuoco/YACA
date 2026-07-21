@@ -40,13 +40,20 @@ async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 50) {
                 'watch/providers': { results: { IT: parsedProviders } }
             };
 
+            let releaseStr = '';
+            if (item.release_date) {
+                releaseStr = item.release_date instanceof Date ? item.release_date.toISOString() : String(item.release_date);
+            } else if (item.first_air_date) {
+                releaseStr = item.first_air_date instanceof Date ? item.first_air_date.toISOString() : String(item.first_air_date);
+            }
+            
             return {
                 id: `tmdb:${item.id}`,
                 type: isMovie ? 'movie' : 'series',
                 name: name,
                 poster: poster,
                 background: background,
-                releaseInfo: (item.release_date || item.first_air_date || '').substring(0, 4) || null,
+                releaseInfo: releaseStr ? releaseStr.substring(0, 4) : null,
                 imdbRating: item.vote_average ? String(item.vote_average.toFixed(1)) : null,
                 genres: parsedGenres.map(g => g.name || g),
                 description: item.overview || null,
