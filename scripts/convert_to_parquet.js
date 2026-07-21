@@ -10,6 +10,7 @@ const basePath = fs.existsSync('/data')
     : path.resolve(__dirname, '../.cache/tmdb');
 
 const types = ['movies', 'tv'];
+let hasError = false;
 
 async function convert() {
     console.log(`[DuckDB Convert] Avvio conversione JSONL in Parquet (ZSTD)...`);
@@ -51,12 +52,13 @@ async function convert() {
         } catch (err) {
             console.error(`[DuckDB Convert] ❌ Errore durante conversione ${type}:`, err);
             if (fs.existsSync(tmpParquetFile)) fs.unlinkSync(tmpParquetFile);
+            hasError = true;
         }
     }
 
     console.timeEnd('Tempo totale conversione');
     db.close();
-    process.exit(0);
+    process.exit(hasError ? 1 : 0);
 }
 
 convert();

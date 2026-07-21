@@ -139,8 +139,16 @@ class DuckDbStore {
     }
 
     close() {
-        if (this.con) this.con.close();
-        if (this.db) this.db.close();
+        if (this.con) {
+            try { this.con.close(); } catch (e) {}
+            this.con = null;
+        }
+        if (this.db) {
+            try { this.db.close(); } catch (e) {}
+            this.db = null;
+        }
+        this.initPromise = null;
+        this.isInitialized = false;
     }
 }
 
