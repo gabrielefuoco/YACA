@@ -8,9 +8,9 @@ async function testSmartAnd() {
     console.log("Connettendo al database...");
     await mongoose.connect(process.env.MONGODB_URI);
     
-    // Config: utente e profilo (ha storico visioni attivo)
-    const userId = 'REOZrGNRr3';
-    const context = '4159713d';
+    // Config: utente e profilo (Otaku Hardcore)
+    const userId = 'gabrielefuoco';
+    const context = 'otaku_hardcore';
     const tmdbApiKey = process.env.TMDB_API_KEY;
     
     console.log(`Esecuzione Smart AND (True Blend) per ${userId} -> Profilo ${context}...`);

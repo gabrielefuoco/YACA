@@ -63,6 +63,14 @@ class DuckDbStore {
 
                         console.log(`[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.`);
                         this.isInitialized = true;
+                        
+                        // Assicuriamoci di importare i mapping anime se sono già stati scaricati
+                        const animeMappingStore = require('../data/animeMappingStore');
+                        if (animeMappingStore.tmdbToAnimeNode && animeMappingStore.tmdbToAnimeNode.size > 0) {
+                            const allTmdbAnimeIds = Array.from(animeMappingStore.tmdbToAnimeNode.keys());
+                            this.updateAnimeMapping(allTmdbAnimeIds).catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-init:', e));
+                        }
+
                         resolve();
                     } catch (errExec) {
                         console.error(`[DuckDB Store] Errore inizializzazione tabelle/FTS:`, errExec);
