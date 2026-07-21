@@ -43,6 +43,32 @@ function getKeywordsForNodeIds(nodeIds, level = 'L2') {
 }
 
 /**
+ * Deduplica un array di film mantenendo solo l'elemento con il punteggio (o ordine) più alto per ciascuna collezione.
+ * @param {Array} scoredItems Array di film già ordinati per punteggio decrescente.
+ * @returns {Array} Array deduplicato.
+ */
+function deduplicateByCollection(scoredItems) {
+    const seenCollections = new Set();
+    const result = [];
+    
+    for (const item of scoredItems) {
+        const data = item.data || item.rawTMDB || item;
+        const collectionId = data.collection_id || data.belongs_to_collection?.id;
+        
+        if (collectionId) {
+            if (seenCollections.has(collectionId)) {
+                continue; // Saga già presente, scarta l'elemento secondario
+            }
+            seenCollections.add(collectionId);
+        }
+        
+        result.push(item);
+    }
+    
+    return result;
+}
+
+/**
  * 🎯 Direct Preset Catalog Builder (Bug 1.3 Fix: Preset Fall-through)
  */
 async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, mediaType) {
@@ -243,7 +269,10 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
         return { data: item.rawTMDB || item, score: score * penaltyMultiplier };
     });
     
-    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ 
+    const sorted = scored.sort((a, b) => b.score - a.score);
+    const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
+    
+    return deduplicated.slice(0, 100).map(i => ({ 
         id: String(i.data.id), 
         matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))), 
         rawTMDB: i.data 
@@ -375,7 +404,10 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         { batchSize: 3, delayMs: 150 }
     );
 
-    return scored.sort((a, b) => (b.score + b.hybridScore) - (a.score + a.hybridScore)).slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
+    const sorted = scored.sort((a, b) => (b.score + b.hybridScore) - (a.score + a.hybridScore));
+    const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
+
+    return deduplicated.slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
 }
 
 /**
@@ -416,7 +448,10 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
         return { data: item.rawTMDB || item, score: score * penaltyMultiplier };
     });
     
-    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ 
+    const sorted = scored.sort((a, b) => b.score - a.score);
+    const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
+    
+    return deduplicated.slice(0, 100).map(i => ({ 
         id: String(i.data.id), 
         matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))), 
         rawTMDB: i.data 
@@ -461,9 +496,10 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
         { batchSize: 3, delayMs: 150 }
     );
 
-    return scored
-        .filter(Boolean)
-        .sort((a, b) => b.score - a.score)
+    const sorted = scored.filter(Boolean).sort((a, b) => b.score - a.score);
+    const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
+    
+    return deduplicated
         .slice(0, 100)
         .map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
 }
