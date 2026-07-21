@@ -27,6 +27,9 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     const isKidsMode = profile?.settings?.kidsMode;
     const cacheKey = `${userId}_${context}_${catalogId}${isKidsMode ? '_kids' : ''}`;
 
+    console.log(`[Hybrid Debug] getHybridCatalog called with catalogId=${catalogId}, userId=${userId}, context=${context}`);
+    console.log(`[Hybrid Debug] profile loaded: ${!!profile}, isKidsMode=${isKidsMode}, cacheKey=${cacheKey}`);
+
     if (profile) {
         const now = new Date();
         const isStale = (now - profile.lastUpdated) > (1000 * 60 * 60 * 12);
@@ -70,8 +73,10 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 
     let recommendationIds;
     const { value: cachedEntry, status: cacheStatus } = await hybridRecommendationsCache.getWithStatus(cacheKey);
+    console.log(`[Hybrid Debug] cache status for ${cacheKey}: ${cacheStatus}`);
     if (cacheStatus !== 'miss' && Array.isArray(cachedEntry?.ids)) {
         recommendationIds = cachedEntry.ids;
+        console.log(`[Hybrid Debug] returning ${recommendationIds.length} IDs from cache`);
         if (cacheStatus === 'stale') {
             console.log(`[Hybrid-SWR] Revalidando catalogo ${catalogId} in background...`);
             buildRecommendIds().catch(e => console.error('[Hybrid-SWR] Error:', e.message));
@@ -79,7 +84,9 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     }
 
     if (!recommendationIds) {
+        console.log(`[Hybrid Debug] building new recommend IDs for ${catalogId}`);
         recommendationIds = await buildRecommendIds();
+        console.log(`[Hybrid Debug] buildRecommendIds returned ${recommendationIds?.length || 0} IDs`);
     }
 
     if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {

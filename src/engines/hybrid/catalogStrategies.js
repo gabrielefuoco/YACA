@@ -97,6 +97,7 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     
     const topL2Ids = getTopL2Ids(profile, 2);
     const kwIds = getKeywordsForL2Ids(topL2Ids);
+    console.log(`[Catalog Debug] True Blend - profile context=${context}, topL2Ids=${topL2Ids.join(',')}, kwIds count=${kwIds.length}`);
     
     // Fallback if no L2 Topoi
     if (kwIds.length === 0) {
