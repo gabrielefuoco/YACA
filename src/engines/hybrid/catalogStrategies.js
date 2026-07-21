@@ -202,7 +202,7 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     profile.user = user;
     profile.context = context;
     
-    const { pool } = await fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters, 100);
+    const { pool } = await fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters, 500);
     
     if (pool.length === 0) {
         return fetchPopularFallbackIds(tmdbApiKey, mediaType);
@@ -375,7 +375,7 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     profile.user = user;
     profile.context = context;
     
-    const { pool } = await fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters, 100);
+    const { pool } = await fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters, 500);
     
     if (pool.length === 0) {
         return fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
