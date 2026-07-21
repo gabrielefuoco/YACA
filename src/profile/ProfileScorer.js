@@ -127,7 +127,8 @@ class ProfileScorer {
 
         // --- 3. Final Affinity Weighting (Thematic 98%, Authorial 2%) ---
         // Authorial weight is minimized as per user feedback: "non sono così importanti"
-        const profileMatch = (thematicScore * 0.98) + (authorialScore * 0.02);
+        const scaledThematicScore = thematicScore / 10.0;
+        const profileMatch = (scaledThematicScore * 0.98) + (authorialScore * 0.02);
 
         // --- Phase 1.3: Bayesian Weighted Rating (IMDb formula) ---
         // WR = ((v/(v+m)) * R) + ((m/(v+m)) * C)

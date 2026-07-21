@@ -160,7 +160,9 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
                         category: preset.category,
                         where: preset.where || [],
                         orderBy: preset.orderBy || null,
-                        _provider: preset._provider || null
+                        _provider: preset._provider || null,
+                        queries: preset.queries || [],
+                        isAnime: preset.isAnime || false
                     });
                 } else {
                     warnings.push(`Preset non riconosciuto: ${presetId}`);

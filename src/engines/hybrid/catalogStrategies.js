@@ -87,6 +87,108 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
     return pool.slice(0, 100).map(id => ({ id: String(id), matchScore: null }));
 }
 
+function getAnimeProportion(profile) {
+    if (!profile.catalogs || profile.catalogs.length === 0) return 0;
+    const animeCount = profile.catalogs.filter(c => c.isAnime).length;
+    return animeCount / profile.catalogs.length;
+}
+
+/**
+ * Esegue query parallele su DuckDB raggruppate per Topos/Keyword ("Smart AND"),
+ * applicando la proporzione esatta per forzare (o meno) il flag Anime.
+ */
+async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [], limitPerQuery = 50) {
+    const types = mediaType === 'movie' ? 'movie' : 'tv';
+    
+    // 1. Calcolo Proporzione Anime
+    const animeRatio = getAnimeProportion(profile);
+    const { user, context } = profile;
+    const globalProfile = null; // not strictly needed for the fetch, used later for scoring
+    
+    // 2. Estrazione DNA
+    const topGenres = computeTopGenres(profile, 3, user, context);
+    const topL2Ids = getTopNodeIds(profile, 'L2', 3);
+    let directKwIds = computeTopKeywords(profile, 10, user, context);
+    
+    // Costruiamo i cluster (Topoi + Keywords)
+    const clusters = [];
+    
+    // Cluster da Topoi L2
+    for (const l2Id of topL2Ids) {
+        const toposKwIds = getKeywordsForNodeIds([l2Id], 'L2');
+        if (toposKwIds.length > 0) {
+            clusters.push({ name: `Topos ${l2Id}`, keywords: toposKwIds });
+        }
+    }
+    
+    // Se non abbiamo L2 (es. profilo nuovo), usiamo le direct keywords a coppie o singole
+    if (clusters.length === 0 && directKwIds.length > 0) {
+        for (let i = 0; i < directKwIds.length; i += 2) {
+            const pair = [directKwIds[i]];
+            if (directKwIds[i+1]) pair.push(directKwIds[i+1]);
+            clusters.push({ name: `KwPair ${pair.join(',')}`, keywords: pair });
+        }
+    }
+    
+    console.log(`[Smart AND] AnimeRatio: ${animeRatio}, TopGenres: ${topGenres.length}, Clusters: ${clusters.length}`);
+    if (clusters.length === 0 && topGenres.length === 0) {
+        console.log(`[Smart AND] Nessun cluster o genere, ritorno vuoto`);
+        return { pool: [], animeRatio }; 
+    }
+    
+    if (clusters.length === 0) {
+        clusters.push({ name: 'Fallback Genres Only', keywords: [] });
+    }
+    
+    let allResultsMap = new Map();
+    let totalQueries = clusters.length;
+    let animeQueriesLimit = Math.round(totalQueries * animeRatio);
+    
+    // 3. Esecuzione Parallela Smart AND
+    const promises = clusters.map(async (cluster, index) => {
+        const where = [...baseFilters];
+        
+        // Aggiungiamo i top genres in OR (ne basta uno)
+        if (topGenres.length > 0) {
+            where.push(F.any(...topGenres.map(g => F.genre(Number(g)))));
+        }
+        
+        // Aggiungiamo il cluster di keyword in OR tra loro
+        if (cluster.keywords.length > 0) {
+            where.push(F.any(...cluster.keywords.map(k => F.keyword(Number(k)))));
+        }
+        
+        // Applichiamo la Quota Anime
+        if (index < animeQueriesLimit) {
+            where.push(F.anime()); // Deve essere strettamente anime
+        }
+        
+        const preset = { type: types, where, orderBy: S.POPULAR };
+        console.log(`[Smart AND Query ${index + 1}/${totalQueries}] WHERE:`, JSON.stringify(where));
+        try {
+            const results = await getDuckDbCatalogFromPreset(preset, 0, limitPerQuery);
+            console.log(`[Smart AND Query ${index + 1}/${totalQueries}] Found ${results?.length || 0} items`);
+            return results || [];
+        } catch(e) {
+            console.error(`[Smart AND Query ${index + 1}/${totalQueries}] Error:`, e);
+            return [];
+        }
+    });
+    
+    const resultsArrays = await Promise.all(promises);
+    
+    for (const arr of resultsArrays) {
+        for (const item of arr) {
+            const id = String(item._tmdbId || item.id.split(':')[1]);
+            if (!allResultsMap.has(id)) {
+                allResultsMap.set(id, item);
+            }
+        }
+    }
+    
+    return { pool: Array.from(allResultsMap.values()), animeRatio };
+}
+
 /**
  * 🎯 Hero Catalog 1: True Blend ("Scelti per Te")
  */
@@ -94,69 +196,34 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
-    const types = mediaType === 'movie' ? 'movie' : 'tv';
     const catalogId = mediaType === 'movie' ? 'yaca_true_blend_movies' : 'yaca_true_blend_series';
     
-    const topGenres = computeTopGenres(profile, 3, user, context);
-    const topL2Ids = getTopNodeIds(profile, 'L2', 2);
-    const directKwIds = computeTopKeywords(profile, 10, user, context);
+    const baseFilters = [F.minVotes(1000)];
+    profile.user = user;
+    profile.context = context;
     
-    const where = [F.minVotes(1000)];
+    const { pool } = await fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters, 100);
     
-    if (topGenres.length > 0) {
-        where.push(F.any(...topGenres.map(g => F.genre(Number(g)))));
-    }
-    
-    if (directKwIds.length > 0) {
-        where.push(F.keyword(...directKwIds.map(Number)));
-    }
-    
-    // Raggruppiamo per Topoi L2 (se presenti)
-    for (const l2Id of topL2Ids) {
-        const toposKwIds = getKeywordsForNodeIds([l2Id], 'L2');
-        if (toposKwIds.length > 0) {
-            where.push(F.keyword(...toposKwIds.map(Number)));
-        }
-    }
-    
-    // Se non ci sono né keyword dirette né generi, peschiamo fallback
-    if (where.length === 1) {
+    if (pool.length === 0) {
         return fetchPopularFallbackIds(tmdbApiKey, mediaType);
     }
     
-    const preset = {
-        type: types,
-        where: where,
-        orderBy: S.POPULAR
-    };
-
-    console.log(`\n======================================================`);
-    console.log(`[Catalog Debug] True Blend Native SQL - profile context=${context}`);
-    console.log(`[Catalog Debug] Profile DNA:`);
-    console.log(` - Top Genres: ${JSON.stringify(topGenres)}`);
-    console.log(` - Top L2 Node IDs: ${JSON.stringify(topL2Ids)}`);
-    console.log(` - Direct Keyword IDs: ${JSON.stringify(directKwIds)}`);
-    console.log(`[Catalog Debug] Generated Pre-filtering Rules (DuckDB WHERE):`);
-    where.forEach((rule, idx) => console.log(`   ${idx + 1}. ${rule}`));
-    console.log(`======================================================\n`);
-
-    // Use DuckDB for instant local querying
-    const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 500);
-    if (!lightMetas || lightMetas.length === 0) {
-        return [];
-    }
-    
-    const impressionMap = await getImpressionMap(userId, context, catalogId, lightMetas.map(m => String(m._tmdbId || m.id.split(':')[1])));
-
+    const impressionMap = await getImpressionMap(userId, context, catalogId, pool.map(m => String(m._tmdbId || m.id.split(':')[1])));
     const dnaFilters = getProfileDnaFilters(user, context);
-    const scored = lightMetas.map(item => {
-        const seenDays = impressionMap.get(String(item._tmdbId)) || 0;
+    
+    const scored = pool.map(item => {
+        const id = String(item._tmdbId || item.id.split(':')[1]);
+        const seenDays = impressionMap.get(id) || 0;
         const penaltyMultiplier = calculateImpressionPenalty(seenDays);
-        const score = ProfileScorer.calculateItemMatch(item.rawTMDB, profile, { dnaFilters, globalProfile });
-        return { data: item.rawTMDB, score: score * penaltyMultiplier };
+        const score = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profile, { dnaFilters, globalProfile });
+        return { data: item.rawTMDB || item, score: score * penaltyMultiplier };
     });
     
-    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score))), rawTMDB: i.data }));
+    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ 
+        id: String(i.data.id), 
+        matchScore: Math.min(100, Math.max(1, Math.round(i.score))), 
+        rawTMDB: i.data 
+    }));
 }
 
 /**
@@ -294,75 +361,41 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     if (!profile) return fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
 
-    const types = mediaType === 'movie' ? 'movie' : 'tv';
     const catalogId = mediaType === 'movie' ? 'yaca_hidden_gems_movies' : 'yaca_hidden_gems_series';
     
-    const topGenres = computeTopGenres(profile, 3, user, context);
-    const topL2Ids = getTopNodeIds(profile, 'L2', 2);
-    const directKwIds = computeTopKeywords(profile, 10, user, context);
-    
-    const where = [
+    const baseFilters = [
         F.minScore(6.5),
         F.minVotes(50),
         F.maxVotes(1000)
     ];
-    if (types === 'movie') {
-        where.push(F.minRuntime(60));
-    }
-
-    if (topGenres.length > 0) {
-        where.push(F.any(...topGenres.map(g => F.genre(Number(g)))));
-    }
-    if (directKwIds.length > 0) {
-        where.push(F.keyword(...directKwIds.map(Number)));
-    }
-    for (const l2Id of topL2Ids) {
-        const toposKwIds = getKeywordsForNodeIds([l2Id], 'L2');
-        if (toposKwIds.length > 0) {
-            where.push(F.keyword(...toposKwIds.map(Number)));
-        }
+    if (mediaType === 'movie') {
+        baseFilters.push(F.minRuntime(60));
     }
     
-    if (where.length <= 4) { // solo i 3-4 threshold filtri = nessun sapore profilato
+    profile.user = user;
+    profile.context = context;
+    
+    const { pool } = await fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters, 100);
+    
+    if (pool.length === 0) {
         return fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
     }
     
-    const preset = {
-        type: types,
-        where: where,
-        orderBy: S.POPULAR
-    };
-
-    console.log(`\n======================================================`);
-    console.log(`[Catalog Debug] Hidden Gems - profile context=${context}`);
-    console.log(`[Catalog Debug] Profile DNA:`);
-    console.log(` - Top Genres: ${JSON.stringify(topGenres)}`);
-    console.log(` - Top L2 Node IDs: ${JSON.stringify(topL2Ids)}`);
-    console.log(` - Direct Keyword IDs: ${JSON.stringify(directKwIds)}`);
-    console.log(`[Catalog Debug] Generated Pre-filtering Rules (DuckDB WHERE):`);
-    where.forEach((rule, idx) => console.log(`   ${idx + 1}. ${rule}`));
-    console.log(`======================================================\n`);
-
-    // Use DuckDB for instant local querying
-    const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 500);
-    if (!lightMetas || lightMetas.length === 0) {
-        return [];
-    }
-
-    const impressionMap = await getImpressionMap(userId, context, catalogId, lightMetas.map(m => String(m._tmdbId || m.id.split(':')[1])));
-
+    const impressionMap = await getImpressionMap(userId, context, catalogId, pool.map(m => String(m._tmdbId || m.id.split(':')[1])));
     const dnaFilters = getProfileDnaFilters(user, context);
-    const scored = lightMetas.map(item => {
-        const seenDays = impressionMap.get(String(item._tmdbId || item.id.split(':')[1])) || 0;
+    
+    const scored = pool.map(item => {
+        const id = String(item._tmdbId || item.id.split(':')[1]);
+        const seenDays = impressionMap.get(id) || 0;
         const penaltyMultiplier = calculateImpressionPenalty(seenDays);
-        const baseScore = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profile, { dnaFilters, globalProfile });
-        return { data: item, score: baseScore * penaltyMultiplier };
+        const score = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profile, { dnaFilters, globalProfile });
+        return { data: item.rawTMDB || item, score: score * penaltyMultiplier };
     });
     
     return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ 
-        id: String(i.data._tmdbId || i.data.id.split(':')[1]), 
-        matchScore: Math.min(100, Math.max(1, Math.round(i.score))),
-        rawTMDB: i.data.rawTMDB || i.data 
+        id: String(i.data.id), 
+        matchScore: Math.min(100, Math.max(1, Math.round(i.score))), 
+        rawTMDB: i.data 
     }));
 }
 
