@@ -37,6 +37,8 @@ async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 50) {
                 release_date: item.release_date,
                 original_language: item.original_language,
                 genres: parsedGenres,
+                belongs_to_collection: item.collection_id ? { id: item.collection_id, name: item.collection_name } : null,
+                collection_id: item.collection_id,
                 'watch/providers': { results: { IT: parsedProviders } }
             };
 
