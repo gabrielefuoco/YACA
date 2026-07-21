@@ -8,14 +8,14 @@ interface OrbitalDnaGraphProps {
 
 export function OrbitalDnaGraph({ compiledVectors, getDnaName }: OrbitalDnaGraphProps) {
   const nodes = useMemo(() => {
-    if (!compiledVectors || !compiledVectors.V_final) return [];
+    if (!compiledVectors || !compiledVectors.V_final) return null;
 
     const finalVector = compiledVectors.V_final;
     const items = Object.entries(finalVector)
       .filter(([key]) => key.match(/^[gkda]:/)) // Only genres, keywords, directors, actors
       .sort((a, b) => b[1] - a[1]);
 
-    if (items.length === 0) return [];
+    if (items.length === 0) return null;
 
     // Take top 3 genres for the center
     const genres = items.filter(([k]) => k.startsWith('g:')).slice(0, 3);
