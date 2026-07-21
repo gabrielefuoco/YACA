@@ -39,8 +39,8 @@ export function OrbitalDnaGraph({ compiledVectors, getDnaName }: OrbitalDnaGraph
       }} />
 
       {/* Orbits */}
-      <div className="absolute w-[180px] h-[180px] border border-primary/20 rounded-full animate-[spin_60s_linear_infinite]" />
-      <div className="absolute w-[280px] h-[280px] border border-primary/10 rounded-full animate-[spin_90s_linear_infinite_reverse]" />
+      <div className="absolute w-[220px] h-[220px] border border-primary/20 rounded-full animate-[spin_60s_linear_infinite]" />
+      <div className="absolute w-[340px] h-[340px] border border-primary/10 rounded-full animate-[spin_90s_linear_infinite_reverse]" />
 
       {/* Center: Top Nodes */}
       <div className="relative z-10 flex flex-col items-center justify-center gap-2">
@@ -63,10 +63,10 @@ export function OrbitalDnaGraph({ compiledVectors, getDnaName }: OrbitalDnaGraph
         const angle = (i / total) * 2 * Math.PI;
         
         // Varying distance: closer if weight is higher
-        // Max orbit radius is ~140px, min is ~90px
+        // Increase base radius for more breathing room (140 to 180)
         const maxWeight = nodes.others[0][1];
         const normalizedW = weight / maxWeight; // 0 to 1
-        const radius = 140 - (normalizedW * 50); // Higher weight = smaller radius (closer to center)
+        const radius = 170 - (normalizedW * 50) + (i % 2 === 0 ? 15 : -15); // Add staggering
 
         const x = Math.cos(angle) * radius;
         const y = Math.sin(angle) * radius;

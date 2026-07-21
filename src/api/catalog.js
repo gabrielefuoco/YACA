@@ -198,7 +198,8 @@ router.post('/preview-catalog', async (req, res) => {
                     title: item.name || '',
                     poster: item.poster || null,
                     vote: item.vote_average || item.imdbRating || 0,
-                    year: item.releaseInfo || ''
+                    year: item.releaseInfo || '',
+                    _yacaMatch: item._yacaMatch
                 }));
 
                 return res.json({
@@ -243,7 +244,8 @@ router.post('/preview-catalog', async (req, res) => {
                 title: item.name || '',
                 poster: item.poster || null,
                 vote: item.vote_average || item.imdbRating || 0,
-                year: item.releaseInfo || ''
+                year: item.releaseInfo || '',
+                _yacaMatch: item._yacaMatch
             }));
 
             return res.json({

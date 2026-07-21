@@ -113,7 +113,24 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     // Use DuckDB for instant local querying
     const lightMetas = await getDuckDbCatalogFromFilters(filters, types, 0, 500, {});
     if (!lightMetas || lightMetas.length === 0) {
-        return fetchPopularFallbackIds(tmdbApiKey, mediaType);
+        // Fallback: fetch from TMDB directly and score them
+        const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+        const { fetchTmdbResults } = require('./dataFetchers');
+        const fallbackResults = await fetchTmdbResults(
+            tmdbClient,
+            `/discover/${types}`,
+            { sort_by: 'popularity.desc', 'vote_count.gte': 50 },
+            `Popular fallback (${mediaType})`
+        );
+        const scored = fallbackResults.map(item => {
+            const score = ProfileScorer.calculateItemMatch(item, profile, { dnaFilters, globalProfile });
+            return { data: item, score };
+        });
+        return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ 
+            id: String(i.data.id), 
+            matchScore: Math.min(100, Math.max(1, Math.round(i.score))),
+            rawTMDB: i.data 
+        }));
     }
     
     const impressionMap = await getImpressionMap(userId, context, catalogId, lightMetas.map(m => String(m._tmdbId)));
@@ -125,7 +142,7 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
         return { data: item.rawTMDB, score: score * penaltyMultiplier };
     });
     
-    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score))) }));
+    return scored.sort((a, b) => b.score - a.score).slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score))), rawTMDB: i.data }));
 }
 
 /**

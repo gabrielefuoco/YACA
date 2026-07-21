@@ -33,8 +33,9 @@ export function CatalogLivePreview({ catalogId, userId, profileId }: CatalogLive
         });
         
         if (mounted) {
-          if (res.metas) {
-            setItems(res.metas.slice(0, 20));
+          const fetchedItems = res.metas || res.items || res.results;
+          if (fetchedItems) {
+            setItems(fetchedItems.slice(0, 20));
           } else {
             setItems([]);
           }
