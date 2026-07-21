@@ -97,13 +97,13 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
     
     const topGenres = computeTopGenres(profile, 3, user, context);
     const topL2Ids = getTopL2Ids(profile, 2);
-    let kwIds = getKeywordsForL2Ids(topL2Ids);
-    console.log(`[Catalog Debug] True Blend - profile context=${context}, topL2Ids=${topL2Ids.join(',')}, kwIds count=${kwIds.length}`);
+    const expandedKwIds = getKeywordsForL2Ids(topL2Ids);
+    const directKwIds = computeTopKeywords(profile, 10, user, context);
     
-    // Fallback if no L2 Topoi
-    if (kwIds.length === 0) {
-        kwIds = computeTopKeywords(profile, 10, user, context);
-    }
+    // Unione: diamo priorità alle keyword dirette (L0), arricchite con l'espansione semantica (L2)
+    const kwIds = Array.from(new Set([...directKwIds, ...expandedKwIds])).slice(0, 50);
+    
+    console.log(`[Catalog Debug] True Blend - profile context=${context}, directKw=${directKwIds.length}, expandedKw=${expandedKwIds.length}`);
     
     const dnaFilters = getProfileDnaFilters(user, context);
     const filters = {
@@ -189,13 +189,11 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     }
 
     if (dnaSeeds.length === 0) {
-        // Fallback: Use dynamic VSM top keywords if no manual DNA is set
+        // Fallback: Use dynamic VSM top keywords se non c'è DNA manuale
         const topL2Ids = getTopL2Ids(profile, 2);
-        let kwIds = getKeywordsForL2Ids(topL2Ids);
-        
-        if (kwIds.length === 0) {
-            kwIds = computeTopKeywords(profile, 10, user, context);
-        }
+        const expandedKwIds = getKeywordsForL2Ids(topL2Ids);
+        const directKwIds = computeTopKeywords(profile, 10, user, context);
+        const kwIds = Array.from(new Set([...directKwIds, ...expandedKwIds])).slice(0, 50);
         
         const topGenres = computeTopGenres(profile, 3, user, context);
         
@@ -302,11 +300,9 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
     
     const topGenres = computeTopGenres(profile, 3, user, context);
     const topL2Ids = getTopL2Ids(profile, 2);
-    let kwIds = getKeywordsForL2Ids(topL2Ids);
-    
-    if (kwIds.length === 0) {
-        kwIds = computeTopKeywords(profile, 10, user, context);
-    }
+    const expandedKwIds = getKeywordsForL2Ids(topL2Ids);
+    const directKwIds = computeTopKeywords(profile, 10, user, context);
+    const kwIds = Array.from(new Set([...directKwIds, ...expandedKwIds])).slice(0, 50);
 
     const dnaFilters = getProfileDnaFilters(user, context);
     const filters = {
