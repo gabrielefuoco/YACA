@@ -143,7 +143,8 @@ function calculateMatchmakerFunnel(genres, moods, filters) {
         score = score * massBonus;
         
         if (bubbleUpBoosts[m_id]) {
-            score *= (1.0 + (bubbleUpBoosts[m_id] * 0.1));
+            // Increase mood multiplier dramatically so that moods actually steer the genre
+            score *= (1.0 + (bubbleUpBoosts[m_id] * 2.0));
         }
         
         if (genres && genres.length > 0 && score === 0) continue;
@@ -163,7 +164,7 @@ function calculateMatchmakerFunnel(genres, moods, filters) {
         if (!grouped[r.l4_id]) {
             const l4_node = graph.data.L4[r.l4_id];
             grouped[r.l4_id] = {
-                l4_id: r.l4_id,
+                id: r.l4_id,
                 name: l4_node?.ui_name || l4_node?.medoid || "Mix",
                 emoji: l4_node?.ui_emoji || "🔥",
                 children_l3: []
