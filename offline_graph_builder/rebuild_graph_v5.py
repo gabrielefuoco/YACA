@@ -8,13 +8,12 @@ import math
 import os
 import pickle
 import re
-from itertools import combinations
 from collections import defaultdict, Counter
 from tqdm import tqdm
 from scipy.spatial.distance import cdist
 
 CACHE_DIR = 'cache'
-MIN_KEYWORD_FREQ = 5
+MIN_KEYWORD_FREQ = 15
 ALPHA = 0.4
 TOP_K_EDGES_PER_NODE = 10
 LEIDEN_RESOLUTION = 150.0
@@ -23,8 +22,8 @@ CACHE_KWS = os.path.join(CACHE_DIR, f'kws_f{MIN_KEYWORD_FREQ}.pkl')
 CACHE_PPMI = os.path.join(CACHE_DIR, f'ppmi_f{MIN_KEYWORD_FREQ}.npz')
 CACHE_EMB = os.path.join(CACHE_DIR, f'emb_f{MIN_KEYWORD_FREQ}.npy')
 CACHE_COSINE = os.path.join(CACHE_DIR, f'cosine_f{MIN_KEYWORD_FREQ}_t0.75.npz')
+CACHE_KW_GENRES = os.path.join(CACHE_DIR, 'kw_genres.json')
 
-# Elenco espanso di Keyword Umorali (Mood) da depotenziare come Hub
 MOOD_KEYWORDS = {
     'powerful', 'admiring', 'intense', 'awestruck', 'enthusiastic', 'adoring', 
     'bold', 'vibrant', 'exuberant', 'thrilling', 'exhilarated', 'foreboding', 
@@ -35,8 +34,16 @@ MOOD_KEYWORDS = {
     'contemplative', 'psychological', 'emotional', 'romantic', 'dramatic'
 }
 
+def cosine_similarity(vec1, vec2):
+    dot = sum(vec1[k] * vec2.get(k, 0) for k in vec1)
+    mag1 = math.sqrt(sum(v**2 for v in vec1.values()))
+    mag2 = math.sqrt(sum(v**2 for v in vec2.values()))
+    if mag1 == 0 or mag2 == 0:
+        return 0.0
+    return dot / (mag1 * mag2)
+
 def main():
-    print("[START] Inizio Fase 1: Re-build Graph v4 con Hub-Penalty per Mood")
+    print("[START] Inizio Fase 1: Re-build Graph v5 con Progressive Genre Penalty")
 
     # 1. Caricamento Cache
     with open(CACHE_KWS, 'rb') as f:
@@ -45,6 +52,10 @@ def main():
     PPMI_matrix = sp.load_npz(CACHE_PPMI)
     embeddings = np.load(CACHE_EMB)
     Cosine_matrix = sp.load_npz(CACHE_COSINE)
+    
+    with open(CACHE_KW_GENRES, 'r', encoding='utf-8') as f:
+        kw_genres = json.load(f)
+    
     print(f"   [OK] Cache caricata. Nodi: {N}")
 
     # 2. Fusione Matrici
@@ -74,38 +85,18 @@ def main():
     Fused_matrix.eliminate_zeros()
     Fused_matrix = Fused_matrix.maximum(Fused_matrix.T)
 
-    # 4. Hub-Penalty per Keyword Umorali e SUPER-HUBS (Masking Bipartito)
-    # Troviamo gli indici delle keyword umorali classiche
+    # 4. Hub-Penalty per Keyword Umorali
     mood_indices = [i for i, kw in enumerate(id_to_kw) if kw in MOOD_KEYWORDS]
-    
-    # NOVITÀ: Identifichiamo i 50 "Super-Hubs" (generici tipo murder, love) calcolando 
-    # la Degree Centrality grezza sulla matrice PPMI
-    degrees = np.array(PPMI_matrix.sum(axis=1)).flatten()
-    # Argpartition per trovare gli indici dei 50 valori più alti
-    top_50_hub_indices = np.argpartition(degrees, -50)[-50:]
-    
-    # Stampiamo quali sono per debug
-    top_hubs_words = [id_to_kw[i] for i in top_50_hub_indices]
-    print(f"   [INFO] Identificati {len(top_50_hub_indices)} Super-Hubs da depotenziare: {', '.join(top_hubs_words[:15])}...")
-    
-    # Uniamo gli indici
-    all_penalty_indices = list(set(mood_indices + list(top_50_hub_indices)))
-
-    if all_penalty_indices:
+    if mood_indices:
         cx_fused = Fused_matrix.tocoo()
         is_mood = np.zeros(N, dtype=bool)
-        is_mood[all_penalty_indices] = True
-        
-        # Maschera: True se entrambi i nodi sono umorali/hub
+        is_mood[mood_indices] = True
         mood_to_mood_mask = is_mood[cx_fused.row] & is_mood[cx_fused.col]
-        # Azzeriamo gli edge incrociati tra i super-hub
         cx_fused.data[mood_to_mood_mask] = 0
         Fused_matrix = cx_fused.tocsr()
         Fused_matrix.eliminate_zeros()
-        print(f"   [OK] Applicato Hub-Penalty su {len(all_penalty_indices)} keyword (rimossi edge hub-to-hub).")
 
-    # 5. Isolamento NSFW (Per conservarli a L1 senza inquinarli o inquinare SFW)
-    # Regex aggiornata con i termini giapponesi e specifici sfuggiti
+    # 5. Isolamento NSFW
     nsfw_pattern = re.compile(r'\b(sex|sexy|sexual|sexuality|porn\w*|eroti\w*|nude|nudity|rape|incest|masturbat\w*|vibrator|dildo|bdsm|fetish\w*|orgasm|3p|4p|sexually broken|pinku eiga|av idol|hentai|ero|エロ|辱め)\b', re.IGNORECASE)
     is_node_nsfw = np.zeros(N, dtype=bool)
     for i in range(N):
@@ -113,7 +104,6 @@ def main():
             is_node_nsfw[i] = True
 
     cx_fused = Fused_matrix.tocoo()
-    # Manteniamo i link SOLO tra SFW-SFW e tra NSFW-NSFW.
     keep_mask = is_node_nsfw[cx_fused.row] == is_node_nsfw[cx_fused.col]
     cx_fused.data[~keep_mask] = 0
     Fused_matrix = cx_fused.tocsr()
@@ -139,14 +129,6 @@ def main():
 
     print(f"   [OK] L1: {len(clusters)} clusters ({len(valid_l1_clusters)} SFW)")
 
-    def get_medoid(kw_indices):
-        if not kw_indices: return "Unknown"
-        if len(kw_indices) == 1: return id_to_kw[kw_indices[0]]
-        vecs = embeddings[kw_indices]
-        mean_vec = np.mean(vecs, axis=0, keepdims=True)
-        dists = cdist(mean_vec, vecs, metric='cosine')[0]
-        return id_to_kw[kw_indices[np.argmin(dists)]]
-
     cluster_adj = defaultdict(float)
     cx = PPMI_matrix.tocoo()
     for i, j, v in zip(cx.row, cx.col, cx.data):
@@ -167,7 +149,7 @@ def main():
     ig_G_L1 = ig.Graph(n=len(l1_list), edges=l1_edges, directed=False)
     partition_L2 = leidenalg.find_partition(ig_G_L1, leidenalg.RBConfigurationVertexPartition, weights=l1_weights, resolution_parameter=10.0)
     clusters_L2 = list(partition_L2)
-    print(f"   [OK] L2: {len(clusters_L2)} Topoi (solo SFW)")
+    print(f"   [OK] L2: {len(clusters_L2)} Topoi")
 
     id_to_L2 = {}
     for l2_id, l1_idxs in enumerate(clusters_L2):
@@ -186,15 +168,33 @@ def main():
     ig_G_L2 = ig.Graph(n=len(clusters_L2), edges=list(l2_adj.keys()), directed=False)
     partition_L3 = leidenalg.find_partition(ig_G_L2, leidenalg.RBConfigurationVertexPartition, weights=list(l2_adj.values()), resolution_parameter=3.16)
     clusters_L3 = list(partition_L3)
-    print(f"   [OK] L3 (3.16): {len(clusters_L3)} Intermedi Superiori")
+    print(f"   [OK] L3: {len(clusters_L3)} Intermedi Superiori")
 
     id_to_L3 = {}
     for l3_id, l2_nodes in enumerate(clusters_L3):
         for l2_node in l2_nodes:
             id_to_L3[l2_node] = l3_id
 
-    # 9. L4 Clustering (1.5)
-    # 9. L4 Clustering (2.0)
+    # -- PROGRESSIVE GENRE PENALTY PRE-L4 --
+    # Calcoliamo il vettore di genere per ogni L3
+    l3_genre_profiles = {}
+    for l3_id, l2_nodes in enumerate(clusters_L3):
+        profile = defaultdict(float)
+        for l2 in l2_nodes:
+            for l1_idx in clusters_L2[l2]:
+                l1 = idx_to_l1[l1_idx]
+                for node in clusters[l1]:
+                    kw = id_to_kw[node]
+                    if kw in kw_genres:
+                        for g, p in kw_genres[kw].items():
+                            profile[g] += p
+        # Normalizziamo
+        total = sum(profile.values())
+        if total > 0:
+            for g in profile:
+                profile[g] /= total
+        l3_genre_profiles[l3_id] = profile
+
     l3_adj = defaultdict(float)
     for (l2_1, l2_2), w in l2_adj.items():
         l3_1 = id_to_L3[l2_1]
@@ -203,36 +203,77 @@ def main():
             edge = tuple(sorted([l3_1, l3_2]))
             l3_adj[edge] += w
 
-    ig_G_L3 = ig.Graph(n=len(clusters_L3), edges=list(l3_adj.keys()), directed=False)
-    partition_L4 = leidenalg.find_partition(ig_G_L3, leidenalg.RBConfigurationVertexPartition, weights=list(l3_adj.values()), resolution_parameter=2.0)
+    # Applichiamo la Genre Similarity per attenuare gli edge
+    l3_adj_penalized = {}
+    for (u, v), w in l3_adj.items():
+        sim = cosine_similarity(l3_genre_profiles[u], l3_genre_profiles[v])
+        # Un moltiplicatore più incisivo: penalizziamo forte se sotto 0.2 (generi quasi disgiunti)
+        # Esaltiamo la penalizzazione cubica o la usiamo cruda
+        penalty = sim ** 2 
+        new_w = w * penalty
+        if new_w > 0:
+            l3_adj_penalized[(u, v)] = new_w
+
+    # 9. L4 Clustering (1.5)
+    ig_G_L3 = ig.Graph(n=len(clusters_L3), edges=list(l3_adj_penalized.keys()), directed=False)
+    partition_L4 = leidenalg.find_partition(ig_G_L3, leidenalg.RBConfigurationVertexPartition, weights=list(l3_adj_penalized.values()), resolution_parameter=1.5)
     clusters_L4 = list(partition_L4)
-    print(f"   [OK] L4 (2.0): {len(clusters_L4)} Nuovi Macro-Vibes")
+    print(f"   [OK] L4 (1.5) [Genre Guided]: {len(clusters_L4)} Nuovi Macro-Vibes")
 
     id_to_L4 = {}
     for l4_id, l3_nodes in enumerate(clusters_L4):
         for l3_node in l3_nodes:
             id_to_L4[l3_node] = l4_id
 
-    # 10. L5 Clustering (1.0)
+    # -- PROGRESSIVE GENRE PENALTY PRE-L5 --
+    l4_genre_profiles = {}
+    for l4_id, l3_nodes in enumerate(clusters_L4):
+        profile = defaultdict(float)
+        for l3 in l3_nodes:
+            for g, p in l3_genre_profiles[l3].items():
+                profile[g] += p
+        total = sum(profile.values())
+        if total > 0:
+            for g in profile:
+                profile[g] /= total
+        l4_genre_profiles[l4_id] = profile
+
     l4_adj = defaultdict(float)
-    for (l3_1, l3_2), w in l3_adj.items():
+    for (l3_1, l3_2), w in l3_adj_penalized.items():
         l4_1 = id_to_L4[l3_1]
         l4_2 = id_to_L4[l3_2]
         if l4_1 != l4_2:
             edge = tuple(sorted([l4_1, l4_2]))
             l4_adj[edge] += w
 
-    ig_G_L4 = ig.Graph(n=len(clusters_L4), edges=list(l4_adj.keys()), directed=False)
-    partition_L5 = leidenalg.find_partition(ig_G_L4, leidenalg.RBConfigurationVertexPartition, weights=list(l4_adj.values()), resolution_parameter=1.0)
+    l4_adj_penalized = {}
+    for (u, v), w in l4_adj.items():
+        sim = cosine_similarity(l4_genre_profiles[u], l4_genre_profiles[v])
+        penalty = sim ** 2
+        new_w = w * penalty
+        if new_w > 0:
+            l4_adj_penalized[(u, v)] = new_w
+
+    # 10. L5 Clustering (1.15)
+    ig_G_L4 = ig.Graph(n=len(clusters_L4), edges=list(l4_adj_penalized.keys()), directed=False)
+    partition_L5 = leidenalg.find_partition(ig_G_L4, leidenalg.RBConfigurationVertexPartition, weights=list(l4_adj_penalized.values()), resolution_parameter=1.15)
     clusters_L5 = list(partition_L5)
-    print(f"   [OK] L5 (1.0): {len(clusters_L5)} Old L3 (Root)")
+    print(f"   [OK] L5 (1.15) [Genre Guided]: {len(clusters_L5)} Continenti")
 
     id_to_L5 = {}
     for l5_id, l4_nodes in enumerate(clusters_L5):
         for l4_node in l4_nodes:
             id_to_L5[l4_node] = l5_id
 
-    # 11. Costruzione JSON con Medoidi
+    def get_medoid(kw_indices):
+        if not kw_indices: return "Unknown"
+        if len(kw_indices) == 1: return id_to_kw[kw_indices[0]]
+        vecs = embeddings[kw_indices]
+        mean_vec = np.mean(vecs, axis=0, keepdims=True)
+        dists = cdist(mean_vec, vecs, metric='cosine')[0]
+        return id_to_kw[kw_indices[np.argmin(dists)]]
+
+    # 11. Costruzione JSON
     kw_to_L1 = {id_to_kw[i]: f"c_{id_to_cluster[i]}" for i in range(N)}
     
     L1_dict = {}
@@ -300,7 +341,7 @@ def main():
 
     output_data = {
         "metadata": {
-            "version": "2.3",
+            "version": "2.5",
             "total_keywords": N,
             "L1_count": len(clusters),
             "L2_count": len(clusters_L2),
@@ -319,7 +360,7 @@ def main():
     OUTPUT_JSON = '../src/data/hierarchical_graph.json'
     with open(OUTPUT_JSON, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, ensure_ascii=False)
-    print(f"[DONE] Grafo ricostruito con 5 livelli e salvato in {OUTPUT_JSON}!")
+    print(f"[DONE] Grafo V5 con Genre Penalty salvato in {OUTPUT_JSON}!")
 
 if __name__ == "__main__":
     main()

@@ -14,12 +14,12 @@ from collections import defaultdict, Counter
 from tqdm import tqdm
 
 # --- CONFIGURAZIONE PARAMETRI DI TUNING ---
-DATASET_PATH = '../TMDB_movie_dataset_v11.csv'
+DATASET_PATH = '../movies.parquet'
 OUTPUT_JSON = '../src/data/graph_data.json'
 CACHE_DIR = 'cache'
 
 # Parametri Tuning
-MIN_KEYWORD_FREQ = 15       # Recuperiamo la long-tail (10k-15k keyword)
+MIN_KEYWORD_FREQ = 5        # 5 in 25k movies is equivalent to ~200 in 1M movies. Perfetto per pulire il rumore.
 ALPHA = 0.4                 # Compromesso: 40% PPMI, 60% Semantica
 TOP_K_EDGES_PER_NODE = 10   # Sparsità forzata: ogni keyword si lega al max a 10 altre keyword
 LEIDEN_RESOLUTION = 150.0   # Forziamo lo spezzettamento estremo in micro-cluster da ~5 nodi
@@ -45,11 +45,11 @@ def main():
         PPMI_matrix = sp.load_npz(CACHE_PPMI)
         print(f"   [OK] {N} keyword caricate. Matrice PPMI caricata ({PPMI_matrix.nnz} archi).\n")
     else:
-        print("1. Caricamento dataset TMDB...")
+        print("1. Caricamento dataset TMDB (Parquet)...")
         try:
-            df = pd.read_csv(DATASET_PATH, usecols=['keywords'])
+            df = pd.read_parquet(DATASET_PATH, columns=['keywords'])
         except Exception as e:
-            print(f"[ERROR] Errore nel caricamento del dataset. Verifica il percorso: {DATASET_PATH}")
+            print(f"[ERROR] Errore nel caricamento del dataset. Verifica il percorso: {DATASET_PATH}\n{e}")
             return
 
         df = df.dropna(subset=['keywords'])
@@ -60,9 +60,15 @@ def main():
         keyword_counts = Counter()
         
         for row in tqdm(df['keywords'], desc="Parsing keywords"):
-            kws = [k.strip().lower() for k in row.split(',') if k.strip()]
-            movies_keywords.append(kws)
-            keyword_counts.update(kws)
+            try:
+                # The parquet has keywords as JSON array string: [{"id":123,"name":"magic"}, ...]
+                kw_list = json.loads(row)
+                kws = [k['name'].strip().lower() for k in kw_list if 'name' in k and k['name'].strip()]
+                if kws:
+                    movies_keywords.append(kws)
+                    keyword_counts.update(kws)
+            except:
+                continue
             
         valid_keywords = {k for k, v in keyword_counts.items() if v >= MIN_KEYWORD_FREQ}
         print(f"   [OK] Keyword uniche totali: {len(keyword_counts)}")

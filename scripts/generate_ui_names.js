@@ -21,19 +21,24 @@ async function main() {
         l4Data[m_id] = {
             medoid: m_data.medoid,
             genres: m_data.inferred_genres,
-            keywords: m_data.top_keywords.slice(0, 7) // Top 7 keywords per non appesantire il prompt
+            keywords: m_data.top_keywords.slice(0, 15) // Top 15 keywords per maggiore contesto
         };
     }
 
     const prompt = `
-Sei un esperto di cinema e architettura dell'informazione.
-Ho un dizionario JSON dove le chiavi sono gli ID delle categorie cinematografiche (L4) e i valori contengono le keyword e i generi di quella categoria.
-Il tuo compito è analizzare i generi e le keyword di ogni categoria e generare un nome commerciale, molto accattivante e intuitivo da mostrare nell'interfaccia utente (UI), accompagnato da un'emoji rappresentativa.
+Sei un esperto copywriter e curatore editoriale di cinema.
+Ho un dizionario JSON dove le chiavi sono gli ID delle categorie cinematografiche e i valori contengono le TOP 15 keyword (temi, oggetti, vibe) e i generi predominanti.
+Il tuo compito è generare un "Nome Categoria" molto esplicativo e riassuntivo che faccia capire subito all'utente cosa troverà dentro, accompagnato da un'emoji.
 Il nome UI deve essere in ITALIANO.
-Regole per il "name":
-- Massimo 3 parole (es. "Fantascienza e Spazio", "Dramma Sociale", "Avventura Epica").
-- Usa la lettera maiuscola per ogni parola principale.
-- Non essere troppo generico, ma nemmeno troppo specifico (ignora keyword isolate se non c'entrano col genere principale).
+
+REGOLE TASSATIVE PER IL NOME:
+1. DIVIETO ASSOLUTO: Non usare MAI le parole "Dramma", "Drammatico", "Commedia", "Thriller", "Horror" o "Azione".
+2. Deve essere ESPLICATIVO e RIASSUNTIVO del filone tematico (es. "La Frontiera Selvaggia", "Magia e Mostri", "Indagini Oscure", "Eroi dello Sport", "Viaggi nello Spazio", "Vita in Cucina").
+3. Massimo 3-4 parole. Usa la maiuscola per ogni parola principale.
+4. Ispirati pesantemente alle "keywords" per capire la VIBE reale del cluster. I generi servono solo come contesto aggiuntivo.
+
+Regole per l'"emoji":
+- Esattamente 1 carattere emoji pertinente.
 
 Regole per l'"emoji":
 - Esattamente 1 carattere emoji.
@@ -71,15 +76,25 @@ ${JSON.stringify(l4Data, null, 2)}
             content = content.replace(/^```json/, "").replace(/```$/, "").trim();
         }
 
-        const generatedData = JSON.parse(content);
+        // Estrazione sicura via Regex per bypassare JSON non validi
+        const nameRegex = /"name":\s*"([^"]+)"/g;
+        const emojiRegex = /"emoji":\s*"?([^\s",}]+)"?/g;
+        
+        const names = [];
+        const emojis = [];
+        let match;
+        while ((match = nameRegex.exec(content)) !== null) { names.push(match[1]); }
+        while ((match = emojiRegex.exec(content)) !== null) { emojis.push(match[1]); }
         
         console.log("3. Iniezione dei nomi UI nel grafo...");
         let count = 0;
-        for (const [m_id, res] of Object.entries(generatedData)) {
-            if (graph.L4[m_id]) {
-                graph.L4[m_id].ui_name = res.name;
-                graph.L4[m_id].ui_emoji = res.emoji;
-                console.log(`  - [${m_id}] ${graph.L4[m_id].medoid} -> ${res.emoji} ${res.name}`);
+        const keys = Object.keys(l4Data);
+        for (let i = 0; i < keys.length; i++) {
+            const m_id = keys[i];
+            if (graph.L4[m_id] && names[i] && emojis[i]) {
+                graph.L4[m_id].ui_name = names[i];
+                graph.L4[m_id].ui_emoji = emojis[i];
+                console.log(`  - [${m_id}] ${graph.L4[m_id].medoid} -> ${emojis[i]} ${names[i]}`);
                 count++;
             }
         }

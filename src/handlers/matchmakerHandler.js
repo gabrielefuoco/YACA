@@ -3,32 +3,57 @@ const { nanoid } = require('nanoid');
 const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
 const { createTmdbClient } = require('../clients/tmdb');
-const { getMatchmakerInitCards, getMatchmakerNextCards, getFinalRecommendations } = require('../engines/hybrid/MatchmakerGraphEngine');
+const { calculateMatchmakerFunnel, getMatchmakerInitCards, getMatchmakerNextCards, getFinalRecommendations } = require('../engines/hybrid/MatchmakerGraphEngine');
+
+async function funnelMatchmakerSession(req, res) {
+    const { id: profileId } = req.params;
+    const { userId, genres, moods, filters } = req.body;
+
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+
+    try {
+        const topL4s = calculateMatchmakerFunnel(genres || [], moods || [], filters || {});
+        res.json({
+            success: true,
+            results: topL4s
+        });
+    } catch (error) {
+        console.error('[Matchmaker] Error funnel:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
 
 async function initMatchmakerSession(req, res) {
     const { id: profileId } = req.params;
-    const { userId, type = 'movie', vibeOrRandom = 'random', initialGenres } = req.body;
+    const { userId, type = 'movie', startingL3NodeId, filters } = req.body;
 
     if (!userId) return res.status(400).json({ error: 'userId required' });
 
     try {
         const sessionId = `match_${nanoid(10)}`;
         
+        // Anime is requested as type 'anime' in UI, but to TMDB it's 'tv' (or 'movie').
+        // Our filters.isAnime handles the DuckDB restriction.
         let tmdbType = type;
-        if (type === 'anime') tmdbType = 'series';
+        if (type === 'anime') {
+            tmdbType = 'tv';
+            if (!filters) filters = {};
+            filters.isAnime = true;
+        }
 
         const sessionState = {
             userId, profileId,
             type: tmdbType,
             originalType: type,
             iteration: 0,
-            initialVibe: vibeOrRandom,
+            startingL3NodeId,
+            filters: filters || {},
             likedIds: [], dislikedIds: [], watchlistIds: [],
             cardHistory: [],
-            currentLevel: 'L4'
+            currentLevel: 'L2' // Iniziamo da L2 (Topos) visto che abbiamo l'L3
         };
 
-        const cards = await getMatchmakerInitCards(tmdbType);
+        const cards = await getMatchmakerInitCards(tmdbType, startingL3NodeId, sessionState.filters);
         
         await matchmakerSessionCache.set(sessionId, sessionState);
 
@@ -72,7 +97,7 @@ async function analyzeMatchmakerSession(req, res) {
 
         sessionState.iteration += 1;
 
-        const nextRes = await getMatchmakerNextCards(sessionState.type, sessionState.cardHistory, sessionState.currentLevel);
+        const nextRes = await getMatchmakerNextCards(sessionState.type, sessionState.cardHistory, sessionState.currentLevel, sessionState.filters);
         
         if (nextRes.isFinal) {
             sessionState.winningNode = nextRes.winningNode;
@@ -120,7 +145,7 @@ async function finishMatchmakerSession(req, res) {
         let expandedIds = [...winningIds];
         
         if (sessionState.winningNode) {
-            const finalRecs = await getFinalRecommendations(sessionState.winningNode, sessionState.type);
+            const finalRecs = await getFinalRecommendations([sessionState.winningNode], sessionState.type, sessionState.filters);
             expandedIds = Array.from(new Set([...expandedIds, ...finalRecs])).slice(0, 40);
         }
 
@@ -131,8 +156,8 @@ async function finishMatchmakerSession(req, res) {
             const catalogId = `custom_matchmaker_${nanoid(8)}`;
             const newCatalog = {
                 id: catalogId,
-                name: `Matchmaker Mix (${new Date().toLocaleDateString()})`,
-                type: sessionState.type,
+                name: `Matchmaker Mix 💖`,
+                type: sessionState.originalType || sessionState.type,
                 source: 'custom',
                 emoji: '💖',
                 presentation_strategy: 'popularity',
@@ -204,6 +229,7 @@ async function getMatchmakerTrailer(req, res) {
 }
 
 module.exports = {
+    funnelMatchmakerSession,
     initMatchmakerSession,
     analyzeMatchmakerSession,
     finishMatchmakerSession,

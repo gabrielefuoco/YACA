@@ -80,13 +80,27 @@ con.all(`SELECT genres, keywords FROM read_parquet('movies.parquet') WHERE genre
             }
         }
         
-        // Ordina e prendi i primi 2 generi
+        // Ordina e prendi i primi 2 generi (legacy string array)
         const sortedGenres = Object.entries(l4GenreCounts)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 2)
             .map(entry => entry[0]);
             
+        // Calcola la distribuzione probabilistica completa
+        let totalCount = 0;
+        for (const count of Object.values(l4GenreCounts)) {
+            totalCount += count;
+        }
+        
+        const genreDistribution = {};
+        if (totalCount > 0) {
+            for (const [gname, count] of Object.entries(l4GenreCounts)) {
+                genreDistribution[gname] = count / totalCount;
+            }
+        }
+            
         m_data.inferred_genres = sortedGenres;
+        m_data.genre_distribution = genreDistribution;
         
         console.log(`  - [${m_id}] ${m_data.medoid} -> Generi Inferiti: [${sortedGenres.join(', ')}]`);
     }
@@ -125,7 +139,20 @@ con.all(`SELECT genres, keywords FROM read_parquet('movies.parquet') WHERE genre
             .slice(0, 2)
             .map(entry => entry[0]);
             
+        let totalCount = 0;
+        for (const count of Object.values(l3GenreCounts)) {
+            totalCount += count;
+        }
+        
+        const genreDistribution = {};
+        if (totalCount > 0) {
+            for (const [gname, count] of Object.entries(l3GenreCounts)) {
+                genreDistribution[gname] = count / totalCount;
+            }
+        }
+            
         v_data.inferred_genres = sortedGenres;
+        v_data.genre_distribution = genreDistribution;
     }
 
     console.log("\n4. Salvataggio del nuovo JSON...");

@@ -25,7 +25,20 @@ export type SwipeItem = {
     discarded_options?: string[];
 };
 
-export type MatchmakerPhase = 'choosing' | 'playing' | 'results';
+export type MatchmakerPhase = 'choosing' | 'funnel' | 'playing' | 'results';
+
+export type FunnelResult = {
+    l4_id: string;
+    name: string;
+    emoji: string;
+    children_l3: {
+        id: string;
+        name: string;
+        emoji: string;
+        score: number;
+        top_genres: string;
+    }[];
+};
 
 export function useMatchmaker(userId: string | null, profileId: string | null) {
     const [isOpen, setIsOpen] = useState(false);
@@ -36,6 +49,7 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
     const [cards, setCards] = useState<MatchmakerCard[]>([]);
     const [swipesQueue, setSwipesQueue] = useState<SwipeItem[]>([]);
     const [matchedCards, setMatchedCards] = useState<MatchmakerCard[]>([]);
+    const [funnelResults, setFunnelResults] = useState<FunnelResult[]>([]);
     
     const [iteration, setIteration] = useState(0);
     const [maxIterations, setMaxIterations] = useState(8);
@@ -48,11 +62,35 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
         setCards([]);
         setSwipesQueue([]);
         setMatchedCards([]);
+        setFunnelResults([]);
         setIteration(0);
         isAnalyzingRef.current = false;
     }, []);
 
-    const initMatchmaker = useCallback(async (type: 'movie' | 'series' | 'anime' = 'movie', vibeOrRandom: string = 'random', initialGenres?: number[]) => {
+    const startFunnel = useCallback(async (genres: string[], moods: string[], filters: any = {}) => {
+        if (!userId || !profileId) return;
+        setIsLoading(true);
+        try {
+            const res = await fetch(`/api/profiles/${profileId}/matchmaker/funnel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, genres, moods, filters })
+            });
+            const data = await res.json();
+            if (data.success && data.results) {
+                setFunnelResults(data.results);
+                setPhase('funnel');
+            } else {
+                console.error("Funnel returned no results");
+            }
+        } catch (error) {
+            console.error('Failed to run funnel', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [userId, profileId]);
+
+    const initMatchmaker = useCallback(async (type: 'movie' | 'series' | 'anime', startingL3NodeId: string, filters: any = {}) => {
         if (!userId || !profileId) return;
         setIsLoading(true);
         setPhase('playing');
@@ -62,7 +100,7 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
             const res = await fetch(`/api/profiles/${profileId}/matchmaker/init`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, type, vibeOrRandom, initialGenres })
+                body: JSON.stringify({ userId, type, startingL3NodeId, filters })
             });
             const data = await res.json();
             if (data.success) {
@@ -72,11 +110,11 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
                 setMaxIterations(data.maxIterations);
                 setSwipesQueue([]);
             } else {
-                setPhase('choosing');
+                setPhase('funnel');
             }
         } catch (error) {
             console.error('Failed to init matchmaker', error);
-            setPhase('choosing');
+            setPhase('funnel');
         } finally {
             setIsLoading(false);
         }
@@ -151,7 +189,7 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
                 isAnalyzingRef.current = false;
             }
         } else if (remainingCards === 0) {
-             setPhase('results'); // fallback (should rarely hit now)
+             setPhase('results');
         }
 
     }, [userId, profileId, sessionId, swipesQueue, iteration, cards]);
@@ -222,7 +260,10 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
         matchedCards,
         iteration,
         maxIterations,
+        funnelResults,
+        setPhase,
         openMatchmaker,
+        startFunnel,
         initMatchmaker,
         handleSwipe,
         transitionToResults,

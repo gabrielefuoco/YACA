@@ -2,7 +2,7 @@ const fs = require('fs');
 
 const graph = JSON.parse(fs.readFileSync('./src/data/hierarchical_graph.json', 'utf8'));
 
-let markdown = `# L4 Macro-Vibes Recap\n\nQuesto documento elenca tutti i 34 Macro-Vibes (Livello L4) rigenerati, con i loro nomi UI, generi inferiti e le prime 5 keyword.\n\n`;
+let markdown = `# L4 Macro-Vibes Recap\n\nQuesto documento elenca tutti i 70 Macro-Vibes (Livello L4) rigenerati, con i loro nomi UI, generi inferiti e le prime 5 keyword.\n\n`;
 
 for (const [m_id, m_data] of Object.entries(graph.L4)) {
     const genres = m_data.inferred_genres.length > 0 ? m_data.inferred_genres.join(', ') : 'Nessuno';

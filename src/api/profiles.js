@@ -8,7 +8,7 @@ const { syncAllStremioData } = require('../utils/stremioAddon');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const LibraryConverterService = require('../services/LibraryConverterService');
 const UserLibraryItem = require('../db/models/UserLibraryItem');
-const { initMatchmakerSession, analyzeMatchmakerSession, finishMatchmakerSession, getMatchmakerTrailer } = require('../handlers/matchmakerHandler');
+const { funnelMatchmakerSession, initMatchmakerSession, analyzeMatchmakerSession, finishMatchmakerSession, getMatchmakerTrailer } = require('../handlers/matchmakerHandler');
 
 /**
  * POST /api/profiles/:id/convert-library
@@ -331,6 +331,12 @@ router.post('/:id/sync-vectors', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+/**
+ * POST /api/profiles/:id/matchmaker/funnel
+ * Filters genres and moods to return a macro Vibe funnel
+ */
+router.post('/:id/matchmaker/funnel', funnelMatchmakerSession);
 
 /**
  * POST /api/profiles/:id/matchmaker/init

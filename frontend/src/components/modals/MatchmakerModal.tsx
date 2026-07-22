@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { MatchmakerCard, SwipeAction, MatchmakerPhase } from '@/hooks/useMatchmaker';
+import { MatchmakerCard, SwipeAction, MatchmakerPhase, FunnelResult } from '@/hooks/useMatchmaker';
 import { useState, useEffect, useRef } from 'react';
-import { Sparkles, Heart, X, Bookmark, Info, Film, Tv, PlaySquare, PlayCircle } from 'lucide-react';
+import { Sparkles, Heart, X, Bookmark, Info, Film, Tv, PlaySquare, PlayCircle, ChevronLeft } from 'lucide-react';
 
 interface MatchmakerModalProps {
     matchmaker: {
@@ -12,7 +12,11 @@ interface MatchmakerModalProps {
         matchedCards: MatchmakerCard[];
         iteration: number;
         maxIterations: number;
-        initMatchmaker: (t: 'movie'|'series'|'anime', v: string, initialGenres?: number[]) => void;
+        funnelResults: FunnelResult[];
+        setPhase: (p: MatchmakerPhase) => void;
+        openMatchmaker: () => void;
+        startFunnel: (genres: string[], moods: string[], filters?: any) => void;
+        initMatchmaker: (type: 'movie'|'series'|'anime', startingL3NodeId: string, filters?: any) => void;
         handleSwipe: (id: string | null, action: SwipeAction, overrideTitle?: string, overrideGenres?: number[], questionText?: string, discardedOptions?: string[]) => void;
         fetchTrailer: (type: 'movie'|'series'|'anime', id: string) => Promise<string | null>;
         transitionToResults: () => void;
@@ -26,7 +30,8 @@ const GENRE_MAP: Record<number, string> = {
     80: 'Crime', 99: 'Documentario', 18: 'Dramma', 10751: 'Famiglia',
     14: 'Fantasy', 36: 'Storico', 27: 'Horror', 10402: 'Musica',
     9648: 'Mistero', 10749: 'Romantico', 878: 'Fantascienza',
-    10770: 'TV Movie', 53: 'Thriller', 10752: 'Guerra', 37: 'Western'
+    10770: 'TV Movie', 53: 'Thriller', 10752: 'Guerra', 37: 'Western',
+    9999: 'Anime'
 };
 
 const POPULAR_GENRES = [
@@ -41,18 +46,20 @@ const POPULAR_GENRES = [
     { id: 9648, name: 'Mistero' },
     { id: 10749, name: 'Romance' },
     { id: 878, name: 'Fantascienza' },
-    { id: 53, name: 'Thriller' }
+    { id: 53, name: 'Thriller' },
+    { id: 9999, name: 'Anime' }
 ];
 
 export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
     const { 
         isOpen, isLoading, phase, cards, matchedCards, 
-        iteration, maxIterations, initMatchmaker, handleSwipe, 
+        iteration, maxIterations, funnelResults, setPhase,
+        startFunnel, initMatchmaker, handleSwipe, 
         fetchTrailer, transitionToResults, closeAndSave, setIsOpen 
     } = matchmaker;
     
     const [flipped, setFlipped] = useState(false);
-    const [selectedType, setSelectedType] = useState<'movie' | 'series' | 'anime' | null>(null);
+    const [selectedType, setSelectedType] = useState<'movie' | 'series' | null>(null);
     const [selectedVibe, setSelectedVibe] = useState<string | null>(null);
     const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
     const [freeText, setFreeText] = useState("");
@@ -77,8 +84,6 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
         { id: 'Drammatico & Emozionante', label: 'Dramma & Emozione', icon: '😭', desc: 'Storie profonde, toccanti' },
         { id: 'Epico & Avventuroso', label: 'Epico & Avventura', icon: '🌍', desc: 'Viaggi, magia, fantascienza' }
     ];
-
-    // Early return rimosso per rispettare le Rules of Hooks
 
     const currentCard = cards[0];
     const cardsLeft = cards.length;
@@ -114,7 +119,9 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
         e.stopPropagation();
         if (!currentCard || !selectedType) return;
         setIsLoadingTrailer(true);
-        const url = await fetchTrailer(selectedType, currentCard.id);
+        // Se è Anime usiamo anime, altrimenti selectedType
+        const t = selectedGenres.includes(9999) ? 'anime' : selectedType;
+        const url = await fetchTrailer(t, currentCard.id);
         if (url) setTrailerUrl(url);
         setIsLoadingTrailer(false);
     };
@@ -160,23 +167,51 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, phase, currentCard, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [isOpen, phase, currentCard, isLoading]);
+
+    const handleStartFunnel = () => {
+        const isAnime = selectedGenres.includes(9999);
+        const genresStr = selectedGenres.filter(id => id !== 9999).map(id => GENRE_MAP[id]).filter(Boolean);
+        const moods = selectedVibe ? [selectedVibe] : [];
+        startFunnel(genresStr, moods, { isAnime });
+    };
+
+    const handleStartTinder = (l3_id: string) => {
+        if (!selectedType) return;
+        const isAnime = selectedGenres.includes(9999);
+        initMatchmaker(selectedType, l3_id, { isAnime });
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && closeAndSave(false)}>
-            <DialogContent className="max-w-md w-full h-[85vh] p-0 overflow-hidden bg-marrow-deep border-marrow-light/10 z-[100] flex flex-col">
+            <DialogContent className="w-screen h-screen max-w-none sm:max-w-4xl sm:h-[90vh] p-0 overflow-hidden bg-marrow-deep border-marrow-light/10 z-[100] flex flex-col rounded-none sm:rounded-3xl">
                 <DialogTitle className="sr-only">Matchmaker</DialogTitle>
+
+                {/* --- HEADER NAVBAR (Solo visibile quando necessario) --- */}
+                {(phase === 'choosing' && selectedType !== null) || phase === 'funnel' ? (
+                    <div className="shrink-0 flex items-center p-4 bg-black/40 border-b border-white/5 relative">
+                        <button 
+                            onClick={() => {
+                                if (phase === 'funnel') setPhase('choosing');
+                                else if (phase === 'choosing') setSelectedType(null);
+                            }}
+                            className="absolute left-4 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-all"
+                        >
+                            <ChevronLeft className="w-5 h-5 text-white" />
+                        </button>
+                        <h2 className="text-sm font-black text-white uppercase tracking-widest text-center w-full">YACA Matchmaker</h2>
+                    </div>
+                ) : null}
 
                 {/* --- CHOOSING PHASE --- */}
                 {phase === 'choosing' && (
                     <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                        <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-6 border border-primary/50 shadow-[0_0_30px_rgba(220,38,38,0.3)]">
-                            <Sparkles className="w-8 h-8 text-primary" />
-                        </div>
-                        <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2">YACA Matchmaker</h2>
-                        
-                        {!selectedType ? (
+                        {!selectedType && (
                             <>
+                                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-6 border border-primary/50 shadow-[0_0_30px_rgba(220,38,38,0.3)]">
+                                    <Sparkles className="w-8 h-8 text-primary" />
+                                </div>
+                                <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2">YACA Matchmaker</h2>
                                 <p className="text-white/80 font-bold text-sm mb-10">Cosa vuoi esplorare oggi?</p>
                                 <div className="flex flex-col gap-4 w-full max-w-[240px]">
                                     <button 
@@ -195,20 +230,14 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                         <Tv className="w-5 h-5 text-primary" />
                                         Serie TV
                                     </button>
-                                    <button 
-                                        onClick={() => setSelectedType('anime')}
-                                        disabled={isLoading}
-                                        className="flex items-center justify-center gap-3 w-full py-4 bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
-                                    >
-                                        <PlaySquare className="w-5 h-5 text-primary" />
-                                        Anime
-                                    </button>
                                 </div>
                             </>
-                        ) : (
-                            <>
-                                <div className="flex-1 w-full max-w-[320px] overflow-y-auto pr-1 mb-6 flex flex-col gap-4 custom-scrollbar">
-                                    <div>
+                        )}
+                        
+                        {selectedType && (
+                            <div className="flex-1 w-full max-w-[400px] flex flex-col pt-4">
+                                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                                    <div className="mb-6">
                                         <p className="text-white/80 font-bold text-sm mb-3">1. Qual è il tuo Mood? (richiesto)</p>
                                         <div className="flex flex-col gap-2">
                                             {VIBES.map(v => (
@@ -231,9 +260,9 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                         </div>
                                     </div>
 
-                                    <div>
+                                    <div className="mb-6">
                                         <p className="text-white/80 font-bold text-sm mb-3">2. Scegli fino a 3 generi (opzionale)</p>
-                                        <div className="flex flex-wrap justify-center gap-2">
+                                        <div className="flex flex-wrap gap-2">
                                             {POPULAR_GENRES.map(g => (
                                                 <button 
                                                     key={g.id}
@@ -251,36 +280,59 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                     </div>
                                 </div>
                                 
-                                <div className="flex gap-3 w-full max-w-[320px] mt-auto">
+                                <div className="shrink-0 pt-4 mt-auto">
                                     <button 
-                                        onClick={() => { setSelectedType(null); setSelectedVibe(null); setSelectedGenres([]); }}
-                                        className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-white/70 font-bold hover:bg-white/10"
-                                    >
-                                        Indietro
-                                    </button>
-                                    <button 
-                                        onClick={() => initMatchmaker(selectedType, selectedVibe || 'random', selectedGenres.length > 0 ? selectedGenres : undefined)}
+                                        onClick={handleStartFunnel}
                                         disabled={isLoading || !selectedVibe}
-                                        className="flex-[2] py-3 bg-primary border-2 border-primary/40 rounded-xl text-white font-black hover:brightness-110 disabled:opacity-50 shadow-[0_0_15px_rgba(220,38,38,0.15)] transition-all"
+                                        className="w-full py-4 bg-primary border-2 border-primary/40 rounded-xl text-white font-black hover:brightness-110 disabled:opacity-50 shadow-[0_0_15px_rgba(220,38,38,0.15)] transition-all flex items-center justify-center gap-2"
                                     >
-                                        {isLoading ? 'Avvio...' : 'Esplora'}
+                                        {isLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <Sparkles className="w-5 h-5" />}
+                                        {isLoading ? 'Calcolo Vibe...' : 'Esplora'}
                                     </button>
                                 </div>
-                            </>
-                        )}
-                        
-                        {isLoading && !selectedType && (
-                            <div className="mt-8 flex flex-col items-center gap-2">
-                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                <span className="text-[10px] uppercase font-bold text-white/80 tracking-widest">Inizializzazione DNA...</span>
                             </div>
                         )}
                     </div>
                 )}
 
+                {/* --- FUNNEL PHASE --- */}
+                {phase === 'funnel' && (
+                    <div className="flex-1 flex flex-col bg-marrow-deep overflow-hidden">
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
+                            <h3 className="text-lg font-black text-white mb-6 text-center">Scegli una Sotto-Categoria</h3>
+                            {funnelResults.map((l4) => (
+                                <div key={l4.l4_id} className="mb-8">
+                                    <h4 className="text-sm font-black text-white/80 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <span>{l4.emoji}</span> {l4.name}
+                                    </h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {l4.children_l3.map(l3 => (
+                                            <button 
+                                                key={l3.id}
+                                                onClick={() => handleStartTinder(l3.id)}
+                                                className="flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 rounded-xl transition-all text-left group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-2xl group-hover:scale-110 transition-transform">{l3.emoji}</span>
+                                                    <div>
+                                                        <div className="text-white font-bold">{l3.name}</div>
+                                                        {l3.top_genres && (
+                                                            <div className="text-white/40 text-[10px] font-bold uppercase mt-0.5 line-clamp-1">{l3.top_genres}</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* --- PLAYING PHASE --- */}
                 {phase === 'playing' && (
-                    <>
+                    <div className="flex-1 flex flex-col h-full bg-marrow-deep">
                         <div className="shrink-0 flex items-center justify-between p-4 bg-black/40 text-marrow-light border-b border-white/5">
                             <div className="flex flex-col">
                                 <span className="text-xs font-black uppercase tracking-widest text-amber-200 flex items-center gap-1">
@@ -291,13 +343,6 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                 </span>
                             </div>
                             <div className="flex gap-2">
-                                <button 
-                                    onClick={() => handleSwipe(null, 'steer')}
-                                    disabled={isLoading}
-                                    className="px-3 py-1.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-red-500/40 hover:text-red-300 transition-all disabled:opacity-50"
-                                >
-                                    Cambia Rotta
-                                </button>
                                 <button onClick={transitionToResults} className="px-3 py-1.5 bg-white/10 text-white rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-white/20 transition-all">
                                     Salva Catalogo
                                 </button>
@@ -315,72 +360,20 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                 </div>
                             ) : currentCard ? (
                                 <div className="flex flex-col items-center w-full max-w-[280px] sm:max-w-[320px]">
-                                    {currentCard.is_question ? (
-                                        <div className="w-full aspect-[2/3] max-h-[65vh] bg-gradient-to-br from-indigo-900 to-purple-900 rounded-3xl flex flex-col justify-center items-center p-8 text-center border-2 border-indigo-400/50 shadow-2xl">
-                                            <Sparkles className="w-12 h-12 text-indigo-300 mb-6 animate-pulse" />
-                                            <h2 className="text-2xl font-black text-white mb-10 leading-tight">
-                                                {currentCard.question_text}
-                                            </h2>
-                                            <div className="w-full flex flex-col gap-4">
-                                                {currentCard.question_options?.map((opt, i) => {
-                                                    if (opt.is_free_text) {
-                                                        return (
-                                                            <div className="flex w-full gap-2" key={i}>
-                                                                <input 
-                                                                    type="text" 
-                                                                    placeholder="Scrivi tu..." 
-                                                                    value={freeText}
-                                                                    onChange={e => setFreeText(e.target.value)}
-                                                                    onKeyDown={e => {
-                                                                        if (e.key === 'Enter' && freeText.trim()) {
-                                                                            handleAnswer(e as any, { label: freeText.trim(), genre_ids: [] });
-                                                                            setFreeText('');
-                                                                        }
-                                                                    }}
-                                                                    className="flex-1 bg-indigo-900/50 border border-indigo-300/30 text-white placeholder-white/50 font-bold px-4 py-4 rounded-xl focus:outline-none focus:border-indigo-400"
-                                                                />
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        if (freeText.trim()) {
-                                                                            handleAnswer(e, { label: freeText.trim(), genre_ids: [] });
-                                                                            setFreeText('');
-                                                                        }
-                                                                    }}
-                                                                    className="bg-indigo-600/80 hover:bg-indigo-500 text-white font-bold px-6 py-4 rounded-xl transition-all shadow-lg active:scale-95"
-                                                                >
-                                                                    Vai
-                                                                </button>
-                                                            </div>
-                                                        );
-                                                    }
-                                                    return (
-                                                        <button 
-                                                            key={i} 
-                                                            onClick={(e) => handleAnswer(e, opt)}
-                                                            className="w-full bg-indigo-600/30 hover:bg-indigo-500/50 border border-indigo-300/30 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 text-lg"
-                                                        >
-                                                            {opt.label}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div 
-                                            className="relative w-full aspect-[2/3] max-h-[65vh] rounded-3xl overflow-hidden shadow-2xl cursor-pointer group transition-all duration-300 preserve-3d"
-                                            style={{ 
-                                                transform: `rotateY(${flipped ? 180 : 0}deg) translateX(${dragX}px) rotate(${dragX * 0.05}deg)`,
-                                                opacity: 1 - Math.abs(dragX) / 400
-                                            }}
-                                            onClick={handleFlip}
-                                            onTouchStart={handleTouchStart}
-                                            onTouchMove={handleTouchMove}
-                                            onTouchEnd={handleTouchEnd}
-                                        >
+                                    <div 
+                                        className="relative w-full aspect-[2/3] max-h-[65vh] rounded-3xl overflow-hidden shadow-2xl cursor-pointer group transition-all duration-300 preserve-3d"
+                                        style={{ 
+                                            transform: `rotateY(${flipped ? 180 : 0}deg) translateX(${dragX}px) rotate(${dragX * 0.05}deg)`,
+                                            opacity: 1 - Math.abs(dragX) / 400
+                                        }}
+                                        onClick={handleFlip}
+                                        onTouchStart={handleTouchStart}
+                                        onTouchMove={handleTouchMove}
+                                        onTouchEnd={handleTouchEnd}
+                                    >
                                         {/* Front */}
                                         <div className="absolute inset-0 backface-hidden bg-[#111]">
                                             {currentCard.poster ? (
-                                                // eslint-disable-next-line @next/next/no-img-element
                                                 <img src={currentCard.poster} alt={currentCard.title} className="w-full h-full object-cover opacity-90" />
                                             ) : (
                                                 <div className="w-full h-full bg-marrow-deep/50 flex items-center justify-center text-white/30 text-xs">No Poster</div>
@@ -423,34 +416,31 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                                 ))}
                                             </div>
                                         </div>
-                                        </div>
-                                    )}
+                                    </div>
 
                                     {/* Actions */}
-                                    {!currentCard.is_question && (
-                                        <div className="flex items-center justify-center gap-6 mt-6 shrink-0 w-full">
-                                            <div className="flex flex-col items-center gap-2">
-                                                <button onClick={(e) => { e.stopPropagation(); onSwipe('dislike'); }} className="w-14 h-14 bg-white/5 border-2 border-red-500/30 rounded-full flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all shadow-lg active:scale-95">
-                                                    <X className="w-6 h-6" />
-                                                </button>
-                                                <span className="text-[10px] font-bold text-white/50 uppercase">Scarta</span>
-                                            </div>
-                                            
-                                            <div className="flex flex-col items-center gap-2">
-                                                <button onClick={(e) => { e.stopPropagation(); onSwipe('watchlist'); }} className="w-12 h-12 bg-white/5 border-2 border-blue-400/30 rounded-full flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all -translate-y-2 shadow-lg active:scale-95">
-                                                    <Bookmark className="w-5 h-5" />
-                                                </button>
-                                                <span className="text-[10px] font-bold text-white/50 uppercase -translate-y-2">Libreria</span>
-                                            </div>
-                                            
-                                            <div className="flex flex-col items-center gap-2">
-                                                <button onClick={(e) => { e.stopPropagation(); onSwipe('like'); }} className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white hover:bg-primary/80 transition-all shadow-[0_0_20px_rgba(220,38,38,0.4)] active:scale-95">
-                                                    <Heart className="w-6 h-6" fill="currentColor" />
-                                                </button>
-                                                <span className="text-[10px] font-bold text-white/50 uppercase">Mi piace</span>
-                                            </div>
+                                    <div className="flex items-center justify-center gap-6 mt-6 shrink-0 w-full">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <button onClick={(e) => { e.stopPropagation(); onSwipe('dislike'); }} className="w-14 h-14 bg-white/5 border-2 border-red-500/30 rounded-full flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all shadow-lg active:scale-95">
+                                                <X className="w-6 h-6" />
+                                            </button>
+                                            <span className="text-[10px] font-bold text-white/50 uppercase">Scarta</span>
                                         </div>
-                                    )}
+                                        
+                                        <div className="flex flex-col items-center gap-2">
+                                            <button onClick={(e) => { e.stopPropagation(); onSwipe('watchlist'); }} className="w-12 h-12 bg-white/5 border-2 border-blue-400/30 rounded-full flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all -translate-y-2 shadow-lg active:scale-95">
+                                                <Bookmark className="w-5 h-5" />
+                                            </button>
+                                            <span className="text-[10px] font-bold text-white/50 uppercase -translate-y-2">Libreria</span>
+                                        </div>
+                                        
+                                        <div className="flex flex-col items-center gap-2">
+                                            <button onClick={(e) => { e.stopPropagation(); onSwipe('like'); }} className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white hover:bg-primary/80 transition-all shadow-[0_0_20px_rgba(220,38,38,0.4)] active:scale-95">
+                                                <Heart className="w-6 h-6" fill="currentColor" />
+                                            </button>
+                                            <span className="text-[10px] font-bold text-white/50 uppercase">Mi piace</span>
+                                        </div>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center text-center p-6">
@@ -463,7 +453,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                 </div>
                             )}
                         </div>
-                    </>
+                    </div>
                 )}
 
                 {/* --- RESULTS PHASE --- */}
@@ -485,7 +475,6 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                         <div key={c.id} className="flex flex-col gap-1">
                                             <div className="aspect-[2/3] rounded-lg overflow-hidden bg-white/5 border border-white/10 relative">
                                                 {c.poster ? (
-                                                    // eslint-disable-next-line @next/next/no-img-element
                                                     <img src={c.poster} alt={c.title} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-[10px] text-white/30">No Img</div>
