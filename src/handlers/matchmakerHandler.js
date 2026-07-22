@@ -47,7 +47,11 @@ async function initMatchmakerSession(req, res) {
             originalType: type,
             iteration: 0,
             startingL3NodeId,
-            filters: { ...(filters || {}), genres: req.body.genres, moods: req.body.moods },
+            filters: {
+                ...(filters || {}),
+                genres: req.body.genres || filters?.genres,
+                moods: req.body.moods || filters?.moods
+            },
             likedIds: [], dislikedIds: [], watchlistIds: [],
             cardHistory: [],
             currentLevel: 'L2' // Iniziamo da L2 (Topos) visto che abbiamo l'L3
