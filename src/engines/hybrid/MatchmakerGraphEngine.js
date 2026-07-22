@@ -170,7 +170,10 @@ function calculateMatchmakerFunnel(genres, moods, filters) {
         grouped[r.l4_id].children_l3.push(r);
     }
     
-    for (const l4_id in grouped) grouped[l4_id].children_l3.sort((a, b) => b.score - a.score);
+    for (const l4_id in grouped) {
+        grouped[l4_id].children_l3.sort((a, b) => b.score - a.score);
+        grouped[l4_id].children_l3 = grouped[l4_id].children_l3.slice(0, 4); // Limit to top 4 L3 per L4
+    }
     
     const finalArray = Object.values(grouped).sort((a, b) => {
         const maxA = a.children_l3.length > 0 ? a.children_l3[0].score : 0;
@@ -178,7 +181,7 @@ function calculateMatchmakerFunnel(genres, moods, filters) {
         return maxB - maxA;
     });
     
-    const finalResults = finalArray.slice(0, 10);
+    const finalResults = finalArray.slice(0, 4); // Limit to top 4 L4 clusters
     console.log(`[MatchmakerGraphEngine] Funnel Results: returned ${finalResults.length} L4 clusters`);
     return finalResults;
 }
