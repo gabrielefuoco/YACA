@@ -217,8 +217,19 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
         const preset = { type: types, where, orderBy: S.POPULAR };
         console.log(`[Smart AND Query ${index + 1}/${totalQueries}] WHERE:`, JSON.stringify(where));
         try {
-            const results = await getDuckDbCatalogFromPreset(preset, 0, limitPerQuery);
+            let results = await getDuckDbCatalogFromPreset(preset, 0, limitPerQuery);
             console.log(`[Smart AND Query ${index + 1}/${totalQueries}] Found ${results?.length || 0} items`);
+            
+            // Smart Fallback: se una query restituisce meno di 5 risultati (es. keyword iper-specifiche prive di match per Anime),
+            // allentiamo il filtro rimuovendo le keyword e tenendo i Generi Top + Quota Anime.
+            if ((!results || results.length < 5) && cluster.keywords.length > 0) {
+                const fallbackWhere = where.filter(w => !w.includes('"keywords" LIKE'));
+                const fallbackPreset = { type: types, where: fallbackWhere, orderBy: S.POPULAR };
+                const fallbackResults = await getDuckDbCatalogFromPreset(fallbackPreset, 0, limitPerQuery);
+                console.log(`[Smart AND Query ${index + 1}/${totalQueries}] Smart Fallback (Genres/Anime) Found ${fallbackResults?.length || 0} items`);
+                results = [...(results || []), ...(fallbackResults || [])];
+            }
+
             return results || [];
         } catch(e) {
             console.error(`[Smart AND Query ${index + 1}/${totalQueries}] Error:`, e);
@@ -309,14 +320,18 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     if (topGenres.length > 0) {
         where.push(F.any(...topGenres.map(g => F.genre(Number(g)))));
     }
+    const allKwRules = [];
     if (directKwIds.length > 0) {
-        where.push(F.keyword(...directKwIds.map(Number)));
+        allKwRules.push(...directKwIds.map(k => F.keywordStr(k)));
     }
     for (const l2Id of topL2Ids) {
         const toposKwIds = getKeywordsForNodeIds([l2Id], 'L2');
         if (toposKwIds.length > 0) {
-            where.push(F.keyword(...toposKwIds.map(Number)));
+            allKwRules.push(...toposKwIds.map(k => F.keywordStr(k)));
         }
+    }
+    if (allKwRules.length > 0) {
+        where.push(F.any(...allKwRules));
     }
     
     if (where.length > 0) {

@@ -36,15 +36,28 @@ class HierarchicalGraph {
         if (!tmdbKeywordsArray || !Array.isArray(tmdbKeywordsArray)) return vector;
 
         for (const kw of tmdbKeywordsArray) {
-            const kwId = typeof kw === 'object' ? String(kw.id) : String(kw);
-            if (!kwId) continue;
+            let kwId = null;
+            let kwStr = null;
+
+            if (typeof kw === 'object' && kw !== null) {
+                kwId = kw.id ? String(kw.id) : null;
+                kwStr = kw.name ? String(kw.name).toLowerCase().trim() : null;
+            } else {
+                const s = String(kw).toLowerCase().trim();
+                if (/^\d+$/.test(s)) {
+                    kwId = s;
+                } else {
+                    kwStr = s;
+                }
+            }
 
             // Nodo L0 (Keyword Grezza)
-            vector[`k:${kwId}`] = 1.0;
+            if (kwId) vector[`k:${kwId}`] = 1.0;
+            if (kwStr) vector[`k:${kwStr}`] = 1.0;
             
             if (!this.isLoaded) continue;
 
-            const l1Id = this.data.kw_to_L1[kwId];
+            const l1Id = (kwStr && this.data.kw_to_L1[kwStr]) || (kwId && this.data.kw_to_L1[kwId]) || null;
             if (!l1Id) continue;
             
             // Nodo L1 (Micro-Cluster)

@@ -56,7 +56,7 @@ jest.mock('../src/clients/trakt', () => ({
 
 jest.mock('../src/ai/querySynthesizer', () => ({
     generateDiscoveryQueries: jest.fn().mockResolvedValue([{ genre_ids: [18], keyword: 'slow burn' }])
-}));
+}), { virtual: true });
 
 const TasteProfile = require('../src/models/TasteProfile');
 const UserAccount = require('../src/db/models/UserAccount');

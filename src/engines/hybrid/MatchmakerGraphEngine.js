@@ -355,7 +355,8 @@ async function getMatchmakerNextCards(mediaType, history, currentLevelStr, filte
     
     hotNodes.sort((a, b) => b.score - a.score);
     const topHotNodes = hotNodes.slice(0, 5).map(n => {
-        const name = graph.data[nextLevelStr]?.[n.id]?.name || 'Unknown';
+        const nodeObj = graph.data[nextLevelStr]?.[n.id];
+        const name = nodeObj?.ui_name || nodeObj?.medoid || nodeObj?.name || 'Unknown';
         return { id: n.id, name, score: n.score };
     });
     console.log(`[MatchmakerGraphEngine] Computed Hot Nodes:`, topHotNodes);
