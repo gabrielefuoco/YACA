@@ -289,12 +289,9 @@ async function getMatchmakerNextCards(mediaType, history, currentLevelStr, filte
     
     let nextLevelStr = LEVELS[levelIdx + 1]; // es. L2 -> L1
     
-    // Se siamo già a L1 o oltre, continuiamo a rimanere su L1 finché la history non supera un tot di interazioni
+    // Se siamo già a L1 o oltre, continuiamo a rimanere su L1 all'infinito, 
+    // sarà l'utente a decidere quando fermarsi tramite la UI (Salva Catalogo)
     if (levelIdx >= LEVELS.length - 1 || currentLevelStr === 'L1') {
-        if (history.length >= 25) { // Dopo 25 swipe totali (circa 3 round completi) ci fermiamo
-            console.log(`[MatchmakerGraphEngine] Reached ${history.length} swipes in history. Game over.`);
-            return { isFinal: true, cards: [] };
-        }
         nextLevelStr = 'L1';
     }
     
