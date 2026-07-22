@@ -196,9 +196,15 @@ function applyFunnelFiltersToPreset(preset, filters) {
     if (filters.isAnime) preset.where.push(F.anime);
 }
 
-async function getCardsForNodes(nodeIds, currentLevel, cardsPerNode, mediaType, filters) {
+async function getCardsForNodes(nodeIds, currentLevel, cardsPerNode, mediaType, filters, history = []) {
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const nodeKeywords = getKeywordsForNodes(nodeIds, currentLevel);
+    
+    // Estrai gli ID già visti dalla history per evitare duplicati
+    const swipedIds = new Set(history.map(s => {
+        // history id è "movie:1234" o "series:5678"
+        return s.id.split(':')[1];
+    }));
     
     let allCards = [];
     for (const [nodeId, kwStrs] of nodeKeywords.entries()) {
@@ -216,8 +222,11 @@ async function getCardsForNodes(nodeIds, currentLevel, cardsPerNode, mediaType, 
         const safeStrs = kwStrs.map(s => s.replace(/'/g, "''"));
         preset.where.push(`(${safeStrs.map(s => `"keywords" LIKE '%"${s}"%'`).join(' OR ')})`);
         
-        const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, cardsPerNode * 3);
-        const shuffled = lightMetas.sort(() => 0.5 - Math.random()).slice(0, cardsPerNode);
+        const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, cardsPerNode * 5); // Fetch more to account for filters
+        
+        // Filtriamo i duplicati
+        const filteredMetas = lightMetas.filter(c => !swipedIds.has(String(c.id).replace('tmdb:', '')));
+        const shuffled = filteredMetas.sort(() => 0.5 - Math.random()).slice(0, cardsPerNode);
         
         const mappedCards = shuffled.map(c => ({
             id: String(c.id),
@@ -278,12 +287,17 @@ async function getMatchmakerNextCards(mediaType, history, currentLevelStr, filte
     console.log(`[MatchmakerGraphEngine] Current Level: ${currentLevelStr} | History len: ${history.length}`);
     const levelIdx = LEVELS.indexOf(currentLevelStr);
     
-    if (levelIdx >= LEVELS.length - 1) {
-        console.log(`[MatchmakerGraphEngine] Reached leaf level. Game over.`);
-        return { isFinal: true, cards: [] }; // Leaf reached
+    let nextLevelStr = LEVELS[levelIdx + 1]; // es. L2 -> L1
+    
+    // Se siamo già a L1 o oltre, continuiamo a rimanere su L1 finché la history non supera un tot di interazioni
+    if (levelIdx >= LEVELS.length - 1 || currentLevelStr === 'L1') {
+        if (history.length >= 25) { // Dopo 25 swipe totali (circa 3 round completi) ci fermiamo
+            console.log(`[MatchmakerGraphEngine] Reached ${history.length} swipes in history. Game over.`);
+            return { isFinal: true, cards: [] };
+        }
+        nextLevelStr = 'L1';
     }
     
-    const nextLevelStr = LEVELS[levelIdx + 1]; // es. L2 -> L1
     console.log(`[MatchmakerGraphEngine] Target Next Level: ${nextLevelStr}`);
     
     const l1HeatMap = {};
@@ -340,7 +354,7 @@ async function getMatchmakerNextCards(mediaType, history, currentLevelStr, filte
         selectedNodes = allNodes.sort(() => 0.5 - Math.random()).slice(0, 4);
     }
     
-    const cards = await getCardsForNodes(selectedNodes, nextLevelStr, 3, mediaType, filters);
+    const cards = await getCardsForNodes(selectedNodes, nextLevelStr, 3, mediaType, filters, history);
     console.log(`[MatchmakerGraphEngine] Next cards ready: ${cards.length} cards for nextLevel ${nextLevelStr}`);
     return { isFinal: false, nextLevel: nextLevelStr, cards, winningNode };
 }
