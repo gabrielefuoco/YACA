@@ -148,8 +148,16 @@ async function finishMatchmakerSession(req, res) {
         const winningIds = Array.from(new Set([...sessionState.likedIds, ...sessionState.watchlistIds])).map(i => String(i).replace('tmdb:', ''));
         let expandedIds = [...winningIds];
         
-        if (sessionState.winningNode) {
-            const finalRecs = await getFinalRecommendations([sessionState.winningNode], sessionState.type, sessionState.filters);
+        const winningNodes = new Set();
+        if (sessionState.winningNode) winningNodes.add(sessionState.winningNode);
+        (sessionState.cardHistory || []).forEach(c => {
+            if ((c.action === 'like' || c.action === 'watchlist') && c._graphNodeId) {
+                winningNodes.add(c._graphNodeId);
+            }
+        });
+
+        if (winningNodes.size > 0) {
+            const finalRecs = await getFinalRecommendations(Array.from(winningNodes), sessionState.type, sessionState.filters);
             expandedIds = Array.from(new Set([...expandedIds, ...finalRecs])).slice(0, 40);
         }
 
