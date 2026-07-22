@@ -113,7 +113,7 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
     return pool.slice(0, 100).map(id => ({ id: String(id), matchScore: null }));
 }
 
-const ANIME_KEYWORDS = ['210024', '287501', '290894', '290895', '310214', '288390'];
+const ANIME_KEYWORDS = ['anime', 'manga', 'shounen', 'shoujo', 'seinen', 'isekai', 'mecha', 'magical girl'];
 
 function getAnimeProportion(profile, directKwIds = [], topGenres = []) {
     const activeSubProfile = profile?.user?.profiles?.find(p => p.id === profile.context);
@@ -135,8 +135,9 @@ function getAnimeProportion(profile, directKwIds = [], topGenres = []) {
     }
     
     // Se non ci sono cataloghi pinati (o nessuno è anime), cerchiamo il DNA
-    if (topGenres.includes('16') || topGenres.includes(16)) {
-        const hasAnimeKw = directKwIds.some(kw => ANIME_KEYWORDS.includes(String(kw)));
+    const hasAnimeGenre = topGenres.some(g => String(g) === '16' || String(g).toLowerCase().includes('animaz') || String(g).toLowerCase().includes('animation'));
+    if (hasAnimeGenre) {
+        const hasAnimeKw = directKwIds.some(kw => ANIME_KEYWORDS.includes(String(kw).toLowerCase()));
         if (hasAnimeKw) return 1.0;
     }
     return 0;
@@ -205,7 +206,7 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
         
         // Aggiungiamo il cluster di keyword in OR tra loro
         if (cluster.keywords.length > 0) {
-            where.push(F.any(...cluster.keywords.map(k => F.keyword(Number(k)))));
+            where.push(F.any(...cluster.keywords.map(k => F.keywordStr(k))));
         }
         
         // Applichiamo la Quota Anime

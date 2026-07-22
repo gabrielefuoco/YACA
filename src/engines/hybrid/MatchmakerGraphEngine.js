@@ -142,7 +142,9 @@ function calculateMatchmakerFunnel(genres, moods, filters) {
         const massBonus = Math.min(1.0, Math.log10(Math.max(2, totalKeywords)) / 2.0);
         score = score * massBonus;
         
-        if (bubbleUpBoosts[m_id]) score += (bubbleUpBoosts[m_id] * 0.1); 
+        if (bubbleUpBoosts[m_id]) {
+            score *= (1.0 + (bubbleUpBoosts[m_id] * 0.1));
+        }
         
         if (genres && genres.length > 0 && score === 0) continue;
         

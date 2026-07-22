@@ -14,6 +14,7 @@ const F = {
     
     // --- Keywords ---
     keyword: (...ids) => `(${ids.map(id => jsonHas('keywords', id)).join(' OR ')})`,
+    keywordStr: (...strs) => `(${strs.map(s => `"keywords" LIKE '%"${s.replace(/'/g, "''")}"%'`).join(' OR ')})`,
     allKeywords: (...ids) => `(${ids.map(id => jsonHas('keywords', id)).join(' AND ')})`,
     notKeyword: (...ids) => `(${ids.map(id => `"keywords" NOT LIKE '%"id":${id}%'`).join(' AND ')})`,
     
