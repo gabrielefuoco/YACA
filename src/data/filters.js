@@ -9,6 +9,7 @@ const jsonHasStr = (col, val) => `"${col}" LIKE '%"${val}"%'`;
 const F = {
     // --- Generi ---
     genre: (...ids) => `(${ids.map(id => jsonHas('genres', id)).join(' OR ')})`,
+    genreStr: (...strs) => `(${strs.map(s => `"genres" LIKE '%"name":"${s.replace(/'/g, "''")}"%'`).join(' OR ')})`,
     allGenres: (...ids) => `(${ids.map(id => jsonHas('genres', id)).join(' AND ')})`,
     notGenre: (...ids) => `(${ids.map(id => `"genres" NOT LIKE '%"id":${id}%'`).join(' AND ')})`,
     

@@ -149,6 +149,11 @@ async function getDuckDbCatalogFromFilters(filters, type = 'movie', skip = 0, li
     }
 }
 
+function sanitizeBigInt(val) {
+    if (typeof val === 'bigint') return Number(val);
+    return val;
+}
+
 async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
     try {
         const sql = `SELECT * FROM ${type === 'movie' ? 'movies' : 'tv'} WHERE id = ${Number(tmdbId)}`;
@@ -176,14 +181,14 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
         try { if (item.keywords) parsedKeywords = JSON.parse(item.keywords); } catch(e){}
 
         const rawTMDB = {
-            id: item.id,
+            id: sanitizeBigInt(item.id),
             title: item.title || item.name,
             original_title: item.original_title || item.original_name,
             overview: item.overview,
             poster_path: item.poster_path,
             backdrop_path: item.backdrop_path,
-            vote_average: item.vote_average,
-            popularity: item.popularity,
+            vote_average: sanitizeBigInt(item.vote_average),
+            popularity: sanitizeBigInt(item.popularity),
             release_date: item.release_date,
             original_language: item.original_language,
             genres: parsedGenres,

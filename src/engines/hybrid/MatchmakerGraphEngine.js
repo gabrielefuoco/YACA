@@ -125,26 +125,30 @@ function calculateMatchmakerFunnel(genres, moods, filters) {
                 }
             }
         }
-        
         let score = 0;
         const dist = m_data.genre_distribution || {};
         let matchCount = 0;
+        let hasCoreGenre = false;
         for (const g of (genres || [])) {
-            if (dist[g] && dist[g] > 0.01) { 
+            if (dist[g] && dist[g] >= 0.05) { 
                 score += dist[g];
                 matchCount++;
+                hasCoreGenre = true;
             }
         }
+        
+        if (genres && genres.length > 0 && !hasCoreGenre) continue;
         
         if (genres && genres.length > 0) score = score * (matchCount / genres.length);
         else score = 1.0;
         
-        const massBonus = Math.min(1.0, Math.log10(Math.max(2, totalKeywords)) / 2.0);
+        const massBonus = Math.min(1.0, Math.log10(Math.max(2, m_data.totalKeywords || 10)) / 2.0);
         score = score * massBonus;
         
         if (bubbleUpBoosts[m_id]) {
-            // Increase mood multiplier dramatically so that moods actually steer the genre
-            score *= (1.0 + (bubbleUpBoosts[m_id] * 2.0));
+            // Un mood match dà un boost del 50% al cluster, abbastanza per vincere su parità di genere
+            // ma non abbastanza da far scavalcare un cluster senza il genere corretto
+            score *= (1.0 + (bubbleUpBoosts[m_id] * 0.5));
         }
         
         if (genres && genres.length > 0 && score === 0) continue;
@@ -203,6 +207,9 @@ function applyFunnelFiltersToPreset(preset, filters) {
     if (filters.yearMin) preset.where.push(`"release_date" >= '${filters.yearMin}-01-01'`);
     if (filters.yearMax) preset.where.push(`"release_date" <= '${filters.yearMax}-12-31'`);
     if (filters.isAnime) preset.where.push(F.anime);
+    if (filters.genres && filters.genres.length > 0) {
+        preset.where.push(F.genreStr(...filters.genres));
+    }
 }
 
 async function getCardsForNodes(nodeIds, currentLevel, cardsPerNode, mediaType, filters, history = []) {
