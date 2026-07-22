@@ -316,9 +316,6 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                                     <span className="text-2xl group-hover:scale-110 transition-transform">{l3.emoji}</span>
                                                     <div>
                                                         <div className="text-white font-bold">{l3.name}</div>
-                                                        {l3.top_genres && (
-                                                            <div className="text-white/40 text-[10px] font-bold uppercase mt-0.5 line-clamp-1">{l3.top_genres}</div>
-                                                        )}
                                                     </div>
                                                 </div>
                                             </button>
