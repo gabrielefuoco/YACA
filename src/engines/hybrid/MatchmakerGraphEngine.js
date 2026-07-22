@@ -184,7 +184,13 @@ function calculateMatchmakerFunnel(genres, moods, filters) {
     });
     
     const finalResults = finalArray.slice(0, 4); // Limit to top 4 L4 clusters
-    console.log(`[MatchmakerGraphEngine] Funnel Results: returned ${finalResults.length} L4 clusters`);
+    console.log(`[MatchmakerGraphEngine] 🏁 FUNNEL RESULTS 🏁`);
+    finalResults.forEach((l4, idx) => {
+        console.log(`  ${idx+1}. [${l4.id}] ${l4.name} (Score: ${l4.children_l3[0]?.score?.toFixed(3)})`);
+        l4.children_l3.forEach((l3, l3Idx) => {
+            console.log(`       -> [${l3.id}] ${l3.name} (Score: ${l3.score.toFixed(3)})`);
+        });
+    });
     return finalResults;
 }
 
@@ -224,7 +230,7 @@ async function getCardsForNodes(nodeIds, currentLevel, cardsPerNode, mediaType, 
         const safeStrs = kwStrs.map(s => s.replace(/'/g, "''"));
         preset.where.push(`(${safeStrs.map(s => `"keywords" LIKE '%"${s}"%'`).join(' OR ')})`);
         
-        const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, cardsPerNode * 5); // Fetch more to account for filters
+        const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 100); // Fetch a large pool to avoid exhaustion when filtering swiped cards
         
         // Filtriamo i duplicati
         const filteredMetas = lightMetas.filter(c => !swipedIds.has(String(c.id).replace('tmdb:', '')));
@@ -340,7 +346,11 @@ async function getMatchmakerNextCards(mediaType, history, currentLevelStr, filte
     }
     
     hotNodes.sort((a, b) => b.score - a.score);
-    console.log(`[MatchmakerGraphEngine] Computed Hot Nodes:`, hotNodes.slice(0, 5));
+    const topHotNodes = hotNodes.slice(0, 5).map(n => {
+        const name = graph.data[nextLevelStr]?.[n.id]?.name || 'Unknown';
+        return { id: n.id, name, score: n.score };
+    });
+    console.log(`[MatchmakerGraphEngine] Computed Hot Nodes:`, topHotNodes);
     
     // Selezioniamo i top 4
     let selectedNodes = hotNodes.slice(0, 4).map(n => n.id);
