@@ -3,29 +3,19 @@ const { nanoid } = require('nanoid');
 const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
 const { createTmdbClient } = require('../clients/tmdb');
-const { calculateMatchmakerFunnel, getMatchmakerInitCards, getMatchmakerNextCards, getFinalRecommendations } = require('../engines/hybrid/MatchmakerGraphEngine');
+const { getMatchmakerInitCards, getMatchmakerNextCards, getFinalRecommendations } = require('../engines/hybrid/MatchmakerGraphEngine');
 
 async function funnelMatchmakerSession(req, res) {
-    const { id: profileId } = req.params;
-    const { userId, genres, moods, filters } = req.body;
-
-    if (!userId) return res.status(400).json({ error: 'userId required' });
-
-    try {
-        const topL4s = calculateMatchmakerFunnel(genres || [], moods || [], filters || {});
-        res.json({
-            success: true,
-            results: topL4s
-        });
-    } catch (error) {
-        console.error('[Matchmaker] Error funnel:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
+    // Deprecated: L3/L4 funnel is bypassed. We return empty array in case older UI calls it.
+    res.json({
+        success: true,
+        results: []
+    });
 }
 
 async function initMatchmakerSession(req, res) {
     const { id: profileId } = req.params;
-    const { userId, type = 'movie', startingL3NodeId, filters } = req.body;
+    const { userId, type = 'movie', genres, moods, filters } = req.body;
 
     if (!userId) return res.status(400).json({ error: 'userId required' });
 
@@ -35,10 +25,11 @@ async function initMatchmakerSession(req, res) {
         // Anime is requested as type 'anime' in UI, but to TMDB it's 'tv' (or 'movie').
         // Our filters.isAnime handles the DuckDB restriction.
         let tmdbType = type;
+        // Se non esiste filters, lo inizializziamo, altrimenti modifichiamo una copia per sicurezza
+        let activeFilters = filters ? { ...filters } : {};
         if (type === 'anime') {
             tmdbType = 'tv';
-            if (!filters) filters = {};
-            filters.isAnime = true;
+            activeFilters.isAnime = true;
         }
 
         const sessionState = {
@@ -46,18 +37,17 @@ async function initMatchmakerSession(req, res) {
             type: tmdbType,
             originalType: type,
             iteration: 0,
-            startingL3NodeId,
             filters: {
-                ...(filters || {}),
-                genres: req.body.genres || filters?.genres,
-                moods: req.body.moods || filters?.moods
+                ...activeFilters,
+                genres: genres || activeFilters.genres,
+                moods: moods || activeFilters.moods
             },
             likedIds: [], dislikedIds: [], watchlistIds: [],
             cardHistory: [],
-            currentLevel: 'L2' // Iniziamo da L2 (Topos) visto che abbiamo l'L3
+            currentLevel: 'L2' // Iniziamo da L2 (Topos)
         };
 
-        const cards = await getMatchmakerInitCards(tmdbType, startingL3NodeId, sessionState.filters);
+        const cards = await getMatchmakerInitCards(tmdbType, genres, moods, sessionState.filters);
         
         await matchmakerSessionCache.set(sessionId, sessionState);
 

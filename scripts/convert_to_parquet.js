@@ -16,6 +16,13 @@ async function convert() {
     console.log(`[DuckDB Convert] Avvio conversione JSONL in Parquet (ZSTD)...`);
     console.time('Tempo totale conversione');
 
+    try {
+        console.log(`[DuckDB Convert] Esecuzione fix generi italiani in JSONL...`);
+        require('child_process').execSync(`node ${path.join(__dirname, 'fix_jsonl_genres.js')}`);
+    } catch (e) {
+        console.warn(`[DuckDB Convert] Warning: fix_jsonl_genres fallito`, e.message);
+    }
+
     for (const type of types) {
         const jsonlFile = path.join(basePath, `master_${type}.jsonl`);
         const parquetFile = path.join(basePath, `${type}.parquet`);

@@ -61,143 +61,7 @@ function getKeywordsForNodes(nodeIds, level) {
     return nodeKeywords;
 }
 
-/**
- * ATTO 1: IL FUNNEL (L4 -> L3)
- * Motore Matematico VSM (Jaccard + Mass Penalty + Mood Bubble-up)
- */
-function calculateMatchmakerFunnel(genres, moods, filters) {
-    console.log('[MatchmakerGraphEngine] 🔵 STARTING FUNNEL 🔵');
-    console.log('[MatchmakerGraphEngine] Inputs -> Genres:', genres, '| Moods:', moods, '| Filters:', filters);
 
-    if (!graph.isLoaded || !graph.data) {
-        console.warn('[MatchmakerGraphEngine] Graph not loaded!');
-        return [];
-    }
-    
-    let moodKeywords = [];
-    if (moods && moods.length > 0) {
-        moods.forEach(m => {
-            if (MOOD_KEYWORDS_MAP[m]) moodKeywords.push(...MOOD_KEYWORDS_MAP[m]);
-        });
-    }
-    const moodSet = new Set(moodKeywords);
-    console.log('[MatchmakerGraphEngine] Mood Keywords Set Size:', moodSet.size);
-    
-    // Bubble-Up termico da L2
-    const bubbleUpBoosts = {};
-    if (moodSet.size > 0) {
-        for (const [l2_id, l2_data] of Object.entries(graph.data.L2 || {})) {
-            let intersectScore = 0;
-            const topKws = l2_data.top_keywords || [];
-            for (const kw of topKws) {
-                if (moodSet.has(kw.name)) intersectScore += 1;
-            }
-            if (l2_data.children_L1) {
-                for (const l1_id of l2_data.children_L1) {
-                    const l1_data = graph.data.L1[l1_id];
-                    if (l1_data && l1_data.keywords) {
-                        for (const kw of l1_data.keywords) {
-                            if (moodSet.has(kw)) intersectScore += 0.5;
-                        }
-                    }
-                }
-            }
-            if (intersectScore > 0 && l2_data.parent) {
-                bubbleUpBoosts[l2_data.parent] = (bubbleUpBoosts[l2_data.parent] || 0) + intersectScore;
-            }
-        }
-    }
-    
-    const results = [];
-    for (const [m_id, m_data] of Object.entries(graph.data.L3 || {})) {
-        if (m_data.nsfw || m_data.is_nsfw) continue;
-        
-        // Calcolo Massa
-        let totalKeywords = 0;
-        if (m_data.children_L2) {
-            for (const l2 of m_data.children_L2) {
-                const l2_node = graph.data.L2[l2];
-                if (l2_node && l2_node.children_L1) {
-                    for (const l1 of l2_node.children_L1) {
-                        const l1_node = graph.data.L1[l1];
-                        if (l1_node && l1_node.keywords) totalKeywords += l1_node.keywords.length;
-                    }
-                }
-            }
-        }
-        let score = 0;
-        const dist = m_data.genre_distribution || {};
-        let matchCount = 0;
-        let hasCoreGenre = false;
-        for (const g of (genres || [])) {
-            if (dist[g] && dist[g] >= 0.05) { 
-                score += dist[g];
-                matchCount++;
-                hasCoreGenre = true;
-            }
-        }
-        
-        if (genres && genres.length > 0 && !hasCoreGenre) continue;
-        
-        if (genres && genres.length > 0) score = score * (matchCount / genres.length);
-        else score = 1.0;
-        
-        const massBonus = Math.min(1.0, Math.log10(Math.max(2, m_data.totalKeywords || 10)) / 2.0);
-        score = score * massBonus;
-        
-        if (bubbleUpBoosts[m_id]) {
-            // Un mood match dà un boost del 50% al cluster, abbastanza per vincere su parità di genere
-            // ma non abbastanza da far scavalcare un cluster senza il genere corretto
-            score *= (1.0 + (bubbleUpBoosts[m_id] * 0.5));
-        }
-        
-        if (genres && genres.length > 0 && score === 0) continue;
-        
-        results.push({
-            id: m_id,
-            l4_id: m_data.parent,
-            name: m_data.ui_name || m_data.medoid,
-            emoji: m_data.ui_emoji || "✨",
-            score: score,
-            top_genres: m_data.inferred_genres ? m_data.inferred_genres.join(', ') : ''
-        });
-    }
-    
-    const grouped = {};
-    for (const r of results) {
-        if (!grouped[r.l4_id]) {
-            const l4_node = graph.data.L4[r.l4_id];
-            grouped[r.l4_id] = {
-                id: r.l4_id,
-                name: l4_node?.ui_name || l4_node?.medoid || "Mix",
-                emoji: l4_node?.ui_emoji || "🔥",
-                children_l3: []
-            };
-        }
-        grouped[r.l4_id].children_l3.push(r);
-    }
-    
-    for (const l4_id in grouped) {
-        grouped[l4_id].children_l3.sort((a, b) => b.score - a.score);
-        grouped[l4_id].children_l3 = grouped[l4_id].children_l3.slice(0, 4); // Limit to top 4 L3 per L4
-    }
-    
-    const finalArray = Object.values(grouped).sort((a, b) => {
-        const maxA = a.children_l3.length > 0 ? a.children_l3[0].score : 0;
-        const maxB = b.children_l3.length > 0 ? b.children_l3[0].score : 0;
-        return maxB - maxA;
-    });
-    
-    const finalResults = finalArray.slice(0, 4); // Limit to top 4 L4 clusters
-    console.log(`[MatchmakerGraphEngine] 🏁 FUNNEL RESULTS 🏁`);
-    finalResults.forEach((l4, idx) => {
-        console.log(`  ${idx+1}. [${l4.id}] ${l4.name} (Score: ${l4.children_l3[0]?.score?.toFixed(3)})`);
-        l4.children_l3.forEach((l3, l3Idx) => {
-            console.log(`       -> [${l3.id}] ${l3.name} (Score: ${l3.score.toFixed(3)})`);
-        });
-    });
-    return finalResults;
-}
 
 /**
  * Applica i filtri globali del funnel (Anime, Year) al preset
@@ -262,35 +126,58 @@ async function getCardsForNodes(nodeIds, currentLevel, cardsPerNode, mediaType, 
 }
 
 /**
- * ATTO 2: Inizializzazione Tinder Game
+ * ATTO 1 (Ex ATTO 2): Inizializzazione Tinder Game bypassando L3/L4
  */
-async function getMatchmakerInitCards(mediaType, startingL3NodeId, filters) {
+async function getMatchmakerInitCards(mediaType, genres, moods, filters) {
     console.log(`[MatchmakerGraphEngine] 🟢 INIT TINDER GAME 🟢`);
-    console.log(`[MatchmakerGraphEngine] Type: ${mediaType} | Starting L3: ${startingL3NodeId} | Filters:`, filters);
+    console.log(`[MatchmakerGraphEngine] Type: ${mediaType} | Genres: ${genres} | Moods: ${moods} | Filters:`, filters);
 
     if (!graph.isLoaded || !graph.data) {
         console.warn('[MatchmakerGraphEngine] Graph not loaded during init!');
         return [];
     }
     
-    let l2Nodes = [];
-    if (startingL3NodeId) {
-        l2Nodes = getLevelChildren('L3', startingL3NodeId);
-        console.log(`[MatchmakerGraphEngine] Found ${l2Nodes.length} L2 nodes for L3 parent ${startingL3NodeId}`);
+    let moodKeywords = [];
+    if (moods && moods.length > 0) {
+        moods.forEach(m => {
+            if (MOOD_KEYWORDS_MAP[m]) moodKeywords.push(...MOOD_KEYWORDS_MAP[m]);
+        });
+    }
+    const moodSet = new Set(moodKeywords);
+    
+    // Top L2 Nodes based on Mood intersection
+    const l2Scores = [];
+    for (const [l2_id, l2_data] of Object.entries(graph.data.L2 || {})) {
+        let score = 0;
+        const topKws = l2_data.top_keywords || [];
+        for (const kw of topKws) {
+            if (moodSet.has(kw)) score += 1;
+        }
+        if (score > 0) {
+            l2Scores.push({ id: l2_id, score });
+        }
     }
     
-    if (l2Nodes.length === 0) {
-        // Fallback L4 a caso se L3 non trovato
-        console.warn(`[MatchmakerGraphEngine] Fallback: startingL3NodeId not found or empty. Using random L4.`);
-        const l4Nodes = Object.keys(graph.data.L4 || {});
-        if (l4Nodes.length === 0) return [];
-        const randomL4 = l4Nodes.sort(() => 0.5 - Math.random())[0];
-        const randomL3s = getLevelChildren('L4', randomL4);
-        if (randomL3s.length > 0) l2Nodes = getLevelChildren('L3', randomL3s[0]);
+    l2Scores.sort((a, b) => b.score - a.score);
+    const topL2s = l2Scores.slice(0, 10).map(x => x.id);
+    
+    if (topL2s.length === 0) {
+        console.warn(`[MatchmakerGraphEngine] Fallback: No L2 found for mood. Using random L2.`);
+        const allL2s = Object.keys(graph.data.L2 || {});
+        if (allL2s.length > 0) topL2s.push(allL2s.sort(() => 0.5 - Math.random())[0]);
     }
     
-    const selectedL2s = l2Nodes.sort(() => 0.5 - Math.random()).slice(0, 4);
-    const cards = await getCardsForNodes(selectedL2s, 'L2', 3, mediaType, filters);
+    // Apply genres logic via filters object so getCardsForNodes can pick it up
+    if (!filters) filters = {};
+    if (genres && genres.length > 0) {
+        filters.genres = genres;
+    }
+    
+    // selectedL2s uses topL2s randomly scrambled, picking up to 4 nodes
+    const selectedL2s = topL2s.sort(() => 0.5 - Math.random()).slice(0, 4);
+    
+    // Generiamo 5 carte per nodo (max 20 carte totali) al primo round
+    const cards = await getCardsForNodes(selectedL2s, 'L2', 5, mediaType, filters);
     console.log(`[MatchmakerGraphEngine] Init complete: returning ${cards.length} cards`);
     return cards;
 }
@@ -413,7 +300,6 @@ async function getFinalRecommendations(winningNodesArray, mediaType, filters) {
 }
 
 module.exports = {
-    calculateMatchmakerFunnel,
     getMatchmakerInitCards,
     getMatchmakerNextCards,
     getFinalRecommendations

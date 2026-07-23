@@ -6,6 +6,18 @@ const stream = require('stream');
 
 const pipeline = promisify(stream.pipeline);
 
+const TMDB_GENRES_EN_MAP = {
+    28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
+    99: 'Documentary', 18: 'Drama', 10751: 'Family', 14: 'Fantasy', 36: 'History',
+    27: 'Horror', 10402: 'Music', 9648: 'Mystery', 10749: 'Romance', 878: 'Science Fiction',
+    10770: 'TV Movie', 53: 'Thriller', 10752: 'War', 37: 'Western',
+    10759: 'Action & Adventure', 10762: 'Kids', 10763: 'News', 10764: 'Reality',
+    10765: 'Sci-Fi & Fantasy', 10766: 'Soap', 10767: 'Talk', 10768: 'War & Politics'
+};
+function getEnglishGenreName(id, originalName) {
+    return TMDB_GENRES_EN_MAP[id] || originalName;
+}
+
 class TmdbDumpClient {
     constructor(apiKey) {
         this.apiKey = apiKey;
@@ -109,7 +121,7 @@ class TmdbDumpClient {
             status: data.status,
             poster_path: data.poster_path,
             backdrop_path: data.backdrop_path,
-            genres: JSON.stringify(data.genres || []),
+            genres: JSON.stringify((data.genres || []).map(g => ({ id: g.id, name: getEnglishGenreName(g.id, g.name) }))),
             keywords: JSON.stringify(keywords),
             cast: JSON.stringify(cast),
             directors: JSON.stringify(directors),
@@ -186,7 +198,7 @@ class TmdbDumpClient {
             type: data.type,
             poster_path: data.poster_path,
             backdrop_path: data.backdrop_path,
-            genres: JSON.stringify(data.genres || []),
+            genres: JSON.stringify((data.genres || []).map(g => ({ id: g.id, name: getEnglishGenreName(g.id, g.name) }))),
             keywords: JSON.stringify(keywords),
             cast: JSON.stringify(cast),
             created_by: JSON.stringify(created_by),
