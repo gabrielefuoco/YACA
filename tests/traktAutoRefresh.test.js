@@ -3,13 +3,13 @@ jest.mock('nanoid', () => ({
     nanoid: jest.fn(() => 'test_nanoid_id')
 }));
 
-// Mock httpClient to control traktClient
 const mockTraktClient = {
     post: jest.fn(),
-    get: jest.fn()
+    get: jest.fn(),
+    interceptors: { response: { use: jest.fn() } }
 };
-jest.mock('../src/utils/httpClient', () => ({
-    createAxiosInstance: jest.fn(() => mockTraktClient)
+jest.mock('../src/utils/axiosClient', () => ({
+    createAxiosClient: jest.fn(() => mockTraktClient)
 }));
 
 // Mock MongoDB UserAccount Model (Two-Table Split: trakt.js writes tokens to UserAccount)

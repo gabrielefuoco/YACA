@@ -1,7 +1,6 @@
 const graph = require('../graph/HierarchicalGraph');
 const { getDuckDbCatalogFromPreset, getDuckDbMetaDetails } = require('../../catalog/providers/DuckDbProvider');
-const { processTmdbQueryToPreset } = require('../../utils/legacyTmdbAdapter');
-const { F } = require('../../data/filters');
+const { F, S } = require('../../data/filters');
 
 const LEVELS = ['L5', 'L4', 'L3', 'L2', 'L1'];
 
@@ -91,10 +90,11 @@ async function getCardsForNodes(nodeIds, currentLevel, cardsPerNode, mediaType, 
         if (kwStrs.length === 0) continue;
         
         // Creiamo il preset a mano perché vogliamo fare match sulle keyword a livello stringa
-        const preset = processTmdbQueryToPreset({
-            'vote_count.gte': 50,
-            sort_by: 'popularity.desc'
-        }, types);
+        const preset = {
+            type: types,
+            where: [ F.minVotes(50) ],
+            orderBy: S.POPULAR
+        };
         
         applyFunnelFiltersToPreset(preset, filters);
         
@@ -285,10 +285,11 @@ async function getFinalRecommendations(winningNodesArray, mediaType, filters) {
     if (kwStrs.size === 0) return [];
     
     const types = mediaType === 'movie' ? 'movie' : 'tv';
-    const preset = processTmdbQueryToPreset({
-        'vote_count.gte': 30,
-        sort_by: 'popularity.desc'
-    }, types);
+    const preset = {
+        type: types,
+        where: [ F.minVotes(30) ],
+        orderBy: S.POPULAR
+    };
     
     applyFunnelFiltersToPreset(preset, filters);
     

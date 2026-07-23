@@ -1,8 +1,6 @@
 const CacheManager = require('./CacheManager');
 const { 
-    RECOMMENDATIONS_CACHE_TTL_MS,
-    FAST_CATALOG_PAGE1_L2_TTL_MS,
-    FAST_CATALOG_PAGE1_SWR_MS
+    RECOMMENDATIONS_CACHE_TTL_MS
 } = require('../config');
 
 const ONE_DAY_MS = 1000 * 60 * 60 * 24;
@@ -43,14 +41,6 @@ const catalogRequestCache = new CacheManager('tmdb_catalog', {
     swrMs: 12 * ONE_HOUR_MS
 });
 
-// Sostituisce il vecchio src/models/TmdbRequestCache.js
-const TmdbRequestCache = new CacheManager('tmdb_catalog_raw', {
-    ramMax: 50,
-    ramTtlMs: FAST_CATALOG_PAGE1_L2_TTL_MS,
-    redisTtlMs: FAST_CATALOG_PAGE1_L2_TTL_MS,
-    swrMs: FAST_CATALOG_PAGE1_SWR_MS
-});
-
 const simulcastDatesCache = new CacheManager('simulcast_dates', {
     ramMax: 300,
     ramTtlMs: ONE_HOUR_MS * 12,
@@ -70,7 +60,6 @@ module.exports = {
     hybridRecommendationsCache,
     catalogFallbackCache,
     catalogRequestCache,
-    TmdbRequestCache,
     simulcastDatesCache,
     matchmakerSessionCache
 };

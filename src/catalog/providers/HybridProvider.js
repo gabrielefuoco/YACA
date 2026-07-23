@@ -34,7 +34,6 @@ async function getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey
 
 async function getHybridPopularCatalog(baseId, type, skip, userConfig, tmdbClient, tmdbApiKey, tmdbFetchOptions) {
     const isMovie = type === 'movie';
-    const tmdbEp = isMovie ? '/discover/movie' : '/discover/tv';
     const traktEp = isMovie ? 'popular_movies' : 'popular_shows';
     const contentType = isMovie ? 'movie' : 'series';
 

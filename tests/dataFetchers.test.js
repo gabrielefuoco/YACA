@@ -1,4 +1,4 @@
-const { fetchTmdbResults, fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds } = require('../src/engines/hybrid/dataFetchers');
+const { fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds } = require('../src/engines/hybrid/dataFetchers');
 const tmdb = require('../src/clients/tmdb');
 const { getTmdbPopularCache, getTmdbTopRatedCache } = require('../src/cache/cacheInstances');
 const UserConfig = require('../src/models/UserConfig');
@@ -37,21 +37,7 @@ describe('dataFetchers', () => {
         jest.clearAllMocks();
     });
 
-    describe('fetchTmdbResults', () => {
-        it('should fetch results successfully', async () => {
-            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
-            getDuckDbCatalogFromFilters.mockResolvedValue([{ id: 1 }]);
-            const result = await fetchTmdbResults(null, '/path', {}, 'label');
-            expect(result).toEqual([{ id: 1 }]);
-        });
 
-        it('should return empty array on failure', async () => {
-            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
-            getDuckDbCatalogFromFilters.mockRejectedValue(new Error('fail'));
-            const result = await fetchTmdbResults(null, '/path', {}, 'label');
-            expect(result).toEqual([]);
-        });
-    });
 
     describe('fetchPopularFallbackIds', () => {
         it('should fetch from TMDB discover (now DuckDb)', async () => {

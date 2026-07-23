@@ -1,8 +1,9 @@
-const { createAxiosInstance } = require('../utils/httpClient');
+const { createAxiosClient } = require('../utils/axiosClient');
+const { createTmdbClient } = require('./tmdb');
 const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
 const UserConfig = require('../models/UserConfig');
 
-const traktClient = createAxiosInstance('https://api.trakt.tv', {
+const traktClient = createAxiosClient('https://api.trakt.tv', {
     headers: {
         'Content-Type': 'application/json',
         'trakt-api-version': '2',
@@ -13,7 +14,7 @@ const traktClient = createAxiosInstance('https://api.trakt.tv', {
 // LOCK: Gestione dei refresh in corso per evitare race conditions (invalid_grant)
 const ongoingRefreshes = new Map();
 
-const tmdbEnrichClient = createAxiosInstance('https://api.themoviedb.org/3');
+const tmdbEnrichClient = createTmdbClient(process.env.TMDB_API_KEY);
 
 /**
  * Rigenera i token Trakt usando il refresh_token.

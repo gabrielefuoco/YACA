@@ -1,9 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { createAxiosInstance } = require('../utils/httpClient');
+const { createTmdbClient } = require('../clients/tmdb');
 const { sanitizeString } = require('../utils/helpers');
-
-const tmdbClient = createAxiosInstance('https://api.themoviedb.org/3');
 
 // TMDB Proxy Search endpoints per Autocomplete
 router.get('/tmdb/search/multi', async (req, res) => {
@@ -13,15 +11,14 @@ router.get('/tmdb/search/multi', async (req, res) => {
     if (!query) return res.json({ results: [] });
 
     try {
-        const response = await tmdbClient.get('/search/multi', {
+        const client = createTmdbClient(tmdbKey);
+        const response = await client.get('/search/multi', {
             params: {
-                api_key: sanitizeString(tmdbKey),
                 query: sanitizeString(query),
                 language: 'it-IT',
                 page: 1,
                 include_adult: false
-            },
-            timeout: 5000
+            }
         });
         return res.json({ results: response.data.results || [] });
     } catch (err) {
@@ -36,13 +33,12 @@ router.get('/tmdb/search/keyword', async (req, res) => {
     if (!query) return res.json({ results: [] });
 
     try {
-        const response = await tmdbClient.get('/search/keyword', {
+        const client = createTmdbClient(tmdbKey);
+        const response = await client.get('/search/keyword', {
             params: {
-                api_key: sanitizeString(tmdbKey),
                 query: sanitizeString(query),
                 page: 1
-            },
-            timeout: 5000
+            }
         });
         return res.json({ results: response.data.results || [] });
     } catch (err) {
@@ -58,15 +54,14 @@ router.get('/tmdb/search/person', async (req, res) => {
     if (!query) return res.json({ results: [] });
 
     try {
-        const response = await tmdbClient.get('/search/person', {
+        const client = createTmdbClient(tmdbKey);
+        const response = await client.get('/search/person', {
             params: {
-                api_key: sanitizeString(tmdbKey),
                 query: sanitizeString(query),
                 language: 'it-IT',
                 page: 1,
                 include_adult: false
-            },
-            timeout: 5000
+            }
         });
         return res.json({ results: response.data.results || [] });
     } catch (err) {
@@ -82,14 +77,13 @@ router.get('/tmdb/search/genre', async (req, res) => {
     if (!query) return res.json({ results: [] });
 
     try {
+        const client = createTmdbClient(tmdbKey);
         const [movieGenresRes, tvGenresRes] = await Promise.all([
-            tmdbClient.get('/genre/movie/list', {
-                params: { api_key: sanitizeString(tmdbKey), language: 'it-IT' },
-                timeout: 5000
+            client.get('/genre/movie/list', {
+                params: { language: 'it-IT' }
             }),
-            tmdbClient.get('/genre/tv/list', {
-                params: { api_key: sanitizeString(tmdbKey), language: 'it-IT' },
-                timeout: 5000
+            client.get('/genre/tv/list', {
+                params: { language: 'it-IT' }
             })
         ]);
 
@@ -110,10 +104,8 @@ router.post('/validate-tmdb-key', async (req, res) => {
         return res.status(400).json({ valid: false, error: 'TMDB API key non configurata sul server' });
     }
     try {
-        const testRes = await tmdbClient.get('/configuration', {
-            params: { api_key: tmdbKey },
-            timeout: 5000
-        });
+        const client = createTmdbClient(tmdbKey);
+        const testRes = await client.get('/configuration');
         if (testRes.data && testRes.data.images) {
             return res.json({ valid: true });
         }
@@ -216,12 +208,10 @@ router.post('/tmdb/batch-keywords', async (req, res) => {
         
         for (let i = 0; i < keywordIds.length; i += batchSize) {
             const batch = keywordIds.slice(i, i + batchSize);
+            const client = createTmdbClient(apiKey);
             const batchResults = await Promise.all(batch.map(async (id) => {
                 try {
-                    const response = await tmdbClient.get(`/keyword/${id}`, {
-                        params: { api_key: sanitizeString(apiKey) },
-                        timeout: 10000
-                    });
+                    const response = await client.get(`/keyword/${id}`);
                     return { id, name: response.data.name };
                 } catch (err) {
                     console.error(`[TMDB] Error fetching keyword ${id}:`, err.message);

@@ -1,9 +1,9 @@
-const { fetchTmdbCatalog, getTmdbIdByName } = require('../../clients/tmdb');
+const { getTmdbIdByName } = require('../../clients/tmdb');
 const { routeLiveStremioSearch } = require('../../ai/router');
 const { getProfileDnaFilters } = require('../../utils/helpers');
 const { normalizeContentId } = require('../../utils/contentId');
 const { interleaveMultipleResults, applyConsensusScoring } = require('../../utils/resultMerger');
-const { catalogFallbackCache, simulcastDatesCache } = require('../../cache/cacheInstances');
+
 const TasteProfile = require('../../models/TasteProfile');
 const ProfileScorer = require('../../profile/ProfileScorer');
 const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataHydrator');

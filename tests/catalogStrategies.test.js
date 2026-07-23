@@ -11,13 +11,19 @@ jest.mock('../src/clients/tmdb', () => ({
 
 jest.mock('../src/engines/hybrid/dataFetchers', () => ({
     fetchProfileContext: jest.fn(),
-    fetchTmdbResults: jest.fn(),
     fetchTraktRecommendationsRaw: jest.fn(),
     fetchPopularFallbackIds: jest.fn(),
     fetchRecentHistory: jest.fn(),
     getImpressionMap: jest.fn().mockResolvedValue(new Map()),
     calculateImpressionPenalty: jest.fn().mockReturnValue(1.0)
 }));
+
+jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
+    getDuckDbCatalogFromPreset: jest.fn(),
+    getDuckDbCatalogFromFilters: jest.fn()
+}));
+
+const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
 
 jest.mock('../src/profile/ProfileScorer', () => ({
     computeDnaMultiplier: jest.fn(() => 1.0),
@@ -55,15 +61,15 @@ describe('catalogStrategies', () => {
             expect(result).toEqual([]);
         });
 
-        it('should fetch from TMDB using preset queries', async () => {
+        it('should fetch from DuckDb using preset queries', async () => {
             dataFetchers.fetchProfileContext.mockResolvedValueOnce({ profile: null });
-            dataFetchers.fetchTmdbResults.mockResolvedValue([
+            DuckDbProvider.getDuckDbCatalogFromFilters.mockResolvedValue([
                 { id: 101, title: 'Action 1' },
                 { id: 102, title: 'Action 2' }
             ]);
 
             const result = await catalogStrategies.buildDirectPresetCatalog('preset1', 'key', 'movie');
-            expect(dataFetchers.fetchTmdbResults).toHaveBeenCalled();
+            expect(DuckDbProvider.getDuckDbCatalogFromFilters).toHaveBeenCalled();
             expect(result).toEqual([{ id: '101', matchScore: null }, { id: '102', matchScore: null }]);
         });
     });
@@ -78,7 +84,6 @@ describe('catalogStrategies', () => {
         });
 
         it('should fetch DNA seeds if DNA params exist', async () => {
-            const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
             jest.spyOn(DuckDbProvider, 'getDuckDbCatalogFromPreset').mockResolvedValueOnce([
                 { _tmdbId: 201, id: 'tmdb:201' }
             ]);
@@ -89,8 +94,8 @@ describe('catalogStrategies', () => {
             scoringEngine.computeTopGenres.mockReturnValueOnce(['16']);
             dataFetchers.fetchTraktRecommendationsRaw.mockResolvedValueOnce([]);
             
-            // fetchTmdbResults for allSimilar
-            dataFetchers.fetchTmdbResults.mockResolvedValueOnce([
+            // getDuckDbCatalogFromFilters for allSimilar
+            DuckDbProvider.getDuckDbCatalogFromFilters.mockResolvedValueOnce([
                 { id: 301, title: 'Recommended 1', genre_ids: [16] }
             ]);
 
@@ -108,15 +113,10 @@ describe('catalogStrategies', () => {
             dataFetchers.fetchTraktRecommendationsRaw.mockResolvedValueOnce([
                 { movie: { ids: { tmdb: 999 } } } // Trakt seed
             ]);
-            dataFetchers.fetchTmdbResults.mockResolvedValueOnce([]); // discover
-            dataFetchers.fetchTmdbResults.mockResolvedValueOnce([
-                { id: 601, title: 'Western Show', genre_ids: [28] }
-            ]); // similar for loved
-            dataFetchers.fetchTmdbResults.mockResolvedValueOnce([
-                { id: 602, title: 'Trakt Similar', genre_ids: [28] }
-            ]); // similar for trakt seed
-
-            ProfileScorer.computeDnaMultiplier.mockReturnValueOnce(0.1).mockReturnValueOnce(0.1);
+            DuckDbProvider.getDuckDbCatalogFromFilters.mockResolvedValueOnce([
+                { id: 401, title: 'Non-DNA 1', genre_ids: [999] }, 
+                { id: 402, title: 'DNA 1', genre_ids: [16] } 
+            ]);ProfileScorer.computeDnaMultiplier.mockReturnValueOnce(0.1).mockReturnValueOnce(0.1);
 
             const result = await catalogStrategies.buildHybridCatalog('user1', 'global', 'trakt', 'tmdb', 'movie');
             const resultIds = (result || []).map(x => typeof x === 'object' ? x.id : x);
@@ -143,12 +143,12 @@ describe('catalogStrategies', () => {
             scoringEngine.computeTopKeywords.mockReturnValueOnce(['123']);
             
             // fetchDiscoverPages
-            dataFetchers.fetchTmdbResults.mockResolvedValueOnce([{ id: 201, genre_ids: [28] }]); // page 1
-            dataFetchers.fetchTmdbResults.mockResolvedValueOnce([{ id: 202, genre_ids: [28] }]); // page 2
-            dataFetchers.fetchTmdbResults.mockResolvedValueOnce([{ id: 203, genre_ids: [28] }]); // page 3
+            DuckDbProvider.getDuckDbCatalogFromPreset.mockResolvedValueOnce([{ id: 'tmdb:201', genre_ids: [28] }]); // page 1
+            DuckDbProvider.getDuckDbCatalogFromPreset.mockResolvedValueOnce([{ id: 'tmdb:202', genre_ids: [28] }]); // page 2
+            DuckDbProvider.getDuckDbCatalogFromPreset.mockResolvedValueOnce([{ id: 'tmdb:203', genre_ids: [28] }]); // page 3
             
             // similar fetch for loved
-            dataFetchers.fetchTmdbResults.mockResolvedValueOnce([{ id: 301, genre_ids: [28] }, { id: 301 }]); // duplicate id to test existingIds.has
+            DuckDbProvider.getDuckDbCatalogFromPreset.mockResolvedValueOnce([{ id: 'tmdb:301', genre_ids: [28] }, { id: 'tmdb:301' }]); // duplicate id to test existingIds.has
             
             const result = await catalogStrategies.buildTopGenresMixCatalog('user1', 'global', 'tmdb', 'movie');
             const resultIds = (result || []).map(x => typeof x === 'object' ? x.id : x);
@@ -179,10 +179,10 @@ describe('catalogStrategies', () => {
                     return Promise.resolve({ id: 999 });
                 });
 
-                ProfileScorer.computeDnaMultiplier.mockImplementation((item) => {
-                    if (item.id === 101) return 1.0;
-                    if (item.id === 103) return 0.2; // penalty
-                    return 1.0;
+                ProfileScorer.calculateItemMatch.mockImplementation((item) => {
+                    if (item.id === 101) return 10.0;
+                    if (item.id === 103) return 2.0; // penalty
+                    return 5.0;
                 });
                 
                 return await catalogStrategies.buildTraktFilteredCatalog('u', 'ctx', 'trakt', 'tmdb', 'movie');

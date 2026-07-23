@@ -6,7 +6,7 @@ const { rateLimitedMap } = require('../../utils/rateLimiter');
 
 // Import from new modules
 const { applyKidsMode } = require('../../utils/kidsModeFilters');
-const { fetchTmdbResults, fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds, getImpressionMap, calculateImpressionPenalty } = require('./dataFetchers');
+const { fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds, getImpressionMap, calculateImpressionPenalty } = require('./dataFetchers');
 const { extractDNAParams, resolveAiQueryToTmdbParams, twoTierScore, computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
 const ProfileScorer = require('../../profile/ProfileScorer');
 const { getDuckDbCatalogFromPreset, getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
@@ -81,8 +81,8 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
     const { profile } = await fetchProfileContext(userId, context);
     const isKidsMode = profile?.settings?.kidsMode;
 
-    const tmdbType = (preset.type === 'series' || mediaType === 'series') ? 'tv' : 'movie';
-    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
+    const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
+    const tmdbType = (preset.type === 'series' || mediaType === 'series') ? 'series' : 'movie';
     const existingIds = new Set();
     const pool = [];
 
@@ -94,12 +94,14 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
         const finalParams = isKidsMode ? applyKidsMode(params) : params;
 
         for (let page = 1; page <= 3; page++) {
-            const results = await fetchTmdbResults(
-                tmdbClient,
-                `/discover/${tmdbType}`,
-                { ...finalParams, page },
-                `Direct Preset (${presetId}) page ${page}`
-            );
+            const skip = (page - 1) * 40;
+            const results = await getDuckDbCatalogFromFilters(
+                finalParams,
+                tmdbType,
+                skip,
+                40,
+                {}
+            ).catch(() => []);
             for (const item of results) {
                 const nId = normalizeContentId(item.id);
                 if (nId && !existingIds.has(nId)) {
@@ -148,7 +150,7 @@ function getAnimeProportion(profile, directKwIds = [], topGenres = []) {
  * applicando la proporzione esatta per forzare (o meno) il flag Anime.
  */
 async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [], limitPerQuery = 50) {
-    const types = mediaType === 'movie' ? 'movie' : 'tv';
+    const types = mediaType === 'movie' ? 'movie' : 'series';
     
     const { user, context } = profile;
     const globalProfile = null; // not strictly needed for the fetch, used later for scoring
@@ -298,7 +300,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
-    const types = mediaType === 'movie' ? 'movie' : 'tv';
+    const types = mediaType === 'movie' ? 'movie' : 'series';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
     const dnaFilters = getProfileDnaFilters(user, context);
 
@@ -359,11 +361,12 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     }
     const allSeeds = Array.from(allSeedsMap.entries()).map(([id, weight]) => ({ id, weight }));
 
+    const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
     const weightedCounts = new Map(); 
     const allSimilar = await rateLimitedMap(
         allSeeds,
         async (seed) => ({
-            results: await fetchTmdbResults(tmdbClient, `/${types}/${seed.id}/recommendations`, {}, `Hybrid recommendations (${types}/${seed.id})`),
+            results: await getDuckDbCatalogFromFilters({ similar_to: seed.id }, types, 0, 40, {}).catch(() => []),
             weight: seed.weight
         }),
         { batchSize: 5, delayMs: 50 }
@@ -482,7 +485,7 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
     // console.log(`[TraktFiltered] userId=${userId}, context=${context}, hasProfile=${!!profile}, hasUser=${!!user}, hasTraktToken=${!!traktToken}, tokenFirst10=${traktToken?.substring(0,10)}`);
     if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
-    const types = mediaType === 'movie' ? 'movie' : 'tv';
+    const types = mediaType === 'movie' ? 'movie' : 'series';
     const dnaFilters = getProfileDnaFilters(user, context);
 
     const traktRaw = await fetchTraktRecommendationsRaw(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 100, user);

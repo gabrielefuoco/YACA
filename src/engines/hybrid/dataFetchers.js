@@ -33,30 +33,6 @@ async function fetchProfileContext(userId, context) {
     return { profile, user, globalProfile };
 }
 
-async function fetchTmdbResults(tmdbClient, endpoint, params = {}, errorLabel = endpoint) {
-    try {
-        const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
-        const type = endpoint.includes('tv') || endpoint.includes('series') ? 'series' : 'movie';
-        
-        let filters = { ...params };
-        const recMatch = endpoint.match(/\/(\d+)\/recommendations/);
-        if (recMatch) {
-            filters.similar_to = recMatch[1];
-        }
-
-        const results = await getDuckDbCatalogFromFilters(filters, type, 0, 40, {});
-        
-        if (params.without_original_language && results.length > 0) {
-            const excludedLangs = String(params.without_original_language).split('|');
-            return results.filter(item => !excludedLangs.includes(item.original_language));
-        }
-
-        return results;
-    } catch (err) {
-        console.warn(`[Hybrid] ${errorLabel} failed:`, err.message);
-        return [];
-    }
-}
 
 /**
  * Generic fetcher for Trakt to DRY up redundant calls.
@@ -117,14 +93,9 @@ async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40, u
 }
 
 async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60) {
-    const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
-    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-    const results = await fetchTmdbResults(
-        tmdbClient,
-        `/discover/${tmdbType}`,
-        { sort_by: 'popularity.desc', 'vote_count.gte': 50 },
-        `Popular fallback (${mediaType})`
-    );
+    const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
+    const type = mediaType === 'movie' ? 'movie' : 'series';
+    const results = await getDuckDbCatalogFromFilters({ sort_by: 'popularity.desc', 'vote_count.gte': 50 }, type, 0, 40, {}).catch(() => []);
     return results
         .map(item => normalizeContentId(item.id))
         .filter(Boolean)
@@ -132,19 +103,14 @@ async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60) {
 }
 
 async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = 60) {
-    const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
-    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-    const results = await fetchTmdbResults(
-        tmdbClient,
-        `/discover/${tmdbType}`,
-        {
-            sort_by: 'vote_average.desc',
-            'vote_count.gte': 50,
-            'vote_count.lte': 2000,
-            'vote_average.gte': 7.0
-        },
-        `Hidden Gems fallback (${mediaType})`
-    );
+    const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
+    const type = mediaType === 'movie' ? 'movie' : 'series';
+    const results = await getDuckDbCatalogFromFilters({
+        sort_by: 'vote_average.desc',
+        'vote_count.gte': 50,
+        'vote_count.lte': 2000,
+        'vote_average.gte': 7.0
+    }, type, 0, 40, {}).catch(() => []);
     return results
         .filter(item => (item.popularity ?? Infinity) <= 80)
         .map(item => normalizeContentId(item.id))
@@ -153,15 +119,15 @@ async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = 60) {
 }
 
 async function fetchTmdbSimilarCounts(seedTmdbIds, tmdbApiKey, mediaType = 'movie') {
-    const types = mediaType === 'movie' ? 'movie' : 'tv';
+    const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
+    const type = mediaType === 'movie' ? 'movie' : 'series';
     const counts = new Map();
-    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
 
     if (!seedTmdbIds || seedTmdbIds.length === 0) return counts;
 
     const results = await rateLimitedMap(
         seedTmdbIds,
-        (id) => fetchTmdbResults(tmdbClient, `/${types}/${id}/recommendations`, {}, `Similar fetch (${types}/${id})`),
+        (id) => getDuckDbCatalogFromFilters({ similar_to: id }, type, 0, 40, {}).catch(() => []),
         { batchSize: 3, delayMs: 150 }
     );
 
@@ -202,7 +168,6 @@ function calculateImpressionPenalty(seenDays) {
 
 module.exports = {
     fetchProfileContext,
-    fetchTmdbResults,
     safeTraktFetch,
     fetchRecentHistory,
     fetchRecentRatings,

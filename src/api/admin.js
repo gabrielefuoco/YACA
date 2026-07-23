@@ -4,7 +4,7 @@ const CacheManager = require('../cache/CacheManager');
 const redisClient = require('../cache/redisClient');
 const { clearAllTmdbCaches } = require('../clients/tmdb');
 const { clearIdCache } = require('../id_mapping/id_cache');
-const { aiPromptCache, aiDiscoveryCache, hybridRecommendationsCache, TmdbRequestCache } = require('../cache/cacheInstances');
+const { aiPromptCache, aiDiscoveryCache, hybridRecommendationsCache } = require('../cache/cacheInstances');
 const UserAccount = require('../db/models/UserAccount');
 const SystemLog = require('../models/SystemLog');
 const adminAuth = require('../middleware/adminAuth');
@@ -45,7 +45,6 @@ router.post('/system/flush', async (req, res) => {
         if (!namespace || namespace === 'all') {
             await clearAllTmdbCaches();
             await clearIdCache();
-            await TmdbRequestCache.clear();
             await hybridRecommendationsCache.clear();
             await aiPromptCache.clear();
             await aiDiscoveryCache.clear();
