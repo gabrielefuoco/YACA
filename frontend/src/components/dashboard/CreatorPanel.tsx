@@ -12,7 +12,6 @@ import { GENRE_NAMES, SORT_OPTIONS, LANGUAGES } from '@/lib/constants';
 import { Loader2, Wand2, Save, X, Eye, Plus, Layers, Info, Sparkles, Film, Tv, ChevronLeft, ChevronRight, Trash2, ListMusic } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
-import { InlineTmdbSearch } from '@/components/shared/InlineTmdbSearch';
 import { generateId } from '@/lib/utils';
 
 const MAX_AI_CATALOG_NAME_LENGTH = 30;
@@ -646,8 +645,20 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               <div className="space-y-4">
                 <div>
                   <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px] mb-2 block">Cerca ed Aggiungi a TMDB</Label>
-                  <InlineTmdbSearch
-                    type={type}
+                  <AutocompleteSearch
+                    placeholder="Cerca film o serie TV su TMDB..."
+                    searchFn={async (query) => {
+                      const res = await fetch(`/api/tmdb/search/multi?query=${encodeURIComponent(query)}`).then(r => r.json());
+                      return {
+                        results: (res.results || []).map((r: any) => ({
+                          id: String(r.id),
+                          name: r.title || r.name,
+                          poster: r.poster_path ? `https://image.tmdb.org/t/p/w92${r.poster_path}` : null,
+                          media_type: r.media_type || 'movie'
+                        }))
+                      };
+                    }}
+                    layout="horizontal"
                     existingItems={block.manualItems || []}
                     onSelect={(item: any) => {
                       const currentItems = block.manualItems || [];

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { InlineTmdbSearch } from '@/components/shared/InlineTmdbSearch';
+import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { Button } from '@/components/ui/button';
 import { generateId } from '@/lib/utils';
 import { Loader2, Library, CheckSquare, Square, Trash2, ArrowUpDown, RefreshCw } from 'lucide-react';
@@ -214,7 +214,23 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
 
       <div className="glass-panel p-4 bg-white/60 border border-marrow-light/10 rounded-2xl">
         <h3 className="text-sm font-bold text-marrow-deep mb-3 uppercase tracking-wider">Aggiungi Elemento</h3>
-        <InlineTmdbSearch onSelect={handleAdd} existingItems={items} type="movie" />
+        <AutocompleteSearch 
+          placeholder="Cerca film o serie TV su TMDB..."
+          searchFn={async (query) => {
+            const res = await fetch(`/api/tmdb/search/multi?query=${encodeURIComponent(query)}`).then(r => r.json());
+            return {
+              results: (res.results || []).map((r: any) => ({
+                id: String(r.id),
+                name: r.title || r.name,
+                poster: r.poster_path ? `https://image.tmdb.org/t/p/w92${r.poster_path}` : null,
+                media_type: r.media_type || 'movie'
+              }))
+            };
+          }}
+          layout="horizontal"
+          onSelect={handleAdd} 
+          existingItems={items} 
+        />
       </div>
 
       {isSelectionMode && selectedIds.size > 0 && (
