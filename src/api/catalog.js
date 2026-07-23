@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const { catalogHandler } = require('../handlers/catalogHandler');
-const { resolveAiQueryToTmdbParams } = require('../engines/hybrid/scoringEngine');
 const { generateTmdbFiltersFromPrompt } = require('../ai/router');
 const { getPresets } = require('../data/presets');
 const { sanitizeString } = require('../utils/helpers');
@@ -129,22 +128,20 @@ router.post('/preview-catalog', async (req, res) => {
             
             if (aiFilters.queries && Array.isArray(aiFilters.queries)) {
                 // Process each query to resolve TMDB IDs and keyword names
-                aiFilters.queries = await Promise.all(aiFilters.queries.map(async (q) => {
+                aiFilters.queries = aiFilters.queries.map((q) => {
                     if (q.strategy === 'discovery') {
                         const qKeywords = q.keyword || null;
-                        const tmdbParams = await resolveAiQueryToTmdbParams(q, sanitizedTmdbKey, aiType);
+                        const tmdbParams = { ...q };
                         if (qKeywords) tmdbParams._keywordNames = qKeywords;
                         return tmdbParams;
                     }
                     return q;
-                }));
+                });
                 discoverFilters = aiFilters;
             } else {
                 // Single query processing
                 originalAiKeywords = aiFilters.keyword || null;
-                discoverFilters = strategy === 'discovery'
-                    ? await resolveAiQueryToTmdbParams(aiFilters, sanitizedTmdbKey, aiType)
-                    : aiFilters;
+                discoverFilters = { ...aiFilters };
                 if (originalAiKeywords) discoverFilters._keywordNames = originalAiKeywords;
             }
         } else if (customFilters) {

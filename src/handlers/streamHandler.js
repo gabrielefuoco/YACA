@@ -261,12 +261,6 @@ async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
                         const kitsuRes = animeMappingStore.resolveKitsu(tmdbId, currentSeason, currentEpisode);
                         if (kitsuRes.success) {
                             badgeEntries.push({ stremioId: `kitsu:${kitsuRes.kitsuId}:${kitsuRes.kitsuEpisode}`, baseId: `kitsu:${kitsuRes.kitsuId}` });
-                        } else {
-                            const { tvdbBridgeFallback } = require('../utils/tvdbBridgeFallback');
-                            const fallbackRes = await tvdbBridgeFallback(tmdbId, currentSeason, currentEpisode, apiKey);
-                            if (fallbackRes && fallbackRes.success) {
-                                badgeEntries.push({ stremioId: `kitsu:${fallbackRes.kitsuId}:${fallbackRes.kitsuEpisode}`, baseId: `kitsu:${fallbackRes.kitsuId}` });
-                            }
                         }
                     } else if (type === 'movie') {
                         const kitsuMovieId = animeMappingStore.resolveKitsuMovie(tmdbId);

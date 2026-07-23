@@ -10,7 +10,6 @@ const configureRoute = require('./src/api/configure/index');
 const UserConfig = require('./src/models/UserConfig');
 const { getPresets, profileTemplates } = require('./src/data/presets');
 const connectDB = require('./src/db/connection');
-const { generateMergedName } = require('./src/api/mergeRoutes');
 const { loginHandler, meHandler, logoutHandler } = require('./src/api/auth/index.js');
 const { inputSanitizer } = require('./src/middleware/inputSanitizer');
 const { attachRequestContext } = require('./src/middleware/requestContext');
@@ -154,7 +153,6 @@ app.get('/api/presets', (req, res) => {
 // 2. Registra endpoint configuration (Frontend Web)
 const configureLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
 app.post('/api/configure', cookieParser(), configureLimiter, configureRoute);
-app.post('/api/ai/generate-merged-name', cookieParser(), generateMergedName);
 
 // Unified Profiles API (DNA, Sync Status)
 const profileRoutes = require('./src/api/profiles');

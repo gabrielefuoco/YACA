@@ -71,37 +71,7 @@ function calculateHybridScore(item, tmdbCounts, topGenres, itemGenres) {
 
 
 
-async function saveScoringData(tmdbDetails, type) {
-    if (!tmdbDetails || !tmdbDetails.id) return;
 
-    const keywordItems = tmdbDetails.keywords?.keywords || tmdbDetails.keywords?.results || [];
-    const directors = (tmdbDetails.credits?.crew || [])
-        .filter(c => c.job === 'Director')
-        .map(c => c.id)
-        .filter(Boolean);
-    const cast = (tmdbDetails.credits?.cast || [])
-        .slice(0, 5)
-        .map(c => c.id)
-        .filter(Boolean);
-    const genreIds = tmdbDetails.genre_ids || (tmdbDetails.genres ? tmdbDetails.genres.map(g => g.id) : []);
-
-    try {
-        await TmdbScoringData.updateOne(
-            { tmdbId: tmdbDetails.id, type },
-            {
-                $set: {
-                    vote_average: tmdbDetails.vote_average || 0,
-                    vote_count: tmdbDetails.vote_count || 0,
-                    genre_ids: genreIds,
-                    keyword_ids: keywordItems.map(k => k.id).filter(Boolean),
-                    director_ids: directors,
-                    cast_ids: cast
-                }
-            },
-            { upsert: true }
-        );
-    } catch (_e) { }
-}
 
 
 
@@ -109,6 +79,5 @@ module.exports = {
     computeTopGenres,
     computeTopKeywords,
     calculateHybridScore,
-    saveScoringData,
     extractVectorByPrefix
 };

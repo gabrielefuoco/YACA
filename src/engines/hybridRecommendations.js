@@ -9,7 +9,7 @@ const { getPresets } = require('../data/presets');
 
 // Import from the new hybrid layer
 const { fetchRecentHistory, fetchRecentRatings, fetchTraktRecommendationsRaw, fetchTmdbSimilarCounts, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds } = require('./hybrid/dataFetchers');
-const { calculateHybridScore, computeTopGenres, computeTopKeywords, resolveAiQueryToTmdbParams, saveScoringData, twoTierScore } = require('./hybrid/scoringEngine');
+const { calculateHybridScore, computeTopGenres, computeTopKeywords } = require('./hybrid/scoringEngine');
 const { buildDirectPresetCatalog, buildTopGenresMixCatalog, buildHybridCatalog, buildHiddenGemsCatalog, buildTraktFilteredCatalog } = require('./hybrid/catalogStrategies');
 
 /**
@@ -259,8 +259,5 @@ module.exports = {
     buildTopGenresMixCatalog,
     buildHiddenGemsCatalog,
     buildTraktFilteredCatalog,
-    twoTierScore,
-    resolveAiQueryToTmdbParams,
-    saveScoringData,
     recommendationsCache: hybridRecommendationsCache
 };
