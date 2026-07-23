@@ -148,3 +148,5 @@ tmdb_worker/
 *.parquet
 *.jsonl
 hf_run_logs.txt
+
+eslint-output.json

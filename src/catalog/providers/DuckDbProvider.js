@@ -82,6 +82,13 @@ function buildPresetFromFilters(q, type) {
     if (q['first_air_date.gte']) where.push(`"first_air_date" >= '${q['first_air_date.gte']}'`);
     if (q['first_air_date.lte']) where.push(`"first_air_date" <= '${q['first_air_date.lte']}'`);
 
+    if (q.tmdbIds && Array.isArray(q.tmdbIds) && q.tmdbIds.length > 0) {
+        const validIds = q.tmdbIds.map(Number).filter(n => Number.isFinite(n) && n > 0);
+        if (validIds.length > 0) {
+            where.push(`"id" IN (${validIds.join(',')})`);
+        }
+    }
+
     return {
         type,
         where,

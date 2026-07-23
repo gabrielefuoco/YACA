@@ -94,7 +94,7 @@ app.get('/health', (req, res) => {
 // Endpoint per mitigare l'ibernazione (Scale to Zero) su Hugging Face Spaces.
 // Uptime Robot chiama questa rotta per fare Keep-Alive e prevenire il cold start.
 app.get('/api/cron/warmup', (req, res) => {
-    res.json({ status: 'ok', message: 'Uptime Robot Keep-Alive. Il demone CacheWarmer gestisce la cache in background.' });
+    res.json({ status: 'ok', message: 'Uptime Robot Keep-Alive. Il demone TmdbDumpDaemon gestisce la cache in background.' });
 });
 
 // Rate limiter for auth endpoints (brute-force protection)
@@ -174,12 +174,6 @@ const server = app.listen(PORT, () => {
     if (!process.env.HOST_URL && !process.env.RENDER_EXTERNAL_URL) {
         console.warn('⚠️ HOST_URL non configurato nel file .env. Verranno usati gli header proxy (X-Forwarded-Host/X-Forwarded-Proto) quando disponibili.');
     }
-
-    // Avvia il Demone Continuo del Cache Warmer
-    const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-    // TEMPORANEAMENTE DISABILITATO PER FAVORIRE TMDB DUMP COLD START
-    // const { runCacheWarmer } = require('./src/utils/cacheWarmer');
-    // runCacheWarmer(hostUrl).catch(err => console.error('[CacheWarmer Daemon] Startup Error:', err.message));
 
     // Avvia il Demone TMDB Dump
     const { runTmdbDumpDaemon } = require('./src/utils/tmdbDumpDaemon');
