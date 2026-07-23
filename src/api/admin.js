@@ -8,7 +8,6 @@ const { aiPromptCache, aiDiscoveryCache, hybridRecommendationsCache } = require(
 const UserAccount = require('../db/models/UserAccount');
 const SystemLog = require('../models/SystemLog');
 const adminAuth = require('../middleware/adminAuth');
-const { runCacheWarmer } = require('../utils/cacheWarmer');
 const { getDumpStatus } = require('../utils/tmdbDumpDaemon');
 const { exec } = require('child_process');
 const path = require('path');
@@ -69,12 +68,7 @@ router.post('/scripts/trigger', async (req, res) => {
     const { action } = req.body;
     
     try {
-        if (action === 'warmup') {
-            const hostUrl = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 7000}`;
-            // Non attendiamo la fine per non bloccare
-            runCacheWarmer(hostUrl).catch(e => console.error(e));
-            return res.json({ success: true, message: 'Cache Warmer innescato con successo.' });
-        }
+
         
         if (action === 'analyze_presets') {
             const scriptPath = path.join(__dirname, '../../scripts/analyze_presets.js');
