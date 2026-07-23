@@ -19,6 +19,32 @@ function validateAndNormalizeSafeId(value) {
     return SAFE_ID_REGEX.test(trimmed) ? trimmed : null;
 }
 
+function buildStremioLibraryPayload(meta, existingItem = null) {
+    const now = new Date().toISOString();
+    return {
+        _id: meta.id || existingItem?._id,
+        name: meta.name || existingItem?.name || '',
+        type: meta.type || existingItem?.type || 'movie',
+        poster: meta.poster || existingItem?.poster || null,
+        posterShape: meta.posterShape || existingItem?.posterShape || 'poster',
+        background: meta.background || existingItem?.background || null,
+        logo: meta.logo || existingItem?.logo || null,
+        year: meta.releaseInfo ? meta.releaseInfo.toString() : (existingItem?.year || null),
+        removed: existingItem?.removed || false,
+        temp: existingItem?.temp || false,
+        _ctime: existingItem?._ctime || now,
+        _mtime: now,
+        state: existingItem?.state || {
+            timeOffset: 0,
+            video_id: null,
+            season: 1,
+            episode: 1,
+            timeAsPercentage: 0,
+            noNotifs: false
+        }
+    };
+}
+
 function validateManifestUrl(manifestUrl) {
     if (typeof manifestUrl !== 'string') return false;
     try {
@@ -203,28 +229,7 @@ async function pushToStremioLibrary(authKey, itemsToAdd, sanitizeOptions = {}) {
             }
 
             // Stremio library item format
-            changes.push({
-                _id: meta.id,
-                name: meta.name || '',
-                type: meta.type || 'movie',
-                poster: meta.poster || null,
-                posterShape: meta.posterShape || 'poster',
-                background: meta.background || null,
-                logo: meta.logo || null,
-                year: meta.releaseInfo ? meta.releaseInfo.toString() : null,
-                removed: false,
-                temp: false,
-                _ctime: now,
-                _mtime: now,
-                state: {
-                    timeOffset: 0,
-                    video_id: null,
-                    season: 1,
-                    episode: 1,
-                    timeAsPercentage: 0,
-                    noNotifs: false
-                }
-            });
+            changes.push(buildStremioLibraryPayload(meta));
         }
 
         if (changes.length === 0) {
@@ -355,6 +360,7 @@ async function updateSyncTimestamp(userId, profileId) {
 module.exports = {
     updateStremioAddonCollection,
     syncAllStremioData,
+    fetchStremioLibrary,
     pushToStremioLibrary,
-    fetchStremioLibrary
+    buildStremioLibraryPayload
 };

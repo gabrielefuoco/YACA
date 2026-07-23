@@ -7,4 +7,14 @@ function normalizeContentId(id) {
     return parts[parts.length - 1].trim();
 }
 
-module.exports = { normalizeContentId };
+function getBaseId(id) {
+    if (!id) return '';
+    const str = String(id);
+    if (str.startsWith('tmdb:') || str.startsWith('kitsu:') || str.startsWith('anilist:')) {
+        const parts = str.split(':');
+        return `${parts[0]}:${parts[1]}`;
+    }
+    return str;
+}
+
+module.exports = { normalizeContentId, getBaseId };

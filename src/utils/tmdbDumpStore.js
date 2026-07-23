@@ -73,6 +73,40 @@ class TmdbDumpStore {
         fs.appendFileSync(filePath, data);
     }
 
+    async _processFileSafely(filePath, lineProcessorFn, onEndFn) {
+        const tempPath = filePath + '.tmp';
+        const fileStream = fs.createReadStream(filePath);
+        const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+        
+        const writeStream = fs.createWriteStream(tempPath);
+        
+        for await (const line of rl) {
+            if (!line.trim()) continue;
+            try {
+                const doc = JSON.parse(line);
+                const resultLine = lineProcessorFn(doc, line);
+                if (resultLine !== null) {
+                    writeStream.write(resultLine + '\n');
+                }
+            } catch (e) {
+                // Skip invalid lines
+            }
+        }
+        
+        if (onEndFn) {
+            onEndFn(writeStream);
+        }
+        
+        writeStream.end();
+        await new Promise((resolve, reject) => {
+            writeStream.on('finish', resolve);
+            writeStream.on('error', reject);
+        });
+        
+        // Swap atomico
+        fs.renameSync(tempPath, filePath);
+    }
+
     async upsert(rows, mediaType) {
         if (!rows || rows.length === 0) return;
         const filePath = this._getFilePath(mediaType);
@@ -80,44 +114,23 @@ class TmdbDumpStore {
         const newRowsMap = new Map();
         for (const r of rows) newRowsMap.set(r.id, r);
 
-        const tempPath = filePath + '.tmp';
-        
         if (fs.existsSync(filePath)) {
-            const fileStream = fs.createReadStream(filePath);
-            const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
-            
-            const writeStream = fs.createWriteStream(tempPath);
-            
-            for await (const line of rl) {
-                if (!line.trim()) continue;
-                try {
-                    const doc = JSON.parse(line);
+            await this._processFileSafely(
+                filePath, 
+                (doc, line) => {
                     if (newRowsMap.has(doc.id)) {
-                        // Scrivi la versione aggiornata e rimuovi dalla mappa
-                        writeStream.write(JSON.stringify(newRowsMap.get(doc.id)) + '\n');
+                        const updated = JSON.stringify(newRowsMap.get(doc.id));
                         newRowsMap.delete(doc.id);
-                    } else {
-                        // Mantieni la riga originale
-                        writeStream.write(line + '\n');
+                        return updated;
                     }
-                } catch (e) {
-                    // Skip invalid lines
+                    return line;
+                },
+                (writeStream) => {
+                    for (const doc of newRowsMap.values()) {
+                        writeStream.write(JSON.stringify(doc) + '\n');
+                    }
                 }
-            }
-            
-            // Aggiungi in coda eventuali nuovi inserimenti rimasti nella mappa
-            for (const doc of newRowsMap.values()) {
-                writeStream.write(JSON.stringify(doc) + '\n');
-            }
-            
-            writeStream.end();
-            await new Promise((resolve, reject) => {
-                writeStream.on('finish', resolve);
-                writeStream.on('error', reject);
-            });
-            
-            // Swap atomico
-            fs.renameSync(tempPath, filePath);
+            );
         } else {
             this.appendBatch(rows, mediaType);
         }
@@ -129,30 +142,13 @@ class TmdbDumpStore {
         if (!fs.existsSync(filePath)) return;
 
         const idsSet = new Set(ids);
-        const tempPath = filePath + '.tmp';
-        
-        const fileStream = fs.createReadStream(filePath);
-        const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
-        
-        const writeStream = fs.createWriteStream(tempPath);
-        
-        for await (const line of rl) {
-            if (!line.trim()) continue;
-            try {
-                const doc = JSON.parse(line);
-                if (!idsSet.has(doc.id)) {
-                    writeStream.write(line + '\n');
-                }
-            } catch (e) { }
-        }
-        
-        writeStream.end();
-        await new Promise((resolve, reject) => {
-            writeStream.on('finish', resolve);
-            writeStream.on('error', reject);
-        });
-        
-        fs.renameSync(tempPath, filePath);
+        await this._processFileSafely(
+            filePath,
+            (doc, line) => {
+                if (!idsSet.has(doc.id)) return line;
+                return null;
+            }
+        );
     }
 
     loadCursor() {

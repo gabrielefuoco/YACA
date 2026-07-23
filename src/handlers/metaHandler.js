@@ -47,30 +47,7 @@ async function applyKitsuMappingToMeta(meta, tmdbId) {
     }
 }
 
-function normalizeAnimeEpisodes(seriesId, episodes) {
-    if (!seriesId || !Array.isArray(episodes)) return [];
 
-    let absoluteIndex = 1;
-    return episodes
-        .map((episode) => {
-            const season = (episode?.season !== undefined && episode?.season !== null && Number(episode.season) >= 0) ? Number(episode.season) : 1;
-            const episodeNumber = (episode?.episode !== undefined && episode?.episode !== null && Number(episode.episode) >= 0) ? Number(episode.episode) : absoluteIndex++;
-
-            // If we have an IMDB seriesId (tt...), we want to force its use for better stream compatibility
-            // otherwise we preserve full IDs (like kitsu: absolute ones).
-            const isImdbSeries = seriesId && seriesId.startsWith('tt');
-            const hasFullId = episode.id && (episode.id.match(/:/g) || []).length >= 2;
-            const useSeriesIdMapping = isImdbSeries || !hasFullId;
-
-            return {
-                ...episode,
-                id: useSeriesIdMapping ? `${seriesId}:${season}:${episodeNumber}` : episode.id,
-                season,
-                episode: episodeNumber
-            };
-        })
-        .sort((a, b) => (a.season - b.season) || (a.episode - b.episode));
-}
 
 async function resolveAnimeEpisodes(metaObj, tmdbId, tmdbApiKey) {
     if (metaObj._numberOfSeasons) {

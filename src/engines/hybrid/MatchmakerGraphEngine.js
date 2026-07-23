@@ -13,15 +13,7 @@ const MOOD_KEYWORDS_MAP = {
     "Epico & Avventuroso": ['epic', 'journey', 'magic', 'fantasy world', 'space opera', 'adventure', 'quest', 'empire', 'mythology', 'chosen one', 'sword and sorcery']
 };
 
-function getLevelChildren(level, nodeId) {
-    if (!graph.isLoaded || !graph.data) return [];
-    
-    if (level === 'L5') return Object.keys(graph.data.L4 || {}).filter(k => graph.data.L4[k].parent === nodeId);
-    if (level === 'L4') return Object.keys(graph.data.L3 || {}).filter(k => graph.data.L3[k].parent === nodeId);
-    if (level === 'L3') return Object.keys(graph.data.L2 || {}).filter(k => graph.data.L2[k].parent === nodeId);
-    if (level === 'L2') return graph.data.L2[nodeId]?.children_L1 || [];
-    return [];
-}
+
 
 function getKeywordsForNodes(nodeIds, level) {
     if (!graph.isLoaded || !graph.data) return new Map();

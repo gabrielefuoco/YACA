@@ -4,6 +4,7 @@ const AddonConfig = require('../db/models/AddonConfig');
 const { stremioClient } = require('../clients/stremio');
 const { createTmdbClient } = require('../clients/tmdb');
 const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
+const { buildStremioLibraryPayload } = require('../utils/stremioAddon');
 
 const BATCH_SIZE = 500; // Process all items
 
@@ -98,21 +99,7 @@ class LibraryConverterService {
                         }
 
                         // Prepare for datastorePut
-                        changes.push({
-                            _id: item._id,
-                            name: meta.name || '',
-                            type: meta.type || 'movie',
-                            poster: meta.poster || null,
-                            posterShape: meta.posterShape || 'poster',
-                            background: meta.background || null,
-                            logo: meta.logo || null,
-                            year: meta.releaseInfo ? meta.releaseInfo.toString() : null,
-                            removed: false,
-                            temp: item.temp,
-                            _ctime: item._ctime,
-                            _mtime: new Date().toISOString(),
-                            state: item.state
-                        });
+                        changes.push(buildStremioLibraryPayload(meta, item));
 
                         // Update db
                         item.tmdbId = tmdbId;

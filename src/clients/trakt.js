@@ -1,7 +1,7 @@
 const { createAxiosClient } = require('../utils/axiosClient');
 const { createTmdbClient } = require('./tmdb');
 const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
-const UserConfig = require('../models/UserConfig');
+
 
 const traktClient = createAxiosClient('https://api.trakt.tv', {
     headers: {
@@ -349,22 +349,7 @@ async function syncTraktRatings(token, ratings) {
     }
 }
 
-/**
- * Sincronizza la cronologia su Trakt.
- * @param {string} token - OAuth Token
- * @param {Array} history - Array di oggetti history [{movie: {ids: {imdb: "..."}}}]
- */
-async function syncTraktHistory(token, history) {
-    if (!token || !history.length) return;
-    try {
-        await traktClient.post('/sync/history', history, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        console.log(`[TraktClient] Pushed ${history.length} history items to Trakt.`);
-    } catch (err) {
-        console.error('[TraktClient] Error syncing history:', err.response?.data || err.message);
-    }
-}
+
 
 module.exports = {
     fetchTraktCatalog,

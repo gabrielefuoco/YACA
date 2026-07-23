@@ -1,10 +1,6 @@
 const axios = require('axios');
 const zlib = require('zlib');
 const readline = require('readline');
-const { promisify } = require('util');
-const stream = require('stream');
-
-const pipeline = promisify(stream.pipeline);
 
 const TMDB_GENRES_EN_MAP = {
     28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
@@ -16,6 +12,35 @@ const TMDB_GENRES_EN_MAP = {
 };
 function getEnglishGenreName(id, originalName) {
     return TMDB_GENRES_EN_MAP[id] || originalName;
+}
+
+function extractCommonTmdbData(data) {
+    const cast = (data.credits?.cast || []).slice(0, 20).map(c => ({id: c.id, name: c.name, character: c.character, order: c.order}));
+    const keywordsArray = data.keywords?.keywords || data.keywords?.results || [];
+    const keywords = keywordsArray.map(k => ({id: k.id, name: k.name}));
+    const trailer = (data.videos?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube');
+    const logo = (data.images?.logos || []).find(l => l.iso_639_1 === 'it') || 
+                 (data.images?.logos || []).find(l => l.iso_639_1 === 'en') || 
+                 (data.images?.logos || []).find(l => l.iso_639_1 === null);
+    const recommendations = (data.recommendations?.results || []).slice(0, 10).map(r => r.id);
+    const watch_providers_it = data['watch/providers']?.results?.IT || null;
+    const production_companies = (data.production_companies || []).map(c => ({id: c.id, name: c.name}));
+    const production_countries = (data.production_countries || []).map(c => c.iso_3166_1);
+    const spoken_languages = (data.spoken_languages || []).map(l => l.iso_639_1);
+    const genres = JSON.stringify((data.genres || []).map(g => ({ id: g.id, name: getEnglishGenreName(g.id, g.name) })));
+
+    return {
+        cast: JSON.stringify(cast),
+        keywords: JSON.stringify(keywords),
+        trailer_key: trailer ? trailer.key : null,
+        logo_path: logo ? logo.file_path : null,
+        recommendations: JSON.stringify(recommendations),
+        watch_providers_it: watch_providers_it ? JSON.stringify(watch_providers_it) : null,
+        production_companies: JSON.stringify(production_companies),
+        production_countries: JSON.stringify(production_countries),
+        spoken_languages: JSON.stringify(spoken_languages),
+        genres: genres
+    };
 }
 
 class TmdbDumpClient {
@@ -88,25 +113,16 @@ class TmdbDumpClient {
         
         if (!data || data.vote_count < 10) return null;
 
+        const common = extractCommonTmdbData(data);
         const directors = (data.credits?.crew || []).filter(c => c.job === 'Director').map(c => ({id: c.id, name: c.name}));
         const writers = (data.credits?.crew || []).filter(c => ['Screenplay', 'Writer'].includes(c.job)).map(c => ({id: c.id, name: c.name}));
-        const cast = (data.credits?.cast || []).slice(0, 20).map(c => ({id: c.id, name: c.name, character: c.character, order: c.order}));
-        const keywords = (data.keywords?.keywords || []).map(k => ({id: k.id, name: k.name}));
-        const trailer = (data.videos?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube');
-        const logo = (data.images?.logos || []).find(l => l.iso_639_1 === 'it') || 
-                     (data.images?.logos || []).find(l => l.iso_639_1 === 'en') || 
-                     (data.images?.logos || []).find(l => l.iso_639_1 === null);
-        const recommendations = (data.recommendations?.results || []).slice(0, 10).map(r => r.id);
-        const watch_providers_it = data['watch/providers']?.results?.IT || null;
-        const production_companies = (data.production_companies || []).map(c => ({id: c.id, name: c.name}));
-        const production_countries = (data.production_countries || []).map(c => c.iso_3166_1);
-        const spoken_languages = (data.spoken_languages || []).map(l => l.iso_639_1);
         
         const itRelease = (data.release_dates?.results || []).find(r => r.iso_3166_1 === 'IT');
         const usRelease = (data.release_dates?.results || []).find(r => r.iso_3166_1 === 'US');
         const content_rating = itRelease?.release_dates?.[0]?.certification || usRelease?.release_dates?.[0]?.certification || null;
 
         return {
+            ...common,
             id: data.id,
             imdb_id: data.imdb_id,
             title: data.title,
@@ -121,21 +137,11 @@ class TmdbDumpClient {
             status: data.status,
             poster_path: data.poster_path,
             backdrop_path: data.backdrop_path,
-            genres: JSON.stringify((data.genres || []).map(g => ({ id: g.id, name: getEnglishGenreName(g.id, g.name) }))),
-            keywords: JSON.stringify(keywords),
-            cast: JSON.stringify(cast),
             directors: JSON.stringify(directors),
             writers: JSON.stringify(writers),
-            production_companies: JSON.stringify(production_companies),
-            production_countries: JSON.stringify(production_countries),
-            spoken_languages: JSON.stringify(spoken_languages),
-            trailer_key: trailer ? trailer.key : null,
-            logo_path: logo ? logo.file_path : null,
             tagline: data.tagline || null,
             collection_id: data.belongs_to_collection ? data.belongs_to_collection.id : null,
             collection_name: data.belongs_to_collection ? data.belongs_to_collection.name : null,
-            recommendations: JSON.stringify(recommendations),
-            watch_providers_it: watch_providers_it ? JSON.stringify(watch_providers_it) : null,
             content_rating: content_rating,
             adult: data.adult || false,
             budget: data.budget || 0,
@@ -154,19 +160,9 @@ class TmdbDumpClient {
         
         if (!data || data.vote_count < 10) return null;
 
-        const cast = (data.credits?.cast || []).slice(0, 20).map(c => ({id: c.id, name: c.name, character: c.character, order: c.order}));
-        const keywords = (data.keywords?.results || []).map(k => ({id: k.id, name: k.name}));
-        const trailer = (data.videos?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube');
-        const logo = (data.images?.logos || []).find(l => l.iso_639_1 === 'it') || 
-                     (data.images?.logos || []).find(l => l.iso_639_1 === 'en') || 
-                     (data.images?.logos || []).find(l => l.iso_639_1 === null);
+        const common = extractCommonTmdbData(data);
         const created_by = (data.created_by || []).map(c => ({id: c.id, name: c.name}));
         const networks = (data.networks || []).map(n => ({id: n.id, name: n.name}));
-        const recommendations = (data.recommendations?.results || []).slice(0, 10).map(r => r.id);
-        const watch_providers_it = data['watch/providers']?.results?.IT || null;
-        const production_companies = (data.production_companies || []).map(c => ({id: c.id, name: c.name}));
-        const production_countries = (data.production_countries || []).map(c => c.iso_3166_1);
-        const spoken_languages = (data.spoken_languages || []).map(l => l.iso_639_1);
         
         // Runtime della serie (prende il primo, se disponibile, altrimenti media, altrimenti null)
         let runtime = null;
@@ -179,6 +175,7 @@ class TmdbDumpClient {
         const content_rating = itRating?.rating || usRating?.rating || null;
 
         return {
+            ...common,
             id: data.id,
             imdb_id: data.external_ids?.imdb_id || null,
             tvdb_id: data.external_ids?.tvdb_id || null,
@@ -198,19 +195,9 @@ class TmdbDumpClient {
             type: data.type,
             poster_path: data.poster_path,
             backdrop_path: data.backdrop_path,
-            genres: JSON.stringify((data.genres || []).map(g => ({ id: g.id, name: getEnglishGenreName(g.id, g.name) }))),
-            keywords: JSON.stringify(keywords),
-            cast: JSON.stringify(cast),
             created_by: JSON.stringify(created_by),
             networks: JSON.stringify(networks),
-            production_companies: JSON.stringify(production_companies),
-            production_countries: JSON.stringify(production_countries),
-            spoken_languages: JSON.stringify(spoken_languages),
-            trailer_key: trailer ? trailer.key : null,
-            logo_path: logo ? logo.file_path : null,
             tagline: data.tagline || null,
-            recommendations: JSON.stringify(recommendations),
-            watch_providers_it: watch_providers_it ? JSON.stringify(watch_providers_it) : null,
             content_rating: content_rating,
             adult: data.adult || false,
             runtime: runtime,

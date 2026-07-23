@@ -7,9 +7,9 @@ const { rateLimitedMap } = require('../../utils/rateLimiter');
 // Import from new modules
 const { applyKidsMode } = require('../../utils/kidsModeFilters');
 const { fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds, getImpressionMap, calculateImpressionPenalty } = require('./dataFetchers');
-const { extractDNAParams, resolveAiQueryToTmdbParams, twoTierScore, computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
+const { computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
 const ProfileScorer = require('../../profile/ProfileScorer');
-const { getDuckDbCatalogFromPreset, getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
+const { getDuckDbCatalogFromPreset } = require('../../catalog/providers/DuckDbProvider');
 const { F, S } = require('../../data/filters');
 const graph = require('../graph/HierarchicalGraph');
 
@@ -253,23 +253,17 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
     return { pool: Array.from(allResultsMap.values()), animeRatio };
 }
 
-/**
- * 🎯 Hero Catalog 1: True Blend ("Scelti per Te")
- */
-async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) {
+async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fallbackFn) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
-
-    const catalogId = mediaType === 'movie' ? 'yaca_true_blend_movies' : 'yaca_true_blend_series';
+    if (!profile) return fallbackFn(tmdbApiKey, mediaType);
     
-    const baseFilters = [F.minVotes(1000)];
     profile.user = user;
     profile.context = context;
     
     const { pool } = await fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters, 1000);
     
     if (pool.length === 0) {
-        return fetchPopularFallbackIds(tmdbApiKey, mediaType);
+        return fallbackFn(tmdbApiKey, mediaType);
     }
     
     const impressionMap = await getImpressionMap(userId, context, catalogId, pool.map(m => String(m._tmdbId || m.id.split(':')[1])));
@@ -291,6 +285,15 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
         matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))), 
         rawTMDB: i.data 
     }));
+}
+
+/**
+ * 🎯 Hero Catalog 1: True Blend ("Scelti per Te")
+ */
+async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) {
+    const catalogId = mediaType === 'movie' ? 'yaca_true_blend_movies' : 'yaca_true_blend_series';
+    const baseFilters = [F.minVotes(1000)];
+    return buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fetchPopularFallbackIds);
 }
 
 /**
@@ -433,48 +436,11 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
  * 💎 Hero Catalog 3: Hidden Gems ("Gemme Nascoste" / Anti-Trash)
  */
 async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
-    const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
-
     const catalogId = mediaType === 'movie' ? 'yaca_hidden_gems_movies' : 'yaca_hidden_gems_series';
+    const baseFilters = [F.minScore(6.5), F.minVotes(50), F.maxVotes(1000)];
+    if (mediaType === 'movie') baseFilters.push(F.minRuntime(60));
     
-    const baseFilters = [
-        F.minScore(6.5),
-        F.minVotes(50),
-        F.maxVotes(1000)
-    ];
-    if (mediaType === 'movie') {
-        baseFilters.push(F.minRuntime(60));
-    }
-    
-    profile.user = user;
-    profile.context = context;
-    
-    const { pool } = await fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters, 1000);
-    
-    if (pool.length === 0) {
-        return fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
-    }
-    
-    const impressionMap = await getImpressionMap(userId, context, catalogId, pool.map(m => String(m._tmdbId || m.id.split(':')[1])));
-    const dnaFilters = getProfileDnaFilters(user, context);
-    
-    const scored = pool.map(item => {
-        const id = String(item._tmdbId || item.id.split(':')[1]);
-        const seenDays = impressionMap.get(id) || 0;
-        const penaltyMultiplier = calculateImpressionPenalty(seenDays);
-        const score = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profile, { dnaFilters, globalProfile });
-        return { data: item.rawTMDB || item, score: score * penaltyMultiplier };
-    });
-    
-    const sorted = scored.sort((a, b) => b.score - a.score);
-    const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
-    
-    return deduplicated.slice(0, 100).map(i => ({ 
-        id: String(i.data.id), 
-        matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))), 
-        rawTMDB: i.data 
-    }));
+    return buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fetchHiddenGemsFallbackIds);
 }
 
 /**

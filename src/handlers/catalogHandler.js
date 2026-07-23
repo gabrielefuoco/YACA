@@ -3,6 +3,7 @@ const { getCacheConfig } = require('../cache/CacheManager');
 const { catalogRequestCache } = require('../cache/cacheInstances');
 const { getPresets } = require('../data/presets');
 const { generateRequestHash } = require('../utils/requestHash');
+const { getBaseId } = require('../utils/contentId');
 const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
 
 const { routeCatalogRequest } = require('../catalog/CatalogRouter');
@@ -42,14 +43,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
     const metas = cachedData.metas.map(m => ({ ...m }));
 
     const itemIds = metas
-        .map(item => {
-            const id = String(item.id);
-            if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
-                const parts = id.split(':');
-                return `${parts[0]}:${parts[1]}`;
-            }
-            return id;
-        })
+        .map(item => getBaseId(item.id))
         .filter(id => id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:') || id.startsWith('tt'));
 
     if (itemIds.length > 0) {
@@ -62,12 +56,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
             const queuePromises = [];
             
             metas.forEach(item => {
-                const id = String(item.id);
-                let bId = id;
-                if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
-                    const parts = id.split(':');
-                    bId = `${parts[0]}:${parts[1]}`;
-                }
+                let bId = getBaseId(item.id);
 
                 if (!bId.startsWith('tmdb:') && !bId.startsWith('kitsu:') && !bId.startsWith('anilist:') && !bId.startsWith('tt')) {
                     return;

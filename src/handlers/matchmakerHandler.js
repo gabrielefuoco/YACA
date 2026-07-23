@@ -5,6 +5,16 @@ const AddonConfig = require('../db/models/AddonConfig');
 const { createTmdbClient } = require('../clients/tmdb');
 const { getMatchmakerInitCards, getMatchmakerNextCards, getFinalRecommendations } = require('../engines/hybrid/MatchmakerGraphEngine');
 
+async function getSessionState(sessionId, res) {
+    const sessionStateData = await matchmakerSessionCache.getWithStatus(sessionId);
+    const sessionState = sessionStateData?.value;
+    if (!sessionState) {
+        res.status(404).json({ error: 'Session expired or not found' });
+        return null;
+    }
+    return sessionState;
+}
+
 async function funnelMatchmakerSession(req, res) {
     // Deprecated: L3/L4 funnel is bypassed. We return empty array in case older UI calls it.
     res.json({
@@ -71,9 +81,8 @@ async function analyzeMatchmakerSession(req, res) {
     if (!userId || !sessionId) return res.status(400).json({ error: 'userId and sessionId required' });
 
     try {
-        const sessionStateData = await matchmakerSessionCache.getWithStatus(sessionId);
-        const sessionState = sessionStateData?.value;
-        if (!sessionState) return res.status(404).json({ error: 'Session expired or not found' });
+        const sessionState = await getSessionState(sessionId, res);
+        if (!sessionState) return;
 
         if (swipes && Array.isArray(swipes)) {
             swipes.forEach(s => {
@@ -126,9 +135,8 @@ async function finishMatchmakerSession(req, res) {
     if (!userId || !sessionId) return res.status(400).json({ error: 'userId and sessionId required' });
 
     try {
-        const sessionStateData = await matchmakerSessionCache.getWithStatus(sessionId);
-        const sessionState = sessionStateData?.value;
-        if (!sessionState) return res.status(404).json({ error: 'Session expired or not found' });
+        const sessionState = await getSessionState(sessionId, res);
+        if (!sessionState) return;
 
         (pendingSwipes || []).forEach(s => {
             if (s.action === 'like') sessionState.likedIds.push(s.id);
