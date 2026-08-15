@@ -150,3 +150,7 @@ tmdb_worker/
 hf_run_logs.txt
 
 eslint-output.json
+
+# Regenerable data / cache blobs
+relevance_validation_report.json
+public/cache/
