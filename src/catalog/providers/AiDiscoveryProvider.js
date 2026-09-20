@@ -130,13 +130,8 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
 
         finalResults = primaryResults || [];
     } else {
-        const isFirstPage = skip === 0;
-        let perQuerySkip;
-        if (presentation_strategy === 'interleave') {
-            perQuerySkip = Math.floor(skip / queries.length);
-        } else {
-            perQuerySkip = skip;
-        }
+        const totalNeeded = skip + PAGE_SIZE;
+        const pagesToFetch = Math.max(LOOKAHEAD_PAGES, Math.ceil(totalNeeded / PAGE_SIZE));
 
         const queryResults = await Promise.all(
             queries.map(async (queryDef) => {
@@ -144,10 +139,9 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                 if (!query.strategy) query.strategy = 'discovery';
                 query = applyAiQualityFilters(query);
 
-                const pagesToFetch = (isFirstPage || settings?.deepFetch) ? LOOKAHEAD_PAGES : 1;
                 const pagePromises = [];
                 for (let p = 0; p < pagesToFetch; p++) {
-                    const pageSkip = perQuerySkip + (p * PAGE_SIZE);
+                    const pageSkip = p * PAGE_SIZE;
                     pagePromises.push(
                         executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions)
                     );
@@ -171,7 +165,7 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                         
                         const relaxedPromises = [];
                         for (let p = 0; p < pagesToFetch; p++) {
-                            const pageSkip = perQuerySkip + (p * PAGE_SIZE);
+                            const pageSkip = p * PAGE_SIZE;
                             relaxedPromises.push(executeComplexStrategy(relaxedQuery, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions));
                         }
                         const pageResults = await Promise.all(relaxedPromises);
@@ -189,7 +183,7 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
         );
 
         if (presentation_strategy === 'interleave') {
-            finalResults = interleaveMultipleResults(queryResults, PAGE_SIZE);
+            finalResults = interleaveMultipleResults(queryResults, PAGE_SIZE, skip);
         } else {
             const finalItems = applyConsensusScoring(queryResults);
             
@@ -199,7 +193,7 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                 return (b.popularity || 0) - (a.popularity || 0);
             });
 
-            finalResults = finalItems.slice(0, PAGE_SIZE);
+            finalResults = finalItems.slice(skip, skip + PAGE_SIZE);
         }
     }
 
