@@ -1,0 +1,6 @@
+const fs=require('fs'),readline=require('readline');
+const KS=['action','thriller','survival','martial arts','superhero','explosion','shootout','violence','blood','chase','murder','police','revenge','feel-good','slice of life','comedy','healing','relaxing','friendship','family','vacation','peaceful','romantic comedy','love','mind-bending','psychological thriller','mystery','detective','dark','plot twist','suspense','paranoia','investigation','mind control','tearjerker','sad','crying','melodrama','heartbreaking','emotional','tragedy','terminal illness','grief','loneliness','epic','journey','magic','fantasy world','space opera','adventure','quest','empire','mythology','chosen one','sword and sorcery'];
+const c=Object.fromEntries(KS.map(k=>[k,0]));
+const rl=readline.createInterface({input:fs.createReadStream('.cache/tmdb/master_movies.jsonl'),crlfDelay:Infinity});
+rl.on('line',l=>{if(!l.trim())return;let o;try{o=JSON.parse(l)}catch{return}let kws=[];try{kws=typeof o.keywords==='string'?JSON.parse(o.keywords):(o.keywords||[])}catch{};if(!Array.isArray(kws))return;const j=JSON.stringify(kws);for(const k of KS)if(j.includes(`"${k}"`))c[k]++;});
+rl.on('close',()=>{const zero=KS.filter(k=>c[k]===0);console.log('zero-match mood keywords:',JSON.stringify(zero));console.log('counts:',JSON.stringify(c));});

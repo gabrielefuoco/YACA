@@ -62,6 +62,10 @@ Stremio → `src/api/stremio.js:331` (`GET /:userHandle/catalog/:type/:id.json`)
 > **Riprioritizzazione post-risposte (20/09):** il sintomo guida di Gabriele è il **collasso della diversità nel top-k** ("i risultati, anche per sottogeneri, erano sempre troppo simili tra loro", "non trovava quello che cercava"). Ordine di attacco: **H1** (scoring cieco), **H6** (hybridScore dominante), **H5** (paginazione/interleave), **H11** (nuova: nessuna diversificazione nel top-k) sui cataloghi hero; **H3/H3b** sul matchmaker. **H2** resta valida in sé ma non spiega il peggioramento (i cataloghi prima di `73a023d` NON erano meglio — risposta 5). **H7** declassata a bassa priorità. **H10** sempre certezza (test verdi vacui).
 
 ### H1 — [prob. alta, impatto alto] Il VSM di True Blend/Hidden Gems è alimentato con light-meta DuckDB senza keyword/credits/vote_count
+
+> **VERIFICATA AL 100% (20/09)** — vedi `H1-verifica-duckdb.md`. Il parquet **contiene** `keywords`, `cast`, `directors`, `vote_count`, `popularity`; è `DuckDbProvider.mapDuckDbRowToMeta` che li **esclude programmaticamente** da `rawTMDB`. Effetti misurati: Bayesian score appiattito a **6.5** (il rating viene ignorato), segnale topos **azzerato**, falso indie-bonus **+25%** su ogni film, e — il colpo di grazia — con i light-meta **tutti i candidati del genere preferito saturano a 10.000**, distruggendo il ranking. Con i campi completi, un film mirato (Ritorno al futuro 9.660) stacca nettamente uno non mirato (Spider-Man 3 8.285).
+>
+> Nota tecnica: DuckDB funziona anche su Windows — il blocco dei probe era un `BigInt` non serializzato, non il binario nativo.
 - **Evidenza**: `DuckDbProvider.js:148-200` (`mapDuckDbRowToMeta`) costruisce `rawTMDB` (`:159`) con soli generi/voti/popolarità: **niente `keywords`, niente `credits`, niente `vote_count`**. `buildFilteredCatalog` (`catalogStrategies.js:251`) prende il pool da `getDuckDbCatalogFromPreset` e scorea `item.rawTMDB || item` (`:264`). `ProfileScorer.calculateBaseItemMatch` usa keyword (`ProfileScorer.js:87-99`), credits (`:130-146`), `vote_count` (`:156`) e l'`indieBonus` (`:177-180`). `getDuckDbMetaDetails` (`DuckDbProvider.js:223-277`) *ha* keywords/credits, ma non è usato in questo percorso. Probe: profilo solo-keyword 9.58 vs 3.96; qualità ignorata (3.25 = 3.25).
 - **Meccanismo**: la quota tematica gerarchica (topoi) e la quota autoriale vanno a 0; il Bayesian diventa la costante C=6.5 e l'`indieBonus` si applica uniformemente (voteCount=0<1000) → ranking ≈ affinità di genere.
 - **Effetto atteso**: "Scelti per Te"/"Gemme Nascoste" non riflettono gusti per keyword/topoi; punteggi compressi e `_yacaMatch` poco informativo; i due cataloghi ordinano in modo simile tra loro.
@@ -69,6 +73,10 @@ Stremio → `src/api/stremio.js:331` (`GET /:userHandle/catalog/:type/:id.json`)
 - **Fix minima**: in `buildFilteredCatalog`, idratare il pool (o i top-N candidati) con `getDuckDbMetaDetails` (SQL locale, zero API) prima di `calculateItemMatch`; oppure reintrodurre il Two-Tier documentato: `calculateLightScore` per il taglio, full score dopo idratazione. (Nessun refactor del grafo.)
 
 ### H2 — [prob. alta, impatto alto] `V_active` non cresce più: `TmdbScoringData` non ha nessun writer dal commit 73a023d
+
+> **DECISIONE A/B RISOLTA DALLA VERIFICA H1**: il DNA che serve a `ProfileBuilder` (generi, keyword, registi, cast, paese) è **già nel parquet DuckDB** ⇒ si adotta l'**Opzione B**: `ProfileBuilder` legge da DuckDB, zero scritture su Mongo, e `TmdbScoringData` può essere pensionata (Atlas torna a contenere solo dati utente). H1 e H2 hanno la stessa radice: la migrazione a DuckDB nativo ha lasciato due consumatori agganciati alla vecchia collection Mongo.
+
+> **VERIFICATA SU ATLAS (20/09)** — vedi `H2-verifica-atlas.md`. `tmdbscoringdatas`: 1080 documenti ma **nessun insert dal 02/06/2026** e **nessun update dal 21/07/2026**; il commit `73a023d` (23/07) ha spento la pipeline di scrittura. 8 profili su 18 hanno `V_active` **vuoto**, gli altri 10 sono congelati ai 1080 titoli storici. Impatto: la personalizzazione non cresce più per nessuno → tutto resta su `V_static` (che spiega anche parte del "sempre simili").
 - **Evidenza**: `ProfileBuilder.js:125-126` e `:145-146`: l'estrazione DNA esce subito se `TmdbScoringData` non ha il documento. L'unico riferimento a `TmdbScoringData` in scrittura è `metaHandler.js:232-252` (`updateScoringCache`) con **`upsert: false`** — non crea documenti. Grep su tutto il repo: nessun creator. `git log -S "saveScoringData"` → rimosso in `73a023d` ("cleanup dead code … migrate to native DuckDB sql"); il test relativo è `describe.skip` (`tests/hybridRecommendations.reviewFixes.test.js:187`).
 - **Meccanismo**: `syncUserHistory`/`syncStremioData` scrivono `WatchHistory` ma `_bulkUpdateVectorsAsync` non trova scoring data → `dnaList=[]` → `V_active` invariato → `V_final ≈ V_static`.
 - **Effetto atteso**: utenti diversi con gli stessi preset ottengono gli stessi cataloghi; la personalizzazione non migliora guardando contenuti; i cataloghi hero sembrano generici.
@@ -203,7 +211,7 @@ Nota: H4 (cache fallback) ha già copertura parziale in `tests/hybridRecommendat
 
 ## 5. Prossimo passo + comandi pronti per il server (da eseguire quando torna su)
 
-**5.1 Comandi Mongo (read-only):**
+**5.1 Comandi Mongo (read-only):** — ✅ eseguiti il 20/09, risultati in `H2-verifica-atlas.md`
 ```js
 // H2 — V_active senza writer: se 0, H2 confermata
 db.tmdbscoringdata.countDocuments({})
