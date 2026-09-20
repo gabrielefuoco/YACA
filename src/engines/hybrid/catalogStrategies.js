@@ -279,8 +279,14 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
     
     const sorted = scored.sort((a, b) => b.score - a.score);
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
+    const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
+        ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
+        : deduplicated;
+    const diversifiedSet = new Set(diversified);
+    const remaining = deduplicated.filter(item => !diversifiedSet.has(item));
+    const finalItems = [...diversified, ...remaining];
     
-    return deduplicated.slice(0, 100).map(i => ({ 
+    return finalItems.slice(0, 100).map(i => ({ 
         id: String(i.data.id), 
         matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))), 
         rawTMDB: i.data 
@@ -428,8 +434,14 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
 
     const sorted = scored.sort((a, b) => (b.score + b.hybridScore) - (a.score + a.hybridScore));
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
+    const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
+        ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
+        : deduplicated;
+    const diversifiedSet = new Set(diversified);
+    const remaining = deduplicated.filter(item => !diversifiedSet.has(item));
+    const finalItems = [...diversified, ...remaining];
 
-    return deduplicated.slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
+    return finalItems.slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
 }
 
 /**
