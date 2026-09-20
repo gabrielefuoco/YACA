@@ -1,171 +1,47 @@
-name: 🚀 Deploy YACA
-
-# Workflow unificato: deploya CF Worker + sincronizza secrets su HF + push codice a HF Space
-# Per usarlo: fork della repo → aggiungi secrets su GitHub → esegui l'action → tutto online!
+name: 🚀 Build & Deploy to GHCR
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          fetch-depth: 0
-          lfs: false
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ════════════════════════════════════════════════════════════
-      # STEP 1: Sincronizza Secrets GitHub → HF Space
-      # ════════════════════════════════════════════════════════════
+      - name: 🏷️ Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ github.sha }}
 
-      - name: 🔐 Sync Secrets to HF Space
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE_ID: ${{ secrets.HF_SPACE_ID }}
-          # ── Secrets dell'app da sincronizzare ──
-          SECRET_MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          SECRET_TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
-          SECRET_PROXY_ADDON_URL: ${{ secrets.PROXY_ADDON_URL }}
-          SECRET_JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          SECRET_ERDB_CONFIG: ${{ secrets.ERDB_CONFIG }}
-          SECRET_MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-          SECRET_TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
-          SECRET_TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
-          SECRET_HOST_URL: ${{ secrets.HOST_URL }}
-          SECRET_TORRENTIO_URL: ${{ secrets.TORRENTIO_URL }}
-          SECRET_HF_BUCKET_NAME: ${{ secrets.HF_BUCKET_NAME }}
-          SECRET_HF_ACCESS_TOKEN: ${{ secrets.HF_TOKEN }}
-          SECRET_ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
-        run: |
-          if [ -z "$HF_TOKEN" ]; then
-            echo "❌ HF_TOKEN non configurato. Impossibile sincronizzare i secrets."
-            exit 1
-          fi
-
-          if [ -z "$HF_SPACE_ID" ]; then
-            echo "❌ HF_SPACE_ID non configurato."
-            echo "   Vai su Settings → Secrets and variables → Variables → New repository variable"
-            echo "   Nome: HF_SPACE_ID   Valore: il-tuo-username/YACA"
-            exit 1
-          fi
-
-          # Install hf CLI
-          curl -LsSf https://hf.co/cli/install.sh | bash -s
-          
-          SYNCED=0
-          SKIPPED=0
-
-          sync_secret() {
-            local KEY="$1"
-            local VALUE="$2"
-            if [ -n "$VALUE" ]; then
-              if hf spaces secrets add "$HF_SPACE_ID" --secrets "${KEY}=${VALUE}"; then
-                echo "  ✅ ${KEY}"
-                SYNCED=$((SYNCED + 1))
-              else
-                echo "  ⚠️ ${KEY} (Errore HF CLI)"
-              fi
-            else
-              SKIPPED=$((SKIPPED + 1))
-            fi
-          }
-
-          echo "🔐 Sincronizzazione secrets su HF Space: ${HF_SPACE_ID}"
-          echo ""
-
-          # Se HOST_URL non è definito nei secrets di GitHub, lo calcoliamo automaticamente dall'HF_SPACE_ID
-          if [ -z "$SECRET_HOST_URL" ]; then
-            # Sostituisci "/" con "-" e converti in minuscolo (es: gabrielefuoco/YACA -> gabrielefuoco-yaca)
-            # Rimuovi anche punti e underscores convertendoli in trattini per il subdominio HF
-            CLEANED_SPACE=$(echo "$HF_SPACE_ID" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr '_' '-' | tr '.' '-')
-            SECRET_HOST_URL="https://${CLEANED_SPACE}.hf.space"
-            echo "ℹ️ HOST_URL non configurato nei secrets. Calcolato automaticamente: $SECRET_HOST_URL"
-          fi
-
-          sync_secret "MONGODB_URI" "$SECRET_MONGODB_URI"
-          sync_secret "TMDB_API_KEY" "$SECRET_TMDB_API_KEY"
-          sync_secret "PROXY_ADDON_URL" "$SECRET_PROXY_ADDON_URL"
-          sync_secret "JWT_SECRET" "$SECRET_JWT_SECRET"
-          sync_secret "ERDB_CONFIG" "$SECRET_ERDB_CONFIG"
-          sync_secret "MISTRAL_API_KEY" "$SECRET_MISTRAL_API_KEY"
-          sync_secret "TRAKT_CLIENT_ID" "$SECRET_TRAKT_CLIENT_ID"
-          sync_secret "TRAKT_CLIENT_SECRET" "$SECRET_TRAKT_CLIENT_SECRET"
-          sync_secret "HOST_URL" "$SECRET_HOST_URL"
-          sync_secret "TORRENTIO_URL" "$SECRET_TORRENTIO_URL"
-          sync_secret "HF_BUCKET_NAME" "$SECRET_HF_BUCKET_NAME"
-          sync_secret "HF_ACCESS_TOKEN" "$SECRET_HF_ACCESS_TOKEN"
-          sync_secret "ADMIN_PASS" "$SECRET_ADMIN_PASS"
-
-          echo ""
-          echo "📊 Sincronizzati: $SYNCED | Saltati (non configurati): $SKIPPED"
-
-      # ════════════════════════════════════════════════════════════
-      # STEP 2: Push codice su HF Space
-      # ════════════════════════════════════════════════════════════
-      - name: 📦 Push to Hugging Face Space
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE_ID: ${{ secrets.HF_SPACE_ID }}
-        run: |
-          if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE_ID" ]; then
-            echo "❌ HF_TOKEN o HF_SPACE_ID mancanti. Impossibile pushare."
-            exit 1
-          fi
-
-          echo "🧹 Pulizia dei file non necessari..."
-          rm -f frontend/lint_output.json || true
-
-          # Estrai username dal HF_SPACE_ID (formato: username/repo)
-          HF_USERNAME=$(echo "$HF_SPACE_ID" | cut -d'/' -f1)
-
-          rm -rf .git
-          git init
-          git checkout -b main
-
-          git config user.name "GitHub Action"
-          git config user.email "actions@github.com"
-
-          echo "📦 Configurazione Git LFS..."
-          git lfs install
-          git lfs track "*.mp4"
-          git lfs track "*.png"
-          git lfs track "*.jpg"
-          git lfs track "*.jpeg"
-
-          echo "📦 Creazione pacchetto di deploy..."
-          git add .gitattributes
-          git add .
-          git commit -m "🚀 Auto-deploy from GitHub Actions"
-
-          git remote add hf "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_ID}"
-          git config http.postBuffer 1048576000
-          git config http.version HTTP/1.1
-
-          echo "🚀 Push a Hugging Face Space: ${HF_SPACE_ID}..."
-          
-          MAX_RETRIES=3
-          RETRY_COUNT=0
-          SUCCESS=0
-          
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if git -c protocol.version=0 push -f hf main; then
-              SUCCESS=1
-              break
-            else
-              echo "⚠️ Push fallito (probabile errore 429 Rate Limit). Ritento tra 20 secondi..."
-              sleep 20
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-            fi
-          done
-          
-          if [ $SUCCESS -eq 0 ]; then
-            echo "❌ Push fallito dopo $MAX_RETRIES tentativi. Verifica HF_TOKEN, HF_SPACE_ID o riprova più tardi."
-            exit 1
-          fi
-
-          echo "✅ Deploy completato su https://huggingface.co/spaces/${HF_SPACE_ID}"
-
+      - name: 📦 Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

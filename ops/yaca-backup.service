@@ -1,0 +1,15 @@
+[Unit]
+Description=YACA MongoDB Backup to Cloudflare R2
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/srv/yaca/.env
+WorkingDirectory=/srv/yaca
+ExecStart=/bin/bash /srv/yaca/ops/yaca-backup.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
