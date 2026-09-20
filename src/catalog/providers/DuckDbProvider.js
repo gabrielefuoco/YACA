@@ -9,23 +9,22 @@ const duckDbStore = require('../../db/duckDbStore');
 const { buildCatalogQuery } = require('../../db/queryBuilder');
 const { F, S } = require('../../data/filters');
 
-function mapSortBy(s, type) {
+function mapSortBy(s, type = 'movie') {
+    const isTv = type === 'tv' || type === 'series';
     if (!s) return S.POPULAR;
     if (s === 'popularity.desc') return S.POPULAR;
     if (s === 'vote_average.desc') return S.TOP_RATED;
     if (s === 'revenue.desc') {
-        return (type === 'tv' || type === 'series') ? S.POPULAR : S.REVENUE;
+        return isTv ? S.POPULAR : S.REVENUE;
     }
     if (s === 'primary_release_date.desc' || s === 'first_air_date.desc' || s === 'release_date.desc') {
-        return (type === 'tv' || type === 'series') ? S.NEWEST_TV : S.NEWEST_MOVIE;
+        return isTv ? S.NEWEST_TV : S.NEWEST_MOVIE;
+    }
+    if (s === 'primary_release_date.asc' || s === 'first_air_date.asc' || s === 'release_date.asc') {
+        return isTv ? '"first_air_date" ASC NULLS LAST' : '"release_date" ASC NULLS LAST';
     }
     return s.replace('.desc', ' DESC NULLS LAST').replace('.asc', ' ASC NULLS LAST');
 }
-
-const parseFilterVal = (v) => {
-    const s = String(v).trim();
-    return /^\d+$/.test(s) ? Number(s) : s;
-};
 
 function buildPresetFromFilters(q, type = 'movie') {
     const where = [];
@@ -62,31 +61,31 @@ function buildPresetFromFilters(q, type = 'movie') {
     if (q.with_genres) {
         const str = String(q.with_genres);
         if (str.includes('|')) {
-            where.push(F.genre(...str.split('|').map(parseFilterVal)));
+            where.push(F.genre(...str.split('|').map(Number)));
         } else if (str.includes(',')) {
-            where.push(F.allGenres(...str.split(',').map(parseFilterVal)));
+            where.push(F.allGenres(...str.split(',').map(Number)));
         } else {
-            where.push(F.genre(parseFilterVal(str)));
+            where.push(F.genre(Number(str)));
         }
     }
 
     if (q.without_genres) {
-        where.push(F.notGenre(...String(q.without_genres).split(/[,|]/).map(parseFilterVal)));
+        where.push(F.notGenre(...String(q.without_genres).split(/[,|]/).map(Number)));
     }
 
     if (q.with_keywords) {
         const str = String(q.with_keywords);
         if (str.includes('|')) {
-            where.push(F.keyword(...str.split('|').map(parseFilterVal)));
+            where.push(F.keyword(...str.split('|').map(Number)));
         } else if (str.includes(',')) {
-            where.push(F.allKeywords(...str.split(',').map(parseFilterVal)));
+            where.push(F.allKeywords(...str.split(',').map(Number)));
         } else {
-            where.push(F.keyword(parseFilterVal(str)));
+            where.push(F.keyword(Number(str)));
         }
     }
 
     if (q.without_keywords) {
-        where.push(F.notKeyword(...String(q.without_keywords).split(/[,|]/).map(parseFilterVal)));
+        where.push(F.notKeyword(...String(q.without_keywords).split(/[,|]/).map(Number)));
     }
 
     if (!isTv) {
@@ -145,56 +144,91 @@ function buildPresetFromFilters(q, type = 'movie') {
     };
 }
 
-function mapDuckDbRowToMeta(item, type = 'movie') {
-    const isMovie = type === 'movie';
-    const name = item.title || item.name || item.original_title || item.original_name || 'Unknown';
-    const poster = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null;
-    const background = item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null;
+function sanitizeBigInt(val) {
+    if (typeof val === 'bigint') return Number(val);
+    return val;
+}
 
+function mapDuckDbRowToMeta(item, isMovie = true) {
+    let name = item.title || item.name || item.original_title || item.original_name || 'Unknown';
+    let poster = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null;
+    let background = item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null;
+    
     let parsedGenres = [];
     let parsedProviders = null;
-    try { if (item.genres) parsedGenres = JSON.parse(item.genres); } catch (e) {}
-    try { if (item.watch_providers_it) parsedProviders = JSON.parse(item.watch_providers_it); } catch (e) {}
+    let parsedCast = [];
+    let parsedCrew = [];
+    let parsedKeywords = [];
+    
+    try { if (item.genres) parsedGenres = typeof item.genres === 'string' ? JSON.parse(item.genres) : item.genres; } catch(e){}
+    try { if (item.watch_providers_it) parsedProviders = typeof item.watch_providers_it === 'string' ? JSON.parse(item.watch_providers_it) : item.watch_providers_it; } catch(e){}
+    try { if (item.cast) parsedCast = typeof item.cast === 'string' ? JSON.parse(item.cast) : item.cast; } catch(e){}
+    try { 
+        if (item.directors) {
+            const dirs = typeof item.directors === 'string' ? JSON.parse(item.directors) : item.directors;
+            parsedCrew.push(...dirs.map(d => ({ ...d, job: d.job || 'Director' })));
+        }
+    } catch(e){}
+    try { 
+        if (item.writers) {
+            const wrs = typeof item.writers === 'string' ? JSON.parse(item.writers) : item.writers;
+            parsedCrew.push(...wrs.map(w => ({ ...w, job: w.job || 'Writer' })));
+        }
+    } catch(e){}
+    try { if (item.keywords) parsedKeywords = typeof item.keywords === 'string' ? JSON.parse(item.keywords) : item.keywords; } catch(e){}
+
+    const voteCount = sanitizeBigInt(item.vote_count) || 0;
+    const voteAverage = item.vote_average != null ? Number(item.vote_average) : undefined;
 
     const rawTMDB = {
-        id: item.id,
+        id: sanitizeBigInt(item.id),
         title: item.title || item.name,
         original_title: item.original_title || item.original_name,
         overview: item.overview,
         poster_path: item.poster_path,
         backdrop_path: item.backdrop_path,
-        vote_average: item.vote_average,
-        popularity: item.popularity,
-        release_date: item.release_date || item.first_air_date,
-        first_air_date: item.first_air_date || item.release_date,
+        vote_average: voteAverage,
+        vote_count: voteCount,
+        popularity: sanitizeBigInt(item.popularity) || 0,
+        release_date: item.release_date,
         original_language: item.original_language,
         genres: parsedGenres,
-        belongs_to_collection: item.collection_id ? { id: item.collection_id, name: item.collection_name } : null,
-        collection_id: item.collection_id,
-        'watch/providers': { results: { IT: parsedProviders } }
+        belongs_to_collection: item.collection_id ? { id: sanitizeBigInt(item.collection_id), name: item.collection_name } : null,
+        collection_id: sanitizeBigInt(item.collection_id),
+        'watch/providers': { results: { IT: parsedProviders } },
+        credits: { cast: parsedCast, crew: parsedCrew },
+        keywords: { results: parsedKeywords, keywords: parsedKeywords }
     };
 
-    if (item.logo_path) rawTMDB.images = { logos: [{ file_path: item.logo_path }] };
-    if (item.trailer_key) rawTMDB.videos = { results: [{ key: item.trailer_key, type: 'Trailer', site: 'YouTube' }] };
-    if (item.content_rating) rawTMDB.release_dates = { results: [{ iso_3166_1: 'IT', release_dates: [{ certification: item.content_rating }] }] };
+    if (item.logo_path) {
+        rawTMDB.images = { logos: [{ file_path: item.logo_path }] };
+    }
+    if (item.trailer_key) {
+        rawTMDB.videos = { results: [{ key: item.trailer_key, type: 'Trailer', site: 'YouTube' }] };
+    }
+    if (item.content_rating) {
+        rawTMDB.release_dates = { results: [{ iso_3166_1: 'IT', release_dates: [{ certification: item.content_rating }] }] };
+    }
 
-    const d = item.release_date || item.first_air_date || item.last_air_date || '';
+    const d = item.release_date || item.last_air_date || item.first_air_date || '';
     const dateStr = d instanceof Date ? d.toISOString() : String(d);
 
     return {
         id: `tmdb:${item.id}`,
-        _tmdbId: item.id,
+        _tmdbId: sanitizeBigInt(item.id),
         type: isMovie ? 'movie' : 'series',
         name,
         poster,
         posterShape: 'poster',
         background,
-        releaseInfo: dateStr ? dateStr.substring(0, 4) : null,
-        imdbRating: item.vote_average ? Number(item.vote_average).toFixed(1) : undefined,
-        genres: parsedGenres.map(g => g.name || g),
-        genre_ids: parsedGenres.map(g => g.id).filter(Boolean),
         description: item.overview || '',
-        popularity: item.popularity || 0,
+        releaseInfo: dateStr ? dateStr.substring(0, 4) : null,
+        imdbRating: voteAverage ? voteAverage.toFixed(1) : undefined,
+        popularity: sanitizeBigInt(item.popularity) || 0,
+        genres: parsedGenres.map(g => g.name || g),
+        genre_ids: parsedGenres.map(g => g.id),
+        vote_count: voteCount,
+        keywords: parsedKeywords,
         rawTMDB
     };
 }
@@ -203,33 +237,28 @@ async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 50) {
     try {
         const sql = await buildCatalogQuery(preset, skip, limit);
         const rows = await duckDbStore.query(sql);
-        return rows.map(item => mapDuckDbRowToMeta(item, preset.type));
+        return rows.map(item => mapDuckDbRowToMeta(item, preset.type === 'movie'));
     } catch (e) {
         console.error('[DuckDbProvider] Error in getDuckDbCatalogFromPreset:', e);
         return [];
     }
 }
 
-async function getDuckDbCatalogFromFilters(filters, type = 'movie', skip = 0, limit = 50) {
-    const preset = buildPresetFromFilters(filters, type);
-    return getDuckDbCatalogFromPreset(preset, skip, limit);
-}
-
-function sanitizeBigInt(val) {
-    if (typeof val === 'bigint') return Number(val);
-    return val;
+async function getDuckDbCatalogFromFilters(filters, type = 'movie', skip = 0, limit = 50, options = {}) {
+    try {
+        const preset = buildPresetFromFilters(filters, type);
+        const sql = await buildCatalogQuery(preset, skip, limit);
+        const rows = await duckDbStore.query(sql);
+        return rows.map(item => mapDuckDbRowToMeta(item, type === 'movie'));
+    } catch (err) {
+        console.error(`[DuckDbProvider] Errore nella generazione del catalogo:`, err);
+        return [];
+    }
 }
 
 async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
     try {
-        if (typeof tmdbId === 'string' && (tmdbId === 'movie' || tmdbId === 'tv' || tmdbId === 'series') && (typeof type === 'number' || (typeof type === 'string' && !['movie', 'tv', 'series'].includes(type)))) {
-            const temp = tmdbId;
-            tmdbId = type;
-            type = temp;
-        }
-        const cleanId = Number(String(tmdbId).replace(/^tmdb:/i, ''));
-        if (!Number.isFinite(cleanId) || cleanId <= 0) return null;
-        const sql = `SELECT * FROM ${type === 'movie' ? 'movies' : 'tv'} WHERE id = ${cleanId}`;
+        const sql = `SELECT * FROM ${type === 'movie' ? 'movies' : 'tv'} WHERE id = ${Number(tmdbId)}`;
         const rows = await duckDbStore.query(sql);
 
         if (rows.length === 0) return null;
@@ -246,12 +275,25 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
         let parsedCrew = [];
         let parsedKeywords = [];
         
-        try { if (item.genres) parsedGenres = JSON.parse(item.genres); } catch(e){}
-        try { if (item.watch_providers_it) parsedProviders = JSON.parse(item.watch_providers_it); } catch(e){}
-        try { if (item.cast) parsedCast = JSON.parse(item.cast); } catch(e){}
-        try { if (item.directors) parsedCrew.push(...JSON.parse(item.directors)); } catch(e){}
-        try { if (item.writers) parsedCrew.push(...JSON.parse(item.writers)); } catch(e){}
-        try { if (item.keywords) parsedKeywords = JSON.parse(item.keywords); } catch(e){}
+        try { if (item.genres) parsedGenres = typeof item.genres === 'string' ? JSON.parse(item.genres) : item.genres; } catch(e){}
+        try { if (item.watch_providers_it) parsedProviders = typeof item.watch_providers_it === 'string' ? JSON.parse(item.watch_providers_it) : item.watch_providers_it; } catch(e){}
+        try { if (item.cast) parsedCast = typeof item.cast === 'string' ? JSON.parse(item.cast) : item.cast; } catch(e){}
+        try { 
+            if (item.directors) {
+                const dirs = typeof item.directors === 'string' ? JSON.parse(item.directors) : item.directors;
+                parsedCrew.push(...dirs.map(d => ({ ...d, job: d.job || 'Director' })));
+            }
+        } catch(e){}
+        try { 
+            if (item.writers) {
+                const wrs = typeof item.writers === 'string' ? JSON.parse(item.writers) : item.writers;
+                parsedCrew.push(...wrs.map(w => ({ ...w, job: w.job || 'Writer' })));
+            }
+        } catch(e){}
+        try { if (item.keywords) parsedKeywords = typeof item.keywords === 'string' ? JSON.parse(item.keywords) : item.keywords; } catch(e){}
+
+        const voteCount = sanitizeBigInt(item.vote_count) || 0;
+        const voteAverage = item.vote_average != null ? Number(item.vote_average) : undefined;
 
         const rawTMDB = {
             id: sanitizeBigInt(item.id),
@@ -260,15 +302,15 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
             overview: item.overview,
             poster_path: item.poster_path,
             backdrop_path: item.backdrop_path,
-            vote_average: sanitizeBigInt(item.vote_average),
-            popularity: sanitizeBigInt(item.popularity),
-            release_date: item.release_date || item.first_air_date,
-            first_air_date: item.first_air_date || item.release_date,
+            vote_average: voteAverage,
+            vote_count: voteCount,
+            popularity: sanitizeBigInt(item.popularity) || 0,
+            release_date: item.release_date,
             original_language: item.original_language,
             genres: parsedGenres,
             'watch/providers': { results: { IT: parsedProviders } },
             credits: { cast: parsedCast, crew: parsedCrew },
-            keywords: { results: parsedKeywords } // Per film
+            keywords: { results: parsedKeywords, keywords: parsedKeywords }
         };
 
         if (type === 'tv') {
@@ -279,7 +321,7 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
         if (item.trailer_key) rawTMDB.videos = { results: [{ key: item.trailer_key, type: 'Trailer', site: 'YouTube' }] };
         if (item.content_rating) rawTMDB.release_dates = { results: [{ iso_3166_1: 'IT', release_dates: [{ certification: item.content_rating }] }] };
 
-        const d = item.release_date || item.first_air_date || item.last_air_date || '';
+        const d = item.release_date || item.last_air_date || '';
         const dateStr = d instanceof Date ? d.toISOString() : String(d);
 
         const metaObj = {
@@ -319,5 +361,6 @@ module.exports = {
     buildPresetFromFilters,
     getDuckDbCatalogFromFilters,
     getDuckDbCatalogFromPreset,
-    getDuckDbMetaDetails
+    getDuckDbMetaDetails,
+    mapDuckDbRowToMeta
 };

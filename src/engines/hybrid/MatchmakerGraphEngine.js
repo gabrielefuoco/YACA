@@ -1,7 +1,7 @@
 const graph = require('../graph/HierarchicalGraph');
-const { getDuckDbCatalogFromPreset } = require('../../catalog/providers/DuckDbProvider');
-const duckDbStore = require('../../db/duckDbStore');
-const { F, S } = require('../../data/filters');
+const DuckDbProvider = require('../../catalog/providers/DuckDbProvider');
+const ProfileScorer = require('../../profile/ProfileScorer');
+const { F, S, G } = require('../../data/filters');
 
 const LEVELS = ['L5', 'L4', 'L3', 'L2', 'L1'];
 
@@ -14,63 +14,37 @@ const MOOD_KEYWORDS_MAP = {
     "Epico & Avventuroso": ['epic', 'journey', 'magic', 'fantasy world', 'space opera', 'adventure', 'quest', 'empire', 'mythology', 'chosen one', 'sword and sorcery']
 };
 
+
+
 function getKeywordsForNodes(nodeIds, level) {
     return graph.getKeywordsForNodes(nodeIds, level);
 }
 
 
 
-const IT_TO_EN_GENRES = {
-    'azione': 'Action',
-    'avventura': 'Adventure',
-    'animazione': 'Animation',
-    'commedia': 'Comedy',
-    'crime': 'Crime',
-    'documentario': 'Documentary',
-    'dramma': 'Drama',
-    'famiglia': 'Family',
-    'fantasy': 'Fantasy',
-    'fantastico': 'Fantasy',
-    'storico': 'History',
-    'storia': 'History',
-    'horror': 'Horror',
-    'musica': 'Music',
-    'mistero': 'Mystery',
-    'romance': 'Romance',
-    'romantico': 'Romance',
-    'fantascienza': 'Science Fiction',
-    'tv movie': 'TV Movie',
-    'film tv': 'TV Movie',
-    'thriller': 'Thriller',
-    'guerra': 'War',
-    'western': 'Western'
-};
-
 /**
  * Applica i filtri globali del funnel (Anime, Year) al preset
  */
 function applyFunnelFiltersToPreset(preset, filters) {
     if (!filters) return;
-    const dateCol = (preset.type === 'tv' || preset.type === 'series') ? '"first_air_date"' : '"release_date"';
-    if (filters.yearMin) preset.where.push(`${dateCol} >= '${filters.yearMin}-01-01'`);
-    if (filters.yearMax) preset.where.push(`${dateCol} <= '${filters.yearMax}-12-31'`);
+    if (filters.yearMin) preset.where.push(`"release_date" >= '${filters.yearMin}-01-01'`);
+    if (filters.yearMax) preset.where.push(`"release_date" <= '${filters.yearMax}-12-31'`);
     if (filters.isAnime) preset.where.push(F.anime);
     if (filters.genres && filters.genres.length > 0) {
-        const normalizedGenres = filters.genres.map(g => {
-            const lower = String(g).trim().toLowerCase();
-            return IT_TO_EN_GENRES[lower] || g;
-        });
-        preset.where.push(F.genreStr(...normalizedGenres));
+        const mappedGenres = filters.genres.map(g => (G.mapGenre ? G.mapGenre(g, preset.type) : g));
+        preset.where.push(F.genreStr(...mappedGenres));
     }
 }
 
 async function getCardsForNodes(nodeIds, currentLevel, cardsPerNode, mediaType, filters, history = []) {
     const types = mediaType === 'movie' ? 'movie' : 'tv';
     const nodeKeywords = getKeywordsForNodes(nodeIds, currentLevel);
+    const profile = filters?.profile || (filters?.V_final ? { compiledVectors: { V_final: filters.V_final } } : null);
     
     // Estrai gli ID già visti dalla history per evitare duplicati
     const swipedIds = new Set(history.map(s => {
-        return String(s.id).replace(/^[a-zA-Z]+:/, '');
+        // history id è "movie:1234" o "series:5678"
+        return s.id.split(':')[1];
     }));
     
     let allCards = [];
@@ -90,13 +64,25 @@ async function getCardsForNodes(nodeIds, currentLevel, cardsPerNode, mediaType, 
         const safeStrs = kwStrs.map(s => s.replace(/'/g, "''"));
         preset.where.push(`(${safeStrs.map(s => `"keywords" ILIKE '%"${s}"%'`).join(' OR ')})`);
         
-        const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 100); // Fetch a large pool to avoid exhaustion when filtering swiped cards
+        const lightMetas = await DuckDbProvider.getDuckDbCatalogFromPreset(preset, 0, 100);
         
         // Filtriamo i duplicati
-        const filteredMetas = lightMetas.filter(c => !swipedIds.has(String(c._tmdbId || c.id).replace(/^[a-zA-Z]+:/, '')));
-        const shuffled = filteredMetas.sort(() => 0.5 - Math.random()).slice(0, cardsPerNode);
+        const filteredMetas = (lightMetas || []).filter(c => !swipedIds.has(String(c.id).replace('tmdb:', '')));
         
-        const mappedCards = shuffled.map(c => ({
+        let sortedMetas;
+        if (profile && profile.compiledVectors && profile.compiledVectors.V_final) {
+            sortedMetas = filteredMetas.slice().sort((a, b) => {
+                const scoreA = ProfileScorer.calculateLightScore(a.rawTMDB || a, profile);
+                const scoreB = ProfileScorer.calculateLightScore(b.rawTMDB || b, profile);
+                return scoreB - scoreA || (b.popularity || 0) - (a.popularity || 0);
+            });
+        } else {
+            sortedMetas = filteredMetas.slice().sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+        }
+        
+        const selectedMetas = sortedMetas.slice(0, cardsPerNode);
+        
+        const mappedCards = selectedMetas.map(c => ({
             id: String(c.id),
             title: c.name,
             poster: c.poster,
@@ -110,7 +96,62 @@ async function getCardsForNodes(nodeIds, currentLevel, cardsPerNode, mediaType, 
         
         allCards.push(...mappedCards);
     }
-    return allCards.sort(() => 0.5 - Math.random());
+    
+    // Fallback esplicito se il mazzo è vuoto (nessun nodo ha prodotto carte o keyword morte)
+    if (allCards.length === 0) {
+        console.warn(`[MatchmakerGraphEngine] 0 cards from node keywords; falling back to relaxed preset.`);
+        const fallbackPreset = {
+            type: types,
+            where: [ F.minVotes(30) ],
+            orderBy: S.POPULAR
+        };
+        applyFunnelFiltersToPreset(fallbackPreset, filters);
+        let fallbackMetas = await DuckDbProvider.getDuckDbCatalogFromPreset(fallbackPreset, 0, 50);
+        
+        if (!fallbackMetas || fallbackMetas.length === 0) {
+            const relaxedPreset = {
+                type: types,
+                where: [],
+                orderBy: S.POPULAR
+            };
+            applyFunnelFiltersToPreset(relaxedPreset, filters);
+            fallbackMetas = await DuckDbProvider.getDuckDbCatalogFromPreset(relaxedPreset, 0, 50);
+        }
+        
+        if (!fallbackMetas || fallbackMetas.length === 0) {
+            fallbackMetas = await DuckDbProvider.getDuckDbCatalogFromPreset({ type: types, where: [], orderBy: S.POPULAR }, 0, 50);
+        }
+        
+        const unswiped = (fallbackMetas || []).filter(c => !swipedIds.has(String(c.id).replace('tmdb:', '')));
+        const candidatePool = unswiped.length > 0 ? unswiped : (fallbackMetas || []);
+        
+        let sortedFallback;
+        if (profile && profile.compiledVectors && profile.compiledVectors.V_final) {
+            sortedFallback = candidatePool.slice().sort((a, b) => {
+                const scoreA = ProfileScorer.calculateLightScore(a.rawTMDB || a, profile);
+                const scoreB = ProfileScorer.calculateLightScore(b.rawTMDB || b, profile);
+                return scoreB - scoreA || (b.popularity || 0) - (a.popularity || 0);
+            });
+        } else {
+            sortedFallback = candidatePool.slice().sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+        }
+        
+        const totalTarget = Math.max(cardsPerNode, (nodeIds.length || 1) * cardsPerNode, 5);
+        const fallbackCards = sortedFallback.slice(0, totalTarget).map(c => ({
+            id: String(c.id),
+            title: c.name,
+            poster: c.poster,
+            year: c.releaseInfo,
+            overview: c.description,
+            genre_ids: c.rawTMDB?.genres?.map(g => g.id) || [],
+            type: types,
+            _graphNodeId: nodeIds[0] || 'fallback',
+            _graphLevel: currentLevel
+        }));
+        allCards.push(...fallbackCards);
+    }
+    
+    return allCards;
 }
 
 /**
@@ -133,7 +174,10 @@ async function getMatchmakerInitCards(mediaType, genres, moods, filters) {
     }
     const moodSet = new Set(moodKeywords);
     
-    // Top L2 Nodes based on Mood intersection
+    const profile = filters?.profile || (filters?.V_final ? { compiledVectors: { V_final: filters.V_final } } : null);
+    const vFinal = profile?.compiledVectors?.V_final || {};
+    
+    // Top L2 Nodes based on Mood intersection + V_final profile affinity
     const l2Scores = [];
     for (const [l2_id, l2_data] of Object.entries(graph.data.L2 || {})) {
         let score = 0;
@@ -141,6 +185,13 @@ async function getMatchmakerInitCards(mediaType, genres, moods, filters) {
         for (const kw of topKws) {
             if (moodSet.has(kw)) score += 1;
         }
+        
+        // Ponderazione da V_final se presente
+        const vFinalScore = vFinal[`L2:${l2_id}`];
+        if (vFinalScore) {
+            score += (vFinalScore * 0.1);
+        }
+
         if (score > 0) {
             l2Scores.push({ id: l2_id, score });
         }
@@ -150,9 +201,18 @@ async function getMatchmakerInitCards(mediaType, genres, moods, filters) {
     const topL2s = l2Scores.slice(0, 10).map(x => x.id);
     
     if (topL2s.length === 0) {
-        console.warn(`[MatchmakerGraphEngine] Fallback: No L2 found for mood. Using random L2.`);
-        const allL2s = Object.keys(graph.data.L2 || {});
-        if (allL2s.length > 0) topL2s.push(allL2s.sort(() => 0.5 - Math.random())[0]);
+        console.warn(`[MatchmakerGraphEngine] Fallback: No L2 found for mood. Using top profile or first available L2.`);
+        const vFinalL2s = Object.entries(vFinal)
+            .filter(([k]) => k.startsWith('L2:'))
+            .sort((a, b) => b[1] - a[1])
+            .map(([k]) => k.split(':')[1]);
+            
+        if (vFinalL2s.length > 0) {
+            topL2s.push(...vFinalL2s.slice(0, 4));
+        } else {
+            const allL2s = Object.keys(graph.data.L2 || {});
+            if (allL2s.length > 0) topL2s.push(allL2s[0]);
+        }
     }
     
     // Apply genres logic via filters object so getCardsForNodes can pick it up
@@ -161,8 +221,8 @@ async function getMatchmakerInitCards(mediaType, genres, moods, filters) {
         filters.genres = genres;
     }
     
-    // selectedL2s uses topL2s randomly scrambled, picking up to 4 nodes
-    const selectedL2s = topL2s.sort(() => 0.5 - Math.random()).slice(0, 4);
+    // selectedL2s picks up to 4 top nodes deterministically
+    const selectedL2s = topL2s.slice(0, 4);
     
     // Generiamo 5 carte per nodo (max 20 carte totali) al primo round
     const cards = await getCardsForNodes(selectedL2s, 'L2', 5, mediaType, filters);
@@ -178,61 +238,35 @@ async function getMatchmakerNextCards(mediaType, history, currentLevelStr, filte
     console.log(`[MatchmakerGraphEngine] Current Level: ${currentLevelStr} | History len: ${history.length}`);
     const levelIdx = LEVELS.indexOf(currentLevelStr);
     
-    let nextLevelStr = (levelIdx >= 0 && levelIdx < LEVELS.length - 1) 
-        ? LEVELS[levelIdx + 1] 
-        : 'L1';
-    
-    // Se siamo già a L1 o oltre, continuiamo a rimanere su L1 all'infinito
-    if (currentLevelStr === 'L1' || nextLevelStr !== 'L2') {
+    let nextLevelStr;
+    if (levelIdx === -1 || levelIdx >= LEVELS.length - 1 || currentLevelStr === 'L1') {
         nextLevelStr = 'L1';
+    } else {
+        nextLevelStr = LEVELS[levelIdx + 1]; // es. L2 -> L1
     }
     
     console.log(`[MatchmakerGraphEngine] Target Next Level: ${nextLevelStr}`);
     
     const l1HeatMap = {};
-    const likedOrWatchlist = history.filter(s => s.action === 'like' || s.action === 'watchlist');
-    const tmdbIds = likedOrWatchlist
-        .map(s => Number(String(s.id).replace(/^[a-zA-Z]+:/, '')))
-        .filter(n => Number.isFinite(n) && n > 0);
-
-    const metaMap = new Map();
-    if (tmdbIds.length > 0) {
-        const table = mediaType === 'movie' ? 'movies' : 'tv';
-        try {
-            const uniqueIds = Array.from(new Set(tmdbIds));
-            const rows = await duckDbStore.query(`SELECT id, keywords FROM ${table} WHERE id IN (${uniqueIds.join(',')})`);
-            for (const row of rows) {
-                let parsedKws = [];
-                try { if (row.keywords) parsedKws = JSON.parse(row.keywords); } catch(e){}
-                metaMap.set(Number(row.id), parsedKws);
-            }
-        } catch (e) {
-            console.error('[MatchmakerGraphEngine] Error batch fetching metadata for swipes:', e);
-        }
-    }
-
     for (const swipe of history) {
         if (swipe.action === 'like' || swipe.action === 'watchlist') {
             const weight = swipe.action === 'watchlist' ? 2 : 1;
-            const cleanTmdbId = Number(String(swipe.id).replace(/^[a-zA-Z]+:/, ''));
-            const keywords = metaMap.get(cleanTmdbId) || [];
-            for (const kwObj of keywords) {
-                const kwStr = (typeof kwObj === 'object' && kwObj !== null ? (kwObj.name || '') : String(kwObj)).toLowerCase();
-                const targetL1 = graph.data?.kw_to_L1?.[kwStr];
-                if (targetL1) {
-                    l1HeatMap[targetL1] = (l1HeatMap[targetL1] || 0) + weight;
+            const tmdbId = swipe.id.split(':')[1];
+            
+            const getMeta = DuckDbProvider.getDuckDbMetaDetails;
+            const meta = typeof getMeta === 'function' ? await getMeta(tmdbId, mediaType) : null;
+            if (meta && meta.rawTMDB && meta.rawTMDB.keywords && meta.rawTMDB.keywords.results) {
+                for (const kwObj of meta.rawTMDB.keywords.results) {
+                    const kwStr = kwObj.name.toLowerCase();
+                    const targetL1 = graph.data.kw_to_L1?.[kwStr];
+                    if (targetL1) {
+                        l1HeatMap[targetL1] = (l1HeatMap[targetL1] || 0) + weight;
+                    }
                 }
             }
         } else if (swipe.action === 'dislike' && swipe._graphNodeId) {
-            const nodeId = swipe._graphNodeId;
-            if (graph.data?.L1?.[nodeId]) {
-                l1HeatMap[nodeId] = (l1HeatMap[nodeId] || 0) - 0.5;
-            } else if (graph.data?.L2?.[nodeId]) {
-                const children = graph.data.L2[nodeId]?.children_L1 || [];
-                for (const childL1 of children) {
-                    l1HeatMap[childL1] = (l1HeatMap[childL1] || 0) - 0.5;
-                }
-            }
+            // Penalità diretta
+            l1HeatMap[swipe._graphNodeId] = (l1HeatMap[swipe._graphNodeId] || 0) - 0.5;
         }
     }
     
@@ -240,7 +274,7 @@ async function getMatchmakerNextCards(mediaType, history, currentLevelStr, filte
     let hotNodes = [];
     if (nextLevelStr === 'L1') {
         for (const [l1_id, score] of Object.entries(l1HeatMap)) {
-            if (score > 0 && graph.data?.L1?.[l1_id]) hotNodes.push({ id: l1_id, score });
+            if (score > 0) hotNodes.push({ id: l1_id, score });
         }
     } else {
         // Se nextLevel è L2 (strano, solitamente si parte da L2), aggreghiamo il calore L1 ai padri L2
@@ -250,7 +284,7 @@ async function getMatchmakerNextCards(mediaType, history, currentLevelStr, filte
             if (l2_id) l2HeatMap[l2_id] = (l2HeatMap[l2_id] || 0) + score;
         }
         for (const [l2_id, score] of Object.entries(l2HeatMap)) {
-            if (score > 0 && graph.data?.L2?.[l2_id]) hotNodes.push({ id: l2_id, score });
+            if (score > 0) hotNodes.push({ id: l2_id, score });
         }
     }
     
@@ -267,10 +301,22 @@ async function getMatchmakerNextCards(mediaType, history, currentLevelStr, filte
     
     // Fallback se nessun Like
     if (selectedNodes.length === 0) {
-        console.log(`[MatchmakerGraphEngine] Heat Map empty (no likes?), picking random nodes from ${nextLevelStr}`);
-        const allNodes = Object.keys(graph.data[nextLevelStr] || {});
-        selectedNodes = allNodes.sort(() => 0.5 - Math.random()).slice(0, 4);
+        console.log(`[MatchmakerGraphEngine] Heat Map empty (no likes?), picking nodes from ${nextLevelStr}`);
+        const profile = filters?.profile || (filters?.V_final ? { compiledVectors: { V_final: filters.V_final } } : null);
+        const vFinal = profile?.compiledVectors?.V_final || {};
+        const vFinalNodes = Object.entries(vFinal)
+            .filter(([k]) => k.startsWith(`${nextLevelStr}:`))
+            .sort((a, b) => b[1] - a[1])
+            .map(([k]) => k.split(':')[1]);
+            
+        if (vFinalNodes.length > 0) {
+            selectedNodes = vFinalNodes.slice(0, 4);
+        } else {
+            const allNodes = Object.keys(graph.data[nextLevelStr] || {});
+            selectedNodes = allNodes.slice(0, 4);
+        }
     }
+    
     const winningNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
     
     const cards = await getCardsForNodes(selectedNodes, nextLevelStr, 3, mediaType, filters, history);
@@ -290,7 +336,6 @@ async function getFinalRecommendations(winningNodesArray, mediaType, filters) {
         if (winningNode.startsWith('t_')) level = 'L2';
         else if (winningNode.startsWith('v_')) level = 'L3';
         else if (winningNode.startsWith('m_')) level = 'L4';
-        else if (winningNode.startsWith('r_')) level = 'L5';
         
         const map = getKeywordsForNodes([winningNode], level);
         const arr = map.get(winningNode) || [];
@@ -311,13 +356,13 @@ async function getFinalRecommendations(winningNodesArray, mediaType, filters) {
     const safeStrs = Array.from(kwStrs).slice(0, 30).map(s => s.replace(/'/g, "''"));
     preset.where.push(`(${safeStrs.map(s => `"keywords" ILIKE '%"${s}"%'`).join(' OR ')})`);
     
-    const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 100);
-    return lightMetas.map(m => String(m._tmdbId || m.id).replace(/^[a-zA-Z]+:/, ''));
+    const lightMetas = await DuckDbProvider.getDuckDbCatalogFromPreset(preset, 0, 100);
+    return lightMetas.map(m => String(m.id).replace('tmdb:', ''));
 }
 
 module.exports = {
+    getKeywordsForNodes,
     getMatchmakerInitCards,
     getMatchmakerNextCards,
-    getFinalRecommendations,
-    getKeywordsForNodes
+    getFinalRecommendations
 };

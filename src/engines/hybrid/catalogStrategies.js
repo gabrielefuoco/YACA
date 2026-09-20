@@ -9,8 +9,8 @@ const { applyKidsMode } = require('../../utils/kidsModeFilters');
 const { fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds, getImpressionMap, calculateImpressionPenalty } = require('./dataFetchers');
 const { computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
 const ProfileScorer = require('../../profile/ProfileScorer');
-const { getDuckDbCatalogFromPreset, getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
-const { F, S } = require('../../data/filters');
+const { getDuckDbCatalogFromPreset } = require('../../catalog/providers/DuckDbProvider');
+const { F, S, G } = require('../../data/filters');
 const graph = require('../graph/HierarchicalGraph');
 
 function getTopNodeIds(profile, level = 'L2', limit = 2) {
@@ -23,12 +23,23 @@ function getTopNodeIds(profile, level = 'L2', limit = 2) {
 }
 
 function getKeywordsForNodeIds(nodeIds, level = 'L2') {
-    const map = graph.getKeywordsForNodes(nodeIds, level);
-    const kwSet = new Set();
-    for (const arr of map.values()) {
-        arr.forEach(k => kwSet.add(k));
+    if (!graph.isLoaded || !graph.data || !graph.data[level]) return [];
+    const kwIds = new Set();
+    for (const nodeId of nodeIds) {
+        // If the level is L1, the children_L1 is just itself, otherwise it's in the graph
+        const l1s = level === 'L1' ? [nodeId] : (graph.data[level][nodeId]?.children_L1 || []);
+        for (const l1 of l1s) {
+            for (const [kwId, targetL1] of Object.entries(graph.data.kw_to_L1 || {})) {
+                if (targetL1 === l1) kwIds.add(kwId);
+            }
+        }
     }
-    return Array.from(kwSet).slice(0, 50);
+    let kwArray = Array.from(kwIds);
+    // Limit to max 50 keywords for SQL performance
+    if (kwArray.length > 50) {
+        kwArray = kwArray.sort(() => 0.5 - Math.random()).slice(0, 50);
+    }
+    return kwArray;
 }
 
 /**
@@ -70,6 +81,7 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
     const { profile } = await fetchProfileContext(userId, context);
     const isKidsMode = profile?.settings?.kidsMode;
 
+    const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
     const tmdbType = (preset.type === 'series' || mediaType === 'series') ? 'series' : 'movie';
     const existingIds = new Set();
     const pool = [];
@@ -145,11 +157,18 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
 
     // 2. Estrazione DNA
     const topGenres = computeTopGenres(profile, 3, user, context);
+    const isTv = mediaType === 'series' || mediaType === 'tv';
+    const mappedTopGenres = topGenres.map(g => {
+        const id = Number(g);
+        if (isTv && G._movieToTv && G._movieToTv[id]) return G._movieToTv[id];
+        if (!isTv && G._tvToMovie && G._tvToMovie[id]) return G._tvToMovie[id];
+        return id;
+    });
     const topL2Ids = getTopNodeIds(profile, 'L2', 3);
     let directKwIds = computeTopKeywords(profile, 10, user, context);
 
     // 1. Calcolo Proporzione Anime
-    const animeRatio = getAnimeProportion(profile, directKwIds, topGenres);
+    const animeRatio = getAnimeProportion(profile, directKwIds, mappedTopGenres);
     
     // Costruiamo i cluster (Topoi + Keywords)
     const clusters = [];
@@ -171,8 +190,8 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
         }
     }
     
-    console.log(`[Smart AND] AnimeRatio: ${animeRatio}, TopGenres: ${topGenres.length}, Clusters: ${clusters.length}`);
-    if (clusters.length === 0 && topGenres.length === 0) {
+    console.log(`[Smart AND] AnimeRatio: ${animeRatio}, TopGenres: ${mappedTopGenres.length}, Clusters: ${clusters.length}`);
+    if (clusters.length === 0 && mappedTopGenres.length === 0) {
         console.log(`[Smart AND] Nessun cluster o genere, ritorno vuoto`);
         return { pool: [], animeRatio }; 
     }
@@ -190,8 +209,8 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
         const where = [...baseFilters];
         
         // Aggiungiamo i top genres in OR (ne basta uno)
-        if (topGenres.length > 0) {
-            where.push(F.any(...topGenres.map(g => F.genre(Number(g)))));
+        if (mappedTopGenres.length > 0) {
+            where.push(F.any(...mappedTopGenres.map(g => F.genre(Number(g)))));
         }
         
         // Aggiungiamo il cluster di keyword in OR tra loro
@@ -213,7 +232,7 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
             // Smart Fallback: se una query restituisce meno di 5 risultati (es. keyword iper-specifiche prive di match per Anime),
             // allentiamo il filtro rimuovendo le keyword e tenendo i Generi Top + Quota Anime.
             if ((!results || results.length < 5) && cluster.keywords.length > 0) {
-                const fallbackWhere = where.filter(w => !w.toLowerCase().includes('"keywords"'));
+                const fallbackWhere = where.filter(w => !w.includes('"keywords" LIKE'));
                 const fallbackPreset = { type: types, where: fallbackWhere, orderBy: S.POPULAR };
                 const fallbackResults = await getDuckDbCatalogFromPreset(fallbackPreset, 0, limitPerQuery);
                 console.log(`[Smart AND Query ${index + 1}/${totalQueries}] Smart Fallback (Genres/Anime) Found ${fallbackResults?.length || 0} items`);
@@ -231,7 +250,7 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
     
     for (const arr of resultsArrays) {
         for (const item of arr) {
-            const id = String(item._tmdbId || String(item.id).replace(/^[a-zA-Z]+:/, ''));
+            const id = String(item._tmdbId || item.id.split(':')[1]);
             if (!allResultsMap.has(id)) {
                 allResultsMap.set(id, item);
             }
@@ -254,21 +273,37 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
         return fallbackFn(tmdbApiKey, mediaType);
     }
     
-    const impressionMap = await getImpressionMap(userId, context, catalogId, pool.map(m => String(m._tmdbId || String(m.id).replace(/^[a-zA-Z]+:/, ''))));
+    const impressionMap = await getImpressionMap(userId, context, catalogId, pool.map(m => String(m._tmdbId || m.id.split(':')[1])));
     const dnaFilters = getProfileDnaFilters(user, context);
     
     const scored = pool.map(item => {
-        const id = String(item._tmdbId || String(item.id).replace(/^[a-zA-Z]+:/, ''));
+        const id = String(item._tmdbId || item.id.split(':')[1]);
         const seenDays = impressionMap.get(id) || 0;
         const penaltyMultiplier = calculateImpressionPenalty(seenDays);
-        const score = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profile, { dnaFilters, globalProfile });
-        return { data: item.rawTMDB || item, score: score * penaltyMultiplier };
+        const tmdbData = item.rawTMDB || item;
+        if (typeof tmdbData.vote_count !== 'number') {
+            tmdbData.vote_count = typeof item.vote_count === 'number' ? item.vote_count : 0;
+        }
+        if (!tmdbData.keywords) {
+            tmdbData.keywords = item.keywords ? { results: item.keywords, keywords: item.keywords } : { results: [], keywords: [] };
+        }
+        if (!tmdbData.credits) {
+            tmdbData.credits = item.credits || { cast: [], crew: [] };
+        }
+        const score = ProfileScorer.calculateItemMatch(tmdbData, profile, { dnaFilters, globalProfile });
+        return { data: tmdbData, score: score * penaltyMultiplier };
     });
     
     const sorted = scored.sort((a, b) => b.score - a.score);
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
+    const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
+        ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
+        : deduplicated;
+    const diversifiedSet = new Set(diversified);
+    const remaining = deduplicated.filter(item => !diversifiedSet.has(item));
+    const finalItems = [...diversified, ...remaining];
     
-    return deduplicated.slice(0, 100).map(i => ({ 
+    return finalItems.slice(0, 100).map(i => ({ 
         id: String(i.data.id), 
         matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))), 
         rawTMDB: i.data 
@@ -292,9 +327,17 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
     const types = mediaType === 'movie' ? 'movie' : 'series';
+    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
     const dnaFilters = getProfileDnaFilters(user, context);
 
     const topGenres = computeTopGenres(profile, 3, user, context);
+    const isTv = mediaType === 'series' || mediaType === 'tv';
+    const mappedTopGenres = topGenres.map(g => {
+        const id = Number(g);
+        if (isTv && G._movieToTv && G._movieToTv[id]) return G._movieToTv[id];
+        if (!isTv && G._tvToMovie && G._tvToMovie[id]) return G._tvToMovie[id];
+        return id;
+    });
 
     const lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 20).map(id => ({ id: String(id), weight: 2 }));
     const likedIds = (user?.profiles?.find(p => p.id === context)?.liked || []).slice(0, 15).map(id => ({ id: String(id), weight: 1 }));
@@ -309,8 +352,8 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const directKwIds = computeTopKeywords(profile, 10, user, context);
     
     const where = [];
-    if (topGenres.length > 0) {
-        where.push(F.any(...topGenres.map(g => F.genre(Number(g)))));
+    if (mappedTopGenres.length > 0) {
+        where.push(F.any(...mappedTopGenres.map(g => F.genre(Number(g)))));
     }
     const allKwRules = [];
     if (directKwIds.length > 0) {
@@ -335,7 +378,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         console.log(`======================================================\n`);
         const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 10);
         if (lightMetas && lightMetas.length > 0) {
-            dnaSeeds = lightMetas.slice(0, 5).map(item => ({ id: String(item._tmdbId || String(item.id).replace(/^[a-zA-Z]+:/, '')), weight: 4 }));
+            dnaSeeds = lightMetas.slice(0, 5).map(item => ({ id: String(item._tmdbId || item.id.split(':')[1]), weight: 4 }));
         }
     }
 
@@ -351,6 +394,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     }
     const allSeeds = Array.from(allSeedsMap.entries()).map(([id, weight]) => ({ id, weight }));
 
+    const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
     const weightedCounts = new Map(); 
     const allSimilar = await rateLimitedMap(
         allSeeds,
@@ -406,16 +450,49 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
             const penaltyMultiplier = calculateImpressionPenalty(seenDays);
 
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, data.id, types);
-            const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
+            const tmdbData = details || data.rawTMDB || data;
+            if (typeof tmdbData.vote_count !== 'number') {
+                tmdbData.vote_count = typeof data.vote_count === 'number' ? data.vote_count : (data.rawTMDB?.vote_count ?? 0);
+            }
+            if (!tmdbData.keywords) {
+                tmdbData.keywords = data.keywords || data.rawTMDB?.keywords;
+            }
+            if (!tmdbData.credits) {
+                tmdbData.credits = data.credits || data.rawTMDB?.credits;
+            }
+            const score = ProfileScorer.calculateItemMatch(tmdbData, profile, { dnaFilters, globalProfile });
             return { data, score: score * penaltyMultiplier, hybridScore: hybridScore * penaltyMultiplier };
         },
         { batchSize: 3, delayMs: 150 }
     );
 
-    const sorted = scored.sort((a, b) => (b.score + b.hybridScore) - (a.score + a.hybridScore));
-    const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
+    // H6: Normalizzazione hybridScore su scala 0-10 per renderlo comparabile con lo score VSM (0-10)
+    const maxHybrid = scored.reduce((max, item) => Math.max(max, item.hybridScore || 0), 0);
+    const hybridScale = Math.max(maxHybrid, 13.5);
 
-    return deduplicated.slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
+    const scoredWithCombined = scored.map(item => {
+        const normalizedHybrid = hybridScale > 0
+            ? Math.min(10, Math.max(0, (item.hybridScore / hybridScale) * 10))
+            : 0;
+        // Ponderazione VSM-first: VSM (60%) + Ibrido (40%) su scala comune 0-10
+        const combinedScore = (item.score * 0.6) + (normalizedHybrid * 0.4);
+        return {
+            ...item,
+            normalizedHybrid,
+            combinedScore
+        };
+    });
+
+    const sorted = scoredWithCombined.sort((a, b) => b.combinedScore - a.combinedScore);
+    const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
+    const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
+        ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
+        : deduplicated;
+    const diversifiedSet = new Set(diversified);
+    const remaining = deduplicated.filter(item => !diversifiedSet.has(item));
+    const finalItems = [...diversified, ...remaining];
+
+    return finalItems.slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
 }
 
 /**

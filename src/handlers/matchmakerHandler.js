@@ -42,6 +42,19 @@ async function initMatchmakerSession(req, res) {
             activeFilters.isAnime = true;
         }
 
+        let userProfile = null;
+        if (userId) {
+            try {
+                const TasteProfile = require('../models/TasteProfile');
+                userProfile = await TasteProfile.findOne({ owner: userId, context: profileId || 'global' }).lean();
+                if (!userProfile && profileId && profileId !== 'global') {
+                    userProfile = await TasteProfile.findOne({ owner: userId, context: 'global' }).lean();
+                }
+            } catch (e) {
+                console.warn('[Matchmaker] TasteProfile lookup error:', e.message);
+            }
+        }
+
         const sessionState = {
             userId, profileId,
             type: tmdbType,
@@ -50,7 +63,8 @@ async function initMatchmakerSession(req, res) {
             filters: {
                 ...activeFilters,
                 genres: genres || activeFilters.genres,
-                moods: moods || activeFilters.moods
+                moods: moods || activeFilters.moods,
+                profile: userProfile || activeFilters.profile
             },
             likedIds: [], dislikedIds: [], watchlistIds: [],
             cardHistory: [],

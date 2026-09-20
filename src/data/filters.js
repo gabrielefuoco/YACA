@@ -121,8 +121,33 @@ const G = {
         Talk: 10767, WarPolitics: 10768, Western: 37,
     },
     // Utilità di conversione cross-type
-    _movieToTv: { 28: 10759, 878: 10765, 14: 10765, 10752: 10768 },
+    _movieToTv: { 28: 10759, 12: 10759, 878: 10765, 14: 10765, 10752: 10768 },
     _tvToMovie: { 10759: 28, 10765: 878, 10768: 10752 },
+    mapGenre: (genre, targetType) => {
+        const isTv = targetType === 'tv' || targetType === 'series';
+        if (isTv) {
+            const num = Number(genre);
+            if (!isNaN(num) && G._movieToTv[num]) return G._movieToTv[num];
+            const str = String(genre).trim();
+            if (/^\d+$/.test(str) && G._movieToTv[Number(str)]) return G._movieToTv[Number(str)];
+            const lower = str.toLowerCase();
+            if (lower === 'action' || lower === 'adventure') return 'Action & Adventure';
+            if (lower === 'science fiction' || lower === 'sci-fi' || lower === 'fantasy') return 'Sci-Fi & Fantasy';
+            if (lower === 'war' || lower === 'war & politics') return 'War & Politics';
+            return genre;
+        } else {
+            const num = Number(genre);
+            if (!isNaN(num) && G._tvToMovie[num]) return G._tvToMovie[num];
+            const str = String(genre).trim();
+            if (/^\d+$/.test(str) && G._tvToMovie[Number(str)]) return G._tvToMovie[Number(str)];
+            const lower = str.toLowerCase();
+            if (lower === 'action & adventure') return 'Action';
+            if (lower === 'sci-fi & fantasy') return 'Science Fiction';
+            if (lower === 'war & politics') return 'War';
+            return genre;
+        }
+    },
+    mapGenres: (genres, targetType) => (genres || []).map(g => G.mapGenre(g, targetType))
 };
 
 // === ENTITÀ DINAMICHE (Sync da DuckDB) ===

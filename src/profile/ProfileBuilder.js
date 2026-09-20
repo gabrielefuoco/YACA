@@ -119,16 +119,65 @@ class ProfileBuilder {
     }
 
     /**
+     * Recupera i dati DNA per una lista di elementi da DuckDB locale.
+     */
+    static async _fetchDnaItemsFromDuckDb(items) {
+        if (!items || items.length === 0) return [];
+        const duckDbStore = require('../db/duckDbStore');
+
+        const movieItems = items.filter(i => !i.type || i.type === 'movie');
+        const tvItems = items.filter(i => i.type === 'tv' || i.type === 'series');
+
+        const queryTable = async (table, targetItems) => {
+            const ids = [...new Set(targetItems.map(i => Number(i.tmdbId)).filter(id => !isNaN(id) && id > 0))];
+            if (ids.length === 0) return [];
+
+            const chunkSize = 500;
+            let rows = [];
+            for (let i = 0; i < ids.length; i += chunkSize) {
+                const chunk = ids.slice(i, i + chunkSize);
+                const sql = `SELECT id, genres, keywords, "cast", directors, original_language FROM ${table} WHERE id IN (${chunk.join(',')})`;
+                try {
+                    const res = await duckDbStore.query(sql);
+                    if (res && res.length > 0) rows.push(...res);
+                } catch (err) {
+                    console.warn(`[ProfileBuilder] Errore query DuckDB per ${table}:`, err.message);
+                }
+            }
+            return rows;
+        };
+
+        const [movieRows, tvRows] = await Promise.all([
+            queryTable('movies', movieItems),
+            queryTable('tv', tvItems)
+        ]);
+
+        const allRows = [...movieRows, ...tvRows];
+        return allRows.map(row => {
+            let genres = [];
+            let keywords = [];
+            let cast = [];
+            let directors = [];
+            try { if (row.genres) genres = typeof row.genres === 'string' ? JSON.parse(row.genres) : row.genres; } catch(e){}
+            try { if (row.keywords) keywords = typeof row.keywords === 'string' ? JSON.parse(row.keywords) : row.keywords; } catch(e){}
+            try { if (row.cast) cast = typeof row.cast === 'string' ? JSON.parse(row.cast) : row.cast; } catch(e){}
+            try { if (row.directors) directors = typeof row.directors === 'string' ? JSON.parse(row.directors) : row.directors; } catch(e){}
+
+            return {
+                tmdbId: Number(row.id),
+                genre_ids: genres.map(g => g.id || g),
+                keyword_ids: keywords.map(k => k.id || k),
+                cast_ids: cast.slice(0, 5).map(c => c.id || c),
+                director_ids: directors.map(d => d.id || d)
+            };
+        });
+    }
+
+    /**
      * Aggiorna V_active e V_final in background (singolo elemento).
      */
     static async _updateVectorsAsync(owner, context, tmdbId, type) {
-        const tmdbData = await TmdbScoringData.findOne({ tmdbId, type }).lean();
-        if (!tmdbData) return;
-
-        const itemDNA = extractActiveDNAFromTmdbData(tmdbData, 100);
-        if (Object.keys(itemDNA).length === 0) return;
-
-        await ProfileBuilder._updateAndSaveActiveVectors(owner, context, [itemDNA]);
+        await ProfileBuilder._bulkUpdateVectorsAsync(owner, context, [{ tmdbId, type }]);
     }
 
     /**
@@ -137,17 +186,37 @@ class ProfileBuilder {
     static async _bulkUpdateVectorsAsync(owner, context, items) {
         if (!items || items.length === 0) return;
 
-        const queries = items.map(item => ({ tmdbId: item.tmdbId, type: item.type }));
-        const chunkSize = 1000;
-        let tmdbDataList = [];
-        for (let i = 0; i < queries.length; i += chunkSize) {
-            const chunk = queries.slice(i, i + chunkSize);
-            const chunkData = await TmdbScoringData.find({ $or: chunk }).lean();
-            tmdbDataList = tmdbDataList.concat(chunkData);
+        // 1. Prelievo DNA primario da DuckDB
+        const duckDbDnaData = await ProfileBuilder._fetchDnaItemsFromDuckDb(items);
+        const dnaList = duckDbDnaData.map(data => extractActiveDNAFromTmdbData(data, 100));
+
+        // 2. Fallback facoltativo su TmdbScoringData solo per elementi non trovati in DuckDB
+        const foundIds = new Set(duckDbDnaData.map(d => d.tmdbId));
+        const missingItems = items.filter(i => !foundIds.has(Number(i.tmdbId)));
+
+        if (missingItems.length > 0) {
+            const queries = missingItems.map(item => ({ tmdbId: item.tmdbId, type: item.type }));
+            const chunkSize = 1000;
+            let tmdbDataList = [];
+            for (let i = 0; i < queries.length; i += chunkSize) {
+                const chunk = queries.slice(i, i + chunkSize);
+                try {
+                    const chunkData = await TmdbScoringData.find({ $or: chunk }).lean();
+                    if (chunkData && chunkData.length > 0) {
+                        tmdbDataList = tmdbDataList.concat(chunkData);
+                    }
+                } catch (e) {
+                    // Fallback silenzioso
+                }
+            }
+            if (tmdbDataList.length > 0) {
+                dnaList.push(...tmdbDataList.map(data => extractActiveDNAFromTmdbData(data, 100)));
+            }
         }
 
-        const dnaList = tmdbDataList.map(data => extractActiveDNAFromTmdbData(data, 100));
-        await ProfileBuilder._updateAndSaveActiveVectors(owner, context, dnaList);
+        if (dnaList.length > 0) {
+            await ProfileBuilder._updateAndSaveActiveVectors(owner, context, dnaList);
+        }
     }
 
     /**

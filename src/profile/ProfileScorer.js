@@ -38,7 +38,22 @@ class ProfileScorer {
      */
     static getVectorScore(vector, prefix, id) {
         if (!vector) return 0;
-        return vector[`${prefix}:${this.normalizeDnaId(id)}`] || 0;
+        const normId = this.normalizeDnaId(id);
+        const direct = vector[`${prefix}:${normId}`];
+        if (direct !== undefined) return direct;
+        if (prefix === 'g') {
+            const numId = Number(normId);
+            const { G } = require('../data/filters');
+            if (G._tvToMovie && G._tvToMovie[numId]) {
+                const alt = vector[`g:${G._tvToMovie[numId]}`];
+                if (alt !== undefined) return alt;
+            }
+            if (G._movieToTv && G._movieToTv[numId]) {
+                const alt = vector[`g:${G._movieToTv[numId]}`];
+                if (alt !== undefined) return alt;
+            }
+        }
+        return 0;
     }
 
     static computeDnaMultiplier(tmdbData, dnaFilters = []) {
@@ -309,20 +324,23 @@ class ProfileScorer {
     static applyDiversityCaps(items, caps = { genre: 10, director: 3 }) {
         if (!items || items.length === 0) return items;
 
+        const genreCap = caps?.genre ?? 10;
+        const directorCap = caps?.director ?? 3;
         const genreCounts = new Map();
         const directorCounts = new Map();
         const result = [];
 
         for (const item of items) {
-            const genres = item.genre_ids || (item.genres ? item.genres.map(g => g.id) : []);
-            const directors = (item.credits?.crew || [])
+            const target = item.data || item.rawTMDB || item;
+            const genres = (target.genre_ids || (target.genres ? target.genres.map(g => (typeof g === 'object' && g !== null ? (g.id ?? g) : g)) : [])).map(g => (g != null ? String(g) : g));
+            const directors = (target.credits?.crew || [])
                 .filter(c => c.job === 'Director')
-                .map(c => c.id);
+                .map(c => String(c.id));
 
             // Check genre cap
-            const genreBlocked = genres.some(gid => (genreCounts.get(gid) || 0) >= caps.genre);
+            const genreBlocked = genres.some(gid => (genreCounts.get(gid) || 0) >= genreCap);
             // Check director cap
-            const dirBlocked = directors.some(did => (directorCounts.get(did) || 0) >= caps.director);
+            const dirBlocked = directors.some(did => (directorCounts.get(did) || 0) >= directorCap);
 
             if (genreBlocked || dirBlocked) continue;
 
