@@ -39,7 +39,7 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
     // SCENARIO 1: RICERCA VIVA TESTUALE
     if (search) {
         if (baseId === 'yaca_search_standard') {
-            return await getDuckDbCatalogFromFilters({ _search: search }, type, skip, 50, activeProfileSettings);
+            return await getDuckDbCatalogFromFilters({ _search: search }, type, skip, 100, activeProfileSettings);
         }
         // Il fallback o la ricerca AI profonda rimangono sulla vecchia pipeline
         return await executeCombinedSearch(search, userConfig, type, skip, activeProfileSettings, tmdbFetchOptions);
@@ -49,7 +49,7 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
     if (id === 'yaca_discover_movies' || id === 'yaca_discover_series') {
         const filters = {};
         if (sortBy) filters.sort_by = sortBy;
-        return await getDuckDbCatalogFromFilters(filters, type, skip, 50, activeProfileSettings);
+        return await getDuckDbCatalogFromFilters(filters, type, skip, 100, activeProfileSettings);
     }
 
     // SCENARIO 2.5 e 2.6: HYBRID RECOMMENDATIONS

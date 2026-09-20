@@ -4,7 +4,7 @@ const duckDbStore = require('./duckDbStore');
  * Converte un oggetto preset in una stringa SQL per DuckDB.
  * Gestisce nativamente la FTS (Full-Text Search) e i simili (Recommendations).
  */
-async function buildCatalogQuery(preset, skip = 0, limit = 50) {
+async function buildCatalogQuery(preset, skip = 0, limit = 100) {
     const table = preset.type === 'movie' ? 'movies' : 'tv';
     const rawWhere = preset.where || [];
     

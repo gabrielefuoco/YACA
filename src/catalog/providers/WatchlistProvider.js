@@ -69,7 +69,7 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
         query.itemId = { $not: { $regex: /^(kitsu|hanime|anilist):/ } };
     }
 
-    const pageSize = 50;
+    const pageSize = 100;
     
     // 3. Query the DB
     const items = await UserLibraryItem.find(query)

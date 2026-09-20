@@ -233,7 +233,7 @@ function mapDuckDbRowToMeta(item, isMovie = true) {
     };
 }
 
-async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 50) {
+async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 100) {
     try {
         const sql = await buildCatalogQuery(preset, skip, limit);
         const rows = await duckDbStore.query(sql);
@@ -244,7 +244,7 @@ async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 50) {
     }
 }
 
-async function getDuckDbCatalogFromFilters(filters, type = 'movie', skip = 0, limit = 50, options = {}) {
+async function getDuckDbCatalogFromFilters(filters, type = 'movie', skip = 0, limit = 100, options = {}) {
     try {
         const preset = buildPresetFromFilters(filters, type);
         const sql = await buildCatalogQuery(preset, skip, limit);

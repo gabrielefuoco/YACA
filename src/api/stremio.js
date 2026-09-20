@@ -336,7 +336,7 @@ router.get([
 ], async (req, res) => {
     const userConfig = await UserConfig.resolveUserConfig(req.params.userHandle);
     if (!userConfig) {
-        return res.status(400).json({ metas: [] });
+        return res.status(200).json({ metas: [] });
     }
     const { type, id, extra: extraStr } = req.params;
     let extra = parseExtra(extraStr);
@@ -369,7 +369,7 @@ router.get([
 router.get(['/:userHandle/meta/:type/:id.json', '/:userHandle/:configVersion/meta/:type/:id.json'], async (req, res) => {
     const userConfig = await UserConfig.resolveUserConfig(req.params.userHandle);
     if (!userConfig) {
-        return res.status(400).json({ meta: null });
+        return res.status(200).json({ meta: null });
     }
     const { type, id } = req.params;
     const args = { type, id };
@@ -403,7 +403,7 @@ router.get(['/:userHandle/meta/:type/:id.json', '/:userHandle/:configVersion/met
 router.get(['/:userHandle/stream/:type/:id.json', '/:userHandle/:configVersion/stream/:type/:id.json'], async (req, res) => {
     const userConfig = await UserConfig.resolveUserConfig(req.params.userHandle);
     if (!userConfig) {
-        return res.status(400).json({ streams: [] });
+        return res.status(200).json({ streams: [] });
     }
     const { type, id } = req.params;
     const configVersion = req.params.configVersion || '';
