@@ -90,31 +90,4 @@ describe('H6 — hybridScore (0-135+) domina lo score VSM (0-10) nel Seed Networ
         expect(ids[0]).toBe('9001');
     });
 
-    it('verde (documentazione): comportamento attuale — B con hybridScore 100 batte A con VSM 10', async () => {
-        dataFetchers.fetchProfileContext.mockResolvedValue({
-            profile: { compiledVectors: { V_final: {} } },
-            user: { profiles: [{ id: 'global', loved: [500], liked: [] }] },
-            globalProfile: null
-        });
-        dataFetchers.fetchTraktRecommendationsRaw.mockResolvedValue([]);
-
-        const A = { id: 9001, title: 'A — VSM perfetto', genre_ids: [99] };
-        const B = { id: 9002, title: 'B — solo ibrido', genre_ids: [99] };
-        DuckDbProvider.getDuckDbCatalogFromFilters.mockResolvedValue([A, B]);
-
-        scoringEngine.calculateHybridScore.mockImplementation((item) =>
-            item.tmdbId === 9001 ? 0 : 100
-        );
-        ProfileScorer.calculateItemMatch.mockImplementation((item) =>
-            item.id === 9001 ? 10.0 : 0.0
-        );
-        tmdb.getTmdbMovieDetails.mockImplementation((key, id) =>
-            Promise.resolve({ id, genre_ids: [99], vote_average: 7 })
-        );
-
-        const result = await catalogStrategies.buildHybridCatalog('u1', 'global', 'trakt', 'tmdb-key', 'movie');
-        const ids = result.map(r => (typeof r === 'object' ? String(r.id) : String(r)));
-
-        expect(ids[0]).toBe('9002');
-    });
 });
