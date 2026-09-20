@@ -436,13 +436,40 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
             const penaltyMultiplier = calculateImpressionPenalty(seenDays);
 
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, data.id, types);
-            const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
+            const tmdbData = details || data.rawTMDB || data;
+            if (typeof tmdbData.vote_count !== 'number') {
+                tmdbData.vote_count = typeof data.vote_count === 'number' ? data.vote_count : (data.rawTMDB?.vote_count ?? 0);
+            }
+            if (!tmdbData.keywords) {
+                tmdbData.keywords = data.keywords || data.rawTMDB?.keywords;
+            }
+            if (!tmdbData.credits) {
+                tmdbData.credits = data.credits || data.rawTMDB?.credits;
+            }
+            const score = ProfileScorer.calculateItemMatch(tmdbData, profile, { dnaFilters, globalProfile });
             return { data, score: score * penaltyMultiplier, hybridScore: hybridScore * penaltyMultiplier };
         },
         { batchSize: 3, delayMs: 150 }
     );
 
-    const sorted = scored.sort((a, b) => (b.score + b.hybridScore) - (a.score + a.hybridScore));
+    // H6: Normalizzazione hybridScore su scala 0-10 per renderlo comparabile con lo score VSM (0-10)
+    const maxHybrid = scored.reduce((max, item) => Math.max(max, item.hybridScore || 0), 0);
+    const hybridScale = Math.max(maxHybrid, 13.5);
+
+    const scoredWithCombined = scored.map(item => {
+        const normalizedHybrid = hybridScale > 0
+            ? Math.min(10, Math.max(0, (item.hybridScore / hybridScale) * 10))
+            : 0;
+        // Ponderazione VSM-first: VSM (60%) + Ibrido (40%) su scala comune 0-10
+        const combinedScore = (item.score * 0.6) + (normalizedHybrid * 0.4);
+        return {
+            ...item,
+            normalizedHybrid,
+            combinedScore
+        };
+    });
+
+    const sorted = scoredWithCombined.sort((a, b) => b.combinedScore - a.combinedScore);
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
     const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
         ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
