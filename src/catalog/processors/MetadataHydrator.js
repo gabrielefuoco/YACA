@@ -1,6 +1,7 @@
 const { getTmdbMovieDetails } = require('../../clients/tmdb');
 const { normalizeContentId } = require('../../utils/contentId');
-const TmdbScoringData = require('../../models/TmdbScoringData');
+const duckDbStore = require('../../db/duckDbStore');
+const { mapDuckDbRowToMeta } = require('../providers/DuckDbProvider');
 const { MAX_BADGE_CACHE_HYDRATION_ITEMS } = require('../constants');
 
 async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
@@ -44,50 +45,54 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
 
     const tmdbIds = itemsToHydrate.map(item => normalizeContentId(item.id)).filter(Boolean);
 
-    // Fase 1: Bulk query su TmdbScoringData per evitare N chiamate individuali
+    // Fase 1: Bulk query su DuckDB (parquet) per evitare N chiamate individuali
     let scoringMap = new Map();
     try {
-        const orConditions = tmdbIds.map(id => {
-            if (id.startsWith('tt')) {
-                return { imdbId: id };
-            } else {
-                return { tmdbId: Number(id) };
-            }
-        });
-
-        const cachedDocs = await TmdbScoringData.find({
-            $or: orConditions,
-            type: tmdbType
-        }).lean();
-
-        for (const doc of cachedDocs) {
-            // Store by both tmdbId and imdbId for easier lookup later
-            if (doc.tmdbId) scoringMap.set(String(doc.tmdbId), doc);
-            if (doc.imdbId) scoringMap.set(doc.imdbId, doc);
+        if (!duckDbStore.isInitialized) {
+            await duckDbStore.init();
         }
-    } catch (_e) { /* TmdbScoringData miss is non-blocking */ }
+
+        const tableName = tmdbType === 'movie' ? 'movies' : 'tv';
+        const numericIds = tmdbIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+        const imdbIds = tmdbIds.filter(id => typeof id === 'string' && /^tt\d+$/.test(id));
+
+        let conditions = [];
+        if (numericIds.length > 0) {
+            conditions.push(`id IN (${numericIds.join(',')})`);
+        }
+        if (tableName === 'movies' && imdbIds.length > 0) {
+            conditions.push(`imdb_id IN (${imdbIds.map(id => `'${id}'`).join(',')})`);
+        }
+
+        if (conditions.length > 0) {
+            const sql = `SELECT * FROM ${tableName} WHERE ${conditions.join(' OR ')}`;
+            const rows = await duckDbStore.query(sql);
+
+            for (const row of rows) {
+                const mappedMeta = mapDuckDbRowToMeta(row, tmdbType === 'movie');
+                if (row.id != null) scoringMap.set(String(row.id), mappedMeta);
+                if (row.imdb_id) scoringMap.set(row.imdb_id, mappedMeta);
+            }
+        }
+    } catch (_e) { /* DuckDB miss is non-blocking */ }
 
     // Fase 2: Idratta i risultati in batch parallelo
     await Promise.all(
         itemsToHydrate.map(async (item) => {
             try {
                 const tmdbId = normalizeContentId(item.id);
-                const scoringDoc = scoringMap.get(tmdbId);
+                const mappedMeta = scoringMap.get(String(tmdbId));
 
-                if (scoringDoc) {
-                    item.rawTMDB = {
-                        id: scoringDoc.tmdbId,
-                        genre_ids: scoringDoc.genre_ids,
-                        vote_average: scoringDoc.vote_average,
-                        vote_count: scoringDoc.vote_count,
-                        keywords: { keywords: scoringDoc.keyword_ids.map(id => ({ id })) },
-                        credits: {
-                            crew: scoringDoc.director_ids.map(id => ({ id, job: 'Director' })),
-                            cast: scoringDoc.cast_ids.map(id => ({ id }))
-                        }
-                    };
-                    item.keywords = item.rawTMDB.keywords.keywords;
-                    item.cast = item.rawTMDB.credits.cast;
+                if (mappedMeta) {
+                    item.rawTMDB = mappedMeta.rawTMDB;
+                    item.keywords = mappedMeta.keywords || [];
+                    item.cast = mappedMeta.rawTMDB?.credits?.cast || [];
+                    if (mappedMeta.genre_ids && (!item.genre_ids || item.genre_ids.length === 0)) {
+                        item.genre_ids = mappedMeta.genre_ids;
+                    }
+                    if (mappedMeta.vote_count != null && !item.vote_count) {
+                        item.vote_count = mappedMeta.vote_count;
+                    }
                     return;
                 }
 
