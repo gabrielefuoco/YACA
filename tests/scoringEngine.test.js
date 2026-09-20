@@ -1,13 +1,8 @@
 const scoringEngine = require('../src/engines/hybrid/scoringEngine');
 const tmdb = require('../src/clients/tmdb');
-const TmdbScoringData = require('../src/models/TmdbScoringData');
 const ProfileScorer = require('../src/profile/ProfileScorer');
 
 jest.mock('../src/clients/tmdb');
-jest.mock('../src/models/TmdbScoringData', () => ({
-    updateOne: jest.fn(),
-    find: jest.fn(() => ({ lean: jest.fn().mockResolvedValue([]) }))
-}));
 
 jest.mock('../src/profile/ProfileScorer', () => ({
     calculateLightScore: jest.fn(() => 5),

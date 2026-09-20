@@ -2,7 +2,6 @@ const TasteProfile = require('../models/TasteProfile');
 const WatchHistory = require('../models/WatchHistory');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
-const TmdbScoringData = require('../models/TmdbScoringData');
 const { extractActiveDNAFromTmdbData, computeFinalDNA } = require('../utils/dnaExtractor');
 
 class ProfileBuilder {
@@ -189,30 +188,6 @@ class ProfileBuilder {
         // 1. Prelievo DNA primario da DuckDB
         const duckDbDnaData = await ProfileBuilder._fetchDnaItemsFromDuckDb(items);
         const dnaList = duckDbDnaData.map(data => extractActiveDNAFromTmdbData(data, 100));
-
-        // 2. Fallback facoltativo su TmdbScoringData solo per elementi non trovati in DuckDB
-        const foundIds = new Set(duckDbDnaData.map(d => d.tmdbId));
-        const missingItems = items.filter(i => !foundIds.has(Number(i.tmdbId)));
-
-        if (missingItems.length > 0) {
-            const queries = missingItems.map(item => ({ tmdbId: item.tmdbId, type: item.type }));
-            const chunkSize = 1000;
-            let tmdbDataList = [];
-            for (let i = 0; i < queries.length; i += chunkSize) {
-                const chunk = queries.slice(i, i + chunkSize);
-                try {
-                    const chunkData = await TmdbScoringData.find({ $or: chunk }).lean();
-                    if (chunkData && chunkData.length > 0) {
-                        tmdbDataList = tmdbDataList.concat(chunkData);
-                    }
-                } catch (e) {
-                    // Fallback silenzioso
-                }
-            }
-            if (tmdbDataList.length > 0) {
-                dnaList.push(...tmdbDataList.map(data => extractActiveDNAFromTmdbData(data, 100)));
-            }
-        }
 
         if (dnaList.length > 0) {
             await ProfileBuilder._updateAndSaveActiveVectors(owner, context, dnaList);

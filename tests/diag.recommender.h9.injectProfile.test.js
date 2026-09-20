@@ -25,10 +25,6 @@ jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn()
 }));
 
-jest.mock('../src/models/TmdbScoringData', () => ({
-    findOne: jest.fn()
-}));
-
 jest.mock('../src/catalog/processors/MetadataHydrator', () => ({
     hydrateResultsFromLocalDetailsCache: jest.fn(async () => {})
 }));

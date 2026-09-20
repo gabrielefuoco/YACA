@@ -1,11 +1,9 @@
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 const TasteProfile = require('../src/models/TasteProfile');
 const WatchHistory = require('../src/models/WatchHistory');
-const TmdbScoringData = require('../src/models/TmdbScoringData');
 
 jest.mock('../src/models/TasteProfile');
 jest.mock('../src/models/WatchHistory');
-jest.mock('../src/models/TmdbScoringData');
 
 describe('ProfileBuilder', () => {
     beforeEach(() => {

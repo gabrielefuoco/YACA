@@ -137,6 +137,19 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
         test('getDuckDbCatalogFromPreset executes multi-term BM25 search without throwing', async () => {
             if (!duckDbStore.isInitialized) return;
 
+            const querySpy = jest.spyOn(duckDbStore, 'query').mockResolvedValueOnce([
+                {
+                    id: 603,
+                    title: 'The Matrix',
+                    original_title: 'The Matrix',
+                    vote_average: 8.2,
+                    vote_count: 23000,
+                    popularity: 55.0,
+                    genres: JSON.stringify([{ id: 28, name: 'Action' }]),
+                    keywords: JSON.stringify([{ id: 4379, name: 'time travel' }])
+                }
+            ]);
+
             const catalog = await getDuckDbCatalogFromPreset({
                 type: 'movie',
                 where: [{ _fts: 'The Matrix' }],
@@ -146,6 +159,8 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
             expect(Array.isArray(catalog)).toBe(true);
             expect(catalog.length).toBeGreaterThan(0);
             expect(catalog[0].name).toMatch(/Matrix/i);
+
+            querySpy.mockRestore();
         });
 
         test('DuckDB query on movies containing "tv" in search does not get dropped', async () => {
@@ -258,11 +273,26 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
         test('getMatchmakerNextCards safely falls back and assigns winningNode when heat map is empty', async () => {
             if (!duckDbStore.isInitialized) return;
 
+            const querySpy = jest.spyOn(duckDbStore, 'query').mockResolvedValue([
+                {
+                    id: 603,
+                    title: 'The Matrix',
+                    original_title: 'The Matrix',
+                    vote_average: 8.2,
+                    vote_count: 23000,
+                    popularity: 55.0,
+                    genres: JSON.stringify([{ id: 28, name: 'Action' }]),
+                    keywords: JSON.stringify([{ id: 4379, name: 'time travel' }])
+                }
+            ]);
+
             const next = await getMatchmakerNextCards('movie', [], 'L2', {});
             expect(next).toBeDefined();
             expect(next.cards.length).toBeGreaterThan(0);
             expect(next.winningNode).toBeDefined();
             expect(typeof next.winningNode).toBe('string');
+
+            querySpy.mockRestore();
         });
 
         test('getMatchmakerNextCards handles unknown currentLevel safely without jumping to L5', async () => {

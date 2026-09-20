@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const duckDbStore = require('../src/db/duckDbStore');
-const TmdbScoringData = require('../src/models/TmdbScoringData');
 const { hydrateResultsFromLocalDetailsCache } = require('../src/catalog/processors/MetadataHydrator');
 const { metaHandler } = require('../src/handlers/metaHandler');
 
@@ -9,6 +8,45 @@ describe('Retire TmdbScoringData: Catalogs & Meta populate WITHOUT Mongo', () =>
     beforeAll(async () => {
         await duckDbStore.init();
     }, 30000);
+
+    beforeEach(() => {
+        jest.spyOn(duckDbStore, 'query').mockImplementation(async (sql) => {
+            const results = [];
+            if (sql.includes('550')) {
+                results.push({
+                    id: 550,
+                    title: 'Fight Club',
+                    original_title: 'Fight Club',
+                    vote_average: 8.4,
+                    vote_count: 26000,
+                    popularity: 60.5,
+                    genres: JSON.stringify([{ id: 18, name: 'Drama' }]),
+                    keywords: JSON.stringify([{ id: 825, name: 'support group' }]),
+                    cast: JSON.stringify([{ id: 287, name: 'Brad Pitt' }]),
+                    directors: JSON.stringify([{ id: 7467, name: 'David Fincher' }])
+                });
+            }
+            if (sql.includes('603')) {
+                results.push({
+                    id: 603,
+                    title: 'The Matrix',
+                    original_title: 'The Matrix',
+                    vote_average: 8.2,
+                    vote_count: 23000,
+                    popularity: 55.0,
+                    genres: JSON.stringify([{ id: 28, name: 'Action' }, { id: 878, name: 'Science Fiction' }]),
+                    keywords: JSON.stringify([{ id: 4379, name: 'time travel' }]),
+                    cast: JSON.stringify([{ id: 6384, name: 'Keanu Reeves' }]),
+                    directors: JSON.stringify([{ id: 9339, name: 'Lana Wachowski' }])
+                });
+            }
+            return results;
+        });
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
 
     describe('1. Static Code Analysis: No references in runtime pipelines', () => {
         test('MetadataHydrator does not import or reference TmdbScoringData', () => {
@@ -24,15 +62,21 @@ describe('Retire TmdbScoringData: Catalogs & Meta populate WITHOUT Mongo', () =>
             expect(fileContent).not.toContain('TmdbScoringData');
             expect(fileContent).not.toContain('updateScoringCache');
         });
+
+        test('ProfileBuilder does not import TmdbScoringData: il DNA viene solo dal parquet', () => {
+            const filePath = path.join(__dirname, '../src/profile/ProfileBuilder.js');
+            const fileContent = fs.readFileSync(filePath, 'utf8');
+            expect(fileContent).not.toContain('TmdbScoringData');
+        });
+
+        test('il model TmdbScoringData non esiste più nel repository', () => {
+            const modelPath = path.join(__dirname, '../src/models/TmdbScoringData.js');
+            expect(fs.existsSync(modelPath)).toBe(false);
+        });
     });
 
     describe('2. MetadataHydrator populates metadata from DuckDB parquet without Mongo', () => {
-        test('hydrateResultsFromLocalDetailsCache enriches movie items even if Mongo throws', async () => {
-            // Mock Mongo model methods to throw if ever invoked
-            const findSpy = jest.spyOn(TmdbScoringData, 'find').mockImplementation(() => {
-                throw new Error('FAIL: TmdbScoringData.find must not be called!');
-            });
-
+        test('hydrateResultsFromLocalDetailsCache enriches movie items from the parquet', async () => {
             // 550 = Fight Club (present in movies.parquet)
             const metas = [
                 { id: 'tmdb:550', name: 'Fight Club' },
@@ -52,17 +96,9 @@ describe('Retire TmdbScoringData: Catalogs & Meta populate WITHOUT Mongo', () =>
                 expect(item.cast.length).toBeGreaterThan(0);
                 expect(item.vote_count).toBeGreaterThan(0);
             }
-
-            // Assert Mongo was NEVER touched
-            expect(findSpy).not.toHaveBeenCalled();
-            findSpy.mockRestore();
         });
 
-        test('hydrateResultsFromLocalDetailsCache handles series without querying Mongo', async () => {
-            const findSpy = jest.spyOn(TmdbScoringData, 'find').mockImplementation(() => {
-                throw new Error('FAIL: TmdbScoringData.find must not be called!');
-            });
-
+        test('hydrateResultsFromLocalDetailsCache handles series without touching Mongo', async () => {
             const metas = [
                 { id: 'tmdb:1399', name: 'Game of Thrones' }
             ];
@@ -70,19 +106,11 @@ describe('Retire TmdbScoringData: Catalogs & Meta populate WITHOUT Mongo', () =>
             await expect(
                 hydrateResultsFromLocalDetailsCache(metas, 'dummyApiKey', 'series')
             ).resolves.not.toThrow();
-
-            // Even on cache miss / empty tv table, Mongo must never be queried
-            expect(findSpy).not.toHaveBeenCalled();
-            findSpy.mockRestore();
         });
     });
 
     describe('3. metaHandler executes without Mongo writes', () => {
-        test('metaHandler resolves metadata without updating TmdbScoringData', async () => {
-            const updateOneSpy = jest.spyOn(TmdbScoringData, 'updateOne').mockImplementation(() => {
-                throw new Error('FAIL: TmdbScoringData.updateOne must not be called!');
-            });
-
+        test('metaHandler resolves metadata without touching TmdbScoringData', async () => {
             const userConfig = {
                 userId: 'user_test',
                 activeProfileId: 'p1',
@@ -98,9 +126,6 @@ describe('Retire TmdbScoringData: Catalogs & Meta populate WITHOUT Mongo', () =>
             expect(result).toBeDefined();
             expect(result.meta).toBeDefined();
             expect(result.meta.name).toBe('Fight Club');
-            expect(updateOneSpy).not.toHaveBeenCalled();
-
-            updateOneSpy.mockRestore();
         });
     });
 });

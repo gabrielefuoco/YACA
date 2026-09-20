@@ -10,12 +10,10 @@
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 const TasteProfile = require('../src/models/TasteProfile');
 const WatchHistory = require('../src/models/WatchHistory');
-const TmdbScoringData = require('../src/models/TmdbScoringData');
 const duckDbStore = require('../src/db/duckDbStore');
 
 jest.mock('../src/models/TasteProfile');
 jest.mock('../src/models/WatchHistory');
-jest.mock('../src/models/TmdbScoringData');
 jest.mock('../src/db/duckDbStore', () => ({
     query: jest.fn()
 }));
@@ -40,9 +38,6 @@ describe('H2 — V_active source DuckDB vs TmdbScoringData', () => {
             return [];
         });
 
-        // 2. TmdbScoringData è vuoto (simula la realtà: writer rimosso dal commit 73a023d)
-        TmdbScoringData.findOne = jest.fn().mockResolvedValue(null);
-        TmdbScoringData.find = jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
 
         // 3. Setup del profilo esistente (V_active inizialmente vuoto)
         TasteProfile.findOne.mockReturnValue({
@@ -66,8 +61,6 @@ describe('H2 — V_active source DuckDB vs TmdbScoringData', () => {
         expect(duckDbStore.query).toHaveBeenCalledWith(expect.stringContaining('FROM movies'));
         expect(duckDbStore.query).toHaveBeenCalledWith(expect.stringContaining('5721'));
 
-        // TmdbScoringData NON deve essere stato interrogato perché il record è stato trovato in DuckDB
-        expect(TmdbScoringData.find).not.toHaveBeenCalled();
 
         // TasteProfile.updateOne deve essere stato chiamato con V_active popolato
         expect(TasteProfile.updateOne).toHaveBeenCalled();
@@ -109,7 +102,6 @@ describe('H2 — V_active source DuckDB vs TmdbScoringData', () => {
             return [];
         });
 
-        TmdbScoringData.find = jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
 
         TasteProfile.findOne.mockReturnValue({
             lean: jest.fn().mockResolvedValue({
@@ -131,7 +123,6 @@ describe('H2 — V_active source DuckDB vs TmdbScoringData', () => {
 
         expect(duckDbStore.query).toHaveBeenCalledWith(expect.stringContaining('FROM movies'));
         expect(duckDbStore.query).toHaveBeenCalledWith(expect.stringContaining('FROM tv'));
-        expect(TmdbScoringData.find).not.toHaveBeenCalled();
 
         expect(TasteProfile.updateOne).toHaveBeenCalled();
         const updateArgs = TasteProfile.updateOne.mock.calls[0][1];

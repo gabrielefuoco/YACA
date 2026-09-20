@@ -83,7 +83,7 @@ function extractActiveDNAFromTmdbData(tmdbData, baseWeight = 100) {
         dna[k] = (dna[k] || 0) + baseWeight;
     };
 
-    // Generi (supporta format raw TMDB e format cache Mongoose TmdbScoringData)
+    // Generi (supporta format raw TMDB e le forme normalizzate del parquet DuckDB)
     const genreIds = tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id) : []);
     genreIds.forEach(id => addKey('g', id));
 

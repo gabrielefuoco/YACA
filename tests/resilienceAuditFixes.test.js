@@ -210,18 +210,15 @@ describe('Resilience Audit Fixes (10 Critical Vulnerabilities)', () => {
             expect(() => {
                 require('../src/db/models/ImdbToTmdbMapping');
                 require('../src/models/SystemLog');
-                require('../src/models/TmdbScoringData');
                 require('../src/models/TasteProfile');
             }).not.toThrow();
 
             const ImdbToTmdbMapping = require('../src/db/models/ImdbToTmdbMapping');
             const SystemLog = require('../src/models/SystemLog');
-            const TmdbScoringData = require('../src/models/TmdbScoringData');
             const TasteProfile = require('../src/models/TasteProfile');
 
             expect(ImdbToTmdbMapping).toBeDefined();
             expect(SystemLog).toBeDefined();
-            expect(TmdbScoringData).toBeDefined();
             expect(TasteProfile).toBeDefined();
         });
     });
