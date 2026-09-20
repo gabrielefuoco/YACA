@@ -17,40 +17,7 @@ const MOOD_KEYWORDS_MAP = {
 
 
 function getKeywordsForNodes(nodeIds, level) {
-    if (!graph.isLoaded || !graph.data) return new Map();
-    const nodeKeywords = new Map(); // nodeId -> [kwStr, kwStr, ...]
-    
-    for (const nodeId of nodeIds) {
-        const kwStrs = new Set();
-        
-        let l1s = [];
-        if (level === 'L1') l1s = [nodeId];
-        else if (level === 'L2') l1s = graph.data.L2[nodeId]?.children_L1 || [];
-        else if (level === 'L3') {
-            const l2s = Object.keys(graph.data.L2 || {}).filter(k => graph.data.L2[k].parent === nodeId);
-            for (const l2 of l2s) l1s.push(...(graph.data.L2[l2]?.children_L1 || []));
-        } else if (level === 'L4') {
-            const l3s = Object.keys(graph.data.L3 || {}).filter(k => graph.data.L3[k].parent === nodeId);
-            for (const l3 of l3s) {
-                const l2s = Object.keys(graph.data.L2 || {}).filter(k => graph.data.L2[k].parent === l3);
-                for (const l2 of l2s) l1s.push(...(graph.data.L2[l2]?.children_L1 || []));
-            }
-        }
-        
-        for (const l1 of l1s) {
-            const l1_node = graph.data.L1[l1];
-            if (l1_node && l1_node.keywords) {
-                l1_node.keywords.forEach(k => kwStrs.add(k));
-            }
-        }
-        
-        let kwArray = Array.from(kwStrs);
-        if (kwArray.length > 30) kwArray = kwArray.sort(() => 0.5 - Math.random()).slice(0, 30);
-        
-        nodeKeywords.set(nodeId, kwArray);
-    }
-    
-    return nodeKeywords;
+    return graph.getKeywordsForNodes(nodeIds, level);
 }
 
 
