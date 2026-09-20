@@ -78,29 +78,4 @@ describe('H9 — l\'iniezione profilo trasforma with_genres AND in OR', () => {
         expect(injected).toBeDefined();
         expect(injected.with_genres).toContain(',');
     });
-
-    it('verde (documentazione): comportamento attuale — la virgola sparisce (OR)', async () => {
-        TasteProfile.findOne.mockResolvedValue({ owner: 'u1', context: 'global' });
-        router.routeLiveStremioSearch.mockResolvedValue({
-            filters: {
-                queries: [{ strategy: 'discovery', with_genres: '35,18' }]
-            }
-        });
-        DuckDbProvider.getDuckDbCatalogFromFilters.mockResolvedValue([
-            { id: 'tmdb:1', popularity: 5, rawTMDB: { vote_average: 7, genres: [{ id: 35, name: 'Comedy' }] } }
-        ]);
-
-        await executeCombinedSearch(
-            'commedie romantiche',
-            { userId: 'u1', activeProfileId: 'global', apiKeys: { tmdb: 'k', mistral: 'm' } },
-            'movie',
-            0,
-            {},
-            {}
-        );
-
-        const duckCalls = DuckDbProvider.getDuckDbCatalogFromFilters.mock.calls;
-        const injected = duckCalls.map(c => c[0]).find(f => f && f.with_genres !== undefined);
-        expect(injected.with_genres).toBe('35|18|28|16');
-    });
 });

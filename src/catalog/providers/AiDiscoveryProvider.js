@@ -213,13 +213,23 @@ async function injectProfilePreferences(filters, userId, profileId) {
     const topGenres = computeTopGenres(profile, 2);
 
     if (topKeywords.length > 0) {
-        const existingKws = enriched.with_keywords ? enriched.with_keywords.split(/[|,]/) : [];
-        enriched.with_keywords = [...new Set([...existingKws, ...topKeywords])].join('|');
+        if (enriched.with_keywords) {
+            const separator = enriched.with_keywords.includes(',') ? ',' : '|';
+            const existingKws = enriched.with_keywords.split(separator).map(s => s.trim()).filter(Boolean);
+            enriched.with_keywords = [...new Set([...existingKws, ...topKeywords])].join(separator);
+        } else {
+            enriched.with_keywords = topKeywords.join('|');
+        }
     }
 
     if (topGenres.length > 0) {
-        const existingGenres = enriched.with_genres ? enriched.with_genres.split(/[|,]/) : [];
-        enriched.with_genres = [...new Set([...existingGenres, ...topGenres])].join('|');
+        if (enriched.with_genres) {
+            const separator = enriched.with_genres.includes(',') ? ',' : '|';
+            const existingGenres = enriched.with_genres.split(separator).map(s => s.trim()).filter(Boolean);
+            enriched.with_genres = [...new Set([...existingGenres, ...topGenres])].join(separator);
+        } else {
+            enriched.with_genres = topGenres.join('|');
+        }
     }
 
     return enriched;
