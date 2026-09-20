@@ -56,15 +56,15 @@ const SORT_MAP = {
     'Incassi': 'revenue.desc'
 };
 
-function getSortByValue(genreExtra, type) {
-    if (!genreExtra || !Object.prototype.hasOwnProperty.call(SORT_MAP, genreExtra)) return 'popularity.desc';
-    if (genreExtra === 'Data di Uscita') {
+function getSortByValue(sortOption, type) {
+    if (!sortOption || !Object.prototype.hasOwnProperty.call(SORT_MAP, sortOption)) return 'popularity.desc';
+    if (sortOption === 'Data di Uscita') {
         return type === 'movie' ? 'primary_release_date.desc' : 'first_air_date.desc';
     }
-    return SORT_MAP[genreExtra];
+    return SORT_MAP[sortOption];
 }
 
-const presetExtra = [{ name: 'genre', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
+const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
 const searchExtra = [{ name: 'search', isRequired: true }];
 
 // Stremio API: Login con credenziali Stremio per ottenere authKey
@@ -348,8 +348,9 @@ router.get([
     if (extra.skip) extra.skip = parseInt(extra.skip, 10) || 0;
     else extra.skip = 0;
 
-    if (extra.genre) {
-        extra.sortBy = getSortByValue(extra.genre, type);
+    const sortBy = extra.sortBy || extra.genre || null;
+    if (sortBy) {
+        extra.sortBy = getSortByValue(sortBy, type);
     }
 
     const args = { type, id, extra };
@@ -736,5 +737,10 @@ router.get('/images/fallback', async (req, res) => {
         res.redirect(302, fallback);
     }
 });
+
+router.getSortByValue = getSortByValue;
+router.presetExtra = presetExtra;
+router.SORT_OPTIONS = SORT_OPTIONS;
+router.SORT_MAP = SORT_MAP;
 
 module.exports = router;
