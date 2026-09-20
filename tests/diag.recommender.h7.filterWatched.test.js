@@ -18,7 +18,7 @@ jest.mock('../src/models/TasteProfile', () => ({
 }));
 
 jest.mock('../src/models/WatchHistory', () => ({
-    find: jest.fn()
+    find: jest.fn().mockResolvedValue([{ tmdbId: 123 }])
 }));
 
 const TasteProfile = require('../src/models/TasteProfile');

@@ -1,4 +1,5 @@
 const TasteProfile = require('../../models/TasteProfile');
+const WatchHistory = require('../../models/WatchHistory');
 const { normalizeContentId } = require('../../utils/contentId');
 
 /**
@@ -13,14 +14,37 @@ async function filterWatchedItems(metas, userConfig) {
     }
 
     const userId = userConfig.userId;
-    // Carichiamo il profilo globale per avere la history completa (Trakt + Stremio)
-    const profile = await TasteProfile.findOne({ owner: userId, context: 'global' });
-    if (!profile) return metas;
+    const watchedIds = new Set();
 
-    const watchedIds = new Set([
-        ...(profile.processedTraktIds || []),
-        ...(profile.processedStremioIds || [])
-    ].map(normalizeContentId));
+    // 1. Carichiamo la cronologia da WatchHistory
+    try {
+        const query = WatchHistory.find({ owner: userId });
+        const history = (query && typeof query.lean === 'function') ? await query.lean() : await query;
+        if (Array.isArray(history)) {
+            for (const item of history) {
+                if (item?.tmdbId) {
+                    watchedIds.add(normalizeContentId(item.tmdbId));
+                }
+            }
+        }
+    } catch (err) {
+        // Fallback or ignore DB error
+    }
+
+    // 2. Carichiamo il profilo globale per compatibilità legacy (processedTraktIds + processedStremioIds)
+    try {
+        const profile = await TasteProfile.findOne({ owner: userId, context: 'global' });
+        if (profile) {
+            for (const id of (profile.processedTraktIds || [])) {
+                watchedIds.add(normalizeContentId(id));
+            }
+            for (const id of (profile.processedStremioIds || [])) {
+                watchedIds.add(normalizeContentId(id));
+            }
+        }
+    } catch (err) {
+        // Fallback or ignore DB error
+    }
 
     if (watchedIds.size === 0) return metas;
 
