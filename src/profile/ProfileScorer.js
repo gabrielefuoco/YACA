@@ -38,7 +38,22 @@ class ProfileScorer {
      */
     static getVectorScore(vector, prefix, id) {
         if (!vector) return 0;
-        return vector[`${prefix}:${this.normalizeDnaId(id)}`] || 0;
+        const normId = this.normalizeDnaId(id);
+        const direct = vector[`${prefix}:${normId}`];
+        if (direct !== undefined) return direct;
+        if (prefix === 'g') {
+            const numId = Number(normId);
+            const { G } = require('../data/filters');
+            if (G._tvToMovie && G._tvToMovie[numId]) {
+                const alt = vector[`g:${G._tvToMovie[numId]}`];
+                if (alt !== undefined) return alt;
+            }
+            if (G._movieToTv && G._movieToTv[numId]) {
+                const alt = vector[`g:${G._movieToTv[numId]}`];
+                if (alt !== undefined) return alt;
+            }
+        }
+        return 0;
     }
 
     static computeDnaMultiplier(tmdbData, dnaFilters = []) {
