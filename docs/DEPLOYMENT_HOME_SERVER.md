@@ -4,6 +4,18 @@ Questo runbook operativo documenta l'installazione, la configurazione, l'esposiz
 
 ---
 
+## 0. Cosa ti serve prima di iniziare
+
+- [ ] Chiavetta USB con **Debian 12 netinst** (o Ubuntu Server 24.04) — nessun ambiente grafico
+- [ ] I valori dei segreti dal PC di sviluppo (file `secrets.env` del repo): `MONGODB_URI`, `TMDB_API_KEY`, `MISTRAL_API_KEY`, `JWT_SECRET`, `ADMIN_PASS`, eventuali `TRAKT_*`
+- [ ] Un account **Tailscale nuovo** (gratis) per la tailnet del server
+- [ ] L'ultima GitHub Action **verde**, con l'immagine presente su GHCR (`ghcr.io/gabrielefuoco/yaca:latest`)
+- [ ] Nessun dominio richiesto: l'esposizione pubblica passa da Tailscale Funnel
+
+Ordine di esecuzione: **§2** installazione + checklist → **§3** file e primo avvio → **§4** Funnel e `HOST_URL` → **§5** cold start (10-12 h, in background) → **§6** accesso admin → **§7** backup e monitoring (quando vuoi).
+
+---
+
 ## 1. Architettura e Budget di Sistema
 
 L'infrastruttura sul server casalingo opera con un tetto massimo di memoria di circa 1.9 GB, lasciando oltre 4 GB di RAM disponibili per l'OS, sessioni SSH e agenti di sviluppo.
@@ -375,3 +387,25 @@ Non installare agenti pesanti sul server. Configurare un servizio esterno gratui
   docker system prune -f
   ```
 - **Blackout improvvisi**: Poiché il laptop opera senza batteria, un'interruzione di corrente provocherà uno spegnimento improvviso. All'avvio successivo, Docker riavvierà automaticamente i container grazie alla direttiva `restart: unless-stopped`.
+
+---
+
+## 8. Trappole note e comandi utili
+
+| Sintomo | Causa | Rimedio |
+|---|---|---|
+| Watchtower non aggiorna mai l'app | package GHCR privato e container senza credenziali | rendi pubblico il package, oppure `sudo docker login ghcr.io` + scommenta in `docker-compose.yml` il mount `/root/.docker/config.json:/config.json:ro` e poi `docker compose up -d watchtower` |
+| Poster con URL sbagliati o manifest con host errato | `HOST_URL` non aggiornato dopo il Funnel | correggi `.env` e **`docker compose up -d app`** (`restart` non rilegge il `.env`) |
+| Cataloghi vuoti per ore | cold start TMDB in corso, oppure `TMDB_API_KEY` assente | `curl -H "x-admin-password: <ADMIN_PASS>" http://127.0.0.1:7860/api/admin/tmdb-dump/status` |
+| Backup notturno mai eseguito | rclone configurato per l'utente, ma il servizio gira come root | `sudo rclone config` (remote `r2`), oppure `User=<utente>` nel unit systemd |
+| Dopo un blackout l'app non riparte | spegnimento sporco (batteria rimossa) | riavvia il server; i dati utente sono su Atlas e i parquet si rigenerano — in ultima istanza si reinstalla |
+
+Comandi quotidiani (da `/srv/yaca`):
+
+```bash
+docker compose ps                 # stato dei tre container
+docker compose logs -f app        # log applicativi
+docker stats --no-stream          # RAM/CPU reali per container
+df -h /                           # spazio libero (tenere ≥ 30 GB)
+docker system prune -f            # pulizia immagini e cache orfane
+```
