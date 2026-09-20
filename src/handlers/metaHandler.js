@@ -150,9 +150,6 @@ async function metaHandler(args, userConfig) {
                                         await resolveAnimeEpisodes(finalBgMeta, tmdbId, tmdbApiKey);
                                     }
                                     
-                                    // Aggiornamento silente scoring cache (voti freschi)
-                                    updateScoringCache(Number(tmdbId), type === 'series' ? 'tv' : type, finalBgMeta.rawTMDB || finalBgMeta).catch(() => { });
-                                    
                                     await applyKitsuMappingToMeta(finalBgMeta, tmdbId);
 
                                     delete finalBgMeta._keywordNames;
@@ -177,9 +174,6 @@ async function metaHandler(args, userConfig) {
                                 // Lazy fetch episodi per serie tv normali e anime
                                 await resolveAnimeEpisodes(meta, tmdbId, tmdbApiKey);
                             }
-
-                            // Aggiornamento silente scoring cache (voti freschi)
-                            updateScoringCache(Number(tmdbId), type === 'series' ? 'tv' : type, meta.rawTMDB || {}).catch(() => { });
 
                             await applyKitsuMappingToMeta(meta, tmdbId);
 
@@ -219,31 +213,6 @@ async function metaHandler(args, userConfig) {
         console.error("Errore Meta Handler:", err.message);
         return { meta: null };
     }
-}
-
-/**
- * Aggiornamento silente della scoring cache quando l'utente naviga i dettagli.
- * Salva solo vote_average e vote_count (i dati volatili utili allo scorer).
- * Usa lazy require per non bloccare il caricamento del modulo se mongoose non è disponibile.
- * @param {number} tmdbId ID TMDB
- * @param {string} type 'movie' o 'tv'
- * @param {Object} metaData Dati meta freschi dal TMDB
- */
-async function updateScoringCache(tmdbId, type, metaData) {
-    if (!tmdbId || !metaData) return;
-    try {
-        const TmdbScoringData = require('../models/TmdbScoringData');
-        await TmdbScoringData.updateOne(
-            { tmdbId, type },
-            {
-                $set: {
-                    vote_average: metaData.vote_average || (metaData.imdbRating ? parseFloat(metaData.imdbRating) : 0),
-                    vote_count: metaData.vote_count || 0
-                }
-            },
-            { upsert: false } // Solo aggiorna se già esiste; non creare nuovi documenti parziali
-        );
-    } catch (_e) { /* scoring cache update failure is non-blocking */ }
 }
 
 module.exports = { metaHandler };
