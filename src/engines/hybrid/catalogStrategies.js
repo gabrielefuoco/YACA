@@ -273,8 +273,18 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
         const id = String(item._tmdbId || item.id.split(':')[1]);
         const seenDays = impressionMap.get(id) || 0;
         const penaltyMultiplier = calculateImpressionPenalty(seenDays);
-        const score = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profile, { dnaFilters, globalProfile });
-        return { data: item.rawTMDB || item, score: score * penaltyMultiplier };
+        const tmdbData = item.rawTMDB || item;
+        if (typeof tmdbData.vote_count !== 'number') {
+            tmdbData.vote_count = typeof item.vote_count === 'number' ? item.vote_count : 0;
+        }
+        if (!tmdbData.keywords) {
+            tmdbData.keywords = item.keywords ? { results: item.keywords, keywords: item.keywords } : { results: [], keywords: [] };
+        }
+        if (!tmdbData.credits) {
+            tmdbData.credits = item.credits || { cast: [], crew: [] };
+        }
+        const score = ProfileScorer.calculateItemMatch(tmdbData, profile, { dnaFilters, globalProfile });
+        return { data: tmdbData, score: score * penaltyMultiplier };
     });
     
     const sorted = scored.sort((a, b) => b.score - a.score);
