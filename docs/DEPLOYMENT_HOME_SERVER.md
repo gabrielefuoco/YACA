@@ -149,7 +149,7 @@ Configurare le variabili minime necessarie:
 - `ADMIN_PASS=<password-admin-desiderata>`
 - `TRAKT_CLIENT_ID` e `TRAKT_CLIENT_SECRET` (se abilitati)
 - `TORRENTIO_URL=https://torrentio.strem.fun`
-- `DISABLE_MONGO_LOGS=true`
+- `SYSTEM_LOG=console` (log su console Docker invece che su Atlas: è già il default)
 
 ### 3.4 Autenticazione GHCR (se il repository/package è privato)
 Se l'immagine container su GitHub Container Registry non è resa pubblica:
@@ -157,6 +157,8 @@ Se l'immagine container su GitHub Container Registry non è resa pubblica:
 echo "<GITHUB_PERSONAL_ACCESS_TOKEN>" | docker login ghcr.io -u <GITHUB_USERNAME> --password-stdin
 ```
 *(Se il package GHCR è impostato su 'Public', il login non è necessario).*
+
+⚠️ **Se il package resta privato, Watchtower non vede quelle credenziali**: `docker login` scrive in `/root/.docker/config.json` sull'host, ma il container non lo vede. Dopo il login, scommenta in `docker-compose.yml` il mount `- /root/.docker/config.json:/config.json:ro` sotto il servizio `watchtower` e rilancia `docker compose up -d watchtower`. In alternativa (più semplice) rendi pubblico il package: Profile → Packages → yaca → Package settings → Change visibility.
 
 ### 3.5 Avvio dei container
 Posizionarsi nella directory `/srv/yaca` ed eseguire l'avvio in background:

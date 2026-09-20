@@ -63,6 +63,9 @@ services:
       - WATCHTOWER_LABEL_ENABLE=true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      # Package GHCR privato: scommenta DOPO aver fatto `docker login ghcr.io` sull'host
+      # (il file deve esistere, altrimenti Docker crea una directory al suo posto)
+      # - /root/.docker/config.json:/config.json:ro
     logging:
       driver: "json-file"
       options:

@@ -31,7 +31,8 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          # GHCR richiede nomi immagine minuscoli: github.repository è "gabrielefuoco/YACA" e farebbe fallire la push
+          images: ghcr.io/${{ github.repository_owner }}/yaca
           tags: |
             type=raw,value=latest
             type=raw,value=${{ github.sha }}
