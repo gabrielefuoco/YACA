@@ -22,9 +22,21 @@
 #
 #    NOTA: Il flag '--drop' sovrascrive le collezioni esistenti prima del ripristino.
 #          Omettere '--drop' se si intende eseguire un merge non distruttivo.
+#
+#    NOTA: In una shell manuale le variabili non sono esportate: prima dei comandi
+#          eseguire `set -a; . /srv/yaca/.env; set +a` (oppure esportare MONGODB_URI a mano).
 # ==============================================================================
 
 set -euo pipefail
+
+# Se lanciato a mano (es. `sudo ./yaca-backup.sh`) l'ambiente non ha le variabili:
+# ricaricale dal .env del server.
+if [ -z "${MONGODB_URI:-}" ] && [ -f /srv/yaca/.env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . /srv/yaca/.env
+  set +a
+fi
 
 # Controllo variabili d'ambiente obbligatorie
 if [ -z "${MONGODB_URI:-}" ]; then

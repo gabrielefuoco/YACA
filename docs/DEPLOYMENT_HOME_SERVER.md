@@ -154,7 +154,8 @@ Configurare le variabili minime necessarie:
 ### 3.4 Autenticazione GHCR (se il repository/package è privato)
 Se l'immagine container su GitHub Container Registry non è resa pubblica:
 ```bash
-echo "<GITHUB_PERSONAL_ACCESS_TOKEN>" | docker login ghcr.io -u <GITHUB_USERNAME> --password-stdin
+# `sudo` è necessario se poi monti /root/.docker/config.json in Watchtower (v. nota sotto)
+echo "<GITHUB_PERSONAL_ACCESS_TOKEN>" | sudo docker login ghcr.io -u <GITHUB_USERNAME> --password-stdin
 ```
 *(Se il package GHCR è impostato su 'Public', il login non è necessario).*
 
@@ -227,10 +228,10 @@ Aggiornare il file `/srv/yaca/.env` inserendo l'URL pubblico ottenuto:
 HOST_URL=https://<nome-nodo>.<nome-tailnet>.ts.net
 ```
 
-Riavviare il container applicativo per caricare il nuovo hostname nei manifest:
+Riavviare il container applicativo per caricare il nuovo hostname nei manifest (`restart` NON rilegge il `.env`: serve ricreare il container):
 ```bash
 cd /srv/yaca
-docker compose restart app
+docker compose up -d app
 ```
 
 ### 4.4 Verifica Esterna da Rete Terza
@@ -294,7 +295,7 @@ Installare rclone sul server casalingo:
 sudo apt install -y rclone
 ```
 
-Eseguire `rclone config` per creare un remote denominato `r2`:
+Eseguire `sudo rclone config` per creare un remote denominato `r2` (il servizio di backup gira come root, quindi la config deve stare in `/root/.config/rclone/`):
 - Type: `s3`
 - Provider: `Cloudflare`
 - `access_key_id`: la chiave R2 generata nella dashboard Cloudflare
@@ -345,7 +346,10 @@ rclone lsf r2:yaca-backups
 # 2. Scaricare l'archivio desiderato:
 rclone copy r2:yaca-backups/yaca-mongo-backup-XXXXXXXX_XXXXXX.archive.gz /tmp/
 
-# 3. Ripristinare il database su MongoDB Atlas:
+# 3. Caricare le variabili d'ambiente (in una shell manuale NON sono esportate):
+set -a; . /srv/yaca/.env; set +a
+
+# 4. Ripristinare il database su MongoDB Atlas:
 # Con mongorestore nativo (se installato):
 mongorestore --uri="$MONGODB_URI" --archive=/tmp/yaca-mongo-backup-XXXXXXXX_XXXXXX.archive.gz --gzip --drop
 
@@ -353,7 +357,7 @@ mongorestore --uri="$MONGODB_URI" --archive=/tmp/yaca-mongo-backup-XXXXXXXX_XXXX
 docker run --rm -v /tmp:/backup mongo:7 \
   mongorestore --uri="$MONGODB_URI" --archive=/backup/yaca-mongo-backup-XXXXXXXX_XXXXXX.archive.gz --gzip --drop
 
-# 4. Rimuovere il file temporaneo:
+# 5. Rimuovere il file temporaneo:
 rm /tmp/yaca-mongo-backup-XXXXXXXX_XXXXXX.archive.gz
 ```
 

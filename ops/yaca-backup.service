@@ -3,6 +3,10 @@ Description=YACA MongoDB Backup to Cloudflare R2
 After=network-online.target docker.service
 Wants=network-online.target
 
+# Nota: il servizio gira come root, quindi la config di rclone deve esistere per root:
+# creala con `sudo rclone config` (remote `r2`), oppure aggiungi qui `User=<utente-sul-server>`
+# assicurandoti che quell'utente sia nel gruppo docker.
+
 [Service]
 Type=oneshot
 EnvironmentFile=-/srv/yaca/.env
