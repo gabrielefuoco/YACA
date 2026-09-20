@@ -64,7 +64,8 @@ function applyFunnelFiltersToPreset(preset, filters) {
     if (filters.yearMax) preset.where.push(`"release_date" <= '${filters.yearMax}-12-31'`);
     if (filters.isAnime) preset.where.push(F.anime);
     if (filters.genres && filters.genres.length > 0) {
-        preset.where.push(F.genreStr(...filters.genres));
+        const mappedGenres = filters.genres.map(g => (G.mapGenre ? G.mapGenre(g, preset.type) : g));
+        preset.where.push(F.genreStr(...mappedGenres));
     }
 }
 

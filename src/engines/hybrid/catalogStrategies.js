@@ -10,7 +10,7 @@ const { fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackI
 const { computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
 const ProfileScorer = require('../../profile/ProfileScorer');
 const { getDuckDbCatalogFromPreset } = require('../../catalog/providers/DuckDbProvider');
-const { F, S } = require('../../data/filters');
+const { F, S, G } = require('../../data/filters');
 const graph = require('../graph/HierarchicalGraph');
 
 function getTopNodeIds(profile, level = 'L2', limit = 2) {
@@ -157,11 +157,18 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
 
     // 2. Estrazione DNA
     const topGenres = computeTopGenres(profile, 3, user, context);
+    const isTv = mediaType === 'series' || mediaType === 'tv';
+    const mappedTopGenres = topGenres.map(g => {
+        const id = Number(g);
+        if (isTv && G._movieToTv && G._movieToTv[id]) return G._movieToTv[id];
+        if (!isTv && G._tvToMovie && G._tvToMovie[id]) return G._tvToMovie[id];
+        return id;
+    });
     const topL2Ids = getTopNodeIds(profile, 'L2', 3);
     let directKwIds = computeTopKeywords(profile, 10, user, context);
 
     // 1. Calcolo Proporzione Anime
-    const animeRatio = getAnimeProportion(profile, directKwIds, topGenres);
+    const animeRatio = getAnimeProportion(profile, directKwIds, mappedTopGenres);
     
     // Costruiamo i cluster (Topoi + Keywords)
     const clusters = [];
@@ -183,8 +190,8 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
         }
     }
     
-    console.log(`[Smart AND] AnimeRatio: ${animeRatio}, TopGenres: ${topGenres.length}, Clusters: ${clusters.length}`);
-    if (clusters.length === 0 && topGenres.length === 0) {
+    console.log(`[Smart AND] AnimeRatio: ${animeRatio}, TopGenres: ${mappedTopGenres.length}, Clusters: ${clusters.length}`);
+    if (clusters.length === 0 && mappedTopGenres.length === 0) {
         console.log(`[Smart AND] Nessun cluster o genere, ritorno vuoto`);
         return { pool: [], animeRatio }; 
     }
@@ -202,8 +209,8 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
         const where = [...baseFilters];
         
         // Aggiungiamo i top genres in OR (ne basta uno)
-        if (topGenres.length > 0) {
-            where.push(F.any(...topGenres.map(g => F.genre(Number(g)))));
+        if (mappedTopGenres.length > 0) {
+            where.push(F.any(...mappedTopGenres.map(g => F.genre(Number(g)))));
         }
         
         // Aggiungiamo il cluster di keyword in OR tra loro
@@ -324,6 +331,13 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const dnaFilters = getProfileDnaFilters(user, context);
 
     const topGenres = computeTopGenres(profile, 3, user, context);
+    const isTv = mediaType === 'series' || mediaType === 'tv';
+    const mappedTopGenres = topGenres.map(g => {
+        const id = Number(g);
+        if (isTv && G._movieToTv && G._movieToTv[id]) return G._movieToTv[id];
+        if (!isTv && G._tvToMovie && G._tvToMovie[id]) return G._tvToMovie[id];
+        return id;
+    });
 
     const lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 20).map(id => ({ id: String(id), weight: 2 }));
     const likedIds = (user?.profiles?.find(p => p.id === context)?.liked || []).slice(0, 15).map(id => ({ id: String(id), weight: 1 }));
@@ -338,8 +352,8 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const directKwIds = computeTopKeywords(profile, 10, user, context);
     
     const where = [];
-    if (topGenres.length > 0) {
-        where.push(F.any(...topGenres.map(g => F.genre(Number(g)))));
+    if (mappedTopGenres.length > 0) {
+        where.push(F.any(...mappedTopGenres.map(g => F.genre(Number(g)))));
     }
     const allKwRules = [];
     if (directKwIds.length > 0) {
