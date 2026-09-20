@@ -1,9 +1,8 @@
-const { getTmdbIdByName } = require('../../clients/tmdb');
+const { getTmdbIdByName, createTmdbClient } = require('../../clients/tmdb');
 const { routeLiveStremioSearch } = require('../../ai/router');
 const { getProfileDnaFilters } = require('../../utils/helpers');
-const { normalizeContentId } = require('../../utils/contentId');
 const { interleaveMultipleResults, applyConsensusScoring } = require('../../utils/resultMerger');
-
+const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
 const TasteProfile = require('../../models/TasteProfile');
 const ProfileScorer = require('../../profile/ProfileScorer');
 const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataHydrator');
@@ -57,32 +56,32 @@ function getKeywordFallbackSequence(originalKeyword, fallbackArray = []) {
 }
 
 async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, settings = {}, cacheOptions = {}) {
-
-    let results = [];
     const searchType = type === 'series' ? 'tv' : 'movie';
 
     if (filters.strategy === "similar" && filters.similar_to) {
         const targetId = await getTmdbIdByName(tmdbApiKey, searchType, filters.similar_to);
         if (targetId) {
-            const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
-            results = await getDuckDbCatalogFromFilters({ similar_to: targetId }, type, skip, PAGE_SIZE, settings);
+            return await getDuckDbCatalogFromFilters({ similar_to: targetId }, type, skip, PAGE_SIZE, settings);
         }
+        return [];
     }
-    else if (filters.strategy === "multi_search") {
-        const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
-        results = await getDuckDbCatalogFromFilters({ text_search: filters.text_search || filters.keyword }, type, skip, PAGE_SIZE, settings);
+    if (filters.strategy === "multi_search") {
+        return await getDuckDbCatalogFromFilters({ text_search: filters.text_search || filters.keyword }, type, skip, PAGE_SIZE, settings);
     }
-    else if (filters.strategy === "manual_list" && Array.isArray(filters.items)) {
-        const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
-        const tmdbIds = filters.items.map(item => item.tmdbId).filter(Boolean);
-        results = await getDuckDbCatalogFromFilters({ tmdbIds }, type, skip, PAGE_SIZE, settings);
+    if (filters.strategy === "manual_list") {
+        let tmdbIds = [];
+        if (Array.isArray(filters.items)) {
+            tmdbIds = filters.items.map(item => typeof item === 'object' && item !== null ? (item.tmdbId || item.id) : item).filter(Boolean);
+        } else if (Array.isArray(filters.tmdbIds)) {
+            tmdbIds = filters.tmdbIds;
+        } else if (filters.with_id || filters.params?.with_id) {
+            tmdbIds = [filters.with_id || filters.params.with_id];
+        }
+        if (tmdbIds.length === 0) return [];
+        return await getDuckDbCatalogFromFilters({ tmdbIds }, type, skip, PAGE_SIZE, settings);
     }
-    else {
-        // Usa DuckDB per tutti i cataloghi discovery nativi (inclusi preset e hybrid fallback)
-        // Passiamo i filters crudi così che tmdbToSqlTranslator faccia la magia offline
-        const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
-        return await getDuckDbCatalogFromFilters(filters, type, skip, PAGE_SIZE, settings);
-    }
+    // Usa DuckDB per tutti i cataloghi discovery nativi (inclusi preset e hybrid fallback)
+    return await getDuckDbCatalogFromFilters(filters, type, skip, PAGE_SIZE, settings);
 }
 
 // Fase 2: Processa qualsiasi catalogo tramite array "queries" (LookAhead, Consensus)
@@ -93,7 +92,7 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
 
     if (queries.length === 0) return [];
 
-    let finalResults = [];
+    let finalResults;
 
     if (queries.length === 1) {
         let query = { ...queries[0] };
@@ -235,7 +234,7 @@ async function injectProfilePreferences(filters, userId, profileId) {
 async function executeCombinedSearch(search, userConfig, type, skip, activeProfileSettings, cacheOptions) {
     const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
     const mistralKey = userConfig.apiKeys?.mistral || process.env.MISTRAL_API_KEY;
-    const tmdbClient = require('../../clients/tmdb').createTmdbClient(tmdbApiKey);
+    const tmdbClient = createTmdbClient(tmdbApiKey);
     const userId = userConfig.userId;
     const profileId = userConfig.activeProfileId;
     const activeContext = profileId || 'global';
@@ -256,7 +255,6 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
             const routing = await routeLiveStremioSearch(search, mistralKey);
             
             if (routing?.filters?.strategy === 'static_list') {
-                const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
                 const titles = routing.filters.static_items || [];
                 const titlePromises = titles.map(title =>
                     getDuckDbCatalogFromFilters({ text_search: title }, type, 0, 1, activeProfileSettings)

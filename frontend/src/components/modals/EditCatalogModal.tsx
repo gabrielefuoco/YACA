@@ -25,7 +25,7 @@ export function EditCatalogModal({
 
   return (
     <Dialog open={open} onOpenChange={(val) => { if (!val) onClose(); }}>
-      <DialogContent className="w-[95vw] max-w-5xl bg-background-light border-marrow-light/30 shadow-2xl p-0 overflow-hidden h-[90vh] md:h-[85vh] flex flex-col rounded-2xl sm:rounded-3xl">
+      <DialogContent className="w-[95vw] max-w-5xl bg-background-light border-marrow-light/30 shadow-2xl p-0 overflow-hidden h-[90dvh] md:h-[85dvh] max-h-[90dvh] md:max-h-[85dvh] flex flex-col rounded-2xl sm:rounded-3xl">
         <DialogHeader className="p-4 sm:p-6 bg-white/40 border-b border-marrow-light/10 shrink-0">
           <DialogTitle className="text-lg sm:text-2xl font-black text-marrow-deep tracking-tight">
             Modifica Catalogo
@@ -35,7 +35,7 @@ export function EditCatalogModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 scrollbar-hide bg-white/10">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6 md:p-8 scrollbar-hide bg-white/10 relative">
           <CreatorPanel
             editCatalog={catalog}
             onAddCatalog={(updatedCatalog) => {

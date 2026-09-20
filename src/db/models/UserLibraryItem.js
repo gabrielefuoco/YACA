@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const userLibraryItemSchema = new mongoose.Schema({
     addonUuid: { type: String, required: true, index: true }, // Links to AddonConfig.uuid
-    _id: { type: String, required: true }, // The stremio _id (e.g., tt1234567, kitsu:123)
+    itemId: { type: String, required: true }, // The stremio _id (e.g., tt1234567, kitsu:123)
     type: { type: String, required: true }, // movie, series, anime, etc.
     name: { type: String },
     poster: { type: String },
@@ -24,6 +24,6 @@ const userLibraryItemSchema = new mongoose.Schema({
 
 // Compound index to quickly find user's library items by type and UUID
 userLibraryItemSchema.index({ addonUuid: 1, type: 1, removed: 1, _mtime: -1 });
-userLibraryItemSchema.index({ addonUuid: 1, _id: 1 }, { unique: true });
+userLibraryItemSchema.index({ addonUuid: 1, itemId: 1 }, { unique: true });
 
 module.exports = mongoose.models.UserLibraryItem || mongoose.model('UserLibraryItem', userLibraryItemSchema);

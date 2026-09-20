@@ -379,7 +379,12 @@ router.get('/:id/library', async (req, res) => {
             removed: false
         }).sort({ _ctime: -1 }).lean();
 
-        res.json(items);
+        const mappedItems = items.map(item => ({
+            ...item,
+            _id: item.itemId || item._id
+        }));
+
+        res.json(mappedItems);
     } catch (err) {
         console.error(`[ProfileAPI] Error fetching library:`, err.message);
         res.status(500).json({ error: 'Internal server error' });
@@ -404,7 +409,7 @@ router.post('/:id/library', async (req, res) => {
         const now = new Date();
         const doc = {
             addonUuid: account.addonUuid,
-            _id: item.id,
+            itemId: item.id,
             type: item.type,
             name: item.name || '',
             poster: item.poster || '',
@@ -420,7 +425,7 @@ router.post('/:id/library', async (req, res) => {
 
         const UserLibraryItem = require('../db/models/UserLibraryItem');
         await UserLibraryItem.findOneAndUpdate(
-            { addonUuid: account.addonUuid, _id: item.id },
+            { addonUuid: account.addonUuid, itemId: item.id },
             { $set: doc },
             { upsert: true, returnDocument: 'after' }
         );
@@ -456,7 +461,10 @@ router.delete('/:id/library/:itemId', async (req, res) => {
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
         const UserLibraryItem = require('../db/models/UserLibraryItem');
-        const item = await UserLibraryItem.findOne({ addonUuid: account.addonUuid, _id: itemId });
+        const item = await UserLibraryItem.findOne({
+            addonUuid: account.addonUuid,
+            $or: [{ itemId: itemId }, { _id: itemId }]
+        });
         
         if (item) {
             item.removed = true;
@@ -469,7 +477,7 @@ router.delete('/:id/library/:itemId', async (req, res) => {
                     authKey: account.apiKeys.stremio,
                     collection: 'libraryItem',
                     changes: [{
-                        _id: item._id,
+                        _id: item.itemId || item._id,
                         removed: true,
                         _mtime: item._mtime
                     }]
@@ -510,14 +518,17 @@ router.put('/:id/library/reorder', async (req, res) => {
             const newMtime = newCtime;
             
             const updated = await UserLibraryItem.findOneAndUpdate(
-                { addonUuid: account.addonUuid, _id: itemId },
+                {
+                    addonUuid: account.addonUuid,
+                    $or: [{ itemId: itemId }, { _id: itemId }]
+                },
                 { $set: { _ctime: newCtime, _mtime: newMtime } },
                 { returnDocument: 'after' }
             );
 
             if (updated) {
                 changes.push({
-                    _id: updated._id,
+                    _id: updated.itemId || updated._id,
                     type: updated.type,
                     name: updated.name || '',
                     poster: updated.poster || null,

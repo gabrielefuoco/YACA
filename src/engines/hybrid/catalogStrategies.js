@@ -9,7 +9,7 @@ const { applyKidsMode } = require('../../utils/kidsModeFilters');
 const { fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds, getImpressionMap, calculateImpressionPenalty } = require('./dataFetchers');
 const { computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
 const ProfileScorer = require('../../profile/ProfileScorer');
-const { getDuckDbCatalogFromPreset } = require('../../catalog/providers/DuckDbProvider');
+const { getDuckDbCatalogFromPreset, getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
 const { F, S } = require('../../data/filters');
 const graph = require('../graph/HierarchicalGraph');
 
@@ -23,23 +23,12 @@ function getTopNodeIds(profile, level = 'L2', limit = 2) {
 }
 
 function getKeywordsForNodeIds(nodeIds, level = 'L2') {
-    if (!graph.isLoaded || !graph.data || !graph.data[level]) return [];
-    const kwIds = new Set();
-    for (const nodeId of nodeIds) {
-        // If the level is L1, the children_L1 is just itself, otherwise it's in the graph
-        const l1s = level === 'L1' ? [nodeId] : (graph.data[level][nodeId]?.children_L1 || []);
-        for (const l1 of l1s) {
-            for (const [kwId, targetL1] of Object.entries(graph.data.kw_to_L1 || {})) {
-                if (targetL1 === l1) kwIds.add(kwId);
-            }
-        }
+    const map = graph.getKeywordsForNodes(nodeIds, level);
+    const kwSet = new Set();
+    for (const arr of map.values()) {
+        arr.forEach(k => kwSet.add(k));
     }
-    let kwArray = Array.from(kwIds);
-    // Limit to max 50 keywords for SQL performance
-    if (kwArray.length > 50) {
-        kwArray = kwArray.sort(() => 0.5 - Math.random()).slice(0, 50);
-    }
-    return kwArray;
+    return Array.from(kwSet).slice(0, 50);
 }
 
 /**
@@ -81,7 +70,6 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
     const { profile } = await fetchProfileContext(userId, context);
     const isKidsMode = profile?.settings?.kidsMode;
 
-    const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
     const tmdbType = (preset.type === 'series' || mediaType === 'series') ? 'series' : 'movie';
     const existingIds = new Set();
     const pool = [];
@@ -225,7 +213,7 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
             // Smart Fallback: se una query restituisce meno di 5 risultati (es. keyword iper-specifiche prive di match per Anime),
             // allentiamo il filtro rimuovendo le keyword e tenendo i Generi Top + Quota Anime.
             if ((!results || results.length < 5) && cluster.keywords.length > 0) {
-                const fallbackWhere = where.filter(w => !w.includes('"keywords" LIKE'));
+                const fallbackWhere = where.filter(w => !w.toLowerCase().includes('"keywords"'));
                 const fallbackPreset = { type: types, where: fallbackWhere, orderBy: S.POPULAR };
                 const fallbackResults = await getDuckDbCatalogFromPreset(fallbackPreset, 0, limitPerQuery);
                 console.log(`[Smart AND Query ${index + 1}/${totalQueries}] Smart Fallback (Genres/Anime) Found ${fallbackResults?.length || 0} items`);
@@ -243,7 +231,7 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
     
     for (const arr of resultsArrays) {
         for (const item of arr) {
-            const id = String(item._tmdbId || item.id.split(':')[1]);
+            const id = String(item._tmdbId || String(item.id).replace(/^[a-zA-Z]+:/, ''));
             if (!allResultsMap.has(id)) {
                 allResultsMap.set(id, item);
             }
@@ -266,11 +254,11 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
         return fallbackFn(tmdbApiKey, mediaType);
     }
     
-    const impressionMap = await getImpressionMap(userId, context, catalogId, pool.map(m => String(m._tmdbId || m.id.split(':')[1])));
+    const impressionMap = await getImpressionMap(userId, context, catalogId, pool.map(m => String(m._tmdbId || String(m.id).replace(/^[a-zA-Z]+:/, ''))));
     const dnaFilters = getProfileDnaFilters(user, context);
     
     const scored = pool.map(item => {
-        const id = String(item._tmdbId || item.id.split(':')[1]);
+        const id = String(item._tmdbId || String(item.id).replace(/^[a-zA-Z]+:/, ''));
         const seenDays = impressionMap.get(id) || 0;
         const penaltyMultiplier = calculateImpressionPenalty(seenDays);
         const score = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profile, { dnaFilters, globalProfile });
@@ -304,7 +292,6 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
 
     const types = mediaType === 'movie' ? 'movie' : 'series';
-    const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
     const dnaFilters = getProfileDnaFilters(user, context);
 
     const topGenres = computeTopGenres(profile, 3, user, context);
@@ -348,7 +335,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         console.log(`======================================================\n`);
         const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 10);
         if (lightMetas && lightMetas.length > 0) {
-            dnaSeeds = lightMetas.slice(0, 5).map(item => ({ id: String(item._tmdbId || item.id.split(':')[1]), weight: 4 }));
+            dnaSeeds = lightMetas.slice(0, 5).map(item => ({ id: String(item._tmdbId || String(item.id).replace(/^[a-zA-Z]+:/, '')), weight: 4 }));
         }
     }
 
@@ -364,7 +351,6 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     }
     const allSeeds = Array.from(allSeedsMap.entries()).map(([id, weight]) => ({ id, weight }));
 
-    const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
     const weightedCounts = new Map(); 
     const allSimilar = await rateLimitedMap(
         allSeeds,

@@ -93,7 +93,7 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-md bg-white text-marrow-deep border-slate-200">
+      <DialogContent className="w-[92vw] sm:max-w-md bg-white text-marrow-deep border-slate-200 rounded-2xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20 text-red-400">🎬</span>
@@ -157,7 +157,7 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
             </div>
 
             <a href={verificationUrl} target="_blank" rel="noopener noreferrer">
-              <Button className="w-full bg-red-600 text-white hover:bg-red-700 border-0" variant="default">
+              <Button className="w-full bg-red-600 text-white hover:bg-red-700 border-0 min-h-[44px] touch-manipulation" variant="default">
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Apri Trakt.tv
               </Button>
@@ -179,7 +179,7 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
         )}
 
         <div className="flex justify-end mt-4">
-          <Button variant="ghost" onClick={onClose} className="text-marrow-light/70 hover:text-marrow-deep">Annulla</Button>
+          <Button variant="ghost" onClick={onClose} className="text-marrow-light/70 hover:text-marrow-deep min-h-[44px] touch-manipulation">Annulla</Button>
         </div>
       </DialogContent>
     </Dialog>

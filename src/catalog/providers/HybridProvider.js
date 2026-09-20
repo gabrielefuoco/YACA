@@ -4,6 +4,7 @@ const { fetchTraktCatalog } = require('../../clients/trakt');
 const { filterWatchedItems } = require('../processors/FilterWatched');
 const { normalizeContentId } = require('../../utils/contentId');
 const { PAGES_PER_REQUEST } = require('../../config');
+const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
 
 const TASTE_BASED_IDS = new Set([
     // Hero Catalogs (Phase 4)
@@ -35,7 +36,6 @@ async function getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey
 async function getHybridPopularCatalog(baseId, type, skip, userConfig, tmdbClient, tmdbApiKey, tmdbFetchOptions) {
     const isMovie = type === 'movie';
     const traktEp = isMovie ? 'popular_movies' : 'popular_shows';
-    const contentType = isMovie ? 'movie' : 'series';
 
     let combinedResults = [];
     const MAX_DEPTH = Math.max(PAGES_PER_REQUEST || 3, 3);
@@ -43,7 +43,6 @@ async function getHybridPopularCatalog(baseId, type, skip, userConfig, tmdbClien
         ? Array.from({ length: MAX_DEPTH }, (_, i) => skip + (i * 20))
         : [skip];
 
-    const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
     const pagesResults = await Promise.all(pageSkips.map((pageSkip) =>
         Promise.all([
             getDuckDbCatalogFromFilters({ sort_by: 'popularity.desc', 'vote_count.gte': 50 }, type, pageSkip, 20, {}),

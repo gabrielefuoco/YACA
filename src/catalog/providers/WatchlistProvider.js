@@ -1,6 +1,5 @@
+const mongoose = require('mongoose');
 const UserLibraryItem = require('../../db/models/UserLibraryItem');
-const { getTmdbClient } = require('../../clients/tmdb');
-const { formatMovieToStremio, formatSeriesToStremio } = require('../formatters/StremioFormatter');
 const LibrarySyncService = require('../../services/LibrarySyncService');
 const UserAccount = require('../../db/models/UserAccount');
 const AddonConfig = require('../../db/models/AddonConfig');
@@ -11,6 +10,7 @@ const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
  * Trigger background sync if needed.
  */
 async function triggerSyncIfNeeded(addonUuid) {
+    if (mongoose.connection.readyState !== 1) return;
     try {
         const addonConfig = await AddonConfig.findOne({ uuid: addonUuid });
         if (!addonConfig) return;
@@ -32,8 +32,10 @@ async function triggerSyncIfNeeded(addonUuid) {
 }
 
 async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSettings) {
+    const uuid = userConfig.addonUuid || userConfig.uuid;
+
     // 1. Fire async sync if interval passed
-    triggerSyncIfNeeded(userConfig.uuid);
+    triggerSyncIfNeeded(uuid);
 
     // 2. Map catalog ID to stremio types
     let targetType = 'movie'; // Default to movie
@@ -50,7 +52,7 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
 
     // Prepare query for UserLibraryItem
     let query = {
-        addonUuid: userConfig.uuid,
+        addonUuid: uuid,
         removed: false
     };
 
@@ -58,12 +60,13 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
         // Anime might be identified by source (kitsu:, hanime:, etc.) or type
         query.$or = [
             { type: 'anime' },
+            { itemId: { $regex: /^(kitsu|hanime|anilist):/ } },
             { _id: { $regex: /^(kitsu|hanime|anilist):/ } }
         ];
     } else {
         query.type = targetType;
         // Exclude anime from standard series/movies if possible by removing known anime prefixes
-        query._id = { $not: { $regex: /^(kitsu|hanime|anilist):/ } };
+        query.itemId = { $not: { $regex: /^(kitsu|hanime|anilist):/ } };
     }
 
     const pageSize = 50;
@@ -81,14 +84,14 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
 
     // 4. Transform to Stremio meta objects
     const catalog = [];
-    const tmdbClient = getTmdbClient(activeProfileSettings?.tmdbKey);
     
     for (const item of items) {
         // If it's a native Stremio item, it already has poster, name, etc.
         // We can just return it mostly as is, or try to enrich it.
         // For watchlist, Stremio client usually just needs standard meta preview.
+        const effectiveId = item.itemId || item._id;
         let metaItem = {
-            id: item._id,
+            id: effectiveId,
             type: item.type,
             name: item.name || 'Unknown',
             poster: item.poster,
@@ -97,23 +100,6 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
             logo: item.logo,
             year: item.year
         };
-
-        // Attempt basic ERDB badge formatting if it's a standard IMDB item and not anime
-        if (targetType !== 'anime' && item._id.startsWith('tt')) {
-            const isMovie = item.type === 'movie';
-            // We fake a rawTMDB object to pass to formatter to get the badge!
-            // But we don't have TMDB full data. We can just append the badge manually 
-            // if we want, or do a lightweight lookup. 
-            // For now, let's just return the item. If it has a badge, we could generate it 
-            // using the ERDB formatting logic, but we need the badge generator URL.
-            // A simple implementation for watchlist is to just return the item natively first.
-            
-            // To properly add badges, we'd need to parse it through StremioFormatter,
-            // but StremioFormatter expects a `rawTMDB` object.
-            
-            // Actually, we can use the `poster` directly.
-            // Let's rely on Stremio's native fallback if we don't enrich it immediately.
-        }
 
         catalog.push(metaItem);
     }

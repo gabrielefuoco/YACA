@@ -2,10 +2,14 @@ const { ITEMS_PER_PAGE } = require('../config');
 const TasteProfile = require('../models/TasteProfile');
 const ProfileBuilder = require('../profile/ProfileBuilder');
 const tmdb = require('../clients/tmdb');
+const { prioritizeLocalizedImages } = require('../clients/tmdb');
 const { hybridRecommendationsCache } = require('../cache/cacheInstances');
 const { normalizeContentId } = require('../utils/contentId');
 const { rateLimitedMap } = require('../utils/rateLimiter');
 const { getPresets } = require('../data/presets');
+const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
+const RecommendationImpression = require('../models/RecommendationImpression');
+const mongoose = require('mongoose');
 
 // Import from the new hybrid layer
 const { fetchRecentHistory, fetchRecentRatings, fetchTraktRecommendationsRaw, fetchTmdbSimilarCounts, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds } = require('./hybrid/dataFetchers');
@@ -123,7 +127,17 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 
                 const normalizedId = normalizeContentId(tmdbId);
                 const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
-                let item = await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType, { cacheOnly: true });
+                let item = null;
+                try {
+                    const duckMeta = await getDuckDbMetaDetails(normalizedId, tmdbType);
+                    if (duckMeta && duckMeta.rawTMDB) {
+                        item = duckMeta.rawTMDB;
+                    }
+                } catch (_e) {}
+
+                if (!item) {
+                    item = await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType, { cacheOnly: true });
+                }
 
                 if (!item) {
                     if (!tmdbClient) tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
@@ -141,7 +155,6 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 
                 let logoUrl = null;
                 if (item.images && item.images.logos && item.images.logos.length > 0) {
-                    const { prioritizeLocalizedImages } = require('../clients/tmdb');
                     const bestLogoArray = prioritizeLocalizedImages(item.images.logos);
                     const bestLogoObj = bestLogoArray.length > 0 ? bestLogoArray[0] : null;
                     if (bestLogoObj && bestLogoObj.file_path) {
@@ -212,11 +225,13 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
             };
         });
 
-        global.setImmediate(() => {
-            RecommendationImpression.bulkWrite(ops).catch(err => {
-                console.error("[Impression-Tracking] Error during bulkWrite:", err.message);
+        if (process.env.NODE_ENV !== 'test' && mongoose.connection?.readyState === 1) {
+            global.setImmediate(() => {
+                RecommendationImpression.bulkWrite(ops).catch(err => {
+                    console.error("[Impression-Tracking] Error during bulkWrite:", err.message);
+                });
             });
-        });
+        }
     }
 
     return cleanResults;

@@ -88,7 +88,7 @@ export function AutocompleteSearch({
                   placeholder={placeholder}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  className={cn("bg-white/60 border-marrow-light/10 pl-9 text-marrow-deep font-black placeholder:text-marrow-light/40", className)}
+                  className={cn("bg-white/60 border-marrow-light/10 pl-9 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-10 sm:h-9", className)}
                 />
                 {isLoading && <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-marrow-light/50" />}
               </div>
@@ -112,7 +112,7 @@ export function AutocompleteSearch({
                           <Button
                             size="sm"
                             variant={isAdded ? "secondary" : "default"}
-                            className="h-8 text-[10px] font-bold"
+                            className="h-9 px-2 text-xs font-bold touch-manipulation"
                             onClick={() => !isAdded && handleSelect(item)}
                             disabled={isAdded}
                           >
@@ -137,7 +137,7 @@ export function AutocompleteSearch({
                     placeholder={placeholder}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    className={cn("pl-9", className)}
+                    className={cn("pl-9 text-base sm:text-sm h-10 sm:h-9", className)}
                 />
                 {isLoading && (
                     <Loader2 className="absolute right-2.5 top-2.5 h-4 w-4 animate-spin text-marrow-light/50" />

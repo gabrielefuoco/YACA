@@ -57,40 +57,40 @@ export function ProfileManager({
 
         <div className="flex items-center gap-2 sm:gap-3">
           {editingProfile && !isGlobalSelected && (
-            <div className="flex items-center gap-1 sm:gap-1.5 mr-1 sm:mr-2 pr-2 sm:pr-4 border-r border-marrow-light/20">
+            <div className="flex items-center gap-1.5 mr-1 sm:mr-2 pr-2 sm:pr-4 border-r border-marrow-light/20">
               <button 
                 onClick={() => onUpdateProfile?.(editingProfile.id, { settings: { ...editingProfile.settings, kidsMode: !editingProfile.settings?.kidsMode } })}
                 title={editingProfile.settings?.kidsMode ? "Disabilita Modalità Bambini" : "Abilita Modalità Bambini"}
-                className={`flex items-center justify-center size-7 sm:size-8 rounded-full transition-colors border shadow-sm ${
+                className={`flex items-center justify-center size-9 sm:size-8 rounded-full transition-colors border shadow-sm touch-manipulation ${
                   editingProfile.settings?.kidsMode 
                     ? 'bg-blue-500 text-white border-blue-600 hover:bg-blue-600' 
                     : 'bg-white/50 text-marrow-deep hover:bg-white hover:text-blue-500 border-marrow-light/10'
                 }`}
               >
-                <span className="material-symbols-outlined text-[16px] sm:text-[18px]">
+                <span className="material-symbols-outlined text-[18px]">
                   {editingProfile.settings?.kidsMode ? 'child_care' : 'child_friendly'}
                 </span>
               </button>
               <button 
                 onClick={startRename}
                 title="Rinomina profilo selezionato"
-                className="flex items-center justify-center size-7 sm:size-8 rounded-full bg-white/50 text-marrow-deep hover:bg-white hover:text-primary transition-colors border border-marrow-light/10 shadow-sm"
+                className="flex items-center justify-center size-9 sm:size-8 rounded-full bg-white/50 text-marrow-deep hover:bg-white hover:text-primary transition-colors border border-marrow-light/10 shadow-sm touch-manipulation"
               >
-                <span className="material-symbols-outlined text-[16px] sm:text-[18px]">edit</span>
+                <span className="material-symbols-outlined text-[18px]">edit</span>
               </button>
               <button 
                 onClick={() => onRemove?.(editingProfile.id)}
                 title="Elimina profilo selezionato"
-                className="flex items-center justify-center size-7 sm:size-8 rounded-full bg-destructive/5 text-destructive hover:bg-destructive hover:text-white transition-colors border border-destructive/10 shadow-sm"
+                className="flex items-center justify-center size-9 sm:size-8 rounded-full bg-destructive/5 text-destructive hover:bg-destructive hover:text-white transition-colors border border-destructive/10 shadow-sm touch-manipulation"
               >
-                <span className="material-symbols-outlined text-[16px] sm:text-[18px]">delete</span>
+                <span className="material-symbols-outlined text-[18px]">delete</span>
               </button>
             </div>
           )}
 
           <button
             onClick={() => setIsDialogOpen(true)}
-            className="flex items-center gap-1.5 sm:gap-2 cursor-pointer justify-center rounded-lg h-8 sm:h-9 px-3 sm:px-4 bg-primary text-white text-xs sm:text-sm font-bold hover:brightness-110 transition-all shadow-sm shadow-primary/20"
+            className="flex items-center gap-1.5 sm:gap-2 cursor-pointer justify-center rounded-lg h-9 sm:h-9 px-3.5 sm:px-4 bg-primary text-white text-xs sm:text-sm font-bold hover:brightness-110 transition-all shadow-sm shadow-primary/20 min-h-[36px] touch-manipulation"
           >
             <span className="material-symbols-outlined text-xs sm:text-sm">add</span>
             <span className="hidden sm:inline">Nuovo Profilo</span>
@@ -146,7 +146,7 @@ export function ProfileManager({
                       onSetActive(profile.id);
                     }}
                     title="Imposta come Attivo"
-                    className="mt-1 flex items-center justify-center gap-1 w-full max-w-[100px] bg-emerald-500 text-white py-0.5 rounded-full text-[10px] font-bold uppercase hover:bg-emerald-600 transition-colors shadow-sm"
+                    className="mt-1 flex items-center justify-center gap-1 w-full max-w-[100px] bg-emerald-500 text-white py-1 rounded-full text-[10px] font-bold uppercase hover:bg-emerald-600 transition-colors shadow-sm min-h-[28px] sm:min-h-[24px] touch-manipulation"
                   >
                     <span className="material-symbols-outlined text-[12px]">check</span>
                     Attiva
@@ -160,8 +160,8 @@ export function ProfileManager({
 
       {/* Dialog per Creazione Nuovo Profilo */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-background-light border-marrow-light/10 shadow-2xl p-0 overflow-hidden">
-          <div className="p-6">
+        <DialogContent className="w-[92vw] sm:max-w-[600px] bg-background-light border-marrow-light/10 shadow-2xl p-0 overflow-hidden max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl">
+          <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
             <DialogHeader>
               <DialogTitle className="text-xl font-black text-marrow-deep flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">add_circle</span>
@@ -184,9 +184,9 @@ export function ProfileManager({
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="Nome del nuovo profilo..."
                     onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                    className="bg-white border-marrow-light/20 flex-1"
+                    className="bg-white border-marrow-light/20 flex-1 text-base sm:text-sm h-10 sm:h-9"
                   />
-                  <Button onClick={handleAdd} className="bg-primary hover:brightness-110 shrink-0 font-bold">
+                  <Button onClick={handleAdd} className="bg-primary hover:brightness-110 shrink-0 font-bold min-h-[40px] px-4 touch-manipulation">
                     Crea
                   </Button>
                 </div>
@@ -211,7 +211,7 @@ export function ProfileManager({
                           onCreateFromTemplate?.(tpl);
                           setIsDialogOpen(false);
                         }}
-                        className="flex flex-col items-start p-3 rounded-xl border border-marrow-light/10 bg-white hover:border-primary/50 hover:bg-primary/5 transition-all text-left shadow-sm group/tpl"
+                        className="flex flex-col items-start p-3 rounded-xl border border-marrow-light/10 bg-white hover:border-primary/50 hover:bg-primary/5 transition-all text-left shadow-sm group/tpl touch-manipulation min-h-[44px]"
                       >
                         <p className="text-sm font-bold text-marrow-deep group-hover/tpl:text-primary transition-colors mb-1 truncate w-full">
                           {tpl.name}

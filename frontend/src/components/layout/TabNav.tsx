@@ -19,7 +19,7 @@ export function TabNav({ activeTab, onTabChange }: TabNavProps) {
           key={id}
           onClick={() => onTabChange(id)}
           className={cn(
-            'text-[11px] sm:text-sm transition-all duration-300 flex items-center px-2.5 py-1 sm:px-4 sm:py-1.5 font-black uppercase tracking-wider whitespace-nowrap',
+            'text-[11px] sm:text-sm transition-all duration-300 flex items-center justify-center px-3 py-1.5 sm:px-4 sm:py-1.5 font-black uppercase tracking-wider whitespace-nowrap min-h-[36px] sm:min-h-0 touch-manipulation',
             activeTab === id
               ? 'bg-primary text-white rounded-full shadow-lg shadow-primary/30 scale-105'
               : 'text-marrow-light hover:text-primary hover:bg-primary/5 rounded-full'

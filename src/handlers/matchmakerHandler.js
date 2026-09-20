@@ -3,6 +3,7 @@ const { nanoid } = require('nanoid');
 const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
 const { createTmdbClient } = require('../clients/tmdb');
+const duckDbStore = require('../db/duckDbStore');
 const { getMatchmakerInitCards, getMatchmakerNextCards, getFinalRecommendations } = require('../engines/hybrid/MatchmakerGraphEngine');
 
 async function getSessionState(sessionId, res) {
@@ -35,10 +36,9 @@ async function initMatchmakerSession(req, res) {
         // Anime is requested as type 'anime' in UI, but to TMDB it's 'tv' (or 'movie').
         // Our filters.isAnime handles the DuckDB restriction.
         let tmdbType = type;
-        // Se non esiste filters, lo inizializziamo, altrimenti modifichiamo una copia per sicurezza
         let activeFilters = filters ? { ...filters } : {};
         if (type === 'anime') {
-            tmdbType = 'tv';
+            tmdbType = (activeFilters.targetType === 'movie' || activeFilters.mediaType === 'movie') ? 'movie' : 'tv';
             activeFilters.isAnime = true;
         }
 
@@ -74,6 +74,20 @@ async function initMatchmakerSession(req, res) {
     }
 }
 
+function recordSwipes(sessionState, swipes) {
+    if (!swipes || !Array.isArray(swipes)) return;
+    for (const s of swipes) {
+        sessionState.cardHistory.push({
+            id: s.id,
+            action: s.action,
+            _graphNodeId: s._graphNodeId || null
+        });
+        if (s.action === 'like') sessionState.likedIds.push(s.id);
+        else if (s.action === 'dislike') sessionState.dislikedIds.push(s.id);
+        else if (s.action === 'watchlist') sessionState.watchlistIds.push(s.id);
+    }
+}
+
 async function analyzeMatchmakerSession(req, res) {
     const { id: profileId } = req.params;
     const { userId, sessionId, swipes } = req.body;
@@ -84,19 +98,7 @@ async function analyzeMatchmakerSession(req, res) {
         const sessionState = await getSessionState(sessionId, res);
         if (!sessionState) return;
 
-        if (swipes && Array.isArray(swipes)) {
-            swipes.forEach(s => {
-                sessionState.cardHistory.push({
-                    id: s.id,
-                    action: s.action,
-                    _graphNodeId: s._graphNodeId || null
-                });
-                
-                if (s.action === 'like') sessionState.likedIds.push(s.id);
-                if (s.action === 'dislike') sessionState.dislikedIds.push(s.id);
-                if (s.action === 'watchlist') sessionState.watchlistIds.push(s.id);
-            });
-        }
+        recordSwipes(sessionState, swipes);
 
         sessionState.iteration += 1;
 
@@ -138,12 +140,9 @@ async function finishMatchmakerSession(req, res) {
         const sessionState = await getSessionState(sessionId, res);
         if (!sessionState) return;
 
-        (pendingSwipes || []).forEach(s => {
-            if (s.action === 'like') sessionState.likedIds.push(s.id);
-            if (s.action === 'watchlist') sessionState.watchlistIds.push(s.id);
-        });
+        recordSwipes(sessionState, pendingSwipes);
 
-        const winningIds = Array.from(new Set([...sessionState.likedIds, ...sessionState.watchlistIds])).map(i => String(i).replace('tmdb:', ''));
+        const winningIds = Array.from(new Set([...sessionState.likedIds, ...sessionState.watchlistIds])).map(i => String(i).replace(/^[a-zA-Z]+:/, ''));
         let expandedIds = [...winningIds];
         
         const winningNodes = new Set();
@@ -171,10 +170,11 @@ async function finishMatchmakerSession(req, res) {
                 source: 'custom',
                 emoji: '💖',
                 presentation_strategy: 'popularity',
-                queries: expandedIds.map(id => ({
+                queries: [{
                     strategy: 'manual_list',
-                    params: { with_id: id }
-                }))
+                    tmdbIds: expandedIds,
+                    items: expandedIds.map(id => ({ tmdbId: id }))
+                }]
             };
 
             if (account?.addonUuid) {
@@ -216,9 +216,17 @@ async function getMatchmakerTrailer(req, res) {
         }
         
         const tmdbClient = createTmdbClient(tmdbApiKey);
-        const cleanId = String(itemId).replace('tmdb:', '');
+        const cleanId = String(itemId).replace(/^[a-zA-Z]+:/, '');
         const endpointType = type === 'series' ? 'tv' : (type === 'anime' ? 'tv' : 'movie');
-        
+
+        const numericId = Number(cleanId);
+        if (Number.isFinite(numericId) && numericId > 0 && endpointType === 'movie') {
+            const localRows = await duckDbStore.query(`SELECT trailer_key FROM movies WHERE id = ${numericId}`).catch(() => []);
+            if (localRows.length > 0 && localRows[0].trailer_key) {
+                return res.json({ success: true, trailerUrl: `https://www.youtube.com/embed/${localRows[0].trailer_key}?autoplay=1&controls=0&modestbranding=1` });
+            }
+        }
+
         const { data } = await tmdbClient.get(`/${endpointType}/${cleanId}`, {
             params: { append_to_response: 'videos' }
         });

@@ -13,12 +13,16 @@ async function buildCatalogQuery(preset, skip = 0, limit = 50) {
     let similarId = null;
     
     for (const w of rawWhere) {
-        if (typeof w === 'object' && w._fts) {
-            ftsClause = w.query;
-        } else if (typeof w === 'object' && w._similar) {
+        if (typeof w === 'object' && w !== null && (w._fts || w.query)) {
+            const rawClause = typeof w._fts === 'string' ? w._fts : (typeof w.query === 'string' ? w.query : '');
+            const trimmed = rawClause.trim();
+            if (trimmed) {
+                ftsClause = trimmed.replace(/'/g, "''");
+            }
+        } else if (typeof w === 'object' && w !== null && w._similar) {
             similarId = w.tmdbId;
-        } else {
-            normalFilters.push(w);
+        } else if (w && typeof w === 'string' && w.trim()) {
+            normalFilters.push(w.trim());
         }
     }
     
@@ -31,20 +35,24 @@ async function buildCatalogQuery(preset, skip = 0, limit = 50) {
     
     // SIMILAR: legge i consigliati archiviati nativamente nei metadati
     if (similarId) {
-        try {
-            const targetRow = await duckDbStore.query(`SELECT recommendations FROM ${table} WHERE id = ${similarId}`);
-            if (targetRow.length > 0 && targetRow[0].recommendations) {
-                const recIds = JSON.parse(targetRow[0].recommendations);
-                if (Array.isArray(recIds) && recIds.length > 0) {
-                    normalFilters.push(`id IN (${recIds.join(',')})`);
-                } else {
-                    normalFilters.push('1=0'); // Fallback (nessun raccomandato, query fallisce deliberatamente)
+        const cleanSimilarId = Number(String(similarId).replace(/^tmdb:/i, ''));
+        let foundRecs = false;
+        if (Number.isFinite(cleanSimilarId) && cleanSimilarId > 0) {
+            try {
+                const targetRow = await duckDbStore.query(`SELECT recommendations FROM ${table} WHERE id = ${cleanSimilarId}`);
+                if (targetRow.length > 0 && targetRow[0].recommendations) {
+                    const recIds = JSON.parse(targetRow[0].recommendations);
+                    const validRecIds = Array.isArray(recIds) ? recIds.map(Number).filter(n => Number.isFinite(n) && n > 0) : [];
+                    if (validRecIds.length > 0) {
+                        normalFilters.push(`id IN (${validRecIds.join(',')})`);
+                        foundRecs = true;
+                    }
                 }
-            } else {
-                normalFilters.push('1=0');
+            } catch (e) {
+                console.error(`[QueryBuilder] Errore recupero similar per ${cleanSimilarId}:`, e);
             }
-        } catch (e) {
-            console.error(`[QueryBuilder] Errore recupero similar per ${similarId}:`, e);
+        }
+        if (!foundRecs) {
             normalFilters.push('1=0');
         }
     }

@@ -210,7 +210,7 @@ class ProfileBuilder {
     static async syncStremioData(owner, stremioData, context = 'global') {
         if (!owner || !stremioData) return;
 
-        let allItems = [];
+        let allItems;
         if (Array.isArray(stremioData)) {
             allItems = stremioData.map(item => ({ item, source: 'manual' }));
         } else {

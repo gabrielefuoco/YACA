@@ -32,8 +32,8 @@ const profileTemplates = [
     },
     {
         id: 'tpl_nostalgia',
-        name: '📼 Nostalgia (\\'80/\\'90)',
-        description: 'Rivisita i classici degli anni \\'80 e \\'90',
+        name: "📼 Nostalgia ('80/'90)",
+        description: "Rivisita i classici degli anni '80 e '90",
         presets: [
             'preset_80s_movies', 'preset_90s_movies', 'preset_cult_classics',
             'preset_anime_classic',
@@ -52,8 +52,8 @@ const profileTemplates = [
     },
     {
         id: 'tpl_autori',
-        name: '🎬 Cinema d\\'Autore',
-        description: 'Il meglio del cinema d\\'autore internazionale',
+        name: "🎬 Cinema d'Autore",
+        description: "Il meglio del cinema d'autore internazionale",
         presets: [
             'preset_a24', 'preset_romcom', 'preset_action_blockbusters', 'preset_psych_thriller', 'preset_italian_comedy', 'preset_netflix_movies', 'preset_amazon_movies', 'preset_disney_movies', 'preset_hbo_max_movies', 'preset_nolan', 'preset_cyberpunk', 'preset_kubrick', 'preset_villeneuve',
             'preset_ghibli', 'preset_fincher', 'preset_wesanderson', 'preset_lynch',

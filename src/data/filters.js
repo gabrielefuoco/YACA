@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // === HELPER INTERNI ===
-const jsonHas = (col, id) => `"${col}" LIKE '%"id":${id}%'`;
+const jsonHas = (col, id) => `("${col}" LIKE '%"id":${id},%' OR "${col}" LIKE '%"id":${id}}%' OR "${col}" LIKE '%"id": ${id},%' OR "${col}" LIKE '%"id": ${id}}%')`;
 const jsonHasStr = (col, val) => `"${col}" LIKE '%"${val}"%'`;
 
 // === FILTRI CONTENUTO (F) ===
@@ -14,10 +14,14 @@ const F = {
         if (/^\d+$/.test(strVal)) {
             return jsonHas('genres', strVal);
         }
-        return `"genres" LIKE '%"name":"${strVal.replace(/'/g, "''")}"%'`;
+        return `"genres" ILIKE '%"name":"${strVal.replace(/'/g, "''")}"%'`;
     }).join(' OR ')})`,
     allGenres: (...ids) => `(${ids.map(id => jsonHas('genres', id)).join(' AND ')})`,
-    notGenre: (...ids) => `(${ids.map(id => `"genres" NOT LIKE '%"id":${id}%'`).join(' AND ')})`,
+    notGenre: (...ids) => `(${ids.map(val => {
+        const strVal = String(val).trim();
+        if (/^\d+$/.test(strVal)) return `NOT ${jsonHas('genres', strVal)}`;
+        return `"genres" NOT ILIKE '%"name":"${strVal.replace(/'/g, "''")}"%'`;
+    }).join(' AND ')})`,
     
     // --- Keywords ---
     keyword: (...ids) => `(${ids.map(id => jsonHas('keywords', id)).join(' OR ')})`,
@@ -26,10 +30,14 @@ const F = {
         if (/^\d+$/.test(strVal)) {
             return jsonHas('keywords', strVal);
         }
-        return `"keywords" LIKE '%"${strVal.replace(/'/g, "''")}"%'`;
+        return `"keywords" ILIKE '%"${strVal.replace(/'/g, "''")}"%'`;
     }).join(' OR ')})`,
     allKeywords: (...ids) => `(${ids.map(id => jsonHas('keywords', id)).join(' AND ')})`,
-    notKeyword: (...ids) => `(${ids.map(id => `"keywords" NOT LIKE '%"id":${id}%'`).join(' AND ')})`,
+    notKeyword: (...ids) => `(${ids.map(val => {
+        const strVal = String(val).trim();
+        if (/^\d+$/.test(strVal)) return `NOT ${jsonHas('keywords', strVal)}`;
+        return `"keywords" NOT ILIKE '%"${strVal.replace(/'/g, "''")}"%'`;
+    }).join(' AND ')})`,
     
     // --- Persone ---
     director: (id) => jsonHas('directors', id),
@@ -55,10 +63,11 @@ const F = {
     releasedBetween: (from, to) => `"release_date" BETWEEN '${from}' AND '${to}'`,
     airedAfter: (d) => `"first_air_date" >= '${d}'`,
     airedBefore: (d) => `"first_air_date" <= '${d}'`,
-    releasedInYear: (y) => `"release_date" LIKE '${y}%'`,
+    releasedInYear: (y) => `"release_date" BETWEEN '${y}-01-01' AND '${y}-12-31'`,
+    airedInYear: (y) => `"first_air_date" BETWEEN '${y}-01-01' AND '${y}-12-31'`,
     
     // --- Watch Providers ---
-    provider: (id) => `"watch_providers_it" LIKE '%"provider_id":${id}%'`,
+    provider: (id) => `("watch_providers_it" LIKE '%"provider_id":${id},%' OR "watch_providers_it" LIKE '%"provider_id":${id}}%' OR "watch_providers_it" LIKE '%"provider_id": ${id},%' OR "watch_providers_it" LIKE '%"provider_id": ${id}}%')`,
     
     // --- Identity / Speciali ---
     anime: '"id" IN (SELECT "tmdb_id" FROM anime_mappings)',
@@ -77,7 +86,7 @@ const F = {
 // === ORDINAMENTI (bidirezionali) ===
 const SortExpr = {
     popular: '"popularity"',
-    score: '"vote_average" DESC, "vote_count"',
+    score: '"vote_average" DESC, "vote_count" DESC',
     bayesian: '("vote_average" * LOG10("vote_count"))',
     release: '"release_date"',
     airDate: '"first_air_date"',

@@ -21,11 +21,11 @@ class HierarchicalGraph {
                 console.log('[HierarchicalGraph] Grafo gerarchico caricato in RAM con successo.');
             } else {
                 console.warn('[HierarchicalGraph] File hierarchical_graph.json non trovato. Grafo non disponibile.');
-                this.data = { kw_to_L1: {}, L1: {}, L2: {}, L3: {} };
+                this.data = { kw_to_L1: {}, L1: {}, L2: {}, L3: {}, L4: {}, L5: {} };
             }
         } catch (err) {
             console.error('[HierarchicalGraph] Errore nel caricamento del grafo:', err);
-            this.data = { kw_to_L1: {}, L1: {}, L2: {}, L3: {} };
+            this.data = { kw_to_L1: {}, L1: {}, L2: {}, L3: {}, L4: {}, L5: {} };
         }
     }
 
@@ -145,6 +145,68 @@ class HierarchicalGraph {
         }
 
         return { ...vector };
+    }
+
+    /**
+     * Risolve le keyword TMDB associate ai nodi per qualsiasi livello (L1-L5).
+     * @param {Array<string>} nodeIds Array di identificatori di nodi (es. ['c_1'], ['t_5'])
+     * @param {string} level Livello del grafo ('L1', 'L2', 'L3', 'L4', 'L5')
+     * @returns {Map<string, Array<string>>} Mappa nodeId -> array di stringhe keyword
+     */
+    getKeywordsForNodes(nodeIds, level) {
+        if (!this.isLoaded || !this.data || !Array.isArray(nodeIds)) return new Map();
+        const nodeKeywords = new Map();
+
+        for (const nodeId of nodeIds) {
+            const kwStrs = new Set();
+            let l1s = [];
+
+            if (level === 'L1') {
+                l1s = [nodeId];
+            } else if (level === 'L2') {
+                l1s = this.data.L2?.[nodeId]?.children_L1 || [];
+            } else if (level === 'L3') {
+                const l2s = this.data.L3?.[nodeId]?.children_L2 || [];
+                for (const l2 of l2s) {
+                    const ch = this.data.L2?.[l2]?.children_L1;
+                    if (ch) l1s.push(...ch);
+                }
+            } else if (level === 'L4') {
+                const l3s = this.data.L4?.[nodeId]?.children_L3 || [];
+                for (const l3 of l3s) {
+                    const l2s = this.data.L3?.[l3]?.children_L2 || [];
+                    for (const l2 of l2s) {
+                        const ch = this.data.L2?.[l2]?.children_L1;
+                        if (ch) l1s.push(...ch);
+                    }
+                }
+            } else if (level === 'L5') {
+                const l4s = this.data.L5?.[nodeId]?.children_L4 || [];
+                for (const l4 of l4s) {
+                    const l3s = this.data.L4?.[l4]?.children_L3 || [];
+                    for (const l3 of l3s) {
+                        const l2s = this.data.L3?.[l3]?.children_L2 || [];
+                        for (const l2 of l2s) {
+                            const ch = this.data.L2?.[l2]?.children_L1;
+                            if (ch) l1s.push(...ch);
+                        }
+                    }
+                }
+            }
+
+            for (const l1 of l1s) {
+                const l1_node = this.data.L1?.[l1];
+                if (l1_node?.keywords) {
+                    l1_node.keywords.forEach(k => kwStrs.add(k));
+                }
+            }
+
+            let kwArray = Array.from(kwStrs);
+            if (kwArray.length > 30) kwArray = kwArray.sort(() => 0.5 - Math.random()).slice(0, 30);
+            nodeKeywords.set(nodeId, kwArray);
+        }
+
+        return nodeKeywords;
     }
 }
 

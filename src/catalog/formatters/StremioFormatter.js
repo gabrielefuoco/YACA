@@ -138,7 +138,7 @@ function sanitizeCatalogMeta(item, options = {}) {
     const activeProfile = userConfig?.profiles?.find(p => p.id === userConfig.activeProfileId);
     const erdbConfig = activeProfile?.settings?.erdbConfig || process.env.ERDB_CONFIG;
 
-    let sourceImage = item.poster;
+    let sourceImage;
     let finalPosterShape = item.posterShape || 'poster';
 
     let tlBadge = null;
@@ -324,11 +324,8 @@ function sanitizeCatalogMeta(item, options = {}) {
         baseItem._yacaMatch = item._yacaMatch;
     }
 
-    if (item.trailers) {
-        baseItem.trailers = item.trailers;
-    }
-
     if (options.isMetaDetail) {
+        if (item.trailers) baseItem.trailers = item.trailers;
         if (videos) baseItem.videos = videos;
         if (item.behaviorHints) baseItem.behaviorHints = item.behaviorHints;
         if (item.links) baseItem.links = item.links;

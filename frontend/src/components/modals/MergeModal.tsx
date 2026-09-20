@@ -88,9 +88,9 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-2xl bg-background-light border-marrow-light/30 shadow-2xl p-0 overflow-hidden max-h-[95vh] flex flex-col">
+      <DialogContent className="w-[95vw] sm:max-w-2xl bg-background-light border-marrow-light/30 shadow-2xl p-0 overflow-hidden max-h-[90dvh] sm:max-h-[95dvh] flex flex-col rounded-2xl sm:rounded-3xl">
         {/* Modern Header */}
-        <DialogHeader className="p-4 sm:p-6 md:p-8 bg-white/40 border-b border-marrow-light/10">
+        <DialogHeader className="p-4 sm:p-6 md:p-8 bg-white/40 border-b border-marrow-light/10 shrink-0">
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="p-2 sm:p-3 bg-primary rounded-xl sm:rounded-2xl text-white shadow-lg shadow-primary/20">
               <Wand2 className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -139,18 +139,18 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 onClick={() => setStrategy('mixed')}
-                className={`flex flex-col items-start p-3 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all relative overflow-hidden group ${strategy === 'mixed'
+                className={`flex flex-col items-start p-3 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all relative overflow-hidden group touch-manipulation min-h-[44px] ${strategy === 'mixed'
                   ? 'border-primary bg-primary/5 shadow-md'
                   : 'border-marrow-light/10 bg-white/60 text-marrow-light hover:border-primary/40 hover:bg-white/90'
                   }`}
               >
-                <div className={`mb-3 p-2 rounded-xl transition-colors ${strategy === 'mixed' ? 'bg-primary text-white' : 'bg-marrow-light/10 text-marrow-light'}`}>
+                <div className={`mb-2 sm:mb-3 p-2 rounded-xl transition-colors ${strategy === 'mixed' ? 'bg-primary text-white' : 'bg-marrow-light/10 text-marrow-light'}`}>
                   <RotateCcw className="h-5 w-5" />
                 </div>
                 <span className={`text-sm font-black uppercase tracking-tight ${strategy === 'mixed' ? 'text-primary' : 'text-marrow-deep'}`}>Misto</span>
-                <span className="text-[12px] font-medium opacity-80 leading-snug mt-1.5 text-left">Alterna i titoli delle due liste (1 a 1)</span>
+                <span className="text-[11px] sm:text-[12px] font-medium opacity-80 leading-snug mt-1 sm:mt-1.5 text-left">Alterna i titoli delle due liste (1 a 1)</span>
                 {strategy === 'mixed' && (
-                  <div className="absolute top-4 right-4 bg-primary rounded-full p-1 shadow-sm">
+                  <div className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-primary rounded-full p-1 shadow-sm">
                     <Check className="h-3 w-3 text-white" strokeWidth={5} />
                   </div>
                 )}
@@ -158,18 +158,18 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
 
               <button
                 onClick={() => setStrategy('popularity')}
-                className={`flex flex-col items-start p-5 rounded-2xl border-2 transition-all relative overflow-hidden group ${strategy === 'popularity'
+                className={`flex flex-col items-start p-3 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all relative overflow-hidden group touch-manipulation min-h-[44px] ${strategy === 'popularity'
                   ? 'border-primary bg-primary/5 shadow-md'
                   : 'border-marrow-light/10 bg-white/60 text-marrow-light hover:border-primary/40 hover:bg-white/90'
                   }`}
               >
-                <div className={`mb-3 p-2 rounded-xl transition-colors ${strategy === 'popularity' ? 'bg-primary text-white' : 'bg-marrow-light/10 text-marrow-light'}`}>
+                <div className={`mb-2 sm:mb-3 p-2 rounded-xl transition-colors ${strategy === 'popularity' ? 'bg-primary text-white' : 'bg-marrow-light/10 text-marrow-light'}`}>
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <span className={`text-sm font-black uppercase tracking-tight ${strategy === 'popularity' ? 'text-primary' : 'text-marrow-deep'}`}>Popolarità</span>
-                <span className="text-[12px] font-medium opacity-80 leading-snug mt-1.5 text-left">Ordina per voto e popolarità globale</span>
+                <span className="text-[11px] sm:text-[12px] font-medium opacity-80 leading-snug mt-1 sm:mt-1.5 text-left">Ordina per voto e popolarità globale</span>
                 {strategy === 'popularity' && (
-                  <div className="absolute top-4 right-4 bg-primary rounded-full p-1 shadow-sm">
+                  <div className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-primary rounded-full p-1 shadow-sm">
                     <Check className="h-3 w-3 text-white" strokeWidth={5} />
                   </div>
                 )}
@@ -187,7 +187,7 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
               <button
                 onClick={handleAiNaming}
                 disabled={namingLoading}
-                className="flex items-center gap-2 text-[11px] text-primary font-black tracking-wider hover:brightness-110 transition-all disabled:opacity-50 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10"
+                className="flex items-center gap-2 text-[11px] text-primary font-black tracking-wider hover:brightness-110 transition-all disabled:opacity-50 px-3.5 py-2 rounded-full bg-primary/5 border border-primary/10 min-h-[40px] touch-manipulation"
               >
                 {namingLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                 GENERA CON AI
@@ -199,7 +199,7 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={`${catalogA.name} + ${catalogB.name}`}
-                className="bg-white/80 border-2 border-marrow-light/10 focus:border-primary focus:ring-4 focus:ring-primary/5 h-14 px-5 text-base rounded-2xl font-bold text-marrow-deep placeholder:text-marrow-light/30 shadow-sm"
+                className="bg-white/80 border-2 border-marrow-light/10 focus:border-primary focus:ring-4 focus:ring-primary/5 h-12 sm:h-14 px-4 sm:px-5 text-base sm:text-base rounded-2xl font-bold text-marrow-deep placeholder:text-marrow-light/30 shadow-sm"
               />
             </div>
           </div>
@@ -228,7 +228,12 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
                     <div key={item.id} className="flex-shrink-0 group/poster">
                       <div className="relative h-44 w-28 rounded-2xl overflow-hidden border-2 border-marrow-light/10 group-hover/poster:border-primary transition-all shadow-md group-hover/poster:shadow-lg group-hover/poster:-translate-y-1">
                         {item.poster ? (
-                          <Image src={item.poster} alt={item.title || 'Poster'} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover/poster:scale-110" />
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={item.poster}
+                            alt={item.title || 'Poster'}
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
                           <div className="h-full w-full bg-marrow-light/5 flex items-center justify-center text-[10px] text-marrow-light p-3 text-center font-bold">
                             {item.title}
@@ -249,17 +254,17 @@ export function MergeModal({ open, onClose, catalogA, catalogB, onConfirm }: Mer
         </div>
 
         {/* High-Contrast Footer */}
-        <DialogFooter className="p-6 sm:p-8 bg-white/60 border-t border-marrow-light/10 flex flex-col-reverse sm:flex-row gap-4">
+        <DialogFooter className="p-4 sm:p-6 bg-white/80 backdrop-blur-md border-t border-marrow-light/10 shrink-0 flex flex-col-reverse sm:flex-row gap-2 sm:gap-4">
           <Button 
             variant="ghost" 
             onClick={onClose} 
-            className="h-12 px-6 hover:bg-primary/5 text-marrow-light font-black uppercase tracking-[0.15em] text-xs transition-all"
+            className="h-11 sm:h-12 min-h-[44px] px-6 hover:bg-primary/5 text-marrow-light font-black uppercase tracking-[0.15em] text-xs transition-all touch-manipulation"
           >
             Cancella
           </Button>
           <Button
             onClick={handleConfirm}
-            className="bg-primary hover:bg-marrow-deep text-white px-10 h-12 font-black rounded-2xl shadow-xl shadow-primary/20 uppercase tracking-[0.15em] text-xs transition-all hover:scale-[1.03] active:scale-95 flex items-center gap-2"
+            className="bg-primary hover:bg-marrow-deep text-white px-8 sm:px-10 h-11 sm:h-12 min-h-[44px] font-black rounded-2xl shadow-xl shadow-primary/20 uppercase tracking-[0.15em] text-xs transition-all hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-2 touch-manipulation"
           >
             <span>Genera Lista</span>
             <Check className="h-4 w-4" />

@@ -32,7 +32,7 @@ export function RenameProfileDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] glass-panel border-marrow-light/10">
+      <DialogContent className="w-[92vw] sm:max-w-[425px] glass-panel border-marrow-light/10 max-h-[90dvh] flex flex-col rounded-2xl p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <span className="material-symbols-outlined text-primary">edit</span>
@@ -48,17 +48,17 @@ export function RenameProfileDialog({
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="bg-marrow-light/5 border-marrow-light/10 focus:border-primary/50"
+              className="bg-marrow-light/5 border-marrow-light/10 focus:border-primary/50 text-base sm:text-sm h-10 sm:h-9"
               onKeyDown={(e) => e.key === "Enter" && handleSave()}
               autoFocus
             />
           </div>
         </div>
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="gap-2 sm:gap-0 flex flex-col-reverse sm:flex-row">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} className="min-h-[44px] touch-manipulation">
             Annulla
           </Button>
-          <Button onClick={handleSave} className="bg-primary hover:brightness-110">
+          <Button onClick={handleSave} className="bg-primary hover:brightness-110 min-h-[44px] touch-manipulation">
             Salva Modifiche
           </Button>
         </DialogFooter>

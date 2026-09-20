@@ -14,9 +14,12 @@ class LocalStorageClient {
         this._ensureDirectory();
 
         // Avvia il Garbage Collector in background (ritardato di 5 minuti per non pesare sul bootup)
-        setTimeout(() => this._startGarbageCollector(), 5 * 60 * 1000);
+        const initGcTimer = setTimeout(() => this._startGarbageCollector(), 5 * 60 * 1000);
+        if (initGcTimer?.unref) initGcTimer.unref();
+
         // Eseguilo periodicamente ogni 24 ore
-        setInterval(() => this._startGarbageCollector(), 24 * 60 * 60 * 1000);
+        const periodicGcTimer = setInterval(() => this._startGarbageCollector(), 24 * 60 * 60 * 1000);
+        if (periodicGcTimer?.unref) periodicGcTimer.unref();
     }
 
     async _startGarbageCollector() {

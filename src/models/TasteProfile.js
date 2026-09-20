@@ -53,6 +53,6 @@ const tasteProfileSchema = new mongoose.Schema({
 // Indice unico composto per utente + contesto
 tasteProfileSchema.index({ owner: 1, context: 1 }, { unique: true });
 
-const TasteProfile = mongoose.model('TasteProfile', tasteProfileSchema);
+const TasteProfile = mongoose.models.TasteProfile || mongoose.model('TasteProfile', tasteProfileSchema);
 
 module.exports = TasteProfile;

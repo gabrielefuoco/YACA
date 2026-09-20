@@ -25,4 +25,4 @@ tmdbScoringDataSchema.index({ tmdbId: 1, type: 1 }, { unique: true });
 tmdbScoringDataSchema.index({ imdbId: 1 });
 tmdbScoringDataSchema.index({ needsEnrichment: 1, lockedUntil: 1 });
 
-module.exports = mongoose.model('TmdbScoringData', tmdbScoringDataSchema);
+module.exports = mongoose.models.TmdbScoringData || mongoose.model('TmdbScoringData', tmdbScoringDataSchema);

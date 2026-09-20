@@ -68,7 +68,7 @@ function getProfileDnaFilters(userConfig, profileId) {
 }
 
 function resolveHostUrl(req) {
-    let host = '';
+    let host;
 
     // 1. Explicitly configured URL (Highest priority)
     const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;

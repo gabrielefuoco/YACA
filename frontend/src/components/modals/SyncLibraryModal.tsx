@@ -22,7 +22,7 @@ export function SyncLibraryModal({
   
   return (
     <Dialog open={open} onOpenChange={isProcessing ? undefined : onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] glass-panel border-marrow-light/10">
+      <DialogContent className="w-[92vw] sm:max-w-[425px] glass-panel border-marrow-light/10 max-h-[90dvh] flex flex-col p-4 sm:p-6 rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2 text-destructive">
             <AlertTriangle className="h-5 w-5" />
@@ -42,13 +42,13 @@ export function SyncLibraryModal({
           </div>
         )}
 
-        <DialogFooter className="gap-2 sm:gap-0 mt-4">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isProcessing}>
+        <DialogFooter className="gap-2 sm:gap-0 mt-4 flex flex-col-reverse sm:flex-row">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isProcessing} className="min-h-[44px] touch-manipulation">
             Annulla
           </Button>
           <Button 
             onClick={onConfirm} 
-            className="bg-destructive hover:bg-destructive/90 text-white"
+            className="bg-destructive hover:bg-destructive/90 text-white min-h-[44px] touch-manipulation"
             disabled={isProcessing}
           >
             {isProcessing ? (

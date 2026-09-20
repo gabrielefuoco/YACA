@@ -1,4 +1,8 @@
 require('dotenv').config();
+
+// Fix DuckDB BIGINT JSON serialization in Express
+BigInt.prototype.toJSON = function() { return Number(this); };
+
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -66,6 +70,16 @@ app.get(['/fiamma_yaca.png', '/logo_yaca.png'], (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.setHeader('Vary', 'Origin');
     res.sendFile(filePath);
+});
+
+app.get('/assets/profile_updated.mp4', (req, res) => {
+    const filePath = path.join(__dirname, 'public', 'assets', 'profile_updated.mp4');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'video/mp4');
+    if (fs.existsSync(filePath)) {
+        return res.sendFile(filePath);
+    }
+    return res.status(200).end();
 });
 
  
@@ -169,37 +183,45 @@ app.get(/^(?!\/api|\/manifest\.json|.*\.(png|jpg|jpeg|gif|svg|ico|js|css|json|mp
 app.use(errorMiddleware);
 
 // Avvia il server
-const server = app.listen(PORT, () => {
-    console.log(`🚀 YACA Server in esecuzione su http://localhost:${PORT}`);
-    if (!process.env.HOST_URL && !process.env.RENDER_EXTERNAL_URL) {
-        console.warn('⚠️ HOST_URL non configurato nel file .env. Verranno usati gli header proxy (X-Forwarded-Host/X-Forwarded-Proto) quando disponibili.');
-    }
+let server;
+if (require.main === module) {
+    server = app.listen(PORT, () => {
+        console.log(`🚀 YACA Server in esecuzione su http://localhost:${PORT}`);
+        if (!process.env.HOST_URL && !process.env.RENDER_EXTERNAL_URL) {
+            console.warn('⚠️ HOST_URL non configurato nel file .env. Verranno usati gli header proxy (X-Forwarded-Host/X-Forwarded-Proto) quando disponibili.');
+        }
 
-    // Avvia il Demone TMDB Dump
-    const { runTmdbDumpDaemon } = require('./src/utils/tmdbDumpDaemon');
-    runTmdbDumpDaemon().catch(err => console.error('[TmdbDump Daemon] Startup Error:', err.message));
-});
+        // Avvia il Demone TMDB Dump
+        const { runTmdbDumpDaemon } = require('./src/utils/tmdbDumpDaemon');
+        runTmdbDumpDaemon().catch(err => console.error('[TmdbDump Daemon] Startup Error:', err.message));
+    });
+}
 
 // L'auto-deploy del Cloudflare Worker è stato spostato nelle GitHub Actions (.github/workflows/deploy.yml)
 
 // Graceful shutdown
 const shutdown = (signal) => {
     console.log(`\n${signal} ricevuto. Spegnimento in corso...`);
-    server.close(async () => {
-        console.log('Server chiuso correttamente.');
-        try {
-            const mongoose = require('mongoose');
-            await mongoose.disconnect();
-            console.log('MongoDB disconnesso.');
-        } catch (err) {
-            console.error('Errore durante la disconnessione:', err.message);
-        }
+    if (server) {
+        server.close(async () => {
+            console.log('Server chiuso correttamente.');
+            try {
+                const mongoose = require('mongoose');
+                await mongoose.disconnect();
+                console.log('MongoDB disconnesso.');
+            } catch (err) {
+                console.error('Errore durante la disconnessione:', err.message);
+            }
+            process.exit(0);
+        });
+        const shutdownTimer = setTimeout(() => {
+            console.error('Spegnimento forzato dopo timeout.');
+            process.exit(1);
+        }, 10000);
+        if (shutdownTimer?.unref) shutdownTimer.unref();
+    } else {
         process.exit(0);
-    });
-    setTimeout(() => {
-        console.error('Spegnimento forzato dopo timeout.');
-        process.exit(1);
-    }, 10000);
+    }
 };
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
@@ -212,3 +234,5 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception:', err);
 });
+
+module.exports = app;

@@ -281,6 +281,20 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
             });
         }
 
+        // Add Custom Catalogs (e.g. Matchmaker, custom lists)
+        if (userConfig.customCatalogs && Array.isArray(userConfig.customCatalogs)) {
+            userConfig.customCatalogs.forEach(c => {
+                if (c.isActive !== false) {
+                    catalogs.push({
+                        id: c.id,
+                        type: c.type === 'series' ? 'series' : (c.type === 'anime' ? 'anime' : 'movie'),
+                        name: c.name,
+                        extra: presetExtra
+                    });
+                }
+            });
+        }
+
         const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
         const manifest = {
             id: 'org.stremio.yaca.catalog',
@@ -291,7 +305,7 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
             resources: [
                 'catalog',
                 'meta',
-                { name: 'stream', types: ['movie', 'series', 'other'], idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'yaca-profile-'] }
+                { name: 'stream', types: ['movie', 'series', 'anime', 'other'], idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'yaca-profile-'] }
             ],
             types: ['movie', 'series', 'anime', 'other'],
             catalogs: catalogs,
@@ -451,7 +465,7 @@ router.get('/:userHandle/configure', (_req, res) => {
 });
 
 // Switch Profile
-router.get('/users/:userId/switch-profile/:profileId', async (req, res) => {
+router.get(['/users/:userId/switch-profile/:profileId', '/api/users/:userId/switch-profile/:profileId'], async (req, res) => {
     const { userId, profileId } = req.params;
 
     try {
@@ -536,7 +550,7 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
         const badgeHeight = 50; // +15% from 44
         const rx = Math.round(badgeHeight / 2);
 
-        let svgContent = '';
+        let svgContent;
         if (textToSVG) {
             const metrics = textToSVG.getMetrics(text, { fontSize });
             const textWidth = metrics.width;

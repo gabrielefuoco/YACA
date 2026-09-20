@@ -1,8 +1,4 @@
-const TmdbScoringData = require('../../models/TmdbScoringData');
-const ProfileScorer = require('../../profile/ProfileScorer');
-const tmdb = require('../../clients/tmdb');
 const { getProfileDnaFilters } = require('../../utils/helpers');
-const { rateLimitedMap } = require('../../utils/rateLimiter');
 
 function extractVectorByPrefix(vFinal, prefix) {
     if (!vFinal || typeof vFinal !== 'object') return {};

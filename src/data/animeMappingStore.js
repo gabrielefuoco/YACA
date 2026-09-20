@@ -29,6 +29,9 @@ class AnimeMappingStore {
         
         // Avvia il polling in background ogni 12 ore
         this.syncInterval = setInterval(() => this.sync(), SYNC_INTERVAL_MS);
+        if (this.syncInterval?.unref) {
+            this.syncInterval.unref();
+        }
         this.isReady = true;
     }
 

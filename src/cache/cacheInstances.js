@@ -9,13 +9,13 @@ const ONE_HOUR_MS = 1000 * 60 * 60;
 const ONE_MINUTE_MS = 1000 * 60;
 
 const aiPromptCache = new CacheManager('ai_prompt_cache', {
-    ramMax: 100,
+    ramMax: 50,
     ramTtlMs: ONE_MINUTE_MS,
     redisTtlMs: ONE_MINUTE_MS
 });
 
 const aiDiscoveryCache = new CacheManager('ai_discovery_queries', {
-    ramMax: 100,
+    ramMax: 50,
     ramTtlMs: ONE_MINUTE_MS,
     redisTtlMs: ONE_MINUTE_MS
 });
@@ -28,21 +28,21 @@ const hybridRecommendationsCache = new CacheManager('recommendation_cache', {
 });
 
 const catalogFallbackCache = new CacheManager('catalog_fallback', {
-    ramMax: 500,
+    ramMax: 100,
     ramTtlMs: TEN_MINUTES_MS,
     redisTtlMs: 14 * ONE_DAY_MS,
     swrMs: ONE_HOUR_MS
 });
 
 const catalogRequestCache = new CacheManager('tmdb_catalog', {
-    ramMax: 500,
+    ramMax: 150,
     ramTtlMs: TEN_MINUTES_MS,
     redisTtlMs: 14 * ONE_DAY_MS,
     swrMs: 12 * ONE_HOUR_MS
 });
 
 const simulcastDatesCache = new CacheManager('simulcast_dates', {
-    ramMax: 300,
+    ramMax: 100,
     ramTtlMs: ONE_HOUR_MS * 12,
     redisTtlMs: ONE_DAY_MS * 7,
     swrMs: ONE_HOUR_MS * 6

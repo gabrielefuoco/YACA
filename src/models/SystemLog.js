@@ -28,6 +28,6 @@ const systemLogSchema = new mongoose.Schema({
     timestamps: true
 });
 
-const SystemLog = mongoose.model('SystemLog', systemLogSchema);
+const SystemLog = mongoose.models.SystemLog || mongoose.model('SystemLog', systemLogSchema);
 
 module.exports = SystemLog;

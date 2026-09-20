@@ -51,13 +51,13 @@ export default function AdminPage() {
                                 value={passwordInput}
                                 onChange={(e) => setPasswordInput(e.target.value)}
                                 placeholder="Master Password"
-                                className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500/50 transition-colors"
+                                className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500/50 transition-colors text-base sm:text-sm"
                                 autoFocus
                             />
                             <button
                                 type="submit"
                                 disabled={!passwordInput.trim()}
-                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-gray-900 font-bold transition-all disabled:opacity-50"
+                                className="w-full flex items-center justify-center gap-2 py-3 min-h-[44px] rounded-xl bg-red-500 hover:bg-red-600 text-gray-900 font-bold transition-all disabled:opacity-50 touch-manipulation"
                             >
                                 Sblocca
                                 <ArrowRight className="w-4 h-4" />

@@ -10,6 +10,8 @@ const { routeCatalogRequest } = require('../catalog/CatalogRouter');
 const { filterWatchedItems } = require('../catalog/processors/FilterWatched');
 const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
 const { formatStremioCatalog, sanitizeCatalogMeta, findLatestAiredEpisode } = require('../catalog/formatters/StremioFormatter');
+const StreamBadge = require('../db/models/StreamBadge');
+const PendingScan = require('../db/models/PendingScan');
 function getLatestEpisodeInfo(item) {
     if (!item) return null;
     
@@ -48,11 +50,9 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
 
     if (itemIds.length > 0) {
         try {
-            const StreamBadge = require('../db/models/StreamBadge');
             const allBadges = await StreamBadge.find({ baseId: { $in: itemIds } }).lean();
             
             const existingStremioIds = new Set(allBadges.map(b => b.stremioId));
-            const PendingScan = require('../db/models/PendingScan');
             const queuePromises = [];
             
             metas.forEach(item => {
@@ -110,7 +110,6 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                 Promise.all(queuePromises).catch(() => {});
             }
 
-            const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
             const activeProfileSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
             const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
             const sanitizeOptions = {
@@ -261,6 +260,9 @@ async function catalogHandler(args, userConfig, hostUrl) {
             if (activeProfile && activeProfile.catalogs) {
                 catalogMeta = activeProfile.catalogs.find(c => c.id === id);
             }
+            if (!catalogMeta && userConfig.customCatalogs) {
+                catalogMeta = userConfig.customCatalogs.find(c => c.id === id);
+            }
         }
     }
 
@@ -318,15 +320,17 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 await hydrateEpisodeBadgesFromCache(finalResults, tmdbApiKey);
             }
 
-            // DEDUPLICATION: TMDBProvider might return the same anime from different pages
-            const uniqueMetas = new Map();
-            for (const meta of finalResults) {
-                if (!meta || !meta.id) continue;
-                if (!uniqueMetas.has(meta.id)) {
-                    uniqueMetas.set(meta.id, meta);
-                }
+            // Deduplicate items by ID
+            if (Array.isArray(finalResults) && finalResults.length > 0) {
+                const seenIds = new Set();
+                finalResults = finalResults.filter(item => {
+                    const itemId = String(item?.id || item?.stremioId || '');
+                    if (!itemId) return false;
+                    if (seenIds.has(itemId)) return false;
+                    seenIds.add(itemId);
+                    return true;
+                });
             }
-            finalResults = Array.from(uniqueMetas.values());
 
             // 3.8 SIMULCAST SORTING (se applicabile)
             // Se il catalogo ha query basate su date di airing (es. Simulcast), ordiniamo per episodio più recente
@@ -369,23 +373,6 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     if (a._latestAirDate) return -1;
                     if (b._latestAirDate) return 1;
                     return 0; // maintain original relative order
-                });
-            }
-
-
-
-            // console.log('PRE DEDUPLICATION RESULTS:', finalResults?.length);
-            // De-duplicate finalResults by ID
-            if (Array.isArray(finalResults) && finalResults.length > 0) {
-                const seenIds = new Set();
-                finalResults = finalResults.filter(item => {
-                    const itemId = String(item.id || item.stremioId || '');
-                    if (!itemId) return true;
-                    if (seenIds.has(itemId)) {
-                        return false;
-                    }
-                    seenIds.add(itemId);
-                    return true;
                 });
             }
 

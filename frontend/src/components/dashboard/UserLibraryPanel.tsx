@@ -184,7 +184,7 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
             variant="outline"
             size="sm"
             onClick={() => setIsSyncModalOpen(true)}
-            className="text-xs font-bold text-white border-primary/20 bg-primary hover:bg-primary/90 shadow-sm shadow-primary/20"
+            className="text-xs font-bold text-white border-primary/20 bg-primary hover:bg-primary/90 shadow-sm shadow-primary/20 min-h-[38px] touch-manipulation"
           >
             <RefreshCw className="h-3.5 w-3.5 mr-1" /> 
             Converti in YACA
@@ -193,7 +193,7 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
             variant="outline"
             size="sm"
             onClick={() => setSortMode(s => s === 'date_desc' ? 'name_asc' : s === 'name_asc' ? 'date_asc' : 'date_desc')}
-            className="text-xs font-bold text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white"
+            className="text-xs font-bold text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white min-h-[38px] touch-manipulation"
           >
             <ArrowUpDown className="h-4 w-4 mr-1" />
             Ordina: {sortMode === 'date_desc' ? 'Più Recenti' : sortMode === 'name_asc' ? 'A-Z' : 'Meno Recenti'}
@@ -205,7 +205,7 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
               setIsSelectionMode(!isSelectionMode);
               if (isSelectionMode) setSelectedIds(new Set());
             }}
-            className={`text-xs font-bold ${isSelectionMode ? '' : 'text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white'}`}
+            className={`text-xs font-bold min-h-[38px] touch-manipulation ${isSelectionMode ? '' : 'text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white'}`}
           >
             {isSelectionMode ? 'Annulla Selezione' : 'Seleziona Elementi'}
           </Button>
@@ -287,19 +287,29 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
                     )}
                   </div>
                 ) : (
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
-                    <div className="text-center w-full">
-                      <p className="text-white font-bold text-[10px] leading-tight mb-3 line-clamp-3 px-1">{item.name}</p>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-7 px-3 text-[10px] font-bold"
-                        onClick={(e) => handleRemove(item._id, e)}
-                      >
-                        <Trash2 className="h-3 w-3 mr-1" /> Rimuovi
-                      </Button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => handleRemove(item._id, e)}
+                      aria-label={`Rimuovi ${item.name}`}
+                      className="sm:hidden absolute top-1.5 right-1.5 z-10 size-7 rounded-full bg-black/70 text-white/90 active:bg-destructive active:text-white flex items-center justify-center shadow-md touch-manipulation"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                    <div className="hidden sm:flex absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center p-2">
+                      <div className="text-center w-full">
+                        <p className="text-white font-bold text-[10px] leading-tight mb-3 line-clamp-3 px-1">{item.name}</p>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-7 px-3 text-[10px] font-bold touch-manipulation"
+                          onClick={(e) => handleRemove(item._id, e)}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" /> Rimuovi
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             );

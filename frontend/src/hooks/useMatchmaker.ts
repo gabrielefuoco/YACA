@@ -12,6 +12,8 @@ export type MatchmakerCard = {
     is_question?: boolean;
     question_text?: string;
     question_options?: { label: string; genre_ids: number[]; is_free_text?: boolean }[];
+    _graphNodeId?: string;
+    _graphLevel?: string;
 };
 
 export type SwipeAction = 'like' | 'dislike' | 'watchlist' | 'answered' | 'steer';
@@ -23,6 +25,8 @@ export type SwipeItem = {
     genre_ids: number[];
     question_text?: string;
     discarded_options?: string[];
+    _graphNodeId?: string | null;
+    _graphLevel?: string | null;
 };
 
 export type MatchmakerPhase = 'choosing' | 'funnel' | 'playing' | 'results';
@@ -90,17 +94,23 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
         }
     }, [userId, profileId]);
 
-    const initMatchmaker = useCallback(async (type: 'movie' | 'series' | 'anime', startingL3NodeId: string, filters: any = {}) => {
+    const initMatchmaker = useCallback(async (
+        type: 'movie' | 'series' | 'anime' = 'movie', 
+        genres: string[] | string = [], 
+        moods: string[] = [], 
+        filters: any = {}
+    ) => {
         if (!userId || !profileId) return;
         setIsLoading(true);
         setPhase('playing');
         setMatchedCards([]);
         isAnalyzingRef.current = false;
         try {
+            const genresArray = Array.isArray(genres) ? genres : (genres ? [genres] : []);
             const res = await fetch(`/api/profiles/${profileId}/matchmaker/init`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, type, startingL3NodeId, filters })
+                body: JSON.stringify({ userId, type, genres: genresArray, moods, filters })
             });
             const data = await res.json();
             if (data.success) {
@@ -110,11 +120,11 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
                 setMaxIterations(data.maxIterations);
                 setSwipesQueue([]);
             } else {
-                setPhase('funnel');
+                setPhase('choosing');
             }
         } catch (error) {
             console.error('Failed to init matchmaker', error);
-            setPhase('funnel');
+            setPhase('choosing');
         } finally {
             setIsLoading(false);
         }
@@ -136,7 +146,9 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
             title: overrideTitle || card?.title || 'Steer', 
             genre_ids: overrideGenres || card?.genre_ids || [],
             question_text: questionText,
-            discarded_options: discardedOptions
+            discarded_options: discardedOptions,
+            _graphNodeId: card?._graphNodeId || null,
+            _graphLevel: card?._graphLevel || null
         }];
         setSwipesQueue(newQueue);
 
@@ -146,7 +158,7 @@ export function useMatchmaker(userId: string | null, profileId: string | null) {
 
         if (action === 'watchlist' && card) {
             api.addToLibrary(profileId, userId, {
-                id: `tmdb:${card.id}`,
+                id: card.id.startsWith('tmdb:') ? card.id : `tmdb:${card.id}`,
                 type: card.type,
                 name: card.title,
                 poster: card.poster

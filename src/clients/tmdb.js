@@ -36,7 +36,6 @@ const KEY_CREW_ROLES = ['Director', 'Writer', 'Screenplay', 'Author', 'Creator']
 
 const TMDB_MIRRORS = [
     TMDB_ENDPOINT,
-    'https://tmdb.org/3',
     'https://api.tmdb.org/3'
 ];
 let currentMirrorIdx = 0;
@@ -62,7 +61,9 @@ const createTmdbClient = (apiKey) => {
             console.warn(`TMDB mirror ${TMDB_MIRRORS[currentMirrorIdx]} failed, switching...`);
             currentMirrorIdx = (currentMirrorIdx + 1) % TMDB_MIRRORS.length;
             err.config.baseURL = TMDB_MIRRORS[currentMirrorIdx];
-            err.config.url = err.config.url.replace(/^(https?:\/\/[^\/]+)/, TMDB_MIRRORS[currentMirrorIdx]);
+            if (err.config.url && /^https?:\/\//.test(err.config.url)) {
+                err.config.url = err.config.url.replace(/^https?:\/\/[^/]+(?:\/3)?/, TMDB_MIRRORS[currentMirrorIdx]);
+            }
             err.config._mirrorRetryCount = retryCount + 1;
             return client.request(err.config);
         }
@@ -659,11 +660,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
                 } else if (isCleanOverview(originalOverview)) {
                     data.overview = originalOverview;
                 } else if (enOverview) {
-                    try {
-                        data.overview = await translateTextToItalian(enOverview, 'en');
-                    } catch (_e) {
-                        data.overview = enOverview;
-                    }
+                    data.overview = enOverview;
                 } else if (originalOverview) {
                     data.overview = originalOverview;
                 }

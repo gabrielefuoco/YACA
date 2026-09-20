@@ -40,7 +40,7 @@ class LibraryConverterService {
                 try {
                     let tmdbId = item.tmdbId;
                     let tmdbData = null;
-                    const strId = String(item._id);
+                    const strId = String(item.itemId || item._id);
                     const isImdb = strId.startsWith('tt');
                     const isTmdb = strId.startsWith('tmdb:');
                     
@@ -71,7 +71,7 @@ class LibraryConverterService {
 
                     // We proceed even if tmdbData is null, to apply badges to Kitsu or fallback items!
                     let meta = {
-                        id: item._id, // Keep the original stremio id
+                        id: item.itemId || item._id, // Keep the original stremio id
                         tmdbId: tmdbId,
                         type: item.type,
                         name: tmdbData?.title || tmdbData?.name || item.name,
@@ -112,7 +112,7 @@ class LibraryConverterService {
                     await new Promise(r => setTimeout(r, 200));
 
                 } catch (err) {
-                    console.error(`[LibraryConverter] Error processing item ${item._id}:`, err.message);
+                    console.error(`[LibraryConverter] Error processing item ${item.itemId || item._id}:`, err.message);
                 }
             }
 

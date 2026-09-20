@@ -31,6 +31,7 @@ module.exports = [
                 decodeURIComponent: "readonly",
                 describe: "readonly",
                 it: "readonly",
+                test: "readonly",
                 expect: "readonly",
                 beforeEach: "readonly",
                 afterEach: "readonly",
@@ -42,6 +43,7 @@ module.exports = [
         rules: {
             "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "caughtErrorsIgnorePattern": "^_" }],
             "no-console": "off",
+            "no-empty": ["error", { "allowEmptyCatch": true }],
             "no-undef": "error",
             "eqeqeq": ["error", "always"],
             "no-var": "error",
@@ -49,6 +51,6 @@ module.exports = [
         }
     },
     {
-        ignores: ["node_modules/", "coverage/"]
+        ignores: ["node_modules/", "coverage/", "frontend/**", ".agents/**", "offline_graph_builder/**", ".cache/**", "public/**"]
     }
 ];

@@ -16,7 +16,7 @@ interface MatchmakerModalProps {
         setPhase: (p: MatchmakerPhase) => void;
         openMatchmaker: () => void;
         startFunnel: (genres: string[], moods: string[], filters?: any) => void;
-        initMatchmaker: (type: 'movie'|'series'|'anime', startingL3NodeId: string, filters?: any) => void;
+        initMatchmaker: (type: 'movie'|'series'|'anime', genres?: string[], moods?: string[], filters?: any) => void;
         handleSwipe: (id: string | null, action: SwipeAction, overrideTitle?: string, overrideGenres?: number[], questionText?: string, discardedOptions?: string[]) => void;
         fetchTrailer: (type: 'movie'|'series'|'anime', id: string) => Promise<string | null>;
         transitionToResults: () => void;
@@ -31,6 +31,15 @@ const GENRE_MAP: Record<number, string> = {
     14: 'Fantasy', 36: 'Storico', 27: 'Horror', 10402: 'Musica',
     9648: 'Mistero', 10749: 'Romantico', 878: 'Fantascienza',
     10770: 'TV Movie', 53: 'Thriller', 10752: 'Guerra', 37: 'Western',
+    9999: 'Anime'
+};
+
+const TMDB_GENRES_EN_MAP: Record<number, string> = {
+    28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy',
+    80: 'Crime', 99: 'Documentary', 18: 'Drama', 10751: 'Family',
+    14: 'Fantasy', 36: 'History', 27: 'Horror', 10402: 'Music',
+    9648: 'Mystery', 10749: 'Romance', 878: 'Science Fiction',
+    10770: 'TV Movie', 53: 'Thriller', 10752: 'War', 37: 'Western',
     9999: 'Anime'
 };
 
@@ -119,8 +128,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
         e.stopPropagation();
         if (!currentCard || !selectedType) return;
         setIsLoadingTrailer(true);
-        // Se è Anime usiamo anime, altrimenti selectedType
-        const t = selectedGenres.includes(9999) ? 'anime' : selectedType;
+        const t = selectedGenres.includes(9999) ? (selectedType === 'series' ? 'series' : 'movie') : selectedType;
         const url = await fetchTrailer(t, currentCard.id);
         if (url) setTrailerUrl(url);
         setIsLoadingTrailer(false);
@@ -170,21 +178,32 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
     }, [isOpen, phase, currentCard, isLoading]);
 
     const handleStartFunnel = () => {
+        if (!selectedType) return;
         const isAnime = selectedGenres.includes(9999);
-        const genresStr = selectedGenres.filter(id => id !== 9999).map(id => GENRE_MAP[id]).filter(Boolean);
+        const genresEn = selectedGenres
+            .filter(id => id !== 9999)
+            .map(id => TMDB_GENRES_EN_MAP[id] || GENRE_MAP[id])
+            .filter(Boolean);
         const moods = selectedVibe ? [selectedVibe] : [];
-        startFunnel(genresStr, moods, { isAnime });
+        const targetType = selectedType;
+        initMatchmaker(targetType, genresEn, moods, { isAnime });
     };
 
     const handleStartTinder = (l3_id: string) => {
         if (!selectedType) return;
         const isAnime = selectedGenres.includes(9999);
-        initMatchmaker(selectedType, l3_id, { isAnime });
+        const genresEn = selectedGenres
+            .filter(id => id !== 9999)
+            .map(id => TMDB_GENRES_EN_MAP[id] || GENRE_MAP[id])
+            .filter(Boolean);
+        const moods = selectedVibe ? [selectedVibe] : [];
+        const targetType = selectedType;
+        initMatchmaker(targetType, genresEn, moods, { isAnime, startingL3NodeId: l3_id });
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && closeAndSave(false)}>
-            <DialogContent className="w-screen h-screen max-w-none sm:max-w-4xl sm:h-[90vh] p-0 overflow-hidden bg-marrow-deep border-marrow-light/10 z-[100] flex flex-col rounded-none sm:rounded-3xl">
+            <DialogContent className="w-screen h-[100dvh] max-h-[100dvh] max-w-none sm:max-w-4xl sm:h-[90dvh] sm:max-h-[90dvh] p-0 overflow-hidden bg-marrow-deep border-marrow-light/10 z-[100] flex flex-col rounded-none sm:rounded-3xl">
                 <DialogTitle className="sr-only">Matchmaker</DialogTitle>
 
                 {/* --- HEADER NAVBAR (Solo visibile quando necessario) --- */}
@@ -195,7 +214,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                 if (phase === 'funnel') setPhase('choosing');
                                 else if (phase === 'choosing') setSelectedType(null);
                             }}
-                            className="absolute left-4 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-all"
+                            className="absolute left-4 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-all min-w-[40px] min-h-[40px] flex items-center justify-center touch-manipulation"
                         >
                             <ChevronLeft className="w-5 h-5 text-white" />
                         </button>
@@ -217,7 +236,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                     <button 
                                         onClick={() => setSelectedType('movie')}
                                         disabled={isLoading}
-                                        className="flex items-center justify-center gap-3 w-full py-4 bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                        className="flex items-center justify-center gap-3 w-full py-4 min-h-[48px] bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50 touch-manipulation"
                                     >
                                         <Film className="w-5 h-5 text-primary" />
                                         Film
@@ -225,7 +244,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                     <button 
                                         onClick={() => setSelectedType('series')}
                                         disabled={isLoading}
-                                        className="flex items-center justify-center gap-3 w-full py-4 bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                        className="flex items-center justify-center gap-3 w-full py-4 min-h-[48px] bg-marrow-deep border-2 border-primary/40 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:bg-primary/20 hover:border-primary transition-all hover:scale-105 active:scale-95 disabled:opacity-50 touch-manipulation"
                                     >
                                         <Tv className="w-5 h-5 text-primary" />
                                         Serie TV
@@ -358,7 +377,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                             ) : currentCard ? (
                                 <div className="flex flex-col items-center w-full max-w-[280px] sm:max-w-[320px]">
                                     <div 
-                                        className="relative w-full aspect-[2/3] max-h-[65vh] rounded-3xl overflow-hidden shadow-2xl cursor-pointer group transition-all duration-300 preserve-3d"
+                                        className="relative w-full aspect-[2/3] max-h-[50dvh] sm:max-h-[60dvh] rounded-3xl overflow-hidden shadow-2xl cursor-pointer group transition-all duration-300 preserve-3d touch-none select-none"
                                         style={{ 
                                             transform: `rotateY(${flipped ? 180 : 0}deg) translateX(${dragX}px) rotate(${dragX * 0.05}deg)`,
                                             opacity: 1 - Math.abs(dragX) / 400
@@ -397,7 +416,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <button onClick={handleFetchTrailer} disabled={isLoadingTrailer} className="w-full flex items-center justify-center gap-2 mb-6 px-4 py-3 bg-red-600 hover:bg-red-500 rounded-lg text-white font-black text-sm uppercase tracking-wide transition-all shadow-lg active:scale-95 shrink-0">
+                                                    <button onClick={handleFetchTrailer} disabled={isLoadingTrailer} className="w-full flex items-center justify-center gap-2 mb-6 px-4 py-3 bg-red-600 hover:bg-red-500 rounded-lg text-white font-black text-sm uppercase tracking-wide transition-all shadow-lg active:scale-95 shrink-0 touch-manipulation min-h-[44px]">
                                                         {isLoadingTrailer ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <PlayCircle className="w-5 h-5" />}
                                                         {isLoadingTrailer ? 'Ricerca...' : 'Guarda Trailer'}
                                                     </button>
@@ -416,23 +435,23 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex items-center justify-center gap-6 mt-6 shrink-0 w-full">
+                                    <div className="flex items-center justify-center gap-6 mt-4 sm:mt-6 shrink-0 w-full">
                                         <div className="flex flex-col items-center gap-2">
-                                            <button onClick={(e) => { e.stopPropagation(); onSwipe('dislike'); }} className="w-14 h-14 bg-white/5 border-2 border-red-500/30 rounded-full flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all shadow-lg active:scale-95">
+                                            <button onClick={(e) => { e.stopPropagation(); onSwipe('dislike'); }} className="w-14 h-14 bg-white/5 border-2 border-red-500/30 rounded-full flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all shadow-lg active:scale-95 touch-manipulation min-w-[56px] min-h-[56px]">
                                                 <X className="w-6 h-6" />
                                             </button>
                                             <span className="text-[10px] font-bold text-white/50 uppercase">Scarta</span>
                                         </div>
                                         
                                         <div className="flex flex-col items-center gap-2">
-                                            <button onClick={(e) => { e.stopPropagation(); onSwipe('watchlist'); }} className="w-12 h-12 bg-white/5 border-2 border-blue-400/30 rounded-full flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all -translate-y-2 shadow-lg active:scale-95">
+                                            <button onClick={(e) => { e.stopPropagation(); onSwipe('watchlist'); }} className="w-12 h-12 bg-white/5 border-2 border-blue-400/30 rounded-full flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all -translate-y-2 shadow-lg active:scale-95 touch-manipulation min-w-[48px] min-h-[48px]">
                                                 <Bookmark className="w-5 h-5" />
                                             </button>
                                             <span className="text-[10px] font-bold text-white/50 uppercase -translate-y-2">Libreria</span>
                                         </div>
                                         
                                         <div className="flex flex-col items-center gap-2">
-                                            <button onClick={(e) => { e.stopPropagation(); onSwipe('like'); }} className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white hover:bg-primary/80 transition-all shadow-[0_0_20px_rgba(220,38,38,0.4)] active:scale-95">
+                                            <button onClick={(e) => { e.stopPropagation(); onSwipe('like'); }} className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white hover:bg-primary/80 transition-all shadow-[0_0_20px_rgba(220,38,38,0.4)] active:scale-95 touch-manipulation min-w-[56px] min-h-[56px]">
                                                 <Heart className="w-6 h-6" fill="currentColor" />
                                             </button>
                                             <span className="text-[10px] font-bold text-white/50 uppercase">Mi piace</span>
@@ -444,7 +463,7 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                                     <Sparkles className="w-12 h-12 text-amber-200 mb-4" />
                                     <h3 className="text-xl font-black text-white mb-2">Carte esaurite</h3>
                                     <p className="text-sm text-white/70 mb-6">Abbiamo esplorato abbastanza per ora.</p>
-                                    <button onClick={transitionToResults} className="px-6 py-3 bg-primary text-white rounded-full font-bold uppercase tracking-widest hover:brightness-110 shadow-lg">
+                                    <button onClick={transitionToResults} className="px-6 py-3 min-h-[44px] bg-primary text-white rounded-full font-bold uppercase tracking-widest hover:brightness-110 shadow-lg touch-manipulation">
                                         Vai ai risultati
                                     </button>
                                 </div>
@@ -493,14 +512,14 @@ export function MatchmakerModal({ matchmaker }: MatchmakerModalProps) {
                             <button 
                                 onClick={() => closeAndSave(false)} 
                                 disabled={isLoading}
-                                className="flex-1 py-3 bg-white/5 text-white/70 rounded-xl font-bold uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all text-xs"
+                                className="flex-1 py-3 min-h-[44px] bg-white/5 text-white/70 rounded-xl font-bold uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all text-xs touch-manipulation"
                             >
                                 Esci senza salvare
                             </button>
                             <button 
                                 onClick={() => closeAndSave(true)} 
                                 disabled={isLoading || matchedCards.length === 0}
-                                className="flex-1 py-3 bg-primary text-white rounded-xl font-bold uppercase tracking-widest hover:brightness-110 transition-all text-xs disabled:opacity-50 shadow-[0_0_20px_rgba(220,38,38,0.3)]"
+                                className="flex-1 py-3 min-h-[44px] bg-primary text-white rounded-xl font-bold uppercase tracking-widest hover:brightness-110 transition-all text-xs disabled:opacity-50 shadow-[0_0_20px_rgba(220,38,38,0.3)] touch-manipulation"
                             >
                                 {isLoading ? 'Salvataggio...' : 'Salva Catalogo'}
                             </button>

@@ -1,5 +1,8 @@
 //src/data/presets.js
 
+const { F, S } = require('./filters');
+const { buildPresetFromFilters } = require('../catalog/providers/DuckDbProvider');
+
 // Lista dei Cataloghi Pre-Configurati con query API TMDB "Hardcoded"
 // Questo permette di bypassare l'AI per cataloghi perfetti e verificati.
 
@@ -39,7 +42,7 @@ const getPresets = () => {
     dWeek.setDate(dWeek.getDate() - 14);
     const twoWeeksAgoStr = dWeek.toISOString().split('T')[0];
 
-    return [
+    const rawPresets = [
         // =============================================
         // --- 🔥 TOP, TREND & TRAKT ---
         // =============================================
@@ -281,6 +284,24 @@ const getPresets = () => {
         { id: 'preset_anime_kids_movies', isAnime: true, name: 'Anime per Bambini (Film)', emoji: '🧸', category: '👨‍👩‍👧‍👦 Bambini & Famiglia', type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: TMDB_GENRES.MOVIE.Animation, with_keywords: '208349', with_original_language: 'ja', sort_by: 'popularity.desc', 'vote_count.gte': 10 }] },
 
     ];
+
+    return rawPresets.map(p => {
+        if (p.id === 'preset_anime_simulcast') {
+            return {
+                ...p,
+                _provider: 'anilist_simulcast'
+            };
+        }
+        if (!p.where) {
+            const duck = buildPresetFromFilters(p.queries?.[0], p.type);
+            return {
+                ...p,
+                where: duck.where,
+                orderBy: p.orderBy || duck.orderBy
+            };
+        }
+        return p;
+    });
 };
 
 const profileTemplates = [

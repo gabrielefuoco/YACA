@@ -16,7 +16,7 @@ class CacheManager {
      * 
      * Note: "mongoTtlMs" parameter is supported for backwards compatibility.
      */
-    constructor(namespace, { ramMax = 1000, ramTtlMs = 300000, redisTtlMs, mongoTtlMs, swrMs = 0 } = {}) {
+    constructor(namespace, { ramMax = 200, ramTtlMs = 300000, redisTtlMs, mongoTtlMs, swrMs = 0 } = {}) {
         this.namespace = namespace;
         this.ramTtlMs = ramTtlMs;
         this.redisTtlMs = redisTtlMs || mongoTtlMs || 86400000;
@@ -204,7 +204,7 @@ class CacheManager {
     }
 
     async getStats() {
-        let l2Count = 0;
+        let l2Count;
         if (redisClient.isAvailable) {
             try {
                 const keys = await redisClient.keys(`${this.namespace}:*`);

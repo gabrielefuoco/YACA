@@ -48,18 +48,25 @@ class DuckDbStore {
                     try {
                         await execPromise("INSTALL fts;");
                         await execPromise("LOAD fts;");
+                        await execPromise("SET scalar_subquery_error_on_multiple_rows=false;");
                         
                         if (fs.existsSync(this.moviesParquetPath)) {
                             await execPromise(`DROP TABLE IF EXISTS movies;`);
                             await execPromise(`CREATE TABLE movies AS SELECT * FROM read_parquet('${this.moviesParquetPath.replace(/\\/g, '/')}');`);
                             await execPromise(`PRAGMA create_fts_index('movies', 'id', 'title', 'original_title');`);
+                        } else {
+                            await execPromise(`CREATE TABLE IF NOT EXISTS movies (id BIGINT, title VARCHAR, original_title VARCHAR, overview VARCHAR, poster_path VARCHAR, backdrop_path VARCHAR, release_date VARCHAR, vote_average DOUBLE, vote_count BIGINT, popularity DOUBLE, genres VARCHAR, keywords VARCHAR, production_companies VARCHAR, production_countries VARCHAR, original_language VARCHAR, adult BOOLEAN);`);
                         }
                         
                         if (fs.existsSync(this.tvParquetPath)) {
                             await execPromise(`DROP TABLE IF EXISTS tv;`);
                             await execPromise(`CREATE TABLE tv AS SELECT * FROM read_parquet('${this.tvParquetPath.replace(/\\/g, '/')}');`);
                             await execPromise(`PRAGMA create_fts_index('tv', 'id', 'name', 'original_name');`);
+                        } else {
+                            await execPromise(`CREATE TABLE IF NOT EXISTS tv (id BIGINT, name VARCHAR, original_name VARCHAR, overview VARCHAR, poster_path VARCHAR, backdrop_path VARCHAR, first_air_date VARCHAR, vote_average DOUBLE, vote_count BIGINT, popularity DOUBLE, genres VARCHAR, keywords VARCHAR, networks VARCHAR, production_companies VARCHAR, production_countries VARCHAR, original_language VARCHAR, adult BOOLEAN);`);
                         }
+
+                        await execPromise(`CREATE TABLE IF NOT EXISTS anime_mappings (tmdb_id BIGINT PRIMARY KEY);`);
 
                         console.log(`[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.`);
                         this.isInitialized = true;
@@ -92,14 +99,18 @@ class DuckDbStore {
         return new Promise((resolve, reject) => {
             let sql = `
                 DROP TABLE IF EXISTS anime_mappings;
-                CREATE TABLE anime_mappings (tmdb_id INTEGER PRIMARY KEY);
+                CREATE TABLE anime_mappings (tmdb_id BIGINT PRIMARY KEY);
             `;
             
             if (tmdbIds && tmdbIds.length > 0) {
-                // Generiamo una singola INSERT enorme, estraendo solo il tmdbId ed evitando duplicati
-                const uniqueIds = Array.from(new Set(tmdbIds.map(id => String(id).split(':')[0])));
-                const values = uniqueIds.map(id => `(${id})`).join(',');
-                sql += `\nINSERT INTO anime_mappings VALUES ${values};`;
+                const uniqueIds = Array.from(new Set(tmdbIds.map(id => {
+                    const clean = Number(String(id).replace(/^[a-zA-Z]+:/, ''));
+                    return Number.isFinite(clean) && clean > 0 ? clean : null;
+                }).filter(Boolean)));
+                if (uniqueIds.length > 0) {
+                    const values = uniqueIds.map(id => `(${id})`).join(',');
+                    sql += `\nINSERT INTO anime_mappings VALUES ${values};`;
+                }
             }
             
             this.con.exec(sql, (err) => {
@@ -120,10 +131,10 @@ class DuckDbStore {
 
         return new Promise((resolve, reject) => {
             // Protezione query a tabelle vuote
-            if (sql.includes('movies') && !fs.existsSync(this.moviesParquetPath)) {
+            if (/\bFROM\s+movies\b/i.test(sql) && !fs.existsSync(this.moviesParquetPath)) {
                 return resolve([]); 
             }
-            if (sql.includes('tv') && !fs.existsSync(this.tvParquetPath)) {
+            if (/\bFROM\s+tv\b/i.test(sql) && !fs.existsSync(this.tvParquetPath)) {
                 return resolve([]); 
             }
             

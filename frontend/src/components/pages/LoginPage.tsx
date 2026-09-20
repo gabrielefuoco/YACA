@@ -160,7 +160,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="la.tua@email.com"
-                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-10 sm:h-12 px-3 sm:px-4 rounded-xl font-medium text-sm"
+                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-10 sm:h-12 px-3 sm:px-4 rounded-xl font-medium text-base sm:text-sm"
                 onKeyDown={(e) => e.key === 'Enter' && handleStremioLogin()}
               />
             </div>
@@ -172,7 +172,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-10 sm:h-12 px-3 sm:px-4 rounded-xl font-medium text-sm"
+                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-10 sm:h-12 px-3 sm:px-4 rounded-xl font-medium text-base sm:text-sm"
                 onKeyDown={(e) => e.key === 'Enter' && handleStremioLogin()}
               />
             </div>

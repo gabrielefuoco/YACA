@@ -616,10 +616,10 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                     value={block.aiPrompt || ''}
                     onChange={(e) => updateBlock(block.id, { aiPrompt: e.target.value })}
                     placeholder="es. Film horror italiani degli anni 80..."
-                    className="flex-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40"
+                    className="flex-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm"
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAiGenerateBlock(block.id, block.aiPrompt || ''); } }}
                   />
-                  <Button onClick={(e) => { e.preventDefault(); handleAiGenerateBlock(block.id, block.aiPrompt || ''); }} disabled={block.aiLoading || !block.aiPrompt?.trim()} className="shrink-0 bg-primary text-white hover:brightness-110">
+                  <Button onClick={(e) => { e.preventDefault(); handleAiGenerateBlock(block.id, block.aiPrompt || ''); }} disabled={block.aiLoading || !block.aiPrompt?.trim()} className="shrink-0 bg-primary text-white hover:brightness-110 min-h-[40px]">
                     {block.aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wand2 className="h-4 w-4 mr-2" />}
                     Genera
                   </Button>
@@ -630,14 +630,14 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
             {block.strategy === 'similar' && (
               <div>
                 <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Titolo di Riferimento</Label>
-                <Input value={block.similarTo || ''} onChange={(e) => updateBlock(block.id, { similarTo: e.target.value })} placeholder="es. Bridgerton" className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-black placeholder:text-marrow-light/40" />
+                <Input value={block.similarTo || ''} onChange={(e) => updateBlock(block.id, { similarTo: e.target.value })} placeholder="es. Bridgerton" className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm" />
               </div>
             )}
 
             {block.strategy === 'multi_search' && (
               <div>
                 <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Titolo da Cercare</Label>
-                <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-black placeholder:text-marrow-light/40" />
+                <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm" />
               </div>
             )}
 
@@ -772,7 +772,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 <div className={block.provider === 'kitsu' ? 'col-span-2' : ''}>
                   <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Ordina per</Label>
                   <Select value={block.sortBy} onValueChange={(v) => updateBlock(block.id, { sortBy: v })}>
-                    <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-xs">
+                    <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-base sm:text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -786,7 +786,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 <div>
                   <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Lingua originale</Label>
                   <Select value={block.language || '__any'} onValueChange={(v) => updateBlock(block.id, { language: v === '__any' ? '' : v })}>
-                    <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-xs">
+                    <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-base sm:text-xs">
                       <SelectValue placeholder="Qualsiasi" />
                     </SelectTrigger>
                     <SelectContent>
@@ -817,11 +817,11 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Anno da</Label>
-                  <Input value={block.yearFrom} onChange={(e) => updateBlock(block.id, { yearFrom: e.target.value })} placeholder="es. 2000" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40" type="number" min="1900" max="2099" />
+                  <Input value={block.yearFrom} onChange={(e) => updateBlock(block.id, { yearFrom: e.target.value })} placeholder="es. 2000" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm" type="number" min="1900" max="2099" />
                 </div>
                 <div>
                   <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Anno a</Label>
-                  <Input value={block.yearTo} onChange={(e) => updateBlock(block.id, { yearTo: e.target.value })} placeholder="es. 2024" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40" type="number" min="1900" max="2099" />
+                  <Input value={block.yearTo} onChange={(e) => updateBlock(block.id, { yearTo: e.target.value })} placeholder="es. 2024" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm" type="number" min="1900" max="2099" />
                 </div>
               </div>
 
@@ -829,11 +829,11 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Durata min (min)</Label>
-                  <Input value={block.runtimeGte} onChange={(e) => updateBlock(block.id, { runtimeGte: e.target.value })} placeholder="es. 90" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40" type="number" min="0" max="400" />
+                  <Input value={block.runtimeGte} onChange={(e) => updateBlock(block.id, { runtimeGte: e.target.value })} placeholder="es. 90" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm" type="number" min="0" max="400" />
                 </div>
                 <div>
                   <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Durata max (min)</Label>
-                  <Input value={block.runtimeLte} onChange={(e) => updateBlock(block.id, { runtimeLte: e.target.value })} placeholder="es. 180" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40" type="number" min="0" max="400" />
+                  <Input value={block.runtimeLte} onChange={(e) => updateBlock(block.id, { runtimeLte: e.target.value })} placeholder="es. 180" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm" type="number" min="0" max="400" />
                 </div>
               </div>
               )}
@@ -841,7 +841,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               <div>
                 <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Censura (Fino a)</Label>
                 <Select value={block.certificationLte || '__any'} onValueChange={(v) => updateBlock(block.id, { certificationLte: v === '__any' ? '' : v })}>
-                  <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-xs">
+                  <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-base sm:text-xs">
                     <SelectValue placeholder="Qualsiasi" />
                   </SelectTrigger>
                   <SelectContent>
@@ -876,7 +876,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                   }
                 }}
               >
-                <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-xs">
+                <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-base sm:text-xs">
                   <SelectValue placeholder="Scegli categorie anime..." />
                 </SelectTrigger>
                 <SelectContent className="max-h-[250px] bg-white border border-marrow-light/10 text-marrow-deep font-bold">
@@ -1073,7 +1073,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Il mio catalogo"
-              className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-sm sm:text-base h-9 sm:h-10"
+              className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-10 sm:h-10"
             />
           </div>
           <div className="sm:w-56 shrink-0">
@@ -1083,7 +1083,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 <button
                   key={t}
                   onClick={() => setType(t)}
-                  className={`flex-1 rounded-lg border py-1.5 sm:py-2 text-xs sm:text-sm font-bold transition-all ${type === t
+                  className={`flex-1 rounded-lg border py-2 text-xs sm:text-sm font-bold transition-all min-h-[40px] touch-manipulation ${type === t
                     ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
                     : 'border-marrow-light/20 bg-white/40 text-marrow-light hover:text-primary hover:border-primary/50'
                     }`}
@@ -1113,7 +1113,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               <button
                 key={s}
                 onClick={() => setPresentationStrategy(s)}
-                className={`flex-1 sm:flex-none rounded-lg border px-2 sm:px-4 py-1.5 text-[10px] sm:text-xs font-bold transition-all ${presentationStrategy === s
+                className={`flex-1 sm:flex-none rounded-lg border px-3 sm:px-4 py-2 sm:py-1.5 text-[10px] sm:text-xs font-bold transition-all min-h-[40px] touch-manipulation flex items-center justify-center ${presentationStrategy === s
                   ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
                   : 'border-marrow-light/20 bg-white/50 text-marrow-light hover:text-primary hover:border-primary/50'
                   }`}
@@ -1166,13 +1166,13 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="relative mt-8 sm:mt-12 pb-4">
-        <div className="glass-panel p-2 sm:p-3 flex items-center justify-between gap-2 sm:gap-3 bg-white/95 shadow-md border border-marrow-light/20 rounded-2xl mx-auto max-w-2xl">
+      <div className="sticky bottom-0 z-30 pt-3 pb-2 bg-gradient-to-t from-background-light via-background-light/95 to-transparent mt-6 sm:mt-10">
+        <div className="glass-panel p-2 sm:p-3 flex items-center justify-between gap-2 sm:gap-3 bg-white/95 backdrop-blur-md shadow-lg border border-marrow-light/20 rounded-2xl mx-auto max-w-2xl">
           {onCancel && (
             <Button
               variant="outline"
               onClick={onCancel}
-              className="font-bold border-marrow-light/20 text-marrow-light hover:bg-marrow-light/5 text-[10px] sm:text-sm h-10 sm:h-12 px-3 sm:px-4"
+              className="font-bold border-marrow-light/20 text-marrow-light hover:bg-marrow-light/5 text-xs sm:text-sm h-11 sm:h-12 min-h-[44px] px-3.5 sm:px-4 touch-manipulation"
             >
               Annulla
             </Button>
@@ -1181,31 +1181,31 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
           <Button
             variant="ghost"
             onClick={handleManualPreview}
-            className="flex-1 font-bold text-marrow-deep hover:bg-primary/10 hover:text-primary text-[10px] sm:text-sm h-10 sm:h-12"
+            className="flex-1 font-bold text-marrow-deep hover:bg-primary/10 hover:text-primary text-xs sm:text-sm h-11 sm:h-12 min-h-[44px] touch-manipulation"
           >
-            <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+            <Eye className="h-4 w-4 mr-1.5 sm:mr-2" />
             <span className="hidden sm:inline">Aggiorna</span> Anteprima
           </Button>
 
           <Button
             onClick={handleSave}
             disabled={blocks.length === 0 || saved}
-            className={`flex-1 font-black shadow-lg text-[10px] sm:text-sm h-10 sm:h-12 transition-all duration-300 ${saved
+            className={`flex-1 font-black shadow-lg text-xs sm:text-sm h-11 sm:h-12 min-h-[44px] transition-all duration-300 touch-manipulation ${saved
               ? 'bg-success hover:bg-success text-white shadow-success/30'
               : 'bg-primary hover:brightness-110 text-white shadow-primary/30'
               }`}
           >
             {saved ? (
               <span className="flex items-center">
-                <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" /> Salvato!
+                <Save className="h-4 w-4 mr-1.5 sm:mr-2" /> Salvato!
               </span>
             ) : editCatalog ? (
               <span className="flex items-center">
-                <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Salva</span> Modifiche
+                <Save className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Salva</span> Modifiche
               </span>
             ) : (
               <span className="flex items-center">
-                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Crea</span> Catalogo
+                <Plus className="h-4 w-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Crea</span> Catalogo
               </span>
             )}
           </Button>

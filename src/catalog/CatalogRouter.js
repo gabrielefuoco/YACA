@@ -4,9 +4,8 @@ const { getTraktCatalog } = require('./providers/TraktProvider');
 const { getEngineHybridCatalog, getHybridPopularCatalog, TASTE_BASED_IDS } = require('./providers/HybridProvider');
 const { executeCombinedSearch, executeUniversalPipeline } = require('./providers/AiDiscoveryProvider');
 const { getAnilistSimulcastCatalog } = require('./providers/AnilistProvider');
-const { getDuckDbCatalogFromFilters } = require('./providers/DuckDbProvider');
+const { getDuckDbCatalogFromFilters, getDuckDbCatalogFromPreset, mapSortBy, buildPresetFromFilters } = require('./providers/DuckDbProvider');
 const { normalizeToUniversalSchema } = require('../utils/resultMerger');
-const { normalizeContentId } = require('../utils/contentId');
 const { getPresets } = require('../data/presets');
 const { getWatchlistCatalog } = require('./providers/WatchlistProvider');
 
@@ -43,7 +42,6 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
             return await getDuckDbCatalogFromFilters({ _search: search }, type, skip, 50, activeProfileSettings);
         }
         // Il fallback o la ricerca AI profonda rimangono sulla vecchia pipeline
-        const { executeCombinedSearch } = require('./providers/AiDiscoveryProvider');
         return await executeCombinedSearch(search, userConfig, type, skip, activeProfileSettings, tmdbFetchOptions);
     }
 
@@ -79,8 +77,12 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
 
     // SCENARIO 5: SQL NATIVO (Nuova architettura DuckDB diretta)
     if (catalogMeta?.where) {
-        const { getDuckDbCatalogFromPreset } = require('./providers/DuckDbProvider');
-        return await getDuckDbCatalogFromPreset(catalogMeta, skip);
+        let presetToRun = catalogMeta;
+        if (sortBy) {
+            const { mapSortBy } = require('./providers/DuckDbProvider');
+            presetToRun = { ...catalogMeta, orderBy: mapSortBy(sortBy, catalogMeta.type || type) };
+        }
+        return await getDuckDbCatalogFromPreset(presetToRun, skip);
     }
 
     // SCENARIO 6: UNIVERSAL PIPELINE (AI/PRESETS Custom legacy)

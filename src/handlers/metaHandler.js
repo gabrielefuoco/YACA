@@ -2,9 +2,10 @@ const { getTmdbMetaDetails, fetchTmdbEpisodes, createTmdbClient } = require('../
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const CacheManager = require('../cache/CacheManager');
 const animeMappingStore = require('../data/animeMappingStore');
+const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
 
 // Cache per l'oggetto meta finale combinato
-const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 2000, ramTtlMs: 3600000, swrMs: 600000 });
+const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 300, ramTtlMs: 3600000, swrMs: 600000 });
 
 async function applyKitsuMappingToMeta(meta, tmdbId) {
     if (!meta) return;
@@ -73,12 +74,8 @@ async function metaHandler(args, userConfig) {
 
         if (!userConfig) throw new Error("Configurazione utente mancante");
 
-        const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
-        if (!tmdbApiKey) throw new Error("TMDB API key mancante");
-        let meta = null;
-
-        // Caso 0: Profilo interno YACA
-        if (id.startsWith('yaca-profile-')) {
+        // Caso 0: Profilo interno YACA (funziona anche senza TMDB API key)
+        if (id && typeof id === 'string' && id.startsWith('yaca-profile-')) {
             const profileId = id.replace('yaca-profile-', '');
             let profileName = 'Profilo Sconosciuto';
             let isActive = false;
@@ -91,7 +88,7 @@ async function metaHandler(args, userConfig) {
                 }
             }
 
-            meta = {
+            const meta = {
                 id: id,
                 type: type || 'other',
                 name: isActive ? `✅ ${profileName} (Attivo)` : profileName,
@@ -106,6 +103,10 @@ async function metaHandler(args, userConfig) {
             return { meta };
         }
 
+        const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
+        if (!tmdbApiKey) throw new Error("TMDB API key mancante");
+        let meta = null;
+
         // Fetch metadata via TMDB
         if (id.startsWith('tmdb:') || id.startsWith('tt') || id.startsWith('kitsu:')) {
             let tmdbId = null;
@@ -115,7 +116,6 @@ async function metaHandler(args, userConfig) {
                 const tmdbIdResult = await translateImdbToTmdb(id, tmdbApiKey);
                 tmdbId = tmdbIdResult?.id;
             } else if (id.startsWith('kitsu:')) {
-                const animeMappingStore = require('../data/animeMappingStore');
                 const kitsuId = id.split(':')[1];
                 tmdbId = animeMappingStore.resolveTmdbFromKitsu(kitsuId);
             }
@@ -137,7 +137,6 @@ async function metaHandler(args, userConfig) {
                         // Fire-and-forget background revalidation
                         (async () => {
                             try {
-                                const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
                                 const bgMeta = await getDuckDbMetaDetails(tmdbId, type);
                                 
                                 // Fallback live TMDB solo se DuckDB fallisce
@@ -165,7 +164,6 @@ async function metaHandler(args, userConfig) {
                             } catch (_e) { /* silent background revalidation */ }
                         })();
                     } else {
-                        const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
                         meta = await getDuckDbMetaDetails(tmdbId, type);
                         
                         // Fallback API live SOLO se non lo troviamo nel DB offline e i fallback non sono disabilitati.

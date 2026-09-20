@@ -46,8 +46,10 @@ class ProfileScorer {
 
         const genreIds = (tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id) : []))
             .map((id) => this.normalizeDnaId(id));
-        const keywordItems = tmdbData.keywords?.keywords || tmdbData.keywords?.results || [];
-        const keywordIds = keywordItems.map((k) => this.normalizeDnaId(k.id));
+        const keywordItems = Array.isArray(tmdbData.keywords)
+            ? tmdbData.keywords
+            : (tmdbData.keywords?.keywords || tmdbData.keywords?.results || []);
+        const keywordIds = keywordItems.map((k) => this.normalizeDnaId(typeof k === 'object' && k !== null ? (k.id || k.name) : k));
 
         const hasGenreMatch = dnaFilters.some(
             (f) => f.type === 'genre' && genreIds.includes(this.normalizeDnaId(f.id))
@@ -83,7 +85,9 @@ class ProfileScorer {
         });
 
         // Keywords (VSM Gerarchico: L1, L2, L3)
-        const keywordItems = tmdbData.keywords?.keywords || tmdbData.keywords?.results || [];
+        const keywordItems = Array.isArray(tmdbData.keywords)
+            ? tmdbData.keywords
+            : (tmdbData.keywords?.keywords || tmdbData.keywords?.results || []);
         const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
         const hVector = HierarchicalGraph.vectorizeKeywords(keywordItems);
         
@@ -100,7 +104,8 @@ class ProfileScorer {
 
         // --- 1.2 Calcolo penalità per disallineamento di genere (Alien Ratio) ---
         let genreAlignmentMultiplier = 1.0;
-        if (genreIds.length > 0) {
+        const hasProfileGenres = Object.keys(vFinal).some(k => k.startsWith('g:'));
+        if (hasProfileGenres && genreIds.length > 0) {
             let effectiveAlienRatio = unalignedGenres / genreIds.length;
             
             // Perdono basato sul Thematic Score: se il film risuona fortemente con il DNA 
@@ -247,7 +252,9 @@ class ProfileScorer {
         });
 
         // Keywords (VSM Gerarchico: L1, L2, L3)
-        const keywordItems = lightData.keywords?.keywords || lightData.keywords?.results || lightData.keywords || [];
+        const keywordItems = Array.isArray(lightData.keywords)
+            ? lightData.keywords
+            : (lightData.keywords?.keywords || lightData.keywords?.results || []);
         let keywordScore = 0;
         const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
         const hVector = HierarchicalGraph.vectorizeKeywords(keywordItems);

@@ -357,7 +357,7 @@ export function SettingsPage({
               placeholder="Inserisci la tua chiave API TMDB..."
               value={tmdbKey}
               onChange={(e) => setTmdbKey(e.target.value)}
-              className="mt-1 bg-white/60 border border-marrow-light/10 focus:border-primary text-xs"
+              className="mt-1 bg-white/60 border border-marrow-light/10 focus:border-primary text-base sm:text-xs"
             />
           </div>
           <div>
@@ -368,7 +368,7 @@ export function SettingsPage({
               placeholder="Inserisci la tua chiave API Mistral..."
               value={mistralKey}
               onChange={(e) => setMistralKey(e.target.value)}
-              className="mt-1 bg-white/60 border border-marrow-light/10 focus:border-primary text-xs"
+              className="mt-1 bg-white/60 border border-marrow-light/10 focus:border-primary text-base sm:text-xs"
             />
           </div>
           <div>
@@ -379,7 +379,7 @@ export function SettingsPage({
               placeholder={hasGlobalErdb ? "Attivo a livello globale (lascia vuoto per usare il default)" : "Incolla il payload ERDB..."}
               value={erdbConfig}
               onChange={(e) => setErdbConfig(e.target.value)}
-              className="mt-1 bg-white/60 border border-marrow-light/10 focus:border-primary text-xs"
+              className="mt-1 bg-white/60 border border-marrow-light/10 focus:border-primary text-base sm:text-xs"
             />
             <p className="text-[10px] text-marrow-light/50 mt-1">
               Ottieni questo payload configurando i badge e i voti su <a href="https://easyratingsdb.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">easyratingsdb.com</a>.
@@ -428,17 +428,15 @@ export function SettingsPage({
             <>
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => setTraktModalOpen(true)}
-                className="flex-1 text-xs text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 rounded-xl py-4"
+                className="flex-1 text-xs text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 rounded-xl h-auto py-3 min-h-[44px] touch-manipulation font-bold"
               >
                 Aggiorna Login Trakt
               </Button>
               <Button
                 variant="outline"
-                size="sm"
                 onClick={onDisconnectTrakt}
-                className="flex-1 text-xs text-marrow-deep rounded-xl bg-white/80 border-marrow-light/20 hover:bg-white py-4 shadow-sm"
+                className="flex-1 text-xs text-marrow-deep rounded-xl bg-white/80 border-marrow-light/20 hover:bg-white h-auto py-3 min-h-[44px] touch-manipulation font-bold shadow-sm"
               >
                 Disconnetti Trakt
               </Button>
@@ -446,18 +444,16 @@ export function SettingsPage({
           ) : (
             <Button
               variant="outline"
-              size="sm"
               onClick={() => setTraktModalOpen(true)}
-              className="flex-1 text-xs text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 rounded-xl py-4"
+              className="flex-1 text-xs text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 rounded-xl h-auto py-3 min-h-[44px] touch-manipulation font-bold"
             >
               Connetti Trakt
             </Button>
           )}
           <Button
             variant="destructive"
-            size="sm"
             onClick={onLogout}
-            className="flex-1 text-xs rounded-xl py-4 shadow-sm"
+            className="flex-1 text-xs rounded-xl h-auto py-3 min-h-[44px] touch-manipulation font-bold shadow-sm"
           >
             <LogOut className="h-3.5 w-3.5 mr-1" />
             Logout

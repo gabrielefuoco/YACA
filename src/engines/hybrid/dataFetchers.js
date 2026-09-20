@@ -1,10 +1,10 @@
 const TasteProfile = require('../../models/TasteProfile');
 const UserAccount = require('../../db/models/UserAccount');
 const AddonConfig = require('../../db/models/AddonConfig');
-const tmdb = require('../../clients/tmdb');
 const { traktClient } = require('../../clients/trakt');
 const { normalizeContentId } = require('../../utils/contentId');
 const { rateLimitedMap } = require('../../utils/rateLimiter');
+const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
 
 /**
  * Loads the profile context needed by hybrid catalogs in one place.
@@ -93,7 +93,6 @@ async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40, u
 }
 
 async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60) {
-    const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
     const type = mediaType === 'movie' ? 'movie' : 'series';
     const results = await getDuckDbCatalogFromFilters({ sort_by: 'popularity.desc', 'vote_count.gte': 50 }, type, 0, 40, {}).catch(() => []);
     return results
@@ -103,7 +102,6 @@ async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60) {
 }
 
 async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = 60) {
-    const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
     const type = mediaType === 'movie' ? 'movie' : 'series';
     const results = await getDuckDbCatalogFromFilters({
         sort_by: 'vote_average.desc',
@@ -119,7 +117,6 @@ async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = 60) {
 }
 
 async function fetchTmdbSimilarCounts(seedTmdbIds, tmdbApiKey, mediaType = 'movie') {
-    const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
     const type = mediaType === 'movie' ? 'movie' : 'series';
     const counts = new Map();
 

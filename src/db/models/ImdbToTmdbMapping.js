@@ -19,4 +19,4 @@ const imdbToTmdbMappingSchema = new mongoose.Schema({
     timestamps: true
 });
 
-module.exports = mongoose.model('ImdbToTmdbMapping', imdbToTmdbMappingSchema);
+module.exports = mongoose.models.ImdbToTmdbMapping || mongoose.model('ImdbToTmdbMapping', imdbToTmdbMappingSchema);

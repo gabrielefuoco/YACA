@@ -107,7 +107,7 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cerca cataloghi..."
           autoFocus
-          className="bg-white/60 border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40"
+          className="bg-white/60 border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-10 sm:h-9"
         />
       )}
 

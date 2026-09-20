@@ -1,5 +1,6 @@
 const graph = require('../graph/HierarchicalGraph');
-const { getDuckDbCatalogFromPreset, getDuckDbMetaDetails } = require('../../catalog/providers/DuckDbProvider');
+const { getDuckDbCatalogFromPreset } = require('../../catalog/providers/DuckDbProvider');
+const duckDbStore = require('../../db/duckDbStore');
 const { F, S } = require('../../data/filters');
 
 const LEVELS = ['L5', 'L4', 'L3', 'L2', 'L1'];
@@ -13,57 +14,53 @@ const MOOD_KEYWORDS_MAP = {
     "Epico & Avventuroso": ['epic', 'journey', 'magic', 'fantasy world', 'space opera', 'adventure', 'quest', 'empire', 'mythology', 'chosen one', 'sword and sorcery']
 };
 
-
-
 function getKeywordsForNodes(nodeIds, level) {
-    if (!graph.isLoaded || !graph.data) return new Map();
-    const nodeKeywords = new Map(); // nodeId -> [kwStr, kwStr, ...]
-    
-    for (const nodeId of nodeIds) {
-        const kwStrs = new Set();
-        
-        let l1s = [];
-        if (level === 'L1') l1s = [nodeId];
-        else if (level === 'L2') l1s = graph.data.L2[nodeId]?.children_L1 || [];
-        else if (level === 'L3') {
-            const l2s = Object.keys(graph.data.L2 || {}).filter(k => graph.data.L2[k].parent === nodeId);
-            for (const l2 of l2s) l1s.push(...(graph.data.L2[l2]?.children_L1 || []));
-        } else if (level === 'L4') {
-            const l3s = Object.keys(graph.data.L3 || {}).filter(k => graph.data.L3[k].parent === nodeId);
-            for (const l3 of l3s) {
-                const l2s = Object.keys(graph.data.L2 || {}).filter(k => graph.data.L2[k].parent === l3);
-                for (const l2 of l2s) l1s.push(...(graph.data.L2[l2]?.children_L1 || []));
-            }
-        }
-        
-        for (const l1 of l1s) {
-            const l1_node = graph.data.L1[l1];
-            if (l1_node && l1_node.keywords) {
-                l1_node.keywords.forEach(k => kwStrs.add(k));
-            }
-        }
-        
-        let kwArray = Array.from(kwStrs);
-        if (kwArray.length > 30) kwArray = kwArray.sort(() => 0.5 - Math.random()).slice(0, 30);
-        
-        nodeKeywords.set(nodeId, kwArray);
-    }
-    
-    return nodeKeywords;
+    return graph.getKeywordsForNodes(nodeIds, level);
 }
 
 
+
+const IT_TO_EN_GENRES = {
+    'azione': 'Action',
+    'avventura': 'Adventure',
+    'animazione': 'Animation',
+    'commedia': 'Comedy',
+    'crime': 'Crime',
+    'documentario': 'Documentary',
+    'dramma': 'Drama',
+    'famiglia': 'Family',
+    'fantasy': 'Fantasy',
+    'fantastico': 'Fantasy',
+    'storico': 'History',
+    'storia': 'History',
+    'horror': 'Horror',
+    'musica': 'Music',
+    'mistero': 'Mystery',
+    'romance': 'Romance',
+    'romantico': 'Romance',
+    'fantascienza': 'Science Fiction',
+    'tv movie': 'TV Movie',
+    'film tv': 'TV Movie',
+    'thriller': 'Thriller',
+    'guerra': 'War',
+    'western': 'Western'
+};
 
 /**
  * Applica i filtri globali del funnel (Anime, Year) al preset
  */
 function applyFunnelFiltersToPreset(preset, filters) {
     if (!filters) return;
-    if (filters.yearMin) preset.where.push(`"release_date" >= '${filters.yearMin}-01-01'`);
-    if (filters.yearMax) preset.where.push(`"release_date" <= '${filters.yearMax}-12-31'`);
+    const dateCol = (preset.type === 'tv' || preset.type === 'series') ? '"first_air_date"' : '"release_date"';
+    if (filters.yearMin) preset.where.push(`${dateCol} >= '${filters.yearMin}-01-01'`);
+    if (filters.yearMax) preset.where.push(`${dateCol} <= '${filters.yearMax}-12-31'`);
     if (filters.isAnime) preset.where.push(F.anime);
     if (filters.genres && filters.genres.length > 0) {
-        preset.where.push(F.genreStr(...filters.genres));
+        const normalizedGenres = filters.genres.map(g => {
+            const lower = String(g).trim().toLowerCase();
+            return IT_TO_EN_GENRES[lower] || g;
+        });
+        preset.where.push(F.genreStr(...normalizedGenres));
     }
 }
 
@@ -73,8 +70,7 @@ async function getCardsForNodes(nodeIds, currentLevel, cardsPerNode, mediaType, 
     
     // Estrai gli ID già visti dalla history per evitare duplicati
     const swipedIds = new Set(history.map(s => {
-        // history id è "movie:1234" o "series:5678"
-        return s.id.split(':')[1];
+        return String(s.id).replace(/^[a-zA-Z]+:/, '');
     }));
     
     let allCards = [];
@@ -90,14 +86,14 @@ async function getCardsForNodes(nodeIds, currentLevel, cardsPerNode, mediaType, 
         
         applyFunnelFiltersToPreset(preset, filters);
         
-        // MATCH STRINGA SU JSON. DuckDB: "keywords" LIKE '%"nome_keyword"%'
+        // MATCH STRINGA SU JSON. DuckDB: "keywords" ILIKE '%"nome_keyword"%'
         const safeStrs = kwStrs.map(s => s.replace(/'/g, "''"));
-        preset.where.push(`(${safeStrs.map(s => `"keywords" LIKE '%"${s}"%'`).join(' OR ')})`);
+        preset.where.push(`(${safeStrs.map(s => `"keywords" ILIKE '%"${s}"%'`).join(' OR ')})`);
         
         const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 100); // Fetch a large pool to avoid exhaustion when filtering swiped cards
         
         // Filtriamo i duplicati
-        const filteredMetas = lightMetas.filter(c => !swipedIds.has(String(c.id).replace('tmdb:', '')));
+        const filteredMetas = lightMetas.filter(c => !swipedIds.has(String(c._tmdbId || c.id).replace(/^[a-zA-Z]+:/, '')));
         const shuffled = filteredMetas.sort(() => 0.5 - Math.random()).slice(0, cardsPerNode);
         
         const mappedCards = shuffled.map(c => ({
@@ -182,35 +178,61 @@ async function getMatchmakerNextCards(mediaType, history, currentLevelStr, filte
     console.log(`[MatchmakerGraphEngine] Current Level: ${currentLevelStr} | History len: ${history.length}`);
     const levelIdx = LEVELS.indexOf(currentLevelStr);
     
-    let nextLevelStr = LEVELS[levelIdx + 1]; // es. L2 -> L1
+    let nextLevelStr = (levelIdx >= 0 && levelIdx < LEVELS.length - 1) 
+        ? LEVELS[levelIdx + 1] 
+        : 'L1';
     
-    // Se siamo già a L1 o oltre, continuiamo a rimanere su L1 all'infinito, 
-    // sarà l'utente a decidere quando fermarsi tramite la UI (Salva Catalogo)
-    if (levelIdx >= LEVELS.length - 1 || currentLevelStr === 'L1') {
+    // Se siamo già a L1 o oltre, continuiamo a rimanere su L1 all'infinito
+    if (currentLevelStr === 'L1' || nextLevelStr !== 'L2') {
         nextLevelStr = 'L1';
     }
     
     console.log(`[MatchmakerGraphEngine] Target Next Level: ${nextLevelStr}`);
     
     const l1HeatMap = {};
+    const likedOrWatchlist = history.filter(s => s.action === 'like' || s.action === 'watchlist');
+    const tmdbIds = likedOrWatchlist
+        .map(s => Number(String(s.id).replace(/^[a-zA-Z]+:/, '')))
+        .filter(n => Number.isFinite(n) && n > 0);
+
+    const metaMap = new Map();
+    if (tmdbIds.length > 0) {
+        const table = mediaType === 'movie' ? 'movies' : 'tv';
+        try {
+            const uniqueIds = Array.from(new Set(tmdbIds));
+            const rows = await duckDbStore.query(`SELECT id, keywords FROM ${table} WHERE id IN (${uniqueIds.join(',')})`);
+            for (const row of rows) {
+                let parsedKws = [];
+                try { if (row.keywords) parsedKws = JSON.parse(row.keywords); } catch(e){}
+                metaMap.set(Number(row.id), parsedKws);
+            }
+        } catch (e) {
+            console.error('[MatchmakerGraphEngine] Error batch fetching metadata for swipes:', e);
+        }
+    }
+
     for (const swipe of history) {
         if (swipe.action === 'like' || swipe.action === 'watchlist') {
             const weight = swipe.action === 'watchlist' ? 2 : 1;
-            const tmdbId = swipe.id.split(':')[1];
-            
-            const meta = await getDuckDbMetaDetails(tmdbId, mediaType);
-            if (meta && meta.rawTMDB && meta.rawTMDB.keywords && meta.rawTMDB.keywords.results) {
-                for (const kwObj of meta.rawTMDB.keywords.results) {
-                    const kwStr = kwObj.name.toLowerCase();
-                    const targetL1 = graph.data.kw_to_L1?.[kwStr];
-                    if (targetL1) {
-                        l1HeatMap[targetL1] = (l1HeatMap[targetL1] || 0) + weight;
-                    }
+            const cleanTmdbId = Number(String(swipe.id).replace(/^[a-zA-Z]+:/, ''));
+            const keywords = metaMap.get(cleanTmdbId) || [];
+            for (const kwObj of keywords) {
+                const kwStr = (typeof kwObj === 'object' && kwObj !== null ? (kwObj.name || '') : String(kwObj)).toLowerCase();
+                const targetL1 = graph.data?.kw_to_L1?.[kwStr];
+                if (targetL1) {
+                    l1HeatMap[targetL1] = (l1HeatMap[targetL1] || 0) + weight;
                 }
             }
         } else if (swipe.action === 'dislike' && swipe._graphNodeId) {
-            // Penalità diretta
-            l1HeatMap[swipe._graphNodeId] = (l1HeatMap[swipe._graphNodeId] || 0) - 0.5;
+            const nodeId = swipe._graphNodeId;
+            if (graph.data?.L1?.[nodeId]) {
+                l1HeatMap[nodeId] = (l1HeatMap[nodeId] || 0) - 0.5;
+            } else if (graph.data?.L2?.[nodeId]) {
+                const children = graph.data.L2[nodeId]?.children_L1 || [];
+                for (const childL1 of children) {
+                    l1HeatMap[childL1] = (l1HeatMap[childL1] || 0) - 0.5;
+                }
+            }
         }
     }
     
@@ -218,7 +240,7 @@ async function getMatchmakerNextCards(mediaType, history, currentLevelStr, filte
     let hotNodes = [];
     if (nextLevelStr === 'L1') {
         for (const [l1_id, score] of Object.entries(l1HeatMap)) {
-            if (score > 0) hotNodes.push({ id: l1_id, score });
+            if (score > 0 && graph.data?.L1?.[l1_id]) hotNodes.push({ id: l1_id, score });
         }
     } else {
         // Se nextLevel è L2 (strano, solitamente si parte da L2), aggreghiamo il calore L1 ai padri L2
@@ -228,7 +250,7 @@ async function getMatchmakerNextCards(mediaType, history, currentLevelStr, filte
             if (l2_id) l2HeatMap[l2_id] = (l2HeatMap[l2_id] || 0) + score;
         }
         for (const [l2_id, score] of Object.entries(l2HeatMap)) {
-            if (score > 0) hotNodes.push({ id: l2_id, score });
+            if (score > 0 && graph.data?.L2?.[l2_id]) hotNodes.push({ id: l2_id, score });
         }
     }
     
@@ -244,12 +266,12 @@ async function getMatchmakerNextCards(mediaType, history, currentLevelStr, filte
     let selectedNodes = hotNodes.slice(0, 4).map(n => n.id);
     
     // Fallback se nessun Like
-    let winningNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
     if (selectedNodes.length === 0) {
         console.log(`[MatchmakerGraphEngine] Heat Map empty (no likes?), picking random nodes from ${nextLevelStr}`);
         const allNodes = Object.keys(graph.data[nextLevelStr] || {});
         selectedNodes = allNodes.sort(() => 0.5 - Math.random()).slice(0, 4);
     }
+    const winningNode = selectedNodes.length > 0 ? selectedNodes[0] : null;
     
     const cards = await getCardsForNodes(selectedNodes, nextLevelStr, 3, mediaType, filters, history);
     console.log(`[MatchmakerGraphEngine] Next cards ready: ${cards.length} cards for nextLevel ${nextLevelStr}`);
@@ -268,6 +290,7 @@ async function getFinalRecommendations(winningNodesArray, mediaType, filters) {
         if (winningNode.startsWith('t_')) level = 'L2';
         else if (winningNode.startsWith('v_')) level = 'L3';
         else if (winningNode.startsWith('m_')) level = 'L4';
+        else if (winningNode.startsWith('r_')) level = 'L5';
         
         const map = getKeywordsForNodes([winningNode], level);
         const arr = map.get(winningNode) || [];
@@ -286,14 +309,15 @@ async function getFinalRecommendations(winningNodesArray, mediaType, filters) {
     applyFunnelFiltersToPreset(preset, filters);
     
     const safeStrs = Array.from(kwStrs).slice(0, 30).map(s => s.replace(/'/g, "''"));
-    preset.where.push(`(${safeStrs.map(s => `"keywords" LIKE '%"${s}"%'`).join(' OR ')})`);
+    preset.where.push(`(${safeStrs.map(s => `"keywords" ILIKE '%"${s}"%'`).join(' OR ')})`);
     
     const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 100);
-    return lightMetas.map(m => String(m.id).replace('tmdb:', ''));
+    return lightMetas.map(m => String(m._tmdbId || m.id).replace(/^[a-zA-Z]+:/, ''));
 }
 
 module.exports = {
     getMatchmakerInitCards,
     getMatchmakerNextCards,
-    getFinalRecommendations
+    getFinalRecommendations,
+    getKeywordsForNodes
 };

@@ -83,6 +83,15 @@ export function ActiveCatalogsPanel({
     setDragIndex(null);
   };
 
+  const handleMoveCatalog = (fromIndex: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
+    if (targetIndex < 0 || targetIndex >= catalogs.length) return;
+    const reordered = [...catalogs];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(targetIndex, 0, moved);
+    onReorder(reordered);
+  };
+
   const startMerging = (catalog: Catalog) => {
     setMergeSource(catalog);
     setIsSelectionMode(true);
@@ -111,9 +120,12 @@ export function ActiveCatalogsPanel({
         </div>
         
         {!isSelectionMode && catalogs.length > 1 && (
-           <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/40 rounded-2xl border border-marrow-light/10 shadow-sm">
-             <span className="material-symbols-outlined text-primary text-sm">info</span>
-             <p className="text-[10px] text-marrow-light font-black uppercase tracking-wider">Trascina per riordinare</p>
+           <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/40 rounded-xl sm:rounded-2xl border border-marrow-light/10 shadow-sm">
+             <span className="material-symbols-outlined text-primary text-xs sm:text-sm">info</span>
+             <p className="text-[9px] sm:text-[10px] text-marrow-light font-black uppercase tracking-wider">
+               <span className="sm:hidden">Frecce per riordinare</span>
+               <span className="hidden sm:inline">Trascina per riordinare</span>
+             </p>
            </div>
         )}
       </div>
@@ -121,19 +133,19 @@ export function ActiveCatalogsPanel({
 
       {/* Merge Selection Bar */}
       {isSelectionMode && (
-        <div className="p-4 rounded-2xl bg-primary border-2 border-primary shadow-xl shadow-primary/20 flex items-center justify-between animate-in slide-in-from-top duration-300">
-          <div className="flex items-center gap-4">
-            <div className="size-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <Wand2 className="h-5 w-5 text-white" />
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-primary border-2 border-primary shadow-xl shadow-primary/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="size-9 sm:size-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+              <Wand2 className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-white" />
             </div>
-            <div className="flex flex-col">
-              <p className="text-xs font-black text-white uppercase tracking-[0.2em] leading-none mb-1">Fase 2: Unione Intelligente</p>
-              <p className="text-sm font-bold text-white/80">Scegli il secondo catalogo da fondere con <span className="text-white underline decoration-white/30">{mergeSource?.name}</span></p>
+            <div className="flex flex-col min-w-0">
+              <p className="text-[10px] sm:text-xs font-black text-white uppercase tracking-[0.2em] leading-none mb-1">Fase 2: Unione Intelligente</p>
+              <p className="text-xs sm:text-sm font-bold text-white/90 truncate">Scegli il secondo catalogo da fondere con <span className="text-white underline decoration-white/30">{mergeSource?.name}</span></p>
             </div>
           </div>
           <button 
             onClick={cancelMerge}
-            className="px-4 py-2 bg-white text-primary rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-marrow-deep hover:text-white transition-all shadow-lg"
+            className="w-full sm:w-auto px-4 py-2 sm:py-2 bg-white text-primary rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-marrow-deep hover:text-white transition-all shadow-lg shrink-0 min-h-[38px] touch-manipulation flex items-center justify-center"
           >
             Annulla
           </button>
@@ -161,6 +173,10 @@ export function ActiveCatalogsPanel({
               onRemove={() => !isSelectionMode && onRemove(catalog.id)}
               onEdit={() => !isSelectionMode && onEdit(catalog)}
               onDuplicate={() => !isSelectionMode && onDuplicate(catalog)}
+              onMoveUp={() => !isSelectionMode && handleMoveCatalog(index, 'up')}
+              onMoveDown={() => !isSelectionMode && handleMoveCatalog(index, 'down')}
+              canMoveUp={!isSelectionMode && index > 0}
+              canMoveDown={!isSelectionMode && index < catalogs.length - 1}
               onMergeStart={() => startMerging(catalog)}
               onMergeSelect={() => selectMergeTarget(catalog)}
               onDragStart={() => handleDragStart(index)}
@@ -183,7 +199,7 @@ export function ActiveCatalogsPanel({
           </div>
           
           <div className="flex flex-col gap-4 w-full">
-            {myLists.map((catalog, index) => (
+            {myLists.map((catalog) => (
               <CatalogItem
                 key={catalog.id}
                 catalog={catalog}
@@ -193,10 +209,6 @@ export function ActiveCatalogsPanel({
                 canBeMergeTarget={!mergeSource || mergeSource.type === catalog.type}
                 onMergeStart={() => startMerging(catalog)}
                 onMergeSelect={() => selectMergeTarget(catalog)}
-                onDragStart={() => handleDragStart(index + 1000)}
-                onDragOver={(e) => { e.preventDefault(); }}
-                onDrop={() => handleDrop(index + 1000)}
-                onDragEnd={() => setDragIndex(null)}
               />
             ))}
           </div>
