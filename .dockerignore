@@ -3,12 +3,17 @@ npm-debug.log
 frontend/node_modules
 frontend/.next
 frontend/out
+.cache
+.scratch
 .git
 .env
+.env.test
+secrets.env
 *.md
 Dockerfile
 .dockerignore
 .github
+ops
 tests
 docs
 eslint.config.js

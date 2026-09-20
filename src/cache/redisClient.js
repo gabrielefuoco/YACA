@@ -15,21 +15,20 @@ if (process.env.NODE_ENV === 'test') {
         disconnect: () => {}
     };
 } else {
-    // Connettiti al demone locale sulla porta standard (es. Docker / HF Spaces)
-    redisClient = new Redis('redis://127.0.0.1:6379', {
+    // Redis è un container separato (docker-compose.yml): l'URL arriva da REDIS_URL.
+    const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+    redisClient = new Redis(redisUrl, {
         maxRetriesPerRequest: 1,
         enableOfflineQueue: false,
         retryStrategy(times) {
-            if (times > 3) {
-                return null; // Ferma i retry per evitare loop continui se Redis non è in esecuzione
-            }
-            return Math.min(times * 100, 1000);
+            // Backoff continuo fino a 3s: in compose Redis può partire dopo l'app.
+            return Math.min(times * 100, 3000);
         }
     });
 
     redisClient.on('connect', () => {
         isAvailable = true;
-        console.log('[Redis] Connesso correttamente a 127.0.0.1:6379');
+        console.log(`[Redis] Connesso correttamente a ${redisUrl}`);
     });
 
     redisClient.on('error', (err) => {

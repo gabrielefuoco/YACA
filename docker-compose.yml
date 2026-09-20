@@ -30,6 +30,10 @@ services:
       - "127.0.0.1:7860:7860"
     env_file:
       - .env
+    environment:
+      # Contratto di deploy: la porta e l'URL di Redis li decide il compose, non il .env locale.
+      - PORT=7860
+      - REDIS_URL=redis://redis:6379
     volumes:
       - yaca_tmdb:/data/tmdb
       - yaca_badges:/data/badges

@@ -15,15 +15,15 @@ RUN npm run build
 FROM node:20-slim AS runner
 WORKDIR /app
 
-# Install system fonts for SVG text rendering and redis-server for cache
+# Install system fonts for SVG text rendering
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    fontconfig fonts-dejavu-core fonts-noto-core redis-server \
+    fontconfig fonts-dejavu-core fonts-noto-core \
     && rm -rf /var/lib/apt/lists/* \
     && fc-cache -fv
 
 # Imposta NODE_ENV a production
 ENV NODE_ENV=production
-# Hugging Face Spaces richiede la porta 7860
+# Porta di default dell'app (sovrascrivibile da PORT; deve combaciare con docker-compose.yml)
 ENV PORT=7860
 
 # Copia le dipendenze del backend
@@ -42,5 +42,5 @@ RUN chmod +x start.sh
 # Esponi la porta richiesta
 EXPOSE 7860
 
-# Start Redis and Node app via script
+# Avvia l'app (Redis è un servizio separato, v. docker-compose.yml)
 CMD ["./start.sh"]
