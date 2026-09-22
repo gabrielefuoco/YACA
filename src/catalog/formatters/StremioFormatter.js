@@ -129,7 +129,7 @@ function sanitizeCatalogMeta(item, options = {}) {
     if (!item) return item;
 
     const { shouldApplyEpisodeBadge, isLandscapeEnabled, userConfig, hostUrl } = options;
-    let badgeText = shouldApplyEpisodeBadge ? getEpisodeBadgeText(item) : null;
+    let badgeText = (shouldApplyEpisodeBadge || item._forceBadgeText) ? getEpisodeBadgeText(item) : null;
 
     if (item._itaBadge) {
         if (badgeText) {
@@ -328,6 +328,14 @@ function sanitizeCatalogMeta(item, options = {}) {
 
     if (item._yacaMatch !== undefined) {
         baseItem._yacaMatch = item._yacaMatch;
+    }
+
+    if (item._forceBadgeText !== undefined) {
+        baseItem._forceBadgeText = item._forceBadgeText;
+    }
+
+    if (item._itaBadge !== undefined) {
+        baseItem._itaBadge = item._itaBadge;
     }
 
     if (options.isMetaDetail) {

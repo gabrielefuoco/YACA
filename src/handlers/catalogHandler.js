@@ -162,7 +162,7 @@ function getLatestEpisodeInfo(item) {
     return null;
 }
 
-async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta, type, baseId) {
+async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta, type, baseId, options = {}) {
     if (!cachedData || !Array.isArray(cachedData.metas) || cachedData.metas.length === 0) {
         return cachedData || { metas: [] };
     }
@@ -170,10 +170,29 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
     // Clone metas to avoid modifying cached objects in place
     const metas = cachedData.metas.map(m => ({ ...m }));
 
+    // Snapshot in RAM per gli anime (una sola lettura, cache TTL breve, non lancia mai)
+    let animeSnapshot = options.snapshot || null;
+    if (!animeSnapshot && metas.some(isItemAnime)) {
+        try {
+            animeSnapshot = await animeAiringState.getSnapshot();
+        } catch (_e) {
+            animeSnapshot = null;
+        }
+    }
+
     // Catalogo novità anime: i badge vengono dallo stato esterno, non da StreamBadge/TMDB.
     if (isAiringStateCatalog(baseId, catalogMeta)) {
-        return await applyAiringStateBadges(metas, { userConfig, hostUrl, catalogMeta, type });
+        return await applyAiringStateBadges(metas, { userConfig, hostUrl, catalogMeta, type, snapshot: animeSnapshot });
     }
+
+    const activeProfileSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
+    const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
+    const sanitizeOptions = {
+        shouldApplyEpisodeBadge: (type === 'series' || type === 'anime') && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId)),
+        isLandscapeEnabled: isLandscape,
+        userConfig,
+        hostUrl
+    };
 
     // Escludiamo gli anime dallo scanner torrent ITA a monte (resta attivo per serie e film non-anime)
     const nonAnimeMetas = metas.filter(item => !isItemAnime(item));
@@ -181,9 +200,10 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
         .map(item => getBaseId(item.id))
         .filter(id => id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:') || id.startsWith('tt'));
 
+    let allBadges = [];
     if (itemIds.length > 0) {
         try {
-            const allBadges = await StreamBadge.find({ baseId: { $in: itemIds } }).lean();
+            allBadges = await StreamBadge.find({ baseId: { $in: itemIds } }).lean();
             
             const existingStremioIds = new Set(allBadges.map(b => b.stremioId));
             const queuePromises = [];
@@ -246,121 +266,139 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
             if (queuePromises.length > 0) {
                 Promise.all(queuePromises).catch(() => {});
             }
-
-            const activeProfileSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
-            const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
-            const sanitizeOptions = {
-                shouldApplyEpisodeBadge: (type === 'series' || type === 'anime') && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId)),
-                isLandscapeEnabled: isLandscape,
-                userConfig,
-                hostUrl
-            };
-
-            const getEpNum = (stremioId) => {
-                const parts = stremioId.split(':');
-                return parseInt(parts[parts.length - 1]) || 0;
-            };
-
-            const processedMetas = [];
-
-            for (let i = 0; i < metas.length; i++) {
-                const item = metas[i];
-
-                // Titolo anime: lo scanner torrent e i suoi badge/cloni non si applicano.
-                // Vince lo stato del modulo esterno (airing_state). Nessun clone _ita_offset da streambadges.
-                if (isItemAnime(item)) {
-                    const isAlreadyCloned = String(item.id).endsWith('_ita_offset');
-                    const animeItem = { ...item, _itaBadge: false };
-                    if (sanitizeOptions.shouldApplyEpisodeBadge && !isAlreadyCloned) {
-                        processedMetas.push(sanitizeCatalogMeta(animeItem, sanitizeOptions));
-                    } else {
-                        processedMetas.push(animeItem);
-                    }
-                    continue;
-                }
-
-                const id = String(item.id);
-                let bId = id;
-                if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
-                    const parts = id.split(':');
-                    bId = `${parts[0]}:${parts[1]}`;
-                }
-
-                const itemBadges = allBadges.filter(b => b.baseId === bId);
-                const itaBadges = itemBadges.filter(b => b.hasIta === true);
-                const noItaBadges = itemBadges.filter(b => b.hasIta === false);
-                const isAlreadyCloned = id.endsWith('_ita_offset');
-
-                if (itaBadges.length > 0) {
-                    // Troviamo maxItaEp e maxNoItaEp per calcolare l'offset
-                    const sortedIta = itaBadges.map(b => getEpNum(b.stremioId)).sort((a, b) => a - b);
-                    const sortedNoIta = noItaBadges.map(b => getEpNum(b.stremioId)).sort((a, b) => a - b);
-
-                    const maxIta = sortedIta[sortedIta.length - 1];
-                    const maxNoIta = sortedNoIta.find(ep => ep > maxIta);
-
-                    const hasOffset = maxNoIta && (maxNoIta > maxIta);
-
-                    if (hasOffset && !isAlreadyCloned && sanitizeOptions.shouldApplyEpisodeBadge && (item.type === 'series' || item.type === 'anime')) {
-                        // 1. Elemento originale (Sub): badge ITA disattivato
-                        const subItem = { ...item };
-                        subItem._itaBadge = false;
-                        if (sanitizeOptions.shouldApplyEpisodeBadge) {
-                            processedMetas.push(sanitizeCatalogMeta(subItem, sanitizeOptions));
-                        } else {
-                            processedMetas.push(subItem);
-                        }
-
-                        // 2. Elemento clone (Dub): badge ITA attivato, forziamo stagione ed episodio
-                        const dubItem = { ...item };
-                        dubItem.id = `${item.id}_ita_offset`;
-                        dubItem._itaBadge = true;
-
-                        // Troviamo il badge specifico per recuperare stagione ed episodio originali
-                        const maxItaBadge = itaBadges.find(b => getEpNum(b.stremioId) === maxIta);
-                        let maxItaSeason = 1;
-                        let maxItaEpisode = maxIta;
-                        
-                        if (maxItaBadge) {
-                            const parts = maxItaBadge.stremioId.split(':');
-                            if (maxItaBadge.stremioId.startsWith('tmdb:tv:')) {
-                                maxItaSeason = parseInt(parts[3]) || 1;
-                                maxItaEpisode = parseInt(parts[4]) || maxIta;
-                            } else if (parts.length === 4) {
-                                maxItaSeason = parseInt(parts[2]) || 1;
-                                maxItaEpisode = parseInt(parts[3]) || maxIta;
-                            }
-                        }
-                        
-                        dubItem._forceSeason = maxItaSeason;
-                        dubItem._forceEpisode = maxItaEpisode;
-
-                        processedMetas.push(sanitizeCatalogMeta(dubItem, sanitizeOptions));
-                    } else {
-                        // Nessun offset: badge ITA standard
-                        const standardItem = { ...item };
-                        standardItem._itaBadge = true;
-                        processedMetas.push(sanitizeCatalogMeta(standardItem, sanitizeOptions));
-                    }
-                } else {
-                    // Non ci sono flussi ita, disattiva il badge
-                    const subItem = { ...item };
-                    subItem._itaBadge = false;
-                    if (sanitizeOptions.shouldApplyEpisodeBadge) {
-                        processedMetas.push(sanitizeCatalogMeta(subItem, sanitizeOptions));
-                    } else {
-                        processedMetas.push(subItem);
-                    }
-                }
-            }
-
-            return { metas: processedMetas };
         } catch (badgeErr) {
             console.error('[Catalog Post-Cache] Error applying stream badges:', badgeErr.message);
         }
     }
 
-    return { metas: metas.map(m => (isItemAnime(m) ? { ...m, _itaBadge: false } : m)) };
+    const getEpNum = (stremioId) => {
+        const parts = stremioId.split(':');
+        return parseInt(parts[parts.length - 1]) || 0;
+    };
+
+    const processedMetas = [];
+
+    for (let i = 0; i < metas.length; i++) {
+        const item = metas[i];
+
+        // Titolo anime: lo scanner torrent e i suoi badge/cloni non si applicano.
+        // La verità ITA arriva dallo stato esterno (anime_airing_state).
+        // Badge ITA ovunque se il titolo è doppiato (formato 'ITA n'), ma MAI cloni nei cataloghi standard.
+        if (isItemAnime(item)) {
+            const isAlreadyCloned = String(item.id).endsWith('_ita_offset');
+
+            let doc = null;
+            if (animeSnapshot) {
+                doc = animeAiringState.findDocument(animeSnapshot, item.id);
+                if (!doc) {
+                    const tmdbId = extractTmdbId(item);
+                    if (tmdbId && animeSnapshot.byTmdbId) {
+                        doc = animeSnapshot.byTmdbId.get(tmdbId) || null;
+                    }
+                }
+                if (!doc && item.id && String(item.id).startsWith('kitsu:')) {
+                    const kitsuId = String(item.id).replace('kitsu:', '').replace(/_ita_offset$/, '');
+                    try {
+                        const mappedTmdbId = animeMappingStore.resolveTmdbFromKitsu(kitsuId);
+                        if (mappedTmdbId && animeSnapshot.byTmdbId) {
+                            doc = animeSnapshot.byTmdbId.get(String(mappedTmdbId)) || null;
+                        }
+                    } catch (_e) {
+                        // Lookup difensivo, mai crash
+                    }
+                }
+            }
+
+            const dubEpisode = animeAiringState.getDubEpisode(doc);
+            const animeItem = { ...item, _itaBadge: false };
+            if (dubEpisode !== null) {
+                animeItem._forceBadgeText = `ITA ${dubEpisode}`;
+            }
+
+            if ((sanitizeOptions.shouldApplyEpisodeBadge || animeItem._forceBadgeText) && !isAlreadyCloned) {
+                processedMetas.push(sanitizeCatalogMeta(animeItem, sanitizeOptions));
+            } else {
+                processedMetas.push(animeItem);
+            }
+            continue;
+        }
+
+        const id = String(item.id);
+        let bId = id;
+        if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
+            const parts = id.split(':');
+            bId = `${parts[0]}:${parts[1]}`;
+        }
+
+        const itemBadges = allBadges.filter(b => b.baseId === bId);
+        const itaBadges = itemBadges.filter(b => b.hasIta === true);
+        const noItaBadges = itemBadges.filter(b => b.hasIta === false);
+        const isAlreadyCloned = id.endsWith('_ita_offset');
+
+        if (itaBadges.length > 0) {
+            // Troviamo maxItaEp e maxNoItaEp per calcolare l'offset
+            const sortedIta = itaBadges.map(b => getEpNum(b.stremioId)).sort((a, b) => a - b);
+            const sortedNoIta = noItaBadges.map(b => getEpNum(b.stremioId)).sort((a, b) => a - b);
+
+            const maxIta = sortedIta[sortedIta.length - 1];
+            const maxNoIta = sortedNoIta.find(ep => ep > maxIta);
+
+            const hasOffset = maxNoIta && (maxNoIta > maxIta);
+
+            if (hasOffset && !isAlreadyCloned && sanitizeOptions.shouldApplyEpisodeBadge && (item.type === 'series' || item.type === 'anime')) {
+                // 1. Elemento originale (Sub): badge ITA disattivato
+                const subItem = { ...item };
+                subItem._itaBadge = false;
+                if (sanitizeOptions.shouldApplyEpisodeBadge) {
+                    processedMetas.push(sanitizeCatalogMeta(subItem, sanitizeOptions));
+                } else {
+                    processedMetas.push(subItem);
+                }
+
+                // 2. Elemento clone (Dub): badge ITA attivato, forziamo stagione ed episodio
+                const dubItem = { ...item };
+                dubItem.id = `${item.id}_ita_offset`;
+                dubItem._itaBadge = true;
+
+                // Troviamo il badge specifico per recuperare stagione ed episodio originali
+                const maxItaBadge = itaBadges.find(b => getEpNum(b.stremioId) === maxIta);
+                let maxItaSeason = 1;
+                let maxItaEpisode = maxIta;
+                
+                if (maxItaBadge) {
+                    const parts = maxItaBadge.stremioId.split(':');
+                    if (maxItaBadge.stremioId.startsWith('tmdb:tv:')) {
+                        maxItaSeason = parseInt(parts[3]) || 1;
+                        maxItaEpisode = parseInt(parts[4]) || maxIta;
+                    } else if (parts.length === 4) {
+                        maxItaSeason = parseInt(parts[2]) || 1;
+                        maxItaEpisode = parseInt(parts[3]) || maxIta;
+                    }
+                }
+                
+                dubItem._forceSeason = maxItaSeason;
+                dubItem._forceEpisode = maxItaEpisode;
+
+                processedMetas.push(sanitizeCatalogMeta(dubItem, sanitizeOptions));
+            } else {
+                // Nessun offset: badge ITA standard
+                const standardItem = { ...item };
+                standardItem._itaBadge = true;
+                processedMetas.push(sanitizeCatalogMeta(standardItem, sanitizeOptions));
+            }
+        } else {
+            // Non ci sono flussi ita, disattiva il badge
+            const subItem = { ...item };
+            subItem._itaBadge = false;
+            if (sanitizeOptions.shouldApplyEpisodeBadge) {
+                processedMetas.push(sanitizeCatalogMeta(subItem, sanitizeOptions));
+            } else {
+                processedMetas.push(subItem);
+            }
+        }
+    }
+
+    return { metas: processedMetas };
 }
 
 /**

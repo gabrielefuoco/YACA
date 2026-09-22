@@ -394,8 +394,13 @@ function findDocument(snapshot, itemId) {
     if (parts[0] === 'kitsu' && parts[1]) {
         return (snapshot.byKitsuId && snapshot.byKitsuId.get(parts[1])) || null;
     }
-    if (parts[0] === 'tmdb' && parts[1]) {
-        return (snapshot.byTmdbId && snapshot.byTmdbId.get(parts[1])) || null;
+    if (parts[0] === 'tmdb') {
+        if (/^\d+$/.test(parts[1])) {
+            return (snapshot.byTmdbId && snapshot.byTmdbId.get(parts[1])) || null;
+        }
+        if (parts.length > 2 && /^\d+$/.test(parts[2])) {
+            return (snapshot.byTmdbId && snapshot.byTmdbId.get(parts[2])) || null;
+        }
     }
     if (/^\d+$/.test(raw)) {
         return (snapshot.byTmdbId && snapshot.byTmdbId.get(raw)) || null;
@@ -405,6 +410,31 @@ function findDocument(snapshot, itemId) {
 
 function getCardInfoForId(snapshot, itemId, options = {}) {
     return getCardInfo(findDocument(snapshot, itemId), options);
+}
+
+/**
+ * Ritorna l'episodio doppiato più recente dal documento, oppure null se non è doppiato.
+ * Legge `italian.dub.latest`, con fallback sull'episodio più recente con `dubIta: true`.
+ */
+function getDubEpisode(doc) {
+    if (!doc) return null;
+    if (doc.dub && Number.isFinite(doc.dub.episode) && doc.dub.episode > 0) {
+        return doc.dub.episode;
+    }
+    if (Array.isArray(doc.episodes)) {
+        let maxEp = 0;
+        for (const ep of doc.episodes) {
+            if (ep.dubIta && Number.isFinite(ep.episode) && ep.episode > maxEp) {
+                maxEp = ep.episode;
+            }
+        }
+        if (maxEp > 0) return maxEp;
+    }
+    return null;
+}
+
+function getDubEpisodeForId(snapshot, itemId) {
+    return getDubEpisode(findDocument(snapshot, itemId));
 }
 
 /**
@@ -464,6 +494,8 @@ module.exports = {
     getCardInfoForId,
     getWindowInfo,
     findDocument,
+    getDubEpisode,
+    getDubEpisodeForId,
     resolveCardId,
     validateDocument,
     buildSnapshot,

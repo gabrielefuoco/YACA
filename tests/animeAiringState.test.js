@@ -284,11 +284,29 @@ describe('AnimeAiringState - finestra 14 giorni e card', () => {
         expect(animeAiringState.getCardInfoForId(snapshot, null, WINDOW)).toBeNull();
     });
 
-    test('lookup per id item: kitsu, kitsu con _ita_offset, tmdb', () => {
+    test('lookup per id item: kitsu, kitsu con _ita_offset, tmdb (anche con prefisso tv/movie)', () => {
         expect(animeAiringState.getCardInfoForId(snapshot, 'kitsu:48269', WINDOW)).not.toBeNull();
         expect(animeAiringState.getCardInfoForId(snapshot, 'kitsu:48269_ita_offset', WINDOW)).not.toBeNull();
         expect(animeAiringState.getCardInfoForId(snapshot, 'tmdb:240411', WINDOW)).not.toBeNull();
+        expect(animeAiringState.getCardInfoForId(snapshot, 'tmdb:tv:240411', WINDOW)).not.toBeNull();
         expect(animeAiringState.getCardInfoForId(snapshot, '240411', WINDOW)).not.toBeNull();
+    });
+
+    test('getDubEpisode e getDubEpisodeForId estraggono l\'ultimo episodio doppiato indipendentemente dalla finestra', () => {
+        // Dandadan: dub S2E8 -> 8
+        const dandadanDoc = getDoc(snapshot, '240411');
+        expect(animeAiringState.getDubEpisode(dandadanDoc)).toBe(8);
+        expect(animeAiringState.getDubEpisodeForId(snapshot, 'kitsu:48269')).toBe(8);
+        expect(animeAiringState.getDubEpisodeForId(snapshot, 'tmdb:tv:240411')).toBe(8);
+
+        // Serie conclusa fuori finestra (60 giorni fa): getDubEpisode restituisce 12
+        const conclusaDoc = getDoc(snapshot, '999001');
+        expect(animeAiringState.getDubEpisode(conclusaDoc)).toBe(12);
+        expect(animeAiringState.getDubEpisodeForId(snapshot, 'kitsu:111')).toBe(12);
+
+        // Titolo non doppiato o assente -> null
+        expect(animeAiringState.getDubEpisode(null)).toBeNull();
+        expect(animeAiringState.getDubEpisodeForId(snapshot, 'kitsu:999999')).toBeNull();
     });
 
     test('le novità sono ordinate per ultimo episodio disponibile (più recente prima)', () => {

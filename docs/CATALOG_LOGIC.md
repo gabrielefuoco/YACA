@@ -143,8 +143,11 @@ Per evitare di superare i rate limit delle API esterne (TMDB, Kitsu, Trakt) e ga
 Per indicare visivamente all'utente la disponibilità del doppiaggio o dei sottotitoli in italiano direttamente all'interno delle locandine dei cataloghi di Stremio, YACA implementa un sistema asincrono di scansione dei flussi in background. Questo evita di rallentare il caricamento iniziale dei cataloghi ed evita chiamate massive e sincrone ai proxy torrent.
 
 > [!IMPORTANT]
-> **Ambito esclusivo: Serie e Film Non-Anime.**
-> Gli **anime sono esclusi a monte** da questo scanner (tramite `isAnimeContent` e `animeMappingStore` in `catalogHandler.js`). Un titolo anime non viene interrogato su `streambadges` né viene mai accodato in `pendingscans`. Per gli anime, la verità sulla disponibilità dell'italiano (per-episodio, sub e doppiaggio) è gestita dal modulo sorgente esterno (`services/anime-source` e la collezione `anime_airing_state`).
+> **Ambito esclusivo dello scanner torrent: Serie e Film Non-Anime.**
+> Gli **anime sono esclusi a monte** da questo scanner (tramite `isItemAnime` e `animeMappingStore` in `catalogHandler.js`). Un titolo anime non viene interrogato su `streambadges` né viene mai accodato in `pendingscans`.
+> Per gli anime, la disponibilità dell'italiano proviene dallo stato esterno (`anime_airing_state`):
+> - **In tutti i cataloghi**: se il titolo ha un canale doppiato, riceve il badge `ITA n` (formato coerente col ticket 10, senza duplicare la card);
+> - **Nel catalogo novità** (`preset_anime_simulcast`): produce la card sub `EP n` e, se presente un'uscita doppiata nella finestra di 14 giorni, il clone `_ita_offset` con `ITA n`.
 
 ### Flusso di Scansione ed Idratazione del Badge (Serie e Film Non-Anime)
 
