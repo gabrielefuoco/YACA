@@ -17,8 +17,10 @@
 #        mongorestore --uri="${MONGODB_URI}" --archive="/tmp/<NOME_BACKUP>.archive.gz" --gzip --drop
 #
 #    - Oppure tramite container Docker (se gli strumenti Mongo non sono installati sull'host):
-#        docker run --rm -v /tmp:/backup mongo:7 \
-#          mongorestore --uri="${MONGODB_URI}" --archive="/backup/<NOME_BACKUP>.archive.gz" --gzip --drop
+#        docker run --rm --user "$(id -u):$(id -g)" --entrypoint mongorestore \
+#          -v /tmp:/backup mongo:7 \
+#          --uri="${MONGODB_URI}" --archive="/backup/<NOME_BACKUP>.archive.gz" --gzip --drop
+#      (nota: `--entrypoint` è obbligatorio — vedi la nota sull'entrypoint più sotto)
 #
 #    NOTA: Il flag '--drop' sovrascrive le collezioni esistenti prima del ripristino.
 #          Omettere '--drop' se si intende eseguire un merge non distruttivo.
@@ -72,10 +74,15 @@ if command -v mongodump >/dev/null 2>&1; then
   mongodump --uri="${MONGODB_URI}" --archive="${ARCHIVE_PATH}" --gzip
 elif command -v docker >/dev/null 2>&1; then
   echo "[i] 'mongodump' non trovato sull'host. Esecuzione tramite container Docker (mongo:7)..."
-  # --user + HOME: l'immagine mongo non gira come root, quindi senza questo non può
-  # scrivere nella cartella temporanea montata (errore: "permission denied").
-  docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "${TMP_DIR}:/backup" mongo:7 \
-    mongodump --uri="${MONGODB_URI}" --archive="/backup/${ARCHIVE_NAME}" --gzip
+  # Due dettagli non negoziabili, verificati il 2026-09-22:
+  #  - `--entrypoint mongodump`: invocare `mongodump` come comando del container lo fa passare
+  #    dall'entrypoint dell'immagine, che cambia utente e fa fallire la scrittura con
+  #    "permission denied" sulla cartella montata. Con --entrypoint il binario parte diretto.
+  #  - `--user` + `HOME=/tmp`: il file deve nascere con l'uid dell'invocante (root sotto systemd),
+  #    altrimenti il resto dello script non lo può leggere/copiare.
+  docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp --entrypoint mongodump \
+    -v "${TMP_DIR}:/backup" mongo:7 \
+    --uri="${MONGODB_URI}" --archive="/backup/${ARCHIVE_NAME}" --gzip
 else
   echo "[-] ERRORE: Né 'mongodump' né 'docker' sono disponibili per generare il dump." >&2
   exit 1
