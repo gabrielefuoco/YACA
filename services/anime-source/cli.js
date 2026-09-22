@@ -21,6 +21,7 @@ const { SeriesDiscoveryManager } = require('./src/discovery');
 const DEFAULT_MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/yaca';
 const REFRESH_AIRING_MS = 3 * 60 * 60 * 1000;      // ~3 ore per serie in corso
 const DEFAULT_LIMIT = 300;                         // ~300 serie come budget per giro (ticket 20)
+const DEFAULT_DUB_LIMIT = 2000; // la passata doppiati non usa il budget della scansione: l'archivio ha ~1520 titoli
 
 function parseArgs(args) {
     const opts = {
@@ -29,6 +30,7 @@ function parseArgs(args) {
         series: null,
         mongoUri: DEFAULT_MONGO_URI,
         limit: DEFAULT_LIMIT,
+        dubLimit: DEFAULT_DUB_LIMIT,
         healthCheck: false,
         refreshList: false,
         buildDubList: false,
@@ -46,6 +48,12 @@ function parseArgs(args) {
             opts.series = args[++i];
         } else if (arg === '--mongo-uri' && i + 1 < args.length) {
             opts.mongoUri = args[++i];
+        } else if (arg === '--dub-limit' && i + 1 < args.length) {
+            const parsedDubLimit = parseInt(args[i + 1], 10);
+            if (!isNaN(parsedDubLimit) && parsedDubLimit > 0) {
+                opts.dubLimit = parsedDubLimit;
+                i++;
+            }
         } else if (arg === '--limit' && i + 1 < args.length) {
             const parsedLimit = parseInt(args[++i], 10);
             if (!isNaN(parsedLimit) && parsedLimit > 0) {
@@ -79,6 +87,7 @@ Opzioni:
   --once                Esegue una sola scansione ed esce
   --series <titolo>     Debug: cerca ed elabora solo la serie specificata (esce subito)
   --limit <n>           Tetto massimo di serie per giro (default: 300)
+  --dub-limit <n>       Tetto massimo di serie per la passata doppiati (default: 2000)
   --health-check        Verifica il battito di salute (exit 0 se < 12h, exit 1 altrimenti)
   --refresh-list        Forza la riscoperta della lista serie in corso ignorando la cache di 24h
   --build-dub-list      Costruisce o forza la lista dei doppiati da AnimeUnity ed elabora i dati episodici
@@ -442,7 +451,7 @@ async function main() {
     }
 
     if (opts.buildDubList) {
-        await runDubbedPass({ limit: opts.limit, forceRefresh: true });
+        await runDubbedPass({ limit: opts.dubLimit, forceRefresh: true });
         if (store) await store.close();
         console.log('[AnimeSource] Passata doppiati completata.');
         process.exit(0);
@@ -470,7 +479,7 @@ async function main() {
     // né il catalogo novità né il primo battito di salute.
     if (!discoveryManager.hasDubbedList()) {
         console.log('[AnimeSource] Elenco doppiati non trovato in cache (.cache/dubbed-series.json). Rilevato primo avvio: avvio passata doppiati...');
-        await runDubbedPass({ limit: opts.limit, forceRefresh: false });
+        await runDubbedPass({ limit: opts.dubLimit, forceRefresh: false });
     }
 
     // Modalità continua (in container/daemon)
