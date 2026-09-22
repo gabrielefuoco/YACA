@@ -105,7 +105,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Endpoint per mitigare l'ibernazione (Scale to Zero) su Hugging Face Spaces.
+// Endpoint per mitigare l'ibernazione (Scale to Zero) sui free tier.
 // Uptime Robot chiama questa rotta per fare Keep-Alive e prevenire il cold start.
 app.get('/api/cron/warmup', (req, res) => {
     res.json({ status: 'ok', message: 'Uptime Robot Keep-Alive. Il demone TmdbDumpDaemon gestisce la cache in background.' });

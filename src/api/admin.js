@@ -99,14 +99,12 @@ router.get('/tmdb-dump/status', async (req, res) => {
     }
 });
 
-// Endpoint per innescare un backup su HF Dataset
+// Endpoint per innescare un backup
 router.post('/tmdb-dump/backup', async (req, res) => {
-    // Il backup effettivo userebbe huggingface_hub in uno script python 
-    // lanciato in child_process. Per ora ritorniamo istruzioni per CLI.
+    // Il backup dei dati è gestito in ops/yaca-backup.sh (dump MongoDB Atlas -> storage remoto).
     res.json({ 
         success: true, 
-        message: 'Backup function requires hf CLI.',
-        cli_command: 'hf sync hf://buckets/Gabriele-fuoco/YACA-storage/tmdb/ ./backup_tmdb/'
+        message: 'Il backup dei dati è gestito in ops/yaca-backup.sh'
     });
 });
 

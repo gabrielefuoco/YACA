@@ -251,8 +251,8 @@ describe('Resilience Audit Fixes (10 Critical Vulnerabilities)', () => {
             expect(fileContent).toContain('this.syncInterval.unref()');
         });
 
-        test('HFStorageClient timers have unref called', () => {
-            const fileContent = fs.readFileSync(path.join(__dirname, '../src/utils/HFStorageClient.js'), 'utf8');
+        test('BadgeDiskCache timers have unref called', () => {
+            const fileContent = fs.readFileSync(path.join(__dirname, '../src/utils/BadgeDiskCache.js'), 'utf8');
             expect(fileContent).toContain('initGcTimer.unref()');
             expect(fileContent).toContain('periodicGcTimer.unref()');
         });

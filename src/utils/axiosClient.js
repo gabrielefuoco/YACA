@@ -6,7 +6,7 @@ const https = require('https');
 /**
  * Creates an Axios instance with automatic retry logic for 429 (Too Many Requests).
  * It reads the 'retry-after' header if present, or defaults to a fallback delay.
- * Forces IPv4 to bypass Hugging Face outbound IPv6 blocks natively.
+ * Forces IPv4 for stable outbound network connectivity.
  * 
  * @param {string} baseURL The base URL for the API
  * @param {object} options Additional axios config (headers, timeout, etc.)

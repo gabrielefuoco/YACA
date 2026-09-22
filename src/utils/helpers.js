@@ -75,8 +75,7 @@ function resolveHostUrl(req) {
     if (explicitHost) {
         host = explicitHost;
     } else if (process.env.SPACE_HOST) {
-        // 2. Hugging Face Spaces detection
-        // SPACE_HOST is typically "username-spacename.hf.space"
+        // 2. Legacy fallback space host detection
         host = `https://${process.env.SPACE_HOST}`;
     } else {
         // 3. Reverse Proxy Headers
@@ -93,7 +92,7 @@ function resolveHostUrl(req) {
     }
 
     // Force HTTPS for non-local environments to avoid Mixed Content issues
-    // Hugging Face and Render always terminate SSL at the proxy
+    // Reverse proxies terminate SSL upstream
     if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
         host = host.replace(/^http:\/\//, 'https://');
     }

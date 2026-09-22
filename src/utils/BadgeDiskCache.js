@@ -3,11 +3,11 @@ const fsPromises = require('fs/promises');
 const path = require('path');
 
 /**
- * Client proxy for Local/Mounted Storage (e.g. Hugging Face Space /data volume)
+ * Local/Mounted disk cache for generated badges (e.g. persistent volume /data or local .cache)
  */
-class LocalStorageClient {
+class BadgeDiskCache {
     constructor() {
-        // Controllo robusto: se esiste la cartella /data (mounted in HF Spaces), la usiamo.
+        // Controllo robusto: se esiste la cartella /data (volume montato persistente), la usiamo.
         // Altrimenti (es. dev locale) usiamo .cache locale
         this.basePath = fs.existsSync('/data') ? '/data/badges' : path.resolve(__dirname, '../../.cache/badges');
         
@@ -24,7 +24,7 @@ class LocalStorageClient {
 
     async _startGarbageCollector() {
         try {
-            console.log(`[LocalStorageClient] Starting Garbage Collection in ${this.basePath}...`);
+            console.log(`[BadgeDiskCache] Starting Garbage Collection in ${this.basePath}...`);
             const files = await fsPromises.readdir(this.basePath);
             const now = Date.now();
             const maxAgeMs = 7 * 24 * 60 * 60 * 1000; // 7 giorni in ms
@@ -41,15 +41,15 @@ class LocalStorageClient {
                         deletedCount++;
                     }
                 } catch (err) {
-                    console.error(`[LocalStorageClient] Failed to check/delete file ${file}:`, err.message);
+                    console.error(`[BadgeDiskCache] Failed to check/delete file ${file}:`, err.message);
                 }
             }
 
             if (deletedCount > 0) {
-                console.log(`[LocalStorageClient] GC completed. Deleted ${deletedCount} old badges.`);
+                console.log(`[BadgeDiskCache] GC completed. Deleted ${deletedCount} old badges.`);
             }
         } catch (error) {
-            console.error(`[LocalStorageClient] Garbage Collection error:`, error.message);
+            console.error(`[BadgeDiskCache] Garbage Collection error:`, error.message);
         }
     }
 
@@ -57,10 +57,10 @@ class LocalStorageClient {
         try {
             if (!fs.existsSync(this.basePath)) {
                 fs.mkdirSync(this.basePath, { recursive: true });
-                console.log(`[LocalStorageClient] Created cache directory at ${this.basePath}`);
+                console.log(`[BadgeDiskCache] Created cache directory at ${this.basePath}`);
             }
         } catch (err) {
-            console.error(`[LocalStorageClient] Error creating directory ${this.basePath}:`, err.message);
+            console.error(`[BadgeDiskCache] Error creating directory ${this.basePath}:`, err.message);
         }
     }
 
@@ -87,7 +87,7 @@ class LocalStorageClient {
             if (error.code === 'ENOENT') {
                 return null; // non esiste
             }
-            console.error(`[LocalStorageClient] Check exists error for ${filePath}:`, error.message);
+            console.error(`[BadgeDiskCache] Check exists error for ${filePath}:`, error.message);
             return null;
         }
     }
@@ -111,14 +111,14 @@ class LocalStorageClient {
                     await fsPromises.writeFile(filePath, buffer);
                     return filePath;
                 } catch (retryErr) {
-                    console.error(`[LocalStorageClient] Retry upload failed for ${filePath}:`, retryErr.message);
+                    console.error(`[BadgeDiskCache] Retry upload failed for ${filePath}:`, retryErr.message);
                     return null;
                 }
             }
-            console.error(`[LocalStorageClient] Upload error for ${filePath}:`, error.message);
+            console.error(`[BadgeDiskCache] Upload error for ${filePath}:`, error.message);
             return null;
         }
     }
 }
 
-module.exports = new LocalStorageClient();
+module.exports = new BadgeDiskCache();

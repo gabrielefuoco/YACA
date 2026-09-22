@@ -39,7 +39,7 @@ if (textToSVG) {
     }
 }
 
-const HFStorageClient = require('../utils/HFStorageClient');
+const BadgeDiskCache = require('../utils/BadgeDiskCache');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler } = require('../handlers/metaHandler');
 const { streamHandler } = require('../handlers/streamHandler');
@@ -662,7 +662,7 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
 
     try {
         // Check if image exists in Local/Mounted Storage
-        const filePath = await HFStorageClient.exists(cacheKey);
+        const filePath = await BadgeDiskCache.exists(cacheKey);
         if (filePath) {
             // Express sets ETag, Cache-Control and streams the file natively
             return res.sendFile(filePath, { maxAge: 86400000, dotfiles: 'allow' }, (err) => {
@@ -676,7 +676,7 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
         const processedBuffer = await generateBadgeImage(originalUrl, episode, tlBadge);
 
         // Save to Local/Mounted Storage synchronously
-        const newFilePath = await HFStorageClient.upload(cacheKey, processedBuffer);
+        const newFilePath = await BadgeDiskCache.upload(cacheKey, processedBuffer);
 
         if (newFilePath) {
             return res.sendFile(newFilePath, { maxAge: 86400000, dotfiles: 'allow' }, (err) => {
@@ -686,7 +686,7 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
             });
         }
 
-        // Fallback: se le credentials HF non ci sono, inviamo il buffer
+        // Fallback: se il salvataggio su disco fallisce, inviamo il buffer
         res.setHeader('Content-Type', 'image/jpeg');
         res.setHeader('Cache-Control', 'public, max-age=86400');
         return res.send(processedBuffer);
@@ -701,7 +701,7 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
         setTimeout(async () => {
             try {
                 const retryBuffer = await generateBadgeImage(originalUrl, episode, tlBadge);
-                await HFStorageClient.upload(cacheKey, retryBuffer);
+                await BadgeDiskCache.upload(cacheKey, retryBuffer);
             } catch (retryErr) {
                 console.error(`[BadgeCache] Background retry failed for ${id}:`, retryErr.message);
             }
