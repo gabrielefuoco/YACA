@@ -72,7 +72,9 @@ if command -v mongodump >/dev/null 2>&1; then
   mongodump --uri="${MONGODB_URI}" --archive="${ARCHIVE_PATH}" --gzip
 elif command -v docker >/dev/null 2>&1; then
   echo "[i] 'mongodump' non trovato sull'host. Esecuzione tramite container Docker (mongo:7)..."
-  docker run --rm -v "${TMP_DIR}:/backup" mongo:7 \
+  # --user + HOME: l'immagine mongo non gira come root, quindi senza questo non può
+  # scrivere nella cartella temporanea montata (errore: "permission denied").
+  docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "${TMP_DIR}:/backup" mongo:7 \
     mongodump --uri="${MONGODB_URI}" --archive="/backup/${ARCHIVE_NAME}" --gzip
 else
   echo "[-] ERRORE: Né 'mongodump' né 'docker' sono disponibili per generare il dump." >&2
