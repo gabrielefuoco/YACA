@@ -17,8 +17,10 @@ describe('DuckDB Native Presets & Architectural Optimizations', () => {
 
         for (const preset of presets) {
             if (preset.id === 'preset_anime_simulcast') {
+                // Il simulcast ora nasce dallo stato esterno (anime_airing_state), non da AniList:
+                // nessuna where nativa, solo il marker del provider.
                 expect(preset.where).toBeUndefined();
-                expect(preset._provider).toBe('anilist_simulcast');
+                expect(preset._provider).toBe('airing_state');
             } else {
                 expect(Array.isArray(preset.where)).toBe(true);
                 expect(typeof preset.orderBy).toBe('string');

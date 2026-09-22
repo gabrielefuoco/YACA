@@ -12,6 +12,132 @@ const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/Metadat
 const { formatStremioCatalog, sanitizeCatalogMeta, findLatestAiredEpisode } = require('../catalog/formatters/StremioFormatter');
 const StreamBadge = require('../db/models/StreamBadge');
 const PendingScan = require('../db/models/PendingScan');
+const animeAiringState = require('../data/animeAiringState');
+const { isAnimeContent } = require('../utils/animeIdentity');
+const animeMappingStore = require('../data/animeMappingStore');
+
+function extractTmdbId(item) {
+    if (!item) return null;
+    if (item.tmdbId) return String(item.tmdbId);
+    if (item._tmdbId) return String(item._tmdbId);
+    const strId = String(item.id || '').replace(/_ita_offset$/, '').trim();
+    if (/^\d+$/.test(strId)) return strId;
+    if (strId.startsWith('tmdb:')) {
+        const parts = strId.split(':');
+        // tmdb:12345 or tmdb:12345:1:1
+        if (/^\d+$/.test(parts[1])) return parts[1];
+        // tmdb:tv:12345 or tmdb:movie:12345
+        if (parts.length > 2 && /^\d+$/.test(parts[2])) return parts[2];
+    }
+    return null;
+}
+
+function extractGenreIds(item) {
+    if (Array.isArray(item.genre_ids) && item.genre_ids.length > 0) {
+        return item.genre_ids;
+    }
+    if (Array.isArray(item.genres)) {
+        return item.genres.map(g => {
+            if (typeof g === 'number') return g;
+            if (typeof g === 'object' && g !== null && g.id) return g.id;
+            if (typeof g === 'string') {
+                const lower = g.toLowerCase();
+                if (lower === 'animation' || lower === 'animazione') return 16;
+            }
+            return g;
+        });
+    }
+    return [];
+}
+
+function isItemAnime(item) {
+    if (!item) return false;
+    if (item.type === 'anime') return true;
+
+    const id = String(item.id || '');
+    if (id.startsWith('kitsu:') || id.startsWith('anilist:')) return true;
+
+    const tmdbId = extractTmdbId(item);
+    const genreIds = extractGenreIds(item);
+    const originalLanguage = item.original_language || item.originalLanguage || item._originalLanguage || item.rawTMDB?.original_language;
+    const keywords = item.keywords || item.rawTMDB?.keywords;
+
+    return isAnimeContent({
+        tmdbId,
+        genreIds,
+        originalLanguage,
+        keywords,
+        mappingStore: animeMappingStore
+    });
+}
+
+// Marker del provider/stato esterno. `anilist_simulcast` resta accettato per le
+// configurazioni già installate prima della rimozione di AniList.
+const AIRING_STATE_PROVIDERS = new Set(['airing_state', 'anilist_simulcast']);
+
+function isAiringStateCatalog(baseId, catalogMeta) {
+    return baseId === 'preset_anime_simulcast' || AIRING_STATE_PROVIDERS.has(catalogMeta?._provider);
+}
+
+/**
+ * Badge del catalogo novità anime: le due card (sub e ITA) leggono lo stato esterno,
+ * non TMDB/StreamBadge. Card sub -> `EP {italian.sub.latest.episode}`;
+ * card ITA (clone `_ita_offset`) -> `ITA {italian.dub.latest.episode}` e solo se nella
+ * finestra di 14 giorni è uscito un episodio doppiato. Entrambe condividono lo stesso id.
+ * Non lancia mai: in caso di problemi serve le card senza badge.
+ */
+async function applyAiringStateBadges(metas, { userConfig, hostUrl, catalogMeta, type, snapshot = null } = {}) {
+    if (!Array.isArray(metas) || metas.length === 0) return { metas: [] };
+
+    try {
+        const state = snapshot || await animeAiringState.getSnapshot(); // getSnapshot non lancia mai
+        const activeProfileSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
+        const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
+        const sanitizeOptions = {
+            shouldApplyEpisodeBadge: type === 'series' || type === 'anime',
+            isLandscapeEnabled: isLandscape,
+            userConfig,
+            hostUrl
+        };
+
+        const processed = [];
+        for (const item of metas) {
+            if (String(item.id).endsWith('_ita_offset')) {
+                processed.push(item);
+                continue;
+            }
+            const info = animeAiringState.getCardInfoForId(state, item.id);
+            if (!info) {
+                // Nessuno stato per questa serie: la card resta, senza badge.
+                processed.push({ ...item, _itaBadge: false });
+                continue;
+            }
+
+            if (info.sub) {
+                processed.push(sanitizeCatalogMeta({
+                    ...item,
+                    _itaBadge: false,
+                    _forceBadgeText: `EP ${info.sub.episode}`
+                }, sanitizeOptions));
+            }
+
+            if (info.dub) {
+                processed.push(sanitizeCatalogMeta({
+                    ...item,
+                    id: `${item.id}_ita_offset`,
+                    _itaBadge: false,
+                    _forceBadgeText: `ITA ${info.dub.episode}`
+                }, sanitizeOptions));
+            }
+        }
+
+        return { metas: processed };
+    } catch (error) {
+        console.error('[Catalog] Errore badge stato anime:', error.message);
+        return { metas };
+    }
+}
+
 function getLatestEpisodeInfo(item) {
     if (!item) return null;
     
@@ -44,7 +170,14 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
     // Clone metas to avoid modifying cached objects in place
     const metas = cachedData.metas.map(m => ({ ...m }));
 
-    const itemIds = metas
+    // Catalogo novità anime: i badge vengono dallo stato esterno, non da StreamBadge/TMDB.
+    if (isAiringStateCatalog(baseId, catalogMeta)) {
+        return await applyAiringStateBadges(metas, { userConfig, hostUrl, catalogMeta, type });
+    }
+
+    // Escludiamo gli anime dallo scanner torrent ITA a monte (resta attivo per serie e film non-anime)
+    const nonAnimeMetas = metas.filter(item => !isItemAnime(item));
+    const itemIds = nonAnimeMetas
         .map(item => getBaseId(item.id))
         .filter(id => id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:') || id.startsWith('tt'));
 
@@ -56,7 +189,11 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
             const queuePromises = [];
             
             metas.forEach(item => {
-                let bId = getBaseId(item.id);
+                if (isItemAnime(item)) {
+                    return; // Nessun accodamento per titoli anime: la verità ITA arriva dal modulo esterno
+                }
+
+                const bId = getBaseId(item.id);
 
                 if (!bId.startsWith('tmdb:') && !bId.startsWith('kitsu:') && !bId.startsWith('anilist:') && !bId.startsWith('tt')) {
                     return;
@@ -128,6 +265,20 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
 
             for (let i = 0; i < metas.length; i++) {
                 const item = metas[i];
+
+                // Titolo anime: lo scanner torrent e i suoi badge/cloni non si applicano.
+                // Vince lo stato del modulo esterno (airing_state). Nessun clone _ita_offset da streambadges.
+                if (isItemAnime(item)) {
+                    const isAlreadyCloned = String(item.id).endsWith('_ita_offset');
+                    const animeItem = { ...item, _itaBadge: false };
+                    if (sanitizeOptions.shouldApplyEpisodeBadge && !isAlreadyCloned) {
+                        processedMetas.push(sanitizeCatalogMeta(animeItem, sanitizeOptions));
+                    } else {
+                        processedMetas.push(animeItem);
+                    }
+                    continue;
+                }
+
                 const id = String(item.id);
                 let bId = id;
                 if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
@@ -138,6 +289,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
                 const itemBadges = allBadges.filter(b => b.baseId === bId);
                 const itaBadges = itemBadges.filter(b => b.hasIta === true);
                 const noItaBadges = itemBadges.filter(b => b.hasIta === false);
+                const isAlreadyCloned = id.endsWith('_ita_offset');
 
                 if (itaBadges.length > 0) {
                     // Troviamo maxItaEp e maxNoItaEp per calcolare l'offset
@@ -149,7 +301,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
 
                     const hasOffset = maxNoIta && (maxNoIta > maxIta);
 
-                    if (hasOffset && sanitizeOptions.shouldApplyEpisodeBadge && (item.type === 'series' || item.type === 'anime')) {
+                    if (hasOffset && !isAlreadyCloned && sanitizeOptions.shouldApplyEpisodeBadge && (item.type === 'series' || item.type === 'anime')) {
                         // 1. Elemento originale (Sub): badge ITA disattivato
                         const subItem = { ...item };
                         subItem._itaBadge = false;
@@ -208,7 +360,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
         }
     }
 
-    return { metas };
+    return { metas: metas.map(m => (isItemAnime(m) ? { ...m, _itaBadge: false } : m)) };
 }
 
 /**
@@ -231,7 +383,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const { cacheOptions: tmdbFetchOptions } = getCacheConfig(userConfig.ttl);
     
     // We bump this version whenever we make significant changes to how posters or badges are generated
-    const BADGE_CATALOG_VERSION = 14;
+    const BADGE_CATALOG_VERSION = 15;
 
     // Check Full CACHE Request
     const requestCacheKey = generateRequestHash(id, { 
@@ -419,4 +571,11 @@ async function catalogHandler(args, userConfig, hostUrl) {
     return await applyPostCacheBadges(responseData, userConfig, hostUrl, catalogMeta, type, baseId);
 }
 
-module.exports = { catalogHandler };
+module.exports = {
+    catalogHandler,
+    applyAiringStateBadges,
+    isAiringStateCatalog,
+    applyPostCacheBadges,
+    isItemAnime,
+    extractTmdbId
+};

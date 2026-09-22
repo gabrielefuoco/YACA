@@ -205,7 +205,7 @@ const getPresets = () => {
         // =============================================
         // --- 🏮 ANIME & ASIA (Sottogeneri via Kitsu) ---
         // =============================================
-        { id: 'preset_anime_simulcast', isAnime: true, name: 'Simulcast (Nuovi Episodi)', emoji: '📺', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', showEpisodeBadge: true, queries: [{ provider: 'anilist', strategy: 'simulcast' }] },
+        { id: 'preset_anime_simulcast', isAnime: true, name: 'Simulcast (Nuovi Episodi)', emoji: '📺', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', showEpisodeBadge: true, queries: [{ provider: 'airing_state', strategy: 'recent_episodes' }] },
         { id: 'preset_anime_shonen', isAnime: true, name: 'Anime: Battle Shōnen', emoji: '🔥', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: TMDB_GENRES.TV.Animation, with_keywords: '207826', with_original_language: 'ja', sort_by: 'popularity.desc' }] },
         { id: 'preset_anime_seinen', isAnime: true, name: 'Anime: Seinen (Maturi)', emoji: '🍷', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: TMDB_GENRES.TV.Animation, with_keywords: '195668', with_original_language: 'ja', sort_by: 'vote_average.desc', 'vote_count.gte': 50 }] },
         { id: 'preset_anime_shoujo', isAnime: true, name: 'Anime: Shōjo (Romantico)', emoji: '🌸', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: TMDB_GENRES.TV.Animation, with_keywords: '206437', with_original_language: 'ja', sort_by: 'popularity.desc' }] },
@@ -289,7 +289,7 @@ const getPresets = () => {
         if (p.id === 'preset_anime_simulcast') {
             return {
                 ...p,
-                _provider: 'anilist_simulcast'
+                _provider: 'airing_state'
             };
         }
         if (!p.where) {

@@ -13,6 +13,8 @@ class AnimeMappingStore {
         this.kitsuToTmdb = new Map();
         this.tmdbToKitsuMovie = new Map();
         this.malToTmdb = new Map();
+        this.anibridgeTmdbIds = new Set();
+        this.animeTmdbIds = new Set();
         
         this.etags = {
             anibridge: null,
@@ -86,9 +88,9 @@ class AnimeMappingStore {
             console.log(`[AnimeMappingStore] Sincronizzazione completata. TMDB chiavi: ${this.tmdbToAnimeNode.size}`);
             
             // POPOLIAMO LA TABELLA ANIME IN DUCKDB PER LE QUERY SQL
-            if (this.tmdbToAnimeNode.size > 0) {
-                const allTmdbAnimeIds = Array.from(this.tmdbToAnimeNode.keys());
-                await duckDbStore.updateAnimeMapping(allTmdbAnimeIds).catch(e => {
+            const idsToUpdate = this.animeTmdbIds.size > 0 ? Array.from(this.animeTmdbIds) : Array.from(this.tmdbToAnimeNode.keys());
+            if (idsToUpdate.length > 0) {
+                await duckDbStore.updateAnimeMapping(idsToUpdate).catch(e => {
                     console.error('[AnimeMappingStore] Impossibile aggiornare DuckDB:', e.message);
                 });
             }
@@ -96,6 +98,22 @@ class AnimeMappingStore {
         } catch (error) {
             console.error(`[AnimeMappingStore] Errore critico durante il sync: ${error.message}`);
         }
+    }
+
+    _rebuildAnimeTmdbIds() {
+        const combined = new Set(this.anibridgeTmdbIds || []);
+        if (this.tmdbToAnimeNode) {
+            for (const key of this.tmdbToAnimeNode.keys()) {
+                const id = key.split(':')[0];
+                if (id) combined.add(String(id));
+            }
+        }
+        if (this.tmdbToKitsuMovie) {
+            for (const id of this.tmdbToKitsuMovie.keys()) {
+                combined.add(String(id));
+            }
+        }
+        this.animeTmdbIds = combined;
     }
 
     buildFribbIndex(fribbData) {
@@ -131,10 +149,12 @@ class AnimeMappingStore {
         this.kitsuToTmdb = newKitsuToTmdb;
         this.tmdbToKitsuMovie = newTmdbToKitsuMovie;
         this.malToTmdb = newMalToTmdb;
+        this._rebuildAnimeTmdbIds();
     }
 
     buildAnibridgeIndex(anibridgeData) {
         const newIndex = new Map();
+        const newAnibridgeTmdbIds = new Set();
         
         const parseRange = (str) => {
             const [start, end] = str.split('-').map(Number);
@@ -164,6 +184,10 @@ class AnimeMappingStore {
                         season = parts[2].replace('s', '');
                     }
 
+                    if (tmdbId) {
+                        newAnibridgeTmdbIds.add(String(tmdbId));
+                    }
+
                     const key = `${tmdbId}:${season}`;
                     const rules = [];
                     for (const [animeRange, tmdbRange] of Object.entries(episodesMap)) {
@@ -183,6 +207,8 @@ class AnimeMappingStore {
             }
         }
         this.tmdbToAnimeNode = newIndex;
+        this.anibridgeTmdbIds = newAnibridgeTmdbIds;
+        this._rebuildAnimeTmdbIds();
     }
 
     /**
@@ -309,6 +335,20 @@ class AnimeMappingStore {
 
     resolveKitsuFromMal(malId) {
         return this.fribbIndex.mal.get(String(malId));
+    }
+
+    /**
+     * Verifica in O(1) se un ID TMDB appartiene a un anime presente nello store (Anibridge o Fribb).
+     * @param {string|number} id ID TMDB (supporta anche formati "tmdb:123" o "123:1")
+     * @returns {boolean}
+     */
+    isAnimeTmdbId(id) {
+        if (id === null || id === undefined || id === '') return false;
+        const cleanId = String(id).replace(/^tmdb:(tv:|movie:)?/i, '').split(':')[0].trim();
+        if (!cleanId) return false;
+        if (this.animeTmdbIds.has(cleanId)) return true;
+        if (this.tmdbToKitsuMovie?.has(cleanId)) return true;
+        return false;
     }
 }
 

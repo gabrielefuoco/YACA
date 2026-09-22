@@ -61,61 +61,53 @@ sequenceDiagram
 Le piattaforme di streaming collegate a Stremio (come Torrentio o Anime Kitsu) gestiscono i flussi per gli anime unicamente se la richiesta contiene l'ID nativo di Kitsu (formato `kitsu:<kitsuId>:<episode>`). 
 Tuttavia, i motori di raccomandazione di YACA e le API di ricerca globale operano prevalentemente su metadati TMDB (formato `tmdb:<tmdbId>`), che forniscono catalogazione, generi e affinità nettamente superiori per l'AI.
 
-### La Soluzione: Traduzione Bidirezionale degli ID
-YACA implementa un motore di traduzione asincrono in [TmdbToKitsuMapper.js](../src/utils/TmdbToKitsuMapper.js) e [kitsu.js](../src/clients/kitsu.js):
+### La Soluzione: Traduzione Bidirezionale degli ID tramite Mapping Store
+YACA implementa un'architettura ad alta efficienza basata su mapping statici pre-elaborati in [animeMappingStore.js](../src/data/animeMappingStore.js) e sulla regola canonica di rilevamento in [animeIdentity.js](../src/utils/animeIdentity.js):
 
 ```mermaid
 graph TD
-    subgraph TMDB to Kitsu ID Mapping
-        A[Risultato Catalogo TMDB] --> B{È un Anime?}
-        B -->|No| C[Mantieni ID TMDB]
-        B -->|Sì: Animazione JP| D[Richiedi External IDs da TMDB]
-        D -->|Ottieni| E[TVDB ID]
-        E -->|Interroga Kitsu API /mappings| F[Risolvi Kitsu ID]
-        F -->|Trovato| G[Sostituisci ID con kitsu:id]
-        G --> H[Salva ID TMDB originale in item.tmdbId]
+    subgraph Anime Identity & Mapping Store
+        A[Risorsa TMDB] --> B{animeIdentity: È Anime?}
+        B -->|No| C[Mantieni ID e metadati nativi TMDB]
+        B -->|Sì: Store o 16+ja/keyword| D[animeMappingStore: Lookup O(1)]
+        D -->|Serie TV| E[Anibridge: Mapping Stagione ed Episodi]
+        D -->|Film| F[Fribb: tmdbToKitsuMovie]
+        E --> G[Risoluzione Kitsu via Consensus Voting]
+        F --> H[ID Video kitsu:kitsuId]
     end
     
     subgraph Detail Hydration
-        I[Richiesta Meta Detail Stremio] --> J{Tipo ID?}
-        J -->|kitsu:id| K[getKitsuMetaDetails]
-        K --> L[Trova TMDB ID nei mapping Kitsu]
-        L --> M[Scarica Titolo, Descrizione e Poster IT da TMDB]
-        M --> N[Scarica tutti gli episodi assoluti da Kitsu]
-        N --> O[Formatta in formato Stremio kitsu:id:season:episode]
+        I[Richiesta Meta Detail Stremio] --> J{Tipo Contenuto?}
+        J -->|Anime Serie| K[fetchTmdbEpisodes: scarica griglia episodi TMDB]
+        K --> L[applyKitsuMappingToMeta: assegna target kitsu:id:ep]
+        J -->|Anime Film| M[applyKitsuMappingToMeta: assegna defaultVideoId kitsu:id]
     end
 ```
 
-#### 1. Rilevamento Anime
-Durante la fase di post-fetch, la funzione `translateAnimeIdsToKitsu` in [TmdbToKitsuMapper.js](../src/utils/TmdbToKitsuMapper.js) analizza i metadati TMDB e classifica un contenuto come anime se presenta le seguenti condizioni:
-- Il genere include *16* (Animation).
-- I paesi di produzione includono *JP* (Giappone) **OPPURE** la lingua originale è *ja* (Giapponese).
+#### 1. Rilevamento Canonico dell'Identità Anime
+L'identità anime è unificata nel modulo [animeIdentity.js](../src/utils/animeIdentity.js) (`isAnimeContent`) condiviso da tutti i percorsi dati (DuckDB locale e client TMDB live):
+- **Store Match**: Il TMDB ID è presente in `animeMappingStore` (Anibridge / Fribb);
+- **Euristica TMDB**: Genere TMDB *16* (Animation) **E** (`original_language === 'ja'` **OPPURE** esiste una keyword TMDB che include la parola `"anime"` case-insensitive, con filtro anti-falsi positivi per escludere animazioni occidentali come "anime-inspired" o "anime-influenced").
+- La regola vale in modo identico per **serie TV** e per **film**, includendo donghua cinesi/coreani censiti ed escludendo produzioni occidentali.
 
-#### 2. Risoluzione tramite Bridge TVDB
-Kitsu non supporta il mapping diretto da ID TMDB nelle sue API pubbliche. Pertanto, YACA utilizza **TVDB** come ponte:
-1. Chiama TMDB `/tv/{tmdbId}/external_ids` per ricavare l'ID TVDB della serie.
-2. Esegue una query sull'endpoint `/mappings` di Kitsu filtrando per `externalSite: 'thetvdb'` ed `externalId: tvdbId`.
-3. Se non viene trovato nulla, esegue fallback per i mapping strutturati come `thetvdb/series` o `thetvdb/season`.
-4. Una volta ottenuto l'ID Kitsu, l'ID della risorsa nel catalogo viene convertito in `kitsu:{kitsuId}` e il TMDB ID originale viene conservato in `item.tmdbId`.
+#### 2. Risoluzione tramite `animeMappingStore` (Anibridge + Fribb)
+Invece di lente chiamate HTTP live verso API esterne, YACA mantiene in memoria due dataset ad alte prestazioni sincronizzati ogni 12 ore con supporto ETag/304:
+1. **Anibridge**: Mappature multi-provider (AniDB, AniList, MAL) con offset e range per convertire episodi TMDB in episodi Anime progressivi.
+2. **Fribb (`anime-list-mini`)**: Mapping incrociato diretto per Kitsu ID, AniDB, AniList, MAL e TMDB (inclusi film).
+3. **Lookup O(1) e Indici RAM**: Lo store popola un `Set` di TMDB ID anime per lookup a tempo costante (`isAnimeTmdbId(tmdbId)`) e aggiorna la tabella in-memory `anime_mappings` di DuckDB per consentire filtri nativi zero-latency (`F.anime`).
 
-#### 3. Normalizzazione degli Episodi in `metaHandler`
-Le serie Anime su Kitsu utilizzano una numerazione assoluta per gli episodi (es. episodio 150 invece di Stagione 5 Episodio 10). 
-Stremio e Torrentio richiedono invece la suddivisione per stagioni. 
-All'interno di `normalizeAnimeEpisodes` in [metaHandler.js](../src/handlers/metaHandler.js):
-- YACA scarica l'intera lista di episodi da Kitsu (/episodes in batch tramite paginazione asincrona).
-- Qualora Kitsu non fornisca un numero di stagione valido (`seasonNumber`), YACA normalizza gli episodi forzando la mappatura corretta dell'ID (es. `kitsu:{kitsuId}:{season}:{episode}`) mantenendo la coerenza con i tracker di streaming.
-
-#### 4. Risoluzione Fallback per Titolo e Ordinamento per Popolarità
-Qualora Kitsu non esponga mapping diretti verso TMDB o TVDB per un determinato anime, YACA effettua una ricerca testuale di ripiego (fallback) tramite l'endpoint `/search/tv` (o `/search/movie`) di TMDB, pulendo il titolo da suffissi di stagione (es. *Season 2*, *2nd Season*).
-- **Problema di accuratezza:** Spesso TMDB contiene schede duplicate, strambe o orfane inserite dagli utenti con popolarità prossima allo zero (es. *325627* per *The Apothecary Diaries*), che compaiono al primo posto della ricerca per via della corrispondenza esatta del titolo inglese, oscurando la scheda ufficiale localizzata in italiano.
-- **Risoluzione:** I risultati restituiti dalla ricerca TMDB vengono ordinati per popolarità decrescente (`popularity`). Questo assicura che YACA mappi sempre l'anime alla scheda ufficiale principale (es. *220542* - *Il monologo della Speziale*) che contiene descrizioni in italiano, poster e sfondi corretti.
+#### 3. Idratazione Episodica e Consensus Voting in `metaHandler`
+All'interno di [metaHandler.js](../src/handlers/metaHandler.js):
+- Per le serie TV anime, YACA scarica la griglia episodi da TMDB (`resolveAnimeEpisodes`) e poi applica `applyKitsuMappingToMeta`:
+- Ogni episodio TMDB viene risolto tramite `animeMappingStore.resolveKitsu(tmdbId, season, episode)` applicando un algoritmo di **consensus voting** ponderato tra i provider.
+- Se risolto con successo, l'ID dell'episodio per Stremio diventa `kitsu:{kitsuId}:{kitsuEpisode}` (compatibile con i tracker Torrentio/Anime Kitsu). In caso di collisione o assenza di mapping, viene mantenuto l'ID TMDB nativo come fallback di sicurezza.
 
 #### 5. Doppia Query in Parallelo e De-duplicazione dei Flussi (Stream Proxying)
 Nel proxy dei flussi ([streamHandler.js](../src/handlers/streamHandler.js)), sorge un problema analogo a livello di tracker torrent (es. Torrentio o il Corsaro Viola):
 - **Problema dei flussi Kitsu:** I torrent italiani (con doppiaggio o sub ITA) vengono caricati e associati dagli indexer quasi esclusivamente sotto l'ID IMDb della serie (es. `tt4508902`). Interrogando il proxy esclusivamente con l'ID Kitsu (`kitsu:10740:1`), si ottenevano pochissimi risultati internazionali sub-eng e zero risultati italiani, causando il mancato badge **ITA** (falso negativo salvato in cache).
 - **Risoluzione parallela:** Quando YACA riceve una richiesta di stream per un ID Kitsu (`kitsu:id:season:episode`), traduce preventivamente l'ID Kitsu nel rispettivo ID IMDb (ricavando la stagione e l'episodio TMDB corrispondenti) e avvia due richieste asincrone parallele al proxy: una per l'ID Kitsu e una per l'ID IMDb.
 - **Fusione e De-duplicazione:** I flussi restituiti da entrambe le query vengono fusi in RAM ed eliminati i duplicati basandosi sull'identificatore univoco del torrent (`infoHash`) o sul link (`url` / `externalUrl`). Questa unione garantisce il massimo assortimento di flussi (sia le release subbate specifiche per anime indicizzate su Kitsu, sia i doppiaggi italiani tradizionali indicizzati su IMDb) e permette a YACA di applicare correttamente il badge **ITA** sui cataloghi anime in base alla presenza reale di tracce italiane.
-- **Negative Caching ed Eviction dei Falsi Negativi:** L'esito della rilevazione della lingua italiana viene persistito a lungo termine nella collezione `streambadges` su MongoDB. Se un anime riceveva precedentemente un esito negativo (`hasIta: false`), la logica del catalogo evitava di inserirlo nuovamente in coda di scansione per ottimizzare le risorse. A seguito del cambio di logica (da query singola a query parallela), è stato necessario ripulire i vecchi documenti `hasIta: false` relativi a Kitsu (colonna `baseId` che inizia con `kitsu:`) per permettere al background scanner di ri-analizzarli alla luce della nuova architettura dual-query (vedi dettagli in [CATALOG_LOGIC.md](CATALOG_LOGIC.md#5-il-sistema-di-scansione-dei-badge-ita-background-stream-scanner)).
+- **Negative Caching ed Eviction dei Falsi Negativi (Serie e Film Non-Anime):** L'esito della rilevazione della lingua italiana viene persistito a lungo termine nella collezione `streambadges` su MongoDB. Lo scanner torrent in background copre **esclusivamente serie e film non-anime**. Gli **anime sono esclusi a monte** dallo scanner torrent: la verità sulla loro disponibilità italiana (sub e doppiaggio per-episodio) proviene dal modulo sorgente esterno (`services/anime-source`), evitando falsi negativi e ridondanze sui tracker (vedi dettagli in [CATALOG_LOGIC.md](CATALOG_LOGIC.md#5-il-sistema-di-scansione-dei-badge-ita-background-stream-scanner---solo-non-anime)). Per le serie e i film non-anime, la cache negativa (`hasIta: false`) evita interrogazioni ripetute.
 
 
 ---

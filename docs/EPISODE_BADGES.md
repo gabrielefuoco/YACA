@@ -34,4 +34,15 @@ Le ottimizzazioni recenti per Kitsu includono:
 - **Prevenzione Fallback Fantasma**: Poiché gli episodi futuri su Kitsu non hanno spesso la data `airdate`, il mapper sincronizza le date esatte (`match.released`) da TMDB. In questo modo gli episodi che usciranno nel futuro verranno ignorati dal filtro `aired` del Formatter e il conteggio degli episodi mostrerà correttamente l'ultimo episodio effettivamente rilasciato ad oggi (es. "Ascendance of a Bookworm S4" mostrerà "Ep 12" al posto di tutti i 24 episodi futuri messi a catalogo).
 
 ## Offset Badge per flussi Doppiati (ITA)
-Nel caso di simulcast in italiano o flussi doppiati, `catalogHandler.js` può clonare un elemento del catalogo per evidenziare la versione italiana. Durante questa fase, le proprietà `_forceSeason` e `_forceEpisode` vengono iniettate in base al badge Torrentio trovato. Se `StremioFormatter.js` trova questi flag, utilizzerà i valori forzati al posto del calcolo dinamico sui video.
+
+Esistono due percorsi distinti, a seconda del catalogo.
+
+### Cataloghi standard (serie e film non-anime)
+`catalogHandler.js` può clonare un elemento del catalogo per evidenziare la versione italiana leggendo i badge Torrentio (`StreamBadge`). Durante questa fase, le proprietà `_forceSeason` e `_forceEpisode` vengono iniettate in base al badge trovato. Se `StremioFormatter.js` trova questi flag, utilizzerà i valori forzati al posto del calcolo dinamico sui video.
+
+### Catalogo novità anime (`preset_anime_simulcast`)
+I badge non vengono da TMDB né da `StreamBadge`, ma dallo stato esterno `anime_airing_state` (`src/data/animeAiringState.js`):
+- card sub -> `EP {italian.sub.latest.episode}`;
+- card ITA (clone `_ita_offset`) -> `ITA {italian.dub.latest.episode}`, aggiunta **solo se** nella finestra di 14 giorni è uscito un episodio con `dubIta: true`;
+- entrambe le card condividono lo stesso id `kitsu:{id}` (cambia la presentazione, non l'identità di streaming).
+Il testo del badge viene passato via `_forceBadgeText` e ha la precedenza su qualsiasi calcolo TMDB.

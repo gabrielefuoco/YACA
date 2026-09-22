@@ -70,7 +70,9 @@ const F = {
     provider: (id) => `("watch_providers_it" LIKE '%"provider_id":${id},%' OR "watch_providers_it" LIKE '%"provider_id":${id}}%' OR "watch_providers_it" LIKE '%"provider_id": ${id},%' OR "watch_providers_it" LIKE '%"provider_id": ${id}}%')`,
     
     // --- Identity / Speciali ---
-    anime: '"id" IN (SELECT "tmdb_id" FROM anime_mappings)',
+    // Regola canonica in SQL: store OR (genere 16 AND original_language = 'ja').
+    // Le keyword non vengono valutate in SQL per evitare fragilità e falsi positivi (es. "anime-inspired").
+    anime: `("id" IN (SELECT "tmdb_id" FROM anime_mappings) OR (${jsonHas('genres', 16)} AND "original_language" = 'ja'))`,
     franchise: '"collection_id" IS NOT NULL',
     validBoxOffice: '"revenue" > 1000000 AND "budget" > 500000',
     shortFilm: '"runtime" BETWEEN 1 AND 45',

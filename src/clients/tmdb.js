@@ -26,6 +26,8 @@ const { logError } = require('../utils/logger');
 
 
 const CacheManager = require('../cache/CacheManager');
+const animeMappingStore = require('../data/animeMappingStore');
+const { isAnimeContent } = require('../utils/animeIdentity');
 
 // Costanti di trimming per ridurre il peso dei payload TMDB in cache (anti-OOM / anti-16MB BSON)
 const MAX_CAST_SIZE = 10;
@@ -737,9 +739,13 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
     }
 
     // Early anime detection: skip expensive TMDB episode fetching for anime series
-    const isAnimation = data.genres && data.genres.some(g => g.id === 16);
-    const hasAnimeKeyword = rawKwList && rawKwList.some(k => k.name.toLowerCase().includes('anime'));
-    const isAnime = isAnimation && hasAnimeKeyword;
+    const isAnime = isAnimeContent({
+        tmdbId,
+        genreIds: (data.genres || []).map(g => g.id),
+        originalLanguage: data.original_language,
+        keywords: rawKwList,
+        mappingStore: animeMappingStore
+    });
     meta._isAnime = isAnime;
 
     // Store necessary properties for fallback TMDB episode fetching if Kitsu mapping fails

@@ -3,7 +3,7 @@ const { getTraktCatalog } = require('./providers/TraktProvider');
 
 const { getEngineHybridCatalog, getHybridPopularCatalog, TASTE_BASED_IDS } = require('./providers/HybridProvider');
 const { executeCombinedSearch, executeUniversalPipeline } = require('./providers/AiDiscoveryProvider');
-const { getAnilistSimulcastCatalog } = require('./providers/AnilistProvider');
+const { getAiringStateCatalog } = require('./providers/AiringStateProvider');
 const { getDuckDbCatalogFromFilters, getDuckDbCatalogFromPreset, mapSortBy, buildPresetFromFilters } = require('./providers/DuckDbProvider');
 const { normalizeToUniversalSchema } = require('../utils/resultMerger');
 const { getPresets } = require('../data/presets');
@@ -70,9 +70,11 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
         return await getWatchlistCatalog(id, type, skip, userConfig, activeProfileSettings);
     }
 
-    // SCENARIO 4.5: ANILIST SIMULCAST
-    if (baseId === 'preset_anime_simulcast' || catalogMeta?._provider === 'anilist_simulcast') {
-        return await getAnilistSimulcastCatalog(skip);
+    // SCENARIO 4.5: ANIME NOVITÀ (stato esterno `anime_airing_state`, finestra 14 giorni).
+    // `anilist_simulcast` resta accettato come marker legacy: le configurazioni già installate
+    // hanno quel valore salvato in profilo, l'id del preset non cambia.
+    if (baseId === 'preset_anime_simulcast' || catalogMeta?._provider === 'airing_state' || catalogMeta?._provider === 'anilist_simulcast') {
+        return await getAiringStateCatalog(skip);
     }
 
     // SCENARIO 5: SQL NATIVO (Nuova architettura DuckDB diretta)

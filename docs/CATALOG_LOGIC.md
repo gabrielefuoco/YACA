@@ -55,7 +55,7 @@ graph TD
    - **Filter Watched**: Rimuove i contenuti già visti dall'utente (se abilitato nelle impostazioni).
    - **Hydration & Badge**: Se il catalogo prevede badge per gli episodi (es. simulcast o nuove uscite), arricchisce i metadati recuperando le informazioni sugli episodi.
    - **TMDB to Kitsu**: Traduce gli ID degli anime in ID Kitsu per garantire la compatibilità con i motori di streaming.
-   - **Simulcast Sorting**: Se il catalogo è basato su date di rilascio dei simulcast, ordina gli elementi per la data dell'episodio più recente.
+   - **Simulcast Sorting**: per il catalogo novità anime (`preset_anime_simulcast`) l'ordinamento per data dell'ultimo episodio disponibile è già applicato da `AiringStateProvider.js` leggendo `anime_airing_state` (finestra 14 giorni).
 8. **Formattazione Stremio**: I metadati normalizzati vengono convertiti nel formato finale Stremio Meta Preview tramite [StremioFormatter.js](../src/catalog/formatters/StremioFormatter.js).
 
 ---
@@ -102,9 +102,16 @@ La risoluzione fisica dei dati è delegata ai provider dedicati in `src/catalog/
 - **AiDiscoveryProvider.js**: Si occupa dei task generativi (Universal Pipeline). Sebbene elabori query intelligenti, alla base demanda a `DuckDbProvider` la vera e propria interrogazione (grazie all'intercettore `legacyTmdbAdapter.js` per compatibilità VSM).
 - **TmdbProvider.js / KitsuProvider.js**: Provider legacy o di fallback per risoluzioni via rete API nei casi dove il DB locale non dispone dei dati.
 - **TraktProvider.js**: Provider specifico per la piattaforma Trakt.tv.
-- **AnilistProvider.js**: Costruisce cataloghi per gli Anime sfruttando simulcast ed endpoint dedicati AniList, per poi re-iniettare i risultati elaborati nel pipeline DuckDB.
+- **AiringStateProvider.js**: Alimenta il catalogo `preset_anime_simulcast` ("Simulcast - Nuovi Episodi") leggendo lo stato scritto dal modulo esterno nella collezione MongoDB `anime_airing_state` (contratto in `services/anime-source`). Seleziona le serie con almeno un episodio sub o ITA negli ultimi 14 giorni, le ordina per data dell'ultimo episodio disponibile e le idrata da DuckDB con una query batch (`id IN (...)`). Niente più AniList.
 - **HybridProvider.js**:
     Collega il motore di raccomandazione ibrido generatore di cataloghi speciali basati sul profilo psicofisico dei gusti dell'utente (Taste Profile) come *True Blend* o *Hidden Gems*.
+
+### Stato esterno `anime_airing_state`
+
+Il catalogo novità anime non nasce da una query TMDB/DuckDB ma da una collezione MongoDB scritta dal modulo esterno `services/anime-source` (contratto: `_id` = TMDB id in stringa, `schemaVersion`, `italian.sub/dub.latest` come `{season, episode}`, `episodes[]` con `subIta`/`dubIta`). Il lettore è `src/data/animeAiringState.js`:
+- valida solo i campi che consuma e ignora i documenti con `schemaVersion` più alta;
+- tiene una cache L1 in RAM con TTL ~60s: una query per snapshot, non una per item;
+- non lancia mai: su errore serve l'ultimo stato noto (anche stantio) o il vuoto, con un log aggregato (una riga per refresh).
 
 ---
 
@@ -131,11 +138,15 @@ Per evitare di superare i rate limit delle API esterne (TMDB, Kitsu, Trakt) e ga
 
 ---
 
-## 5. Il Sistema di Scansione dei Badge ITA (Background Stream Scanner)
+## 5. Il Sistema di Scansione dei Badge ITA (Background Stream Scanner - Solo Non-Anime)
 
 Per indicare visivamente all'utente la disponibilità del doppiaggio o dei sottotitoli in italiano direttamente all'interno delle locandine dei cataloghi di Stremio, YACA implementa un sistema asincrono di scansione dei flussi in background. Questo evita di rallentare il caricamento iniziale dei cataloghi ed evita chiamate massive e sincrone ai proxy torrent.
 
-### Flusso di Scansione ed Idratazione del Badge
+> [!IMPORTANT]
+> **Ambito esclusivo: Serie e Film Non-Anime.**
+> Gli **anime sono esclusi a monte** da questo scanner (tramite `isAnimeContent` e `animeMappingStore` in `catalogHandler.js`). Un titolo anime non viene interrogato su `streambadges` né viene mai accodato in `pendingscans`. Per gli anime, la verità sulla disponibilità dell'italiano (per-episodio, sub e doppiaggio) è gestita dal modulo sorgente esterno (`services/anime-source` e la collezione `anime_airing_state`).
+
+### Flusso di Scansione ed Idratazione del Badge (Serie e Film Non-Anime)
 
 ```mermaid
 sequenceDiagram
@@ -147,10 +158,11 @@ sequenceDiagram
     participant P as Stream Proxy (Torrentio / ICV)
 
     Client->>CH: Richiesta Catalogo
-    CH->>DB: Cerca record in 'streambadges' per gli ID restituiti
+    Note over CH: Filtro anime a monte: esclusi da scanner torrent
+    CH->>DB: Cerca record in 'streambadges' per item non-anime
     DB-->>CH: Ritorna record trovati (hasIta: true/false)
     Note over CH: Applica badge grafici '_itaBadge' a chi ha hasIta: true
-    Note over CH: Identifica ID non presenti nel DB (missingBaseIds)
+    Note over CH: Identifica ID non-anime non presenti nel DB (missingBaseIds)
     CH->>DB: Inserisce in 'pendingscans' (status: 'pending')
     CH-->>Client: Ritorna Catalogo (Idratato con i badge esistenti)
     
@@ -168,7 +180,7 @@ sequenceDiagram
 ### Componenti del Sistema:
 
 1. **Rilevamento e Accodamento (`catalogHandler.js`)**:
-   Nella funzione `applyPostCacheBadges`, YACA filtra gli elementi del catalogo privi di badge. Per ciascuno di essi:
+   Nella funzione `applyPostCacheBadges`, YACA esclude preventivamente i titoli anime e filtra gli elementi non-anime privi di badge. Per ciascuno di essi:
    - Verifica se esiste già una scansione pregressa nella collezione `streambadges`.
    - Se l'ID non è mai stato scansionato (non è presente nel DB), crea un record nella collezione `pendingscans` con stato `pending`.
 2. **Coda e Rate Limiting (`queueProcessor.js` / `rateLimiter.js`)**:
@@ -177,11 +189,11 @@ sequenceDiagram
    - Utilizza `rateLimitedMap` per eseguire le scansioni in parallelo (in lotti da 5 elementi alla volta) distanziate di almeno 1000ms, per prevenire il ban o il rate-limit da parte dei provider torrent e dei proxy (come Torrentio).
    - Genera una chiamata a `streamHandler` simulando la richiesta del primo episodio (se serie TV) o del film (se film).
 3. **Analisi e Risoluzione dei Flussi (`streamHandler.js`)**:
-   La funzione analizza i titoli dei flussi torrent risultanti. Se un flusso contiene parole chiave come `ita`, `italian`, `ita/eng` nel nome del file torrent, l'anime o il film viene qualificato come avente tracce in italiano.
+   La funzione analizza i titoli dei flussi torrent risultanti. Se un flusso contiene parole chiave come `ita`, `italian`, `ita/eng` nel nome del file torrent, la serie TV o il film non-anime viene qualificato come avente tracce in italiano.
    Il risultato viene memorizzato in `StreamBadge` con `hasIta: true` (se trovato) o `hasIta: false` (se non trovato).
 4. **Negative Caching e Resubmission**:
    Gli elementi marcati con `hasIta: false` fungono da cache negativa. La pipeline del catalogo li esclude dalle scansioni successive per evitare cicli di query infiniti su contenuti privi di doppiaggio italiano.
-   - *Nota operativa:* In caso di aggiornamento delle logiche di scraping o mapping (come l'introduzione della query parallela Kitsu + IMDb), è necessario eliminare manualmente dal DB le voci `hasIta: false` obsolete per costringere il sistema a rieseguire la scansione.
+   - *Nota operativa:* In caso di aggiornamento delle logiche di scraping o mapping, è possibile eliminare manualmente dal DB le voci `hasIta: false` obsolete per costringere il sistema a rieseguire la scansione.
 
 ---
 

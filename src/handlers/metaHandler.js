@@ -7,6 +7,136 @@ const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
 // Cache per l'oggetto meta finale combinato
 const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 300, ramTtlMs: 3600000, swrMs: 600000 });
 
+// --- Monitoraggio e Statistiche Kitsu Mapping (bounded in RAM) ---
+const MAX_TRACKED_KEYS = 200; // Tetto massimo chiavi in memoria per il container (1536MB)
+const LOG_INTERVAL_MISSES = 50; // Soglia log aggregato: ogni 50 miss
+const LOG_INTERVAL_COLLISIONS = 10; // Soglia log aggregato: ogni 10 collisioni
+const LOG_INTERVAL_MS = 10 * 60 * 1000; // Frequenza temporale massima per log: 10 minuti
+
+const kitsuStats = {
+    totalMisses: 0,
+    totalCollisions: 0,
+    misses: new Map(), // key: `${tmdbId}:${season}` -> count
+    collisions: new Map() // key: targetId (`kitsu:${kitsuId}:${kitsuEpisode}`) -> count
+};
+
+let lastLoggedMisses = 0;
+let lastLoggedCollisions = 0;
+let lastLogTime = Date.now();
+
+/**
+ * Incrementa il contatore in una Map con tetto massimo (MAX_TRACKED_KEYS).
+ * Scelta di limitazione memoria: se la mappa è piena, espelle la prima chiave con frequenza minima
+ * (minVal <= 1) per accogliere nuove chiavi emergenti; se tutte le 200 chiavi hanno già occorrenze
+ * ripetute (> 1), smette di aggiungere nuove chiavi per prevenire thrashing da miss isolati.
+ * In entrambi i casi i contatori globali (totalMisses, totalCollisions) continuano a salire.
+ */
+function incrementBoundedMap(map, key) {
+    if (map.has(key)) {
+        map.set(key, map.get(key) + 1);
+        return;
+    }
+
+    if (map.size < MAX_TRACKED_KEYS) {
+        map.set(key, 1);
+        return;
+    }
+
+    let minKey = null;
+    let minVal = Infinity;
+    for (const [k, v] of map) {
+        if (v < minVal) {
+            minVal = v;
+            minKey = k;
+            if (minVal <= 1) break; // Ottimizzazione: non può scendere sotto 1
+        }
+    }
+
+    if (minVal <= 1 && minKey !== null) {
+        map.delete(minKey);
+        map.set(key, 1);
+    }
+}
+
+function getTopEntries(map, limit = 5) {
+    if (map.size === 0) return '';
+    return Array.from(map.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit)
+        .map(([k, v]) => `${k} (${v})`)
+        .join(', ');
+}
+
+function checkAndLogAggregatedStats() {
+    try {
+        const missDiff = kitsuStats.totalMisses - lastLoggedMisses;
+        const collDiff = kitsuStats.totalCollisions - lastLoggedCollisions;
+        const now = Date.now();
+        const timeDiff = now - lastLogTime;
+
+        const shouldLog =
+            missDiff >= LOG_INTERVAL_MISSES ||
+            collDiff >= LOG_INTERVAL_COLLISIONS ||
+            ((missDiff > 0 || collDiff > 0) && timeDiff >= LOG_INTERVAL_MS);
+
+        if (shouldLog) {
+            lastLoggedMisses = kitsuStats.totalMisses;
+            lastLoggedCollisions = kitsuStats.totalCollisions;
+            lastLogTime = now;
+
+            const topMisses = getTopEntries(kitsuStats.misses, 5);
+            const topCollisions = getTopEntries(kitsuStats.collisions, 5);
+
+            console.warn(
+                `[KitsuMapping Stats] Misses: ${kitsuStats.totalMisses} (top: ${topMisses || 'nessuno'}), ` +
+                `Collisioni: ${kitsuStats.totalCollisions} (top: ${topCollisions || 'nessuna'})`
+            );
+        }
+    } catch (_e) {
+        // Nessun errore nei log deve propagarsi o interrompere la richiesta
+    }
+}
+
+function recordMiss(tmdbId, season) {
+    if (tmdbId === null || tmdbId === undefined) return;
+    const cleanSeason = season !== undefined && season !== null ? season : 1;
+    const key = `${tmdbId}:${cleanSeason}`;
+
+    kitsuStats.totalMisses++;
+    incrementBoundedMap(kitsuStats.misses, key);
+    checkAndLogAggregatedStats();
+}
+
+function recordCollision(targetId) {
+    if (!targetId) return;
+    const key = String(targetId);
+
+    kitsuStats.totalCollisions++;
+    incrementBoundedMap(kitsuStats.collisions, key);
+    checkAndLogAggregatedStats();
+}
+
+function getKitsuMappingStats() {
+    return {
+        totalMisses: kitsuStats.totalMisses,
+        totalCollisions: kitsuStats.totalCollisions,
+        missesCount: kitsuStats.misses.size,
+        collisionsCount: kitsuStats.collisions.size,
+        misses: new Map(kitsuStats.misses),
+        collisions: new Map(kitsuStats.collisions)
+    };
+}
+
+function resetKitsuMappingStats() {
+    kitsuStats.totalMisses = 0;
+    kitsuStats.totalCollisions = 0;
+    kitsuStats.misses.clear();
+    kitsuStats.collisions.clear();
+    lastLoggedMisses = 0;
+    lastLoggedCollisions = 0;
+    lastLogTime = Date.now();
+}
+
 async function applyKitsuMappingToMeta(meta, tmdbId) {
     if (!meta) return;
 
@@ -24,6 +154,7 @@ async function applyKitsuMappingToMeta(meta, tmdbId) {
     if (meta.type === 'series' && Array.isArray(meta.videos)) {
         let fallbackCount = 0;
         const usedKitsuIds = new Set();
+        const isAnime = meta._isAnime !== false;
         
         for (const video of meta.videos) {
             const mapped = animeMappingStore.resolveKitsu(tmdbId, video.season, video.episode);
@@ -34,12 +165,14 @@ async function applyKitsuMappingToMeta(meta, tmdbId) {
                 // Invece di far sparire l'episodio da Stremio (che deduplica gli id), facciamo fallback all'ID TMDB nativo.
                 if (usedKitsuIds.has(targetId)) {
                     fallbackCount++;
+                    recordCollision(targetId);
                 } else {
                     usedKitsuIds.add(targetId);
                     video.id = targetId;
                 }
-            } else if (meta._isAnime) {
+            } else if (isAnime) {
                 fallbackCount++;
+                recordMiss(tmdbId, video.season);
             }
         }
         if (fallbackCount > 0) {
@@ -124,7 +257,7 @@ async function metaHandler(args, userConfig) {
                 const cacheKey = `meta_${tmdbId}_${type}`;
 
                 // Use getWithStatus for SWR support
-                let { value: cachedMeta, status: cacheStatus } = await finalMetaCache.getWithStatus(cacheKey);
+                const { value: cachedMeta, status: cacheStatus } = await finalMetaCache.getWithStatus(cacheKey);
 
 
 
@@ -215,4 +348,9 @@ async function metaHandler(args, userConfig) {
     }
 }
 
-module.exports = { metaHandler };
+module.exports = {
+    metaHandler,
+    applyKitsuMappingToMeta,
+    getKitsuMappingStats,
+    resetKitsuMappingStats
+};

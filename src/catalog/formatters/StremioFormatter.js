@@ -38,6 +38,11 @@ function findLatestAiredEpisode(videos) {
 function getEpisodeBadgeText(item) {
     if (!item?.poster) return null;
 
+    // Badge pilotato dallo stato esterno (catalogo novità anime): `EP 12` / `ITA 8`.
+    if (item._forceBadgeText) {
+        return String(item._forceBadgeText);
+    }
+
     if (item._forceEpisode) {
         const isKitsu = item.id && (item.id.startsWith('kitsu:') || item.id.includes(':absolute:'));
         const season = item._forceSeason || 1;
@@ -316,6 +321,7 @@ function sanitizeCatalogMeta(item, options = {}) {
         genres: item.genres,
         cast: item.cast,
         director: item.director,
+        original_language: item.original_language || item.originalLanguage || item._originalLanguage || item.rawTMDB?.original_language,
         _rawName: baseName, // Save raw base name for idempotency in applyPostCacheBadges
         _rawPoster: rawPoster, // Save raw poster to prevent nested proxies
     };

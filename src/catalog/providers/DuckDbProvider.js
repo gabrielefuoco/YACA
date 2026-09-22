@@ -8,6 +8,8 @@
 const duckDbStore = require('../../db/duckDbStore');
 const { buildCatalogQuery } = require('../../db/queryBuilder');
 const { F, S } = require('../../data/filters');
+const animeMappingStore = require('../../data/animeMappingStore');
+const { isAnimeContent } = require('../../utils/animeIdentity');
 
 function mapSortBy(s, type = 'movie') {
     const isTv = type === 'tv' || type === 'series';
@@ -341,11 +343,17 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
             rawTMDB
         };
 
+        metaObj._originalLanguage = item.original_language;
+        metaObj._isAnime = isAnimeContent({
+            tmdbId: item.id,
+            genreIds: parsedGenres.map(g => g.id),
+            originalLanguage: item.original_language,
+            keywords: parsedKeywords,
+            mappingStore: animeMappingStore
+        });
+
         if (!isMovie) {
             metaObj._numberOfSeasons = item.number_of_seasons || 1;
-            metaObj._originalLanguage = item.original_language;
-            const genreIds = parsedGenres.map(g => g.id);
-            metaObj._isAnime = item.original_language === 'ja' && genreIds.includes(16);
         }
 
         return metaObj;

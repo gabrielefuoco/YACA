@@ -102,15 +102,43 @@ class DuckDbStore {
                 CREATE TABLE anime_mappings (tmdb_id BIGINT PRIMARY KEY);
             `;
             
-            if (tmdbIds && tmdbIds.length > 0) {
-                const uniqueIds = Array.from(new Set(tmdbIds.map(id => {
-                    const clean = Number(String(id).replace(/^[a-zA-Z]+:/, ''));
-                    return Number.isFinite(clean) && clean > 0 ? clean : null;
-                }).filter(Boolean)));
-                if (uniqueIds.length > 0) {
-                    const values = uniqueIds.map(id => `(${id})`).join(',');
-                    sql += `\nINSERT INTO anime_mappings VALUES ${values};`;
+            let rawList = [];
+            if (Array.isArray(tmdbIds)) {
+                rawList = tmdbIds;
+            } else if (tmdbIds && typeof tmdbIds[Symbol.iterator] === 'function') {
+                rawList = Array.from(tmdbIds);
+            } else if (tmdbIds !== null && tmdbIds !== undefined) {
+                rawList = [tmdbIds];
+            }
+
+            const validIds = [];
+            let invalidCount = 0;
+
+            for (const rawId of rawList) {
+                let str = String(rawId || '').trim();
+                if (!str) {
+                    invalidCount++;
+                    continue;
                 }
+                // Rimuove prefissi noti come tmdb_show:, tmdb_movie:, o qualsiasi prefisso alfabetico con underscore
+                str = str.replace(/^(?:[a-zA-Z][a-zA-Z0-9_]*:)+/, '');
+                // Estrae la parte prima di ':' (suffisso stagione, es. 12345:1 -> 12345)
+                const idPart = str.split(':')[0].trim();
+                const clean = Number(idPart);
+                if (Number.isInteger(clean) && clean > 0) {
+                    validIds.push(clean);
+                } else {
+                    invalidCount++;
+                }
+            }
+
+            const uniqueIds = Array.from(new Set(validIds));
+            const duplicatesCount = validIds.length - uniqueIds.length;
+            const totalDiscarded = rawList.length - uniqueIds.length;
+
+            if (uniqueIds.length > 0) {
+                const values = uniqueIds.map(id => `(${id})`).join(',');
+                sql += `\nINSERT INTO anime_mappings VALUES ${values};`;
             }
             
             this.con.exec(sql, (err) => {
@@ -118,7 +146,14 @@ class DuckDbStore {
                     console.error('[DuckDB Store] Errore aggiornamento tabella anime_mappings:', err);
                     return reject(err);
                 }
-                console.log(`[DuckDB Store] Tabella anime_mappings creata in RAM con ${tmdbIds ? tmdbIds.length : 0} anime certificati.`);
+                let discardedMsg = '';
+                if (totalDiscarded > 0) {
+                    const details = [];
+                    if (duplicatesCount > 0) details.push(`${duplicatesCount} ${duplicatesCount === 1 ? 'duplicato' : 'duplicati'}`);
+                    if (invalidCount > 0) details.push(`${invalidCount} non ${invalidCount === 1 ? 'valido' : 'validi'}`);
+                    discardedMsg = ` (${totalDiscarded} ${totalDiscarded === 1 ? 'scartato' : 'scartati'}: ${details.join(', ')})`;
+                }
+                console.log(`[DuckDB Store] Tabella anime_mappings creata in RAM con ${uniqueIds.length} anime certificati${discardedMsg}.`);
                 resolve();
             });
         });
