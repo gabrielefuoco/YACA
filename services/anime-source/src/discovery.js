@@ -13,7 +13,9 @@ const path = require('path');
 
 const DEFAULT_CACHE_DIR = path.join(__dirname, '../.cache');
 const AIRING_SERIES_FILE = 'airing-series.json';
+const DUBBED_SERIES_FILE = 'dubbed-series.json';
 const LAST_RUN_FILE = 'last-run.json';
+const LAST_HOME_RUN_FILE = 'last-home-run.json';
 const MAX_HEALTH_AGE_MS = 12 * 60 * 60 * 1000; // 12 ore (ticket 18)
 const MAX_LIST_AGE_MS = 24 * 60 * 60 * 1000;   // 24 ore (ticket 20)
 
@@ -21,7 +23,9 @@ class SeriesDiscoveryManager {
     constructor(options = {}) {
         this.cacheDir = options.cacheDir || DEFAULT_CACHE_DIR;
         this.listFile = path.join(this.cacheDir, AIRING_SERIES_FILE);
+        this.dubbedListFile = path.join(this.cacheDir, DUBBED_SERIES_FILE);
         this.heartbeatFile = path.join(this.cacheDir, LAST_RUN_FILE);
+        this.lastHomeRunFile = path.join(this.cacheDir, LAST_HOME_RUN_FILE);
         this.maxHealthAgeMs = options.maxHealthAgeMs || MAX_HEALTH_AGE_MS;
         this.maxListAgeMs = options.maxListAgeMs || MAX_LIST_AGE_MS;
     }
@@ -224,6 +228,191 @@ class SeriesDiscoveryManager {
             };
         }
     }
+
+    /**
+     * Carica l'elenco dei doppiati memorizzato su disco (.cache/dubbed-series.json)
+     * @returns {{ timestamp: string, count: number, records: Array<Object> }|null}
+     */
+    loadCachedDubbedList() {
+        if (!fs.existsSync(this.dubbedListFile)) return null;
+        try {
+            const raw = fs.readFileSync(this.dubbedListFile, 'utf8');
+            const data = JSON.parse(raw);
+            if (data && Array.isArray(data.records)) {
+                return data;
+            }
+            return null;
+        } catch (err) {
+            console.warn(`[Discovery] Impossibile leggere ${this.dubbedListFile}: ${err.message}`);
+            return null;
+        }
+    }
+
+    /**
+     * Salva l'elenco dei doppiati su disco (.cache/dubbed-series.json)
+     * @param {Array<Object>} records 
+     * @returns {Object}
+     */
+    saveCachedDubbedList(records) {
+        this._ensureCacheDir();
+        const data = {
+            timestamp: new Date().toISOString(),
+            count: records.length,
+            records
+        };
+        fs.writeFileSync(this.dubbedListFile, JSON.stringify(data, null, 2), 'utf8');
+        return data;
+    }
+
+    /**
+     * Verifica se esiste già un elenco doppiati valido su disco
+     * @returns {boolean}
+     */
+    hasDubbedList() {
+        if (!fs.existsSync(this.dubbedListFile)) return false;
+        try {
+            const data = JSON.parse(fs.readFileSync(this.dubbedListFile, 'utf8'));
+            return Boolean(data && Array.isArray(data.records) && data.records.length > 0);
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Recupera l'elenco completo dei doppiati da tracciare:
+     * - Se in cache e non forzato, riusa la cache locale
+     * - Altrimenti interroga l'archivio AnimeUnity (con dubbed: true, status: false)
+     * - Se la chiamata fallisce, ricade sulla cache esistente senza azzerarla
+     * @param {Object} params
+     * @param {Object} params.client Istanza di AnimeUnityClient
+     * @param {number} [params.limit=1600] Budget massimo
+     * @param {boolean} [params.forceRefresh=false]
+     * @returns {Promise<{ records: Array<Object>, fromCache: boolean, timestamp: string, fallback?: boolean }>}
+     */
+    async getDubbedSeries({ client, limit = 1600, forceRefresh = false } = {}) {
+        const cached = this.loadCachedDubbedList();
+
+        if (!forceRefresh && cached && Array.isArray(cached.records) && cached.records.length > 0) {
+            return {
+                records: cached.records,
+                fromCache: true,
+                timestamp: cached.timestamp
+            };
+        }
+
+        let fetchedRecords = null;
+        try {
+            fetchedRecords = await client.getDubbedSeries({ limit });
+        } catch (err) {
+            console.error(`[Discovery] Errore durante il fetch dei doppiati da AnimeUnity: ${err.message}`);
+        }
+
+        if (Array.isArray(fetchedRecords) && fetchedRecords.length > 0) {
+            this.saveCachedDubbedList(fetchedRecords);
+            return {
+                records: fetchedRecords,
+                fromCache: false,
+                timestamp: new Date().toISOString()
+            };
+        }
+
+        // Fallback: errore o elenco vuoto dal portale -> NON azzerare l'elenco corrente
+        if (cached && Array.isArray(cached.records) && cached.records.length > 0) {
+            console.warn(`[Discovery] Lettura doppiati dal portale fallita o vuota. Mantengo valida l'ultima lista nota in cache (${cached.records.length} serie).`);
+            return {
+                records: cached.records,
+                fromCache: true,
+                timestamp: cached.timestamp,
+                fallback: true
+            };
+        }
+
+        return {
+            records: [],
+            fromCache: false,
+            timestamp: new Date().toISOString()
+        };
+    }
+
+    /**
+     * Scrive il timestamp dell'ultimo controllo della home page
+     * @param {Date} [timestamp]
+     * @returns {Object}
+     */
+    writeHomeHeartbeat(timestamp = new Date()) {
+        this._ensureCacheDir();
+        const iso = timestamp instanceof Date ? timestamp.toISOString() : new Date(timestamp).toISOString();
+        const data = { timestamp: iso };
+        fs.writeFileSync(this.lastHomeRunFile, JSON.stringify(data, null, 2), 'utf8');
+        return data;
+    }
+
+    /**
+     * Aggiornamento quotidiano dalla home page di AnimeUnity:
+     * - Legge le ultime uscite dalla home
+     * - Estrae i titoli con dub: 1
+     * - Confronta con la lista conosciuta (.cache/dubbed-series.json)
+     * - Se trova titoli nuovi, li accoda alla lista persistita su disco
+     * - Se la home è irraggiungibile o cambia formato, la lista NON si azzera
+     * @param {Object} params
+     * @param {Object} params.client Istanza di AnimeUnityClient
+     * @returns {Promise<{ newDubbedRecords: Array<Object>, dubbedReleases: Array<Object>, totalKnown: number, fromCache: boolean, errorOrEmpty?: boolean }>}
+     */
+    async checkDailyHomeUpdates({ client } = {}) {
+        const cached = this.loadCachedDubbedList();
+        const knownRecords = (cached && Array.isArray(cached.records)) ? cached.records : [];
+        const knownIds = new Set(knownRecords.map(r => Number(r.id)));
+
+        let homeItems = [];
+        try {
+            homeItems = await client.getLatestReleasesFromHome();
+        } catch (err) {
+            console.error(`[Discovery] Errore lettura home page AnimeUnity: ${err.message}`);
+        }
+
+        if (!Array.isArray(homeItems) || homeItems.length === 0) {
+            console.warn('[Discovery] Lettura home page fallita o vuota. Mantengo valida la lista doppiati corrente.');
+            return {
+                newDubbedRecords: [],
+                dubbedReleases: [],
+                totalKnown: knownRecords.length,
+                fromCache: true,
+                errorOrEmpty: true
+            };
+        }
+
+        const dubbedReleases = [];
+        const newDubbedRecords = [];
+        const seenNewIds = new Set();
+
+        for (const item of homeItems) {
+            const anime = item.anime || item;
+            if (!anime || Number(anime.dub) !== 1) continue;
+
+            dubbedReleases.push(item);
+
+            const animeId = Number(anime.id);
+            if (animeId && !knownIds.has(animeId) && !seenNewIds.has(animeId)) {
+                seenNewIds.add(animeId);
+                newDubbedRecords.push(anime);
+            }
+        }
+
+        if (newDubbedRecords.length > 0) {
+            const updatedRecords = [...knownRecords, ...newDubbedRecords];
+            this.saveCachedDubbedList(updatedRecords);
+            console.log(`[Discovery] Rilevati ${newDubbedRecords.length} nuovi titoli doppiati dalla home. Lista aggiornata a ${updatedRecords.length} serie.`);
+        }
+
+        this.writeHomeHeartbeat();
+
+        return {
+            newDubbedRecords,
+            dubbedReleases,
+            totalKnown: knownRecords.length + newDubbedRecords.length,
+            fromCache: false
+        };
+    }
 }
 
 module.exports = {
@@ -231,5 +420,7 @@ module.exports = {
     MAX_HEALTH_AGE_MS,
     MAX_LIST_AGE_MS,
     AIRING_SERIES_FILE,
-    LAST_RUN_FILE
+    DUBBED_SERIES_FILE,
+    LAST_RUN_FILE,
+    LAST_HOME_RUN_FILE
 };

@@ -6,7 +6,8 @@ const path = require('path');
 const {
     AnimeUnityClient,
     decodeHtmlEntities,
-    extractArchiveRecords
+    extractArchiveRecords,
+    extractHomeItems
 } = require('../src/animeunity');
 
 describe('AnimeUnity Adapter', () => {
@@ -50,6 +51,25 @@ describe('AnimeUnity Adapter', () => {
         assert.deepStrictEqual(extractArchiveRecords('<archive-records records="not-valid-json">'), []);
     });
 
+    test('extractHomeItems estrae correttamente gli item da fixture HTML e JSON', () => {
+        const fixtureHtml = fs.readFileSync(path.join(__dirname, 'fixtures/home_page.html'), 'utf8');
+        const items = extractHomeItems(fixtureHtml);
+
+        assert.ok(Array.isArray(items));
+        assert.strictEqual(items.length, 3);
+        assert.strictEqual(items[0].anime.title, 'Futsutsuka na Akujo dewa Gozaimasu ga: Suuguu Chouso Torikae Den (ITA)');
+        assert.strictEqual(items[0].anime.dub, 1);
+        assert.strictEqual(items[1].anime.dub, 0);
+        assert.strictEqual(items[2].anime.dub, 1);
+
+        // Test da oggetto e stringa JSON
+        const rawItems = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/home_items.json'), 'utf8'));
+        assert.strictEqual(extractHomeItems(rawItems).length, 5);
+        assert.strictEqual(extractHomeItems(JSON.stringify(rawItems)).length, 5);
+        assert.deepStrictEqual(extractHomeItems('<div>nessun item</div>'), []);
+        assert.deepStrictEqual(extractHomeItems(null), []);
+    });
+
     test('getEpisodes parsa correttamente le risposte reali di /info_api sub e doppiato', async () => {
         const subFixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/info_api_5660_sub.json'), 'utf8'));
         const dubFixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/info_api_5698_dub.json'), 'utf8'));
@@ -85,6 +105,122 @@ describe('AnimeUnity Adapter', () => {
         assert.strictEqual(dubRes.episodes.length, 12);
         assert.strictEqual(dubRes.episodes[0].number, '1');
         assert.strictEqual(dubRes.episodes[0].created_at, '2024-10-03 16:45:54');
+    });
+
+    test('getDubbedSeries scarica l archivio con dubbed: true, status: false e rispetta il limite', async () => {
+        const dubbedFixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/archive_dubbed.json'), 'utf8'));
+
+        const mockFetch = async (url, options = {}) => {
+            if (url.includes('/archivio') && (!options.method || options.method === 'GET')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    headers: {
+                        getSetCookie: () => ['XSRF-TOKEN=test-csrf; Path=/'],
+                        get: () => 'XSRF-TOKEN=test-csrf;'
+                    },
+                    text: async () => '<html><head><meta name="csrf-token" content="csrf-val-abc"></head></html>'
+                };
+            }
+            if (url.includes('/archivio/get-animes') && options.method === 'POST') {
+                const body = JSON.parse(options.body);
+                assert.strictEqual(body.dubbed, true, 'dubbed deve essere true');
+                assert.strictEqual(body.status, false, 'status deve essere false per prendere tutti i doppiati');
+                assert.strictEqual(options.headers['X-CSRF-TOKEN'], 'csrf-val-abc');
+
+                if (body.offset === 0) {
+                    return {
+                        ok: true,
+                        status: 200,
+                        json: async () => ({
+                            tot: 4,
+                            records: dubbedFixture.records
+                        })
+                    };
+                }
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        tot: 4,
+                        records: []
+                    })
+                };
+            }
+            return { ok: false, status: 404 };
+        };
+
+        const client = new AnimeUnityClient({ fetch: mockFetch, requestDelayMs: 0 });
+
+        // Test con limit 2 su 4 disponibili
+        const recordsLimited = await client.getDubbedSeries({ limit: 2 });
+        assert.strictEqual(recordsLimited.length, 2);
+        assert.strictEqual(recordsLimited[0].title, 'Dandadan (ITA)');
+
+        // Test con limit pieno
+        const recordsAll = await client.getDubbedSeries({ limit: 10 });
+        assert.strictEqual(recordsAll.length, 4);
+    });
+
+    test('getLatestReleasesFromHome legge e parsa gli elementi della home page', async () => {
+        const html = fs.readFileSync(path.join(__dirname, 'fixtures/home_page.html'), 'utf8');
+        const mockFetch = async () => ({
+            ok: true,
+            status: 200,
+            text: async () => html
+        });
+
+        const client = new AnimeUnityClient({ fetch: mockFetch, requestDelayMs: 0 });
+        const releases = await client.getLatestReleasesFromHome();
+
+        assert.ok(Array.isArray(releases));
+        assert.strictEqual(releases.length, 3);
+        assert.strictEqual(releases[0].anime.id, 7701);
+        assert.strictEqual(releases[0].number, '6');
+    });
+
+    test('findSubCounterpart trova la controparte sub tramite anilist_id/mal_id o ritorna null', async () => {
+        const dandadanArchiveHtml = fs.readFileSync(path.join(__dirname, 'fixtures/dandadan_archive.html'), 'utf8');
+
+        const mockFetch = async (url) => {
+            if (url.includes('title=Dandadan')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    text: async () => dandadanArchiveHtml
+                };
+            }
+            if (url.includes('title=.hack')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    text: async () => '<archive-records records="[{&quot;id&quot;:827,&quot;title&quot;:&quot;.hack//Intermezzo (ITA)&quot;,&quot;dub&quot;:1,&quot;anilist_id&quot;:1143,&quot;mal_id&quot;:1143}]">'
+                };
+            }
+            return { ok: true, text: async () => '[]' };
+        };
+
+        const client = new AnimeUnityClient({ fetch: mockFetch, requestDelayMs: 0 });
+
+        // 1. Dandadan (ITA) -> ha controparte sub (id 5660)
+        const subFound = await client.findSubCounterpart({
+            id: 5698,
+            title: 'Dandadan (ITA)',
+            anilist_id: 171018,
+            mal_id: 57334
+        });
+        assert.ok(subFound);
+        assert.strictEqual(subFound.id, 5660);
+        assert.strictEqual(subFound.dub, 0);
+
+        // 2. .hack//Intermezzo (ITA) -> esiste solo doppiato, nessuna controparte sub
+        const subNotFound = await client.findSubCounterpart({
+            id: 827,
+            title: '.hack//Intermezzo (ITA)',
+            anilist_id: 1143,
+            mal_id: 1143
+        });
+        assert.strictEqual(subNotFound, null);
     });
 
     test('searchArchive e getEpisodes gestiscono errori HTTP senza crash o dati inventati', async () => {

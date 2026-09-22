@@ -1,0 +1,61 @@
+{
+  "tot": 1520,
+  "records": [
+    {
+      "id": 5698,
+      "user_id": 2,
+      "title": "Dandadan (ITA)",
+      "plot": "Trama Dandadan",
+      "date": "2024",
+      "episodes_count": 12,
+      "status": "Terminato",
+      "slug": "dandadan-ita",
+      "title_eng": "Dandadan (ITA)",
+      "dub": 1,
+      "anilist_id": 171018,
+      "mal_id": 57334
+    },
+    {
+      "id": 827,
+      "user_id": 2,
+      "title": ".hack//Intermezzo (ITA)",
+      "plot": "Episodio 27 di .hack//Sign",
+      "date": "2003",
+      "episodes_count": 1,
+      "status": "Terminato",
+      "slug": "hackintermezzo-ita",
+      "title_eng": ".hack//Intermezzo (ITA)",
+      "dub": 1,
+      "anilist_id": 1143,
+      "mal_id": 1143
+    },
+    {
+      "id": 3075,
+      "user_id": 2,
+      "title": "Bleach (ITA)",
+      "plot": "Ichigo Kurosaki",
+      "date": "2004",
+      "episodes_count": 366,
+      "status": "Terminato",
+      "slug": "bleach-ita",
+      "title_eng": "Bleach (ITA)",
+      "dub": 1,
+      "anilist_id": 269,
+      "mal_id": 269
+    },
+    {
+      "id": 7701,
+      "user_id": 2,
+      "title": "Futsutsuka na Akujo dewa Gozaimasu ga: Suuguu Chouso Torikae Den (ITA)",
+      "plot": "Trama",
+      "date": "2026",
+      "episodes_count": 12,
+      "status": "In Corso",
+      "slug": "futsutsuka-na-akujo-ita",
+      "title_eng": "Though I Am an Inept Villainess (ITA)",
+      "dub": 1,
+      "anilist_id": 188139,
+      "mal_id": 61240
+    }
+  ]
+}

@@ -13,6 +13,16 @@ function cleanTitle(rawTitle) {
 }
 
 /**
+ * Titolo di un record del portale, con ripiego sui campi alternativi.
+ * I record solo-doppiati hanno spesso `title: null` e il titolo in `title_eng`/`title_it`:
+ * senza questo ripiego il documento uscirebbe con `title: ""`.
+ */
+function recordTitle(record) {
+    if (!record) return '';
+    return record.title || record.title_eng || record.title_it || record.slug || '';
+}
+
+/**
  * Confronta due oggetti episodio { season, episode }
  * @returns {number} > 0 se a > b, < 0 se a < b, 0 se uguali
  */
@@ -77,7 +87,7 @@ function buildAiringStateDocument({
         return null;
     }
 
-    const titleSource = seasonList[0].subRecord?.title || seasonList[0].dubRecord?.title || '';
+    const titleSource = recordTitle(seasonList[0].subRecord) || recordTitle(seasonList[0].dubRecord);
     const title = cleanTitle(titleSource);
 
     const epMap = new Map();
@@ -143,7 +153,7 @@ function buildAiringStateDocument({
                 animeId: subRec.id,
                 dub: 0,
                 season: seasonNum,
-                title: subRec.title,
+                title: recordTitle(subRec),
                 status: subRec.status,
                 episodesCount: subRec.episodes_count !== undefined ? Number(subRec.episodes_count) : seasonMaxSubEp,
                 latest: seasonMaxSubEp > 0 ? { season: seasonNum, episode: seasonMaxSubEp } : null,
@@ -202,7 +212,7 @@ function buildAiringStateDocument({
                 animeId: dubRec.id,
                 dub: 1,
                 season: seasonNum,
-                title: dubRec.title,
+                title: recordTitle(dubRec),
                 status: dubRec.status,
                 episodesCount: dubRec.episodes_count !== undefined ? Number(dubRec.episodes_count) : seasonMaxDubEp,
                 latest: seasonMaxDubEp > 0 ? { season: seasonNum, episode: seasonMaxDubEp } : null,

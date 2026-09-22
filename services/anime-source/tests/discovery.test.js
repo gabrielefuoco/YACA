@@ -247,13 +247,92 @@ describe('Discovery & Observability (Ticket 18, 19, 20)', () => {
         assert.strictEqual(manager.checkHealth().ok, false);
     });
 
-    test('parseArgs riconosce le nuove opzioni --limit, --health-check, --refresh-list', () => {
-        const args = ['--limit', '150', '--health-check', '--refresh-list', '--dry-run'];
+    test('SeriesDiscoveryManager.getDubbedSeries persiste la lista, riusa la cache e ricade senza azzerare su errore', async () => {
+        const manager = new SeriesDiscoveryManager({ cacheDir: tmpDir });
+        const mockDubbed = [
+            { id: 5698, title: 'Dandadan (ITA)', dub: 1 },
+            { id: 827, title: '.hack//Intermezzo (ITA)', dub: 1 }
+        ];
+
+        // 1. Inizialmente non esiste
+        assert.strictEqual(manager.hasDubbedList(), false);
+        assert.strictEqual(manager.loadCachedDubbedList(), null);
+
+        // 2. Fetch da client
+        const mockClient = {
+            getDubbedSeries: async () => mockDubbed
+        };
+        const res = await manager.getDubbedSeries({ client: mockClient, limit: 100 });
+        assert.strictEqual(res.fromCache, false);
+        assert.strictEqual(res.records.length, 2);
+        assert.strictEqual(manager.hasDubbedList(), true);
+
+        // 3. Secondo fetch: riusa la cache
+        let clientCalled = false;
+        mockClient.getDubbedSeries = async () => { clientCalled = true; return []; };
+        const resCached = await manager.getDubbedSeries({ client: mockClient });
+        assert.strictEqual(clientCalled, false, 'Non deve chiamare il client se la cache esiste');
+        assert.strictEqual(resCached.fromCache, true);
+        assert.strictEqual(resCached.records.length, 2);
+
+        // 4. Se forzato (forceRefresh: true) e il client fallisce: fallback su cache senza azzerarla
+        mockClient.getDubbedSeries = async () => { throw new Error('500 Internal Server Error'); };
+        const resFallback = await manager.getDubbedSeries({ client: mockClient, forceRefresh: true });
+        assert.strictEqual(resFallback.fromCache, true);
+        assert.strictEqual(resFallback.fallback, true);
+        assert.strictEqual(resFallback.records.length, 2, 'La lista NON deve essere azzerata');
+    });
+
+    test('SeriesDiscoveryManager.checkDailyHomeUpdates rileva nuovi doppiati e non azzera su errore home', async () => {
+        const manager = new SeriesDiscoveryManager({ cacheDir: tmpDir });
+        const initialDubbed = [
+            { id: 7701, title: 'Futsutsuka na Akujo (ITA)', dub: 1 }
+        ];
+        manager.saveCachedDubbedList(initialDubbed);
+
+        const homeItemsFixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/home_items.json'), 'utf8'));
+
+        // 1. Controllo normale: homeItemsFixture contiene:
+        // - 7701 (già noto)
+        // - 7614 (nuovo doppiato)
+        // - 9999 (nuovo doppiato)
+        // - 7726, 7618 (sub, dub: 0)
+        const mockClient = {
+            getLatestReleasesFromHome: async () => homeItemsFixture
+        };
+
+        const updateResult = await manager.checkDailyHomeUpdates({ client: mockClient });
+        assert.strictEqual(updateResult.fromCache, false);
+        assert.strictEqual(updateResult.dubbedReleases.length, 3, 'Ci sono 3 rilasci doppiati nella fixture home');
+        assert.strictEqual(updateResult.newDubbedRecords.length, 2, '2 titoli sono nuovi (7614 e 9999)');
+        assert.strictEqual(updateResult.totalKnown, 3, 'Totale noto aggiornato a 1 + 2 = 3');
+
+        // Verifica che la cache su disco sia stata aggiornata con i nuovi titoli
+        const updatedDisk = manager.loadCachedDubbedList();
+        assert.strictEqual(updatedDisk.count, 3);
+        assert.ok(updatedDisk.records.some(r => r.id === 9999));
+        assert.ok(updatedDisk.records.some(r => r.id === 7614));
+
+        // 2. Controllo successivo con errore o home vuota: la lista su disco NON viene azzerata!
+        mockClient.getLatestReleasesFromHome = async () => { throw new Error('Home timeout'); };
+        const errResult = await manager.checkDailyHomeUpdates({ client: mockClient });
+        assert.strictEqual(errResult.fromCache, true);
+        assert.strictEqual(errResult.errorOrEmpty, true);
+        assert.strictEqual(errResult.totalKnown, 3);
+
+        const diskAfterError = manager.loadCachedDubbedList();
+        assert.strictEqual(diskAfterError.count, 3, 'La lista salvata non deve essere cancellata su errore');
+    });
+
+    test('parseArgs riconosce le nuove opzioni --limit, --health-check, --refresh-list, --build-dub-list, --check-home', () => {
+        const args = ['--limit', '150', '--health-check', '--refresh-list', '--build-dub-list', '--check-home', '--dry-run'];
         const opts = parseArgs(args);
 
         assert.strictEqual(opts.limit, 150);
         assert.strictEqual(opts.healthCheck, true);
         assert.strictEqual(opts.refreshList, true);
+        assert.strictEqual(opts.buildDubList, true);
+        assert.strictEqual(opts.checkHome, true);
         assert.strictEqual(opts.dryRun, true);
     });
 });
