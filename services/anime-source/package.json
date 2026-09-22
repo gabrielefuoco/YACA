@@ -1,0 +1,16 @@
+{
+  "name": "yaca-anime-source",
+  "version": "1.0.0",
+  "description": "Anime airing state producer for YACA",
+  "main": "cli.js",
+  "scripts": {
+    "test": "node --test tests/",
+    "start": "node cli.js"
+  },
+  "dependencies": {
+    "mongodb": "^6.5.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

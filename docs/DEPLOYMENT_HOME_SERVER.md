@@ -24,6 +24,7 @@ L'infrastruttura sul server casalingo opera con un tetto massimo di memoria di c
 Internet ──HTTPS──> Tailscale Funnel (*.ts.net) ──> host 127.0.0.1:7860
                                                        ├─> container app (Node+DuckDB, cap 1.5 GB)
                                                        ├─> container redis (cap 300 MB, maxmemory 256 MB)
+                                                       ├─> container anime-source (worker, cap 256 MB)
                                                        └─> container watchtower (cap 50 MB)
 Atlas M0 (dati utente)  ◄── app, via WAN (TLS)
 GitHub main ──Actions──> GHCR ──pull──> Watchtower (aggiornamenti automatici)
@@ -35,8 +36,9 @@ Storage locale host:    yaca_tmdb (/data/tmdb, ~200 MB)  |  yaca_badges (/data/b
 | OS + Docker + Tailscale | ~310 MB | — | Linux headless senza desktop |
 | `app` (Node + DuckDB) | ~400 MB | 1536 MB | Express + DuckDB in-memory + cold start |
 | `redis` (Cache L1/L2) | ~270 MB | 300 MB | LRU eviction, no snapshot su disco |
+| `anime-source` (Worker Anime) | ~70 MB | 256 MB | Polling periodico AnimeUnity, popola anime_airing_state |
 | `watchtower` | ~20 MB | 50 MB | Polling orario su GHCR con cleanup |
-| **Totale Applicativo** | **~1.0 GB** | **~1.9 GB** | Pienamente nei limiti degli 8 GB dell'host |
+| **Totale Applicativo** | **~1.1 GB** | **~2.2 GB** | Pienamente nei limiti degli 8 GB dell'host |
 
 ---
 
@@ -182,7 +184,7 @@ docker compose pull
 docker compose up -d
 ```
 
-Verificare che tutti e tre i container siano operativi:
+Verificare che tutti i quattro container siano operativi:
 ```bash
 docker compose ps
 ```
@@ -195,6 +197,12 @@ curl -i http://127.0.0.1:7860/health
 ```
 
 Risposta attesa: `HTTP/1.1 200 OK` con payload JSON indicante stato `ok` o uptime.
+
+### 3.7 Servizio Anime Source (`anime-source`)
+Modulo worker autonomo in background che scansiona periodicamente le serie anime in corso e popola la collezione `anime_airing_state` su MongoDB per i badge di trasmissione.
+- **Verifica stato**: `docker compose ps` (deve risultare `healthy`; diventa `unhealthy` se non completa un giro con successo da oltre 12 ore).
+- **Health check manuale**: `docker compose exec anime-source node cli.js --health-check` (exit code `0` se recente, `1` se obsoleto o assente).
+- **Verifica dati su MongoDB**: verificare che la collezione contenga documenti (`db.anime_airing_state.countDocuments()`).
 
 ---
 
@@ -403,7 +411,7 @@ Non installare agenti pesanti sul server. Configurare un servizio esterno gratui
 Comandi quotidiani (da `/srv/yaca`):
 
 ```bash
-docker compose ps                 # stato dei tre container
+docker compose ps                 # stato dei container (app, redis, anime-source, watchtower)
 docker compose logs -f app        # log applicativi
 docker stats --no-stream          # RAM/CPU reali per container
 df -h /                           # spazio libero (tenere ≥ 30 GB)

@@ -9,6 +9,12 @@
     "test": "jest",
     "lint": "eslint ."
   },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/services/"
+    ]
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

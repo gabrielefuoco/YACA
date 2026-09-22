@@ -52,6 +52,33 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  anime-source:
+    image: ghcr.io/gabrielefuoco/yaca-anime-source:${ANIME_SOURCE_TAG:-latest}
+    container_name: yaca-anime-source
+    restart: unless-stopped
+    mem_limit: 256m
+    env_file:
+      - .env
+    volumes:
+      # Cache persistente per i dump di mapping (Anibridge/Fribb) e catalogo serie in corso
+      - yaca_anime_source_cache:/app/.cache
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    # Healthcheck basato sul battito di freschezza (.cache/last-run.json).
+    # 'unhealthy' significa che nessun giro e' andato a buon fine nelle ultime 12 ore.
+    # Docker NON riavvia autonomamente un container unhealthy; segnala lo stato per l'operatore.
+    healthcheck:
+      test: ["CMD", "node", "cli.js", "--health-check"]
+      interval: 5m
+      timeout: 10s
+      retries: 2
+      start_period: 5m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   watchtower:
     # Fork mantenuto: `containrrr/watchtower` non è più aggiornato e il suo client parla
     # l'API Docker 1.25, mentre Engine 29 richiede >= 1.40 → crash-loop.
@@ -80,3 +107,5 @@ volumes:
     name: yaca_tmdb
   yaca_badges:
     name: yaca_badges
+  yaca_anime_source_cache:
+    name: yaca_anime_source_cache

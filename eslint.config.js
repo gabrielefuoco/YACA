@@ -51,6 +51,6 @@ module.exports = [
         }
     },
     {
-        ignores: ["node_modules/", "coverage/", "frontend/**", ".agents/**", "offline_graph_builder/**", ".cache/**", "public/**"]
+        ignores: ["node_modules/", "coverage/", "frontend/**", ".agents/**", "offline_graph_builder/**", ".cache/**", "public/**", "services/**"]
     }
 ];

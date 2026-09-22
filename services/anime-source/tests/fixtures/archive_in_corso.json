@@ -1,0 +1,2067 @@
+{
+  "records": [
+    {
+      "id": 7726,
+      "user_id": 2,
+      "title": "Yi Nian Yongheng 4",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/b199409-X1BoggxZulkT.jpg",
+      "plot": "Quarta stagione di A Will Eternal",
+      "date": "2026",
+      "episodes_count": 46,
+      "episodes_length": 21,
+      "author": " ",
+      "created_at": "2026-07-30 12:21:11",
+      "status": "In Corso",
+      "imageurl_cover": "",
+      "type": "ONA",
+      "slug": "a-will-eternal-4",
+      "title_eng": "A Will Eternal 4",
+      "day": "Indeterminato",
+      "favorites": 16,
+      "score": "8.77",
+      "visite": 19176,
+      "studio": "B.CMAY PICTURES",
+      "dub": 0,
+      "always_home": 1,
+      "members": 84,
+      "cover": "https://img.animeworld.ac/copertine/deFIJ.png",
+      "anilist_id": 199409,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 62248,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 9,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 7726,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7726,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7726,
+            "genre_id": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": 7451,
+      "user_id": 2,
+      "title": "Honzuki no Gekokujou: Shisho ni Naru Tame ni wa Shudan wo Erandeiraremasen - Ryoushu no Youjo",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx171110-7zOdInS6DQNL.jpg",
+      "plot": "Quarta stagione di Ascendance of a Bookworm",
+      "date": "2026",
+      "episodes_count": 24,
+      "episodes_length": 23,
+      "author": " ",
+      "created_at": "2026-03-26 05:10:10",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/171110-lgtmKokpevUM.jpg",
+      "type": "TV",
+      "slug": "ascendance-of-a-bookworm-4",
+      "title_eng": "Ascendance of a Bookworm 4",
+      "day": "Sabato",
+      "favorites": 115,
+      "score": "8.13",
+      "visite": 166527,
+      "studio": "WIT STUDIO",
+      "dub": 0,
+      "always_home": 1,
+      "members": 818,
+      "cover": "https://i.ibb.co/GfZkDnB8/4t80394yhtj8iwoert.png",
+      "anilist_id": 171110,
+      "season": "Primavera",
+      "title_it": "Ascendance of a Bookworm: Adopted Daughter of an Archduke",
+      "mal_id": 57466,
+      "crunchy_id": "G6793XKZY",
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 22,
+      "genres": [
+        {
+          "id": 22,
+          "name": "Drama",
+          "pivot": {
+            "anime_id": 7451,
+            "genre_id": 22
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7451,
+            "genre_id": 9
+          }
+        },
+        {
+          "id": 53,
+          "name": "Isekai",
+          "pivot": {
+            "anime_id": 7451,
+            "genre_id": 53
+          }
+        },
+        {
+          "id": 54,
+          "name": "Reincarnation",
+          "pivot": {
+            "anime_id": 7451,
+            "genre_id": 54
+          }
+        },
+        {
+          "id": 50,
+          "name": "Slice of Life",
+          "pivot": {
+            "anime_id": 7451,
+            "genre_id": 50
+          }
+        }
+      ]
+    },
+    {
+      "id": 5752,
+      "user_id": 2,
+      "title": null,
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx165159-aCFC9Sng7t4M.png",
+      "plot": "In questa nuova serie, i professionisti di Beyblade, provenienti da ogni angolo del mondo, si riuniscono per competere nella Pro League, all'interno della celebre X Tower! Il protagonista cercherà in tutti i modi di accedere alla competizione e di sfidare i migliori giocatori.",
+      "date": "2023",
+      "episodes_count": 0,
+      "episodes_length": 22,
+      "author": " ",
+      "created_at": "2024-10-24 14:10:58",
+      "status": "In Corso",
+      "imageurl_cover": "",
+      "type": "TV",
+      "slug": "beyblade-x-ita",
+      "title_eng": "Beyblade X (ITA)",
+      "day": "Indeterminato",
+      "favorites": 63,
+      "score": "7.94",
+      "visite": 198343,
+      "studio": "OLM",
+      "dub": 1,
+      "always_home": 1,
+      "members": 229,
+      "cover": "https://img.animeworld.so/copertine/shut7.png",
+      "anilist_id": 165159,
+      "season": "Autunno",
+      "title_it": null,
+      "mal_id": 56566,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 100,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 5752,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 5752,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 14,
+          "name": "Kids",
+          "pivot": {
+            "anime_id": 5752,
+            "genre_id": 14
+          }
+        },
+        {
+          "id": 27,
+          "name": "Sports",
+          "pivot": {
+            "anime_id": 5752,
+            "genre_id": 27
+          }
+        }
+      ]
+    },
+    {
+      "id": 7574,
+      "user_id": 2,
+      "title": null,
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx97940-fyh8o7gNbha0.png",
+      "plot": "In un mondo dove la magia è al centro della vita quotidiana è nato Asta, un ragazzo completamente privo di ogni abilità  magica. Suo amico è Yuno, al contrario dotato di grande forza magica; i due sono fin da piccoli rivali e hanno deciso di competere per il titolo di Imperatore Stregone, la più alta carica magica del loro regno.",
+      "date": "2017",
+      "episodes_count": 170,
+      "episodes_length": 24,
+      "author": " ",
+      "created_at": "2026-05-21 05:22:24",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/97940-1URQdQ4U1a0b.jpg",
+      "type": "TV",
+      "slug": "black-clover-ita",
+      "title_eng": "Black Clover (ITA)",
+      "day": "Indeterminato",
+      "favorites": 286,
+      "score": "8.60",
+      "visite": 1102111,
+      "studio": "Studio Pierrot",
+      "dub": 1,
+      "always_home": 1,
+      "members": 1148,
+      "cover": "https://img.animeworld.ac/copertine/TSAUM.jpg",
+      "anilist_id": 97940,
+      "season": "Autunno",
+      "title_it": null,
+      "mal_id": 34572,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 102,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 7574,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 7574,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7574,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7574,
+            "genre_id": 9
+          }
+        },
+        {
+          "id": 34,
+          "name": "Shounen",
+          "pivot": {
+            "anime_id": 7574,
+            "genre_id": 34
+          }
+        }
+      ]
+    },
+    {
+      "id": 7754,
+      "user_id": 2,
+      "title": "Biaoren",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx122508-abXsQzAGwPzN.jpg",
+      "plot": "Dao Ma, un misterioso cacciatore di taglie, viaggia nelle regioni più remote dell'impero accompagnato dal piccolo Xiao Qi. Quando accetta un incarico che lo porterà fino alla capitale imperiale, Chang'an, sia lui che la persona che è incaricato di scortare finiranno nel mirino di diverse fazioni assetate di sangue e di potere.",
+      "date": "2023",
+      "episodes_count": 15,
+      "episodes_length": 20,
+      "author": " ",
+      "created_at": "2026-08-26 16:43:18",
+      "status": "In Corso",
+      "imageurl_cover": "",
+      "type": "ONA",
+      "slug": "blades-of-the-guardians",
+      "title_eng": "Blades of the Guardians",
+      "day": "Giovedì",
+      "favorites": 66,
+      "score": "7.83",
+      "visite": 43126,
+      "studio": "Colored Pencil Animation",
+      "dub": 0,
+      "always_home": 1,
+      "members": 366,
+      "cover": "https://m.media-amazon.com/images/S/pv-target-images/75447ce4ede6ee311d58903d5a0118c73a7e83003d787344870848ce57dd04f9._SX1080_FMjpg_.jpg",
+      "anilist_id": 122508,
+      "season": "Primavera",
+      "title_it": null,
+      "mal_id": 44388,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": "0J9BU61WDOHAL7MJ07C7LZ4GHS",
+      "disney_id": null,
+      "real_episodes_count": 8,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 7754,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 7754,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 22,
+          "name": "Drama",
+          "pivot": {
+            "anime_id": 7754,
+            "genre_id": 22
+          }
+        }
+      ]
+    },
+    {
+      "id": 7616,
+      "user_id": 2,
+      "title": "Bleach: Sennen Kessen-hen - Kashin-tan",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx185874-aU3e6tBT6wwA.jpg",
+      "plot": "Quarto e ultimo cour di Bleach: Sennen Kessen-hen",
+      "date": "2026",
+      "episodes_count": 10,
+      "episodes_length": 24,
+      "author": " ",
+      "created_at": "2026-06-28 02:59:48",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/185874-IdGyh1EBG91I.jpg",
+      "type": "TV",
+      "slug": "bleach-thousand-year-blood-war-the-calamity",
+      "title_eng": "Bleach: Thousand-Year Blood War - The Calamity",
+      "day": "Sabato",
+      "favorites": 478,
+      "score": "9.22",
+      "visite": 664036,
+      "studio": "PIERROT FILMS",
+      "dub": 0,
+      "always_home": 1,
+      "members": 2572,
+      "cover": "https://img.animeworld.ac/copertine/X3ktM.png",
+      "anilist_id": 185874,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 60636,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": "entity-571475d5-8b1a-453f-a57f-26bb4dd13304",
+      "real_episodes_count": 8,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 7616,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 7616,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 34,
+          "name": "Shounen",
+          "pivot": {
+            "anime_id": 7616,
+            "genre_id": 34
+          }
+        },
+        {
+          "id": 42,
+          "name": "Supernatural",
+          "pivot": {
+            "anime_id": 7616,
+            "genre_id": 42
+          }
+        }
+      ]
+    },
+    {
+      "id": 7617,
+      "user_id": 2,
+      "title": "Bleach: Sennen Kessen-hen - Kashin-tan (ITA)",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx185874-aU3e6tBT6wwA.jpg",
+      "plot": "Quarto e ultimo cour di Bleach: Sennen Kessen-hen",
+      "date": "2026",
+      "episodes_count": 10,
+      "episodes_length": 0,
+      "author": " ",
+      "created_at": "2026-06-28 03:00:14",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/185874-IdGyh1EBG91I.jpg",
+      "type": "TV",
+      "slug": "bleach-thousand-year-blood-war-the-calamity-ita",
+      "title_eng": "Bleach: Thousand-Year Blood War - The Calamity (ITA)",
+      "day": "Sabato",
+      "favorites": 93,
+      "score": "8.09",
+      "visite": 0,
+      "studio": "PIERROT FILMS",
+      "dub": 1,
+      "always_home": 1,
+      "members": 376,
+      "cover": "https://img.animeworld.ac/copertine/X3ktM.png",
+      "anilist_id": 185874,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 60636,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": "entity-571475d5-8b1a-453f-a57f-26bb4dd13304",
+      "real_episodes_count": 0,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 7617,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 7617,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 34,
+          "name": "Shounen",
+          "pivot": {
+            "anime_id": 7617,
+            "genre_id": 34
+          }
+        },
+        {
+          "id": 42,
+          "name": "Supernatural",
+          "pivot": {
+            "anime_id": 7617,
+            "genre_id": 42
+          }
+        }
+      ]
+    },
+    {
+      "id": 7705,
+      "user_id": 2,
+      "title": "Boruto: Naruto Next Generations (ITA)",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx97938-BnF6M5yTaNB1.jpg",
+      "plot": "Boruto: Naruto Next Generations segue le vicende di Boruto Uzumaki, figlio di Naruto Uzumaki, divenuto oramai il Settimo Hokage di Konoha. Inizialmente vengono seguite le vicende narrate nell'undicesimo film della serie, Boruto: Naruto the Movie, ma finita questa parte la storia proseguirà con saghe inedite, arrivando allo scontro finale, preannunciato dalla prima pagina del primo capitolo, tra Boruto e il misterioso Kawaki.",
+      "date": "2017",
+      "episodes_count": 293,
+      "episodes_length": 24,
+      "author": " ",
+      "created_at": "2026-07-15 00:00:01",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/97938-cT6wkSRifTEC.jpg",
+      "type": "TV",
+      "slug": "boruto-naruto-next-generations-ita",
+      "title_eng": "Boruto: Naruto Next Generations (ITA)",
+      "day": "Indeterminato",
+      "favorites": 76,
+      "score": "8.36",
+      "visite": 360265,
+      "studio": "Studio Pierrot",
+      "dub": 1,
+      "always_home": 1,
+      "members": 342,
+      "cover": "https://m.media-amazon.com/images/S/pv-target-images/5088fbb9981b58aa6ef5c27a0cdb7f80748c7cb18de28be01ae4bc677919bff9.jpg",
+      "anilist_id": 97938,
+      "season": "Primavera",
+      "title_it": null,
+      "mal_id": 34566,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 90,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 7705,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 7705,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7705,
+            "genre_id": 9
+          }
+        },
+        {
+          "id": 31,
+          "name": "Martial Arts",
+          "pivot": {
+            "anime_id": 7705,
+            "genre_id": 31
+          }
+        },
+        {
+          "id": 34,
+          "name": "Shounen",
+          "pivot": {
+            "anime_id": 7705,
+            "genre_id": 34
+          }
+        }
+      ]
+    },
+    {
+      "id": 7633,
+      "user_id": 2,
+      "title": "Yani Neko",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx207141-h5q5KJPd6vaX.jpg",
+      "plot": "In un Giappone moderno dove umani e neko (esseri umanoidi con caratteristiche feline) convivono, vive Yaniko Satō, una catgirl poco ordinaria: pigra, disordinata, incapace di gestire la propria vita… e gravemente dipendente dalle sigarette. Yaniko non può fare a meno di fumare, a tal punto che il suo appartamento puzza di fumo, è pieno di mozziconi e rifiuti, e ogni volta che tenta di smettere cade vittima delle sue enormi voglie. I suoi soldi vanno quasi tutti nell’acquisto di nuove sigarette, e quando non può permettersele comincia a recuperare mozziconi per strada o a riutilizzarli pur di soddisfare il bisogno di nicotina. Costantemente in ritardo con l’affitto e incapace di mantenere un lavoro, Yaniko si trova spesso in situazioni assurde e grottesche. La sua sorella, i suoi amici e i vicini di casa cercano di aiutarla mentre lei combina guai dopo guai, affrontando piccoli drammi quotidiani con ironia e disordine.",
+      "date": "2026",
+      "episodes_count": 12,
+      "episodes_length": 23,
+      "author": " ",
+      "created_at": "2026-06-28 03:10:38",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/207141-MvHAS2YVfJzL.jpg",
+      "type": "TV",
+      "slug": "chainsmoker-cat",
+      "title_eng": "Chainsmoker Cat",
+      "day": "Giovedì",
+      "favorites": 255,
+      "score": "7.38",
+      "visite": 168681,
+      "studio": "Bibury Animation Studios",
+      "dub": 0,
+      "always_home": 1,
+      "members": 2036,
+      "cover": "https://yanineko-anime.com/wp/wp-content/themes/yanineko-theme/images/ogp.jpg",
+      "anilist_id": 207141,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 63403,
+      "crunchy_id": null,
+      "netflix_id": "82760630",
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 11,
+      "genres": [
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7633,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 49,
+          "name": "Seinen",
+          "pivot": {
+            "anime_id": 7633,
+            "genre_id": 49
+          }
+        },
+        {
+          "id": 50,
+          "name": "Slice of Life",
+          "pivot": {
+            "anime_id": 7633,
+            "genre_id": 50
+          }
+        }
+      ]
+    },
+    {
+      "id": 7708,
+      "user_id": 2,
+      "title": "Yani Neko (ITA)",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx207141-h5q5KJPd6vaX.jpg",
+      "plot": "In un Giappone moderno dove umani e neko (esseri umanoidi con caratteristiche feline) convivono, vive Yaniko Satō, una catgirl poco ordinaria: pigra, disordinata, incapace di gestire la propria vita… e gravemente dipendente dalle sigarette. Yaniko non può fare a meno di fumare, a tal punto che il suo appartamento puzza di fumo, è pieno di mozziconi e rifiuti, e ogni volta che tenta di smettere cade vittima delle sue enormi voglie. I suoi soldi vanno quasi tutti nell’acquisto di nuove sigarette, e quando non può permettersele comincia a recuperare mozziconi per strada o a riutilizzarli pur di soddisfare il bisogno di nicotina. Costantemente in ritardo con l’affitto e incapace di mantenere un lavoro, Yaniko si trova spesso in situazioni assurde e grottesche. La sua sorella, i suoi amici e i vicini di casa cercano di aiutarla mentre lei combina guai dopo guai, affrontando piccoli drammi quotidiani con ironia e disordine.",
+      "date": "2026",
+      "episodes_count": 12,
+      "episodes_length": 24,
+      "author": " ",
+      "created_at": "2026-07-17 11:37:11",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/207141-MvHAS2YVfJzL.jpg",
+      "type": "TV",
+      "slug": "chainsmoker-cat-ita",
+      "title_eng": "Chainsmoker Cat (ITA)",
+      "day": "Giovedì",
+      "favorites": 184,
+      "score": "7.74",
+      "visite": 83924,
+      "studio": "Bibury Animation Studios",
+      "dub": 1,
+      "always_home": 1,
+      "members": 820,
+      "cover": "https://img.animeworld.ac/copertine/AVRbG.png",
+      "anilist_id": 207141,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 63403,
+      "crunchy_id": null,
+      "netflix_id": "82760630",
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 9,
+      "genres": [
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7708,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 49,
+          "name": "Seinen",
+          "pivot": {
+            "anime_id": 7708,
+            "genre_id": 49
+          }
+        },
+        {
+          "id": 50,
+          "name": "Slice of Life",
+          "pivot": {
+            "anime_id": 7708,
+            "genre_id": 50
+          }
+        }
+      ]
+    },
+    {
+      "id": 7625,
+      "user_id": 2,
+      "title": "Clevatess II: Majuu no Ou to Itsuwari no Yuusha Denshou",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx198946-IGXmbqBEYRYD.jpg",
+      "plot": "Seconda stagione di Clevatess",
+      "date": "2026",
+      "episodes_count": 13,
+      "episodes_length": 23,
+      "author": " ",
+      "created_at": "2026-06-28 03:05:32",
+      "status": "In Corso",
+      "imageurl_cover": "",
+      "type": "TV",
+      "slug": "clevatess-2",
+      "title_eng": "Clevatess 2",
+      "day": "Mercoledì",
+      "favorites": 168,
+      "score": "8.12",
+      "visite": 145470,
+      "studio": "Lay-duce",
+      "dub": 0,
+      "always_home": 1,
+      "members": 1292,
+      "cover": "https://img.animeworld.ac/copertine/29086_1_1.png",
+      "anilist_id": 198946,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 62513,
+      "crunchy_id": "G8DHV78ZM",
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 11,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 7625,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 22,
+          "name": "Drama",
+          "pivot": {
+            "anime_id": 7625,
+            "genre_id": 22
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7625,
+            "genre_id": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": 7448,
+      "user_id": 2,
+      "title": "Yomi no Tsugai (ITA)",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx195600-moI0UFArtOme.jpg",
+      "plot": "Yuru vive in un piccolo villaggio in montagna, conducendo una vita serena vivendo di caccia di uccelli. Mentre la sorella gemella di Yuru stranamente sembra avere un \"compito\" nella prigione del villaggio come se fosse intrappolata. Un mistero viene fuori in questo villaggio apparentemente sereno, cosa si nasconde dietro?",
+      "date": "2026",
+      "episodes_count": 24,
+      "episodes_length": 23,
+      "author": " ",
+      "created_at": "2026-03-26 05:08:50",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/195600-UxHvDXwzJxlP.jpg",
+      "type": "TV",
+      "slug": "daemons-of-the-shadow-realm-ita",
+      "title_eng": "Daemons of the Shadow Realm (ITA)",
+      "day": "Sabato",
+      "favorites": 521,
+      "score": "8.12",
+      "visite": 404517,
+      "studio": "bones film",
+      "dub": 1,
+      "always_home": 1,
+      "members": 2105,
+      "cover": "https://img.animeworld.ac/copertine/skIYy.jpg",
+      "anilist_id": 195600,
+      "season": "Primavera",
+      "title_it": null,
+      "mal_id": 62001,
+      "crunchy_id": "GT00371630",
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 16,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 7448,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 7448,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7448,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7448,
+            "genre_id": 9
+          }
+        },
+        {
+          "id": 34,
+          "name": "Shounen",
+          "pivot": {
+            "anime_id": 7448,
+            "genre_id": 34
+          }
+        }
+      ]
+    },
+    {
+      "id": 7652,
+      "user_id": 2,
+      "title": "Reiwa no Dara-san",
+      "imageurl": "https://img.animeschedule.net/production/assets/public/img/anime/jpg/default/reiwa-no-dara-san-ae77fc059c370ee0d7c8bf637695b84d.jpg",
+      "plot": "In un giorno di tempesta, due fratelli curiosi attraversano una zona da sempre vietata e incontrano una creatura mostruosa e bizzarra, considerata un essere leggendario e temuto. Nonostante il suo aspetto inquietante, i bambini non si spaventano e la chiamano semplicemente \"Dara-san\", dando così inizio a un'insolita convivenza fatta di incontri soprannaturali, situazioni comiche e avventure surreali che mescolano horror e umorismo nell’era moderna.",
+      "date": "2026",
+      "episodes_count": 13,
+      "episodes_length": 23,
+      "author": " ",
+      "created_at": "2026-07-02 13:53:17",
+      "status": "In Corso",
+      "imageurl_cover": "",
+      "type": "TV",
+      "slug": "dara-san-of-reiwa",
+      "title_eng": "Dara-san of Reiwa",
+      "day": "Giovedì",
+      "favorites": 102,
+      "score": "7.75",
+      "visite": 81326,
+      "studio": "Asahi Production",
+      "dub": 0,
+      "always_home": 1,
+      "members": 657,
+      "cover": "https://img.animeworld.ac/copertine/goS45.png",
+      "anilist_id": 203880,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 63082,
+      "crunchy_id": "GT00377933",
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 12,
+      "genres": [
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7652,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 3,
+          "name": "Horror",
+          "pivot": {
+            "anime_id": 7652,
+            "genre_id": 3
+          }
+        },
+        {
+          "id": 42,
+          "name": "Supernatural",
+          "pivot": {
+            "anime_id": 7652,
+            "genre_id": 42
+          }
+        }
+      ]
+    },
+    {
+      "id": 743,
+      "user_id": 2,
+      "title": "Meitantei Conan",
+      "imageurl": "https://cdn.myanimelist.net/images/anime/1593/138525.jpg",
+      "plot": "Shinichi Kudo è un liceale di sedici anni (diciassette nel corso della serie) e, nonostante la giovane età, è un abilissimo investigatore che spesso collabora con la polizia risolvendo casi molto complicati. Grande fan di Sherlock Holmes sogna di emularne le gesta e di diventare «l’Holmes del nuovo millennio». Un giorno, recatosi con l’amica d’infanzia Ran Mori a Tropical Land, un parco divertimenti, assiste in prima persona ad un sanguinoso caso di omicidio sulle montagne russe riuscendo, poco dopo, a risolverlo ed a smascherare il colpevole. Prima di tornare a casa, assiste ad uno scambio di una ingente somma di denaro tra due uomini; uno di loro è membro di una misteriosa organizzazione criminale ed è vestito completamente di nero. Preso da ciò che stava accadendo davanti ai suoi occhi, Shinichi non si accorge dell’arrivo alle sue spalle di un altro affiliato e finisce col venire scoperto e catturato; essendo un testimone scomodo, i due uomini decidono di ucciderlo somministrandogli una sostanza chiamata APTX4869. Il farmaco, tuttavia, ha un effetto ben diverso sul giovane: lo ringiovanisce di dieci anni.",
+      "date": "1996",
+      "episodes_count": 0,
+      "episodes_length": 25,
+      "author": " ",
+      "created_at": "2019-06-06 20:29:47",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/235-MTmiz0uB0fMd.jpg",
+      "type": "TV",
+      "slug": "detective-conan",
+      "title_eng": "Detective Conan",
+      "day": "Indeterminato",
+      "favorites": 2136,
+      "score": "9.02",
+      "visite": 24411452,
+      "studio": "TMS Entertainment",
+      "dub": 0,
+      "always_home": 1,
+      "members": 6557,
+      "cover": "https://img.animeworld.tv/copertine/detectiveconan.png",
+      "anilist_id": 235,
+      "season": "Inverno",
+      "title_it": null,
+      "mal_id": 235,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 1158,
+      "genres": [
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 743,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 743,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 24,
+          "name": "Mystery",
+          "pivot": {
+            "anime_id": 743,
+            "genre_id": 24
+          }
+        },
+        {
+          "id": 47,
+          "name": "Psychological",
+          "pivot": {
+            "anime_id": 743,
+            "genre_id": 47
+          }
+        },
+        {
+          "id": 34,
+          "name": "Shounen",
+          "pivot": {
+            "anime_id": 743,
+            "genre_id": 34
+          }
+        }
+      ]
+    },
+    {
+      "id": 7402,
+      "user_id": 2,
+      "title": "Meitantei Conan Simulcast",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx235-MyYT7K3chBdO.jpg",
+      "plot": "31° stagione di Detective Conan",
+      "date": "1996",
+      "episodes_count": 0,
+      "episodes_length": 25,
+      "author": " ",
+      "created_at": "2026-02-28 22:37:57",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/235-MTmiz0uB0fMd.jpg",
+      "type": "TV",
+      "slug": "detective-conan-simulcast",
+      "title_eng": "Detective Conan Simulcast",
+      "day": "Domenica",
+      "favorites": 37,
+      "score": "8.82",
+      "visite": 85657,
+      "studio": "TMS Entertainment",
+      "dub": 0,
+      "always_home": 1,
+      "members": 179,
+      "cover": "https://image.tmdb.org/t/p/original/8G0dzqFrIKVMgnv2BkD1tBkKkmW.jpg",
+      "anilist_id": 235,
+      "season": "Inverno",
+      "title_it": "Case Closed Simulcast",
+      "mal_id": 235,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": "0LMJDOT28S1REBYMM9JBZF5LJA",
+      "disney_id": null,
+      "real_episodes_count": 28,
+      "genres": [
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 7402,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7402,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 24,
+          "name": "Mystery",
+          "pivot": {
+            "anime_id": 7402,
+            "genre_id": 24
+          }
+        },
+        {
+          "id": 47,
+          "name": "Psychological",
+          "pivot": {
+            "anime_id": 7402,
+            "genre_id": 47
+          }
+        },
+        {
+          "id": 34,
+          "name": "Shounen",
+          "pivot": {
+            "anime_id": 7402,
+            "genre_id": 34
+          }
+        }
+      ]
+    },
+    {
+      "id": 7097,
+      "user_id": 2,
+      "title": null,
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx188388-aXx9fsnvezBf.jpg",
+      "plot": "L'e-Pulse, generato dai pensieri e dalle emozioni umane, veniva utilizzato come fonte di energia per il dispositivo di supporto AI chiamato \"Sapotama\". Ma dalle ombre di questo straordinario sviluppo emersero mostri terrificanti. I Digimon sono esseri viventi che evolvono consumando e-Pulse. Tomorou Tenma viene trascinato in un'esperienza straordinaria dopo l'incontro con Gekkomon, comparso improvvisamente dal suo Sapotama. Vivendo insieme a Kyou Sawashiro e agli altri membri della squadra di cacciatori di taglie \"Golden Dawn\", Tomorou rinnova la sua determinazione. Quale nuovo futuro sarà forgiato da esseri umani e Digimon?",
+      "date": "2025",
+      "episodes_count": 0,
+      "episodes_length": 23,
+      "author": " ",
+      "created_at": "2025-09-23 18:41:00",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/188388-kCSxLPMY2JkD.jpg",
+      "type": "TV",
+      "slug": "digimon-beatbreak",
+      "title_eng": "Digimon Beatbreak",
+      "day": "Domenica",
+      "favorites": 102,
+      "score": "7.05",
+      "visite": 175491,
+      "studio": "Toei Animation",
+      "dub": 0,
+      "always_home": 1,
+      "members": 513,
+      "cover": "https://img.animeworld.ac/copertine/6iXSR.png",
+      "anilist_id": 188388,
+      "season": "Autunno",
+      "title_it": null,
+      "mal_id": 61269,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": "0TG9C087ETNAPW9YA7U0KYTOXW",
+      "disney_id": null,
+      "real_episodes_count": 48,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 7097,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 7097,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7097,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7097,
+            "genre_id": 9
+          }
+        },
+        {
+          "id": 40,
+          "name": "Sci-fi",
+          "pivot": {
+            "anime_id": 7097,
+            "genre_id": 40
+          }
+        }
+      ]
+    },
+    {
+      "id": 7760,
+      "user_id": 2,
+      "title": null,
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx170083-GTwRrhTApcLR.png",
+      "plot": "Serie commemorativa del 40° anniversario del franchise. A causa di una cospirazione, Goku e i suoi amici vengono rimpiccioliti. Per sistemare le cose, partiranno per un nuovo mondo, in una grande avventura che li vedrà toccare luoghi mai visti prima.",
+      "date": "2024",
+      "episodes_count": 20,
+      "episodes_length": 23,
+      "author": " ",
+      "created_at": "2026-09-07 22:43:15",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/170083-SYCCWWlq3hqF.jpg",
+      "type": "TV",
+      "slug": "dragon-ball-daima-ita",
+      "title_eng": "Dragon Ball Daima (ITA)",
+      "day": "Indeterminato",
+      "favorites": 46,
+      "score": "8.19",
+      "visite": 12563,
+      "studio": "Toei Animation",
+      "dub": 1,
+      "always_home": 1,
+      "members": 139,
+      "cover": "https://img.animeworld.ac/copertine/4Mskl.png",
+      "anilist_id": 170083,
+      "season": "Autunno",
+      "title_it": null,
+      "mal_id": null,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 2,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 7760,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 7760,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7760,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7760,
+            "genre_id": 9
+          }
+        },
+        {
+          "id": 31,
+          "name": "Martial Arts",
+          "pivot": {
+            "anime_id": 7760,
+            "genre_id": 31
+          }
+        },
+        {
+          "id": 34,
+          "name": "Shounen",
+          "pivot": {
+            "anime_id": 7760,
+            "genre_id": 34
+          }
+        },
+        {
+          "id": 35,
+          "name": "Super Power",
+          "pivot": {
+            "anime_id": 7760,
+            "genre_id": 35
+          }
+        }
+      ]
+    },
+    {
+      "id": 7657,
+      "user_id": 2,
+      "title": "Kore Kaite Shine",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx188525-TBVfJaCZrcfg.jpg",
+      "plot": "La liceale Ai Yasumi vive a Izuoujima, una delle tante piccole isole a sud di Tokyo. Un giorno si rende conto che riesce a \"creare\" i manga che tanto ama leggere. Inizia così a vivere folli avventure!",
+      "date": "2026",
+      "episodes_count": 12,
+      "episodes_length": 23,
+      "author": " ",
+      "created_at": "2026-07-03 00:28:57",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/188525-Vnei12N4wZsM.jpg",
+      "type": "TV",
+      "slug": "draw-this-then-die",
+      "title_eng": "Draw This, Then Die!",
+      "day": "Venerdì",
+      "favorites": 22,
+      "score": "7.65",
+      "visite": 24920,
+      "studio": "Shin-Ei Animation",
+      "dub": 0,
+      "always_home": 1,
+      "members": 203,
+      "cover": "https://imgsrv.crunchyroll.com/cdn-cgi/image/fit=contain,format=auto,quality=85,width=1200,height=675/catalog/crunchyroll/beaadad85b7b6e1696dd8abe3dbd4bf4.png",
+      "anilist_id": 188525,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 61280,
+      "crunchy_id": "GT00371656",
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 11,
+      "genres": [
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7657,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 34,
+          "name": "Shounen",
+          "pivot": {
+            "anime_id": 7657,
+            "genre_id": 34
+          }
+        },
+        {
+          "id": 50,
+          "name": "Slice of Life",
+          "pivot": {
+            "anime_id": 7657,
+            "genre_id": 50
+          }
+        }
+      ]
+    },
+    {
+      "id": 2925,
+      "user_id": 2,
+      "title": "Ochikobore Fruit Tart",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx108713-6rHQTEA9ptyb.jpg",
+      "plot": "Il quarto dormitorio della Rat Production (anche detto Nezumi-sou) è quello che ospita le idol fallite: la ex baby attrice Sekino Roko, la musicista Nukui Hayu e la modella Maehara Nina. Sakura Ino, che ha sempre sognato di diventare una idol, si trasferisce al dormitorio proprio nel momento in cui viene deciso di demolire l'edificio. Il manager Kajino Hoho lancia però un nuovo progetto chiamato \"Ochikobore Fruit Tart\", che vedrà come protagoniste proprio le ragazze del Nezumi-sou, riunite in un gruppo di idol chiamato Fruit Tart. Le ragazze cercheranno quindi di diventare famose per ottenere il milione di yen necessario a saldare il debito per salvare il dormitorio.",
+      "date": "2020",
+      "episodes_count": 12,
+      "episodes_length": 24,
+      "author": " ",
+      "created_at": "2021-01-11 01:04:10",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/108713-YE7zYLKdMsVW.jpg",
+      "type": "TV",
+      "slug": "dropout-idol-fruit-tart",
+      "title_eng": "Dropout Idol Fruit Tart",
+      "day": "Indeterminato",
+      "favorites": 41,
+      "score": "7.26",
+      "visite": 23277,
+      "studio": "feel.",
+      "dub": 0,
+      "always_home": 1,
+      "members": 266,
+      "cover": "https://img.animeworld.ac/copertine/lnbdn.png",
+      "anilist_id": 108713,
+      "season": "Autunno",
+      "title_it": null,
+      "mal_id": 39609,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 8,
+      "genres": [
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 2925,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 5,
+          "name": "Ecchi",
+          "pivot": {
+            "anime_id": 2925,
+            "genre_id": 5
+          }
+        },
+        {
+          "id": 16,
+          "name": "Music",
+          "pivot": {
+            "anime_id": 2925,
+            "genre_id": 16
+          }
+        },
+        {
+          "id": 50,
+          "name": "Slice of Life",
+          "pivot": {
+            "anime_id": 2925,
+            "genre_id": 50
+          }
+        }
+      ]
+    },
+    {
+      "id": 7033,
+      "user_id": 2,
+      "title": null,
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/b198560-8lBinZTckY70.jpg",
+      "plot": "C’era una volta, quando la trasmissione televisiva stessa era un’avventura. L’invenzione della televisione ha reso possibile trasmettere qualsiasi evento, tuttavia è ancora un’epoca in cui abbondano spade e magia. È giunto il momento che le telecamere puntino il loro obiettivo verso l’oscurità dei dungeon, finora conosciuti solo dagli avventurieri. Affrontando innumerevoli mostri e continui problemi con le attrezzature, gli avventurieri armati di telecamera proseguirono, nella speranza di trasmettere in diretta la prima conquista di un dungeon. Cosa li attenderà più avanti?",
+      "date": "2025",
+      "episodes_count": 0,
+      "episodes_length": 5,
+      "author": " ",
+      "created_at": "2025-09-11 12:59:47",
+      "status": "In Corso",
+      "imageurl_cover": "",
+      "type": "ONA",
+      "slug": "dungeons-television",
+      "title_eng": "Dungeons & Television",
+      "day": "Indeterminato",
+      "favorites": 20,
+      "score": "6.67",
+      "visite": 13527,
+      "studio": null,
+      "dub": 0,
+      "always_home": 1,
+      "members": 157,
+      "cover": "https://img.animeworld.ac/copertine/amhXs.png",
+      "anilist_id": 198560,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 62238,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 1,
+      "genres": [
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 7033,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7033,
+            "genre_id": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": 7626,
+      "user_id": 2,
+      "title": "Katainaka no Ossan, Kensei ni Naru 2",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx194829-bZKwhfo60EuF.jpg",
+      "plot": "Seconda stagione di From Old Country Bumpkin to Master Swordsman",
+      "date": "2026",
+      "episodes_count": 12,
+      "episodes_length": 24,
+      "author": " ",
+      "created_at": "2026-06-28 03:06:35",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/194829-mAQpjlKYA8c2.jpg",
+      "type": "TV",
+      "slug": "from-old-country-bumpkin-to-master-swordsman-2",
+      "title_eng": "From Old Country Bumpkin to Master Swordsman 2",
+      "day": "Mercoledì",
+      "favorites": 163,
+      "score": "7.91",
+      "visite": 161264,
+      "studio": "Hayabusa Film",
+      "dub": 0,
+      "always_home": 1,
+      "members": 1535,
+      "cover": "https://m.media-amazon.com/images/S/pv-target-images/344ac76131685f2733b275240fb429a237e9463be39974e89b8d0d5006adb819.jpg",
+      "anilist_id": 194829,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 61897,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": "0GZCWV7IOJ8M9624JD5A4HA66B",
+      "disney_id": null,
+      "real_episodes_count": 11,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 7626,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 7626,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7626,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7626,
+            "genre_id": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": 7627,
+      "user_id": 2,
+      "title": "Katainaka no Ossan, Kensei ni Naru 2 (ITA)",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx194829-bZKwhfo60EuF.jpg",
+      "plot": "Seconda stagione di From Old Country Bumpkin to Master Swordsman",
+      "date": "2026",
+      "episodes_count": 12,
+      "episodes_length": 24,
+      "author": " ",
+      "created_at": "2026-06-28 03:07:01",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/194829-mAQpjlKYA8c2.jpg",
+      "type": "TV",
+      "slug": "from-old-country-bumpkin-to-master-swordsman-2-ita",
+      "title_eng": "From Old Country Bumpkin to Master Swordsman 2 (ITA)",
+      "day": "Mercoledì",
+      "favorites": 162,
+      "score": "8.05",
+      "visite": 112377,
+      "studio": "Hayabusa Film",
+      "dub": 1,
+      "always_home": 1,
+      "members": 853,
+      "cover": "https://m.media-amazon.com/images/S/pv-target-images/344ac76131685f2733b275240fb429a237e9463be39974e89b8d0d5006adb819.jpg",
+      "anilist_id": 194829,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 61897,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": "0GZCWV7IOJ8M9624JD5A4HA66B",
+      "disney_id": null,
+      "real_episodes_count": 11,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 7627,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 7627,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7627,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7627,
+            "genre_id": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": 7769,
+      "user_id": 2,
+      "title": null,
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx214703-iXoaVH6UkiZd.png",
+      "plot": "Spin-off di Cardfight!! Vanguard incentrato su due ragazze che aspirano a diventare idol.",
+      "date": "2026",
+      "episodes_count": 0,
+      "episodes_length": 2,
+      "author": " ",
+      "created_at": "2026-09-21 17:02:52",
+      "status": "In Corso",
+      "imageurl_cover": "",
+      "type": "TV Short",
+      "slug": "ghost-meets-gal",
+      "title_eng": "Ghost Meets Gal!",
+      "day": "Indeterminato",
+      "favorites": 3,
+      "score": "6.00",
+      "visite": 10357,
+      "studio": "AtoriE",
+      "dub": 0,
+      "always_home": 1,
+      "members": 26,
+      "cover": "https://img.animeworld.ac/copertine/0H0eO.png",
+      "anilist_id": 214703,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 64718,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 3,
+      "genres": [
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7769,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7769,
+            "genre_id": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": 7665,
+      "user_id": 2,
+      "title": "Grow Up Show: Himawari no Circus-dan",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx196017-GynDNdbDzqzk.jpg",
+      "plot": "Nel Giappone della fine degli anni '50, un’epoca di grande fermento economico, gli spettacoli itineranti vivono il loro massimo splendore. In tutto il paese, le compagnie circensi si danno battaglia per un unico, prestigioso obiettivo: ottenere un posto alla \"Circus Collection\", il festival nazionale più ambito del settore. Il Sunflower Circus è una piccola troupe carica di talento, ma sull'orlo del fallimento a causa di una pesante crisi finanziaria. Il destino del gruppo cambia radicalmente con l'arrivo di Mizuka Tsurumaki, una giovane artista dal talento fuori dal comune. Nonostante il suo carattere difficile e spesso scontroso generi inizialmente attriti tra i membri, la sua energia travolgente infonde nuova speranza alla troupe. Superando debiti e contrasti interni, i protagonisti iniziano così la loro scalata verso il sogno della Circus Collection.",
+      "date": "2026",
+      "episodes_count": 13,
+      "episodes_length": 23,
+      "author": " ",
+      "created_at": "2026-07-04 16:36:41",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/196017-qB1xhp5PO10x.jpg",
+      "type": "TV",
+      "slug": "grow-up-show-sunflower-circus",
+      "title_eng": "Grow Up Show: Sunflower Circus",
+      "day": "Sabato",
+      "favorites": 23,
+      "score": "7.57",
+      "visite": 28272,
+      "studio": "A-1 Pictures",
+      "dub": 0,
+      "always_home": 1,
+      "members": 164,
+      "cover": "https://img.animeworld.ac/copertine/BOvTe.jpg",
+      "anilist_id": 196017,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 62051,
+      "crunchy_id": "GT00378063",
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 12,
+      "genres": [
+        {
+          "id": 50,
+          "name": "Slice of Life",
+          "pivot": {
+            "anime_id": 7665,
+            "genre_id": 50
+          }
+        }
+      ]
+    },
+    {
+      "id": 7651,
+      "user_id": 2,
+      "title": "Hanazakari no Kimitachi e 2nd Season",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx209669-7GlPe2ra5f1i.jpg",
+      "plot": "Seconda stagione di Hana-Kimi",
+      "date": "2026",
+      "episodes_count": 13,
+      "episodes_length": 24,
+      "author": " ",
+      "created_at": "2026-07-01 10:56:54",
+      "status": "In Corso",
+      "imageurl_cover": "",
+      "type": "TV",
+      "slug": "hana-kimi-2",
+      "title_eng": "Hana-Kimi 2",
+      "day": "Mercoledì",
+      "favorites": 91,
+      "score": "8.02",
+      "visite": 96308,
+      "studio": "Signal.MD",
+      "dub": 0,
+      "always_home": 1,
+      "members": 486,
+      "cover": "https://i.ibb.co/hJnkbcjD/432986t2h4otu.webp",
+      "anilist_id": 209669,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 63780,
+      "crunchy_id": "GT00365568",
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 13,
+      "genres": [
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7651,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 22,
+          "name": "Drama",
+          "pivot": {
+            "anime_id": 7651,
+            "genre_id": 22
+          }
+        },
+        {
+          "id": 17,
+          "name": "Romance",
+          "pivot": {
+            "anime_id": 7651,
+            "genre_id": 17
+          }
+        },
+        {
+          "id": 33,
+          "name": "School",
+          "pivot": {
+            "anime_id": 7651,
+            "genre_id": 33
+          }
+        },
+        {
+          "id": 18,
+          "name": "Shoujo",
+          "pivot": {
+            "anime_id": 7651,
+            "genre_id": 18
+          }
+        },
+        {
+          "id": 50,
+          "name": "Slice of Life",
+          "pivot": {
+            "anime_id": 7651,
+            "genre_id": 50
+          }
+        }
+      ]
+    },
+    {
+      "id": 7699,
+      "user_id": 2,
+      "title": "Hanaori-san wa Tensei shitemo Kenka ga Shitai",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx199066-YXDVsguvFZMm.jpg",
+      "plot": "Ryūsei Narukami è un giovane NEET che in realtà è la reincarnazione di un potente Re Demone di un altro mondo. Meteor Hanaori, una liceale, è invece l'eroina che in passato lo aveva sconfitto. Entrambi rinati, si ritrovano di nuovo faccia a faccia quando Ryūsei diventa insegnante nella scuola di Hanaori. Il loro rapporto oscilla tra rivalità e attrazione, mentre i ricordi della vita precedente riemergono e li costringono a fare i conti con ciò che sono stati e con i sentimenti che, questa volta, rischiano di trasformare la loro \"lotta\" in qualcosa di molto diverso.",
+      "date": "2026",
+      "episodes_count": 12,
+      "episodes_length": 24,
+      "author": " ",
+      "created_at": "2026-07-11 12:23:11",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/199066-nmAYnI6uChse.jpg",
+      "type": "TV",
+      "slug": "hanaori-san-still-wants-to-fight-in-the-next-life",
+      "title_eng": "Hanaori-san Still Wants to Fight in the Next Life",
+      "day": "Sabato",
+      "favorites": 158,
+      "score": "7.70",
+      "visite": 81179,
+      "studio": "LIDENFILMS",
+      "dub": 0,
+      "always_home": 1,
+      "members": 1046,
+      "cover": "https://img.animeworld.ac/copertine/ee1b56392af730990425d7378111130b.png",
+      "anilist_id": 199066,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 62535,
+      "crunchy_id": "GT00378066",
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 11,
+      "genres": [
+        {
+          "id": 37,
+          "name": "Comedy",
+          "pivot": {
+            "anime_id": 7699,
+            "genre_id": 37
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7699,
+            "genre_id": 9
+          }
+        },
+        {
+          "id": 54,
+          "name": "Reincarnation",
+          "pivot": {
+            "anime_id": 7699,
+            "genre_id": 54
+          }
+        },
+        {
+          "id": 17,
+          "name": "Romance",
+          "pivot": {
+            "anime_id": 7699,
+            "genre_id": 17
+          }
+        },
+        {
+          "id": 49,
+          "name": "Seinen",
+          "pivot": {
+            "anime_id": 7699,
+            "genre_id": 49
+          }
+        },
+        {
+          "id": 42,
+          "name": "Supernatural",
+          "pivot": {
+            "anime_id": 7699,
+            "genre_id": 42
+          }
+        }
+      ]
+    },
+    {
+      "id": 7636,
+      "user_id": 2,
+      "title": "Hell Mode: Yarikomizuki no Gamer wa Hai Settei no Isekai de Musou suru 2nd Season",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx209983-goWdl95cx0cG.jpg",
+      "plot": "Seconda stagione di Hell Mode: The Hardcore Gamer Dominates in Another World with Garbage Balancing",
+      "date": "2026",
+      "episodes_count": 13,
+      "episodes_length": 23,
+      "author": " ",
+      "created_at": "2026-06-28 03:11:30",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/209983-fJysbFB72IM9.jpg",
+      "type": "TV",
+      "slug": "hell-mode-the-hardcore-gamer-dominates-in-another-world-with-garbage-balancing-2",
+      "title_eng": "Hell Mode: The Hardcore Gamer Dominates in Another World with Garbage Balancing 2",
+      "day": "Venerdì",
+      "favorites": 353,
+      "score": "8.03",
+      "visite": 325676,
+      "studio": "Yokohama Animation Lab",
+      "dub": 0,
+      "always_home": 1,
+      "members": 2383,
+      "cover": "https://img.animeworld.ac/copertine/hOn7q.png",
+      "anilist_id": 209983,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 63817,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": "0H156V0P4VU8W2IE4BKNMJC9QJ",
+      "disney_id": null,
+      "real_episodes_count": 12,
+      "genres": [
+        {
+          "id": 51,
+          "name": "Action",
+          "pivot": {
+            "anime_id": 7636,
+            "genre_id": 51
+          }
+        },
+        {
+          "id": 21,
+          "name": "Adventure",
+          "pivot": {
+            "anime_id": 7636,
+            "genre_id": 21
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7636,
+            "genre_id": 9
+          }
+        },
+        {
+          "id": 53,
+          "name": "Isekai",
+          "pivot": {
+            "anime_id": 7636,
+            "genre_id": 53
+          }
+        },
+        {
+          "id": 54,
+          "name": "Reincarnation",
+          "pivot": {
+            "anime_id": 7636,
+            "genre_id": 54
+          }
+        }
+      ]
+    },
+    {
+      "id": 7618,
+      "user_id": 2,
+      "title": "Kimi ga Shinu made Koi wo Shitai",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx187260-WW5RBa5NINRP.jpg",
+      "plot": "Nel misterioso orfanotrofio dove vive Sheena, la morte non è una novità per i suoi residenti: le ragazze che non hanno più una famiglia vengono cresciute come armi da guerra, istruite ad uccidere e togliere la vita agli altri senza battere ciglio. Tutte quante, tranne Sheena, che desidera solamente la fine del conflitto che la circonda. La notte della morte della sua compagna di stanza finisce per incontrare una ragazza ricoperta di sangue, che sorride nonostante tutto il tumulto che la circonda. Il giorno dopo la stessa ragazza viene presentata come Mimi, una nuova studentessa che frequenterà la classe di Sheena. Inizialmente conosciuta come un mito scolastico, ora le voci riguardo Mimi aumentano: in realtà lei è l'arma segreta dell'orfanotrofio, un'immortale che non può morire in nessun modo. Quando Sheena scopre che Mimi è la sua nuova compagna di stanza, il suo mondo viene totalmente sconvolto... quanto sarà complicato vivere con qualcuno che ama e accoglie la morte, quando il tuo unico desiderio è che quello di fermare questo ciclo di violenza?",
+      "date": "2026",
+      "episodes_count": 13,
+      "episodes_length": 23,
+      "author": " ",
+      "created_at": "2026-06-28 03:01:20",
+      "status": "In Corso",
+      "imageurl_cover": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/187260-HMkLPy3ZvzW1.jpg",
+      "type": "TV",
+      "slug": "i-want-to-love-you-till-your-dying-day",
+      "title_eng": "I Want to Love You Till Your Dying Day",
+      "day": "Martedì",
+      "favorites": 140,
+      "score": "8.19",
+      "visite": 75374,
+      "studio": "ROLL2",
+      "dub": 0,
+      "always_home": 1,
+      "members": 953,
+      "cover": "https://img.animeworld.ac/copertine/IXrIW.png",
+      "anilist_id": 187260,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": 61126,
+      "crunchy_id": "GT00374354",
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 11,
+      "genres": [
+        {
+          "id": 22,
+          "name": "Drama",
+          "pivot": {
+            "anime_id": 7618,
+            "genre_id": 22
+          }
+        },
+        {
+          "id": 9,
+          "name": "Fantasy",
+          "pivot": {
+            "anime_id": 7618,
+            "genre_id": 9
+          }
+        },
+        {
+          "id": 58,
+          "name": "Girls Love",
+          "pivot": {
+            "anime_id": 7618,
+            "genre_id": 58
+          }
+        },
+        {
+          "id": 17,
+          "name": "Romance",
+          "pivot": {
+            "anime_id": 7618,
+            "genre_id": 17
+          }
+        },
+        {
+          "id": 33,
+          "name": "School",
+          "pivot": {
+            "anime_id": 7618,
+            "genre_id": 33
+          }
+        }
+      ]
+    },
+    {
+      "id": 7759,
+      "user_id": 2,
+      "title": null,
+      "imageurl": "https://cdn.myanimelist.net/images/anime/1009/159343.jpg",
+      "plot": "Brevi episodi originali che raccontano la vita quotidiana di Narumi sul lavoro.",
+      "date": "2026",
+      "episodes_count": 4,
+      "episodes_length": 3,
+      "author": " ",
+      "created_at": "2026-09-05 16:12:17",
+      "status": "In Corso",
+      "imageurl_cover": "",
+      "type": "ONA",
+      "slug": "kaiju-no-8-narumis-week-at-work",
+      "title_eng": "Kaiju No. 8: Narumi's Week at Work",
+      "day": "Sabato",
+      "favorites": 35,
+      "score": "7.96",
+      "visite": 23465,
+      "studio": "Production I.G",
+      "dub": 0,
+      "always_home": 1,
+      "members": 244,
+      "cover": "https://img.animeworld.ac/copertine/DD-A7.png",
+      "anilist_id": 204431,
+      "season": "Estate",
+      "title_it": null,
+      "mal_id": null,
+      "crunchy_id": "GG5H5XQ7D",
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 3,
+      "genres": [
+        {
+          "id": 40,
+          "name": "Sci-fi",
+          "pivot": {
+            "anime_id": 7759,
+            "genre_id": 40
+          }
+        },
+        {
+          "id": 34,
+          "name": "Shounen",
+          "pivot": {
+            "anime_id": 7759,
+            "genre_id": 34
+          }
+        },
+        {
+          "id": 50,
+          "name": "Slice of Life",
+          "pivot": {
+            "anime_id": 7759,
+            "genre_id": 50
+          }
+        }
+      ]
+    },
+    {
+      "id": 7761,
+      "user_id": 2,
+      "title": "Kaijuu 8-gou: Narumi no Heijitsu (ITA)",
+      "imageurl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx204431-5JC0YY6i6ECJ.jpg",
+      "plot": "Brevi episodi originali che raccontano la vita quotidiana di Narumi sul lavoro.",
+      "date": "2026",
+      "episodes_count": 4,
+      "episodes_length": 3,
+      "author": " ",
+      "created_at": "2026-09-12 11:26:23",
+      "status": "In Corso",
+      "imageurl_cover": "",
+      "type": "Special",
+      "slug": "kaiju-no-8-narumis-week-at-work-ita",
+      "title_eng": "Kaiju No. 8: Narumi's Week at Work (ITA)",
+      "day": "Sabato",
+      "favorites": 16,
+      "score": "8.31",
+      "visite": 6674,
+      "studio": "Production I.G",
+      "dub": 1,
+      "always_home": 1,
+      "members": 97,
+      "cover": "https://img.animeworld.ac/copertine/DD-A7.png",
+      "anilist_id": 204431,
+      "season": "Autunno",
+      "title_it": null,
+      "mal_id": 63138,
+      "crunchy_id": null,
+      "netflix_id": null,
+      "prime_id": null,
+      "disney_id": null,
+      "real_episodes_count": 1,
+      "genres": [
+        {
+          "id": 40,
+          "name": "Sci-fi",
+          "pivot": {
+            "anime_id": 7761,
+            "genre_id": 40
+          }
+        },
+        {
+          "id": 50,
+          "name": "Slice of Life",
+          "pivot": {
+            "anime_id": 7761,
+            "genre_id": 50
+          }
+        }
+      ]
+    }
+  ],
+  "tot": 83
+}
