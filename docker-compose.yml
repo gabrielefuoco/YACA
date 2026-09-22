@@ -53,7 +53,10 @@ services:
         max-file: "3"
 
   watchtower:
-    image: containrrr/watchtower
+    # Fork mantenuto: `containrrr/watchtower` non è più aggiornato e il suo client parla
+    # l'API Docker 1.25, mentre Engine 29 richiede >= 1.40 → crash-loop.
+    # Drop-in: stesse label (com.centurylinklabs.watchtower.enable) e variabili WATCHTOWER_*.
+    image: ghcr.io/nicholas-fedor/watchtower:latest
     container_name: yaca-watchtower
     restart: unless-stopped
     mem_limit: 50m
