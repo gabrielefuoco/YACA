@@ -84,53 +84,70 @@ async function coldStart(store, client) {
         
         let batch = [];
 
-        for (let i = 0; i < idsToFetch.length; i++) {
+        // Concorrenza del cold start: il dump è ~530k titoli e una richiesta alla volta
+        // significa ~3 giorni. Con N richieste in volo il tempo si divide quasi per N.
+        // Configurabile da .env (TMDB_DUMP_CONCURRENCY / TMDB_DUMP_DELAY_MS).
+        const CONCURRENCY = Math.max(1, Number(process.env.TMDB_DUMP_CONCURRENCY) || 8);
+        const DELAY_MS = Math.max(0, Number(process.env.TMDB_DUMP_DELAY_MS) || 285);
+        const CHUNK = 500; // stessa granularità di flush/cursor di prima
+        console.log(`[TmdbDump] Concorrenza: ${CONCURRENCY} richieste in volo, pausa ${DELAY_MS}ms per gruppo`);
+
+        for (let chunkStart = 0; chunkStart < idsToFetch.length; chunkStart += CHUNK) {
             if (!daemonRunning) {
                 console.log('[TmdbDump] Daemon interrupted. Saving cursor...');
                 break;
             }
 
-            const id = idsToFetch[i];
-            const actualIndex = startIndex + i;
-            dumpStatus.progress = actualIndex;
-            dumpStatus.currentTask = `Fetching ${mediaType} ${id} (${actualIndex + 1}/${allIds.length})`;
+            const chunk = idsToFetch.slice(chunkStart, chunkStart + CHUNK);
+            let doneInChunk = 0;
 
-            const row = mediaType === 'movies' 
-                ? await client.fetchMovie(id) 
-                : await client.fetchTv(id);
+            for (let j = 0; j < chunk.length; j += CONCURRENCY) {
+                if (!daemonRunning) break;
 
-            if (row) {
-                batch.push(row);
+                const slice = chunk.slice(j, j + CONCURRENCY);
+                const actualIndex = startIndex + chunkStart + j;
+                dumpStatus.currentTask = `Fetching ${mediaType} ${slice[0]}…${slice[slice.length - 1]} (${actualIndex + 1}/${allIds.length})`;
+                dumpStatus.progress = actualIndex;
+
+                const rows = await Promise.all(slice.map(id =>
+                    mediaType === 'movies' ? client.fetchMovie(id) : client.fetchTv(id)
+                ));
+                for (const row of rows) {
+                    if (row) batch.push(row);
+                }
+                doneInChunk += slice.length;
+
+                // Rate limiting: pausa per gruppo, non per singola richiesta
+                if (DELAY_MS > 0) await sleep(DELAY_MS);
             }
 
-            // Flush ogni 500 iterazioni
-            if (batch.length >= 500 || i === idsToFetch.length - 1) {
-                if (batch.length > 0) {
-                    store.appendBatch(batch, mediaType);
-                    batch = [];
-                }
-                
-                // Salva cursor leggero (senza gli ID, solo l'indice)
-                cursor = { 
-                    mediaType, 
-                    index: actualIndex + 1, 
-                    completed: cursor.completed || {} 
-                };
-                store.saveCursor(cursor);
-                
-                const percent = ((cursor.index / allIds.length) * 100).toFixed(1);
-                console.log(`[TmdbDump] [${mediaType.toUpperCase()}] Progress: ${cursor.index}/${allIds.length} (${percent}%)`);
-                
-                // Conversione parziale in background ogni 5000 item (10 flush)
-                if (cursor.index % 5000 === 0 && cursor.index > 0) {
-                    console.log(`[TmdbDump] Triggering intermediate Parquet conversion at ${cursor.index}...`);
-                    // Non usiamo await così non fermiamo il download
-                    convertAndReloadDuckDb().catch(e => console.error(e));
-                }
+            // Flush e cursor: la granularità è il chunk, così il resume resta esatto
+            if (batch.length > 0) {
+                store.appendBatch(batch, mediaType);
+                batch = [];
             }
 
-            // Rate limiting: ~3.5 req/sec
-            await sleep(285);
+            cursor = {
+                mediaType,
+                index: startIndex + chunkStart + doneInChunk,
+                completed: cursor.completed || {}
+            };
+            store.saveCursor(cursor);
+
+            const percent = ((cursor.index / allIds.length) * 100).toFixed(1);
+            console.log(`[TmdbDump] [${mediaType.toUpperCase()}] Progress: ${cursor.index}/${allIds.length} (${percent}%)`);
+
+            // Conversione parziale in background ogni 5000 item
+            if (cursor.index % 5000 === 0 && cursor.index > 0) {
+                console.log(`[TmdbDump] Triggering intermediate Parquet conversion at ${cursor.index}...`);
+                // Non usiamo await così non fermiamo il download
+                convertAndReloadDuckDb().catch(e => console.error(e));
+            }
+
+            if (!daemonRunning) {
+                console.log('[TmdbDump] Daemon interrupted. Saving cursor...');
+                break;
+            }
         }
         
         // Segna questo media type come completato
