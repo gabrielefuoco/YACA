@@ -50,15 +50,3 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: 🌐 Rendi pubblico il package GHCR
-        # Il package nasce privato e il server di casa lo scarica senza credenziali:
-        # va reso pubblico una volta (come `yaca`). Questo step lo fa da sé quando
-        # GitHub lo consente; se il token non ha i permessi necessari, avvisa e la
-        # build resta valida — in quel caso la visibilità si imposta a mano.
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh api --method PATCH "user/packages/container/yaca-anime-source" -f visibility=public \
-            || gh api --method PATCH "repos/${{ github.repository }}/packages/container/yaca-anime-source" -f visibility=public \
-            || echo "::warning title=Visibilità package::Impostare a mano: Packages → yaca-anime-source → Package settings → Change visibility → Public"
