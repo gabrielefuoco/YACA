@@ -30,9 +30,12 @@ async function convert() {
 
         console.log(`[DuckDB Convert] Copia di ${type}...`);
         
+        // ignore_errors: una riga con un campo vuoto (es. `release_date: ""` di un film non
+        // ancora uscito) non deve bloccare la conversione dell'INTERO catalogo. Il writer già
+        // normalizza le date a null, questa è la rete di sicurezza per i dump scritti prima.
         const query = `
             COPY (
-                SELECT * FROM read_json_auto('${jsonlFile.replace(/\\/g, '/')}') ORDER BY popularity DESC
+                SELECT * FROM read_json_auto('${jsonlFile.replace(/\\/g, '/')}', ignore_errors=true) ORDER BY popularity DESC
             ) TO '${tmpParquetFile.replace(/\\/g, '/')}' (FORMAT PARQUET, COMPRESSION 'ZSTD');
         `;
 
