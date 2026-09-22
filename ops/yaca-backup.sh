@@ -7,10 +7,10 @@
 # Per ripristinare un backup salvato su Cloudflare R2:
 #
 # 1. Elencare i backup disponibili su Cloudflare R2:
-#      rclone lsf "${R2_DESTINATION:-r2:yaca-backups}"
+#      rclone lsf "${R2_DESTINATION:-r2:yaca-backups}/mongo"
 #
 # 2. Scaricare il file di archivio desiderato in una cartella temporanea:
-#      rclone copy "${R2_DESTINATION:-r2:yaca-backups}/<NOME_BACKUP>.archive.gz" /tmp/
+#      rclone copy "${R2_DESTINATION:-r2:yaca-backups}/mongo/<NOME_BACKUP>.archive.gz" /tmp/
 #
 # 3. Eseguire il restore su MongoDB Atlas:
 #    - Con mongorestore nativo sull'host:
@@ -98,11 +98,13 @@ FILE_SIZE="$(du -h "${ARCHIVE_PATH}" | cut -f1)"
 echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Dump generato con successo: ${ARCHIVE_NAME} (${FILE_SIZE})."
 
 # Caricamento su Cloudflare R2
-echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Caricamento archivio su ${R2_DESTINATION}..."
-rclone copy "${ARCHIVE_PATH}" "${R2_DESTINATION}"
+# Sottocartella dedicata: la retention qui sotto è ricorsiva, quindi senza
+# separazione cancellerebbe anche gli artefatti degli altri backup.
+echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Caricamento archivio su ${R2_DESTINATION}/mongo/..."
+rclone copy "${ARCHIVE_PATH}" "${R2_DESTINATION}/mongo"
 
 # Applicazione retention policy sui backup remoti
 echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Applicazione retention: rimozione backup più vecchi di ${BACKUP_RETENTION_DAYS} giorni..."
-rclone delete --min-age "${BACKUP_RETENTION_DAYS}d" "${R2_DESTINATION}" || true
+rclone delete --min-age "${BACKUP_RETENTION_DAYS}d" "${R2_DESTINATION}/mongo" || true
 
 echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Backup completato con successo su ${R2_DESTINATION}."
