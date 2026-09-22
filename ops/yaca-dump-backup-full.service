@@ -1,0 +1,18 @@
+[Unit]
+Description=YACA Full Local DB Backup (including TMDB JSONL dumps)
+After=network-online.target docker.service
+Wants=network-online.target
+
+# Nota: il servizio gira come root. La destinazione e le impostazioni
+# sono lette da /srv/yaca/.env (R2_DESTINATION, JSONL_RETENTION_DAYS).
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/srv/yaca/.env
+WorkingDirectory=/srv/yaca
+ExecStart=/bin/bash /srv/yaca/ops/yaca-dump-backup.sh --full
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

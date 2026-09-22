@@ -1,0 +1,18 @@
+[Unit]
+Description=YACA Local DB Backup (TMDB Parquet, Cursor, Anime Cache)
+After=network-online.target docker.service
+Wants=network-online.target
+
+# Nota: il servizio gira come root. La destinazione e le impostazioni
+# sono lette da /srv/yaca/.env (R2_DESTINATION, BACKUP_RETENTION_DAYS).
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/srv/yaca/.env
+WorkingDirectory=/srv/yaca
+ExecStart=/bin/bash /srv/yaca/ops/yaca-dump-backup.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

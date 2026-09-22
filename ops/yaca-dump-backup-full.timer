@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer settimanale per backup completo database locali YACA (--full)
+
+[Timer]
+OnCalendar=Sun *-*-* 05:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target
