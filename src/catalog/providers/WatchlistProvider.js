@@ -53,7 +53,8 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
     // Prepare query for UserLibraryItem
     let query = {
         addonUuid: uuid,
-        removed: false
+        removed: false,
+        itemId: { $ne: null, $exists: true }
     };
 
     if (id === 'yaca_watchlist_anime') {
@@ -68,7 +69,7 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
     } else {
         query.type = targetType;
         // Exclude anime from standard series/movies if possible by removing known anime prefixes
-        query.itemId = { $not: { $regex: /^(kitsu|hanime|anilist):/ } };
+        query.itemId = { $ne: null, $exists: true, $not: { $regex: /^(kitsu|hanime|anilist):/ } };
     }
 
     const pageSize = 100;
@@ -100,7 +101,8 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
             posterShape: item.posterShape || 'poster',
             background: item.background,
             logo: item.logo,
-            year: item.year
+            year: item.year,
+            releaseInfo: item.year ? String(item.year) : item.year
         };
 
         catalog.push(metaItem);

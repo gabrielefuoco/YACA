@@ -260,6 +260,114 @@ router.get('/manifest.json', (req, res) => {
     res.json(manifest);
 });
 
+function resolveCatalogType(cat) {
+    if (!cat) return 'movie';
+    const raw = (cat.kind || cat.type || '').toString().toLowerCase().trim();
+    if (raw === 'series') return 'series';
+    if (raw === 'anime') return 'anime';
+    if (raw === 'other') return 'other';
+    return 'movie';
+}
+
+function buildManifest(userConfig, hostUrl = 'http://localhost:7000', userHandle = null) {
+    const cv = userConfig.configVersion?.toString().replace(/_/g, '-');
+    const dynamicVersion = cv ? `1.0.4+${cv}` : '1.0.4';
+
+    const activeProfileId = userConfig.activeProfileId || 'global';
+    const profile = userConfig.profiles?.find(p => p.id === activeProfileId) || (userConfig.profiles?.[0]);
+
+    const selectedPresets = profile?.raw_ui_state?.selectedPresets;
+    const heroCatalogs = [
+        { id: 'yaca_true_blend_movies', type: 'movie', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
+        { id: 'yaca_true_blend_series', type: 'series', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
+        { id: 'yaca_seed_network_movies', type: 'movie', name: '🕸️ La Rete dei tuoi Preferiti', extra: [{ name: 'skip' }] },
+        { id: 'yaca_seed_network_series', type: 'series', name: '🕸️ La Rete dei tuoi Preferiti', extra: [{ name: 'skip' }] },
+        { id: 'yaca_hidden_gems_movies', type: 'movie', name: '💎 Gemme Nascoste', extra: [{ name: 'skip' }] },
+        { id: 'yaca_hidden_gems_series', type: 'series', name: '💎 Gemme Nascoste', extra: [{ name: 'skip' }] },
+        { id: 'yaca_trakt_filtered_movies', type: 'movie', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
+        { id: 'yaca_trakt_filtered_series', type: 'series', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
+    ];
+
+    // Filter: only show hero catalogs if they are enabled in the active profile's selectedPresets.
+    // If selectedPresets is not configured yet, show all of them.
+    const activeHeroCatalogs = Array.isArray(selectedPresets)
+        ? heroCatalogs.filter(c => selectedPresets.includes(c.id))
+        : heroCatalogs;
+
+    const catalogs = [
+        { id: 'yaca-profiles', type: 'other', name: '👥 Cambia Profilo' },
+        { id: 'yaca_search_standard', type: 'movie', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
+        { id: 'yaca_search_standard', type: 'series', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
+        { id: 'yaca_search_ai', type: 'movie', name: 'YACA: Deep AI Search', extra: searchExtra },
+        { id: 'yaca_search_ai', type: 'series', name: 'YACA: Deep AI Search', extra: searchExtra },
+        { id: 'yaca_watchlist_movies', type: 'movie', name: '🎬 I Film della tua Watchlist', extra: [{ name: 'skip' }] },
+        { id: 'yaca_watchlist_series', type: 'series', name: '📺 Le Serie della tua Watchlist', extra: [{ name: 'skip' }] },
+        { id: 'yaca_watchlist_anime', type: 'anime', name: '🎌 Gli Anime della tua Watchlist', extra: [{ name: 'skip' }] },
+        ...activeHeroCatalogs
+    ];
+
+    // Tracciamo gli ID già presenti per deduplicare cataloghi custom e di profilo
+    // (escludendo yaca_search_standard e yaca_search_ai che compaiono 2 volte per movie e series)
+    const seenCatalogIds = new Set(
+        catalogs
+            .map(c => c.id)
+            .filter(id => id !== 'yaca_search_standard' && id !== 'yaca_search_ai')
+    );
+
+    // Add User Presets (precedenza alla voce di profilo)
+    if (profile && profile.catalogs && Array.isArray(profile.catalogs)) {
+        profile.catalogs.forEach(p => {
+            if (p.isActive !== false && p.id && !seenCatalogIds.has(p.id)) {
+                seenCatalogIds.add(p.id);
+                catalogs.push({
+                    id: p.id,
+                    type: resolveCatalogType(p),
+                    name: p.name,
+                    extra: getCatalogExtra(p)
+                });
+            }
+        });
+    }
+
+    // Add Custom Catalogs (e.g. Matchmaker, custom lists)
+    if (userConfig.customCatalogs && Array.isArray(userConfig.customCatalogs)) {
+        userConfig.customCatalogs.forEach(c => {
+            if (c.isActive !== false && c.id && !seenCatalogIds.has(c.id)) {
+                seenCatalogIds.add(c.id);
+                catalogs.push({
+                    id: c.id,
+                    type: resolveCatalogType(c),
+                    name: c.name,
+                    extra: getCatalogExtra(c)
+                });
+            }
+        });
+    }
+
+    const configHandle = userHandle || userConfig.userHandle || userConfig.addonUuid || 'unknown';
+    return {
+        id: 'org.stremio.yaca.catalog',
+        version: dynamicVersion,
+        name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
+        description: 'Catalogo Intelligente Potenziato da AI',
+        logo: `${hostUrl}/fiamma_yaca.png`,
+        resources: [
+            'catalog',
+            'meta',
+            { name: 'stream', types: ['movie', 'series', 'anime', 'other'], idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'yaca-profile-'] }
+        ],
+        types: ['movie', 'series', 'anime', 'other'],
+        catalogs: catalogs,
+        idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'yaca-profile-'],
+        behaviorHints: {
+            configurable: true,
+            configurationRequired: false
+        },
+        contactEmail: 'yaca.addon@proton.me',
+        configurationURL: `${hostUrl}/${configHandle}/configure`
+    };
+}
+
 // Manifest di Stremio (Dinamico)
 router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.json'], async (req, res) => {
     const userConfig = await UserConfig.resolveUserConfig(req.params.userHandle);
@@ -268,93 +376,8 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
     }
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     try {
-        const cv = userConfig.configVersion?.toString().replace(/_/g, '-');
-        const dynamicVersion = cv ? `1.0.4+${cv}` : '1.0.4';
-
-        const activeProfileId = userConfig.activeProfileId || 'global';
-        const profile = userConfig.profiles?.find(p => p.id === activeProfileId) || (userConfig.profiles?.[0]);
-
-        const selectedPresets = profile?.raw_ui_state?.selectedPresets;
-        const heroCatalogs = [
-            { id: 'yaca_true_blend_movies', type: 'movie', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
-            { id: 'yaca_true_blend_series', type: 'series', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
-            { id: 'yaca_seed_network_movies', type: 'movie', name: '🕸️ La Rete dei tuoi Preferiti', extra: [{ name: 'skip' }] },
-            { id: 'yaca_seed_network_series', type: 'series', name: '🕸️ La Rete dei tuoi Preferiti', extra: [{ name: 'skip' }] },
-            { id: 'yaca_hidden_gems_movies', type: 'movie', name: '💎 Gemme Nascoste', extra: [{ name: 'skip' }] },
-            { id: 'yaca_hidden_gems_series', type: 'series', name: '💎 Gemme Nascoste', extra: [{ name: 'skip' }] },
-            { id: 'yaca_trakt_filtered_movies', type: 'movie', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
-            { id: 'yaca_trakt_filtered_series', type: 'series', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
-        ];
-
-        // Filter: only show hero catalogs if they are enabled in the active profile's selectedPresets.
-        // If selectedPresets is not configured yet, show all of them.
-        const activeHeroCatalogs = Array.isArray(selectedPresets)
-            ? heroCatalogs.filter(c => selectedPresets.includes(c.id))
-            : heroCatalogs;
-
-        const catalogs = [
-            { id: 'yaca-profiles', type: 'other', name: '👥 Cambia Profilo' },
-            { id: 'yaca_search_standard', type: 'movie', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
-            { id: 'yaca_search_standard', type: 'series', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
-            { id: 'yaca_search_ai', type: 'movie', name: 'YACA: Deep AI Search', extra: searchExtra },
-            { id: 'yaca_search_ai', type: 'series', name: 'YACA: Deep AI Search', extra: searchExtra },
-            { id: 'yaca_watchlist_movies', type: 'movie', name: '🎬 I Film della tua Watchlist', extra: [{ name: 'skip' }] },
-            { id: 'yaca_watchlist_series', type: 'series', name: '📺 Le Serie della tua Watchlist', extra: [{ name: 'skip' }] },
-            { id: 'yaca_watchlist_anime', type: 'anime', name: '🎌 Gli Anime della tua Watchlist', extra: [{ name: 'skip' }] },
-            ...activeHeroCatalogs
-        ];
-
-        // Add User Presets
-        if (profile && profile.catalogs && Array.isArray(profile.catalogs)) {
-            profile.catalogs.forEach(p => {
-                if (p.isActive !== false) {
-                    catalogs.push({
-                        id: p.id,
-                        type: p.type === 'series' ? 'series' : 'movie',
-                        name: p.name,
-                        extra: getCatalogExtra(p)
-                    });
-                }
-            });
-        }
-
-        // Add Custom Catalogs (e.g. Matchmaker, custom lists)
-        if (userConfig.customCatalogs && Array.isArray(userConfig.customCatalogs)) {
-            userConfig.customCatalogs.forEach(c => {
-                if (c.isActive !== false) {
-                    catalogs.push({
-                        id: c.id,
-                        type: c.type === 'series' ? 'series' : (c.type === 'anime' ? 'anime' : 'movie'),
-                        name: c.name,
-                        extra: getCatalogExtra(c)
-                    });
-                }
-            });
-        }
-
         const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
-        const manifest = {
-            id: 'org.stremio.yaca.catalog',
-            version: dynamicVersion,
-            name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
-            description: 'Catalogo Intelligente Potenziato da AI',
-            logo: `${hostUrl}/fiamma_yaca.png`,
-            resources: [
-                'catalog',
-                'meta',
-                { name: 'stream', types: ['movie', 'series', 'anime', 'other'], idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'yaca-profile-'] }
-            ],
-            types: ['movie', 'series', 'anime', 'other'],
-            catalogs: catalogs,
-            idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'yaca-profile-'],
-            behaviorHints: {
-                configurable: true,
-                configurationRequired: false
-            },
-            contactEmail: 'yaca.addon@proton.me',
-            configurationURL: `${hostUrl}/${req.params.userHandle}/configure`
-        };
-
+        const manifest = buildManifest(userConfig, hostUrl, req.params.userHandle);
         return res.json(manifest);
     } catch (err) {
         console.error("Manifest Error:", err);
@@ -795,5 +818,7 @@ router.defaultExtra = defaultExtra;
 router.getCatalogExtra = getCatalogExtra;
 router.SORT_OPTIONS = SORT_OPTIONS;
 router.SORT_MAP = SORT_MAP;
+router.resolveCatalogType = resolveCatalogType;
+router.buildManifest = buildManifest;
 
 module.exports = router;
