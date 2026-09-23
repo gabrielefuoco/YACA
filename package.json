@@ -12,7 +12,7 @@
   "jest": {
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "<rootDir>/services/"
+      "services"
     ]
   },
   "keywords": [],
