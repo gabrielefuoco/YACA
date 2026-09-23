@@ -232,7 +232,7 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
             // Smart Fallback: se una query restituisce meno di 5 risultati (es. keyword iper-specifiche prive di match per Anime),
             // allentiamo il filtro rimuovendo le keyword e tenendo i Generi Top + Quota Anime.
             if ((!results || results.length < 5) && cluster.keywords.length > 0) {
-                const fallbackWhere = where.filter(w => !w.includes('"keywords" LIKE'));
+                const fallbackWhere = where.filter(w => !w.includes('"keywords"'));
                 const fallbackPreset = { type: types, where: fallbackWhere, orderBy: S.POPULAR };
                 const fallbackResults = await getDuckDbCatalogFromPreset(fallbackPreset, 0, limitPerQuery);
                 console.log(`[Smart AND Query ${index + 1}/${totalQueries}] Smart Fallback (Genres/Anime) Found ${fallbackResults?.length || 0} items`);
@@ -305,8 +305,8 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
     
     return finalItems.slice(0, 100).map(i => ({ 
         id: String(i.data.id), 
-        matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))), 
-        rawTMDB: i.data 
+        matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))),
+        genres: i.data.genres
     }));
 }
 

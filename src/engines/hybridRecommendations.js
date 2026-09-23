@@ -36,7 +36,8 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 
     if (profile) {
         const now = new Date();
-        const isStale = (now - profile.lastUpdated) > (1000 * 60 * 60 * 12);
+        const lastUpdatedMs = profile.lastUpdated ? new Date(profile.lastUpdated).getTime() : 0;
+        const isStale = (now.getTime() - lastUpdatedMs) > (1000 * 60 * 60 * 12);
         if (isStale) {
             // console.log(`[Hybrid] Sincronizzazione profilo per ${userId} (${context})...`);
             syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context, userConfig).then(async (synced) => {
@@ -162,6 +163,30 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                     }
                 }
 
+                let releaseYear = '';
+                try {
+                    const rawDate = item.release_date || item.first_air_date;
+                    if (rawDate instanceof Date) {
+                        releaseYear = !isNaN(rawDate.getTime()) ? rawDate.toISOString().substring(0, 4) : '';
+                    } else if (typeof rawDate === 'string') {
+                        releaseYear = rawDate.substring(0, 4);
+                    } else if (rawDate != null) {
+                        releaseYear = String(rawDate).substring(0, 4);
+                    }
+                } catch (_e) {
+                    releaseYear = '';
+                }
+
+                let imdbRating;
+                if (item.vote_average != null) {
+                    const num = Number(item.vote_average);
+                    if (!isNaN(num)) imdbRating = num.toFixed(1);
+                }
+
+                const genre_ids = Array.isArray(item.genre_ids)
+                    ? item.genre_ids
+                    : (Array.isArray(item.genres) ? item.genres.map(g => g.id).filter(id => id != null) : []);
+
                 return {
                     id: `tmdb:${normalizedId}`,
                     type: mediaType === 'movie' ? 'movie' : 'series',
@@ -171,33 +196,38 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                     background: item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null,
                     logo: logoUrl,
                     description: item.overview || '',
-                    releaseInfo: (item.release_date || item.first_air_date || '').substring(0, 4),
-                    imdbRating: item.vote_average ? item.vote_average.toFixed(1) : undefined,
-                    genre_ids: item.genre_ids || (item.genres ? item.genres.map(g => g.id) : []),
+                    releaseInfo: releaseYear,
+                    imdbRating,
+                    genre_ids,
                     _yacaMatch: matchScore
                 };
-            } catch (_e) {
+            } catch (err) {
+                console.error(`[Hybrid] Errore risoluzione item ${recItem?.id || recItem}:`, err?.message || err);
                 return null;
             }
         },
         { batchSize: 3, delayMs: 150 }
     );
 
-    // Warm-up subsequent pages in the background (from the next item after the current page slice onwards)
-    const remainingIds = recommendationIds.slice(skip + ITEMS_PER_PAGE);
-    if (remainingIds.length > 0) {
+    // Warm-up subsequent pages in the background (limit to next page slice to avoid N+1 hammering)
+    const nextBatchIds = recommendationIds.slice(skip + ITEMS_PER_PAGE, skip + (ITEMS_PER_PAGE * 2));
+    if (nextBatchIds.length > 0) {
         global.setImmediate(() => {
             rateLimitedMap(
-                remainingIds,
+                nextBatchIds,
                 async (recItem) => {
                     try {
                         const isObj = typeof recItem === 'object' && recItem !== null;
                         const tmdbId = isObj ? recItem.id : recItem;
+                        const normalizedId = normalizeContentId(tmdbId);
                         const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
-                        await tmdb.getTmdbMovieDetails(tmdbApiKey, tmdbId.toString(), tmdbType);
+                        const duckMeta = await getDuckDbMetaDetails(normalizedId, tmdbType);
+                        if (!duckMeta || !duckMeta.rawTMDB) {
+                            await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType);
+                        }
                     } catch (_e) { }
                 },
-                { batchSize: 1, delayMs: 300 }
+                { batchSize: 2, delayMs: 150 }
             ).catch(err => console.error("[Background-Warmup] Error:", err.message));
         });
     }
@@ -249,8 +279,23 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
             fetchRecentHistory(traktToken, traktType, 40, userConfig),
             fetchRecentRatings(traktToken, traktType, 40, userConfig)
         ]);
-        await ProfileBuilder.syncUserHistory(userId, context, [...history, ...ratings], tmdbApiKey);
-        return true;
+        const combined = [...(history || []), ...(ratings || [])];
+
+        // Se non ci sono nuove interazioni (es. Trakt vuoto o errore 403),
+        // aggiorniamo comunque lastUpdated per non ripetere il check ad ogni richiesta
+        // ed evitiamo di invalidare inutilmente la cache delle raccomandazioni (BUG-3)
+        if (combined.length === 0) {
+            if (typeof TasteProfile.updateOne === 'function') {
+                await TasteProfile.updateOne({ owner: userId, context }, { $set: { lastUpdated: new Date() } });
+            }
+            return false;
+        }
+
+        const syncResult = await ProfileBuilder.syncUserHistory(userId, context, combined, tmdbApiKey);
+        if (typeof TasteProfile.updateOne === 'function') {
+            await TasteProfile.updateOne({ owner: userId, context }, { $set: { lastUpdated: new Date() } });
+        }
+        return syncResult !== false;
     } catch (err) {
         console.error(`[Hybrid] syncIncrementalRecommendations failed for ${userId}/${context}:`, err.message);
         return false;

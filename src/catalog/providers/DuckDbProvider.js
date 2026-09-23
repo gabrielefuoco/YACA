@@ -193,6 +193,7 @@ function mapDuckDbRowToMeta(item, isMovie = true) {
         vote_count: voteCount,
         popularity: sanitizeBigInt(item.popularity) || 0,
         release_date: item.release_date,
+        first_air_date: item.first_air_date,
         original_language: item.original_language,
         genres: parsedGenres,
         belongs_to_collection: item.collection_id ? { id: sanitizeBigInt(item.collection_id), name: item.collection_name } : null,
@@ -308,6 +309,7 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
             vote_count: voteCount,
             popularity: sanitizeBigInt(item.popularity) || 0,
             release_date: item.release_date,
+            first_air_date: item.first_air_date,
             original_language: item.original_language,
             genres: parsedGenres,
             'watch/providers': { results: { IT: parsedProviders } },
@@ -323,8 +325,8 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
         if (item.trailer_key) rawTMDB.videos = { results: [{ key: item.trailer_key, type: 'Trailer', site: 'YouTube' }] };
         if (item.content_rating) rawTMDB.release_dates = { results: [{ iso_3166_1: 'IT', release_dates: [{ certification: item.content_rating }] }] };
 
-        const d = item.release_date || item.last_air_date || '';
-        const dateStr = d instanceof Date ? d.toISOString() : String(d);
+        const d = item.release_date || item.first_air_date || item.last_air_date || '';
+        const dateStr = d instanceof Date ? d.toISOString() : String(d || '');
 
         const metaObj = {
             id: `tmdb:${item.id}`,
