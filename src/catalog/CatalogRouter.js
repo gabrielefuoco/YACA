@@ -1,7 +1,7 @@
 const { getTraktCatalog } = require('./providers/TraktProvider');
 
 
-const { getEngineHybridCatalog, getHybridPopularCatalog, TASTE_BASED_IDS } = require('./providers/HybridProvider');
+const { getEngineHybridCatalog, TASTE_BASED_IDS } = require('./providers/HybridProvider');
 const { executeCombinedSearch, executeUniversalPipeline } = require('./providers/AiDiscoveryProvider');
 const { getAiringStateCatalog } = require('./providers/AiringStateProvider');
 const { getDuckDbCatalogFromFilters, getDuckDbCatalogFromPreset, mapSortBy, buildPresetFromFilters } = require('./providers/DuckDbProvider');
@@ -45,19 +45,9 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
         return await executeCombinedSearch(search, userConfig, type, skip, activeProfileSettings, tmdbFetchOptions);
     }
 
-    // SCENARIO 2: CATALOGHI TMDB STANDARD
-    if (id === 'yaca_discover_movies' || id === 'yaca_discover_series') {
-        const filters = {};
-        if (sortBy) filters.sort_by = sortBy;
-        return await getDuckDbCatalogFromFilters(filters, type, skip, 100, activeProfileSettings);
-    }
-
-    // SCENARIO 2.5 e 2.6: HYBRID RECOMMENDATIONS
+    // SCENARIO 2.5: HYBRID RECOMMENDATIONS (Taste-based)
     if (TASTE_BASED_IDS.has(baseId)) {
         return await getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey, activeProfileSettings);
-    }
-    if (baseId === 'yaca_hybrid_popular_movies' || baseId === 'yaca_hybrid_popular_series') {
-        return await getHybridPopularCatalog(baseId, type, skip, userConfig, tmdbClient, tmdbApiKey, tmdbFetchOptions, activeProfileSettings);
     }
 
     // SCENARIO 3: TRAKT
@@ -96,13 +86,17 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
             const mergedFrom = raw.merge?.sources || raw.merge?.catalogs || raw.mergedFrom || [];
             if (mergedFrom.length > 0) {
                 const activeProfile = userConfig.profiles?.find(p => p.id === userConfig.activeProfileId);
-                const customCatalogs = activeProfile?.existingCatalogs || activeProfile?.catalogs || [];
+                const profileCatalogs = activeProfile?.existingCatalogs || activeProfile?.catalogs || [];
+                const userCustomCatalogs = userConfig.customCatalogs || [];
                 const allPresets = getPresets();
                 const sourceFilters = raw.merge?.sourceFilters || [];
                 const mergedQueries = [];
                 for (let i = 0; i < mergedFrom.length; i++) {
                     const srcId = mergedFrom[i];
-                    let srcCat = customCatalogs.find(c => c.id === srcId);
+                    let srcCat = profileCatalogs.find(c => c.id === srcId);
+                    if (!srcCat) {
+                        srcCat = userCustomCatalogs.find(c => c.id === srcId);
+                    }
                     if (!srcCat) {
                         srcCat = allPresets.find(p => p.id === srcId);
                     }
