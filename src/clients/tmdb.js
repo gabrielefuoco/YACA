@@ -413,6 +413,12 @@ function getPageCacheTtl(pageNum, options = {}) {
  * riducendo drasticamente il numero di richieste (es. 30 stagioni → 2 chiamate).
  */
 async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalLanguage = null) {
+    // Difesa in profondità: un BigInt (le colonne BIGINT di DuckDB arrivano così in JS)
+    // fa esplodere ogni aritmetica con "Cannot convert a BigInt value to a number" e la
+    // serie perderebbe tutti gli episodi. Meglio convertirli qui, una volta sola.
+    if (typeof tmdbId === 'bigint') tmdbId = Number(tmdbId);
+    totalSeasons = Number(totalSeasons) || 0;
+
     const cacheKey = `eps:${tmdbId}`;
     const { value: cached, status } = await tvEpisodesCache.getWithStatus(cacheKey);
     if (status === 'fresh') return cached;

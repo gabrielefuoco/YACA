@@ -57,11 +57,13 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
     };
 
     if (id === 'yaca_watchlist_anime') {
-        // Anime might be identified by source (kitsu:, hanime:, etc.) or type
+        // Anime might be identified by source (kitsu:, hanime:, etc.) or type.
+        // NB: niente `$regex` su `_id`: nel modello è un ObjectId e Mongoose lancia
+        // "Can't use $regex", facendo fallire l'INTERA query (catalogo sempre vuoto).
+        // Gli id di Stremio vivono in `itemId`.
         query.$or = [
             { type: 'anime' },
-            { itemId: { $regex: /^(kitsu|hanime|anilist):/ } },
-            { _id: { $regex: /^(kitsu|hanime|anilist):/ } }
+            { itemId: { $regex: /^(kitsu|hanime|anilist):/ } }
         ];
     } else {
         query.type = targetType;

@@ -328,7 +328,7 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
 
         const metaObj = {
             id: `tmdb:${item.id}`,
-            _tmdbId: item.id,
+            _tmdbId: sanitizeBigInt(item.id),
             type: isMovie ? 'movie' : 'series',
             name,
             poster,
@@ -337,7 +337,7 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
             description: item.overview || '',
             releaseInfo: dateStr.substring(0, 4),
             imdbRating: item.vote_average ? Number(item.vote_average).toFixed(1) : undefined,
-            popularity: item.popularity || 0,
+            popularity: sanitizeBigInt(item.popularity) || 0,
             genre_ids: parsedGenres.map(g => g.id),
             behaviorHints: isMovie ? { defaultVideoId: `tmdb:${item.id}` } : { hasScheduledVideos: true },
             rawTMDB
@@ -353,7 +353,10 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
         });
 
         if (!isMovie) {
-            metaObj._numberOfSeasons = item.number_of_seasons || 1;
+            // DuckDB restituisce le colonne BIGINT come BigInt: senza la conversione,
+            // chi fa aritmetica su questo valore (fetchTmdbEpisodes) lancia
+            // "Cannot convert a BigInt value to a number" e la serie resta senza episodi.
+            metaObj._numberOfSeasons = sanitizeBigInt(item.number_of_seasons) || 1;
         }
 
         return metaObj;
