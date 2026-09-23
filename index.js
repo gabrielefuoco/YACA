@@ -13,6 +13,7 @@ const rateLimit = require('express-rate-limit');
 const configureRoute = require('./src/api/configure/index');
 const UserConfig = require('./src/models/UserConfig');
 const { getPresets, profileTemplates } = require('./src/data/presets');
+const { getCatalogKind } = require('./src/catalog/catalogKind');
 const connectDB = require('./src/db/connection');
 const { loginHandler, meHandler, logoutHandler } = require('./src/api/auth/index.js');
 const { inputSanitizer } = require('./src/middleware/inputSanitizer');
@@ -149,8 +150,13 @@ app.get('/api/user/:userId', inputSanitizer, async (req, res) => {
 });
 
 app.get('/api/presets', (req, res) => {
+    const rawPresets = getPresets();
+    const presetsWithKind = rawPresets.map(p => ({
+        ...p,
+        kind: getCatalogKind(p)
+    }));
     res.json({
-        presets: getPresets(),
+        presets: presetsWithKind,
         profileTemplates,
         hasGlobalErdb: !!process.env.ERDB_CONFIG
     });

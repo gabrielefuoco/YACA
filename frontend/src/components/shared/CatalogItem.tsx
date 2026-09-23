@@ -19,6 +19,8 @@ interface CatalogItemProps {
   isMerging?: boolean; 
   mergeSelectionInProgress?: boolean;
   canBeMergeTarget?: boolean;
+  isHiddenBySelectors?: boolean;
+  hiddenReason?: string;
   onDragStart?: React.DragEventHandler;
   onDragOver?: React.DragEventHandler;
   onDragLeave?: React.DragEventHandler;
@@ -42,6 +44,8 @@ export function CatalogItem({
   isMerging,
   mergeSelectionInProgress,
   canBeMergeTarget = true,
+  isHiddenBySelectors = false,
+  hiddenReason,
   onDragStart,
   onDragOver,
   onDragLeave,
@@ -117,6 +121,8 @@ export function CatalogItem({
           !canBeMergeTarget ? 'opacity-20 grayscale scale-[0.98] pointer-events-none border-marrow-light/5' :
           'opacity-100 hover:border-primary/50 cursor-pointer shadow-md'
         ) :
+        isHiddenBySelectors ?
+        'border-dashed border-amber-500/40 bg-slate-100/70 opacity-60 hover:opacity-90 transition-opacity sm:cursor-grab sm:active:cursor-grabbing' :
         'border-marrow-light/10 bg-white/60 hover:bg-white/90 hover:border-primary/30 sm:cursor-grab sm:active:cursor-grabbing'
       }`}
     >
@@ -164,11 +170,17 @@ export function CatalogItem({
           </div>
           <div className="min-w-0">
             <h3 className="font-black text-marrow-deep text-sm sm:text-lg leading-tight truncate group-hover:text-primary transition-colors">{catalog.name}</h3>
-            <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
               <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-primary/5 text-primary text-[9px] sm:text-[10px] font-black uppercase tracking-wider border border-primary/10">
                 <span className="material-symbols-outlined text-[10px] shrink-0">{sourceIcon}</span> 
                 <span className="truncate">{sourceLabel}</span>
               </span>
+              {isHiddenBySelectors && (
+                <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-800 text-[9px] sm:text-[10px] font-black uppercase tracking-wider border border-amber-500/30">
+                  <span className="material-symbols-outlined text-[10px] shrink-0">visibility_off</span>
+                  <span>Nascosto dai selettori</span>
+                </span>
+              )}
             </div>
           </div>
         </div>

@@ -5,6 +5,17 @@ export interface DNAItem {
   score?: number;
 }
 
+export interface TypeSelectors {
+  film?: boolean;
+  serie?: boolean;
+  anime?: 'only' | 'exclude' | null;
+}
+
+export interface CatalogKind {
+  mediaSet: ('film' | 'serie')[];
+  anime: 'yes' | 'no' | 'mixed';
+}
+
 export interface ProfileSettings {
   fastRefresh?: boolean;
   tmdbKey?: string;
@@ -13,6 +24,7 @@ export interface ProfileSettings {
   erdbConfig?: string;
   manualDNA?: DNAItem[];
   suggestedDNA?: DNAItem[];
+  typeSelectors?: TypeSelectors;
 }
 
 export interface QueryBlock {
@@ -83,6 +95,8 @@ export interface Preset {
   presentation_strategy?: 'popularity' | 'interleave';
   showEpisodeBadge?: boolean;
   description?: string;
+  isAnime?: boolean;
+  kind?: CatalogKind;
 }
 
 export interface ProfileTemplate {
@@ -90,6 +104,7 @@ export interface ProfileTemplate {
   name: string;
   description: string;
   presets: string[];
+  typeSelectors?: TypeSelectors;
 }
 
 export interface PosterItem {

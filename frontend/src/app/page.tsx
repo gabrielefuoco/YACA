@@ -12,7 +12,7 @@ import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
-import { MyList, StremioAuth, Profile, Catalog } from '@/types';
+import { MyList, StremioAuth, Profile, Catalog, ProfileTemplate } from '@/types';
 import { LOCAL_STORAGE_KEYS, SESSION_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 import { api } from '@/lib/api';
 import { usePathname } from 'next/navigation';
@@ -409,7 +409,7 @@ export default function Home() {
     }
   };
 
-  const handleTemplateApplied = async (profileId: string, selectedPresets: string[]) => {
+  const handleTemplateApplied = async (profileId: string, selectedPresets: string[], template?: ProfileTemplate) => {
     const nextProfiles = profiles.map((p) =>
       p.id === profileId
         ? {
@@ -417,6 +417,10 @@ export default function Home() {
           raw_ui_state: {
             ...p.raw_ui_state,
             selectedPresets,
+          },
+          settings: {
+            ...p.settings,
+            typeSelectors: template?.typeSelectors || { film: false, serie: false, anime: null },
           },
         }
         : p

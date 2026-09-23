@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { PosterRow } from '@/components/shared/PosterRow';
 import { Check, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { isCatalogConformant, getIncompatibilityReason } from '@/lib/catalogKind';
 
 interface ExplorePanelProps {
   presets: Preset[];
@@ -123,6 +124,10 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
             ? profile.existingCatalogs.some(c => c.id === preset.id)
             : selectedPresets.includes(preset.id);
 
+          const targetCatalog = preset.isCustom ? preset.originalCatalog : preset;
+          const isConformant = isCatalogConformant(targetCatalog, profile.settings?.typeSelectors);
+          const incompatibilityReason = isConformant ? null : getIncompatibilityReason(targetCatalog, profile.settings?.typeSelectors);
+
           const filterCount = preset.queries?.[0] ? Object.keys(preset.queries[0]).length - 1 : 0; 
 
           return (
@@ -137,10 +142,15 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-black text-marrow-deep text-sm sm:text-lg leading-tight truncate group-hover:text-primary transition-colors">{preset.name}</h3>
-                    <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
                       {preset.category && (
                         <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] px-1.5 py-0 shrink-0 bg-primary/10 text-primary hover:bg-primary/20 border-0">
                           {preset.category}
+                        </Badge>
+                      )}
+                      {!isConformant && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-amber-500/10 text-amber-700 border-amber-500/30 font-bold">
+                          {incompatibilityReason}
                         </Badge>
                       )}
                     </div>
@@ -150,12 +160,17 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
                 <div className="flex items-center gap-1 shrink-0 ml-4">
                   <Button
                     size="sm"
+                    disabled={!isConformant && !isSelected}
+                    title={incompatibilityReason ?? undefined}
                     className={`rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md ${
                       isSelected 
                         ? 'bg-success/20 text-success hover:bg-success/30 border border-success/20' 
+                        : !isConformant
+                        ? 'bg-marrow-light/10 text-marrow-light/50 border border-marrow-light/20 cursor-not-allowed shadow-none'
                         : 'bg-primary text-white hover:bg-marrow-deep hover:shadow-lg hover:-translate-y-0.5'
                     }`}
                     onClick={() => {
+                      if (!isConformant && !isSelected) return;
                       if (preset.isCustom && onAddCatalog) {
                         onAddCatalog(preset.originalCatalog);
                       } else {
@@ -163,7 +178,7 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
                       }
                     }}
                   >
-                    {isSelected ? <><Check className="w-3 h-3 mr-1" /> Aggiunto</> : 'Aggiungi'}
+                    {isSelected ? <><Check className="w-3 h-3 mr-1" /> Aggiunto</> : (!isConformant ? (incompatibilityReason || 'Non compatibile') : 'Aggiungi')}
                   </Button>
                   
                   {preset.isCustom && onEditCatalog && (

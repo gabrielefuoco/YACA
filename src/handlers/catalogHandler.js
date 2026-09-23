@@ -14,6 +14,7 @@ const PendingScan = require('../db/models/PendingScan');
 const animeAiringState = require('../data/animeAiringState');
 const { isAnimeContent } = require('../utils/animeIdentity');
 const animeMappingStore = require('../data/animeMappingStore');
+const { isCatalogConformant } = require('../catalog/catalogKind');
 
 function extractTmdbId(item) {
     if (!item) return null;
@@ -455,6 +456,13 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 catalogMeta = userConfig.customCatalogs.find(c => c.id === id);
             }
         }
+    }
+
+    // GUARDIA SELETTORI DI TIPO (Ticket 09 / Spec 06):
+    // Se il catalogo richiesto è un suggerimento non conforme ai selettori del profilo attivo -> { metas: [] }
+    const targetCatalog = catalogMeta || { id, type };
+    if (!isCatalogConformant(targetCatalog, activeProfileSettings?.typeSelectors)) {
+        return { metas: [] };
     }
 
     // managed SWR: Fetch or Revalidate

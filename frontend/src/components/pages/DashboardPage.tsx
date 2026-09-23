@@ -38,7 +38,7 @@ interface DashboardPageProps {
   onSaveMyList: (list: MyList) => void;
   onRemoveMyList: (id: string) => void;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
-  onTemplateApplied?: (profileId: string, selectedPresets: string[]) => Promise<void> | void;
+  onTemplateApplied?: (profileId: string, selectedPresets: string[], template?: ProfileTemplate) => Promise<void> | void;
   syncStatus: any;
   syncProfileVectors: (profileId: string, userId: string) => Promise<any>;
   userId?: string;
@@ -133,12 +133,16 @@ export function DashboardPage({
     // Creates a new profile with the template's name
     const newProfile = onAddProfile(template.name);
     
-    // Set the template's presets to the new profile
+    // Set the template's presets and typeSelectors to the new profile
     onUpdateProfile(newProfile.id, {
       raw_ui_state: {
         ...newProfile.raw_ui_state,
         selectedPresets: template.presets,
         catalogOrder: template.presets,
+      },
+      settings: {
+        ...newProfile.settings,
+        typeSelectors: template.typeSelectors || { film: false, serie: false, anime: null },
       },
     });
 

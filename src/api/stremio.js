@@ -46,6 +46,7 @@ const { metaHandler } = require('../handlers/metaHandler');
 const { streamHandler } = require('../handlers/streamHandler');
 const { parseExtra } = require('../utils/helpers');
 const { getPresets } = require('../data/presets');
+const { isCatalogConformant } = require('../catalog/catalogKind');
 
 // Rate limiter for sync-status polling (max 30 requests per minute per IP)
 const syncStatusLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
@@ -288,11 +289,15 @@ function buildManifest(userConfig, hostUrl = 'http://localhost:7000', userHandle
         { id: 'yaca_trakt_filtered_series', type: 'series', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
     ];
 
-    // Filter: only show hero catalogs if they are enabled in the active profile's selectedPresets.
-    // If selectedPresets is not configured yet, show all of them.
-    const activeHeroCatalogs = Array.isArray(selectedPresets)
-        ? heroCatalogs.filter(c => selectedPresets.includes(c.id))
-        : heroCatalogs;
+    const typeSelectors = profile?.settings?.typeSelectors;
+
+    // Filter: only show hero catalogs if they are enabled in the active profile's selectedPresets
+    // and conformant to typeSelectors.
+    const activeHeroCatalogs = (
+        Array.isArray(selectedPresets)
+            ? heroCatalogs.filter(c => selectedPresets.includes(c.id))
+            : heroCatalogs
+    ).filter(c => isCatalogConformant(c, typeSelectors));
 
     const catalogs = [
         { id: 'yaca-profiles', type: 'other', name: '👥 Cambia Profilo' },
@@ -318,13 +323,15 @@ function buildManifest(userConfig, hostUrl = 'http://localhost:7000', userHandle
     if (profile && profile.catalogs && Array.isArray(profile.catalogs)) {
         profile.catalogs.forEach(p => {
             if (p.isActive !== false && p.id && !seenCatalogIds.has(p.id)) {
-                seenCatalogIds.add(p.id);
-                catalogs.push({
-                    id: p.id,
-                    type: resolveCatalogType(p),
-                    name: p.name,
-                    extra: getCatalogExtra(p)
-                });
+                if (isCatalogConformant(p, typeSelectors)) {
+                    seenCatalogIds.add(p.id);
+                    catalogs.push({
+                        id: p.id,
+                        type: resolveCatalogType(p),
+                        name: p.name,
+                        extra: getCatalogExtra(p)
+                    });
+                }
             }
         });
     }
@@ -333,13 +340,15 @@ function buildManifest(userConfig, hostUrl = 'http://localhost:7000', userHandle
     if (userConfig.customCatalogs && Array.isArray(userConfig.customCatalogs)) {
         userConfig.customCatalogs.forEach(c => {
             if (c.isActive !== false && c.id && !seenCatalogIds.has(c.id)) {
-                seenCatalogIds.add(c.id);
-                catalogs.push({
-                    id: c.id,
-                    type: resolveCatalogType(c),
-                    name: c.name,
-                    extra: getCatalogExtra(c)
-                });
+                if (isCatalogConformant(c, typeSelectors)) {
+                    seenCatalogIds.add(c.id);
+                    catalogs.push({
+                        id: c.id,
+                        type: resolveCatalogType(c),
+                        name: c.name,
+                        extra: getCatalogExtra(c)
+                    });
+                }
             }
         });
     }
