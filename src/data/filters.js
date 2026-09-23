@@ -9,13 +9,16 @@ const jsonHasStr = (col, val) => `"${col}" LIKE '%"${val}"%'`;
 const F = {
     // --- Generi ---
     genre: (...ids) => `(${ids.map(id => jsonHas('genres', id)).join(' OR ')})`,
-    genreStr: (...strs) => `(${strs.map(s => {
-        const strVal = String(s).trim();
-        if (/^\d+$/.test(strVal)) {
-            return jsonHas('genres', strVal);
-        }
-        return `"genres" ILIKE '%"name":"${strVal.replace(/'/g, "''")}"%'`;
-    }).join(' OR ')})`,
+    genreStr: (...strs) => {
+        const flatStrs = strs.flat(Infinity);
+        return `(${flatStrs.map(s => {
+            const strVal = String(s).trim();
+            if (/^\d+$/.test(strVal)) {
+                return jsonHas('genres', strVal);
+            }
+            return `"genres" ILIKE '%"name":"${strVal.replace(/'/g, "''")}"%'`;
+        }).join(' OR ')})`;
+    },
     allGenres: (...ids) => `(${ids.map(id => jsonHas('genres', id)).join(' AND ')})`,
     notGenre: (...ids) => `(${ids.map(val => {
         const strVal = String(val).trim();
@@ -122,16 +125,51 @@ const G = {
         News: 10763, Reality: 10764, SciFiFantasy: 10765, Soap: 10766,
         Talk: 10767, WarPolitics: 10768, Western: 37,
     },
-    // Utilità di conversione cross-type
-    _movieToTv: { 28: 10759, 12: 10759, 878: 10765, 14: 10765, 10752: 10768 },
-    _tvToMovie: { 10759: 28, 10765: 878, 10768: 10752 },
+    // Utilità di conversione cross-type (TMDB Movie ↔ TV)
+    // 10759 (TV Action & Adventure) include sia Action (28) che Adventure (12) dei film.
+    // 10765 (TV Sci-Fi & Fantasy) include sia Sci-Fi (878) che Fantasy (14) dei film.
+    // 10768 (TV War & Politics) include War (10752) dei film.
+    //
+    // DOCUMENTAZIONE GENERI NON MAPPATI (TV vs FILM):
+    // - Thriller (53), Horror (27), Romance (10749): su TMDB non esistono come generi TV.
+    //   Nelle serie TV queste opere vengono classificate sotto Mystery (9648), Crime (80) o Drama (18).
+    // - Kids (10762): genere presente solo in TV; nei film la classificazione corrispondente
+    //   è suddivisa tra Family (10751) e Animation (16).
+    // - Soap (10766), Reality (10764), Talk (10767), News (10763): format televisivi privi di controparte cinematografica.
+    // - TV Movie (10770): categoria di catalogo solo film.
+    // Non vengono forzate equivalenze arbitrarie 1:1 per preservare l'affinità tematica del profiling VSM.
+    _movieToTv: { 28: [10759], 12: [10759], 878: [10765], 14: [10765], 10752: [10768] },
+    _tvToMovie: { 10759: [28, 12], 10765: [878, 14], 10768: [10752] },
+
+    getEquivalentGenreIds: (genreId) => {
+        const num = Number(genreId);
+        if (isNaN(num)) return [];
+        const result = new Set();
+        if (G._tvToMovie && G._tvToMovie[num]) {
+            const m = G._tvToMovie[num];
+            if (Array.isArray(m)) m.forEach(id => result.add(id));
+            else result.add(m);
+        }
+        if (G._movieToTv && G._movieToTv[num]) {
+            const t = G._movieToTv[num];
+            if (Array.isArray(t)) t.forEach(id => result.add(id));
+            else result.add(t);
+        }
+        return Array.from(result);
+    },
+
     mapGenre: (genre, targetType) => {
         const isTv = targetType === 'tv' || targetType === 'series';
         if (isTv) {
             const num = Number(genre);
-            if (!isNaN(num) && G._movieToTv[num]) return G._movieToTv[num];
+            if (!isNaN(num) && G._movieToTv[num]) {
+                return Array.isArray(G._movieToTv[num]) ? G._movieToTv[num][0] : G._movieToTv[num];
+            }
             const str = String(genre).trim();
-            if (/^\d+$/.test(str) && G._movieToTv[Number(str)]) return G._movieToTv[Number(str)];
+            if (/^\d+$/.test(str) && G._movieToTv[Number(str)]) {
+                const res = G._movieToTv[Number(str)];
+                return Array.isArray(res) ? res[0] : res;
+            }
             const lower = str.toLowerCase();
             if (lower === 'action' || lower === 'adventure') return 'Action & Adventure';
             if (lower === 'science fiction' || lower === 'sci-fi' || lower === 'fantasy') return 'Sci-Fi & Fantasy';
@@ -139,17 +177,26 @@ const G = {
             return genre;
         } else {
             const num = Number(genre);
-            if (!isNaN(num) && G._tvToMovie[num]) return G._tvToMovie[num];
+            if (!isNaN(num) && G._tvToMovie[num]) {
+                const res = G._tvToMovie[num];
+                return Array.isArray(res) ? res : [res];
+            }
             const str = String(genre).trim();
-            if (/^\d+$/.test(str) && G._tvToMovie[Number(str)]) return G._tvToMovie[Number(str)];
+            if (/^\d+$/.test(str) && G._tvToMovie[Number(str)]) {
+                const res = G._tvToMovie[Number(str)];
+                return Array.isArray(res) ? res : [res];
+            }
             const lower = str.toLowerCase();
-            if (lower === 'action & adventure') return 'Action';
-            if (lower === 'sci-fi & fantasy') return 'Science Fiction';
+            if (lower === 'action & adventure') return ['Action', 'Adventure'];
+            if (lower === 'sci-fi & fantasy') return ['Science Fiction', 'Fantasy'];
             if (lower === 'war & politics') return 'War';
             return genre;
         }
     },
-    mapGenres: (genres, targetType) => (genres || []).map(g => G.mapGenre(g, targetType))
+    mapGenres: (genres, targetType) => (genres || []).flatMap(g => {
+        const res = G.mapGenre(g, targetType);
+        return Array.isArray(res) ? res : [res];
+    })
 };
 
 // === ENTITÀ DINAMICHE (Sync da DuckDB) ===

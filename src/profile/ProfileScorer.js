@@ -30,6 +30,32 @@ class ProfileScorer {
     }
 
     /**
+     * Helper condiviso per recuperare tutti gli ID genere equivalenti (cross-mapping TV ↔ Film).
+     * @param {string|number} id 
+     * @returns {number[]}
+     */
+    static getEquivalentGenreIds(id) {
+        const { G } = require('../data/filters');
+        if (typeof G.getEquivalentGenreIds === 'function') {
+            return G.getEquivalentGenreIds(id);
+        }
+        const num = Number(this.normalizeDnaId(id));
+        if (isNaN(num)) return [];
+        const alts = [];
+        if (G._tvToMovie && G._tvToMovie[num]) {
+            const m = G._tvToMovie[num];
+            if (Array.isArray(m)) alts.push(...m);
+            else alts.push(m);
+        }
+        if (G._movieToTv && G._movieToTv[num]) {
+            const t = G._movieToTv[num];
+            if (Array.isArray(t)) alts.push(...t);
+            else alts.push(t);
+        }
+        return alts;
+    }
+
+    /**
      * Gets a score from the fused vector for a specific type and id.
      * @param {Object} vector V_final object
      * @param {'g'|'k'|'d'|'a'} prefix 
@@ -42,16 +68,15 @@ class ProfileScorer {
         const direct = vector[`${prefix}:${normId}`];
         if (direct !== undefined) return direct;
         if (prefix === 'g') {
-            const numId = Number(normId);
-            const { G } = require('../data/filters');
-            if (G._tvToMovie && G._tvToMovie[numId]) {
-                const alt = vector[`g:${G._tvToMovie[numId]}`];
-                if (alt !== undefined) return alt;
+            const altIds = this.getEquivalentGenreIds(normId);
+            let maxScore = 0;
+            for (const altId of altIds) {
+                const alt = vector[`g:${altId}`];
+                if (alt !== undefined && alt > maxScore) {
+                    maxScore = alt;
+                }
             }
-            if (G._movieToTv && G._movieToTv[numId]) {
-                const alt = vector[`g:${G._movieToTv[numId]}`];
-                if (alt !== undefined) return alt;
-            }
+            if (maxScore > 0) return maxScore;
         }
         return 0;
     }
@@ -59,15 +84,24 @@ class ProfileScorer {
     static computeDnaMultiplier(tmdbData, dnaFilters = []) {
         if (!Array.isArray(dnaFilters) || dnaFilters.length === 0) return 1.0;
 
-        const genreIds = (tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id) : []))
-            .map((id) => this.normalizeDnaId(id));
+        const rawGenreIds = tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id) : []);
+        const genreIdSet = new Set();
+        for (const gid of rawGenreIds) {
+            const norm = this.normalizeDnaId(gid);
+            if (norm) {
+                genreIdSet.add(norm);
+                const alts = this.getEquivalentGenreIds(norm);
+                alts.forEach(alt => genreIdSet.add(String(alt)));
+            }
+        }
+
         const keywordItems = Array.isArray(tmdbData.keywords)
             ? tmdbData.keywords
             : (tmdbData.keywords?.keywords || tmdbData.keywords?.results || []);
         const keywordIds = keywordItems.map((k) => this.normalizeDnaId(typeof k === 'object' && k !== null ? (k.id || k.name) : k));
 
         const hasGenreMatch = dnaFilters.some(
-            (f) => f.type === 'genre' && genreIds.includes(this.normalizeDnaId(f.id))
+            (f) => f.type === 'genre' && genreIdSet.has(this.normalizeDnaId(f.id))
         );
         const hasKeywordMatch = dnaFilters.some(
             (f) => f.type === 'keyword' && keywordIds.includes(this.normalizeDnaId(f.id))
@@ -162,8 +196,10 @@ class ProfileScorer {
 
         // --- 3. Final Affinity Weighting (Thematic 98%, Authorial 2%) ---
         // Authorial weight is minimized as per user feedback: "non sono così importanti"
-        // Rimosso il moltiplicatore genreAlignmentMultiplier da qui per evitare doppia penalità
-        const profileMatch = (scaledThematicScore * 0.98) + (authorialScore * 0.02);
+        const hasProfileSignal = vFinal && Object.keys(vFinal).length > 0;
+        const profileMatch = hasProfileSignal
+            ? (scaledThematicScore * 0.98) + (authorialScore * 0.02)
+            : null;
 
         // --- Phase 1.3: Bayesian Weighted Rating (IMDb formula) ---
         // WR = ((v/(v+m)) * R) + ((m/(v+m)) * C)
@@ -177,19 +213,26 @@ class ProfileScorer {
         // 4.1 Decadimento Dinamico del Voto: più il match VSM è alto, meno conta la massa
         // Calcoliamo un fattore di decadimento (es. se profileMatch è 8.0, decayFactor = 1 - 0.8 = 0.2)
         // Usiamo un tetto massimo di decadimento per non azzerarlo completamente (min 0.1)
-        const matchRatio = Math.min(profileMatch / 10.0, 0.9); 
+        const isMatchNull = profileMatch === null;
+        const matchRatio = !isMatchNull ? Math.min(profileMatch / 10.0, 0.9) : 0; 
         const dynamicTmdbWeight = tmdbWeight * (1 - matchRatio);
         
-        const totalDynamicWeight = dynamicTmdbWeight + traktWeight;
+        // BUG-DNA-4: Rinormalizzazione sui segnali disponibili per evitare che nei profili freddi
+        // (con match nullo / assenza di segnale profilo) traktWeight agisca da peso morto dividendo per 2.0
+        // e dimezzando ingiustificatamente il punteggio bayesiano di qualità.
+        const effectiveTraktWeight = !isMatchNull ? traktWeight : 0;
+        const totalDynamicWeight = dynamicTmdbWeight + effectiveTraktWeight;
         let finalScore = 0;
         
-        if (totalDynamicWeight > 0) {
-            finalScore = ((profileMatch * traktWeight) + (bayesianScore * dynamicTmdbWeight)) / totalDynamicWeight;
+        if (isMatchNull) {
+            finalScore = bayesianScore;
+        } else if (totalDynamicWeight > 0) {
+            finalScore = ((profileMatch * effectiveTraktWeight) + (bayesianScore * dynamicTmdbWeight)) / totalDynamicWeight;
         }
 
         // 4.2 Hidden Gem Boost (Moltiplicatore Coda Lunga)
         // Se un film è poco popolare (sotto i 1000 voti) ma ha un buon match (es. >= 4.0), applichiamo un bonus.
-        if (voteCount < 1000 && profileMatch >= 4.0) {
+        if (voteCount < 1000 && !isMatchNull && profileMatch >= 4.0) {
             // Bonus proporzionale alla "mancanza" di voti (max +25% di bonus)
             const indieBonus = 1.0 + (0.25 * (1 - (voteCount / 1000)));
             finalScore *= indieBonus;

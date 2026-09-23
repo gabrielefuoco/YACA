@@ -17,7 +17,7 @@ function getTopNodeIds(profile, level = 'L2', limit = 2) {
     if (!profile || !profile.compiledVectors || !profile.compiledVectors.V_final) return [];
     return Object.entries(profile.compiledVectors.V_final)
         .filter(([k]) => k.startsWith(`${level}:`))
-        .sort((a, b) => b[1] - a[1])
+        .sort((a, b) => (b[1] - a[1]) || String(a[0]).localeCompare(String(b[0])))
         .slice(0, limit)
         .map(([k]) => k.split(':')[1]);
 }
@@ -35,9 +35,16 @@ function getKeywordsForNodeIds(nodeIds, level = 'L2') {
         }
     }
     let kwArray = Array.from(kwIds);
-    // Limit to max 50 keywords for SQL performance
+    // BUG-DNA-1: Ordinamento deterministico stabile (per id crescente) anziché shuffle casuale
+    // con Math.random(), mantenendo il cap a 50 per garantire riproducibilità tra richieste e performance SQL DuckDB.
     if (kwArray.length > 50) {
-        kwArray = kwArray.sort(() => 0.5 - Math.random()).slice(0, 50);
+        kwArray.sort((a, b) => {
+            const numA = Number(a);
+            const numB = Number(b);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return String(a).localeCompare(String(b));
+        });
+        kwArray = kwArray.slice(0, 50);
     }
     return kwArray;
 }
@@ -158,12 +165,18 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
     // 2. Estrazione DNA
     const topGenres = computeTopGenres(profile, 3, user, context);
     const isTv = mediaType === 'series' || mediaType === 'tv';
-    const mappedTopGenres = topGenres.map(g => {
+    const mappedTopGenres = [...new Set(topGenres.flatMap(g => {
         const id = Number(g);
-        if (isTv && G._movieToTv && G._movieToTv[id]) return G._movieToTv[id];
-        if (!isTv && G._tvToMovie && G._tvToMovie[id]) return G._tvToMovie[id];
-        return id;
-    });
+        if (isTv && G._movieToTv && G._movieToTv[id]) {
+            const m = G._movieToTv[id];
+            return Array.isArray(m) ? m : [m];
+        }
+        if (!isTv && G._tvToMovie && G._tvToMovie[id]) {
+            const m = G._tvToMovie[id];
+            return Array.isArray(m) ? m : [m];
+        }
+        return [id];
+    }))];
     const topL2Ids = getTopNodeIds(profile, 'L2', 3);
     let directKwIds = computeTopKeywords(profile, 10, user, context);
 
@@ -294,7 +307,15 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
         return { data: tmdbData, score: score * penaltyMultiplier };
     });
     
-    const sorted = scored.sort((a, b) => b.score - a.score);
+    const sorted = scored.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        const idA = a.data?.id ?? '';
+        const idB = b.data?.id ?? '';
+        const numA = Number(idA);
+        const numB = Number(idB);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return String(idA).localeCompare(String(idB));
+    });
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
     const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
         ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
@@ -332,12 +353,18 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
 
     const topGenres = computeTopGenres(profile, 3, user, context);
     const isTv = mediaType === 'series' || mediaType === 'tv';
-    const mappedTopGenres = topGenres.map(g => {
+    const mappedTopGenres = [...new Set(topGenres.flatMap(g => {
         const id = Number(g);
-        if (isTv && G._movieToTv && G._movieToTv[id]) return G._movieToTv[id];
-        if (!isTv && G._tvToMovie && G._tvToMovie[id]) return G._tvToMovie[id];
-        return id;
-    });
+        if (isTv && G._movieToTv && G._movieToTv[id]) {
+            const m = G._movieToTv[id];
+            return Array.isArray(m) ? m : [m];
+        }
+        if (!isTv && G._tvToMovie && G._tvToMovie[id]) {
+            const m = G._tvToMovie[id];
+            return Array.isArray(m) ? m : [m];
+        }
+        return [id];
+    }))];
 
     const lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 20).map(id => ({ id: String(id), weight: 2 }));
     const likedIds = (user?.profiles?.find(p => p.id === context)?.liked || []).slice(0, 15).map(id => ({ id: String(id), weight: 1 }));
@@ -437,7 +464,15 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         candidates.push({ data: rawItem, hybridScore });
     }
 
-    candidates.sort((a, b) => b.hybridScore - a.hybridScore);
+    candidates.sort((a, b) => {
+        if (b.hybridScore !== a.hybridScore) return b.hybridScore - a.hybridScore;
+        const idA = a.data?.id ?? '';
+        const idB = b.data?.id ?? '';
+        const numA = Number(idA);
+        const numB = Number(idB);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return String(idA).localeCompare(String(idB));
+    });
 
     const candidateIds = candidates.slice(0, 80).map(c => String(c.data.id));
     const catalogId = mediaType === 'movie' ? 'yaca_seed_network_movies' : 'yaca_seed_network_series';
@@ -483,7 +518,15 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         };
     });
 
-    const sorted = scoredWithCombined.sort((a, b) => b.combinedScore - a.combinedScore);
+    const sorted = scoredWithCombined.sort((a, b) => {
+        if (b.combinedScore !== a.combinedScore) return b.combinedScore - a.combinedScore;
+        const idA = a.data?.id ?? '';
+        const idB = b.data?.id ?? '';
+        const numA = Number(idA);
+        const numB = Number(idB);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return String(idA).localeCompare(String(idB));
+    });
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
     const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
         ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
