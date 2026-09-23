@@ -27,7 +27,7 @@ function computeTopElements(profile, prefix, filterType, n = 5, user = null, con
     });
 
     return Object.entries(scores)
-        .sort((a, b) => b[1] - a[1])
+        .sort((a, b) => (b[1] - a[1]) || String(a[0]).localeCompare(String(b[0])))
         .slice(0, n)
         .map(e => String(e[0]));
 }
