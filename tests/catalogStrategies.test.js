@@ -153,6 +153,7 @@ describe('catalogStrategies', () => {
             const result = await catalogStrategies.buildTopGenresMixCatalog('user1', 'global', 'tmdb', 'movie');
             const resultIds = (result || []).map(x => typeof x === 'object' ? x.id : x);
             expect(resultIds.length).toBeGreaterThan(0);
+            expect(result[0]).not.toHaveProperty('rawTMDB');
         });
     });
 
