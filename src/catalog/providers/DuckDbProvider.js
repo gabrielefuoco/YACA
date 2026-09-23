@@ -90,11 +90,15 @@ function buildPresetFromFilters(q, type = 'movie') {
         where.push(F.notKeyword(...String(q.without_keywords).split(/[,|]/).map(Number)));
     }
 
+    // Nota architetturale: la tabella 'tv' del parquet TMDB include 'cast' e 'watch_providers_it',
+    // ma NON include 'directors' e 'writers' (in TMDB le serie TV usano 'created_by').
+    // Pertanto, F.crew DEVE rimanere guardato da !isTv per evitare errori Binder SQL in DuckDB
+    // ("Referenced column directors not found in FROM clause").
     if (!isTv) {
         if (q.with_crew) where.push(F.crew(q.with_crew));
-        if (q.with_cast) where.push(F.actor(q.with_cast));
-        if (q.with_watch_providers) where.push(F.provider(q.with_watch_providers));
     }
+    if (q.with_cast) where.push(F.actor(q.with_cast));
+    if (q.with_watch_providers) where.push(F.provider(q.with_watch_providers));
     if (q.with_companies) where.push(F.company(q.with_companies));
     if (q.with_networks) where.push(F.network(q.with_networks));
 
