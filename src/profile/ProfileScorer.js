@@ -9,21 +9,16 @@ const NICHE_FADE_OUT_VOTES = 2000;
 const NICHE_MIN_VOTE_BONUS = 1.0;
 const NICHE_MAX_VOTE_BONUS = 2.5;
 
+const { isItemInappropriateForKids } = require('../utils/kidsModeFilters');
+const { G } = require('../data/filters');
+
 function clampScore(value) {
     return Math.min(Math.max(value, 0), 10);
 }
 
 class ProfileScorer {
     static isItemInappropriateForKids(tmdbData) {
-        const { ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../utils/kidsModeFilters');
-        const adultGenres = ADULT_GENRE_IDS.split(',').map(Number);
-        const adultKeywords = ADULT_KEYWORD_IDS.split(',').map(Number);
-
-        const genreIds = tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id) : []);
-        const keywordItems = tmdbData.keywords?.keywords || tmdbData.keywords?.results || tmdbData.keywords || [];
-        const keywordIds = keywordItems.map(k => typeof k === 'object' ? k.id : k);
-
-        return genreIds.some(id => adultGenres.includes(id)) || keywordIds.some(id => adultKeywords.includes(id));
+        return isItemInappropriateForKids(tmdbData);
     }
     static normalizeDnaId(value) {
         return String(value ?? '').replace(/^tmdb:/i, '').trim();
@@ -35,8 +30,7 @@ class ProfileScorer {
      * @returns {number[]}
      */
     static getEquivalentGenreIds(id) {
-        const { G } = require('../data/filters');
-        if (typeof G.getEquivalentGenreIds === 'function') {
+        if (typeof G?.getEquivalentGenreIds === 'function') {
             return G.getEquivalentGenreIds(id);
         }
         const num = Number(this.normalizeDnaId(id));

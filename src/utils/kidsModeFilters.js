@@ -29,10 +29,63 @@ const ADULT_GENRE_IDS = [
     80  // Crime
 ].join(',');
 
-function applyKidsMode(params) {
-    if (!params) return params;
+const ADULT_GENRE_SET = new Set(ADULT_GENRE_IDS.split(',').map(Number));
+const ADULT_KEYWORD_SET = new Set(ADULT_KEYWORD_IDS.split(',').map(Number));
 
-    const safeParams = { ...params };
+/**
+ * Checks if a given item (meta, TMDB object, DuckDB row) is inappropriate for kids.
+ * @param {Object} item
+ * @returns {boolean} true if inappropriate, false if family-safe
+ */
+function isItemInappropriateForKids(item) {
+    if (!item) return false;
+    const data = item.rawTMDB || item.data || item;
+
+    // 1. Check genres
+    const rawGenres = data.genre_ids || data.genres || [];
+    const genreIds = Array.isArray(rawGenres)
+        ? rawGenres.map(g => (typeof g === 'object' && g !== null ? g.id : g))
+        : (typeof rawGenres === 'string' ? rawGenres.split(/[,|]/) : [rawGenres]);
+
+    for (const gid of genreIds) {
+        const num = Number(gid);
+        if (!isNaN(num) && ADULT_GENRE_SET.has(num)) {
+            return true;
+        }
+    }
+
+    // 2. Check keywords
+    const kwSource = data.keywords?.keywords || data.keywords?.results || data.keywords || [];
+    const kwItems = Array.isArray(kwSource)
+        ? kwSource
+        : (typeof kwSource === 'string' ? kwSource.split(/[,|]/) : []);
+
+    for (const k of kwItems) {
+        const kid = typeof k === 'object' && k !== null ? k.id : k;
+        const num = Number(kid);
+        if (!isNaN(num) && ADULT_KEYWORD_SET.has(num)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Applies kids mode either by enriching TMDB/DuckDB query parameters
+ * or by hard-filtering an array of content items.
+ * @param {Object|Array} paramsOrItems
+ * @returns {Object|Array}
+ */
+function applyKidsMode(paramsOrItems) {
+    if (!paramsOrItems) return paramsOrItems;
+
+    // Hard-filtering if passed an array of items/candidates
+    if (Array.isArray(paramsOrItems)) {
+        return paramsOrItems.filter(item => !isItemInappropriateForKids(item));
+    }
+
+    const safeParams = { ...paramsOrItems };
     
     // 1. Omitted certification_lte/country because it aggressively filters out 99% of non-US content (like Anime) that lacks a formal US rating, causing fallback triggering. We rely on strict keyword/genre blocking instead.
 
@@ -55,6 +108,7 @@ function applyKidsMode(params) {
 
 module.exports = {
     applyKidsMode,
+    isItemInappropriateForKids,
     ADULT_KEYWORD_IDS,
     ADULT_GENRE_IDS
 };

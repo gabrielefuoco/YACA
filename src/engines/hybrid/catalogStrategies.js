@@ -5,7 +5,7 @@ const { getProfileDnaFilters } = require('../../utils/helpers');
 const { rateLimitedMap } = require('../../utils/rateLimiter');
 
 // Import from new modules
-const { applyKidsMode } = require('../../utils/kidsModeFilters');
+const { applyKidsMode, isItemInappropriateForKids, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../../utils/kidsModeFilters');
 const { fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds, getImpressionMap, calculateImpressionPenalty } = require('./dataFetchers');
 const { computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
 const ProfileScorer = require('../../profile/ProfileScorer');
@@ -218,8 +218,13 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
     let animeQueriesLimit = Math.round(totalQueries * animeRatio);
     
     // 3. Esecuzione Parallela Smart AND
+    const isKidsMode = Boolean(profile?.settings?.kidsMode);
     const promises = clusters.map(async (cluster, index) => {
         const where = [...baseFilters];
+        if (isKidsMode) {
+            where.push(F.notGenre(...ADULT_GENRE_IDS.split(',').map(Number)));
+            where.push(F.notKeyword(...ADULT_KEYWORD_IDS.split(',').map(Number)));
+        }
         
         // Aggiungiamo i top genres in OR (ne basta uno)
         if (mappedTopGenres.length > 0) {
@@ -245,7 +250,7 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
             // Smart Fallback: se una query restituisce meno di 5 risultati (es. keyword iper-specifiche prive di match per Anime),
             // allentiamo il filtro rimuovendo le keyword e tenendo i Generi Top + Quota Anime.
             if ((!results || results.length < 5) && cluster.keywords.length > 0) {
-                const fallbackWhere = where.filter(w => !w.includes('"keywords"'));
+                const fallbackWhere = where.filter(w => !cluster.keywords.some(k => w.includes(String(k))));
                 const fallbackPreset = { type: types, where: fallbackWhere, orderBy: S.POPULAR };
                 const fallbackResults = await getDuckDbCatalogFromPreset(fallbackPreset, 0, limitPerQuery);
                 console.log(`[Smart AND Query ${index + 1}/${totalQueries}] Smart Fallback (Genres/Anime) Found ${fallbackResults?.length || 0} items`);
@@ -270,30 +275,40 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
         }
     }
     
-    return { pool: Array.from(allResultsMap.values()), animeRatio };
+    let finalPool = Array.from(allResultsMap.values());
+    if (isKidsMode) {
+        finalPool = applyKidsMode(finalPool);
+    }
+    return { pool: finalPool, animeRatio };
 }
 
 async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fallbackFn) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return fallbackFn(tmdbApiKey, mediaType);
+    const isKidsMode = Boolean(profile?.settings?.kidsMode);
+    if (!profile) return fallbackFn(tmdbApiKey, mediaType, 60, isKidsMode);
     
     profile.user = user;
     profile.context = context;
     
     const { pool } = await fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters, 1000);
-    
-    if (pool.length === 0) {
-        return fallbackFn(tmdbApiKey, mediaType);
+    let candidatePool = pool;
+    if (isKidsMode) {
+        candidatePool = applyKidsMode(pool);
     }
     
-    const impressionMap = await getImpressionMap(userId, context, catalogId, pool.map(m => String(m._tmdbId || m.id.split(':')[1])));
+    if (candidatePool.length === 0) {
+        return fallbackFn(tmdbApiKey, mediaType, 60, isKidsMode);
+    }
+    
+    const impressionMap = await getImpressionMap(userId, context, catalogId, candidatePool.map(m => String(m._tmdbId || m.id.split(':')[1])));
     const dnaFilters = getProfileDnaFilters(user, context);
     
-    const scored = pool.map(item => {
+    const scored = candidatePool.map(item => {
         const id = String(item._tmdbId || item.id.split(':')[1]);
         const seenDays = impressionMap.get(id) || 0;
         const penaltyMultiplier = calculateImpressionPenalty(seenDays);
         const tmdbData = item.rawTMDB || item;
+        if (isKidsMode && isItemInappropriateForKids(tmdbData)) return null;
         if (typeof tmdbData.vote_count !== 'number') {
             tmdbData.vote_count = typeof item.vote_count === 'number' ? item.vote_count : 0;
         }
@@ -304,8 +319,9 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
             tmdbData.credits = item.credits || { cast: [], crew: [] };
         }
         const score = ProfileScorer.calculateItemMatch(tmdbData, profile, { dnaFilters, globalProfile });
+        if (isKidsMode && score <= 0) return null;
         return { data: tmdbData, score: score * penaltyMultiplier };
-    });
+    }).filter(Boolean);
     
     const sorted = scored.sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
@@ -322,7 +338,14 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
         : deduplicated;
     const diversifiedSet = new Set(diversified);
     const remaining = deduplicated.filter(item => !diversifiedSet.has(item));
-    const finalItems = [...diversified, ...remaining];
+    let finalItems = [...diversified, ...remaining];
+    if (isKidsMode) {
+        finalItems = applyKidsMode(finalItems);
+    }
+    
+    if (finalItems.length === 0) {
+        return fallbackFn(tmdbApiKey, mediaType, 60, isKidsMode);
+    }
     
     return finalItems.slice(0, 100).map(i => ({ 
         id: String(i.data.id), 
@@ -345,7 +368,8 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) 
  */
 async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
+    const isKidsMode = Boolean(profile?.settings?.kidsMode);
+    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
 
     const types = mediaType === 'movie' ? 'movie' : 'series';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
@@ -379,6 +403,10 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const directKwIds = computeTopKeywords(profile, 10, user, context);
     
     const where = [];
+    if (isKidsMode) {
+        where.push(F.notGenre(...ADULT_GENRE_IDS.split(',').map(Number)));
+        where.push(F.notKeyword(...ADULT_KEYWORD_IDS.split(',').map(Number)));
+    }
     if (mappedTopGenres.length > 0) {
         where.push(F.any(...mappedTopGenres.map(g => F.genre(Number(g)))));
     }
@@ -417,7 +445,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     console.log(`[Catalog Debug] Seed Network - Collected Seeds: Loved=${lovedIds.length}, Liked=${likedIds.length}, Trakt=${traktIds.length}, DNA=${dnaSeeds.length}`);
 
     if (allSeedsMap.size === 0) {
-        return fetchPopularFallbackIds(tmdbApiKey, mediaType);
+        return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
     }
     const allSeeds = Array.from(allSeedsMap.entries()).map(([id, weight]) => ({ id, weight }));
 
@@ -448,6 +476,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     for (const [tmdbId, weightedScore] of weightedCounts.entries()) {
         const rawItem = itemData.get(tmdbId);
         if (!rawItem) continue;
+        if (isKidsMode && isItemInappropriateForKids(rawItem)) continue;
         const itemGenres = rawItem.genre_ids || [];
         
         let hybridScore = calculateHybridScore(
@@ -474,18 +503,24 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         return String(idA).localeCompare(String(idB));
     });
 
-    const candidateIds = candidates.slice(0, 80).map(c => String(c.data.id));
+    let filteredCandidates = candidates;
+    if (isKidsMode) {
+        filteredCandidates = applyKidsMode(candidates);
+    }
+
+    const candidateIds = filteredCandidates.slice(0, 80).map(c => String(c.data.id));
     const catalogId = mediaType === 'movie' ? 'yaca_seed_network_movies' : 'yaca_seed_network_series';
     const impressionMap = await getImpressionMap(userId, context, catalogId, candidateIds);
 
     const scored = await rateLimitedMap(
-        candidates.slice(0, 80),
+        filteredCandidates.slice(0, 80),
         async ({ data, hybridScore }) => {
             const seenDays = impressionMap.get(String(data.id)) || 0;
             const penaltyMultiplier = calculateImpressionPenalty(seenDays);
 
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, data.id, types);
             const tmdbData = details || data.rawTMDB || data;
+            if (isKidsMode && isItemInappropriateForKids(tmdbData)) return null;
             if (typeof tmdbData.vote_count !== 'number') {
                 tmdbData.vote_count = typeof data.vote_count === 'number' ? data.vote_count : (data.rawTMDB?.vote_count ?? 0);
             }
@@ -496,16 +531,19 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
                 tmdbData.credits = data.credits || data.rawTMDB?.credits;
             }
             const score = ProfileScorer.calculateItemMatch(tmdbData, profile, { dnaFilters, globalProfile });
+            if (isKidsMode && score <= 0) return null;
             return { data, score: score * penaltyMultiplier, hybridScore: hybridScore * penaltyMultiplier };
         },
         { batchSize: 3, delayMs: 150 }
     );
 
+    const validScored = scored.filter(Boolean);
+
     // H6: Normalizzazione hybridScore su scala 0-10 per renderlo comparabile con lo score VSM (0-10)
-    const maxHybrid = scored.reduce((max, item) => Math.max(max, item.hybridScore || 0), 0);
+    const maxHybrid = validScored.reduce((max, item) => Math.max(max, item.hybridScore || 0), 0);
     const hybridScale = Math.max(maxHybrid, 13.5);
 
-    const scoredWithCombined = scored.map(item => {
+    const scoredWithCombined = validScored.map(item => {
         const normalizedHybrid = hybridScale > 0
             ? Math.min(10, Math.max(0, (item.hybridScore / hybridScale) * 10))
             : 0;
@@ -533,7 +571,14 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         : deduplicated;
     const diversifiedSet = new Set(diversified);
     const remaining = deduplicated.filter(item => !diversifiedSet.has(item));
-    const finalItems = [...diversified, ...remaining];
+    let finalItems = [...diversified, ...remaining];
+    if (isKidsMode) {
+        finalItems = applyKidsMode(finalItems);
+    }
+
+    if (finalItems.length === 0) {
+        return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
+    }
 
     return finalItems.slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
 }
@@ -554,8 +599,8 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
  */
 async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    // console.log(`[TraktFiltered] userId=${userId}, context=${context}, hasProfile=${!!profile}, hasUser=${!!user}, hasTraktToken=${!!traktToken}, tokenFirst10=${traktToken?.substring(0,10)}`);
-    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType);
+    const isKidsMode = Boolean(profile?.settings?.kidsMode);
+    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
 
     const types = mediaType === 'movie' ? 'movie' : 'series';
     const dnaFilters = getProfileDnaFilters(user, context);
@@ -565,9 +610,9 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
         .map(item => item.movie?.ids?.tmdb || item.show?.ids?.tmdb || item.ids?.tmdb)
         .filter(Boolean);
 
-    // console.log(`[TraktFiltered] traktTmdbIds count: ${traktTmdbIds.length}`);
-
-    if (traktTmdbIds.length === 0) return [];
+    if (traktTmdbIds.length === 0) {
+        return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
+    }
 
     const candidateIds = traktTmdbIds.slice(0, 100).map(String);
     const catalogId = mediaType === 'movie' ? 'yaca_trakt_filtered_movies' : 'yaca_trakt_filtered_series';
@@ -581,7 +626,9 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
 
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, id, types);
             if (!details) return null;
+            if (isKidsMode && isItemInappropriateForKids(details)) return null;
             const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
+            if (isKidsMode && score <= 0) return null;
             return { data: details, score: score * penaltyMultiplier };
         },
         { batchSize: 3, delayMs: 150 }
@@ -589,8 +636,16 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
 
     const sorted = scored.filter(Boolean).sort((a, b) => b.score - a.score);
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
-    
-    return deduplicated
+    let finalItems = deduplicated;
+    if (isKidsMode) {
+        finalItems = applyKidsMode(finalItems);
+    }
+
+    if (finalItems.length === 0) {
+        return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
+    }
+
+    return finalItems
         .slice(0, 100)
         .map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
 }

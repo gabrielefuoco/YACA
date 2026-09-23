@@ -11,6 +11,8 @@ const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
 const RecommendationImpression = require('../models/RecommendationImpression');
 const mongoose = require('mongoose');
 
+const { applyKidsMode, isItemInappropriateForKids } = require('../utils/kidsModeFilters');
+
 // Import from the new hybrid layer
 const { fetchRecentHistory, fetchRecentRatings, fetchTraktRecommendationsRaw, fetchTmdbSimilarCounts, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds } = require('./hybrid/dataFetchers');
 const { calculateHybridScore, computeTopGenres, computeTopKeywords } = require('./hybrid/scoringEngine');
@@ -102,10 +104,12 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 
         if (NICHE_CATALOG_IDS.has(catalogId)) {
             if (catalogId.startsWith('yaca_hidden_gems')) {
-                recommendationIds = await fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType);
+                recommendationIds = await fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
+            } else if (catalogId.startsWith('yaca_trakt_filtered')) {
+                recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
             }
         } else {
-            recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType);
+            recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
         }
 
         if (recommendationIds && recommendationIds.length > 0) {
@@ -153,6 +157,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                 }
 
                 if (!item) return null;
+                if (isKidsMode && isItemInappropriateForKids(item)) return null;
 
                 let logoUrl = null;
                 if (item.images && item.images.logos && item.images.logos.length > 0) {
@@ -232,7 +237,10 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         });
     }
 
-    const cleanResults = results.filter(Boolean);
+    let cleanResults = results.filter(Boolean);
+    if (isKidsMode) {
+        cleanResults = applyKidsMode(cleanResults);
+    }
     if (skip === 0 && cleanResults.length > 0) {
         const currentDateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         const RecommendationImpression = require('../models/RecommendationImpression');
