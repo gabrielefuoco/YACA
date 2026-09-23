@@ -12,7 +12,8 @@ jest.mock('../src/clients/tmdb', () => ({
 jest.mock('../src/clients/trakt', () => ({
     traktClient: {
         get: jest.fn()
-    }
+    },
+    smartTraktRefresh: jest.fn()
 }));
 
 jest.mock('../src/cache/cacheInstances', () => ({
@@ -103,6 +104,59 @@ describe('dataFetchers', () => {
             expect(result).toEqual([{ id: 1 }]);
         });
 
+        it('safeTraktFetch should attempt refresh on 403 if refreshToken is present and retry', async () => {
+            process.env.TRAKT_CLIENT_ID = 'test_client';
+            const { smartTraktRefresh } = require('../src/clients/trakt');
+            smartTraktRefresh.mockResolvedValueOnce({
+                access_token: 'new_token',
+                refresh_token: 'new_refresh'
+            });
+
+            const error403 = new Error('Forbidden');
+            error403.response = { status: 403 };
+
+            traktClient.get
+                .mockRejectedValueOnce(error403)
+                .mockResolvedValueOnce({ data: [{ id: 42, title: 'Refreshed Item' }] });
+
+            const userObj = {
+                userId: 'user_123',
+                apiKeys: { trakt: 'old_token', traktRefreshToken: 'refresh_123' }
+            };
+
+            const res = await safeTraktFetch('/recommendations/movies', 'old_token', 10, userObj);
+
+            expect(smartTraktRefresh).toHaveBeenCalledWith('user_123', 'refresh_123');
+            expect(userObj.apiKeys.trakt).toBe('new_token');
+            expect(res).toEqual([{ id: 42, title: 'Refreshed Item' }]);
+        });
+
+        it('safeTraktFetch should return empty array if retry fails after 403 refresh', async () => {
+            process.env.TRAKT_CLIENT_ID = 'test_client';
+            const { smartTraktRefresh } = require('../src/clients/trakt');
+            smartTraktRefresh.mockResolvedValueOnce({
+                access_token: 'new_token',
+                refresh_token: 'new_refresh'
+            });
+
+            const error403 = new Error('Forbidden');
+            error403.response = { status: 403 };
+
+            traktClient.get
+                .mockRejectedValueOnce(error403)
+                .mockRejectedValueOnce(error403);
+
+            const userObj = {
+                userId: 'user_123',
+                apiKeys: { trakt: 'old_token', traktRefreshToken: 'refresh_123' }
+            };
+
+            const res = await safeTraktFetch('/recommendations/movies', 'old_token', 10, userObj);
+
+            expect(smartTraktRefresh).toHaveBeenCalledTimes(1);
+            expect(res).toEqual([]);
+        });
+
         it('fetchRecentHistory calls safeTraktFetch', async () => {
             traktClient.get.mockResolvedValueOnce({ data: [{ type: 'history' }] });
             const res = await fetchRecentHistory('token', 'movies');
@@ -113,6 +167,20 @@ describe('dataFetchers', () => {
             traktClient.get.mockResolvedValueOnce({ data: [{ type: 'ratings' }] });
             const res = await fetchRecentRatings('token', 'shows');
             expect(res).toEqual([{ type: 'ratings' }]);
+        });
+    });
+
+    describe('fallback with isKidsMode', () => {
+        it('fetchPopularFallbackIds filters out adult items when isKidsMode is true', async () => {
+            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+            getDuckDbCatalogFromFilters.mockResolvedValue([
+                { id: 101, title: 'Safe Movie', genre_ids: [28, 12] },
+                { id: 102, title: 'Horror Movie', genre_ids: [27] }
+            ]);
+
+            const res = await fetchPopularFallbackIds('key', 'movie', 60, true);
+            expect(res).toContain('101');
+            expect(res).not.toContain('102');
         });
     });
 });

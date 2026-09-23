@@ -275,8 +275,8 @@ async function fetchTraktCatalog(endpoint, skip = 0, traktToken = null, tmdbApiK
     } catch (err) {
         const status = err.response?.status;
 
-        // === AUTO-REFRESH: se 401 e abbiamo il contesto per il refresh ===
-        if (status === 401 && refreshContext?.userConfig?.apiKeys?.traktRefreshToken) {
+        // === AUTO-REFRESH: se 401 o 403 e abbiamo il contesto per il refresh ===
+        if ((status === 401 || status === 403) && refreshContext?.userConfig?.apiKeys?.traktRefreshToken) {
             const userId = refreshContext.userConfig.userId;
             
             try {
