@@ -21,8 +21,7 @@ graph TD
         G -->|Route Request| H[CatalogRouter.js]
         H -->|Risolve| I[Providers]
         I -->|Filtro Post-Fetch| J[Wrong Media Type & Kids Mode]
-        J -->|Filtro Utente| K[FilterWatched.js]
-        K -->|Badge Episodi| L[MetadataHydrator.js]
+        J -->|Badge Episodi| L[MetadataHydrator.js]
         L -->|Traduttore Anime| M[TmdbToKitsuMapper.js]
         M -->|Sort Simulcast| N[Simulcast Sorting]
         N -->|Formatta| O[StremioFormatter.js]
@@ -52,7 +51,6 @@ graph TD
    - **Esclusione di tipi errati**: Filtra elementi il cui `media_type` non corrisponde alla richiesta (es. rimuove film da richieste di serie).
    - **Kids Mode Fallback**: Se il profilo ha la modalità bambini attiva, esclude contenuti con generi horror (27), thriller (53) e crime (80).
 7. **Post-Processing**:
-   - **Filter Watched**: Rimuove i contenuti già visti dall'utente (se abilitato nelle impostazioni).
    - **Hydration & Badge**: Se il catalogo prevede badge per gli episodi (es. simulcast o nuove uscite), arricchisce i metadati recuperando le informazioni sugli episodi.
    - **TMDB to Kitsu**: Traduce gli ID degli anime in ID Kitsu per garantire la compatibilità con i motori di streaming.
    - **Simulcast Sorting**: per il catalogo novità anime (`preset_anime_simulcast`) l'ordinamento per data dell'ultimo episodio disponibile è già applicato da `AiringStateProvider.js` leggendo `anime_airing_state` (finestra 14 giorni).
@@ -82,7 +80,7 @@ graph TD
 L'interleaving unisce i risultati di $N$ query differenti alternandoli ciclicamente (es. $Q1_1, Q2_1, Q3_1, Q1_2, Q2_2, Q3_2...$). 
 La logica è implementata in `interleaveMultipleResults` all'interno di [resultMerger.js](../src/utils/resultMerger.js):
 - Ciascuna query viene paginata in modo indipendente calcolando un parametro `perQuerySkip` (es. `Math.floor(skip / N)`).
-- Durante l'unione, gli elementi duplicati (stesso ID normalizzato) vengono saltati per garantire l'univocità nel catalogo finale.
+- Durante l'unione, gli elementi duplicati (stesso ID namespace-aware) vengono saltati per garantire l'univocità nel catalogo finale.
 
 ### B. Strategia Popularity & Consensus (Consenso)
 Quando non viene richiesto l'interleaving, YACA combina i risultati di query multiple premiando la convergenza tramite la funzione `applyConsensusScoring` in [resultMerger.js](../src/utils/resultMerger.js):

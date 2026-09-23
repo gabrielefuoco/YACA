@@ -7,7 +7,6 @@ const { getBaseId } = require('../utils/contentId');
 const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
 
 const { routeCatalogRequest } = require('../catalog/CatalogRouter');
-const { filterWatchedItems } = require('../catalog/processors/FilterWatched');
 const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
 const { formatStremioCatalog, sanitizeCatalogMeta, findLatestAiredEpisode } = require('../catalog/formatters/StremioFormatter');
 const StreamBadge = require('../db/models/StreamBadge');
@@ -496,16 +495,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 });
             }
 
-            // 3. POST-PROCESSING: Filtri utente
+            // 3. POST-PROCESSING
             let finalResults = results;
-            if (!extra?.search && id !== 'yaca-profiles' && baseId !== 'yaca_search_history') {
-                finalResults = await filterWatchedItems(
-                    finalResults, 
-                    userConfig
-                );
-            }
-            
-            // console.log('POST FILTER WATCHED RESULTS:', finalResults?.length);
             
             const shouldBadge = type === 'series' && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId));
             if (shouldBadge) {
