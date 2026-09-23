@@ -205,7 +205,7 @@ const getPresets = () => {
         // =============================================
         // --- 🏮 ANIME & ASIA (Sottogeneri via Kitsu) ---
         // =============================================
-        { id: 'preset_anime_simulcast', isAnime: true, name: 'Simulcast (Nuovi Episodi)', emoji: '📺', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', showEpisodeBadge: true, queries: [{ provider: 'airing_state', strategy: 'recent_episodes' }] },
+        { id: 'preset_anime_simulcast', isAnime: true, name: 'Simulcast (Nuovi Episodi)', emoji: '📺', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', showEpisodeBadge: true, _provider: 'airing_state', sortable: false, queries: [{ provider: 'airing_state', strategy: 'recent_episodes' }] },
         { id: 'preset_anime_shonen', isAnime: true, name: 'Anime: Battle Shōnen', emoji: '🔥', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: TMDB_GENRES.TV.Animation, with_keywords: '207826', with_original_language: 'ja', sort_by: 'popularity.desc' }] },
         { id: 'preset_anime_seinen', isAnime: true, name: 'Anime: Seinen (Maturi)', emoji: '🍷', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: TMDB_GENRES.TV.Animation, with_keywords: '195668', with_original_language: 'ja', sort_by: 'vote_average.desc', 'vote_count.gte': 50 }] },
         { id: 'preset_anime_shoujo', isAnime: true, name: 'Anime: Shōjo (Romantico)', emoji: '🌸', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: TMDB_GENRES.TV.Animation, with_keywords: '206437', with_original_language: 'ja', sort_by: 'popularity.desc' }] },
@@ -286,10 +286,11 @@ const getPresets = () => {
     ];
 
     return rawPresets.map(p => {
-        if (p.id === 'preset_anime_simulcast') {
+        if (p._provider === 'airing_state' || p.queries?.[0]?.provider === 'airing_state' || p.id === 'preset_anime_simulcast') {
             return {
                 ...p,
-                _provider: 'airing_state'
+                _provider: 'airing_state',
+                sortable: false
             };
         }
         if (!p.where) {
@@ -297,7 +298,8 @@ const getPresets = () => {
             return {
                 ...p,
                 where: duck.where,
-                orderBy: p.orderBy || duck.orderBy
+                orderBy: p.orderBy || duck.orderBy,
+                sortable: p.sortable !== undefined ? p.sortable : true
             };
         }
         return p;

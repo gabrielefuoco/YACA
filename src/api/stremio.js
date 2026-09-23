@@ -45,6 +45,7 @@ const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler } = require('../handlers/metaHandler');
 const { streamHandler } = require('../handlers/streamHandler');
 const { parseExtra } = require('../utils/helpers');
+const { getPresets } = require('../data/presets');
 
 // Rate limiter for sync-status polling (max 30 requests per minute per IP)
 const syncStatusLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
@@ -65,8 +66,43 @@ function getSortByValue(sortOption, type) {
     return SORT_MAP[sortOption];
 }
 
+const defaultExtra = [{ name: 'skip' }];
 const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
 const searchExtra = [{ name: 'search', isRequired: true }];
+
+let canonicalPresetsMap = null;
+function getCanonicalPresetsMap() {
+    if (!canonicalPresetsMap) {
+        try {
+            const presets = getPresets();
+            canonicalPresetsMap = new Map(presets.map(p => [p.id, p]));
+        } catch (e) {
+            console.error('[stremio] Failed to load canonical presets for catalog extra:', e.message);
+            canonicalPresetsMap = new Map();
+        }
+    }
+    return canonicalPresetsMap;
+}
+
+function getCatalogExtra(cat) {
+    if (!cat) return presetExtra;
+    if (cat.extra) return cat.extra;
+
+    // Regola data-driven: se il catalogo dichiara sortable === false o _provider === 'airing_state'
+    if (cat.sortable === false || cat._provider === 'airing_state' || cat._provider === 'anilist_simulcast') {
+        return defaultExtra;
+    }
+
+    // Risoluzione canonica da presets.js
+    const presetMap = getCanonicalPresetsMap();
+    const baseId = cat.id && cat.id.startsWith('yaca_preset_') ? cat.id.replace('yaca_preset_', '') : cat.id;
+    const canonical = presetMap.get(baseId) || (cat.id ? presetMap.get(cat.id) : null);
+    if (canonical && (canonical.sortable === false || canonical._provider === 'airing_state' || canonical._provider === 'anilist_simulcast')) {
+        return defaultExtra;
+    }
+
+    return presetExtra;
+}
 
 // Stremio API: Login con credenziali Stremio per ottenere authKey
 router.post('/stremio-auth', async (req, res) => {
@@ -276,7 +312,7 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
                         id: p.id,
                         type: p.type === 'series' ? 'series' : 'movie',
                         name: p.name,
-                        extra: presetExtra
+                        extra: getCatalogExtra(p)
                     });
                 }
             });
@@ -290,7 +326,7 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
                         id: c.id,
                         type: c.type === 'series' ? 'series' : (c.type === 'anime' ? 'anime' : 'movie'),
                         name: c.name,
-                        extra: presetExtra
+                        extra: getCatalogExtra(c)
                     });
                 }
             });
@@ -755,6 +791,8 @@ router.get('/images/fallback', async (req, res) => {
 
 router.getSortByValue = getSortByValue;
 router.presetExtra = presetExtra;
+router.defaultExtra = defaultExtra;
+router.getCatalogExtra = getCatalogExtra;
 router.SORT_OPTIONS = SORT_OPTIONS;
 router.SORT_MAP = SORT_MAP;
 
