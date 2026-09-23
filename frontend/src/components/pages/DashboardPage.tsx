@@ -38,7 +38,7 @@ interface DashboardPageProps {
   onSaveMyList: (list: MyList) => void;
   onRemoveMyList: (id: string) => void;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
-  onTemplateApplied?: (profileId: string, selectedPresets: string[]) => Promise<void> | void;
+  onTemplateApplied?: (profileId: string, selectedPresets: string[], template?: ProfileTemplate) => Promise<void> | void;
   syncStatus: any;
   syncProfileVectors: (profileId: string, userId: string) => Promise<any>;
   userId?: string;

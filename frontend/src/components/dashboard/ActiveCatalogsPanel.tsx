@@ -4,6 +4,7 @@ import { Profile, Catalog, Preset } from '@/types';
 import { CatalogItem } from '@/components/shared/CatalogItem';
 import { MergeModal } from '@/components/modals/MergeModal';
 import { Layers, Wand2 } from 'lucide-react';
+import { isCatalogConformant, getIncompatibilityReason } from '@/lib/catalogKind';
 
 interface ActiveCatalogsPanelProps {
   profile: Profile;
@@ -68,6 +69,10 @@ export function ActiveCatalogsPanel({
     const bOrder = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
     return aOrder - bOrder;
   });
+
+  const hiddenCatalogsCount = catalogs.filter(
+    (c) => !isCatalogConformant(c, profile.settings?.typeSelectors)
+  ).length;
 
   const handleDragStart = (index: number) => {
     if (isSelectionMode) return;
@@ -152,6 +157,20 @@ export function ActiveCatalogsPanel({
         </div>
       )}
 
+      {hiddenCatalogsCount > 0 && (
+        <div className="p-3 sm:p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center gap-3 text-amber-900 shadow-sm animate-in fade-in duration-200">
+          <span className="material-symbols-outlined text-amber-600 text-lg sm:text-xl shrink-0">visibility_off</span>
+          <div className="flex flex-col">
+            <p className="text-xs sm:text-sm font-bold">
+              {hiddenCatalogsCount} {hiddenCatalogsCount === 1 ? 'catalogo attivo è nascosto' : 'cataloghi attivi sono nascosti'} nel manifest di Stremio
+            </p>
+            <p className="text-[10px] sm:text-xs text-amber-800/80 font-medium">
+              A causa dei selettori di tipo impostati sul profilo. I cataloghi restano salvati nel profilo e rimangono riordinabili e rimovibili.
+            </p>
+          </div>
+        </div>
+      )}
+
       {catalogs.length === 0 ? (
         <div className="rounded-[2.5rem] border-2 border-dashed border-marrow-light/20 p-8 sm:p-16 text-center bg-white/40 shadow-inner">
           <div className="size-20 bg-marrow-light/5 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -162,29 +181,35 @@ export function ActiveCatalogsPanel({
         </div>
       ) : (
         <div className="flex flex-col gap-3 sm:gap-4 w-full">
-          {catalogs.map((catalog, index) => (
-            <CatalogItem
-              key={catalog.id}
-              catalog={catalog}
-              isDragging={dragIndex === index}
-              isMerging={mergeSource?.id === catalog.id}
-              mergeSelectionInProgress={isSelectionMode}
-              canBeMergeTarget={!mergeSource || mergeSource.type === catalog.type}
-              onRemove={() => !isSelectionMode && onRemove(catalog.id)}
-              onEdit={() => !isSelectionMode && onEdit(catalog)}
-              onDuplicate={() => !isSelectionMode && onDuplicate(catalog)}
-              onMoveUp={() => !isSelectionMode && handleMoveCatalog(index, 'up')}
-              onMoveDown={() => !isSelectionMode && handleMoveCatalog(index, 'down')}
-              canMoveUp={!isSelectionMode && index > 0}
-              canMoveDown={!isSelectionMode && index < catalogs.length - 1}
-              onMergeStart={() => startMerging(catalog)}
-              onMergeSelect={() => selectMergeTarget(catalog)}
-              onDragStart={() => handleDragStart(index)}
-              onDragOver={(e) => { e.preventDefault(); }}
-              onDrop={() => handleDrop(index)}
-              onDragEnd={() => setDragIndex(null)}
-            />
-          ))}
+          {catalogs.map((catalog, index) => {
+            const isHidden = !isCatalogConformant(catalog, profile.settings?.typeSelectors);
+            const hiddenReason = isHidden ? (getIncompatibilityReason(catalog, profile.settings?.typeSelectors) ?? undefined) : undefined;
+            return (
+              <CatalogItem
+                key={catalog.id}
+                catalog={catalog}
+                isHiddenBySelectors={isHidden}
+                hiddenReason={hiddenReason}
+                isDragging={dragIndex === index}
+                isMerging={mergeSource?.id === catalog.id}
+                mergeSelectionInProgress={isSelectionMode}
+                canBeMergeTarget={!mergeSource || mergeSource.type === catalog.type}
+                onRemove={() => !isSelectionMode && onRemove(catalog.id)}
+                onEdit={() => !isSelectionMode && onEdit(catalog)}
+                onDuplicate={() => !isSelectionMode && onDuplicate(catalog)}
+                onMoveUp={() => !isSelectionMode && handleMoveCatalog(index, 'up')}
+                onMoveDown={() => !isSelectionMode && handleMoveCatalog(index, 'down')}
+                canMoveUp={!isSelectionMode && index > 0}
+                canMoveDown={!isSelectionMode && index < catalogs.length - 1}
+                onMergeStart={() => startMerging(catalog)}
+                onMergeSelect={() => selectMergeTarget(catalog)}
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => { e.preventDefault(); }}
+                onDrop={() => handleDrop(index)}
+                onDragEnd={() => setDragIndex(null)}
+              />
+            );
+          })}
         </div>
       )}
 

@@ -45,6 +45,66 @@ export function ProfileManager({
   const editingProfile = profiles.find(p => p.id === editingProfileId);
   const isGlobalSelected = editingProfile?.id === 'global';
 
+  const currentSelectors = editingProfile?.settings?.typeSelectors || { film: false, serie: false, anime: null };
+
+  const handleToggleFilm = () => {
+    if (!editingProfile) return;
+    const newSelectors = {
+      ...currentSelectors,
+      film: !currentSelectors.film
+    };
+    onUpdateProfile?.(editingProfile.id, {
+      settings: {
+        ...editingProfile.settings,
+        typeSelectors: newSelectors
+      }
+    });
+  };
+
+  const handleToggleSerie = () => {
+    if (!editingProfile) return;
+    const newSelectors = {
+      ...currentSelectors,
+      serie: !currentSelectors.serie
+    };
+    onUpdateProfile?.(editingProfile.id, {
+      settings: {
+        ...editingProfile.settings,
+        typeSelectors: newSelectors
+      }
+    });
+  };
+
+  const handleToggleAnimeOnly = () => {
+    if (!editingProfile) return;
+    const newAnime: 'only' | 'exclude' | null = currentSelectors.anime === 'only' ? null : 'only';
+    const newSelectors = {
+      ...currentSelectors,
+      anime: newAnime
+    };
+    onUpdateProfile?.(editingProfile.id, {
+      settings: {
+        ...editingProfile.settings,
+        typeSelectors: newSelectors
+      }
+    });
+  };
+
+  const handleToggleNoAnime = () => {
+    if (!editingProfile) return;
+    const newAnime: 'only' | 'exclude' | null = currentSelectors.anime === 'exclude' ? null : 'exclude';
+    const newSelectors = {
+      ...currentSelectors,
+      anime: newAnime
+    };
+    onUpdateProfile?.(editingProfile.id, {
+      settings: {
+        ...editingProfile.settings,
+        typeSelectors: newSelectors
+      }
+    });
+  };
+
   return (
     <section className="flex flex-col gap-4 sm:gap-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
@@ -157,6 +217,71 @@ export function ProfileManager({
           );
         })}
       </div>
+
+      {/* Selettori di Tipo del Profilo */}
+      {editingProfile && (
+        <div className="p-3 sm:p-4 rounded-xl border border-marrow-light/15 bg-white/50 backdrop-blur-sm shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-6">
+          <div className="flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-primary text-xl">tune</span>
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-marrow-deep">
+                Selettori di Tipo: <span className="text-primary font-black">{editingProfile.name}</span>
+              </p>
+              <p className="text-[10px] sm:text-xs text-marrow-light/70 font-medium">
+                Filtra i cataloghi del profilo nel manifest di Stremio e nella dashboard
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 sm:gap-6">
+            {/* Gruppo 1: Media (Film / Serie) - Indipendenti */}
+            <div className="flex items-center gap-2 p-1 bg-white/80 rounded-lg border border-marrow-light/10 shadow-xs">
+              <label className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-marrow-deep cursor-pointer hover:text-primary transition-colors select-none">
+                <input
+                  type="checkbox"
+                  checked={Boolean(currentSelectors.film)}
+                  onChange={handleToggleFilm}
+                  className="rounded border-marrow-light/30 text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer accent-primary"
+                />
+                <span>Solo Film</span>
+              </label>
+              <span className="text-marrow-light/20">|</span>
+              <label className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-marrow-deep cursor-pointer hover:text-primary transition-colors select-none">
+                <input
+                  type="checkbox"
+                  checked={Boolean(currentSelectors.serie)}
+                  onChange={handleToggleSerie}
+                  className="rounded border-marrow-light/30 text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer accent-primary"
+                />
+                <span>Solo Serie</span>
+              </label>
+            </div>
+
+            {/* Gruppo 2: Anime (Solo Anime / No Anime) - Mutuamente esclusivi */}
+            <div className="flex items-center gap-2 p-1 bg-white/80 rounded-lg border border-marrow-light/10 shadow-xs">
+              <label className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-marrow-deep cursor-pointer hover:text-primary transition-colors select-none">
+                <input
+                  type="checkbox"
+                  checked={currentSelectors.anime === 'only'}
+                  onChange={handleToggleAnimeOnly}
+                  className="rounded border-marrow-light/30 text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer accent-primary"
+                />
+                <span>Solo Anime</span>
+              </label>
+              <span className="text-marrow-light/20">|</span>
+              <label className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-marrow-deep cursor-pointer hover:text-primary transition-colors select-none">
+                <input
+                  type="checkbox"
+                  checked={currentSelectors.anime === 'exclude'}
+                  onChange={handleToggleNoAnime}
+                  className="rounded border-marrow-light/30 text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer accent-primary"
+                />
+                <span>No Anime</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dialog per Creazione Nuovo Profilo */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
