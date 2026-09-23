@@ -43,6 +43,9 @@ function getEpisodeBadgeText(item) {
         return String(item._forceBadgeText);
     }
 
+    // Anime fuori dal catalogo novità: solo il badge ITA (se doppiato), mai quello episodio.
+    if (item._itaOnlyBadge) return null;
+
     if (item._forceEpisode) {
         const isKitsu = item.id && (item.id.startsWith('kitsu:') || item.id.includes(':absolute:'));
         const season = item._forceSeason || 1;
@@ -281,8 +284,11 @@ function sanitizeCatalogMeta(item, options = {}) {
 
 
 
+    // Anime fuori dal catalogo novità: fuori resta SOLO il badge ITA, quindi la stagione non si mostra.
+    if (item._itaOnlyBadge) tlBadge = null;
+
     let poster = sourceImage;
-    const BADGE_IMG_VERSION = 23; // Bump to force Stremio to re-download badge images
+    const BADGE_IMG_VERSION = 24; // Bump to force Stremio to re-download badge images
     if ((badgeText || tlBadge) && hostUrl && sourceImage) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';
@@ -332,6 +338,10 @@ function sanitizeCatalogMeta(item, options = {}) {
 
     if (item._forceBadgeText !== undefined) {
         baseItem._forceBadgeText = item._forceBadgeText;
+    }
+
+    if (item._itaOnlyBadge !== undefined) {
+        baseItem._itaOnlyBadge = item._itaOnlyBadge;
     }
 
     if (item._itaBadge !== undefined) {

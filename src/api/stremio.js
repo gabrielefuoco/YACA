@@ -11,6 +11,7 @@ const CacheManager = require('../cache/CacheManager');
 const sharp = require('sharp');
 const axios = require('axios');
 const path = require('path');
+const crypto = require('crypto');
 const TextToSVG = require('text-to-svg');
 
 let textToSVG = null;
@@ -541,7 +542,15 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
     }
 
     const bv = req.params.cacheBuster || req.query.bv || 'v16';
-    const cacheKey = `${id}_${episode}_${tlBadge}_${bv}`;
+    // La SORGENTE fa parte della chiave: un'immagine composta dal fallback TMDB non deve
+    // essere scambiata per quella di ERDB (e viceversa) restando poi in cache per giorni.
+    // Si usa host+path (senza query) perché la URL ERDB porta un tmdbKey variabile.
+    let sourceKey = 'src';
+    try {
+        const u = new URL(originalUrl);
+        sourceKey = crypto.createHash('sha1').update(`${u.hostname}${u.pathname}`).digest('hex').slice(0, 8);
+    } catch (_e) { /* l'URL è già stato validato sopra */ }
+    const cacheKey = `${id}_${episode}_${tlBadge}_${bv}_${sourceKey}`;
     // console.log(`[Badge] Request: id=${id}, episode="${episode}", bv=${bv}, textToSVG=${!!textToSVG}`);
 
     const createBadgeSvg = (text, isTopLeft) => {
@@ -709,8 +718,15 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
     }
 });
 
-// Simple in-memory cache for HEAD requests to avoid spamming ERDB
-const fallbackHeadCache = new Map();
+// Cache dell'esistenza dei poster ERDB: su Redis (sopravvive ai riavvii) con TTL lungo per
+// gli "esiste" e corto per i "non c'è", così un 404 non costa 8 secondi di timeout a ogni render.
+const ERDB_POSITIVE_TTL_MS = 24 * 60 * 60 * 1000;
+const ERDB_NEGATIVE_TTL_MS = 6 * 60 * 60 * 1000;
+const erdbHeadCache = new CacheManager('erdb_head', {
+    ramMax: 2000,
+    ramTtlMs: ERDB_POSITIVE_TTL_MS,
+    redisTtlMs: ERDB_POSITIVE_TTL_MS
+});
 
 // Fallback route for ERDB posters that might 404 (e.g. unmapped Kitsu items)
 router.get('/images/fallback', async (req, res) => {
@@ -719,20 +735,19 @@ router.get('/images/fallback', async (req, res) => {
         return res.status(400).send('Missing url or fallback parameter');
     }
 
-    if (fallbackHeadCache.has(url)) {
-        const isOk = fallbackHeadCache.get(url);
-        return res.redirect(302, isOk ? url : fallback);
+    const cached = await erdbHeadCache.get(url).catch(() => null);
+    if (cached && typeof cached.ok === 'boolean') {
+        return res.redirect(302, cached.ok ? url : fallback);
     }
 
     try {
         // Fast HEAD request to check if the primary URL exists
         await axios.head(url, { timeout: 8000 });
-        // It exists! Cache and redirect to the primary URL
-        fallbackHeadCache.set(url, true);
+        await erdbHeadCache.set(url, { ok: true }, ERDB_POSITIVE_TTL_MS).catch(() => {});
         res.redirect(302, url);
     } catch (err) {
-        // Doesn't exist (404) or timeout. Cache and redirect to fallback
-        fallbackHeadCache.set(url, false);
+        // Non esiste (404) o timeout: memorizzato in negativo, così non si ritenta a ogni render
+        await erdbHeadCache.set(url, { ok: false }, ERDB_NEGATIVE_TTL_MS).catch(() => {});
         console.warn(`[Fallback] ERDB URL failed: ${url} (${err.message}). Using TMDB fallback...`);
         res.redirect(302, fallback);
     }

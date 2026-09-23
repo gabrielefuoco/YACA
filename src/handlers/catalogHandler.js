@@ -310,7 +310,9 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
             }
 
             const dubEpisode = animeAiringState.getDubEpisode(doc);
-            const animeItem = { ...item, _itaBadge: false };
+            // Fuori dal catalogo novità un anime mostra SOLO il badge ITA (o niente):
+            // niente badge episodio e niente badge di stagione. Il flag lo rispetta il formatter.
+            const animeItem = { ...item, _itaBadge: false, _itaOnlyBadge: true };
             if (dubEpisode !== null) {
                 animeItem._forceBadgeText = `ITA ${dubEpisode}`;
             }
