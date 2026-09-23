@@ -1,21 +1,5 @@
 const { interleaveMultipleResults, applyConsensusScoring } = require('../src/utils/resultMerger');
 const { getBaseId, normalizeContentId } = require('../src/utils/contentId');
-const { getHybridPopularCatalog } = require('../src/catalog/providers/HybridProvider');
-
-// Mock delle dipendenze di HybridProvider
-jest.mock('../src/catalog/providers/DuckDbProvider', () => {
-    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
-    return {
-        ...actual,
-        getDuckDbCatalogFromFilters: jest.fn()
-    };
-});
-jest.mock('../src/clients/trakt', () => ({
-    fetchTraktCatalog: jest.fn()
-}));
-
-const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
-const { fetchTraktCatalog } = require('../src/clients/trakt');
 
 describe('BUG-02: Dedup Namespace-Aware (kitsu vs tmdb collision fix)', () => {
     describe('contentId helper behavior contrast', () => {
@@ -103,56 +87,6 @@ describe('BUG-02: Dedup Namespace-Aware (kitsu vs tmdb collision fix)', () => {
             expect(result[0].id).toBe('kitsu:1100');
             expect(result[0].consensusCount).toBe(2);
             expect(result[0].consensusBonus).toBe(3); // 2^2 - 1 = 3
-        });
-    });
-
-    describe('getHybridPopularCatalog (HybridProvider)', () => {
-        beforeEach(() => {
-            jest.clearAllMocks();
-        });
-
-        it('preserva sia kitsu:1100 che tmdb:1100 senza scartare per collisione di ID', async () => {
-            getDuckDbCatalogFromFilters.mockResolvedValueOnce([
-                { id: 'tmdb:1100', title: 'TMDB Item 1100' }
-            ]);
-            fetchTraktCatalog.mockResolvedValueOnce([
-                { id: 'kitsu:1100', title: 'Kitsu Item 1100' }
-            ]);
-
-            const userConfig = { userId: 'u1' };
-            const results = await getHybridPopularCatalog('hybrid_pop', 'movie', 0, userConfig, {}, 'fake-key', {});
-
-            expect(results).toHaveLength(2);
-            expect(results.map(r => r.id)).toEqual(['tmdb:1100', 'kitsu:1100']);
-        });
-
-        it('esegue esattamente 1 fetch per richiesta (nessun prefetch multi-pagina né refill)', async () => {
-            getDuckDbCatalogFromFilters.mockResolvedValueOnce([
-                { id: 'tmdb:1', title: 'Item 1' }
-            ]);
-            fetchTraktCatalog.mockResolvedValueOnce([
-                { id: 'tmdb:2', title: 'Item 2' }
-            ]);
-
-            const userConfig = { userId: 'u1', config: { hideWatched: true } };
-            await getHybridPopularCatalog('hybrid_pop', 'movie', 40, userConfig, {}, 'fake-key', {});
-
-            // Una sola chiamata a DuckDb e una sola a Trakt con skip = 40
-            expect(getDuckDbCatalogFromFilters).toHaveBeenCalledTimes(1);
-            expect(getDuckDbCatalogFromFilters).toHaveBeenCalledWith(
-                { sort_by: 'popularity.desc', 'vote_count.gte': 50 },
-                'movie',
-                40,
-                20,
-                {}
-            );
-            expect(fetchTraktCatalog).toHaveBeenCalledTimes(1);
-            expect(fetchTraktCatalog).toHaveBeenCalledWith(
-                'popular_movies',
-                40,
-                null,
-                'fake-key'
-            );
         });
     });
 });

@@ -60,7 +60,12 @@ const addonConfigSchema = new mongoose.Schema({
             tmdbKey: String,
             erdbConfig: String,
             manualDNA: [mongoose.Schema.Types.Mixed],
-            suggestedDNA: [mongoose.Schema.Types.Mixed]
+            suggestedDNA: [mongoose.Schema.Types.Mixed],
+            typeSelectors: {
+                film: { type: Boolean, default: false },
+                serie: { type: Boolean, default: false },
+                anime: { type: String, enum: ['only', 'exclude', null], default: null }
+            }
         },
         raw_ui_state: mongoose.Schema.Types.Mixed, // Ok to leave Mixed for frontend UI state
 

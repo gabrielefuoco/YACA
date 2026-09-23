@@ -133,12 +133,16 @@ export function DashboardPage({
     // Creates a new profile with the template's name
     const newProfile = onAddProfile(template.name);
     
-    // Set the template's presets to the new profile
+    // Set the template's presets and typeSelectors to the new profile
     onUpdateProfile(newProfile.id, {
       raw_ui_state: {
         ...newProfile.raw_ui_state,
         selectedPresets: template.presets,
         catalogOrder: template.presets,
+      },
+      settings: {
+        ...newProfile.settings,
+        typeSelectors: template.typeSelectors || { film: false, serie: false, anime: null },
       },
     });
 
