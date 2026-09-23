@@ -11,6 +11,22 @@ const { F, S } = require('../../data/filters');
 const animeMappingStore = require('../../data/animeMappingStore');
 const { isAnimeContent } = require('../../utils/animeIdentity');
 
+const SUPPORTED_SORT_BY = Object.freeze([
+    'popularity.desc',
+    'vote_average.desc',
+    'revenue.desc',
+    'primary_release_date.desc',
+    'first_air_date.desc',
+    'release_date.desc',
+    'primary_release_date.asc',
+    'first_air_date.asc',
+    'release_date.asc'
+]);
+
+function isMappedSortBy(s) {
+    return Boolean(s && SUPPORTED_SORT_BY.includes(s));
+}
+
 function mapSortBy(s, type = 'movie') {
     const isTv = type === 'tv' || type === 'series';
     if (!s) return S.POPULAR;
@@ -374,6 +390,8 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
 }
 
 module.exports = {
+    SUPPORTED_SORT_BY,
+    isMappedSortBy,
     mapSortBy,
     buildPresetFromFilters,
     getDuckDbCatalogFromFilters,

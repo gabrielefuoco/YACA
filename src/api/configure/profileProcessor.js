@@ -161,6 +161,7 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
                         where: preset.where || [],
                         orderBy: preset.orderBy || null,
                         _provider: preset._provider || null,
+                        sortable: preset.sortable !== false,
                         queries: preset.queries || [],
                         isAnime: preset.isAnime || false
                     });

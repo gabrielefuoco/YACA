@@ -72,4 +72,63 @@ Il flusso dei preset è gestito in modalità 100% offline:
 5. DuckDB esegue la query in memoria (tempo tipico: < 15ms) e ritorna il result-set.
 6. Il result-set viene convertito nel formato compatto LightMeta e passato allo `StremioFormatter`.
 
-*Nota: La Full-Text Search (FTS) è supportata passando l'oggetto `{ _fts: "query" }` nell'array `where`, che innesca automaticamente l'estensione BM25 di DuckDB.*
+7. *Nota: La Full-Text Search (FTS) è supportata passando l'oggetto `{ _fts: "query" }` nell'array `where`, che innesca automaticamente l'estensione BM25 di DuckDB.*
+
+---
+
+## 4. Ordinamento e Gestione `orderBy` / `sortBy`
+
+### 4.1 Default Curato per Ogni Preset
+Ogni catalogo preset definisce un proprio ordinamento predefinito e curato, identificato dalla proprietà `orderBy`.
+Durante la generazione dei preset da [presets.js](../src/data/presets.js), la funzione `buildPresetFromFilters` analizza il parametro `sort_by` specificato nel blocco query del preset (`p.queries[0].sort_by`) e calcola l'espressione SQL corrispondente invocando [`mapSortBy(s, type)`](../src/catalog/providers/DuckDbProvider.js#L14).
+
+Se un preset definisce già un `orderBy` esplicito a livello di radice, questo ha la precedenza (`orderBy: p.orderBy || duck.orderBy`).
+
+> [!NOTE]
+> L'unica eccezione ai cataloghi basati su clausole SQL `where` e `orderBy` è rappresentata dai cataloghi guidati da stato esterno, come `preset_anime_simulcast` (`_provider: 'airing_state'`). In questo caso l'ordine è intrinsecamente temporale (data di uscita dell'episodio) ed è gestito direttamente dal reader dello stato `anime_airing_state`.
+
+### 4.2 Tabella di Mappatura `sort_by` → `orderBy` (`mapSortBy`)
+
+La funzione `mapSortBy(sort_by, type)` traduce i criteri di ordinamento stile TMDB nelle corrispondenti clausole SQL native per DuckDB, tenendo conto delle differenze semantiche tra film (`movie`) e serie televisive (`series` / `tv`):
+
+| `sort_by` (TMDB Style) | Tipo | Espressione SQL `orderBy` | Costante DSL `S.*` | Note |
+|---|---|---|---|---|
+| `popularity.desc` | movie, series | `"popularity" DESC NULLS LAST` | `S.POPULAR` | Ordinamento predefinito per popolarità generale |
+| `vote_average.desc` | movie, series | `"vote_average" DESC, "vote_count" DESC` | `S.TOP_RATED` | Ordina per voto medio e penalizza titoli con pochi voti |
+| `revenue.desc` | movie | `"revenue" DESC NULLS LAST` | `S.REVENUE` | Box office e incassi al botteghino |
+| `revenue.desc` | series, tv | `"popularity" DESC NULLS LAST` | `S.POPULAR` | Fallback: TMDB non traccia incassi box office per le serie TV |
+| `primary_release_date.desc`<br>`first_air_date.desc`<br>`release_date.desc` | movie | `"release_date" DESC NULLS LAST` | `S.NEWEST_MOVIE` | Nuove uscite cinematografiche |
+| `primary_release_date.desc`<br>`first_air_date.desc`<br>`release_date.desc` | series, tv | `"first_air_date" DESC NULLS LAST` | `S.NEWEST_TV` | Nuove uscite televisive (prima messa in onda) |
+| `primary_release_date.asc`<br>`first_air_date.asc`<br>`release_date.asc` | movie | `"release_date" ASC NULLS LAST` | — | Uscite storiche (dai più vecchi ai più recenti) |
+| `primary_release_date.asc`<br>`first_air_date.asc`<br>`release_date.asc` | series, tv | `"first_air_date" ASC NULLS LAST` | — | Prime messe in onda storiche |
+| *(null / undefined / vuoto)* | movie, series | `"popularity" DESC NULLS LAST` | `S.POPULAR` | Fallback di sicurezza standard |
+
+I valori supportati sono enumerati in `SUPPORTED_SORT_BY` e verificati da una suite di test di copertura che fallisce se viene introdotto un nuovo preset con un `sort_by` non gestito.
+
+### 4.3 Extra `sortBy` di Stremio (`stremio.js`)
+
+Stremio supporta l'esposizione di controlli di ordinamento tramite l'array `extra` del manifesto:
+
+```javascript
+const SORT_OPTIONS = ['Popolarità', 'Voto Medio', 'Data di Uscita', 'Incassi'];
+const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
+```
+
+#### Regola di Esposizione nel Manifest
+* **Solo sui Preset Utente**: Il selettore `sortBy` è esposto **esclusivamente sui cataloghi dei preset utente** (`profile.catalogs` e `customCatalogs`) definiti dall'utente o derivati dai template di profilo ([stremio.js:52,68](../src/api/stremio.js)).
+* **Non sugli Hero Catalogs**: I cataloghi Hero (`yaca_true_blend_*`, `yaca_seed_network_*`, `yaca_hidden_gems_*`, `yaca_trakt_filtered_*`) e la Watchlist (`yaca_watchlist_*`) usano esclusivamente `extra: [{ name: 'skip' }]`. Il loro ordinamento è algoritmico, basato sul DNA dell'utente o sull'ordine di aggiunta alla libreria, e non deve essere alterato dal client.
+* **Non sui cataloghi non ordinabili (Simulcast)**: Cataloghi come `preset_anime_simulcast` dichiarano `_provider === 'airing_state'` e `sortable: false`. Per essi la funzione helper `getCatalogExtra()` ritorna `[{ name: 'skip' }]`, rimuovendo il selettore `sortBy` dal manifesto di Stremio ed evitando che l'utente veda opzioni che la route ignorerebbe.
+
+#### Comportamento a Runtime
+1. **Navigazione Normale**: Quando un utente apre un catalogo preset su Stremio senza selezionare alcun filtro di ordinamento, la richiesta non include `sortBy`. Il backend esegue la query SQL utilizzando il default curato `catalogMeta.orderBy`.
+2. **Selezione Utente**: Se l'utente seleziona una voce nel menu a tendina di Stremio (es. "Voto Medio"):
+   - L'endpoint estrae `extra.sortBy` e lo traduce in formato TMDB tramite `getSortByValue()` (`stremio.js:60`).
+   - Il [CatalogRouter](../src/catalog/CatalogRouter.js#L83-L86) rileva `sortBy` e sovrascrive temporaneamente l'ordinamento:
+     ```javascript
+     if (sortBy) {
+         const { mapSortBy } = require('./providers/DuckDbProvider');
+         presetToRun = { ...catalogMeta, orderBy: mapSortBy(sortBy, catalogMeta.type || type) };
+     }
+     ```
+   - DuckDB esegue la query con il nuovo `orderBy` e restituisce i risultati ordinati secondo la preferenza temporanea dell'utente.
+
