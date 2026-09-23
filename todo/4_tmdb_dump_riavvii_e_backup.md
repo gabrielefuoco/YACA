@@ -49,3 +49,31 @@ Da fare:
 - **Procedura di restore dei file**: documentata in testa a `ops/yaca-dump-backup.sh` (`docker cp` inverso) ma **non ancora provata** su un ripristino reale.
 - **Monitoraggio "backup recente"**: nessun controllo automatico che avvisi se un backup non è stato fatto per N giorni.
 - Il punto 1 (riavvii a metà dump) resta tutto da fare: scrittura atomica, `tv.parquet.bak`, stato "dump in corso", filtro `paths` su `deploy.yml`.
+
+### Aggiornamento serale (2026-09-22, dopo il passaggio a Google Drive)
+
+- **Off-site FATTO**: destinazione su **Google Drive** via **OAuth** (il service account non può scrivere su Drive personale: quota zero — errore `storageQuotaExceeded`). Token in `/root/.config/rclone/rclone.conf` (600, root).
+- **Restore verificato DA DRIVE**: archivio scaricato da Drive e ripristinato in un db di prova → 32.378 documenti, 0 falliti, 18 collezioni (`userlibraryitems` 169, `anime_airing_state` 941, `streambadges` 24798), db di prova eliminato.
+- **Struttura su Drive**: `mongo/`, `tmdb/parquet/`, `tmdb/jsonl/`, `anime-source/` — sottocartelle separate perché la retention di `rclone delete` è **ricorsiva**: il backup Mongo scriveva nella radice e avrebbe cancellato anche gli altri artefatti (corretto).
+- **Misurato l'upstream di casa: ~0,3 Mbps.** Conseguenza da decidere: il backup settimanale dei `master_*.jsonl` (~800 MB) impiegherebbe **~6 ore**. Proposta: **comprimere prima dell'upload** (gzip: ~200 MB → ~1,5 ore), oppure accettare che il ripristino del dump richieda il cold start (i parquet, che sono ciò che YACA usa davvero, sono già salvati ogni giorno e sono piccoli).
+- **Ancora aperto**: il controllo automatico "backup recente" (nessuno avvisa se un backup non parte) e tutto il punto 1 (riavvii a metà dump).
+
+### Backup automatici: SOSPESI (2026-09-22 sera) — cosa serve per riprenderli
+
+**Stato**: i tre timer sono **disabilitati** su `mate` (`systemctl disable --now yaca-backup.timer yaca-dump-backup.timer yaca-dump-backup-full.timer`). Gli script e le unità restano nel repo (`ops/yaca-backup.sh`, `ops/yaca-dump-backup.sh` + unità) e funzionano: sono solo spenti. Una copia locale esiste in `/srv/yaca/backups-local/` (dall'ultima esecuzione riuscita).
+
+**Cosa funziona già**: dump Mongo (con `--entrypoint mongodump`), backup dei file (parquet, cursore, liste) con **gate** sui dump incompleti, sottocartelle per tipo (`mongo/`, `tmdb/parquet/`, `tmdb/jsonl/`, `anime-source/`), retention separate, e **restore verificato** (32.378 documenti ripristinati, 0 falliti). Tutto tranne il pezzo Google.
+
+**Cosa blocca: la destinazione Google Drive.** Due trappole in fila, entrambe risolte solo in parte:
+1. **Service account su Drive personale**: quota zero → `Error 403 storageQuotaExceeded`. Vale solo per Shared Drive di Workspace. (La chiave sta in `~/.pi/agent/skills/backup-drive/secrets/` e su `/srv/yaca/secrets/`.)
+2. **OAuth con il client pubblico di rclone**: l'upload funziona come meccanismo (token in `/root/.config/rclone/rclone.conf` su `mate`), ma il progetto Google di rclone (`projects/202264815644`) ha la **quota per progetto condivisa con tutti gli utenti rclone del mondo** → `Error 403 RATE_LIMIT_EXCEEDED`, e rclone entra in un ciclo di retry che rispedisce lo stesso file per mezz'ora (visto: 1,47 GB inviati per un file da 58 MB).
+
+**Le quattro uscite, con i costi**:
+- **(a)** client OAuth tuo + **pubblicare** l'app: quota tua e token che non scadono, ma Google pretende home page, privacy policy, ToS e **domini autorizzati/verificati** → serve un dominio dell'utente (e le pagine le può scrivere l'agente).
+- **(b)** client tuo in **Testing**: quota tua, i 403 spariscono, ma il token scade ogni **7 giorni** → ri-autorizzo settimanale a mano.
+- **(c)** restare su rclone con la sua quota condivisa: nessun setup, ma i file grandi **falliscono nelle ore di punta** (alle 02:30 UTC probabilmente passa). Mitigazioni: comprimere i `jsonl`, `RuntimeMaxSec=` sul servizio per non farlo girare mezz'ora, retry brevi.
+- **(d)** provider diverso (Backblaze B2: 10 GB gratis, S3, zero burocrazia): i dati veri sono **<1 GB**, quindi basta. È la strada più corta e la raccomandazione dell'orchestratore.
+
+**Diagnostica che ha smascherato il problema** (da riusare): `ss -tinp | grep rclone` → se `bytes_sent` è molte volte la dimensione del file, **non è lento, è un ciclo di retry**. E per misurare la linea senza inquinare: fare il test **prima** di lanciare altri upload (la prima misura, 0,3 Mbps, era falsata dall'upload in corso; la linea vera fa ~19 Mbps in salita).
+
+**Comando per riaccendere** (una volta risolta la destinazione): `sudo systemctl enable --now yaca-backup.timer yaca-dump-backup.timer yaca-dump-backup-full.timer`

@@ -154,3 +154,8 @@ eslint-output.json
 # Regenerable data / cache blobs
 relevance_validation_report.json
 public/cache/
+
+# Credenziali: chiavi di servizio (mai in git)
+*serviceaccount*.json
+drive-backup-*.json
+gdrive-sa.json
