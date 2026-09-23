@@ -14,7 +14,7 @@ const PendingScan = require('../db/models/PendingScan');
 const animeAiringState = require('../data/animeAiringState');
 const { isAnimeContent } = require('../utils/animeIdentity');
 const animeMappingStore = require('../data/animeMappingStore');
-const { isCatalogConformant } = require('../catalog/catalogKind');
+const { isCatalogConformant, isAlwaysVisible } = require('../catalog/catalogKind');
 
 function extractTmdbId(item) {
     if (!item) return null;
@@ -33,11 +33,9 @@ function extractTmdbId(item) {
 }
 
 function extractGenreIds(item) {
-    if (Array.isArray(item.genre_ids) && item.genre_ids.length > 0) {
-        return item.genre_ids;
-    }
-    if (Array.isArray(item.genres)) {
-        return item.genres.map(g => {
+    const rawGenres = item.genre_ids || item.genres || item.rawTMDB?.genre_ids || item.rawTMDB?.genres;
+    if (Array.isArray(rawGenres) && rawGenres.length > 0) {
+        return rawGenres.map(g => {
             if (typeof g === 'number') return g;
             if (typeof g === 'object' && g !== null && g.id) return g.id;
             if (typeof g === 'string') {
@@ -52,6 +50,8 @@ function extractGenreIds(item) {
 
 function isItemAnime(item) {
     if (!item) return false;
+    // Marcatore esistente: se _isAnime è già valorizzato come boolean (es. da DuckDbProvider), usalo direttamente
+    if (typeof item._isAnime === 'boolean') return item._isAnime;
     if (item.type === 'anime') return true;
 
     const id = String(item.id || '');
@@ -62,13 +62,18 @@ function isItemAnime(item) {
     const originalLanguage = item.original_language || item.originalLanguage || item._originalLanguage || item.rawTMDB?.original_language;
     const keywords = item.keywords || item.rawTMDB?.keywords;
 
-    return isAnimeContent({
+    // Ricalcola con isAnimeContent (mappingStore Anibridge/Fribb + genere 16 + ja/keyword).
+    // Se non porta né mapping certificato né combinazione genre/lingua/keyword -> restituisce false (fail-open).
+    const isAnime = isAnimeContent({
         tmdbId,
         genreIds,
         originalLanguage,
         keywords,
         mappingStore: animeMappingStore
     });
+
+    item._isAnime = isAnime;
+    return isAnime;
 }
 
 // Marker del provider/stato esterno. `anilist_simulcast` resta accettato per le
@@ -433,6 +438,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
         user: userConfig.userId, 
         profile: userConfig.activeProfileId, 
         kidsMode: activeProfileSettings.kidsMode,
+        typeSelectors: activeProfileSettings.typeSelectors,
         configVersion: userConfig.configVersion || userConfig.config?.configVersion,
         badgeV: BADGE_CATALOG_VERSION
     }, skip, type);
@@ -499,6 +505,24 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     const genres = i.genre_ids || (i.genres ? i.genres.map(g => g.id) : []);
                     // Exclude Horror (27), Thriller (53), Crime (80)
                     if (genres.some(id => [27, 53, 80].includes(id))) return false;
+                    return true;
+                });
+            }
+
+            // 2.6 FILTRAGGIO POST-FETCH: Filtro Contenuti Anime (Ticket 13 / Spec 06 Sezione 6)
+            // Perimetro: cataloghi di suggerimento (preset utente, 8 hero, custom/merged).
+            // Utility e libreria personale (yaca-profiles, 2 ricerche, 3 watchlist) non vengono filtrate.
+            const animeSelector = activeProfileSettings?.typeSelectors?.anime;
+            const isSubjectCatalog = !isAlwaysVisible(id) && !isAlwaysVisible(baseId) && !extra?.search;
+            if (isSubjectCatalog && (animeSelector === 'exclude' || animeSelector === 'only')) {
+                results = results.filter(item => {
+                    const isAnime = isItemAnime(item);
+                    if (animeSelector === 'exclude') {
+                        return !isAnime;
+                    }
+                    if (animeSelector === 'only') {
+                        return isAnime;
+                    }
                     return true;
                 });
             }
