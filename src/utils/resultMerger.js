@@ -1,4 +1,4 @@
-const { normalizeContentId } = require('./contentId');
+const { getBaseId } = require('./contentId');
 
 
 
@@ -17,7 +17,7 @@ function interleaveMultipleResults(queryResultsArrays, limit, skip = 0) {
         for (const arr of queryResultsArrays) {
             const item = (arr || [])[i];
             if (!item) continue;
-            const itemId = item.id !== undefined && item.id !== null ? normalizeContentId(item.id) : null;
+            const itemId = item.id !== undefined && item.id !== null ? getBaseId(item.id) : null;
             if (itemId) {
                 if (seen.has(itemId)) continue;
                 seen.add(itemId);
@@ -106,13 +106,13 @@ function applyConsensusScoring(queryResults) {
     queryResults.forEach((items, queryIndex) => {
         for (const item of items || []) {
             if (!item?.id) continue;
-            const normalizedId = normalizeContentId(item.id);
-            if (mergedMap.has(normalizedId)) {
-                const existing = mergedMap.get(normalizedId);
+            const baseId = getBaseId(item.id);
+            if (mergedMap.has(baseId)) {
+                const existing = mergedMap.get(baseId);
                 existing.consensusCount += 1;
                 existing.queryIndexes.add(queryIndex);
             } else {
-                mergedMap.set(normalizedId, {
+                mergedMap.set(baseId, {
                     ...item,
                     consensusCount: 1,
                     queryIndexes: new Set([queryIndex])

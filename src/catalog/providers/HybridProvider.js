@@ -1,9 +1,7 @@
 const { getHybridCatalog } = require('../../engines/hybridRecommendations');
 
 const { fetchTraktCatalog } = require('../../clients/trakt');
-const { filterWatchedItems } = require('../processors/FilterWatched');
-const { normalizeContentId } = require('../../utils/contentId');
-const { PAGES_PER_REQUEST } = require('../../config');
+const { getBaseId } = require('../../utils/contentId');
 const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
 
 const TASTE_BASED_IDS = new Set([
@@ -16,56 +14,28 @@ const TASTE_BASED_IDS = new Set([
 
 async function getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey) {
     const traktToken = userConfig.apiKeys?.trakt;
-    let combinedResults = [];
-
-    const parallelPages = (userConfig?.config?.hideWatched) ? 3 : 1;
-    const promises = [];
-    for (let i = 0; i < parallelPages; i++) {
-        promises.push(getHybridCatalog(baseId, skip + (i * 20), traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId, userConfig));
-    }
-
-    const pagesResults = await Promise.all(promises);
-    for (let pageResults of pagesResults) {
-        pageResults = await filterWatchedItems(pageResults, userConfig);
-        combinedResults.push(...pageResults);
-        if (combinedResults.length >= 20) break;
-    }
-    return combinedResults.slice(0, 20);
+    const pageResults = await getHybridCatalog(baseId, skip, traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId, userConfig);
+    return (pageResults || []).slice(0, 20);
 }
 
 async function getHybridPopularCatalog(baseId, type, skip, userConfig, tmdbClient, tmdbApiKey, tmdbFetchOptions) {
     const isMovie = type === 'movie';
     const traktEp = isMovie ? 'popular_movies' : 'popular_shows';
 
-    let combinedResults = [];
-    const MAX_DEPTH = Math.max(PAGES_PER_REQUEST || 3, 3);
-    const pageSkips = (userConfig?.config?.hideWatched)
-        ? Array.from({ length: MAX_DEPTH }, (_, i) => skip + (i * 20))
-        : [skip];
+    const [tmdbResults, traktResults] = await Promise.all([
+        getDuckDbCatalogFromFilters({ sort_by: 'popularity.desc', 'vote_count.gte': 50 }, type, skip, 20, {}),
+        fetchTraktCatalog(traktEp, skip, null, tmdbApiKey).catch(() => [])
+    ]);
 
-    const pagesResults = await Promise.all(pageSkips.map((pageSkip) =>
-        Promise.all([
-            getDuckDbCatalogFromFilters({ sort_by: 'popularity.desc', 'vote_count.gte': 50 }, type, pageSkip, 20, {}),
-            fetchTraktCatalog(traktEp, pageSkip, null, tmdbApiKey).catch(() => [])
-        ])
-    ));
+    const seen = new Set();
+    const merged = [...(tmdbResults || []), ...(traktResults || [])].filter(item => {
+        const idKey = getBaseId(item.id);
+        if (seen.has(idKey)) return false;
+        seen.add(idKey);
+        return true;
+    });
 
-    for (const [tmdbResults, traktResults] of pagesResults) {
-        const seen = new Set();
-        let merged = [...tmdbResults, ...traktResults].filter(item => {
-            const normalizedItemId = normalizeContentId(item.id);
-            if (seen.has(normalizedItemId)) return false;
-            seen.add(normalizedItemId);
-            return true;
-        });
-
-        merged = await filterWatchedItems(merged, userConfig);
-        combinedResults.push(...merged);
-
-        if (combinedResults.length >= 20 || merged.length === 0 || !userConfig?.config?.hideWatched) break;
-    }
-    
-    return combinedResults.slice(0, 40); // Preserving the original behavior which returned up to 40 items
+    return merged.slice(0, 40); // Preserving the original behavior which returned up to 40 items
 }
 
 module.exports = {
