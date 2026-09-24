@@ -78,7 +78,15 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
     }
 
     if (q.with_origin_country) {
-        where.push(F.country(q.with_origin_country));
+        const countries = String(q.with_origin_country)
+            .split('|')
+            .map(code => code.trim())
+            .filter(Boolean);
+        where.push(
+            countries.length === 0 ? '1=0'
+                : countries.length === 1 ? F.country(countries[0])
+                    : F.any(...countries.map(code => F.country(code)))
+        );
     }
 
     if (q.with_genres) {
@@ -145,6 +153,14 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
         } else {
             where.push('1=0');
         }
+    }
+
+    if (q.without_tmdbIds) {
+        const validIds = String(q.without_tmdbIds)
+            .split(/[,|]/)
+            .map(Number)
+            .filter(n => Number.isSafeInteger(n) && n > 0);
+        where.push(validIds.length > 0 ? `"id" NOT IN (${validIds.join(',')})` : '1=1');
     }
 
     if (q.with_id || q.params?.with_id) {
