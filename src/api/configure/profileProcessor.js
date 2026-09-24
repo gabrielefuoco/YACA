@@ -2,22 +2,12 @@ const { nanoid } = require('nanoid');
 const { getPresets } = require('../../data/presets');
 const TasteProfile = require('../../models/TasteProfile');
 const { extractStaticDNAFromQueries } = require('../../utils/dnaExtractor');
-const { createTmdbClient } = require('../../clients/tmdb');
-
-/**
- * TMDB genre ID → Italian name lookup.
- * Used to resolve known genre IDs when building suggestedDNA from presets.
- */
-const GENRE_ID_TO_NAME = {
-    '28': 'Azione', '12': 'Avventura', '16': 'Animazione', '35': 'Commedia',
-    '80': 'Crime', '99': 'Documentario', '18': 'Dramma', '10751': 'Famiglia',
-    '14': 'Fantasy', '36': 'Storia', '27': 'Horror', '10402': 'Musica',
-    '9648': 'Mistero', '10749': 'Romance', '878': 'Fantascienza',
-    '53': 'Thriller', '10752': 'Guerra', '37': 'Western',
-    '10759': 'Azione & Avventura', '10762': 'Kids', '10763': 'News',
-    '10764': 'Reality', '10765': 'Sci-Fi & Fantasy', '10766': 'Soap',
-    '10767': 'Talk', '10768': 'War & Politics', '10770': 'Film TV'
-};
+const {
+    resolveDnaNames,
+    getReadableFallback,
+    GENRE_ID_TO_NAME
+} = require('../../utils/tmdbNameResolver');
+const { isRetiredTmdbKeywordId } = require('../../data/keywordIds');
 
 /**
  * Splits a pipe- or comma-separated ID string, or returns array values as strings.
@@ -73,11 +63,11 @@ function buildSuggestedDNAFromCatalogs(catalogs = []) {
 
     for (const [type, map] of Object.entries(counts)) {
         const top = Array.from(map.entries())
+            .filter(([id]) => !(type === 'keyword' && isRetiredTmdbKeywordId(id)))
             .sort((a, b) => b[1] - a[1])
             .slice(0, limits[type])
             .map(([id]) => {
-                let name = `${type} ${id}`;
-                if (type === 'genre' && GENRE_ID_TO_NAME[id]) name = GENRE_ID_TO_NAME[id];
+                const name = getReadableFallback(type, id);
                 return { id: String(id), type, name };
             });
         results.push(...top);
@@ -174,31 +164,21 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
         }
 
         // 3. Build suggestedDNA from installed catalogs
-        const manualDNA = isGlobal ? [] : (Array.isArray(profile.settings.manualDNA) ? profile.settings.manualDNA : []);
-        const manualIds = new Set(manualDNA.map(d => `${d.type}:${d.id}`));
-        
+        const rawManualDNA = isGlobal ? [] : (Array.isArray(profile.settings.manualDNA) ? profile.settings.manualDNA : []);
         const catalogDNA = buildSuggestedDNAFromCatalogs(profile.catalogs);
-        
-        // --- Fetch Keyword Names from TMDB ---
-        if (tmdbKey) {
-            const tmdbClient = createTmdbClient(tmdbKey);
-            const keywordUpdates = catalogDNA.filter(d => d.type === 'keyword' && d.name.startsWith('keyword '));
-            if (keywordUpdates.length > 0) {
-                await Promise.allSettled(keywordUpdates.map(async (k) => {
-                    try {
-                        const res = await tmdbClient.get(`/keyword/${k.id}`);
-                        if (res.data && res.data.name) {
-                            k.name = res.data.name; // Translate keyword!
-                        }
-                    } catch (e) {
-                        // ignore failures, will fallback to generic name
-                    }
-                }));
-            }
-        }
+
+        // Resolve DNA names across all types using tmdbNameResolver (with budget and cache)
+        const effectiveTmdbKey = tmdbKey || process.env.TMDB_API_KEY;
+        const [resolvedManualDNA, resolvedCatalogDNA] = await Promise.all([
+            resolveDnaNames(rawManualDNA, { apiKey: effectiveTmdbKey, budgetMs: 1500 }),
+            resolveDnaNames(catalogDNA, { apiKey: effectiveTmdbKey, budgetMs: 1500 })
+        ]);
+
+        const manualDNA = resolvedManualDNA;
+        const manualIds = new Set(manualDNA.map(d => `${d.type}:${d.id}`));
 
         // Deduplicate: exclude items already in manualDNA
-        profile.settings.suggestedDNA = catalogDNA.filter(d => !manualIds.has(`${d.type}:${d.id}`));
+        profile.settings.suggestedDNA = resolvedCatalogDNA.filter(d => !manualIds.has(`${d.type}:${d.id}`));
         
         if (isGlobal) {
             profile.settings.manualDNA = [];
