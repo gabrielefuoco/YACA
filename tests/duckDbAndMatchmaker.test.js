@@ -105,6 +105,14 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
             expect(preset.where.some(w => typeof w === 'string' && w.includes('603,604'))).toBe(true);
         });
 
+        test('buildPresetFromFilters supports AND groups containing OR keyword alternatives', () => {
+            const preset = buildPresetFromFilters({ with_keywords: '9715,2095|259094' }, 'series');
+            const keywordClause = preset.where.find(clause => String(clause).includes('"keywords"'));
+
+            expect(keywordClause).toBe(`${F.keyword(9715)} AND ${F.keyword(2095, 259094)}`);
+            expect(keywordClause).not.toContain('NaN');
+        });
+
         test('getDuckDbMetaDetails handles numeric and tmdb: prefixed IDs safely', async () => {
             const invalidMeta = await getDuckDbMetaDetails('movie', 'not_valid_id');
             expect(invalidMeta).toBeNull();

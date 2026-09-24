@@ -107,14 +107,15 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
     }
 
     if (q.with_keywords) {
-        const str = String(q.with_keywords);
-        if (str.includes('|')) {
-            where.push(F.keyword(...str.split('|').map(Number)));
-        } else if (str.includes(',')) {
-            where.push(F.allKeywords(...str.split(',').map(Number)));
-        } else {
-            where.push(F.keyword(Number(str)));
-        }
+        // `a,b` = AND; `a|b` = OR. I gruppi separati da virgola possono
+        // contenere alternative OR: `a,b|c` = a AND (b OR c).
+        const keywordGroups = String(q.with_keywords)
+            .split(',')
+            .map(group => group.split('|').map(Number))
+            .filter(ids => ids.length > 0 && ids.every(Number.isFinite));
+        where.push(keywordGroups.length > 0
+            ? keywordGroups.map(ids => F.keyword(...ids)).join(' AND ')
+            : '1=0');
     }
 
     if (q.without_keywords) {
