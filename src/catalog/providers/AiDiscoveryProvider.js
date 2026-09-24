@@ -66,7 +66,7 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
         }
         return [];
     }
-    if (filters.strategy === "multi_search") {
+    if (filters.strategy === "multi_search" || filters.strategy === "lexical_search") {
         return await getDuckDbCatalogFromFilters({ text_search: filters.text_search || filters.keyword }, type, skip, PAGE_SIZE, settings);
     }
     if (filters.strategy === "manual_list") {
@@ -259,6 +259,7 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     const dnaFilters = getProfileDnaFilters(userConfig, activeContext);
 
     let plannedQueries = [];
+    let usingLexicalFallback = false;
     try {
         if (mistralKey) {
             const routing = await routeLiveStremioSearch(search, mistralKey);
@@ -280,12 +281,19 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     }
 
     if (plannedQueries.length === 0) {
-        plannedQueries = [{ strategy: 'multi_search', text_search: search, target: 'tmdb' }];
+        // Senza un piano Mistral non fingiamo una ricerca semantica: il fallback
+        // dichiara esplicitamente una ricerca lessicale stretta sui titoli. Il
+        // provider applica BM25, copertura di tutti i termini e boost esatto.
+        usingLexicalFallback = true;
+        plannedQueries = [{ strategy: 'lexical_search', text_search: search, target: 'tmdb' }];
+        console.info(`[AiDiscoveryProvider] Router AI non disponibile: fallback lessicale stretto per "${search}".`);
     }
 
-    const enrichedQueries = await Promise.all(
-        plannedQueries.map(query => injectProfilePreferences(query, userId, profileId))
-    );
+    const enrichedQueries = usingLexicalFallback
+        ? plannedQueries
+        : await Promise.all(
+            plannedQueries.map(query => injectProfilePreferences(query, userId, profileId))
+        );
     const queryResults = await Promise.all(
         enrichedQueries.map(query =>
             executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions)
@@ -294,6 +302,12 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
 
     const finalItems = applyConsensusScoring(queryResults);
     await hydrateResultsFromLocalDetailsCache(finalItems, tmdbApiKey, type);
+
+    if (usingLexicalFallback) {
+        // executeComplexStrategy ha già applicato skip e limite: non riordinare
+        // per voto/profilo, altrimenti il fallback nasconderebbe la rilevanza BM25.
+        return finalItems;
+    }
 
     for (const item of finalItems) {
         const consensusBonus = item.consensusCount > 1 ? (item.consensusCount ** 2) - 1 : 0;
