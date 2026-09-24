@@ -207,35 +207,6 @@ async function metaHandler(args, userConfig) {
 
         if (!userConfig) throw new Error("Configurazione utente mancante");
 
-        // Caso 0: Profilo interno YACA (funziona anche senza TMDB API key)
-        if (id && typeof id === 'string' && id.startsWith('yaca-profile-')) {
-            const profileId = id.replace('yaca-profile-', '');
-            let profileName = 'Profilo Sconosciuto';
-            let isActive = false;
-
-            if (userConfig.profiles) {
-                const profileObj = userConfig.profiles.find(p => p.id === profileId);
-                if (profileObj) {
-                    profileName = profileObj.name;
-                    isActive = profileObj.id === userConfig.activeProfileId;
-                }
-            }
-
-            const meta = {
-                id: id,
-                type: type || 'other',
-                name: isActive ? `✅ ${profileName} (Attivo)` : profileName,
-                poster: `https://ui-avatars.com/api/?name=${encodeURIComponent(profileName)}&background=random&color=fff&size=512`,
-                background: `https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop`,
-                description: isActive
-                    ? `Questo è il profilo attualmente attivo.\n\nNon è necessario fare nulla.`
-                    : `⚠️ PREMI RIPRODUCI PER ATTIVARE QUESTO PROFILO ⚠️\n\n1. Premi il tasto Riproduci/Play.\n2. Attendi la fine del breve video (2 secondi).\n3. Ritorna alla schermata precedente.\nI cataloghi si aggiorneranno automaticamente in background con le preferenze del profilo "${profileName}".`,
-                releaseInfo: 'YACA System',
-                runtime: '0 min'
-            };
-            return { meta };
-        }
-
         const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
         if (!tmdbApiKey) throw new Error("TMDB API key mancante");
         let meta = null;

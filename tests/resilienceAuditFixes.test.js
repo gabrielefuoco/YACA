@@ -67,56 +67,6 @@ describe('Resilience Audit Fixes (10 Critical Vulnerabilities)', () => {
         });
     });
 
-    // 3. Stremio Profile Switcher 3-Tier Failure
-    describe('3. Stremio Profile Switcher 3-Tier Failure', () => {
-        test('metaHandler resolves yaca-profile- even without TMDB API key', async () => {
-            const { metaHandler } = require('../src/handlers/metaHandler');
-            const userConfig = {
-                userId: 'user_test',
-                activeProfileId: 'p1',
-                profiles: [
-                    { id: 'p1', name: 'Cinema' },
-                    { id: 'p2', name: 'Kids' }
-                ],
-                apiKeys: {} // No TMDB key!
-            };
-
-            const prevKey = process.env.TMDB_API_KEY;
-            delete process.env.TMDB_API_KEY;
-
-            try {
-                const res = await metaHandler({ type: 'other', id: 'yaca-profile-p2' }, userConfig);
-                expect(res).toBeDefined();
-                expect(res.meta).toBeDefined();
-                expect(res.meta.name).toBe('Kids');
-                expect(res.meta.id).toBe('yaca-profile-p2');
-            } finally {
-                if (prevKey) process.env.TMDB_API_KEY = prevKey;
-            }
-        });
-
-        test('public/assets/profile_updated.mp4 exists and is a non-empty file', () => {
-            const videoPath = path.join(__dirname, '../public/assets/profile_updated.mp4');
-            expect(fs.existsSync(videoPath)).toBe(true);
-            const stats = fs.statSync(videoPath);
-            expect(stats.size).toBeGreaterThan(100);
-        });
-
-        test('stremio router contains both /users/... and /api/users/... switch-profile routes', () => {
-            const stremioRouter = require('../src/api/stremio');
-            const switchRoutes = stremioRouter.stack
-                .filter(layer => layer.route && layer.route.path)
-                .map(layer => layer.route.path);
-
-            const hasUserSwitch = switchRoutes.some(p => 
-                (Array.isArray(p) && p.includes('/users/:userId/switch-profile/:profileId') && p.includes('/api/users/:userId/switch-profile/:profileId')) ||
-                p === '/users/:userId/switch-profile/:profileId' ||
-                p === '/api/users/:userId/switch-profile/:profileId'
-            );
-            expect(hasUserSwitch).toBe(true);
-        });
-    });
-
     // 4. DuckDB SQL Substring Prefix Collision in filters.js
     describe('4. DuckDB SQL Substring Prefix Collision in filters.js', () => {
         const { F } = require('../src/data/filters');

@@ -74,7 +74,7 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 
 ### 7. ⚙️ Internals di Stremio e Mapping Anime
 *   **[STREMIO_INTERNALS.md](STREMIO_INTERNALS.md)**
-    *   *Descrizione*: Analizza le logiche interne dell'addon e i workaround applicati per superare le limitazioni di Stremio. Copre il sistema di sincronizzazione dei profili multipli tramite URL dinamici, l'ordinamento TMDB per popolarità nei fallback e il *Hybrid Anime Mapping* con recupero flussi dual-query parallelo (Kitsu + IMDb).
+    *   *Descrizione*: Analizza le logiche interne dell'addon e le soluzioni applicate per superare le limitazioni di Stremio. Copre la configurazione dei profili multipli, il manifest dinamico, l'ordinamento TMDB per popolarità nei fallback e il *Hybrid Anime Mapping* con recupero flussi dual-query parallelo (Kitsu + IMDb).
 
 ### 8. 🔄 Integrazioni Esterne e Sincronizzazione
 *   **[INTEGRATIONS.md](INTEGRATIONS.md)**

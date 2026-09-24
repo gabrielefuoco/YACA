@@ -73,16 +73,6 @@ app.get(['/fiamma_yaca.png', '/logo_yaca.png'], (req, res) => {
     res.sendFile(filePath);
 });
 
-app.get('/assets/profile_updated.mp4', (req, res) => {
-    const filePath = path.join(__dirname, 'public', 'assets', 'profile_updated.mp4');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Content-Type', 'video/mp4');
-    if (fs.existsSync(filePath)) {
-        return res.sendFile(filePath);
-    }
-    return res.status(200).end();
-});
-
  
 // 2. STATIC ASSETS (Actual files from public/ or frontend/out/)
 const staticOptions = {

@@ -18,7 +18,7 @@ Abbiamo creato una documentazione dettagliata e modulare per ogni componente del
 - [🤖 Motore AI & Live Search Router](docs/AI_ENGINE.md): Mappatura del linguaggio naturale da barra di ricerca Stremio a parametri strutturati.
 - [🖥️ Architettura Frontend SPA](docs/FRONTEND.md): Dashboard React 19 + Next.js (Static Export), sessioni cookie e visualizzazione DNA.
 - [🔀 Logica Cataloghi](docs/CATALOG_LOGIC.md): Lifecycle delle richieste, caching a due livelli (RAM L1 + Redis L2) e gestione badge ITA.
-- [⚙️ Internals Stremio](docs/STREMIO_INTERNALS.md): Workaround multi-profilo, manifest dinamici e mapping ibrido Anime (Kitsu/TMDB).
+- [⚙️ Internals Stremio](docs/STREMIO_INTERNALS.md): profili configurabili, manifest dinamici e mapping ibrido Anime (Kitsu/TMDB).
 - [🔄 Integrazioni](docs/INTEGRATIONS.md): Device Auth Flow Trakt.tv e sincronizzazione bidirezionale.
 - [🧬 Sistema Preset](docs/PRESETS.md): Definizione dei preset ed estrazione filtri SQL.
 - [🧪 Testing e Utilities](docs/TESTING_UTILITIES.md): Suite Jest e script operativi di manutenzione.

@@ -300,7 +300,6 @@ function buildManifest(userConfig, hostUrl = 'http://localhost:7000', userHandle
     ).filter(c => isCatalogConformant(c, typeSelectors));
 
     const catalogs = [
-        { id: 'yaca-profiles', type: 'other', name: '👥 Cambia Profilo' },
         { id: 'yaca_search_standard', type: 'movie', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
         { id: 'yaca_search_standard', type: 'series', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
         { id: 'yaca_search_ai', type: 'movie', name: 'YACA: Deep AI Search', extra: searchExtra },
@@ -319,7 +318,7 @@ function buildManifest(userConfig, hostUrl = 'http://localhost:7000', userHandle
             .filter(id => id !== 'yaca_search_standard' && id !== 'yaca_search_ai')
     );
 
-    // Add User Presets (precedenza alla voce di profilo)
+    // Add User Presets
     if (profile && profile.catalogs && Array.isArray(profile.catalogs)) {
         profile.catalogs.forEach(p => {
             if (p.isActive !== false && p.id && !seenCatalogIds.has(p.id)) {
@@ -363,11 +362,11 @@ function buildManifest(userConfig, hostUrl = 'http://localhost:7000', userHandle
         resources: [
             'catalog',
             'meta',
-            { name: 'stream', types: ['movie', 'series', 'anime', 'other'], idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'yaca-profile-'] }
+            { name: 'stream', types: ['movie', 'series', 'anime', 'other'], idPrefixes: ['tt', 'tmdb:', 'kitsu:'] }
         ],
         types: ['movie', 'series', 'anime', 'other'],
         catalogs: catalogs,
-        idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'yaca-profile-'],
+        idPrefixes: ['tt', 'tmdb:', 'kitsu:'],
         behaviorHints: {
             configurable: true,
             configurationRequired: false
@@ -476,12 +475,10 @@ router.get(['/:userHandle/stream/:type/:id.json', '/:userHandle/:configVersion/s
         return res.status(200).json({ streams: [] });
     }
     const { type, id } = req.params;
-    const configVersion = req.params.configVersion || '';
     const args = { type, id };
-    const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
 
     try {
-        const response = await streamHandler(args, userConfig, hostUrl, configVersion);
+        const response = await streamHandler(args, userConfig);
         res.setHeader('Cache-Control', 'no-cache, no-store');
         res.json(response);
     } catch (err) {
@@ -532,42 +529,6 @@ router.get('/:userHandle/configure', (_req, res) => {
         } catch (_e) { /* malformed URL — fall through to default */ }
     }
     res.redirect(302, '/');
-});
-
-// Switch Profile
-router.get(['/users/:userId/switch-profile/:profileId', '/api/users/:userId/switch-profile/:profileId'], async (req, res) => {
-    const { userId, profileId } = req.params;
-
-    try {
-        const userConfig = await UserConfig.resolveUserConfig(userId);
-        if (!userConfig) return res.status(404).send('User not found');
-
-        const profileExists = userConfig.profiles && userConfig.profiles.some(p => p.id === profileId);
-        if (!profileExists) return res.status(400).send('Profile not found');
-
-        const newConfigVersion = Date.now().toString(36);
-        await UserConfig.saveUser({
-            userId,
-            config: {
-                activeProfileId: profileId,
-                configVersion: newConfigVersion
-            }
-        });
-
-        const stremioAuthKey = userConfig.apiKeys?.stremio;
-        if (stremioAuthKey) {
-            const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
-            const manifestUrl = `${hostUrl}/${userId}/${newConfigVersion}/manifest.json`;
-            updateStremioAddonCollection(stremioAuthKey, manifestUrl)
-                .then(r => console.log(`[Profile Switch] Sync Stremio completato per utente ${userId}: ${r.success}`))
-                .catch(e => console.error(`[Profile Switch] Errore sync Stremio utente ${userId}:`, e));
-        }
-
-        res.redirect('/assets/profile_updated.mp4');
-    } catch (err) {
-        console.error(`Errore switch profile per user ${userId}:`, err.message);
-        res.status(500).send('Internal validation error');
-    }
 });
 
 // Dynamic image overlay route for episode badges
