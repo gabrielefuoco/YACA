@@ -121,6 +121,11 @@ describe('AiringStateProvider - catalogo novità anime', () => {
         expect(where).toContain('240411');
         expect(where).toContain('999002');
         expect(where).toContain('999004');
+        // Lo stato esterno può contenere donghua/webtoon: il gate identità
+        // resta obbligatorio e non viene sostituito dal namespace `kitsu:`.
+        expect(where).toContain('"original_language" = \'ja\'');
+        expect(where).toContain('"genres"');
+        expect(where).toContain('16');
     });
 
     test('rispetta la paginazione (skip) come gli altri provider', async () => {
