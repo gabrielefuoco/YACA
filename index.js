@@ -198,8 +198,15 @@ if (require.main === module) {
         }
 
         // Avvia il Demone TMDB Dump
-        const { runTmdbDumpDaemon } = require('./src/utils/tmdbDumpDaemon');
-        runTmdbDumpDaemon().catch(err => console.error('[TmdbDump Daemon] Startup Error:', err.message));
+        // In sviluppo/test su più istanze parallele conviene disattivarlo
+        // (DISABLE_TMDB_DUMP=1): evita che ogni istanza riprenda il cold start
+        // e saturi le rate limit di TMDB. In produzione il default resta attivo.
+        if (process.env.DISABLE_TMDB_DUMP === '1') {
+            console.log('[TmdbDump Daemon] Disattivato da DISABLE_TMDB_DUMP=1');
+        } else {
+            const { runTmdbDumpDaemon } = require('./src/utils/tmdbDumpDaemon');
+            runTmdbDumpDaemon().catch(err => console.error('[TmdbDump Daemon] Startup Error:', err.message));
+        }
     });
 }
 
