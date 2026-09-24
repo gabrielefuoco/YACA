@@ -54,6 +54,7 @@ export interface QueryBlock {
   certification_country?: string;
   'certification.lte'?: string;
   'with_runtime.gte'?: number;
+  isAnime?: boolean;
   [key: string]: unknown;
 }
 
@@ -68,6 +69,7 @@ export interface Catalog {
   presentation_strategy?: 'popularity' | 'interleave';
   showEpisodeBadge?: boolean;
   emoji?: string;
+  isAnime?: boolean;
 }
 
 export interface Profile {

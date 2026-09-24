@@ -161,13 +161,15 @@ router.post('/preview-catalog', async (req, res) => {
                 'air_date.gte', 'air_date.lte',
                 'without_genres', 'without_keywords',
                 'with_runtime.gte', 'with_runtime.lte',
-                'certification.lte', 'queries', 'items'
+                'certification.lte', 'queries', 'items', 'isAnime'
             ];
             
             for (const [key, value] of Object.entries(customFilters)) {
                 if (allowedFilterKeys.includes(key) && value !== undefined && value !== '') {
                     if (key === 'queries' || key === 'items') {
                         discoverFilters[key] = value;
+                    } else if (key === 'isAnime') {
+                        discoverFilters[key] = value === true || value === 'true';
                     } else if (key === 'provider' && value === 'kitsu') {
                         discoverFilters[key] = 'tmdb';
                     } else if (typeof value === 'string') {
@@ -183,19 +185,28 @@ router.post('/preview-catalog', async (req, res) => {
                     }
                 }
             }
+            if (req.body.isAnime === true || req.body.isAnime === 'true') {
+                discoverFilters.isAnime = true;
+            }
         } else if (id) {
             targetCatalogId = id;
         } else {
             return res.status(400).json({ error: 'id, filters o prompt obbligatori' });
         }
 
+        const isAnimeRequested = Boolean(discoverFilters?.isAnime || customFilters?.isAnime || req.body.isAnime);
+
         if (customFilters?.merge || discoverFilters?.queries) {
             try {
+                const previewFilters = (discoverFilters && Object.keys(discoverFilters).length > 0) ? discoverFilters : customFilters;
+                if (isAnimeRequested && previewFilters && typeof previewFilters === 'object') {
+                    previewFilters.isAnime = true;
+                }
                 const previewData = await catalogHandler(
                     {
                         type: discoverType === 'tv' ? 'series' : 'movie',
                         id: targetCatalogId,
-                        filters: (discoverFilters && Object.keys(discoverFilters).length > 0) ? discoverFilters : customFilters,
+                        filters: previewFilters,
                         extra: { skip: 0 }
                     },
                     fullUserConfig,
@@ -217,6 +228,7 @@ router.post('/preview-catalog', async (req, res) => {
                     filters: discoverFilters,
                     queries: aiFilters?.queries || discoverFilters?.queries || undefined,
                     presentation_strategy: strategy,
+                    isAnime: isAnimeRequested || undefined,
                     results: items
                 });
             } catch (err) {
@@ -231,10 +243,12 @@ router.post('/preview-catalog', async (req, res) => {
                 queries: [
                     {
                         strategy: strategy,
-                        ...discoverFilters
+                        ...discoverFilters,
+                        ...(isAnimeRequested ? { isAnime: true } : {})
                     }
                 ],
-                presentation_strategy: 'popularity'
+                presentation_strategy: 'popularity',
+                ...(isAnimeRequested ? { isAnime: true } : {})
             };
 
             const previewData = await catalogHandler(
@@ -261,7 +275,8 @@ router.post('/preview-catalog', async (req, res) => {
                 items,
                 filters: discoverFilters,
                 type: discoverType,
-                name: sanitizedPrompt ? sanitizedPrompt.substring(0, MAX_PREVIEW_CATALOG_NAME_LENGTH) : null
+                name: sanitizedPrompt ? sanitizedPrompt.substring(0, MAX_PREVIEW_CATALOG_NAME_LENGTH) : null,
+                isAnime: isAnimeRequested || undefined
             });
         } catch (err) {
             console.error("Errore preview singola:", err);

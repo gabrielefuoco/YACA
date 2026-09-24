@@ -99,6 +99,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
   const [type, setType] = useState<'movie' | 'series'>('movie');
   const [presentationStrategy, setPresentationStrategy] = useState<'popularity' | 'interleave'>('popularity');
   const [showEpisodeBadge, setShowEpisodeBadge] = useState(false);
+  const [isAnime, setIsAnime] = useState(false);
 
   // Block state
   const [blocks, setBlocks] = useState<BlockState[]>([]);
@@ -190,6 +191,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       setType(editCatalog.type || 'movie');
       setPresentationStrategy(editCatalog.presentation_strategy || 'popularity');
       setShowEpisodeBadge(editCatalog.showEpisodeBadge || false);
+      setIsAnime(Boolean(editCatalog.isAnime || (editCatalog.filters as any)?.isAnime));
 
       let initialBlocks: BlockState[] = [];
       if (editCatalog.queries && editCatalog.queries.length > 0) {
@@ -212,6 +214,8 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       setName('');
       setType('movie');
       setPresentationStrategy('popularity');
+      setShowEpisodeBadge(false);
+      setIsAnime(false);
       setBlocks([createEmptyBlock()]);
       setPreviewFilters(null);
     }
@@ -313,12 +317,13 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
   };
 
   // --- Build query blocks for save ---
-  const buildQueryBlock = (block: BlockState): QueryBlock => {
+  const buildQueryBlock = useCallback((block: BlockState): QueryBlock => {
     const dateKey = type === 'series' ? 'first_air_date' : 'primary_release_date';
     const q: any = {
       ...(block.rawProps || {}),
       provider: block.provider,
       strategy: block.strategy === 'ai' ? 'discovery' : block.strategy,
+      ...(isAnime && { isAnime: true }),
       ...(block.similarTo && { similar_to: block.similarTo }),
       ...(block.textSearch && { text_search: block.textSearch }),
       sort_by: block.sortBy,
@@ -340,29 +345,42 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
     };
 
     return q;
-  };
+  }, [type, isAnime]);
 
   // Build a flat filters object from a block (for preview backward compat)
-  const buildFiltersFromBlock = (block: BlockState): Record<string, unknown> => buildQueryBlock(block) as Record<string, unknown>;
+  const buildFiltersFromBlock = useCallback((block: BlockState): Record<string, unknown> => {
+    const q = buildQueryBlock(block) as Record<string, unknown>;
+    if (isAnime) {
+      q.isAnime = true;
+    }
+    return q;
+  }, [buildQueryBlock, isAnime]);
 
   const handleManualPreview = useCallback(() => {
     if (blocks.length === 0) return;
     // For multi-query, send all queries so the backend processes them via universal pipeline
     if (blocks.length > 1) {
       const queries = blocks.map(buildQueryBlock);
-      setPreviewFilters({ queries, presentation_strategy: presentationStrategy });
+      setPreviewFilters({
+        queries,
+        presentation_strategy: presentationStrategy,
+        ...(isAnime ? { isAnime: true } : {})
+      });
     } else {
-      setPreviewFilters(buildFiltersFromBlock(blocks[0]));
+      setPreviewFilters({
+        ...buildFiltersFromBlock(blocks[0]),
+        ...(isAnime ? { isAnime: true } : {})
+      });
     }
     setPreviewType(type);
-  }, [blocks, type, presentationStrategy]);
+  }, [blocks, type, presentationStrategy, isAnime, buildQueryBlock, buildFiltersFromBlock]);
 
-  // Auto-update global preview when presentation or type changes
+  // Auto-update global preview when presentation, type or isAnime changes
   useEffect(() => {
     if (previewFilters) {
       handleManualPreview();
     }
-  }, [presentationStrategy, type]);
+  }, [presentationStrategy, type, isAnime]);
 
   const handleSave = async () => {
     const staticBlock = blocks.find(b => b.strategy === 'static_list');
@@ -374,8 +392,10 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
           name: name.trim() || 'Lista senza nome',
           type,
           source: 'manual',
+          isAnime: isAnime ? true : undefined,
           queries: [{
              strategy: 'manual_list',
+             ...(isAnime ? { isAnime: true } : {}),
              items: staticItems.map(item => {
                const rawId = String(item.id || '');
                const tmdbId = parseInt(rawId.replace('tmdb:', ''), 10) || item.tmdbId;
@@ -411,11 +431,12 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       queries,
       presentation_strategy: presentationStrategy,
       showEpisodeBadge: type === 'series' ? showEpisodeBadge : undefined,
+      isAnime: isAnime ? true : undefined,
       // For multi-query: put queries[] in filters so the backend normalizer picks them up
       // For single-query: flatten the block as a simple filters object
       filters: blocks.length > 1
-        ? { queries, presentation_strategy: presentationStrategy }
-        : buildFiltersFromBlock(blocks[0]),
+        ? { queries, presentation_strategy: presentationStrategy, ...(isAnime ? { isAnime: true } : {}) }
+        : { ...buildFiltersFromBlock(blocks[0]), ...(isAnime ? { isAnime: true } : {}) },
       emoji: editCatalog ? editCatalog.emoji : '🎨',
     };
     onAddCatalog(catalog);
@@ -940,7 +961,14 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
         {/* Row 1: Name input + Type toggle */}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <div className="flex-1 min-w-0">
-            <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Nome catalogo</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Nome catalogo</Label>
+              {isAnime && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-0.5 text-[10px] font-black border border-amber-500/30">
+                  🏮 Solo anime
+                </span>
+              )}
+            </div>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -996,7 +1024,36 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
           </div>
         </div>
 
-        {/* Row 3: Badge Settings (Only for Series) */}
+        {/* Row 3: Anime Filter Toggle */}
+        <div className="flex flex-col sm:flex-row sm:items-center items-start justify-between gap-1 sm:gap-3 pt-2 border-t border-marrow-light/10 mt-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <span className="text-base select-none">🏮</span>
+            <span className="text-marrow-deep font-black uppercase tracking-wide text-[9px] sm:text-[10px] whitespace-nowrap">Filtro Anime</span>
+            <span className="relative group">
+              <Info className="h-3.5 w-3.5 text-marrow-light/60 cursor-help" />
+              <span className="absolute bottom-full left-0 sm:left-1/2 sm:-translate-x-1/2 mb-2 w-64 rounded-lg bg-primary-dark text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
+                Se attivato, il catalogo estrarrà esclusivamente produzioni anime (animazione giapponese) dal database TMDB, filtrando tutti gli altri contenuti.
+              </span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2 mt-1 sm:mt-0">
+            {isAnime && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-0.5 text-[11px] font-black border border-amber-500/20">
+                🏮 Solo anime
+              </span>
+            )}
+            <Switch 
+              checked={isAnime} 
+              onCheckedChange={setIsAnime} 
+              id="anime-toggle"
+            />
+            <Label htmlFor="anime-toggle" className="text-xs text-marrow-deep cursor-pointer font-bold">
+              Solo anime
+            </Label>
+          </div>
+        </div>
+
+        {/* Row 4: Badge Settings (Only for Series) */}
         {type === 'series' && (
           <div className="flex flex-col sm:flex-row sm:items-center items-start gap-1 sm:gap-3 pt-1 border-t border-marrow-light/10 mt-2">
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">

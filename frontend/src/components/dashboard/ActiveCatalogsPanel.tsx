@@ -60,6 +60,7 @@ export function ActiveCatalogsPanel({
         queries,
         emoji: preset.emoji,
         presentation_strategy: preset.presentation_strategy,
+        isAnime: preset.isAnime,
       };
     });
   const allCatalogs = [...profile.existingCatalogs, ...presetCatalogs];

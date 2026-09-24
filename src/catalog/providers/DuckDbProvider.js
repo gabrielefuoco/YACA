@@ -60,6 +60,10 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
         where.push({ _similar: true, tmdbId: q.similar_to });
     }
 
+    if (q.isAnime || options?.isAnime) {
+        where.push(F.anime);
+    }
+
     if (q['vote_count.gte']) where.push(F.minVotes(q['vote_count.gte']));
     if (q['vote_count.lte']) where.push(F.maxVotes(q['vote_count.lte']));
     if (q['vote_average.gte']) where.push(F.minScore(q['vote_average.gte']));

@@ -33,14 +33,27 @@ function interleaveMultipleResults(queryResultsArrays, limit, skip = 0) {
  * nello Universal Catalog Schema. Garantisce backward compatibility.
  */
 function normalizeToUniversalSchema(catalogMeta, directFilters) {
+    const isAnime = Boolean(
+        catalogMeta?.isAnime ||
+        directFilters?.isAnime ||
+        catalogMeta?.filters?.isAnime ||
+        directFilters?.filters?.isAnime
+    );
+
+    const applyAnime = (queries) => {
+        if (!isAnime || !Array.isArray(queries)) return queries;
+        return queries.map(q => (q && typeof q === 'object' ? { ...q, isAnime: true } : q));
+    };
+
     // Caso 1: Filtri diretti passati dall'esterno (es. preview)
     if (directFilters) {
         // Multi-query AI filters already present
         if (Array.isArray(directFilters.queries) && directFilters.queries.length > 0) {
             return {
-                queries: directFilters.queries,
+                queries: applyAnime(directFilters.queries),
                 presentation_strategy: directFilters.presentation_strategy || 'popularity',
-                weights: directFilters.weights
+                weights: directFilters.weights,
+                ...(isAnime ? { isAnime: true } : {})
             };
         }
 
@@ -50,23 +63,26 @@ function normalizeToUniversalSchema(catalogMeta, directFilters) {
                 queries: null, // Handled by legacy merge path
                 presentation_strategy: directFilters.merge.strategy === 'mixed' ? 'interleave' : 'popularity',
                 _isMerge: true,
-                _rawFilters: directFilters
+                _rawFilters: directFilters,
+                ...(isAnime ? { isAnime: true } : {})
             };
         }
         return {
-            queries: [{ strategy: 'discovery', ...directFilters }],
-            presentation_strategy: 'popularity'
+            queries: applyAnime([{ strategy: 'discovery', ...directFilters }]),
+            presentation_strategy: 'popularity',
+            ...(isAnime ? { isAnime: true } : {})
         };
     }
 
-    if (!catalogMeta) return { queries: [{}], presentation_strategy: 'popularity' };
+    if (!catalogMeta) return { queries: applyAnime([{}]), presentation_strategy: 'popularity', ...(isAnime ? { isAnime: true } : {}) };
 
     // Caso 2: Nuovo formato con queries[] già presente
     if (Array.isArray(catalogMeta.queries) && catalogMeta.queries.length > 0) {
         return {
-            queries: catalogMeta.queries,
+            queries: applyAnime(catalogMeta.queries),
             presentation_strategy: catalogMeta.presentation_strategy || 'popularity',
-            weights: catalogMeta.weights
+            weights: catalogMeta.weights,
+            ...(isAnime ? { isAnime: true } : {})
         };
     }
 
@@ -78,20 +94,23 @@ function normalizeToUniversalSchema(catalogMeta, directFilters) {
                 queries: null,
                 presentation_strategy: 'popularity',
                 _isMerge: true,
-                _rawFilters: catalogMeta.filters
+                _rawFilters: catalogMeta.filters,
+                ...(isAnime ? { isAnime: true } : {})
             };
         }
         return {
-            queries: [{ strategy: 'discovery', ...catalogMeta.filters }],
+            queries: applyAnime([{ strategy: 'discovery', ...catalogMeta.filters }]),
             presentation_strategy: catalogMeta.presentation_strategy || 'popularity',
-            weights: catalogMeta.weights
+            weights: catalogMeta.weights,
+            ...(isAnime ? { isAnime: true } : {})
         };
     }
 
     // Caso 4: Catalogo senza filtri (placeholder per trakt/signature che vengono intercettati prima)
     return {
-        queries: [{}],
-        presentation_strategy: catalogMeta.presentation_strategy || 'popularity'
+        queries: applyAnime([{}]),
+        presentation_strategy: catalogMeta.presentation_strategy || 'popularity',
+        ...(isAnime ? { isAnime: true } : {})
     };
 }
 

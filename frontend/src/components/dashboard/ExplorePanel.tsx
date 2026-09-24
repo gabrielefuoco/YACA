@@ -148,6 +148,11 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
                           {preset.category}
                         </Badge>
                       )}
+                      {(preset.isAnime || (preset as any).originalCatalog?.isAnime) && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-black">
+                          🏮 Solo anime
+                        </Badge>
+                      )}
                       {!isConformant && (
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-amber-500/10 text-amber-700 border-amber-500/30 font-bold">
                           {incompatibilityReason}
