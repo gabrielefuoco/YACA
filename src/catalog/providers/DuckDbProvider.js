@@ -184,11 +184,13 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
         }
     }
 
-    return {
+    const preset = {
         type,
         where,
         orderBy: mapSortBy(q.sort_by, type)
     };
+    if (q.uniqueById) preset.uniqueById = true;
+    return preset;
 }
 
 function sanitizeBigInt(val) {

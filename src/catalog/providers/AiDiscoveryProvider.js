@@ -66,7 +66,7 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
         }
         return [];
     }
-    if (filters.strategy === "multi_search") {
+    if (filters.strategy === "multi_search" || filters.strategy === "lexical_search") {
         return await getDuckDbCatalogFromFilters({ text_search: filters.text_search || filters.keyword }, type, skip, PAGE_SIZE, settings);
     }
     if (filters.strategy === "manual_list") {
@@ -79,19 +79,64 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
             tmdbIds = [filters.with_id || filters.params.with_id];
         }
         if (tmdbIds.length === 0) return [];
-        return await getDuckDbCatalogFromFilters({ tmdbIds }, type, skip, PAGE_SIZE, settings);
+        return await getDuckDbCatalogFromFilters({ tmdbIds, uniqueById: filters.uniqueById }, type, skip, PAGE_SIZE, settings);
     }
     // Usa DuckDB per tutti i cataloghi discovery nativi (inclusi preset e hybrid fallback)
     return await getDuckDbCatalogFromFilters(filters, type, skip, PAGE_SIZE, settings);
 }
 
+function collectManualListItems(queries) {
+    const items = [];
+    for (const query of queries) {
+        if (Array.isArray(query.items)) items.push(...query.items);
+        else if (Array.isArray(query.tmdbIds)) items.push(...query.tmdbIds);
+        else {
+            const id = query.with_id || query.params?.with_id;
+            if (id) items.push(id);
+        }
+    }
+    return items;
+}
+
+function getPagesToFetchForQuery(query, requestedPages) {
+    if (query.strategy !== 'manual_list') return requestedPages;
+
+    let itemCount = null;
+    if (Array.isArray(query.items)) itemCount = query.items.length;
+    else if (Array.isArray(query.tmdbIds)) itemCount = query.tmdbIds.length;
+    else if (query.with_id || query.params?.with_id) itemCount = 1;
+
+    if (itemCount === null) return requestedPages;
+    return Math.max(1, Math.min(requestedPages, Math.ceil(itemCount / PAGE_SIZE)));
+}
+
 // Fase 2: Processa qualsiasi catalogo tramite array "queries" (LookAhead, Consensus)
 async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions) {
     const { presentation_strategy } = universalCatalog;
-    const MAX_QUERIES = 10;
-    const queries = (universalCatalog.queries || []).slice(0, MAX_QUERIES);
+    const queries = universalCatalog.queries || [];
 
     if (queries.length === 0) return [];
+
+    // I Matchmaker legacy salvano una query manual_list per fonte. Un solo ID
+    // genera un piano DuckDB leggero: per le liste compatibili un batch IN evita
+    // decine di query full-table e rende skip un vero offset SQL.
+    const canBatchManualList = queries.length > 1 &&
+        presentation_strategy !== 'interleave' &&
+        queries.every(query => query.strategy === 'manual_list');
+    if (canBatchManualList) {
+        const items = collectManualListItems(queries);
+        if (items.length > 0) {
+            return await executeComplexStrategy(
+                { strategy: 'manual_list', items, uniqueById: true },
+                tmdbClient,
+                tmdbApiKey,
+                type,
+                skip,
+                settings,
+                cacheOptions
+            );
+        }
+    }
 
     let finalResults;
 
@@ -140,7 +185,8 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                 query = applyAiQualityFilters(query);
 
                 const pagePromises = [];
-                for (let p = 0; p < pagesToFetch; p++) {
+                const queryPagesToFetch = getPagesToFetchForQuery(query, pagesToFetch);
+                for (let p = 0; p < queryPagesToFetch; p++) {
                     const pageSkip = p * PAGE_SIZE;
                     pagePromises.push(
                         executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions)
@@ -259,6 +305,7 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     const dnaFilters = getProfileDnaFilters(userConfig, activeContext);
 
     let plannedQueries = [];
+    let usingLexicalFallback = false;
     try {
         if (mistralKey) {
             const routing = await routeLiveStremioSearch(search, mistralKey);
@@ -280,12 +327,19 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     }
 
     if (plannedQueries.length === 0) {
-        plannedQueries = [{ strategy: 'multi_search', text_search: search, target: 'tmdb' }];
+        // Senza un piano Mistral non fingiamo una ricerca semantica: il fallback
+        // dichiara esplicitamente una ricerca lessicale stretta sui titoli. Il
+        // provider applica BM25, copertura di tutti i termini e boost esatto.
+        usingLexicalFallback = true;
+        plannedQueries = [{ strategy: 'lexical_search', text_search: search, target: 'tmdb' }];
+        console.info(`[AiDiscoveryProvider] Router AI non disponibile: fallback lessicale stretto per "${search}".`);
     }
 
-    const enrichedQueries = await Promise.all(
-        plannedQueries.map(query => injectProfilePreferences(query, userId, profileId))
-    );
+    const enrichedQueries = usingLexicalFallback
+        ? plannedQueries
+        : await Promise.all(
+            plannedQueries.map(query => injectProfilePreferences(query, userId, profileId))
+        );
     const queryResults = await Promise.all(
         enrichedQueries.map(query =>
             executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions)
@@ -294,6 +348,12 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
 
     const finalItems = applyConsensusScoring(queryResults);
     await hydrateResultsFromLocalDetailsCache(finalItems, tmdbApiKey, type);
+
+    if (usingLexicalFallback) {
+        // executeComplexStrategy ha già applicato skip e limite: non riordinare
+        // per voto/profilo, altrimenti il fallback nasconderebbe la rilevanza BM25.
+        return finalItems;
+    }
 
     for (const item of finalItems) {
         const consensusBonus = item.consensusCount > 1 ? (item.consensusCount ** 2) - 1 : 0;
