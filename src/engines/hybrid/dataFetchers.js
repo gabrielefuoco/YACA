@@ -12,6 +12,10 @@ const HERO_FALLBACK_LIMIT = 160;
 // 20 separa le code lunghe dai titoli già mainstream (i falsi positivi osservati
 // nel ticket 23 partivano da 41.4), mantenendo comunque ampia la finestra.
 const HIDDEN_GEMS_MAX_POPULARITY = 20;
+// 1.000 è la soglia già usata dal builder hidden_gems normale (50–1.000 voti).
+// Il fallback deve applicare lo stesso contratto, altrimenti il ramo freddo
+// amplia il range e invalida la deduplicazione/qualità verificata sul builder.
+const HIDDEN_GEMS_MAX_VOTES = 1000;
 const TOP_RATED_FALLBACK_MONTHS = 60;
 const DISCOVERY_FALLBACK_MONTHS = Object.freeze({ movie: 12, series: 24 });
 
@@ -266,7 +270,7 @@ async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = HERO_FA
     const baseFilters = {
         sort_by: 'vote_average.desc',
         'vote_count.gte': 50,
-        'vote_count.lte': 2000,
+        'vote_count.lte': HIDDEN_GEMS_MAX_VOTES,
         'vote_average.gte': 7.0,
         'popularity.lte': HIDDEN_GEMS_MAX_POPULARITY
     };
@@ -339,6 +343,7 @@ module.exports = {
     fetchUndiscoveredFallbackIds,
     fetchHiddenGemsFallbackIds,
     HIDDEN_GEMS_MAX_POPULARITY,
+    HIDDEN_GEMS_MAX_VOTES,
     fetchTmdbSimilarCounts,
     getImpressionMap,
     calculateImpressionPenalty

@@ -51,11 +51,12 @@ jest.mock('../src/cache/cacheInstances', () => ({
 
 function cachedHeroGroup(mediaType, ids) {
     const suffix = mediaType === 'movie' ? 'movies' : 'series';
+    const owner = mediaType === 'series' ? 'seed_network' : 'true_blend';
     const catalogs = {};
     for (const slug of ['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered']) {
-        catalogs[`yaca_${slug}_${suffix}`] = ids;
+        catalogs[`yaca_${slug}_${suffix}`] = slug === owner ? ids : [];
     }
-    return { schemaVersion: 3, mediaType, catalogs };
+    return { schemaVersion: 4, mediaType, catalogs };
 }
 
 describe('Hero Catalogs Audit 02 Fixes', () => {

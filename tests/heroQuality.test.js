@@ -4,7 +4,7 @@ const {
     isHiddenGemPopularityAllowed,
     isHiddenGemAlignedWithProfile
 } = require('../src/engines/hybrid/catalogStrategies');
-const { HIDDEN_GEMS_MAX_POPULARITY } = require('../src/engines/hybrid/dataFetchers');
+const { HIDDEN_GEMS_MAX_POPULARITY, HIDDEN_GEMS_MAX_VOTES } = require('../src/engines/hybrid/dataFetchers');
 
 function scored(id, genres, directorId, collectionId = null) {
     return {
@@ -103,6 +103,7 @@ describe('Ticket 23: hero quality policies', () => {
 
     it('usa un tetto inclusivo per la popolarità delle hidden gems', () => {
         expect(HIDDEN_GEMS_MAX_POPULARITY).toBe(20);
+        expect(HIDDEN_GEMS_MAX_VOTES).toBe(1000);
         expect(isHiddenGemPopularityAllowed(HIDDEN_GEMS_MAX_POPULARITY)).toBe(true);
         expect(isHiddenGemPopularityAllowed(20.01)).toBe(false);
         expect(isHiddenGemPopularityAllowed(41.4)).toBe(false);
