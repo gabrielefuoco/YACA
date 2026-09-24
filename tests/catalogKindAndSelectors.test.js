@@ -92,7 +92,6 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
         });
 
         it('riconosce i cataloghi alwaysVisible (utility e libreria)', () => {
-            expect(isAlwaysVisible('yaca-profiles')).toBe(true);
             expect(isAlwaysVisible('yaca_search_standard')).toBe(true);
             expect(isAlwaysVisible('yaca_search_ai')).toBe(true);
             expect(isAlwaysVisible('yaca_watchlist_movies')).toBe(true);
@@ -283,8 +282,7 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
             const manifest = buildManifest(baseUserConfig);
             const catalogIds = manifest.catalogs.map(c => c.id);
 
-            // Utility e watchlist sempre presenti
-            expect(catalogIds).toContain('yaca-profiles');
+            // Ricerca e watchlist sempre presenti
             expect(catalogIds).toContain('yaca_search_standard');
             expect(catalogIds).toContain('yaca_search_ai');
             expect(catalogIds).toContain('yaca_watchlist_movies');
@@ -314,8 +312,7 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
             const manifest = buildManifest(configSoloSerie);
             const catalogIds = manifest.catalogs.map(c => c.id);
 
-            // Utility e watchlist restano SEMPRE presenti
-            expect(catalogIds).toContain('yaca-profiles');
+            // Watchlist resta sempre presente
             expect(catalogIds).toContain('yaca_watchlist_movies');
             expect(catalogIds).toContain('yaca_watchlist_series');
             expect(catalogIds).toContain('yaca_watchlist_anime');
@@ -354,9 +351,8 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
             expect(catalogIds).not.toContain('preset_pop_anime');
             expect(catalogIds).not.toContain('custom_anime_matchmaker');
 
-            // Utility e watchlist sempre presenti (inclusa la watchlist anime dell'utente)
+            // Watchlist sempre presente (inclusa la watchlist anime dell'utente)
             expect(catalogIds).toContain('yaca_watchlist_anime');
-            expect(catalogIds).toContain('yaca-profiles');
         });
     });
 
@@ -399,16 +395,5 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
             expect(response).toEqual({ metas: [] });
         });
 
-        it('richiesta di un catalogo alwaysVisible (es. yaca-profiles) passa la guardia', async () => {
-            const response = await catalogHandler(
-                { id: 'yaca-profiles', type: 'other', extra: {} },
-                userConfig,
-                'http://localhost:7000'
-            );
-
-            // Non viene bloccato dalla guardia (metas array restituito)
-            expect(response).toHaveProperty('metas');
-            expect(response.metas.length).toBeGreaterThan(0);
-        });
     });
 });

@@ -16,7 +16,6 @@
 // Registry esplicito per 8 Hero e cataloghi fissi/utility
 const FIXED_CATALOGS_REGISTRY = {
     // Utility e libreria personale (sempre visibili nel manifest)
-    'yaca-profiles': { mediaSet: [], anime: 'no', alwaysVisible: true },
     'yaca_search_standard': { mediaSet: ['film', 'serie'], anime: 'mixed', alwaysVisible: true },
     'yaca_search_ai': { mediaSet: ['film', 'serie'], anime: 'mixed', alwaysVisible: true },
     'yaca_watchlist_movies': { mediaSet: ['film'], anime: 'no', alwaysVisible: true },

@@ -221,25 +221,6 @@ describe('TICKET 13: Filtro dei contenuti anime dentro i cataloghi', () => {
             ]
         };
 
-        it('yaca-profiles non viene filtrato', async () => {
-            routeCatalogRequest.mockResolvedValueOnce([
-                { id: 'yaca-profile-p_test', type: 'other', name: 'Test Profile', isSpecialProfile: true }
-            ]);
-
-            const config = JSON.parse(JSON.stringify(baseUserConfig));
-            config.profiles[0].settings.typeSelectors.anime = 'exclude';
-
-            const response = await catalogHandler(
-                { id: 'yaca-profiles', type: 'other', extra: {} },
-                config,
-                'http://localhost:7000'
-            );
-
-            expect(response).toHaveProperty('metas');
-            expect(response.metas.length).toBe(1);
-            expect(response.metas[0].id).toBe('yaca-profile-p_test');
-        });
-
         it('yaca_watchlist_anime non viene filtrata anche se il profilo è No Anime (libreria personale)', async () => {
             routeCatalogRequest.mockResolvedValueOnce([
                 { id: 'tmdb:301', type: 'series', name: 'Watchlist Anime Title', _isAnime: true }

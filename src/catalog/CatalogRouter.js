@@ -19,25 +19,6 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
 
     const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
 
-    // SCENARIO -1: YACA PROFILES
-    if (id === 'yaca-profiles') {
-        if (!userConfig.profiles || userConfig.profiles.length === 0) {
-            return [];
-        }
-        return userConfig.profiles.map(p => {
-            const isActive = p.id === userConfig.activeProfileId;
-            const displayName = isActive ? `✅ ${p.name}` : p.name;
-            return {
-                id: `yaca-profile-${p.id}`,
-                type: args.type || 'other',
-                name: displayName,
-                poster: `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random&color=fff&size=512`,
-                description: isActive ? 'Profilo attualmente attivo' : 'Seleziona per impostare come Profilo Attivo',
-                isSpecialProfile: true // Marker for formatter to skip TMDB formatting
-            };
-        });
-    }
-
     // SCENARIO 1: RICERCA VIVA TESTUALE
     if (search) {
         if (baseId === 'yaca_search_standard') {

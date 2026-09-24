@@ -76,24 +76,10 @@ function hasItaKeywords(streams) {
 
 /**
  * Gestisce la logica di stream per Stremio.
- * Funziona sia da Proxy Aggregator che da Profile Switcher.
+ * Gestisce le richieste di stream del proxy aggregatore.
  */
-async function streamHandler(args, userConfig, hostUrl, configVersion = '') {
+async function streamHandler(args, userConfig) {
     const { id, type } = args;
-
-    if (id.startsWith('yaca-profile-')) {
-        const profileId = id.replace('yaca-profile-', '');
-        const streamUrl = `${hostUrl}/api/users/${userConfig.userId}/switch-profile/${profileId}`;
-        return {
-            streams: [
-                {
-                    title: `\nAttiva questo profilo\nSync in background`,
-                    url: streamUrl,
-                    behaviorHints: { notWebReady: false }
-                }
-            ]
-        };
-    }
 
     // Proxy Stream Logic
     const proxyUrl = process.env.PROXY_ADDON_URL;

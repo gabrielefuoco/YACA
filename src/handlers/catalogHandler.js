@@ -387,7 +387,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
         baseId = id.replace('yaca_preset_', '');
     }
 
-    if (id !== 'yaca-profiles' && baseId !== 'yaca_search_history') {
+    if (baseId !== 'yaca_search_history') {
         const presets = getPresets();
         catalogMeta = presets.find(p => p.id === baseId || p.id === id);
 
@@ -447,7 +447,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
             // 2.6 FILTRAGGIO POST-FETCH: Filtro Contenuti Anime (Ticket 13 / Spec 06 Sezione 6)
             // Perimetro: cataloghi di suggerimento (preset utente, 8 hero, custom/merged).
-            // Utility e libreria personale (yaca-profiles, 2 ricerche, 3 watchlist) non vengono filtrate.
+            // Le ricerche e la libreria personale (3 watchlist) non vengono filtrate.
             const animeSelector = activeProfileSettings?.typeSelectors?.anime;
             const isSubjectCatalog = !isAlwaysVisible(id) && !isAlwaysVisible(baseId) && !extra?.search;
             if (isSubjectCatalog && (animeSelector === 'exclude' || animeSelector === 'only')) {
@@ -549,7 +549,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
     // SWR handling
     let responseData;
-    if (extra?.search || id === 'yaca-profiles' || baseId === 'yaca_search_history') {
+    if (extra?.search || baseId === 'yaca_search_history') {
         responseData = await fetchCatalog();
     } else if (extra?.warmupMode) {
         const cachedStatus = await catalogRequestCache.getWithStatus(requestCacheKey);

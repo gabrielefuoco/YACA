@@ -4,54 +4,11 @@ Questo documento descrive le soluzioni tecniche e i workaround ingegneristici im
 
 ---
 
-## 1. Gestione dei Profili Utente (YACA Profiling Workaround)
+## 1. Gestione dei profili utente
 
-### Il Problema
-Stremio non fornisce supporto nativo per profili multipli all'interno di un singolo account o installazione di addon. La configurazione (inclusi i cataloghi personalizzati) viene definita staticamente al momento dell'installazione tramite l'URL del manifest (es. `https://yaca.addon/userId/manifest.json`).
+I profili YACA sono creati, modificati e selezionati nella configurazione web. Il profilo attivo e i cataloghi personalizzati vengono salvati nella configurazione utente e riflessi nel manifest dinamico.
 
-### La Soluzione di YACA
-YACA implementa un sistema dinamico di switch del profilo attivo basato sull'intercettazione dei flussi multimediali di Stremio:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Utente as Stremio Client
-    participant API as YACA Backend (stremio.js)
-    participant DB as MongoDB (UserConfig)
-    participant Cloud as Stremio Cloud API
-
-    Utente->>API: Richiesta Catalogo 'yaca-profiles'
-    API-->>Utente: Ritorna lista Profili come elementi cliccabili
-    Utente->>API: Clicca su Profilo 'B' (Richiesta Meta Detail)
-    API-->>Utente: Mostra pulsante "Riproduci per attivare"
-    Utente->>API: Clicca su Riproduci (Richiesta Stream)
-    API-->>Utente: Ritorna URL Switch finto: /switch-profile/profileId
-    Utente->>API: Esegue il finto video (GET /switch-profile/profileId)
-    Note over API,DB: Aggiorna activeProfileId nel DB
-    Note over API,DB: Genera nuova configVersion (timestamp base36)
-    API->>Cloud: addonCollectionSet (Aggiorna manifestUrl con nuova configVersion)
-    API-->>Utente: Reindirizza a dummy video (profile_updated.mp4)
-    Note over Utente: Stremio ricarica il Manifest con la nuova configVersion
-    Utente->>API: Richiede nuovi cataloghi personalizzati
-```
-
-### Componenti del Workaround:
-
-1.  **Catalogo Virtuale**: 
-    In [CatalogRouter.js](../src/catalog/CatalogRouter.js) (Caso `yaca-profiles`), YACA restituisce la lista dei profili dell'utente sotto forma di schede catalogo con avatar generati dinamicamente.
-2.  **Abilitazione della Riproduzione (Meta Handler)**: 
-    In [metaHandler.js](../src/handlers/metaHandler.js) (Caso `yaca-profile-`), l'addon imposta una descrizione speciale per i profili non attivi spiegando come procedere all'attivazione e abilita il pulsante di riproduzione.
-3.  **Generazione dello Stream Finto**: 
-    In [streamHandler.js](../src/handlers/streamHandler.js), quando l'utente preme "Play" sul profilo desiderato, YACA risponde con un unico stream il cui URL punta all'endpoint di controllo: 
-    `${hostUrl}/api/users/${userConfig.userId}/switch-profile/${profileId}`.
-4.  **switch-profile Endpoint**:
-    In [stremio.js](../src/api/stremio.js), la chiamata HTTP innescata dal player esegue le seguenti operazioni:
-    - Modifica l'attributo `activeProfileId` nella configurazione dell'utente su MongoDB.
-    - Genera una nuova stringa di versione basata sul timestamp corrente convertito in base 36 (`newConfigVersion = Date.now().toString(36)`).
-    - Effettua una chiamata di sincronizzazione push alle API di Stremio (`addonCollectionSet`) per sostituire l'URL di installazione dell'addon dell'utente con quello aggiornato contenente la nuova `configVersion` (es. `https://yaca.addon/userId/newConfigVersion/manifest.json`).
-    - Reindirizza il player di Stremio a un video MP4 muto di 2 secondi (`profile_updated.mp4`) ospitato localmente per evitare errori di riproduzione nel client.
-5.  **Bust Cache Automatico**:
-    Poiché l'URL del manifest memorizzato nel client di Stremio ora include la nuova `configVersion`, Stremio cancella immediatamente la cache locale del manifest e invia richieste fresche per caricare i cataloghi associati al profilo appena attivato.
+Il client Stremio non offre un meccanismo nativo per cambiare profilo dall'interno dell'addon. Per questo YACA non espone un controllo di profilo tra i cataloghi e non modifica il profilo attivo in risposta a richieste del client: il cambio profilo va effettuato dalla configurazione web.
 
 ---
 
@@ -128,7 +85,7 @@ Per evitare leak del token dell'utente (UUID) nei log o nei referral del browser
 
 ## 4. Variabili d'Ambiente Coinvolte nei Workaround
 
-*   `HOST_URL`: L'URL pubblico in cui è ospitato l'addon. Viene usato per generare i link di switch profilo e per aggiornare l'indirizzo del manifest sul cloud di Stremio.
+*   `HOST_URL`: L'URL pubblico in cui è ospitato l'addon. Viene usato per generare gli URL del manifest e per costruire i link di configurazione.
 *   `RENDER_EXTERNAL_URL`: Fallback per `HOST_URL` se l'applicazione è ospitata su Render.
 *   `SPACE_HOST`: Hostname di Hugging Face Spaces (es. `<username>-yaca.hf.space`), utilizzato per calcolare automaticamente l'URL pubblico qualora non sia configurato un `HOST_URL` esplicito.
 *   `FRONTEND_URL`: L'URL dell'applicazione frontend di YACA (Next.js/React) utilizzato per i redirect sicuri dalla schermata di configurazione di Stremio.
