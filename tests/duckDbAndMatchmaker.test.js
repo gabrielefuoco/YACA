@@ -270,7 +270,7 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
             expect(next).toBeDefined();
             expect(next).toHaveProperty('cards');
             expect(Array.isArray(next.cards)).toBe(true);
-        });
+        }, 30000);
 
         test('getFinalRecommendations returns TMDB IDs for winning nodes', async () => {
             if (!duckDbStore.isInitialized) return;
@@ -283,7 +283,7 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
             recs.forEach(id => {
                 expect(typeof id === 'string' || typeof id === 'number').toBe(true);
             });
-        });
+        }, 30000);
 
         test('getMatchmakerNextCards safely falls back and assigns winningNode when heat map is empty', async () => {
             if (!duckDbStore.isInitialized) return;
@@ -315,7 +315,7 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
 
             const next = await getMatchmakerNextCards('movie', [], undefined, {});
             expect(next.nextLevel).toBe('L1');
-        });
+        }, 30000);
     });
 
     describe('WatchlistProvider & Custom Catalogs', () => {

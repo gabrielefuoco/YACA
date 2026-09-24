@@ -69,8 +69,13 @@ class DuckDbStore {
                         await execPromise(`CREATE TABLE IF NOT EXISTS anime_mappings (tmdb_id BIGINT PRIMARY KEY);`);
 
                         console.log(`[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.`);
+
+                        // I dump di produzione più recenti non contengono ancora la colonna US:
+                        // mantenerla nullable evita query non portabili sui preset regionali.
+                        await execPromise('ALTER TABLE movies ADD COLUMN IF NOT EXISTS watch_providers_us VARCHAR;');
+                        await execPromise('ALTER TABLE tv ADD COLUMN IF NOT EXISTS watch_providers_us VARCHAR;');
                         this.isInitialized = true;
-                        
+
                         // Assicuriamoci di importare i mapping anime se sono già stati scaricati
                         const animeMappingStore = require('../data/animeMappingStore');
                         if (animeMappingStore.tmdbToAnimeNode && animeMappingStore.tmdbToAnimeNode.size > 0) {

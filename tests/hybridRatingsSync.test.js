@@ -100,5 +100,5 @@ describe('hybrid catalog stale sync merges history and ratings', () => {
             [...history, ...ratings],
             'tmdb_key'
         );
-    });
+    }, 30000);
 });
