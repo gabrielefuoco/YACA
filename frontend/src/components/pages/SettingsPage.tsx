@@ -1,19 +1,13 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { TraktAuthModal } from '@/components/modals/TraktAuthModal';
-import { Profile, AppConfig } from '@/types';
+import { Profile } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { api } from '@/lib/api';
-import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
 import {
-  Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Download, Upload, RefreshCw, Save, Rocket, Server, ShieldCheck
+  Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Save, Rocket
 } from 'lucide-react';
 import { profilesToApiPayload } from '@/lib/utils';
-import Link from 'next/link';
 
 interface SettingsPageProps {
   profiles: Profile[];
@@ -24,9 +18,6 @@ interface SettingsPageProps {
   traktRefreshToken?: string | null;
   configVersion?: string;
   userId?: string;
-  globalTmdbKey?: string;
-  globalMistralKey?: string;
-  hasGlobalErdb?: boolean;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
   onLogout: () => void;
   onDisconnectTrakt: () => void;
@@ -43,9 +34,6 @@ export function SettingsPage({
   traktRefreshToken,
   configVersion,
   userId,
-  globalTmdbKey,
-  globalMistralKey,
-  hasGlobalErdb,
   onUpdateProfile,
   onLogout,
   onDisconnectTrakt,
@@ -62,22 +50,6 @@ export function SettingsPage({
   const [copied, setCopied] = useState(false);
   const [traktModalOpen, setTraktModalOpen] = useState(false);
 
-  const [tmdbKey, setTmdbKey] = useState(globalTmdbKey || '');
-  const [mistralKey, setMistralKey] = useState(globalMistralKey || '');
-  const [erdbConfig, setErdbConfig] = useState(settings?.erdbConfig || '');
-
-  useEffect(() => {
-    setTmdbKey(globalTmdbKey || '');
-  }, [globalTmdbKey]);
-
-  useEffect(() => {
-    setMistralKey(globalMistralKey || '');
-  }, [globalMistralKey]);
-
-  useEffect(() => {
-    setErdbConfig(settings?.erdbConfig || '');
-  }, [settings?.erdbConfig]);
-
   const handleSave = async () => {
     setLoading(true);
     setError('');
@@ -88,7 +60,6 @@ export function SettingsPage({
     onUpdateProfile(activeProfileId, {
       settings: {
         ...settings,
-        erdbConfig,
         manualDNA: currentDNA,
         suggestedDNA: currentSuggestedDNA,
       },
@@ -102,7 +73,6 @@ export function SettingsPage({
           ...p,
           settings: {
             ...p.settings,
-            erdbConfig,
           },
         }
         : p
@@ -119,8 +89,6 @@ export function SettingsPage({
         traktToken,
         traktRefreshToken,
         configVersion,
-        tmdbKey: tmdbKey || '',
-        mistralKey: mistralKey || '',
       });
 
       if (data.userId) {
@@ -148,62 +116,10 @@ export function SettingsPage({
     setLoading(false);
   };
 
-
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleExport = () => {
-    // Export only non-sensitive config data (no auth keys/tokens)
-    const config: AppConfig = {
-      profiles,
-      activeProfileId,
-      configVersion,
-    };
-    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'yaca-backup.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const content = reader.result as string;
-        try {
-          const parsed = JSON.parse(content);
-          if (parsed.profiles) {
-            const apiProfiles = profilesToApiPayload(parsed.profiles);
-            const data = await api.configure({
-              profiles: apiProfiles,
-              activeProfileId: parsed.activeProfileId,
-              userId,
-              stremioAuthKey: parsed.stremioAuthKey,
-              traktToken: parsed.traktToken,
-              traktRefreshToken: parsed.traktRefreshToken,
-              configVersion,
-            });
-            if (data.userId) {
-              localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
-              window.location.reload();
-            }
-          }
-        } catch { }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
   };
 
   const manifestUrl = userId
@@ -223,7 +139,7 @@ export function SettingsPage({
           </div>
           <div>
             <h3 className="text-sm sm:text-base font-black text-marrow-deep">Salva & Installa</h3>
-            <p className="text-[10px] sm:text-xs text-marrow-light font-medium hidden sm:block">Salva la configurazione, installa l&apos;addon su Stremio e gestisci i backup</p>
+            <p className="text-[10px] sm:text-xs text-marrow-light font-medium hidden sm:block">Salva la configurazione e installa l&apos;addon su Stremio</p>
           </div>
         </div>
 
@@ -319,73 +235,6 @@ export function SettingsPage({
           </div>
         )}
 
-        <Separator className="bg-marrow-light/10" />
-
-        {/* Backup & Import */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button variant="outline" onClick={handleExport} className="flex-1 font-black text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 shadow-sm rounded-xl py-5">
-            <Download className="h-4 w-4 mr-2" />
-            Esporta Backup
-          </Button>
-          <Button variant="outline" onClick={handleImport} className="flex-1 font-black text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white shadow-sm rounded-xl py-5">
-            <Upload className="h-4 w-4 mr-2" />
-            Importa Backup
-          </Button>
-        </div>
-      </section>
-
-
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* API Keys                                                           */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-3 sm:p-5 space-y-3 sm:space-y-4 shadow-sm ">
-        <div className="flex items-center gap-2 text-primary">
-          <ShieldCheck className="h-5 w-5 text-primary" />
-          <h3 className="text-sm font-black uppercase tracking-widest">Chiavi API (Opzionali)</h3>
-        </div>
-        <p className="text-[10px] text-marrow-light/50 -mt-2 leading-relaxed">
-          Inserisci le tue chiavi API personali. Se non inserite, verranno utilizzate le chiavi globali dell&apos;addon (se disponibili).
-        </p>
-
-        <div className="space-y-3">
-          <div>
-            <Label htmlFor="tmdbKey" className="text-xs font-bold text-marrow-deep">Chiave API TMDB</Label>
-            <Input
-              id="tmdbKey"
-              type="password"
-              placeholder="Inserisci la tua chiave API TMDB..."
-              value={tmdbKey}
-              onChange={(e) => setTmdbKey(e.target.value)}
-              className="mt-1 bg-white/60 border border-marrow-light/10 focus:border-primary text-base sm:text-xs"
-            />
-          </div>
-          <div>
-            <Label htmlFor="mistralKey" className="text-xs font-bold text-marrow-deep">Chiave API Mistral (Necessaria per AI)</Label>
-            <Input
-              id="mistralKey"
-              type="password"
-              placeholder="Inserisci la tua chiave API Mistral..."
-              value={mistralKey}
-              onChange={(e) => setMistralKey(e.target.value)}
-              className="mt-1 bg-white/60 border border-marrow-light/10 focus:border-primary text-base sm:text-xs"
-            />
-          </div>
-          <div>
-            <Label htmlFor="erdbConfig" className="text-xs font-bold text-marrow-deep">Configurazione EasyRatingsDB (Opzionale)</Label>
-            <Input
-              id="erdbConfig"
-              type="text"
-              placeholder={hasGlobalErdb ? "Attivo a livello globale (lascia vuoto per usare il default)" : "Incolla il payload ERDB..."}
-              value={erdbConfig}
-              onChange={(e) => setErdbConfig(e.target.value)}
-              className="mt-1 bg-white/60 border border-marrow-light/10 focus:border-primary text-base sm:text-xs"
-            />
-            <p className="text-[10px] text-marrow-light/50 mt-1">
-              Ottieni questo payload configurando i badge e i voti su <a href="https://easyratingsdb.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">easyratingsdb.com</a>.
-            </p>
-          </div>
-        </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
