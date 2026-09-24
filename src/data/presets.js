@@ -16,10 +16,10 @@ const TMDB_COMPANIES = {
 };
 
 const TMDB_PEOPLE = {
-    Nolan: 525, Tarantino: 138, Spielberg: 488, Scorsese: 224, Kubrick: 240, Villeneuve: 137427, Fincher: 1341,
-    Lynch: 5602, DelToro: 10828, Peele: 185153, Eastwood: 190, Cameron: 2710, Bay: 865, Carpenter: 887,
+    Nolan: 525, Tarantino: 138, Spielberg: 488, Scorsese: 1032, Kubrick: 240, Villeneuve: 137427, Fincher: 7467,
+    Lynch: 5602, DelToro: 10828, Peele: 291263, Eastwood: 190, Cameron: 2710, Bay: 865, Carpenter: 11770,
     Hitchcock: 2636, Scott: 578, Miyazaki: 608, Burton: 510, Jackson: 108, WesAnderson: 5655,
-    DiCaprio: 6193, Cruise: 500, Reeves: 6384, BradPitt: 287, DeNiro: 380, JohnnyDepp: 85, Denzel: 882, NicolasCage: 2963
+    DiCaprio: 6193, Cruise: 500, Reeves: 6384, BradPitt: 287, DeNiro: 380, JohnnyDepp: 85, Denzel: 5292, NicolasCage: 2963
 };
 
 const TMDB_NETWORKS = {
@@ -499,4 +499,4 @@ for (const template of profileTemplates) {
     }
 }
 
-module.exports = { getPresets, profileTemplates };
+module.exports = { getPresets, profileTemplates, TMDB_PEOPLE };
