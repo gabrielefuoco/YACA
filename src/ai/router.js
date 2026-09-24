@@ -131,8 +131,13 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, taskType = 'sin
             systemPrompt += "\n\nCRITICAL: The user is in KIDS MODE. You MUST ONLY generate queries for family-friendly, children-appropriate content. Never generate queries containing adult, violent, scary, or sexually suggestive keywords or themes.";
         }
 
+        // Il modello è configurabile: sui piani gratuiti alcuni modelli hanno
+        // `limit-req-minute = 0` (es. `mistral-small-latest`), quindi ogni chiamata
+        // torna 429 e la ricerca AI degrada in silenzio. Default su un modello
+        // disponibile; override con MISTRAL_MODEL.
+        const model = process.env.MISTRAL_MODEL || 'open-mistral-nemo';
         const response = await client.chat.complete({
-            model: "mistral-small-latest",
+            model,
             messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: `QUERY: "${prompt}"` }
