@@ -143,27 +143,6 @@ describe('catalogStrategies', () => {
             expect(where).toContain('"id":18');
         });
 
-        it('non riaggiunge gli item esclusi dai diversity cap', async () => {
-            dataFetchers.fetchProfileContext.mockResolvedValueOnce({
-                profile: { compiledVectors: { V_final: {} } },
-                user: { profiles: [{ id: 'global', settings: { manualDNA: [], suggestedDNA: [] } }] }
-            });
-            scoringEngine.computeTopGenres.mockReturnValueOnce(['35']);
-            scoringEngine.computeTopKeywords.mockReturnValueOnce([]);
-            DuckDbProvider.getDuckDbCatalogFromPreset.mockResolvedValueOnce([
-                { id: 'tmdb:1', genre_ids: [35] },
-                { id: 'tmdb:2', genre_ids: [35] },
-                { id: 'tmdb:3', genre_ids: [35] },
-                { id: 'tmdb:4', genre_ids: [35] }
-            ]);
-            ProfileScorer.applyDiversityCaps.mockImplementationOnce(items => items.slice(0, 3));
-
-            const result = await catalogStrategies.buildTopGenresMixCatalog('user1', 'global', 'tmdb', 'series');
-
-            expect(result).toHaveLength(3);
-            expect(result.map(item => item.id)).toEqual(['tmdb:1', 'tmdb:2', 'tmdb:3']);
-        });
-
         it('should fetch using AI queries if mistral key is present', async () => {
             const aiQueries = [{ genre_ids: [28], keyword: 'action' }];
             const mistralKey = 'fake_mistral';

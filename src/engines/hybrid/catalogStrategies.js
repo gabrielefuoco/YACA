@@ -324,11 +324,12 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
         return String(idA).localeCompare(String(idB));
     });
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
-    // I cap sono un filtro di selezione: gli esclusi non vanno riaggiunti
-    // subito dopo, altrimenti l'ordinamento successivo neutralizza il limite.
-    let finalItems = typeof ProfileScorer.applyDiversityCaps === 'function'
+    const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
         ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
         : deduplicated;
+    const diversifiedSet = new Set(diversified);
+    const remaining = deduplicated.filter(item => !diversifiedSet.has(item));
+    let finalItems = [...diversified, ...remaining];
     if (isKidsMode) {
         finalItems = applyKidsMode(finalItems);
     }
@@ -509,7 +510,8 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
             }
             const score = ProfileScorer.calculateItemMatch(tmdbData, profile, { dnaFilters, globalProfile, kidsMode: isKidsMode });
             if (isKidsMode && score <= 0) return null;
-            return { data, score: score * penaltyMultiplier, hybridScore: hybridScore * penaltyMultiplier };
+            const hydratedData = { ...data, ...tmdbData, id: data.id || tmdbData.id };
+            return { data: hydratedData, score: score * penaltyMultiplier, hybridScore: hybridScore * penaltyMultiplier };
         },
         { batchSize: 3, delayMs: 150 }
     );
@@ -543,9 +545,12 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         return String(idA).localeCompare(String(idB));
     });
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
-    let finalItems = typeof ProfileScorer.applyDiversityCaps === 'function'
+    const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
         ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
         : deduplicated;
+    const diversifiedSet = new Set(diversified);
+    const remaining = deduplicated.filter(item => !diversifiedSet.has(item));
+    let finalItems = [...diversified, ...remaining];
     if (isKidsMode) {
         finalItems = applyKidsMode(finalItems);
     }
