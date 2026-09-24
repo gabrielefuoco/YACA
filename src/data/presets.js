@@ -15,6 +15,17 @@ const TMDB_COMPANIES = {
     Pixar: 3, Ghibli: 10342, Marvel: 420, DC: 128064, A24: 41077, Blumhouse: 3172, Disney: 2, DreamWorks: 521, Illumination: 3166, Lucasfilm: 1
 };
 
+// Le collection TMDB dell'MCU sono divise per franchise. La keyword MCU
+// agisce da controllo trasversale: alcune collection (es. Deadpool) includono
+// anche pellicole pre-MCU e non sono sufficienti da sole.
+const TMDB_COLLECTIONS = {
+    MCU: [86311, 531241, 529892, 448150, 131292, 131295, 623911, 618529, 284433, 131296, 422834]
+};
+
+const TMDB_KEYWORDS = {
+    MCU: 180547
+};
+
 const TMDB_PEOPLE = {
     Nolan: 525, Tarantino: 138, Spielberg: 488, Scorsese: 1032, Kubrick: 240, Villeneuve: 137427, Fincher: 7467,
     Lynch: 5602, DelToro: 10828, Peele: 291263, Eastwood: 190, Cameron: 2710, Bay: 865, Carpenter: 11770,
@@ -88,7 +99,7 @@ const getPresets = () => {
         { id: 'preset_ghibli', isAnime: true, name: 'Studio Ghibli', emoji: '🍃', category: "🏮 Solo Anime", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_companies: TMDB_COMPANIES.Ghibli, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
         { id: 'preset_pixar', name: 'Disney Pixar', emoji: '🧸', category: "👨‍👩‍👧‍👦 Bambini & Famiglia", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_companies: TMDB_COMPANIES.Pixar, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
         { id: 'preset_a24', name: 'A24: Cinema Indipendente', emoji: '💎', category: "🎬 Cinema d'Autore & Registi", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_companies: TMDB_COMPANIES.A24, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
-        { id: 'preset_marvel', name: 'Marvel Cinematic Universe', emoji: '🦸', category: "🐉 Fantascienza & Fantasy", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_companies: TMDB_COMPANIES.Marvel, sort_by: 'revenue.desc', 'vote_count.gte': 20 }] },
+        { id: 'preset_marvel', name: 'Marvel Cinematic Universe', emoji: '🦸', category: "🐉 Fantascienza & Fantasy", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_collections: TMDB_COLLECTIONS.MCU.join('|'), with_keywords: TMDB_KEYWORDS.MCU, sort_by: 'revenue.desc', 'vote_count.gte': 20 }] },
         { id: 'preset_dc', name: 'DC Comics (Film)', emoji: '🦇', category: "🐉 Fantascienza & Fantasy", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_companies: TMDB_COMPANIES.DC, sort_by: 'popularity.desc', 'vote_count.gte': 20 }] },
         { id: 'preset_blumhouse', name: 'Blumhouse Horror', emoji: '🔪', category: "👻 Brivido & Paura", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_companies: TMDB_COMPANIES.Blumhouse, sort_by: 'popularity.desc', 'vote_count.gte': 20 }] },
         { id: 'preset_dreamworks', name: 'DreamWorks Animation', emoji: '🐉', category: "👨‍👩‍👧‍👦 Bambini & Famiglia", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_companies: TMDB_COMPANIES.DreamWorks, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },

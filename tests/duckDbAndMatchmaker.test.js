@@ -1,5 +1,6 @@
 const { buildCatalogQuery } = require('../src/db/queryBuilder');
 const { F, S } = require('../src/data/filters');
+const { getPresets } = require('../src/data/presets');
 const { 
     buildPresetFromFilters, 
     getDuckDbCatalogFromPreset, 
@@ -196,6 +197,20 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
             const tvPreset = buildPresetFromFilters({ 'primary_release_date.gte': '2022-01-01', sort_by: 'primary_release_date.desc' }, 'series');
             expect(tvPreset.where).toContain('"first_air_date" >= \'2022-01-01\'');
             expect(tvPreset.orderBy).toContain('"first_air_date" DESC');
+        });
+
+        test('il preset MCU usa le collection TMDB e non la sola company Marvel', () => {
+            const source = getPresets().find((preset) => preset.id === 'preset_marvel');
+            const query = source.queries[0];
+            const compiled = buildPresetFromFilters(query, source.type);
+
+            expect(source.name).toBe('Marvel Cinematic Universe');
+            expect(query.with_companies).toBeUndefined();
+            expect(query.with_keywords).toBe(180547);
+            expect(compiled.where.join(' ')).toContain(
+                '"collection_id" IN (86311,531241,529892,448150,131292,131295,623911,618529,284433,131296,422834)'
+            );
+            expect(compiled.where.join(' ')).toContain('"keywords"');
         });
     });
 

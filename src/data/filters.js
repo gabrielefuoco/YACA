@@ -48,6 +48,10 @@ const F = {
     crew: (id) => `(${jsonHas('directors', id)} OR ${jsonHas('writers', id)})`,
     company: (id) => jsonHas('production_companies', id),
     network: (id) => jsonHas('networks', id),
+    collections: (...ids) => {
+        const validIds = ids.map(Number).filter(id => Number.isSafeInteger(id) && id > 0);
+        return validIds.length > 0 ? `"collection_id" IN (${validIds.join(',')})` : '1=0';
+    },
     
     // --- Lingua e Paese ---
     lang: (code) => `"original_language" = '${code}'`,

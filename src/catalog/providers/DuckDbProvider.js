@@ -118,6 +118,7 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
     if (q.with_cast) where.push(F.actor(q.with_cast));
     if (q.with_watch_providers) where.push(F.provider(q.with_watch_providers));
     if (q.with_companies) where.push(F.company(q.with_companies));
+    if (q.with_collections) where.push(F.collections(...String(q.with_collections).split('|').map(Number)));
     if (q.with_networks) where.push(F.network(q.with_networks));
 
     const dateCol = isTv ? '"first_air_date"' : '"release_date"';
