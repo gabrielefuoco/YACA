@@ -77,6 +77,7 @@ const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');
 const {
     getHybridCatalog,
     buildSharedHeroCatalogs,
+    getSharedHeroCatalogs,
     buildSharedHeroCacheKey
 } = require('../src/engines/hybridRecommendations');
 
@@ -98,14 +99,14 @@ function resultIds(results) {
     return results.map(item => item.id.replace(/^tmdb:/, ''));
 }
 
-function userConfig(version = 'cfg-v1', kidsMode = false) {
+function userConfig(version = 'cfg-v1', kidsMode = false, profileId = 'sim_profile') {
     return {
         userId: 'sim_user',
-        activeProfileId: 'sim_profile',
+        activeProfileId: profileId,
         configVersion: version,
         apiKeys: { tmdb: 'tmdb-key' },
         profiles: [{
-            id: 'sim_profile',
+            id: profileId,
             settings: { kidsMode, typeSelectors: {} }
         }]
     };
@@ -231,15 +232,19 @@ describe('Ticket 21: shared hero diversity', () => {
         expect(mockCacheStore.size).toBe(1);
     });
 
-    it('mantiene distinti i quattro fallback freddi', async () => {
-        strategies.buildTopGenresMixCatalog.mockResolvedValue(pool(1, 30));
-        strategies.buildHybridCatalog.mockResolvedValue(pool(31, 60));
-        strategies.buildHiddenGemsCatalog.mockResolvedValue(pool(61, 90));
-        strategies.buildTraktFilteredCatalogWithMeta.mockResolvedValue({
-            ids: pool(91, 120),
-            traktAvailable: false,
-            fallbackUsed: true
-        });
+    it('deduplica i quattro fallback freddi anche quando i builder falliscono', async () => {
+        for (const builder of [
+            strategies.buildTopGenresMixCatalog,
+            strategies.buildHybridCatalog,
+            strategies.buildHiddenGemsCatalog,
+            strategies.buildTraktFilteredCatalogWithMeta
+        ]) {
+            builder.mockRejectedValue(new Error('builder freddo non disponibile'));
+        }
+        dataFetchers.fetchPopularFallbackIds.mockResolvedValue(pool(1, 30).map(item => item.id));
+        dataFetchers.fetchTopRatedPeriodFallbackIds.mockResolvedValue(pool(31, 60).map(item => item.id));
+        dataFetchers.fetchHiddenGemsFallbackIds.mockResolvedValue(pool(61, 90).map(item => item.id));
+        dataFetchers.fetchUndiscoveredFallbackIds.mockResolvedValue(pool(91, 120).map(item => item.id));
 
         const group = await buildSharedHeroCatalogs({
             userId: 'sim_user',
@@ -250,7 +255,7 @@ describe('Ticket 21: shared hero diversity', () => {
             kidsMode: false,
             userConfig: userConfig()
         });
-        const ids = movieHeroIds.map(catalogId => group.catalogs[catalogId].map(item => item.id));
+        const ids = movieHeroIds.map(catalogId => group.catalogs[catalogId].map(item => String(item)));
 
         expect(ids).toEqual([
             pool(1, 30).map(item => item.id),
@@ -259,11 +264,125 @@ describe('Ticket 21: shared hero diversity', () => {
             pool(91, 120).map(item => item.id)
         ]);
         expect(pairwiseOverlap(ids)).toEqual([[], [], [], [], [], []]);
+        expect(dataFetchers.fetchPopularFallbackIds).toHaveBeenCalledTimes(1);
+        expect(dataFetchers.fetchTopRatedPeriodFallbackIds).toHaveBeenCalledTimes(1);
+        expect(dataFetchers.fetchHiddenGemsFallbackIds).toHaveBeenCalledTimes(1);
+        expect(dataFetchers.fetchUndiscoveredFallbackIds).toHaveBeenCalledTimes(1);
         expect(group.trakt).toEqual({
             available: false,
             fallbackUsed: true,
             hiddenForInsufficientFallback: false
         });
+    });
+
+    it('scarta una cache schema 3 con overlap invece di servirla', async () => {
+        const key = buildSharedHeroCacheKey({
+            userId: 'sim_user',
+            context: 'sim_profile',
+            mediaType: 'movie',
+            kidsMode: false,
+            configVersion: 'cfg-v1'
+        });
+        mockCacheStore.set(key, {
+            schemaVersion: 3,
+            mediaType: 'movie',
+            catalogs: {
+                yaca_true_blend_movies: [{ id: '1' }],
+                yaca_seed_network_movies: [{ id: '1' }],
+                yaca_hidden_gems_movies: [{ id: '2' }],
+                yaca_trakt_filtered_movies: [{ id: '3' }]
+            }
+        });
+        strategies.buildTopGenresMixCatalog.mockResolvedValue(pool(1, 40));
+        strategies.buildHybridCatalog.mockResolvedValue(pool(101, 140));
+        strategies.buildHiddenGemsCatalog.mockResolvedValue(pool(201, 240));
+        strategies.buildTraktFilteredCatalogWithMeta.mockResolvedValue({
+            ids: pool(301, 340),
+            traktAvailable: false,
+            fallbackUsed: true
+        });
+
+        const group = await getSharedHeroCatalogs({
+            userId: 'sim_user',
+            context: 'sim_profile',
+            mediaType: 'movie',
+            traktToken: null,
+            tmdbApiKey: 'tmdb-key',
+            kidsMode: false,
+            userConfig: userConfig()
+        }, key);
+        const ids = movieHeroIds.map(catalogId => group.catalogs[catalogId].map(item => item.id));
+
+        expect(group.schemaVersion).toBe(4);
+        expect(pairwiseOverlap(ids)).toEqual([[], [], [], [], [], []]);
+        expect(ids).toEqual([
+            pool(1, 40).map(item => item.id),
+            pool(101, 140).map(item => item.id),
+            pool(201, 240).map(item => item.id),
+            pool(301, 340).map(item => item.id)
+        ]);
+        expect(strategies.buildTopGenresMixCatalog).toHaveBeenCalledTimes(1);
+        expect(strategies.buildHybridCatalog).toHaveBeenCalledTimes(1);
+        expect(strategies.buildHiddenGemsCatalog).toHaveBeenCalledTimes(1);
+        expect(strategies.buildTraktFilteredCatalogWithMeta).toHaveBeenCalledTimes(1);
+    });
+
+    it('mantiene isolati due profili con lo stesso DNA e cache key distinta', async () => {
+        const profileA = 'sim_profile_dna_a';
+        const profileB = 'sim_profile_dna_b';
+        const poolsByProfile = {
+            [profileA]: [pool(1, 40), pool(101, 140), pool(201, 240), pool(301, 340)],
+            [profileB]: [pool(401, 440), pool(501, 540), pool(601, 640), pool(701, 740)]
+        };
+        for (const [index, builder] of [
+            strategies.buildTopGenresMixCatalog,
+            strategies.buildHybridCatalog,
+            strategies.buildHiddenGemsCatalog
+        ].entries()) {
+            builder.mockImplementation(async (_userId, context) => poolsByProfile[context][index]);
+        }
+        strategies.buildTraktFilteredCatalogWithMeta.mockImplementation(async (_userId, context) => ({
+            ids: poolsByProfile[context][3],
+            traktAvailable: false,
+            fallbackUsed: true
+        }));
+
+        async function fetchProfile(profileId) {
+            const config = userConfig('cfg-shared-dna', false, profileId);
+            const first = await Promise.all(movieHeroIds.map(async catalogId => [
+                catalogId,
+                await getHybridCatalog(catalogId, 0, null, 'tmdb-key', 'sim_user', profileId, config)
+            ]));
+            const second = await Promise.all(movieHeroIds.map(async catalogId => [
+                catalogId,
+                await getHybridCatalog(catalogId, 20, null, 'tmdb-key', 'sim_user', profileId, config)
+            ]));
+            return { first: new Map(first), second: new Map(second) };
+        }
+
+        const [profileAResult, profileBResult] = await Promise.all([
+            fetchProfile(profileA),
+            fetchProfile(profileB)
+        ]);
+        for (const result of [profileAResult, profileBResult]) {
+            const combined = Object.fromEntries(movieHeroIds.map(catalogId => [
+                catalogId,
+                [
+                    ...result.first.get(catalogId).map(item => item.id),
+                    ...result.second.get(catalogId).map(item => item.id)
+                ]
+            ]));
+            expect(pairwiseOverlap(Object.values(combined))).toEqual([[], [], [], [], [], []]);
+        }
+
+        expect(mockCacheStore.size).toBe(2);
+        expect(strategies.buildTopGenresMixCatalog).toHaveBeenCalledTimes(2);
+        expect(strategies.buildHybridCatalog).toHaveBeenCalledTimes(2);
+        expect(strategies.buildHiddenGemsCatalog).toHaveBeenCalledTimes(2);
+        expect(strategies.buildTraktFilteredCatalogWithMeta).toHaveBeenCalledTimes(2);
+        expect(profileAResult.first.get('yaca_true_blend_movies')[0].id).not.toBe(
+            profileBResult.first.get('yaca_true_blend_movies')[0].id
+        );
     });
 
     it('nasconde il catalogo Trakt quando il fallback deduplicato resta sotto 10', async () => {

@@ -50,10 +50,10 @@ const HERO_CATALOG_IDS = new Map([
     ]))
 ]);
 // Il nome della chiave `heroes_v1` fa parte del contratto del ticket 21.
-// La schema interna resta però versionata per invalidare i pool costruiti
-// prima delle policy di qualità del ticket 23.
+// Lo schema interno versiona l'allocazione: 4 invalida i blocchi schema 3
+// prodotti prima della garanzia pairwise verificata sul dataset completo.
 const HERO_CACHE_KEY_VERSION = 'v1';
-const HERO_CACHE_SCHEMA_VERSION = 3;
+const HERO_CACHE_SCHEMA_VERSION = 4;
 const HERO_MIN_FALLBACK_ITEMS = 10;
 const HERO_MAX_ITEMS_PER_CATALOG = 100;
 const activeHeroGroupBuilds = new Map();
@@ -127,8 +127,24 @@ function assignHeroPools(poolsByCatalog, mediaType, maxItemsPerCatalog = HERO_MA
 
 function isSharedHeroCacheEntry(entry, mediaType) {
     if (!entry || entry.schemaVersion !== HERO_CACHE_SCHEMA_VERSION || entry.mediaType !== mediaType || !entry.catalogs) return false;
-    return ['movie', 'series'].includes(mediaType)
-        && HERO_PRIORITY.every(slug => Array.isArray(entry.catalogs[getHeroCatalogId(slug, mediaType)]));
+    if (!['movie', 'series'].includes(mediaType)) return false;
+
+    // Il numero di schema garantisce la forma del payload, non la sua correttezza.
+    // Un blocco allocato da una versione precedente può infatti contenere lo
+    // stesso ID in due hero. Non deve mai essere servito né invalidare le pagine
+    // già servite con un nuovo snapshot: lo scartiamo per ricostruire un solo
+    // gruppo coerente e verificabile.
+    const claimedIds = new Set();
+    for (const slug of HERO_PRIORITY) {
+        const pool = entry.catalogs[getHeroCatalogId(slug, mediaType)];
+        if (!Array.isArray(pool)) return false;
+        for (const item of pool) {
+            const id = getRecommendationId(item);
+            if (!id || claimedIds.has(id)) return false;
+            claimedIds.add(id);
+        }
+    }
+    return true;
 }
 
 function normalizePoolResult(result) {

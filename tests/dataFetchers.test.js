@@ -64,7 +64,7 @@ describe('dataFetchers', () => {
             const result = await fetchHiddenGemsFallbackIds('key', 'tv');
             expect(result).toEqual(['101']); // 102 filtered out (popularity > 20)
             expect(getDuckDbCatalogFromFilters).toHaveBeenCalledWith(
-                expect.objectContaining({ 'popularity.lte': 20 }),
+                expect.objectContaining({ 'popularity.lte': 20, 'vote_count.lte': 1000 }),
                 'series',
                 0,
                 expect.any(Number),
