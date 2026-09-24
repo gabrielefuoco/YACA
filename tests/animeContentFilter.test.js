@@ -21,7 +21,7 @@ describe('TICKET 13: Filtro dei contenuti anime dentro i cataloghi', () => {
         await catalogRequestCache.clear();
     });
 
-    describe('1. Unità isItemAnime (riconoscimento marcatore e fail-open)', () => {
+    describe('1. Unità isItemAnime (marcatore normalizzato, default false)', () => {
         it('riconosce _isAnime === true esplicito', () => {
             const item = { id: 'tmdb:1', name: 'Anime Esplicito', _isAnime: true };
             expect(isItemAnime(item)).toBe(true);
@@ -32,7 +32,7 @@ describe('TICKET 13: Filtro dei contenuti anime dentro i cataloghi', () => {
             expect(isItemAnime(item)).toBe(false);
         });
 
-        it('fail-open: item senza _isAnime e senza metadati (genre/lingua/keyword) restituisce false', () => {
+        it('default false: item senza _isAnime e senza prove restituisce false', () => {
             const item = { id: 'tmdb:3', name: 'Serie Senza Metadati' };
             expect(isItemAnime(item)).toBe(false);
         });
@@ -111,7 +111,7 @@ describe('TICKET 13: Filtro dei contenuti anime dentro i cataloghi', () => {
             ]
         };
 
-        it('anime === "exclude" (No Anime): rimuove gli item anime, mantiene i non-anime e l\'item senza metadati (fail-open)', async () => {
+        it('anime === "exclude" (No Anime): rimuove gli item anime e mantiene i non-anime', async () => {
             routeCatalogRequest.mockResolvedValueOnce(createMockItems());
 
             const config = JSON.parse(JSON.stringify(baseUserConfig));
@@ -134,7 +134,7 @@ describe('TICKET 13: Filtro dei contenuti anime dentro i cataloghi', () => {
             expect(names).toContain('Breaking Bad');
             expect(names).toContain('Succession (Inferito non anime)');
 
-            // Item senza _isAnime e senza metadati: PASSA per fail-open
+            // Item senza prove: il boundary lo normalizza a false, quindi passa No Anime.
             expect(names).toContain('Serie Indipendente Senza Metadati');
             expect(names.length).toBe(3);
         });
@@ -202,6 +202,29 @@ describe('TICKET 13: Filtro dei contenuti anime dentro i cataloghi', () => {
             expect(names).not.toContain('Hero Anime');
             expect(names).toContain('Hero Drama');
             expect(names.length).toBe(1);
+        });
+
+        it('esclude KPop Demon Hunters da catalogo e hero con No Anime', async () => {
+            const kpop = {
+                id: 'tmdb:803796',
+                type: 'movie',
+                name: 'KPop Demon Hunters',
+                genre_ids: [14, 10402, 35, 16],
+                original_language: 'en',
+                keywords: [{ id: 999999, name: 'animesque' }]
+            };
+            const config = JSON.parse(JSON.stringify(baseUserConfig));
+            config.profiles[0].settings.typeSelectors.anime = 'exclude';
+
+            for (const catalogId of ['preset_top_rated_movies', 'yaca_true_blend_movies']) {
+                routeCatalogRequest.mockResolvedValueOnce([kpop]);
+                const response = await catalogHandler(
+                    { id: catalogId, type: 'movie', extra: {} },
+                    config,
+                    'http://localhost:7000'
+                );
+                expect(response.metas.map(meta => meta.id)).not.toContain('tmdb:803796');
+            }
         });
     });
 
@@ -358,7 +381,7 @@ describe('TICKET 13: Filtro dei contenuti anime dentro i cataloghi', () => {
             ]
         });
 
-        it('con No Anime: item con _isAnime NON compare; item senza _isAnime PASSA', async () => {
+        it('con No Anime: item anime non compare; item senza prove normalizzato a false passa', async () => {
             routeCatalogRequest.mockResolvedValueOnce(generalCatalogItems());
 
             const response = await catalogHandler(

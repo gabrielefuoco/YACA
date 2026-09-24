@@ -11,69 +11,53 @@ const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/Metadat
 const { formatStremioCatalog, sanitizeCatalogMeta, findLatestAiredEpisode } = require('../catalog/formatters/StremioFormatter');
 const StreamBadge = require('../db/models/StreamBadge');
 const animeAiringState = require('../data/animeAiringState');
-const { isAnimeContent } = require('../utils/animeIdentity');
+const { normalizeAnimeMarker, extractAnimeTmdbId } = require('../utils/animeIdentity');
 const animeMappingStore = require('../data/animeMappingStore');
 const { isCatalogConformant, isAlwaysVisible } = require('../catalog/catalogKind');
 const { applyKidsMode } = require('../utils/kidsModeFilters');
 
-function extractTmdbId(item) {
-    if (!item) return null;
-    if (item.tmdbId) return String(item.tmdbId);
-    if (item._tmdbId) return String(item._tmdbId);
-    const strId = String(item.id || '').replace(/_ita_offset$/, '').trim();
-    if (/^\d+$/.test(strId)) return strId;
-    if (strId.startsWith('tmdb:')) {
-        const parts = strId.split(':');
-        // tmdb:12345 or tmdb:12345:1:1
-        if (/^\d+$/.test(parts[1])) return parts[1];
-        // tmdb:tv:12345 or tmdb:movie:12345
-        if (parts.length > 2 && /^\d+$/.test(parts[2])) return parts[2];
-    }
-    return null;
-}
+const extractTmdbId = extractAnimeTmdbId;
 
-function extractGenreIds(item) {
-    const rawGenres = item.genre_ids || item.genres || item.rawTMDB?.genre_ids || item.rawTMDB?.genres;
-    if (Array.isArray(rawGenres) && rawGenres.length > 0) {
-        return rawGenres.map(g => {
-            if (typeof g === 'number') return g;
-            if (typeof g === 'object' && g !== null && g.id) return g.id;
-            if (typeof g === 'string') {
-                const lower = g.toLowerCase();
-                if (lower === 'animation' || lower === 'animazione') return 16;
-            }
-            return g;
-        });
-    }
-    return [];
-}
-
+/**
+ * Consumer del contratto normalizzato. Il resolver è condiviso con i dettagli,
+ * ma un payload già attraversato dal boundary non viene riclassificato.
+ */
 function isItemAnime(item) {
-    if (!item) return false;
-    // Marcatore esistente: se _isAnime è già valorizzato come boolean (es. da DuckDbProvider), usalo direttamente
-    if (typeof item._isAnime === 'boolean') return item._isAnime;
-    if (item.type === 'anime') return true;
+    return normalizeAnimeMarker(item) === true;
+}
 
-    const id = String(item.id || '');
-    if (id.startsWith('kitsu:') || id.startsWith('anilist:')) return true;
+/**
+ * Trova il documento airing-state della card. La card può usare un Kitsu ID
+ * stagionale risolto da Anibridge, diverso da `doc.ids.kitsu`: in quel caso lo
+ * riportiamo all'opera base TMDB prima della lookup snapshot.
+ */
+function findAiringStateDocument(snapshot, item, mappingStore = animeMappingStore) {
+    if (!snapshot || !item) return null;
+
+    const direct = animeAiringState.findDocument(snapshot, item.id);
+    if (direct) return direct;
 
     const tmdbId = extractTmdbId(item);
-    const genreIds = extractGenreIds(item);
-    const originalLanguage = item.original_language || item.originalLanguage || item._originalLanguage || item.rawTMDB?.original_language;
-    const keywords = item.keywords || item.rawTMDB?.keywords;
+    if (tmdbId && snapshot.byTmdbId) {
+        const byTmdbId = snapshot.byTmdbId.get(String(tmdbId));
+        if (byTmdbId) return byTmdbId;
+    }
 
-    // Ricalcola con isAnimeContent (mappingStore Anibridge/Fribb + genere 16 + ja/keyword).
-    // Se non porta né mapping certificato né combinazione genre/lingua/keyword -> restituisce false (fail-open).
-    const isAnime = isAnimeContent({
-        tmdbId,
-        genreIds,
-        originalLanguage,
-        keywords,
-        mappingStore: animeMappingStore
-    });
+    const itemId = String(item.id || '').replace(/_ita_offset$/, '');
+    if (!itemId.startsWith('kitsu:')) return null;
 
-    item._isAnime = isAnime;
-    return isAnime;
+    const kitsuId = itemId.slice('kitsu:'.length).split(':')[0];
+    if (!/^\d+$/.test(kitsuId) || !mappingStore) return null;
+
+    try {
+        const mappedTmdbId = mappingStore.resolveTmdbFromKitsu(kitsuId);
+        return mappedTmdbId && snapshot.byTmdbId
+            ? snapshot.byTmdbId.get(String(mappedTmdbId)) || null
+            : null;
+    } catch (_error) {
+        // Il fallback difensivo non deve mai far fallire il catalogo.
+        return null;
+    }
 }
 
 // Marker del provider/stato esterno. `anilist_simulcast` resta accettato per le
@@ -91,7 +75,14 @@ function isAiringStateCatalog(baseId, catalogMeta) {
  * finestra di 14 giorni è uscito un episodio doppiato. Entrambe condividono lo stesso id.
  * Non lancia mai: in caso di problemi serve le card senza badge.
  */
-async function applyAiringStateBadges(metas, { userConfig, hostUrl, catalogMeta, type, snapshot = null } = {}) {
+async function applyAiringStateBadges(metas, {
+    userConfig,
+    hostUrl,
+    catalogMeta,
+    type,
+    snapshot = null,
+    mappingStore = animeMappingStore
+} = {}) {
     if (!Array.isArray(metas) || metas.length === 0) return { metas: [] };
 
     try {
@@ -111,7 +102,8 @@ async function applyAiringStateBadges(metas, { userConfig, hostUrl, catalogMeta,
                 processed.push(item);
                 continue;
             }
-            const info = animeAiringState.getCardInfoForId(state, item.id);
+            const doc = findAiringStateDocument(state, item, mappingStore);
+            const info = animeAiringState.getCardInfo(doc);
             if (!info) {
                 // Nessuno stato per questa serie: la card resta, senza badge.
                 processed.push({ ...item, _itaBadge: false });
@@ -172,8 +164,13 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
         return cachedData || { metas: [] };
     }
 
-    // Clone metas to avoid modifying cached objects in place
-    const metas = cachedData.metas.map(m => ({ ...m }));
+    // Clone metas to avoid modifying cached objects in place. La normalizzazione
+    // difensiva copre anche cache creati prima dell'introduzione del marker.
+    const metas = cachedData.metas.map(item => {
+        const clone = { ...item };
+        normalizeAnimeMarker(clone);
+        return clone;
+    });
 
     // Snapshot in RAM per gli anime (una sola lettura, cache TTL breve, non lancia mai)
     let animeSnapshot = options.snapshot || null;
@@ -230,27 +227,9 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
         if (isItemAnime(item)) {
             const isAlreadyCloned = String(item.id).endsWith('_ita_offset');
 
-            let doc = null;
-            if (animeSnapshot) {
-                doc = animeAiringState.findDocument(animeSnapshot, item.id);
-                if (!doc) {
-                    const tmdbId = extractTmdbId(item);
-                    if (tmdbId && animeSnapshot.byTmdbId) {
-                        doc = animeSnapshot.byTmdbId.get(tmdbId) || null;
-                    }
-                }
-                if (!doc && item.id && String(item.id).startsWith('kitsu:')) {
-                    const kitsuId = String(item.id).replace('kitsu:', '').replace(/_ita_offset$/, '');
-                    try {
-                        const mappedTmdbId = animeMappingStore.resolveTmdbFromKitsu(kitsuId);
-                        if (mappedTmdbId && animeSnapshot.byTmdbId) {
-                            doc = animeSnapshot.byTmdbId.get(String(mappedTmdbId)) || null;
-                        }
-                    } catch (_e) {
-                        // Lookup difensivo, mai crash
-                    }
-                }
-            }
+            const doc = animeSnapshot
+                ? findAiringStateDocument(animeSnapshot, item)
+                : null;
 
             const dubEpisode = animeAiringState.getDubEpisode(doc);
             // Fuori dal catalogo novità un anime mostra SOLO il badge ITA (o niente):
@@ -366,7 +345,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const { cacheOptions: tmdbFetchOptions } = getCacheConfig(userConfig.ttl);
     
     // We bump this version whenever we make significant changes to how posters or badges are generated
-    const BADGE_CATALOG_VERSION = 15;
+    const BADGE_CATALOG_VERSION = 16;
 
     // Check Full CACHE Request
     const requestCacheKey = generateRequestHash(id, { 
@@ -420,7 +399,14 @@ async function catalogHandler(args, userConfig, hostUrl) {
             // 1. ROUTING: Determina il catalogo grezzo passando attraverso il Router
             let results = await routeCatalogRequest(routerArgs, userConfig, tmdbClient, tmdbApiKey, activeProfileSettings, tmdbFetchOptions, catalogMeta);
             // console.log('ROUTE RESULTS:', results?.length);
-            
+
+            // Boundary unico per i cataloghi: prima di selettori, kids e badge
+            // ogni item espone un boolean, calcolato dal resolver condiviso.
+            results = (results || []).map(item => {
+                normalizeAnimeMarker(item);
+                return item;
+            });
+
             if (!results || results.length === 0) {
                 return { metas: [] };
             }
@@ -576,5 +562,6 @@ module.exports = {
     isAiringStateCatalog,
     applyPostCacheBadges,
     isItemAnime,
-    extractTmdbId
+    extractTmdbId,
+    findAiringStateDocument
 };

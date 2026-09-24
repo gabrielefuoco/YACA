@@ -74,6 +74,7 @@ const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvide
 const dataFetchers = require('../src/engines/hybrid/dataFetchers');
 const strategies = require('../src/engines/hybrid/catalogStrategies');
 const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');
+const { normalizeAnimeMarker } = require('../src/utils/animeIdentity');
 const {
     getHybridCatalog,
     buildSharedHeroCatalogs,
@@ -230,6 +231,44 @@ describe('Ticket 21: shared hero diversity', () => {
         expect(strategies.buildTraktFilteredCatalogWithMeta).toHaveBeenCalledTimes(1);
         expect(dataFetchers.fetchTraktRecommendationsRawDetailed).toHaveBeenCalledTimes(1);
         expect(mockCacheStore.size).toBe(1);
+    });
+
+    it('preserva le prove anime nel payload hero per il boundary normalizzato', async () => {
+        strategies.buildTopGenresMixCatalog.mockResolvedValue([
+            { id: '803796', matchScore: 40 }
+        ]);
+        getDuckDbMetaDetails.mockResolvedValue({
+            _isAnime: true,
+            rawTMDB: {
+                id: 803796,
+                title: 'KPop Demon Hunters',
+                overview: 'Fixture',
+                release_date: '2025-06-20',
+                vote_average: 8,
+                genre_ids: [14, 10402, 35, 16],
+                original_language: 'en',
+                keywords: { results: [{ id: 999999, name: 'animesque' }] }
+            }
+        });
+
+        const results = await getHybridCatalog(
+            'yaca_true_blend_movies',
+            0,
+            null,
+            'tmdb-key',
+            'sim_user',
+            'sim_profile',
+            userConfig()
+        );
+
+        expect(results).toHaveLength(1);
+        expect(results[0]).toEqual(expect.objectContaining({
+            id: 'tmdb:803796',
+            name: 'KPop Demon Hunters',
+            original_language: 'en',
+            keywords: [{ id: 999999, name: 'animesque' }]
+        }));
+        expect(normalizeAnimeMarker(results[0])).toBe(true);
     });
 
     it('deduplica i quattro fallback freddi anche quando i builder falliscono', async () => {

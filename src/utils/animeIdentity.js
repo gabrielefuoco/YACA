@@ -14,6 +14,8 @@
  * produzioni occidentali stilisticamente influenzate dall'animazione giapponese (es. Avatar, Castlevania).
  */
 
+const ANIME_MARKER_DEFAULT = false;
+
 function isAnimeKeywordString(keyword) {
     if (!keyword || typeof keyword !== 'string') return false;
     const s = keyword.toLowerCase().trim();
@@ -117,7 +119,113 @@ function isAnimeContent({ tmdbId, genreIds, originalLanguage, keywords, mappingS
     return false;
 }
 
+/**
+ * Estrae un TMDB id dai payload Stremio senza richiedere una rete.
+ * I suffissi di presentazione (`_ita_offset`) non cambiano l'opera.
+ */
+function extractAnimeTmdbId(item) {
+    if (!item) return null;
+    if (item.tmdbId !== undefined && item.tmdbId !== null && item.tmdbId !== '') {
+        return String(item.tmdbId);
+    }
+    if (item._tmdbId !== undefined && item._tmdbId !== null && item._tmdbId !== '') {
+        return String(item._tmdbId);
+    }
+
+    const rawId = String(item.id || item.stremioId || '').replace(/_ita_offset$/, '').trim();
+    if (/^\d+$/.test(rawId)) return rawId;
+
+    const parts = rawId.split(':');
+    if (parts[0] === 'tmdb') {
+        if (/^\d+$/.test(parts[1] || '')) return parts[1];
+        if (parts.length > 2 && /^\d+$/.test(parts[2])) return parts[2];
+    }
+    return null;
+}
+
+function extractAnimeGenreIds(item) {
+    const candidates = [item.genre_ids, item.genres, item.rawTMDB?.genre_ids, item.rawTMDB?.genres];
+    const rawGenres = candidates.find(source => {
+        if (Array.isArray(source)) return source.some(genre => genre !== null && genre !== undefined);
+        if (typeof source === 'string' && source.trim()) {
+            try {
+                const parsed = JSON.parse(source);
+                return Array.isArray(parsed) && parsed.length > 0;
+            } catch {
+                return false;
+            }
+        }
+        return false;
+    });
+
+    if (!rawGenres) return [];
+    let list = rawGenres;
+    if (typeof list === 'string') {
+        try {
+            list = JSON.parse(list);
+        } catch {
+            return [];
+        }
+    }
+    if (!Array.isArray(list)) return [];
+
+    return list.map(genre => {
+        if (typeof genre === 'string') {
+            const normalized = genre.toLowerCase();
+            return normalized === 'animation' || normalized === 'animazione' ? 16 : genre;
+        }
+        if (typeof genre === 'number') return genre;
+        if (genre && typeof genre === 'object' && genre.id !== undefined) return genre.id;
+        return genre;
+    });
+}
+
+/**
+ * Unico contratto di normalizzazione del marcatore anime.
+ *
+ * Un boolean già presente è autorevole e viene soltanto propagato. In assenza
+ * del marker, Kitsu/AniList e `type: anime` sono prove positive; per i payload
+ * TMDB viene usata `isAnimeContent`. Il default unico è `false`: senza prove
+ * non abilitiamo enrichment Kitsu, filtri anime o badge-specifici.
+ *
+ * La funzione muta il payload e restituisce il boolean. Le chiamate successive
+ * sono O(1) e non ripetono classificazioni o lookup.
+ */
+function normalizeAnimeMarker(item, options = {}) {
+    if (!item || typeof item !== 'object') return false;
+    if (typeof item._isAnime === 'boolean') return item._isAnime;
+
+    const opts = options && typeof options === 'object' ? options : {};
+    const rawId = String(item.id || item.stremioId || '').replace(/_ita_offset$/, '');
+    let isAnime = item.type === 'anime'
+        || rawId.startsWith('kitsu:')
+        || rawId.startsWith('anilist:');
+
+    if (!isAnime) {
+        isAnime = isAnimeContent({
+            tmdbId: opts.tmdbId ?? extractAnimeTmdbId(item),
+            genreIds: opts.genreIds ?? extractAnimeGenreIds(item),
+            originalLanguage: opts.originalLanguage
+                ?? item.original_language
+                ?? item.originalLanguage
+                ?? item._originalLanguage
+                ?? item.rawTMDB?.original_language,
+            keywords: opts.keywords ?? item.keywords ?? item.rawTMDB?.keywords,
+            mappingStore: opts.mappingStore
+        });
+    }
+
+    // Unico fallback per il marker; `isAnimeContent` resta il resolver
+    // canonico, ma non può far ereditare un default implicito al boundary.
+    if (typeof isAnime !== 'boolean') isAnime = ANIME_MARKER_DEFAULT;
+    item._isAnime = isAnime;
+    return isAnime;
+}
+
 module.exports = {
+    ANIME_MARKER_DEFAULT,
+    normalizeAnimeMarker,
+    extractAnimeTmdbId,
     isAnimeContent,
     hasAnimeKeyword,
     isAnimeKeywordString,
