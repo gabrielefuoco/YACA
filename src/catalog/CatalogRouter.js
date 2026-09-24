@@ -9,6 +9,8 @@ const { normalizeToUniversalSchema } = require('../utils/resultMerger');
 const { getPresets } = require('../data/presets');
 const { getWatchlistCatalog } = require('./providers/WatchlistProvider');
 
+const PRESET_PAGE_SIZE = 20;
+
 async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, activeProfileSettings, tmdbFetchOptions, catalogMeta) {
     const { id, type, extra, filters: directFilters } = args;
     const skip = extra.skip || 0;
@@ -74,7 +76,8 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
             const { mapSortBy } = require('./providers/DuckDbProvider');
             presetToRun = { ...catalogMeta, orderBy: mapSortBy(sortBy, catalogMeta.type || type) };
         }
-        return await getDuckDbCatalogFromPreset(presetToRun, skip, 100, {
+        const isPresetCatalog = baseId.startsWith('preset_') || String(catalogMeta?.id || '').startsWith('preset_');
+        return await getDuckDbCatalogFromPreset(presetToRun, skip, isPresetCatalog ? PRESET_PAGE_SIZE : 100, {
             kidsMode: Boolean(activeProfileSettings?.kidsMode)
         });
     }
@@ -129,4 +132,4 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
     return [];
 }
 
-module.exports = { routeCatalogRequest };
+module.exports = { routeCatalogRequest, PRESET_PAGE_SIZE };

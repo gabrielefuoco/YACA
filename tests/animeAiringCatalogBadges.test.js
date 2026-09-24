@@ -13,7 +13,7 @@ jest.mock('../src/catalog/providers/DuckDbProvider', () => {
 const animeAiringState = require('../src/data/animeAiringState');
 const animeMappingStore = require('../src/data/animeMappingStore');
 const { getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');
-const { getAiringStateCatalog } = require('../src/catalog/providers/AiringStateProvider');
+const { getAiringStateCatalog, PAGE_SIZE } = require('../src/catalog/providers/AiringStateProvider');
 const { applyAiringStateBadges, isAiringStateCatalog } = require('../src/handlers/catalogHandler');
 const { sanitizeCatalogMeta, formatStremioCatalog } = require('../src/catalog/formatters/StremioFormatter');
 
@@ -115,8 +115,12 @@ describe('AiringStateProvider - catalogo novità anime', () => {
 
         const metas = await getAiringStateCatalog(0);
         expect(metas.map((m) => m.id)).toEqual(['kitsu:222', 'kitsu:48269', 'kitsu:444']);
+        expect(PAGE_SIZE).toBe(20);
         expect(getDuckDbCatalogFromPreset).toHaveBeenCalledTimes(1);
 
+        const [, hydrationSkip, hydrationLimit] = getDuckDbCatalogFromPreset.mock.calls[0];
+        expect(hydrationSkip).toBe(0);
+        expect(hydrationLimit).toBe(3);
         const where = getDuckDbCatalogFromPreset.mock.calls[0][0].where.join(' ');
         expect(where).toContain('240411');
         expect(where).toContain('999002');

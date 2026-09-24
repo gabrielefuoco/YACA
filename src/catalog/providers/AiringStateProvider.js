@@ -17,7 +17,7 @@ const animeMappingStore = require('../../data/animeMappingStore');
 const { F } = require('../../data/filters');
 const { getDuckDbCatalogFromPreset } = require('./DuckDbProvider');
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 20;
 
 /**
  * @param {number} skip Paginazione Stremio (offset sugli item della lista novità)

@@ -30,7 +30,7 @@ async function buildCatalogQuery(preset, skip = 0, limit = 100) {
     if (ftsClause) {
         normalFilters.push(`fts_main_${table}.match_bm25(id, '${ftsClause}') IS NOT NULL`);
         const where = normalFilters.join(' AND ');
-        return `SELECT * FROM ${table} WHERE ${where} ORDER BY fts_main_${table}.match_bm25(id, '${ftsClause}') DESC LIMIT ${limit} OFFSET ${skip}`;
+        return `SELECT * FROM ${table} WHERE ${where} ORDER BY fts_main_${table}.match_bm25(id, '${ftsClause}') DESC, id ASC LIMIT ${limit} OFFSET ${skip}`;
     }
     
     // SIMILAR: legge i consigliati archiviati nativamente nei metadati
@@ -60,7 +60,7 @@ async function buildCatalogQuery(preset, skip = 0, limit = 100) {
     // Query Standard
     const where = normalFilters.join(' AND ');
     const order = preset.orderBy || 'popularity DESC NULLS LAST';
-    return `SELECT * FROM ${table} WHERE ${where} ORDER BY ${order} LIMIT ${limit} OFFSET ${skip}`;
+    return `SELECT * FROM ${table} WHERE ${where} ORDER BY ${order}, id ASC LIMIT ${limit} OFFSET ${skip}`;
 }
 
 module.exports = { buildCatalogQuery };
