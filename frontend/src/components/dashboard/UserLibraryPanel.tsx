@@ -120,8 +120,17 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
     setDragIndex(null);
   };
 
-  const sortedItems = [...items].sort((a, b) => {
-    if (sortMode === 'name_asc') return a.name.localeCompare(b.name);
+  // Deduplica difensiva per evitare chiavi duplicate e render multipli
+  const uniqueItems = Array.from(
+    items.reduce((map, item) => {
+      const key = item._id || item.itemId;
+      if (key && !map.has(key)) map.set(key, item);
+      return map;
+    }, new Map<string, any>()).values()
+  );
+
+  const sortedItems = [...uniqueItems].sort((a, b) => {
+    if (sortMode === 'name_asc') return (a.name || '').localeCompare(b.name || '');
     if (sortMode === 'date_asc') return new Date(a._ctime).getTime() - new Date(b._ctime).getTime();
     return 0; // date_desc is default from API and DB
   });
@@ -271,7 +280,11 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
               >
                 {item.poster ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.poster} alt={item.name} className="w-full h-full object-cover" />
+                  <img
+                    src={item.poster.startsWith('http') ? item.poster : `https://image.tmdb.org/t/p/w500${item.poster}`}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <div className="w-full h-full bg-marrow-light/20 flex items-center justify-center p-2 text-center">
                     <span className="text-xs font-bold text-marrow-deep/50">{item.name}</span>

@@ -386,10 +386,20 @@ router.get('/:id/library', async (req, res) => {
             removed: false
         }).sort({ _ctime: -1 }).lean();
 
-        const mappedItems = items.map(item => ({
-            ...item,
-            _id: item.itemId || item._id
-        }));
+        const seen = new Set();
+        const mappedItems = [];
+
+        for (const item of items) {
+            const effectiveId = String(item.itemId || item._id).trim();
+            if (!effectiveId || seen.has(effectiveId)) continue;
+            seen.add(effectiveId);
+
+            mappedItems.push({
+                ...item,
+                _id: effectiveId,
+                itemId: effectiveId
+            });
+        }
 
         res.json(mappedItems);
     } catch (err) {
@@ -414,12 +424,19 @@ router.post('/:id/library', async (req, res) => {
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
         const now = new Date();
+        let poster = item.poster || '';
+        if (!poster) {
+            const { resolvePoster } = require('../utils/posterResolver');
+            const resolved = await resolvePoster({ itemId: item.id, type: item.type, name: item.name });
+            if (resolved) poster = resolved;
+        }
+
         const doc = {
             addonUuid: account.addonUuid,
             itemId: item.id,
             type: item.type,
             name: item.name || '',
-            poster: item.poster || '',
+            poster,
             posterShape: item.posterShape || 'poster',
             background: item.background || '',
             year: item.year ? item.year.toString() : '',
@@ -431,11 +448,18 @@ router.post('/:id/library', async (req, res) => {
         };
 
         const UserLibraryItem = require('../db/models/UserLibraryItem');
-        await UserLibraryItem.findOneAndUpdate(
-            { addonUuid: account.addonUuid, itemId: item.id },
-            { $set: doc },
-            { upsert: true, returnDocument: 'after' }
-        );
+        let existing = await UserLibraryItem.findOne({
+            addonUuid: account.addonUuid,
+            $or: [{ itemId: item.id }, { _id: item.id }]
+        });
+
+        if (existing) {
+            Object.assign(existing, doc);
+            existing.itemId = item.id;
+            await existing.save();
+        } else {
+            await UserLibraryItem.create(doc);
+        }
 
         let hostUrl = process.env.BASE_URL;
         if (!hostUrl) {

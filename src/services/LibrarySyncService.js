@@ -3,6 +3,7 @@ const AddonConfig = require('../db/models/AddonConfig');
 const UserLibraryItem = require('../db/models/UserLibraryItem');
 const { stremioClient } = require('../clients/stremio');
 const { isAnimeContent } = require('../utils/animeIdentity');
+const { resolvePoster } = require('../utils/posterResolver');
 let animeMappingStore = null;
 try {
     animeMappingStore = require('../data/animeMappingStore');
@@ -82,6 +83,105 @@ function classifySyncItemType(item, resolvedTmdbId = null, mappingStore = animeM
 
 class LibrarySyncService {
     /**
+     * Impedisce che una sincronizzazione degradi una copertina già presente.
+     *
+     * Gli upsert scrivono `poster: <risolto> || null`: se la risoluzione non trova
+     * nulla (nessuna corrispondenza nel parquet locale e nessun client TMDB), il
+     * valore salvato diventerebbe `null`, cancellando una copertina buona già in
+     * archivio. Qui, a ops già costruite e con una sola query, ripristiniamo la
+     * copertina esistente quando la nuova sarebbe vuota. Se invece la nuova
+     * copertina è valorizzata, vince quella (migliora il dato, non lo degrada).
+     *
+     * @param {String} addonUuid
+     * @param {Array} bulkOps ops nel formato `{ updateOne: { filter, update, upsert } }`
+     * @returns {Promise<number>} quante copertine sono state preservate
+     */
+    static async preserveExistingPosters(addonUuid, bulkOps = []) {
+        if (!addonUuid || bulkOps.length === 0) return 0;
+
+        const ids = bulkOps
+            .map(op => op?.updateOne?.filter?.itemId)
+            .filter(id => typeof id === 'string' && id.length > 0);
+        if (ids.length === 0) return 0;
+
+        try {
+            const existing = await UserLibraryItem
+                .find({ addonUuid, itemId: { $in: ids }, poster: { $nin: [null, ''] } }, { itemId: 1, poster: 1 })
+                .lean();
+
+            if (!existing || existing.length === 0) return 0;
+
+            const posterByItemId = new Map(
+                existing
+                    .filter(doc => doc && doc.itemId && typeof doc.poster === 'string' && doc.poster.trim().length > 0)
+                    .map(doc => [String(doc.itemId), doc.poster])
+            );
+            if (posterByItemId.size === 0) return 0;
+
+            let preserved = 0;
+            for (const op of bulkOps) {
+                const setId = String(op?.updateOne?.filter?.itemId || '');
+                const set = op?.updateOne?.update?.$set;
+                if (!setId || !set || !('poster' in set)) continue;
+                if (set.poster) continue; // copertina nuova valida: la teniamo
+                const previous = posterByItemId.get(setId);
+                if (previous) {
+                    set.poster = previous;
+                    preserved++;
+                }
+            }
+
+            if (preserved > 0) {
+                console.log(`[LibrarySync] Copertine preservate da sovrascrittura: ${preserved}`);
+            }
+            return preserved;
+        } catch (err) {
+            console.warn('[LibrarySync] Preservazione copertine non-fatale:', err.message);
+            return 0;
+        }
+    }
+
+    /**
+     * Consolida e deduplica gli elementi della libreria per un dato addonUuid.
+     * Riconcilia documenti legacy senza itemId con i record unificati, mantenendo il record più ricco.
+     *
+     * @param {String} addonUuid
+     * @returns {Promise<number>} numero di duplicati rimossi
+     */
+    static async deduplicateUserLibrary(addonUuid) {
+        if (!addonUuid) return 0;
+        try {
+            const items = await UserLibraryItem.find({ addonUuid }).sort({ mapped: -1, _mtime: -1 });
+            const seen = new Map();
+            const toDeleteIds = [];
+
+            for (const item of items) {
+                const key = String(item.itemId || item._id).trim();
+                if (!key) continue;
+
+                if (seen.has(key)) {
+                    toDeleteIds.push(item._id);
+                } else {
+                    seen.set(key, item);
+                    if (!item.itemId) {
+                        item.itemId = key;
+                        await item.save().catch(() => {});
+                    }
+                }
+            }
+
+            if (toDeleteIds.length > 0) {
+                await UserLibraryItem.deleteMany({ _id: { $in: toDeleteIds } });
+                console.log(`[LibrarySync] Deduplicati ${toDeleteIds.length} elementi per addonUuid ${addonUuid}`);
+            }
+            return toDeleteIds.length;
+        } catch (err) {
+            console.warn('[LibrarySync] Deduplicazione libreria non-fatale:', err.message);
+            return 0;
+        }
+    }
+
+    /**
      * Sincronizza la libreria Stremio dell'utente e la salva in locale.
      * @param {String} userId - L'ID dell'utente in UserAccount.
      */
@@ -130,14 +230,26 @@ class LibrarySyncService {
                 }
             }
 
-            const bulkOps = items.map(item => {
+            await LibrarySyncService.deduplicateUserLibrary(user.addonUuid);
+
+            const bulkOps = await Promise.all(items.map(async item => {
                 const resolvedTmdbId = imdbMap.get(item._id) || (item.tmdbId ? String(item.tmdbId) : null);
                 const finalType = classifySyncItemType(item, resolvedTmdbId);
+                let poster = item.poster;
+                if (!poster) {
+                    poster = await resolvePoster({
+                        itemId: item._id,
+                        tmdbId: resolvedTmdbId,
+                        type: finalType,
+                        name: item.name
+                    });
+                }
+
                 const updateFields = {
                     itemId: item._id,
                     type: finalType,
                     name: item.name,
-                    poster: item.poster,
+                    poster: poster || null,
                     posterShape: item.posterShape,
                     background: item.background,
                     logo: item.logo,
@@ -159,9 +271,10 @@ class LibrarySyncService {
                         upsert: true
                     }
                 };
-            });
+            }));
 
             if (bulkOps.length > 0) {
+                await LibrarySyncService.preserveExistingPosters(user.addonUuid, bulkOps);
                 await UserLibraryItem.bulkWrite(bulkOps, { ordered: false });
             }
 
@@ -189,6 +302,8 @@ class LibrarySyncService {
         if (!addonConfig) return;
 
         try {
+            await LibrarySyncService.deduplicateUserLibrary(user.addonUuid);
+
             const { traktClient } = require('../clients/trakt');
             console.log(`[LibrarySync] Fetching Trakt library for user ${userId}...`);
             const [moviesRes, showsRes] = await Promise.allSettled([
@@ -216,6 +331,13 @@ class LibrarySyncService {
                         originalLanguage: m.language
                     }, tmdbId ? String(tmdbId) : null);
 
+                    const poster = await resolvePoster({
+                        itemId,
+                        tmdbId,
+                        type: finalType,
+                        name: m.title
+                    });
+
                     bulkOps.push({
                         updateOne: {
                             filter: { addonUuid: user.addonUuid, itemId },
@@ -224,6 +346,7 @@ class LibrarySyncService {
                                     itemId,
                                     type: finalType,
                                     name: m.title,
+                                    poster: poster || null,
                                     year: m.year,
                                     tmdbId: tmdbId || null,
                                     _mtime: entry.listed_at ? new Date(entry.listed_at).getTime() : Date.now(),
@@ -251,6 +374,13 @@ class LibrarySyncService {
                         originalLanguage: s.language
                     }, tmdbId ? String(tmdbId) : null);
 
+                    const poster = await resolvePoster({
+                        itemId,
+                        tmdbId,
+                        type: finalType,
+                        name: s.title
+                    });
+
                     bulkOps.push({
                         updateOne: {
                             filter: { addonUuid: user.addonUuid, itemId },
@@ -259,6 +389,7 @@ class LibrarySyncService {
                                     itemId,
                                     type: finalType,
                                     name: s.title,
+                                    poster: poster || null,
                                     year: s.year,
                                     tmdbId: tmdbId || null,
                                     _mtime: entry.listed_at ? new Date(entry.listed_at).getTime() : Date.now(),
@@ -272,6 +403,7 @@ class LibrarySyncService {
             }
 
             if (bulkOps.length > 0) {
+                await LibrarySyncService.preserveExistingPosters(user.addonUuid, bulkOps);
                 await UserLibraryItem.bulkWrite(bulkOps, { ordered: false });
             }
 
