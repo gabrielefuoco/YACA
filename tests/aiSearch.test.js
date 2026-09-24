@@ -47,7 +47,7 @@ describe('AI Search (Mistral & Caching) Tests', () => {
 
         expect(aiPromptCache.get).toHaveBeenCalledWith('prompt:single_query:film d\'azione');
         expect(mockMistralComplete).toHaveBeenCalledWith(expect.objectContaining({
-            model: 'mistral-small-latest',
+            model: process.env.MISTRAL_MODEL || 'open-mistral-nemo',
             messages: expect.arrayContaining([
                 { role: 'user', content: 'QUERY: "film d\'azione"' }
             ])

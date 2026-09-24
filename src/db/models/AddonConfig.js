@@ -80,7 +80,8 @@ const addonConfigSchema = new mongoose.Schema({
     customCatalogs: [catalogSchema],
     config: {
         activeProfileId: String,
-        configVersion: String
+        configVersion: String,
+        manifestFingerprint: String
     },
     syncStatus: {
         isSyncing: { type: Boolean, default: false },

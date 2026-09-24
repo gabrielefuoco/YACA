@@ -2,7 +2,6 @@ const UserConfig = require('../../models/UserConfig');
 const { validateAuth, validateKeys } = require('./validators');
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');
 const { updateStremioAddonCollection } = require('../../utils/stremioAddon');
-const UserAccount = require('../../db/models/UserAccount');
 
 module.exports = async (req, res) => {
     try {
@@ -98,8 +97,11 @@ module.exports = async (req, res) => {
 
         const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
         const manifestUrl = `${hostUrl}/${userDoc.userId}/${userDoc.config?.configVersion}/manifest.json`;
+        const manifestChanged = existingUser?.configVersion !== userDoc.config?.configVersion;
 
-        if (userDoc.apiKeys?.stremio) {
+        // A new URL is required for Stremio to discard its cached manifest.
+        // Avoid a pointless collection update when the save changed no manifest input.
+        if (userDoc.apiKeys?.stremio && manifestChanged) {
             updateStremioAddonCollection(userDoc.apiKeys.stremio, manifestUrl)
                 .catch((syncError) => {
                     console.error('Errore aggiornamento addon Stremio:', syncError.message);
@@ -113,7 +115,9 @@ module.exports = async (req, res) => {
             configVersion: userDoc.config?.configVersion,
             apiKeys: userDoc.apiKeys, // Return keys for frontend state sync
             warnings,
-            message: userDoc.apiKeys?.stremio ? "Configurazione salvata. Stremio aggiornato." : "Configurazione salvata."
+            message: userDoc.apiKeys?.stremio && manifestChanged
+                ? "Configurazione salvata. Stremio aggiornato."
+                : "Configurazione salvata."
         });
 
     } catch (err) {
