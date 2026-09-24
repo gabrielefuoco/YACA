@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { createTmdbClient } = require('../clients/tmdb');
 const { sanitizeString } = require('../utils/helpers');
+const { resolveDnaNames } = require('../utils/tmdbNameResolver');
 
 // TMDB Proxy Search endpoints per Autocomplete
 router.get('/tmdb/search/multi', async (req, res) => {
@@ -202,29 +203,15 @@ router.post('/tmdb/batch-keywords', async (req, res) => {
     if (!apiKey) return res.status(400).json({ error: 'TMDB API key is required' });
 
     try {
-        const results = [];
-        const batchSize = 20; // TMDB can handle many small fast requests
-        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-        
-        for (let i = 0; i < keywordIds.length; i += batchSize) {
-            const batch = keywordIds.slice(i, i + batchSize);
-            const client = createTmdbClient(apiKey);
-            const batchResults = await Promise.all(batch.map(async (id) => {
-                try {
-                    const response = await client.get(`/keyword/${id}`);
-                    return { id, name: response.data.name };
-                } catch (err) {
-                    console.error(`[TMDB] Error fetching keyword ${id}:`, err.message);
-                    return { id, name: `Keyword ${id}` };
-                }
-            }));
-            results.push(...batchResults);
-            
-            // Add a small delay between batches to respect TMDB's 50req/s limit
-            if (i + batchSize < keywordIds.length) {
-                await delay(300);
-            }
-        }
+        const items = keywordIds.map(id => ({ id, type: 'keyword' }));
+        const resolved = await resolveDnaNames(items, {
+            apiKey,
+            budgetMs: 15000,
+            batchSize: 20,
+            batchDelayMs: 300,
+            filterRetired: false
+        });
+        const results = resolved.map(item => ({ id: item.id, name: item.name }));
         res.json({ results });
     } catch (err) {
         res.status(500).json({ error: 'Internal server error' });
