@@ -54,6 +54,12 @@ const matchmakerSessionCache = new CacheManager('matchmaker_sessions', {
     redisTtlMs: ONE_HOUR_MS
 });
 
+const dnaNamesCache = new CacheManager('dna_names', {
+    ramMax: 500,
+    ramTtlMs: ONE_DAY_MS,
+    redisTtlMs: ONE_DAY_MS * 14
+});
+
 module.exports = {
     aiPromptCache,
     aiDiscoveryCache,
@@ -61,5 +67,6 @@ module.exports = {
     catalogFallbackCache,
     catalogRequestCache,
     simulcastDatesCache,
-    matchmakerSessionCache
+    matchmakerSessionCache,
+    dnaNamesCache
 };
