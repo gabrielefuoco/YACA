@@ -29,6 +29,7 @@ function createGlobalProfile(): Profile {
       fastRefresh: false,
       manualDNA: [],
       suggestedDNA: [],
+      typeSelectors: { film: false, serie: false, anime: null },
     },
   };
 }
@@ -47,6 +48,7 @@ function createDefaultProfile(name: string = 'Profilo Principale'): Profile {
     existingCatalogs: [],
     settings: {
       fastRefresh: false,
+      typeSelectors: { film: false, serie: false, anime: null },
     },
   };
 }

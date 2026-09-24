@@ -37,7 +37,10 @@ function createDefaultProfiles(): Profile[] {
         heroPresetsInitialized: true,
       },
       existingCatalogs: [],
-      settings: { fastRefresh: false },
+      settings: {
+        fastRefresh: false,
+        typeSelectors: { film: false, serie: false, anime: null },
+      },
     },
   ];
 }
