@@ -100,7 +100,7 @@ const getPresets = () => {
         // =============================================
         // --- 🎬 CINEMA, REGISTI & AUTORI (Studios) ---
         // =============================================
-        { id: 'preset_ghibli', isAnime: true, name: 'Studio Ghibli', emoji: '🍃', category: "🏮 Solo Anime", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_companies: TMDB_COMPANIES.Ghibli, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
+        { id: 'preset_ghibli', isAnime: true, name: 'Studio Ghibli', emoji: '🍃', category: "🏮 Solo Anime", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_companies: TMDB_COMPANIES.Ghibli, with_original_language: 'ja', sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
         { id: 'preset_pixar', name: 'Disney Pixar', emoji: '🧸', category: "👨‍👩‍👧‍👦 Bambini & Famiglia", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_companies: TMDB_COMPANIES.Pixar, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
         { id: 'preset_a24', name: 'A24: Cinema Indipendente', emoji: '💎', category: "🎬 Cinema d'Autore & Registi", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_companies: TMDB_COMPANIES.A24, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
         { id: 'preset_marvel', name: 'Marvel Cinematic Universe', emoji: '🦸', category: "🐉 Fantascienza & Fantasy", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_collections: TMDB_COLLECTIONS.MCU.join('|'), with_keywords: TMDB_KEYWORDS.MCU, sort_by: 'revenue.desc', 'vote_count.gte': 20 }] },
