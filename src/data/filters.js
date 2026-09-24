@@ -74,7 +74,11 @@ const F = {
     airedInYear: (y) => `"first_air_date" BETWEEN '${y}-01-01' AND '${y}-12-31'`,
     
     // --- Watch Providers ---
-    provider: (id) => `("watch_providers_it" LIKE '%"provider_id":${id},%' OR "watch_providers_it" LIKE '%"provider_id":${id}}%' OR "watch_providers_it" LIKE '%"provider_id": ${id},%' OR "watch_providers_it" LIKE '%"provider_id": ${id}}%')`,
+    // Le colonne sono regionali: non usare il catalogo IT per un preset US.
+    provider: (id, region = 'IT') => {
+        const column = String(region).toUpperCase() === 'US' ? 'watch_providers_us' : 'watch_providers_it';
+        return `("${column}" LIKE '%"provider_id":${id},%' OR "${column}" LIKE '%"provider_id":${id}}%' OR "${column}" LIKE '%"provider_id": ${id},%' OR "${column}" LIKE '%"provider_id": ${id}}%')`;
+    },
     
     // --- Identity / Speciali ---
     // Regola canonica in SQL: store OR (genere 16 AND original_language = 'ja').

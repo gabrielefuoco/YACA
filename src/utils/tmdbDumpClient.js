@@ -24,6 +24,7 @@ function extractCommonTmdbData(data) {
                  (data.images?.logos || []).find(l => l.iso_639_1 === null);
     const recommendations = (data.recommendations?.results || []).slice(0, 10).map(r => r.id);
     const watch_providers_it = data['watch/providers']?.results?.IT || null;
+    const watch_providers_us = data['watch/providers']?.results?.US || null;
     const production_companies = (data.production_companies || []).map(c => ({id: c.id, name: c.name}));
     const production_countries = (data.production_countries || []).map(c => c.iso_3166_1);
     const spoken_languages = (data.spoken_languages || []).map(l => l.iso_639_1);
@@ -36,6 +37,7 @@ function extractCommonTmdbData(data) {
         logo_path: logo ? logo.file_path : null,
         recommendations: JSON.stringify(recommendations),
         watch_providers_it: watch_providers_it ? JSON.stringify(watch_providers_it) : null,
+        watch_providers_us: watch_providers_us ? JSON.stringify(watch_providers_us) : null,
         production_companies: JSON.stringify(production_companies),
         production_countries: JSON.stringify(production_countries),
         spoken_languages: JSON.stringify(spoken_languages),

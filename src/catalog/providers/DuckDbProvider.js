@@ -108,15 +108,15 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
         where.push(F.notKeyword(...String(q.without_keywords).split(/[,|]/).map(Number)));
     }
 
-    // Nota architetturale: la tabella 'tv' del parquet TMDB include 'cast' e 'watch_providers_it',
-    // ma NON include 'directors' e 'writers' (in TMDB le serie TV usano 'created_by').
+    // Nota architetturale: la tabella 'tv' del parquet TMDB include 'cast' e le colonne
+    // watch_providers_it/us, ma NON include 'directors' e 'writers' (in TMDB le serie TV usano 'created_by').
     // Pertanto, F.crew DEVE rimanere guardato da !isTv per evitare errori Binder SQL in DuckDB
     // ("Referenced column directors not found in FROM clause").
     if (!isTv) {
         if (q.with_crew) where.push(F.crew(q.with_crew));
     }
     if (q.with_cast) where.push(F.actor(q.with_cast));
-    if (q.with_watch_providers) where.push(F.provider(q.with_watch_providers));
+    if (q.with_watch_providers) where.push(F.provider(q.with_watch_providers, q.watch_region));
     if (q.with_companies) where.push(F.company(q.with_companies));
     if (q.with_collections) where.push(F.collections(...String(q.with_collections).split('|').map(Number)));
     if (q.with_networks) where.push(F.network(q.with_networks));
@@ -180,13 +180,15 @@ function mapDuckDbRowToMeta(item, isMovie = true) {
     let background = item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null;
     
     let parsedGenres = [];
-    let parsedProviders = null;
+    let parsedProvidersIT = null;
+    let parsedProvidersUS = null;
     let parsedCast = [];
     let parsedCrew = [];
     let parsedKeywords = [];
     
     try { if (item.genres) parsedGenres = typeof item.genres === 'string' ? JSON.parse(item.genres) : item.genres; } catch(e){}
-    try { if (item.watch_providers_it) parsedProviders = typeof item.watch_providers_it === 'string' ? JSON.parse(item.watch_providers_it) : item.watch_providers_it; } catch(e){}
+    try { if (item.watch_providers_it) parsedProvidersIT = typeof item.watch_providers_it === 'string' ? JSON.parse(item.watch_providers_it) : item.watch_providers_it; } catch(e){}
+    try { if (item.watch_providers_us) parsedProvidersUS = typeof item.watch_providers_us === 'string' ? JSON.parse(item.watch_providers_us) : item.watch_providers_us; } catch(e){}
     try { if (item.cast) parsedCast = typeof item.cast === 'string' ? JSON.parse(item.cast) : item.cast; } catch(e){}
     try { 
         if (item.directors) {
@@ -221,7 +223,7 @@ function mapDuckDbRowToMeta(item, isMovie = true) {
         genres: parsedGenres,
         belongs_to_collection: item.collection_id ? { id: sanitizeBigInt(item.collection_id), name: item.collection_name } : null,
         collection_id: sanitizeBigInt(item.collection_id),
-        'watch/providers': { results: { IT: parsedProviders } },
+        'watch/providers': { results: { IT: parsedProvidersIT, US: parsedProvidersUS } },
         credits: { cast: parsedCast, crew: parsedCrew },
         keywords: { results: parsedKeywords, keywords: parsedKeywords }
     };
@@ -309,13 +311,15 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
         let background = item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null;
 
         let parsedGenres = [];
-        let parsedProviders = null;
+        let parsedProvidersIT = null;
+        let parsedProvidersUS = null;
         let parsedCast = [];
         let parsedCrew = [];
         let parsedKeywords = [];
         
         try { if (item.genres) parsedGenres = typeof item.genres === 'string' ? JSON.parse(item.genres) : item.genres; } catch(e){}
-        try { if (item.watch_providers_it) parsedProviders = typeof item.watch_providers_it === 'string' ? JSON.parse(item.watch_providers_it) : item.watch_providers_it; } catch(e){}
+        try { if (item.watch_providers_it) parsedProvidersIT = typeof item.watch_providers_it === 'string' ? JSON.parse(item.watch_providers_it) : item.watch_providers_it; } catch(e){}
+        try { if (item.watch_providers_us) parsedProvidersUS = typeof item.watch_providers_us === 'string' ? JSON.parse(item.watch_providers_us) : item.watch_providers_us; } catch(e){}
         try { if (item.cast) parsedCast = typeof item.cast === 'string' ? JSON.parse(item.cast) : item.cast; } catch(e){}
         try { 
             if (item.directors) {
@@ -348,7 +352,7 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
             first_air_date: item.first_air_date,
             original_language: item.original_language,
             genres: parsedGenres,
-            'watch/providers': { results: { IT: parsedProviders } },
+            'watch/providers': { results: { IT: parsedProvidersIT, US: parsedProvidersUS } },
             credits: { cast: parsedCast, crew: parsedCrew },
             keywords: { results: parsedKeywords, keywords: parsedKeywords }
         };
