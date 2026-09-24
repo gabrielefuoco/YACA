@@ -67,7 +67,7 @@ export default function Home() {
   const [userId, setUserId] = useState<string | null>(null);
   const [configDecoded, setConfigDecoded] = useState(false);
   const [globalTmdbKey, setGlobalTmdbKey] = useState<string>('');
-  const [globalMistralKey, setGlobalMistralKey] = useState<string>('');
+  const [, setGlobalMistralKey] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState(true);
   const autoConfigCalledRef = useRef(false);
   const pathname = usePathname();
@@ -200,7 +200,7 @@ export default function Home() {
     syncProfileVectors,
   } = useProfiles(initialProfiles, initialActiveProfileId);
 
-  const { presets, profileTemplates, categories, hasGlobalErdb } = usePresets();
+  const { presets, profileTemplates, categories } = usePresets();
 
   // Remove manual sessionStorage restoration since it's handled by useProfiles constructor/effect
 
@@ -551,9 +551,6 @@ export default function Home() {
                   traktRefreshToken={traktRefreshToken}
                   configVersion={configVersion}
                   userId={userId ?? undefined}
-                  globalTmdbKey={globalTmdbKey}
-                  globalMistralKey={globalMistralKey}
-                  hasGlobalErdb={hasGlobalErdb}
                   onUpdateProfile={updateProfile}
                   onLogout={handleLogout}
                   onDisconnectTrakt={handleDisconnectTrakt}
