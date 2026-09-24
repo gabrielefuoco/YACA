@@ -1,4 +1,5 @@
 const { EPISODE_CATALOG_IDS } = require('../constants');
+const { normalizeAnimeMarker } = require('../../utils/animeIdentity');
 
 function findLatestAiredEpisode(videos) {
     if (!Array.isArray(videos) || videos.length === 0) return null;
@@ -130,6 +131,10 @@ function getErdbId(item, context = 'default') {
 
 function sanitizeCatalogMeta(item, options = {}) {
     if (!item) return item;
+
+    // Il formatter è il boundary di serializzazione: qui il marker non viene
+    // più perso dalla seconda sanitizzazione/cache.
+    normalizeAnimeMarker(item);
 
     const { shouldApplyEpisodeBadge, isLandscapeEnabled, userConfig, hostUrl } = options;
     let badgeText = (shouldApplyEpisodeBadge || item._forceBadgeText) ? getEpisodeBadgeText(item) : null;
@@ -328,6 +333,7 @@ function sanitizeCatalogMeta(item, options = {}) {
         cast: item.cast,
         director: item.director,
         original_language: item.original_language || item.originalLanguage || item._originalLanguage || item.rawTMDB?.original_language,
+        _isAnime: item._isAnime,
         _rawName: baseName, // Save raw base name for idempotency in applyPostCacheBadges
         _rawPoster: rawPoster, // Save raw poster to prevent nested proxies
     };

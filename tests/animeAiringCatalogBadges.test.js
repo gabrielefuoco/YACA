@@ -221,6 +221,60 @@ describe('Badge sub/ITA dal documento di stato', () => {
         expect(dub.id.replace('_ita_offset', '')).toBe(sub.id);
     });
 
+    test('risolve gli ID Kitsu stagionali verso il TMDB base dello snapshot', async () => {
+        const rawDocs = [
+            {
+                _id: '65942',
+                schemaVersion: 1,
+                ids: { kitsu: '49746' },
+                title: 'Re:ZERO -Starting Life in Another World-',
+                italian: { sub: { latest: { season: 1, episode: 18 } } },
+                episodes: [
+                    { season: 1, episode: 18, airedAt: daysAgo(1), subIta: true, dubIta: false }
+                ]
+            },
+            {
+                _id: '293629',
+                schemaVersion: 1,
+                ids: { kitsu: '50622' },
+                title: 'Samurai Troopers - I cinque samurai: La nuova leggenda delle armature',
+                italian: { sub: { latest: { season: 1, episode: 12 } } },
+                episodes: [
+                    { season: 1, episode: 12, airedAt: daysAgo(2), subIta: true, dubIta: false }
+                ]
+            }
+        ];
+        const snapshot = animeAiringState.buildSnapshot(rawDocs);
+        const tmdbByKitsu = { 11209: '65942', 50427: '293629' };
+        const mappingStore = {
+            resolveTmdbFromKitsu: jest.fn(id => tmdbByKitsu[id] || null)
+        };
+
+        // Le card usano ID stagionali diversi da quelli memorizzati nel documento.
+        expect(animeAiringState.findDocument(snapshot, 'kitsu:11209')).toBeNull();
+        expect(animeAiringState.findDocument(snapshot, 'kitsu:50427')).toBeNull();
+
+        const result = await applyAiringStateBadges([
+            item('kitsu:11209', rawDocs[0].title),
+            item('kitsu:50427', rawDocs[1].title)
+        ], {
+            userConfig: USER_CONFIG,
+            hostUrl: HOST,
+            catalogMeta: CATALOG_META,
+            type: 'series',
+            snapshot,
+            mappingStore
+        });
+
+        expect(result.metas).toHaveLength(2);
+        expect(result.metas[0].id).toBe('kitsu:11209');
+        expect(result.metas[0].poster).toContain('EP%2018');
+        expect(result.metas[1].id).toBe('kitsu:50427');
+        expect(result.metas[1].poster).toContain('EP%2012');
+        expect(mappingStore.resolveTmdbFromKitsu).toHaveBeenCalledWith('11209');
+        expect(mappingStore.resolveTmdbFromKitsu).toHaveBeenCalledWith('50427');
+    });
+
     test('doppiato fermo: nessuna card ITA, badge sub corretto', async () => {
         const metas = [item('kitsu:222', 'Dub Fermo')];
         const result = await applyAiringStateBadges(metas, {

@@ -79,8 +79,8 @@ describe('Kitsu Mapping Stats & Resilience', () => {
         expect(stats.totalMisses).toBe(0);
     });
 
-    test('Non traccia miss se il contenuto non è un anime (_isAnime === false)', async () => {
-        jest.spyOn(animeMappingStore, 'resolveKitsu').mockReturnValue({
+    test('Non avvia il lookup Kitsu se il contenuto non è un anime (_isAnime === false)', async () => {
+        const resolveKitsu = jest.spyOn(animeMappingStore, 'resolveKitsu').mockReturnValue({
             error: 'No rule'
         });
 
@@ -95,6 +95,7 @@ describe('Kitsu Mapping Stats & Resilience', () => {
         await applyKitsuMappingToMeta(meta, 1396);
 
         expect(meta.videos[0].id).toBe('tmdb:1396:1:1');
+        expect(resolveKitsu).not.toHaveBeenCalled();
         const stats = getKitsuMappingStats();
         expect(stats.totalMisses).toBe(0);
         expect(stats.missesCount).toBe(0);

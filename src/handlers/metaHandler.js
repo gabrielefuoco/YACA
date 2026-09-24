@@ -3,6 +3,7 @@ const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const CacheManager = require('../cache/CacheManager');
 const animeMappingStore = require('../data/animeMappingStore');
 const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
+const { normalizeAnimeMarker } = require('../utils/animeIdentity');
 
 // Cache per l'oggetto meta finale combinato
 const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 300, ramTtlMs: 3600000, swrMs: 600000 });
@@ -140,6 +141,11 @@ function resetKitsuMappingStats() {
 async function applyKitsuMappingToMeta(meta, tmdbId) {
     if (!meta) return;
 
+    // Stesso resolver e stesso default del catalogo. Un marker assente senza
+    // prove diventa false e non avvia enrichment Kitsu.
+    const isAnime = normalizeAnimeMarker(meta);
+    if (!isAnime) return;
+
     if (meta.type === 'movie') {
         const kitsuId = animeMappingStore.resolveKitsuMovie(tmdbId);
         if (kitsuId) {
@@ -154,8 +160,7 @@ async function applyKitsuMappingToMeta(meta, tmdbId) {
     if (meta.type === 'series' && Array.isArray(meta.videos)) {
         let fallbackCount = 0;
         const usedKitsuIds = new Set();
-        const isAnime = meta._isAnime !== false;
-        
+
         for (const video of meta.videos) {
             const mapped = animeMappingStore.resolveKitsu(tmdbId, video.season, video.episode);
             
@@ -185,7 +190,8 @@ async function applyKitsuMappingToMeta(meta, tmdbId) {
 
 async function resolveAnimeEpisodes(metaObj, tmdbId, tmdbApiKey) {
     if (metaObj._numberOfSeasons) {
-        console.log(`[Anime] Carico episodi TMDB per Anime ${tmdbId}`);
+        const source = metaObj._isAnime ? 'Anime' : 'TMDB';
+        console.log(`[${source}] Carico episodi TMDB per ${tmdbId}`);
         const tmdbClient = createTmdbClient(tmdbApiKey);
         metaObj.videos = await fetchTmdbEpisodes(
             tmdbClient,
@@ -257,7 +263,6 @@ async function metaHandler(args, userConfig) {
                                     await applyKitsuMappingToMeta(finalBgMeta, tmdbId);
 
                                     delete finalBgMeta._keywordNames;
-                                    delete finalBgMeta._isAnime;
                                     delete finalBgMeta._numberOfSeasons;
                                     delete finalBgMeta._originalLanguage;
                                     await finalMetaCache.set(cacheKey, finalBgMeta);
@@ -282,7 +287,6 @@ async function metaHandler(args, userConfig) {
                             await applyKitsuMappingToMeta(meta, tmdbId);
 
                             delete meta._keywordNames;
-                            delete meta._isAnime;
                             delete meta._numberOfSeasons;
                             delete meta._originalLanguage;
 
@@ -295,6 +299,10 @@ async function metaHandler(args, userConfig) {
 
 
         if (meta) {
+            // Anche una entry dalla cache storica deve rispettare il boundary
+            // corrente prima di raggiungere formatter e consumer.
+            normalizeAnimeMarker(meta);
+
             // Per richieste con tmdb: ID, manteniamo l'IMDB ID risolto per compatibilità streaming
             if (id.startsWith('tmdb:') && meta.id && meta.id.startsWith('tt')) {
                 if (meta.behaviorHints && type === 'movie') {

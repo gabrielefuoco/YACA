@@ -438,6 +438,9 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                 const genre_ids = Array.isArray(item.genre_ids)
                     ? item.genre_ids
                     : (Array.isArray(item.genres) ? item.genres.map(g => g.id).filter(id => id !== null && id !== undefined) : []);
+                const keywords = Array.isArray(item.keywords)
+                    ? item.keywords
+                    : (item.keywords?.results || item.keywords?.keywords || []);
 
                 return {
                     id: `tmdb:${normalizedId}`,
@@ -451,6 +454,11 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                     releaseInfo: releaseYear,
                     imdbRating,
                     genre_ids,
+                    // Il boundary catalogo classifica `_isAnime`: conservare le
+                    // prove evita che il ramo hero classifichi come non-anime un
+                    // payload Animazione + keyword "anime*" (es. animesque).
+                    original_language: item.original_language || item.originalLanguage || null,
+                    keywords,
                     _yacaMatch: matchScore
                 };
             } catch (err) {

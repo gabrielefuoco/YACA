@@ -9,7 +9,7 @@ const duckDbStore = require('../../db/duckDbStore');
 const { buildCatalogQuery } = require('../../db/queryBuilder');
 const { F, S } = require('../../data/filters');
 const animeMappingStore = require('../../data/animeMappingStore');
-const { isAnimeContent } = require('../../utils/animeIdentity');
+const { normalizeAnimeMarker } = require('../../utils/animeIdentity');
 const { applyKidsMode, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../../utils/kidsModeFilters');
 
 const SUPPORTED_SORT_BY = Object.freeze([
@@ -265,7 +265,7 @@ function mapDuckDbRowToMeta(item, isMovie = true) {
     const d = item.release_date || item.first_air_date || item.last_air_date || '';
     const dateStr = d instanceof Date ? d.toISOString() : String(d);
 
-    return {
+    const meta = {
         id: `tmdb:${item.id}`,
         _tmdbId: sanitizeBigInt(item.id),
         type: isMovie ? 'movie' : 'series',
@@ -278,11 +278,14 @@ function mapDuckDbRowToMeta(item, isMovie = true) {
         imdbRating: voteAverage ? voteAverage.toFixed(1) : undefined,
         popularity: sanitizeBigInt(item.popularity) || 0,
         genres: parsedGenres.map(g => g.name || g),
-        genre_ids: parsedGenres.map(g => g.id),
+        genre_ids: parsedGenres.map(g => (g && typeof g === 'object' ? g.id : g)),
         vote_count: voteCount,
         keywords: parsedKeywords,
         rawTMDB
     };
+
+    normalizeAnimeMarker(meta, { mappingStore: animeMappingStore });
+    return meta;
 }
 
 function applyKidsModeToPreset(preset, options = {}) {
@@ -404,15 +407,14 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
             releaseInfo: dateStr.substring(0, 4),
             imdbRating: item.vote_average ? Number(item.vote_average).toFixed(1) : undefined,
             popularity: sanitizeBigInt(item.popularity) || 0,
-            genre_ids: parsedGenres.map(g => g.id),
+            genre_ids: parsedGenres.map(g => (g && typeof g === 'object' ? g.id : g)),
             behaviorHints: isMovie ? { defaultVideoId: `tmdb:${item.id}` } : { hasScheduledVideos: true },
             rawTMDB
         };
 
         metaObj._originalLanguage = item.original_language;
-        metaObj._isAnime = isAnimeContent({
+        normalizeAnimeMarker(metaObj, {
             tmdbId: item.id,
-            genreIds: parsedGenres.map(g => g.id),
             originalLanguage: item.original_language,
             keywords: parsedKeywords,
             mappingStore: animeMappingStore
