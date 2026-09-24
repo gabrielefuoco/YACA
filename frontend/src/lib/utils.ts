@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Profile } from "@/types";
+import { Profile, TypeSelectors } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -30,6 +30,7 @@ export interface BackendProfile {
     animeIdMode?: 'kitsu' | 'imdb';
     manualDNA?: unknown[];
     suggestedDNA?: unknown[];
+    typeSelectors?: TypeSelectors;
   };
   raw_ui_state?: {
     selectedPresets?: string[];
@@ -50,6 +51,23 @@ interface BackendCatalog {
   presentation_strategy?: 'popularity' | 'interleave';
 }
 
+export function sanitizeTypeSelectors(raw?: unknown): {
+  film: boolean;
+  serie: boolean;
+  anime: 'only' | 'exclude' | null;
+} {
+  const defaultSelectors = { film: false, serie: false, anime: null as 'only' | 'exclude' | null };
+  if (!raw || typeof raw !== 'object') {
+    return defaultSelectors;
+  }
+  const obj = raw as Record<string, unknown>;
+  const film = obj.film === true;
+  const serie = obj.serie === true;
+  const anime = (obj.anime === 'only' || obj.anime === 'exclude') ? obj.anime : null;
+
+  return { film, serie, anime };
+}
+
 export function profilesToApiPayload(profiles: Profile[]) {
   return profiles.map((p) => ({
     id: p.id,
@@ -67,6 +85,7 @@ export function profilesToApiPayload(profiles: Profile[]) {
       animeIdMode: p.settings?.animeIdMode ?? 'kitsu',
       manualDNA: p.settings?.manualDNA ?? [],
       suggestedDNA: p.settings?.suggestedDNA ?? [],
+      typeSelectors: sanitizeTypeSelectors(p.settings?.typeSelectors),
     },
   }));
 }
@@ -134,6 +153,7 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
       animeIdMode: (bSettings.animeIdMode === 'imdb' ? 'imdb' : 'kitsu') as 'kitsu' | 'imdb',
       manualDNA: Array.isArray(bSettings.manualDNA) ? bSettings.manualDNA as import('@/types').DNAItem[] : [],
       suggestedDNA: Array.isArray(bSettings.suggestedDNA) ? bSettings.suggestedDNA as import('@/types').DNAItem[] : [],
+      typeSelectors: sanitizeTypeSelectors(bSettings.typeSelectors),
     },
   };
 }
