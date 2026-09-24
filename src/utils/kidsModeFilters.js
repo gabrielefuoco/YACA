@@ -21,6 +21,8 @@ const ADULT_KEYWORD_IDS = [
     361470, // scary
     14964,  // drugs
     9826,   // murder
+    1849,   // homicide
+    10714,  // serial killer
     161919, // adult animation
     11192,  // adult humor
     9964,   // crude humor

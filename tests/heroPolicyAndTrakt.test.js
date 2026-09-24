@@ -16,7 +16,7 @@ const {
     buildPresetFromFilters,
     applyKidsModeToPreset
 } = require('../src/catalog/providers/DuckDbProvider');
-const { applyKidsMode, isItemInappropriateForKids } = require('../src/utils/kidsModeFilters');
+const { applyKidsMode, isItemInappropriateForKids, ADULT_KEYWORD_IDS } = require('../src/utils/kidsModeFilters');
 const UserAccount = require('../src/db/models/UserAccount');
 const AddonConfig = require('../src/db/models/AddonConfig');
 const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');
@@ -294,6 +294,26 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
                 genre_ids: [16, 35],
                 keywords: [{ id: keywordId }]
             }));
+            const p8LeakTitles = [
+                {
+                    id: 'tmdb:8587',
+                    title: 'Il re leone',
+                    genre_ids: [16, 10751, 18],
+                    keywords: [{ id: 9826, name: 'murder' }]
+                },
+                {
+                    id: 'tmdb:1301421',
+                    title: 'Pecore sotto copertura',
+                    genre_ids: [35, 10751, 9648],
+                    keywords: [{ id: 9826, name: 'murder' }]
+                }
+            ];
+            const violentSynonymItems = [1849, 10714].map((keywordId, index) => ({
+                id: String(index + 20),
+                title: keywordId === 1849 ? 'Homicide' : 'Serial killer',
+                genre_ids: [18],
+                keywords: [{ id: keywordId }]
+            }));
 
             expect(isItemInappropriateForKids(safeItem)).toBe(false);
             expect(isItemInappropriateForKids(horrorItem)).toBe(true);
@@ -302,8 +322,14 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
             expect(isItemInappropriateForKids(hentaiItem)).toBe(true);
             expect(isItemInappropriateForKids(goreItem)).toBe(true);
             semanticAdultItems.forEach(item => expect(isItemInappropriateForKids(item)).toBe(true));
+            p8LeakTitles.forEach(item => expect(isItemInappropriateForKids(item)).toBe(true));
+            violentSynonymItems.forEach(item => expect(isItemInappropriateForKids(item)).toBe(true));
+            expect(ADULT_KEYWORD_IDS.split(',').map(Number)).toEqual(expect.arrayContaining([9826, 1849, 10714]));
 
-            const filtered = applyKidsMode([safeItem, horrorItem, thrillerItem, crimeItem, hentaiItem, goreItem, ...semanticAdultItems]);
+            const filtered = applyKidsMode([
+                safeItem, horrorItem, thrillerItem, crimeItem, hentaiItem, goreItem,
+                ...semanticAdultItems, ...p8LeakTitles, ...violentSynonymItems
+            ]);
             expect(filtered).toEqual([safeItem]);
         });
 
@@ -542,11 +568,18 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
 
             getDuckDbCatalogFromFilters.mockResolvedValue([
                 { id: 'tmdb:601', name: 'Safe', genre_ids: [12], keywords: [{ id: 100 }] },
-                { id: 'tmdb:10283', name: 'Archer', genre_ids: [16, 35], keywords: [{ id: 14964 }] }
+                { id: 'tmdb:10283', name: 'Archer', genre_ids: [16, 35], keywords: [{ id: 14964 }] },
+                { id: 'tmdb:8587', name: 'Il re leone', genre_ids: [16, 10751, 18], keywords: [{ id: 9826 }] },
+                { id: 'tmdb:1301421', name: 'Pecore sotto copertura', genre_ids: [35, 10751, 9648], keywords: [{ id: 9826 }] },
+                { id: 'tmdb:620', name: 'Homicide', genre_ids: [18], keywords: [{ id: 1849 }] },
+                { id: 'tmdb:621', name: 'Serial killer', genre_ids: [18], keywords: [{ id: 10714 }] }
             ]);
             const presetResult = await buildDirectPresetCatalog('preset_action_blockbusters', 'user_1', 'kids_profile', 'tmdb_key', 'movie', true);
             expect(getDuckDbCatalogFromFilters.mock.calls[0][0].without_keywords).toContain('161919');
             expect(getDuckDbCatalogFromFilters.mock.calls[0][0].without_keywords).toContain('220192');
+            expect(getDuckDbCatalogFromFilters.mock.calls[0][0].without_keywords).toContain('9826');
+            expect(getDuckDbCatalogFromFilters.mock.calls[0][0].without_keywords).toContain('1849');
+            expect(getDuckDbCatalogFromFilters.mock.calls[0][0].without_keywords).toContain('10714');
             expect(presetResult.map(item => item.id)).toEqual(['601']);
 
             getDuckDbCatalogFromFilters.mockClear();
