@@ -78,15 +78,12 @@ function deduplicateByCollection(scoredItems) {
 /**
  * 🎯 Direct Preset Catalog Builder (Bug 1.3 Fix: Preset Fall-through)
  */
-async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, mediaType) {
+async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, mediaType, isKidsMode = false) {
     const presetsList = getPresets();
     const preset = presetsList.find(p => p.id === presetId);
     if (!preset || !preset.queries || preset.queries.length === 0) {
         return [];
     }
-
-    const { profile } = await fetchProfileContext(userId, context);
-    const isKidsMode = profile?.settings?.kidsMode;
 
     const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
     const tmdbType = (preset.type === 'series' || mediaType === 'series') ? 'series' : 'movie';
@@ -156,7 +153,7 @@ function getAnimeProportion(profile, directKwIds = [], topGenres = []) {
  * Esegue query parallele su DuckDB raggruppate per Topos/Keyword ("Smart AND"),
  * applicando la proporzione esatta per forzare (o meno) il flag Anime.
  */
-async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [], limitPerQuery = 50) {
+async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [], limitPerQuery = 50, isKidsMode = false) {
     const types = mediaType === 'movie' ? 'movie' : 'series';
     
     const { user, context } = profile;
@@ -218,7 +215,6 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
     let animeQueriesLimit = Math.round(totalQueries * animeRatio);
     
     // 3. Esecuzione Parallela Smart AND
-    const isKidsMode = Boolean(profile?.settings?.kidsMode);
     const promises = clusters.map(async (cluster, index) => {
         const where = [...baseFilters];
         if (isKidsMode) {
@@ -282,15 +278,14 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
     return { pool: finalPool, animeRatio };
 }
 
-async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fallbackFn) {
+async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fallbackFn, isKidsMode = false) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    const isKidsMode = Boolean(profile?.settings?.kidsMode);
     if (!profile) return fallbackFn(tmdbApiKey, mediaType, 60, isKidsMode);
     
     profile.user = user;
     profile.context = context;
     
-    const { pool } = await fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters, 1000);
+    const { pool } = await fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters, 1000, isKidsMode);
     let candidatePool = pool;
     if (isKidsMode) {
         candidatePool = applyKidsMode(pool);
@@ -318,7 +313,7 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
         if (!tmdbData.credits) {
             tmdbData.credits = item.credits || { cast: [], crew: [] };
         }
-        const score = ProfileScorer.calculateItemMatch(tmdbData, profile, { dnaFilters, globalProfile });
+        const score = ProfileScorer.calculateItemMatch(tmdbData, profile, { dnaFilters, globalProfile, kidsMode: isKidsMode });
         if (isKidsMode && score <= 0) return null;
         return { data: tmdbData, score: score * penaltyMultiplier };
     }).filter(Boolean);
@@ -357,18 +352,17 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
 /**
  * 🎯 Hero Catalog 1: True Blend ("Scelti per Te")
  */
-async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType) {
+async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType, isKidsMode = false) {
     const catalogId = mediaType === 'movie' ? 'yaca_true_blend_movies' : 'yaca_true_blend_series';
     const baseFilters = [F.minVotes(1000)];
-    return buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fetchPopularFallbackIds);
+    return buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fetchPopularFallbackIds, isKidsMode);
 }
 
 /**
  * 🕸️ Hero Catalog 2: Super-Seed Network ("La Rete dei tuoi Preferiti")
  */
-async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
+async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    const isKidsMode = Boolean(profile?.settings?.kidsMode);
     if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
 
     const types = mediaType === 'movie' ? 'movie' : 'series';
@@ -530,7 +524,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
             if (!tmdbData.credits) {
                 tmdbData.credits = data.credits || data.rawTMDB?.credits;
             }
-            const score = ProfileScorer.calculateItemMatch(tmdbData, profile, { dnaFilters, globalProfile });
+            const score = ProfileScorer.calculateItemMatch(tmdbData, profile, { dnaFilters, globalProfile, kidsMode: isKidsMode });
             if (isKidsMode && score <= 0) return null;
             return { data, score: score * penaltyMultiplier, hybridScore: hybridScore * penaltyMultiplier };
         },
@@ -586,20 +580,19 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
 /**
  * 💎 Hero Catalog 3: Hidden Gems ("Gemme Nascoste" / Anti-Trash)
  */
-async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType) {
+async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType, isKidsMode = false) {
     const catalogId = mediaType === 'movie' ? 'yaca_hidden_gems_movies' : 'yaca_hidden_gems_series';
     const baseFilters = [F.minScore(6.5), F.minVotes(50), F.maxVotes(1000)];
     if (mediaType === 'movie') baseFilters.push(F.minRuntime(60));
     
-    return buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fetchHiddenGemsFallbackIds);
+    return buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fetchHiddenGemsFallbackIds, isKidsMode);
 }
 
 /**
  * 🌐 Hero Catalog 4: Trakt Filtered ("Suggeriti dalla Community")
  */
-async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType) {
+async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    const isKidsMode = Boolean(profile?.settings?.kidsMode);
     if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
 
     const types = mediaType === 'movie' ? 'movie' : 'series';
@@ -627,7 +620,7 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, id, types);
             if (!details) return null;
             if (isKidsMode && isItemInappropriateForKids(details)) return null;
-            const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile });
+            const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile, kidsMode: isKidsMode });
             if (isKidsMode && score <= 0) return null;
             return { data: details, score: score * penaltyMultiplier };
         },

@@ -74,7 +74,9 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
             const { mapSortBy } = require('./providers/DuckDbProvider');
             presetToRun = { ...catalogMeta, orderBy: mapSortBy(sortBy, catalogMeta.type || type) };
         }
-        return await getDuckDbCatalogFromPreset(presetToRun, skip);
+        return await getDuckDbCatalogFromPreset(presetToRun, skip, 100, {
+            kidsMode: Boolean(activeProfileSettings?.kidsMode)
+        });
     }
 
     // SCENARIO 6: UNIVERSAL PIPELINE (AI/PRESETS Custom legacy)

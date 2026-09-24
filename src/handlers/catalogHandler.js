@@ -14,6 +14,7 @@ const animeAiringState = require('../data/animeAiringState');
 const { isAnimeContent } = require('../utils/animeIdentity');
 const animeMappingStore = require('../data/animeMappingStore');
 const { isCatalogConformant, isAlwaysVisible } = require('../catalog/catalogKind');
+const { applyKidsMode } = require('../utils/kidsModeFilters');
 
 function extractTmdbId(item) {
     if (!item) return null;
@@ -436,14 +437,12 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
 
             // console.log('POST MEDIA TYPE RESULTS:', results?.length);
-            // 2.5 FILTRAGGIO POST-FETCH: Modalità Bambini Fallback
+            // 2.5 FILTRAGGIO POST-FETCH: guardia unica per genere + keyword.
+            // I provider DuckDB applicano già i vincoli in SQL; questo secondo
+            // livello copre preset, ricerche e fallback che possono perdere i campi
+            // pesanti durante la normalizzazione.
             if (activeProfileSettings?.kidsMode) {
-                results = results.filter(i => {
-                    const genres = i.genre_ids || (i.genres ? i.genres.map(g => g.id) : []);
-                    // Exclude Horror (27), Thriller (53), Crime (80)
-                    if (genres.some(id => [27, 53, 80].includes(id))) return false;
-                    return true;
-                });
+                results = applyKidsMode(results);
             }
 
             // 2.6 FILTRAGGIO POST-FETCH: Filtro Contenuti Anime (Ticket 13 / Spec 06 Sezione 6)

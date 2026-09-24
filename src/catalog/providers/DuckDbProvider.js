@@ -10,6 +10,7 @@ const { buildCatalogQuery } = require('../../db/queryBuilder');
 const { F, S } = require('../../data/filters');
 const animeMappingStore = require('../../data/animeMappingStore');
 const { isAnimeContent } = require('../../utils/animeIdentity');
+const { applyKidsMode, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../../utils/kidsModeFilters');
 
 const SUPPORTED_SORT_BY = Object.freeze([
     'popularity.desc',
@@ -44,8 +45,9 @@ function mapSortBy(s, type = 'movie') {
     return s.replace('.desc', ' DESC NULLS LAST').replace('.asc', ' ASC NULLS LAST');
 }
 
-function buildPresetFromFilters(q, type = 'movie') {
+function buildPresetFromFilters(q, type = 'movie', options = {}) {
     const where = [];
+    if (options?.kidsMode) q = applyKidsMode(q || {});
     if (!q) return { type, where, orderBy: S.POPULAR };
 
     const isTv = type === 'tv' || type === 'series';
@@ -256,11 +258,24 @@ function mapDuckDbRowToMeta(item, isMovie = true) {
     };
 }
 
-async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 100) {
+function applyKidsModeToPreset(preset, options = {}) {
+    if (!options?.kidsMode) return preset;
+    return {
+        ...preset,
+        where: [
+            ...(preset.where || []),
+            F.notGenre(...ADULT_GENRE_IDS.split(',').map(Number)),
+            F.notKeyword(...ADULT_KEYWORD_IDS.split(',').map(Number))
+        ]
+    };
+}
+
+async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 100, options = {}) {
     try {
-        const sql = await buildCatalogQuery(preset, skip, limit);
+        const safePreset = applyKidsModeToPreset(preset, options);
+        const sql = await buildCatalogQuery(safePreset, skip, limit);
         const rows = await duckDbStore.query(sql);
-        return rows.map(item => mapDuckDbRowToMeta(item, preset.type === 'movie'));
+        return rows.map(item => mapDuckDbRowToMeta(item, safePreset.type === 'movie'));
     } catch (e) {
         console.error('[DuckDbProvider] Error in getDuckDbCatalogFromPreset:', e);
         return [];
@@ -269,7 +284,7 @@ async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 100) {
 
 async function getDuckDbCatalogFromFilters(filters, type = 'movie', skip = 0, limit = 100, options = {}) {
     try {
-        const preset = buildPresetFromFilters(filters, type);
+        const preset = buildPresetFromFilters(filters, type, options);
         const sql = await buildCatalogQuery(preset, skip, limit);
         const rows = await duckDbStore.query(sql);
         return rows.map(item => mapDuckDbRowToMeta(item, type === 'movie'));
@@ -394,6 +409,7 @@ module.exports = {
     isMappedSortBy,
     mapSortBy,
     buildPresetFromFilters,
+    applyKidsModeToPreset,
     getDuckDbCatalogFromFilters,
     getDuckDbCatalogFromPreset,
     getDuckDbMetaDetails,

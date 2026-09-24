@@ -1,8 +1,21 @@
-const { getHybridCatalog } = require('../src/engines/hybridRecommendations');
+const {
+    getHybridCatalog,
+    buildHybridCatalog,
+    buildDirectPresetCatalog,
+    fetchPopularFallbackIds,
+    getActiveKidsMode,
+    buildRecommendationCacheKey
+} = require('../src/engines/hybridRecommendations');
 const TasteProfile = require('../src/models/TasteProfile');
 const tmdb = require('../src/clients/tmdb');
 const { traktClient, smartTraktRefresh } = require('../src/clients/trakt');
-const { getDuckDbCatalogFromFilters, getDuckDbCatalogFromPreset, getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
+const {
+    getDuckDbCatalogFromFilters,
+    getDuckDbCatalogFromPreset,
+    getDuckDbMetaDetails,
+    buildPresetFromFilters,
+    applyKidsModeToPreset
+} = require('../src/catalog/providers/DuckDbProvider');
 const { applyKidsMode, isItemInappropriateForKids } = require('../src/utils/kidsModeFilters');
 const UserAccount = require('../src/db/models/UserAccount');
 const AddonConfig = require('../src/db/models/AddonConfig');
@@ -92,6 +105,17 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
 
     afterAll(() => {
         process.env.TRAKT_CLIENT_ID = origEnv;
+    });
+
+    const createKidsUserConfig = (context = 'kids_profile', configVersion = 'cfg-v1') => ({
+        userId: 'user_1',
+        activeProfileId: context,
+        configVersion,
+        apiKeys: { tmdb: 'tmdb_key' },
+        profiles: [{
+            id: context,
+            settings: { kidsMode: true, typeSelectors: {} }
+        }]
     });
 
     describe('BUG-4: Trakt 403 → refresh tentato → fallback popolato', () => {
@@ -264,6 +288,12 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
             const crimeItem = { id: '4', title: 'Gangster Crime', genre_ids: [80] };
             const hentaiItem = { id: '5', title: 'Adult Keyword', genre_ids: [16], keywords: [{ id: 198385 }] };
             const goreItem = { id: '6', title: 'Gore Item', genre_ids: [28], keywords: [{ id: 10292 }] };
+            const semanticAdultItems = [161919, 11192, 9964, 204950, 220192].map((keywordId, index) => ({
+                id: String(index + 7),
+                title: `Semantic adult ${keywordId}`,
+                genre_ids: [16, 35],
+                keywords: [{ id: keywordId }]
+            }));
 
             expect(isItemInappropriateForKids(safeItem)).toBe(false);
             expect(isItemInappropriateForKids(horrorItem)).toBe(true);
@@ -271,8 +301,9 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
             expect(isItemInappropriateForKids(crimeItem)).toBe(true);
             expect(isItemInappropriateForKids(hentaiItem)).toBe(true);
             expect(isItemInappropriateForKids(goreItem)).toBe(true);
+            semanticAdultItems.forEach(item => expect(isItemInappropriateForKids(item)).toBe(true));
 
-            const filtered = applyKidsMode([safeItem, horrorItem, thrillerItem, crimeItem, hentaiItem, goreItem]);
+            const filtered = applyKidsMode([safeItem, horrorItem, thrillerItem, crimeItem, hentaiItem, goreItem, ...semanticAdultItems]);
             expect(filtered).toEqual([safeItem]);
         });
 
@@ -324,7 +355,13 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
                 null,
                 'tmdb_key',
                 'user_1',
-                'kids_profile'
+                'kids_profile',
+                createKidsUserConfig()
+            );
+
+            // La cache usa il kidsMode del profilo YACA e la configVersion.
+            expect(hybridRecommendationsCache.getWithStatus).toHaveBeenCalledWith(
+                'user_1_kids_profile_yaca_true_blend_movies_cvcfg-v1_kids'
             );
 
             // Item 502 (Horror) MUST NOT be returned in kidsMode
@@ -400,12 +437,118 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
                 'valid_token',
                 'tmdb_key',
                 'user_1',
-                'kids_profile'
+                'kids_profile',
+                createKidsUserConfig()
             );
 
             const resultIds = results.map(r => r.id);
             expect(resultIds).toContain('tmdb:601');
             expect(resultIds).not.toContain('tmdb:602');
+        });
+
+        it('usa esclusivamente kidsMode e configVersion del profilo YACA per la cache', () => {
+            const kidsConfig = createKidsUserConfig('kids_profile', 'cfg-v2');
+            const adultConfig = {
+                ...kidsConfig,
+                profiles: [{ id: 'kids_profile', settings: { kidsMode: false } }]
+            };
+
+            expect(getActiveKidsMode(kidsConfig, 'kids_profile')).toBe(true);
+            expect(getActiveKidsMode(adultConfig, 'kids_profile')).toBe(false);
+
+            const kidsKey = buildRecommendationCacheKey({
+                userId: 'sim_user', context: 'kids_profile', catalogId: 'yaca_true_blend_movies',
+                kidsMode: true, configVersion: 'cfg-v2'
+            });
+            const adultKey = buildRecommendationCacheKey({
+                userId: 'sim_user', context: 'kids_profile', catalogId: 'yaca_true_blend_movies',
+                kidsMode: false, configVersion: 'cfg-v2'
+            });
+            const nextVersionKey = buildRecommendationCacheKey({
+                userId: 'sim_user', context: 'kids_profile', catalogId: 'yaca_true_blend_movies',
+                kidsMode: true, configVersion: 'cfg-v3'
+            });
+
+            expect(kidsKey).toContain('_kids');
+            expect(kidsKey).toContain('cfg-v2');
+            expect(kidsKey).not.toBe(adultKey);
+            expect(kidsKey).not.toBe(nextVersionKey);
+        });
+
+        it('blocca Archer e i titoli adult-animation anche nell espansione seed', async () => {
+            TasteProfile.findOne.mockResolvedValue({
+                owner: 'user_1',
+                context: 'kids_profile',
+                compiledVectors: { V_final: { 'g:16': 10 } },
+                lastUpdated: new Date()
+            });
+            AddonConfig.findOne.mockReturnValue({
+                lean: jest.fn().mockResolvedValue({
+                    uuid: 'uuid_1',
+                    profiles: [{ id: 'kids_profile', settings: { kidsMode: true, manualDNA: [], suggestedDNA: [] } }]
+                })
+            });
+
+            getDuckDbCatalogFromPreset.mockResolvedValue([
+                { id: 'tmdb:999', _tmdbId: 999, genre_ids: [16, 10762], keywords: [] }
+            ]);
+            getDuckDbCatalogFromFilters.mockResolvedValue([
+                { id: 'tmdb:501', _tmdbId: 501, name: 'Safe', genre_ids: [16, 10762], keywords: [{ id: 3095 }] },
+                { id: 'tmdb:10283', _tmdbId: 10283, name: 'Archer', genre_ids: [16, 35], keywords: [{ id: 14964 }, { id: 161919 }] },
+                { id: 'tmdb:456', _tmdbId: 456, name: 'The Simpsons', genre_ids: [16, 35], keywords: [{ id: 161919 }, { id: 11192 }] },
+                { id: 'tmdb:2122', _tmdbId: 2122, name: 'King of the Hill', genre_ids: [16, 35], keywords: [{ id: 161919 }] },
+                { id: 'tmdb:84503', _tmdbId: 84503, name: 'Close Enough', genre_ids: [16, 35], keywords: [{ id: 161919 }, { id: 11192 }] },
+                { id: 'tmdb:1434', _tmdbId: 1434, name: 'Family Guy', genre_ids: [16, 35], keywords: [{ id: 161919 }, { id: 11192 }] },
+                { id: 'tmdb:5921', _tmdbId: 5921, name: 'The Life & Times of Tim', genre_ids: [16, 35], keywords: [{ id: 161919 }, { id: 9964 }, { id: 204950 }, { id: 220192 }] }
+            ]);
+            tmdb.getTmdbMovieDetails.mockResolvedValue({
+                id: 501,
+                name: 'Safe',
+                genre_ids: [16, 10762],
+                keywords: { results: [{ id: 3095 }] },
+                vote_average: 8,
+                vote_count: 1000
+            });
+
+            const result = await buildHybridCatalog(
+                'user_1', 'kids_profile', null, 'tmdb_key', 'series', true
+            );
+
+            expect(result.map(item => item.id)).toEqual(['tmdb:501']);
+        });
+
+        it('applica i blocchi kids ai preset DuckDB e ai fallback', async () => {
+            const filterPreset = buildPresetFromFilters(
+                { with_genres: 28, without_keywords: '999' },
+                'movie',
+                { kidsMode: true }
+            );
+            expect(filterPreset.where.join(' ')).toContain('"id":999');
+            expect(filterPreset.where.join(' ')).toContain('"id":14964');
+            expect(filterPreset.where.join(' ')).toContain('"id":161919');
+
+            const nativePreset = applyKidsModeToPreset(
+                { type: 'movie', where: [], orderBy: 'popularity' },
+                { kidsMode: true }
+            );
+            const nativeWhere = nativePreset.where.join(' ');
+            expect(nativeWhere).toContain('"id":27');
+            expect(nativeWhere).toContain('"id":161919');
+            expect(nativeWhere).toContain('"id":220192');
+
+            getDuckDbCatalogFromFilters.mockResolvedValue([
+                { id: 'tmdb:601', name: 'Safe', genre_ids: [12], keywords: [{ id: 100 }] },
+                { id: 'tmdb:10283', name: 'Archer', genre_ids: [16, 35], keywords: [{ id: 14964 }] }
+            ]);
+            await buildDirectPresetCatalog('preset_action_blockbusters', 'user_1', 'kids_profile', 'tmdb_key', 'movie', true);
+            expect(getDuckDbCatalogFromFilters.mock.calls[0][0].without_keywords).toContain('161919');
+            expect(getDuckDbCatalogFromFilters.mock.calls[0][0].without_keywords).toContain('220192');
+
+            getDuckDbCatalogFromFilters.mockClear();
+            const fallback = await fetchPopularFallbackIds('tmdb_key', 'series', 60, true);
+            expect(getDuckDbCatalogFromFilters.mock.calls[0][0].without_keywords).toContain('14964');
+            expect(getDuckDbCatalogFromFilters.mock.calls[0][0].without_keywords).toContain('161919');
+            expect(fallback).toEqual(['601']);
         });
     });
 });

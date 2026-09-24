@@ -18,6 +18,16 @@ const { fetchRecentHistory, fetchRecentRatings, fetchTraktRecommendationsRaw, fe
 const { calculateHybridScore, computeTopGenres, computeTopKeywords } = require('./hybrid/scoringEngine');
 const { buildDirectPresetCatalog, buildTopGenresMixCatalog, buildHybridCatalog, buildHiddenGemsCatalog, buildTraktFilteredCatalog } = require('./hybrid/catalogStrategies');
 
+function getActiveKidsMode(userConfig, context) {
+    const activeProfile = userConfig?.profiles?.find(profile => profile.id === context);
+    return activeProfile?.settings?.kidsMode === true;
+}
+
+function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, configVersion }) {
+    const version = String(configVersion || 'unversioned');
+    return `${userId}_${context}_${catalogId}_cv${encodeURIComponent(version)}${kidsMode ? '_kids' : ''}`;
+}
+
 /**
  * Main endpoint: handles request for a profiled hybrid catalog.
  */
@@ -30,8 +40,10 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     }
     const context = activeProfileId || 'global';
     const profile = await TasteProfile.findOne({ owner: userId, context });
-    const isKidsMode = profile?.settings?.kidsMode;
-    const cacheKey = `${userId}_${context}_${catalogId}${isKidsMode ? '_kids' : ''}`;
+    // kidsMode è un'impostazione del profilo YACA (AddonConfig), non del TasteProfile.
+    const isKidsMode = getActiveKidsMode(userConfig, context);
+    const configVersion = userConfig?.configVersion || userConfig?.config?.configVersion;
+    const cacheKey = buildRecommendationCacheKey({ userId, context, catalogId, kidsMode: isKidsMode, configVersion });
 
     console.log(`[Hybrid Debug] getHybridCatalog called with catalogId=${catalogId}, userId=${userId}, context=${context}`);
     console.log(`[Hybrid Debug] profile loaded: ${!!profile}, isKidsMode=${isKidsMode}, cacheKey=${cacheKey}`);
@@ -52,7 +64,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 
     const buildRecommendIds = async () => {
         if (matchedPreset) {
-            const ids = await buildDirectPresetCatalog(catalogId, userId, context, tmdbApiKey, mediaType);
+            const ids = await buildDirectPresetCatalog(catalogId, userId, context, tmdbApiKey, mediaType, isKidsMode);
             if (ids.length > 0) {
                 await hybridRecommendationsCache.set(cacheKey, { ids });
                 return ids;
@@ -65,13 +77,13 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         const TRAKT_FILTERED_IDS = new Set(['yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series']);
 
         const ids = TRUE_BLEND_IDS.has(catalogId)
-            ? await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType)
+            ? await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType, isKidsMode)
             : SEED_NETWORK_IDS.has(catalogId)
-                ? await buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType)
+                ? await buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode)
                 : HIDDEN_GEMS_IDS.has(catalogId)
-                    ? await buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType)
+                    ? await buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType, isKidsMode)
                     : TRAKT_FILTERED_IDS.has(catalogId)
-                        ? await buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType)
+                        ? await buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode)
                         : [];
 
         await hybridRecommendationsCache.set(cacheKey, { ids });
@@ -149,7 +161,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                     const endpoint = mediaType === 'movie' ? `/movie/${normalizedId}` : `/tv/${normalizedId}`;
                     const res = await tmdbClient.get(endpoint, {
                         params: {
-                            append_to_response: 'images',
+                            append_to_response: 'images,keywords',
                             include_image_language: 'it,en,null'
                         }
                     });
@@ -312,6 +324,8 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
 
 module.exports = {
     getHybridCatalog,
+    getActiveKidsMode,
+    buildRecommendationCacheKey,
     syncIncrementalRecommendations,
     fetchRecentHistory,
     fetchRecentRatings,

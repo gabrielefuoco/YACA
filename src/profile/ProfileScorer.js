@@ -106,7 +106,8 @@ class ProfileScorer {
 
     static calculateBaseItemMatch(tmdbData, profile, context = {}) {
         if (!tmdbData || !profile) return 0;
-        if (profile?.settings?.kidsMode && this.isItemInappropriateForKids(tmdbData)) return -9999;
+        const kidsMode = context.kidsMode ?? profile?.settings?.kidsMode ?? false;
+        if (kidsMode && this.isItemInappropriateForKids(tmdbData)) return -9999;
 
         const tmdbWeight = context.tmdbWeight ?? profile.tmdbWeight ?? 1.0;
         const traktWeight = context.traktWeight ?? profile.traktWeight ?? 1.0;
@@ -288,7 +289,8 @@ class ProfileScorer {
 
     static calculateLightScore(lightData, profile, context = {}) {
         if (!lightData || !profile) return 0;
-        if (profile?.settings?.kidsMode && this.isItemInappropriateForKids(lightData)) return -9999;
+        const kidsMode = context.kidsMode ?? profile?.settings?.kidsMode ?? false;
+        if (kidsMode && this.isItemInappropriateForKids(lightData)) return -9999;
 
         // Genre match score
         const vFinal = profile.compiledVectors?.V_final || {};
