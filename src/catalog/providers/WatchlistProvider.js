@@ -7,6 +7,7 @@ const duckDbStore = require('../../db/duckDbStore');
 const { mapDuckDbRowToMeta } = require('./DuckDbProvider');
 
 const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const WATCHLIST_PAGE_SIZE = 20;
 
 /**
  * Trigger background sync if needed.
@@ -158,13 +159,12 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
         query.itemId = { $ne: null, $exists: true, $not: { $regex: /^(kitsu|hanime|anilist):/ } };
     }
 
-    const pageSize = 100;
-    
-    // 3. Query the DB
+    // 3. Query the DB. itemId is unique within an addon and is the stable
+    // tie-breaker when several library rows share the same _mtime timestamp.
     const items = await UserLibraryItem.find(query)
-        .sort({ _mtime: -1 })
+        .sort({ _mtime: -1, itemId: 1 })
         .skip(skip)
-        .limit(pageSize)
+        .limit(WATCHLIST_PAGE_SIZE)
         .lean();
 
     if (!items || items.length === 0) {
@@ -206,5 +206,6 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
 }
 
 module.exports = {
-    getWatchlistCatalog
+    getWatchlistCatalog,
+    WATCHLIST_PAGE_SIZE
 };
