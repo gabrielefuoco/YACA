@@ -34,9 +34,6 @@ describe('hybrid recommendations module resolution', () => {
                     clear: jest.fn()
                 }
             }));
-            jest.doMock('../src/ai/querySynthesizer', () => ({
-                generateDiscoveryQueries: jest.fn(() => [])
-            }), { virtual: true });
 
             expect(() => require('../src/engines/hybridRecommendations')).not.toThrow();
         });

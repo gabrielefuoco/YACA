@@ -131,10 +131,6 @@ describe('catalogStrategies', () => {
             const user = { apiKeys: { mistral: mistralKey }, profiles: [{ id: 'global', loved: [100] }] };
             
             dataFetchers.fetchProfileContext.mockResolvedValueOnce({ profile: {}, user });
-            const { generateDiscoveryQueries } = require('../src/ai/querySynthesizer');
-            jest.mock('../src/ai/querySynthesizer', () => ({
-                generateDiscoveryQueries: jest.fn()
-            }), { virtual: true });
             
             // To properly mock this, let's just test without AI query first, but with `loved` ids and genre jitter.
             // A simple fallback test for topGenres

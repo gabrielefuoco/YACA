@@ -48,8 +48,8 @@ async function run() {
     let stdout = false;
     let nocache = false;
     let fetchStreams = false;
-    let useLocal = false;
-    let formatText = false; // Add text formatting option
+    let baseUrl = 'http://127.0.0.1:7860';
+    let formatText = false;
     
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--pages' && args[i+1]) pages = parseInt(args[++i], 10);
@@ -59,7 +59,8 @@ async function run() {
         else if (args[i] === '--stdout') stdout = true;
         else if (args[i] === '--nocache') nocache = true;
         else if (args[i] === '--streams') fetchStreams = true;
-        else if (args[i] === '--local') useLocal = true;
+        else if (args[i] === '--url' && args[i+1]) baseUrl = args[++i].replace(/\/+$/, '');
+        else if (args[i] === '--local') baseUrl = 'http://127.0.0.1:7860';
         else if (args[i] === '--text') formatText = true;
     }
     
@@ -69,12 +70,10 @@ async function run() {
     }
 
     if (!config) {
-        // Fallback default config if MongoDB fails or is not available
-        config = 'eyJhcGlLZXlzIjp7InRtZGIiOiJjOTE2YTkyZDM3MGVhZmQ1OGVlZDg2ZGQ3M2UzZGNhMCJ9LCJhY3RpdmVQcm9maWxlSWQiOiJkZWZhdWx0IiwicHJvZmlsZXMiOlt7ImlkIjoiZGVmYXVsdCIsInNldHRpbmdzIjp7ImFuaW1lSWRNb2RlIjoia2l0c3UifX1dfQ==';
-        if (!stdout) console.log("Using default fallback config.");
+        console.error("No config provided and could not fetch addonUuid from MongoDB.");
+        process.exit(1);
     }
     
-    const baseUrl = useLocal ? 'http://127.0.0.1:7000' : 'https://gabriele-fuoco-yaca.hf.space';
     let targetCatalogs = [];
     
     try {
@@ -88,7 +87,7 @@ async function run() {
             targetCatalogs = manifestCatalogs.filter(c => specificIds.includes(c.id));
         }
     } catch (e) {
-        console.error("Failed to fetch manifest:", e.message);
+        console.error(`Failed to fetch manifest from ${baseUrl}/${config}/manifest.json:`, e.message);
         process.exit(1);
     }
     
@@ -203,14 +202,18 @@ async function run() {
             console.log(JSON.stringify(allData, null, 2));
         }
     } else {
+        const scratchDir = path.join(__dirname, '..', '.agents', 'scratch');
+        if (!fs.existsSync(scratchDir)) {
+            fs.mkdirSync(scratchDir, { recursive: true });
+        }
         if (formatText) {
-            const outPath = path.join(__dirname, '..', 'catalogs_output.txt');
+            const outPath = path.join(scratchDir, 'catalogs_output.txt');
             fs.writeFileSync(outPath, textOutput);
             console.log(`Saved textual state to ${outPath}`);
         } else {
             const outPath = compact 
-                ? path.join(__dirname, '..', 'catalog_state_compact.json') 
-                : path.join(__dirname, '..', 'catalog_state.json');
+                ? path.join(scratchDir, 'catalog_state_compact.json') 
+                : path.join(scratchDir, 'catalog_state.json');
             fs.writeFileSync(outPath, JSON.stringify(allData, null, 2));
             console.log(`Saved JSON state to ${outPath}`);
         }

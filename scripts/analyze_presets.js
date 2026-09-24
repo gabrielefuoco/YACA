@@ -1,4 +1,6 @@
 const { getPresets } = require('../src/data/presets.js');
+const fs = require('fs');
+const path = require('path');
 
 const TMDB_GENRES = {
     MOVIE: { Action: 28, Adventure: 12, Animation: 16, Comedy: 35, Crime: 80, Documentary: 99, Drama: 18, Family: 10751, Fantasy: 14, History: 36, Horror: 27, Music: 10402, Mystery: 9648, Romance: 10749, SciFi: 878, Thriller: 53, War: 10752, Western: 37 },
@@ -103,6 +105,10 @@ presets.forEach(p => {
     }
 });
 
-const fs = require('fs');
-fs.writeFileSync('analysis_report.json', JSON.stringify(report, null, 2));
-console.log('Report saved to analysis_report.json');
+const scratchDir = path.join(__dirname, '..', '.agents', 'scratch');
+if (!fs.existsSync(scratchDir)) {
+    fs.mkdirSync(scratchDir, { recursive: true });
+}
+const outPath = path.join(scratchDir, 'analysis_report.json');
+fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
+console.log(`Report saved to ${outPath}`);

@@ -19,7 +19,7 @@ Queste regole si applicano a tutto il progetto YACA e definiscono il comportamen
   - **Localizzazione**: YACA preferisce l'italiano. Qualsiasi correzione ai metadati deve dare priorità a `it-IT` come lingua per i `title` e le `description` (fallback su `en-US`).
 
 ## 3. Gestione e Invalidazione Cache
-- **REGOLA AUREA**: YACA utilizza una cache L1 (RAM) e L2 (MongoDB `CacheEntry`). Se uno script aggiorna l'URL di una copertina, parametri di preset o configurazioni, usa `node scripts/clear_caches.js` per propagare immediatamente i cambiamenti.
+- **REGOLA AUREA**: YACA utilizza una cache L1 (RAM) e L2 (Redis). Se uno script aggiorna l'URL di una copertina, parametri di preset o configurazioni, usa `node scripts/clear_caches.js` per propagare immediatamente i cambiamenti (svuota Redis e invalida la cache in memoria).
 
 ## 4. Gestione Repository (GitHub) e Pulizia
 - **Branch e Commit**: Creare branch dedicati per le lavorazioni (es. `feature/nome-feature`, `fix/nome-bug`) ed effettuare commit atomici con messaggi semantici.
@@ -42,8 +42,8 @@ Queste regole si applicano a tutto il progetto YACA e definiscono il comportamen
 
 ## 8. Note Architetturali Chiave (VSM & Cache)
 - **Vector Space Model (VSM) DNA**: Il sistema di raccomandazioni genera vettori per ogni utente (`TasteProfile`). Le chiavi hanno prefissi semantici: `g:` (Genere), `k:` (Keyword TMDB), `d:` (Regista), `a:` (Attore). Il profilo finale viene calcolato unendo lo storico pregresso e quello dinamico: `(V_static + V_active) / N° Interazioni = V_final`.
-- **Ciclo di Vita della Cache**: Non esistono cronjob di pulizia manuale per la cache MongoDB (`CacheEntry`). La collection fa affidamento esclusivamente sugli **Indici TTL (Time-To-Live)** nativi di MongoDB, che distruggono autonomamente i documenti scaduti in background. Quando modifichi le impostazioni di caching, verifica sempre che il TTL index sia configurato correttamente.
-- **Ottimizzazione Payload (Catalog vs Meta)**: I payload inviati a Stremio sono differenziati per risparmiare memoria (RAM e MongoDB). Il formattatore `sanitizeCatalogMeta` applica una dieta ferrea: nei *Cataloghi* rimuove array pesanti come `videos`, `behaviorHints`, `links` e `trailers` per evitare BSON enormi in cache; nei dettagli *Meta* li conserva condizionatamente (tramite il flag `isMetaDetail: true`). Mai usare lo spread operator (`...item`) globalmente nel formatter per evitare di ingolfare la cache dei cataloghi con dati grezzi (es. `rawTMDB`).
+- **Ciclo di Vita della Cache**: La cache L2 è gestita da Redis (`src/cache/CacheManager.js`, `redisClient.js`) con TTL automatici nativi su ciascuna chiave. In MongoDB Atlas risiede unicamente `request_cache` (fallback) con TTL index. Per svuotare la cache durante i test o manutenzioni, usa `node scripts/clear_caches.js` che esegue `redisClient.flushdb()`.
+- **Ottimizzazione Payload (Catalog vs Meta)**: I payload inviati a Stremio sono differenziati per risparmiare memoria (RAM e Redis/MongoDB). Il formattatore `sanitizeCatalogMeta` applica una dieta ferrea: nei *Cataloghi* rimuove array pesanti come `videos`, `behaviorHints`, `links` e `trailers` per evitare BSON enormi in cache; nei dettagli *Meta* li conserva condizionatamente (tramite il flag `isMetaDetail: true`). Mai usare lo spread operator (`...item`) globalmente nel formatter per evitare di ingolfare la cache dei cataloghi con dati grezzi (es. `rawTMDB`).
 
 ## 9. Cataloghi e Motore di Ricerca (DuckDB Nativo)
 - **Zero API TMDB per i Cataloghi**: Il motore di discovery e pre-filtraggio di YACA non interroga MAI l'endpoint `/discover` di TMDB (deprecato per lentezza e limiti dell'API). I cataloghi vengono estratti a latenza zero interrogando localmente in SQL il motore in-memory **DuckDB** (su file `.parquet`).

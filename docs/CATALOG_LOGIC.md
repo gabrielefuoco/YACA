@@ -136,65 +136,18 @@ Per evitare di superare i rate limit delle API esterne (TMDB, Kitsu, Trakt) e ga
 
 ---
 
-## 5. Il Sistema di Scansione dei Badge ITA (Background Stream Scanner - Solo Non-Anime)
+## 5. Il Sistema dei Badge ITA (Anime & Stato Episodi)
 
-Per indicare visivamente all'utente la disponibilità del doppiaggio o dei sottotitoli in italiano direttamente all'interno delle locandine dei cataloghi di Stremio, YACA implementa un sistema asincrono di scansione dei flussi in background. Questo evita di rallentare il caricamento iniziale dei cataloghi ed evita chiamate massive e sincrone ai proxy torrent.
+Per indicare visivamente all'utente la disponibilità del doppiaggio o delle novità in simulcast direttamente all'interno delle locandine dei cataloghi di Stremio, YACA implementa un sistema ad alte prestazioni basato sullo stato degli episodi.
 
 > [!IMPORTANT]
-> **Ambito esclusivo dello scanner torrent: Serie e Film Non-Anime.**
-> Gli **anime sono esclusi a monte** da questo scanner (tramite `isItemAnime` e `animeMappingStore` in `catalogHandler.js`). Un titolo anime non viene interrogato su `streambadges` né viene mai accodato in `pendingscans`.
-> Per gli anime, la disponibilità dell'italiano proviene dallo stato esterno (`anime_airing_state`):
-> - **In tutti i cataloghi**: se il titolo ha un canale doppiato, riceve il badge `ITA n` (formato coerente col ticket 10, senza duplicare la card);
-> - **Nel catalogo novità** (`preset_anime_simulcast`): produce la card sub `EP n` e, se presente un'uscita doppiata nella finestra di 14 giorni, il clone `_ita_offset` con `ITA n`.
-
-### Flusso di Scansione ed Idratazione del Badge (Serie e Film Non-Anime)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Client as Stremio Client
-    participant CH as catalogHandler.js
-    participant DB as MongoDB (StreamBadge & PendingScan)
-    participant W as Cache Warmer / QueueProcessor
-    participant P as Stream Proxy (Torrentio / ICV)
-
-    Client->>CH: Richiesta Catalogo
-    Note over CH: Filtro anime a monte: esclusi da scanner torrent
-    CH->>DB: Cerca record in 'streambadges' per item non-anime
-    DB-->>CH: Ritorna record trovati (hasIta: true/false)
-    Note over CH: Applica badge grafici '_itaBadge' a chi ha hasIta: true
-    Note over CH: Identifica ID non-anime non presenti nel DB (missingBaseIds)
-    CH->>DB: Inserisce in 'pendingscans' (status: 'pending')
-    CH-->>Client: Ritorna Catalogo (Idratato con i badge esistenti)
-    
-    Note over W: Esecuzione asincrona (Tick del Cache Warmer)
-    W->>DB: Estrae fino a 100 scansioni in stato 'pending'
-    loop Per ogni elemento in coda (con rate limit di 1s)
-        W->>P: Interroga lo streamHandler (richiesta fittizia S1E1 o Film)
-        P-->>W: Ritorna i torrent disponibili
-        Note over W: Analizza titoli dei torrent alla ricerca di tracce "ITA" o "ITALIAN"
-        W->>DB: Upsert record in 'streambadges' (hasIta: true/false)
-        W->>DB: Elimina elemento da 'pendingscans' (o lo marca 'failed' se errore)
-    end
-```
-
-### Componenti del Sistema:
-
-1. **Rilevamento e Accodamento (`catalogHandler.js`)**:
-   Nella funzione `applyPostCacheBadges`, YACA esclude preventivamente i titoli anime e filtra gli elementi non-anime privi di badge. Per ciascuno di essi:
-   - Verifica se esiste già una scansione pregressa nella collezione `streambadges`.
-   - Se l'ID non è mai stato scansionato (non è presente nel DB), crea un record nella collezione `pendingscans` con stato `pending`.
-2. **Coda e Rate Limiting (`queueProcessor.js` / `rateLimiter.js`)**:
-   La funzione `processPendingScans` in [queueProcessor.js](../src/utils/queueProcessor.js) viene periodicamente invocata dal `cacheWarmer.js`. Essa:
-   - Estrae fino a 100 elementi `pending`.
-   - Utilizza `rateLimitedMap` per eseguire le scansioni in parallelo (in lotti da 5 elementi alla volta) distanziate di almeno 1000ms, per prevenire il ban o il rate-limit da parte dei provider torrent e dei proxy (come Torrentio).
-   - Genera una chiamata a `streamHandler` simulando la richiesta del primo episodio (se serie TV) o del film (se film).
-3. **Analisi e Risoluzione dei Flussi (`streamHandler.js`)**:
-   La funzione analizza i titoli dei flussi torrent risultanti. Se un flusso contiene parole chiave come `ita`, `italian`, `ita/eng` nel nome del file torrent, la serie TV o il film non-anime viene qualificato come avente tracce in italiano.
-   Il risultato viene memorizzato in `StreamBadge` con `hasIta: true` (se trovato) o `hasIta: false` (se non trovato).
-4. **Negative Caching e Resubmission**:
-   Gli elementi marcati con `hasIta: false` fungono da cache negativa. La pipeline del catalogo li esclude dalle scansioni successive per evitare cicli di query infiniti su contenuti privi di doppiaggio italiano.
-   - *Nota operativa:* In caso di aggiornamento delle logiche di scraping o mapping, è possibile eliminare manualmente dal DB le voci `hasIta: false` obsolete per costringere il sistema a rieseguire la scansione.
+> **Dismissione dello Scanner Torrent Asincrono (PendingScan)**:
+> In passato il sistema utilizzava uno scanner torrent asincrono con coda `PendingScan` e worker background. Tale architettura è stata interamente ritirata per eliminare il sovraccarico di rete sui proxy torrent e la persistenza di collezioni write-only.
+> L'idratazione dei badge ITA oggi avviene in modo deterministico ed efficiente:
+> - **Anime**: la disponibilità del doppiaggio proviene dallo stato esterno sincronizzato (`anime_airing_state`, AnimeWorld/Kitsu).
+>   - **In tutti i cataloghi**: se il titolo ha un canale doppiato, riceve il badge `ITA n` (senza duplicare la card);
+>   - **Nel catalogo novità** (`preset_anime_simulcast`): produce la card sub `EP n` e, se presente un'uscita doppiata recente, il clone `_ita_offset` con `ITA n`.
+> - **Contenuti Non-Anime**: non subiscono scansioni a vuoto in background; i metadati grafici sono applicati direttamente dai descrittori dei cataloghi.
 
 ---
 
@@ -202,8 +155,8 @@ sequenceDiagram
 
 I comportamenti di caching e di interconnessione con i provider sono influenzati dalle seguenti chiavi d'ambiente definite nel file di configurazione globale:
 
-*   `MONGODB_URI`: Stringa di connessione a MongoDB per la cache L2.
-*   `TMDB_API_KEY`: API Key utilizzata per interrogare TMDB e per arricchire i cataloghi anime.
-*   `MISTRAL_API_KEY`: Chiave API per Mistral AI, necessaria per abilitare la Universal Pipeline basata su AI Discovery.
+*   `MONGODB_URI`: Stringa di connessione a MongoDB Atlas per profili, impostazioni e configurazioni account.
+*   `REDIS_URL`: URL di connessione a Redis per il caching L2 distribuito (default: `redis://127.0.0.1:6379`).
+*   `TMDB_API_KEY`: API Key utilizzata per interrogare TMDB e per arricchire i metadati.
+*   `MISTRAL_API_KEY`: Chiave API per Mistral AI, necessaria per abilitare la ricerca semantica Live Search.
 *   `KITSU_ENDPOINT`: Endpoint dell'API di Kitsu (default: `https://kitsu.io/api/edge`).
-

@@ -28,7 +28,7 @@ graph TD
             PM["ProfileManager.tsx"]
             ACP["ActiveCatalogsPanel.tsx"]
             DAP["DnaAndAiPanel.tsx"]
-            Radar["DnaRadarChart.tsx"]
+            Radar["OrbitalDnaGraph.tsx"]
             
             DashPage --> PM
             DashPage --> ACP
@@ -158,7 +158,7 @@ Il DNA del profilo rappresenta i generi e le parole chiave (keyword) preferite d
 
 1.  **DNA Base (`V_static`)**: Calcolato analizzando staticamente i filtri dei preset abilitati. Mostra le preferenze "dichiarate".
 2.  **DNA Evoluto (`V_final`)**: Unisce il DNA di base con i vettori estratti dall'attività di visione reale dell'utente (Stremio/Trakt history, Love e Like).
-3.  **DnaRadarChart**: Il componente [DnaRadarChart.tsx](../frontend/src/components/dashboard/DnaRadarChart.tsx) (sviluppato su canvas/SVG nativo) traccia visivamente le differenze tra il DNA statico e quello dinamico evoluto, mostrando come cambiano i pesi dei generi principali nel tempo.
+3.  **OrbitalDnaGraph**: Il componente [OrbitalDnaGraph.tsx](../frontend/src/components/dashboard/OrbitalDnaGraph.tsx) (sviluppato su canvas/SVG nativo) traccia visivamente le differenze tra il DNA statico e quello dinamico evoluto, mostrando come cambiano i pesi dei generi principali nel tempo.
 
 ### Editor Manuale del DNA
 

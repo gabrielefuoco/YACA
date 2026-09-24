@@ -123,8 +123,6 @@ const nextSyncInterval = (8 * 60 * 60 * 1000) + randomOffsetMs; // 8 ore ± 2 or
 ```
 Questo impedisce collisioni e picchi di richieste simultanee sul server provenienti da molteplici istanze.
 
-### 2. Warmup Cache Endpoint (`/api/cron/warmup`)
-YACA non include una libreria interna di cron (come `node-cron`) che consumerebbe risorse in modo sincrono. Espone invece un endpoint `/api/cron/warmup` in [index.js](../index.js) progettato per essere richiamato periodicamente da un servizio esterno (es. UptimeRobot, cron-job.org o Hugging Face cron scheduler).
-*   **Keep-Alive**: Le richieste costanti all'endpoint impediscono all'Hugging Face Space gratuito di andare in stato di "Sleep" per inattività.
-*   **Cache Warmer**: Avvia la funzione `runCacheWarmer` in [src/utils/cacheWarmer.js](../src/utils/cacheWarmer.js) che cicla tutti gli utenti e pre-carica (warmup) nei database di cache L2 i primi elementi dei cataloghi attivi dei profili, azzerando i tempi di caricamento per l'utente al click su Stremio.
+### 2. Warmup Keep-Alive Endpoint (`/api/cron/warmup`)
+YACA non include una libreria interna di cron pesante (come `node-cron`). Espone invece un endpoint `/api/cron/warmup` in [index.js](../index.js) richiamabile periodicamente da un servizio esterno (es. UptimeRobot o cron-job.org) per mitigare l'ibernazione (cold start). L'aggiornamento dei cataloghi e del dataset TMDB in locale è gestito dal demone in background `TmdbDumpDaemon`.
 

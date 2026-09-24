@@ -44,17 +44,14 @@ Per ovviare ai limiti di latenza imposti dalle API esterne di TMDB durante la sc
 
 ```mermaid
 graph TD
-    A[Pool Iniziale di Candidati] --> B[Tier 1: Light Scoring in RAM]
+    A[Pool Iniziale di Candidati DuckDB/Parquet] --> B[Tier 1: Light Scoring in RAM]
     B --> C[Ordinamento dei risultati]
-    C --> D[Taglio brutale: passa solo la metà migliore max 80]
+    C --> D[Taglio selettivo: passa solo la metà migliore max 80]
     D --> E[Tier 2: Full Scoring]
-    E --> F{Dati in cache TmdbScoringData?}
-    F -->|Sì| G[Usa dati pre-salvati]
-    F -->|No| H[Chiamata API TMDB + Save in DB]
-    G --> I[Calcolo Affinità Completa]
-    H --> I
-    I --> J[Applicazione Penalità Invecchiamento]
-    J --> K[Ordinamento Finale]
+    E --> F[Arricchimento Istantaneo da Parquet/DuckDB]
+    F --> G[Calcolo Affinità Completa VSM]
+    G --> H[Applicazione Penalità Invecchiamento]
+    H --> I[Ordinamento Finale & Salvataggio in Cache Redis L2]
 ```
 
 ### Tier 1: Light Scoring (RAM-Only)
@@ -70,7 +67,7 @@ All'interno del catalogo *Hidden Gems*, l'algoritmo devia per premiare opere di 
 
 ### Tier 2: Full Scoring
 Viene applicato solo ai sopravvissuti del Tier 1.
-1.  **Arricchimento metadati**: Recupera le keyword esatte e i crediti (regista e primi 5 attori). Per evitare di saturare i limiti di velocità delle API di TMDB, cerca prima nella cache MongoDB (`TmdbScoringData`). Se assente, effettua una chiamata a TMDB e salva il risultato in cache per le richieste future.
+1.  **Arricchimento metadati a zero latenza**: Recupera le keyword esatte, crediti (regista e primi 5 attori) e parametri tematici direttamente dal database locale Parquet tramite il motore in-memory **DuckDB** (`DuckDbProvider.js`). Il modello legacy `TmdbScoringData` su MongoDB e le chiamate dirette all'API TMDB per lo scoring sono stati completamente dismessi: il dataset locale offre dati completi a zero chiamate esterne e latenza < 10ms.
 2.  **Calcolo Affinità Completa** (`ProfileScorer.calculateItemMatch`):
     *   **Assi Tematici (98% del match)**: Somma dei pesi del DNA `V_final` per generi e parole chiave dell'item.
     *   **Assi Autoriali (2% del match)**: Somma dei pesi per registi e attori principali (limitato al 2% in base al feedback degli utenti che giudicavano secondari i registi).
