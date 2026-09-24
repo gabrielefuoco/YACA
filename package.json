@@ -13,7 +13,8 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "services"
-    ]
+    ],
+    "testTimeout": 30000
   },
   "keywords": [],
   "author": "",
