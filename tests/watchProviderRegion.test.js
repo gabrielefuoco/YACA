@@ -49,19 +49,22 @@ describe('Watch provider region', () => {
         expect(JSON.parse(row.watch_providers_us)).toEqual(usProviders);
     });
 
-    test('Film su Max usa HBO Max 1899 e la colonna US, Serie su Max resta sul network 3186', () => {
+    test('Film HBO & Max e Serie HBO & Max sono cataloghi per produzione, senza vincolo di regione', () => {
         const movies = getPresets().find((preset) => preset.id === 'preset_hbo_max_movies');
         const movieQuery = movies.queries[0];
         const compiled = buildPresetFromFilters(movieQuery, movies.type);
         const movieWhere = compiled.where.join(' ');
 
-        expect(movieQuery.with_watch_providers).toBe(1899);
-        expect(movieQuery.watch_region).toBe('US');
-        expect(movieWhere).toContain('watch_providers_us');
-        expect(movieWhere).not.toContain('watch_providers_it');
+        // Scelta di prodotto: il catalogo è "roba prodotta da HBO/Max", non
+        // "disponibile in streaming": niente provider né regione, solo società.
+        expect(movieQuery.with_companies).toBe('3268|7429|14914|11489|158691|306613|187379');
+        expect(movieQuery.with_watch_providers).toBeUndefined();
+        expect(movieQuery.watch_region).toBeUndefined();
+        expect(movieWhere).toContain('production_companies');
+        expect(movieWhere).not.toContain('watch_providers');
 
         const series = getPresets().find((preset) => preset.id === 'preset_hbo_max_series');
-        expect(series.queries[0].with_networks).toBe(3186);
+        expect(series.queries[0].with_networks).toBe('49|3186');
         expect(series.queries[0].with_watch_providers).toBeUndefined();
     });
 

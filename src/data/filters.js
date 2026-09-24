@@ -46,8 +46,8 @@ const F = {
     director: (id) => jsonHas('directors', id),
     actor: (id) => jsonHas('cast', id),
     crew: (id) => `(${jsonHas('directors', id)} OR ${jsonHas('writers', id)})`,
-    company: (id) => jsonHas('production_companies', id),
-    network: (id) => jsonHas('networks', id),
+    company: (...ids) => `(${ids.map(id => jsonHas('production_companies', id)).join(' OR ')})`,
+    network: (...ids) => `(${ids.map(id => jsonHas('networks', id)).join(' OR ')})`,
     collections: (...ids) => {
         const validIds = ids.map(Number).filter(id => Number.isSafeInteger(id) && id > 0);
         return validIds.length > 0 ? `"collection_id" IN (${validIds.join(',')})` : '1=0';

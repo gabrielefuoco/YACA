@@ -12,7 +12,9 @@ const TMDB_GENRES = {
 };
 
 const TMDB_COMPANIES = {
-    Pixar: 3, Ghibli: 10342, Marvel: 420, DC: 128064, A24: 41077, Blumhouse: 3172, Disney: 2, DreamWorks: 521, Illumination: 3166, Lucasfilm: 1
+    Pixar: 3, Ghibli: 10342, Marvel: 420, DC: 128064, A24: 41077, Blumhouse: 3172, Disney: 2, DreamWorks: 521, Illumination: 3166, Lucasfilm: 1,
+    // Produzione HBO/Max: HBO, HBO Films, HBO Documentary Films, HBO/Cinemax Documentary, le tre schede HBO Max presenti su TMDB.
+    HBOFamily: '3268|7429|14914|11489|158691|306613|187379'
 };
 
 // Le collection TMDB dell'MCU sono divise per franchise. La keyword MCU
@@ -34,7 +36,9 @@ const TMDB_PEOPLE = {
 };
 
 const TMDB_NETWORKS = {
-    HBO: 49, Netflix: 213, Amazon: 1024, DisneyPlus: 2739, AppleTV: 2552, Sky: 125
+    HBO: 49, Netflix: 213, Amazon: 1024, DisneyPlus: 2739, AppleTV: 2552, Sky: 125,
+    // HBO + HBO Max: il catalogo serie del brand, per produzione (network), non per disponibilità.
+    HBOMax: '49|3186'
 };
 
 const getPresets = () => {
@@ -282,9 +286,9 @@ const getPresets = () => {
         { id: 'preset_netflix_movies', name: 'Film su Netflix', emoji: 'N', category: "📺 Network & Piattaforme", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_watch_providers: 8, watch_region: 'IT', sort_by: 'popularity.desc', 'vote_count.gte': 50 }] },
         { id: 'preset_amazon_movies', name: 'Film su Prime Video', emoji: 'A', category: "📺 Network & Piattaforme", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_watch_providers: 119, watch_region: 'IT', sort_by: 'popularity.desc', 'vote_count.gte': 50 }] },
         { id: 'preset_disney_movies', name: 'Film su Disney+', emoji: '🏰', category: "📺 Network & Piattaforme", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_watch_providers: 337, watch_region: 'IT', sort_by: 'popularity.desc', 'vote_count.gte': 50 }] },
-        { id: 'preset_hbo_max_movies', name: 'Film su Max', emoji: '📺', category: "📺 Network & Piattaforme", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_watch_providers: 1899, watch_region: 'US', sort_by: 'popularity.desc', 'vote_count.gte': 50 }] },
+        { id: 'preset_hbo_max_movies', name: 'Film HBO & Max', emoji: '📺', category: "📺 Network & Piattaforme", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_companies: TMDB_COMPANIES.HBOFamily, sort_by: 'popularity.desc', 'vote_count.gte': 50 }] },
         
-        { id: 'preset_hbo_max_series', name: 'Serie su Max', emoji: '📺', category: "📺 Network & Piattaforme", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_networks: 3186, sort_by: 'popularity.desc', 'vote_count.gte': 20, without_keywords: '210024' }] },
+        { id: 'preset_hbo_max_series', name: 'Serie HBO & Max', emoji: '📺', category: "📺 Network & Piattaforme", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_networks: TMDB_NETWORKS.HBOMax, sort_by: 'popularity.desc', 'vote_count.gte': 20, without_keywords: '210024' }] },
         { id: 'preset_hulu_series', name: 'Serie su Hulu', emoji: '🟩', category: "📺 Network & Piattaforme", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_networks: 453, sort_by: 'popularity.desc', 'vote_count.gte': 20, without_keywords: '210024' }] },
         { id: 'preset_paramount_series', name: 'Serie su Paramount+', emoji: '🏔️', category: "📺 Network & Piattaforme", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_networks: 4330, sort_by: 'popularity.desc', 'vote_count.gte': 20, without_keywords: '210024' }] },
         // =============================================
