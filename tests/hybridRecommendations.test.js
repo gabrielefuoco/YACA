@@ -129,6 +129,22 @@ describe('calculateHybridScore', () => {
         expect(score).toBe(0);
     });
 
+    it('applica il mapping cross-type nel bonus genere ibrido', () => {
+        const counts = new Map();
+        expect(calculateHybridScore(
+            { tmdbId: 800, position: null }, counts, [53], [9648]
+        )).toBe(30);
+        expect(calculateHybridScore(
+            { tmdbId: 801, position: null }, counts, [10749], [18]
+        )).toBe(30);
+        expect(calculateHybridScore(
+            { tmdbId: 802, position: null }, counts, [9648], [53]
+        )).toBe(30);
+        expect(calculateHybridScore(
+            { tmdbId: 803, position: null }, counts, [18], [10749]
+        )).toBe(30);
+    });
+
     it('should handle fewer than 3 top genres gracefully', () => {
         const item = { tmdbId: 600, position: null };
         const tmdbCounts = new Map();

@@ -13,6 +13,14 @@ const { getDuckDbCatalogFromPreset } = require('../../catalog/providers/DuckDbPr
 const { F, S, G } = require('../../data/filters');
 const graph = require('../graph/HierarchicalGraph');
 
+function mapGenreIdsToTarget(genres) {
+    return [...new Set((genres || []).flatMap(genre => {
+        const id = Number(genre);
+        if (!Number.isFinite(id)) return [];
+        return [id, ...G.getEquivalentGenreIds(id)];
+    }))];
+}
+
 function getTopNodeIds(profile, level = 'L2', limit = 2) {
     if (!profile || !profile.compiledVectors || !profile.compiledVectors.V_final) return [];
     return Object.entries(profile.compiledVectors.V_final)
@@ -161,19 +169,7 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
 
     // 2. Estrazione DNA
     const topGenres = computeTopGenres(profile, 3, user, context);
-    const isTv = mediaType === 'series' || mediaType === 'tv';
-    const mappedTopGenres = [...new Set(topGenres.flatMap(g => {
-        const id = Number(g);
-        if (isTv && G._movieToTv && G._movieToTv[id]) {
-            const m = G._movieToTv[id];
-            return Array.isArray(m) ? m : [m];
-        }
-        if (!isTv && G._tvToMovie && G._tvToMovie[id]) {
-            const m = G._tvToMovie[id];
-            return Array.isArray(m) ? m : [m];
-        }
-        return [id];
-    }))];
+    const mappedTopGenres = mapGenreIdsToTarget(topGenres);
     const topL2Ids = getTopNodeIds(profile, 'L2', 3);
     let directKwIds = computeTopKeywords(profile, 10, user, context);
 
@@ -328,12 +324,11 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
         return String(idA).localeCompare(String(idB));
     });
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
-    const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
+    // I cap sono un filtro di selezione: gli esclusi non vanno riaggiunti
+    // subito dopo, altrimenti l'ordinamento successivo neutralizza il limite.
+    let finalItems = typeof ProfileScorer.applyDiversityCaps === 'function'
         ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
         : deduplicated;
-    const diversifiedSet = new Set(diversified);
-    const remaining = deduplicated.filter(item => !diversifiedSet.has(item));
-    let finalItems = [...diversified, ...remaining];
     if (isKidsMode) {
         finalItems = applyKidsMode(finalItems);
     }
@@ -370,19 +365,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const dnaFilters = getProfileDnaFilters(user, context);
 
     const topGenres = computeTopGenres(profile, 3, user, context);
-    const isTv = mediaType === 'series' || mediaType === 'tv';
-    const mappedTopGenres = [...new Set(topGenres.flatMap(g => {
-        const id = Number(g);
-        if (isTv && G._movieToTv && G._movieToTv[id]) {
-            const m = G._movieToTv[id];
-            return Array.isArray(m) ? m : [m];
-        }
-        if (!isTv && G._tvToMovie && G._tvToMovie[id]) {
-            const m = G._tvToMovie[id];
-            return Array.isArray(m) ? m : [m];
-        }
-        return [id];
-    }))];
+    const mappedTopGenres = mapGenreIdsToTarget(topGenres);
 
     const lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 20).map(id => ({ id: String(id), weight: 2 }));
     const likedIds = (user?.profiles?.find(p => p.id === context)?.liked || []).slice(0, 15).map(id => ({ id: String(id), weight: 1 }));
@@ -560,12 +543,9 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         return String(idA).localeCompare(String(idB));
     });
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
-    const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
+    let finalItems = typeof ProfileScorer.applyDiversityCaps === 'function'
         ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
         : deduplicated;
-    const diversifiedSet = new Set(diversified);
-    const remaining = deduplicated.filter(item => !diversifiedSet.has(item));
-    let finalItems = [...diversified, ...remaining];
     if (isKidsMode) {
         finalItems = applyKidsMode(finalItems);
     }

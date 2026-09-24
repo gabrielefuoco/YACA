@@ -1,4 +1,5 @@
 const { getProfileDnaFilters } = require('../../utils/helpers');
+const { G } = require('../../data/filters');
 
 function extractVectorByPrefix(vFinal, prefix) {
     if (!vFinal || typeof vFinal !== 'object') return {};
@@ -52,14 +53,19 @@ function calculateHybridScore(item, tmdbCounts, topGenres, itemGenres) {
         score += Math.floor(100 / Math.pow(2, count - 1));
     }
 
-    const topGenresNorm = topGenres.map(String);
-    const itemGenresNorm = itemGenres.map(String);
+    const expandGenreIds = (genres) => new Set((genres || []).flatMap(genre => {
+        const id = Number(genre);
+        if (!Number.isFinite(id)) return [];
+        return [String(id), ...G.getEquivalentGenreIds(id).map(String)];
+    }));
+    const itemGenreIds = expandGenreIds(itemGenres);
     const genreBoosts = [30, 15, 5];
-    const limit = Math.min(topGenresNorm.length, genreBoosts.length);
+    const limit = Math.min(topGenres.length, genreBoosts.length);
     for (let i = 0; i < limit; i++) {
-        if (itemGenresNorm.includes(topGenresNorm[i])) {
-            score += genreBoosts[i];
-        }
+        const topId = Number(topGenres[i]);
+        if (!Number.isFinite(topId)) continue;
+        const equivalents = [String(topId), ...G.getEquivalentGenreIds(topId).map(String)];
+        if (equivalents.some(id => itemGenreIds.has(id))) score += genreBoosts[i];
     }
 
     return score;

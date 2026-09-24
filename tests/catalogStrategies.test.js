@@ -27,7 +27,8 @@ const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
 
 jest.mock('../src/profile/ProfileScorer', () => ({
     computeDnaMultiplier: jest.fn(() => 1.0),
-    calculateItemMatch: jest.fn(() => 5.0)
+    calculateItemMatch: jest.fn(() => 5.0),
+    applyDiversityCaps: jest.fn(items => items.slice(0, 3))
 }));
 
 jest.mock('../src/engines/hybrid/scoringEngine', () => ({
@@ -62,7 +63,6 @@ describe('catalogStrategies', () => {
         });
 
         it('should fetch from DuckDb using preset queries', async () => {
-            dataFetchers.fetchProfileContext.mockResolvedValueOnce({ profile: null });
             DuckDbProvider.getDuckDbCatalogFromFilters.mockResolvedValue([
                 { id: 101, title: 'Action 1' },
                 { id: 102, title: 'Action 2' }
@@ -125,6 +125,45 @@ describe('catalogStrategies', () => {
     });
 
     describe('buildTopGenresMixCatalog', () => {
+        it('mappa Thriller e Romance movie nei generi TV della query DuckDB', async () => {
+            dataFetchers.fetchProfileContext.mockResolvedValueOnce({
+                profile: { compiledVectors: { V_final: {} } },
+                user: { profiles: [{ id: 'global', settings: { manualDNA: [], suggestedDNA: [] } }] }
+            });
+            scoringEngine.computeTopGenres.mockReturnValueOnce(['53', '10749']);
+            scoringEngine.computeTopKeywords.mockReturnValueOnce([]);
+            DuckDbProvider.getDuckDbCatalogFromPreset.mockResolvedValueOnce([
+                { id: 'tmdb:1', genre_ids: [9648] }
+            ]);
+
+            await catalogStrategies.buildTopGenresMixCatalog('user1', 'global', 'tmdb', 'series');
+
+            const where = DuckDbProvider.getDuckDbCatalogFromPreset.mock.calls[0][0].where.join(' ');
+            expect(where).toContain('"id":9648');
+            expect(where).toContain('"id":18');
+        });
+
+        it('non riaggiunge gli item esclusi dai diversity cap', async () => {
+            dataFetchers.fetchProfileContext.mockResolvedValueOnce({
+                profile: { compiledVectors: { V_final: {} } },
+                user: { profiles: [{ id: 'global', settings: { manualDNA: [], suggestedDNA: [] } }] }
+            });
+            scoringEngine.computeTopGenres.mockReturnValueOnce(['35']);
+            scoringEngine.computeTopKeywords.mockReturnValueOnce([]);
+            DuckDbProvider.getDuckDbCatalogFromPreset.mockResolvedValueOnce([
+                { id: 'tmdb:1', genre_ids: [35] },
+                { id: 'tmdb:2', genre_ids: [35] },
+                { id: 'tmdb:3', genre_ids: [35] },
+                { id: 'tmdb:4', genre_ids: [35] }
+            ]);
+            ProfileScorer.applyDiversityCaps.mockImplementationOnce(items => items.slice(0, 3));
+
+            const result = await catalogStrategies.buildTopGenresMixCatalog('user1', 'global', 'tmdb', 'series');
+
+            expect(result).toHaveLength(3);
+            expect(result.map(item => item.id)).toEqual(['tmdb:1', 'tmdb:2', 'tmdb:3']);
+        });
+
         it('should fetch using AI queries if mistral key is present', async () => {
             const aiQueries = [{ genre_ids: [28], keyword: 'action' }];
             const mistralKey = 'fake_mistral';

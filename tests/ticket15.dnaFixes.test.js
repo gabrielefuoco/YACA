@@ -78,6 +78,10 @@ describe('Ticket 15: Fix DNA e Ordinamento Cataloghi', () => {
 
         it('la mappa _tvToMovie include War (10752) per 10768', () => {
             expect(G._tvToMovie[10768]).toEqual([10752]);
+            expect(G._movieToTv[53]).toEqual([9648]);
+            expect(G._tvToMovie[9648]).toEqual([53]);
+            expect(G._movieToTv[10749]).toEqual([18]);
+            expect(G._tvToMovie[18]).toEqual([10749]);
         });
 
         it('G.getEquivalentGenreIds è simmetrico e bidirezionale', () => {
@@ -91,6 +95,10 @@ describe('Ticket 15: Fix DNA e Ordinamento Cataloghi', () => {
 
             expect(G.getEquivalentGenreIds(10768)).toEqual([10752]);
             expect(G.getEquivalentGenreIds(10752)).toEqual([10768]);
+            expect(G.getEquivalentGenreIds(53)).toEqual([9648]);
+            expect(G.getEquivalentGenreIds(9648)).toEqual([53]);
+            expect(G.getEquivalentGenreIds(10749)).toEqual([18]);
+            expect(G.getEquivalentGenreIds(18)).toEqual([10749]);
         });
 
         it('mapGenre e mapGenres gestiscono correttamente la conversione multipla', () => {
@@ -98,6 +106,10 @@ describe('Ticket 15: Fix DNA e Ordinamento Cataloghi', () => {
             expect(G.mapGenres([10759], 'movie')).toEqual([28, 12]);
             expect(G.mapGenres(['10759'], 'movie')).toEqual([28, 12]);
             expect(G.mapGenres([28, 12], 'tv')).toEqual([10759, 10759]);
+            expect(G.mapGenres([53, 10749], 'tv')).toEqual([9648, 18]);
+            expect(G.mapGenres([9648, 18], 'movie')).toEqual([53, 10749]);
+            expect(G.mapGenre('Thriller', 'series')).toBe('Mystery');
+            expect(G.mapGenre('Romance', 'series')).toBe('Drama');
         });
     });
 
@@ -132,6 +144,28 @@ describe('Ticket 15: Fix DNA e Ordinamento Cataloghi', () => {
 
             const multiplier = ProfileScorer.computeDnaMultiplier(tvItem, dnaFilters);
             expect(multiplier).toBe(1.0);
+        });
+
+        it('riconosce Thriller movie nelle serie Mystery e Romance movie nelle serie Drama', () => {
+            expect(ProfileScorer.computeDnaMultiplier(
+                { genre_ids: [9648] }, [{ type: 'genre', id: 53 }]
+            )).toBe(1.0);
+            expect(ProfileScorer.computeDnaMultiplier(
+                { genre_ids: [18] }, [{ type: 'genre', id: 10749 }]
+            )).toBe(1.0);
+            expect(ProfileScorer.computeDnaMultiplier(
+                { genre_ids: [53] }, [{ type: 'genre', id: 9648 }]
+            )).toBe(1.0);
+            expect(ProfileScorer.computeDnaMultiplier(
+                { genre_ids: [10749] }, [{ type: 'genre', id: 18 }]
+            )).toBe(1.0);
+        });
+
+        it('getVectorScore applica il mapping anche a Thriller e Romance', () => {
+            expect(ProfileScorer.getVectorScore({ 'g:53': 8.2 }, 'g', 9648)).toBe(8.2);
+            expect(ProfileScorer.getVectorScore({ 'g:10749': 7.1 }, 'g', 18)).toBe(7.1);
+            expect(ProfileScorer.getVectorScore({ 'g:9648': 6.9 }, 'g', 53)).toBe(6.9);
+            expect(ProfileScorer.getVectorScore({ 'g:18': 6.4 }, 'g', 10749)).toBe(6.4);
         });
 
         it('computeDnaMultiplier applica 0.1x se i generi sono realmente non correlati', () => {

@@ -125,21 +125,21 @@ const G = {
         News: 10763, Reality: 10764, SciFiFantasy: 10765, Soap: 10766,
         Talk: 10767, WarPolitics: 10768, Western: 37,
     },
-    // Utilità di conversione cross-type (TMDB Movie ↔ TV)
-    // 10759 (TV Action & Adventure) include sia Action (28) che Adventure (12) dei film.
-    // 10765 (TV Sci-Fi & Fantasy) include sia Sci-Fi (878) che Fantasy (14) dei film.
-    // 10768 (TV War & Politics) include War (10752) dei film.
-    //
-    // DOCUMENTAZIONE GENERI NON MAPPATI (TV vs FILM):
-    // - Thriller (53), Horror (27), Romance (10749): su TMDB non esistono come generi TV.
-    //   Nelle serie TV queste opere vengono classificate sotto Mystery (9648), Crime (80) o Drama (18).
-    // - Kids (10762): genere presente solo in TV; nei film la classificazione corrispondente
-    //   è suddivisa tra Family (10751) e Animation (16).
-    // - Soap (10766), Reality (10764), Talk (10767), News (10763): format televisivi privi di controparte cinematografica.
-    // - TV Movie (10770): categoria di catalogo solo film.
-    // Non vengono forzate equivalenze arbitrarie 1:1 per preservare l'affinità tematica del profiling VSM.
-    _movieToTv: { 28: [10759], 12: [10759], 878: [10765], 14: [10765], 10752: [10768] },
-    _tvToMovie: { 10759: [28, 12], 10765: [878, 14], 10768: [10752] },
+    // Utilità di conversione cross-type (TMDB Movie ↔ TV).
+    // Le tabelle sono reciproche: ogni equivalenza usata dal VSM può quindi
+    // essere percorsa anche nella direzione inversa senza casi speciali.
+    // 10759 (TV Action & Adventure) include Action (28) e Adventure (12).
+    // 10765 (TV Sci-Fi & Fantasy) include Sci-Fi (878) e Fantasy (14).
+    // 10768 (TV War & Politics) include War (10752).
+    // Thriller movie è classificato Mystery TV; Romance movie è classificato Drama TV.
+    _movieToTv: {
+        28: [10759], 12: [10759], 878: [10765], 14: [10765], 10752: [10768],
+        53: [9648], 10749: [18]
+    },
+    _tvToMovie: {
+        10759: [28, 12], 10765: [878, 14], 10768: [10752],
+        9648: [53], 18: [10749]
+    },
 
     getEquivalentGenreIds: (genreId) => {
         const num = Number(genreId);
@@ -174,6 +174,8 @@ const G = {
             if (lower === 'action' || lower === 'adventure') return 'Action & Adventure';
             if (lower === 'science fiction' || lower === 'sci-fi' || lower === 'fantasy') return 'Sci-Fi & Fantasy';
             if (lower === 'war' || lower === 'war & politics') return 'War & Politics';
+            if (lower === 'thriller' || lower === 'mystery') return 'Mystery';
+            if (lower === 'romance' || lower === 'drama') return 'Drama';
             return genre;
         } else {
             const num = Number(genre);
@@ -190,6 +192,8 @@ const G = {
             if (lower === 'action & adventure') return ['Action', 'Adventure'];
             if (lower === 'sci-fi & fantasy') return ['Science Fiction', 'Fantasy'];
             if (lower === 'war & politics') return 'War';
+            if (lower === 'mystery') return ['Mystery', 'Thriller'];
+            if (lower === 'drama') return ['Drama', 'Romance'];
             return genre;
         }
     },
