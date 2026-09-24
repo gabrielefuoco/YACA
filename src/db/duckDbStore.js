@@ -63,7 +63,7 @@ class DuckDbStore {
                             await execPromise(`CREATE TABLE tv AS SELECT * FROM read_parquet('${this.tvParquetPath.replace(/\\/g, '/')}');`);
                             await execPromise(`PRAGMA create_fts_index('tv', 'id', 'name', 'original_name');`);
                         } else {
-                            await execPromise(`CREATE TABLE IF NOT EXISTS tv (id BIGINT, name VARCHAR, original_name VARCHAR, overview VARCHAR, poster_path VARCHAR, backdrop_path VARCHAR, first_air_date VARCHAR, vote_average DOUBLE, vote_count BIGINT, popularity DOUBLE, genres VARCHAR, keywords VARCHAR, watch_providers_it VARCHAR, watch_providers_us VARCHAR, networks VARCHAR, production_companies VARCHAR, production_countries VARCHAR, original_language VARCHAR, adult BOOLEAN);`);
+                            await execPromise(`CREATE TABLE IF NOT EXISTS tv (id BIGINT, name VARCHAR, original_name VARCHAR, overview VARCHAR, poster_path VARCHAR, backdrop_path VARCHAR, first_air_date VARCHAR, vote_average DOUBLE, vote_count BIGINT, popularity DOUBLE, genres VARCHAR, keywords VARCHAR, watch_providers_it VARCHAR, watch_providers_us VARCHAR, networks VARCHAR, production_companies VARCHAR, production_countries VARCHAR, original_language VARCHAR, number_of_seasons INTEGER, number_of_episodes INTEGER, status VARCHAR, adult BOOLEAN);`);
                         }
 
                         await execPromise(`CREATE TABLE IF NOT EXISTS anime_mappings (tmdb_id BIGINT PRIMARY KEY);`);

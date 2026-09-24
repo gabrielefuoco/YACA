@@ -62,6 +62,9 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
 
     if (q['vote_count.gte']) where.push(F.minVotes(q['vote_count.gte']));
     if (q['vote_average.gte']) where.push(F.minScore(q['vote_average.gte']));
+    if (q.with_status) where.push(F.status(q.with_status));
+    if (q['number_of_seasons.lte'] !== undefined) where.push(F.maxSeasons(q['number_of_seasons.lte']));
+    if (q['number_of_episodes.lte'] !== undefined) where.push(F.maxEpisodes(q['number_of_episodes.lte']));
     
     if (q.with_original_language) {
         const langs = q.with_original_language.split('|');

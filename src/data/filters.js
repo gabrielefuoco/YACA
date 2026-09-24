@@ -63,6 +63,18 @@ const F = {
     maxVotes: (n) => `"vote_count" <= ${n}`,
     minScore: (n) => `"vote_average" >= ${n}`,
     minRuntime: (m) => `"runtime" >= ${m}`,
+    status: (value) => {
+        const safe = String(value || '').replace(/'/g, "''");
+        return safe ? `"status" = '${safe}'` : '1=0';
+    },
+    maxSeasons: (n) => {
+        const value = Number(n);
+        return Number.isFinite(value) && value >= 0 ? `"number_of_seasons" <= ${value}` : '1=0';
+    },
+    maxEpisodes: (n) => {
+        const value = Number(n);
+        return Number.isFinite(value) && value >= 0 ? `"number_of_episodes" <= ${value}` : '1=0';
+    },
     
     // --- Date ---
     releasedAfter: (d) => `"release_date" >= '${d}'`,
