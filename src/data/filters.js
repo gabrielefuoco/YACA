@@ -62,6 +62,7 @@ const F = {
     minVotes: (n) => `"vote_count" >= ${n}`,
     maxVotes: (n) => `"vote_count" <= ${n}`,
     minScore: (n) => `"vote_average" >= ${n}`,
+    maxPopularity: (n) => `"popularity" <= ${n}`,
     minRuntime: (m) => `"runtime" >= ${m}`,
     
     // --- Date ---

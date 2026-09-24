@@ -14,6 +14,7 @@ const {
     fetchTopRatedPeriodFallbackIds,
     fetchUndiscoveredFallbackIds,
     fetchHiddenGemsFallbackIds,
+    HIDDEN_GEMS_MAX_POPULARITY,
     getImpressionMap,
     calculateImpressionPenalty
 } = require('./dataFetchers');
@@ -22,6 +23,12 @@ const ProfileScorer = require('../../profile/ProfileScorer');
 const { getDuckDbCatalogFromPreset } = require('../../catalog/providers/DuckDbProvider');
 const { F, S, G } = require('../../data/filters');
 const graph = require('../graph/HierarchicalGraph');
+const { isAnimeContent } = require('../../utils/animeIdentity');
+
+const HERO_DIVERSITY_CAPS = Object.freeze({ genre: 3, director: 1 });
+const HERO_COLLECTION_CAP = 1;
+const HIDDEN_CHILD_ORIENTED_GENRE_IDS = new Set(['16', '10751', '10762']);
+const HIDDEN_MUSIC_GENRE_ID = 10402;
 
 function mapGenreIdsToTarget(genres) {
     return [...new Set((genres || []).flatMap(genre => {
@@ -67,30 +74,212 @@ function getKeywordsForNodeIds(nodeIds, level = 'L2') {
     return kwArray;
 }
 
+function getItemData(item) {
+    return item?.data || item?.rawTMDB || item || {};
+}
+
+function getItemGenreIds(item) {
+    const data = getItemData(item);
+    const rawGenres = data.genre_ids || (data.genres ? data.genres.map(genre => (
+        typeof genre === 'object' && genre !== null ? genre.id : genre
+    )) : []);
+    return [...new Set(rawGenres.filter(id => id !== null && id !== undefined).map(String))];
+}
+
+function getCollectionId(item) {
+    const data = getItemData(item);
+    const rawId = data.collection_id ?? data.belongs_to_collection?.id;
+    if (rawId === null || rawId === undefined || String(rawId).trim() === '') return null;
+    return String(rawId).trim();
+}
+
 /**
- * Deduplica un array di film mantenendo solo l'elemento con il punteggio (o ordine) più alto per ciascuna collezione.
- * @param {Array} scoredItems Array di film già ordinati per punteggio decrescente.
- * @returns {Array} Array deduplicato.
+ * Mantiene al massimo `maxPerCollection` titoli per saga, mantenendo per
+ * saga i candidati già ordinati per score/ordine.
  */
-function deduplicateByCollection(scoredItems) {
-    const seenCollections = new Set();
+function deduplicateByCollection(scoredItems, maxPerCollection = HERO_COLLECTION_CAP) {
+    const collectionCounts = new Map();
     const result = [];
-    
-    for (const item of scoredItems) {
-        const data = item.data || item.rawTMDB || item;
-        const collectionId = data.collection_id || data.belongs_to_collection?.id;
-        
+
+    for (const item of scoredItems || []) {
+        const collectionId = getCollectionId(item);
         if (collectionId) {
-            if (seenCollections.has(collectionId)) {
-                continue; // Saga già presente, scarta l'elemento secondario
-            }
-            seenCollections.add(collectionId);
+            const count = collectionCounts.get(collectionId) || 0;
+            if (count >= maxPerCollection) continue;
+            collectionCounts.set(collectionId, count + 1);
         }
-        
         result.push(item);
     }
-    
+
     return result;
+}
+
+/**
+ * Applica i cap all'intero elenco. Il vecchio `diversified + remaining`
+ * ricostruiva di fatto la lista originale e neutralizzava i cap dopo le prime
+ * posizioni; qui i candidati eccedenti restano esclusi.
+ */
+function applyHeroQualityCaps(items, caps = HERO_DIVERSITY_CAPS, collectionCap = HERO_COLLECTION_CAP) {
+    const withoutFranchiseDuplicates = deduplicateByCollection(items, collectionCap);
+    if (typeof ProfileScorer.applyDiversityCaps !== 'function') return withoutFranchiseDuplicates;
+    return ProfileScorer.applyDiversityCaps(withoutFranchiseDuplicates, caps);
+}
+
+function getItemDirectorIds(item) {
+    const data = getItemData(item);
+    const credits = data.credits?.crew || data.rawTMDB?.credits?.crew || [];
+    return [...new Set(credits
+        .filter(credit => credit?.job === 'Director' && credit?.id !== undefined)
+        .map(credit => String(credit.id)))];
+}
+
+function getProspectiveCapOverflow(item, genreCounts, directorCounts, caps) {
+    let genreOverflow = 0;
+    for (const genreId of getItemGenreIds(item)) {
+        genreOverflow += Math.max((genreCounts.get(genreId) || 0) + 1 - caps.genre, 0);
+    }
+
+    let directorOverflow = 0;
+    for (const directorId of getItemDirectorIds(item)) {
+        directorOverflow += Math.max((directorCounts.get(directorId) || 0) + 1 - caps.director, 0);
+    }
+    // Un regista ripetuto è un segnale identitario più forte del genere
+    // secondario: durante il refill privilegia sempre un regista ancora libero.
+    return genreOverflow + (directorOverflow * 1000);
+}
+
+function incrementCapCounts(item, genreCounts, directorCounts) {
+    for (const genreId of getItemGenreIds(item)) {
+        genreCounts.set(genreId, (genreCounts.get(genreId) || 0) + 1);
+    }
+    for (const directorId of getItemDirectorIds(item)) {
+        directorCounts.set(directorId, (directorCounts.get(directorId) || 0) + 1);
+    }
+}
+
+/**
+ * I cap restano il criterio di selezione anche quando il pool supera la
+ * profondità utile. Se sono troppo restrittivi per la sola verifica del profilo
+ * (es. soli film family, tutti Animation/Family/Kids), il refill arriva al
+ * massimo a una pagina: è cap-aware e, a parità di overflow, segue il ranking
+ * originale. Evita sia il bypass cieco di `remaining` sia le pagine vuote.
+ */
+function finalizeHeroQualityCandidates(items, caps = HERO_DIVERSITY_CAPS, targetSize = 100) {
+    const uniqueItems = deduplicateByCollection(items);
+    const target = Math.max(0, Number(targetSize) || 0);
+    if (typeof ProfileScorer.applyDiversityCaps !== 'function') return uniqueItems.slice(0, target);
+
+    const strictlyCapped = ProfileScorer.applyDiversityCaps(uniqueItems, caps);
+    const cappedTarget = Math.min(target, uniqueItems.length);
+    const minimumPageSize = Math.min(cappedTarget, 20);
+    if (strictlyCapped.length >= minimumPageSize) return strictlyCapped.slice(0, target);
+
+    const strictSet = new Set(strictlyCapped);
+    const selected = new Set(strictlyCapped);
+    const genreCounts = new Map();
+    const directorCounts = new Map();
+    for (const item of strictlyCapped) incrementCapCounts(item, genreCounts, directorCounts);
+
+    const remaining = uniqueItems.filter(item => !selected.has(item));
+    while (selected.size < minimumPageSize && remaining.length > 0) {
+        let bestIndex = 0;
+        let bestOverflow = Infinity;
+        for (let index = 0; index < remaining.length; index++) {
+            const overflow = getProspectiveCapOverflow(
+                remaining[index], genreCounts, directorCounts, caps
+            );
+            if (overflow < bestOverflow) {
+                bestOverflow = overflow;
+                bestIndex = index;
+                if (overflow === 0) break;
+            }
+        }
+        const [next] = remaining.splice(bestIndex, 1);
+        selected.add(next);
+        incrementCapCounts(next, genreCounts, directorCounts);
+    }
+
+    // I titoli che rispettano tutti i cap aprono il blocco; il refill
+    // cap-aware completa la pagina solo quando il pool non offre alternative.
+    return [
+        ...strictlyCapped,
+        ...uniqueItems.filter(item => selected.has(item) && !strictSet.has(item))
+    ];
+}
+
+function isHiddenGemPopularityAllowed(value) {
+    const popularity = Number(value);
+    return Number.isFinite(popularity) && popularity <= HIDDEN_GEMS_MAX_POPULARITY;
+}
+
+function getVectorAffinity(vector, prefix, id) {
+    if (!vector || id === null || id === undefined) return 0;
+    if (typeof ProfileScorer.getVectorScore === 'function') {
+        return ProfileScorer.getVectorScore(vector, prefix, id);
+    }
+    return Number(vector[`${prefix}:${String(id)}`]) || 0;
+}
+
+function getItemKeywords(item) {
+    const data = getItemData(item);
+    if (Array.isArray(data.keywords)) return data.keywords;
+    return data.keywords?.results || data.keywords?.keywords || [];
+}
+
+function getItemKeywordIds(item) {
+    return [...new Set(getItemKeywords(item).map(keyword => {
+        const id = typeof keyword === 'object' && keyword !== null ? (keyword.id ?? keyword.name) : keyword;
+        return id === null || id === undefined ? null : String(id);
+    }).filter(Boolean))];
+}
+
+function hasAffinityForAny(vector, prefix, ids) {
+    return ids.some(id => getVectorAffinity(vector, prefix, id) > 0);
+}
+
+/**
+ * Le coda lunga deve essere pertinente, non soltanto poco vista. È ammesso
+ * un solo affinità genre/keyword/regista; i cluster children/kids e concerti
+ * richiedono inoltre un'esplicita affinità del profilo per la famiglia di
+ * generi da cui provengono (così il Cinefilo non eredita anime/kids da
+ * `comedy`, mentre Otaku e Famiglia li mantengono).
+ */
+function isHiddenGemAlignedWithProfile(item, profile) {
+    const vector = profile?.compiledVectors?.V_final;
+    if (!vector || typeof vector !== 'object' || Object.keys(vector).length === 0) return true;
+
+    const genreIds = getItemGenreIds(item);
+    const keywordIds = getItemKeywordIds(item);
+    const data = getItemData(item);
+    const directorIds = (data.credits?.crew || [])
+        .filter(credit => credit?.job === 'Director' && credit?.id !== undefined)
+        .map(credit => String(credit.id));
+
+    const hasDnaAffinity = hasAffinityForAny(vector, 'g', genreIds)
+        || hasAffinityForAny(vector, 'k', keywordIds)
+        || hasAffinityForAny(vector, 'd', directorIds);
+    if (!hasDnaAffinity) return false;
+
+    const childGenreIds = genreIds.filter(id => HIDDEN_CHILD_ORIENTED_GENRE_IDS.has(id));
+    const hasChildGenreAffinity = hasAffinityForAny(vector, 'g', childGenreIds);
+    if (childGenreIds.length > 0 && !hasChildGenreAffinity) return false;
+
+    const keywordItems = getItemKeywords(item);
+    const isAnime = isAnimeContent({
+        tmdbId: data.id ?? data._tmdbId,
+        genreIds,
+        originalLanguage: data.original_language,
+        keywords: keywordItems
+    });
+    const isMangaAdaptation = keywordItems.some(keyword => (
+        typeof keyword?.name === 'string' && /based on manga/i.test(keyword.name)
+    ));
+    if ((isAnime || isMangaAdaptation) && !hasChildGenreAffinity) return false;
+
+    if (genreIds.includes(String(HIDDEN_MUSIC_GENRE_ID))
+        && getVectorAffinity(vector, 'g', HIDDEN_MUSIC_GENRE_ID) <= 0) return false;
+
+    return true;
 }
 
 function compareContentIds(a, b) {
@@ -362,12 +551,15 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
     const impressionMap = await getImpressionMap(userId, context, catalogId, candidatePool.map(m => String(m._tmdbId || m.id.split(':')[1])));
     const dnaFilters = getProfileDnaFilters(user, context);
     
+    const isHiddenGems = catalogId === 'yaca_hidden_gems_movies' || catalogId === 'yaca_hidden_gems_series';
     const scored = candidatePool.map(item => {
         const id = String(item._tmdbId || item.id.split(':')[1]);
         const seenDays = impressionMap.get(id) || 0;
         const penaltyMultiplier = calculateImpressionPenalty(seenDays);
         const tmdbData = item.rawTMDB || item;
         if (isKidsMode && isItemInappropriateForKids(tmdbData)) return null;
+        if (isHiddenGems && !isHiddenGemPopularityAllowed(tmdbData.popularity ?? item.popularity)) return null;
+        if (isHiddenGems && !isHiddenGemAlignedWithProfile(tmdbData, profile)) return null;
         if (typeof tmdbData.vote_count !== 'number') {
             tmdbData.vote_count = typeof item.vote_count === 'number' ? item.vote_count : 0;
         }
@@ -383,13 +575,7 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
     }).filter(Boolean);
     
     const sorted = sortScoredByScore(scored, item => item.score);
-    const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
-    const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
-        ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
-        : deduplicated;
-    const diversifiedSet = new Set(diversified);
-    const remaining = deduplicated.filter(item => !diversifiedSet.has(item));
-    let finalItems = [...diversified, ...remaining];
+    let finalItems = finalizeHeroQualityCandidates(sorted, HERO_DIVERSITY_CAPS);
     if (isKidsMode) {
         finalItems = applyKidsMode(finalItems);
     }
@@ -499,7 +685,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const allSimilar = await rateLimitedMap(
         allSeeds,
         async (seed) => ({
-            results: await getDuckDbCatalogFromFilters({ similar_to: seed.id }, types, 0, 40, { kidsMode: isKidsMode }).catch(() => []),
+            results: await getDuckDbCatalogFromFilters({ similar_to: seed.id }, types, 0, 80, { kidsMode: isKidsMode }).catch(() => []),
             weight: seed.weight
         }),
         { batchSize: 5, delayMs: 50 }
@@ -550,12 +736,16 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         filteredCandidates = applyKidsMode(candidates);
     }
 
-    const candidateIds = filteredCandidates.slice(0, 80).map(c => String(c.data.id));
+    // Pre-diversifica il pool completo prima delle chiamate TMDB: i cap non
+    // possono più essere neutralizzati dal cutoff e il dettaglio viene idratato
+    // solo per i candidati che possono davvero entrare nel catalogo.
+    const scoringCandidates = finalizeHeroQualityCandidates(filteredCandidates, HERO_DIVERSITY_CAPS, 120);
+    const candidateIds = scoringCandidates.map(c => String(c.data.id));
     const catalogId = mediaType === 'movie' ? 'yaca_seed_network_movies' : 'yaca_seed_network_series';
     const impressionMap = await getImpressionMap(userId, context, catalogId, candidateIds);
 
     const scored = await rateLimitedMap(
-        filteredCandidates.slice(0, 80),
+        scoringCandidates,
         async ({ data, hybridScore }) => {
             const seenDays = impressionMap.get(String(data.id)) || 0;
             const penaltyMultiplier = calculateImpressionPenalty(seenDays);
@@ -574,7 +764,14 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
             }
             const score = ProfileScorer.calculateItemMatch(tmdbData, profile, { dnaFilters, globalProfile, kidsMode: isKidsMode });
             if (isKidsMode && score <= 0) return null;
-            const hydratedData = { ...data, ...tmdbData, id: data.id || tmdbData.id };
+            const hydratedData = {
+                ...data,
+                ...tmdbData,
+                id: data.id || tmdbData.id,
+                genres: tmdbData.genres || data.genres || data.rawTMDB?.genres || [],
+                genre_ids: tmdbData.genre_ids || data.genre_ids || data.rawTMDB?.genres?.map(genre => genre.id) || [],
+                credits: tmdbData.credits || data.credits || data.rawTMDB?.credits || { cast: [], crew: [] }
+            };
             return { data: hydratedData, score: score * penaltyMultiplier, hybridScore: hybridScore * penaltyMultiplier };
         },
         { batchSize: 3, delayMs: 150 }
@@ -600,13 +797,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     });
 
     const sorted = sortScoredByScore(scoredWithCombined, item => item.combinedScore);
-    const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
-    const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
-        ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
-        : deduplicated;
-    const diversifiedSet = new Set(diversified);
-    const remaining = deduplicated.filter(item => !diversifiedSet.has(item));
-    let finalItems = [...diversified, ...remaining];
+    let finalItems = finalizeHeroQualityCandidates(sorted, HERO_DIVERSITY_CAPS);
     if (isKidsMode) {
         finalItems = applyKidsMode(finalItems);
     }
@@ -623,7 +814,12 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
  */
 async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType, isKidsMode = false) {
     const catalogId = mediaType === 'movie' ? 'yaca_hidden_gems_movies' : 'yaca_hidden_gems_series';
-    const baseFilters = [F.minScore(6.5), F.minVotes(50), F.maxVotes(1000)];
+    const baseFilters = [
+        F.minScore(6.5),
+        F.minVotes(50),
+        F.maxVotes(1000),
+        F.maxPopularity(HIDDEN_GEMS_MAX_POPULARITY)
+    ];
     if (mediaType === 'movie') baseFilters.push(F.minRuntime(60));
     
     return buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fetchHiddenGemsFallbackIds, isKidsMode);
@@ -680,7 +876,7 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
     );
 
     const sorted = sortScoredByScore(scored.filter(Boolean), item => item.score);
-    const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
+    const deduplicated = deduplicateByCollection(sorted);
     let finalItems = deduplicated;
     if (isKidsMode) {
         const safeIds = new Set(applyKidsMode(deduplicated.map(item => item.data)).map(item => normalizeContentId(item.id)));
@@ -714,5 +910,9 @@ module.exports = {
     buildHybridCatalog,
     buildHiddenGemsCatalog,
     buildTraktFilteredCatalog,
-    buildTraktFilteredCatalogWithMeta
+    buildTraktFilteredCatalogWithMeta,
+    applyHeroQualityCaps,
+    finalizeHeroQualityCandidates,
+    isHiddenGemPopularityAllowed,
+    isHiddenGemAlignedWithProfile
 };

@@ -49,7 +49,11 @@ const HERO_CATALOG_IDS = new Map([
         { slug, mediaType }
     ]))
 ]);
-const HERO_CACHE_SCHEMA_VERSION = 1;
+// Il nome della chiave `heroes_v1` fa parte del contratto del ticket 21.
+// La schema interna resta però versionata per invalidare i pool costruiti
+// prima delle policy di qualità del ticket 23.
+const HERO_CACHE_KEY_VERSION = 'v1';
+const HERO_CACHE_SCHEMA_VERSION = 3;
 const HERO_MIN_FALLBACK_ITEMS = 10;
 const HERO_MAX_ITEMS_PER_CATALOG = 100;
 const activeHeroGroupBuilds = new Map();
@@ -75,7 +79,7 @@ function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, con
 
 function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, configVersion }) {
     const version = normalizeConfigVersion(configVersion);
-    return `${userId}_${context}_heroes_v${HERO_CACHE_SCHEMA_VERSION}_${mediaType}_cv${encodeURIComponent(version)}${kidsMode ? '_kids' : ''}`;
+    return `${userId}_${context}_heroes_${HERO_CACHE_KEY_VERSION}_${mediaType}_cv${encodeURIComponent(version)}${kidsMode ? '_kids' : ''}`;
 }
 
 function compareContentIds(a, b) {

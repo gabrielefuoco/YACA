@@ -61,7 +61,9 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
     }
 
     if (q['vote_count.gte']) where.push(F.minVotes(q['vote_count.gte']));
+    if (q['vote_count.lte']) where.push(F.maxVotes(q['vote_count.lte']));
     if (q['vote_average.gte']) where.push(F.minScore(q['vote_average.gte']));
+    if (q['popularity.lte']) where.push(F.maxPopularity(q['popularity.lte']));
     
     if (q.with_original_language) {
         const langs = q.with_original_language.split('|');

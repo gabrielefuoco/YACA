@@ -55,7 +55,7 @@ function cachedMovieHeroGroup(ids) {
     for (const slug of ['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered']) {
         catalogs[`yaca_${slug}_movies`] = ids;
     }
-    return { schemaVersion: 1, mediaType: 'movie', catalogs };
+    return { schemaVersion: 3, mediaType: 'movie', catalogs };
 }
 
 describe('hybrid catalog stale sync merges history and ratings', () => {

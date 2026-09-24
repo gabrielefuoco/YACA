@@ -59,14 +59,35 @@ describe('dataFetchers', () => {
     describe('fetchHiddenGemsFallbackIds', () => {
         it('should fetch from TMDB discover and filter by popularity (now DuckDb)', async () => {
             const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
-            getDuckDbCatalogFromFilters.mockResolvedValue([{ id: 101, popularity: 50 }, { id: 102, popularity: 90 }]);
+            getDuckDbCatalogFromFilters.mockResolvedValue([{ id: 101, popularity: 20 }, { id: 102, popularity: 41.4 }]);
             const { fetchHiddenGemsFallbackIds } = require('../src/engines/hybrid/dataFetchers');
             const result = await fetchHiddenGemsFallbackIds('key', 'tv');
-            expect(result).toEqual(['101']); // 102 filtered out (popularity > 80)
+            expect(result).toEqual(['101']); // 102 filtered out (popularity > 20)
+            expect(getDuckDbCatalogFromFilters).toHaveBeenCalledWith(
+                expect.objectContaining({ 'popularity.lte': 20 }),
+                'series',
+                0,
+                expect.any(Number),
+                {}
+            );
         });
     });
 
     describe('fallback hero distinti', () => {
+        it('deduplica collection e regista anche nei fallback', async () => {
+            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+            getDuckDbCatalogFromFilters.mockResolvedValue([
+                { id: 1, popularity: 30, collection_id: 900, directors: [{ id: 55, job: 'Director' }] },
+                { id: 2, popularity: 20, collection_id: 900, directors: [{ id: 66, job: 'Director' }] },
+                { id: 3, popularity: 10, collection_id: 901, directors: [{ id: 55, job: 'Director' }] },
+                { id: 4, popularity: 5, directors: [{ id: 77, job: 'Director' }] }
+            ]);
+
+            const result = await fetchPopularFallbackIds('key', 'movie');
+
+            expect(result).toEqual(['1', '4']);
+        });
+
         it('seleziona top-rated nella finestra mobile e usa ID come tie-breaker', async () => {
             const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
             getDuckDbCatalogFromFilters.mockResolvedValue([

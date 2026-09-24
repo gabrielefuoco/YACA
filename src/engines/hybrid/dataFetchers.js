@@ -9,6 +9,9 @@ const { applyKidsMode } = require('../../utils/kidsModeFilters');
 
 const MAX_HERO_FALLBACK_FETCH = 200;
 const HERO_FALLBACK_LIMIT = 160;
+// 20 separa le code lunghe dai titoli già mainstream (i falsi positivi osservati
+// nel ticket 23 partivano da 41.4), mantenendo comunque ampia la finestra.
+const HIDDEN_GEMS_MAX_POPULARITY = 20;
 const TOP_RATED_FALLBACK_MONTHS = 60;
 const DISCOVERY_FALLBACK_MONTHS = Object.freeze({ movie: 12, series: 24 });
 
@@ -26,6 +29,11 @@ function compareContentIds(a, b) {
 function getNumericSortValue(item, field) {
     const value = Number(item?.[field]);
     return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
+}
+
+function isHiddenGemPopularity(value) {
+    const popularity = Number(value);
+    return Number.isFinite(popularity) && popularity <= HIDDEN_GEMS_MAX_POPULARITY;
 }
 
 function getDateSortValue(item) {
@@ -54,6 +62,22 @@ async function fetchFallbackRows(filters, type, limit, isKidsMode) {
     return isKidsMode ? applyKidsMode(results) : results;
 }
 
+function getFallbackCollectionId(item) {
+    const rawId = item?.collection_id
+        ?? item?.belongs_to_collection?.id
+        ?? item?.rawTMDB?.collection_id
+        ?? item?.rawTMDB?.belongs_to_collection?.id;
+    return rawId === null || rawId === undefined || String(rawId).trim() === '' ? null : String(rawId).trim();
+}
+
+function getFallbackDirectorIds(item) {
+    const rawDirectors = item?.directors || item?.rawTMDB?.directors || item?.rawTMDB?.credits?.crew || [];
+    const directors = Array.isArray(rawDirectors) ? rawDirectors : [];
+    return [...new Set(directors
+        .filter(person => person?.job === 'Director' && person?.id !== undefined)
+        .map(person => String(person.id)))];
+}
+
 function mapStableFallbackIds(rows, limit, compareRows) {
     const seen = new Set();
     const candidates = [];
@@ -65,7 +89,24 @@ function mapStableFallbackIds(rows, limit, compareRows) {
         candidates.push({ id, item });
     }
     candidates.sort((a, b) => compareRows(a.item, b.item) || compareContentIds(a.id, b.id));
-    return candidates.slice(0, Math.max(0, Number(limit) || 0)).map(candidate => candidate.id);
+
+    const maxItems = Math.max(0, Number(limit) || 0);
+    if (maxItems === 0) return [];
+    const seenCollections = new Set();
+    const seenDirectors = new Set();
+    const selected = [];
+    for (const candidate of candidates) {
+        const collectionId = getFallbackCollectionId(candidate.item);
+        if (collectionId && seenCollections.has(collectionId)) continue;
+        const directorIds = getFallbackDirectorIds(candidate.item);
+        if (directorIds.some(directorId => seenDirectors.has(directorId))) continue;
+
+        if (collectionId) seenCollections.add(collectionId);
+        directorIds.forEach(directorId => seenDirectors.add(directorId));
+        selected.push(candidate.id);
+        if (selected.length >= maxItems) break;
+    }
+    return selected;
 }
 
 /**
@@ -226,11 +267,12 @@ async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = HERO_FA
         sort_by: 'vote_average.desc',
         'vote_count.gte': 50,
         'vote_count.lte': 2000,
-        'vote_average.gte': 7.0
+        'vote_average.gte': 7.0,
+        'popularity.lte': HIDDEN_GEMS_MAX_POPULARITY
     };
     const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
     const results = (await fetchFallbackRows(filters, type, limit, isKidsMode))
-        .filter(item => (item.popularity ?? Infinity) <= 80);
+        .filter(item => isHiddenGemPopularity(item.popularity));
     return mapStableFallbackIds(results, limit, (a, b) => {
         const scoreDelta = getNumericSortValue(b, 'vote_average') - getNumericSortValue(a, 'vote_average');
         return scoreDelta || getNumericSortValue(b, 'vote_count') - getNumericSortValue(a, 'vote_count');
@@ -296,6 +338,7 @@ module.exports = {
     fetchTopRatedPeriodFallbackIds,
     fetchUndiscoveredFallbackIds,
     fetchHiddenGemsFallbackIds,
+    HIDDEN_GEMS_MAX_POPULARITY,
     fetchTmdbSimilarCounts,
     getImpressionMap,
     calculateImpressionPenalty
