@@ -5,7 +5,8 @@ import { api } from '@/lib/api';
 import { X, BrainCircuit, Terminal, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
-import { OrbitalDnaGraph } from './OrbitalDnaGraph';
+import { DnaBarChart } from './DnaBarChart';
+import { formatDnaLabel } from '@/lib/dnaChart';
 import { CatalogLivePreview } from './CatalogLivePreview';
 
 const HERO_CATALOGS_BASE = [
@@ -92,9 +93,10 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
       if (name) return name;
     }
     
-    // 4. Fallback: prefix + ID
-    const prefixLabels: Record<string, string> = { g: 'Genere', k: 'Keyword', d: 'Regista', a: 'Attore', o: 'Paese' };
-    return `${prefixLabels[prefix] || prefix} ${id}`;
+    // 4. Fallback: prefix + ID formatted presentably
+    const prefixLabels: Record<string, string> = { g: 'Genere', k: 'Keyword', d: 'Regista', a: 'Attore', o: 'Paese', n: 'Network', c: 'Casa' };
+    const rawFallback = `${prefixLabels[prefix] || prefix} #${id}`;
+    return formatDnaLabel(rawFallback, vectorKey);
   };
 
   const toggleHeroCatalog = (fullCatalogId: string, isEnabled: boolean) => {
@@ -233,7 +235,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
         {compiledVectors && (Object.keys(compiledVectors.V_static || {}).length > 0 || Object.keys(compiledVectors.V_final || {}).length > 0) ? (
           <div className="flex flex-col gap-6 items-center w-full">
             <div className="w-full flex justify-center py-2">
-               <OrbitalDnaGraph 
+               <DnaBarChart 
                  compiledVectors={compiledVectors}
                  getDnaName={getDnaName}
                />

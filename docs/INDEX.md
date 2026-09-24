@@ -66,7 +66,7 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 
 ### 5. 🖥️ Architettura Frontend (SPA)
 *   **[FRONTEND.md](FRONTEND.md)**
-    *   *Descrizione*: Analisi dell'applicazione frontend basata su **React 19** e **Next.js 16 (Static Export)**. Descrive la struttura dei file in `frontend/src/`, la gestione della sessione cookie-based sicura con protezione CSRF, il debouncing degli aggiornamenti degli addon in Stremio e la visualizzazione del grafico DNA tramite `OrbitalDnaGraph.tsx`.
+    *   *Descrizione*: Analisi dell'applicazione frontend basata su **React 19** e **Next.js 16 (Static Export)**. Descrive la struttura dei file in `frontend/src/`, la gestione della sessione cookie-based sicura con protezione CSRF, il debouncing degli aggiornamenti degli addon in Stremio e la visualizzazione del grafico DNA tramite `DnaBarChart.tsx`.
 
 ### 6. 🔀 Logica dei Cataloghi e Ciclo di Vita
 *   **[CATALOG_LOGIC.md](CATALOG_LOGIC.md)**
