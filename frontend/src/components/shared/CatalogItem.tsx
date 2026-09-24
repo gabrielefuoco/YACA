@@ -175,6 +175,12 @@ export function CatalogItem({
                 <span className="material-symbols-outlined text-[10px] shrink-0">{sourceIcon}</span> 
                 <span className="truncate">{sourceLabel}</span>
               </span>
+              {(catalog.isAnime || (catalog.filters as any)?.isAnime) && (
+                <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider border border-amber-500/20">
+                  <span>🏮</span>
+                  <span>Solo anime</span>
+                </span>
+              )}
               {isHiddenBySelectors && (
                 <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-800 text-[9px] sm:text-[10px] font-black uppercase tracking-wider border border-amber-500/30">
                   <span className="material-symbols-outlined text-[10px] shrink-0">visibility_off</span>

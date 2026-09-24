@@ -116,10 +116,17 @@ function sanitizeCustomCatalog(catalog) {
     if (sanitized.provider === 'kitsu') {
         sanitized.provider = 'tmdb';
     }
+    const isAnime = Boolean(sanitized.isAnime || sanitized.filters?.isAnime);
+    if (isAnime) {
+        sanitized.isAnime = true;
+    }
     if (sanitized.filters && typeof sanitized.filters === 'object') {
         sanitized.filters = { ...sanitized.filters };
         if (sanitized.filters.provider === 'kitsu') {
             sanitized.filters.provider = 'tmdb';
+        }
+        if (isAnime) {
+            sanitized.filters.isAnime = true;
         }
     }
     if (Array.isArray(sanitized.queries)) {
@@ -128,6 +135,9 @@ function sanitizeCustomCatalog(catalog) {
             const cleanQ = { ...q };
             if (cleanQ.provider === 'kitsu') {
                 cleanQ.provider = 'tmdb';
+            }
+            if (isAnime) {
+                cleanQ.isAnime = true;
             }
             return cleanQ;
         });

@@ -449,6 +449,17 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 });
             }
 
+            const isAnimeCatalog = Boolean(
+                catalogMeta?.isAnime ||
+                targetCatalog?.isAnime ||
+                catalogMeta?.filters?.isAnime ||
+                directFilters?.isAnime ||
+                directFilters?.filters?.isAnime
+            );
+            if (isAnimeCatalog) {
+                results = results.filter(item => isItemAnime(item));
+            }
+
             // 3. POST-PROCESSING
             let finalResults = results;
             
