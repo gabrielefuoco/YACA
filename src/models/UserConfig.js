@@ -12,6 +12,7 @@
 const { nanoid } = require('nanoid');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
+const { buildManifestFingerprint } = require('../utils/manifestFingerprint');
 const UserConfig = {
     _decryptApiKeys(apiKeysObj) {
         if (!apiKeysObj) return {};
@@ -152,13 +153,41 @@ const UserConfig = {
                     });
                 }
 
-                // Merge Config (version bump on every save)
+                // Merge config and change the public manifest URL only when the
+                // persisted manifest inputs actually change. Legacy configs
+                // without a fingerprint are compared against their current
+                // effective state and receive a baseline on the next save.
                 const existingConfigObj = existingConfig?.config || {};
                 localData.config = {
                     ...existingConfigObj,
-                    ...(localData.config || {}),
-                    configVersion: nanoid(8)
+                    ...(localData.config || {})
                 };
+
+                const finalizedCustomCatalogs = localData.customCatalogs !== undefined
+                    ? localData.customCatalogs
+                    : (existingConfig?.customCatalogs || []);
+                const nextManifestFingerprint = buildManifestFingerprint({
+                    activeProfileId: localData.config.activeProfileId,
+                    profiles: finalizedProfiles,
+                    customCatalogs: finalizedCustomCatalogs
+                });
+                const previousManifestFingerprint = typeof existingConfig?.config?.manifestFingerprint === 'string'
+                    ? existingConfig.config.manifestFingerprint
+                    : (existingConfig
+                        ? buildManifestFingerprint({
+                            activeProfileId: existingConfig.config?.activeProfileId,
+                            profiles: existingConfig.profiles || [],
+                            customCatalogs: existingConfig.customCatalogs || []
+                        })
+                        : null);
+                const mustCreateConfigVersion = !existingConfig?.config?.configVersion;
+                const manifestChanged = mustCreateConfigVersion
+                    || previousManifestFingerprint !== nextManifestFingerprint;
+
+                localData.config.configVersion = manifestChanged
+                    ? nanoid(8)
+                    : existingConfig.config.configVersion;
+                localData.config.manifestFingerprint = nextManifestFingerprint;
 
                 localData.userId = targetUserId;
 
