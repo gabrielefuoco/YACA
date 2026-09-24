@@ -108,8 +108,9 @@ describe('Ticket 20: paginazione deterministica dei preset DuckDB', () => {
             orderBy: '"popularity" DESC NULLS LAST'
         }, 20, 20);
 
+        expect(sql).toContain("ORDER BY CASE WHEN lower(trim(coalesce(name, '')))");
         expect(sql).toContain(
-            "ORDER BY fts_main_tv.match_bm25(id, 'matrix') DESC, id ASC LIMIT 20 OFFSET 20"
+            "fts_main_tv.match_bm25(id, 'matrix') DESC, id ASC LIMIT 20 OFFSET 20"
         );
     });
 });

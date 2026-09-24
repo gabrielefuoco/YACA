@@ -24,13 +24,16 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
     }, 30000);
 
     describe('queryBuilder', () => {
-        test('BM25 FTS clause formats properly for _fts string', async () => {
+        test('BM25 FTS usa match esatto, copertura dei termini e ordinamento per rilevanza', async () => {
             const query = await buildCatalogQuery({
                 type: 'movie',
                 where: [{ _fts: 'The Matrix' }]
             }, 0, 10);
             expect(query).toContain("fts_main_movies.match_bm25(id, 'The Matrix')");
-            expect(query).toContain("ORDER BY fts_main_movies.match_bm25(id, 'The Matrix') DESC");
+            expect(query).toContain("concat_ws(' ', coalesce(title, ''), coalesce(original_title, '')) ILIKE '%the%'");
+            expect(query).toContain("concat_ws(' ', coalesce(title, ''), coalesce(original_title, '')) ILIKE '%matrix%'");
+            expect(query).toContain("lower(trim(coalesce(title, ''))) = lower(trim('The Matrix'))");
+            expect(query).toContain("fts_main_movies.match_bm25(id, 'The Matrix') DESC, id ASC");
         });
 
         test('BM25 FTS clause escapes single quotes safely', async () => {
@@ -38,7 +41,9 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
                 type: 'movie',
                 where: [{ _fts: "d'azione" }]
             }, 0, 10);
-            expect(query).toContain("d''azione");
+            expect(query).toContain("match_bm25(id, 'd''azione')");
+            expect(query).toContain("ILIKE '%azione%'");
+            expect(query).not.toContain("ILIKE '%d'''action%'");
         });
 
         test('BM25 FTS clause ignores non-string query values', async () => {
@@ -133,6 +138,32 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
                 expect(catalog[0]).toHaveProperty('name');
                 expect(catalog[0].id).toMatch(/^tmdb:\d+$/);
             }
+        });
+
+        test('la ricerca standard mette per primo il titolo esatto', async () => {
+            if (!duckDbStore.isInitialized) return;
+
+            const catalog = await getDuckDbCatalogFromPreset({
+                type: 'movie',
+                where: [{ _fts: 'Spider-Man: No Way Home' }]
+            }, 0, 20);
+
+            expect(catalog.length).toBeGreaterThan(0);
+            expect(catalog[0].id).toBe('tmdb:634649');
+            expect(catalog[0].name).toBe('Spider-Man: No Way Home');
+        });
+
+        test('la ricerca standard rifiuta una stringa senza senso', async () => {
+            if (!duckDbStore.isInitialized) return;
+
+            const preset = {
+                where: [{ _fts: '__t15_no_such_title_9f7c1__' }]
+            };
+            const movies = await getDuckDbCatalogFromPreset({ ...preset, type: 'movie' }, 0, 20);
+            const series = await getDuckDbCatalogFromPreset({ ...preset, type: 'series' }, 0, 20);
+
+            expect(movies).toEqual([]);
+            expect(series).toEqual([]);
         });
 
         test('getDuckDbCatalogFromPreset executes multi-term BM25 search without throwing', async () => {
