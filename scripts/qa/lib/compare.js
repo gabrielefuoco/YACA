@@ -49,7 +49,7 @@ function loadRunArtifacts(runDir) {
 function indexArtifacts(artifacts) {
     const map = new Map();
     for (const a of artifacts) {
-        map.set(`${a.profileId}::${a.catalog.id}`, a);
+        map.set(`${a.profileId}::${a.catalog.id}::${a.catalog.type || 'unknown'}`, a);
     }
     return map;
 }

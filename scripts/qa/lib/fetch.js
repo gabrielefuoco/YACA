@@ -93,6 +93,12 @@ function matchesCatalogFilter(catalog, onlyList) {
     );
 }
 
+function buildCatalogFileName(catalog) {
+    const id = safeFileName(catalog?.id || 'catalog');
+    const type = safeFileName(catalog?.type || 'unknown');
+    return `${id}-${type}.json`;
+}
+
 /**
  * Con `--only` è possibile chiedere fetch DIRETTE di preset/hero non presenti nel
  * manifest del profilo (piano di copertura 160/160, profiles-proposal §C):
@@ -256,7 +262,7 @@ async function runFetch(opts = {}) {
                 pacingMs
             });
             const metas = rawPages.flatMap(p => (Array.isArray(p.data?.metas) ? p.data.metas : []));
-            const file = path.join(runDir, 'raw', profile.id, `${safeFileName(catalog.id)}.json`);
+            const file = path.join(runDir, 'raw', profile.id, buildCatalogFileName(catalog));
             writeJson(file, {
                 profileId: profile.id,
                 catalog: {
@@ -313,6 +319,7 @@ async function runFetch(opts = {}) {
 module.exports = {
     DEFAULT_BASE_URL,
     SEARCH_CATALOG_IDS,
+    buildCatalogFileName,
     httpGetJson,
     mapLimit,
     setActiveProfile,

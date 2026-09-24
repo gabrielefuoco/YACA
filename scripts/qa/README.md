@@ -125,7 +125,7 @@ in caso di anomalia o residui.
 .scratch/simulazione-profili/runs/<timestamp>/
   run.json                        # metadati: baseUrl, mode, profili, conteggi, errori, gitRev
   raw/<profileId>/_manifest.json  # manifest grezzo del profilo attivo
-  raw/<profileId>/<catalogId>.json# pages[] + rawPages[] (payload server intatti)
+  raw/<profileId>/<catalogId>-<type>.json# pages[] + rawPages[] (payload server intatti)
   review/<profileId>/<catalogId>.json/.md
   review/summary.json / summary.md
   compare_<runA>.md / .json       # da `compare`
