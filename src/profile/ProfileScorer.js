@@ -379,7 +379,7 @@ class ProfileScorer {
 
         for (const item of items) {
             const target = item.data || item.rawTMDB || item;
-            const genres = (target.genre_ids || (target.genres ? target.genres.map(g => (typeof g === 'object' && g !== null ? (g.id ?? g) : g)) : [])).map(g => (g != null ? String(g) : g));
+            const genres = (target.genre_ids || (target.genres ? target.genres.map(g => (typeof g === 'object' && g !== null ? (g.id ?? g) : g)) : [])).map(g => (g !== null && g !== undefined ? String(g) : g));
             const directors = (target.credits?.crew || [])
                 .filter(c => c.job === 'Director')
                 .map(c => String(c.id));

@@ -118,14 +118,15 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
         }]
     });
 
-    describe('BUG-4: Trakt 403 → refresh tentato → fallback popolato', () => {
-        it('trakt_filtered_movies triggers refresh on 403 and falls back to popular movies when trakt is empty', async () => {
+    describe('BUG-4: Trakt 403 → refresh tentato → fallback distinto', () => {
+        it('trakt_filtered_movies tenta il refresh e nasconde il fallback novità sotto 10 item', async () => {
             // Profile setup: user has a valid profile
             TasteProfile.findOne.mockResolvedValue({
                 owner: 'user_1',
                 context: 'global',
                 compiledVectors: { V_final: {} },
-                settings: {}
+                settings: {},
+                lastUpdated: new Date()
             });
 
             // Trakt responds 403 on initial call
@@ -168,18 +169,24 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
             // 1. Refresh was attempted on 403
             expect(smartTraktRefresh).toHaveBeenCalledWith('user_1', 'valid_refresh_token');
 
-            // 2. Catalog did NOT end up empty; it was populated via popular fallback
-            expect(results.length).toBeGreaterThan(0);
-            expect(results[0].name).toContain('Popular Fallback Movie');
-            expect(results[0].type).toBe('movie');
+            // 2. Il fallback non è un clone popolare e viene nascosto sotto la soglia minima.
+            expect(results).toEqual([]);
+            expect(getDuckDbCatalogFromFilters).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    sort_by: 'primary_release_date.desc',
+                    'primary_release_date.gte': expect.any(String)
+                }),
+                'movie', 0, 160, {}
+            );
         });
 
-        it('trakt_filtered_series triggers refresh on 403 and falls back to popular series', async () => {
+        it('trakt_filtered_series tenta il refresh e nasconde il fallback novità sotto 10 item', async () => {
             TasteProfile.findOne.mockResolvedValue({
                 owner: 'user_1',
                 context: 'global',
                 compiledVectors: { V_final: {} },
-                settings: {}
+                settings: {},
+                lastUpdated: new Date()
             });
 
             const error403 = new Error('Forbidden');
@@ -216,9 +223,14 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
             );
 
             expect(smartTraktRefresh).toHaveBeenCalled();
-            expect(results.length).toBe(1);
-            expect(results[0].type).toBe('series');
-            expect(results[0].name).toContain('Popular Fallback Series');
+            expect(results).toEqual([]);
+            expect(getDuckDbCatalogFromFilters).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    sort_by: 'first_air_date.desc',
+                    'primary_release_date.gte': expect.any(String)
+                }),
+                'series', 0, 160, {}
+            );
         });
 
         it('trakt_filtered succeeds with refreshed token if second attempt returns items', async () => {
@@ -226,7 +238,8 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
                 owner: 'user_1',
                 context: 'global',
                 compiledVectors: { V_final: {} },
-                settings: {}
+                settings: {},
+                lastUpdated: new Date()
             });
 
             const error403 = new Error('Forbidden');
@@ -387,7 +400,7 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
 
             // La cache usa il kidsMode del profilo YACA e la configVersion.
             expect(hybridRecommendationsCache.getWithStatus).toHaveBeenCalledWith(
-                'user_1_kids_profile_yaca_true_blend_movies_cvcfg-v1_kids'
+                'user_1_kids_profile_heroes_v1_movie_cvcfg-v1_kids'
             );
 
             // Item 502 (Horror) MUST NOT be returned in kidsMode

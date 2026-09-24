@@ -202,7 +202,7 @@ function mapDuckDbRowToMeta(item, isMovie = true) {
     try { if (item.keywords) parsedKeywords = typeof item.keywords === 'string' ? JSON.parse(item.keywords) : item.keywords; } catch(e){}
 
     const voteCount = sanitizeBigInt(item.vote_count) || 0;
-    const voteAverage = item.vote_average != null ? Number(item.vote_average) : undefined;
+    const voteAverage = item.vote_average !== null && item.vote_average !== undefined ? Number(item.vote_average) : undefined;
 
     const rawTMDB = {
         id: sanitizeBigInt(item.id),
@@ -331,7 +331,7 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
         try { if (item.keywords) parsedKeywords = typeof item.keywords === 'string' ? JSON.parse(item.keywords) : item.keywords; } catch(e){}
 
         const voteCount = sanitizeBigInt(item.vote_count) || 0;
-        const voteAverage = item.vote_average != null ? Number(item.vote_average) : undefined;
+        const voteAverage = item.vote_average !== null && item.vote_average !== undefined ? Number(item.vote_average) : undefined;
 
         const rawTMDB = {
             id: sanitizeBigInt(item.id),

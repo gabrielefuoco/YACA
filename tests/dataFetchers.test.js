@@ -1,4 +1,11 @@
-const { fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds } = require('../src/engines/hybrid/dataFetchers');
+const {
+    fetchProfileContext,
+    fetchTraktRecommendationsRaw,
+    fetchPopularFallbackIds,
+    fetchTopRatedPeriodFallbackIds,
+    fetchUndiscoveredFallbackIds,
+    fetchHiddenGemsFallbackIds
+} = require('../src/engines/hybrid/dataFetchers');
 const tmdb = require('../src/clients/tmdb');
 const { getTmdbPopularCache, getTmdbTopRatedCache } = require('../src/cache/cacheInstances');
 const UserConfig = require('../src/models/UserConfig');
@@ -56,6 +63,42 @@ describe('dataFetchers', () => {
             const { fetchHiddenGemsFallbackIds } = require('../src/engines/hybrid/dataFetchers');
             const result = await fetchHiddenGemsFallbackIds('key', 'tv');
             expect(result).toEqual(['101']); // 102 filtered out (popularity > 80)
+        });
+    });
+
+    describe('fallback hero distinti', () => {
+        it('seleziona top-rated nella finestra mobile e usa ID come tie-breaker', async () => {
+            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+            getDuckDbCatalogFromFilters.mockResolvedValue([
+                { id: 20, vote_average: 8, vote_count: 500 },
+                { id: 10, vote_average: 8, vote_count: 500 }
+            ]);
+
+            const result = await fetchTopRatedPeriodFallbackIds('key', 'movie');
+
+            expect(result).toEqual(['10', '20']);
+            expect(getDuckDbCatalogFromFilters.mock.calls[0][0]).toEqual(expect.objectContaining({
+                sort_by: 'vote_average.desc',
+                'primary_release_date.gte': expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+            }));
+        });
+
+        it('seleziona novità per tipo e deduplica gli ID', async () => {
+            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+            getDuckDbCatalogFromFilters.mockResolvedValue([
+                { id: 20, release_date: '2025-02-01', vote_average: 8 },
+                { id: 10, release_date: '2025-02-01', vote_average: 8 },
+                { id: 'tmdb:10', release_date: '2026-01-01', vote_average: 9 },
+                { id: 30, release_date: '2026-01-01', vote_average: 7 }
+            ]);
+
+            const result = await fetchUndiscoveredFallbackIds('key', 'movie');
+
+            expect(result).toEqual(['30', '10', '20']);
+            expect(getDuckDbCatalogFromFilters.mock.calls[0][0]).toEqual(expect.objectContaining({
+                sort_by: 'primary_release_date.desc',
+                'primary_release_date.gte': expect.any(String)
+            }));
         });
     });
 

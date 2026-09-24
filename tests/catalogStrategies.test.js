@@ -13,6 +13,8 @@ jest.mock('../src/engines/hybrid/dataFetchers', () => ({
     fetchProfileContext: jest.fn(),
     fetchTraktRecommendationsRaw: jest.fn(),
     fetchPopularFallbackIds: jest.fn(),
+    fetchTopRatedPeriodFallbackIds: jest.fn(),
+    fetchUndiscoveredFallbackIds: jest.fn(),
     fetchRecentHistory: jest.fn(),
     getImpressionMap: jest.fn().mockResolvedValue(new Map()),
     calculateImpressionPenalty: jest.fn().mockReturnValue(1.0)
@@ -75,11 +77,13 @@ describe('catalogStrategies', () => {
     });
 
     describe('buildHybridCatalog', () => {
-        it('should fallback if no profile', async () => {
+        it('usa il fallback top-rated del periodo se il profilo è assente', async () => {
             dataFetchers.fetchProfileContext.mockResolvedValueOnce({ profile: null });
-            dataFetchers.fetchPopularFallbackIds.mockResolvedValueOnce(['999']);
-            
+            dataFetchers.fetchTopRatedPeriodFallbackIds.mockResolvedValueOnce(['999']);
+
             const result = await catalogStrategies.buildHybridCatalog('user1', 'global', 'trakt', 'tmdb', 'movie');
+            expect(dataFetchers.fetchTopRatedPeriodFallbackIds).toHaveBeenCalledWith('tmdb', 'movie', 160, false);
+            expect(dataFetchers.fetchPopularFallbackIds).not.toHaveBeenCalled();
             expect(result).toEqual(['999']);
         });
 
@@ -208,6 +212,20 @@ describe('catalogStrategies', () => {
             expect(resultIds).not.toContain('102'); // watched
             expect(resultIds).toContain('101'); // high score
             expect(resultIds).toContain('103'); // penalized but still returned if pool is small
+        });
+
+        it('risolve i pari score con ID crescente, indipendentemente dalla latenza', async () => {
+            dataFetchers.fetchProfileContext.mockResolvedValueOnce({ profile: {}, user: {} });
+            dataFetchers.fetchTraktRecommendationsRaw.mockResolvedValueOnce([
+                { movie: { ids: { tmdb: 30 } } },
+                { movie: { ids: { tmdb: 10 } } },
+                { movie: { ids: { tmdb: 20 } } }
+            ]);
+            ProfileScorer.calculateItemMatch.mockImplementation(() => 5);
+            tmdb.getTmdbMovieDetails.mockImplementation(async (_key, id) => ({ id: Number(id), genre_ids: [18] }));
+
+            const result = await catalogStrategies.buildTraktFilteredCatalog('u', 'ctx', 'trakt', 'tmdb', 'movie');
+            expect(result.map(item => String(item.id))).toEqual(['10', '20', '30']);
         });
     });
 });

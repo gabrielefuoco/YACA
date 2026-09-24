@@ -49,6 +49,15 @@ jest.mock('../src/cache/cacheInstances', () => ({
     }
 }));
 
+function cachedHeroGroup(mediaType, ids) {
+    const suffix = mediaType === 'movie' ? 'movies' : 'series';
+    const catalogs = {};
+    for (const slug of ['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered']) {
+        catalogs[`yaca_${slug}_${suffix}`] = ids;
+    }
+    return { schemaVersion: 1, mediaType, catalogs };
+}
+
 describe('Hero Catalogs Audit 02 Fixes', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -58,7 +67,7 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
         it('successfully extracts releaseInfo when DuckDB rawTMDB.release_date is a Date object', async () => {
             TasteProfile.findOne.mockResolvedValue({ lastUpdated: new Date() });
             hybridRecommendationsCache.getWithStatus.mockResolvedValue({
-                value: { ids: [{ id: '11', matchScore: 95 }] },
+                value: cachedHeroGroup('movie', [{ id: '11', matchScore: 95 }]),
                 status: 'fresh'
             });
 
@@ -93,12 +102,10 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
         it('does not zero the entire page if one item has an error or fails to load', async () => {
             TasteProfile.findOne.mockResolvedValue({ lastUpdated: new Date() });
             hybridRecommendationsCache.getWithStatus.mockResolvedValue({
-                value: {
-                    ids: [
-                        { id: '999999', matchScore: 90 }, // This item fails/throws
-                        { id: '12', matchScore: 85 }       // This item succeeds
-                    ]
-                },
+                value: cachedHeroGroup('movie', [
+                    { id: '999999', matchScore: 90 }, // questo item fallisce
+                    { id: '12', matchScore: 85 }       // questo item viene risolto
+                ]),
                 status: 'fresh'
             });
 
@@ -135,7 +142,7 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
         it('handles null, empty, or string release_date gracefully', async () => {
             TasteProfile.findOne.mockResolvedValue({ lastUpdated: new Date() });
             hybridRecommendationsCache.getWithStatus.mockResolvedValue({
-                value: { ids: [{ id: '100', matchScore: 50 }] },
+                value: cachedHeroGroup('movie', [{ id: '100', matchScore: 50 }]),
                 status: 'fresh'
             });
 
@@ -168,7 +175,7 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
         it('extracts releaseInfo from first_air_date for series', async () => {
             TasteProfile.findOne.mockResolvedValue({ lastUpdated: new Date() });
             hybridRecommendationsCache.getWithStatus.mockResolvedValue({
-                value: { ids: [{ id: '1399', matchScore: 92 }] },
+                value: cachedHeroGroup('series', [{ id: '1399', matchScore: 92 }]),
                 status: 'fresh'
             });
 

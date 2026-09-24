@@ -14,9 +14,27 @@ const mongoose = require('mongoose');
 const { applyKidsMode, isItemInappropriateForKids } = require('../utils/kidsModeFilters');
 
 // Import from the new hybrid layer
-const { fetchRecentHistory, fetchRecentRatings, fetchTraktRecommendationsRaw, fetchTmdbSimilarCounts, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds } = require('./hybrid/dataFetchers');
+const {
+    fetchProfileContext,
+    fetchRecentHistory,
+    fetchRecentRatings,
+    fetchTraktRecommendationsRaw,
+    fetchTraktRecommendationsRawDetailed,
+    fetchTmdbSimilarCounts,
+    fetchPopularFallbackIds,
+    fetchTopRatedPeriodFallbackIds,
+    fetchUndiscoveredFallbackIds,
+    fetchHiddenGemsFallbackIds
+} = require('./hybrid/dataFetchers');
 const { calculateHybridScore, computeTopGenres, computeTopKeywords } = require('./hybrid/scoringEngine');
-const { buildDirectPresetCatalog, buildTopGenresMixCatalog, buildHybridCatalog, buildHiddenGemsCatalog, buildTraktFilteredCatalog } = require('./hybrid/catalogStrategies');
+const {
+    buildDirectPresetCatalog,
+    buildTopGenresMixCatalog,
+    buildHybridCatalog,
+    buildHiddenGemsCatalog,
+    buildTraktFilteredCatalog,
+    buildTraktFilteredCatalogWithMeta
+} = require('./hybrid/catalogStrategies');
 
 function getActiveKidsMode(userConfig, context) {
     const profiles = userConfig?.profiles ?? userConfig?.config?.profiles ?? [];
@@ -24,11 +42,218 @@ function getActiveKidsMode(userConfig, context) {
     return activeProfile?.settings?.kidsMode === true;
 }
 
-function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, configVersion }) {
-    const version = configVersion === undefined || configVersion === null
+const HERO_PRIORITY = Object.freeze(['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered']);
+const HERO_CATALOG_IDS = new Map([
+    ...HERO_PRIORITY.flatMap(slug => ['movie', 'series'].map(mediaType => [
+        `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`,
+        { slug, mediaType }
+    ]))
+]);
+const HERO_CACHE_SCHEMA_VERSION = 1;
+const HERO_MIN_FALLBACK_ITEMS = 10;
+const HERO_MAX_ITEMS_PER_CATALOG = 100;
+const activeHeroGroupBuilds = new Map();
+
+function getHeroCatalogInfo(catalogId) {
+    return HERO_CATALOG_IDS.get(catalogId) || null;
+}
+
+function getHeroCatalogId(slug, mediaType) {
+    return `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`;
+}
+
+function normalizeConfigVersion(configVersion) {
+    return configVersion === undefined || configVersion === null
         ? 'unversioned'
         : String(configVersion);
+}
+
+function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, configVersion }) {
+    const version = normalizeConfigVersion(configVersion);
     return `${userId}_${context}_${catalogId}_cv${encodeURIComponent(version)}${kidsMode ? '_kids' : ''}`;
+}
+
+function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, configVersion }) {
+    const version = normalizeConfigVersion(configVersion);
+    return `${userId}_${context}_heroes_v${HERO_CACHE_SCHEMA_VERSION}_${mediaType}_cv${encodeURIComponent(version)}${kidsMode ? '_kids' : ''}`;
+}
+
+function compareContentIds(a, b) {
+    const idA = normalizeContentId(a ?? '');
+    const idB = normalizeContentId(b ?? '');
+    const numA = Number(idA);
+    const numB = Number(idB);
+    if (Number.isFinite(numA) && Number.isFinite(numB) && numA !== numB) return numA - numB;
+    if (idA < idB) return -1;
+    if (idA > idB) return 1;
+    return 0;
+}
+
+function getRecommendationId(item) {
+    const rawId = item && typeof item === 'object' ? item.id : item;
+    const id = normalizeContentId(rawId ?? '');
+    if (!id || ['undefined', 'null', 'nan'].includes(id.toLowerCase())) return '';
+    return id;
+}
+
+/**
+ * Assegna in modo esclusivo i candidati dei quattro hero. L'ordine dei blocchi
+ * è il requisito di priorità, non l'ordine delle richieste HTTP.
+ */
+function assignHeroPools(poolsByCatalog, mediaType, maxItemsPerCatalog = HERO_MAX_ITEMS_PER_CATALOG) {
+    const assigned = {};
+    const claimedIds = new Set();
+
+    for (const slug of HERO_PRIORITY) {
+        const catalogId = getHeroCatalogId(slug, mediaType);
+        const pool = Array.isArray(poolsByCatalog?.[catalogId]) ? poolsByCatalog[catalogId] : [];
+        const catalogIds = [];
+        for (const item of pool) {
+            const id = getRecommendationId(item);
+            if (!id || claimedIds.has(id)) continue;
+            claimedIds.add(id);
+            catalogIds.push(item);
+            if (catalogIds.length >= maxItemsPerCatalog) break;
+        }
+        assigned[catalogId] = catalogIds;
+    }
+
+    return assigned;
+}
+
+function isSharedHeroCacheEntry(entry, mediaType) {
+    if (!entry || entry.schemaVersion !== HERO_CACHE_SCHEMA_VERSION || entry.mediaType !== mediaType || !entry.catalogs) return false;
+    return ['movie', 'series'].includes(mediaType)
+        && HERO_PRIORITY.every(slug => Array.isArray(entry.catalogs[getHeroCatalogId(slug, mediaType)]));
+}
+
+function normalizePoolResult(result) {
+    if (Array.isArray(result)) return result;
+    return Array.isArray(result?.ids) ? result.ids : [];
+}
+
+async function runPoolBuilder(builder, fallbackBuilder, label, args) {
+    try {
+        return await builder(...args);
+    } catch (error) {
+        console.error(`[HeroPool] ${label} builder failed:`, error?.message || error);
+        return fallbackBuilder();
+    }
+}
+
+/** Costruisce una sola volta tutti i pool e poi applica l'assegnazione disgiunta. */
+async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig }) {
+    const seedFallback = async () => {
+        const fetcher = typeof fetchTopRatedPeriodFallbackIds === 'function'
+            ? fetchTopRatedPeriodFallbackIds
+            : fetchPopularFallbackIds;
+        return fetcher(tmdbApiKey, mediaType, 160, kidsMode);
+    };
+    const communityFallback = async () => {
+        const fetcher = typeof fetchUndiscoveredFallbackIds === 'function'
+            ? fetchUndiscoveredFallbackIds
+            : fetchPopularFallbackIds;
+        return fetcher(tmdbApiKey, mediaType, 160, kidsMode);
+    };
+    const communityFallbackWithMeta = async () => ({
+        ids: await communityFallback(),
+        traktAvailable: false,
+        fallbackUsed: true
+    });
+
+    const hasDetailedTraktFetch = typeof fetchTraktRecommendationsRawDetailed === 'function';
+    let sharedTraktResult = hasDetailedTraktFetch
+        ? { items: [], available: false, fallbackUsed: true, reason: 'credentials' }
+        : null;
+    if (traktToken && hasDetailedTraktFetch) {
+        let traktUser = {
+            userId,
+            apiKeys: userConfig?.apiKeys || userConfig?.config?.apiKeys || {}
+        };
+        if (!traktUser.apiKeys?.traktRefreshToken && typeof fetchProfileContext === 'function') {
+            const profileContext = await fetchProfileContext(userId, context).catch(() => ({}));
+            if (profileContext?.user) traktUser = profileContext.user;
+        }
+        sharedTraktResult = await fetchTraktRecommendationsRawDetailed(
+            traktToken,
+            mediaType === 'movie' ? 'movies' : 'shows',
+            100,
+            traktUser
+        ).catch(error => {
+            console.error('[HeroPool] Trakt fetch failed:', error?.message || error);
+            return { items: [], available: false, fallbackUsed: true, reason: 'error' };
+        });
+    }
+
+    const [trueBlendResult, seedResult, hiddenResult, traktResult] = await Promise.all([
+        runPoolBuilder(buildTopGenresMixCatalog, () => fetchPopularFallbackIds(tmdbApiKey, mediaType, 160, kidsMode), 'true_blend', [userId, context, tmdbApiKey, mediaType, kidsMode]),
+        runPoolBuilder(buildHybridCatalog, seedFallback, 'seed_network', [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult]),
+        runPoolBuilder(buildHiddenGemsCatalog, () => fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, 160, kidsMode), 'hidden_gems', [userId, context, tmdbApiKey, mediaType, kidsMode]),
+        typeof buildTraktFilteredCatalogWithMeta === 'function'
+            ? runPoolBuilder(buildTraktFilteredCatalogWithMeta, communityFallbackWithMeta, 'trakt_filtered', [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult])
+            : runPoolBuilder(buildTraktFilteredCatalog, communityFallbackWithMeta, 'trakt_filtered', [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult])
+    ]);
+
+    const traktCatalogId = getHeroCatalogId('trakt_filtered', mediaType);
+    const rawTraktResult = Array.isArray(traktResult)
+        ? { ids: traktResult, traktAvailable: true, fallbackUsed: false }
+        : {
+            ids: normalizePoolResult(traktResult),
+            traktAvailable: traktResult?.traktAvailable === true,
+            fallbackUsed: traktResult?.fallbackUsed === true || traktResult?.traktAvailable === false
+        };
+    const pools = {
+        [getHeroCatalogId('true_blend', mediaType)]: normalizePoolResult(trueBlendResult),
+        [getHeroCatalogId('seed_network', mediaType)]: normalizePoolResult(seedResult),
+        [getHeroCatalogId('hidden_gems', mediaType)]: normalizePoolResult(hiddenResult),
+        [traktCatalogId]: rawTraktResult.ids
+    };
+    const assigned = assignHeroPools(pools, mediaType);
+    let hiddenForInsufficientFallback = false;
+    if (rawTraktResult.fallbackUsed && assigned[traktCatalogId].length < HERO_MIN_FALLBACK_ITEMS) {
+        assigned[traktCatalogId] = [];
+        hiddenForInsufficientFallback = true;
+    }
+
+    return {
+        schemaVersion: HERO_CACHE_SCHEMA_VERSION,
+        mediaType,
+        catalogs: assigned,
+        trakt: {
+            available: rawTraktResult.traktAvailable,
+            fallbackUsed: rawTraktResult.fallbackUsed,
+            hiddenForInsufficientFallback
+        }
+    };
+}
+
+async function buildAndCacheSharedHeroCatalogs(args, cacheKey) {
+    if (activeHeroGroupBuilds.has(cacheKey)) return activeHeroGroupBuilds.get(cacheKey);
+
+    const promise = (async () => {
+        const group = await buildSharedHeroCatalogs(args);
+        await hybridRecommendationsCache.set(cacheKey, group);
+        return group;
+    })();
+    activeHeroGroupBuilds.set(cacheKey, promise);
+
+    try {
+        return await promise;
+    } finally {
+        if (activeHeroGroupBuilds.get(cacheKey) === promise) activeHeroGroupBuilds.delete(cacheKey);
+    }
+}
+
+async function getSharedHeroCatalogs(args, cacheKey) {
+    const { value, status } = await hybridRecommendationsCache.getWithStatus(cacheKey);
+    if (isSharedHeroCacheEntry(value, args.mediaType)) {
+        if (status === 'stale') {
+            buildAndCacheSharedHeroCatalogs(args, cacheKey)
+                .catch(error => console.error('[Hero-SWR] Error:', error?.message || error));
+        }
+        return value;
+    }
+    return buildAndCacheSharedHeroCatalogs(args, cacheKey);
 }
 
 /**
@@ -46,7 +271,10 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     // kidsMode è un'impostazione del profilo YACA (AddonConfig), non del TasteProfile.
     const isKidsMode = getActiveKidsMode(userConfig, context);
     const configVersion = userConfig?.configVersion ?? userConfig?.config?.configVersion;
-    const cacheKey = buildRecommendationCacheKey({ userId, context, catalogId, kidsMode: isKidsMode, configVersion });
+    const heroInfo = getHeroCatalogInfo(catalogId);
+    const cacheKey = heroInfo
+        ? buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode: isKidsMode, configVersion })
+        : buildRecommendationCacheKey({ userId, context, catalogId, kidsMode: isKidsMode, configVersion });
 
     console.log(`[Hybrid Debug] getHybridCatalog called with catalogId=${catalogId}, userId=${userId}, context=${context}`);
     console.log(`[Hybrid Debug] profile loaded: ${!!profile}, isKidsMode=${isKidsMode}, cacheKey=${cacheKey}`);
@@ -65,70 +293,54 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         }
     }
 
-    const buildRecommendIds = async () => {
-        if (matchedPreset) {
-            const ids = await buildDirectPresetCatalog(catalogId, userId, context, tmdbApiKey, mediaType, isKidsMode);
-            if (ids.length > 0) {
-                await hybridRecommendationsCache.set(cacheKey, { ids });
-                return ids;
-            }
-        }
-
-        const TRUE_BLEND_IDS = new Set(['yaca_true_blend_movies', 'yaca_true_blend_series']);
-        const SEED_NETWORK_IDS = new Set(['yaca_seed_network_movies', 'yaca_seed_network_series']);
-        const HIDDEN_GEMS_IDS = new Set(['yaca_hidden_gems_movies', 'yaca_hidden_gems_series']);
-        const TRAKT_FILTERED_IDS = new Set(['yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series']);
-
-        const ids = TRUE_BLEND_IDS.has(catalogId)
-            ? await buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType, isKidsMode)
-            : SEED_NETWORK_IDS.has(catalogId)
-                ? await buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode)
-                : HIDDEN_GEMS_IDS.has(catalogId)
-                    ? await buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType, isKidsMode)
-                    : TRAKT_FILTERED_IDS.has(catalogId)
-                        ? await buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode)
-                        : [];
-
-        await hybridRecommendationsCache.set(cacheKey, { ids });
-        return ids;
-    };
-
     let recommendationIds;
-    const { value: cachedEntry, status: cacheStatus } = await hybridRecommendationsCache.getWithStatus(cacheKey);
-    console.log(`[Hybrid Debug] cache status for ${cacheKey}: ${cacheStatus}`);
-    if (cacheStatus !== 'miss' && Array.isArray(cachedEntry?.ids)) {
-        recommendationIds = cachedEntry.ids;
-        console.log(`[Hybrid Debug] returning ${recommendationIds.length} IDs from cache`);
-        if (cacheStatus === 'stale') {
-            console.log(`[Hybrid-SWR] Revalidando catalogo ${catalogId} in background...`);
-            buildRecommendIds().catch(e => console.error('[Hybrid-SWR] Error:', e.message));
-        }
-    }
-
-    if (!recommendationIds) {
-        console.log(`[Hybrid Debug] building new recommend IDs for ${catalogId}`);
-        recommendationIds = await buildRecommendIds();
-        console.log(`[Hybrid Debug] buildRecommendIds returned ${recommendationIds?.length || 0} IDs`);
-    }
-
-    if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {
-        const NICHE_CATALOG_IDS = new Set([
-            'yaca_hidden_gems_movies', 'yaca_hidden_gems_series',
-            'yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series'
-        ]);
-
-        if (NICHE_CATALOG_IDS.has(catalogId)) {
-            if (catalogId.startsWith('yaca_hidden_gems')) {
-                recommendationIds = await fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
-            } else if (catalogId.startsWith('yaca_trakt_filtered')) {
-                recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
+    if (heroInfo) {
+        const sharedGroup = await getSharedHeroCatalogs({
+            userId,
+            context,
+            mediaType,
+            traktToken,
+            tmdbApiKey,
+            kidsMode: isKidsMode,
+            userConfig
+        }, cacheKey);
+        recommendationIds = sharedGroup.catalogs[catalogId] || [];
+        console.log(`[HeroPool] ${catalogId}: ${recommendationIds.length} assigned IDs (group=${cacheKey})`);
+    } else {
+        const buildRecommendIds = async () => {
+            if (matchedPreset) {
+                const ids = await buildDirectPresetCatalog(catalogId, userId, context, tmdbApiKey, mediaType, isKidsMode);
+                if (ids.length > 0) {
+                    await hybridRecommendationsCache.set(cacheKey, { ids });
+                    return ids;
+                }
             }
-        } else {
-            recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
+            const ids = [];
+            await hybridRecommendationsCache.set(cacheKey, { ids });
+            return ids;
+        };
+
+        const { value: cachedEntry, status: cacheStatus } = await hybridRecommendationsCache.getWithStatus(cacheKey);
+        console.log(`[Hybrid Debug] cache status for ${cacheKey}: ${cacheStatus}`);
+        if (cacheStatus !== 'miss' && Array.isArray(cachedEntry?.ids)) {
+            recommendationIds = cachedEntry.ids;
+            console.log(`[Hybrid Debug] returning ${recommendationIds.length} IDs from cache`);
+            if (cacheStatus === 'stale') {
+                console.log(`[Hybrid-SWR] Revalidando catalogo ${catalogId} in background...`);
+                buildRecommendIds().catch(e => console.error('[Hybrid-SWR] Error:', e.message));
+            }
         }
 
-        if (recommendationIds && recommendationIds.length > 0) {
-            await hybridRecommendationsCache.set(cacheKey, { ids: recommendationIds });
+        if (!recommendationIds) {
+            console.log(`[Hybrid Debug] building new recommend IDs for ${catalogId}`);
+            recommendationIds = await buildRecommendIds();
+        }
+
+        if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {
+            recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode);
+            if (recommendationIds.length > 0) {
+                await hybridRecommendationsCache.set(cacheKey, { ids: recommendationIds });
+            }
         }
     }
 
@@ -190,7 +402,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                         releaseYear = !isNaN(rawDate.getTime()) ? rawDate.toISOString().substring(0, 4) : '';
                     } else if (typeof rawDate === 'string') {
                         releaseYear = rawDate.substring(0, 4);
-                    } else if (rawDate != null) {
+                    } else if (rawDate !== null && rawDate !== undefined) {
                         releaseYear = String(rawDate).substring(0, 4);
                     }
                 } catch (_e) {
@@ -198,14 +410,14 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                 }
 
                 let imdbRating;
-                if (item.vote_average != null) {
+                if (item.vote_average !== null && item.vote_average !== undefined) {
                     const num = Number(item.vote_average);
                     if (!isNaN(num)) imdbRating = num.toFixed(1);
                 }
 
                 const genre_ids = Array.isArray(item.genre_ids)
                     ? item.genre_ids
-                    : (Array.isArray(item.genres) ? item.genres.map(g => g.id).filter(id => id != null) : []);
+                    : (Array.isArray(item.genres) ? item.genres.map(g => g.id).filter(id => id !== null && id !== undefined) : []);
 
                 return {
                     id: `tmdb:${normalizedId}`,
@@ -329,20 +541,28 @@ module.exports = {
     getHybridCatalog,
     getActiveKidsMode,
     buildRecommendationCacheKey,
+    buildSharedHeroCacheKey,
+    assignHeroPools,
+    buildSharedHeroCatalogs,
+    getSharedHeroCatalogs,
     syncIncrementalRecommendations,
     fetchRecentHistory,
     fetchRecentRatings,
     fetchTraktRecommendationsRaw,
+    fetchTraktRecommendationsRawDetailed,
     fetchTmdbSimilarCounts,
     calculateHybridScore,
     computeTopGenres,
     computeTopKeywords,
     fetchPopularFallbackIds,
+    fetchTopRatedPeriodFallbackIds,
+    fetchUndiscoveredFallbackIds,
     fetchHiddenGemsFallbackIds,
     buildDirectPresetCatalog,
     buildHybridCatalog,
     buildTopGenresMixCatalog,
     buildHiddenGemsCatalog,
     buildTraktFilteredCatalog,
+    buildTraktFilteredCatalogWithMeta,
     recommendationsCache: hybridRecommendationsCache
 };

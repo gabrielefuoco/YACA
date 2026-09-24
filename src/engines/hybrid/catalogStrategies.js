@@ -6,7 +6,17 @@ const { rateLimitedMap } = require('../../utils/rateLimiter');
 
 // Import from new modules
 const { applyKidsMode, isItemInappropriateForKids, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../../utils/kidsModeFilters');
-const { fetchProfileContext, fetchTraktRecommendationsRaw, fetchPopularFallbackIds, fetchHiddenGemsFallbackIds, getImpressionMap, calculateImpressionPenalty } = require('./dataFetchers');
+const {
+    fetchProfileContext,
+    fetchTraktRecommendationsRaw,
+    fetchTraktRecommendationsRawDetailed,
+    fetchPopularFallbackIds,
+    fetchTopRatedPeriodFallbackIds,
+    fetchUndiscoveredFallbackIds,
+    fetchHiddenGemsFallbackIds,
+    getImpressionMap,
+    calculateImpressionPenalty
+} = require('./dataFetchers');
 const { computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
 const ProfileScorer = require('../../profile/ProfileScorer');
 const { getDuckDbCatalogFromPreset } = require('../../catalog/providers/DuckDbProvider');
@@ -81,6 +91,63 @@ function deduplicateByCollection(scoredItems) {
     }
     
     return result;
+}
+
+function compareContentIds(a, b) {
+    const idA = normalizeContentId(a ?? '');
+    const idB = normalizeContentId(b ?? '');
+    const numA = Number(idA);
+    const numB = Number(idB);
+    if (Number.isFinite(numA) && Number.isFinite(numB) && numA !== numB) return numA - numB;
+    if (idA < idB) return -1;
+    if (idA > idB) return 1;
+    return 0;
+}
+
+function sortScoredByScore(items, scoreSelector) {
+    return items.sort((a, b) => {
+        const scoreA = Number(scoreSelector(a));
+        const scoreB = Number(scoreSelector(b));
+        if (Number.isFinite(scoreA) && Number.isFinite(scoreB) && scoreA !== scoreB) return scoreB - scoreA;
+        return compareContentIds(a.data?.id, b.data?.id);
+    });
+}
+
+async function fetchSeedFallbackIds(tmdbApiKey, mediaType, limit, isKidsMode) {
+    // L'adapter mantiene compatibili i mock legacy dei test; in produzione usa sempre il fallback dedicato.
+    const fetcher = typeof fetchTopRatedPeriodFallbackIds === 'function'
+        ? fetchTopRatedPeriodFallbackIds
+        : fetchPopularFallbackIds;
+    return fetcher(tmdbApiKey, mediaType, limit, isKidsMode);
+}
+
+async function fetchCommunityFallbackIds(tmdbApiKey, mediaType, limit, isKidsMode) {
+    const fetcher = typeof fetchUndiscoveredFallbackIds === 'function'
+        ? fetchUndiscoveredFallbackIds
+        : fetchPopularFallbackIds;
+    return fetcher(tmdbApiKey, mediaType, limit, isKidsMode);
+}
+
+async function fetchTraktRecommendationResult(traktToken, mediaType, limit, user, providedResult = null) {
+    if (providedResult && Array.isArray(providedResult.items)) {
+        return {
+            items: providedResult.items,
+            available: providedResult.available === true && providedResult.items.length > 0,
+            reason: providedResult.reason || (providedResult.items.length > 0 ? 'ok' : 'empty')
+        };
+    }
+    if (typeof fetchTraktRecommendationsRawDetailed === 'function') {
+        const result = await fetchTraktRecommendationsRawDetailed(traktToken, mediaType, limit, user);
+        const items = Array.isArray(result) ? result : (Array.isArray(result?.items) ? result.items : []);
+        return {
+            items,
+            available: (Array.isArray(result) || result?.available === true) && items.length > 0,
+            reason: result?.reason || (items.length > 0 ? 'ok' : 'empty')
+        };
+    }
+    const items = await fetchTraktRecommendationsRaw(traktToken, mediaType, limit, user);
+    const normalizedItems = Array.isArray(items) ? items : [];
+    return { items: normalizedItems, available: normalizedItems.length > 0, reason: normalizedItems.length > 0 ? 'ok' : 'empty' };
 }
 
 /**
@@ -277,7 +344,7 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
 
 async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fallbackFn, isKidsMode = false) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return fallbackFn(tmdbApiKey, mediaType, 60, isKidsMode);
+    if (!profile) return fallbackFn(tmdbApiKey, mediaType, 160, isKidsMode);
     
     profile.user = user;
     profile.context = context;
@@ -289,7 +356,7 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
     }
     
     if (candidatePool.length === 0) {
-        return fallbackFn(tmdbApiKey, mediaType, 60, isKidsMode);
+        return fallbackFn(tmdbApiKey, mediaType, 160, isKidsMode);
     }
     
     const impressionMap = await getImpressionMap(userId, context, catalogId, candidatePool.map(m => String(m._tmdbId || m.id.split(':')[1])));
@@ -315,15 +382,7 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
         return { data: tmdbData, score: score * penaltyMultiplier };
     }).filter(Boolean);
     
-    const sorted = scored.sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        const idA = a.data?.id ?? '';
-        const idB = b.data?.id ?? '';
-        const numA = Number(idA);
-        const numB = Number(idB);
-        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-        return String(idA).localeCompare(String(idB));
-    });
+    const sorted = sortScoredByScore(scored, item => item.score);
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
     const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
         ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
@@ -336,7 +395,7 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
     }
     
     if (finalItems.length === 0) {
-        return fallbackFn(tmdbApiKey, mediaType, 60, isKidsMode);
+        return fallbackFn(tmdbApiKey, mediaType, 160, isKidsMode);
     }
     
     return finalItems.slice(0, 100).map(i => ({ 
@@ -358,9 +417,9 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType, 
 /**
  * 🕸️ Hero Catalog 2: Super-Seed Network ("La Rete dei tuoi Preferiti")
  */
-async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false) {
+async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false, providedTraktResult = null) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
+    if (!profile) return fetchSeedFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode);
 
     const types = mediaType === 'movie' ? 'movie' : 'series';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
@@ -372,8 +431,15 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 20).map(id => ({ id: String(id), weight: 2 }));
     const likedIds = (user?.profiles?.find(p => p.id === context)?.liked || []).slice(0, 15).map(id => ({ id: String(id), weight: 1 }));
 
-    const traktRaw = await fetchTraktRecommendationsRaw(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 10, user);
-    const traktIds = traktRaw
+    const sharedTraktResult = await fetchTraktRecommendationResult(
+        traktToken,
+        mediaType === 'movie' ? 'movies' : 'shows',
+        10,
+        user,
+        providedTraktResult
+    );
+    const traktIds = sharedTraktResult.items
+        .slice(0, 10)
         .map(item => ({ id: String(item.movie?.ids?.tmdb || item.show?.ids?.tmdb), weight: 3 }))
         .filter(s => s.id && s.id !== 'undefined');
 
@@ -424,7 +490,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     console.log(`[Catalog Debug] Seed Network - Collected Seeds: Loved=${lovedIds.length}, Liked=${likedIds.length}, Trakt=${traktIds.length}, DNA=${dnaSeeds.length}`);
 
     if (allSeedsMap.size === 0) {
-        return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
+        return fetchSeedFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode);
     }
     const allSeeds = Array.from(allSeedsMap.entries()).map(([id, weight]) => ({ id, weight }));
 
@@ -473,13 +539,10 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     }
 
     candidates.sort((a, b) => {
-        if (b.hybridScore !== a.hybridScore) return b.hybridScore - a.hybridScore;
-        const idA = a.data?.id ?? '';
-        const idB = b.data?.id ?? '';
-        const numA = Number(idA);
-        const numB = Number(idB);
-        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-        return String(idA).localeCompare(String(idB));
+        const scoreA = Number(a.hybridScore);
+        const scoreB = Number(b.hybridScore);
+        if (Number.isFinite(scoreA) && Number.isFinite(scoreB) && scoreA !== scoreB) return scoreB - scoreA;
+        return compareContentIds(a.data?.id, b.data?.id);
     });
 
     let filteredCandidates = candidates;
@@ -536,15 +599,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         };
     });
 
-    const sorted = scoredWithCombined.sort((a, b) => {
-        if (b.combinedScore !== a.combinedScore) return b.combinedScore - a.combinedScore;
-        const idA = a.data?.id ?? '';
-        const idB = b.data?.id ?? '';
-        const numA = Number(idA);
-        const numB = Number(idB);
-        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-        return String(idA).localeCompare(String(idB));
-    });
+    const sorted = sortScoredByScore(scoredWithCombined, item => item.combinedScore);
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
     const diversified = typeof ProfileScorer.applyDiversityCaps === 'function'
         ? ProfileScorer.applyDiversityCaps(deduplicated, { genre: 3, director: 1 })
@@ -557,7 +612,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     }
 
     if (finalItems.length === 0) {
-        return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
+        return fetchSeedFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode);
     }
 
     return finalItems.slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
@@ -577,28 +632,39 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType, is
 /**
  * 🌐 Hero Catalog 4: Trakt Filtered ("Suggeriti dalla Community")
  */
-async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false) {
+async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false, providedTraktResult = null) {
+    const buildFallback = async (traktAvailable = false) => ({
+        ids: await fetchCommunityFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode),
+        traktAvailable,
+        fallbackUsed: true
+    });
+
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    if (!profile) return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
+    if (!profile) return buildFallback(false);
 
     const types = mediaType === 'movie' ? 'movie' : 'series';
     const dnaFilters = getProfileDnaFilters(user, context);
-
-    const traktRaw = await fetchTraktRecommendationsRaw(traktToken, mediaType === 'movie' ? 'movies' : 'shows', 100, user);
-    const traktTmdbIds = traktRaw
+    const traktResult = await fetchTraktRecommendationResult(
+        traktToken,
+        mediaType === 'movie' ? 'movies' : 'shows',
+        100,
+        user,
+        providedTraktResult
+    );
+    const traktTmdbIds = [...new Set(traktResult.items
         .map(item => item.movie?.ids?.tmdb || item.show?.ids?.tmdb || item.ids?.tmdb)
-        .filter(Boolean);
+        .filter(Boolean)
+        .map(String))].slice(0, 100);
 
-    if (traktTmdbIds.length === 0) {
-        return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
+    if (!traktResult.available || traktTmdbIds.length === 0) {
+        return buildFallback(traktResult.available);
     }
 
-    const candidateIds = traktTmdbIds.slice(0, 100).map(String);
     const catalogId = mediaType === 'movie' ? 'yaca_trakt_filtered_movies' : 'yaca_trakt_filtered_series';
-    const impressionMap = await getImpressionMap(userId, context, catalogId, candidateIds);
+    const impressionMap = await getImpressionMap(userId, context, catalogId, traktTmdbIds);
 
     const scored = await rateLimitedMap(
-        traktTmdbIds.slice(0, 100),
+        traktTmdbIds,
         async (id) => {
             const seenDays = impressionMap.get(String(id)) || 0;
             const penaltyMultiplier = calculateImpressionPenalty(seenDays);
@@ -608,25 +674,38 @@ async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey
             if (isKidsMode && isItemInappropriateForKids(details)) return null;
             const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile, kidsMode: isKidsMode });
             if (isKidsMode && score <= 0) return null;
-            return { data: details, score: score * penaltyMultiplier };
+            return { data: { ...details, id: details.id ?? id }, score: score * penaltyMultiplier };
         },
         { batchSize: 3, delayMs: 150 }
     );
 
-    const sorted = scored.filter(Boolean).sort((a, b) => b.score - a.score);
+    const sorted = sortScoredByScore(scored.filter(Boolean), item => item.score);
     const deduplicated = mediaType === 'movie' ? deduplicateByCollection(sorted) : sorted;
     let finalItems = deduplicated;
     if (isKidsMode) {
-        finalItems = applyKidsMode(finalItems);
+        const safeIds = new Set(applyKidsMode(deduplicated.map(item => item.data)).map(item => normalizeContentId(item.id)));
+        finalItems = deduplicated.filter(item => safeIds.has(normalizeContentId(item.data.id)));
     }
 
     if (finalItems.length === 0) {
-        return fetchPopularFallbackIds(tmdbApiKey, mediaType, 60, isKidsMode);
+        return buildFallback(true);
     }
 
-    return finalItems
-        .slice(0, 100)
-        .map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
+    return {
+        ids: finalItems
+            .slice(0, 100)
+            .map(item => ({
+                id: String(item.data.id),
+                matchScore: Math.min(100, Math.max(1, Math.round(item.score * 10)))
+            })),
+        traktAvailable: true,
+        fallbackUsed: false
+    };
+}
+
+async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false) {
+    const result = await buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode);
+    return result.ids;
 }
 
 module.exports = {
@@ -634,5 +713,6 @@ module.exports = {
     buildTopGenresMixCatalog,
     buildHybridCatalog,
     buildHiddenGemsCatalog,
-    buildTraktFilteredCatalog
+    buildTraktFilteredCatalog,
+    buildTraktFilteredCatalogWithMeta
 };

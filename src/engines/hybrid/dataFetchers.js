@@ -7,6 +7,67 @@ const { rateLimitedMap } = require('../../utils/rateLimiter');
 const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
 const { applyKidsMode } = require('../../utils/kidsModeFilters');
 
+const MAX_HERO_FALLBACK_FETCH = 200;
+const HERO_FALLBACK_LIMIT = 160;
+const TOP_RATED_FALLBACK_MONTHS = 60;
+const DISCOVERY_FALLBACK_MONTHS = Object.freeze({ movie: 12, series: 24 });
+
+function compareContentIds(a, b) {
+    const idA = String(a ?? '');
+    const idB = String(b ?? '');
+    const numA = Number(idA);
+    const numB = Number(idB);
+    if (Number.isFinite(numA) && Number.isFinite(numB) && numA !== numB) return numA - numB;
+    if (idA < idB) return -1;
+    if (idA > idB) return 1;
+    return 0;
+}
+
+function getNumericSortValue(item, field) {
+    const value = Number(item?.[field]);
+    return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
+}
+
+function getDateSortValue(item) {
+    const raw = item?.release_date || item?.first_air_date || item?.last_air_date;
+    if (!raw) return Number.NEGATIVE_INFINITY;
+    const timestamp = raw instanceof Date ? raw.getTime() : Date.parse(String(raw));
+    return Number.isFinite(timestamp) ? timestamp : Number.NEGATIVE_INFINITY;
+}
+
+function rollingDateStart(months) {
+    const date = new Date();
+    date.setUTCMonth(date.getUTCMonth() - months);
+    return date.toISOString().slice(0, 10);
+}
+
+async function fetchFallbackRows(filters, type, limit, isKidsMode) {
+    const fetchLimit = Math.min(MAX_HERO_FALLBACK_FETCH, Math.max(40, Number(limit) || 0));
+    let pending;
+    try {
+        pending = getDuckDbCatalogFromFilters(filters, type, 0, fetchLimit, {});
+    } catch (_error) {
+        return [];
+    }
+    const results = await Promise.resolve(pending).catch(() => []);
+    if (!Array.isArray(results)) return [];
+    return isKidsMode ? applyKidsMode(results) : results;
+}
+
+function mapStableFallbackIds(rows, limit, compareRows) {
+    const seen = new Set();
+    const candidates = [];
+    for (const item of rows) {
+        const rawId = item?._tmdbId ?? item?.id;
+        const id = normalizeContentId(rawId);
+        if (!id || ['undefined', 'null', 'nan'].includes(id.toLowerCase()) || seen.has(id)) continue;
+        seen.add(id);
+        candidates.push({ id, item });
+    }
+    candidates.sort((a, b) => compareRows(a.item, b.item) || compareContentIds(a.id, b.id));
+    return candidates.slice(0, Math.max(0, Number(limit) || 0)).map(candidate => candidate.id);
+}
+
 /**
  * Loads the profile context needed by hybrid catalogs in one place.
  * @param {string} userId Unique user ID
@@ -39,9 +100,11 @@ async function fetchProfileContext(userId, context) {
  * Generic fetcher for Trakt to DRY up redundant calls.
  * Includes auto-refresh logic for expired Trakt tokens.
  */
-async function safeTraktFetch(endpoint, traktToken, limit = 40, userObj = null) {
-    if (!traktToken || !process.env.TRAKT_CLIENT_ID) return [];
-    
+async function safeTraktFetchDetailed(endpoint, traktToken, limit = 40, userObj = null) {
+    if (!traktToken || !process.env.TRAKT_CLIENT_ID) {
+        return { items: [], available: false, reason: 'credentials' };
+    }
+
     const execute = async (token) => {
         const res = await traktClient.get(endpoint, {
             headers: {
@@ -55,15 +118,24 @@ async function safeTraktFetch(endpoint, traktToken, limit = 40, userObj = null) 
         return res.data || [];
     };
 
+    const toResult = data => {
+        const items = Array.isArray(data) ? data : [];
+        return {
+            items,
+            available: items.length > 0,
+            reason: items.length > 0 ? 'ok' : 'empty'
+        };
+    };
+
     try {
-        return await execute(traktToken);
+        return toResult(await execute(traktToken));
     } catch (err) {
         console.error(`[safeTraktFetch] Error for ${endpoint}: status=${err.response?.status}, msg=${err.message}, hasUserObj=${!!userObj}, hasRefreshToken=${!!userObj?.apiKeys?.traktRefreshToken}`);
         const status = err.response?.status;
         if ((status === 401 || status === 403) && userObj?.apiKeys?.traktRefreshToken) {
             console.log(`[safeTraktFetch] Token expired or forbidden (${status}) for ${endpoint}. Attempting refresh...`);
             const { smartTraktRefresh } = require('../../clients/trakt');
-            
+
             try {
                 const newTokens = await smartTraktRefresh(userObj.userId, userObj.apiKeys.traktRefreshToken);
                 if (newTokens && newTokens.access_token) {
@@ -72,14 +144,20 @@ async function safeTraktFetch(endpoint, traktToken, limit = 40, userObj = null) 
                     userObj.apiKeys.traktRefreshToken = newTokens.refresh_token;
 
                     console.log(`[safeTraktFetch] Token refreshed successfully. Retrying ${endpoint}...`);
-                    return await execute(newTokens.access_token);
+                    return toResult(await execute(newTokens.access_token));
                 }
             } catch (refreshErr) {
                 console.error(`[safeTraktFetch] Refresh failed:`, refreshErr.message);
             }
+            return { items: [], available: false, reason: status === 403 ? 'forbidden' : 'unauthorized' };
         }
-        return [];
+        return { items: [], available: false, reason: status === 403 ? 'forbidden' : 'error' };
     }
+}
+
+async function safeTraktFetch(endpoint, traktToken, limit = 40, userObj = null) {
+    const result = await safeTraktFetchDetailed(endpoint, traktToken, limit, userObj);
+    return result.items;
 }
 
 async function fetchRecentHistory(traktToken, mediaType, limit = 10, userObj = null) {
@@ -90,48 +168,73 @@ async function fetchRecentRatings(traktToken, mediaType, limit = 40, userObj = n
     return safeTraktFetch(`/users/me/ratings/${mediaType}`, traktToken, limit, userObj);
 }
 
+async function fetchTraktRecommendationsRawDetailed(traktToken, mediaType, limit = 40, userObj = null) {
+    return safeTraktFetchDetailed(`/recommendations/${mediaType}`, traktToken, limit, userObj);
+}
+
 async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40, userObj = null) {
     return safeTraktFetch(`/recommendations/${mediaType}`, traktToken, limit, userObj);
 }
 
-async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = 60, isKidsMode = false) {
+async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false) {
     const type = mediaType === 'movie' ? 'movie' : 'series';
-    let filters = { sort_by: 'popularity.desc', 'vote_count.gte': 50 };
-    if (isKidsMode) {
-        filters = applyKidsMode(filters);
-    }
-    const results = await getDuckDbCatalogFromFilters(filters, type, 0, 40, {}).catch(() => []);
-    let filteredResults = results;
-    if (isKidsMode) {
-        filteredResults = applyKidsMode(results);
-    }
-    return filteredResults
-        .map(item => normalizeContentId(item.id))
-        .filter(Boolean)
-        .slice(0, limit);
+    const baseFilters = { sort_by: 'popularity.desc', 'vote_count.gte': 50 };
+    const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
+    const results = await fetchFallbackRows(filters, type, limit, isKidsMode);
+    return mapStableFallbackIds(
+        results,
+        limit,
+        (a, b) => getNumericSortValue(b, 'popularity') - getNumericSortValue(a, 'popularity')
+    );
 }
 
-async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = 60, isKidsMode = false) {
+async function fetchTopRatedPeriodFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false) {
     const type = mediaType === 'movie' ? 'movie' : 'series';
-    let filters = {
+    const baseFilters = {
+        sort_by: 'vote_average.desc',
+        'primary_release_date.gte': rollingDateStart(TOP_RATED_FALLBACK_MONTHS),
+        'vote_count.gte': 100,
+        'vote_average.gte': 6.5
+    };
+    const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
+    const results = await fetchFallbackRows(filters, type, limit, isKidsMode);
+    return mapStableFallbackIds(results, limit, (a, b) => {
+        const scoreDelta = getNumericSortValue(b, 'vote_average') - getNumericSortValue(a, 'vote_average');
+        return scoreDelta || getNumericSortValue(b, 'vote_count') - getNumericSortValue(a, 'vote_count');
+    });
+}
+
+async function fetchUndiscoveredFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false) {
+    const type = mediaType === 'movie' ? 'movie' : 'series';
+    const baseFilters = {
+        sort_by: type === 'movie' ? 'primary_release_date.desc' : 'first_air_date.desc',
+        'primary_release_date.gte': rollingDateStart(DISCOVERY_FALLBACK_MONTHS[type]),
+        'vote_count.gte': type === 'movie' ? 10 : 20,
+        'vote_average.gte': 5.5
+    };
+    const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
+    const results = await fetchFallbackRows(filters, type, limit, isKidsMode);
+    return mapStableFallbackIds(results, limit, (a, b) => {
+        const dateDelta = getDateSortValue(b) - getDateSortValue(a);
+        return dateDelta || getNumericSortValue(b, 'vote_average') - getNumericSortValue(a, 'vote_average');
+    });
+}
+
+async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false) {
+    const type = mediaType === 'movie' ? 'movie' : 'series';
+    const baseFilters = {
         sort_by: 'vote_average.desc',
         'vote_count.gte': 50,
         'vote_count.lte': 2000,
         'vote_average.gte': 7.0
     };
-    if (isKidsMode) {
-        filters = applyKidsMode(filters);
-    }
-    const results = await getDuckDbCatalogFromFilters(filters, type, 0, 40, {}).catch(() => []);
-    let filteredResults = results;
-    if (isKidsMode) {
-        filteredResults = applyKidsMode(results);
-    }
-    return filteredResults
-        .filter(item => (item.popularity ?? Infinity) <= 80)
-        .map(item => normalizeContentId(item.id))
-        .filter(Boolean)
-        .slice(0, limit);
+    const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
+    const results = (await fetchFallbackRows(filters, type, limit, isKidsMode))
+        .filter(item => (item.popularity ?? Infinity) <= 80);
+    return mapStableFallbackIds(results, limit, (a, b) => {
+        const scoreDelta = getNumericSortValue(b, 'vote_average') - getNumericSortValue(a, 'vote_average');
+        return scoreDelta || getNumericSortValue(b, 'vote_count') - getNumericSortValue(a, 'vote_count');
+    });
 }
 
 async function fetchTmdbSimilarCounts(seedTmdbIds, tmdbApiKey, mediaType = 'movie') {
@@ -184,10 +287,14 @@ function calculateImpressionPenalty(seenDays) {
 module.exports = {
     fetchProfileContext,
     safeTraktFetch,
+    safeTraktFetchDetailed,
     fetchRecentHistory,
     fetchRecentRatings,
     fetchTraktRecommendationsRaw,
+    fetchTraktRecommendationsRawDetailed,
     fetchPopularFallbackIds,
+    fetchTopRatedPeriodFallbackIds,
+    fetchUndiscoveredFallbackIds,
     fetchHiddenGemsFallbackIds,
     fetchTmdbSimilarCounts,
     getImpressionMap,

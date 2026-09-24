@@ -70,7 +70,7 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
 
             for (const row of rows) {
                 const mappedMeta = mapDuckDbRowToMeta(row, tmdbType === 'movie');
-                if (row.id != null) scoringMap.set(String(row.id), mappedMeta);
+                if (row.id !== null && row.id !== undefined) scoringMap.set(String(row.id), mappedMeta);
                 if (row.imdb_id) scoringMap.set(row.imdb_id, mappedMeta);
             }
         }
@@ -90,7 +90,7 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
                     if (mappedMeta.genre_ids && (!item.genre_ids || item.genre_ids.length === 0)) {
                         item.genre_ids = mappedMeta.genre_ids;
                     }
-                    if (mappedMeta.vote_count != null && !item.vote_count) {
+                    if (mappedMeta.vote_count !== null && mappedMeta.vote_count !== undefined && !item.vote_count) {
                         item.vote_count = mappedMeta.vote_count;
                     }
                     return;

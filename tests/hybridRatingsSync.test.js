@@ -50,6 +50,14 @@ const ProfileBuilder = require('../src/profile/ProfileBuilder');
 const tmdb = require('../src/clients/tmdb');
 const { getHybridCatalog } = require('../src/engines/hybridRecommendations');
 
+function cachedMovieHeroGroup(ids) {
+    const catalogs = {};
+    for (const slug of ['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered']) {
+        catalogs[`yaca_${slug}_movies`] = ids;
+    }
+    return { schemaVersion: 1, mediaType: 'movie', catalogs };
+}
+
 describe('hybrid catalog stale sync merges history and ratings', () => {
     const ORIGINAL_ENV = process.env;
 
@@ -65,7 +73,7 @@ describe('hybrid catalog stale sync merges history and ratings', () => {
     it('combines trakt history and ratings before syncing profile', async () => {
         TasteProfile.findOne.mockResolvedValue({ lastUpdated: new Date(0) });
         hybridRecommendationsCache.getWithStatus.mockResolvedValue({
-            value: { ids: ['123'] },
+            value: cachedMovieHeroGroup(['123']),
             status: 'fresh'
         });
 
