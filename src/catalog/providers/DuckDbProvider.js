@@ -129,7 +129,7 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
     if (!isTv) {
         if (q.with_crew) where.push(F.crew(q.with_crew));
     }
-    if (q.with_cast) where.push(F.actor(q.with_cast));
+    if (q.with_cast) where.push(F.actor(...String(q.with_cast).split('|').map(Number)));
     if (q.with_watch_providers) where.push(F.provider(q.with_watch_providers, q.watch_region));
     if (q.with_companies) where.push(F.company(...String(q.with_companies).split('|').map(Number)));
     if (q.with_collections) where.push(F.collections(...String(q.with_collections).split('|').map(Number)));

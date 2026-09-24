@@ -41,10 +41,12 @@ jest.mock('../src/engines/hybridRecommendations', () => ({
 const router = require('../src/ai/router');
 const TasteProfile = require('../src/models/TasteProfile');
 const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
+const { computeTopKeywords } = require('../src/engines/hybridRecommendations');
 
 describe('H9 — l\'iniezione profilo trasforma with_genres AND in OR', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        computeTopKeywords.mockReturnValue([]);
     });
 
     it('ROSSO: with_genres "35,18" (AND) deve restare AND dopo l\'iniezione dei generi del profilo', async () => {
@@ -73,5 +75,33 @@ describe('H9 — l\'iniezione profilo trasforma with_genres AND in OR', () => {
         const injected = duckCalls.map(c => c[0]).find(f => f && f.with_genres !== undefined);
         expect(injected).toBeDefined();
         expect(injected.with_genres).toContain(',');
+    });
+
+    it('le keyword esplicite AI non vengono allargate con OR alle preferenze del profilo', async () => {
+        TasteProfile.findOne.mockResolvedValue({ owner: 'u1', context: 'global' });
+        computeTopKeywords.mockReturnValue(['4565', '10051']);
+        router.routeLiveStremioSearch.mockResolvedValue({
+            filters: {
+                queries: [{
+                    strategy: 'discovery',
+                    with_keywords: '9715',
+                    _keywordNames: 'superhero'
+                }]
+            }
+        });
+        DuckDbProvider.getDuckDbCatalogFromFilters.mockResolvedValue([]);
+
+        await executeCombinedSearch(
+            'film di supereroi marvel',
+            { userId: 'u1', activeProfileId: 'global', apiKeys: { tmdb: 'k', mistral: 'm' } },
+            'movie',
+            0,
+            {},
+            {}
+        );
+
+        const executed = DuckDbProvider.getDuckDbCatalogFromFilters.mock.calls[0][0];
+        expect(executed.with_keywords).toBe('9715');
+        expect(executed.with_keywords).not.toContain('4565');
     });
 });

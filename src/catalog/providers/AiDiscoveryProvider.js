@@ -3,6 +3,7 @@ const { routeLiveStremioSearch } = require('../../ai/router');
 const { getProfileDnaFilters } = require('../../utils/helpers');
 const { interleaveMultipleResults, applyConsensusScoring } = require('../../utils/resultMerger');
 const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
+const { normalizeAiDiscoveryQueries } = require('./AiQueryNormalizer');
 const TasteProfile = require('../../models/TasteProfile');
 const ProfileScorer = require('../../profile/ProfileScorer');
 const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataHydrator');
@@ -262,14 +263,13 @@ async function injectProfilePreferences(filters, userId, profileId) {
         return Number.isFinite(id) ? [id, ...G.getEquivalentGenreIds(id)] : [];
     }))];
 
-    if (topKeywords.length > 0) {
-        if (enriched.with_keywords) {
-            const separator = enriched.with_keywords.includes(',') ? ',' : '|';
-            const existingKws = enriched.with_keywords.split(separator).map(s => s.trim()).filter(Boolean);
-            enriched.with_keywords = [...new Set([...existingKws, ...topKeywords])].join(separator);
-        } else {
-            enriched.with_keywords = topKeywords.join('|');
-        }
+    // Le keyword del profilo sono un fallback di personalizzazione, non un
+    // sostituto del tema esplicito chiesto dall'utente. Se la discovery ha già
+    // una keyword/cast risolto, accodare i ID del profilo con OR trasformerebbe
+    // "superhero" in qualunque film del DNA e ricreerebbe il catalogo generico.
+    const hasExplicitNameFilter = Boolean(enriched._keywordNames || enriched.with_keywords || enriched.with_cast);
+    if (topKeywords.length > 0 && !hasExplicitNameFilter) {
+        enriched.with_keywords = topKeywords.join('|');
     }
 
     if (alignedTopGenres.length > 0) {
@@ -326,13 +326,21 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
         console.error("Errore AI Search (Mistral down):", e.message);
     }
 
+    // Boundary unico dello schema planner → schema DuckDB. La risoluzione dei
+    // nomi può scartare una discovery irrisolvibile; in quel caso non deve
+    // degenerare silenziosamente nel catalogo popolare generico.
+    if (plannedQueries.length > 0) {
+        plannedQueries = await normalizeAiDiscoveryQueries(plannedQueries, { type, tmdbClient });
+    }
+
     if (plannedQueries.length === 0) {
-        // Senza un piano Mistral non fingiamo una ricerca semantica: il fallback
-        // dichiara esplicitamente una ricerca lessicale stretta sui titoli. Il
-        // provider applica BM25, copertura di tutti i termini e boost esatto.
+        // Senza un piano Mistral (o senza nomi risolvibili) non fingiamo una
+        // ricerca semantica: il fallback dichiara esplicitamente una ricerca
+        // lessicale stretta sui titoli. Il provider applica BM25, copertura di
+        // tutti i termini e boost esatto.
         usingLexicalFallback = true;
         plannedQueries = [{ strategy: 'lexical_search', text_search: search, target: 'tmdb' }];
-        console.info(`[AiDiscoveryProvider] Router AI non disponibile: fallback lessicale stretto per "${search}".`);
+        console.info(`[AiDiscoveryProvider] Router AI non disponibile o query non risolvibile: fallback lessicale stretto per "${search}".`);
     }
 
     const enrichedQueries = usingLexicalFallback

@@ -44,7 +44,7 @@ const F = {
     
     // --- Persone ---
     director: (id) => jsonHas('directors', id),
-    actor: (id) => jsonHas('cast', id),
+    actor: (...ids) => `(${ids.map(id => jsonHas('cast', id)).join(' OR ')})`,
     crew: (id) => `(${jsonHas('directors', id)} OR ${jsonHas('writers', id)})`,
     company: (...ids) => `(${ids.map(id => jsonHas('production_companies', id)).join(' OR ')})`,
     network: (...ids) => `(${ids.map(id => jsonHas('networks', id)).join(' OR ')})`,

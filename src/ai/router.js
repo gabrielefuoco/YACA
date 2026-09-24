@@ -11,11 +11,15 @@ const { aiPromptCache } = require('../cache/cacheInstances');
  * Valida la struttura per difendersi da prompt injection.
  */
 const ALLOWED_AI_FIELDS = new Set([
-    'strategy', 'similar_to', 'text_search', 'genre_ids', 'people_list',
+    'strategy', 'similar_to', 'text_search', 'genre_ids', 'without_genre_ids', 'people_list',
     'year_from', 'year_to', 'runtime_lte', 'company_name', 'watch_provider',
-    'keyword', 'original_language', 'language', 'target', 'static_items'
+    'keyword', 'without_keyword', 'original_language', 'language', 'target', 'static_items',
+    'sort_by', 'vote_average_gte', 'vote_average_lte'
 ]);
 const ALLOWED_STRATEGIES = new Set(['discovery', 'multi_search', 'similar', 'static_list']);
+const ALLOWED_SORT_BY = new Set([
+    'popularity.desc', 'revenue.desc', 'primary_release_date.desc', 'vote_average.desc'
+]);
 const ALLOWED_TARGETS = new Set(['tmdb', 'kitsu', 'trakt']);
 
 function sanitizeSingleQuery(parsed, fallbackPrompt) {
@@ -41,8 +45,22 @@ function sanitizeSingleQuery(parsed, fallbackPrompt) {
     if (clean.genre_ids && (!Array.isArray(clean.genre_ids) || !clean.genre_ids.every(id => Number.isInteger(id)))) {
         delete clean.genre_ids;
     }
+    if (clean.without_genre_ids && (!Array.isArray(clean.without_genre_ids) || !clean.without_genre_ids.every(id => Number.isInteger(id)))) {
+        delete clean.without_genre_ids;
+    }
     if (clean.people_list && (!Array.isArray(clean.people_list) || !clean.people_list.every(p => typeof p === 'string'))) {
         delete clean.people_list;
+    }
+    if (clean.without_keyword && typeof clean.without_keyword !== 'string') {
+        delete clean.without_keyword;
+    }
+    if (clean.sort_by && !ALLOWED_SORT_BY.has(clean.sort_by)) {
+        delete clean.sort_by;
+    }
+    for (const field of ['vote_average_gte', 'vote_average_lte']) {
+        if (clean[field] !== undefined && !Number.isFinite(Number(clean[field]))) {
+            delete clean[field];
+        }
     }
     if (!clean.target) {
         clean.target = 'tmdb';
