@@ -39,47 +39,81 @@ const ADULT_GENRE_IDS = [
 const ADULT_GENRE_SET = new Set(ADULT_GENRE_IDS.split(',').map(Number));
 const ADULT_KEYWORD_SET = new Set(ADULT_KEYWORD_IDS.split(',').map(Number));
 
+function isRestrictedCertification(value) {
+    if (value === undefined || value === null) return false;
+    const normalized = String(value).trim().toUpperCase();
+    if (!normalized) return false;
+    if (['TV-MA', 'NC-17', 'R', 'X'].includes(normalized)) return true;
+    return /(?:^|[^0-9])(1[4-9])(?:[^0-9]|$)/.test(normalized);
+}
+
+function hasRestrictedCertification(data) {
+    if (isRestrictedCertification(data.content_rating) || isRestrictedCertification(data.certification)) {
+        return true;
+    }
+
+    const releaseCountries = data.release_dates?.results;
+    if (!Array.isArray(releaseCountries)) return false;
+    return releaseCountries.some(country => {
+        const releases = country?.release_dates;
+        return Array.isArray(releases)
+            && releases.some(release => isRestrictedCertification(release?.certification));
+    });
+}
+
 /**
  * Checks if a given item (meta, TMDB object, DuckDB row) is inappropriate for kids.
  * @param {Object} item
  * @returns {boolean} true if inappropriate, false if family-safe
  */
 function isItemInappropriateForKids(item) {
-    if (!item) return false;
+    // Unknown content is unsafe in kids mode. Returning true here is intentional:
+    // a missing TMDB row or incomplete metadata must fail closed.
+    if (!item) return true;
     const data = item.rawTMDB || item.data || item;
 
-    // 1. Check genres
+    // The dump may carry an Italian/US certification even when discovery could
+    // not use certification_lte (which is too lossy across missing countries).
+    if (hasRestrictedCertification(data)) return true;
+
+    // 1. Check genres and remember whether this safety signal is actually present.
     const rawGenres = data.genre_ids || data.genres || [];
-    const genreIds = Array.isArray(rawGenres)
-        ? rawGenres.map(g => (typeof g === 'object' && g !== null ? g.id : g))
+    const genreSource = Array.isArray(rawGenres)
+        ? rawGenres
         : (typeof rawGenres === 'string' ? rawGenres.split(/[,|]/) : [rawGenres]);
+    const genreIds = genreSource
+        .map(g => (typeof g === 'object' && g !== null ? g.id : g))
+        .map(Number)
+        .filter(id => Number.isFinite(id) && id > 0);
+    const hasGenreMetadata = genreIds.length > 0;
 
     for (const gid of genreIds) {
-        const num = Number(gid);
-        if (!isNaN(num) && ADULT_GENRE_SET.has(num)) {
-            return true;
-        }
+        if (ADULT_GENRE_SET.has(gid)) return true;
     }
 
-    // 2. Check keywords
+    // 2. Check keywords and apply the same fail-closed rule to that signal.
     const kwSource = Array.isArray(data.keywords)
         ? data.keywords
-        : (Array.isArray(data.keywords?.results) && data.keywords.results.length > 0
-            ? data.keywords.results
-            : (data.keywords?.keywords || data.keywords || []));
+        : (data.keywords && typeof data.keywords === 'object'
+            ? (data.keywords.results ?? data.keywords.keywords ?? [])
+            : data.keywords);
     const kwItems = Array.isArray(kwSource)
         ? kwSource
         : (typeof kwSource === 'string' ? kwSource.split(/[,|]/) : []);
+    const keywordIds = kwItems
+        .map(k => (typeof k === 'object' && k !== null ? k.id : k))
+        .map(Number)
+        .filter(id => Number.isFinite(id) && id > 0);
+    const hasKeywordMetadata = keywordIds.length > 0;
 
-    for (const k of kwItems) {
-        const kid = typeof k === 'object' && k !== null ? k.id : k;
-        const num = Number(kid);
-        if (!isNaN(num) && ADULT_KEYWORD_SET.has(num)) {
-            return true;
-        }
+    for (const kid of keywordIds) {
+        if (ADULT_KEYWORD_SET.has(kid)) return true;
     }
 
-    return false;
+    // At least one recognized safety signal is required. This prevents a bare
+    // title/poster from bypassing the hard filter while keeping valid catalog
+    // rows whose provider supplies genres but no keyword list.
+    return !hasGenreMetadata && !hasKeywordMetadata;
 }
 
 /**
@@ -98,7 +132,9 @@ function applyKidsMode(paramsOrItems) {
 
     const safeParams = { ...paramsOrItems };
     
-    // 1. Omitted certification_lte/country because it aggressively filters out 99% of non-US content (like Anime) that lacks a formal US rating, causing fallback triggering. We rely on strict keyword/genre blocking instead.
+    // 1. certification_lte/country is omitted because it aggressively filters out
+    // non-US content (like Anime) that lacks a formal US rating. When a concrete
+    // certification is already present, the post-fetch guard above still blocks it.
 
     // 2. Block sensitive genres
     if (safeParams.without_genres) {
