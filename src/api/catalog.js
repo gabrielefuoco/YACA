@@ -121,7 +121,7 @@ router.post('/preview-catalog', async (req, res) => {
                 });
             }
 
-            const aiType = customType === 'series' || aiFilters.target === 'kitsu' ? 'series' : 'movie';
+            const aiType = customType === 'series' ? 'series' : 'movie';
             discoverType = aiType === 'series' ? 'tv' : 'movie';
             strategy = aiFilters.strategy || 'discovery';
             let originalAiKeywords = null;
@@ -132,6 +132,7 @@ router.post('/preview-catalog', async (req, res) => {
                     if (q.strategy === 'discovery') {
                         const qKeywords = q.keyword || null;
                         const tmdbParams = { ...q };
+                        if (tmdbParams.provider === 'kitsu') tmdbParams.provider = 'tmdb';
                         if (qKeywords) tmdbParams._keywordNames = qKeywords;
                         return tmdbParams;
                     }
@@ -142,6 +143,7 @@ router.post('/preview-catalog', async (req, res) => {
                 // Single query processing
                 originalAiKeywords = aiFilters.keyword || null;
                 discoverFilters = { ...aiFilters };
+                if (discoverFilters.provider === 'kitsu') discoverFilters.provider = 'tmdb';
                 if (originalAiKeywords) discoverFilters._keywordNames = originalAiKeywords;
             }
         } else if (customFilters) {
@@ -166,6 +168,8 @@ router.post('/preview-catalog', async (req, res) => {
                 if (allowedFilterKeys.includes(key) && value !== undefined && value !== '') {
                     if (key === 'queries' || key === 'items') {
                         discoverFilters[key] = value;
+                    } else if (key === 'provider' && value === 'kitsu') {
+                        discoverFilters[key] = 'tmdb';
                     } else if (typeof value === 'string') {
                         discoverFilters[key] = sanitizeString(value);
                     } else if (typeof value === 'number') {

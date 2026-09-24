@@ -94,7 +94,7 @@ Return exactly one JSON object describing the best TMDB query or a static recomm
   "without_keyword": "string" | null,
   "certification_lte": "PG-13" | "R" | null,
   "runtime_gte": 180 | null,
-  "target": "tmdb" | "kitsu" | "trakt"
+  "target": "tmdb" | "trakt"
 }`,
     multi_query: `### TASK:
 Act as a Query Planner. Return a JSON object with a "queries" array or a static list.

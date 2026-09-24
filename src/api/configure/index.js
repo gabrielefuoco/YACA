@@ -1,5 +1,5 @@
 const UserConfig = require('../../models/UserConfig');
-const { validateAuth, validateKeys } = require('./validators');
+const { validateAuth, validateKeys, sanitizeCustomCatalogs } = require('./validators');
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');
 const { updateStremioAddonCollection } = require('../../utils/stremioAddon');
 
@@ -87,7 +87,7 @@ module.exports = async (req, res) => {
 
         if (hasApiKeys) updateData.apiKeys = apiKeys;
         if (parsedProfiles !== undefined) updateData.profiles = parsedProfiles;
-        if (customCatalogs !== undefined) updateData.customCatalogs = customCatalogs;
+        if (customCatalogs !== undefined) updateData.customCatalogs = sanitizeCustomCatalogs(customCatalogs);
         if (stremioEmail) updateData.email = stremioEmail;
 
         // saveUser now handles both UserAccount + AddonConfig (Two-Table Split)
