@@ -203,7 +203,7 @@ const getPresets = () => {
         // --- 🎭 GENERI & TEMATICHE (Formati) ---
         // =============================================
         { id: 'preset_miniseries', name: 'Miniserie di Qualità', emoji: '📺', category: "🕵️ Crimine, Mistero & Thriller", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: TMDB_GENRES.TV.Drama, with_keywords: '11162', with_status: 'Ended', 'number_of_seasons.lte': 1, 'number_of_episodes.lte': 10, sort_by: 'vote_average.desc', 'vote_count.gte': 100, without_keywords: '210024|324571' }] },
-        { id: 'preset_anthology', name: 'Serie Antologiche', emoji: '📦', category: "🕵️ Crimine, Mistero & Thriller", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_keywords: '9706', sort_by: 'popularity.desc', 'vote_count.gte': 5, without_keywords: '210024' }] },
+        { id: 'preset_anthology', name: 'Serie Antologiche', emoji: '📦', category: "🕵️ Crimine, Mistero & Thriller", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_keywords: '9706|337325|250593|367455|362566|362620', without_genres: TMDB_GENRES.TV.Soap, sort_by: 'popularity.desc', 'vote_count.gte': 5, without_keywords: '210024|1157' }] },
         { id: 'preset_sketch_comedy', name: 'Sketch Comedy', emoji: '😂', category: "🍿 Serata Leggera & Risate", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: TMDB_GENRES.TV.Comedy, with_keywords: '156203', sort_by: 'popularity.desc', 'vote_count.gte': 5, without_keywords: '210024' }] },
 
         // =============================================
