@@ -274,7 +274,7 @@ const getPresets = () => {
         { id: 'preset_giant_monsters', name: 'Squali & Mostri Giganti', emoji: '🦖', category: "👻 Brivido & Paura", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_keywords: '11100', sort_by: 'popularity.desc', 'vote_count.gte': 50 }] },
         { id: 'preset_slapstick_comedy', name: 'Commedia Demenziale', emoji: '😂', category: "🍿 Serata Leggera & Risate", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_genres: 35, with_keywords: '364753|9253|11931|9755', sort_by: 'popularity.desc', 'vote_count.gte': 100 }] },
         { id: 'preset_extreme_survival', name: 'Sopravvivenza Estrema', emoji: '🏕️', category: "💥 Adrenalina & Avventura", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_keywords: '10349', sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
-        { id: 'preset_sports_underdog', name: 'Storie di Sport & Riscatto', emoji: '⚽', category: "💥 Adrenalina & Avventura", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_keywords: '6075|10505|22822', with_genres: 18, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
+        { id: 'preset_sports_underdog', name: 'Storie di Sport & Riscatto', emoji: '⚽', category: "💥 Adrenalina & Avventura", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_keywords: '240,6075', with_genres: TMDB_GENRES.MOVIE.Drama, sort_by: 'vote_average.desc', 'vote_count.gte': 20 }] },
 
         // =============================================
         // --- 📺 NETWORKS & PIATTAFORME ---
