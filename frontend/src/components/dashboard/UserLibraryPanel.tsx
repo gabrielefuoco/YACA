@@ -122,12 +122,22 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
 
   // Deduplica difensiva per evitare chiavi duplicate e render multipli
   const uniqueItems = Array.from(
-    items.reduce((map, item) => {
+    items.reduce<Map<string, any>>((map, item) => {
       const key = item._id || item.itemId;
       if (key && !map.has(key)) map.set(key, item);
       return map;
     }, new Map<string, any>()).values()
   );
+
+  // I poster possono essere: URL assoluti (nostri o TMDB), path relativi alle nostre
+  // route (/images/..., /api/...) oppure path TMDB (`/abc.jpg`): solo quest'ultimo va
+  // completato con la base di TMDB, altrimenti l'immagine non carica (placeholder).
+  const resolvePosterSrc = (poster?: string | null): string | null => {
+    if (!poster) return null;
+    if (poster.startsWith('http')) return poster;
+    if (poster.startsWith('/images/') || poster.startsWith('/api/')) return poster;
+    return poster.startsWith('/') ? `https://image.tmdb.org/t/p/w500${poster}` : poster;
+  };
 
   const sortedItems = [...uniqueItems].sort((a, b) => {
     if (sortMode === 'name_asc') return (a.name || '').localeCompare(b.name || '');
@@ -278,10 +288,10 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
                   ${isSelected ? 'ring-4 ring-primary shadow-lg shadow-primary/20 scale-[0.98]' : 'shadow-md'}
                 `}
               >
-                {item.poster ? (
+                {resolvePosterSrc(item.poster) ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={item.poster.startsWith('http') ? item.poster : `https://image.tmdb.org/t/p/w500${item.poster}`}
+                    src={resolvePosterSrc(item.poster) as string}
                     alt={item.name}
                     className="w-full h-full object-cover"
                   />
