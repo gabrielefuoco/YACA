@@ -211,6 +211,7 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
                 id: '1396',
                 name: 'Breaking Bad',
                 first_air_date: '2008-01-20',
+                last_air_date: '2013-09-29',
                 vote_average: 8.9,
                 vote_count: 12000,
                 popularity: 150

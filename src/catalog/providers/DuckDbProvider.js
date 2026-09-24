@@ -259,7 +259,7 @@ function mapDuckDbRowToMeta(item, isMovie = true) {
         rawTMDB.release_dates = { results: [{ iso_3166_1: 'IT', release_dates: [{ certification: item.content_rating }] }] };
     }
 
-    const d = item.release_date || item.last_air_date || item.first_air_date || '';
+    const d = item.release_date || item.first_air_date || item.last_air_date || '';
     const dateStr = d instanceof Date ? d.toISOString() : String(d);
 
     return {
