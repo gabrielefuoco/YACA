@@ -9,6 +9,7 @@ const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const LibraryConverterService = require('../services/LibraryConverterService');
 const UserLibraryItem = require('../db/models/UserLibraryItem');
 const { funnelMatchmakerSession, initMatchmakerSession, analyzeMatchmakerSession, finishMatchmakerSession, getMatchmakerTrailer } = require('../handlers/matchmakerHandler');
+const { sanitizeDnaVector } = require('../data/keywordIds');
 
 /**
  * POST /api/profiles/:id/convert-library
@@ -290,16 +291,20 @@ router.post('/:id/sync-vectors', async (req, res) => {
         return res.status(400).json({ error: `Invalid V_final keys: ${invalidKeys.slice(0, 5).join(', ')}` });
     }
 
+    // Rimuove keyword TMDB ritirati prima del salvataggio e rinormalizza
+    // i pesi residui, senza alterare il documento legacy su Atlas.
+    const sanitizedVFinal = sanitizeDnaVector(V_final);
+
     // Size guard: reject unreasonably large payloads
-    const keyCount = Object.keys(V_final).length;
+    const keyCount = Object.keys(sanitizedVFinal).length;
     if (keyCount > 500) {
         return res.status(400).json({ error: `V_final too large (${keyCount} keys, max 500)` });
     }
 
     // Sanitize: only allow known sub-vectors through
-    const sanitized = { V_final };
-    if (V_active && typeof V_active === 'object' && !Array.isArray(V_active)) sanitized.V_active = V_active;
-    if (V_static && typeof V_static === 'object' && !Array.isArray(V_static)) sanitized.V_static = V_static;
+    const sanitized = { V_final: sanitizedVFinal };
+    if (V_active && typeof V_active === 'object' && !Array.isArray(V_active)) sanitized.V_active = sanitizeDnaVector(V_active);
+    if (V_static && typeof V_static === 'object' && !Array.isArray(V_static)) sanitized.V_static = sanitizeDnaVector(V_static);
 
     try {
         const updateFields = {

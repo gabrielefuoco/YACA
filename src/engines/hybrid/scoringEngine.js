@@ -1,5 +1,6 @@
 const { getProfileDnaFilters } = require('../../utils/helpers');
 const { G } = require('../../data/filters');
+const { isRetiredTmdbKeywordId } = require('../../data/keywordIds');
 
 function extractVectorByPrefix(vFinal, prefix) {
     if (!vFinal || typeof vFinal !== 'object') return {};
@@ -18,11 +19,17 @@ function computeTopElements(profile, prefix, filterType, n = 5, user = null, con
     const vFinal = profile?.compiledVectors?.V_final;
     if (vFinal && Object.keys(vFinal).length > 0) {
         scores = extractVectorByPrefix(vFinal, prefix);
+        if (filterType === 'keyword') {
+            Object.keys(scores).forEach(id => {
+                if (isRetiredTmdbKeywordId(id)) delete scores[id];
+            });
+        }
     }
     
     const dnaFilters = getProfileDnaFilters(user, context);
     dnaFilters.filter(f => f.type === filterType).forEach(f => {
         const id = String(f.id);
+        if (filterType === 'keyword' && isRetiredTmdbKeywordId(id)) return;
         if (!scores[id]) scores[id] = 100;
         else scores[id] += 50;
     });

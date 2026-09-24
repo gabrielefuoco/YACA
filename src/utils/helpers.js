@@ -1,3 +1,5 @@
+const { isRetiredTmdbKeywordId } = require('../data/keywordIds');
+
 /**
  * Parsa i parametri "extra" stile Stremio (es. "search=avengers&skip=20")
  */
@@ -60,6 +62,7 @@ function getProfileDnaFilters(userConfig, profileId) {
     const seen = new Set();
     return orderedDna.filter((item) => {
         if (!item?.type || item?.id === undefined || item?.id === null) return false;
+        if (item.type === 'keyword' && isRetiredTmdbKeywordId(item.id)) return false;
         const key = `${item.type}:${String(item.id)}`;
         if (seen.has(key)) return false;
         seen.add(key);

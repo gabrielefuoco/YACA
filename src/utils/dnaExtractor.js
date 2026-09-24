@@ -1,3 +1,5 @@
+const { isRetiredTmdbKeywordId } = require('../data/keywordIds');
+
 function extractStaticDNAFromQueries(queries) {
     const V_static = {};
     const baseWeight = 100; // Peso fisso per le intenzioni iniziali
@@ -13,7 +15,10 @@ function extractStaticDNAFromQueries(queries) {
             });
         }
         if (query.with_keywords) {
-            const kwIds = query.with_keywords.toString().split(/[,|]/).map(id => id.trim()).filter(Boolean);
+            const kwIds = query.with_keywords.toString()
+                .split(/[,|]/)
+                .map(id => id.trim())
+                .filter(id => id && !isRetiredTmdbKeywordId(id));
             const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
             const hVector = HierarchicalGraph.vectorizeKeywords(kwIds);
             for (const [k, weight] of Object.entries(hVector)) {
@@ -88,8 +93,9 @@ function extractActiveDNAFromTmdbData(tmdbData, baseWeight = 100) {
     genreIds.forEach(id => addKey('g', id));
 
     // Keyword (Gerarchiche tramite HierarchicalGraph)
-    const keywordIds = tmdbData.keyword_ids || 
-        (tmdbData.keywords?.keywords || tmdbData.keywords?.results || []).map(k => k.id);
+    const keywordIds = (tmdbData.keyword_ids ||
+        (tmdbData.keywords?.keywords || tmdbData.keywords?.results || []).map(k => k.id))
+        .filter(id => !isRetiredTmdbKeywordId(id));
     
     const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
     const hVector = HierarchicalGraph.vectorizeKeywords(keywordIds);

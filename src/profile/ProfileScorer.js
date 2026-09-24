@@ -11,6 +11,7 @@ const NICHE_MAX_VOTE_BONUS = 2.5;
 
 const { isItemInappropriateForKids } = require('../utils/kidsModeFilters');
 const { G } = require('../data/filters');
+const { isRetiredTmdbKeywordId, filterRetiredTmdbKeywords, sanitizeDnaVector } = require('../data/keywordIds');
 
 function clampScore(value) {
     return Math.min(Math.max(value, 0), 10);
@@ -59,6 +60,7 @@ class ProfileScorer {
     static getVectorScore(vector, prefix, id) {
         if (!vector) return 0;
         const normId = this.normalizeDnaId(id);
+        if (prefix === 'k' && isRetiredTmdbKeywordId(normId)) return 0;
         const direct = vector[`${prefix}:${normId}`];
         if (direct !== undefined) return direct;
         if (prefix === 'g') {
@@ -89,16 +91,18 @@ class ProfileScorer {
             }
         }
 
-        const keywordItems = Array.isArray(tmdbData.keywords)
-            ? tmdbData.keywords
-            : (tmdbData.keywords?.keywords || tmdbData.keywords?.results || []);
+        const keywordItems = filterRetiredTmdbKeywords(
+            Array.isArray(tmdbData.keywords)
+                ? tmdbData.keywords
+                : (tmdbData.keywords?.keywords || tmdbData.keywords?.results || [])
+        );
         const keywordIds = keywordItems.map((k) => this.normalizeDnaId(typeof k === 'object' && k !== null ? (k.id || k.name) : k));
 
         const hasGenreMatch = dnaFilters.some(
             (f) => f.type === 'genre' && genreIdSet.has(this.normalizeDnaId(f.id))
         );
         const hasKeywordMatch = dnaFilters.some(
-            (f) => f.type === 'keyword' && keywordIds.includes(this.normalizeDnaId(f.id))
+            (f) => f.type === 'keyword' && !isRetiredTmdbKeywordId(f.id) && keywordIds.includes(this.normalizeDnaId(f.id))
         );
 
         return hasGenreMatch || hasKeywordMatch ? 1.0 : 0.1;
@@ -112,7 +116,7 @@ class ProfileScorer {
         const tmdbWeight = context.tmdbWeight ?? profile.tmdbWeight ?? 1.0;
         const traktWeight = context.traktWeight ?? profile.traktWeight ?? 1.0;
 
-        const vFinal = profile.compiledVectors?.V_final || {};
+        const vFinal = sanitizeDnaVector(profile.compiledVectors?.V_final || {});
         let thematicScore = 0;
         let authorialScore = 0;
 
@@ -129,9 +133,11 @@ class ProfileScorer {
         });
 
         // Keywords (VSM Gerarchico: L1, L2, L3)
-        const keywordItems = Array.isArray(tmdbData.keywords)
-            ? tmdbData.keywords
-            : (tmdbData.keywords?.keywords || tmdbData.keywords?.results || []);
+        const keywordItems = filterRetiredTmdbKeywords(
+            Array.isArray(tmdbData.keywords)
+                ? tmdbData.keywords
+                : (tmdbData.keywords?.keywords || tmdbData.keywords?.results || [])
+        );
         const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
         const hVector = HierarchicalGraph.vectorizeKeywords(keywordItems);
         
@@ -293,7 +299,7 @@ class ProfileScorer {
         if (kidsMode && this.isItemInappropriateForKids(lightData)) return -9999;
 
         // Genre match score
-        const vFinal = profile.compiledVectors?.V_final || {};
+        const vFinal = sanitizeDnaVector(profile.compiledVectors?.V_final || {});
         let genreScore = 0;
         let unalignedGenres = 0;
         const genreIds = lightData.genre_ids || [];
@@ -306,9 +312,11 @@ class ProfileScorer {
         });
 
         // Keywords (VSM Gerarchico: L1, L2, L3)
-        const keywordItems = Array.isArray(lightData.keywords)
-            ? lightData.keywords
-            : (lightData.keywords?.keywords || lightData.keywords?.results || []);
+        const keywordItems = filterRetiredTmdbKeywords(
+            Array.isArray(lightData.keywords)
+                ? lightData.keywords
+                : (lightData.keywords?.keywords || lightData.keywords?.results || [])
+        );
         let keywordScore = 0;
         const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
         const hVector = HierarchicalGraph.vectorizeKeywords(keywordItems);
