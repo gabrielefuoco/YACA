@@ -3,6 +3,7 @@ const { getPresets } = require('../../data/presets');
 const TasteProfile = require('../../models/TasteProfile');
 const { extractStaticDNAFromQueries } = require('../../utils/dnaExtractor');
 const { createTmdbClient } = require('../../clients/tmdb');
+const { sanitizeCustomCatalogs } = require('./validators');
 
 /**
  * TMDB genre ID → Italian name lookup.
@@ -129,7 +130,7 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
         const profile = {
             id: input.id || nanoid(8),
             name: isGlobal ? 'Generale' : (input.name || 'Nuovo Profilo'),
-            catalogs: Array.isArray(input.existingCatalogs) ? [...input.existingCatalogs] : [],
+            catalogs: Array.isArray(input.existingCatalogs) ? sanitizeCustomCatalogs(input.existingCatalogs) : [],
             raw_ui_state: {
                 selectedPresets: Array.isArray(input.selectedPresets) ? [...new Set(input.selectedPresets)] : [],
                 catalogOrder: Array.isArray(input.catalogOrder) ? [...new Set(input.catalogOrder)] : [],

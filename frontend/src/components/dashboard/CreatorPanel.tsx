@@ -16,43 +16,6 @@ import { generateId } from '@/lib/utils';
 
 const MAX_AI_CATALOG_NAME_LENGTH = 30;
 
-const KITSU_CATEGORIES = [
-  { value: 'action', label: 'Action (Azione)' },
-  { value: 'adventure', label: 'Adventure (Avventura)' },
-  { value: 'comedy', label: 'Comedy (Commedia)' },
-  { value: 'drama', label: 'Drama (Dramma)' },
-  { value: 'fantasy', label: 'Fantasy (Fantasy)' },
-  { value: 'romance', label: 'Romance (Romantico)' },
-  { value: 'sci-fi', label: 'Sci-Fi (Fantascienza)' },
-  { value: 'slice-of-life', label: 'Slice of Life' },
-  { value: 'supernatural', label: 'Supernatural (Soprannaturale)' },
-  { value: 'mystery', label: 'Mystery (Mistero)' },
-  { value: 'psychological', label: 'Psychological (Psicologico)' },
-  { value: 'thriller', label: 'Thriller (Thriller)' },
-  { value: 'horror', label: 'Horror (Horror)' },
-  { value: 'mecha', label: 'Mecha' },
-  { value: 'sports', label: 'Sports (Sport)' },
-  { value: 'music', label: 'Music (Musica)' },
-  { value: 'historical', label: 'Historical (Storico)' },
-  { value: 'shoujo', label: 'Shoujo' },
-  { value: 'shounen', label: 'Shounen' },
-  { value: 'seinen', label: 'Seinen' },
-  { value: 'josei', label: 'Josei' },
-  { value: 'cyberpunk', label: 'Cyberpunk' },
-  { value: 'martial-arts', label: 'Martial Arts (Arti Marziali)' },
-  { value: 'space', label: 'Space (Spaziale)' },
-  { value: 'super-power', label: 'Super Power (Superpoteri)' },
-  { value: 'military', label: 'Military (Militare)' },
-  { value: 'school', label: 'School (Scolastico)' },
-  { value: 'parody', label: 'Parody (Parodia)' },
-  { value: 'demons', label: 'Demons (Demoni)' },
-  { value: 'magic', label: 'Magic (Magia)' },
-  { value: 'game', label: 'Game (Gioco)' },
-  { value: 'kids', label: 'Kids (Bambini)' },
-  { value: 'isekai', label: 'Isekai' },
-  { value: 'post-apocalyptic', label: 'Post-Apocalyptic' }
-];
-
 interface CreatorPanelProps {
   onAddCatalog: (catalog: Catalog) => void;
   editCatalog?: Catalog;
@@ -66,7 +29,7 @@ interface SelectedItem {
 
 interface BlockState {
   id: string;
-  provider: 'tmdb' | 'kitsu';
+  provider: 'tmdb';
   strategy: 'discovery' | 'multi_search' | 'similar' | 'ai' | 'static_list' | 'manual_list';
   aiPrompt?: string;
   aiLoading?: boolean;
@@ -194,7 +157,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
 
     return {
       id: generateId(),
-      provider: (f.provider as 'tmdb' | 'kitsu') || 'tmdb',
+      provider: 'tmdb',
       strategy: (f.strategy as BlockState['strategy']) || 'discovery',
       similarTo: (f.similar_to as string) || '',
       textSearch: (f.text_search as string) || '',
@@ -376,10 +339,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       ...(block.strategy === 'manual_list' && block.manualItems && { items: block.manualItems }),
     };
 
-    if (block.keywordNames && block.provider === 'kitsu') {
-      q._keywordNames = block.keywordNames;
-    }
-
     return q;
   };
 
@@ -530,24 +489,9 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 <button
                   type="button"
                   onClick={(e) => { e.preventDefault(); updateBlock(block.id, { provider: 'tmdb' }); }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
-                    block.provider === 'tmdb' || !block.provider
-                    ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
-                    : 'bg-white/60 border-marrow-light/10 text-marrow-light hover:text-primary hover:border-primary/30'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border bg-primary border-primary text-white shadow-md shadow-primary/20"
                 >
                   TMDB (Film & Serie)
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); updateBlock(block.id, { provider: 'kitsu' }); }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
-                    block.provider === 'kitsu'
-                    ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
-                    : 'bg-white/60 border-marrow-light/10 text-marrow-light hover:text-primary hover:border-primary/30'
-                  }`}
-                >
-                  Kitsu (Solo Anime)
                 </button>
               </div>
             </div>
@@ -769,7 +713,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
             </summary>
             <div className="mt-4 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <div className={block.provider === 'kitsu' ? 'col-span-2' : ''}>
+                <div>
                   <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Ordina per</Label>
                   <Select value={block.sortBy} onValueChange={(v) => updateBlock(block.id, { sortBy: v })}>
                     <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-base sm:text-xs">
@@ -782,7 +726,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                     </SelectContent>
                   </Select>
                 </div>
-                {block.provider !== 'kitsu' && (
                 <div>
                   <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Lingua originale</Label>
                   <Select value={block.language || '__any'} onValueChange={(v) => updateBlock(block.id, { language: v === '__any' ? '' : v })}>
@@ -796,7 +739,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                     </SelectContent>
                   </Select>
                 </div>
-                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -825,7 +767,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 </div>
               </div>
 
-              {block.provider !== 'kitsu' && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Durata min (min)</Label>
@@ -836,7 +777,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                   <Input value={block.runtimeLte} onChange={(e) => updateBlock(block.id, { runtimeLte: e.target.value })} placeholder="es. 180" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm" type="number" min="0" max="400" />
                 </div>
               </div>
-              )}
 
               <div>
                 <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Censura (Fino a)</Label>
@@ -857,72 +797,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
             </div>
           </details>
 
-          {/* Kitsu Specific Categories */}
-          {block.provider === 'kitsu' && block.strategy === 'discovery' && (
-            <div className="mt-4 border-t border-marrow-light/10 pt-4">
-              <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px] block mb-1">
-                Seleziona Categorie Kitsu
-              </Label>
-              <Select
-                value=""
-                onValueChange={(val) => {
-                  if (!val) return;
-                  const currentKws = block.keywordNames
-                    ? block.keywordNames.split(',').map(k => k.trim()).filter(Boolean)
-                    : [];
-                  if (!currentKws.includes(val)) {
-                    const newKws = [...currentKws, val].join(', ');
-                    updateBlock(block.id, { keywordNames: newKws });
-                  }
-                }}
-              >
-                <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-base sm:text-xs">
-                  <SelectValue placeholder="Scegli categorie anime..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-[250px] bg-white border border-marrow-light/10 text-marrow-deep font-bold">
-                  {KITSU_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Render selected categories as badges */}
-              {block.keywordNames && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {block.keywordNames.split(',').map(k => k.trim()).filter(Boolean).map((catName) => {
-                    const foundCat = KITSU_CATEGORIES.find(c => c.value === catName);
-                    const displayLabel = foundCat ? foundCat.label : catName;
-                    return (
-                      <span
-                        key={catName}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-marrow-cream/80 text-marrow-deep border border-marrow-light/10 text-xs font-black uppercase tracking-wider shadow-sm"
-                      >
-                        {displayLabel}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const currentKws = block.keywordNames
-                              ? block.keywordNames.split(',').map(k => k.trim()).filter(Boolean)
-                              : [];
-                            const newKws = currentKws.filter(x => x !== catName).join(', ');
-                            updateBlock(block.id, { keywordNames: newKws });
-                          }}
-                          className="text-marrow-light hover:text-marrow-deep transition-colors ml-1 font-bold text-[10px]"
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Genres (TMDB only) */}
-          {block.provider === 'tmdb' && (
+          {/* Genres */}
           <details className="group [&_summary::-webkit-details-marker]:hidden">
             <summary className="flex cursor-pointer items-center justify-between font-black text-[10px] text-marrow-light select-none uppercase tracking-widest">
               Generi {block.genres.length > 0 && <span className="text-[10px] font-normal normal-case text-primary ml-2">({block.genres.length} selezionati)</span>}
@@ -961,10 +836,8 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               </div>
             </div>
           </details>
-          )}
 
-          {/* Keywords & Staff (TMDB only) */}
-          {block.provider === 'tmdb' && (
+          {/* Keywords & Staff */}
           <details className="group [&_summary::-webkit-details-marker]:hidden">
             <summary className="flex cursor-pointer items-center justify-between font-black text-[10px] text-marrow-light select-none uppercase tracking-widest">
               Parole Chiave & Staff {(block.keywords.length + block.cast.length + block.crew.length) > 0 && <span className="text-[10px] font-normal normal-case text-primary ml-2">({block.keywords.length + block.cast.length + block.crew.length} selezionati)</span>}
@@ -1012,7 +885,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               </div>
             </div>
           </details>
-          )}
           </>
           )}
 

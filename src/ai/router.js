@@ -20,7 +20,7 @@ const ALLOWED_STRATEGIES = new Set(['discovery', 'multi_search', 'similar', 'sta
 const ALLOWED_SORT_BY = new Set([
     'popularity.desc', 'revenue.desc', 'primary_release_date.desc', 'vote_average.desc'
 ]);
-const ALLOWED_TARGETS = new Set(['tmdb', 'kitsu', 'trakt']);
+const ALLOWED_TARGETS = new Set(['tmdb', 'trakt']);
 
 function sanitizeSingleQuery(parsed, fallbackPrompt) {
     const clean = {};

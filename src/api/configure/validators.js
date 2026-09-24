@@ -105,7 +105,44 @@ function validateKeys(body, existingUser, warnings) {
     };
 }
 
+/**
+ * Normalizza e sanifica i cataloghi custom per garantire retrocompatibilità.
+ * Cataloghi salvati in versioni precedenti con `provider: 'kitsu'` vengono
+ * trasparentemente convertiti a `provider: 'tmdb'`.
+ */
+function sanitizeCustomCatalog(catalog) {
+    if (!catalog || typeof catalog !== 'object') return catalog;
+    const sanitized = { ...catalog };
+    if (sanitized.provider === 'kitsu') {
+        sanitized.provider = 'tmdb';
+    }
+    if (sanitized.filters && typeof sanitized.filters === 'object') {
+        sanitized.filters = { ...sanitized.filters };
+        if (sanitized.filters.provider === 'kitsu') {
+            sanitized.filters.provider = 'tmdb';
+        }
+    }
+    if (Array.isArray(sanitized.queries)) {
+        sanitized.queries = sanitized.queries.map(q => {
+            if (!q || typeof q !== 'object') return q;
+            const cleanQ = { ...q };
+            if (cleanQ.provider === 'kitsu') {
+                cleanQ.provider = 'tmdb';
+            }
+            return cleanQ;
+        });
+    }
+    return sanitized;
+}
+
+function sanitizeCustomCatalogs(catalogs) {
+    if (!Array.isArray(catalogs)) return catalogs;
+    return catalogs.map(sanitizeCustomCatalog);
+}
+
 module.exports = {
     validateAuth,
-    validateKeys
+    validateKeys,
+    sanitizeCustomCatalog,
+    sanitizeCustomCatalogs
 };
