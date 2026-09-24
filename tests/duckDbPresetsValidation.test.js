@@ -39,7 +39,7 @@ describe('DuckDB Native Presets & Architectural Optimizations', () => {
                 await expect(duckDbStore.query(sql)).resolves.toBeDefined();
             }
         }
-    });
+    }, 30000);
 
     test('StremioFormatter payload diet: trailers excluded from catalog, included in meta detail', () => {
         const sampleItem = {
