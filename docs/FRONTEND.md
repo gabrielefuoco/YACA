@@ -28,7 +28,7 @@ graph TD
             PM["ProfileManager.tsx"]
             ACP["ActiveCatalogsPanel.tsx"]
             DAP["DnaAndAiPanel.tsx"]
-            Radar["OrbitalDnaGraph.tsx"]
+            Radar["DnaBarChart.tsx"]
             
             DashPage --> PM
             DashPage --> ACP
@@ -152,13 +152,13 @@ Ogni profilo (escluso quello globale) può attivare la **Modalità Bambini** (`k
 *   Mostra un badge visivo (`child_care`) sul profilo attivo.
 *   Forza il backend a filtrare rigorosamente i cataloghi visualizzati dal profilo, censurando contenuti sensibili o contrassegnati come non adatti a un pubblico giovane (rating PG / censura contenuti espliciti).
 
-### Visualizzazione del DNA e Radar Chart
+### Visualizzazione del DNA e Bar Chart
 
 Il DNA del profilo rappresenta i generi e le parole chiave (keyword) preferite dall'utente. Viene calcolato dal backend in base ai preset attivi e allo storico delle visioni e visualizzato nella sezione [DnaAndAiPanel.tsx](../frontend/src/components/dashboard/DnaAndAiPanel.tsx):
 
 1.  **DNA Base (`V_static`)**: Calcolato analizzando staticamente i filtri dei preset abilitati. Mostra le preferenze "dichiarate".
 2.  **DNA Evoluto (`V_final`)**: Unisce il DNA di base con i vettori estratti dall'attività di visione reale dell'utente (Stremio/Trakt history, Love e Like).
-3.  **OrbitalDnaGraph**: Il componente [OrbitalDnaGraph.tsx](../frontend/src/components/dashboard/OrbitalDnaGraph.tsx) (sviluppato su canvas/SVG nativo) traccia visivamente le differenze tra il DNA statico e quello dinamico evoluto, mostrando come cambiano i pesi dei generi principali nel tempo.
+3.  **DnaBarChart**: Il componente [DnaBarChart.tsx](../frontend/src/components/dashboard/DnaBarChart.tsx) raggruppa le voci del DNA per categoria (generi, keyword, persone, case di produzione, network) e le visualizza con barre orizzontali proporzionali al peso normalizzato (100% per la voce principale).
 
 ### Editor Manuale del DNA
 
