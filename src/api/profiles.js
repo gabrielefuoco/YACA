@@ -9,7 +9,7 @@ const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const LibraryConverterService = require('../services/LibraryConverterService');
 const UserLibraryItem = require('../db/models/UserLibraryItem');
 const { funnelMatchmakerSession, initMatchmakerSession, analyzeMatchmakerSession, finishMatchmakerSession, getMatchmakerTrailer } = require('../handlers/matchmakerHandler');
-const { sanitizeDnaVector } = require('../data/keywordIds');
+const { sanitizeDnaVector, isRetiredTmdbKeywordId } = require('../data/keywordIds');
 
 /**
  * POST /api/profiles/:id/convert-library
@@ -292,7 +292,7 @@ router.post('/:id/sync-vectors', async (req, res) => {
     }
 
     // Rimuove keyword TMDB ritirati prima del salvataggio e rinormalizza
-    // i pesi residui, senza alterare il documento legacy su Atlas.
+    // i pesi residui. I documenti legacy non vengono mutati fuori dallo sync.
     const sanitizedVFinal = sanitizeDnaVector(V_final);
 
     // Size guard: reject unreasonably large payloads
@@ -315,8 +315,10 @@ router.post('/:id/sync-vectors', async (req, res) => {
             lastUpdated: new Date()
         };
 
-        if (idNames && typeof idNames === 'object') {
-            updateFields.idNames = idNames;
+        if (idNames && typeof idNames === 'object' && !Array.isArray(idNames)) {
+            updateFields.idNames = Object.fromEntries(
+                Object.entries(idNames).filter(([id]) => !isRetiredTmdbKeywordId(id))
+            );
         }
 
 

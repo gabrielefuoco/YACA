@@ -60,7 +60,11 @@ function isItemInappropriateForKids(item) {
     }
 
     // 2. Check keywords
-    const kwSource = data.keywords?.keywords || data.keywords?.results || data.keywords || [];
+    const kwSource = Array.isArray(data.keywords)
+        ? data.keywords
+        : (Array.isArray(data.keywords?.results) && data.keywords.results.length > 0
+            ? data.keywords.results
+            : (data.keywords?.keywords || data.keywords || []));
     const kwItems = Array.isArray(kwSource)
         ? kwSource
         : (typeof kwSource === 'string' ? kwSource.split(/[,|]/) : []);

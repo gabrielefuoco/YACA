@@ -17,6 +17,14 @@ function clampScore(value) {
     return Math.min(Math.max(value, 0), 10);
 }
 
+function getKeywordItems(data) {
+    if (Array.isArray(data?.keywords)) return data.keywords;
+    if (Array.isArray(data?.keywords?.results) && data.keywords.results.length > 0) {
+        return data.keywords.results;
+    }
+    return data?.keywords?.keywords || [];
+}
+
 class ProfileScorer {
     static isItemInappropriateForKids(tmdbData) {
         return isItemInappropriateForKids(tmdbData);
@@ -133,11 +141,7 @@ class ProfileScorer {
         });
 
         // Keywords (VSM Gerarchico: L1, L2, L3)
-        const keywordItems = filterRetiredTmdbKeywords(
-            Array.isArray(tmdbData.keywords)
-                ? tmdbData.keywords
-                : (tmdbData.keywords?.keywords || tmdbData.keywords?.results || [])
-        );
+        const keywordItems = filterRetiredTmdbKeywords(getKeywordItems(tmdbData));
         const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
         const hVector = HierarchicalGraph.vectorizeKeywords(keywordItems);
         
@@ -312,11 +316,7 @@ class ProfileScorer {
         });
 
         // Keywords (VSM Gerarchico: L1, L2, L3)
-        const keywordItems = filterRetiredTmdbKeywords(
-            Array.isArray(lightData.keywords)
-                ? lightData.keywords
-                : (lightData.keywords?.keywords || lightData.keywords?.results || [])
-        );
+        const keywordItems = filterRetiredTmdbKeywords(getKeywordItems(lightData));
         let keywordScore = 0;
         const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
         const hVector = HierarchicalGraph.vectorizeKeywords(keywordItems);

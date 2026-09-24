@@ -115,6 +115,7 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
                 {}
             ).catch(() => []);
             for (const item of results) {
+                if (isKidsMode && isItemInappropriateForKids(item)) continue;
                 const nId = normalizeContentId(item.id);
                 if (nId && !existingIds.has(nId)) {
                     existingIds.add(nId);
@@ -432,7 +433,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const allSimilar = await rateLimitedMap(
         allSeeds,
         async (seed) => ({
-            results: await getDuckDbCatalogFromFilters({ similar_to: seed.id }, types, 0, 40, {}).catch(() => []),
+            results: await getDuckDbCatalogFromFilters({ similar_to: seed.id }, types, 0, 40, { kidsMode: isKidsMode }).catch(() => []),
             weight: seed.weight
         }),
         { batchSize: 5, delayMs: 50 }

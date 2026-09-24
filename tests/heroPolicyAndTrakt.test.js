@@ -473,6 +473,10 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
             expect(kidsKey).toContain('cfg-v2');
             expect(kidsKey).not.toBe(adultKey);
             expect(kidsKey).not.toBe(nextVersionKey);
+            expect(buildRecommendationCacheKey({
+                userId: 'sim_user', context: 'kids_profile', catalogId: 'yaca_true_blend_movies',
+                kidsMode: false, configVersion: 0
+            })).toContain('_cv0');
         });
 
         it('blocca Archer e i titoli adult-animation anche nell espansione seed', async () => {
@@ -540,9 +544,10 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
                 { id: 'tmdb:601', name: 'Safe', genre_ids: [12], keywords: [{ id: 100 }] },
                 { id: 'tmdb:10283', name: 'Archer', genre_ids: [16, 35], keywords: [{ id: 14964 }] }
             ]);
-            await buildDirectPresetCatalog('preset_action_blockbusters', 'user_1', 'kids_profile', 'tmdb_key', 'movie', true);
+            const presetResult = await buildDirectPresetCatalog('preset_action_blockbusters', 'user_1', 'kids_profile', 'tmdb_key', 'movie', true);
             expect(getDuckDbCatalogFromFilters.mock.calls[0][0].without_keywords).toContain('161919');
             expect(getDuckDbCatalogFromFilters.mock.calls[0][0].without_keywords).toContain('220192');
+            expect(presetResult.map(item => item.id)).toEqual(['601']);
 
             getDuckDbCatalogFromFilters.mockClear();
             const fallback = await fetchPopularFallbackIds('tmdb_key', 'series', 60, true);

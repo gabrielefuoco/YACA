@@ -93,8 +93,12 @@ function extractActiveDNAFromTmdbData(tmdbData, baseWeight = 100) {
     genreIds.forEach(id => addKey('g', id));
 
     // Keyword (Gerarchiche tramite HierarchicalGraph)
-    const keywordIds = (tmdbData.keyword_ids ||
-        (tmdbData.keywords?.keywords || tmdbData.keywords?.results || []).map(k => k.id))
+    const rawKeywordItems = Array.isArray(tmdbData.keywords)
+        ? tmdbData.keywords
+        : (Array.isArray(tmdbData.keywords?.results) && tmdbData.keywords.results.length > 0
+            ? tmdbData.keywords.results
+            : (tmdbData.keywords?.keywords || []));
+    const keywordIds = (tmdbData.keyword_ids || rawKeywordItems.map(k => k?.id ?? k))
         .filter(id => !isRetiredTmdbKeywordId(id));
     
     const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');

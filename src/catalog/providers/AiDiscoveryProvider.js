@@ -6,6 +6,7 @@ const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
 const TasteProfile = require('../../models/TasteProfile');
 const ProfileScorer = require('../../profile/ProfileScorer');
 const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataHydrator');
+const { G } = require('../../data/filters');
 
 function getTmdbVoteScore(item) {
     const rawVote = item?.rawTMDB?.vote_average ?? item?.vote_average ?? item?.imdbRating;
@@ -210,6 +211,10 @@ async function injectProfilePreferences(filters, userId, profileId) {
     // Use VSM-based top features (V_final) with legacy fallback
     const topKeywords = computeTopKeywords(profile, 3);
     const topGenres = computeTopGenres(profile, 2);
+    const alignedTopGenres = [...new Set(topGenres.flatMap(genre => {
+        const id = Number(genre);
+        return Number.isFinite(id) ? [id, ...G.getEquivalentGenreIds(id)] : [];
+    }))];
 
     if (topKeywords.length > 0) {
         if (enriched.with_keywords) {
@@ -221,13 +226,13 @@ async function injectProfilePreferences(filters, userId, profileId) {
         }
     }
 
-    if (topGenres.length > 0) {
+    if (alignedTopGenres.length > 0) {
         if (enriched.with_genres) {
             const separator = enriched.with_genres.includes(',') ? ',' : '|';
             const existingGenres = enriched.with_genres.split(separator).map(s => s.trim()).filter(Boolean);
-            enriched.with_genres = [...new Set([...existingGenres, ...topGenres])].join(separator);
+            enriched.with_genres = [...new Set([...existingGenres, ...alignedTopGenres])].join(separator);
         } else {
-            enriched.with_genres = topGenres.join('|');
+            enriched.with_genres = alignedTopGenres.join('|');
         }
     }
 

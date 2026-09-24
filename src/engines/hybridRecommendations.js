@@ -19,12 +19,15 @@ const { calculateHybridScore, computeTopGenres, computeTopKeywords } = require('
 const { buildDirectPresetCatalog, buildTopGenresMixCatalog, buildHybridCatalog, buildHiddenGemsCatalog, buildTraktFilteredCatalog } = require('./hybrid/catalogStrategies');
 
 function getActiveKidsMode(userConfig, context) {
-    const activeProfile = userConfig?.profiles?.find(profile => profile.id === context);
+    const profiles = userConfig?.profiles ?? userConfig?.config?.profiles ?? [];
+    const activeProfile = profiles.find(profile => profile.id === context);
     return activeProfile?.settings?.kidsMode === true;
 }
 
 function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, configVersion }) {
-    const version = String(configVersion || 'unversioned');
+    const version = configVersion === undefined || configVersion === null
+        ? 'unversioned'
+        : String(configVersion);
     return `${userId}_${context}_${catalogId}_cv${encodeURIComponent(version)}${kidsMode ? '_kids' : ''}`;
 }
 
@@ -42,7 +45,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     const profile = await TasteProfile.findOne({ owner: userId, context });
     // kidsMode è un'impostazione del profilo YACA (AddonConfig), non del TasteProfile.
     const isKidsMode = getActiveKidsMode(userConfig, context);
-    const configVersion = userConfig?.configVersion || userConfig?.config?.configVersion;
+    const configVersion = userConfig?.configVersion ?? userConfig?.config?.configVersion;
     const cacheKey = buildRecommendationCacheKey({ userId, context, catalogId, kidsMode: isKidsMode, configVersion });
 
     console.log(`[Hybrid Debug] getHybridCatalog called with catalogId=${catalogId}, userId=${userId}, context=${context}`);
