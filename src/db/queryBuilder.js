@@ -60,7 +60,8 @@ async function buildCatalogQuery(preset, skip = 0, limit = 100) {
     // Query Standard
     const where = normalFilters.join(' AND ');
     const order = preset.orderBy || 'popularity DESC NULLS LAST';
-    return `SELECT * FROM ${table} WHERE ${where} ORDER BY ${order}, id ASC LIMIT ${limit} OFFSET ${skip}`;
+    const stableOrder = /"?id"?\s+ASC/i.test(order) ? order : `${order}, id ASC`;
+    return `SELECT * FROM ${table} WHERE ${where} ORDER BY ${stableOrder} LIMIT ${limit} OFFSET ${skip}`;
 }
 
 module.exports = { buildCatalogQuery };

@@ -64,6 +64,9 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
     if (q['vote_count.lte']) where.push(F.maxVotes(q['vote_count.lte']));
     if (q['vote_average.gte']) where.push(F.minScore(q['vote_average.gte']));
     if (q['popularity.lte']) where.push(F.maxPopularity(q['popularity.lte']));
+    if (q.with_status) where.push(F.status(q.with_status));
+    if (q['number_of_seasons.lte'] !== undefined) where.push(F.maxSeasons(q['number_of_seasons.lte']));
+    if (q['number_of_episodes.lte'] !== undefined) where.push(F.maxEpisodes(q['number_of_episodes.lte']));
     
     if (q.with_original_language) {
         const langs = q.with_original_language.split('|');
@@ -77,7 +80,15 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
     }
 
     if (q.with_origin_country) {
-        where.push(F.country(q.with_origin_country));
+        const countries = String(q.with_origin_country)
+            .split('|')
+            .map(code => code.trim())
+            .filter(Boolean);
+        where.push(
+            countries.length === 0 ? '1=0'
+                : countries.length === 1 ? F.country(countries[0])
+                    : F.any(...countries.map(code => F.country(code)))
+        );
     }
 
     if (q.with_genres) {
@@ -144,6 +155,14 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
         } else {
             where.push('1=0');
         }
+    }
+
+    if (q.without_tmdbIds) {
+        const validIds = String(q.without_tmdbIds)
+            .split(/[,|]/)
+            .map(Number)
+            .filter(n => Number.isSafeInteger(n) && n > 0);
+        where.push(validIds.length > 0 ? `"id" NOT IN (${validIds.join(',')})` : '1=1');
     }
 
     if (q.with_id || q.params?.with_id) {

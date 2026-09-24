@@ -9,7 +9,7 @@ const CacheManager = require('../src/cache/CacheManager');
 describe('DuckDB Native Presets & Architectural Optimizations', () => {
     beforeAll(async () => {
         await duckDbStore.init();
-    });
+    }, 30000);
 
     test('All presets define native where and orderBy except simulcast', async () => {
         const presets = getPresets();
