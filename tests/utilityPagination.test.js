@@ -102,8 +102,8 @@ describe('U-03: paginazione utility a 20 item', () => {
             orderBy: '"popularity" DESC NULLS LAST'
         }, 20, 20);
 
-        expect(sql).toContain(
-            "ORDER BY fts_main_movies.match_bm25(id, 'Spider-Man') DESC, id ASC LIMIT 20 OFFSET 20"
-        );
+        // Il ranking FTS è cambiato nel lotto E (boost del titolo esatto prima del BM25),
+        // ma il contratto di paginazione resta: tie-breaker `id ASC` e offset reale.
+        expect(sql).toMatch(/ORDER BY .*fts_main_movies\.match_bm25\(id, 'Spider-Man'\) DESC, id ASC LIMIT 20 OFFSET 20$/);
     });
 });
