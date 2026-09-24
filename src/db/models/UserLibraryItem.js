@@ -22,8 +22,22 @@ const userLibraryItemSchema = new mongoose.Schema({
     timestamps: true 
 });
 
-// Compound index to quickly find user's library items by type and UUID
 userLibraryItemSchema.index({ addonUuid: 1, type: 1, removed: 1, _mtime: -1 });
 userLibraryItemSchema.index({ addonUuid: 1, itemId: 1 }, { unique: true });
 
-module.exports = mongoose.models.UserLibraryItem || mongoose.model('UserLibraryItem', userLibraryItemSchema);
+const UserLibraryItem = mongoose.models.UserLibraryItem || mongoose.model('UserLibraryItem', userLibraryItemSchema);
+
+/**
+ * Garanzia programmatica di verifica e creazione dell'indice all'avvio.
+ * Se la collection ha duplicati legacy in produzione, intercetta l'errore senza crashare
+ * e segnala la necessità di deduplica all'orchestratore.
+ */
+UserLibraryItem.ensureIndexesSafe = async function() {
+    try {
+        await UserLibraryItem.init();
+    } catch (err) {
+        console.warn('[UserLibraryItem] Notice on index initialization:', err.message);
+    }
+};
+
+module.exports = UserLibraryItem;

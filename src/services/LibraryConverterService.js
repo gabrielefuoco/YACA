@@ -5,6 +5,9 @@ const { stremioClient } = require('../clients/stremio');
 const { createTmdbClient } = require('../clients/tmdb');
 const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
 const { buildStremioLibraryPayload } = require('../utils/stremioAddon');
+const duckDbStore = require('../db/duckDbStore');
+const { resolvePoster, TMDB_IMAGE_BASE } = require('../utils/posterResolver');
+const LibrarySyncService = require('./LibrarySyncService');
 
 const BATCH_SIZE = 500; // Process all items
 
@@ -17,6 +20,9 @@ class LibraryConverterService {
                 console.error(`[LibraryConverter] Stremio API key missing for user ${userId}`);
                 return;
             }
+
+            // Deduplica preventivamente la libreria dell'utente prima della conversione
+            await LibrarySyncService.deduplicateUserLibrary(user.addonUuid);
 
             const tmdbClient = createTmdbClient(user.apiKeys.tmdb || process.env.TMDB_API_KEY);
             const userConfig = await AddonConfig.findOne({ uuid: user.addonUuid }).lean();
@@ -61,12 +67,35 @@ class LibraryConverterService {
 
                     if (tmdbId && !tmdbData) {
                         try {
-                            const endpoint = item.type === 'series' ? `/tv/${tmdbId}` : `/movie/${tmdbId}`;
-                            const detailRes = await tmdbClient.get(endpoint, { params: { language: 'it-IT' } });
-                            tmdbData = detailRes.data;
-                        } catch (e) {
-                            console.warn(`[LibraryConverter] Failed to fetch TMDB details for ${tmdbId}`);
+                            const table = (item.type === 'series' || item.type === 'tv') ? 'tv' : 'movies';
+                            const duckRows = await duckDbStore.query(`SELECT * FROM ${table} WHERE id = ? LIMIT 1`, [Number(tmdbId)]);
+                            if (duckRows && duckRows.length > 0) {
+                                tmdbData = duckRows[0];
+                            }
+                        } catch (_duckErr) {}
+
+                        if (!tmdbData) {
+                            try {
+                                const endpoint = item.type === 'series' ? `/tv/${tmdbId}` : `/movie/${tmdbId}`;
+                                const detailRes = await tmdbClient.get(endpoint, { params: { language: 'it-IT' } });
+                                tmdbData = detailRes.data;
+                            } catch (e) {
+                                console.warn(`[LibraryConverter] Failed to fetch TMDB details for ${tmdbId}`);
+                            }
                         }
+                    }
+
+                    let posterCandidate = tmdbData?.poster_path
+                        ? `${TMDB_IMAGE_BASE}${tmdbData.poster_path}`
+                        : item.poster;
+
+                    if (!posterCandidate) {
+                        posterCandidate = await resolvePoster({
+                            itemId: item.itemId || item._id,
+                            tmdbId,
+                            type: item.type,
+                            name: item.name
+                        }, { tmdbClient });
                     }
 
                     // We proceed even if tmdbData is null, to apply badges to Kitsu or fallback items!
@@ -75,7 +104,7 @@ class LibraryConverterService {
                         tmdbId: tmdbId,
                         type: item.type,
                         name: tmdbData?.title || tmdbData?.name || item.name,
-                        poster: tmdbData?.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}` : item.poster,
+                        poster: posterCandidate || item.poster || null,
                         posterShape: 'poster',
                         background: tmdbData?.backdrop_path ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path}` : item.background,
                         releaseInfo: (tmdbData?.release_date || tmdbData?.first_air_date || item.year || '').split('-')[0],
@@ -83,30 +112,31 @@ class LibraryConverterService {
                         rawTMDB: tmdbData // Pass to formatter
                     };
 
-                        const sanitizeOptions = {
-                            userConfig,
-                            hostUrl: hostUrl || process.env.BASE_URL || 'http://localhost:7000',
-                            shouldApplyEpisodeBadge: false
-                        };
+                    const sanitizeOptions = {
+                        userConfig,
+                        hostUrl: hostUrl || process.env.BASE_URL || 'http://localhost:7000',
+                        shouldApplyEpisodeBadge: false
+                    };
 
-                        meta = sanitizeCatalogMeta(meta, sanitizeOptions);
+                    meta = sanitizeCatalogMeta(meta, sanitizeOptions);
 
-                        // Force cache bust on the poster so stremio re-downloads it
-                        if (meta.poster) {
-                            meta.poster = meta.poster.includes('?') 
-                                ? `${meta.poster}&t=${Date.now()}` 
-                                : `${meta.poster}?t=${Date.now()}`;
-                        }
+                    // Force cache bust on the poster so stremio re-downloads it
+                    if (meta.poster) {
+                        meta.poster = meta.poster.includes('?') 
+                            ? `${meta.poster}&t=${Date.now()}` 
+                            : `${meta.poster}?t=${Date.now()}`;
+                    }
 
-                        // Prepare for datastorePut
-                        changes.push(buildStremioLibraryPayload(meta, item));
+                    // Prepare for datastorePut
+                    changes.push(buildStremioLibraryPayload(meta, item));
 
-                        // Update db
-                        item.tmdbId = tmdbId;
-                        item.mapped = true;
-                        item.name = meta.name;
-                        item.poster = meta.poster;
-                        await item.save();
+                    // Update db
+                    item.itemId = item.itemId || item._id;
+                    item.tmdbId = tmdbId;
+                    item.mapped = true;
+                    item.name = meta.name;
+                    item.poster = meta.poster;
+                    await item.save();
                     
                     // Small delay to avoid rate limit
                     await new Promise(r => setTimeout(r, 200));
