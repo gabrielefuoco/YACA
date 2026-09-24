@@ -11,15 +11,11 @@
  *  - Formato badge coerente con Ticket 10: `ITA n`.
  */
 
-jest.mock('../src/db/models/PendingScan', () => ({
-    findOneAndUpdate: jest.fn().mockReturnValue(Promise.resolve())
-}));
 
 jest.mock('../src/db/models/StreamBadge', () => ({
     find: jest.fn()
 }));
 
-const PendingScan = require('../src/db/models/PendingScan');
 const StreamBadge = require('../src/db/models/StreamBadge');
 const animeMappingStore = require('../src/data/animeMappingStore');
 const animeAiringState = require('../src/data/animeAiringState');
@@ -125,7 +121,6 @@ describe('Badge ITA su tutti i cataloghi per gli anime (Ticket 25)', () => {
         StreamBadge.find.mockReturnValue({
             lean: jest.fn().mockResolvedValue([])
         });
-        PendingScan.findOneAndUpdate.mockReturnValue(Promise.resolve());
         snapshot = animeAiringState.buildSnapshot(buildFixtureDocs());
         jest.spyOn(animeAiringState, 'getSnapshot').mockResolvedValue(snapshot);
     });
@@ -173,7 +168,6 @@ describe('Badge ITA su tutti i cataloghi per gli anime (Ticket 25)', () => {
 
         // Nessuna chiamata allo scanner torrent
         expect(StreamBadge.find).not.toHaveBeenCalled();
-        expect(PendingScan.findOneAndUpdate).not.toHaveBeenCalled();
     });
 
     test('2. Anime concluso doppiato (fuori finestra novità) ha il badge ITA nei cataloghi standard', async () => {

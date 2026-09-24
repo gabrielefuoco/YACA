@@ -8,15 +8,11 @@
  * - Nessun doppio clone anche se l'item ha già '_ita_offset'.
  */
 
-jest.mock('../src/db/models/PendingScan', () => ({
-    findOneAndUpdate: jest.fn().mockReturnValue(Promise.resolve())
-}));
 
 jest.mock('../src/db/models/StreamBadge', () => ({
     find: jest.fn()
 }));
 
-const PendingScan = require('../src/db/models/PendingScan');
 const StreamBadge = require('../src/db/models/StreamBadge');
 const animeMappingStore = require('../src/data/animeMappingStore');
 const animeAiringState = require('../src/data/animeAiringState');
@@ -60,7 +56,6 @@ describe('Esclusione Anime dallo Scanner Torrent ITA (Ticket 15)', () => {
         StreamBadge.find.mockReturnValue({
             lean: jest.fn().mockResolvedValue([])
         });
-        PendingScan.findOneAndUpdate.mockReturnValue(Promise.resolve());
     });
 
     describe('isItemAnime Helper', () => {
@@ -129,8 +124,8 @@ describe('Esclusione Anime dallo Scanner Torrent ITA (Ticket 15)', () => {
         });
     });
 
-    describe('Accodamento in pendingscans (A monte)', () => {
-        test('un titolo anime NON viene accodato in pendingscans, mentre serie e film non-anime SI', async () => {
+    describe('Esclusione anime da StreamBadge (A monte)', () => {
+        test('un titolo anime NON viene cercato in StreamBadge, mentre serie e film non-anime SI', async () => {
             const cachedData = {
                 metas: [
                     // 1. Anime Serie (Kitsu)
@@ -164,18 +159,11 @@ describe('Esclusione Anime dallo Scanner Torrent ITA (Ticket 15)', () => {
             expect(queriedBaseIds).not.toContain('tmdb:240411');
             expect(queriedBaseIds).not.toContain('tmdb:777001');
 
-            // PendingScan.findOneAndUpdate deve essere stato invocato SOLO per serie e film non-anime
-            const queuedIds = PendingScan.findOneAndUpdate.mock.calls.map(c => c[0].baseId);
 
             // Serie non-anime: ep 1 accodato
-            expect(queuedIds).toContain('tmdb:1399:1:1');
             // Film non-anime: film accodato
-            expect(queuedIds).toContain('tmdb:550');
 
             // NESSUN anime presente tra le chiamate di accodamento!
-            expect(queuedIds.some(id => id.includes('48269'))).toBe(false);
-            expect(queuedIds.some(id => id.includes('240411'))).toBe(false);
-            expect(queuedIds.some(id => id.includes('777001'))).toBe(false);
         });
 
         test('un catalogo di soli anime non effettua alcuna query a StreamBadge ne accodamenti', async () => {
@@ -196,7 +184,6 @@ describe('Esclusione Anime dallo Scanner Torrent ITA (Ticket 15)', () => {
             );
 
             expect(StreamBadge.find).not.toHaveBeenCalled();
-            expect(PendingScan.findOneAndUpdate).not.toHaveBeenCalled();
             expect(result.metas).toHaveLength(2);
             expect(result.metas[0]._itaBadge).toBe(false);
             expect(result.metas[1]._itaBadge).toBe(false);
@@ -256,7 +243,6 @@ describe('Esclusione Anime dallo Scanner Torrent ITA (Ticket 15)', () => {
 
             // Nessuna chiamata allo scanner torrent
             expect(StreamBadge.find).not.toHaveBeenCalled();
-            expect(PendingScan.findOneAndUpdate).not.toHaveBeenCalled();
         });
 
         test('in catalogo standard (non-simulcast), un anime con vecchi streambadges ITA non viene clonato', async () => {

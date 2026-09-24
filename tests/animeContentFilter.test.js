@@ -7,9 +7,6 @@ jest.mock('../src/catalog/CatalogRouter', () => ({
     routeCatalogRequest: jest.fn()
 }));
 
-jest.mock('../src/db/models/PendingScan', () => ({
-    findOneAndUpdate: jest.fn().mockReturnValue(Promise.resolve())
-}));
 
 jest.mock('../src/db/models/StreamBadge', () => ({
     find: jest.fn().mockReturnValue({

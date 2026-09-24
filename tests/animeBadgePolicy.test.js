@@ -11,9 +11,6 @@
  * badge episodio (calcolato dagli episodi TMDB), cosa che l'utente non vuole.
  */
 
-jest.mock('../src/db/models/PendingScan', () => ({
-    findOneAndUpdate: jest.fn().mockResolvedValue()
-}));
 
 jest.mock('../src/db/models/StreamBadge', () => ({
     find: jest.fn()

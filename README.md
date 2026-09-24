@@ -1,133 +1,126 @@
----
-title: YACA
-emoji: 🚀
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-pinned: false
----
-
 # YACA 🇮🇹 (Yet Another Catalog Addon)
 
-YACA è un addon per Stremio che porta la potenza dell'intelligenza artificiale e la personalizzazione estrema nel tuo mediacenter preferito.
+YACA è un addon stateful avanzato per **Stremio** che unisce un motore analitico SQL in-memory (**DuckDB** su file Parquet), caching distribuito (**Redis**), un motore di raccomandazione bayesiano basato su **Vector Space Model (VSM)** e intelligenza artificiale per generare cataloghi dinamici e personalizzati ad altissime prestazioni.
+
+---
 
 ## 📖 Documentazione Completa
 
-Abbiamo creato una documentazione dettagliata per ogni aspetto del progetto. **Inizia da qui:**
+Abbiamo creato una documentazione dettagliata e modulare per ogni componente del sistema. **Inizia dall'indice:**
 
-👉 **[INDICE DELLA DOCUMENTAZIONE](docs/INDEX.md)**
+👉 **[INDICE GENERALE DELLA DOCUMENTAZIONE](docs/INDEX.md)**
 
-### Quick Links:
-- [🚀 Guida al Deployment](docs/DEPLOYMENT_OPS.md)
-- [🧬 Algoritmi di Scoring](docs/ALGORITHMS.md)
-- [🤖 Motore AI (Mistral)](docs/AI_ENGINE.md)
-- [🖥️ Architettura Frontend](docs/FRONTEND.md)
-- [Logica Cataloghi](docs/CATALOG_LOGIC.md): Lifecycle delle richieste, Merging e Interleaving.
-- [Internals Stremio](docs/STREMIO_INTERNALS.md): Workaround per i profili e mapping Anime ibrido.
-- [Integrazioni](docs/INTEGRATIONS.md): Sync Stremio/Trakt, Fallback Blur e Failover.
-- [🧬 Sistema Preset](docs/PRESETS.md): Definizione dei preset ed utilizzo degli script CLI.
-- [🧪 Testing e Utilities](docs/TESTING_UTILITIES.md): Guida a Jest e agli script di validazione/amministrazione.
-
-[Deploy to Hugging Face Spaces](https://huggingface.co/spaces/Gabriele-fuoco/YACA?duplicate=true)
-
-## Funzionalità
-- **Cataloghi Intelligenti**: Genera cataloghi auto-aggiornanti con prompt testuali (es. "Commedie romantiche natalizie").
-- **100+ Preset Curati**: Cataloghi pre-configurati per genere, regista, attore, studio, decennio e tematiche.
-- **Profili Multipli & Profile DNA**: Organizza cataloghi in profili (es. "Anime", "Serie TV"). Ogni profilo ha un **DNA** unico (generi e keyword) che filtra e dà priorità ai suggerimenti in base al contesto.
-- **Stremio Deep Sync**: Sincronizzazione profonda di **Libreria, Cronologia, Like e Love** direttamente dal tuo account Stremio al tuo Taste Profile globale.
-- **Two-Way Trakt Sync**: I Like/Love di Stremio vengono inviati a Trakt come rating (10/8), mantenendo i due ecosistemi perfettamente allineati.
-- **Taste Profile Pesato**: Un motore di raccomandazione che pesa le tue azioni (Love x4, Like x3, Watch x2) per suggerimenti estremamente precisi.
-- **Sincronizzazione Background**: Throttling intelligente (ogni 8h ± 2h) gestito automaticamente tramite cron jobs.
-- **Integrazione Trakt.tv**: Supporto completo a Watchlist, Preferiti e Raccomandazioni tramite Device Auth Flow.
-- **Ricerca AI Live**: Cerca dalla barra di Stremio e l'AI interpreta la tua richiesta.
-- **Badge Episodi**: Visualizza il numero dell&apos;episodio direttamente sul poster nei cataloghi "In Corso".
-- **Ottimizzato per Hugging Face**: Funziona su Spaces (Docker) con gestione intelligente della cache.
-
-## Architettura
-YACA utilizza un'architettura **Stateful** basata su **MongoDB**. Il cuore del sistema è il **Taste Profile** globale dell'utente, alimentato continuamente da Stremio e Trakt. Sopra questo profilo, ogni **Profilo** YACA applica un **DNA** (filtro contestuale) per estrarre solo i contenuti rilevanti.
+### Documenti Chiave:
+- [🚀 Self-Hosting su Home Server (`mate`)](docs/DEPLOYMENT_HOME_SERVER.md): Guida completa al deploy Docker Compose, Tailscale, Watchtower e GHCR.
+- [☁️ Deploy Alternativo VPS Hetzner](docs/DEPLOYMENT_VPS_HETZNER.md): Architettura multi-container con reverse proxy Caddy HTTPS.
+- [🦆 Architettura DuckDB In-Memory](docs/DUCKDB_ARCHITECTURE.md): Pre-filtraggio a zero chiamate TMDB tramite dataset Parquet ZSTD.
+- [🧬 Algoritmi di Scoring e VSM](docs/ALGORITHMS.md): Taste Profile pesato, Bayesian Rating IMDb e rotazione delle impression.
+- [🤖 Motore AI & Live Search Router](docs/AI_ENGINE.md): Mappatura del linguaggio naturale da barra di ricerca Stremio a parametri strutturati.
+- [🖥️ Architettura Frontend SPA](docs/FRONTEND.md): Dashboard React 19 + Next.js (Static Export), sessioni cookie e visualizzazione DNA.
+- [🔀 Logica Cataloghi](docs/CATALOG_LOGIC.md): Lifecycle delle richieste, caching a due livelli (RAM L1 + Redis L2) e gestione badge ITA.
+- [⚙️ Internals Stremio](docs/STREMIO_INTERNALS.md): Workaround multi-profilo, manifest dinamici e mapping ibrido Anime (Kitsu/TMDB).
+- [🔄 Integrazioni](docs/INTEGRATIONS.md): Device Auth Flow Trakt.tv e sincronizzazione bidirezionale.
+- [🧬 Sistema Preset](docs/PRESETS.md): Definizione dei preset ed estrazione filtri SQL.
+- [🧪 Testing e Utilities](docs/TESTING_UTILITIES.md): Suite Jest e script operativi di manutenzione.
 
 ---
 
-## 🚀 Deploy su Hugging Face Spaces
+## ⚡ Caratteristiche Principali
 
-1. Clicca il link **Deploy to Hugging Face Spaces** qui sopra.
-2. Inserisci il tuo **HF_TOKEN** (con permessi di scrittura) e le altre API Key.
-3. Lo spazio si avvierà automaticamente usando il `Dockerfile` incluso.
-4. Una volta avviato, visita l'URL del tuo spazio (es. `https://<il-tuo-space>.hf.space`) per configurare l'addon.
-
----
-
-## ⏰ Mantenere l'Addon Sempre Attivo (Keep-Alive)
-
-I servizi gratuiti di Hugging Face vanno in sospensione (sleep) dopo un periodo di inattività. Usa **UptimeRobot** per mantenerlo attivo:
-1. Crea un monitor **HTTP(s)** su [UptimeRobot](https://uptimerobot.com/).
-2. URL: `https://<il-tuo-space>.hf.space/api/cron/warmup`.
-3. Intervallo: **10 minuti** (consigliato) o **14 minuti**.
+- **Cataloghi Istantanei DuckDB**: Pre-filtraggio ed estrazione a zero latenza (<10ms) interrogando in SQL locale i dump TMDB compressi in Parquet. Nessuna dipendenza dall'endpoint `/discover` di TMDB.
+- **Cache Distribuita Redis (L2)**: Persistenza distribuita ad alta velocità con TTL dedicati e mitigazione Thundering Herd (SWR Stampede).
+- **Taste Profile Pesato & VSM**: Raccoglie in tempo reale l'attività dell'utente (Love x4, Like x3, Watch x2) su Stremio e Trakt.tv, calcolando un vettore DNA multidimensionale (generi, keyword, registi, attori).
+- **Profili Multipli Dinamici**: Crea molteplici profili (es. "Cinema d'Autore", "Anime Fan", "Kids Only") con DNA e cataloghi dedicati all'interno della medesima installazione Stremio.
+- **Two-Way Trakt Sync**: I voti e le visioni di Stremio si sincronizzano bidirezionalmente con Trakt.tv tramite OAuth Device Code Flow.
+- **Badge Dinamici Anime**: Indicatori del numero di episodio e stato del doppiaggio italiano sincronizzati in memoria con le uscite reali.
+- **Ricerca Semantica AI (Live Search)**: Interroga la barra di ricerca di Stremio in linguaggio naturale (es. *"film thriller anni 90 ambientati sui treni"*) tramite router Mistral AI.
 
 ---
 
-## 🔑 Guida alle API Keys (Variabili d'Ambiente)
+## 🏛️ Architettura di Sistema
 
-### 1. `MONGODB_URI` (Obbligatoria)
-- La stringa di connessione al tuo database MongoDB (es. MongoDB Atlas).
-- Necessaria per salvare profili e configurazioni.
-
-### 2. `HOST_URL` (Altamente Consigliata)
-- L'URL pubblico del tuo servizio (es. `https://<il-tuo-space>.hf.space`).
-- Essenziale per la generazione corretta di poster, badge e manifest.
-
-### 3. `JWT_SECRET` (Consigliata)
-- Chiave segreta per autenticare la dashboard di configurazione tramite cookie HttpOnly.
-- **Se non configurata**: Il server ne genererà una casuale ad ogni avvio. Questo significa che l'app funzionerà comunque, ma le sessioni degli utenti scadranno (sarà necessario rieffettuare il login) ogni volta che il server si riavvia o va in sospensione su Hugging Face.
-- Generabile con: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`.
-
-### 4. The Movie Database (TMDB) - `TMDB_API_KEY` (Obbligatoria*)
-- Recuperabile su [themoviedb.org](https://www.themoviedb.org/) (Settings -> API).
-- \*Se non definita nel server, gli utenti dovranno inserirla manualmente nella UI.
-
-### 5. Mistral AI - `MISTRAL_API_KEY` (Opzionale*)
-- Recuperabile su [console.mistral.ai](https://console.mistral.ai/).
-- \*Obbligatoria per attivare il **Creatore AI** e la **Ricerca AI**.
-
-### 6. Trakt.tv - `TRAKT_CLIENT_ID` e `TRAKT_CLIENT_SECRET` (Opzionali)
-- Per sincronizzare watchlist e cronologia.
-- Crea un'app su [trakt.tv/oauth/applications](https://trakt.tv/oauth/applications).
-- Assicurati di abilitare il flow **`/device/code`**.
+```
+Internet ──HTTPS──> Tailscale Funnel / Caddy ──> 127.0.0.1:7860
+                                                    ├─> container app (Node.js + DuckDB, RAM cap 1.5 GB)
+                                                    ├─> container redis (Cache L2, cap 300 MB)
+                                                    ├─> container anime-source (Worker sincronizzazione)
+                                                    └─> container watchtower (Auto-update continuo da GHCR)
+MongoDB Atlas M0 (Configurazioni & Profili)  ◄──────┘
+GitHub Actions main ──> GHCR (ghcr.io/gabrielefuoco/yaca:latest) ──> Watchtower pull
+```
 
 ---
 
-## Setup Locale
+## 🚀 Deployment in Produzione (Self-Hosting Docker)
 
-Prerequisiti: Node.js installato e un'istanza MongoDB locale o remota.
+La configurazione di riferimento di YACA è un deploy headless su Home Server (`mate`) o VPS tramite Docker Compose:
+
+1. **Clona la configurazione o crea il `docker-compose.yml`**:
+   Configura i servizi `app`, `redis`, `anime-source` e `watchtower` come dettagliato in [docs/DEPLOYMENT_HOME_SERVER.md](docs/DEPLOYMENT_HOME_SERVER.md).
+
+2. **Configura le variabili d'ambiente (`.env`)**:
+   ```bash
+   MONGODB_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/yaca?retryWrites=true&w=majority
+   REDIS_URL=redis://redis:6379
+   TMDB_API_KEY=la_tua_tmdb_api_key
+   MISTRAL_API_KEY=la_tua_mistral_api_key
+   JWT_SECRET=genera_con_crypto_randomBytes
+   HOST_URL=https://mate.taild24589.ts.net
+   PORT=7860
+   ```
+
+3. **Avvia lo stack**:
+   ```bash
+   docker compose up -d
+   ```
+
+4. **Esposizione Pubblica**:
+   - Tramite **Tailscale Funnel**: `tailscale funnel 7860 on`
+   - O tramite **Reverse Proxy Caddy** con certificato HTTPS Let's Encrypt automatico.
+
+5. **Aggiornamenti Automatici**:
+   Watchtower controlla periodicamente il registro GHCR (`ghcr.io/gabrielefuoco/yaca:latest`) e riavvia il container senza interruzione di servizio.
+
+---
+
+## 💻 Setup di Sviluppo Locale
+
+Prerequisiti: Node.js (v20+), Redis e un'istanza MongoDB locale o MongoDB Atlas.
 
 ```bash
-# Installa dipendenze backend
+# 1. Installa le dipendenze backend
 npm ci
 
-# Installa dipendenze frontend
+# 2. Installa le dipendenze e compila il frontend (Next.js export)
 cd frontend
 npm ci
-
-# Torna alla root e compila il frontend
 cd ..
 npm run build
 
-# Avvia le dipendenze locali o il server
+# 3. Avvia il server YACA
 npm start
 ```
 
-Visita `http://localhost:7000` nel browser.
+Il server sarà accessibile all'indirizzo `http://127.0.0.1:7860`.
 
-## Elenco Variabili d'Ambiente
+Per eseguire l'intera suite di test automatizzati:
+```bash
+npm test
+```
 
-|**Variabile**|**Obbligatoria**|**Descrizione**|
+---
+
+## 🔑 Variabili d'Ambiente
+
+| **Variabile** | **Obbligatoria** | **Descrizione** |
 |---|---|---|
-|`MONGODB_URI`|Sì|Connessione a MongoDB|
-|`TMDB_API_KEY`|Sì*|API Key globale TMDB|
-|`MISTRAL_API_KEY`|No*|API Key di Mistral per funzioni AI|
-|`JWT_SECRET`|No|Consigliata. Chiave di sessione (genera fallback casuale al riavvio)|
-|`HOST_URL`|Sì|URL pubblico del server (es. `https://<il-tuo-space>.hf.space`)|
-|`PORT`|No|Porta del server (Hugging Face usa 7860)|
-|`TRAKT_CLIENT_ID`|No|Client ID per Trakt.tv|
-|`TRAKT_CLIENT_SECRET`|No|Client Secret per Trakt.tv|
-|`CORS_ALLOWED_ORIGINS`|No|Origini CORS consentite (es. `*`)|
+| `MONGODB_URI` | **Sì** | Stringa di connessione a MongoDB Atlas per profili e account utente. |
+| `REDIS_URL` | No | URL del server Redis per la cache L2 (default: `redis://127.0.0.1:6379`). |
+| `TMDB_API_KEY` | **Sì*** | API Key globale di TMDB per metadati estesi. |
+| `MISTRAL_API_KEY` | No | API Key Mistral AI per abilitare la ricerca semantica Live Search. |
+| `JWT_SECRET` | No | Chiave di firma token sessione dashboard (fallback random ad ogni avvio se assente). |
+| `HOST_URL` | **Sì** | URL pubblico del server per locandine, badge e manifest Stremio. |
+| `PORT` | No | Porta di ascolto HTTP (default `7860`). |
+| `TRAKT_CLIENT_ID` | No | Client ID di Trakt.tv per la sincronizzazione libreria e cronologia. |
+| `TRAKT_CLIENT_SECRET` | No | Client Secret di Trakt.tv per il flusso OAuth. |
+| `CORS_ALLOWED_ORIGINS` | No | Origini CORS consentite per API pubbliche (default `*`). |

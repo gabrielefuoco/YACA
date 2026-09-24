@@ -10,7 +10,6 @@ const { routeCatalogRequest } = require('../catalog/CatalogRouter');
 const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
 const { formatStremioCatalog, sanitizeCatalogMeta, findLatestAiredEpisode } = require('../catalog/formatters/StremioFormatter');
 const StreamBadge = require('../db/models/StreamBadge');
-const PendingScan = require('../db/models/PendingScan');
 const animeAiringState = require('../data/animeAiringState');
 const { isAnimeContent } = require('../utils/animeIdentity');
 const animeMappingStore = require('../data/animeMappingStore');
@@ -209,70 +208,8 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
     if (itemIds.length > 0) {
         try {
             allBadges = await StreamBadge.find({ baseId: { $in: itemIds } }).lean();
-            
-            const existingStremioIds = new Set(allBadges.map(b => b.stremioId));
-            const queuePromises = [];
-            
-            metas.forEach(item => {
-                if (isItemAnime(item)) {
-                    return; // Nessun accodamento per titoli anime: la verità ITA arriva dal modulo esterno
-                }
-
-                const bId = getBaseId(item.id);
-
-                if (!bId.startsWith('tmdb:') && !bId.startsWith('kitsu:') && !bId.startsWith('anilist:') && !bId.startsWith('tt')) {
-                    return;
-                }
-
-                const itemType = item.type === 'series' || item.type === 'anime' ? 'series' : 'movie';
-                
-                if (itemType === 'series') {
-                    // Accoda Episodio 1 se non ha badge nel DB
-                    const ep1Id = `${bId}:1:1`;
-                    if (!existingStremioIds.has(ep1Id)) {
-                        queuePromises.push(
-                            PendingScan.findOneAndUpdate(
-                                { baseId: ep1Id },
-                                { baseId: ep1Id, type: 'series', status: 'pending' },
-                                { upsert: true }
-                            ).catch(err => console.error(`[PendingScan Queue] Error upserting ${ep1Id}:`, err.message))
-                        );
-                    }
-                    
-                    // Accoda Ultimo Episodio se non ha badge nel DB
-                    const latestInfo = getLatestEpisodeInfo(item);
-                    if (latestInfo) {
-                        const latestId = `${bId}:${latestInfo.season}:${latestInfo.episode}`;
-                        if (!existingStremioIds.has(latestId)) {
-                            queuePromises.push(
-                                PendingScan.findOneAndUpdate(
-                                    { baseId: latestId },
-                                    { baseId: latestId, type: 'series', status: 'pending' },
-                                    { upsert: true }
-                                ).catch(err => console.error(`[PendingScan Queue] Error upserting ${latestId}:`, err.message))
-                            );
-                        }
-                    }
-                } else {
-                    // Accoda Film se non ha badge nel DB
-                    if (!existingStremioIds.has(bId)) {
-                        queuePromises.push(
-                            PendingScan.findOneAndUpdate(
-                                { baseId: bId },
-                                { baseId: bId, type: 'movie', status: 'pending' },
-                                { upsert: true }
-                            ).catch(err => console.error(`[PendingScan Queue] Error upserting ${bId}:`, err.message))
-                        );
-                    }
-                }
-            });
-            
-            // Execute in background
-            if (queuePromises.length > 0) {
-                Promise.all(queuePromises).catch(() => {});
-            }
         } catch (badgeErr) {
-            console.error('[Catalog Post-Cache] Error applying stream badges:', badgeErr.message);
+            console.error('[Catalog Post-Cache] Error fetching stream badges:', badgeErr.message);
         }
     }
 
