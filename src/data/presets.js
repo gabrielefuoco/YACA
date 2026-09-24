@@ -95,7 +95,7 @@ const getPresets = () => {
         { id: 'preset_de_niro', name: 'Starring: Robert De Niro', emoji: '🚕', category: "🎬 Cinema d'Autore & Registi", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_cast: TMDB_PEOPLE.DeNiro, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
         { id: 'preset_johnny_depp', name: 'Starring: Johnny Depp', emoji: '🏴‍☠️', category: "🎬 Cinema d'Autore & Registi", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_cast: TMDB_PEOPLE.JohnnyDepp, sort_by: 'popularity.desc', 'vote_count.gte': 20 }] },
         { id: 'preset_denzel', name: 'Starring: Denzel Washington', emoji: '👮', category: "🎬 Cinema d'Autore & Registi", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_cast: TMDB_PEOPLE.Denzel, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
-        { id: 'preset_nicolas_cage', name: 'La Follia di Nicolas Cage', emoji: '🔥', category: "🎬 Cinema d'Autore & Registi", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_cast: TMDB_PEOPLE.NicolasCage, sort_by: 'popularity.desc' }] },
+        { id: 'preset_nicolas_cage', name: 'La Follia di Nicolas Cage', emoji: '🔥', category: "🎬 Cinema d'Autore & Registi", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_cast: TMDB_PEOPLE.NicolasCage, without_genres: TMDB_GENRES.MOVIE.Documentary, sort_by: 'popularity.desc', 'vote_count.gte': 20 }] },
 
         // =============================================
         // --- 🎬 CINEMA, REGISTI & AUTORI (Studios) ---
