@@ -135,6 +135,11 @@ node_modules/
 
 # Antigravity Agent
 .agent/
+.agents/scratch/
+.scratch/
+
+# Binaries
+*.exe
 
 secrets.env
 
@@ -153,6 +158,9 @@ eslint-output.json
 
 # Regenerable data / cache blobs
 relevance_validation_report.json
+analysis_report.json
+catalog_state*.json
+catalogs_output.txt
 public/cache/
 
 # Credenziali: chiavi di servizio (mai in git)
