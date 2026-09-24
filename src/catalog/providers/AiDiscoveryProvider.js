@@ -79,19 +79,64 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
             tmdbIds = [filters.with_id || filters.params.with_id];
         }
         if (tmdbIds.length === 0) return [];
-        return await getDuckDbCatalogFromFilters({ tmdbIds }, type, skip, PAGE_SIZE, settings);
+        return await getDuckDbCatalogFromFilters({ tmdbIds, uniqueById: filters.uniqueById }, type, skip, PAGE_SIZE, settings);
     }
     // Usa DuckDB per tutti i cataloghi discovery nativi (inclusi preset e hybrid fallback)
     return await getDuckDbCatalogFromFilters(filters, type, skip, PAGE_SIZE, settings);
 }
 
+function collectManualListItems(queries) {
+    const items = [];
+    for (const query of queries) {
+        if (Array.isArray(query.items)) items.push(...query.items);
+        else if (Array.isArray(query.tmdbIds)) items.push(...query.tmdbIds);
+        else {
+            const id = query.with_id || query.params?.with_id;
+            if (id) items.push(id);
+        }
+    }
+    return items;
+}
+
+function getPagesToFetchForQuery(query, requestedPages) {
+    if (query.strategy !== 'manual_list') return requestedPages;
+
+    let itemCount = null;
+    if (Array.isArray(query.items)) itemCount = query.items.length;
+    else if (Array.isArray(query.tmdbIds)) itemCount = query.tmdbIds.length;
+    else if (query.with_id || query.params?.with_id) itemCount = 1;
+
+    if (itemCount === null) return requestedPages;
+    return Math.max(1, Math.min(requestedPages, Math.ceil(itemCount / PAGE_SIZE)));
+}
+
 // Fase 2: Processa qualsiasi catalogo tramite array "queries" (LookAhead, Consensus)
 async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions) {
     const { presentation_strategy } = universalCatalog;
-    const MAX_QUERIES = 10;
-    const queries = (universalCatalog.queries || []).slice(0, MAX_QUERIES);
+    const queries = universalCatalog.queries || [];
 
     if (queries.length === 0) return [];
+
+    // I Matchmaker legacy salvano una query manual_list per fonte. Un solo ID
+    // genera un piano DuckDB leggero: per le liste compatibili un batch IN evita
+    // decine di query full-table e rende skip un vero offset SQL.
+    const canBatchManualList = queries.length > 1 &&
+        presentation_strategy !== 'interleave' &&
+        queries.every(query => query.strategy === 'manual_list');
+    if (canBatchManualList) {
+        const items = collectManualListItems(queries);
+        if (items.length > 0) {
+            return await executeComplexStrategy(
+                { strategy: 'manual_list', items, uniqueById: true },
+                tmdbClient,
+                tmdbApiKey,
+                type,
+                skip,
+                settings,
+                cacheOptions
+            );
+        }
+    }
 
     let finalResults;
 
@@ -140,7 +185,8 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                 query = applyAiQualityFilters(query);
 
                 const pagePromises = [];
-                for (let p = 0; p < pagesToFetch; p++) {
+                const queryPagesToFetch = getPagesToFetchForQuery(query, pagesToFetch);
+                for (let p = 0; p < queryPagesToFetch; p++) {
                     const pageSkip = p * PAGE_SIZE;
                     pagePromises.push(
                         executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions)

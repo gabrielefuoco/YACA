@@ -94,6 +94,10 @@ async function buildCatalogQuery(preset, skip = 0, limit = 100) {
     const where = normalFilters.join(' AND ');
     const order = preset.orderBy || 'popularity DESC NULLS LAST';
     const stableOrder = /"?id"?\s+ASC/i.test(order) ? order : `${order}, id ASC`;
+    if (preset.uniqueById) {
+        const ranked = `SELECT *, row_number() OVER (PARTITION BY id) AS __yaca_unique_row FROM ${table} WHERE ${where}`;
+        return `SELECT * EXCLUDE (__yaca_unique_row) FROM (${ranked}) unique_rows WHERE __yaca_unique_row = 1 ORDER BY ${stableOrder} LIMIT ${limit} OFFSET ${skip}`;
+    }
     return `SELECT * FROM ${table} WHERE ${where} ORDER BY ${stableOrder} LIMIT ${limit} OFFSET ${skip}`;
 }
 

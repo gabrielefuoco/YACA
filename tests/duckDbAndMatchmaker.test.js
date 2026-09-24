@@ -79,6 +79,18 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
             expect(kwFilter).toContain('"cyberpunk"');
         });
 
+        test('buildCatalogQuery deduplica ID prima di applicare LIMIT e OFFSET', async () => {
+            const sql = await buildCatalogQuery({
+                type: 'movie',
+                uniqueById: true,
+                where: ['"id" IN (1,2,3)']
+            }, 20, 20);
+
+            expect(sql).toContain('row_number() OVER (PARTITION BY id)');
+            expect(sql).toContain('WHERE __yaca_unique_row = 1');
+            expect(sql).toContain('LIMIT 20 OFFSET 20');
+        });
+
         test('buildCatalogQuery combines multiple WHERE clauses with AND', async () => {
             const sql = await buildCatalogQuery({
                 type: 'movie',
@@ -104,10 +116,12 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
         test('buildPresetFromFilters handles manual_list and strips ID prefixes', () => {
             const preset = buildPresetFromFilters({
                 strategy: 'manual_list',
+                uniqueById: true,
                 items: [{ tmdbId: 'tmdb:603' }, { id: '604' }, 'invalid_id']
             }, 'movie');
 
             expect(preset.where.some(w => typeof w === 'string' && w.includes('603,604'))).toBe(true);
+            expect(preset.uniqueById).toBe(true);
         });
 
         test('getDuckDbMetaDetails handles numeric and tmdb: prefixed IDs safely', async () => {

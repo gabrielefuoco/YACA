@@ -106,6 +106,36 @@ describe('H5 — paginazione multi-query', () => {
         expect(dups).toEqual([]);
     });
 
+    it('esegue tutte le fonti manual_list e pagina le successive 20 senza troncamento', async () => {
+        const queries = Array.from({ length: 25 }, (_, index) => ({
+            strategy: 'manual_list',
+            with_id: index + 1
+        }));
+        const catalog = { queries, presentation_strategy: 'popularity' };
+
+        const itemsLength = 25;
+        DuckDbProvider.getDuckDbCatalogFromFilters.mockImplementation((filters, type, skip, limit) => {
+            const items = filters.tmdbIds.map((id, index) => ({
+                id: `tmdb:${id}`,
+                popularity: itemsLength - index
+            }));
+            return Promise.resolve(items.slice(skip, skip + limit));
+        });
+
+        const page1 = await executeUniversalPipeline(catalog, {}, 'tmdb-key', 'movie', 0, {}, {});
+        expect(page1).toHaveLength(20);
+        expect(DuckDbProvider.getDuckDbCatalogFromFilters).toHaveBeenCalledTimes(1);
+        expect(DuckDbProvider.getDuckDbCatalogFromFilters.mock.calls[0][0].tmdbIds).toHaveLength(25);
+        expect(DuckDbProvider.getDuckDbCatalogFromFilters.mock.calls[0][2]).toBe(0);
+
+        DuckDbProvider.getDuckDbCatalogFromFilters.mockClear();
+        const page2 = await executeUniversalPipeline(catalog, {}, 'tmdb-key', 'movie', 20, {}, {});
+        expect(page2).toHaveLength(5);
+        expect(DuckDbProvider.getDuckDbCatalogFromFilters).toHaveBeenCalledTimes(1);
+        expect(DuckDbProvider.getDuckDbCatalogFromFilters.mock.calls[0][2]).toBe(20);
+        expect(idsOf(page2).some(id => idsOf(page1).includes(id))).toBe(false);
+    });
+
     it('verde (documentazione): ramo a query singola pagina correttamente', async () => {
         const catalog = {
             queries: [{ strategy: 'discovery', keyword: 'a' }],
