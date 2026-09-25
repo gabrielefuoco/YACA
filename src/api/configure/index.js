@@ -65,10 +65,13 @@ module.exports = async (req, res) => {
         }
 
         // Se il profilo attivo inviato dal client non esiste più, si conserva quello già salvato.
+        // Quando il payload non porta i profili (attivazione rapida dal dashboard) la validazione
+        // usa quelli già salvati: senza, l'id richiesto verrebbe scartato e l'attivazione persa.
+        const profilesForValidation = parsedProfiles !== undefined ? parsedProfiles : (existingUser?.profiles || []);
         const previousActiveProfileId = existingUser?.config?.activeProfileId || existingUser?.activeProfileId;
         const finalActiveProfileId = resolveActiveProfileId({
             requested: activeProfileId,
-            profiles: parsedProfiles,
+            profiles: profilesForValidation,
             previous: previousActiveProfileId
         });
 

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Profile, Catalog, RawProfileData, SyncStatus, TmdbMetadataMap, DNAItem } from '@/types';
 import { api } from '@/lib/api';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
@@ -92,6 +92,10 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
     phase: '',
   });
 
+  // Ultimo profilo attivo ricevuto dal backend: si applica una volta per caricamento,
+  // così la scelta dell'utente non viene sovrascritta dai render successivi.
+  const appliedInitialActiveRef = useRef<string | undefined>(undefined);
+
   // Sync when initialProfiles changes (e.g. after async config decode or save)
   useEffect(() => {
     if (initialProfiles && initialProfiles.length > 0) {
@@ -102,9 +106,23 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
         if (current === safe) return current;
         return safe;
       });
-      setActiveProfileId((prev: string) =>
-        safe.some((p: Profile) => p.id === prev) ? prev : safe[0].id
-      );
+
+      // Il profilo attivo salvato nel backend vince sullo stato locale. Prima di questa
+      // correzione l'effetto si limitava a *conservare* il valore precedente (il default
+      // "global"): dopo un refresh l'utente si ritrovava sempre su "Generale".
+      const incomingActive = initialActiveProfileId && safe.some((p: Profile) => p.id === initialActiveProfileId)
+        ? initialActiveProfileId
+        : null;
+
+      if (incomingActive && incomingActive !== appliedInitialActiveRef.current) {
+        appliedInitialActiveRef.current = incomingActive;
+        setActiveProfileId(incomingActive);
+      } else {
+        setActiveProfileId((prev: string) =>
+          safe.some((p: Profile) => p.id === prev) ? prev : safe[0].id
+        );
+      }
+
       setEditingProfileId((prev: string) => {
         // Priority: stored local id > initial id > first profile
         if (typeof window !== 'undefined') {
@@ -114,7 +132,7 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
         return safe.some((p: Profile) => p.id === prev) ? prev : safe[0].id;
       });
     }
-  }, [initialProfiles]);
+  }, [initialProfiles, initialActiveProfileId]);
 
   const activeProfile = profiles.find((p: Profile) => p.id === activeProfileId) ?? profiles[0];
   const editingProfile = profiles.find((p: Profile) => p.id === editingProfileId) ?? profiles[0];

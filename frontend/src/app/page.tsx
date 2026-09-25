@@ -320,6 +320,21 @@ export default function Home() {
     localStorage.setItem(LOCAL_STORAGE_KEYS.MY_LISTS, JSON.stringify(lists));
   };
 
+  /**
+   * Attivazione di un profilo dal dashboard.
+   * Oltre allo stato locale, salva subito il profilo attivo: l'auto-save dipende dalla
+   * sessione Stremio e non copre il caso "cambio profilo + refresh".
+   */
+  const handleSetActiveProfile = useCallback((id: string) => {
+    setActiveProfileId(id);
+    // Il payload contiene solo il profilo attivo: niente rielaborazione dei profili lato server.
+    api.configure({ activeProfileId: id })
+      .then((data) => {
+        if (data?.configVersion) setConfigVersion(String(data.configVersion));
+      })
+      .catch((err) => console.warn('Salvataggio profilo attivo fallito:', err));
+  }, [setActiveProfileId, setConfigVersion]);
+
   const handleSaveMyList = (list: MyList) => {
     saveMyLists([...myLists, list]);
   };
@@ -522,7 +537,7 @@ export default function Home() {
                   myLists={myLists}
                   customCatalogs={customCatalogs}
                   onSelectEditing={setEditingProfileId}
-                  onSetActive={setActiveProfileId}
+                  onSetActive={handleSetActiveProfile}
                   onAddProfile={addProfile}
                   onRemoveProfile={removeProfile}
                   onRenameProfile={(id, name) => updateProfile(id, { name })}
