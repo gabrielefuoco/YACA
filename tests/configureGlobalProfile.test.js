@@ -11,6 +11,17 @@ jest.mock('../src/ai/router', () => ({
     generateTmdbFiltersFromPrompt: jest.fn()
 }));
 
+// La generazione del DNA salva i vettori in background: senza questi mock la suite
+// resterebbe appesa in attesa di MongoDB (motivo per cui era disattivata).
+jest.mock('../src/models/TasteProfile', () => ({
+    findOne: jest.fn(() => ({ lean: () => Promise.resolve(null) })),
+    updateOne: jest.fn().mockResolvedValue({})
+}));
+
+jest.mock('../src/models/WatchHistory', () => ({
+    countDocuments: jest.fn().mockResolvedValue(0)
+}));
+
 
 
 jest.mock('../src/data/presets', () => ({
@@ -26,7 +37,7 @@ jest.mock('../src/data/presets', () => ({
 const configureRoute = require('../src/api/configure');
 const UserConfig = require('../src/models/UserConfig');
 
-describe.skip('configure route global profile safeguards', () => {
+describe('configure route global profile safeguards', () => {
     const originalEnv = process.env;
 
     beforeEach(() => {
@@ -129,8 +140,41 @@ describe.skip('configure route global profile safeguards', () => {
         const payload = UserConfig.saveUser.mock.calls[0][0];
         const profile = payload.profiles.find((p) => p.id === 'p1');
         expect(profile.settings.suggestedDNA).toEqual(expect.arrayContaining([
-            { id: '222', type: 'keyword', name: 'keyword 222' } // mapped by DNAExtractor
+            { id: '222', type: 'keyword', name: 'Keyword #222' } // senza chiave TMDB resta l'etichetta di fallback
         ]));
+    });
+
+    it('ignora cast e crew: le persone non entrano nel DNA', async () => {
+        const req = {
+            protocol: 'http',
+            get: jest.fn(() => 'localhost:7000'),
+            user: { userId: 'u1', email: 'user@example.com' },
+            body: {
+                activeProfileId: 'p1',
+                profiles: [{
+                    id: 'p1',
+                    name: 'Profilo',
+                    existingCatalogs: [
+                        { queries: [{ with_genres: '28', with_cast: '10205|1234', with_crew: '5678' }] }
+                    ],
+                    newPrompts: [],
+                    settings: { manualDNA: [] }
+                }]
+            }
+        };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await configureRoute(req, res);
+
+        const payload = UserConfig.saveUser.mock.calls[0][0];
+        const profile = payload.profiles.find((p) => p.id === 'p1');
+        expect(profile.settings.suggestedDNA.map(d => d.type)).toEqual(['genre']);
+
+        // E il vettore statico non deve contenere chiavi persona (a:/d:)
+        const { extractStaticDNAFromQueries } = require('../src/utils/dnaExtractor');
+        const vector = extractStaticDNAFromQueries([{ with_genres: '28', with_cast: '10205', with_crew: '5678' }]);
+        expect(Object.keys(vector).some(k => k.startsWith('a:') || k.startsWith('d:'))).toBe(false);
+        expect(vector['g:28']).toBeGreaterThan(0);
     });
 
     it('deduplicates suggestedDNA across multiple active catalogs', async () => {
@@ -161,8 +205,8 @@ describe.skip('configure route global profile safeguards', () => {
         expect(profile.settings.suggestedDNA).toEqual(expect.arrayContaining([
             { id: '53', type: 'genre', name: 'Thriller' },
             { id: '18', type: 'genre', name: 'Dramma' },
-            { id: '111', type: 'keyword', name: 'keyword 111' },
-            { id: '333', type: 'keyword', name: 'keyword 333' }
+            { id: '111', type: 'keyword', name: 'Keyword #111' },
+            { id: '333', type: 'keyword', name: 'Keyword #333' }
         ]));
         expect(profile.settings.suggestedDNA).toHaveLength(4);
     });
@@ -194,8 +238,8 @@ describe.skip('configure route global profile safeguards', () => {
         expect(profile.settings.suggestedDNA).toEqual(expect.arrayContaining([
             { id: '16', type: 'genre', name: 'Animazione' },
             { id: '28', type: 'genre', name: 'Azione' },
-            { id: 'zombie', type: 'keyword', name: 'keyword zombie' },
-            { id: 'samurai', type: 'keyword', name: 'keyword samurai' }
+            { id: 'zombie', type: 'keyword', name: 'Keyword #zombie' },
+            { id: 'samurai', type: 'keyword', name: 'Keyword #samurai' }
         ]));
         expect(profile.settings.suggestedDNA).toHaveLength(4);
     });

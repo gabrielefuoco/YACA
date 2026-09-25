@@ -21,14 +21,15 @@ describe('dnaExtractor', () => {
             expect(result).toHaveProperty('k:monster', 100);
         });
 
-        it('should extract genres, cast, crew, countries', () => {
+        it('should extract genres and countries, ignoring cast e crew', () => {
             const queries = [{ with_genres: '28,12', with_cast: '999', with_crew: '888', with_origin_country: 'US' }];
             const result = extractStaticDNAFromQueries(queries);
             expect(result).toHaveProperty('g:28', 100);
             expect(result).toHaveProperty('g:12', 100);
-            expect(result).toHaveProperty('a:999', 100);
-            expect(result).toHaveProperty('d:888', 100);
             expect(result).toHaveProperty('o:US', 100);
+            // Le persone non alimentano il DNA (scelta di prodotto).
+            expect(result).not.toHaveProperty('a:999');
+            expect(result).not.toHaveProperty('d:888');
         });
 
         it('should return empty object for null queries', () => {
@@ -55,10 +56,11 @@ describe('dnaExtractor', () => {
             const result = extractActiveDNAFromTmdbData(tmdbData);
             expect(result).toHaveProperty('g:28', 100);
             expect(result).toHaveProperty('k:100', 100);
-            expect(result).toHaveProperty('d:50', 100);
-            expect(result).toHaveProperty('a:1', 100);
-            expect(result).not.toHaveProperty('a:6'); // only first 5
             expect(result).toHaveProperty('o:JP', 100);
+            // Registi e cast sono esclusi dal DNA.
+            expect(result).not.toHaveProperty('d:50');
+            expect(result).not.toHaveProperty('a:1');
+            expect(result).not.toHaveProperty('a:6');
         });
 
         it('should extract properties from cache format', () => {
@@ -72,9 +74,9 @@ describe('dnaExtractor', () => {
             const result = extractActiveDNAFromTmdbData(tmdbData);
             expect(result).toHaveProperty('g:28', 100);
             expect(result).toHaveProperty('k:100', 100);
-            expect(result).toHaveProperty('d:50', 100);
-            expect(result).toHaveProperty('a:1', 100);
             expect(result).toHaveProperty('o:US', 100);
+            expect(result).not.toHaveProperty('d:50');
+            expect(result).not.toHaveProperty('a:1');
         });
     });
 

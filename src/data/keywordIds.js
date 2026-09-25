@@ -32,15 +32,23 @@ function filterRetiredTmdbKeywords(keywords) {
  * sono stati eliminati dei pesi. I TasteProfile già persistiti restano intatti
  * su Atlas; la sanitizzazione avviene ai confini in-memory.
  */
+/**
+ * Rimuove keyword ritirati e chiavi delle persone (`a:` cast, `d:` crew) dai vettori
+ * legacy e rinormalizza solo quando sono stati eliminati dei pesi. Le persone non
+ * devono influenzare il DNA (scelta di prodotto: lo rendevano troppo restrittivo).
+ * I TasteProfile già persistiti restano intatti su Atlas; la sanitizzazione avviene
+ * ai confini in-memory.
+ */
 function sanitizeDnaVector(vector) {
     if (!vector || typeof vector !== 'object' || Array.isArray(vector)) return {};
 
     const entries = Object.entries(vector).filter(([key]) => {
+        if (key.startsWith('a:') || key.startsWith('d:')) return false;
         if (!key.startsWith('k:')) return true;
         return !isRetiredTmdbKeywordId(key.slice(2));
     });
-    const removedRetiredKeyword = entries.length !== Object.keys(vector).length;
-    if (!removedRetiredKeyword) return { ...vector };
+    const removedEntry = entries.length !== Object.keys(vector).length;
+    if (!removedEntry) return { ...vector };
 
     const sanitized = Object.fromEntries(entries);
     const total = Object.values(sanitized).reduce((sum, value) => {

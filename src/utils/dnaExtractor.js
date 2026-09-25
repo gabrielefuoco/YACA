@@ -32,20 +32,8 @@ function extractStaticDNAFromQueries(queries) {
                 V_static[k] = (V_static[k] || 0) + baseWeight;
             });
         }
-        if (query.with_cast) {
-            query.with_cast.toString().split(/[,|]/).forEach(id => {
-                if (!id.trim()) return;
-                const k = `a:${id.trim()}`;
-                V_static[k] = (V_static[k] || 0) + baseWeight;
-            });
-        }
-        if (query.with_crew) {
-            query.with_crew.toString().split(/[,|]/).forEach(id => {
-                if (!id.trim()) return;
-                const k = `d:${id.trim()}`;
-                V_static[k] = (V_static[k] || 0) + baseWeight;
-            });
-        }
+        // NOTA: cast e crew (persone) non entrano nel DNA: lo rendevano troppo restrittivo.
+        // Restano solo generi, keyword e paese d'origine.
         if (query.with_origin_country) {
             query.with_origin_country.toString().split(/[,|]/).forEach(id => {
                 if (!id.trim()) return;
@@ -107,15 +95,9 @@ function extractActiveDNAFromTmdbData(tmdbData, baseWeight = 100) {
         dna[k] = (dna[k] || 0) + (baseWeight * weight);
     }
 
-    // Registi
-    const directorIds = tmdbData.director_ids || 
-        (tmdbData.credits?.crew || []).filter(c => c.job === 'Director').map(c => c.id);
-    directorIds.forEach(id => addKey('d', id));
-
-    // Cast
-    const castIds = tmdbData.cast_ids || 
-        (tmdbData.credits?.cast || []).slice(0, 5).map(c => c.id);
-    castIds.forEach(id => addKey('a', id));
+    // Registi e cast non alimentano più il DNA (scelta di prodotto: le persone lo
+    // rendevano troppo restrittivo). Le chiavi `d:`/`a:` eventualmente presenti nei
+    // vettori già salvati vengono comunque scartate da normalizeVector.
 
     // Origin Country
     const countries = tmdbData.origin_country || [];
@@ -124,14 +106,33 @@ function extractActiveDNAFromTmdbData(tmdbData, baseWeight = 100) {
     return dna;
 }
 
+/**
+ * Chiavi DNA relative alle persone (cast `a:` e crew `d:`).
+ * Non devono influenzare il DNA: vengono scartate sia in generazione sia in lettura.
+ */
+function isPersonDnaKey(key) {
+    return typeof key === 'string' && (key.startsWith('a:') || key.startsWith('d:'));
+}
+
+function stripPersonKeys(vector) {
+    if (!vector || typeof vector !== 'object') return vector || {};
+    const clean = {};
+    for (const [key, value] of Object.entries(vector)) {
+        if (isPersonDnaKey(key)) continue;
+        clean[key] = value;
+    }
+    return clean;
+}
+
 function normalizeVector(vector) {
-    if (!vector || typeof vector !== 'object') return {};
-    const sum = Object.values(vector).reduce((a, b) => a + Number(b || 0), 0);
+    const withoutPersons = stripPersonKeys(vector);
+    if (!withoutPersons || typeof withoutPersons !== 'object') return {};
+    const sum = Object.values(withoutPersons).reduce((a, b) => a + Number(b || 0), 0);
     if (sum === 0) return {};
     
     const normalized = {};
-    for (let key in vector) {
-        normalized[key] = Number(vector[key] || 0) / sum;
+    for (let key in withoutPersons) {
+        normalized[key] = Number(withoutPersons[key] || 0) / sum;
     }
     return normalized;
 }
@@ -160,4 +161,4 @@ function computeFinalDNA(V_static, V_active, totalInteractions) {
     return V_final;
 }
 
-module.exports = { extractStaticDNAFromQueries, extractActiveDNAFromTmdbData, computeFinalDNA, normalizeVector };
+module.exports = { extractStaticDNAFromQueries, extractActiveDNAFromTmdbData, computeFinalDNA, normalizeVector, stripPersonKeys, isPersonDnaKey };

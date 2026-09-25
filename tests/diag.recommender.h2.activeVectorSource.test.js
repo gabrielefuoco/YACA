@@ -70,9 +70,10 @@ describe('H2 — V_active source DuckDB vs TmdbScoringData', () => {
 
         expect(vActive).toBeDefined();
         expect(vActive['g:28']).toBe(100);
-        expect(vActive['d:4590']).toBe(100);
-        expect(vActive['a:45099']).toBe(100);
         expect(vActive['k:596']).toBe(100);
+        // Registi e cast non entrano più nel DNA (scelta di prodotto).
+        expect(vActive['d:4590']).toBeUndefined();
+        expect(vActive['a:45099']).toBeUndefined();
 
         // V_final deve essere stato ricalcolato
         expect(vFinal).toBeDefined();
@@ -131,7 +132,7 @@ describe('H2 — V_active source DuckDB vs TmdbScoringData', () => {
         // V_active contiene i dati sia del film che della serie
         expect(vActive['g:18']).toBe(100);
         expect(vActive['g:10765']).toBe(100);
-        expect(vActive['d:333']).toBe(100);
-        expect(vActive['d:666']).toBe(100);
+        expect(vActive['d:333']).toBeUndefined();
+        expect(vActive['d:666']).toBeUndefined();
     });
 });

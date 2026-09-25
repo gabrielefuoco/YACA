@@ -126,7 +126,6 @@ class ProfileScorer {
 
         const vFinal = sanitizeDnaVector(profile.compiledVectors?.V_final || {});
         let thematicScore = 0;
-        let authorialScore = 0;
 
         // --- 1. Assi Tematici (VSM: Vector Space Model) ---
         // Generi
@@ -180,31 +179,13 @@ class ProfileScorer {
         }
 
         // --- 2. Assi Autoriali (Precision Bonus) ---
-        // Registi
-        if (tmdbData.credits && tmdbData.credits.crew) {
-            const directors = tmdbData.credits.crew.filter(c => c.job === 'Director');
-            directors.forEach(d => {
-                if (d && d.id) {
-                    authorialScore += this.getVectorScore(vFinal, 'd', d.id);
-                }
-            });
-        }
+        // Rimossi: registi e cast non influenzano più il DNA (scelta di prodotto).
 
-        // Attori
-        if (tmdbData.credits && tmdbData.credits.cast) {
-            tmdbData.credits.cast.slice(0, 5).forEach(a => {
-                if (a && a.id) {
-                    authorialScore += this.getVectorScore(vFinal, 'a', a.id);
-                }
-            });
-        }
-
-        // --- 3. Final Affinity Weighting (Thematic 98%, Authorial 2%) ---
-        // Authorial weight is minimized as per user feedback: "non sono così importanti"
+        // --- 3. Final Affinity Weighting ---
+        // Il punteggio tematico (generi + keyword) è l'unico segnale del DNA: registi e cast
+        // sono stati rimossi dall'estrazione, quindi non c'è più un termine autoriale.
         const hasProfileSignal = vFinal && Object.keys(vFinal).length > 0;
-        const profileMatch = hasProfileSignal
-            ? (scaledThematicScore * 0.98) + (authorialScore * 0.02)
-            : null;
+        const profileMatch = hasProfileSignal ? scaledThematicScore : null;
 
         // --- Phase 1.3: Bayesian Weighted Rating (IMDb formula) ---
         // WR = ((v/(v+m)) * R) + ((m/(v+m)) * C)

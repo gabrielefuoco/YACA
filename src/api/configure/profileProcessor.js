@@ -34,33 +34,65 @@ function buildSuggestedDNAFromCatalogs(catalogs = []) {
         genre: new Map(),
         keyword: new Map(),
         network: new Map(),
-        company: new Map(),
-        actor: new Map(),
-        director: new Map()
+        company: new Map()
+    };
+
+    const bump = (type, rawId) => {
+        const id = String(rawId).trim();
+        if (!id || !counts[type]) return;
+        counts[type].set(id, (counts[type].get(id) || 0) + 1);
+    };
+
+    const collectFromQuery = (query) => {
+        if (!query || typeof query !== 'object') return;
+        const pick = (field, type) => {
+            const value = query[field];
+            if (value === undefined || value === null || value === '') return;
+            String(value).split(/[,|]/).forEach(id => bump(type, id));
+        };
+        pick('with_genres', 'genre');
+        pick('with_keywords', 'keyword');
+        pick('with_networks', 'network');
+        pick('with_companies', 'company');
+        // Forme usate dai filtri AI / TMDB
+        if (Array.isArray(query.genre_ids)) query.genre_ids.forEach(id => bump('genre', id));
+        if (typeof query.keyword === 'string' && query.keyword.trim()) {
+            query.keyword.split(/[,|]/).forEach(k => bump('keyword', k.trim().toLowerCase()));
+        }
+        // with_cast / with_crew sono ignorati: le persone non entrano nel DNA.
     };
 
     for (const catalog of catalogs) {
-        if (!catalog.where || !Array.isArray(catalog.where)) continue;
-
-        for (const w of catalog.where) {
-            const strW = String(w);
-            const matches = strW.match(/"id":(\d+)/g);
-            if (matches) {
+        // Cataloghi dei preset: filtro serializzato in `where`.
+        if (Array.isArray(catalog.where)) {
+            for (const w of catalog.where) {
+                const strW = String(w);
+                const matches = strW.match(/"id":\s*"?([0-9]+)"?/g);
+                if (!matches) continue;
                 for (const m of matches) {
                     const id = m.replace(/[^0-9]/g, '');
-                    if (strW.includes('genres')) counts.genre.set(id, (counts.genre.get(id) || 0) + 1);
-                    if (strW.includes('keywords')) counts.keyword.set(id, (counts.keyword.get(id) || 0) + 1);
-                    if (strW.includes('networks')) counts.network.set(id, (counts.network.get(id) || 0) + 1);
-                    if (strW.includes('production_companies')) counts.company.set(id, (counts.company.get(id) || 0) + 1);
-                    if (strW.includes('cast')) counts.actor.set(id, (counts.actor.get(id) || 0) + 1);
-                    if (strW.includes('directors') || strW.includes('writers')) counts.director.set(id, (counts.director.get(id) || 0) + 1);
+                    if (strW.includes('genres')) bump('genre', id);
+                    if (strW.includes('keywords')) bump('keyword', id);
+                    if (strW.includes('networks')) bump('network', id);
+                    if (strW.includes('production_companies')) bump('company', id);
                 }
+            }
+        }
+
+        // Cataloghi creati dall'utente (Creator / liste): filtri in `queries`.
+        if (Array.isArray(catalog.queries)) {
+            catalog.queries.forEach(collectFromQuery);
+        }
+        if (catalog.filters && typeof catalog.filters === 'object') {
+            collectFromQuery(catalog.filters);
+            if (Array.isArray(catalog.filters.queries)) {
+                catalog.filters.queries.forEach(collectFromQuery);
             }
         }
     }
 
     const results = [];
-    const limits = { genre: 8, keyword: 8, network: 3, company: 3, actor: 3, director: 3 };
+    const limits = { genre: 8, keyword: 8, network: 3, company: 3 };
 
     for (const [type, map] of Object.entries(counts)) {
         const top = Array.from(map.entries())

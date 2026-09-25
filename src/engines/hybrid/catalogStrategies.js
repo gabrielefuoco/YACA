@@ -251,13 +251,10 @@ function isHiddenGemAlignedWithProfile(item, profile) {
     const genreIds = getItemGenreIds(item);
     const keywordIds = getItemKeywordIds(item);
     const data = getItemData(item);
-    const directorIds = (data.credits?.crew || [])
-        .filter(credit => credit?.job === 'Director' && credit?.id !== undefined)
-        .map(credit => String(credit.id));
 
+    // Le persone (registi, cast) non fanno più parte del DNA: restano generi e keyword.
     const hasDnaAffinity = hasAffinityForAny(vector, 'g', genreIds)
-        || hasAffinityForAny(vector, 'k', keywordIds)
-        || hasAffinityForAny(vector, 'd', directorIds);
+        || hasAffinityForAny(vector, 'k', keywordIds);
     if (!hasDnaAffinity) return false;
 
     const childGenreIds = genreIds.filter(id => HIDDEN_CHILD_ORIENTED_GENRE_IDS.has(id));
