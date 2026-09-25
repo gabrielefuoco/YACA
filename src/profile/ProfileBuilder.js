@@ -3,6 +3,7 @@ const WatchHistory = require('../models/WatchHistory');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
 const { extractActiveDNAFromTmdbData, computeFinalDNA, calculateWeightedInteractions } = require('../utils/dnaExtractor');
+const { computeTimeDecay, applyLogSaturation } = require('../utils/dnaRarity');
 
 class ProfileBuilder {
     /**
@@ -87,35 +88,10 @@ class ProfileBuilder {
     }
 
     /**
-     * Esegue in background l'estrazione del DNA dall'item guardato, 
-     * lo somma al V_active e ricalcola il V_final.
+     * Ricomputo puro di V_active e V_final dai segnali (funzione pura, niente accumulo incrementale).
      */
-    static async _updateAndSaveActiveVectors(owner, context, dnaList) {
-        const profile = await TasteProfile.findOne({ owner, context }).lean();
-        if (!profile) return;
-
-        const vActive = profile.compiledVectors?.V_active || {};
-        const vStatic = profile.compiledVectors?.V_static || {};
-
-        for (const itemDNA of dnaList) {
-            for (const [key, value] of Object.entries(itemDNA)) {
-                vActive[key] = (vActive[key] || 0) + value;
-            }
-        }
-
-        const historyDocs = await WatchHistory.find({ owner, context }).lean();
-        const totalInteractions = calculateWeightedInteractions(historyDocs);
-        const vFinal = computeFinalDNA(vStatic, vActive, totalInteractions);
-
-        await TasteProfile.updateOne(
-            { owner, context },
-            { 
-                $set: { 
-                    "compiledVectors.V_active": vActive,
-                    "compiledVectors.V_final": vFinal
-                } 
-            }
-        );
+    static async _updateAndSaveActiveVectors(owner, context) {
+        return ProfileBuilder.recomputeVectorsForUser(owner, context);
     }
 
     /**
@@ -246,13 +222,16 @@ class ProfileBuilder {
             let weight = 0;
             const signals = doc.signals || [];
             if (signals.length === 0) {
-                weight = 200; // default visto (peso 2)
+                const decay = computeTimeDecay(doc.lastWatchedAt || doc.createdAt);
+                weight = 200 * decay; // default visto (peso 2 con decadimento)
             } else {
                 for (const s of signals) {
-                    if (s.type === 'loved') weight += 400;      // loved 4
-                    else if (s.type === 'liked') weight += 300; // liked 3
-                    else if (s.type === 'watched') weight += 200; // visto 2
-                    else if (s.type === 'library') weight += 100; // libreria 1
+                    const signalDate = s.at || doc.lastWatchedAt || doc.createdAt;
+                    const decay = computeTimeDecay(signalDate);
+                    if (s.type === 'loved') weight += 400 * decay;      // loved 4
+                    else if (s.type === 'liked') weight += 300 * decay; // liked 3
+                    else if (s.type === 'watched') weight += 200 * decay; // visto 2
+                    else if (s.type === 'library') weight += 100 * decay; // libreria 1
                 }
             }
             if (weight > 0) {
@@ -275,10 +254,12 @@ class ProfileBuilder {
                     const tmdbId = Number(lib.tmdbId);
                     if (!tmdbId) continue;
                     const libType = (lib.type === 'series' || lib.type === 'tv') ? 'tv' : 'movie';
+                    const decay = computeTimeDecay(lib.addedAt || lib.createdAt);
+                    const libWeight = 100 * decay;
                     if (itemMap.has(tmdbId)) {
-                        itemMap.get(tmdbId).weight += 100; // Libreria aggiunge peso 1
+                        itemMap.get(tmdbId).weight += libWeight;
                     } else {
-                        itemMap.set(tmdbId, { tmdbId, type: libType, weight: 100 });
+                        itemMap.set(tmdbId, { tmdbId, type: libType, weight: libWeight });
                     }
                 }
             } catch (err) {
@@ -291,14 +272,17 @@ class ProfileBuilder {
 
         // 3. Estrae metadati da DuckDB locale
         const duckDbDnaData = await ProfileBuilder._fetchDnaItemsFromDuckDb(items);
-        const vActive = {};
+        const rawActive = {};
 
         for (const data of duckDbDnaData) {
             const itemDna = extractActiveDNAFromTmdbData(data, data.weight || 100);
             for (const [key, value] of Object.entries(itemDna)) {
-                vActive[key] = (vActive[key] || 0) + value;
+                rawActive[key] = (rawActive[key] || 0) + value;
             }
         }
+
+        // Anti-flat: saturazione logaritmica per chiave (rendimenti decrescenti)
+        const vActive = applyLogSaturation(rawActive, 100);
 
         const totalInteractions = calculateWeightedInteractions(historyDocs);
         const vFinal = computeFinalDNA(vStatic, vActive, totalInteractions);
@@ -319,7 +303,7 @@ class ProfileBuilder {
      * Aggiorna V_active e V_final in background (singolo elemento).
      */
     static async _updateVectorsAsync(owner, context, tmdbId, type) {
-        await ProfileBuilder._bulkUpdateVectorsAsync(owner, context, [{ tmdbId, type }]);
+        await ProfileBuilder.recomputeVectorsForUser(owner, context);
     }
 
     /**
@@ -327,14 +311,7 @@ class ProfileBuilder {
      */
     static async _bulkUpdateVectorsAsync(owner, context, items) {
         if (!items || items.length === 0) return;
-
-        // 1. Prelievo DNA primario da DuckDB
-        const duckDbDnaData = await ProfileBuilder._fetchDnaItemsFromDuckDb(items);
-        const dnaList = duckDbDnaData.map(data => extractActiveDNAFromTmdbData(data, data.weight || 100));
-
-        if (dnaList.length > 0) {
-            await ProfileBuilder._updateAndSaveActiveVectors(owner, context, dnaList);
-        }
+        await ProfileBuilder.recomputeVectorsForUser(owner, context);
     }
 
     /**

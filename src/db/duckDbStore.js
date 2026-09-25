@@ -83,6 +83,9 @@ class DuckDbStore {
                             this.updateAnimeMapping(allTmdbAnimeIds).catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-init:', e));
                         }
 
+                        // Popola la cache dei Document Frequencies (DF) per la rarità dolce DNA
+                        this.buildDfCache().catch(e => console.warn('[DuckDB Store] Warning buildDfCache:', e.message));
+
                         resolve();
                     } catch (errExec) {
                         console.error(`[DuckDB Store] Errore inizializzazione tabelle/FTS:`, errExec);
@@ -230,6 +233,39 @@ class DuckDbStore {
             }
         }
         return mapping;
+    }
+
+    /**
+     * Calcola e memorizza in RAM la tabella dei Document Frequencies (DF)
+     * per il calcolo della rarità dolce nel DNA.
+     */
+    async buildDfCache() {
+        if (!this.isInitialized) return;
+        try {
+            const genresRes = await this.query(`
+                SELECT 'g:' || (json_extract(g, '$.id')::VARCHAR) as k, count(*) as df
+                FROM (
+                    SELECT unnest(from_json(genres, '["JSON"]')) as g FROM movies WHERE genres IS NOT NULL
+                    UNION ALL
+                    SELECT unnest(from_json(genres, '["JSON"]')) as g FROM tv WHERE genres IS NOT NULL
+                ) GROUP BY k
+            `);
+            const kwRes = await this.query(`
+                SELECT 'k:' || (k->>'id') as k, count(*) as df
+                FROM (
+                    SELECT unnest(from_json(keywords, '["JSON"]')) as k FROM movies WHERE keywords IS NOT NULL
+                    UNION ALL
+                    SELECT unnest(from_json(keywords, '["JSON"]')) as k FROM tv WHERE keywords IS NOT NULL
+                ) GROUP BY k
+            `);
+            const dfMap = new Map();
+            for (const r of (genresRes || [])) if (r.k) dfMap.set(r.k, Number(r.df));
+            for (const r of (kwRes || [])) if (r.k) dfMap.set(r.k, Number(r.df));
+            const { setGlobalDfCache } = require('../utils/dnaRarity');
+            setGlobalDfCache(dfMap);
+        } catch (err) {
+            console.warn('[DuckDbStore] Error building DF cache:', err.message);
+        }
     }
 
     close() {

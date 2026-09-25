@@ -158,8 +158,14 @@ function calculateWeightedInteractions(historyDocs) {
 }
 
 function computeFinalDNA(V_static, V_active, totalInteractions) {
-    const normStatic = normalizeVector(V_static || {}); 
-    const normActive = normalizeVector(V_active || {});
+    const { applySoftRarity } = require('./dnaRarity');
+    
+    // Anti-flat: Rarità dolce applicata a tutte le chiavi del DNA, statiche incluse
+    const rareStatic = applySoftRarity(V_static || {});
+    const rareActive = applySoftRarity(V_active || {});
+
+    const normStatic = normalizeVector(rareStatic); 
+    const normActive = normalizeVector(rareActive);
 
     const hasStatic = Object.keys(normStatic).length > 0;
     const hasActive = Object.keys(normActive).length > 0;
