@@ -16,7 +16,22 @@ describe('preset_burton popularity ordering', () => {
         for (let i = 1; i < popularity.length; i++) {
             expect(popularity[i]).toBeLessThanOrEqual(popularity[i - 1]);
         }
-        expect(rows.findIndex(row => Number(row.id) === 869))
-            .toBeLessThan(rows.findIndex(row => Number(row.id) === 162));
+
+        // Contratto d'ordine completo, verificabile a prescindere dai valori dello snapshot
+        // (la popolarità cambia a ogni aggiornamento del dump TMDB): a parità di popolarità
+        // si ordina per vote_count DESC e, a parità anche di quello, per id ASC.
+        for (let i = 1; i < rows.length; i++) {
+            const prev = rows[i - 1];
+            const curr = rows[i];
+            if (Number(prev.popularity) !== Number(curr.popularity)) continue;
+            expect(Number(curr.vote_count)).toBeLessThanOrEqual(Number(prev.vote_count));
+            if (Number(prev.vote_count) === Number(curr.vote_count)) {
+                expect(Number(prev.id)).toBeLessThanOrEqual(Number(curr.id));
+            }
+        }
+
+        // Determinismo: la stessa query deve produrre lo stesso ordine
+        const rowsAgain = await duckDbStore.query(sql);
+        expect(rowsAgain.map(row => String(row.id))).toEqual(rows.map(row => String(row.id)));
     }, 30000);
 });
