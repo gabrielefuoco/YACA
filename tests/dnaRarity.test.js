@@ -112,4 +112,30 @@ describe('dnaRarity utilities', () => {
             expect(result['k:mid']).toBeLessThanOrEqual(180);
         });
     });
+
+    describe('calculateProfileRelevance', () => {
+        const { calculateProfileRelevance } = require('../src/utils/dnaRarity');
+
+        it('should return 1.0 for global context or empty static prior', () => {
+            const itemDna = { 'g:28': 100, 'k:123': 100 };
+            expect(calculateProfileRelevance(itemDna, { 'g:28': 50 }, 'global')).toBe(1.0);
+            expect(calculateProfileRelevance(itemDna, {}, 'custom_profile')).toBe(1.0);
+            expect(calculateProfileRelevance(itemDna, null, 'custom_profile')).toBe(1.0);
+        });
+
+        it('should return 1.0 (full weight) when item shares a genre or topos with static prior', () => {
+            const vStatic = { 'g:28': 100, 'L1:c_1': 50 };
+            const itemRelevant = { 'g:28': 100, 'k:999': 100 };
+            // relevance = 1.0 -> 0.20 + 0.80 * 1.0 = 1.00
+            expect(calculateProfileRelevance(itemRelevant, vStatic, 'profile_action')).toBe(1.0);
+        });
+
+        it('should return 0.40 (80/20 mix with relevance 0.25) when item does not share features with static prior', () => {
+            const vStatic = { 'g:28': 100, 'g:12': 50 };
+            const itemUnrelated = { 'g:16': 100, 'k:999': 100 }; // Animation
+            // relevance = 0.25 -> 0.20 + 0.80 * 0.25 = 0.40
+            const factor = calculateProfileRelevance(itemUnrelated, vStatic, 'profile_action');
+            expect(factor).toBeCloseTo(0.40, 2);
+        });
+    });
 });

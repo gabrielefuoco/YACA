@@ -3,7 +3,7 @@ const WatchHistory = require('../models/WatchHistory');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
 const { extractActiveDNAFromTmdbData, computeFinalDNA, calculateWeightedInteractions } = require('../utils/dnaExtractor');
-const { computeTimeDecay, applyLogSaturation } = require('../utils/dnaRarity');
+const { computeTimeDecay, applyLogSaturation, calculateProfileRelevance } = require('../utils/dnaRarity');
 
 class ProfileBuilder {
     /**
@@ -275,9 +275,11 @@ class ProfileBuilder {
         const rawActive = {};
 
         for (const data of duckDbDnaData) {
-            const itemDna = extractActiveDNAFromTmdbData(data, data.weight || 100);
+            const itemDna = extractActiveDNAFromTmdbData(data, 100);
+            const relevanceFactor = calculateProfileRelevance(itemDna, vStatic, context);
+            const effectiveWeight = (data.weight || 100) * relevanceFactor;
             for (const [key, value] of Object.entries(itemDna)) {
-                rawActive[key] = (rawActive[key] || 0) + value;
+                rawActive[key] = (rawActive[key] || 0) + (value * (effectiveWeight / 100));
             }
         }
 

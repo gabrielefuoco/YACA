@@ -120,11 +120,47 @@ function applySoftRarity(vector, dfMap = null) {
     return result;
 }
 
+/**
+ * Calcola il fattore di rilevanza di un item rispetto al prior statico del contesto.
+ * Mix 80/20: 80% condizionato alla rilevanza (1.0 se condivide genere/topos, 0.25 altrimenti),
+ * 20% libero per consentire deriva organica.
+ * @param {Record<string, number>} itemDna
+ * @param {Record<string, number>} vStatic
+ * @param {string} context
+ * @returns {number} Moltiplicatore in [0.40, 1.00]
+ */
+function calculateProfileRelevance(itemDna, vStatic, context = 'global') {
+    if (!context || context === 'global') return 1.0;
+    if (!vStatic || typeof vStatic !== 'object' || Object.keys(vStatic).length === 0) return 1.0;
+
+    // Estrae le chiavi del prior statico (generi, L1, keyword con peso positivo)
+    const staticKeys = new Set(
+        Object.entries(vStatic)
+            .filter(([k, v]) => Number(v) > 0 && (k.startsWith('g:') || k.startsWith('L1:') || k.startsWith('k:')))
+            .map(([k]) => k)
+    );
+    if (staticKeys.size === 0) return 1.0;
+
+    // Controlla se l'item condivide almeno un genere o topos/keyword con il prior statico
+    let sharesFeature = false;
+    for (const key of Object.keys(itemDna || {})) {
+        if (staticKeys.has(key)) {
+            sharesFeature = true;
+            break;
+        }
+    }
+
+    const relevance = sharesFeature ? 1.0 : 0.25;
+    // Mix 80/20: 80% filtrato / 20% libero
+    return 0.20 + (0.80 * relevance);
+}
+
 module.exports = {
     computeTimeDecay,
     applyLogSaturation,
     getSoftRarityMultiplier,
     applySoftRarity,
+    calculateProfileRelevance,
     setGlobalDfCache,
     getGlobalDfCache,
     DF_MIN_DEFAULT,
