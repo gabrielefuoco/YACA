@@ -98,7 +98,7 @@ export function DnaBarChart({
                   >
                     {/* Item Name (Truncated with native title tooltip) */}
                     <span
-                      className="w-24 sm:w-32 md:w-36 shrink-0 truncate text-xs sm:text-sm font-medium text-marrow-deep select-none cursor-default"
+                      className="w-20 sm:w-32 md:w-36 shrink-0 truncate text-[11px] sm:text-sm font-medium text-marrow-deep select-none cursor-default"
                       title={item.name}
                     >
                       {item.name}

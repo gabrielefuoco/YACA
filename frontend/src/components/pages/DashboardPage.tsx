@@ -197,8 +197,10 @@ export function DashboardPage({
       </div>
 
       {/* Navigation Tabs */}
-      <div className="w-full flex sm:justify-center mb-4 sm:mb-6 overflow-x-auto no-scrollbar scroll-smooth py-1.5 px-2 sm:px-0">
-        <div className="inline-flex sm:flex flex-nowrap sm:flex-wrap items-center justify-start sm:justify-center p-1 sm:p-1.5 bg-white/40 rounded-2xl border border-marrow-light/20 shadow-xl shadow-primary/5 min-w-max sm:min-w-0 w-max sm:w-auto gap-1 sm:gap-2 shrink-0 sm:shrink">
+      {/* Su telefono i tab formano una griglia (2-3 colonne): lo scroll orizzontale
+          nascondeva le voci e tagliava "Matchmaker" a metà. */}
+      <div className="w-full flex sm:justify-center mb-4 sm:mb-6 py-1.5">
+        <div className="grid grid-cols-2 min-[420px]:grid-cols-3 sm:flex sm:flex-wrap sm:items-center sm:justify-center w-full sm:w-auto p-1.5 bg-white/40 rounded-2xl border border-marrow-light/20 shadow-xl shadow-primary/5 gap-1.5 sm:gap-2">
           {tabsItems.map((tab) => (
             <button
               key={tab.id}
@@ -213,7 +215,7 @@ export function DashboardPage({
                 setActiveTab(tab.id);
               }}
               className={`
-                flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-6 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-300 whitespace-nowrap shrink-0 min-h-[40px] touch-manipulation
+                flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-5 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-black transition-all duration-300 sm:whitespace-nowrap min-h-[44px] sm:min-h-0 touch-manipulation
                 ${tab.id === 'matchmaker'
                   ? 'bg-primary/10 text-primary border border-primary/30 hover:bg-primary hover:text-white shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:scale-105'
                   : activeTab === tab.id
@@ -223,7 +225,7 @@ export function DashboardPage({
               `}
             >
               <span className={`material-symbols-outlined text-base sm:text-lg ${tab.id === 'matchmaker' ? 'animate-pulse text-amber-200' : ''}`}>{tab.icon}</span>
-              <span className="uppercase tracking-wider">{tab.label}</span>
+              <span className="uppercase tracking-wider leading-tight text-center">{tab.label}</span>
             </button>
           ))}
         </div>
