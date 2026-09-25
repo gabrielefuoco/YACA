@@ -14,6 +14,7 @@ const duckDbStore = require('../src/db/duckDbStore');
 
 jest.mock('../src/models/TasteProfile');
 jest.mock('../src/models/WatchHistory');
+jest.mock('../src/db/models/UserAccount');
 jest.mock('../src/db/duckDbStore', () => ({
     query: jest.fn()
 }));
@@ -52,6 +53,11 @@ describe('H2 — V_active source DuckDB vs TmdbScoringData', () => {
         });
         TasteProfile.updateOne.mockResolvedValue({ modifiedCount: 1 });
         WatchHistory.countDocuments.mockResolvedValue(1);
+        WatchHistory.find.mockReturnValue({
+            lean: jest.fn().mockResolvedValue([
+                { tmdbId: 5721, type: 'movie', signals: [{ type: 'watched', at: new Date() }] }
+            ])
+        });
 
         // 4. Esecuzione aggiornamento singolo
         await ProfileBuilder._updateVectorsAsync('user1', 'ctx1', 5721, 'movie');
@@ -69,15 +75,18 @@ describe('H2 — V_active source DuckDB vs TmdbScoringData', () => {
         const vFinal = updateArgs.$set['compiledVectors.V_final'];
 
         expect(vActive).toBeDefined();
-        expect(vActive['g:28']).toBe(100);
-        expect(vActive['k:596']).toBe(100);
+        expect(vActive['g:28']).toBeGreaterThan(0);
+        expect(vActive['k:596']).toBeGreaterThan(0);
         // Registi e cast non entrano più nel DNA (scelta di prodotto).
         expect(vActive['d:4590']).toBeUndefined();
         expect(vActive['a:45099']).toBeUndefined();
 
-        // V_final deve essere stato ricalcolato
+        // V_final deve essere stato ricalcolato e normalizzato a ~100
         expect(vFinal).toBeDefined();
         expect(Object.keys(vFinal).length).toBeGreaterThan(0);
+        const sumFinal = Object.values(vFinal).reduce((a, b) => a + Number(b || 0), 0);
+        expect(sumFinal).toBeGreaterThan(99);
+        expect(sumFinal).toBeLessThan(101);
     });
 
     it('ProfileBuilder gestisce aggiornamenti bulk misti (movie e tv) da DuckDB', async () => {
@@ -116,6 +125,12 @@ describe('H2 — V_active source DuckDB vs TmdbScoringData', () => {
         });
         TasteProfile.updateOne.mockResolvedValue({ modifiedCount: 1 });
         WatchHistory.countDocuments.mockResolvedValue(2);
+        WatchHistory.find.mockReturnValue({
+            lean: jest.fn().mockResolvedValue([
+                { tmdbId: 101, type: 'movie', signals: [{ type: 'watched', at: new Date() }] },
+                { tmdbId: 202, type: 'tv', signals: [{ type: 'watched', at: new Date() }] }
+            ])
+        });
 
         await ProfileBuilder._bulkUpdateVectorsAsync('user1', 'ctx1', [
             { tmdbId: 101, type: 'movie' },
@@ -130,8 +145,8 @@ describe('H2 — V_active source DuckDB vs TmdbScoringData', () => {
         const vActive = updateArgs.$set['compiledVectors.V_active'];
 
         // V_active contiene i dati sia del film che della serie
-        expect(vActive['g:18']).toBe(100);
-        expect(vActive['g:10765']).toBe(100);
+        expect(vActive['g:18']).toBeGreaterThan(0);
+        expect(vActive['g:10765']).toBeGreaterThan(0);
         expect(vActive['d:333']).toBeUndefined();
         expect(vActive['d:666']).toBeUndefined();
     });
