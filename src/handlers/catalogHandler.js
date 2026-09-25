@@ -345,7 +345,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const { cacheOptions: tmdbFetchOptions } = getCacheConfig(userConfig.ttl);
     
     // We bump this version whenever we make significant changes to how posters or badges are generated
-    const BADGE_CATALOG_VERSION = 16;
+    const BADGE_CATALOG_VERSION = 17;
 
     // Check Full CACHE Request
     const requestCacheKey = generateRequestHash(id, { 
@@ -544,6 +544,13 @@ async function catalogHandler(args, userConfig, hostUrl) {
         }
     };
 
+    // I cataloghi watchlist sono il riflesso della libreria personale: cambiano quando
+    // l'utente aggiunge o rimuove titoli. Con il TTL di default (giorni) restavano
+    // congelati — ed è così che un titolo già unito continuava a comparire due volte.
+    const WATCHLIST_TTL_MS = 2 * 60 * 1000;
+    const isWatchlistCatalog = typeof id === 'string' && id.startsWith('yaca_watchlist');
+    const effectiveTtl = isWatchlistCatalog ? Math.min(ttl, WATCHLIST_TTL_MS) : ttl;
+
     // SWR handling
     let responseData;
     if (extra?.search || baseId === 'yaca_search_history') {
@@ -557,11 +564,11 @@ async function catalogHandler(args, userConfig, hostUrl) {
             return cachedStatus.value;
         } else {
             const freshData = await fetchCatalog();
-            await catalogRequestCache.set(requestCacheKey, freshData, ttl);
+            await catalogRequestCache.set(requestCacheKey, freshData, effectiveTtl);
             responseData = freshData;
         }
     } else {
-        responseData = await catalogRequestCache.getOrFetch(requestCacheKey, fetchCatalog, ttl);
+        responseData = await catalogRequestCache.getOrFetch(requestCacheKey, fetchCatalog, effectiveTtl);
     }
 
     return await applyPostCacheBadges(responseData, userConfig, hostUrl, catalogMeta, type, baseId);
