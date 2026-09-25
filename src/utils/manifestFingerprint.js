@@ -107,9 +107,12 @@ function getHeroCatalogs() {
         if (typeof stremio.buildManifest === 'function') {
             const manifest = stremio.buildManifest({});
             if (manifest && Array.isArray(manifest.catalogs)) {
-                const heroes = manifest.catalogs.slice(7);
-                if (heroes.length > 0) {
-                    return heroes.map(c => ({
+                // TUTTI i cataloghi definiti dal codice (standard + hero): una firma che
+                // coprisse solo gli hero non rileverebbe cambi ai cataloghi standard
+                // (ricerca/watchlist), lasciando Stremio disallineato dopo il deploy.
+                const definedCatalogs = manifest.catalogs;
+                if (definedCatalogs.length > 0) {
+                    return definedCatalogs.map(c => ({
                         id: c.id,
                         type: c.type,
                         name: c.name
