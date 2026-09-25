@@ -393,8 +393,14 @@ router.get('/:id/library', async (req, res) => {
 
         const items = await require('../db/models/UserLibraryItem').find({
             addonUuid: account.addonUuid,
-            removed: false
+            removed: false,
+            // I duplicati (stesso titolo con id diversi: tt… / tmdb:… / kitsu:…) vengono
+            // marchiati al sync e qui nascosti: la griglia mostra una card per titolo.
+            duplicateOf: null
         }).sort({ _ctime: -1 }).lean();
+
+        const { normalizeLegacyPosterHost } = require('../utils/libraryIdentity');
+        const currentHost = process.env.HOST_URL || `${req.protocol}://${req.get('host')}`;
 
         const seen = new Set();
         const mappedItems = [];
@@ -406,6 +412,7 @@ router.get('/:id/library', async (req, res) => {
 
             mappedItems.push({
                 ...item,
+                poster: normalizeLegacyPosterHost(item.poster, currentHost),
                 _id: effectiveId,
                 itemId: effectiveId
             });

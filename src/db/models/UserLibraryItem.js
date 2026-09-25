@@ -17,12 +17,16 @@ const userLibraryItemSchema = new mongoose.Schema({
     state: { type: mongoose.Schema.Types.Mixed }, // stremio state (lastWatched, timeWatched, season, episode, etc.)
     // YACA specific mapped data (populated later or during sync)
     tmdbId: { type: Number, index: true },
-    mapped: { type: Boolean, default: false }
+    mapped: { type: Boolean, default: false },
+    // Stesso titolo presente con id diversi (tt… / tmdb:… / kitsu:…): il documento
+    // secondario punta al primario e viene nascosto da dashboard e cataloghi.
+    duplicateOf: { type: String, default: null }
 }, { 
     timestamps: true 
 });
 
 userLibraryItemSchema.index({ addonUuid: 1, type: 1, removed: 1, _mtime: -1 });
+userLibraryItemSchema.index({ addonUuid: 1, duplicateOf: 1 });
 userLibraryItemSchema.index({ addonUuid: 1, itemId: 1 }, { unique: true });
 
 const UserLibraryItem = mongoose.models.UserLibraryItem || mongoose.model('UserLibraryItem', userLibraryItemSchema);

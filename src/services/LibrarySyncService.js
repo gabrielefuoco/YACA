@@ -295,6 +295,11 @@ class LibrarySyncService {
                 await UserLibraryItem.bulkWrite(bulkOps, { ordered: false });
             }
 
+            // Lo stesso titolo può arrivare con id diversi (tt… / tmdb:… / kitsu:…):
+            // marchiamo i duplicati così dashboard e cataloghi ne mostrano uno solo.
+            const { applyDuplicateMarks } = require('../utils/libraryIdentity');
+            await applyDuplicateMarks(user.addonUuid);
+
             // Update sync status
             addonConfig.syncStatus.lastLibrarySync = new Date();
             await addonConfig.save();

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
+import { PosterImage } from '@/components/shared/PosterImage';
 import { Button } from '@/components/ui/button';
 import { generateId } from '@/lib/utils';
 import { Loader2, Library, CheckSquare, Square, Trash2, ArrowUpDown, RefreshCw } from 'lucide-react';
@@ -288,18 +289,7 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
                   ${isSelected ? 'ring-4 ring-primary shadow-lg shadow-primary/20 scale-[0.98]' : 'shadow-md'}
                 `}
               >
-                {resolvePosterSrc(item.poster) ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={resolvePosterSrc(item.poster) as string}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-marrow-light/20 flex items-center justify-center p-2 text-center">
-                    <span className="text-xs font-bold text-marrow-deep/50">{item.name}</span>
-                  </div>
-                )}
+                <PosterImage src={resolvePosterSrc(item.poster)} alt={item.name} />
                 
                 {isSelectionMode ? (
                   <div className="absolute inset-0 bg-black/20 flex p-2 items-start justify-end">

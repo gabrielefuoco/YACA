@@ -27,11 +27,12 @@ class LibraryConverterService {
             const tmdbClient = createTmdbClient(user.apiKeys.tmdb || process.env.TMDB_API_KEY);
             const userConfig = await AddonConfig.findOne({ uuid: user.addonUuid }).lean();
 
-            // Find items that are not mapped yet
+            // Find items that are not mapped yet (i duplicati marcati restano fuori)
             const unmappedItems = await UserLibraryItem.find({
                 addonUuid: user.addonUuid,
                 mapped: false,
-                removed: false
+                removed: false,
+                duplicateOf: null
             }).limit(BATCH_SIZE);
 
             if (unmappedItems.length === 0) {

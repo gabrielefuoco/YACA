@@ -5,6 +5,7 @@ const UserAccount = require('../../db/models/UserAccount');
 const AddonConfig = require('../../db/models/AddonConfig');
 const duckDbStore = require('../../db/duckDbStore');
 const { mapDuckDbRowToMeta } = require('./DuckDbProvider');
+const { normalizeLegacyPosterHost } = require('../../utils/libraryIdentity');
 
 const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 const WATCHLIST_PAGE_SIZE = 20;
@@ -141,7 +142,10 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
     let query = {
         addonUuid: uuid,
         removed: false,
-        itemId: { $ne: null, $exists: true }
+        itemId: { $ne: null, $exists: true },
+        // Un solo risultato per titolo: i duplicati con id diverso (tt… / tmdb:… / kitsu:…)
+        // vengono marcati al sync e nascosti qui.
+        duplicateOf: null
     };
 
     if (id === 'yaca_watchlist_anime') {
@@ -187,7 +191,7 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
             id: effectiveId,
             type: item.type,
             name: item.name || 'Unknown',
-            poster: item.poster,
+            poster: normalizeLegacyPosterHost(item.poster, process.env.HOST_URL),
             posterShape: item.posterShape || 'poster',
             background: item.background,
             logo: item.logo,
