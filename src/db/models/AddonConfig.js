@@ -81,7 +81,8 @@ const addonConfigSchema = new mongoose.Schema({
     config: {
         activeProfileId: String,
         configVersion: String,
-        manifestFingerprint: String
+        manifestFingerprint: String,
+        pendingStremioResync: { type: Boolean, default: false }
     },
     syncStatus: {
         isSyncing: { type: Boolean, default: false },
