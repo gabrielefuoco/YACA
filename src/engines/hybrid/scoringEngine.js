@@ -25,19 +25,40 @@ function computeTopElements(profile, prefix, filterType, n = 5, user = null, con
             });
         }
     }
-    
-    const dnaFilters = getProfileDnaFilters(user, context);
-    dnaFilters.filter(f => f.type === filterType).forEach(f => {
-        const id = String(f.id);
-        if (filterType === 'keyword' && isRetiredTmdbKeywordId(id)) return;
-        if (!scores[id]) scores[id] = 100;
-        else scores[id] += 50;
-    });
 
-    return Object.entries(scores)
-        .sort((a, b) => (b[1] - a[1]) || String(a[0]).localeCompare(String(b[0])))
-        .slice(0, n)
+    const dnaFilters = getProfileDnaFilters(user, context);
+    const suggestedIds = dnaFilters
+        .filter(f => f.type === filterType)
+        .map(f => String(f.id))
+        .filter(id => filterType !== 'keyword' || !isRetiredTmdbKeywordId(id));
+    const suggestedSet = new Set(suggestedIds);
+
+    // Ordina gli elementi dal vettore reale V_final per score decrescente
+    // (a parità di score, usa la presenza in suggestedDNA come tie-breaker)
+    const sortedFromVector = Object.entries(scores)
+        .sort((a, b) => {
+            const diff = b[1] - a[1];
+            if (Math.abs(diff) > 0.0001) return diff;
+            const aBonus = suggestedSet.has(String(a[0])) ? 1 : 0;
+            const bBonus = suggestedSet.has(String(b[0])) ? 1 : 0;
+            if (bBonus !== aBonus) return bBonus - aBonus;
+            return String(a[0]).localeCompare(String(b[0]));
+        })
         .map(e => String(e[0]));
+
+    const result = sortedFromVector.slice(0, n);
+
+    // Fallback: se il vettore reale ha meno di n elementi, usa suggestedDNA
+    if (result.length < n) {
+        for (const id of suggestedIds) {
+            if (!result.includes(id)) {
+                result.push(id);
+                if (result.length >= n) break;
+            }
+        }
+    }
+
+    return result;
 }
 
 function computeTopGenres(profile, n = 5, user = null, context = 'global') {

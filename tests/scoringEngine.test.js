@@ -37,13 +37,25 @@ describe('scoringEngine', () => {
             expect(result).toEqual(['16', '28']);
         });
 
-        it('should boost genres from dnaFilters', () => {
+        it('should boost genres from dnaFilters as fallback or tie-breaker', () => {
             const profile = { compiledVectors: { V_final: { 'g:28': 100 } } };
             const helpers = require('../src/utils/helpers');
             helpers.getProfileDnaFilters.mockReturnValueOnce([{ type: 'genre', id: '16' }]);
             
             const result = scoringEngine.computeTopGenres(profile, 2);
-            expect(result).toEqual(expect.arrayContaining(['16', '28']));
+            expect(result).toEqual(['28', '16']);
+        });
+
+        it('should prioritize real V_final scores over suggested DNA without flat boost', () => {
+            const profile = {
+                compiledVectors: {
+                    V_final: { 'g:28': 10, 'g:12': 5 }
+                }
+            };
+            const helpers = require('../src/utils/helpers');
+            helpers.getProfileDnaFilters.mockReturnValueOnce([{ type: 'genre', id: '16' }]);
+            const result = scoringEngine.computeTopGenres(profile, 2);
+            expect(result).toEqual(['28', '12']);
         });
     });
 
