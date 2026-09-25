@@ -3,6 +3,25 @@ const { validateAuth, validateKeys, sanitizeCustomCatalogs } = require('./valida
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');
 const { updateStremioAddonCollection } = require('../../utils/stremioAddon');
 
+/**
+ * Sceglie il profilo attivo da salvare.
+ *
+ * Se il profilo richiesto dal client non esiste più (id rigenerati, stato locale vecchio,
+ * payload parziale) si conserva il profilo attivo già salvato, purché ancora valido: il
+ * ritorno a `global` è l'ultima risorsa. Un fallback a `global` troppo aggressivo ha già
+ * azzerato il profilo attivo di un utente reale, facendogli sparire i cataloghi da Stremio.
+ *
+ * @param {{ requested?: string, profiles?: Array<{id: string}>, previous?: string }} input
+ * @returns {string}
+ */
+function resolveActiveProfileId({ requested, profiles, previous } = {}) {
+    const ids = new Set((profiles || []).map(p => p?.id).filter(Boolean));
+    if (requested && ids.has(requested)) return requested;
+    if (previous && ids.has(previous)) return previous;
+    const first = (profiles || [])[0]?.id;
+    return first || 'global';
+}
+
 module.exports = async (req, res) => {
     try {
         validateAuth(req);
@@ -45,9 +64,13 @@ module.exports = async (req, res) => {
             parsedProfiles = await processProfiles(inputProfiles, userId, mistralKey, warnings, effectiveTmdbKey);
         }
 
-        const finalActiveProfileId = (activeProfileId && parsedProfiles?.some(p => p.id === activeProfileId))
-            ? activeProfileId
-            : (parsedProfiles?.some(p => p.id === 'global') ? 'global' : (parsedProfiles?.[0]?.id || existingUser?.activeProfileId || 'global'));
+        // Se il profilo attivo inviato dal client non esiste più, si conserva quello già salvato.
+        const previousActiveProfileId = existingUser?.config?.activeProfileId || existingUser?.activeProfileId;
+        const finalActiveProfileId = resolveActiveProfileId({
+            requested: activeProfileId,
+            profiles: parsedProfiles,
+            previous: previousActiveProfileId
+        });
 
 
 
@@ -128,3 +151,6 @@ module.exports = async (req, res) => {
         res.status(500).json({ error: "Errore interno durante il salvataggio." });
     }
 };
+
+// Esportata per i test di regressione sulla scelta del profilo attivo.
+module.exports.resolveActiveProfileId = resolveActiveProfileId;
