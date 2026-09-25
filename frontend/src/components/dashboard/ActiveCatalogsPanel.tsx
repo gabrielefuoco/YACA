@@ -16,7 +16,6 @@ interface ActiveCatalogsPanelProps {
   onRemoveMyList: (id: string) => void;
   onEdit: (catalog: Catalog) => void;
   onDuplicate: (catalog: Catalog) => void;
-  onOpenMatchmaker?: () => void;
 }
 
 export function ActiveCatalogsPanel({
@@ -29,7 +28,6 @@ export function ActiveCatalogsPanel({
   onRemoveMyList,
   onEdit,
   onDuplicate,
-  onOpenMatchmaker,
 }: ActiveCatalogsPanelProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [mergeSource, setMergeSource] = useState<Catalog | null>(null);

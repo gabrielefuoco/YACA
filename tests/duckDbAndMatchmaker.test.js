@@ -8,14 +8,8 @@ const {
 } = require('../src/catalog/providers/DuckDbProvider');
 const duckDbStore = require('../src/db/duckDbStore');
 const graph = require('../src/engines/graph/HierarchicalGraph');
-const { 
-    getMatchmakerInitCards, 
-    getMatchmakerNextCards, 
-    getFinalRecommendations,
-    getKeywordsForNodes 
-} = require('../src/engines/hybrid/MatchmakerGraphEngine');
 
-describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
+describe('DuckDB & HierarchicalGraph Suite (Phases 4 & 5)', () => {
     beforeAll(async () => {
         if (!graph.isLoaded) {
             graph.loadData();
@@ -267,7 +261,7 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
         });
     });
 
-    describe('MatchmakerGraphEngine', () => {
+    describe('HierarchicalGraph', () => {
         test('Graph is loaded and contains levels L1-L5', () => {
             expect(graph.isLoaded).toBe(true);
             expect(graph.data).toHaveProperty('L1');
@@ -281,94 +275,13 @@ describe('DuckDB & Matchmaker Engine Suite (Phases 4 & 5)', () => {
             const l5Keys = Object.keys(graph.data.L5 || {});
             if (l5Keys.length > 0) {
                 const sampleL5 = l5Keys[0];
-                const keywordsMap = getKeywordsForNodes([sampleL5], 'L5');
+                const keywordsMap = graph.getKeywordsForNodes([sampleL5], 'L5');
                 expect(keywordsMap.has(sampleL5)).toBe(true);
                 const kws = keywordsMap.get(sampleL5);
                 expect(Array.isArray(kws)).toBe(true);
                 expect(kws.length).toBeGreaterThan(0);
             }
         });
-
-        test('getMatchmakerInitCards generates cards for mood with Italian genre input', async () => {
-            if (!duckDbStore.isInitialized) return;
-
-            const cards = await getMatchmakerInitCards(
-                'movie',
-                ['Azione'],
-                ["Intenso & Ricco d'Azione"],
-                { isAnime: false }
-            );
-
-            expect(Array.isArray(cards)).toBe(true);
-            if (cards.length > 0) {
-                const firstCard = cards[0];
-                expect(firstCard).toHaveProperty('id');
-                expect(firstCard).toHaveProperty('title');
-                expect(firstCard.id).toMatch(/^tmdb:\d+$/);
-            }
-        });
-
-        test('getMatchmakerNextCards updates heat map and penalizes disliked nodes', async () => {
-            if (!duckDbStore.isInitialized) return;
-
-            const l2Keys = Object.keys(graph.data.L2 || {});
-            if (l2Keys.length < 2) return;
-
-            const history = [
-                { id: 'tmdb:603', action: 'like', _graphNodeId: l2Keys[0] },
-                { id: 'tmdb:604', action: 'dislike', _graphNodeId: l2Keys[1] }
-            ];
-
-            const next = await getMatchmakerNextCards('movie', history, 'L2', {});
-            expect(next).toBeDefined();
-            expect(next).toHaveProperty('cards');
-            expect(Array.isArray(next.cards)).toBe(true);
-        }, 30000);
-
-        test('getFinalRecommendations returns TMDB IDs for winning nodes', async () => {
-            if (!duckDbStore.isInitialized) return;
-
-            const l2Keys = Object.keys(graph.data.L2 || {});
-            if (l2Keys.length === 0) return;
-
-            const recs = await getFinalRecommendations([l2Keys[0]], 'movie', {});
-            expect(Array.isArray(recs)).toBe(true);
-            recs.forEach(id => {
-                expect(typeof id === 'string' || typeof id === 'number').toBe(true);
-            });
-        }, 30000);
-
-        test('getMatchmakerNextCards safely falls back and assigns winningNode when heat map is empty', async () => {
-            if (!duckDbStore.isInitialized) return;
-
-            const querySpy = jest.spyOn(duckDbStore, 'query').mockResolvedValue([
-                {
-                    id: 603,
-                    title: 'The Matrix',
-                    original_title: 'The Matrix',
-                    vote_average: 8.2,
-                    vote_count: 23000,
-                    popularity: 55.0,
-                    genres: JSON.stringify([{ id: 28, name: 'Action' }]),
-                    keywords: JSON.stringify([{ id: 4379, name: 'time travel' }])
-                }
-            ]);
-
-            const next = await getMatchmakerNextCards('movie', [], 'L2', {});
-            expect(next).toBeDefined();
-            expect(next.cards.length).toBeGreaterThan(0);
-            expect(next.winningNode).toBeDefined();
-            expect(typeof next.winningNode).toBe('string');
-
-            querySpy.mockRestore();
-        });
-
-        test('getMatchmakerNextCards handles unknown currentLevel safely without jumping to L5', async () => {
-            if (!duckDbStore.isInitialized) return;
-
-            const next = await getMatchmakerNextCards('movie', [], undefined, {});
-            expect(next.nextLevel).toBe('L1');
-        }, 30000);
     });
 
     describe('WatchlistProvider & Custom Catalogs', () => {

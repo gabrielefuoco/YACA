@@ -1,6 +1,8 @@
 # Obiettivo: Implementazione del Kids Filter (NSFW Blacklist)
 
-Questo task definisce il piano per estendere il sistema di blocco NSFW (attualmente applicato al Matchmaker) e creare un solido filtro famigliare ("Kids Mode") per l'intera app YACA, preparandolo anche per futuri dump massivi di dati (1 Milione+ di film su TMDB).
+> **Nota Architetturale**: Il modulo interattivo Matchmaker è stato rimosso da YACA ed estratto nel repo standalone `/APP/matchmaker`. I punti seguenti che citavano il Matchmaker si intendono applicabili alla pipeline DuckDB generale e ai cataloghi Hero/VSM.
+
+Questo task definisce il piano per estendere il sistema di blocco NSFW e creare un solido filtro famigliare ("Kids Mode") per l'intera app YACA, preparandolo anche per futuri dump massivi di dati (1 Milione+ di film su TMDB).
 
 ## 1. Completamento Blacklist (Coda Lunga delle Keyword)
 Prima di attivare il filtro in produzione, dobbiamo catturare le keyword iper-rare che il grafo vettoriale ha ignorato (frequenza < 15):

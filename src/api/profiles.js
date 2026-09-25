@@ -8,7 +8,6 @@ const { syncAllStremioData } = require('../utils/stremioAddon');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const LibraryConverterService = require('../services/LibraryConverterService');
 const UserLibraryItem = require('../db/models/UserLibraryItem');
-const { funnelMatchmakerSession, initMatchmakerSession, analyzeMatchmakerSession, finishMatchmakerSession, getMatchmakerTrailer } = require('../handlers/matchmakerHandler');
 const { sanitizeDnaVector, isRetiredTmdbKeywordId } = require('../data/keywordIds');
 
 /**
@@ -348,36 +347,6 @@ router.post('/:id/sync-vectors', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
-/**
- * POST /api/profiles/:id/matchmaker/funnel
- * Filters genres and moods to return a macro Vibe funnel
- */
-router.post('/:id/matchmaker/funnel', funnelMatchmakerSession);
-
-/**
- * POST /api/profiles/:id/matchmaker/init
- * Initializes a Tinder-style discovery session
- */
-router.post('/:id/matchmaker/init', initMatchmakerSession);
-
-/**
- * POST /api/profiles/:id/matchmaker/analyze
- * Batch-evaluates swipes and fetches new cards
- */
-router.post('/:id/matchmaker/analyze', analyzeMatchmakerSession);
-
-/**
- * POST /api/profiles/:id/matchmaker/finish
- * Force-ends the session and saves the custom catalog
- */
-router.post('/:id/matchmaker/finish', finishMatchmakerSession);
-
-/**
- * GET /api/profiles/:id/matchmaker/trailer/:type/:itemId
- * Fetches the YouTube trailer for the Matchmaker UI
- */
-router.get('/:id/matchmaker/trailer/:type/:itemId', getMatchmakerTrailer);
 
 /**
  * GET /api/profiles/:id/library
