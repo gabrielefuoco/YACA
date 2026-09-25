@@ -1,4 +1,4 @@
-const { extractStaticDNAFromQueries, extractActiveDNAFromTmdbData, computeFinalDNA, normalizeVector } = require('../src/utils/dnaExtractor');
+const { extractStaticDNAFromQueries, extractActiveDNAFromTmdbData, computeFinalDNA, calculateWeightedInteractions, normalizeVector } = require('../src/utils/dnaExtractor');
 
 describe('dnaExtractor', () => {
     describe('extractStaticDNAFromQueries', () => {
@@ -94,38 +94,64 @@ describe('dnaExtractor', () => {
         });
     });
 
+    describe('calculateWeightedInteractions', () => {
+        it('should correctly weight signals: watched=2, liked=3, loved=4, library=0', () => {
+            const historyDocs = [
+                { signals: [{ type: 'watched' }] },            // 2
+                { signals: [{ type: 'liked' }] },              // 3
+                { signals: [{ type: 'loved' }] },              // 4
+                { signals: [{ type: 'library' }] },            // 0 (esclusa)
+                { signals: [{ type: 'watched' }, { type: 'loved' }] }, // 2 + 4 = 6
+                { signals: [] },                               // 2 (default visto)
+                {}                                             // 2 (default visto)
+            ];
+            const T = calculateWeightedInteractions(historyDocs);
+            expect(T).toBe(2 + 3 + 4 + 0 + 6 + 2 + 2); // 19
+        });
+
+        it('should return 0 for null or empty docs', () => {
+            expect(calculateWeightedInteractions(null)).toBe(0);
+            expect(calculateWeightedInteractions([])).toBe(0);
+        });
+    });
+
     describe('computeFinalDNA', () => {
-        it('should favor static DNA initially', () => {
+        it('should favor static DNA initially when T=0', () => {
             const vStatic = { 'g:28': 100 };
             const vActive = { 'g:12': 100 };
-            const totalInteractions = 0; // 0% active weight
+            const T = 0; // 0% active weight
             
-            const result = computeFinalDNA(vStatic, vActive, totalInteractions);
+            const result = computeFinalDNA(vStatic, vActive, T);
             // static weight = 1, active = 0
-            expect(result['g:28']).toBe(100); // 1 * 1 * 100
+            expect(result['g:28']).toBe(100);
             expect(result['g:12']).toBe(0);
         });
 
-        it('should blend static and active at threshold', () => {
+        it('should blend static and active according to w = 0.85 * T / (T + 50)', () => {
             const vStatic = { 'g:28': 100 };
             const vActive = { 'g:12': 100 };
-            const totalInteractions = 50; // threshold = 50, so activeWeight = 0.85
             
-            const result = computeFinalDNA(vStatic, vActive, totalInteractions);
-            // static weight = 0.15, active = 0.85
-            expect(result['g:28']).toBeCloseTo(15);
-            expect(result['g:12']).toBeCloseTo(85);
+            // A T = 50: w = 0.85 * 50 / 100 = 0.425
+            const res50 = computeFinalDNA(vStatic, vActive, 50);
+            expect(res50['g:28']).toBeCloseTo(57.5);
+            expect(res50['g:12']).toBeCloseTo(42.5);
+
+            // A T = 150: w = 0.85 * 150 / 200 = 0.6375
+            const res150 = computeFinalDNA(vStatic, vActive, 150);
+            expect(res150['g:28']).toBeCloseTo(36.25);
+            expect(res150['g:12']).toBeCloseTo(63.75);
         });
 
-        it('should cap active weight to maxActiveWeight', () => {
+        it('should asymptotically approach maxActiveWeight 0.85 without exceeding it', () => {
             const vStatic = { 'g:28': 100 };
             const vActive = { 'g:12': 100 };
-            const totalInteractions = 1000; // far beyond 50
+            const T = 100000; // very large T
             
-            const result = computeFinalDNA(vStatic, vActive, totalInteractions);
-            // max activeWeight = 0.85
-            expect(result['g:28']).toBeCloseTo(15);
-            expect(result['g:12']).toBeCloseTo(85);
+            const result = computeFinalDNA(vStatic, vActive, T);
+            // w = 0.85 * 100000 / 100050 ~= 0.84957
+            expect(result['g:12']).toBeLessThanOrEqual(85);
+            expect(result['g:12']).toBeGreaterThan(84.9);
+            expect(result['g:28']).toBeGreaterThanOrEqual(15);
         });
     });
 });

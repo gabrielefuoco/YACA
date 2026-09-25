@@ -244,9 +244,10 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
                     const hasActiveHistory = Object.keys(vActive).length > 0;
                     
                     // Ricalcola V_final combinando il nuovo V_static con il V_active (o vuoto)
-                    const { computeFinalDNA } = require('../../utils/dnaExtractor');
+                    const { computeFinalDNA, calculateWeightedInteractions } = require('../../utils/dnaExtractor');
                     const WatchHistory = require('../../models/WatchHistory');
-                    const totalInteractions = await WatchHistory.countDocuments({ owner: userId, context: profile.id });
+                    const historyDocs = await WatchHistory.find({ owner: userId, context: profile.id }).lean();
+                    const totalInteractions = calculateWeightedInteractions(historyDocs);
                     const vFinal = computeFinalDNA(inferredStaticDNA, vActive, totalInteractions);
                     
                     const idNamesUpdates = {};

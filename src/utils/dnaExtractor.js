@@ -137,6 +137,26 @@ function normalizeVector(vector) {
     return normalized;
 }
 
+function calculateWeightedInteractions(historyDocs) {
+    if (!historyDocs || !Array.isArray(historyDocs)) return 0;
+    let T = 0;
+    for (const doc of historyDocs) {
+        const signals = doc?.signals;
+        if (!signals || !Array.isArray(signals) || signals.length === 0) {
+            T += 2; // default: visto (peso 2)
+        } else {
+            for (const s of signals) {
+                if (!s || !s.type) continue;
+                if (s.type === 'loved') T += 4;
+                else if (s.type === 'liked') T += 3;
+                else if (s.type === 'watched') T += 2;
+                // library: esclusa (0)
+            }
+        }
+    }
+    return T;
+}
+
 function computeFinalDNA(V_static, V_active, totalInteractions) {
     const normStatic = normalizeVector(V_static || {}); 
     const normActive = normalizeVector(V_active || {});
@@ -159,11 +179,9 @@ function computeFinalDNA(V_static, V_active, totalInteractions) {
         staticWeight = 0.0;
         activeWeight = 1.0;
     } else {
-        // Entrambi presenti: applica la curva di apprendimento
-        const threshold = 50; 
-        const maxActiveWeight = 0.85; 
-
-        activeWeight = Math.min((totalInteractions || 0) / threshold, 1) * maxActiveWeight;
+        // Entrambi presenti: applica la curva w = 0.85 * T / (T + 50) con T pesato
+        const tVal = Math.max(0, Number(totalInteractions) || 0);
+        activeWeight = tVal > 0 ? (0.85 * tVal) / (tVal + 50) : 0;
         staticWeight = 1 - activeWeight;
     }
 
@@ -188,4 +206,12 @@ function computeFinalDNA(V_static, V_active, totalInteractions) {
     return V_final;
 }
 
-module.exports = { extractStaticDNAFromQueries, extractActiveDNAFromTmdbData, computeFinalDNA, normalizeVector, stripPersonKeys, isPersonDnaKey };
+module.exports = { 
+    extractStaticDNAFromQueries, 
+    extractActiveDNAFromTmdbData, 
+    computeFinalDNA, 
+    calculateWeightedInteractions,
+    normalizeVector, 
+    stripPersonKeys, 
+    isPersonDnaKey 
+};

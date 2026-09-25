@@ -2,7 +2,7 @@ const TasteProfile = require('../models/TasteProfile');
 const WatchHistory = require('../models/WatchHistory');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
-const { extractActiveDNAFromTmdbData, computeFinalDNA } = require('../utils/dnaExtractor');
+const { extractActiveDNAFromTmdbData, computeFinalDNA, calculateWeightedInteractions } = require('../utils/dnaExtractor');
 
 class ProfileBuilder {
     /**
@@ -103,7 +103,8 @@ class ProfileBuilder {
             }
         }
 
-        const totalInteractions = await WatchHistory.countDocuments({ owner, context });
+        const historyDocs = await WatchHistory.find({ owner, context }).lean();
+        const totalInteractions = calculateWeightedInteractions(historyDocs);
         const vFinal = computeFinalDNA(vStatic, vActive, totalInteractions);
 
         await TasteProfile.updateOne(
@@ -299,7 +300,7 @@ class ProfileBuilder {
             }
         }
 
-        const totalInteractions = historyDocs.length;
+        const totalInteractions = calculateWeightedInteractions(historyDocs);
         const vFinal = computeFinalDNA(vStatic, vActive, totalInteractions);
 
         await TasteProfile.updateOne(
