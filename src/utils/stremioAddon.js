@@ -81,8 +81,34 @@ async function updateStremioAddonCollection(authKey, manifestUrl) {
     }
 
     const existingIdx = addons.findIndex(a => a.manifest?.id === ADDON_ID);
-    const manifestRes = await stremioClient.get(manifestUrl, { timeout: STREMIO_TIMEOUT });
-    const manifest = manifestRes.data;
+
+    // Il manifest viene costruito in-process. Scaricarlo dalla URL pubblica non funziona
+    // dentro il container: il suo hostname pubblico non è risolvibile via DNS (il servizio
+    // è raggiungibile solo tramite il reverse proxy/Tailscale dell'host), quindi il fetch
+    // lanciava ENOTFOUND e l'intero aggiornamento della collezione falliva: la URL in
+    // Stremio restava quella vecchia e il client continuava a usare il manifest in cache.
+    let manifest = null;
+    try {
+        const parsedManifestUrl = new URL(manifestUrl);
+        const userHandle = parsedManifestUrl.pathname.split('/').filter(Boolean)[0];
+        if (userHandle) {
+            const UserConfig = require('../models/UserConfig');
+            // Lazy require: evita la dipendenza circolare a load-time con src/api/stremio.js
+            const { buildManifest } = require('../api/stremio');
+            const userConfig = await UserConfig.resolveUserConfig(userHandle);
+            if (userConfig && typeof buildManifest === 'function') {
+                manifest = buildManifest(userConfig, parsedManifestUrl.origin, userHandle);
+            }
+        }
+    } catch (err) {
+        console.warn('[StremioAddon] Manifest in-process non disponibile:', err.message);
+    }
+
+    if (!manifest) {
+        // Fallback: rete (utile solo fuori dal container o per handle non risolvibili)
+        const manifestRes = await stremioClient.get(manifestUrl, { timeout: STREMIO_TIMEOUT });
+        manifest = manifestRes.data;
+    }
 
     if (existingIdx !== -1) {
         addons[existingIdx].transportUrl = manifestUrl;

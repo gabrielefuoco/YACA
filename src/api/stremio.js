@@ -792,3 +792,9 @@ router.resolveCatalogType = resolveCatalogType;
 router.buildManifest = buildManifest;
 
 module.exports = router;
+
+// Il builder del manifest è riusato da `src/utils/stremioAddon.js` per aggiornare la collezione
+// Stremio SENZA scaricare il manifest dalla URL pubblica: dentro il container l'hostname pubblico
+// (es. mate.taild24589.ts.net) non è risolvibile, quindi quel fetch falliva e il resync non
+// aggiornava mai la URL installata in Stremio.
+module.exports.buildManifest = buildManifest;
