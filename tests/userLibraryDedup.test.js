@@ -98,13 +98,16 @@ describe('User Library Deduplication & Poster Resolution', () => {
                 sort: jest.fn().mockResolvedValue(mockItems)
             });
 
-            const deleteManySpy = jest.spyOn(UserLibraryItem, 'deleteMany').mockResolvedValue({ deletedCount: 1 });
+            // La deduplica scrive sulla collection grezza (l'`_id` di questi documenti è una stringa:
+            // passare dal modello lo farebbe castare a ObjectId, perdendo la scrittura).
+            const rawDeleteSpy = jest.spyOn(UserLibraryItem.collection, 'deleteMany').mockResolvedValue({ deletedCount: 1 });
+            jest.spyOn(UserLibraryItem.collection, 'updateMany').mockResolvedValue({ modifiedCount: 0 });
 
             const removedCount = await LibrarySyncService.deduplicateUserLibrary('mock-addon-uuid');
 
             expect(findSpy).toHaveBeenCalledWith({ addonUuid: 'mock-addon-uuid' });
             expect(removedCount).toBe(1);
-            expect(deleteManySpy).toHaveBeenCalledWith({
+            expect(rawDeleteSpy).toHaveBeenCalledWith({
                 _id: { $in: ['tt0137523'] }
             });
         });
@@ -121,14 +124,19 @@ describe('User Library Deduplication & Poster Resolution', () => {
             jest.spyOn(UserLibraryItem, 'find').mockReturnValue({
                 sort: jest.fn().mockResolvedValue([mockSingleItem])
             });
-            const deleteManySpy = jest.spyOn(UserLibraryItem, 'deleteMany').mockResolvedValue({ deletedCount: 0 });
+            const rawDeleteSpy = jest.spyOn(UserLibraryItem.collection, 'deleteMany').mockResolvedValue({ deletedCount: 0 });
+            const rawUpdateSpy = jest.spyOn(UserLibraryItem.collection, 'updateMany').mockResolvedValue({ modifiedCount: 1 });
 
             const removedCount = await LibrarySyncService.deduplicateUserLibrary('mock-addon-uuid');
 
             expect(removedCount).toBe(0);
-            expect(mockSingleItem.itemId).toBe('tt0095327');
-            expect(mockSingleItem.save).toHaveBeenCalled();
-            expect(deleteManySpy).not.toHaveBeenCalled();
+            // l'itemId viene assegnato con una update lato driver, non con item.save()
+            expect(rawUpdateSpy).toHaveBeenCalledWith(
+                { _id: { $in: ['tt0095327'] } },
+                [{ $set: { itemId: { $toString: '$_id' } } }]
+            );
+            expect(mockSingleItem.save).not.toHaveBeenCalled();
+            expect(rawDeleteSpy).not.toHaveBeenCalled();
         });
     });
 
@@ -255,5 +263,16 @@ describe('User Library Deduplication & Poster Resolution', () => {
             expect(await LibrarySyncService.preserveExistingPosters('uuid-p', [])).toBe(0);
             expect(findSpy).not.toHaveBeenCalled();
         });
+    });
+});
+
+describe('6. Priorità di consolidamento: mai preferire un documento rimosso', () => {
+    test('la query ordina per removed, poi mapped, poi _mtime', async () => {
+        const sortMock = jest.fn().mockResolvedValue([]);
+        jest.spyOn(UserLibraryItem, 'find').mockReturnValue({ sort: sortMock });
+
+        await LibrarySyncService.deduplicateUserLibrary('uuid-order');
+
+        expect(sortMock).toHaveBeenCalledWith({ removed: 1, mapped: -1, _mtime: -1 });
     });
 });

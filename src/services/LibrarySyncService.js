@@ -151,9 +151,13 @@ class LibrarySyncService {
     static async deduplicateUserLibrary(addonUuid) {
         if (!addonUuid) return 0;
         try {
-            const items = await UserLibraryItem.find({ addonUuid }).sort({ mapped: -1, _mtime: -1 });
+            // Priorità al documento da tenere: prima i NON rimossi (`removed: 1` con `false` prima di `true`),
+            // poi i mappati, poi i più recenti. Senza `removed` in testa si rischiava di tenere
+            // un documento rimosso ed eliminare quello che l'utente vede in libreria.
+            const items = await UserLibraryItem.find({ addonUuid }).sort({ removed: 1, mapped: -1, _mtime: -1 });
             const seen = new Map();
             const toDeleteIds = [];
+            const legacyIds = [];
 
             for (const item of items) {
                 const key = String(item.itemId || item._id).trim();
@@ -163,16 +167,29 @@ class LibrarySyncService {
                     toDeleteIds.push(item._id);
                 } else {
                     seen.set(key, item);
-                    if (!item.itemId) {
-                        item.itemId = key;
-                        await item.save().catch(() => {});
-                    }
+                    if (!item.itemId) legacyIds.push(item._id);
                 }
             }
 
+            // I documenti legacy hanno `_id` di tipo String, mentre lo schema non dichiara `_id`
+            // (mongoose assume ObjectId): ogni scrittura/filtro via modello verrebbe castato e
+            // quindi NON toccherebbe nulla, in silenzio. Si passa dalla collection grezza, che
+            // lavora sui valori reali (stringhe o ObjectId indifferentemente).
+            const raw = UserLibraryItem.collection;
+
+            if (legacyIds.length > 0) {
+                await raw.updateMany(
+                    { _id: { $in: legacyIds } },
+                    [{ $set: { itemId: { $toString: '$_id' } } }]
+                );
+            }
+
             if (toDeleteIds.length > 0) {
-                await UserLibraryItem.deleteMany({ _id: { $in: toDeleteIds } });
-                console.log(`[LibrarySync] Deduplicati ${toDeleteIds.length} elementi per addonUuid ${addonUuid}`);
+                await raw.deleteMany({ _id: { $in: toDeleteIds } });
+            }
+
+            if (toDeleteIds.length > 0 || legacyIds.length > 0) {
+                console.log(`[LibrarySync] Libreria consolidata per ${addonUuid}: ${toDeleteIds.length} duplicati rimossi, ${legacyIds.length} itemId assegnati`);
             }
             return toDeleteIds.length;
         } catch (err) {
