@@ -243,17 +243,11 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
                     const vActive = existing?.compiledVectors?.V_active || {};
                     const hasActiveHistory = Object.keys(vActive).length > 0;
                     
-                    let vFinal;
-                    if (hasActiveHistory) {
-                        // Ricalcola V_final combinando il nuovo V_static con il V_active esistente
-                        const { computeFinalDNA } = require('../../utils/dnaExtractor');
-                        const WatchHistory = require('../../models/WatchHistory');
-                        const totalInteractions = await WatchHistory.countDocuments({ owner: userId, context: profile.id });
-                        vFinal = computeFinalDNA(inferredStaticDNA, vActive, totalInteractions);
-                    } else {
-                        // Nessuno storico: V_final = V_static
-                        vFinal = { ...inferredStaticDNA };
-                    }
+                    // Ricalcola V_final combinando il nuovo V_static con il V_active (o vuoto)
+                    const { computeFinalDNA } = require('../../utils/dnaExtractor');
+                    const WatchHistory = require('../../models/WatchHistory');
+                    const totalInteractions = await WatchHistory.countDocuments({ owner: userId, context: profile.id });
+                    const vFinal = computeFinalDNA(inferredStaticDNA, vActive, totalInteractions);
                     
                     const idNamesUpdates = {};
                     manualDNA.forEach(item => {

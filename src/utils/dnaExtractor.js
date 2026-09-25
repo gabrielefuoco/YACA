@@ -141,12 +141,31 @@ function computeFinalDNA(V_static, V_active, totalInteractions) {
     const normStatic = normalizeVector(V_static || {}); 
     const normActive = normalizeVector(V_active || {});
 
-    // Curva di apprendimento
-    const threshold = 50; 
-    const maxActiveWeight = 0.85; 
+    const hasStatic = Object.keys(normStatic).length > 0;
+    const hasActive = Object.keys(normActive).length > 0;
 
-    const activeWeight = Math.min((totalInteractions || 0) / threshold, 1) * maxActiveWeight;
-    const staticWeight = 1 - activeWeight;
+    if (!hasStatic && !hasActive) {
+        return {};
+    }
+
+    // Se solo uno dei due è presente, assegna il 100% del peso al vettore non vuoto
+    let activeWeight = 0;
+    let staticWeight = 0;
+
+    if (hasStatic && !hasActive) {
+        staticWeight = 1.0;
+        activeWeight = 0.0;
+    } else if (!hasStatic && hasActive) {
+        staticWeight = 0.0;
+        activeWeight = 1.0;
+    } else {
+        // Entrambi presenti: applica la curva di apprendimento
+        const threshold = 50; 
+        const maxActiveWeight = 0.85; 
+
+        activeWeight = Math.min((totalInteractions || 0) / threshold, 1) * maxActiveWeight;
+        staticWeight = 1 - activeWeight;
+    }
 
     const V_final = {};
     const allKeys = new Set([...Object.keys(normStatic), ...Object.keys(normActive)]);
@@ -154,8 +173,16 @@ function computeFinalDNA(V_static, V_active, totalInteractions) {
     for (let key of allKeys) {
         const staticVal = normStatic[key] || 0;
         const activeVal = normActive[key] || 0;
-        // Salvo moltiplicando per 100 per avere un numero più leggibile (opzionale, ma aiuta)
         V_final[key] = ((staticVal * staticWeight) + (activeVal * activeWeight)) * 100;
+    }
+
+    // Garanzia di normalizzazione formale a somma costante 100 in scrittura
+    const sum = Object.values(V_final).reduce((a, b) => a + (Number(b) || 0), 0);
+    if (sum > 0) {
+        const factor = 100 / sum;
+        for (const k of Object.keys(V_final)) {
+            V_final[k] = V_final[k] * factor;
+        }
     }
 
     return V_final;

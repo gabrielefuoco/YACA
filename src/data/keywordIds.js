@@ -47,8 +47,6 @@ function sanitizeDnaVector(vector) {
         if (!key.startsWith('k:')) return true;
         return !isRetiredTmdbKeywordId(key.slice(2));
     });
-    const removedEntry = entries.length !== Object.keys(vector).length;
-    if (!removedEntry) return { ...vector };
 
     const sanitized = Object.fromEntries(entries);
     const total = Object.values(sanitized).reduce((sum, value) => {
@@ -57,6 +55,9 @@ function sanitizeDnaVector(vector) {
     }, 0);
 
     if (total <= 0) return sanitized;
+    const removedEntry = entries.length !== Object.keys(vector).length;
+    if (!removedEntry && Math.abs(total - 100) < 0.001) return { ...vector };
+
     const scale = 100 / total;
     return Object.fromEntries(
         Object.entries(sanitized).map(([key, value]) => {
