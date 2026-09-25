@@ -139,13 +139,14 @@ describe('DNA Chart Grouping, Formatting & Rendering Tests', () => {
     });
 
     describe('2. Raggruppamento per categoria e assenza di sezioni fantasma', () => {
-        it('raggruppa le voci nelle categorie attese nell ordine canonico', () => {
+        it('mostra di default solo generi e studi: keyword, persone e nodi interni restano fuori', () => {
             const rawVector = {
                 'g:16': 100,
                 'k:364043': 60,
                 'a:52263': 40,
                 'c:33': 30,
                 'n:49': 25,
+                'L1:c_85': 20,
             };
 
             const labelMap = {
@@ -158,13 +159,32 @@ describe('DNA Chart Grouping, Formatting & Rendering Tests', () => {
 
             const groups = groupDnaItems(rawVector, (k) => labelMap[k]);
 
-            expect(groups.length).toBe(5);
-            expect(groups.map(g => g.id)).toEqual(['genres', 'keywords', 'people', 'companies', 'networks']);
+            expect(groups.map(g => g.id)).toEqual(['genres', 'companies', 'networks']);
             expect(groups[0].title).toBe('GENERI');
-            expect(groups[1].title).toBe('KEYWORD');
-            expect(groups[2].title).toBe('PERSONE');
-            expect(groups[3].title).toBe('CASE DI PRODUZIONE');
-            expect(groups[4].title).toBe('NETWORK');
+            expect(groups[1].title).toBe('STUDI');
+            expect(groups[2].title).toBe('NETWORK');
+            // Nessuna etichetta numerica grezza nel grafico
+            groups.flatMap(g => g.items).forEach(item => {
+                expect(item.name).not.toMatch(/#\d+/);
+            });
+        });
+
+        it('le categorie nascoste si possono riattivare esplicitamente', () => {
+            const rawVector = { 'g:16': 100, 'k:364043': 60, 'a:52263': 40 };
+            const groups = groupDnaItems(rawVector, null, {
+                allowedCategories: ['genres', 'keywords', 'people'],
+            });
+
+            expect(groups.map(g => g.id)).toEqual(['genres', 'keywords', 'people']);
+        });
+
+        it('scarta le voci sotto soglia e le conta come minori', () => {
+            const rawVector = { 'g:16': 1000, 'g:35': 5, 'g:12': 1 };
+            const groups = groupDnaItems(rawVector);
+
+            expect(groups).toHaveLength(1);
+            expect(groups[0].items.map(i => i.key)).toEqual(['g:16', 'g:35']);
+            expect(groups[0].hiddenCount).toBe(1); // g:12 → 0%
         });
 
         it('una categoria vuota non produce sezioni fantasma', () => {
@@ -177,7 +197,8 @@ describe('DNA Chart Grouping, Formatting & Rendering Tests', () => {
 
             const groups = groupDnaItems(rawVector, (k) => k);
 
-            expect(groups.length).toBe(2);
+            // Solo il gruppo dei generi: keyword e persone non sono categorie mostrate
+            expect(groups.map(g => g.id)).toEqual(['genres']);
             expect(groups.some(g => g.id === 'people')).toBe(false);
             expect(groups.some(g => g.id === 'companies')).toBe(false);
             expect(groups.some(g => g.id === 'networks')).toBe(false);
@@ -218,7 +239,8 @@ describe('DNA Chart Grouping, Formatting & Rendering Tests', () => {
                 'n:49': 20,  // 10%
             };
 
-            const groups = groupDnaItems(rawVector);
+            // Keyword incluse esplicitamente: qui si verifica la matematica delle percentuali
+            const groups = groupDnaItems(rawVector, null, { allowedCategories: ['genres', 'keywords', 'networks'] });
 
             const allItems = groups.flatMap(g => g.items);
             const strongest = allItems.find(i => i.key === 'g:16');
@@ -249,7 +271,7 @@ describe('DNA Chart Grouping, Formatting & Rendering Tests', () => {
     });
 
     describe('4. Render visivo SSR senza browser (react-dom/server) e ispezione HTML', () => {
-        it('renderizza correttamente 5 categorie senza etichette numeriche grezze e salva l anteprima', () => {
+        it('renderizza solo le categorie utili senza etichette numeriche grezze e salva l anteprima', () => {
             const compiledVectors = {
                 V_final: {
                     'g:16': 100,
@@ -285,40 +307,35 @@ describe('DNA Chart Grouping, Formatting & Rendering Tests', () => {
 
             const html = ReactDOMServer.renderToString(element);
 
-            // 1. Verifiche di integrità dell'HTML
+            // 1. Verifiche di integrità dell'HTML: solo le categorie utili
             expect(html).toContain('GENERI');
-            expect(html).toContain('KEYWORD');
-            expect(html).toContain('PERSONE');
-            expect(html).toContain('CASE DI PRODUZIONE');
+            expect(html).toContain('STUDI');
             expect(html).toContain('NETWORK');
+            // Keyword e persone non compaiono più nel grafico (solo codici TMDB)
+            expect(html).not.toContain('KEYWORD');
+            expect(html).not.toContain('PERSONE');
 
             // 2. Presenza dei nomi risolti
             expect(html).toContain('Animazione');
             expect(html).toContain('Commedia');
-            expect(html).toContain('anime');
-            expect(html).toContain('Denzel Washington');
             expect(html).toContain('Universal Pictures');
             expect(html).toContain('HBO');
+            expect(html).not.toContain('Denzel Washington');
 
-            // 3. Etichetta sporca non risolta convertita in formato presentabile
-            expect(html).toContain('Keyword #210024');
-            // MAI etichette numeriche grezze tipo "keyword:210024" o "k:210024" nel testo
-            expect(html).not.toMatch(/>\s*keyword:210024\s*</);
+            // 3. MAI etichette numeriche grezze nel testo
             expect(html).not.toMatch(/>\s*k:210024\s*</);
-            expect(html).not.toMatch(/>\s*network 49\s*</);
+            expect(html).not.toMatch(/>\s*L1:c_85\s*</);
+            expect(html).not.toMatch(/#\d+/);
 
             // 4. Presenza delle percentuali attese
             expect(html).toContain('100%');
             expect(html).toContain('70%');
-            expect(html).toContain('60%');
-            expect(html).toContain('40%');
             expect(html).toContain('30%');
             expect(html).toContain('25%');
-            expect(html).toContain('15%');
 
-            // 5. Presenza di barre progressbar accessibili (7 elementi)
+            // 5. Presenza di barre progressbar accessibili (4 elementi: 2 generi, 1 studio, 1 network)
             const progressbarMatches = html.match(/role="progressbar"/g) || [];
-            expect(progressbarMatches.length).toBe(7);
+            expect(progressbarMatches.length).toBe(4);
 
             // 6. Salvataggio preview HTML in .scratch/dna-chart-preview.html
             const scratchDir = path.resolve(__dirname, '../.scratch');
@@ -350,7 +367,7 @@ describe('DNA Chart Grouping, Formatting & Rendering Tests', () => {
 <body class="max-w-4xl mx-auto">
   <div class="mb-4">
     <h1 class="text-xl font-black uppercase tracking-wider text-marrow-deep">Preview SSR Componente DnaBarChart</h1>
-    <p class="text-xs text-marrow-light/60">Generato per verifica visiva senza browser (Fixture a 5 categorie, pesi scalati).</p>
+    <p class="text-xs text-marrow-light/60">Generato per verifica visiva senza browser (Fixture: generi + studi, categorie rumorose nascoste).</p>
   </div>
   ${html}
 </body>

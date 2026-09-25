@@ -4,7 +4,7 @@ import { Profile, Catalog, RawProfileData, SyncStatus, TmdbMetadataMap, DNAItem 
 import { api } from '@/lib/api';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
 
-import { generateId } from '@/lib/utils';
+import { generateId, resolveHydratedActiveProfile } from '@/lib/utils';
 
 const HERO_PRESET_IDS = [
   'yaca_true_blend_movies', 'yaca_true_blend_series',
@@ -95,6 +95,9 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
   // Ultimo profilo attivo ricevuto dal backend: si applica una volta per caricamento,
   // così la scelta dell'utente non viene sovrascritta dai render successivi.
   const appliedInitialActiveRef = useRef<string | undefined>(undefined);
+  // Valore corrente del profilo attivo, leggibile dentro l'effetto senza ri-eseguirlo.
+  const activeProfileIdRef = useRef<string>(activeProfileId);
+  activeProfileIdRef.current = activeProfileId;
 
   // Sync when initialProfiles changes (e.g. after async config decode or save)
   useEffect(() => {
@@ -107,20 +110,21 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
         return safe;
       });
 
-      // Il profilo attivo salvato nel backend vince sullo stato locale. Prima di questa
-      // correzione l'effetto si limitava a *conservare* il valore precedente (il default
-      // "global"): dopo un refresh l'utente si ritrovava sempre su "Generale".
-      const incomingActive = initialActiveProfileId && safe.some((p: Profile) => p.id === initialActiveProfileId)
-        ? initialActiveProfileId
-        : null;
+      // Il profilo attivo salvato nel backend vince sullo stato locale, una volta per caricamento.
+      // Prima di questa correzione l'effetto si limitava a *conservare* il valore precedente
+      // (il default "global"): dopo un refresh si tornava sempre su "Generale".
+      const { activeId, appliedIncoming } = resolveHydratedActiveProfile({
+        incomingActiveId: initialActiveProfileId,
+        profiles: safe,
+        previousActiveId: activeProfileIdRef.current,
+        alreadyAppliedIncomingId: appliedInitialActiveRef.current,
+      });
 
-      if (incomingActive && incomingActive !== appliedInitialActiveRef.current) {
-        appliedInitialActiveRef.current = incomingActive;
-        setActiveProfileId(incomingActive);
-      } else {
-        setActiveProfileId((prev: string) =>
-          safe.some((p: Profile) => p.id === prev) ? prev : safe[0].id
-        );
+      if (appliedIncoming && activeId) {
+        appliedInitialActiveRef.current = activeId;
+      }
+      if (activeId) {
+        setActiveProfileId(activeId);
       }
 
       setEditingProfileId((prev: string) => {

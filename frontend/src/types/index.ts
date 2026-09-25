@@ -152,6 +152,8 @@ export interface AnalyticsData {
     labels?: Record<string, string>;
     [key: string]: any;
   };
+  /** Studi di produzione della libreria (sezione STUDI del DNA, fuori dal vettore DNA). */
+  studios?: Array<{ id: string; name: string; weight: number; type?: string }>;
 }
 
 export interface WatchHistoryItem {

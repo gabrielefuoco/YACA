@@ -68,6 +68,40 @@ export function sanitizeTypeSelectors(raw?: unknown): {
   return { film, serie, anime };
 }
 
+/**
+ * Sceglie il profilo attivo da mostrare quando arriva la configurazione dal backend.
+ *
+ * Il profilo salvato nel backend vince sullo stato locale, ma solo la prima volta
+ * per caricamento: dopo, la scelta dell'utente non va sovrascritta.
+ *
+ * Regressione coperta: l'effetto di sincronizzazione si limitava a conservare il
+ * valore precedente (il default `global`), quindi dopo un refresh il dashboard
+ * tornava sempre su "Generale".
+ */
+export function resolveHydratedActiveProfile({
+  incomingActiveId,
+  profiles,
+  previousActiveId,
+  alreadyAppliedIncomingId,
+}: {
+  incomingActiveId?: string | null;
+  profiles?: Array<{ id: string }> | null;
+  previousActiveId?: string | null;
+  alreadyAppliedIncomingId?: string | null;
+}): { activeId: string | null; appliedIncoming: boolean } {
+  const ids = new Set((profiles ?? []).map((p) => p?.id).filter(Boolean) as string[]);
+
+  if (incomingActiveId && ids.has(incomingActiveId) && incomingActiveId !== alreadyAppliedIncomingId) {
+    return { activeId: incomingActiveId, appliedIncoming: true };
+  }
+
+  if (previousActiveId && ids.has(previousActiveId)) {
+    return { activeId: previousActiveId, appliedIncoming: false };
+  }
+
+  return { activeId: (profiles ?? [])[0]?.id ?? null, appliedIncoming: false };
+}
+
 export function profilesToApiPayload(profiles: Profile[]) {
   return profiles.map((p) => ({
     id: p.id,

@@ -8,6 +8,8 @@ export interface DnaBarChartProps {
   compiledVectors?: (CompiledVector & { idNames?: Record<string, string> }) | null;
   getDnaName?: (vectorKey: string) => string;
   items?: DnaRawItem[];
+  /** Gruppi già calcolati (usato dal pannello DNA: generi + studi). */
+  groups?: DnaCategoryGroup[];
   maxItemsPerCategory?: number;
   className?: string;
 }
@@ -16,10 +18,13 @@ export function DnaBarChart({
   compiledVectors,
   getDnaName,
   items,
+  groups: providedGroups,
   maxItemsPerCategory = 10,
   className = '',
 }: DnaBarChartProps) {
   const groups: DnaCategoryGroup[] = useMemo(() => {
+    if (providedGroups && providedGroups.length > 0) return providedGroups;
+
     if (items && items.length > 0) {
       return groupDnaItems(items, getDnaName, { maxItemsPerCategory });
     }
@@ -33,7 +38,7 @@ export function DnaBarChart({
     if (!finalVector || Object.keys(finalVector).length === 0) return [];
 
     return groupDnaItems(finalVector, getDnaName, { maxItemsPerCategory });
-  }, [compiledVectors, getDnaName, items, maxItemsPerCategory]);
+  }, [compiledVectors, getDnaName, items, providedGroups, maxItemsPerCategory]);
 
   if (groups.length === 0) {
     return (
@@ -82,8 +87,7 @@ export function DnaBarChart({
                 </div>
                 <span className="text-[10px] text-marrow-light/50 font-mono font-semibold">
                   {group.items.length} {group.items.length === 1 ? 'voce' : 'voci'}
-                </span>
-              </div>
+                </span>              </div>
 
               {/* Items List */}
               <div className="flex flex-col gap-2.5 mt-1">
@@ -121,6 +125,12 @@ export function DnaBarChart({
                     </span>
                   </div>
                 ))}
+
+                {group.hiddenCount > 0 && (
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-marrow-light/45 pt-1">
+                    + {group.hiddenCount} {group.hiddenCount === 1 ? 'voce minore' : 'voci minori'}
+                  </p>
+                )}
               </div>
             </section>
           );

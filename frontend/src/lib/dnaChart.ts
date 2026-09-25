@@ -17,7 +17,7 @@ export const DNA_CATEGORIES: Record<DnaCategoryType, DnaCategoryMeta> = {
   genres: { id: 'genres', label: '🎭 GENERI', icon: '🎭', title: 'GENERI', order: 1 },
   keywords: { id: 'keywords', label: '🔑 KEYWORD', icon: '🔑', title: 'KEYWORD', order: 2 },
   people: { id: 'people', label: '👤 PERSONE', icon: '👤', title: 'PERSONE', order: 3 },
-  companies: { id: 'companies', label: '🏢 CASE DI PRODUZIONE', icon: '🏢', title: 'CASE DI PRODUZIONE', order: 4 },
+  companies: { id: 'companies', label: '🏢 STUDI', icon: '🏢', title: 'STUDI', order: 4 },
   networks: { id: 'networks', label: '📺 NETWORK', icon: '📺', title: 'NETWORK', order: 5 },
   countries: { id: 'countries', label: '🌍 PAESI', icon: '🌍', title: 'PAESI', order: 6 },
   other: { id: 'other', label: '✨ ALTRO', icon: '✨', title: 'ALTRO', order: 7 },
@@ -38,7 +38,16 @@ export interface DnaCategoryGroup {
   title: string;
   order: number;
   items: DnaItemFormatted[];
+  /** Voci scartate perché sotto soglia o oltre il limite mostrato. */
+  hiddenCount: number;
 }
+
+/**
+ * Categorie mostrate nel grafico DNA.
+ * Generi e studi sono leggibili e utili; keyword, persone e nodi interni del grafo
+ * (`L1:c_85`…) erano solo codici TMDB, quindi restano fuori dalla vista.
+ */
+export const DNA_DISPLAY_CATEGORIES: DnaCategoryType[] = ['genres', 'companies', 'networks'];
 
 export interface DnaRawItem {
   key?: string;
@@ -216,6 +225,10 @@ export function calculateDnaPercentages<T extends { weight: number }>(items: T[]
 export interface GroupDnaOptions {
   maxItemsPerCategory?: number;
   customMaxWeight?: number;
+  /** Categorie da mostrare (default: generi + studi/network). */
+  allowedCategories?: DnaCategoryType[];
+  /** Soglia minima in percentuale: sotto questa le voci non vengono mostrate (default 1). */
+  minPercentage?: number;
 }
 
 /**
@@ -286,17 +299,27 @@ export function groupDnaItems(
 
   // 5. Build category groups
   const result: DnaCategoryGroup[] = [];
+  const allowed = options?.allowedCategories ?? DNA_DISPLAY_CATEGORIES;
+  const minPercentage = options?.minPercentage ?? 1;
 
   groupsMap.forEach((items, catId) => {
     // Crucial: avoid ghost sections when a category has 0 items
     if (!items || items.length === 0) return;
+    // Categorie rumorose (keyword, persone, nodi interni) non vengono mostrate
+    if (!allowed.includes(catId)) return;
 
     // Sort descending by weight; secondary sort by name
     items.sort((a, b) => b.weight - a.weight || a.name.localeCompare(b.name));
 
-    const finalItems = (options?.maxItemsPerCategory && options.maxItemsPerCategory > 0)
-      ? items.slice(0, options.maxItemsPerCategory)
-      : items;
+    // Le voci irrilevanti (0-1%) sparivano in righe inutili a "0%": meglio raggrupparle.
+    const relevant = items.filter(item => item.percentage >= minPercentage);
+    const belowThreshold = items.length - relevant.length;
+
+    const limited = (options?.maxItemsPerCategory && options.maxItemsPerCategory > 0)
+      ? relevant.slice(0, options.maxItemsPerCategory)
+      : relevant;
+
+    if (limited.length === 0) return;
 
     const meta = DNA_CATEGORIES[catId] || {
       id: catId,
@@ -312,7 +335,8 @@ export function groupDnaItems(
       icon: meta.icon,
       title: meta.title,
       order: meta.order,
-      items: finalItems,
+      items: limited,
+      hiddenCount: belowThreshold + (relevant.length - limited.length),
     });
   });
 

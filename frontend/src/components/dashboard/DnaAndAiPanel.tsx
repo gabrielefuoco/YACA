@@ -6,7 +6,7 @@ import { X, BrainCircuit, Terminal, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { DnaBarChart } from './DnaBarChart';
-import { formatDnaLabel } from '@/lib/dnaChart';
+import { formatDnaLabel, groupDnaItems, DnaCategoryGroup } from '@/lib/dnaChart';
 import { CatalogLivePreview } from './CatalogLivePreview';
 
 const HERO_CATALOGS_BASE = [
@@ -217,6 +217,33 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
 
 
 
+  /**
+   * Gruppi mostrati nel grafico: generi dal vettore DNA + studi dalla libreria.
+   * Keyword, persone e nodi interni del grafo restano fuori (solo codici TMDB).
+   */
+  const dnaGroups: DnaCategoryGroup[] = useMemo(() => {
+    const finalVector = compiledVectors?.V_final && Object.keys(compiledVectors.V_final).length > 0
+      ? compiledVectors.V_final
+      : compiledVectors?.V_static;
+
+    const genreGroups = finalVector && Object.keys(finalVector).length > 0
+      ? groupDnaItems(finalVector, getDnaName, { maxItemsPerCategory: 8, allowedCategories: ['genres'] })
+      : [];
+
+    const studioItems = (analytics?.studios || []).map(studio => ({
+      id: studio.id,
+      type: 'company',
+      weight: studio.weight,
+      name: studio.name,
+    }));
+
+    const studioGroups = studioItems.length > 0
+      ? groupDnaItems(studioItems, null, { maxItemsPerCategory: 6, allowedCategories: ['companies'] })
+      : [];
+
+    return [...genreGroups, ...studioGroups];
+  }, [compiledVectors, getDnaName, analytics]);
+
   return (
     <div className="flex flex-col gap-6 sm:gap-10 w-full">
       {/* ── Section 1: DNA Tracker & Editor ── */}
@@ -232,13 +259,10 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
         </p>
 
         {/* DNA Dinamico (V_static e V_final) */}
-        {compiledVectors && (Object.keys(compiledVectors.V_static || {}).length > 0 || Object.keys(compiledVectors.V_final || {}).length > 0) ? (
+        {dnaGroups.length > 0 ? (
           <div className="flex flex-col gap-6 items-center w-full">
             <div className="w-full flex justify-center py-2">
-               <DnaBarChart 
-                 compiledVectors={compiledVectors}
-                 getDnaName={getDnaName}
-               />
+               <DnaBarChart groups={dnaGroups} />
             </div>
           </div>
         ) : (

@@ -220,10 +220,20 @@ router.get('/:id/analytics', async (req, res) => {
             yaca_hidden_gems_series: 'hiddenGems',
         };
 
+        // Studi di produzione della libreria (sezione "STUDI" del DNA).
+        // Restano fuori dal vettore DNA: non influenzano punteggi e cataloghi.
+        let studios = [];
+        try {
+            const { computeStudioProfile } = require('../profile/studioProfile');
+            studios = await computeStudioProfile(account?.addonUuid, { limit: 8 });
+        } catch (err) {
+            console.warn('[Analytics] Profilo studi non disponibile:', err.message);
+        }
+
         // Rimosse chiamate a Mistral per le query dinamiche, ritorniamo solo i parametri VSM di base.
         const aiLogs = {};
 
-        return res.json({ aiLogs, baseDnaParams });
+        return res.json({ aiLogs, baseDnaParams, studios });
     } catch (err) {
         console.error(`[Analytics] Error fetching profile analytics for ${profileId}:`, err.message);
         return res.status(500).json({ error: 'Internal server error' });

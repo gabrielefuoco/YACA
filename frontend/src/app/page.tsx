@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { mapBackendProfile, profilesToApiPayload, BackendProfile } from '@/lib/utils';
 import { useConfig } from '@/hooks/useConfig';
 import { useAuth } from '@/hooks/useAuth';
