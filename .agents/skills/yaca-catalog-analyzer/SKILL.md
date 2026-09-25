@@ -40,6 +40,7 @@ node scripts/fetch_catalogs.js --text --nocache --catalogs preset_pop_anime
 - **Filtri SQL Nativi (DuckDB)**: La generazione cataloghi avviene tramite query SQL su DuckDB in-memory (`DuckDbProvider.js`). Non costruire stringhe query TMDB obsolete, ma usa i filtri `F.genre()`, `F.keyword()`, `F.any()` in `preset.where`.
 - **Merge & Deduplicazione (Anime Offset)**: Se trovi duplicati o anomalie nei metadati (es. conteggio episodi sballato), il problema è quasi sempre nel mapping tra l'ID TMDB e l'ID Kitsu (`TmdbToKitsuMapper.js`).
 - **Ottimizzazione Payload in `StremioFormatter.js`**: I cataloghi vengono salvati in cache su Redis (L2) e memoria locale (L1). **Non usare MAI** lo spread operator `...item` in `sanitizeCatalogMeta`, altrimenti ingolferai la cache con i dati grezzi. I campi pesanti (`videos`, `links`, `trailers`) devono essere inclusi SOLO per le richieste meta di dettaglio (`options.isMetaDetail === true`).
+- **Cataloghi Matchmaker (Legacy)**: Il motore interattivo Matchmaker è stato rimosso da YACA ed estratto come standalone in `/APP/matchmaker`. I cataloghi custom salvati (`custom_matchmaker_*`) sono gestiti passivamente come liste statiche `manual_list` (DuckDB `WHERE id IN (...)`) in `AddonConfig.customCatalogs` e continuano a essere serviti a Stremio senza dipendenze dal motore rimosso.
 - **Invalidazione Cache**: Ricorda di svuotare le cache in fase di test con `node scripts/clear_caches.js` (svuota Redis e reimposta L1).
 
 ## Scripts Disponibili (Toolbelt Reale)

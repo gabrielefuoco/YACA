@@ -104,6 +104,9 @@ La risoluzione fisica dei dati è delegata ai provider dedicati in `src/catalog/
 - **HybridProvider.js**:
     Collega il motore di raccomandazione ibrido generatore di cataloghi speciali basati sul profilo psicofisico dei gusti dell'utente (Taste Profile) come *True Blend* o *Hidden Gems*.
 
+### Cataloghi Custom e Dismissione Matchmaker
+I cataloghi personalizzati salvati in `AddonConfig.customCatalogs` (inclusi i cataloghi generati con prefisso `custom_matchmaker_*`) sono gestiti come liste statiche `manual_list`. L'esecuzione avviene tramite fast-path batch in `AiDiscoveryProvider.js` aggregando tutti gli ID in un'unica clausola `id IN (...)` su DuckDB a latenza zero. Il motore Tinder-style interattivo del Matchmaker è stato interamente rimosso dal core di YACA ed estratto nel repository autonomo `/APP/matchmaker`.
+
 ### Stato esterno `anime_airing_state`
 
 Il catalogo novità anime non nasce da una query TMDB/DuckDB ma da una collezione MongoDB scritta dal modulo esterno `services/anime-source` (contratto: `_id` = TMDB id in stringa, `schemaVersion`, `italian.sub/dub.latest` come `{season, episode}`, `episodes[]` con `subIta`/`dubIta`). Il lettore è `src/data/animeAiringState.js`:

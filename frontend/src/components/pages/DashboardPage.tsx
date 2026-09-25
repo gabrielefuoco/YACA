@@ -8,8 +8,6 @@ import { CreatorPanel } from '@/components/dashboard/CreatorPanel';
 import { DnaAndAiPanel } from '@/components/dashboard/DnaAndAiPanel';
 import { RenameProfileDialog } from '@/components/modals/RenameProfileDialog';
 import { EditCatalogModal } from '@/components/modals/EditCatalogModal';
-import { MatchmakerModal } from '@/components/modals/MatchmakerModal';
-import { useMatchmaker } from '@/hooks/useMatchmaker';
 import { generateId } from '@/lib/utils';
 
 import { UserLibraryPanel } from '@/components/dashboard/UserLibraryPanel';
@@ -78,8 +76,6 @@ export function DashboardPage({
   const editingProfile = profiles.find((p) => p.id === editingProfileId) ?? profiles[0];
 
   const activeCatalogIds = editingProfile?.existingCatalogs?.map(c => c.id) || [];
-
-  const matchmaker = useMatchmaker(userId ?? null, editingProfileId ?? null);
 
 
 
@@ -166,7 +162,6 @@ export function DashboardPage({
     { id: 'creator' as const, label: 'Creatore', icon: 'auto_fix' },
     { id: 'dna' as const, label: 'DNA & AI Lab', icon: 'biotech' },
     { id: 'library' as const, label: 'Libreria Utente', icon: 'library_books' },
-    { id: 'matchmaker' as const, label: 'Matchmaker', icon: 'style' },
   ];
 
   return (
@@ -197,18 +192,12 @@ export function DashboardPage({
       </div>
 
       {/* Navigation Tabs */}
-      {/* Su telefono i tab formano una griglia (2-3 colonne): lo scroll orizzontale
-          nascondeva le voci e tagliava "Matchmaker" a metà. */}
       <div className="w-full flex sm:justify-center mb-4 sm:mb-6 py-1.5">
         <div className="grid grid-cols-2 min-[420px]:grid-cols-3 sm:flex sm:flex-wrap sm:items-center sm:justify-center w-full sm:w-auto p-1.5 bg-white/40 rounded-2xl border border-marrow-light/20 shadow-xl shadow-primary/5 gap-1.5 sm:gap-2">
           {tabsItems.map((tab) => (
             <button
               key={tab.id}
               onClick={() => {
-                if (tab.id === 'matchmaker') {
-                  matchmaker.openMatchmaker();
-                  return;
-                }
                 if (tab.id !== 'creator') {
                   setEditingCatalog(null);
                 }
@@ -216,15 +205,13 @@ export function DashboardPage({
               }}
               className={`
                 flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-5 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-black transition-all duration-300 sm:whitespace-nowrap min-h-[44px] sm:min-h-0 touch-manipulation
-                ${tab.id === 'matchmaker'
-                  ? 'bg-primary/10 text-primary border border-primary/30 hover:bg-primary hover:text-white shadow-[0_0_15px_rgba(220,38,38,0.15)] hover:scale-105'
-                  : activeTab === tab.id
-                    ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-105'
-                    : 'text-marrow-light hover:text-primary hover:bg-primary/5'
+                ${activeTab === tab.id
+                  ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-105'
+                  : 'text-marrow-light hover:text-primary hover:bg-primary/5'
                 }
               `}
             >
-              <span className={`material-symbols-outlined text-base sm:text-lg ${tab.id === 'matchmaker' ? 'animate-pulse text-amber-200' : ''}`}>{tab.icon}</span>
+              <span className="material-symbols-outlined text-base sm:text-lg">{tab.icon}</span>
               <span className="uppercase tracking-wider leading-tight text-center">{tab.label}</span>
             </button>
           ))}
@@ -250,7 +237,6 @@ export function DashboardPage({
                 presets={presets}
                 myLists={myListCatalogs}
                 onRemoveMyList={onRemoveMyList}
-                onOpenMatchmaker={() => matchmaker.openMatchmaker()}
               />
             )}
 
@@ -317,8 +303,6 @@ export function DashboardPage({
         onRemoveCatalog={(id) => onRemoveCatalog(editingProfileId, id)}
         onUpdateCatalog={(cat) => onUpdateCatalog(editingProfileId, cat)}
       />
-
-      <MatchmakerModal matchmaker={matchmaker} />
     </div>
   );
 }

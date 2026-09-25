@@ -48,12 +48,6 @@ const simulcastDatesCache = new CacheManager('simulcast_dates', {
     swrMs: ONE_HOUR_MS * 6
 });
 
-const matchmakerSessionCache = new CacheManager('matchmaker_sessions', {
-    ramMax: 50,
-    ramTtlMs: ONE_HOUR_MS,
-    redisTtlMs: ONE_HOUR_MS
-});
-
 const dnaNamesCache = new CacheManager('dna_names', {
     ramMax: 500,
     ramTtlMs: ONE_DAY_MS,
@@ -67,6 +61,5 @@ module.exports = {
     catalogFallbackCache,
     catalogRequestCache,
     simulcastDatesCache,
-    matchmakerSessionCache,
     dnaNamesCache
 };
