@@ -163,3 +163,20 @@ ssh mate "docker exec yaca-app cat /data/tmdb/tv.parquet"     > .cache/tmdb/tv.p
 La produzione non è mai stata coinvolta (il suo dump vive in un volume Docker, `/data/tmdb`, con i JSONL sorgente).
 
 Reso **indipendente dallo snapshot dei dati** anche `tests/presetBurtonOrdering.test.js`: prima pretendeva che due titoli specifici fossero in un certo ordine, cosa che cambia a ogni aggiornamento del dump TMDB (gli id dipendevano dai valori di popolarità del momento). Ora verifica il contratto vero — popolarità ↓, poi voti ↓, poi id ↑ — e il determinismo della query.
+
+---
+
+# Stremio mostrava solo i cataloghi Hero (25 settembre)
+
+**Sintomo**: in Stremio comparivano solo gli 8 cataloghi Hero (più watchlist/ricerca/custom), nessun preset; nel configuratore YACA invece tutto regolare.
+
+**Diagnosi** (server sano, problema nell'installazione Stremio): il manifest servito dall'addon conteneva 38 cataloghi su tutte le URL provate (per uuid, per userId, per userId+versione) e ogni catalogo rispondeva 200 con item (hero 20, Ghibli 20, simulcast 12, custom 9); anche con `skip`, `sortBy` accentato e `search`. Ma l'oggetto addon **salvato nell'account Stremio** conteneva un manifest vecchio con **22 cataloghi e zero preset** (versione `1.0.4+4gEZrhN3`, mentre la corrente era `UfvM25QC`): Stremio usava la sua copia in cache.
+
+**Causa radice**: `updateStremioAddonCollection()` (che aggiorna la URL installata in Stremio, e quindi la cache key del manifest) **scarica il manifest dalla URL pubblica** prima di salvarlo in Stremio. Dentro il container `mate.taild24589.ts.net` non è risolvibile via DNS (l'app è raggiungibile solo attraverso il reverse proxy/Tailscale dell'host) → `getaddrinfo ENOTFOUND` → l'intero aggiornamento falliva, con un semplice log; quindi **ogni resync è sempre fallito in produzione** e la URL in Stremio è rimasta quella dell'installazione iniziale. Sintomo secondario: anche quando la `configVersion` cambiava (fingerprint), Stremio non veniva aggiornato.
+
+**Fix**:
+1. Immediato (dati): risincronizzata l'installazione dell'utente con la versione corrente → in Stremio ora ci sono **38 cataloghi** (verificato leggendo l'oggetto addon dall'account: `1.0.4+UfvM25QC`).
+2. Codice (`68994a0`): `updateStremioAddonCollection()` costruisce il manifest **in-process** (`buildManifest`, ora esportato da `src/api/stremio.js`) e usa il download remoto solo come fallback. Test di regressione `tests/stremioAddonResync.test.js` (4 test: nessun `GET` della URL pubblica, addon aggiornato/aggiunto, fallback, URL non consentita).
+3. **Verifica dalla produzione** dopo il deploy: chiamata reale a `/stremio-addon-update` → `{"success":true}` (prima: "Errore di connessione al servizio Stremio").
+
+**Nota**: un deploy che cambia gli input del manifest (es. la revisione dei preset) non aggiorna da solo la URL installata in Stremio: serve un salvataggio dal configuratore (che rileva il cambio di impronta) oppure una riconciliazione automatica all'avvio — vedi proposta.
