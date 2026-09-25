@@ -38,7 +38,7 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
         type: c.type,
         category: 'Le Mie Creazioni',
         emoji: c.emoji || '💖',
-        description: c.description || 'Catalogo Custom',
+        description: c.source === 'custom' ? 'Lista personalizzata' : 'Catalogo Custom',
         filters: c.filters,
         queries: c.queries,
         isCustom: true,
