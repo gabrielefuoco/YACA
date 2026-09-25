@@ -81,21 +81,110 @@ function getEffectiveActiveProfileId(userConfig) {
         : 'global';
 }
 
+const DEFAULT_HERO_CATALOGS = [
+    { id: 'yaca_true_blend_movies', type: 'movie', name: '⭐ Scelti per Te' },
+    { id: 'yaca_true_blend_series', type: 'series', name: '⭐ Scelti per Te' },
+    { id: 'yaca_seed_network_movies', type: 'movie', name: '🕸️ La Rete dei tuoi Preferiti' },
+    { id: 'yaca_seed_network_series', type: 'series', name: '🕸️ La Rete dei tuoi Preferiti' },
+    { id: 'yaca_hidden_gems_movies', type: 'movie', name: '💎 Gemme Nascoste' },
+    { id: 'yaca_hidden_gems_series', type: 'series', name: '💎 Gemme Nascoste' },
+    { id: 'yaca_trakt_filtered_movies', type: 'movie', name: '🌐 Suggeriti dalla Community' },
+    { id: 'yaca_trakt_filtered_series', type: 'series', name: '🌐 Suggeriti dalla Community' }
+];
+
+let globalHeroCatalogsOverride = null;
+
+function setHeroCatalogs(catalogs) {
+    globalHeroCatalogsOverride = catalogs;
+}
+
+function getHeroCatalogs() {
+    if (globalHeroCatalogsOverride) {
+        return globalHeroCatalogsOverride;
+    }
+    try {
+        const stremio = require('../api/stremio');
+        if (typeof stremio.buildManifest === 'function') {
+            const manifest = stremio.buildManifest({});
+            if (manifest && Array.isArray(manifest.catalogs)) {
+                const heroes = manifest.catalogs.slice(7);
+                if (heroes.length > 0) {
+                    return heroes.map(c => ({
+                        id: c.id,
+                        type: c.type,
+                        name: c.name
+                    }));
+                }
+            }
+        }
+    } catch (_) {}
+    return DEFAULT_HERO_CATALOGS;
+}
+
+function getPresetDefinitions() {
+    try {
+        const { getPresets } = require('../data/presets');
+        if (typeof getPresets === 'function') {
+            const presets = getPresets();
+            if (Array.isArray(presets)) {
+                return presets.map(p => ({
+                    id: String(p.id),
+                    name: String(p.name || ''),
+                    type: String(p.type || '')
+                }));
+            }
+        }
+    } catch (_) {}
+    return [];
+}
+
+/**
+ * Builds a deterministic hash of the code-level manifest definitions:
+ * the hero catalogs declared in buildManifest and relevant fields of presets in presets.js.
+ */
+function buildManifestDefinitionsSignature(heroCatalogsOverride, presetsOverride) {
+    const rawHeroes = heroCatalogsOverride !== undefined
+        ? (heroCatalogsOverride || [])
+        : getHeroCatalogs();
+    const heroes = rawHeroes.map(c => ({
+        id: String(c?.id ?? ''),
+        name: String(c?.name ?? ''),
+        type: String(c?.type ?? '')
+    }));
+
+    const rawPresets = presetsOverride !== undefined
+        ? (presetsOverride || [])
+        : getPresetDefinitions();
+    const presets = rawPresets.map(p => ({
+        id: String(p?.id ?? ''),
+        name: String(p?.name ?? ''),
+        type: String(p?.type ?? '')
+    }));
+
+    const canonicalJson = JSON.stringify(normalizeForJson({ heroes, presets }));
+    return crypto.createHash('sha256').update(canonicalJson).digest('hex').slice(0, 16);
+}
+
 /**
  * Builds a deterministic hash of the persisted configuration that determines
  * the Stremio manifest. Object key order is ignored, while array order is
  * preserved because it determines catalog ordering in the manifest.
  *
  * @param {object} userConfig normalized user config or raw AddonConfig data
+ * @param {object} [options] optional overrides for testing definitions signature
  * @returns {string} SHA-256 fingerprint
  */
-function buildManifestFingerprint(userConfig = {}) {
+function buildManifestFingerprint(userConfig = {}, options = {}) {
     const profiles = Array.isArray(userConfig.profiles)
         ? userConfig.profiles
         : [];
 
+    const definitionsSignature = options.definitionsSignature
+        || buildManifestDefinitionsSignature(options.heroCatalogs, options.presets);
+
     const fingerprintInput = {
-        schemaVersion: FINGERPRINT_SCHEMA_VERSION,
+        schemaVersion: `${FINGERPRINT_SCHEMA_VERSION}:${definitionsSignature}`,
+        definitionsSignature,
         activeProfileId: getEffectiveActiveProfileId(userConfig),
         // Profile order is not part of the manifest. Catalog order below is.
         profiles: profiles
@@ -116,5 +205,8 @@ function buildManifestFingerprint(userConfig = {}) {
 
 module.exports = {
     FINGERPRINT_SCHEMA_VERSION,
+    DEFAULT_HERO_CATALOGS,
+    setHeroCatalogs,
+    buildManifestDefinitionsSignature,
     buildManifestFingerprint
 };

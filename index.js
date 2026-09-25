@@ -197,6 +197,14 @@ if (require.main === module) {
             const { runTmdbDumpDaemon } = require('./src/utils/tmdbDumpDaemon');
             runTmdbDumpDaemon().catch(err => console.error('[TmdbDump Daemon] Startup Error:', err.message));
         }
+
+        // Riconciliazione automatica manifest Stremio all'avvio
+        if (process.env.DISABLE_MANIFEST_RECONCILE === '1') {
+            console.log('[ManifestReconciler] Disattivato da DISABLE_MANIFEST_RECONCILE=1');
+        } else {
+            const { reconcileManifests } = require('./src/utils/manifestReconciler');
+            reconcileManifests().catch(err => console.warn('[ManifestReconciler] Startup Error:', err.message));
+        }
     });
 }
 
