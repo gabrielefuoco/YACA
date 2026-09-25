@@ -3,7 +3,7 @@ const WatchHistory = require('../models/WatchHistory');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
 const { extractActiveDNAFromTmdbData, computeFinalDNA, calculateWeightedInteractions } = require('../utils/dnaExtractor');
-const { computeTimeDecay, applyLogSaturation, calculateProfileRelevance } = require('../utils/dnaRarity');
+const { computeTimeDecay, applyLogSaturation, calculateProfileRelevance, calculateFlatnessMetrics } = require('../utils/dnaRarity');
 
 class ProfileBuilder {
     /**
@@ -288,13 +288,15 @@ class ProfileBuilder {
 
         const totalInteractions = calculateWeightedInteractions(historyDocs);
         const vFinal = computeFinalDNA(vStatic, vActive, totalInteractions);
+        const flatnessMetrics = calculateFlatnessMetrics(vFinal);
 
         await TasteProfile.updateOne(
             { owner, context },
             {
                 $set: {
                     "compiledVectors.V_active": vActive,
-                    "compiledVectors.V_final": vFinal
+                    "compiledVectors.V_final": vFinal,
+                    flatnessMetrics
                 }
             },
             { upsert: true }

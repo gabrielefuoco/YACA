@@ -20,6 +20,14 @@ const tasteProfileSchema = new mongoose.Schema({
         V_final: { type: mongoose.Schema.Types.Mixed, default: {} },
         lastComputed: { type: Date }
     },
+    // Metriche di Flatness del DNA calcolate a ogni sync/ricalcolo
+    flatnessMetrics: {
+        dimensions: { type: Number, default: 0 },
+        sum: { type: Number, default: 0 },
+        entropyBits: { type: Number, default: 0 },
+        top10Share: { type: Number, default: 0 },
+        lastCalculated: { type: Date }
+    },
     // ID to human-readable Name mapping
     idNames: {
         type: Map,

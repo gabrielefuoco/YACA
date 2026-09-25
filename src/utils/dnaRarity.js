@@ -155,12 +155,51 @@ function calculateProfileRelevance(itemDna, vStatic, context = 'global') {
     return 0.20 + (0.80 * relevance);
 }
 
+/**
+ * Calcola le metriche di flatness di un vettore finale DNA:
+ * - entropyBits: entropia di Shannon in bit (-sum p * log2(p))
+ * - top10Share: frazione del peso totale detenuta dai 10 elementi maggiori
+ * - dimensions: numero di chiavi con peso positivo
+ * - sum: somma totale dei pesi
+ * @param {Record<string, number>} vFinal
+ * @returns {{ dimensions: number, sum: number, entropyBits: number, top10Share: number, lastCalculated: Date }}
+ */
+function calculateFlatnessMetrics(vFinal) {
+    if (!vFinal || typeof vFinal !== 'object') {
+        return { dimensions: 0, sum: 0, entropyBits: 0, top10Share: 0, lastCalculated: new Date() };
+    }
+    const values = Object.values(vFinal).map(Number).filter(v => v > 0);
+    const sum = values.reduce((a, b) => a + b, 0);
+    if (sum === 0) {
+        return { dimensions: 0, sum: 0, entropyBits: 0, top10Share: 0, lastCalculated: new Date() };
+    }
+
+    let entropyBits = 0;
+    for (const val of values) {
+        const p = val / sum;
+        entropyBits -= p * Math.log2(p);
+    }
+
+    const sorted = [...values].sort((a, b) => b - a);
+    const top10Sum = sorted.slice(0, 10).reduce((a, b) => a + b, 0);
+    const top10Share = top10Sum / sum;
+
+    return {
+        dimensions: values.length,
+        sum: Number(sum.toFixed(2)),
+        entropyBits: Number(entropyBits.toFixed(3)),
+        top10Share: Number(top10Share.toFixed(3)),
+        lastCalculated: new Date()
+    };
+}
+
 module.exports = {
     computeTimeDecay,
     applyLogSaturation,
     getSoftRarityMultiplier,
     applySoftRarity,
     calculateProfileRelevance,
+    calculateFlatnessMetrics,
     setGlobalDfCache,
     getGlobalDfCache,
     DF_MIN_DEFAULT,

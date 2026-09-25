@@ -9,6 +9,7 @@ const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const LibraryConverterService = require('../services/LibraryConverterService');
 const UserLibraryItem = require('../db/models/UserLibraryItem');
 const { sanitizeDnaVector, isRetiredTmdbKeywordId } = require('../data/keywordIds');
+const { calculateFlatnessMetrics } = require('../utils/dnaRarity');
 
 /**
  * POST /api/profiles/:id/convert-library
@@ -82,7 +83,8 @@ router.get('/:id/sync-status', async (req, res) => {
             manualDNA: profileSettings.manualDNA || [],
             suggestedDNA: profileSettings.suggestedDNA || [],
             compiledVectors: profile.compiledVectors || {},
-            idNames: profile.idNames || {}
+            idNames: profile.idNames || {},
+            flatnessMetrics: profile.flatnessMetrics || calculateFlatnessMetrics(profile.compiledVectors?.V_final)
         });
     } catch (err) {
         console.error(`[ProfileAPI] Error fetching sync status:`, err.message);
@@ -231,8 +233,9 @@ router.get('/:id/analytics', async (req, res) => {
 
         // Rimosse chiamate a Mistral per le query dinamiche, ritorniamo solo i parametri VSM di base.
         const aiLogs = {};
+        const flatnessMetrics = profile?.flatnessMetrics || calculateFlatnessMetrics(profile?.compiledVectors?.V_final);
 
-        return res.json({ aiLogs, baseDnaParams, studios });
+        return res.json({ aiLogs, baseDnaParams, studios, flatnessMetrics });
     } catch (err) {
         console.error(`[Analytics] Error fetching profile analytics for ${profileId}:`, err.message);
         return res.status(500).json({ error: 'Internal server error' });
@@ -306,8 +309,8 @@ router.post('/:id/sync-vectors', async (req, res) => {
 
     // Size guard: reject unreasonably large payloads
     const keyCount = Object.keys(sanitizedVFinal).length;
-    if (keyCount > 500) {
-        return res.status(400).json({ error: `V_final too large (${keyCount} keys, max 500)` });
+    if (keyCount > 2000) {
+        return res.status(400).json({ error: `V_final too large (${keyCount} keys, max 2000)` });
     }
 
     // Sanitize: only allow known sub-vectors through
@@ -316,11 +319,13 @@ router.post('/:id/sync-vectors', async (req, res) => {
     if (V_static && typeof V_static === 'object' && !Array.isArray(V_static)) sanitized.V_static = sanitizeDnaVector(V_static);
 
     try {
+        const flatnessMetrics = calculateFlatnessMetrics(sanitizedVFinal);
         const updateFields = {
             compiledVectors: {
                 ...sanitized,
                 lastComputed: new Date()
             },
+            flatnessMetrics,
             lastUpdated: new Date()
         };
 
@@ -580,6 +585,26 @@ router.put('/:id/library/reorder', async (req, res) => {
     } catch (err) {
         console.error(`[ProfileAPI] Error reordering library:`, err.message);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * GET /api/profiles/:id/flatness
+ * Espone le metriche di flatness del DNA (entropia in bit, quota top-10, dimensioni, somma).
+ */
+router.get('/:id/flatness', async (req, res) => {
+    const { id: profileId } = req.params;
+    const userId = req.query.userId;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    try {
+        const profile = await TasteProfile.findOne({ owner: userId, context: profileId }).lean();
+        if (!profile) return res.status(404).json({ error: 'Profile not found' });
+        const metrics = profile.flatnessMetrics || calculateFlatnessMetrics(profile.compiledVectors?.V_final);
+        return res.json(metrics);
+    } catch (err) {
+        console.error('[FlatnessAPI] Error fetching flatness metrics:', err.message);
+        return res.status(500).json({ error: 'Internal server error' });
     }
 });
 
