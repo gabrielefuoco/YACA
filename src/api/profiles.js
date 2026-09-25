@@ -293,8 +293,8 @@ router.post('/:id/sync-vectors', async (req, res) => {
         return res.status(400).json({ error: 'compiledVectors.V_final must be a non-null object' });
     }
 
-    // Key format validation: all keys must match prefix:id pattern (g:28, k:9715, d:525, a:1100)
-    const VALID_KEY_PATTERN = /^[gkda]:\d+$/;
+    // Key format validation: allows genres, keywords (id/str), countries, and hierarchical graph nodes (L1-L5)
+    const VALID_KEY_PATTERN = /^([gkda]:\d+|k:[a-z0-9_\s-]+|o:[A-Z]{2}|L[1-5]:[a-z0-9_]+)$/i;
     const invalidKeys = Object.keys(V_final).filter(k => !VALID_KEY_PATTERN.test(k));
     if (invalidKeys.length > 0) {
         return res.status(400).json({ error: `Invalid V_final keys: ${invalidKeys.slice(0, 5).join(', ')}` });

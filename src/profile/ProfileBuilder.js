@@ -135,7 +135,8 @@ class ProfileBuilder {
             let rows = [];
             for (let i = 0; i < ids.length; i += chunkSize) {
                 const chunk = ids.slice(i, i + chunkSize);
-                const sql = `SELECT id, genres, keywords, "cast", directors, original_language FROM ${table} WHERE id IN (${chunk.join(',')})`;
+                const directorsCol = table === 'movies' ? 'directors' : 'created_by AS directors';
+                const sql = `SELECT id, genres, keywords, "cast", ${directorsCol}, original_language FROM ${table} WHERE id IN (${chunk.join(',')})`;
                 try {
                     const res = await duckDbStore.query(sql);
                     if (res && res.length > 0) rows.push(...res);
@@ -152,6 +153,7 @@ class ProfileBuilder {
         ]);
 
         const allRows = [...movieRows, ...tvRows];
+        const weightMap = new Map(items.map(i => [Number(i.tmdbId), i.weight || 100]));
         return allRows.map(row => {
             let genres = [];
             let keywords = [];
@@ -164,12 +166,152 @@ class ProfileBuilder {
 
             return {
                 tmdbId: Number(row.id),
+                weight: weightMap.get(Number(row.id)) || 100,
                 genre_ids: genres.map(g => g.id || g),
                 keyword_ids: keywords.map(k => k.id || k),
                 cast_ids: cast.slice(0, 5).map(c => c.id || c),
                 director_ids: directors.map(d => d.id || d)
             };
         });
+    }
+
+    /**
+     * Risolve tutti i contesti attivi per un utente (global + profili AddonConfig).
+     */
+    static async _resolveAllContexts(owner) {
+        const contexts = new Set(['global']);
+        try {
+            const account = await UserAccount.findOne({ userId: owner }).lean();
+            if (account?.addonUuid) {
+                const config = await AddonConfig.findOne({ uuid: account.addonUuid }).lean();
+                for (const p of (config?.profiles || [])) {
+                    if (p.id) contexts.add(p.id);
+                }
+            }
+        } catch (e) {
+            console.warn('[ProfileBuilder] Error resolving contexts:', e.message);
+        }
+        return Array.from(contexts);
+    }
+
+    /**
+     * Backfill della cronologia/segnali da global a un contesto secondario se vuoto.
+     */
+    static async backfillProfileWatchHistory(owner, targetContext) {
+        if (!owner || !targetContext || targetContext === 'global') return;
+        try {
+            const count = await WatchHistory.countDocuments({ owner, context: targetContext });
+            if (count > 0) return;
+            const globalDocs = await WatchHistory.find({ owner, context: 'global' }).lean();
+            if (globalDocs.length === 0) return;
+
+            const bulkOps = globalDocs.map(doc => {
+                const copy = { ...doc, context: targetContext };
+                delete copy._id;
+                delete copy.createdAt;
+                delete copy.updatedAt;
+                return {
+                    updateOne: {
+                        filter: { owner, context: targetContext, tmdbId: copy.tmdbId },
+                        update: { $set: copy },
+                        upsert: true
+                    }
+                };
+            });
+            await WatchHistory.bulkWrite(bulkOps, { ordered: false });
+        } catch (err) {
+            console.warn(`[ProfileBuilder] Backfill error for ${targetContext}:`, err.message);
+        }
+    }
+
+    /**
+     * Ricalcola V_active e V_final dai segnali reali (WatchHistory + UserLibraryItem).
+     * Pesi: loved 4, liked 3, visto 2, libreria 1.
+     */
+    static async recomputeVectorsForUser(owner, context) {
+        if (!owner || !context) return;
+        const profile = await TasteProfile.findOne({ owner, context }).lean();
+        if (!profile) return;
+
+        const vStatic = profile.compiledVectors?.V_static || {};
+
+        // 1. Legge cronologia e segnali
+        const historyDocs = await WatchHistory.find({ owner, context }).lean();
+        const itemMap = new Map(); // tmdbId -> { tmdbId, type, weight }
+
+        for (const doc of historyDocs) {
+            const tmdbId = Number(doc.tmdbId);
+            if (!tmdbId) continue;
+            let weight = 0;
+            const signals = doc.signals || [];
+            if (signals.length === 0) {
+                weight = 200; // default visto (peso 2)
+            } else {
+                for (const s of signals) {
+                    if (s.type === 'loved') weight += 400;      // loved 4
+                    else if (s.type === 'liked') weight += 300; // liked 3
+                    else if (s.type === 'watched') weight += 200; // visto 2
+                    else if (s.type === 'library') weight += 100; // libreria 1
+                }
+            }
+            if (weight > 0) {
+                itemMap.set(tmdbId, { tmdbId, type: doc.type || 'movie', weight });
+            }
+        }
+
+        // 2. Legge UserLibraryItem dell'account (libreria = peso 100 = 1)
+        const addonUuid = await ProfileBuilder._resolveAddonUuid(owner);
+        if (addonUuid) {
+            try {
+                const UserLibraryItem = require('../db/models/UserLibraryItem');
+                const libraryDocs = await UserLibraryItem.find({
+                    addonUuid,
+                    removed: { $ne: true },
+                    tmdbId: { $exists: true, $ne: null }
+                }).lean();
+
+                for (const lib of libraryDocs) {
+                    const tmdbId = Number(lib.tmdbId);
+                    if (!tmdbId) continue;
+                    const libType = (lib.type === 'series' || lib.type === 'tv') ? 'tv' : 'movie';
+                    if (itemMap.has(tmdbId)) {
+                        itemMap.get(tmdbId).weight += 100; // Libreria aggiunge peso 1
+                    } else {
+                        itemMap.set(tmdbId, { tmdbId, type: libType, weight: 100 });
+                    }
+                }
+            } catch (err) {
+                console.warn('[ProfileBuilder] Warning reading UserLibraryItem:', err.message);
+            }
+        }
+
+        const items = Array.from(itemMap.values());
+        if (items.length === 0) return;
+
+        // 3. Estrae metadati da DuckDB locale
+        const duckDbDnaData = await ProfileBuilder._fetchDnaItemsFromDuckDb(items);
+        const vActive = {};
+
+        for (const data of duckDbDnaData) {
+            const itemDna = extractActiveDNAFromTmdbData(data, data.weight || 100);
+            for (const [key, value] of Object.entries(itemDna)) {
+                vActive[key] = (vActive[key] || 0) + value;
+            }
+        }
+
+        const totalInteractions = historyDocs.length;
+        const vFinal = computeFinalDNA(vStatic, vActive, totalInteractions);
+
+        await TasteProfile.updateOne(
+            { owner, context },
+            {
+                $set: {
+                    "compiledVectors.V_active": vActive,
+                    "compiledVectors.V_final": vFinal
+                }
+            },
+            { upsert: true }
+        );
     }
 
     /**
@@ -187,7 +329,7 @@ class ProfileBuilder {
 
         // 1. Prelievo DNA primario da DuckDB
         const duckDbDnaData = await ProfileBuilder._fetchDnaItemsFromDuckDb(items);
-        const dnaList = duckDbDnaData.map(data => extractActiveDNAFromTmdbData(data, 100));
+        const dnaList = duckDbDnaData.map(data => extractActiveDNAFromTmdbData(data, data.weight || 100));
 
         if (dnaList.length > 0) {
             await ProfileBuilder._updateAndSaveActiveVectors(owner, context, dnaList);
@@ -195,121 +337,259 @@ class ProfileBuilder {
     }
 
     /**
-     * Entry point per la sincronizzazione Trakt (ottimizzato Bulk).
+     * Entry point per la sincronizzazione Trakt (ottimizzato Bulk + fasce + dedup Stremio-first + fan-out).
      */
     static async syncUserHistory(owner, context, traktHistory) {
         if (!owner || !traktHistory?.length) return;
 
-        await ProfileBuilder._updateSyncStatus(owner, context, {
-            isSyncing: true,
-            total: traktHistory.length,
-            current: 0
-        });
+        const allContexts = await ProfileBuilder._resolveAllContexts(owner);
+        const targetContexts = allContexts.includes(context) ? allContexts : [context, ...allContexts];
+
+        for (const ctx of targetContexts) {
+            await ProfileBuilder._updateSyncStatus(owner, ctx, {
+                isSyncing: true,
+                total: traktHistory.length,
+                current: 0
+            });
+        }
 
         try {
-            const bulkOps = [];
-            const itemsForDna = [];
-
+            const parsedEntries = [];
             for (let i = 0; i < traktHistory.length; i++) {
                 const entry = traktHistory[i];
                 const tmdbId = entry.movie?.ids?.tmdb || entry.show?.ids?.tmdb;
                 const type = entry.movie ? 'movie' : 'tv';
-                
-                if (tmdbId) {
+                if (!tmdbId) continue;
+
+                let signalType = 'watched';
+                let isRating = false;
+                let ratingVal = null;
+
+                if (typeof entry.rating === 'number') {
+                    isRating = true;
+                    ratingVal = entry.rating;
+                    if (entry.rating >= 9) signalType = 'loved';
+                    else if (entry.rating >= 7) signalType = 'liked';
+                    else if (entry.rating >= 5) signalType = 'watched';
+                    else signalType = 'negative';
+                }
+
+                parsedEntries.push({
+                    tmdbId: Number(tmdbId),
+                    type,
+                    signalType,
+                    isRating,
+                    ratingVal,
+                    at: entry.watched_at || entry.rated_at || new Date()
+                });
+            }
+
+            const tmdbIds = [...new Set(parsedEntries.map(e => e.tmdbId))];
+
+            for (const ctx of targetContexts) {
+                const existingDocs = await WatchHistory.find({ owner, context: ctx, tmdbId: { $in: tmdbIds } }).lean();
+                const existingMap = new Map(existingDocs.map(d => [d.tmdbId, d]));
+
+                const bulkOps = [];
+                for (const item of parsedEntries) {
+                    const existing = existingMap.get(item.tmdbId);
+                    const existingSignals = existing?.signals || [];
+                    const hasStremioSignal = existingSignals.some(s => s.source === 'stremio' || s.source?.startsWith('stremio'));
+
+                    // Dedup Stremio-first: se l'item ha già un segnale Stremio, non contare il rating Trakt
+                    if (item.isRating && hasStremioSignal) {
+                        continue;
+                    }
+
+                    const signals = [...existingSignals];
+                    if (signals.length === 0 && existing?.source) {
+                        signals.push({ type: 'watched', source: existing.source, at: existing.lastWatchedAt || new Date() });
+                    }
+
+                    const signalIdx = signals.findIndex(s => s.type === item.signalType && s.source === 'trakt');
+                    if (signalIdx >= 0) {
+                        signals[signalIdx].at = item.at;
+                        if (item.ratingVal !== null) signals[signalIdx].value = item.ratingVal;
+                    } else {
+                        signals.push({
+                            type: item.signalType,
+                            source: 'trakt',
+                            at: item.at,
+                            ...(item.ratingVal !== null ? { value: item.ratingVal } : {})
+                        });
+                    }
+
                     bulkOps.push({
                         updateOne: {
-                            filter: { owner, context, tmdbId },
-                            update: { 
-                                $set: { type, lastWatchedAt: entry.watched_at || new Date(), source: 'trakt' },
-                                $inc: { episodesWatched: 1 } 
+                            filter: { owner, context: ctx, tmdbId: item.tmdbId },
+                            update: {
+                                $set: { type: item.type, lastWatchedAt: item.at, source: 'trakt', signals },
+                                $inc: { episodesWatched: 1 }
                             },
                             upsert: true
                         }
                     });
-                    itemsForDna.push({ tmdbId, type });
                 }
-            }
 
-            if (bulkOps.length > 0) {
-                // Batch write to DB
-                await WatchHistory.bulkWrite(bulkOps, { ordered: false });
-                await ProfileBuilder._updateSyncStatus(owner, context, { current: traktHistory.length });
-                // Bulk DNA Extraction
-                await ProfileBuilder._bulkUpdateVectorsAsync(owner, context, itemsForDna);
-            }
+                if (bulkOps.length > 0) {
+                    await WatchHistory.bulkWrite(bulkOps, { ordered: false });
+                }
 
-            await ProfileBuilder._updateSyncStatus(owner, context, {
-                isSyncing: false,
-                lastSync: new Date()
-            });
+                await ProfileBuilder.recomputeVectorsForUser(owner, ctx);
+                await ProfileBuilder._updateSyncStatus(owner, ctx, {
+                    isSyncing: false,
+                    current: traktHistory.length,
+                    lastSync: new Date()
+                });
+            }
         } catch (err) {
             console.error('[ProfileBuilder] Trakt Sync Error:', err.message);
-            await ProfileBuilder._updateSyncStatus(owner, context, { isSyncing: false });
+            for (const ctx of targetContexts) {
+                await ProfileBuilder._updateSyncStatus(owner, ctx, { isSyncing: false });
+            }
         }
     }
 
     /**
-     * Entry point per la sincronizzazione Stremio (ottimizzato Bulk).
+     * Entry point per la sincronizzazione Stremio (ottimizzato Bulk + DuckDB IMDb resolution + fan-out).
      */
     static async syncStremioData(owner, stremioData, context = 'global') {
         if (!owner || !stremioData) return;
 
-        let allItems;
+        let allItems = [];
         if (Array.isArray(stremioData)) {
-            allItems = stremioData.map(item => ({ item, source: 'manual' }));
+            allItems = stremioData.map(item => ({ item, signalType: 'watched', source: 'manual' }));
         } else {
             allItems = [
-                ...(stremioData.loved || []).map(item => ({ item, source: 'stremio' })),
-                ...(stremioData.liked || []).map(item => ({ item, source: 'stremio' })),
-                ...(stremioData.library || []).map(item => ({ item, source: 'stremio' }))
+                ...(stremioData.loved || []).map(item => ({ item, signalType: 'loved', source: 'stremio' })),
+                ...(stremioData.liked || []).map(item => ({ item, signalType: 'liked', source: 'stremio' })),
+                ...(stremioData.library || []).map(item => ({ item, signalType: 'library', source: 'stremio' }))
             ];
         }
 
-        await ProfileBuilder._updateSyncStatus(owner, context, {
-            isSyncing: true,
-            total: allItems.length,
-            current: 0
-        });
+        const allContexts = await ProfileBuilder._resolveAllContexts(owner);
+        const targetContexts = allContexts.includes(context) ? allContexts : [context, ...allContexts];
+
+        for (const ctx of targetContexts) {
+            await ProfileBuilder._updateSyncStatus(owner, ctx, {
+                isSyncing: true,
+                total: allItems.length,
+                current: 0
+            });
+        }
 
         try {
-            const bulkOps = [];
-            const itemsForDna = [];
+            // 1. Risolve gli ID IMDb (tt...) via DuckDB in-memory a zero chiamate di rete
+            const imdbIds = allItems
+                .map(({ item }) => String(item.id || item._id || item.itemId || '').trim())
+                .filter(id => /^tt\d+$/.test(id));
 
-            for (let i = 0; i < allItems.length; i++) {
-                const { item, source } = allItems[i];
-                const tmdbId = item.id || item._id;
-                const type = item.type === 'series' ? 'tv' : 'movie';
+            let duckDbResolved = {};
+            if (imdbIds.length > 0) {
+                try {
+                    const duckDbStore = require('../db/duckDbStore');
+                    duckDbResolved = await duckDbStore.resolveImdbIds(imdbIds);
+                } catch (e) {
+                    console.warn('[ProfileBuilder] DuckDB resolveImdbIds error:', e.message);
+                }
+            }
 
-                if (tmdbId && !isNaN(tmdbId)) {
+            // 2. Mappa ogni item al proprio tmdbId numerico
+            const resolvedItems = [];
+            for (const entry of allItems) {
+                const { item, signalType, source } = entry;
+                const rawId = String(item.id || item._id || item.itemId || '').trim();
+                let tmdbId = null;
+                let type = (item.type === 'series' || item.type === 'tv') ? 'tv' : 'movie';
+
+                if (/^tt\d+$/.test(rawId)) {
+                    if (duckDbResolved[rawId]) {
+                        tmdbId = duckDbResolved[rawId].tmdbId;
+                        type = duckDbResolved[rawId].type;
+                    } else {
+                        // Fallback id_cache / Mongo
+                        try {
+                            const { translateImdbToTmdb } = require('../id_mapping/id_cache');
+                            const res = await translateImdbToTmdb(rawId);
+                            if (res?.id) {
+                                tmdbId = Number(res.id.replace('tmdb:', ''));
+                                if (res.type) type = res.type === 'series' ? 'tv' : 'movie';
+                            }
+                        } catch (_e) {}
+                    }
+                } else if (/^\d+$/.test(rawId)) {
+                    tmdbId = parseInt(rawId, 10);
+                } else if (rawId.startsWith('tmdb:')) {
+                    const parsed = parseInt(rawId.replace(/^tmdb:/, ''), 10);
+                    if (!isNaN(parsed)) tmdbId = parsed;
+                }
+
+                if (tmdbId && !isNaN(tmdbId) && tmdbId > 0) {
+                    resolvedItems.push({
+                        tmdbId,
+                        type,
+                        signalType,
+                        source,
+                        at: item._ctime ? new Date(item._ctime) : (item.lastWatched ? new Date(item.lastWatched) : new Date())
+                    });
+                }
+            }
+
+            const tmdbIds = [...new Set(resolvedItems.map(i => i.tmdbId))];
+
+            // 3. Fan-out su tutti i contesti del profilo
+            for (const ctx of targetContexts) {
+                const existingDocs = await WatchHistory.find({ owner, context: ctx, tmdbId: { $in: tmdbIds } }).lean();
+                const existingMap = new Map(existingDocs.map(d => [d.tmdbId, d]));
+
+                const bulkOps = [];
+                for (const item of resolvedItems) {
+                    const existing = existingMap.get(item.tmdbId);
+                    const signals = existing?.signals ? [...existing.signals] : [];
+                    if (signals.length === 0 && existing?.source) {
+                        signals.push({ type: 'watched', source: existing.source, at: existing.lastWatchedAt || new Date() });
+                    }
+
+                    const signalIdx = signals.findIndex(s => s.type === item.signalType && s.source === item.source);
+                    if (signalIdx >= 0) {
+                        signals[signalIdx].at = item.at;
+                    } else {
+                        signals.push({ type: item.signalType, source: item.source, at: item.at });
+                    }
+
                     bulkOps.push({
                         updateOne: {
-                            filter: { owner, context, tmdbId: parseInt(tmdbId) },
-                            update: { 
-                                $set: { type, lastWatchedAt: new Date(), source },
-                                $inc: { episodesWatched: 1 } 
+                            filter: { owner, context: ctx, tmdbId: item.tmdbId },
+                            update: {
+                                $set: { type: item.type, lastWatchedAt: item.at, source: item.source, signals },
+                                $inc: { episodesWatched: 1 }
                             },
                             upsert: true
                         }
                     });
-                    itemsForDna.push({ tmdbId: parseInt(tmdbId), type });
                 }
-            }
 
-            if (bulkOps.length > 0) {
-                // Batch write to DB
-                await WatchHistory.bulkWrite(bulkOps, { ordered: false });
-                await ProfileBuilder._updateSyncStatus(owner, context, { current: allItems.length });
-                // Bulk DNA Extraction
-                await ProfileBuilder._bulkUpdateVectorsAsync(owner, context, itemsForDna);
-            }
+                if (bulkOps.length > 0) {
+                    await WatchHistory.bulkWrite(bulkOps, { ordered: false });
+                }
 
-            await ProfileBuilder._updateSyncStatus(owner, context, {
-                isSyncing: false,
-                lastSync: new Date()
-            });
+                // Esegue anche backfill per contesti che non avevano storico
+                await ProfileBuilder.backfillProfileWatchHistory(owner, ctx);
+
+                // Ricalcola vettori completi (WatchHistory + UserLibraryItem)
+                await ProfileBuilder.recomputeVectorsForUser(owner, ctx);
+
+                await ProfileBuilder._updateSyncStatus(owner, ctx, {
+                    isSyncing: false,
+                    current: allItems.length,
+                    lastSync: new Date()
+                });
+            }
         } catch (err) {
             console.error('[ProfileBuilder] Stremio Sync Error:', err.message);
-            await ProfileBuilder._updateSyncStatus(owner, context, { isSyncing: false });
+            for (const ctx of targetContexts) {
+                await ProfileBuilder._updateSyncStatus(owner, ctx, { isSyncing: false });
+            }
         }
     }
 }

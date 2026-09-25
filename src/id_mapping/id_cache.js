@@ -17,6 +17,19 @@ async function translateImdbToTmdb(imdbId, tmdbApiKey) {
     }
 
     try {
+        const duckDbStore = require('../db/duckDbStore');
+        const duckResolved = await duckDbStore.resolveImdbIds([imdbId]);
+        if (duckResolved && duckResolved[imdbId]) {
+            const result = { 
+                id: `tmdb:${duckResolved[imdbId].tmdbId}`, 
+                type: duckResolved[imdbId].type === 'tv' ? 'series' : 'movie' 
+            };
+            localCache.set(imdbId, result);
+            return result;
+        }
+    } catch (_err) {}
+
+    try {
         const dbMapping = await ImdbToTmdbMapping.findOne({ imdbId }).lean();
         if (dbMapping) {
             const result = { id: dbMapping.tmdbId, type: dbMapping.type };

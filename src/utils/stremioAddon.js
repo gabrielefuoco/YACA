@@ -170,17 +170,7 @@ async function syncAllStremioData(userId, authKey, profileId = 'global') {
             ? await AddonConfig.findOne({ uuid: account.addonUuid }).lean()
             : null;
 
-        if (safeProfileId === 'global') {
-            await ProfileBuilder.syncStremioData(safeUserId, stremioData, 'global');
-        } else {
-            const profile = (addonConfig?.profiles || []).find(p => p.id === safeProfileId);
-            if (profile) {
-                console.log(`[StremioSync] Resolving catalogs for profile ${profile.name || safeProfileId}...`);
-                const catalogItems = await syncCatalogData(profile.catalogs, tmdbKey, profile.settings || {});
-                const formattedData = { liked: catalogItems, loved: [], library: [] };
-                await ProfileBuilder.syncStremioData(safeUserId, formattedData, safeProfileId);
-            }
-        }
+        await ProfileBuilder.syncStremioData(safeUserId, stremioData, safeProfileId);
 
         if (safeProfileId === 'global') {
             await pushToTrakt(safeUserId, stremioData);
@@ -369,17 +359,16 @@ async function updateSyncTimestamp(userId, profileId) {
         }
     };
 
+    const options = { returnDocument: 'after' };
     if (safeProfileId !== 'global') {
         update.$set[`profiles.$[elem].settings.lastSync`] = new Date();
+        options.arrayFilters = [{ 'elem.id': safeProfileId }];
     }
 
     await AddonConfig.findOneAndUpdate(
         { uuid: account.addonUuid },
         update,
-        {
-            arrayFilters: [{ 'elem.id': safeProfileId }],
-            returnDocument: 'after'
-        }
+        options
     );
 }
 

@@ -611,8 +611,26 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const topGenres = computeTopGenres(profile, 3, user, context);
     const mappedTopGenres = mapGenreIdsToTarget(topGenres);
 
-    const lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 20).map(id => ({ id: String(id), weight: 2 }));
-    const likedIds = (user?.profiles?.find(p => p.id === context)?.liked || []).slice(0, 15).map(id => ({ id: String(id), weight: 1 }));
+    let lovedIds = [];
+    let likedIds = [];
+    try {
+        const WatchHistory = require('../../models/WatchHistory');
+        const historyDocs = await WatchHistory.find({ owner: userId, context }).lean();
+        lovedIds = historyDocs
+            .filter(d => (d.signals || []).some(s => s.type === 'loved') || d.source === 'stremio-loved')
+            .slice(0, 20)
+            .map(d => ({ id: String(d.tmdbId), weight: 4 }));
+        likedIds = historyDocs
+            .filter(d => (d.signals || []).some(s => s.type === 'liked') || d.source === 'stremio-liked')
+            .slice(0, 15)
+            .map(d => ({ id: String(d.tmdbId), weight: 3 }));
+    } catch (_e) {}
+    if (lovedIds.length === 0) {
+        lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 20).map(id => ({ id: String(id), weight: 2 }));
+    }
+    if (likedIds.length === 0) {
+        likedIds = (user?.profiles?.find(p => p.id === context)?.liked || []).slice(0, 15).map(id => ({ id: String(id), weight: 1 }));
+    }
 
     const sharedTraktResult = await fetchTraktRecommendationResult(
         traktToken,

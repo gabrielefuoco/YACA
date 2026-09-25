@@ -537,6 +537,25 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
     if (!userId || !traktToken || !tmdbApiKey) return false;
 
     try {
+        // Sincronizzazione periodica Stremio likes/loved (Mega Update first-party)
+        const stremioKey = userConfig?.apiKeys?.stremio || userConfig?.stremioKey;
+        let stremioKeyToUse = stremioKey;
+        if (!stremioKeyToUse) {
+            try {
+                const UserAccount = require('../db/models/UserAccount');
+                const account = await UserAccount.findOne({ userId }).lean();
+                stremioKeyToUse = account?.apiKeys?.stremio;
+            } catch (_e) {}
+        }
+        if (stremioKeyToUse) {
+            try {
+                const { syncAllStremioData } = require('../utils/stremioAddon');
+                await syncAllStremioData(userId, stremioKeyToUse, context);
+            } catch (sErr) {
+                console.warn(`[Hybrid] Stremio periodic likes sync failed:`, sErr.message);
+            }
+        }
+
         const traktType = mediaType === 'movie' ? 'movies' : 'shows';
         const [history, ratings] = await Promise.all([
             fetchRecentHistory(traktToken, traktType, 40, userConfig),

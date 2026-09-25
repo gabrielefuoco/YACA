@@ -189,6 +189,49 @@ class DuckDbStore {
         });
     }
 
+    /**
+     * Risolve un array di IMDb ID (tt...) in { tmdbId, type } via parquet DuckDB in-memory.
+     * @param {string[]} imdbIds
+     * @returns {Promise<Record<string, { tmdbId: number, type: 'movie'|'tv' }>>}
+     */
+    async resolveImdbIds(imdbIds) {
+        if (!Array.isArray(imdbIds) || imdbIds.length === 0) return {};
+        if (!this.isInitialized) await this.init();
+
+        const cleanIds = Array.from(new Set(
+            imdbIds
+                .map(id => String(id || '').trim())
+                .filter(id => /^tt\d+$/.test(id))
+        ));
+        if (cleanIds.length === 0) return {};
+
+        const mapping = {};
+        const chunkSize = 500;
+        for (let i = 0; i < cleanIds.length; i += chunkSize) {
+            const chunk = cleanIds.slice(i, i + chunkSize);
+            const inList = chunk.map(id => `'${id}'`).join(',');
+            const sql = `
+                SELECT id, imdb_id, 'movie' as type FROM movies WHERE imdb_id IN (${inList})
+                UNION ALL
+                SELECT id, imdb_id, 'tv' as type FROM tv WHERE imdb_id IN (${inList})
+            `;
+            try {
+                const rows = await this.query(sql);
+                for (const row of (rows || [])) {
+                    if (row.imdb_id && row.id) {
+                        mapping[row.imdb_id] = {
+                            tmdbId: Number(row.id),
+                            type: row.type === 'tv' ? 'tv' : 'movie'
+                        };
+                    }
+                }
+            } catch (err) {
+                console.error('[DuckDbStore] Errore resolveImdbIds:', err.message);
+            }
+        }
+        return mapping;
+    }
+
     close() {
         if (this.con) {
             try { this.con.close(); } catch (e) {}
