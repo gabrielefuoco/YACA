@@ -151,3 +151,15 @@ Risultato: **367 → 199 documenti**, 168 duplicati eliminati, 72 `itemId` asseg
 `node scripts/repair-dna-names.js --uuid <uuid> --apply` → **8 etichette placeholder risolte** (HBO, HBO Max, Hulu, A24, Studio Ghibli, Blumhouse Productions), 62 voci già corrette, 0 scartate.
 
 **Stato finale**: `main` = `origin/main` = `5ac2ee8`, suite **84/84 verdi (591 test + 9 saltati)**, produzione aggiornata e verificata.
+
+## Nota operativa: cache TMDB locale
+La conversione d'avvio (`src/utils/tmdbDumpDaemon.js`, "Pre-existing JSONL detected. Running boot conversion...") **riscrive la cache locale** `.cache/tmdb/`: interrompendo un server di prova a metà conversione la cache locale resta vuota e i test che leggono i parquet (es. ordine dei preset, titolo esatto nella ricerca) falliscono. La cartella è stata ripristinata copiando i parquet dalla produzione:
+
+```
+ssh mate "docker exec yaca-app cat /data/tmdb/movies.parquet" > .cache/tmdb/movies.parquet
+ssh mate "docker exec yaca-app cat /data/tmdb/tv.parquet"     > .cache/tmdb/tv.parquet
+```
+
+La produzione non è mai stata coinvolta (il suo dump vive in un volume Docker, `/data/tmdb`, con i JSONL sorgente).
+
+Reso **indipendente dallo snapshot dei dati** anche `tests/presetBurtonOrdering.test.js`: prima pretendeva che due titoli specifici fossero in un certo ordine, cosa che cambia a ogni aggiornamento del dump TMDB (gli id dipendevano dai valori di popolarità del momento). Ora verifica il contratto vero — popolarità ↓, poi voti ↓, poi id ↑ — e il determinismo della query.
