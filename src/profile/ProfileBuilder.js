@@ -4,6 +4,7 @@ const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
 const { extractActiveDNAFromTmdbData, computeFinalDNA, calculateWeightedInteractions } = require('../utils/dnaExtractor');
 const { computeTimeDecay, applyLogSaturation, calculateProfileRelevance, calculateFlatnessMetrics } = require('../utils/dnaRarity');
+const { clusterTasteSignals, shouldRecomputeClusters } = require('../utils/tasteClusters');
 
 class ProfileBuilder {
     /**
@@ -273,6 +274,7 @@ class ProfileBuilder {
         // 3. Estrae metadati da DuckDB locale
         const duckDbDnaData = await ProfileBuilder._fetchDnaItemsFromDuckDb(items);
         const rawActive = {};
+        const clusterInputItems = [];
 
         for (const data of duckDbDnaData) {
             const itemDna = extractActiveDNAFromTmdbData(data, 100);
@@ -280,6 +282,13 @@ class ProfileBuilder {
             const effectiveWeight = (data.weight || 100) * relevanceFactor;
             for (const [key, value] of Object.entries(itemDna)) {
                 rawActive[key] = (rawActive[key] || 0) + (value * (effectiveWeight / 100));
+            }
+            if (effectiveWeight > 0 && Object.keys(itemDna).length > 0) {
+                clusterInputItems.push({
+                    tmdbId: data.tmdbId,
+                    weight: effectiveWeight,
+                    itemDna
+                });
             }
         }
 
@@ -290,12 +299,30 @@ class ProfileBuilder {
         const vFinal = computeFinalDNA(vStatic, vActive, totalInteractions);
         const flatnessMetrics = calculateFlatnessMetrics(vFinal);
 
+        // Clustering multi-vettore con isteresi
+        const existingClusters = profile.compiledVectors?.V_clusters || [];
+        const existingMeta = profile.compiledVectors?.clustersMeta || null;
+
+        let vClusters = existingClusters;
+        let clustersMeta = existingMeta;
+
+        if (shouldRecomputeClusters(existingClusters, existingMeta, clusterInputItems)) {
+            vClusters = clusterTasteSignals(clusterInputItems);
+            clustersMeta = {
+                signalCount: clusterInputItems.length,
+                itemIds: clusterInputItems.map(i => i.tmdbId),
+                computedAt: new Date()
+            };
+        }
+
         await TasteProfile.updateOne(
             { owner, context },
             {
                 $set: {
                     "compiledVectors.V_active": vActive,
                     "compiledVectors.V_final": vFinal,
+                    "compiledVectors.V_clusters": vClusters,
+                    "compiledVectors.clustersMeta": clustersMeta,
                     flatnessMetrics
                 }
             },

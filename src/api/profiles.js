@@ -317,6 +317,17 @@ router.post('/:id/sync-vectors', async (req, res) => {
     const sanitized = { V_final: sanitizedVFinal };
     if (V_active && typeof V_active === 'object' && !Array.isArray(V_active)) sanitized.V_active = sanitizeDnaVector(V_active);
     if (V_static && typeof V_static === 'object' && !Array.isArray(V_static)) sanitized.V_static = sanitizeDnaVector(V_static);
+    if (Array.isArray(compiledVectors.V_clusters)) {
+        sanitized.V_clusters = compiledVectors.V_clusters.map(c => ({
+            vector: sanitizeDnaVector(c.vector || {}),
+            mass: Number(c.mass) || 0,
+            massShare: Number(c.massShare) || 0,
+            seeds: Array.isArray(c.seeds) ? c.seeds : []
+        }));
+    }
+    if (compiledVectors.clustersMeta && typeof compiledVectors.clustersMeta === 'object') {
+        sanitized.clustersMeta = compiledVectors.clustersMeta;
+    }
 
     try {
         const flatnessMetrics = calculateFlatnessMetrics(sanitizedVFinal);

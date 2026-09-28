@@ -18,6 +18,8 @@ const tasteProfileSchema = new mongoose.Schema({
         V_static: { type: mongoose.Schema.Types.Mixed, default: {} },
         V_active: { type: mongoose.Schema.Types.Mixed, default: {} },
         V_final: { type: mongoose.Schema.Types.Mixed, default: {} },
+        V_clusters: { type: mongoose.Schema.Types.Mixed, default: [] },
+        clustersMeta: { type: mongoose.Schema.Types.Mixed, default: null },
         lastComputed: { type: Date }
     },
     // Metriche di Flatness del DNA calcolate a ogni sync/ricalcolo
