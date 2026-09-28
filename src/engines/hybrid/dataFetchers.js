@@ -223,13 +223,20 @@ async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40, u
 
 async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false) {
     const type = mediaType === 'movie' ? 'movie' : 'series';
-    const baseFilters = { sort_by: 'popularity.desc', 'vote_count.gte': 50 };
+    const isMovie = type === 'movie';
+    const baseFilters = {
+        sort_by: 'popularity.desc',
+        'vote_count.gte': isMovie ? 100 : 50,
+        'vote_average.gte': isMovie ? 6.8 : 7.0,
+        ...(isMovie ? { 'primary_release_date.gte': rollingDateStart(36) } : { 'first_air_date.gte': rollingDateStart(36) })
+    };
     const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
     const results = await fetchFallbackRows(filters, type, limit, isKidsMode);
     return mapStableFallbackIds(
         results,
         limit,
-        (a, b) => getNumericSortValue(b, 'popularity') - getNumericSortValue(a, 'popularity')
+        (a, b) => (getNumericSortValue(b, 'popularity') - getNumericSortValue(a, 'popularity'))
+            || (getNumericSortValue(b, 'vote_average') - getNumericSortValue(a, 'vote_average'))
     );
 }
 
@@ -268,8 +275,8 @@ async function fetchUndiscoveredFallbackIds(tmdbApiKey, mediaType, limit = HERO_
 async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false) {
     const type = mediaType === 'movie' ? 'movie' : 'series';
     const baseFilters = {
-        sort_by: 'vote_average.desc',
-        'vote_count.gte': 50,
+        sort_by: 'popularity.desc',
+        'vote_count.gte': 100,
         'vote_count.lte': HIDDEN_GEMS_MAX_VOTES,
         'vote_average.gte': 7.0,
         'popularity.lte': HIDDEN_GEMS_MAX_POPULARITY
@@ -278,8 +285,8 @@ async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = HERO_FA
     const results = (await fetchFallbackRows(filters, type, limit, isKidsMode))
         .filter(item => isHiddenGemPopularity(item.popularity));
     return mapStableFallbackIds(results, limit, (a, b) => {
-        const scoreDelta = getNumericSortValue(b, 'vote_average') - getNumericSortValue(a, 'vote_average');
-        return scoreDelta || getNumericSortValue(b, 'vote_count') - getNumericSortValue(a, 'vote_count');
+        const popDelta = getNumericSortValue(b, 'popularity') - getNumericSortValue(a, 'popularity');
+        return popDelta || (getNumericSortValue(b, 'vote_average') - getNumericSortValue(a, 'vote_average'));
     });
 }
 
