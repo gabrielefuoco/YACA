@@ -54,8 +54,8 @@ const getPresets = () => {
     const sixMonthsAgoStr = dSeries.toISOString().split('T')[0];
 
     const dWeek = new Date();
-    dWeek.setDate(dWeek.getDate() - 14);
-    const twoWeeksAgoStr = dWeek.toISOString().split('T')[0];
+    dWeek.setDate(dWeek.getDate() - 45);
+    const recentEpisodesWindowStr = dWeek.toISOString().split('T')[0];
 
     const rawPresets = [
         // =============================================
@@ -67,7 +67,7 @@ const getPresets = () => {
         { id: 'preset_top_rated_series', name: 'Serie Più Votate (All Time)', emoji: '🏆', category: "🔥 Top & Trend", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', sort_by: 'vote_average.desc', 'vote_count.gte': 500, without_keywords: '210024' }] },
         { id: 'preset_new_movies', name: 'Film: Nuove Uscite', emoji: '🆕', category: "🔥 Top & Trend", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', 'primary_release_date.lte': todayStr, 'primary_release_date.gte': twoMonthsAgoStr, sort_by: 'popularity.desc', 'vote_count.gte': 10 }] },
         { id: 'preset_new_series', name: 'Serie TV: Novità', emoji: '🆕', category: "🔥 Top & Trend", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', 'first_air_date.lte': todayStr, 'first_air_date.gte': sixMonthsAgoStr, sort_by: 'popularity.desc', 'vote_count.gte': 5, without_keywords: '210024' }] },
-        { id: 'preset_new_series_eps', name: 'Serie: Episodi Recenti', emoji: '🆕', category: "🔥 Top & Trend", type: 'series', presentation_strategy: 'popularity', showEpisodeBadge: true, queries: [{ strategy: 'discovery', 'air_date.lte': todayStr, 'air_date.gte': twoWeeksAgoStr, sort_by: 'popularity.desc', without_keywords: '210024' }] },
+        { id: 'preset_new_series_eps', name: 'Serie: Episodi Recenti', emoji: '🆕', category: "🔥 Top & Trend", type: 'series', presentation_strategy: 'popularity', showEpisodeBadge: true, queries: [{ strategy: 'discovery', 'air_date.lte': todayStr, 'air_date.gte': recentEpisodesWindowStr, sort_by: 'popularity.desc', without_keywords: '210024' }] },
         { id: 'preset_pop_anime', isAnime: true, name: 'Anime Popolari', emoji: '🌟', category: "🏮 Solo Anime", type: 'series', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_original_language: 'ja', with_genres: TMDB_GENRES.TV.Animation, sort_by: 'popularity.desc', 'vote_count.gte': 100, without_keywords: '198385,353318,214564,360629,284535,256466,356759' }] },
 
         // =============================================
