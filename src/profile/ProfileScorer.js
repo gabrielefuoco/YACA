@@ -116,6 +116,30 @@ class ProfileScorer {
         return hasGenreMatch || hasKeywordMatch ? 1.0 : 0.1;
     }
 
+    /**
+     * Calcola il thematic score grezzo (generi + keyword) di un item rispetto a un vettore DNA.
+     * @param {Object} vector Vettore DNA sanitizzato
+     * @param {Array<number|string>} genreIds ID dei generi dell'item
+     * @param {Object} hVector Vettore pesato delle keyword gerarchiche
+     * @returns {number}
+     */
+    static _computeThematicScoreForVector(vector, genreIds, hVector) {
+        if (!vector || Object.keys(vector).length === 0) return 0;
+        let score = 0;
+        for (const gid of genreIds) {
+            if (gid !== undefined && gid !== null) {
+                score += this.getVectorScore(vector, 'g', gid);
+            }
+        }
+        for (const [nodeKey, movieNodeWeight] of Object.entries(hVector)) {
+            const affinity = vector[nodeKey];
+            if (affinity) {
+                score += (affinity * movieNodeWeight);
+            }
+        }
+        return score;
+    }
+
     static calculateBaseItemMatch(tmdbData, profile, context = {}) {
         if (!tmdbData || !profile) return 0;
         const kidsMode = context.kidsMode ?? profile?.settings?.kidsMode ?? false;
@@ -125,7 +149,9 @@ class ProfileScorer {
         const traktWeight = context.traktWeight ?? profile.traktWeight ?? 1.0;
 
         const vFinal = sanitizeDnaVector(profile.compiledVectors?.V_final || {});
-        let thematicScore = 0;
+        const clusters = Array.isArray(profile.compiledVectors?.V_clusters) && profile.compiledVectors.V_clusters.length > 0
+            ? profile.compiledVectors.V_clusters
+            : null;
 
         // --- 1. Assi Tematici (VSM: Vector Space Model) ---
         // Generi
@@ -134,7 +160,6 @@ class ProfileScorer {
         genreIds.forEach(gid => {
             if (gid !== undefined && gid !== null) {
                 const affinity = this.getVectorScore(vFinal, 'g', gid);
-                thematicScore += affinity;
                 if (affinity < 0.05) unalignedGenres++;
             }
         });
@@ -144,16 +169,20 @@ class ProfileScorer {
         const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
         const hVector = HierarchicalGraph.vectorizeKeywords(keywordItems);
         
-        for (const [nodeKey, movieNodeWeight] of Object.entries(hVector)) {
-            const userAffinity = vFinal[nodeKey];
-            if (userAffinity) {
-                thematicScore += (userAffinity * movieNodeWeight);
-            }
-        }
-        
         // --- 1.1 Curva Logaritmica del Thematic Score (Soft-cap) ---
-        // Calcolato subito per poterlo usare nel filtro alieno (inclusivo dei topoi)
-        const scaledThematicScore = 10.0 * (1 - Math.exp(-thematicScore / 25.0));
+        // Multi-vettore: con i cluster, profileMatch = max_k scaledThematic_k (soft-cap per cluster)
+        let scaledThematicScore = 0;
+        if (clusters) {
+            const clusterScores = clusters.map(c => {
+                const cVec = sanitizeDnaVector(c.vector || c || {});
+                const rawThematic = this._computeThematicScoreForVector(cVec, genreIds, hVector);
+                return 10.0 * (1 - Math.exp(-rawThematic / 25.0));
+            });
+            scaledThematicScore = clusterScores.length > 0 ? Math.max(...clusterScores) : 0;
+        } else {
+            const rawThematic = this._computeThematicScoreForVector(vFinal, genreIds, hVector);
+            scaledThematicScore = 10.0 * (1 - Math.exp(-rawThematic / 25.0));
+        }
 
         // --- 1.2 Calcolo penalità per disallineamento di genere (Alien Ratio) ---
         let genreAlignmentMultiplier = 1.0;
@@ -283,29 +312,62 @@ class ProfileScorer {
         const kidsMode = context.kidsMode ?? profile?.settings?.kidsMode ?? false;
         if (kidsMode && this.isItemInappropriateForKids(lightData)) return -9999;
 
-        // Genre match score
+        // Genre & keyword match score
         const vFinal = sanitizeDnaVector(profile.compiledVectors?.V_final || {});
-        let genreScore = 0;
-        let unalignedGenres = 0;
+        const clusters = Array.isArray(profile.compiledVectors?.V_clusters) && profile.compiledVectors.V_clusters.length > 0
+            ? profile.compiledVectors.V_clusters
+            : null;
+
         const genreIds = lightData.genre_ids || [];
+        let unalignedGenres = 0;
         genreIds.forEach(gid => {
             if (gid !== undefined && gid !== null) {
                 const affinity = this.getVectorScore(vFinal, 'g', gid);
-                genreScore += affinity;
                 if (affinity < 0.05) unalignedGenres++;
             }
         });
 
         // Keywords (VSM Gerarchico: L1, L2, L3)
         const keywordItems = filterRetiredTmdbKeywords(getKeywordItems(lightData));
-        let keywordScore = 0;
         const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
         const hVector = HierarchicalGraph.vectorizeKeywords(keywordItems);
-        
-        for (const [nodeKey, movieNodeWeight] of Object.entries(hVector)) {
-            const userAffinity = vFinal[nodeKey];
-            if (userAffinity) {
-                keywordScore += (userAffinity * movieNodeWeight);
+
+        let genreScore = 0;
+        let keywordScore = 0;
+
+        if (clusters) {
+            let maxThematic = -1;
+            for (const c of clusters) {
+                const cVec = sanitizeDnaVector(c.vector || c || {});
+                let cGenre = 0;
+                let cKw = 0;
+                genreIds.forEach(gid => {
+                    if (gid !== undefined && gid !== null) {
+                        cGenre += this.getVectorScore(cVec, 'g', gid);
+                    }
+                });
+                for (const [nodeKey, movieNodeWeight] of Object.entries(hVector)) {
+                    const affinity = cVec[nodeKey];
+                    if (affinity) cKw += (affinity * movieNodeWeight);
+                }
+                const cTotal = cGenre + (cKw * 0.35);
+                if (cTotal > maxThematic) {
+                    maxThematic = cTotal;
+                    genreScore = cGenre;
+                    keywordScore = cKw;
+                }
+            }
+        } else {
+            genreIds.forEach(gid => {
+                if (gid !== undefined && gid !== null) {
+                    genreScore += this.getVectorScore(vFinal, 'g', gid);
+                }
+            });
+            for (const [nodeKey, movieNodeWeight] of Object.entries(hVector)) {
+                const userAffinity = vFinal[nodeKey];
+                if (userAffinity) {
+                    keywordScore += (userAffinity * movieNodeWeight);
+                }
             }
         }
 
