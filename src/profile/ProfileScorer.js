@@ -413,18 +413,91 @@ class ProfileScorer {
     }
 
     /**
-     * Applica cap di diversità ai risultati per evitare che un singolo genere/regista domini.
+     * Determina il filone narrativo / topos principale di un titolo.
+     * Combina cluster tematici speciali (true-crime doc, medical drama, police procedural, anime)
+     * con il topos gerarchico L2 (o L3) di HierarchicalGraph.
+     * @param {Object} item 
+     * @returns {string} ID del filone narrativo (es. 'strand:true_crime_doc', 'L2:t_36', 'genre:35')
+     */
+    static getItemNarrativeStrand(item) {
+        if (!item) return 'strand:unknown';
+        const target = item.data || item.rawTMDB || item;
+        const rawGenres = target.genre_ids || (target.genres ? target.genres.map(g => (typeof g === 'object' && g !== null ? (g.id ?? g) : g)) : []);
+        const gids = rawGenres.map(Number).filter(Number.isFinite);
+        const kws = Array.isArray(target.keywords)
+            ? target.keywords
+            : (target.keywords?.results || target.keywords?.keywords || []);
+
+        // 1. True crime documentary: Documentary (99) + Crime (80)
+        if (gids.includes(99) && gids.includes(80)) {
+            return 'strand:true_crime_doc';
+        }
+
+        // 2. Anime strand (Animation 16 + JA or anime keyword/overview)
+        if (gids.includes(16) && (target.original_language === 'ja' || /anime|manga/i.test(target.overview || '') || kws.some(k => /anime/i.test(typeof k === 'object' ? k.name : k)))) {
+            return 'strand:anime';
+        }
+
+        // 3. HierarchicalGraph vectorization / semantic keywords
+        const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
+        let vec = {};
+        if (HierarchicalGraph && HierarchicalGraph.isLoaded && kws.length > 0) {
+            vec = HierarchicalGraph.vectorizeKeywords(kws);
+        }
+
+        // Medical drama (doctor / hospital / patient: L2:t_272 or Drama 18 + keywords)
+        if (vec['L2:t_272'] || (gids.includes(18) && kws.some(k => /doctor|hospital|medicine|patient|clinic|surgeon/i.test(typeof k === 'object' ? k.name : k)))) {
+            return 'strand:medical_drama';
+        }
+
+        // Police procedural / crime investigation
+        if (gids.includes(80) && (vec['L2:t_338'] || vec['L2:t_352'] || vec['L2:t_77'] || vec['L2:t_455'] || kws.some(k => /police|detective|investigation|homicide|fbi/i.test(typeof k === 'object' ? k.name : k)))) {
+            return 'strand:police_procedural';
+        }
+
+        // Anime strand via graph if not already caught
+        if (gids.includes(16) && vec['L2:t_20']) {
+            return 'strand:anime';
+        }
+
+        // L2 Topos
+        const l2Entries = Object.entries(vec).filter(([k]) => k.startsWith('L2:')).sort((a, b) => b[1] - a[1]);
+        if (l2Entries.length > 0 && l2Entries[0][1] >= 0.35) {
+            return l2Entries[0][0];
+        }
+
+        // L3 Macro-vibe
+        const l3Entries = Object.entries(vec).filter(([k]) => k.startsWith('L3:')).sort((a, b) => b[1] - a[1]);
+        if (l3Entries.length > 0 && l3Entries[0][1] >= 0.25) {
+            return l3Entries[0][0];
+        }
+
+        // 4. Fallback to specific non-umbrella genre
+        const nonUmbrella = gids.filter(g => g !== 18 && g !== 10770);
+        if (nonUmbrella.length > 0) {
+            return `genre:${nonUmbrella[0]}`;
+        }
+        if (gids.length > 0) {
+            return `genre:${gids[0]}`;
+        }
+        return 'strand:unknown';
+    }
+
+    /**
+     * Applica cap di diversità ai risultati per evitare che un singolo genere/regista/filone domini.
      * @param {Array} items Array di oggetti con proprietà id, genres, directors
-     * @param {Object} caps Limiti massimi per categoria { genre: 10, director: 3 }
+     * @param {Object} caps Limiti massimi per categoria { genre: 10, director: 3, strand: 3 }
      * @returns {Array} Array filtrato con diversità garantita
      */
-    static applyDiversityCaps(items, caps = { genre: 10, director: 3 }) {
+    static applyDiversityCaps(items, caps = { genre: 10, director: 3, strand: 3 }) {
         if (!items || items.length === 0) return items;
 
         const genreCap = caps?.genre ?? 10;
         const directorCap = caps?.director ?? 3;
+        const strandCap = caps?.strand ?? caps?.filone ?? 3;
         const genreCounts = new Map();
         const directorCounts = new Map();
+        const strandCounts = new Map();
         const result = [];
 
         for (const item of items) {
@@ -434,16 +507,26 @@ class ProfileScorer {
             const directors = directorCredits
                 .filter(c => c.job === 'Director')
                 .map(c => String(c.id));
+            const strand = this.getItemNarrativeStrand(target);
+
+            // I generi contenitore/ombrello (Dramma: 18, TV Movie: 10770) sono onnipresenti in TMDB.
+            // Se un titolo possiede generi specifici (es. Crime, Comedy, Sci-Fi), il cap genere viene
+            // valutato su quelli per evitare che il Dramma blocchi prematuramente il catalogo.
+            const specificGenres = genres.filter(g => g !== '18' && g !== '10770');
+            const genresToCheck = specificGenres.length > 0 ? specificGenres : genres;
 
             // Check genre cap
-            const genreBlocked = genres.some(gid => (genreCounts.get(gid) || 0) >= genreCap);
+            const genreBlocked = genresToCheck.some(gid => (genreCounts.get(gid) || 0) >= genreCap);
             // Check director cap
             const dirBlocked = directors.some(did => (directorCounts.get(did) || 0) >= directorCap);
+            // Check strand cap
+            const strandBlocked = strand && (strandCounts.get(strand) || 0) >= strandCap;
 
-            if (genreBlocked || dirBlocked) continue;
+            if (genreBlocked || dirBlocked || strandBlocked) continue;
 
             genres.forEach(gid => genreCounts.set(gid, (genreCounts.get(gid) || 0) + 1));
             directors.forEach(did => directorCounts.set(did, (directorCounts.get(did) || 0) + 1));
+            if (strand) strandCounts.set(strand, (strandCounts.get(strand) || 0) + 1);
             result.push(item);
         }
 

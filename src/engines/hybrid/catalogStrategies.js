@@ -25,7 +25,7 @@ const { F, S, G } = require('../../data/filters');
 const graph = require('../graph/HierarchicalGraph');
 const { isAnimeContent } = require('../../utils/animeIdentity');
 
-const HERO_DIVERSITY_CAPS = Object.freeze({ genre: 3, director: 1 });
+const HERO_DIVERSITY_CAPS = Object.freeze({ genre: 3, director: 1, strand: 3 });
 const HERO_COLLECTION_CAP = 1;
 const HIDDEN_CHILD_ORIENTED_GENRE_IDS = new Set(['16', '10751', '10762']);
 const HIDDEN_MUSIC_GENRE_ID = 10402;
@@ -133,36 +133,64 @@ function getItemDirectorIds(item) {
         .map(credit => String(credit.id)))];
 }
 
-function getProspectiveCapOverflow(item, genreCounts, directorCounts, caps) {
+function getProspectiveCapOverflow(item, genreCounts, directorCounts, strandCounts, caps, selected = []) {
+    const genres = getItemGenreIds(item);
+    const specificGenres = genres.filter(g => g !== '18' && g !== '10770');
+    const checkGenres = specificGenres.length > 0 ? specificGenres : genres;
+
     let genreOverflow = 0;
-    for (const genreId of getItemGenreIds(item)) {
-        genreOverflow += Math.max((genreCounts.get(genreId) || 0) + 1 - caps.genre, 0);
+    for (const genreId of checkGenres) {
+        genreOverflow += Math.max((genreCounts.get(genreId) || 0) + 1 - (caps?.genre ?? 3), 0);
     }
 
     let directorOverflow = 0;
     for (const directorId of getItemDirectorIds(item)) {
-        directorOverflow += Math.max((directorCounts.get(directorId) || 0) + 1 - caps.director, 0);
+        directorOverflow += Math.max((directorCounts.get(directorId) || 0) + 1 - (caps?.director ?? 1), 0);
     }
-    // Un regista ripetuto è un segnale identitario più forte del genere
-    // secondario: durante il refill privilegia sempre un regista ancora libero.
-    return genreOverflow + (directorOverflow * 1000);
+
+    let strandOverflow = 0;
+    const strand = typeof ProfileScorer.getItemNarrativeStrand === 'function'
+        ? ProfileScorer.getItemNarrativeStrand(item)
+        : null;
+    if (strand && strandCounts) {
+        strandOverflow += Math.max((strandCounts.get(strand) || 0) + 1 - (caps?.strand ?? caps?.filone ?? 3), 0);
+    }
+
+    // Penalità consecutiva: evita cluster di item dello stesso filone uno dopo l'altro nel catalogo
+    let consecutivePenalty = 0;
+    if (selected.length > 0) {
+        const lastItem = selected[selected.length - 1];
+        const lastStrand = typeof ProfileScorer.getItemNarrativeStrand === 'function'
+            ? ProfileScorer.getItemNarrativeStrand(lastItem)
+            : null;
+        if (lastStrand && strand && lastStrand === strand) {
+            consecutivePenalty = 50;
+        }
+    }
+
+    return (genreOverflow * 10) + (directorOverflow * 1000) + (strandOverflow * 200) + consecutivePenalty;
 }
 
-function incrementCapCounts(item, genreCounts, directorCounts) {
+function incrementCapCounts(item, genreCounts, directorCounts, strandCounts) {
     for (const genreId of getItemGenreIds(item)) {
         genreCounts.set(genreId, (genreCounts.get(genreId) || 0) + 1);
     }
     for (const directorId of getItemDirectorIds(item)) {
         directorCounts.set(directorId, (directorCounts.get(directorId) || 0) + 1);
     }
+    if (typeof ProfileScorer.getItemNarrativeStrand === 'function' && strandCounts) {
+        const strand = ProfileScorer.getItemNarrativeStrand(item);
+        if (strand) {
+            strandCounts.set(strand, (strandCounts.get(strand) || 0) + 1);
+        }
+    }
 }
 
 /**
- * I cap restano il criterio di selezione anche quando il pool supera la
- * profondità utile. Se sono troppo restrittivi per la sola verifica del profilo
- * (es. soli film family, tutti Animation/Family/Kids), il refill arriva al
- * massimo a una pagina: è cap-aware e, a parità di overflow, segue il ranking
- * originale. Evita sia il bypass cieco di `remaining` sia le pagine vuote.
+ * I cap garantiscono diversità per genere, regista e filone narrativo.
+ * Se la selezione stretta è inferiore a targetSize (es. 100), il refill cap-aware
+ * attinge dalla coda per riempire l'intero catalogo target senza lasciare pagine
+ * corte e prevenendo cluster tematici consecutivi.
  */
 function finalizeHeroQualityCandidates(items, caps = HERO_DIVERSITY_CAPS, targetSize = 100) {
     const uniqueItems = deduplicateByCollection(items);
@@ -171,22 +199,24 @@ function finalizeHeroQualityCandidates(items, caps = HERO_DIVERSITY_CAPS, target
 
     const strictlyCapped = ProfileScorer.applyDiversityCaps(uniqueItems, caps);
     const cappedTarget = Math.min(target, uniqueItems.length);
-    const minimumPageSize = Math.min(cappedTarget, 20);
-    if (strictlyCapped.length >= minimumPageSize) return strictlyCapped.slice(0, target);
+    if (strictlyCapped.length >= cappedTarget) return strictlyCapped.slice(0, target);
 
     const strictSet = new Set(strictlyCapped);
-    const selected = new Set(strictlyCapped);
+    const selected = [...strictlyCapped];
     const genreCounts = new Map();
     const directorCounts = new Map();
-    for (const item of strictlyCapped) incrementCapCounts(item, genreCounts, directorCounts);
+    const strandCounts = new Map();
+    for (const item of strictlyCapped) {
+        incrementCapCounts(item, genreCounts, directorCounts, strandCounts);
+    }
 
-    const remaining = uniqueItems.filter(item => !selected.has(item));
-    while (selected.size < minimumPageSize && remaining.length > 0) {
+    const remaining = uniqueItems.filter(item => !strictSet.has(item));
+    while (selected.length < cappedTarget && remaining.length > 0) {
         let bestIndex = 0;
         let bestOverflow = Infinity;
         for (let index = 0; index < remaining.length; index++) {
             const overflow = getProspectiveCapOverflow(
-                remaining[index], genreCounts, directorCounts, caps
+                remaining[index], genreCounts, directorCounts, strandCounts, caps, selected
             );
             if (overflow < bestOverflow) {
                 bestOverflow = overflow;
@@ -195,16 +225,11 @@ function finalizeHeroQualityCandidates(items, caps = HERO_DIVERSITY_CAPS, target
             }
         }
         const [next] = remaining.splice(bestIndex, 1);
-        selected.add(next);
-        incrementCapCounts(next, genreCounts, directorCounts);
+        selected.push(next);
+        incrementCapCounts(next, genreCounts, directorCounts, strandCounts);
     }
 
-    // I titoli che rispettano tutti i cap aprono il blocco; il refill
-    // cap-aware completa la pagina solo quando il pool non offre alternative.
-    return [
-        ...strictlyCapped,
-        ...uniqueItems.filter(item => selected.has(item) && !strictSet.has(item))
-    ];
+    return selected;
 }
 
 function isHiddenGemPopularityAllowed(value) {
@@ -891,11 +916,10 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
     );
 
     const sorted = sortScoredByScore(scored.filter(Boolean), item => item.score);
-    const deduplicated = deduplicateByCollection(sorted);
-    let finalItems = deduplicated;
+    let finalItems = finalizeHeroQualityCandidates(sorted, HERO_DIVERSITY_CAPS);
     if (isKidsMode) {
-        const safeIds = new Set(applyKidsMode(deduplicated.map(item => item.data)).map(item => normalizeContentId(item.id)));
-        finalItems = deduplicated.filter(item => safeIds.has(normalizeContentId(item.data.id)));
+        const safeIds = new Set(applyKidsMode(finalItems.map(item => item.data)).map(item => normalizeContentId(item.id)));
+        finalItems = finalItems.filter(item => safeIds.has(normalizeContentId(item.data.id)));
     }
 
     if (finalItems.length === 0) {
