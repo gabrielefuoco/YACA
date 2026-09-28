@@ -170,13 +170,17 @@ class ProfileScorer {
         const hVector = HierarchicalGraph.vectorizeKeywords(keywordItems);
         
         // --- 1.1 Curva Logaritmica del Thematic Score (Soft-cap) ---
-        // Multi-vettore: con i cluster, profileMatch = max_k scaledThematic_k (soft-cap per cluster)
+        // Multi-vettore: con i cluster, profileMatch = max_k scaledThematic_k pesato per la massa del cluster
         let scaledThematicScore = 0;
         if (clusters) {
+            const maxMass = Math.max(...clusters.map(c => Number(c.mass) || 0), 0);
             const clusterScores = clusters.map(c => {
                 const cVec = sanitizeDnaVector(c.vector || c || {});
                 const rawThematic = this._computeThematicScoreForVector(cVec, genreIds, hVector);
-                return 10.0 * (1 - Math.exp(-rawThematic / 25.0));
+                const scaled = 10.0 * (1 - Math.exp(-rawThematic / 25.0));
+                const mass = Number(c.mass) || 0;
+                const weight = maxMass > 0 ? (mass / maxMass) : 1;
+                return scaled * weight;
             });
             scaledThematicScore = clusterScores.length > 0 ? Math.max(...clusterScores) : 0;
         } else {
@@ -336,6 +340,7 @@ class ProfileScorer {
         let keywordScore = 0;
 
         if (clusters) {
+            const maxMass = Math.max(...clusters.map(c => Number(c.mass) || 0), 0);
             let maxThematic = -1;
             for (const c of clusters) {
                 const cVec = sanitizeDnaVector(c.vector || c || {});
@@ -350,11 +355,13 @@ class ProfileScorer {
                     const affinity = cVec[nodeKey];
                     if (affinity) cKw += (affinity * movieNodeWeight);
                 }
-                const cTotal = cGenre + (cKw * 0.35);
+                const mass = Number(c.mass) || 0;
+                const weight = maxMass > 0 ? (mass / maxMass) : 1;
+                const cTotal = (cGenre + (cKw * 0.35)) * weight;
                 if (cTotal > maxThematic) {
                     maxThematic = cTotal;
-                    genreScore = cGenre;
-                    keywordScore = cKw;
+                    genreScore = cGenre * weight;
+                    keywordScore = cKw * weight;
                 }
             }
         } else {

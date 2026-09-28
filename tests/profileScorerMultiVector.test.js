@@ -119,4 +119,39 @@ describe('ProfileScorer - Multi-vector scoring with clusters', () => {
         const scoreFallback = ProfileScorer.calculateLightScore(lightItem, singleVectorProfile);
         expect(score).toBeGreaterThanOrEqual(scoreFallback);
     });
+
+    it('weights cluster contribution by cluster mass so small focused clusters do not overwhelm dominant clusters', () => {
+        const itemDominant = {
+            id: 301,
+            genre_ids: [16], // Animation
+            vote_average: 8.0,
+            vote_count: 5000
+        };
+        const itemNiche = {
+            id: 302,
+            genre_ids: [27], // Horror
+            vote_average: 8.0,
+            vote_count: 5000
+        };
+
+        // Dominant cluster (mass 5000) has modest key weight 20
+        // Tiny cluster (mass 200) has high key weight 80 (due to sharp concentration)
+        const profile = {
+            compiledVectors: {
+                V_final: { 'g:16': 40, 'g:27': 5 },
+                V_clusters: [
+                    { vector: { 'g:16': 20 }, mass: 5000, seeds: [1] },
+                    { vector: { 'g:27': 80 }, mass: 200, seeds: [2] }
+                ]
+            }
+        };
+
+        const scoreDominant = ProfileScorer.calculateBaseItemMatch(itemDominant, profile, { tmdbWeight: 0, traktWeight: 1 });
+        const scoreNiche = ProfileScorer.calculateBaseItemMatch(itemNiche, profile, { tmdbWeight: 0, traktWeight: 1 });
+
+        // Item aligning with dominant cluster (mass 5000, weight 1.0) must score higher
+        // than item aligning with tiny cluster (mass 200, weight 200/5000 = 0.04)
+        expect(scoreDominant).toBeGreaterThan(scoreNiche);
+    });
 });
+
