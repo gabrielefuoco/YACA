@@ -76,13 +76,18 @@ const DISCOVERY_FALLBACK_MONTHS = Object.freeze({ movie: 12, series: 24 });
 
 function getHeroRecipes(type, refDate = new Date()) {
     const isMovie = type === 'movie';
+    const popularWindowStart = monthsAgo(36, refDate);
     return [
         {
             id: `hero_true_blend_fallback_${type}`,
             name: `Hero True Blend Fallback (${type})`,
-            note: 'fetchPopularFallbackIds (cold path, dataFetchers.js:203)',
+            note: 'fetchPopularFallbackIds (cold path, dataFetchers.js:224): ultimi 36 mesi, voti>=100(m)/50(s), media>=6.8(m)/7.0(s)',
             type,
-            where: [F.minVotes(50)],
+            where: [
+                isMovie ? F.releasedAfter(popularWindowStart) : F.airedAfter(popularWindowStart),
+                F.minVotes(isMovie ? 100 : 50),
+                F.minScore(isMovie ? 6.8 : 7.0)
+            ],
             orderBy: S.POPULAR
         },
         {
@@ -122,15 +127,15 @@ function getHeroRecipes(type, refDate = new Date()) {
         {
             id: `hero_hidden_gems_fallback_${type}`,
             name: `Hero Hidden Gems Fallback (${type})`,
-            note: 'fetchHiddenGemsFallbackIds (dataFetchers.js:252): media>=7.0, 50-1000 voti, pop<=20',
+            note: 'fetchHiddenGemsFallbackIds (dataFetchers.js:268): media>=7.0, 100-1000 voti, pop<=20, sort: popularity.desc',
             type,
             where: [
-                F.minVotes(50),
+                F.minVotes(100),
                 F.maxVotes(HIDDEN_GEMS_MAX_VOTES),
                 F.minScore(7.0),
                 F.maxPopularity(HIDDEN_GEMS_MAX_POPULARITY)
             ],
-            orderBy: S.TOP_RATED
+            orderBy: S.POPULAR
         },
         {
             id: `hero_trakt_fallback_${type}`,
