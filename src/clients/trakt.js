@@ -18,8 +18,16 @@ const tmdbEnrichClient = createTmdbClient(process.env.TMDB_API_KEY);
 
 /**
  * Rigenera i token Trakt usando il refresh_token.
+ *
+ * NOTA CRITICA SUL REFRESH TOKEN TRAKT:
+ * Il refresh token di Trakt è STRICT SINGLE-USE (monouso).
+ * Ogni operazione di refresh genera una nuova coppia di token e invalida
+ * immediatamente il refresh token precedente. Riusare un refresh token già
+ * inviato o consumato comporta l'errore `invalid_grant: session not found`
+ * e invalida l'intera sessione utente, richiedendo una nuova autorizzazione manuale.
+ *
  * @param {string} refreshToken - Il refresh_token corrente
- * @returns {Promise<{access_token: string, refresh_token: string}|null>} I nuovi token, o null se fallito
+ * @returns {Promise<{access_token: string, refresh_token: string, expires_at?: Date}|null>} I nuovi token, o null se fallito
  */
 async function refreshTraktTokens(refreshToken) {
     const clientId = process.env.TRAKT_CLIENT_ID;
@@ -36,7 +44,16 @@ async function refreshTraktTokens(refreshToken) {
         }, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
 
         if (res.data && res.data.access_token && res.data.refresh_token) {
-            return { access_token: res.data.access_token, refresh_token: res.data.refresh_token };
+            const tokenResult = {
+                access_token: res.data.access_token,
+                refresh_token: res.data.refresh_token
+            };
+            if (res.data.expires_in || res.data.created_at) {
+                const createdAtSec = res.data.created_at || Math.floor(Date.now() / 1000);
+                const expiresInSec = res.data.expires_in || 7776000;
+                tokenResult.expires_at = new Date((createdAtSec + expiresInSec) * 1000);
+            }
+            return tokenResult;
         }
         return null;
     } catch (err) {
@@ -46,25 +63,79 @@ async function refreshTraktTokens(refreshToken) {
 }
 
 /**
+ * Scambia il device code o authorization code per ottenere i token Trakt e calcola traktExpiresAt.
+ *
+ * NOTA CRITICA: Il refresh token di Trakt è STRICT SINGLE-USE. Riusarlo invalida la sessione.
+ *
+ * @param {string} code - Il device_code o authorization code
+ * @param {string} [userId] - ID opzionale utente per persistenza automatica
+ * @returns {Promise<{access_token: string, refresh_token: string, expires_at: Date}|null>}
+ */
+async function exchangeTraktCode(code, userId = null) {
+    const clientId = process.env.TRAKT_CLIENT_ID;
+    const clientSecret = process.env.TRAKT_CLIENT_SECRET;
+    if (!clientId || !clientSecret || !code) return null;
+
+    try {
+        const res = await traktClient.post('/oauth/device/token', {
+            code,
+            client_id: clientId,
+            client_secret: clientSecret
+        }, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+
+        if (res.data && res.data.access_token && res.data.refresh_token) {
+            const createdAtSec = res.data.created_at || Math.floor(Date.now() / 1000);
+            const expiresInSec = res.data.expires_in || 7776000;
+            const expiresAt = new Date((createdAtSec + expiresInSec) * 1000);
+            const tokenResult = {
+                access_token: res.data.access_token,
+                refresh_token: res.data.refresh_token,
+                expires_at: expiresAt,
+                expires_in: res.data.expires_in,
+                created_at: res.data.created_at
+            };
+            if (userId) {
+                await syncTraktTokensToDb(userId, tokenResult.access_token, tokenResult.refresh_token, expiresAt);
+            }
+            return tokenResult;
+        }
+        return null;
+    } catch (err) {
+        console.error('Trakt token exchange failed:', err.response?.data || err.message);
+        return null;
+    }
+}
+
+/**
  * Aggiorna i token Trakt nel database MongoDB dell'utente.
+ *
+ * NOTA CRITICA SUL REFRESH TOKEN TRAKT:
+ * Il refresh token di Trakt è STRICT SINGLE-USE.
+ * Ogni operazione di refresh invalida immediatamente il token precedente;
+ * riusare un refresh token già consumato comporta l'errore `invalid_grant: session not found`
+ * e invalida l'intera sessione utente, richiedendo una nuova autorizzazione manuale.
+ *
  * @param {string} userId - ID univoco dell'utente
  * @param {string} newAccessToken - Il nuovo access token Trakt
  * @param {string} newRefreshToken - Il nuovo refresh token Trakt
+ * @param {Date|string|number} [expiresAt] - Data o timestamp di scadenza del token (traktExpiresAt)
  * @returns {Promise<boolean>} Vero se aggiornato correttamente
  */
-async function syncTraktTokensToDb(userId, newAccessToken, newRefreshToken) {
+async function syncTraktTokensToDb(userId, newAccessToken, newRefreshToken, expiresAt) {
     if (!userId) return false;
 
     try {
         const UserAccount = require('../db/models/UserAccount');
+        const updateSet = {
+            'apiKeys.trakt': newAccessToken,
+            'apiKeys.traktRefreshToken': newRefreshToken
+        };
+        if (expiresAt) {
+            updateSet['apiKeys.traktExpiresAt'] = new Date(expiresAt);
+        }
         await UserAccount.findOneAndUpdate(
             { userId },
-            {
-                $set: {
-                    'apiKeys.trakt': newAccessToken,
-                    'apiKeys.traktRefreshToken': newRefreshToken
-                }
-            },
+            { $set: updateSet },
             { returnDocument: 'after' }
         );
         console.log(`Trakt auto-refresh: token aggiornati nel DB per l'utente ${userId}.`);
@@ -94,7 +165,7 @@ async function smartTraktRefresh(userId, refreshToken) {
     console.log(`Trakt (smart): avvio procedura di refresh per ${userId}...`);
     const refreshPromise = refreshTraktTokens(refreshToken).then(async (newTokens) => {
         if (newTokens && newTokens.access_token) {
-            await syncTraktTokensToDb(userId, newTokens.access_token, newTokens.refresh_token);
+            await syncTraktTokensToDb(userId, newTokens.access_token, newTokens.refresh_token, newTokens.expires_at);
         }
         return newTokens;
     }).catch(err => {
@@ -357,5 +428,6 @@ module.exports = {
     syncTraktTokensToDb,
     syncTraktRatings,
     traktClient,
-    smartTraktRefresh
+    smartTraktRefresh,
+    exchangeTraktCode
 };

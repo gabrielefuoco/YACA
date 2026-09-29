@@ -41,13 +41,20 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
     api
       .traktDeviceCode()
       .then((data) => {
+        if (data?.error) {
+          setError(data.error);
+          return;
+        }
         setUserCode(data.user_code ?? '');
         setVerificationUrl(data.verification_url ?? 'https://trakt.tv/activate');
         setDeviceCode(data.device_code ?? '');
         setCountdown(data.expires_in ?? 600);
         setPolling(true);
       })
-      .catch(() => setError('Errore nella connessione a Trakt'))
+      .catch((err) => {
+        const errorMsg = err?.response?.data?.error || err?.message || 'Errore nella connessione a Trakt';
+        setError(errorMsg);
+      })
       .finally(() => setLoading(false));
   }, [open]);
 
@@ -81,8 +88,16 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
           setPolling(false);
           onSuccessRef.current(data.access_token, data.refresh_token ?? '');
           setTimeout(() => onCloseRef.current(), 1500);
+        } else if (data.error && !data.pending) {
+          setPolling(false);
+          setError(data.error);
         }
-      } catch { }
+      } catch (err: any) {
+        if (err?.message) {
+          setPolling(false);
+          setError(err.message);
+        }
+      }
     }, 5000);
     return () => clearInterval(interval);
   }, [polling, deviceCode]);

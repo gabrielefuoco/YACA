@@ -79,6 +79,8 @@ export const api = {
   traktDeviceCode: () => post('/trakt/device/code'),
   traktDeviceToken: (device_code: string) =>
     post('/trakt/device/token', { device_code }),
+  disconnectTrakt: (userId?: string) =>
+    post('/api/auth/trakt/disconnect', { userId }),
   clearCache: () => post('/api/clear-cache'),
   searchTmdbKeywords: (query: string) =>
     get(`/api/tmdb/search/keyword?query=${encodeURIComponent(query)}`),

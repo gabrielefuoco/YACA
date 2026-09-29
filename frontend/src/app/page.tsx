@@ -493,9 +493,18 @@ export default function Home() {
     window.location.reload();
   };
 
-  const handleDisconnectTrakt = () => {
-    setTraktToken(null);
-    setTraktRefreshToken(null);
+  const handleDisconnectTrakt = async () => {
+    try {
+      const res = await api.disconnectTrakt(userId ?? undefined);
+      if (res?.success) {
+        setTraktToken(null);
+        setTraktRefreshToken(null);
+      } else {
+        console.error('Errore disconnessione Trakt:', res?.error || 'Errore sconosciuto');
+      }
+    } catch (err) {
+      console.error('Errore durante la disconnessione di Trakt:', err);
+    }
   };
 
   const isLoggedIn = Boolean(stremioAuth);

@@ -201,7 +201,10 @@ router.post('/trakt/device/code', async (req, res) => {
         return res.json(response.data);
     } catch (err) {
         console.error("Errore Trakt Code:", err.response?.data || err.message);
-        return res.status(500).json({ error: "Errore di connessione a Trakt." });
+        const errorDetail = err.response?.data?.error_description 
+            ? `${err.response.data.error}: ${err.response.data.error_description}`
+            : (err.response?.data?.error || err.message || "Errore di connessione a Trakt.");
+        return res.status(err.response?.status || 500).json({ error: errorDetail });
     }
 });
 
@@ -231,7 +234,10 @@ router.post('/trakt/device/token', async (req, res) => {
             return res.json({ error: 'Utente ha negato l\'accesso' });
         }
         console.error("Errore Trakt Token:", err.response?.data || err.message);
-        return res.status(500).json({ error: "Errore recupero token Trakt." });
+        const errorDetail = err.response?.data?.error_description 
+            ? `${err.response.data.error}: ${err.response.data.error_description}`
+            : (err.response?.data?.error || err.message || "Errore recupero token Trakt.");
+        return res.status(err.response?.status || 500).json({ error: errorDetail });
     }
 });
 

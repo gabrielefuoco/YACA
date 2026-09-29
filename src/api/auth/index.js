@@ -220,4 +220,53 @@ async function logoutHandler(req, res) {
     return res.json({ success: true });
 }
 
-module.exports = { loginHandler, meHandler, logoutHandler, getJwtSecret };
+/**
+ * POST /api/auth/trakt/disconnect
+ * Body: { userId? }
+ * Removes Trakt tokens (trakt, traktRefreshToken, traktExpiresAt) from UserAccount.
+ */
+async function traktDisconnectHandler(req, res) {
+    let userId = req.body?.userId;
+    const token = req.cookies?.[COOKIE_NAME];
+
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, getJwtSecret());
+            if (decoded?.userId) {
+                userId = decoded.userId;
+            }
+        } catch (err) {
+            // Se il cookie non è valido, usa req.body.userId se fornito
+        }
+    }
+
+    if (!userId) {
+        return res.status(401).json({ success: false, error: 'Non autorizzato o userId mancante.' });
+    }
+
+    try {
+        const updated = await UserAccount.findOneAndUpdate(
+            { userId },
+            {
+                $unset: {
+                    'apiKeys.trakt': 1,
+                    'apiKeys.traktRefreshToken': 1,
+                    'apiKeys.traktExpiresAt': 1
+                }
+            },
+            { returnDocument: 'after' }
+        );
+
+        if (!updated) {
+            return res.status(404).json({ success: false, error: 'Utente non trovato.' });
+        }
+
+        return res.json({ success: true, message: 'Trakt disconnesso con successo.' });
+    } catch (err) {
+        console.error('[Auth] Errore disconnessione Trakt:', err.message);
+        return res.status(500).json({ success: false, error: 'Errore interno durante la disconnessione.' });
+    }
+}
+
+module.exports = { loginHandler, meHandler, logoutHandler, traktDisconnectHandler, getJwtSecret };
+
