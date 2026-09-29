@@ -6,6 +6,13 @@ const { normalizeContentId } = require('../../utils/contentId');
 const { rateLimitedMap } = require('../../utils/rateLimiter');
 const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
 const { applyKidsMode } = require('../../utils/kidsModeFilters');
+const { normalizeAnimeMarker } = require('../../utils/animeIdentity');
+
+function isItemAnime(item) {
+    if (!item) return false;
+    const target = item.data || item.rawTMDB || item;
+    return normalizeAnimeMarker(target) === true;
+}
 
 const MAX_HERO_FALLBACK_FETCH = 200;
 const HERO_FALLBACK_LIMIT = 160;
@@ -53,17 +60,29 @@ function rollingDateStart(months) {
     return date.toISOString().slice(0, 10);
 }
 
-async function fetchFallbackRows(filters, type, limit, isKidsMode) {
+async function fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors = null) {
     const fetchLimit = Math.min(MAX_HERO_FALLBACK_FETCH, Math.max(40, Number(limit) || 0));
+    const effectiveFilters = { ...filters };
+    if (typeSelectors?.anime === 'only') {
+        effectiveFilters.isAnime = true;
+    } else if (typeSelectors?.anime === 'exclude') {
+        effectiveFilters.notAnime = true;
+    }
     let pending;
     try {
-        pending = getDuckDbCatalogFromFilters(filters, type, 0, fetchLimit, {});
+        pending = getDuckDbCatalogFromFilters(effectiveFilters, type, 0, fetchLimit, {});
     } catch (_error) {
         return [];
     }
     const results = await Promise.resolve(pending).catch(() => []);
     if (!Array.isArray(results)) return [];
-    return isKidsMode ? applyKidsMode(results) : results;
+    let processed = isKidsMode ? applyKidsMode(results) : results;
+    if (typeSelectors?.anime === 'only') {
+        processed = processed.filter(isItemAnime);
+    } else if (typeSelectors?.anime === 'exclude') {
+        processed = processed.filter(item => !isItemAnime(item));
+    }
+    return processed;
 }
 
 function getFallbackCollectionId(item) {
@@ -221,7 +240,7 @@ async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40, u
     return safeTraktFetch(`/recommendations/${mediaType}`, traktToken, limit, userObj);
 }
 
-async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false) {
+async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false, typeSelectors = null) {
     const type = mediaType === 'movie' ? 'movie' : 'series';
     const isMovie = type === 'movie';
     const baseFilters = {
@@ -231,7 +250,7 @@ async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLB
         ...(isMovie ? { 'primary_release_date.gte': rollingDateStart(36) } : { 'first_air_date.gte': rollingDateStart(36) })
     };
     const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
-    const results = await fetchFallbackRows(filters, type, limit, isKidsMode);
+    const results = await fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors);
     return mapStableFallbackIds(
         results,
         limit,
@@ -240,7 +259,7 @@ async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLB
     );
 }
 
-async function fetchTopRatedPeriodFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false) {
+async function fetchTopRatedPeriodFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false, typeSelectors = null) {
     const type = mediaType === 'movie' ? 'movie' : 'series';
     const baseFilters = {
         sort_by: 'vote_average.desc',
@@ -249,14 +268,14 @@ async function fetchTopRatedPeriodFallbackIds(tmdbApiKey, mediaType, limit = HER
         'vote_average.gte': 6.5
     };
     const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
-    const results = await fetchFallbackRows(filters, type, limit, isKidsMode);
+    const results = await fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors);
     return mapStableFallbackIds(results, limit, (a, b) => {
         const scoreDelta = getNumericSortValue(b, 'vote_average') - getNumericSortValue(a, 'vote_average');
         return scoreDelta || getNumericSortValue(b, 'vote_count') - getNumericSortValue(a, 'vote_count');
     });
 }
 
-async function fetchUndiscoveredFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false) {
+async function fetchUndiscoveredFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false, typeSelectors = null) {
     const type = mediaType === 'movie' ? 'movie' : 'series';
     const baseFilters = {
         sort_by: type === 'movie' ? 'primary_release_date.desc' : 'first_air_date.desc',
@@ -265,14 +284,14 @@ async function fetchUndiscoveredFallbackIds(tmdbApiKey, mediaType, limit = HERO_
         'vote_average.gte': 5.5
     };
     const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
-    const results = await fetchFallbackRows(filters, type, limit, isKidsMode);
+    const results = await fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors);
     return mapStableFallbackIds(results, limit, (a, b) => {
         const dateDelta = getDateSortValue(b) - getDateSortValue(a);
         return dateDelta || getNumericSortValue(b, 'vote_average') - getNumericSortValue(a, 'vote_average');
     });
 }
 
-async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false) {
+async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false, typeSelectors = null) {
     const type = mediaType === 'movie' ? 'movie' : 'series';
     const baseFilters = {
         sort_by: 'popularity.desc',
@@ -282,7 +301,7 @@ async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = HERO_FA
         'popularity.lte': HIDDEN_GEMS_MAX_POPULARITY
     };
     const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
-    const results = (await fetchFallbackRows(filters, type, limit, isKidsMode))
+    const results = (await fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors))
         .filter(item => isHiddenGemPopularity(item.popularity));
     return mapStableFallbackIds(results, limit, (a, b) => {
         const popDelta = getNumericSortValue(b, 'popularity') - getNumericSortValue(a, 'popularity');

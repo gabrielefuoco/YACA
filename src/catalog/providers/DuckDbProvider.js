@@ -62,6 +62,8 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
 
     if (q.isAnime || options?.isAnime) {
         where.push(F.anime);
+    } else if (q.notAnime || options?.notAnime) {
+        where.push(`NOT (${F.anime})`);
     }
 
     if (q['vote_count.gte']) where.push(F.minVotes(q['vote_count.gte']));

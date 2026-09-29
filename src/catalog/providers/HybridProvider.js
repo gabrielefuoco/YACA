@@ -8,9 +8,13 @@ const TASTE_BASED_IDS = new Set([
     'yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series'
 ]);
 
-async function getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey) {
+async function getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey, activeProfileSettings) {
     const traktToken = userConfig.apiKeys?.trakt;
-    const pageResults = await getHybridCatalog(baseId, skip, traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId, userConfig);
+    const effectiveConfig = {
+        ...userConfig,
+        activeProfileSettings: activeProfileSettings || userConfig?.activeProfileSettings
+    };
+    const pageResults = await getHybridCatalog(baseId, skip, traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId, effectiveConfig);
     return (pageResults || []).slice(0, 20);
 }
 

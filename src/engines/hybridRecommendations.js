@@ -12,6 +12,25 @@ const RecommendationImpression = require('../models/RecommendationImpression');
 const mongoose = require('mongoose');
 
 const { applyKidsMode, isItemInappropriateForKids } = require('../utils/kidsModeFilters');
+const { normalizeAnimeMarker } = require('../utils/animeIdentity');
+
+function isItemAnime(item) {
+    if (!item) return false;
+    const target = item.data || item.rawTMDB || item;
+    return normalizeAnimeMarker(target) === true;
+}
+
+function getActiveTypeSelectors(userConfig, context) {
+    if (userConfig?.activeProfileSettings?.typeSelectors) {
+        return userConfig.activeProfileSettings.typeSelectors;
+    }
+    if (userConfig?.typeSelectors) {
+        return userConfig.typeSelectors;
+    }
+    const profiles = userConfig?.profiles ?? userConfig?.config?.profiles ?? [];
+    const activeProfile = profiles.find(profile => profile.id === context);
+    return activeProfile?.settings?.typeSelectors || activeProfile?.typeSelectors || null;
+}
 
 // Import from the new hybrid layer
 const {
@@ -37,9 +56,15 @@ const {
 } = require('./hybrid/catalogStrategies');
 
 function getActiveKidsMode(userConfig, context) {
+    if (typeof userConfig?.activeProfileSettings?.kidsMode === 'boolean') {
+        return userConfig.activeProfileSettings.kidsMode;
+    }
+    if (typeof userConfig?.kidsMode === 'boolean') {
+        return userConfig.kidsMode;
+    }
     const profiles = userConfig?.profiles ?? userConfig?.config?.profiles ?? [];
     const activeProfile = profiles.find(profile => profile.id === context);
-    return activeProfile?.settings?.kidsMode === true;
+    return (activeProfile?.settings?.kidsMode ?? activeProfile?.kidsMode) === true;
 }
 
 const HERO_PRIORITY = Object.freeze(['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered']);
@@ -72,14 +97,16 @@ function normalizeConfigVersion(configVersion) {
         : String(configVersion);
 }
 
-function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, configVersion }) {
+function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, configVersion, typeSelectors }) {
     const version = normalizeConfigVersion(configVersion);
-    return `${userId}_${context}_${catalogId}_cv${encodeURIComponent(version)}${kidsMode ? '_kids' : ''}`;
+    const animeSuffix = typeSelectors?.anime ? `_a_${typeSelectors.anime}` : '';
+    return `${userId}_${context}_${catalogId}_cv${encodeURIComponent(version)}${kidsMode ? '_kids' : ''}${animeSuffix}`;
 }
 
-function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, configVersion }) {
+function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, configVersion, typeSelectors }) {
     const version = normalizeConfigVersion(configVersion);
-    return `${userId}_${context}_heroes_${HERO_CACHE_KEY_VERSION}_${mediaType}_cv${encodeURIComponent(version)}${kidsMode ? '_kids' : ''}`;
+    const animeSuffix = typeSelectors?.anime ? `_a_${typeSelectors.anime}` : '';
+    return `${userId}_${context}_heroes_${HERO_CACHE_KEY_VERSION}_${mediaType}_cv${encodeURIComponent(version)}${kidsMode ? '_kids' : ''}${animeSuffix}`;
 }
 
 function compareContentIds(a, b) {
@@ -162,18 +189,18 @@ async function runPoolBuilder(builder, fallbackBuilder, label, args) {
 }
 
 /** Costruisce una sola volta tutti i pool e poi applica l'assegnazione disgiunta. */
-async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig }) {
+async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig, typeSelectors }) {
     const seedFallback = async () => {
         const fetcher = typeof fetchTopRatedPeriodFallbackIds === 'function'
             ? fetchTopRatedPeriodFallbackIds
             : fetchPopularFallbackIds;
-        return fetcher(tmdbApiKey, mediaType, 160, kidsMode);
+        return fetcher(tmdbApiKey, mediaType, 160, kidsMode, typeSelectors);
     };
     const communityFallback = async () => {
         const fetcher = typeof fetchUndiscoveredFallbackIds === 'function'
             ? fetchUndiscoveredFallbackIds
             : fetchPopularFallbackIds;
-        return fetcher(tmdbApiKey, mediaType, 160, kidsMode);
+        return fetcher(tmdbApiKey, mediaType, 160, kidsMode, typeSelectors);
     };
     const communityFallbackWithMeta = async () => ({
         ids: await communityFallback(),
@@ -206,12 +233,12 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
     }
 
     const [trueBlendResult, seedResult, hiddenResult, traktResult] = await Promise.all([
-        runPoolBuilder(buildTopGenresMixCatalog, () => fetchPopularFallbackIds(tmdbApiKey, mediaType, 160, kidsMode), 'true_blend', [userId, context, tmdbApiKey, mediaType, kidsMode]),
-        runPoolBuilder(buildHybridCatalog, seedFallback, 'seed_network', [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult]),
-        runPoolBuilder(buildHiddenGemsCatalog, () => fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, 160, kidsMode), 'hidden_gems', [userId, context, tmdbApiKey, mediaType, kidsMode]),
+        runPoolBuilder(buildTopGenresMixCatalog, () => fetchPopularFallbackIds(tmdbApiKey, mediaType, 160, kidsMode, typeSelectors), 'true_blend', [userId, context, tmdbApiKey, mediaType, kidsMode, typeSelectors]),
+        runPoolBuilder(buildHybridCatalog, seedFallback, 'seed_network', [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult, typeSelectors]),
+        runPoolBuilder(buildHiddenGemsCatalog, () => fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, 160, kidsMode, typeSelectors), 'hidden_gems', [userId, context, tmdbApiKey, mediaType, kidsMode, typeSelectors]),
         typeof buildTraktFilteredCatalogWithMeta === 'function'
-            ? runPoolBuilder(buildTraktFilteredCatalogWithMeta, communityFallbackWithMeta, 'trakt_filtered', [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult])
-            : runPoolBuilder(buildTraktFilteredCatalog, communityFallbackWithMeta, 'trakt_filtered', [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult])
+            ? runPoolBuilder(buildTraktFilteredCatalogWithMeta, communityFallbackWithMeta, 'trakt_filtered', [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult, typeSelectors])
+            : runPoolBuilder(buildTraktFilteredCatalog, communityFallbackWithMeta, 'trakt_filtered', [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult, typeSelectors])
     ]);
 
     const traktCatalogId = getHeroCatalogId('trakt_filtered', mediaType);
@@ -290,11 +317,12 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     const profile = await TasteProfile.findOne({ owner: userId, context });
     // kidsMode è un'impostazione del profilo YACA (AddonConfig), non del TasteProfile.
     const isKidsMode = getActiveKidsMode(userConfig, context);
+    const typeSelectors = getActiveTypeSelectors(userConfig, context);
     const configVersion = userConfig?.configVersion ?? userConfig?.config?.configVersion;
     const heroInfo = getHeroCatalogInfo(catalogId);
     const cacheKey = heroInfo
-        ? buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode: isKidsMode, configVersion })
-        : buildRecommendationCacheKey({ userId, context, catalogId, kidsMode: isKidsMode, configVersion });
+        ? buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode: isKidsMode, configVersion, typeSelectors })
+        : buildRecommendationCacheKey({ userId, context, catalogId, kidsMode: isKidsMode, configVersion, typeSelectors });
 
     console.log(`[Hybrid Debug] getHybridCatalog called with catalogId=${catalogId}, userId=${userId}, context=${context}`);
     console.log(`[Hybrid Debug] profile loaded: ${!!profile}, isKidsMode=${isKidsMode}, cacheKey=${cacheKey}`);
@@ -322,14 +350,15 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
             traktToken,
             tmdbApiKey,
             kidsMode: isKidsMode,
-            userConfig
+            userConfig,
+            typeSelectors
         }, cacheKey);
         recommendationIds = sharedGroup.catalogs[catalogId] || [];
         console.log(`[HeroPool] ${catalogId}: ${recommendationIds.length} assigned IDs (group=${cacheKey})`);
     } else {
         const buildRecommendIds = async () => {
             if (matchedPreset) {
-                const ids = await buildDirectPresetCatalog(catalogId, userId, context, tmdbApiKey, mediaType, isKidsMode);
+                const ids = await buildDirectPresetCatalog(catalogId, userId, context, tmdbApiKey, mediaType, isKidsMode, typeSelectors);
                 if (ids.length > 0) {
                     await hybridRecommendationsCache.set(cacheKey, { ids });
                     return ids;
@@ -495,6 +524,11 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     let cleanResults = results.filter(Boolean);
     if (isKidsMode) {
         cleanResults = applyKidsMode(cleanResults);
+    }
+    if (typeSelectors?.anime === 'only') {
+        cleanResults = cleanResults.filter(isItemAnime);
+    } else if (typeSelectors?.anime === 'exclude') {
+        cleanResults = cleanResults.filter(item => !isItemAnime(item));
     }
     if (skip === 0 && cleanResults.length > 0) {
         const currentDateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
