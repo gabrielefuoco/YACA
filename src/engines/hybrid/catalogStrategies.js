@@ -242,6 +242,35 @@ function isHiddenGemPopularityAllowed(value) {
     return Number.isFinite(popularity) && popularity <= HIDDEN_GEMS_MAX_POPULARITY;
 }
 
+function passesQualityFloor(item, mediaType = 'movie', isHiddenGems = false) {
+    if (!item) return false;
+    const target = item.rawTMDB || item.data || item;
+    const voteCount = typeof target.vote_count === 'number' ? target.vote_count : (typeof item.vote_count === 'number' ? item.vote_count : undefined);
+    const voteAvg = typeof target.vote_average === 'number' ? target.vote_average : (typeof item.vote_average === 'number' ? item.vote_average : undefined);
+
+    // If it's hidden gems, niche titles with lower vote count are allowed by design
+    if (!isHiddenGems) {
+        if (voteCount !== undefined && voteCount < 300) return false;
+        if (voteAvg !== undefined && voteAvg < 6.0) return false;
+    }
+
+    // Exclude TV specials / episodes inside movie catalogs (Leva 4)
+    if (mediaType === 'movie') {
+        const rawGenres = target.genre_ids || (target.genres ? target.genres.map(g => (typeof g === 'object' && g !== null ? (g.id ?? g) : g)) : []);
+        const gids = rawGenres.map(Number);
+        const kws = Array.isArray(target.keywords)
+            ? target.keywords
+            : (target.keywords?.results || target.keywords?.keywords || []);
+        const title = target.title || target.name || item.name || '';
+        const isSpecialOrEpisode = target.episode_number !== undefined
+            || (target.runtime && target.runtime <= 20)
+            || (gids.includes(10770) && kws.some(k => /tv episode|special/i.test(typeof k === 'object' ? k.name : k)))
+            || /special|abominevole sposa/i.test(title);
+        if (isSpecialOrEpisode) return false;
+    }
+    return true;
+}
+
 function getVectorAffinity(vector, prefix, id) {
     if (!vector || id === null || id === undefined) return 0;
     if (typeof ProfileScorer.getVectorScore === 'function') {
@@ -618,6 +647,7 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
         const penaltyMultiplier = calculateImpressionPenalty(seenDays);
         const tmdbData = item.rawTMDB || item;
         if (isKidsMode && isItemInappropriateForKids(tmdbData)) return null;
+        if (!passesQualityFloor(tmdbData, mediaType, isHiddenGems)) return null;
         if (isHiddenGems && !isHiddenGemPopularityAllowed(tmdbData.popularity ?? item.popularity)) return null;
         if (isHiddenGems && !isHiddenGemAlignedWithProfile(tmdbData, profile)) return null;
         if (typeof tmdbData.vote_count !== 'number') {
@@ -786,6 +816,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         const rawItem = itemData.get(tmdbId);
         if (!rawItem) continue;
         if (isKidsMode && isItemInappropriateForKids(rawItem)) continue;
+        if (!passesQualityFloor(rawItem, mediaType, false)) continue;
         const itemGenres = rawItem.genre_ids || [];
         
         let hybridScore = calculateHybridScore(
@@ -831,6 +862,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, data.id, types);
             const tmdbData = details || data.rawTMDB || data;
             if (isKidsMode && isItemInappropriateForKids(tmdbData)) return null;
+            if (!passesQualityFloor(tmdbData, mediaType, false)) return null;
             if (typeof tmdbData.vote_count !== 'number') {
                 tmdbData.vote_count = typeof data.vote_count === 'number' ? data.vote_count : (data.rawTMDB?.vote_count ?? 0);
             }
@@ -946,6 +978,7 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
             const details = await tmdb.getTmdbMovieDetails(tmdbApiKey, id, types);
             if (!details) return null;
             if (isKidsMode && isItemInappropriateForKids(details)) return null;
+            if (!passesQualityFloor(details, mediaType, false)) return null;
             const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile, kidsMode: isKidsMode });
             if (isKidsMode && score <= 0) return null;
             return { data: { ...details, id: details.id ?? id }, score: score * penaltyMultiplier };
