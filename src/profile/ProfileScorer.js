@@ -493,6 +493,8 @@ class ProfileScorer {
         if (!items || items.length === 0) return items;
 
         const genreCap = caps?.genre ?? 10;
+        const highMatchGenreCap = caps?.highMatchGenreCap ?? genreCap;
+        const highMatchThreshold = caps?.highMatchThreshold ?? 3.8;
         const directorCap = caps?.director ?? 3;
         const strandCap = caps?.strand ?? caps?.filone ?? 3;
         const genreCounts = new Map();
@@ -515,8 +517,11 @@ class ProfileScorer {
             const specificGenres = genres.filter(g => g !== '18' && g !== '10770');
             const genresToCheck = specificGenres.length > 0 ? specificGenres : genres;
 
+            const score = item.score ?? item.rawScore ?? ((item.matchScore ?? 0) / 10);
+            const effGenreCap = (score >= highMatchThreshold) ? highMatchGenreCap : genreCap;
+
             // Check genre cap
-            const genreBlocked = genresToCheck.some(gid => (genreCounts.get(gid) || 0) >= genreCap);
+            const genreBlocked = genresToCheck.some(gid => (genreCounts.get(gid) || 0) >= effGenreCap);
             // Check director cap
             const dirBlocked = directors.some(did => (directorCounts.get(did) || 0) >= directorCap);
             // Check strand cap

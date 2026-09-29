@@ -25,7 +25,7 @@ const { F, S, G } = require('../../data/filters');
 const graph = require('../graph/HierarchicalGraph');
 const { isAnimeContent } = require('../../utils/animeIdentity');
 
-const HERO_DIVERSITY_CAPS = Object.freeze({ genre: 3, director: 1, strand: 3 });
+const HERO_DIVERSITY_CAPS = Object.freeze({ genre: 3, highMatchGenreCap: 6, director: 1, strand: 3, highMatchThreshold: 3.8 });
 const HERO_COLLECTION_CAP = 1;
 const HIDDEN_CHILD_ORIENTED_GENRE_IDS = new Set(['16', '10751', '10762']);
 const HIDDEN_MUSIC_GENRE_ID = 10402;
@@ -142,8 +142,10 @@ function getProspectiveCapOverflow(item, genreCounts, directorCounts, strandCoun
     const checkGenres = specificGenres.length > 0 ? specificGenres : genres;
 
     let genreOverflow = 0;
+    const score = item.score ?? item.rawScore ?? ((item.matchScore ?? 0) / 10);
+    const effGenreCap = (score >= (caps?.highMatchThreshold ?? 3.8)) ? (caps?.highMatchGenreCap ?? (caps?.genre ?? 3)) : (caps?.genre ?? 3);
     for (const genreId of checkGenres) {
-        genreOverflow += Math.max((genreCounts.get(genreId) || 0) + 1 - (caps?.genre ?? 3), 0);
+        genreOverflow += Math.max((genreCounts.get(genreId) || 0) + 1 - effGenreCap, 0);
     }
 
     let directorOverflow = 0;
