@@ -46,11 +46,15 @@ jest.mock('../src/clients/tmdb', () => ({
     prioritizeLocalizedImages: jest.fn(items => items || [])
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
-    getDuckDbMetaDetails: jest.fn(),
-    getDuckDbCatalogFromFilters: jest.fn(),
-    getDuckDbCatalogFromPreset: jest.fn()
-}));
+jest.mock('../src/catalog/providers/DuckDbProvider', () => {
+    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
+    return {
+        ...actual,
+        getDuckDbMetaDetails: jest.fn(),
+        getDuckDbCatalogFromFilters: jest.fn(),
+        getDuckDbCatalogFromPreset: jest.fn()
+    };
+});
 
 jest.mock('../src/engines/graph/HierarchicalGraph', () => ({
     loadData: jest.fn().mockResolvedValue(true),
