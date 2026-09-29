@@ -160,7 +160,7 @@ class ProfileScorer {
         genreIds.forEach(gid => {
             if (gid !== undefined && gid !== null) {
                 const affinity = this.getVectorScore(vFinal, 'g', gid);
-                if (affinity < 0.05) unalignedGenres++;
+                if (affinity < 0.02) unalignedGenres++;
             }
         });
 
@@ -177,7 +177,7 @@ class ProfileScorer {
             const clusterScores = clusters.map(c => {
                 const cVec = sanitizeDnaVector(c.vector || c || {});
                 const rawThematic = this._computeThematicScoreForVector(cVec, genreIds, hVector);
-                const scaled = 10.0 * (1 - Math.exp(-rawThematic / 25.0));
+                const scaled = 10.0 * (1 - Math.exp(-rawThematic / 20.0));
                 const mass = Number(c.mass) || 0;
                 const weight = maxMass > 0 ? (mass / maxMass) : 1;
                 return scaled * weight;
@@ -185,7 +185,7 @@ class ProfileScorer {
             scaledThematicScore = clusterScores.length > 0 ? Math.max(...clusterScores) : 0;
         } else {
             const rawThematic = this._computeThematicScoreForVector(vFinal, genreIds, hVector);
-            scaledThematicScore = 10.0 * (1 - Math.exp(-rawThematic / 25.0));
+            scaledThematicScore = 10.0 * (1 - Math.exp(-rawThematic / 20.0));
         }
 
         // --- 1.2 Calcolo penalità per disallineamento di genere (Alien Ratio) ---
@@ -196,18 +196,18 @@ class ProfileScorer {
             
             // Perdono basato sul Thematic Score: se il film risuona fortemente con il DNA 
             // (grazie alle keyword e ai topoi), riduciamo la penalità dei generi alieni.
-            if (scaledThematicScore >= 7.0) {
+            if (scaledThematicScore >= 6.0) {
                 effectiveAlienRatio *= 0.1; // Match fortissimo: perdona quasi tutto
-            } else if (scaledThematicScore >= 5.0) {
-                effectiveAlienRatio *= 0.4; // Match alto: perdona parzialmente
-            } else if (scaledThematicScore >= 3.0) {
-                effectiveAlienRatio *= 0.7; // Match moderato: perdono leggero
+            } else if (scaledThematicScore >= 4.0) {
+                effectiveAlienRatio *= 0.3; // Match alto: perdona parzialmente
+            } else if (scaledThematicScore >= 2.5) {
+                effectiveAlienRatio *= 0.6; // Match moderato: perdono leggero
             }
 
             if (effectiveAlienRatio >= 0.5) {
-                genreAlignmentMultiplier = 0.3; // 50%+ dei generi sono alieni al DNA: penalità severa
+                genreAlignmentMultiplier = 0.5; // 50%+ dei generi sono alieni al DNA: penalità calibrata
             } else if (effectiveAlienRatio >= 0.3) {
-                genreAlignmentMultiplier = 0.6; // 30%+ dei generi sono alieni: penalità moderata
+                genreAlignmentMultiplier = 0.75; // 30%+ dei generi sono alieni: penalità moderata
             }
         }
 
@@ -327,7 +327,7 @@ class ProfileScorer {
         genreIds.forEach(gid => {
             if (gid !== undefined && gid !== null) {
                 const affinity = this.getVectorScore(vFinal, 'g', gid);
-                if (affinity < 0.05) unalignedGenres++;
+                if (affinity < 0.02) unalignedGenres++;
             }
         });
 
@@ -386,9 +386,9 @@ class ProfileScorer {
         if (genreIds.length > 0) {
             const alienRatio = unalignedGenres / genreIds.length;
             if (alienRatio >= 0.5) {
-                genreAlignmentMultiplier = 0.3;
+                genreAlignmentMultiplier = 0.5;
             } else if (alienRatio >= 0.3) {
-                genreAlignmentMultiplier = 0.6;
+                genreAlignmentMultiplier = 0.75;
             }
         }
 
