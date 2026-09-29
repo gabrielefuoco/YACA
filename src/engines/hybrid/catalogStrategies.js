@@ -40,7 +40,10 @@ function mapGenreIdsToTarget(genres) {
 
 function getTopNodeIds(profile, level = 'L2', limit = 2) {
     if (!profile || !profile.compiledVectors || !profile.compiledVectors.V_final) return [];
-    return Object.entries(profile.compiledVectors.V_final)
+    const entries = profile.compiledVectors.V_final instanceof Map
+        ? Array.from(profile.compiledVectors.V_final.entries())
+        : Object.entries(profile.compiledVectors.V_final);
+    return entries
         .filter(([k]) => k.startsWith(`${level}:`))
         .sort((a, b) => (b[1] - a[1]) || String(a[0]).localeCompare(String(b[0])))
         .slice(0, limit)
@@ -515,7 +518,7 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
         const preset = { type: types, where, orderBy: S.POPULAR };
         console.log(`[Smart AND Query ${index + 1}/${totalQueries}] WHERE:`, JSON.stringify(where));
         try {
-            let results = await getDuckDbCatalogFromPreset(preset, 0, limitPerQuery);
+            let results = await getDuckDbCatalogFromPreset(preset, 0, Math.min(limitPerQuery, 100));
             console.log(`[Smart AND Query ${index + 1}/${totalQueries}] Found ${results?.length || 0} items`);
             
             // Smart Fallback: se una query restituisce meno di 5 risultati (es. keyword iper-specifiche prive di match per Anime),
@@ -534,6 +537,39 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
             return [];
         }
     });
+
+    // 4. Canale Generi Primari (High Recall & Quality)
+    // Garantisce che i titoli di punta, i capolavori e i grandi successi coerenti con i generi del DNA
+    // (es. Il Padrino, La Forma della Voce, Your Name, I sette samurai, Léon) siano sempre estratti
+    // tra i candidati, affidando allo scoring VSM e ai diversity caps il compito di ordinarli.
+    if (mappedTopGenres.length > 0) {
+        const genreBaseWhere = [...baseFilters];
+        if (isKidsMode) {
+            genreBaseWhere.push(F.notGenre(...ADULT_GENRE_IDS.split(',').map(Number)));
+            genreBaseWhere.push(F.notKeyword(...ADULT_KEYWORD_IDS.split(',').map(Number)));
+        }
+        genreBaseWhere.push(F.any(...mappedTopGenres.map(g => F.genre(Number(g)))));
+
+        promises.push((async () => {
+            try {
+                const trPreset = { type: types, where: genreBaseWhere, orderBy: S.TOP_RATED };
+                const trResults = await getDuckDbCatalogFromPreset(trPreset, 0, Math.min(limitPerQuery, 200));
+                return trResults || [];
+            } catch (e) {
+                return [];
+            }
+        })());
+
+        promises.push((async () => {
+            try {
+                const popPreset = { type: types, where: genreBaseWhere, orderBy: S.POPULAR };
+                const popResults = await getDuckDbCatalogFromPreset(popPreset, 0, Math.min(limitPerQuery, 200));
+                return popResults || [];
+            } catch (e) {
+                return [];
+            }
+        })());
+    }
     
     const resultsArrays = await Promise.all(promises);
     
