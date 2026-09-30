@@ -870,10 +870,15 @@ async function collectRealSeeds({ userId, context, mediaType, user = null }) {
  * avanti la prima alternativa di filone diverso e, se non ne esiste nessuna,
  * esclude l'item in eccesso (il catalogo viene poi riempito dal fallback).
  */
-function enforceMaxStrandRun(items, maxRun = HERO_DIVERSITY_CAPS.strand) {
+function enforceMaxStrandRun(items, maxRun = HERO_DIVERSITY_CAPS.strand, options = {}) {
     if (!Array.isArray(items) || items.length <= maxRun) return Array.isArray(items) ? items : [];
     if (typeof ProfileScorer.getItemNarrativeStrand !== 'function') return items;
 
+    // Ticket 26: alcuni strand non devono contare per il "run". In modo anime-only lo strand
+    // 'strand:anime' vale per *tutti* gli item: contarlo svuota il catalogo (era la causa dei
+    // 6+0 nel seed network), ma bypassare del tutto il cap romperebbe la diversità sugli altri
+    // strand. Ignorarlo è la via di mezzo: quegli item passano sempre, il cap resta attivo sul resto.
+    const ignoredStrands = new Set((options.ignoreStrands || []).map(String));
     const runLimit = Math.max(1, Number(maxRun) || 1);
     const getStrand = item => ProfileScorer.getItemNarrativeStrand(item) || 'strand:unknown';
     const result = [];
@@ -884,6 +889,7 @@ function enforceMaxStrandRun(items, maxRun = HERO_DIVERSITY_CAPS.strand) {
     while (pending.length > 0) {
         const candidate = pending.shift();
         const strand = getStrand(candidate);
+        if (ignoredStrands.has(strand)) { result.push(candidate); continue; }
         if (strand !== currentStrand) {
             result.push(candidate);
             currentStrand = strand;
@@ -1296,7 +1302,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
                 HERO_DIVERSITY_CAPS,
                 SEED_NETWORK_TARGET_SIZE
             );
-            finalItems = animePolicy === ANIME_POLICY_MODES.ONLY ? combined : enforceMaxStrandRun(combined, HERO_DIVERSITY_CAPS.strand);
+            finalItems = enforceMaxStrandRun(combined, HERO_DIVERSITY_CAPS.strand, animePolicy === ANIME_POLICY_MODES.ONLY ? { ignoreStrands: ['strand:anime'] } : {});
             console.log(`[Catalog Debug] Seed Network - Fill: +${fillItems.length} fallback (totale=${finalItems.length})`);
         }
     }
@@ -1345,12 +1351,14 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
             where: [
                 F.anime,
                 F.minScore(6.5),
-                F.minVotes(mediaType === 'movie' ? 100 : 50)
+                // Ticket 26: stesso pavimento del catalogo (`passesQualityFloor`: voti >= 300).
+                // Prima erano 100/50: gli item fra 50 e 299 voti entravano qui e violavano il pavimento.
+                F.minVotes(300)
             ],
             orderBy: S.POPULAR
         };
         const rows = await getDuckDbCatalogFromPreset(preset, 0, limit);
-        return rows.map(r => {
+        return rows.filter(r => passesQualityFloor(r.rawTMDB || r, mediaType, false)).map(r => {
             const raw = r.rawTMDB || r;
             const score = ProfileScorer.calculateItemMatch(raw, profile, { dnaFilters, globalProfile, kidsMode: isKidsMode, typeSelectors: effectiveTypeSelectors, animePolicy });
             return {
