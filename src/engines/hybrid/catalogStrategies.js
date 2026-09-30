@@ -260,7 +260,7 @@ function passesQualityFloor(item, mediaType = 'movie', isHiddenGems = false) {
     // If it's hidden gems, niche titles with lower vote count are allowed by design
     if (!isHiddenGems) {
         if (voteCount !== undefined && voteCount < 300) return false;
-        if (voteAvg !== undefined && voteAvg < 6.0) return false;
+        if (voteAvg !== undefined && voteAvg < 6.5) return false; // Ticket 17: allineato alla sorgente del fill (fetchTopRatedPeriodFallbackIds: vote_average.gte 6.5)
     }
 
     // Exclude TV specials / episodes inside movie catalogs (Leva 4)
