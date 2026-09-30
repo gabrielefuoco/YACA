@@ -82,7 +82,8 @@ describe('catalogStrategies', () => {
             dataFetchers.fetchTopRatedPeriodFallbackIds.mockResolvedValueOnce(['999']);
 
             const result = await catalogStrategies.buildHybridCatalog('user1', 'global', 'trakt', 'tmdb', 'movie');
-            expect(dataFetchers.fetchTopRatedPeriodFallbackIds).toHaveBeenCalledWith('tmdb', 'movie', 160, false);
+            // 5° argomento: typeSelectors (null quando il profilo non ne ha)
+            expect(dataFetchers.fetchTopRatedPeriodFallbackIds).toHaveBeenCalledWith('tmdb', 'movie', 160, false, null);
             expect(dataFetchers.fetchPopularFallbackIds).not.toHaveBeenCalled();
             expect(result).toEqual(['999']);
         });

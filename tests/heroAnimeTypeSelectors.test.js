@@ -23,6 +23,26 @@ jest.mock('../src/models/RecommendationImpression', () => ({
     bulkWrite: jest.fn().mockResolvedValue(null)
 }));
 
+// WatchHistory/UserLibraryItem: senza mock il buffer di mongoose fa attendere ~10s
+// per suite e svuota i pool (i seed reali non trovano nulla).
+jest.mock('../src/models/WatchHistory', () => {
+    const emptyQuery = () => {
+        const q = {};
+        q.sort = () => q;
+        q.limit = () => q;
+        q.select = () => q;
+        q.lean = () => Promise.resolve([]);
+        q.then = (resolve, reject) => Promise.resolve([]).then(resolve, reject);
+        return q;
+    };
+    return { find: jest.fn(emptyQuery), findOne: jest.fn(emptyQuery), countDocuments: jest.fn().mockResolvedValue(0) };
+});
+
+jest.mock('../src/db/models/UserLibraryItem', () => ({
+    find: jest.fn(() => ({ lean: jest.fn().mockResolvedValue([]) })),
+    countDocuments: jest.fn().mockResolvedValue(0)
+}));
+
 jest.mock('../src/db/models/UserAccount', () => ({
     findOne: jest.fn()
 }));
@@ -56,11 +76,17 @@ jest.mock('../src/catalog/providers/DuckDbProvider', () => {
     };
 });
 
-jest.mock('../src/engines/graph/HierarchicalGraph', () => ({
-    loadData: jest.fn().mockResolvedValue(true),
-    getTopKeywordsForNode: jest.fn().mockReturnValue([]),
-    getTopKeywordsForNodes: jest.fn().mockReturnValue([])
-}));
+jest.mock('../src/engines/graph/HierarchicalGraph', () => {
+    const actual = jest.requireActual('../src/engines/graph/HierarchicalGraph');
+    return {
+        ...actual,
+        loadData: jest.fn().mockResolvedValue(true),
+        getTopKeywordsForNode: jest.fn().mockReturnValue([]),
+        getTopKeywordsForNodes: jest.fn().mockReturnValue([]),
+        // ProfileScorer.calculateBaseItemMatch lo usa: senza grafo caricato il contributo è vuoto.
+        vectorizeKeywords: jest.fn().mockReturnValue({})
+    };
+});
 
 const TasteProfile = require('../src/models/TasteProfile');
 const UserAccount = require('../src/db/models/UserAccount');
@@ -164,6 +190,71 @@ describe('Hero Movie Catalogs - typeSelectors (anime: only & exclude)', () => {
         }
     };
 
+    // Il gate HERO_MIN_FALLBACK_ITEMS = 10 nasconde il catalogo trakt quando il pool
+    // fallback è più piccolo: con 6 sole fixture i test E2E non potevano verificare nulla.
+    const mkAnimeFixture = (id) => ({
+        id,
+        title: `Anime Fixture ${id}`,
+        name: `Anime Fixture ${id}`,
+        original_language: 'ja',
+        genre_ids: [16, 28],
+        genres: [{ id: 16, name: 'Animation' }, { id: 28, name: 'Action' }],
+        vote_count: 3000 + id,
+        vote_average: 8.0,
+        popularity: 100 + (id % 40),
+        keywords: [{ id: 210024, name: 'anime' }],
+        release_date: '2020-01-01'
+    });
+
+    const mkLiveActionFixture = (id) => ({
+        id,
+        title: `Live Action Fixture ${id}`,
+        name: `Live Action Fixture ${id}`,
+        original_language: 'en',
+        genre_ids: [12, 18],
+        genres: [{ id: 12, name: 'Adventure' }, { id: 18, name: 'Drama' }],
+        vote_count: 4000 + id,
+        vote_average: 7.5,
+        popularity: 90 + (id % 40),
+        keywords: [{ id: 1234, name: 'journey' }],
+        release_date: '2018-01-01'
+    });
+
+    for (let i = 0; i < 9; i++) {
+        mockItems[String(110 + i)] = mkAnimeFixture(110 + i);
+        mockItems[String(210 + i)] = mkLiveActionFixture(210 + i);
+    }
+
+    // Fixture esclusive del ramo Trakt (id >= 500): il pool "community" (mock DuckDB)
+    // non le restituisce, altrimenti la dedup tra hero (true_blend prima) le ruba
+    // e il hero trakt resta a 0.
+    mockItems['501'] = mkAnimeFixture(501);
+    mockItems['502'] = mkAnimeFixture(502);
+    mockItems['601'] = mkLiveActionFixture(601);
+    mockItems['602'] = mkLiveActionFixture(602);
+
+    // La forma store dei fixture "community" (id < 500)
+    const communityFixtures = () => Object.values(mockItems).filter(it => it.id < 500);
+
+    // Il provider DuckDB restituisce righe in forma "store" (id stringa 'tmdb:<n>',
+    // _tmdbId numerico, campi piatti + rawTMDB), NON oggetti TMDB grezzi: il codice
+    // usa item._tmdbId / item.id.split(':'). Le fixture devono rispecchiarla.
+    const toStoreRow = (it) => ({
+        id: `tmdb:${it.id}`,
+        _tmdbId: it.id,
+        type: 'movie',
+        name: it.title,
+        vote_average: it.vote_average,
+        vote_count: it.vote_count,
+        popularity: it.popularity,
+        genre_ids: it.genre_ids,
+        original_language: it.original_language,
+        keywords: it.keywords,
+        rawTMDB: it,
+        _isAnime: it.genre_ids.includes(16)
+            && (it.original_language === 'ja' || /anime/i.test(JSON.stringify(it.keywords || [])))
+    });
+
     const animeOnlyUserConfig = {
         userId: 'otaku_user',
         activeProfileId: '1c1da0af',
@@ -195,6 +286,8 @@ describe('Hero Movie Catalogs - typeSelectors (anime: only & exclude)', () => {
     beforeEach(() => {
         mockCacheStore.clear();
         jest.clearAllMocks();
+        // Senza questo, safeTraktFetchDetailed esce con reason='credentials' e il ramo Trakt non è mai disponibile.
+        process.env.TRAKT_CLIENT_ID = 'test_trakt_client_id';
 
         UserAccount.findOne.mockReturnValue({
             lean: jest.fn().mockResolvedValue({
@@ -237,38 +330,38 @@ describe('Hero Movie Catalogs - typeSelectors (anime: only & exclude)', () => {
 
         getDuckDbMetaDetails.mockImplementation(async (id) => {
             const item = mockItems[String(id)];
-            return item ? { rawTMDB: item } : null;
+            return item ? toStoreRow(item) : null;
         });
 
         getDuckDbCatalogFromPreset.mockImplementation(async (preset) => {
             const whereStr = JSON.stringify(preset.where || []);
-            const all = Object.values(mockItems);
+            const all = communityFixtures();
             if (whereStr.includes('NOT')) {
-                return all.filter(it => it.original_language !== 'ja' && !it.genre_ids.includes(16));
+                return all.filter(it => it.original_language !== 'ja' && !it.genre_ids.includes(16)).map(toStoreRow);
             }
             if (whereStr.includes('16') && whereStr.includes('original_language')) {
-                return all.filter(it => it.original_language === 'ja' || it.genre_ids.includes(16));
+                return all.filter(it => it.original_language === 'ja' || it.genre_ids.includes(16)).map(toStoreRow);
             }
-            return all;
+            return all.map(toStoreRow);
         });
 
         getDuckDbCatalogFromFilters.mockImplementation(async (filters) => {
-            const all = Object.values(mockItems);
+            const all = communityFixtures();
             if (filters.isAnime) {
-                return all.filter(it => it.original_language === 'ja' || it.genre_ids.includes(16));
+                return all.filter(it => it.original_language === 'ja' || it.genre_ids.includes(16)).map(toStoreRow);
             }
             if (filters.notAnime) {
-                return all.filter(it => it.original_language !== 'ja' && !it.genre_ids.includes(16));
+                return all.filter(it => it.original_language !== 'ja' && !it.genre_ids.includes(16)).map(toStoreRow);
             }
-            return all;
+            return all.map(toStoreRow);
         });
 
         traktClient.get.mockResolvedValue({
             data: [
-                { movie: { ids: { tmdb: 101 } } },
-                { movie: { ids: { tmdb: 102 } } },
-                { movie: { ids: { tmdb: 201 } } },
-                { movie: { ids: { tmdb: 202 } } }
+                { movie: { ids: { tmdb: 501 } } },
+                { movie: { ids: { tmdb: 502 } } },
+                { movie: { ids: { tmdb: 601 } } },
+                { movie: { ids: { tmdb: 602 } } }
             ]
         });
     });
@@ -287,11 +380,14 @@ describe('Hero Movie Catalogs - typeSelectors (anime: only & exclude)', () => {
             );
 
             expect(result.ids.length).toBeGreaterThan(0);
-            const returnedIds = result.ids.map(i => i.id);
-            expect(returnedIds).toContain('101');
-            expect(returnedIds).toContain('102');
-            expect(returnedIds).not.toContain('201'); // Interstellar
-            expect(returnedIds).not.toContain('202'); // Harry Potter
+            // Il builder restituisce due forme: stringhe nel percorso fallback, { id } in quello Trakt.
+            const returnedIds = result.ids.map(i => (typeof i === 'string' ? i : i.id));
+            expect(returnedIds).toContain('501');
+            expect(returnedIds).toContain('502');
+            expect(returnedIds).not.toContain('601'); // live-action Trakt
+            expect(returnedIds).not.toContain('602');
+            expect(returnedIds).not.toContain('201'); // Interstellar (community)
+            expect(returnedIds).not.toContain('202'); // Harry Potter (community)
         });
 
         it('buildTraktFilteredCatalogWithMeta con anime: "exclude" include solo live-action ed esclude anime', async () => {
@@ -307,11 +403,11 @@ describe('Hero Movie Catalogs - typeSelectors (anime: only & exclude)', () => {
             );
 
             expect(result.ids.length).toBeGreaterThan(0);
-            const returnedIds = result.ids.map(i => i.id);
-            expect(returnedIds).toContain('201'); // Interstellar
-            expect(returnedIds).toContain('202'); // Harry Potter
-            expect(returnedIds).not.toContain('101');
-            expect(returnedIds).not.toContain('102');
+            const returnedIds = result.ids.map(i => (typeof i === 'string' ? i : i.id));
+            expect(returnedIds).toContain('601'); // live-action Trakt
+            expect(returnedIds).toContain('602');
+            expect(returnedIds).not.toContain('501');
+            expect(returnedIds).not.toContain('502');
         });
 
         it('buildTopGenresMixCatalog (True Blend) con anime: "only" restituisce solo anime', async () => {
@@ -326,7 +422,10 @@ describe('Hero Movie Catalogs - typeSelectors (anime: only & exclude)', () => {
 
             expect(result.length).toBeGreaterThan(0);
             const returnedIds = result.map(i => i.id);
-            expect(returnedIds.every(id => ['101', '102', '103'].includes(id))).toBe(true);
+            expect(returnedIds.every(id => {
+                const fixture = mockItems[String(id)];
+                return fixture && fixture.genre_ids.includes(16) && fixture.original_language === 'ja';
+            })).toBe(true);
             expect(returnedIds).not.toContain('201');
             expect(returnedIds).not.toContain('202');
             expect(returnedIds).not.toContain('203');
