@@ -1,0 +1,422 @@
+const { validateKeys } = require('../src/api/configure/validators');
+const {
+    smartTraktRefresh,
+    checkTraktHeartbeat,
+    traktClient
+} = require('../src/clients/trakt');
+const { safeTraktFetchDetailed } = require('../src/engines/hybrid/dataFetchers');
+const { buildTraktFilteredCatalogWithMeta } = require('../src/engines/hybrid/catalogStrategies');
+const jwt = require('jsonwebtoken');
+const { traktHealthHandler, getJwtSecret } = require('../src/api/auth/index.js');
+const UserAccount = require('../src/db/models/UserAccount');
+
+jest.mock('../src/db/models/UserAccount', () => ({
+    findOne: jest.fn(),
+    findOneAndUpdate: jest.fn(),
+    updateOne: jest.fn()
+}));
+
+jest.mock('../src/db/models/AddonConfig', () => ({
+    findOne: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({
+            userId: 'user_catalog_deg',
+            addonUuid: 'uuid_cat',
+            settings: {}
+        })
+    })
+}));
+
+jest.mock('../src/models/TasteProfile', () => ({
+    findOne: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue(null)
+    }),
+    updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
+}));
+
+jest.mock('../src/models/RecommendationImpression', () => ({
+    bulkWrite: jest.fn().mockResolvedValue(null)
+}));
+
+jest.mock('../src/profile/ProfileBuilder', () => ({
+    syncUserHistory: jest.fn().mockResolvedValue(null)
+}));
+
+jest.mock('../src/catalog/providers/DuckDbProvider', () => {
+    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
+    return {
+        ...actual,
+        getDuckDbCatalogFromFilters: jest.fn(),
+        getDuckDbCatalogFromPreset: jest.fn(),
+        getDuckDbMetaDetails: jest.fn()
+    };
+});
+
+jest.mock('../src/clients/tmdb', () => ({
+    getTmdbMovieDetails: jest.fn().mockResolvedValue({ id: 101, title: 'Fallback Movie', vote_average: 7.5 }),
+    createTmdbClient: jest.fn()
+}));
+
+describe('Trakt Hardening (Ticket 06 - Irrobustimento Trakt)', () => {
+    let mockTraktPost;
+    let mockTraktGet;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        process.env.TRAKT_CLIENT_ID = 'test_client_id';
+        process.env.TRAKT_CLIENT_SECRET = 'test_client_secret';
+        process.env.TMDB_API_KEY = 'test_tmdb_key';
+
+        mockTraktPost = jest.spyOn(traktClient, 'post');
+        mockTraktGet = jest.spyOn(traktClient, 'get');
+    });
+
+    afterEach(() => {
+        mockTraktPost.mockRestore();
+        mockTraktGet.mockRestore();
+    });
+
+    describe('1. traktExpiresAt nei validatori configure (retrocompatibile & sanificazione)', () => {
+        it('calcola traktExpiresAt se fornito come stringa ISO valida', () => {
+            const result = validateKeys({
+                tmdbKey: 'valid_tmdb_key',
+                traktToken: 'valid_trakt_token_12345678',
+                traktRefreshToken: 'valid_refresh_token_12345678',
+                traktExpiresAt: '2026-12-31T12:00:00.000Z'
+            }, null, []);
+
+            expect(result.traktExpiresAt).toBeInstanceOf(Date);
+            expect(result.traktExpiresAt.toISOString()).toBe('2026-12-31T12:00:00.000Z');
+        });
+
+        it('calcola traktExpiresAt se fornito in secondi epoch (created_at + expires_in)', () => {
+            const epochSec = 1770000000;
+            const result = validateKeys({
+                tmdbKey: 'valid_tmdb_key',
+                traktToken: 'valid_trakt_token_12345678',
+                traktExpiresAt: epochSec
+            }, null, []);
+
+            expect(result.traktExpiresAt).toBeInstanceOf(Date);
+            expect(result.traktExpiresAt.getTime()).toBe(epochSec * 1000);
+        });
+
+        it('retrocompatibile: imposta traktExpiresAt a null se assente (nessun errore)', () => {
+            const result = validateKeys({
+                tmdbKey: 'valid_tmdb_key',
+                traktToken: 'valid_trakt_token_12345678'
+            }, null, []);
+
+            expect(result.traktExpiresAt).toBeNull();
+        });
+
+        it('sanifica a null se traktExpiresAt contiene una stringa non valida (nessun errore)', () => {
+            const result = validateKeys({
+                tmdbKey: 'valid_tmdb_key',
+                traktToken: 'valid_trakt_token_12345678',
+                traktExpiresAt: 'not-a-valid-date'
+            }, null, []);
+
+            expect(result.traktExpiresAt).toBeNull();
+        });
+
+        it('preserva traktExpiresAt da existingUser se il token non è cambiato e body non invia scadenza', () => {
+            const existingDate = new Date('2027-01-01T00:00:00.000Z');
+            const existingUser = {
+                apiKeys: {
+                    trakt: 'existing_trakt_token_12345678',
+                    traktRefreshToken: 'existing_refresh_12345678',
+                    traktExpiresAt: existingDate
+                }
+            };
+
+            const result = validateKeys({
+                tmdbKey: 'valid_tmdb_key',
+                traktToken: 'existing_trakt_token_12345678'
+            }, existingUser, []);
+
+            expect(result.traktExpiresAt).toBeInstanceOf(Date);
+            expect(result.traktExpiresAt.toISOString()).toBe(existingDate.toISOString());
+        });
+    });
+
+    describe('2. Refresh proattivo (scadenza <= 1h vs token valido)', () => {
+        it('scadenza entro 1h → attiva refresh proattivo prima della chiamata API', async () => {
+            const expiringIn30m = new Date(Date.now() + 30 * 60 * 1000);
+            const userObj = {
+                userId: 'user_proactive',
+                apiKeys: {
+                    trakt: 'old_access_token',
+                    traktRefreshToken: 'refresh_candidate',
+                    traktExpiresAt: expiringIn30m
+                }
+            };
+
+            // Trakt refresh risponde con nuovi token
+            mockTraktPost.mockResolvedValueOnce({
+                data: {
+                    access_token: 'fresh_access_token',
+                    refresh_token: 'fresh_refresh_token',
+                    expires_in: 7200,
+                    created_at: Math.floor(Date.now() / 1000)
+                }
+            });
+
+            // Trakt endpoint dati risponde 200
+            mockTraktGet.mockResolvedValueOnce({
+                data: [{ id: 1, title: 'Item 1' }]
+            });
+
+            UserAccount.findOneAndUpdate.mockResolvedValueOnce({ userId: 'user_proactive' });
+
+            const result = await safeTraktFetchDetailed('/recommendations/movies', 'old_access_token', 10, userObj);
+
+            // Verifica che il refresh sia stato chiamato
+            expect(mockTraktPost).toHaveBeenCalledWith(
+                '/oauth/token',
+                expect.objectContaining({ refresh_token: 'refresh_candidate' }),
+                expect.any(Object)
+            );
+
+            // Verifica che la chiamata dati abbia usato il NUOVO token aggiornato
+            expect(mockTraktGet).toHaveBeenCalledWith(
+                '/recommendations/movies',
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        'Authorization': 'Bearer fresh_access_token'
+                    })
+                })
+            );
+
+            // Verifica che lo userObj in memoria sia stato aggiornato
+            expect(userObj.apiKeys.trakt).toBe('fresh_access_token');
+            expect(userObj.apiKeys.traktRefreshToken).toBe('fresh_refresh_token');
+            expect(result.items.length).toBe(1);
+        });
+
+        it('token valido (> 1h) → nessun refresh proattivo', async () => {
+            const expiringIn5h = new Date(Date.now() + 5 * 60 * 60 * 1000);
+            const userObj = {
+                userId: 'user_valid',
+                apiKeys: {
+                    trakt: 'still_valid_access_token',
+                    traktRefreshToken: 'refresh_candidate',
+                    traktExpiresAt: expiringIn5h
+                }
+            };
+
+            mockTraktGet.mockResolvedValueOnce({
+                data: [{ id: 2, title: 'Item 2' }]
+            });
+
+            const result = await safeTraktFetchDetailed('/recommendations/movies', 'still_valid_access_token', 10, userObj);
+
+            // Nessun refresh deve essere partito
+            expect(mockTraktPost).not.toHaveBeenCalled();
+
+            // Chiamata dati eseguita direttamente con il token corrente
+            expect(mockTraktGet).toHaveBeenCalledWith(
+                '/recommendations/movies',
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        'Authorization': 'Bearer still_valid_access_token'
+                    })
+                })
+            );
+
+            expect(userObj.apiKeys.trakt).toBe('still_valid_access_token');
+            expect(result.items.length).toBe(1);
+        });
+    });
+
+    describe('3. Guardia anti-riuso del refresh token (single-use)', () => {
+        it('refresh fallito o timeout → nessun retry + stato richiede ri-autorizzazione persistito', async () => {
+            // Simuliamo fallimento Trakt (es. timeout o invalid_grant)
+            mockTraktPost.mockRejectedValueOnce(new Error('Network timeout on token refresh'));
+
+            UserAccount.findOne.mockResolvedValueOnce({
+                userId: 'user_burn',
+                traktStatus: { status: 'ok', refreshInProgress: false }
+            });
+
+            const refreshResult = await smartTraktRefresh('user_burn', 'burned_refresh_token');
+
+            expect(refreshResult).toBeNull();
+
+            // Verifica che sia stato persistito lo stato 'requires_reauth'
+            expect(UserAccount.updateOne).toHaveBeenCalledWith(
+                { userId: 'user_burn' },
+                expect.objectContaining({
+                    $set: expect.objectContaining({
+                        'traktStatus.status': 'requires_reauth',
+                        'traktStatus.refreshInProgress': false,
+                        'traktStatus.lastError': expect.stringContaining('Refresh fallito')
+                    })
+                })
+            );
+
+            // SECONDO TENTATIVO: non deve assolutamente chiamare Trakt (guardia single-use)
+            UserAccount.findOne.mockResolvedValueOnce({
+                userId: 'user_burn',
+                traktStatus: { status: 'requires_reauth' }
+            });
+
+            const secondAttempt = await smartTraktRefresh('user_burn', 'burned_refresh_token');
+
+            expect(secondAttempt).toBeNull();
+            // mockTraktPost è stato chiamato 1 sola volta in tutto (nel primo test), mai nel secondo
+            expect(mockTraktPost).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('4. Heartbeat diagnostico & degrado dichiarato', () => {
+        it('heartbeat su GET /sync/last_activities con esito 200 persiste status ok', async () => {
+            mockTraktGet.mockResolvedValueOnce({
+                data: {
+                    movies: { watched_at: '2026-09-30T10:00:00.000Z' },
+                    episodes: { watched_at: '2026-09-30T10:00:00.000Z' }
+                }
+            });
+
+            UserAccount.findOne.mockReturnValueOnce({
+                userId: 'user_hb_ok',
+                apiKeys: { trakt: 'test_token_hb' },
+                lean: jest.fn().mockResolvedValue({
+                    userId: 'user_hb_ok',
+                    apiKeys: { trakt: 'test_token_hb' }
+                })
+            });
+
+            const hbResult = await checkTraktHeartbeat('user_hb_ok');
+
+            expect(hbResult.status).toBe('ok');
+            expect(hbResult.connected).toBe(true);
+            expect(mockTraktGet).toHaveBeenCalledWith(
+                '/sync/last_activities',
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        'Authorization': 'Bearer test_token_hb'
+                    })
+                })
+            );
+
+            expect(UserAccount.updateOne).toHaveBeenCalledWith(
+                { userId: 'user_hb_ok' },
+                expect.objectContaining({
+                    $set: expect.objectContaining({
+                        'traktStatus.status': 'ok',
+                        'traktStatus.lastSuccess': expect.any(Date),
+                        'traktStatus.lastError': null
+                    })
+                })
+            );
+        });
+
+        it('heartbeat degradato con errore 401/403 persiste status requires_reauth', async () => {
+            const err = new Error('Forbidden');
+            err.response = { status: 403, data: { error: 'invalid_token' } };
+            mockTraktGet.mockRejectedValueOnce(err);
+
+            UserAccount.findOne.mockReturnValueOnce({
+                userId: 'user_hb_err',
+                apiKeys: { trakt: 'expired_token' },
+                lean: jest.fn().mockResolvedValue({
+                    userId: 'user_hb_err',
+                    apiKeys: { trakt: 'expired_token' }
+                })
+            });
+
+            const hbResult = await checkTraktHeartbeat('user_hb_err');
+
+            expect(hbResult.status).toBe('requires_reauth');
+            expect(UserAccount.updateOne).toHaveBeenCalledWith(
+                { userId: 'user_hb_err' },
+                expect.objectContaining({
+                    $set: expect.objectContaining({
+                        'traktStatus.status': 'requires_reauth',
+                        'traktStatus.lastError': 'invalid_token'
+                    })
+                })
+            );
+        });
+
+        it('endpoint GET /api/trakt/health restituisce lo stato aggiornato', async () => {
+            mockTraktGet.mockResolvedValueOnce({
+                data: { movies: {} }
+            });
+
+            UserAccount.findOne.mockReturnValueOnce({
+                userId: 'user_endpoint',
+                apiKeys: { trakt: 'tok_endpoint' },
+                lean: jest.fn().mockResolvedValue({
+                    userId: 'user_endpoint',
+                    apiKeys: { trakt: 'tok_endpoint' }
+                })
+            });
+
+            const req = { cookies: { yaca_session: jwt.sign({ userId: 'user_endpoint' }, getJwtSecret()) } };
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                json: jest.fn()
+            };
+
+            await traktHealthHandler(req, res);
+
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                success: true,
+                userId: 'user_endpoint',
+                status: 'ok',
+                connected: true
+            }));
+        });
+
+        it('endpoint health senza sessione → 401 e nessuna chiamata a Trakt', async () => {
+            mockTraktGet.mockClear();
+            const req = { query: { userId: 'user_endpoint' }, cookies: {} };
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                json: jest.fn()
+            };
+
+            await traktHealthHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+            expect(mockTraktGet).not.toHaveBeenCalled();
+        });
+
+        it('degrado nei cataloghi: buildTraktFilteredCatalogWithMeta rende visibile fallbackUsed e traktAvailable', async () => {
+            const { getDuckDbCatalogFromFilters, getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');
+            getDuckDbCatalogFromPreset.mockResolvedValue([
+                { _tmdbId: 101, id: 'movie:101', title: 'Fallback Movie 1', score: 8.0 }
+            ]);
+            getDuckDbCatalogFromFilters.mockResolvedValue([
+                { _tmdbId: 101, id: 'movie:101', title: 'Fallback Movie 1', score: 8.0 }
+            ]);
+
+            // Simuliamo il caso di degrado (Trakt non disponibile)
+            const degradedTraktResult = { items: [], available: false, fallbackUsed: true, reason: 'unauthorized' };
+
+            UserAccount.findOne.mockReturnValue({
+                userId: 'user_catalog_deg',
+                addonUuid: 'uuid_cat',
+                lean: jest.fn().mockResolvedValue({ userId: 'user_catalog_deg', addonUuid: 'uuid_cat' })
+            });
+
+            const result = await buildTraktFilteredCatalogWithMeta(
+                'user_catalog_deg',
+                'global',
+                'bad_trakt_token',
+                'tmdb_key',
+                'movie',
+                false,
+                degradedTraktResult
+            );
+
+            expect(result.fallbackUsed).toBe(true);
+            expect(result.traktAvailable).toBe(false);
+            expect(result.ids.length).toBeGreaterThan(0);
+            expect(result.ids[0]).toHaveProperty('fallbackUsed', true);
+            expect(result.ids[0]).toHaveProperty('traktAvailable', false);
+        });
+    });
+});

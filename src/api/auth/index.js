@@ -198,11 +198,15 @@ async function meHandler(req, res) {
             activeProfileId: addonConfig?.config?.activeProfileId || 'global',
             configVersion: addonConfig?.config?.configVersion || null,
             traktConnected: Boolean(account.apiKeys?.trakt),
+            traktStatus: account.traktStatus || null,
             apiKeys: {
                 stremio: account.apiKeys?.stremio || null,
                 tmdb: account.apiKeys?.tmdb || null,
                 mistral: account.apiKeys?.mistral || null,
-                trakt: account.apiKeys?.trakt || null
+                trakt: account.apiKeys?.trakt || null,
+                // NB: il refresh token NON esce dal server (credenziale long-lived).
+                // Il backend lo preserva da sé quando il client non lo rimanda.
+                traktExpiresAt: account.apiKeys?.traktExpiresAt || null
             }
         });
     } catch (err) {
@@ -268,5 +272,34 @@ async function traktDisconnectHandler(req, res) {
     }
 }
 
-module.exports = { loginHandler, meHandler, logoutHandler, traktDisconnectHandler, getJwtSecret };
+/**
+ * GET /api/trakt/health
+ * Esegue l'heartbeat diagnostico su Trakt e restituisce lo stato aggiornato.
+ */
+async function traktHealthHandler(req, res) {
+    // Solo sessione autenticata: mai fidarsi di uno userId passato dal client (IDOR).
+    const token = req.cookies?.[COOKIE_NAME];
+    let userId = null;
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, getJwtSecret());
+            if (decoded?.userId) userId = decoded.userId;
+        } catch (_err) {}
+    }
+
+    if (!userId) {
+        return res.status(401).json({ success: false, error: 'Non autorizzato.' });
+    }
+
+    try {
+        const { checkTraktHeartbeat } = require('../../clients/trakt');
+        const health = await checkTraktHeartbeat(userId);
+        return res.json({ success: true, userId, ...health });
+    } catch (err) {
+        console.error('[Auth] Errore health check Trakt:', err.message);
+        return res.status(500).json({ success: false, error: 'Errore interno controllo stato Trakt.' });
+    }
+}
+
+module.exports = { loginHandler, meHandler, logoutHandler, traktDisconnectHandler, traktHealthHandler, getJwtSecret };
 

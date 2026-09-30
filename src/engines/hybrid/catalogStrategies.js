@@ -1154,11 +1154,20 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType, is
  * 🌐 Hero Catalog 4: Trakt Filtered ("Suggeriti dalla Community")
  */
 async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false, providedTraktResult = null) {
-    const buildFallback = async (traktAvailable = false) => ({
-        ids: await fetchCommunityFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode),
-        traktAvailable,
-        fallbackUsed: true
-    });
+    const buildFallback = async (traktAvailable = false) => {
+        console.warn(`[HeroPool] Degrado Trakt rilevato per ${mediaType}: fallbackUsed=true, traktAvailable=${traktAvailable}`);
+        const fallbackIds = await fetchCommunityFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode);
+        return {
+            ids: fallbackIds.map(id => {
+                if (typeof id === 'object' && id !== null) {
+                    return { ...id, traktAvailable, fallbackUsed: true };
+                }
+                return { id: String(id), traktAvailable, fallbackUsed: true };
+            }),
+            traktAvailable,
+            fallbackUsed: true
+        };
+    };
 
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     if (!profile) return buildFallback(false);
@@ -1217,7 +1226,9 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
             .slice(0, 100)
             .map(item => ({
                 id: String(item.data.id),
-                matchScore: Math.min(100, Math.max(1, Math.round(item.score * 10)))
+                matchScore: Math.min(100, Math.max(1, Math.round(item.score * 10))),
+                traktAvailable: true,
+                fallbackUsed: false
             })),
         traktAvailable: true,
         fallbackUsed: false

@@ -95,11 +95,27 @@ function validateKeys(body, existingUser, warnings) {
         throw { status: 400, message: "Auth key Stremio non valida." };
     }
 
+    let traktExpiresAt = body.traktExpiresAt;
+    if (traktExpiresAt !== undefined && traktExpiresAt !== null && traktExpiresAt !== '' && traktExpiresAt !== 'null') {
+        let parsedDate;
+        if (typeof traktExpiresAt === 'number') {
+            parsedDate = new Date(traktExpiresAt < 1e11 ? traktExpiresAt * 1000 : traktExpiresAt);
+        } else {
+            parsedDate = new Date(traktExpiresAt);
+        }
+        traktExpiresAt = (!isNaN(parsedDate.getTime())) ? parsedDate : null;
+    } else if (traktToken && existingUser?.apiKeys?.trakt && traktToken === existingUser.apiKeys.trakt) {
+        traktExpiresAt = existingUser?.apiKeys?.traktExpiresAt ? new Date(existingUser.apiKeys.traktExpiresAt) : null;
+    } else {
+        traktExpiresAt = null;
+    }
+
     return {
         effectiveTmdbKey,
         mistralKey: effectiveMistralKey,
         traktToken,
         traktRefreshToken,
+        traktExpiresAt,
         stremioAuthKey,
         stremioEmail
     };

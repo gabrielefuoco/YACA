@@ -230,6 +230,9 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
     };
     const assigned = assignHeroPools(pools, mediaType);
     let hiddenForInsufficientFallback = false;
+    if (rawTraktResult.fallbackUsed) {
+        console.warn(`[HeroPool] Degrado Trakt confermato per pool ${traktCatalogId}: fallbackUsed=true, traktAvailable=${rawTraktResult.traktAvailable}`);
+    }
     if (rawTraktResult.fallbackUsed && assigned[traktCatalogId].length < HERO_MIN_FALLBACK_ITEMS) {
         assigned[traktCatalogId] = [];
         hiddenForInsufficientFallback = true;
@@ -372,10 +375,11 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         pageIds,
         async (recItem) => {
             try {
-                // Support both legacy string IDs (if cached) and new object format { id, matchScore }
                 const isObj = typeof recItem === 'object' && recItem !== null;
                 const tmdbId = isObj ? recItem.id : recItem;
                 const matchScore = isObj ? recItem.matchScore : null;
+                const itemFallbackUsed = isObj ? recItem.fallbackUsed : undefined;
+                const itemTraktAvailable = isObj ? recItem.traktAvailable : undefined;
 
                 const normalizedId = normalizeContentId(tmdbId);
                 const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
@@ -459,7 +463,9 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                     // payload Animazione + keyword "anime*" (es. animesque).
                     original_language: item.original_language || item.originalLanguage || null,
                     keywords,
-                    _yacaMatch: matchScore
+                    _yacaMatch: matchScore,
+                    ...(itemFallbackUsed !== undefined ? { fallbackUsed: itemFallbackUsed } : {}),
+                    ...(itemTraktAvailable !== undefined ? { traktAvailable: itemTraktAvailable } : {})
                 };
             } catch (err) {
                 console.error(`[Hybrid] Errore risoluzione item ${recItem?.id || recItem}:`, err?.message || err);

@@ -15,7 +15,7 @@ const UserConfig = require('./src/models/UserConfig');
 const { getPresets, profileTemplates } = require('./src/data/presets');
 const { getCatalogKind } = require('./src/catalog/catalogKind');
 const connectDB = require('./src/db/connection');
-const { loginHandler, meHandler, logoutHandler, traktDisconnectHandler } = require('./src/api/auth/index.js');
+const { loginHandler, meHandler, logoutHandler, traktDisconnectHandler, traktHealthHandler } = require('./src/api/auth/index.js');
 const { inputSanitizer } = require('./src/middleware/inputSanitizer');
 const { attachRequestContext } = require('./src/middleware/requestContext');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
@@ -117,6 +117,7 @@ app.get('/api/auth/me', cookieParser(), meHandler);
 app.post('/api/auth/logout', cookieParser(), logoutHandler);
 app.post('/api/auth/trakt/disconnect', cookieParser(), traktDisconnectHandler);
 app.post('/api/trakt/disconnect', cookieParser(), traktDisconnectHandler);
+app.get('/api/trakt/health', cookieParser(), traktHealthHandler);
 
 
 

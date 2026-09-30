@@ -58,6 +58,7 @@ export default function Home() {
     logout,
   } = useAuth();
 
+  const [traktExpiresAt, setTraktExpiresAt] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'settings'>('dashboard');
   const [myLists, setMyLists] = useState<MyList[]>([]);
   const [customCatalogs, setCustomCatalogs] = useState<Catalog[]>([]);
@@ -118,6 +119,7 @@ export default function Home() {
               if (data.apiKeys.mistral) setGlobalMistralKey(data.apiKeys.mistral);
               if (data.apiKeys.trakt) setTraktToken(data.apiKeys.trakt);
               if (data.apiKeys.traktRefreshToken) setTraktRefreshToken(data.apiKeys.traktRefreshToken);
+              if (data.apiKeys.traktExpiresAt) setTraktExpiresAt(data.apiKeys.traktExpiresAt);
             }
           } else {
             setInitialProfiles(createDefaultProfiles());
@@ -162,6 +164,7 @@ export default function Home() {
             if (data.apiKeys.mistral) setGlobalMistralKey(data.apiKeys.mistral);
             if (data.apiKeys.trakt) setTraktToken(data.apiKeys.trakt);
             if (data.apiKeys.traktRefreshToken) setTraktRefreshToken(data.apiKeys.traktRefreshToken);
+            if (data.apiKeys.traktExpiresAt) setTraktExpiresAt(data.apiKeys.traktExpiresAt);
           }
         } else {
           setInitialProfiles(createDefaultProfiles());
@@ -351,11 +354,13 @@ export default function Home() {
     tmdbKey?: string,
     mistralKey?: string,
     existingProfiles?: BackendProfile[],
-    existingActiveProfileId?: string
+    existingActiveProfileId?: string,
+    newTraktExpiresAt?: string | null
   ) => {
     if (newStremioAuth) setStremioAuth(newStremioAuth);
     if (newTraktToken) setTraktToken(newTraktToken);
     if (newTraktRefreshToken) setTraktRefreshToken(newTraktRefreshToken);
+    if (newTraktExpiresAt !== undefined) setTraktExpiresAt(newTraktExpiresAt);
 
     let activeProfiles = profiles;
 
@@ -389,6 +394,7 @@ export default function Home() {
         email: newStremioAuth?.email,
         traktToken: newTraktToken ?? undefined,
         traktRefreshToken: newTraktRefreshToken ?? undefined,
+        traktExpiresAt: (newTraktExpiresAt ?? traktExpiresAt) ?? undefined,
       });
       if (data.userId) {
         setUserId(data.userId);
@@ -398,6 +404,7 @@ export default function Home() {
         // Restore tokens if returned (ensure state stays in sync)
         if (data.apiKeys?.trakt) setTraktToken(data.apiKeys.trakt);
         if (data.apiKeys?.traktRefreshToken) setTraktRefreshToken(data.apiKeys.traktRefreshToken);
+        if (data.apiKeys?.traktExpiresAt) setTraktExpiresAt(data.apiKeys.traktExpiresAt);
         if (data.apiKeys?.tmdb) setGlobalTmdbKey(data.apiKeys.tmdb);
         if (data.apiKeys?.mistral) setGlobalMistralKey(data.apiKeys.mistral);
 
@@ -499,6 +506,7 @@ export default function Home() {
       if (res?.success) {
         setTraktToken(null);
         setTraktRefreshToken(null);
+        setTraktExpiresAt(null);
       } else {
         console.error('Errore disconnessione Trakt:', res?.error || 'Errore sconosciuto');
       }
@@ -573,14 +581,16 @@ export default function Home() {
                   stremioAuthKey={stremioAuth?.authKey}
                   traktToken={traktToken}
                   traktRefreshToken={traktRefreshToken}
+                  traktExpiresAt={traktExpiresAt}
                   configVersion={configVersion}
                   userId={userId ?? undefined}
                   onUpdateProfile={updateProfile}
                   onLogout={handleLogout}
                   onDisconnectTrakt={handleDisconnectTrakt}
-                  onConnectTrakt={(t, r) => {
+                  onConnectTrakt={(t, r, exp) => {
                     setTraktToken(t);
                     setTraktRefreshToken(r);
+                    setTraktExpiresAt(exp || null);
                   }}
                   onConfigSaved={handleConfigSaved}
                 />

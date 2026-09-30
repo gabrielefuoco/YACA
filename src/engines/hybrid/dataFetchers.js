@@ -150,6 +150,35 @@ async function safeTraktFetchDetailed(endpoint, traktToken, limit = 40, userObj 
         return { items: [], available: false, reason: 'credentials' };
     }
 
+    if (userObj?.traktStatus?.status === 'requires_reauth') {
+        return { items: [], available: false, reason: 'unauthorized' };
+    }
+
+    // Refresh proattivo: se apiKeys.traktExpiresAt è entro ~1 ora, rinnova prima della chiamata
+    const PROACTIVE_REFRESH_WINDOW_MS = 60 * 60 * 1000;
+    const expiresAt = userObj?.apiKeys?.traktExpiresAt;
+    if (expiresAt && userObj?.apiKeys?.traktRefreshToken && userObj?.userId) {
+        const expTime = new Date(expiresAt).getTime();
+        if (!isNaN(expTime) && (expTime - Date.now() <= PROACTIVE_REFRESH_WINDOW_MS)) {
+            console.log(`[safeTraktFetch] Token Trakt in scadenza entro 1h (${new Date(expiresAt).toISOString()}). Avvio refresh proattivo...`);
+            const { smartTraktRefresh } = require('../../clients/trakt');
+            try {
+                const newTokens = await smartTraktRefresh(userObj.userId, userObj.apiKeys.traktRefreshToken);
+                if (newTokens && newTokens.access_token) {
+                    traktToken = newTokens.access_token;
+                    userObj.apiKeys.trakt = newTokens.access_token;
+                    userObj.apiKeys.traktRefreshToken = newTokens.refresh_token;
+                    if (newTokens.expires_at) {
+                        userObj.apiKeys.traktExpiresAt = newTokens.expires_at;
+                    }
+                    console.log(`[safeTraktFetch] Refresh proattivo completato con successo.`);
+                }
+            } catch (proactiveErr) {
+                console.error(`[safeTraktFetch] Refresh proattivo fallito:`, proactiveErr.message);
+            }
+        }
+    }
+
     const execute = async (token) => {
         const res = await traktClient.get(endpoint, {
             headers: {
@@ -187,6 +216,9 @@ async function safeTraktFetchDetailed(endpoint, traktToken, limit = 40, userObj 
                     // Update userObj in memory so subsequent calls in the same request use the new token
                     userObj.apiKeys.trakt = newTokens.access_token;
                     userObj.apiKeys.traktRefreshToken = newTokens.refresh_token;
+                    if (newTokens.expires_at) {
+                        userObj.apiKeys.traktExpiresAt = newTokens.expires_at;
+                    }
 
                     console.log(`[safeTraktFetch] Token refreshed successfully. Retrying ${endpoint}...`);
                     return toResult(await execute(newTokens.access_token));

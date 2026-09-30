@@ -17,7 +17,8 @@ interface LoginPageProps {
     tmdbKey?: string,
     mistralKey?: string,
     existingProfiles?: any[],
-    existingActiveProfileId?: string
+    existingActiveProfileId?: string,
+    traktExpiresAt?: string | null
   ) => void;
 }
 
@@ -29,6 +30,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
   const [stremioAuth, setStremioAuth] = useState<StremioAuth | null>(null);
   const [traktToken, setTraktToken] = useState<string | null>(null);
   const [traktRefreshToken, setTraktRefreshToken] = useState<string | null>(null);
+  const [traktExpiresAt, setTraktExpiresAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [configuring, setConfiguring] = useState(false);
   const [error, setError] = useState('');
@@ -63,7 +65,8 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             undefined,
             undefined,
             data.profiles || undefined,
-            data.activeProfileId || undefined
+            data.activeProfileId || undefined,
+            data.traktExpiresAt || null
           );
           setLoading(false);
           return;
@@ -79,25 +82,31 @@ export function LoginPage({ onComplete }: LoginPageProps) {
     setLoading(false);
   };
 
-  const handleComplete = (tkn: string | null = null, refresh: string | null = null) => {
+  const handleComplete = (tkn: string | null = null, refresh: string | null = null, exp: string | null = null) => {
     setConfiguring(true);
     onComplete(
       stremioAuth,
       tkn,
       refresh,
-      sessionUserId
+      sessionUserId,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      exp ?? traktExpiresAt
     );
   };
 
   const handleSkipTrakt = () => {
-    handleComplete(traktToken, traktRefreshToken);
+    handleComplete(traktToken, traktRefreshToken, traktExpiresAt);
   };
 
-  const handleTraktSuccess = (token: string, refresh: string) => {
+  const handleTraktSuccess = (token: string, refresh: string, expiresAt?: string | null) => {
     setTraktToken(token);
     setTraktRefreshToken(refresh);
+    setTraktExpiresAt(expiresAt || null);
     setTraktModalOpen(false);
-    handleComplete(token, refresh);
+    handleComplete(token, refresh, expiresAt || null);
   };
 
   if (configuring) {
@@ -222,7 +231,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3">
               <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
               <p className="text-sm text-emerald-400 font-medium">Trakt connesso!</p>
-              <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => handleComplete(traktToken, traktRefreshToken)}>
+              <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => handleComplete(traktToken, traktRefreshToken, traktExpiresAt)}>
                 Continua <ChevronRight className="h-3 w-3 ml-1" />
               </Button>
             </div>

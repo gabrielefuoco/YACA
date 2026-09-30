@@ -200,15 +200,19 @@ const UserConfig = {
                 if (localData.email) accountUpdate.$set.email = localData.email;
 
                 if (localData.apiKeys) {
-                    const keysInDoc = ['stremio', 'tmdb', 'mistral', 'trakt', 'traktRefreshToken'];
+                    const keysInDoc = ['stremio', 'tmdb', 'mistral', 'trakt', 'traktRefreshToken', 'traktExpiresAt'];
                     keysInDoc.forEach(k => {
                         if (keysToUnset.has(k)) {
                             accountUnset[`apiKeys.${k}`] = 1;
                         } else {
                             const val = localData.apiKeys[k];
                             if (val !== undefined) {
-                                // Salvataggio in chiaro
-                                accountUpdate.$set[`apiKeys.${k}`] = val;
+                                if (k === 'traktExpiresAt') {
+                                    accountUpdate.$set[`apiKeys.${k}`] = val ? new Date(val) : null;
+                                } else {
+                                    // Salvataggio in chiaro
+                                    accountUpdate.$set[`apiKeys.${k}`] = val;
+                                }
                             }
                         }
                     });
