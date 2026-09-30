@@ -8,7 +8,8 @@ try {
     try {
         ts = require('typescript');
     } catch (e2) {
-        ts = require('C:/Users/gabri/APP/YACA/frontend/node_modules/typescript');
+        // Fallback relativo portabile se eseguito in worktree alternativo
+        ts = require(path.resolve(__dirname, '../../YACA/frontend/node_modules/typescript'));
     }
 }
 

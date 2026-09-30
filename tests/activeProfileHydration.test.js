@@ -14,7 +14,12 @@ let ts;
 try {
     ts = require('../frontend/node_modules/typescript');
 } catch (e) {
-    ts = require('typescript');
+    try {
+        ts = require('typescript');
+    } catch (e2) {
+        // Fallback relativo portabile se eseguito in worktree alternativo
+        ts = require(path.resolve(__dirname, '../../YACA/frontend/node_modules/typescript'));
+    }
 }
 
 function loadUtils() {

@@ -8,7 +8,12 @@ const ts = (() => {
     try {
         return require(path.join(FRONTEND_NODE_MODULES, 'typescript'));
     } catch (e) {
-        return require('C:/Users/gabri/APP/YACA/frontend/node_modules/typescript');
+        try {
+            return require('typescript');
+        } catch (e2) {
+            // Fallback relativo portabile se eseguito in worktree alternativo
+            return require(path.resolve(__dirname, '../../YACA/frontend/node_modules/typescript'));
+        }
     }
 })();
 
