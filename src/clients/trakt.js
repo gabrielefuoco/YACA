@@ -29,7 +29,8 @@ const tmdbEnrichClient = createTmdbClient(process.env.TMDB_API_KEY);
  * @param {string} refreshToken - Il refresh_token corrente
  * @returns {Promise<{access_token: string, refresh_token: string, expires_at?: Date}|null>} I nuovi token, o null se fallito
  */
-async function refreshTraktTokens(refreshToken) {
+async function refreshTraktTokens(refreshToken, options = {}) {
+    const throwOnError = typeof options === 'boolean' ? options : !!options?.throwOnError;
     const clientId = process.env.TRAKT_CLIENT_ID;
     const clientSecret = process.env.TRAKT_CLIENT_SECRET;
     if (!clientId || !clientSecret || !refreshToken) return null;
@@ -58,6 +59,7 @@ async function refreshTraktTokens(refreshToken) {
         return null;
     } catch (err) {
         console.error('Trakt token refresh failed:', err.response?.data || err.message);
+        if (throwOnError) throw err;
         return null;
     }
 }
@@ -213,7 +215,7 @@ async function smartTraktRefresh(userId, refreshToken) {
     console.log(`Trakt (smart): avvio procedura di refresh per ${userId}...`);
     const refreshPromise = (async () => {
         try {
-            const newTokens = await refreshTraktTokens(refreshToken);
+            const newTokens = await refreshTraktTokens(refreshToken, { throwOnError: true });
             if (newTokens && newTokens.access_token) {
                 await syncTraktTokensToDb(userId, newTokens.access_token, newTokens.refresh_token, newTokens.expires_at);
                 if (UserAccount && typeof UserAccount.updateOne === 'function') {
@@ -234,14 +236,20 @@ async function smartTraktRefresh(userId, refreshToken) {
                 }
                 return newTokens;
             } else {
-                // Il refresh token single-use è stato consumato o rigettato da Trakt
-                console.warn(`[Trakt (smart)] Refresh fallito per ${userId}: token single-use consumato. Imposto stato 'requires_reauth'.`);
-                await markRequiresReauth(userId, UserAccount, 'Refresh fallito. Richiede ri-autorizzazione.');
+                // Il refresh token single-use è stato consumato o rigettato da Trakt (risposta senza token)
+                console.warn(`[Trakt (smart)] Refresh fallito per ${userId}: risposta senza token validi. Imposto stato 'requires_reauth'.`);
+                await markRequiresReauth(userId, UserAccount, 'Refresh fallito: risposta non valida. Richiede ri-autorizzazione.');
                 return null;
             }
         } catch (err) {
-            console.error(`[Trakt (smart)] Eccezione durante refresh per ${userId}:`, err.message);
-            await markRequiresReauth(userId, UserAccount, `Refresh fallito o timeout (${err.message}). Richiede ri-autorizzazione.`);
+            const { status, reason } = classifyRefreshError(err);
+            if (status === 'degraded') {
+                console.warn(`[Trakt (smart)] Errore di rete temporaneo durante refresh per ${userId} (${reason}). Imposto stato 'degraded'.`);
+                await markDegraded(userId, UserAccount, reason);
+            } else {
+                console.warn(`[Trakt (smart)] Refresh fallito o timeout per ${userId} (${reason}). Imposto stato 'requires_reauth'.`);
+                await markRequiresReauth(userId, UserAccount, reason);
+            }
             return null;
         } finally {
             ongoingRefreshes.delete(userId);
@@ -252,10 +260,71 @@ async function smartTraktRefresh(userId, refreshToken) {
     return await refreshPromise;
 }
 
-async function markRequiresReauth(userId, UserAccount, errorMsg) {
+/**
+ * Classifica l'errore avvenuto durante il refresh del token Trakt.
+ * Distingue tra:
+ * - "Richiesta inviata, risposta persa" (timeout o errore server) -> 'requires_reauth' (token single-use potenzialmente consumato)
+ * - "Richiesta mai partita" (ECONNREFUSED, ENOTFOUND, nessun err.request) -> 'degraded' (ritentabile)
+ *
+ * @param {Error|any} err
+ * @returns {{status: 'requires_reauth'|'degraded', reason: string}}
+ */
+function classifyRefreshError(err) {
+    if (!err) {
+        return {
+            status: 'requires_reauth',
+            reason: 'Refresh fallito: errore sconosciuto durante il refresh.'
+        };
+    }
+
+    const code = String(err.code || '');
+    const msg = String(err.message || '');
+
+    // 1. Timeout: la richiesta è partita ma la risposta non è mai arrivata (o è andata persa).
+    // In questo caso il token single-use potrebbe essere stato consumato dal server Trakt.
+    const isTimeout = code === 'ECONNABORTED' ||
+                      code === 'ETIMEDOUT' ||
+                      /timeout/i.test(msg);
+
+    if (isTimeout) {
+        return {
+            status: 'requires_reauth',
+            reason: `Refresh fallito: timeout durante il refresh (${msg || code}). Richiede ri-autorizzazione.`
+        };
+    }
+
+    // 2. Richiesta mai inviata / connessione fallita prima di raggiungere Trakt:
+    // DNS fallito (ENOTFOUND), connessione rifiutata (ECONNREFUSED), rete locale non raggiungibile,
+    // oppure nessun err.request (errore nell'inizializzazione prima del socket).
+    const isConnectionError = code === 'ECONNREFUSED' ||
+                              code === 'ENOTFOUND' ||
+                              code === 'ENETUNREACH' ||
+                              code === 'EHOSTUNREACH' ||
+                              code === 'EAI_AGAIN' ||
+                              /ECONNREFUSED|ENOTFOUND|ENETUNREACH|EHOSTUNREACH/i.test(msg);
+
+    const hasNoRequest = !err.request && !err.response;
+
+    if (isConnectionError || hasNoRequest) {
+        return {
+            status: 'degraded',
+            reason: `Errore di rete temporaneo (${msg || code || 'richiesta non inviata'}). Ritentabile.`
+        };
+    }
+
+    // 3. Risposta ricevuta (err.response) con errore (es. 400 invalid_grant, 401, 403)
+    // o altro errore post-invio: token consumato o rigettato da Trakt -> requires_reauth
+    const detail = err.response?.data?.error || err.response?.data || msg || code || 'richiesta respinta';
+    return {
+        status: 'requires_reauth',
+        reason: `Refresh fallito (${detail}). Richiede ri-autorizzazione.`
+    };
+}
+
+async function updateTraktStatus(userId, UserAccount, status, errorMsg) {
     if (!UserAccount) return;
     const update = {
-        'traktStatus.status': 'requires_reauth',
+        'traktStatus.status': status,
         'traktStatus.refreshInProgress': false,
         'traktStatus.lastError': errorMsg,
         'traktStatus.lastErrorAt': new Date()
@@ -267,6 +336,14 @@ async function markRequiresReauth(userId, UserAccount, errorMsg) {
             await UserAccount.findOneAndUpdate({ userId }, { $set: update });
         }
     } catch (_err) {}
+}
+
+async function markRequiresReauth(userId, UserAccount, errorMsg) {
+    return updateTraktStatus(userId, UserAccount, 'requires_reauth', errorMsg);
+}
+
+async function markDegraded(userId, UserAccount, errorMsg) {
+    return updateTraktStatus(userId, UserAccount, 'degraded', errorMsg);
 }
 
 /**
@@ -638,5 +715,8 @@ module.exports = {
     traktClient,
     smartTraktRefresh,
     exchangeTraktCode,
-    checkTraktHeartbeat
+    checkTraktHeartbeat,
+    classifyRefreshError,
+    markRequiresReauth,
+    markDegraded
 };
