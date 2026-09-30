@@ -56,24 +56,25 @@ describe('calculateHybridScore', () => {
         expect(score).toBe(100);
     });
 
-    it('should add TMDB bonus for 2 appearances (+50)', () => {
+    it('should anchor the most-supported candidate of the pool to 100 (count = max)', () => {
         const item = { tmdbId: 200, position: null };
         const tmdbCounts = new Map([[200, 2]]);
         const topGenres = [];
         const itemGenres = [];
 
         const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        expect(score).toBe(50);
+        expect(score).toBe(100);
     });
 
-    it('should add TMDB bonus for 3 appearances (+25)', () => {
+    it('should saturate with log growth instead of collapsing (3 segnali su pool max 10)', () => {
         const item = { tmdbId: 200, position: null };
-        const tmdbCounts = new Map([[200, 3]]);
+        const tmdbCounts = new Map([[200, 3], [201, 10]]);
         const topGenres = [];
         const itemGenres = [];
 
         const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        expect(score).toBe(25);
+        // Ticket 13: 100 * log1p(3) / log1p(10) ≈ 57,8 (con la vecchia 100/2^(n-1) era 25)
+        expect(score).toBeCloseTo(57.81, 1);
     });
 
     it('should add genre boost for top genre #1 (+30)', () => {
@@ -114,9 +115,9 @@ describe('calculateHybridScore', () => {
 
         const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
         // Trakt: 50 - 5 = 45
-        // TMDB: floor(100 / 2^1) = 50
+        // TMDB: 100 * log1p(2)/log1p(2) = 100 (item più sostenuto del pool)
         // Genre: 30 + 15 + 5 = 50
-        expect(score).toBe(45 + 50 + 50);
+        expect(score).toBe(45 + 100 + 50);
     });
 
     it('should return 0 for item with no position, no appearances, no matching genres', () => {
