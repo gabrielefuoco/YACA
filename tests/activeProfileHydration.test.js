@@ -12,15 +12,15 @@ const path = require('path');
 
 let ts;
 try {
-    ts = require('../frontend/node_modules/typescript');
+    ts = require('typescript');
 } catch (e) {
     try {
-        ts = require('typescript');
+        ts = require('../frontend/node_modules/typescript');
     } catch (e2) {
-        // Fallback relativo portabile se eseguito in worktree alternativo
-        ts = require(path.resolve(__dirname, '../../YACA/frontend/node_modules/typescript'));
+        throw new Error('typescript non trovato: esegui `npm install` (root) e `npm install --prefix frontend`');
     }
 }
+
 
 function loadUtils() {
     const source = fs.readFileSync(path.resolve(__dirname, '../frontend/src/lib/utils.ts'), 'utf8');
