@@ -12,6 +12,7 @@ const NICHE_MAX_VOTE_BONUS = 2.5;
 const { isItemInappropriateForKids } = require('../utils/kidsModeFilters');
 const { G } = require('../data/filters');
 const { isRetiredTmdbKeywordId, filterRetiredTmdbKeywords, sanitizeDnaVector } = require('../data/keywordIds');
+const { resolveAnimePolicy, computeAnimeScoreMultiplier } = require('../engines/hybrid/animePolicy');
 
 function clampScore(value) {
     return Math.min(Math.max(value, 0), 10);
@@ -281,11 +282,16 @@ class ProfileScorer {
         return finalClamped;
     }
 
+    static computeAnimeMultiplier(tmdbData, profile, context = {}) {
+        const policy = context.animePolicy || resolveAnimePolicy(profile, context.typeSelectors);
+        return computeAnimeScoreMultiplier(tmdbData, policy);
+    }
+
     /**
      * Calcola l'affinità di un contenuto TMDB con il profilo di gusto dell'utente.
      * @param {Object} tmdbData Dati grezzi TMDB (arricchiti con credits e keywords)
      * @param {Object} profile Documento Mongoose TasteProfile (GLOBAL)
-     * @param {Object} context Opzionali { dnaFilters (User.profiles.settings), tmdbWeight, traktWeight }
+     * @param {Object} context Opzionali { dnaFilters (User.profiles.settings), tmdbWeight, traktWeight, typeSelectors, animePolicy }
      * @returns {Number} Score da 0.0 a 10.0
      */
     static calculateItemMatch(tmdbData, profile, context = {}) {
@@ -295,13 +301,17 @@ class ProfileScorer {
         const profileScore = this.calculateBaseItemMatch(tmdbData, profile, context);
         const globalProfile = context.globalProfile;
 
+        let finalScore = profileScore;
         if (globalProfile) {
             const globalScore = this.calculateBaseItemMatch(tmdbData, globalProfile, context);
-            const finalScore = ((profileScore * ACTIVE_PROFILE_WEIGHT) + (globalScore * GLOBAL_PROFILE_WEIGHT)) * dnaMultiplier;
-            return Math.min(Math.max(finalScore, 0), 10);
+            finalScore = ((profileScore * ACTIVE_PROFILE_WEIGHT) + (globalScore * GLOBAL_PROFILE_WEIGHT));
         }
+        finalScore *= dnaMultiplier;
 
-        return Math.min(Math.max(profileScore * dnaMultiplier, 0), 10);
+        const animeMultiplier = this.computeAnimeMultiplier(tmdbData, profile, context);
+        finalScore *= animeMultiplier;
+
+        return Math.min(Math.max(finalScore, 0), 10);
     }
 
     /**
