@@ -114,6 +114,10 @@ const SortExpr = {
     popular: '"popularity"',
     score: '"vote_average" DESC, "vote_count" DESC',
     bayesian: '("vote_average" * LOG10("vote_count"))',
+    // Ticket 22: media bayesiana — il voto medio "scalato" verso 6.8 finché i voti
+    // sono pochi (m=500). Sostituisce `vote_average DESC` come ordinamento di qualità:
+    // un 8.9 con 1.100 voti non deve battere un 8.4 con 24.000.
+    quality: '(("vote_average" * "vote_count" + 500.0 * 6.8) / ("vote_count" + 500.0))',
     release: '"release_date"',
     airDate: '"first_air_date"',
     revenue: '"revenue"',
@@ -127,6 +131,8 @@ const S = {
     POPULAR: desc(SortExpr.popular),
     TOP_RATED: SortExpr.score, // already descending logic embedded
     BAYESIAN: desc(SortExpr.bayesian),
+    // Qualità bayesiana, con la popolarità come discriminante a parità di merito
+    QUALITY: `${desc(SortExpr.quality)}, ${desc(SortExpr.popular)}`,
     NEWEST_MOVIE: desc(SortExpr.release),
     NEWEST_TV: desc(SortExpr.airDate),
     REVENUE: desc(SortExpr.revenue),
