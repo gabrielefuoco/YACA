@@ -593,7 +593,10 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
             where.push(F.anime);
         }
         
-        const preset = { type: types, where, orderBy: S.POPULAR };
+        // Ticket 22: i canali dei cluster ordinano per QUALITÀ (media bayesiana, popolarità
+        // come discriminante) invece che per popolarità: la finestra si riempie di titoli buoni
+        // e non di ciò che è di moda oggi. Il canale "freschezza" resta più sotto.
+        const preset = { type: types, where, orderBy: S.QUALITY };
         console.log(`[Smart AND Query ${index + 1}/${totalQueries}] WHERE:`, JSON.stringify(where));
         try {
             let results = await getDuckDbCatalogFromPreset(preset, 0, Math.min(limitPerQuery, 100));
@@ -603,7 +606,7 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
             // allentiamo il filtro rimuovendo le keyword e tenendo i Generi Top + Quota Anime.
             if ((!results || results.length < 5) && cluster.keywords.length > 0) {
                 const fallbackWhere = where.filter(w => !cluster.keywords.some(k => w.includes(String(k))));
-                const fallbackPreset = { type: types, where: fallbackWhere, orderBy: S.POPULAR };
+                const fallbackPreset = { type: types, where: fallbackWhere, orderBy: S.QUALITY };
                 const fallbackResults = await getDuckDbCatalogFromPreset(fallbackPreset, 0, limitPerQuery);
                 console.log(`[Smart AND Query ${index + 1}/${totalQueries}] Smart Fallback (Genres/Anime) Found ${fallbackResults?.length || 0} items`);
                 results = [...(results || []), ...(fallbackResults || [])];
@@ -635,7 +638,9 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
 
         promises.push((async () => {
             try {
-                const trPreset = { type: types, where: genreBaseWhere, orderBy: S.TOP_RATED };
+                // Ticket 22: era S.TOP_RATED ("vote_average DESC") che premia il voto medio
+                // anche con pochi voti; ora usa la media bayesiana.
+                const trPreset = { type: types, where: genreBaseWhere, orderBy: S.QUALITY };
                 const trResults = await getDuckDbCatalogFromPreset(trPreset, 0, Math.min(limitPerQuery, 200));
                 return trResults || [];
             } catch (e) {
@@ -645,6 +650,8 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
 
         promises.push((async () => {
             try {
+                // Canale freschezza (ticket 22): mantiene la popolarità pura, con quota fissa
+                // di posti, così il contenuto nuovo e di tendenza non sparisce dal pool.
                 const popPreset = { type: types, where: genreBaseWhere, orderBy: S.POPULAR };
                 const popResults = await getDuckDbCatalogFromPreset(popPreset, 0, Math.min(limitPerQuery, 200));
                 return popResults || [];

@@ -78,7 +78,7 @@ const HERO_CATALOG_IDS = new Map([
 // Lo schema interno versiona l'allocazione: 4 invalida i blocchi schema 3
 // prodotti prima della garanzia pairwise verificata sul dataset completo.
 const HERO_CACHE_KEY_VERSION = 'v1';
-const HERO_CACHE_SCHEMA_VERSION = 4;
+const HERO_CACHE_SCHEMA_VERSION = 5;
 const HERO_MIN_FALLBACK_ITEMS = 10;
 const HERO_MAX_ITEMS_PER_CATALOG = 100;
 const activeHeroGroupBuilds = new Map();
