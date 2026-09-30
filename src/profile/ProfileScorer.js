@@ -17,6 +17,23 @@ function clampScore(value) {
     return Math.min(Math.max(value, 0), 10);
 }
 
+// Performance (30/09): `sanitizeDnaVector` ricostruisce l'intero vettore (V_final ha ~1850 chiavi)
+// e veniva chiamata **per ogni item da punteggiare**, 6 volte (V_final + i cluster): ~8-19 ms per
+// item, cioè 8-19 secondi per ogni costruzione di catalogo con ~1.000 candidati. I vettori del
+// profilo sono immutabili durante una build (il profilo arriva da una lettura DB e viene sostituito,
+// non mutato), quindi si memoizza per identità dell'oggetto. Nessun cambio di comportamento:
+// il risultato è usato in sola lettura da tutti i chiamanti.
+const sanitizeCache = new WeakMap();
+function sanitizeVector(vector) {
+    if (!vector || typeof vector !== 'object' || Array.isArray(vector)) return {};
+    let cached = sanitizeCache.get(vector);
+    if (!cached) {
+        cached = sanitizeDnaVector(vector);
+        sanitizeCache.set(vector, cached);
+    }
+    return cached;
+}
+
 function getKeywordItems(data) {
     if (Array.isArray(data?.keywords)) return data.keywords;
     if (Array.isArray(data?.keywords?.results) && data.keywords.results.length > 0) {
@@ -148,7 +165,7 @@ class ProfileScorer {
         const tmdbWeight = context.tmdbWeight ?? profile.tmdbWeight ?? 1.0;
         const traktWeight = context.traktWeight ?? profile.traktWeight ?? 1.0;
 
-        const vFinal = sanitizeDnaVector(profile.compiledVectors?.V_final || {});
+        const vFinal = sanitizeVector(profile.compiledVectors?.V_final || {});
         const clusters = Array.isArray(profile.compiledVectors?.V_clusters) && profile.compiledVectors.V_clusters.length > 0
             ? profile.compiledVectors.V_clusters
             : null;
@@ -175,7 +192,7 @@ class ProfileScorer {
         if (clusters) {
             const maxMass = Math.max(...clusters.map(c => Number(c.mass) || 0), 0);
             const clusterScores = clusters.map(c => {
-                const cVec = sanitizeDnaVector(c.vector || c || {});
+                const cVec = sanitizeVector(c.vector || c || {});
                 const rawThematic = this._computeThematicScoreForVector(cVec, genreIds, hVector);
                 const scaled = 10.0 * (1 - Math.exp(-rawThematic / 20.0));
                 const mass = Number(c.mass) || 0;
@@ -317,7 +334,7 @@ class ProfileScorer {
         if (kidsMode && this.isItemInappropriateForKids(lightData)) return -9999;
 
         // Genre & keyword match score
-        const vFinal = sanitizeDnaVector(profile.compiledVectors?.V_final || {});
+        const vFinal = sanitizeVector(profile.compiledVectors?.V_final || {});
         const clusters = Array.isArray(profile.compiledVectors?.V_clusters) && profile.compiledVectors.V_clusters.length > 0
             ? profile.compiledVectors.V_clusters
             : null;
@@ -343,7 +360,7 @@ class ProfileScorer {
             const maxMass = Math.max(...clusters.map(c => Number(c.mass) || 0), 0);
             let maxThematic = -1;
             for (const c of clusters) {
-                const cVec = sanitizeDnaVector(c.vector || c || {});
+                const cVec = sanitizeVector(c.vector || c || {});
                 let cGenre = 0;
                 let cKw = 0;
                 genreIds.forEach(gid => {
