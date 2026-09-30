@@ -2,9 +2,10 @@ const { validateKeys } = require('../src/api/configure/validators');
 const {
     smartTraktRefresh,
     checkTraktHeartbeat,
-    traktClient
+    traktClient,
+    classifyRefreshError
 } = require('../src/clients/trakt');
-const { safeTraktFetchDetailed } = require('../src/engines/hybrid/dataFetchers');
+const { safeTraktFetchDetailed, fetchProfileContext } = require('../src/engines/hybrid/dataFetchers');
 const { buildTraktFilteredCatalogWithMeta } = require('../src/engines/hybrid/catalogStrategies');
 const jwt = require('jsonwebtoken');
 const { traktHealthHandler, getJwtSecret } = require('../src/api/auth/index.js');
@@ -266,6 +267,95 @@ describe('Trakt Hardening (Ticket 06 - Irrobustimento Trakt)', () => {
             // mockTraktPost è stato chiamato 1 sola volta in tutto (nel primo test), mai nel secondo
             expect(mockTraktPost).toHaveBeenCalledTimes(1);
         });
+
+        it('richiesta mai partita (ECONNREFUSED) → imposta status degraded e resta ritentabile al turno successivo', async () => {
+            const connErr = new Error('connect ECONNREFUSED 127.0.0.1:443');
+            connErr.code = 'ECONNREFUSED';
+            connErr.request = {};
+            mockTraktPost.mockRejectedValueOnce(connErr);
+
+            UserAccount.findOne.mockResolvedValueOnce({
+                userId: 'user_conn_err',
+                traktStatus: { status: 'ok', refreshInProgress: false }
+            });
+
+            const result = await smartTraktRefresh('user_conn_err', 'unburned_refresh_token');
+
+            expect(result).toBeNull();
+
+            // Verifica che lo stato sia 'degraded' e NON 'requires_reauth'
+            expect(UserAccount.updateOne).toHaveBeenCalledWith(
+                { userId: 'user_conn_err' },
+                expect.objectContaining({
+                    $set: expect.objectContaining({
+                        'traktStatus.status': 'degraded',
+                        'traktStatus.refreshInProgress': false,
+                        'traktStatus.lastError': expect.stringContaining('ECONNREFUSED')
+                    })
+                })
+            );
+
+            // SECONDO TENTATIVO: non è bloccato (degraded è ritentabile!), esegue la chiamata
+            mockTraktPost.mockResolvedValueOnce({
+                data: {
+                    access_token: 'new_recovered_token',
+                    refresh_token: 'new_recovered_refresh',
+                    expires_in: 7200
+                }
+            });
+
+            UserAccount.findOne.mockResolvedValueOnce({
+                userId: 'user_conn_err',
+                traktStatus: { status: 'degraded' }
+            });
+
+            const secondResult = await smartTraktRefresh('user_conn_err', 'unburned_refresh_token');
+
+            expect(secondResult).not.toBeNull();
+            expect(secondResult.access_token).toBe('new_recovered_token');
+            // Entrambe le chiamate HTTP a mockTraktPost sono state effettuate (la seconda non è stata bloccata)
+            expect(mockTraktPost).toHaveBeenCalledTimes(2);
+        });
+
+        it('richiesta mai partita (ENOTFOUND o nessun err.request) → imposta status degraded', async () => {
+            const dnsErr = new Error('getaddrinfo ENOTFOUND api.trakt.tv');
+            dnsErr.code = 'ENOTFOUND';
+            mockTraktPost.mockRejectedValueOnce(dnsErr);
+
+            UserAccount.findOne.mockResolvedValueOnce({
+                userId: 'user_dns_err',
+                traktStatus: { status: 'ok', refreshInProgress: false }
+            });
+
+            const result = await smartTraktRefresh('user_dns_err', 'token_dns');
+
+            expect(result).toBeNull();
+            expect(UserAccount.updateOne).toHaveBeenCalledWith(
+                { userId: 'user_dns_err' },
+                expect.objectContaining({
+                    $set: expect.objectContaining({
+                        'traktStatus.status': 'degraded',
+                        'traktStatus.refreshInProgress': false
+                    })
+                })
+            );
+        });
+
+        it('classifyRefreshError distingue timeout da errori di mancata connessione e risposte server', () => {
+            // Timeout -> requires_reauth
+            expect(classifyRefreshError(new Error('Network timeout')).status).toBe('requires_reauth');
+            expect(classifyRefreshError({ code: 'ECONNABORTED', message: 'timeout', request: {} }).status).toBe('requires_reauth');
+            expect(classifyRefreshError({ code: 'ETIMEDOUT', message: 'timed out', request: {} }).status).toBe('requires_reauth');
+
+            // Richiesta mai inviata -> degraded
+            expect(classifyRefreshError({ code: 'ECONNREFUSED', request: {} }).status).toBe('degraded');
+            expect(classifyRefreshError({ code: 'ENOTFOUND', request: {} }).status).toBe('degraded');
+            expect(classifyRefreshError({ code: 'ENETUNREACH', request: {} }).status).toBe('degraded');
+            expect(classifyRefreshError(new Error('no request sent')).status).toBe('degraded'); // nessun err.request né err.response
+
+            // Risposta server (es. invalid_grant o 400) -> requires_reauth
+            expect(classifyRefreshError({ response: { status: 400, data: { error: 'invalid_grant' } }, request: {} }).status).toBe('requires_reauth');
+        });
     });
 
     describe('4. Heartbeat diagnostico & degrado dichiarato', () => {
@@ -417,6 +507,50 @@ describe('Trakt Hardening (Ticket 06 - Irrobustimento Trakt)', () => {
             expect(result.ids.length).toBeGreaterThan(0);
             expect(result.ids[0]).toHaveProperty('fallbackUsed', true);
             expect(result.ids[0]).toHaveProperty('traktAvailable', false);
+        });
+    });
+
+    describe('5. Guardia inerte e propagazione traktStatus (Ticket 19)', () => {
+        it('fetchProfileContext arricchisce l\'oggetto user con traktStatus da UserAccount', async () => {
+            UserAccount.findOne.mockReturnValueOnce({
+                userId: 'user_with_status',
+                addonUuid: 'uuid_cat',
+                apiKeys: { trakt: 'some_tok' },
+                traktStatus: { status: 'requires_reauth', lastError: 'Session expired' },
+                lean: jest.fn().mockResolvedValue({
+                    userId: 'user_with_status',
+                    addonUuid: 'uuid_cat',
+                    apiKeys: { trakt: 'some_tok' },
+                    traktStatus: { status: 'requires_reauth', lastError: 'Session expired' }
+                })
+            });
+
+            const { user } = await fetchProfileContext('user_with_status', 'global');
+
+            expect(user).toBeDefined();
+            expect(user.traktStatus).toEqual({
+                status: 'requires_reauth',
+                lastError: 'Session expired'
+            });
+        });
+
+        it('safeTraktFetchDetailed corto-circuita su userObj con status requires_reauth senza chiamare Trakt', async () => {
+            const userObj = {
+                userId: 'user_shortcut',
+                apiKeys: { trakt: 'invalid_token' },
+                traktStatus: { status: 'requires_reauth' }
+            };
+
+            const result = await safeTraktFetchDetailed('/recommendations/movies', 'invalid_token', 10, userObj);
+
+            expect(result).toEqual({
+                items: [],
+                available: false,
+                reason: 'unauthorized'
+            });
+            // Nessuna chiamata di rete effettuata né GET né POST
+            expect(mockTraktGet).not.toHaveBeenCalled();
+            expect(mockTraktPost).not.toHaveBeenCalled();
         });
     });
 });
