@@ -1,16 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 
-// Il compilatore TypeScript vive nelle dipendenze del frontend: percorso relativo
-// al repo (portabile), con fallback assoluto se la risoluzione relativa fallisce.
 const FRONTEND_NODE_MODULES = path.resolve(__dirname, '../frontend/node_modules');
-const ts = (() => {
+
+let ts;
+try {
+    ts = require('typescript');
+} catch (e) {
     try {
-        return require(path.join(FRONTEND_NODE_MODULES, 'typescript'));
-    } catch (e) {
-        return require('C:/Users/gabri/APP/YACA/frontend/node_modules/typescript');
+        ts = require('../frontend/node_modules/typescript');
+    } catch (e2) {
+        throw new Error('typescript non trovato: esegui `npm install` (root) e `npm install --prefix frontend`');
     }
-})();
+}
+
 
 describe('TypeSelectors Payload & Mapping Regression Tests', () => {
     let profilesToApiPayload;

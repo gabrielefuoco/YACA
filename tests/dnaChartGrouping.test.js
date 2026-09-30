@@ -3,14 +3,15 @@ const path = require('path');
 
 let ts;
 try {
-    ts = require('../frontend/node_modules/typescript');
+    ts = require('typescript');
 } catch (e) {
     try {
-        ts = require('typescript');
+        ts = require('../frontend/node_modules/typescript');
     } catch (e2) {
-        ts = require('C:/Users/gabri/APP/YACA/frontend/node_modules/typescript');
+        throw new Error('typescript non trovato: esegui `npm install` (root) e `npm install --prefix frontend`');
     }
 }
+
 
 describe('DNA Chart Grouping, Formatting & Rendering Tests', () => {
     let groupDnaItems;
