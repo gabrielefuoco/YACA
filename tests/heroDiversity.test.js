@@ -352,7 +352,7 @@ describe('Ticket 21: shared hero diversity', () => {
         }, key);
         const ids = movieHeroIds.map(catalogId => group.catalogs[catalogId].map(item => item.id));
 
-        expect(group.schemaVersion).toBe(4);
+        expect(group.schemaVersion).toBe(5);
         expect(pairwiseOverlap(ids)).toEqual([[], [], [], [], [], []]);
         expect(ids).toEqual([
             pool(1, 40).map(item => item.id),
