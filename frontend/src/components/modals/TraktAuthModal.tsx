@@ -8,7 +8,7 @@ import { ExternalLink, Loader2, CheckCircle2 } from 'lucide-react';
 interface TraktAuthModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: (token: string, refreshToken: string) => void;
+  onSuccess: (token: string, refreshToken: string, expiresAt?: string | null) => void;
 }
 
 export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps) {
@@ -86,7 +86,13 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
         if (data.access_token) {
           setSuccess(true);
           setPolling(false);
-          onSuccessRef.current(data.access_token, data.refresh_token ?? '');
+          let expiresAt: string | null = null;
+          if (data.created_at && data.expires_in) {
+            expiresAt = new Date((data.created_at + data.expires_in) * 1000).toISOString();
+          } else if (data.expires_in) {
+            expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString();
+          }
+          onSuccessRef.current(data.access_token, data.refresh_token ?? '', expiresAt);
           setTimeout(() => onCloseRef.current(), 1500);
         } else if (data.error && !data.pending) {
           setPolling(false);

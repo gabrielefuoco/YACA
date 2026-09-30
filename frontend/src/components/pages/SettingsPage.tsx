@@ -16,12 +16,13 @@ interface SettingsPageProps {
   stremioAuthKey?: string;
   traktToken?: string | null;
   traktRefreshToken?: string | null;
+  traktExpiresAt?: string | null;
   configVersion?: string;
   userId?: string;
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
   onLogout: () => void;
   onDisconnectTrakt: () => void;
-  onConnectTrakt: (token: string, refreshToken: string) => void;
+  onConnectTrakt: (token: string, refreshToken: string, expiresAt?: string | null) => void;
   onConfigSaved: (userId?: string) => void;
 }
 
@@ -32,6 +33,7 @@ export function SettingsPage({
   stremioAuthKey,
   traktToken,
   traktRefreshToken,
+  traktExpiresAt,
   configVersion,
   userId,
   onUpdateProfile,
@@ -88,6 +90,7 @@ export function SettingsPage({
         stremioAuthKey,
         traktToken,
         traktRefreshToken,
+        traktExpiresAt,
         configVersion,
       });
 
@@ -313,8 +316,8 @@ export function SettingsPage({
       <TraktAuthModal
         open={traktModalOpen}
         onClose={() => setTraktModalOpen(false)}
-        onSuccess={(t, r) => {
-          onConnectTrakt(t, r);
+        onSuccess={(t, r, exp) => {
+          onConnectTrakt(t, r, exp);
           setTraktModalOpen(false);
         }}
       />

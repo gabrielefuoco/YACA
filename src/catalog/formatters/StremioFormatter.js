@@ -354,6 +354,14 @@ function sanitizeCatalogMeta(item, options = {}) {
         baseItem._itaBadge = item._itaBadge;
     }
 
+    if (item.fallbackUsed !== undefined) {
+        baseItem.fallbackUsed = item.fallbackUsed;
+    }
+
+    if (item.traktAvailable !== undefined) {
+        baseItem.traktAvailable = item.traktAvailable;
+    }
+
     if (options.isMetaDetail) {
         if (item.trailers) baseItem.trailers = item.trailers;
         if (videos) baseItem.videos = videos;

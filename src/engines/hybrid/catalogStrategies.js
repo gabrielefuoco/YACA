@@ -20,7 +20,7 @@ const {
 } = require('./dataFetchers');
 const { computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
 const ProfileScorer = require('../../profile/ProfileScorer');
-const { getDuckDbCatalogFromPreset } = require('../../catalog/providers/DuckDbProvider');
+const { getDuckDbCatalogFromPreset, getDuckDbMetaDetails } = require('../../catalog/providers/DuckDbProvider');
 const { F, S, G } = require('../../data/filters');
 const { isAnimeContent, normalizeAnimeMarker } = require('../../utils/animeIdentity');
 
@@ -57,6 +57,15 @@ const HERO_DIVERSITY_CAPS = Object.freeze({ genre: 3, highMatchGenreCap: 6, dire
 const HERO_COLLECTION_CAP = 1;
 const HIDDEN_CHILD_ORIENTED_GENRE_IDS = new Set(['16', '10751', '10762']);
 const HIDDEN_MUSIC_GENRE_ID = 10402;
+
+// Ticket 13 — pesi e cap dei seed reali del Seed Network (loved 4 / liked 3 /
+// visto 2 / libreria 1), più Trakt e DNA come sorgenti di riserva.
+const SEED_SIGNAL_WEIGHTS = Object.freeze({ loved: 4, liked: 3, watched: 2, library: 1, trakt: 3, dna: 2 });
+const SEED_SIGNAL_LIMITS = Object.freeze({ loved: 20, liked: 15, watched: 15, library: 15 });
+const SEED_TRAKT_LIMIT = 10;
+const SEED_DNA_LIMIT = 5;
+const SEED_DNA_MIN_REAL_SEEDS = 5;
+const SEED_NETWORK_TARGET_SIZE = 100;
 
 function mapGenreIdsToTarget(genres) {
     return [...new Set((genres || []).flatMap(genre => {
@@ -279,7 +288,7 @@ function passesQualityFloor(item, mediaType = 'movie', isHiddenGems = false) {
     // If it's hidden gems, niche titles with lower vote count are allowed by design
     if (!isHiddenGems) {
         if (voteCount !== undefined && voteCount < 300) return false;
-        if (voteAvg !== undefined && voteAvg < 6.0) return false;
+        if (voteAvg !== undefined && voteAvg < 6.5) return false; // Ticket 17: allineato alla sorgente del fill (fetchTopRatedPeriodFallbackIds: vote_average.gte 6.5)
     }
 
     // Exclude TV specials / episodes inside movie catalogs (Leva 4)
@@ -749,6 +758,194 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType, 
 /**
  * 🕸️ Hero Catalog 2: Super-Seed Network ("La Rete dei tuoi Preferiti")
  */
+function toSeedMediaType(type) {
+    return (type === 'tv' || type === 'series' || type === 'anime') ? 'tv' : 'movie';
+}
+
+function normalizeSeedId(rawId) {
+    if (rawId === null || rawId === undefined) return null;
+    const id = String(rawId).trim();
+    if (!id || ['undefined', 'null', 'nan'].includes(id.toLowerCase())) return null;
+    return id;
+}
+
+function getSeedTimestamp(...values) {
+    for (const value of values) {
+        if (!value) continue;
+        const time = value instanceof Date ? value.getTime() : Date.parse(String(value));
+        if (Number.isFinite(time)) return time;
+    }
+    return 0;
+}
+
+function keepMostRecentSeed(map, id, at) {
+    const previous = map.get(id);
+    if (previous === undefined || at > previous) map.set(id, at);
+}
+
+/**
+ * Ticket 13 — I seed arrivano dai segnali reali (WatchHistory.signals +
+ * UserLibraryItem) con i pesi loved 4 / liked 3 / visto 2 / libreria 1,
+ * filtrati per tipo media e limitati per sorgente.
+ * La libreria è per account: la leggiamo solo per i contesti che hanno già una
+ * cronologia reale, così un profilo mai sincronizzato resta freddo.
+ */
+async function collectRealSeeds({ userId, context, mediaType, user = null }) {
+    const targetType = mediaType === 'movie' ? 'movie' : 'tv';
+    const buckets = {
+        loved: new Map(),
+        liked: new Map(),
+        watched: new Map(),
+        library: new Map()
+    };
+    let historyDocs = [];
+    try {
+        const WatchHistory = require('../../models/WatchHistory');
+        historyDocs = await WatchHistory.find({ owner: userId, context }).lean();
+        if (!Array.isArray(historyDocs)) historyDocs = [];
+    } catch (_e) {
+        historyDocs = [];
+    }
+
+    for (const doc of historyDocs) {
+        if (toSeedMediaType(doc.type) !== targetType) continue;
+        const id = normalizeSeedId(doc.tmdbId);
+        if (!id) continue;
+        const fallbackAt = getSeedTimestamp(doc.lastWatchedAt, doc.createdAt);
+        const signals = Array.isArray(doc.signals) && doc.signals.length > 0
+            ? doc.signals
+            : [{ type: 'watched', at: doc.lastWatchedAt }];
+        for (const signal of signals) {
+            const bucket = buckets[signal?.type];
+            if (!bucket) continue;
+            keepMostRecentSeed(bucket, id, getSeedTimestamp(signal.at) || fallbackAt);
+        }
+    }
+
+    if (historyDocs.length > 0) {
+        try {
+            let addonUuid = user?.uuid || user?.addonUuid || null;
+            if (!addonUuid) {
+                const UserAccount = require('../../db/models/UserAccount');
+                const account = await UserAccount.findOne({ userId }).lean();
+                addonUuid = account?.addonUuid || null;
+            }
+            if (addonUuid) {
+                const UserLibraryItem = require('../../db/models/UserLibraryItem');
+                const libraryDocs = await UserLibraryItem.find({
+                    addonUuid,
+                    removed: { $ne: true },
+                    tmdbId: { $exists: true, $ne: null }
+                }).lean();
+                for (const lib of Array.isArray(libraryDocs) ? libraryDocs : []) {
+                    if (toSeedMediaType(lib.type) !== targetType) continue;
+                    const id = normalizeSeedId(lib.tmdbId);
+                    if (!id) continue;
+                    keepMostRecentSeed(buckets.library, id, getSeedTimestamp(lib._mtime, lib.addedAt, lib.createdAt));
+                }
+            }
+        } catch (_e) {}
+    }
+
+    const seeds = new Map();
+    const counts = { loved: 0, liked: 0, watched: 0, library: 0 };
+    for (const [type, bucket] of Object.entries(buckets)) {
+        const limit = SEED_SIGNAL_LIMITS[type] ?? 0;
+        const selected = [...bucket.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
+        counts[type] = selected.length;
+        for (const [id] of selected) {
+            seeds.set(id, (seeds.get(id) || 0) + SEED_SIGNAL_WEIGHTS[type]);
+        }
+    }
+    return { seeds, counts };
+}
+
+/**
+ * Ticket 13 — il refill di finalizeHeroQualityCandidates può riaccodare in blocco
+ * i candidati che eccedono i cap, ricreando lunghi run dello stesso filone.
+ * Questo passaggio garantisce il vincolo sul massimo run consecutivo: sposta
+ * avanti la prima alternativa di filone diverso e, se non ne esiste nessuna,
+ * esclude l'item in eccesso (il catalogo viene poi riempito dal fallback).
+ */
+function enforceMaxStrandRun(items, maxRun = HERO_DIVERSITY_CAPS.strand) {
+    if (!Array.isArray(items) || items.length <= maxRun) return Array.isArray(items) ? items : [];
+    if (typeof ProfileScorer.getItemNarrativeStrand !== 'function') return items;
+
+    const runLimit = Math.max(1, Number(maxRun) || 1);
+    const getStrand = item => ProfileScorer.getItemNarrativeStrand(item) || 'strand:unknown';
+    const result = [];
+    const pending = [...items];
+    let currentStrand = null;
+    let currentRun = 0;
+
+    while (pending.length > 0) {
+        const candidate = pending.shift();
+        const strand = getStrand(candidate);
+        if (strand !== currentStrand) {
+            result.push(candidate);
+            currentStrand = strand;
+            currentRun = 1;
+            continue;
+        }
+        if (currentRun < runLimit) {
+            result.push(candidate);
+            currentRun += 1;
+            continue;
+        }
+        const alternativeIndex = pending.findIndex(next => getStrand(next) !== strand);
+        if (alternativeIndex === -1) continue;
+        const alternative = pending.splice(alternativeIndex, 1)[0];
+        pending.unshift(candidate);
+        result.push(alternative);
+        currentStrand = getStrand(alternative);
+        currentRun = 1;
+    }
+
+    return result;
+}
+
+/**
+ * Riempie il Seed Network quando i segnali reali non bastano (profilo freddo):
+ * il fallback top-rated del periodo viene idratato da DuckDB, filtrato dal
+ * pavimento di qualità e ordinato con lo stesso score VSM del profilo.
+ */
+async function buildSeedNetworkFill({ finalItems, tmdbApiKey, mediaType, types, isKidsMode, profile, dnaFilters, globalProfile }) {
+    const target = Math.max(0, SEED_NETWORK_TARGET_SIZE - finalItems.length);
+    if (target === 0) return [];
+
+    const usedIds = new Set(finalItems.map(item => normalizeContentId(item?.data?.id ?? '')).filter(Boolean));
+    const fallbackIds = await fetchSeedFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode);
+    const fillItems = [];
+
+    for (const rawId of Array.isArray(fallbackIds) ? fallbackIds : []) {
+        if (fillItems.length >= target) break;
+        const id = normalizeSeedId(normalizeContentId(rawId));
+        if (!id || usedIds.has(id)) continue;
+        let raw = null;
+        try {
+            const duckMeta = await getDuckDbMetaDetails(id, types);
+            raw = duckMeta?.rawTMDB || null;
+        } catch (_e) {
+            raw = null;
+        }
+        if (!raw) continue;
+        if (isKidsMode && isItemInappropriateForKids(raw)) continue;
+        if (!passesQualityFloor(raw, mediaType, false)) continue;
+        const score = ProfileScorer.calculateItemMatch(raw, profile, { dnaFilters, globalProfile, kidsMode: isKidsMode });
+        if (isKidsMode && score <= 0) continue;
+        usedIds.add(id);
+        fillItems.push({
+            data: { ...raw, id: raw.id ?? Number(id) },
+            score,
+            hybridScore: 0,
+            normalizedHybrid: 0,
+            combinedScore: score * 0.6
+        });
+    }
+
+    return fillItems;
+}
+
 async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false, providedTraktResult = null, directTypeSelectors = null) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     const typeSelectors = resolveTypeSelectors(user, context, directTypeSelectors);
@@ -761,37 +958,32 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const topGenres = computeTopGenres(profile, 3, user, context);
     const mappedTopGenres = mapGenreIdsToTarget(topGenres);
 
-    let lovedIds = [];
-    let likedIds = [];
-    try {
-        const WatchHistory = require('../../models/WatchHistory');
-        const historyDocs = await WatchHistory.find({ owner: userId, context }).lean();
-        lovedIds = historyDocs
-            .filter(d => (d.signals || []).some(s => s.type === 'loved') || d.source === 'stremio-loved')
-            .slice(0, 20)
-            .map(d => ({ id: String(d.tmdbId), weight: 4 }));
-        likedIds = historyDocs
-            .filter(d => (d.signals || []).some(s => s.type === 'liked') || d.source === 'stremio-liked')
-            .slice(0, 15)
-            .map(d => ({ id: String(d.tmdbId), weight: 3 }));
-    } catch (_e) {}
-    if (lovedIds.length === 0) {
-        lovedIds = (user?.profiles?.find(p => p.id === context)?.loved || []).slice(0, 20).map(id => ({ id: String(id), weight: 2 }));
-    }
-    if (likedIds.length === 0) {
-        likedIds = (user?.profiles?.find(p => p.id === context)?.liked || []).slice(0, 15).map(id => ({ id: String(id), weight: 1 }));
+    // Ticket 13 — seed dai segnali reali: loved 4 / liked 3 / visto 2 / libreria 1.
+    const { seeds: realSeeds, counts: seedCounts } = await collectRealSeeds({ userId, context, mediaType, user });
+
+    // Fallback legacy: gli array loved/liked di AddonConfig quando WatchHistory è vuota.
+    if (realSeeds.size === 0) {
+        const legacyProfile = user?.profiles?.find(p => p.id === context);
+        for (const [type, limit] of [['loved', SEED_SIGNAL_LIMITS.loved], ['liked', SEED_SIGNAL_LIMITS.liked]]) {
+            for (const rawId of (legacyProfile?.[type] || []).slice(0, limit)) {
+                const id = normalizeSeedId(rawId);
+                if (!id) continue;
+                realSeeds.set(id, (realSeeds.get(id) || 0) + SEED_SIGNAL_WEIGHTS[type]);
+                seedCounts[type] += 1;
+            }
+        }
     }
 
     const sharedTraktResult = await fetchTraktRecommendationResult(
         traktToken,
         mediaType === 'movie' ? 'movies' : 'shows',
-        10,
+        SEED_TRAKT_LIMIT,
         user,
         providedTraktResult
     );
     const traktIds = sharedTraktResult.items
-        .slice(0, 10)
-        .map(item => ({ id: String(item.movie?.ids?.tmdb || item.show?.ids?.tmdb), weight: 3 }))
+        .slice(0, SEED_TRAKT_LIMIT)
+        .map(item => ({ id: String(item.movie?.ids?.tmdb || item.show?.ids?.tmdb), weight: SEED_SIGNAL_WEIGHTS.trakt }))
         .filter(s => s.id && s.id !== 'undefined');
 
     let dnaSeeds = [];
@@ -825,25 +1017,25 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         where.push(F.any(...allKwRules));
     }
     
-    if (where.length > 0) {
+    if (where.length > 0 && (realSeeds.size + traktIds.length) < SEED_DNA_MIN_REAL_SEEDS) {
         const preset = { type: types, where, orderBy: S.POPULAR };
         console.log(`\n======================================================`);
         console.log(`[Catalog Debug] Seed Network - profile context=${context}`);
-        console.log(`[Catalog Debug] DNA Rules:`);
+        console.log(`[Catalog Debug] DNA Rules (profilo con pochi segnali reali):`);
         where.forEach((rule, idx) => console.log(`   ${idx + 1}. ${rule}`));
         console.log(`======================================================\n`);
         const lightMetas = await getDuckDbCatalogFromPreset(preset, 0, 10);
         if (lightMetas && lightMetas.length > 0) {
-            dnaSeeds = lightMetas.slice(0, 5).map(item => ({ id: String(item._tmdbId || item.id.split(':')[1]), weight: 4 }));
+            dnaSeeds = lightMetas.slice(0, SEED_DNA_LIMIT).map(item => ({ id: String(item._tmdbId || item.id.split(':')[1]), weight: SEED_SIGNAL_WEIGHTS.dna }));
         }
     }
 
-    const allSeedsMap = new Map();
-    [...lovedIds, ...likedIds, ...traktIds, ...dnaSeeds].forEach(({ id, weight }) => {
+    const allSeedsMap = new Map(realSeeds);
+    [...traktIds, ...dnaSeeds].forEach(({ id, weight }) => {
         allSeedsMap.set(id, (allSeedsMap.get(id) || 0) + weight);
     });
 
-    console.log(`[Catalog Debug] Seed Network - Collected Seeds: Loved=${lovedIds.length}, Liked=${likedIds.length}, Trakt=${traktIds.length}, DNA=${dnaSeeds.length}`);
+    console.log(`[Catalog Debug] Seed Network - Collected Seeds: loved=${seedCounts.loved}, liked=${seedCounts.liked}, visto=${seedCounts.watched}, libreria=${seedCounts.library}, Trakt=${traktIds.length}, DNA=${dnaSeeds.length}`);
 
     if (allSeedsMap.size === 0) {
         return fetchSeedFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode, typeSelectors);
@@ -851,7 +1043,8 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     const allSeeds = Array.from(allSeedsMap.entries()).map(([id, weight]) => ({ id, weight }));
 
     const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
-    const weightedCounts = new Map(); 
+    const weightedCounts = new Map();
+    const bestPositions = new Map();
     const allSimilar = await rateLimitedMap(
         allSeeds,
         async (seed) => ({
@@ -860,17 +1053,19 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         }),
         { batchSize: 5, delayMs: 50 }
     );
-    const itemData = new Map(); 
+    const itemData = new Map();
 
     allSimilar.forEach(res => {
-        if (res) {
-            const { results, weight } = res;
-            for (const item of results) {
-                const existing = weightedCounts.get(item.id) || 0;
-                weightedCounts.set(item.id, existing + weight);
-                if (!itemData.has(item.id)) itemData.set(item.id, item);
+        if (!res) return;
+        const { results, weight } = res;
+        results.forEach((item, position) => {
+            weightedCounts.set(item.id, (weightedCounts.get(item.id) || 0) + weight);
+            const previousPosition = bestPositions.get(item.id);
+            if (previousPosition === undefined || position < previousPosition) {
+                bestPositions.set(item.id, position);
             }
-        }
+            if (!itemData.has(item.id)) itemData.set(item.id, item);
+        });
     });
 
     const candidates = [];
@@ -883,7 +1078,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         const itemGenres = rawItem.genre_ids || [];
         
         let hybridScore = calculateHybridScore(
-            { tmdbId, position: null },
+            { tmdbId, position: bestPositions.get(tmdbId) ?? null },
             new Map([[tmdbId, weightedScore]]),
             topGenres,
             itemGenres
@@ -977,11 +1172,31 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     }
     finalItems = finalItems.filter(item => matchesTypeSelectors(item.data || item, typeSelectors));
 
+    // Ticket 13: il refill dei cap può ricreare lunghi run dello stesso filone.
+    finalItems = enforceMaxStrandRun(finalItems, HERO_DIVERSITY_CAPS.strand);
+
+    // Profilo freddo: se i segnali reali non bastano, completa con il fallback
+    // top-rated (pavimento qualità + VSM) invece di lasciare pagine corte.
+    if (finalItems.length < SEED_NETWORK_TARGET_SIZE) {
+        const fillItems = await buildSeedNetworkFill({
+            finalItems, tmdbApiKey, mediaType, types, isKidsMode, profile, dnaFilters, globalProfile
+        });
+        if (fillItems.length > 0) {
+            const combined = finalizeHeroQualityCandidates(
+                [...finalItems, ...fillItems],
+                HERO_DIVERSITY_CAPS,
+                SEED_NETWORK_TARGET_SIZE
+            );
+            finalItems = enforceMaxStrandRun(combined, HERO_DIVERSITY_CAPS.strand);
+            console.log(`[Catalog Debug] Seed Network - Fill: +${fillItems.length} fallback (totale=${finalItems.length})`);
+        }
+    }
+
     if (finalItems.length === 0) {
         return fetchSeedFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode, typeSelectors);
     }
 
-    return finalItems.slice(0, 100).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
+    return finalItems.slice(0, SEED_NETWORK_TARGET_SIZE).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
 }
 
 /**
@@ -1007,11 +1222,20 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     const typeSelectors = resolveTypeSelectors(user, context, directTypeSelectors);
 
-    const buildFallback = async (traktAvailable = false) => ({
-        ids: await fetchCommunityFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode, typeSelectors),
-        traktAvailable,
-        fallbackUsed: true
-    });
+    const buildFallback = async (traktAvailable = false) => {
+        console.warn(`[HeroPool] Degrado Trakt rilevato per ${mediaType}: fallbackUsed=true, traktAvailable=${traktAvailable}`);
+        const fallbackIds = await fetchCommunityFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode, typeSelectors);
+        return {
+            ids: fallbackIds.map(id => {
+                if (typeof id === 'object' && id !== null) {
+                    return { ...id, traktAvailable, fallbackUsed: true };
+                }
+                return { id: String(id), traktAvailable, fallbackUsed: true };
+            }),
+            traktAvailable,
+            fallbackUsed: true
+        };
+    };
 
     if (!profile) return buildFallback(false);
 
@@ -1071,7 +1295,9 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
             .slice(0, 100)
             .map(item => ({
                 id: String(item.data.id),
-                matchScore: Math.min(100, Math.max(1, Math.round(item.score * 10)))
+                matchScore: Math.min(100, Math.max(1, Math.round(item.score * 10))),
+                traktAvailable: true,
+                fallbackUsed: false
             })),
         traktAvailable: true,
         fallbackUsed: false
@@ -1092,6 +1318,10 @@ module.exports = {
     buildTraktFilteredCatalogWithMeta,
     applyHeroQualityCaps,
     finalizeHeroQualityCandidates,
+    enforceMaxStrandRun,
+    collectRealSeeds,
+    SEED_SIGNAL_WEIGHTS,
+    SEED_NETWORK_TARGET_SIZE,
     isHiddenGemPopularityAllowed,
     isHiddenGemAlignedWithProfile
 };

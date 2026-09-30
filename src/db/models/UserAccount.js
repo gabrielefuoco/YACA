@@ -24,7 +24,17 @@ const userAccountSchema = new mongoose.Schema({
         tmdb: String,
         mistral: String,
         trakt: String,
-        traktRefreshToken: String
+        traktRefreshToken: String,
+        traktExpiresAt: Date
+    },
+    traktStatus: {
+        status: { type: String, enum: ['ok', 'degraded', 'requires_reauth', 'not_configured', 'unknown'], default: 'unknown' },
+        lastChecked: Date,
+        lastSuccess: Date,
+        lastError: String,
+        lastErrorAt: Date,
+        refreshInProgress: Boolean,
+        refreshLockedAt: Date
     }
 }, { timestamps: true });
 

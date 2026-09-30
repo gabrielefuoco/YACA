@@ -78,7 +78,15 @@ function calculateHybridScore(item, tmdbCounts, topGenres, itemGenres) {
 
     const count = tmdbCounts.get(item.tmdbId) || 0;
     if (count > 0) {
-        score += Math.floor(100 / Math.pow(2, count - 1));
+        // Ticket 13: il vecchio 100/2^(count-1) faceva crollare il punteggio dopo
+        // il primo hop (loved+liked = 7 -> 1) e la convergenza multi-seme spariva.
+        // Normalizzazione logaritmica sul massimo del pool: monotona crescente,
+        // saturante e con il candidato più sostenuto ancorato a 100.
+        let maxCount = count;
+        for (const value of tmdbCounts.values()) {
+            if (Number.isFinite(value) && value > maxCount) maxCount = value;
+        }
+        score += 100 * (Math.log1p(count) / Math.log1p(maxCount));
     }
 
     const expandGenreIds = (genres) => new Set((genres || []).flatMap(genre => {

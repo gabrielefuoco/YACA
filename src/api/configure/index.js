@@ -38,6 +38,7 @@ module.exports = async (req, res) => {
             mistralKey,
             traktToken,
             traktRefreshToken,
+            traktExpiresAt,
             stremioAuthKey,
             stremioEmail
         } = validateKeys(req.body, existingUser, warnings);
@@ -96,13 +97,14 @@ module.exports = async (req, res) => {
             mistralKey: 'mistral',
             traktToken: 'trakt',
             traktRefreshToken: 'traktRefreshToken',
+            traktExpiresAt: 'traktExpiresAt',
             stremioAuthKey: 'stremio'
         };
 
         // Only include keys that were explicitly provided in the request body
         // and have a non-empty validated value. Ignore empty/undefined values
         // to prevent accidental overwrite of existing DB tokens.
-        const validatedValues = { effectiveTmdbKey, mistralKey, traktToken, traktRefreshToken, stremioAuthKey };
+        const validatedValues = { effectiveTmdbKey, mistralKey, traktToken, traktRefreshToken, traktExpiresAt, stremioAuthKey };
         for (const [validatedName, dbKey] of Object.entries(validatedKeyMap)) {
             const value = validatedValues[validatedName];
             if (value !== undefined && value !== null && value !== '') {
