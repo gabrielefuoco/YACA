@@ -325,6 +325,22 @@ function passesSeedNetworkDnaGate(item, mappedTopGenres) {
     return genreIds.some(g => mappedSet.has(g));
 }
 
+function isQualityFloorItemRecent(item, mediaType = 'movie') {
+    if (!item) return false;
+    const target = item.rawTMDB || item.data || item;
+    const isTv = mediaType === 'tv' || mediaType === 'series';
+    const dateStr = isTv
+        ? (target.first_air_date || target.release_date || item.first_air_date || item.release_date)
+        : (target.release_date || target.first_air_date || item.release_date || item.first_air_date);
+    if (!dateStr || typeof dateStr !== 'string') return false;
+    const timestamp = Date.parse(dateStr);
+    if (isNaN(timestamp)) return false;
+    const now = Date.now();
+    if (timestamp > now + 30 * 24 * 60 * 60 * 1000) return false;
+    const windowDays = isTv ? 180 : 60;
+    return (now - timestamp) <= windowDays * 24 * 60 * 60 * 1000;
+}
+
 function passesQualityFloor(item, mediaType = 'movie', isHiddenGems = false) {
     if (!item) return false;
     const target = item.rawTMDB || item.data || item;
@@ -333,7 +349,12 @@ function passesQualityFloor(item, mediaType = 'movie', isHiddenGems = false) {
 
     // If it's hidden gems, niche titles with lower vote count are allowed by design
     if (!isHiddenGems) {
-        if (voteCount !== undefined && voteCount < 300) return false;
+        // Ticket 35: Discovery permissiva sui recenti:
+        // Titoli recenti (<= 60gg film, <= 180gg serie) ammessi con pavimento a 50 voti
+        // Il catalogo vecchio richiede invece invariato vote_count >= 300
+        const isRecent = isQualityFloorItemRecent(item, mediaType);
+        const minVotesRequired = isRecent ? 50 : 300;
+        if (voteCount !== undefined && voteCount < minVotesRequired) return false;
         if (voteAvg !== undefined && voteAvg < 6.5) return false; // Ticket 17: allineato alla sorgente del fill (fetchTopRatedPeriodFallbackIds: vote_average.gte 6.5)
     }
 
@@ -1572,6 +1593,7 @@ module.exports = {
     getEffectiveTypeSelectors,
     isCompilationOrBoxSet,
     passesQualityFloor,
+    isQualityFloorItemRecent,
     passesSeedNetworkNonNarrativeGate,
     passesSeedNetworkDnaGate,
     NON_NARRATIVE_GENRE_IDS
