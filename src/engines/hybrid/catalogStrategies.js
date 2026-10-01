@@ -1345,7 +1345,7 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
     const animePolicy = resolveAnimePolicy(profile, typeSelectors, { isKidsMode });
     const effectiveTypeSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
 
-    const fetchAnimeFallbackItems = async (limit = 100) => {
+    const fetchAnimeFallbackItems = async (limit = 350) => {
         const preset = {
             type: types,
             where: [
@@ -1373,7 +1373,7 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
     const buildFallback = async (traktAvailable = false) => {
         console.warn(`[HeroPool] Degrado Trakt rilevato per ${mediaType}: fallbackUsed=true, traktAvailable=${traktAvailable}`);
         if (animePolicy === ANIME_POLICY_MODES.ONLY) {
-            const animeItems = await fetchAnimeFallbackItems(100);
+            const animeItems = await fetchAnimeFallbackItems(350);
             return {
                 ids: animeItems.map(item => ({ ...item, traktAvailable, fallbackUsed: true })),
                 traktAvailable,
@@ -1464,7 +1464,7 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
         if (poolItems.length < 40) {
             console.log(`[HeroPool] Trakt Filtered Anime top-up per ${mediaType}: trovati solo ${poolItems.length} item, integro con fallback anime.`);
             const usedIds = new Set(poolItems.map(p => normalizeContentId(p.id)));
-            const fallbackAnime = await fetchAnimeFallbackItems(100);
+            const fallbackAnime = await fetchAnimeFallbackItems(350);
             for (const fb of fallbackAnime) {
                 const fid = normalizeContentId(fb.id);
                 if (!fid || usedIds.has(fid)) continue;
@@ -1474,7 +1474,7 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
                     traktAvailable: true,
                     fallbackUsed: false
                 });
-                if (poolItems.length >= 100) break;
+                if (poolItems.length >= 350) break;
             }
         }
     } else {
@@ -1488,7 +1488,7 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
     }
 
     return {
-        ids: poolItems.slice(0, 100),
+        ids: poolItems.slice(0, 350),
         traktAvailable: true,
         fallbackUsed: false
     };
