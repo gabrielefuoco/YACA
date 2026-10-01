@@ -1,27 +1,49 @@
 /**
  * tests/animeAllCatalogsDubbedBadge.test.js
  *
- * Verifica del badge ITA su tutti i cataloghi per gli anime (Ticket 25).
- * Decisione dell'utente (Ticket 22):
- *  - "Badge ITA ovunque, se il titolo è nella lista dei doppiati di AnimeUnity";
- *  - Clone `_ita_offset` solo dove c'è distinzione temporale (catalogo novità `preset_anime_simulcast`);
- *  - Nessun clone nei cataloghi standard (card singola, stesso id `kitsu:{id}` o `tmdb:{id}`);
- *  - Nessuna query per item (snapshot in RAM via animeAiringState);
- *  - Degrado silenzioso se modulo spento o collection vuota;
- *  - Formato badge coerente con Ticket 10: `ITA n`.
+ * Il badge ITA su tutti i cataloghi (Ticket 25), con la **fonte cambiata** il 01/10/2026.
+ * Decisione dell'utente (Ticket 22, confermata dal ticket 04 della mappa doppiaggio-ita):
+ *  - "Badge ITA ovunque, se il titolo è doppiato";
+ *  - fuori dal catalogo novità: card singola, id invariato, badge `ITA` **secco** — niente numero di
+ *    episodio, niente stagione, nessun clone;
+ *  - clone `_ita_offset` solo nel catalogo novità (`preset_anime_simulcast`), dove c'è distinzione
+ *    temporale tra sub e doppiato;
+ *  - la fonte non è più lo scanner torrent ma la **colonna `ita`** (snapshot delle annotazioni): qui si
+ *    inietta, in produzione la scrive `services/doppiaggi-source`;
+ *  - degrado silenzioso se il file manca o la collection è vuota.
  */
 
-
-jest.mock('../src/db/models/StreamBadge', () => ({
-    find: jest.fn()
-}));
-
-const StreamBadge = require('../src/db/models/StreamBadge');
 const animeMappingStore = require('../src/data/animeMappingStore');
 const animeAiringState = require('../src/data/animeAiringState');
-const {
-    applyPostCacheBadges
-} = require('../src/handlers/catalogHandler');
+const { applyPostCacheBadges: applyPostCacheBadgesRaw } = require('../src/handlers/catalogHandler');
+
+/**
+ * Snapshot delle annotazioni ITA. Nelle fixture di questo file i doppiati sono quelli con
+ * `italian.dub.latest` nello stato anime; GoT è l'unico non-anime doppiato che serve al catalogo misto.
+ *
+ * La chiave è scritta per **entrambi** i tipi: una fixture non sa se la card arriverà come film o come
+ * serie (l'annotazione reale ne ha una sola, e il tipo della card lo decide il handler).
+ */
+function itaSnapshotFromStateDocs(docs) {
+    const byKey = new Map();
+    for (const d of docs) {
+        if (d.ids?.tmdb === undefined) continue;
+        if (d.italian?.dub?.latest) {
+            byKey.set(`tv:${d.ids.tmdb}`, true);
+            byKey.set(`movie:${d.ids.tmdb}`, true);
+        }
+    }
+    byKey.set('tv:1399', true); // Game of Thrones: doppiato, e non passa dallo stato anime
+    byKey.set('movie:1399', true);
+    return { byKey, count: byKey.size, trueCount: byKey.size, nullCount: 0, error: null };
+}
+
+/** Inietta lo snapshot delle annotazioni: il handler lo legge da `options.itaSnapshot`. */
+const applyPostCacheBadges = (cachedData, userConfig, hostUrl, catalogMeta, type, baseId, options = {}) =>
+    applyPostCacheBadgesRaw(cachedData, userConfig, hostUrl, catalogMeta, type, baseId, {
+        ...options,
+        itaSnapshot: options.itaSnapshot || itaSnapshotFromStateDocs(buildFixtureDocs())
+    });
 
 const NOW = Date.UTC(2026, 8, 22, 12, 0, 0);
 const daysAgo = (days) => new Date(NOW - days * 24 * 60 * 60 * 1000).toISOString();
@@ -118,9 +140,6 @@ describe('Badge ITA su tutti i cataloghi per gli anime (Ticket 25)', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        StreamBadge.find.mockReturnValue({
-            lean: jest.fn().mockResolvedValue([])
-        });
         snapshot = animeAiringState.buildSnapshot(buildFixtureDocs());
         jest.spyOn(animeAiringState, 'getSnapshot').mockResolvedValue(snapshot);
     });
@@ -161,13 +180,11 @@ describe('Badge ITA su tutti i cataloghi per gli anime (Ticket 25)', () => {
         expect(item.id).toBe('kitsu:48269');
         expect(item.id).not.toContain('_ita_offset');
 
-        // Badge ITA 8 applicato
-        expect(item._forceBadgeText).toBe('ITA 8');
-        expect(item._itaBadge).toBe(false);
-        expect(item.poster).toContain('ITA%208');
-
-        // Nessuna chiamata allo scanner torrent
-        expect(StreamBadge.find).not.toHaveBeenCalled();
+        // Badge ITA secco: la colonna `ita` dice sì, e l'episodio non compare
+        expect(item._itaBadge).toBe(true);
+        expect(item._forceBadgeText).toBeUndefined();
+        expect(item.poster).toContain('ITA');
+        expect(item.poster).not.toContain('ITA%208');
     });
 
     test('2. Anime concluso doppiato (fuori finestra novità) ha il badge ITA nei cataloghi standard', async () => {
@@ -196,9 +213,9 @@ describe('Badge ITA su tutti i cataloghi per gli anime (Ticket 25)', () => {
         expect(result.metas).toHaveLength(1);
         const item = result.metas[0];
         expect(item.id).toBe('kitsu:30');
-        expect(item._forceBadgeText).toBe('ITA 26');
-        expect(item._itaBadge).toBe(false);
-        expect(item.poster).toContain('ITA%2026');
+        expect(item._itaBadge).toBe(true);
+        expect(item._forceBadgeText).toBeUndefined();
+        expect(item.poster).toContain('ITA');
     });
 
     test('3. Anime NON doppiato: nessun badge ITA, nessuna clonazione', async () => {
@@ -245,7 +262,7 @@ describe('Badge ITA su tutti i cataloghi per gli anime (Ticket 25)', () => {
         expect(resultEps.metas[0].poster).not.toContain('ITA');
     });
 
-    test('4. Anime Movie doppiato riceve il badge ITA 1', async () => {
+    test('4. Anime Movie doppiato riceve il badge ITA secco', async () => {
         const cachedData = {
             metas: [
                 {
@@ -270,8 +287,9 @@ describe('Badge ITA su tutti i cataloghi per gli anime (Ticket 25)', () => {
 
         expect(result.metas).toHaveLength(1);
         expect(result.metas[0].id).toBe('kitsu:11614');
-        expect(result.metas[0]._forceBadgeText).toBe('ITA 1');
-        expect(result.metas[0].poster).toContain('ITA%201');
+        expect(result.metas[0]._itaBadge).toBe(true);
+        expect(result.metas[0]._forceBadgeText).toBeUndefined();
+        expect(result.metas[0].poster).toContain('ITA');
     });
 
     test('5. Supporto per ID TMDB differenti (tmdb:id, tmdb:tv:id)', async () => {
@@ -305,19 +323,13 @@ describe('Badge ITA su tutti i cataloghi per gli anime (Ticket 25)', () => {
         );
 
         expect(result.metas).toHaveLength(2);
-        expect(result.metas[0]._forceBadgeText).toBe('ITA 8');
-        expect(result.metas[0].poster).toContain('ITA%208');
-        expect(result.metas[1]._forceBadgeText).toBe('ITA 8');
-        expect(result.metas[1].poster).toContain('ITA%208');
+        expect(result.metas[0]._itaBadge).toBe(true);
+        expect(result.metas[0].poster).toContain('ITA');
+        expect(result.metas[1]._itaBadge).toBe(true);
+        expect(result.metas[1].poster).toContain('ITA');
     });
 
-    test('6. Catalogo misto: serie non-anime usa scanner torrent, anime usa stato esterno', async () => {
-        StreamBadge.find.mockReturnValue({
-            lean: jest.fn().mockResolvedValue([
-                { baseId: 'tmdb:1399', stremioId: 'tmdb:1399:1:8', hasIta: true }
-            ])
-        });
-
+    test('6. Catalogo misto: anime e non-anime leggono la stessa fonte (la colonna `ita`)', async () => {
         const cachedData = {
             metas: [
                 {
@@ -349,22 +361,16 @@ describe('Badge ITA su tutti i cataloghi per gli anime (Ticket 25)', () => {
             { snapshot }
         );
 
-        // GoT (non-anime) riceve il badge ITA da StreamBadge (_itaBadge: true)
+        // GoT (non-anime) riceve il badge dalla colonna `ita`
         const got = result.metas.find(m => m.id === 'tmdb:1399');
         expect(got).toBeDefined();
         expect(got._itaBadge).toBe(true);
 
-        // Dandadan (anime) riceve il badge ITA dallo stato esterno (_forceBadgeText: 'ITA 8')
+        // Dandadan (anime) riceve il badge dalla stessa fonte, senza numero di episodio
         const dandadan = result.metas.find(m => m.id === 'kitsu:48269');
         expect(dandadan).toBeDefined();
-        expect(dandadan._forceBadgeText).toBe('ITA 8');
-        expect(dandadan._itaBadge).toBe(false);
-
-        // Solo GoT è stato cercato su StreamBadge
-        expect(StreamBadge.find).toHaveBeenCalledTimes(1);
-        const queryIds = StreamBadge.find.mock.calls[0][0].baseId.$in;
-        expect(queryIds).toContain('tmdb:1399');
-        expect(queryIds).not.toContain('kitsu:48269');
+        expect(dandadan._itaBadge).toBe(true);
+        expect(dandadan._forceBadgeText).toBeUndefined();
     });
 
     test('7. Nessun doppio clone se l\'item ha già _ita_offset', async () => {

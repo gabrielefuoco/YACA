@@ -171,9 +171,14 @@ function annotationKeyFor(item, imdbMap = {}) {
 
     if (rawId.startsWith('tmdb:')) {
         const parts = rawId.split(':');
-        const tmdbType = parts[1] === 'movie' ? 'movie' : (parts[1] === 'tv' ? 'tv' : null);
-        const id = Number(parts[2]);
-        return tmdbType && Number.isFinite(id) ? { type: tmdbType, id } : null;
+        // Forma piena: `tmdb:movie:123` / `tmdb:tv:123` — il tipo è nell'id.
+        if (parts[1] === 'movie' || parts[1] === 'tv') {
+            const id = Number(parts[2]);
+            return Number.isFinite(id) ? { type: parts[1], id } : null;
+        }
+        // Forma legacy: `tmdb:123` (e `tmdb:123:1:2`) — il tipo lo dà la card.
+        const legacyId = Number(parts[1]);
+        return Number.isFinite(legacyId) ? { type: cardType, id: legacyId } : null;
     }
 
     if (rawId.startsWith('tt')) {
@@ -280,7 +285,9 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
             // Lo stato anime è già in RAM ed è il ponte migliore (sa ids.tmdb di ciò che traccia);
             // `extractTmdbId` copre le card che un TMDB id ce l'hanno già.
             const doc = animeSnapshot ? findAiringStateDocument(animeSnapshot, item) : null;
-            const animeTmdbId = (doc && doc.ids && doc.ids.tmdb) || extractTmdbId(item);
+            // Due forme in circolazione: `animeAiringState.buildSnapshot` **normalizza** i documenti
+            // (`doc.tmdbId`), mentre altre fixture/snapshot portano il documento grezzo (`doc.ids.tmdb`).
+            const animeTmdbId = (doc && (doc.tmdbId || (doc.ids && doc.ids.tmdb))) || extractTmdbId(item);
             const animeDubbed = animeTmdbId
                 ? itaAnnotations.isDubbed(itaSnapshot, item.type === 'movie' ? 'movie' : 'tv', Number(animeTmdbId))
                 : false;
