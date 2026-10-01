@@ -193,7 +193,8 @@ async function processTmdbGroup(group, animeClient, options = {}) {
 
     return buildAiringStateDocument({
         seasons,
-        orderIndex: group.orderIndex
+        orderIndex: group.orderIndex,
+        listSeenAt: options.listSeenAt || null
     });
 }
 
@@ -410,10 +411,11 @@ async function main() {
         const groups = groupRecordsByTmdb(records, identityResolver);
         console.log(`[AnimeSource] Record raggruppati in ${groups.length} titoli TMDB unificati.`);
 
+        const scanSeenAt = new Date().toISOString();
         for (let i = 0; i < groups.length; i++) {
             const group = groups[i];
             console.log(`[AnimeSource] [${i + 1}/${groups.length}] Elaborazione TMDB ${group.tmdbId} ("${group.title}")...`);
-            const doc = await processTmdbGroup(group, animeClient);
+            const doc = await processTmdbGroup(group, animeClient, { listSeenAt: scanSeenAt });
             if (!doc) continue;
 
             if (opts.dryRun || !store) {

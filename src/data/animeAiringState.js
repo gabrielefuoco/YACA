@@ -28,6 +28,7 @@ const SUPPORTED_SCHEMA_VERSION = 1;
 const CACHE_TTL_MS = 60 * 1000;
 const NOVELTY_WINDOW_DAYS = 14;
 const AIRING_FRESHNESS_HOURS = 12;
+const LIST_WINDOW_DAYS = 14;
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -42,6 +43,7 @@ const PROJECTION = {
     orderIndex: 1,
     italian: 1,
     episodes: 1,
+    listSeenAt: 1,
     updatedAt: 1
 };
 
@@ -162,6 +164,7 @@ function validateDocument(raw) {
             dub: normalizeLatest(raw.dub || (raw.italian && raw.italian.dub && raw.italian.dub.latest)),
             orderIndex: toFiniteNumber(raw.orderIndex),
             episodes: normalizeEpisodes(raw.episodes),
+            listSeenAt: normalizeTimestamp(raw.listSeenAt),
             updatedAt: normalizeTimestamp(raw.updatedAt)
         }
     };
@@ -295,7 +298,7 @@ function getWindowInfo(doc, options = {}) {
         return {
             hasSub,
             hasDub,
-            lastAiredAt: doc.updatedAt || null
+            lastAiredAt: doc.listSeenAt || doc.updatedAt || null
         };
     }
 
@@ -410,9 +413,11 @@ function getNoveltyEntries(snapshot, options = {}) {
 }
 
 /**
- * Tutti i documenti con sub o dub presenti appartenenti al ciclo corrente di AnimeUnity.
- * Filtro freschezza su updatedAt: default 12 ore (≈4 cicli da 3h), configurabile via options.
- * Ordinati per orderIndex se presente, altrimenti per data più recente dell'ultimo episodio.
+ * Tutti i documenti con sub o dub presenti appartenenti alla lista "In corso" di AnimeUnity.
+ * Regola di appartenenza (configurabile):
+ * - se doc.listSeenAt c'è -> includi finché (now - listSeenAt) <= 14 giorni (default LIST_WINDOW_DAYS)
+ * - se manca (transizione, doc legacy) -> includi solo se (now - updatedAt) <= 12 ore (default AIRING_FRESHNESS_HOURS)
+ * Ordinati per orderIndex se presente, altrimenti per listSeenAt/updatedAt decrescente.
  */
 function getAiringEntries(snapshot, options = {}) {
     const docs = snapshot && Array.isArray(snapshot.docs) ? snapshot.docs : [];
@@ -420,21 +425,34 @@ function getAiringEntries(snapshot, options = {}) {
 
     const opts = options && typeof options === 'object' ? options : {};
     const nowMs = Number.isFinite(opts.now) ? opts.now : Date.now();
+
+    const listDays = Number.isFinite(opts.listWindowDays) && opts.listWindowDays > 0
+        ? opts.listWindowDays
+        : LIST_WINDOW_DAYS;
+    const listMaxAgeMs = Number.isFinite(opts.listMaxAgeMs) && opts.listMaxAgeMs > 0
+        ? opts.listMaxAgeMs
+        : listDays * DAY_MS;
+
     const freshnessHours = Number.isFinite(opts.freshnessHours) && opts.freshnessHours > 0
         ? opts.freshnessHours
         : AIRING_FRESHNESS_HOURS;
-    const maxAgeMs = Number.isFinite(opts.maxAgeMs) && opts.maxAgeMs > 0
+    const legacyMaxAgeMs = Number.isFinite(opts.maxAgeMs) && opts.maxAgeMs > 0
         ? opts.maxAgeMs
         : freshnessHours * HOUR_MS;
-    const minUpdatedAt = nowMs - maxAgeMs;
 
     for (const doc of docs) {
         const hasSub = Boolean(doc.sub);
         const hasDub = Boolean(doc.dub);
         if (!hasSub && !hasDub) continue;
 
-        // Filtro di freschezza: solo i documenti aggiornati nell'ultimo ciclo
-        if (doc.updatedAt === null || doc.updatedAt === undefined || doc.updatedAt < minUpdatedAt) {
+        let isIncluded = false;
+        if (doc.listSeenAt !== null && doc.listSeenAt !== undefined) {
+            isIncluded = (nowMs - doc.listSeenAt) <= listMaxAgeMs;
+        } else {
+            isIncluded = doc.updatedAt !== null && doc.updatedAt !== undefined && (nowMs - doc.updatedAt) <= legacyMaxAgeMs;
+        }
+
+        if (!isIncluded) {
             continue;
         }
 
@@ -447,7 +465,7 @@ function getAiringEntries(snapshot, options = {}) {
             orderIndex: doc.orderIndex !== undefined && doc.orderIndex !== null ? doc.orderIndex : null,
             hasSubInWindow: windowInfo.hasSub,
             hasDubInWindow: windowInfo.hasDub,
-            lastAiredAt: windowInfo.lastAiredAt || doc.updatedAt || null
+            lastAiredAt: windowInfo.lastAiredAt || doc.listSeenAt || doc.updatedAt || null
         });
     }
 
@@ -572,6 +590,7 @@ module.exports = {
     CACHE_TTL_MS,
     NOVELTY_WINDOW_DAYS,
     AIRING_FRESHNESS_HOURS,
+    LIST_WINDOW_DAYS,
     getSnapshot,
     getNoveltyEntries,
     getAiringEntries,

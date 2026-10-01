@@ -5,6 +5,7 @@ const path = require('path');
 
 const {
     buildAiringStateDocument,
+    mergeAiringDocuments,
     cleanTitle,
     compareEpisodes
 } = require('../src/aggregate');
@@ -169,5 +170,37 @@ describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
         assert.ok(docMissingCount);
         assert.deepStrictEqual(docMissingCount.sub, { season: 1, episode: null });
         assert.strictEqual(docMissingCount.dub, undefined);
+    });
+
+    test('listSeenAt: scritto solo se passato e preservato/aggiornato nel merge', () => {
+        const seenDate = '2026-10-01T12:00:00.000Z';
+        const docOngoing = buildAiringStateDocument({
+            subRecord: mockSubRecordS1,
+            identity: mockIdentityS1,
+            listSeenAt: seenDate,
+            now: fixedNow
+        });
+        assert.strictEqual(docOngoing.listSeenAt, seenDate, 'doc ongoing deve avere listSeenAt');
+
+        const docBulk = buildAiringStateDocument({
+            subRecord: mockSubRecordS1,
+            identity: mockIdentityS1,
+            now: fixedNow
+        });
+        assert.strictEqual(docBulk.listSeenAt, undefined, 'doc bulk non deve avere listSeenAt');
+
+        // Merge: passata doppiati (bulk) su doc esistente con listSeenAt -> preserva listSeenAt esistente
+        const mergedAfterDub = mergeAiringDocuments(docOngoing, docBulk);
+        assert.strictEqual(mergedAfterDub.listSeenAt, seenDate, 'merge con bulk incoming preserva listSeenAt esistente');
+
+        // Merge: nuovo ciclo ongoing con data più recente -> aggiorna listSeenAt
+        const newerDate = '2026-10-01T18:00:00.000Z';
+        const docNewer = { ...docBulk, listSeenAt: newerDate };
+        const mergedNewer = mergeAiringDocuments(docOngoing, docNewer);
+        assert.strictEqual(mergedNewer.listSeenAt, newerDate, 'merge aggiorna a listSeenAt più recente');
+
+        // Merge: doc vecchi senza listSeenAt -> resta undefined
+        const mergedLegacy = mergeAiringDocuments(docBulk, { ...docBulk, title: 'Updated' });
+        assert.strictEqual(mergedLegacy.listSeenAt, undefined, 'merge tra doc senza listSeenAt non imposta listSeenAt');
     });
 });

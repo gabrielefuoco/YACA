@@ -475,6 +475,75 @@ describe('AnimeAiringState - lettura senza finestra e nuovi documenti (senza epi
         expect(entries.find(e => e.doc.tmdbId === '103')).toBeUndefined();
     });
 
+    test('regola di appartenenza listSeenAt (14 giorni) vs legacy (12h): 5 scenari del brief', () => {
+        const docs = [
+            // 1. Doc con listSeenAt di 10 giorni fa -> INCLUSO
+            {
+                _id: '501',
+                schemaVersion: 1,
+                title: 'ListSeen 10gg fa',
+                sub: { season: 1, episode: 10 },
+                listSeenAt: daysAgo(10),
+                updatedAt: daysAgo(10),
+                orderIndex: 0
+            },
+            // 2. Doc con listSeenAt di 20 giorni fa -> ESCLUSO
+            {
+                _id: '502',
+                schemaVersion: 1,
+                title: 'ListSeen 20gg fa',
+                sub: { season: 1, episode: 8 },
+                listSeenAt: daysAgo(20),
+                updatedAt: daysAgo(20),
+                orderIndex: 1
+            },
+            // 3. Doc legacy (solo updatedAt vecchio, senza listSeenAt) -> ESCLUSO
+            {
+                _id: '503',
+                schemaVersion: 1,
+                title: 'Legacy vecchio 3gg',
+                sub: { season: 1, episode: 5 },
+                updatedAt: daysAgo(3),
+                orderIndex: 2
+            },
+            // 4. Doc legacy aggiornato ora (senza listSeenAt, transizione) -> INCLUSO
+            {
+                _id: '504',
+                schemaVersion: 1,
+                title: 'Legacy fresco 2h',
+                sub: { season: 1, episode: 6 },
+                updatedAt: daysAgo(2 / 24),
+                orderIndex: 3
+            },
+            // 5. Doc in corso con listSeenAt recente ma updatedAt vecchio -> INCLUSO
+            {
+                _id: '505',
+                schemaVersion: 1,
+                title: 'ListSeen fresco ma updatedAt vecchio',
+                sub: { season: 1, episode: 12 },
+                listSeenAt: daysAgo(1),
+                updatedAt: daysAgo(25),
+                orderIndex: 4
+            }
+        ];
+
+        const snapshot = animeAiringState.buildSnapshot(docs);
+        const entries = animeAiringState.getAiringEntries(snapshot, { now: NOW, listWindowDays: 14, freshnessHours: 12 });
+        const includedIds = entries.map(e => e.doc.tmdbId);
+
+        // Casi inclusi: 501 (10gg fa), 504 (legacy 2h fa), 505 (listSeen 1gg fa con updatedAt 25gg fa)
+        expect(includedIds).toContain('501');
+        expect(includedIds).toContain('504');
+        expect(includedIds).toContain('505');
+
+        // Casi esclusi: 502 (20gg fa), 503 (legacy 3gg fa)
+        expect(includedIds).not.toContain('502');
+        expect(includedIds).not.toContain('503');
+
+        // Ordine: 501 (orderIndex 0), 504 (orderIndex 3), 505 (orderIndex 4)
+        expect(includedIds).toEqual(['501', '504', '505']);
+    });
+
     test('compatibilità: doc vecchi con episodes[] e freschi vengono inclusi da getAiringEntries', () => {
         const fixtureDocs = buildFixtureDocs(); // 240411 ha updatedAt: daysAgo(0)
         const snapshot = animeAiringState.buildSnapshot(fixtureDocs);

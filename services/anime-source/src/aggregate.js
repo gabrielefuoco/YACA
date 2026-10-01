@@ -65,6 +65,7 @@ function extractRealEpisode(record, type, title) {
  * @param {Object} [params.dubRecord] Record archivio per doppiato
  * @param {Object} [params.identity] Identità { tmdbId, kitsuId, anilistId, malId, season }
  * @param {number} [params.orderIndex] Indice posizionale nella lista sorgente
+ * @param {string|Date|number} [params.listSeenAt] Data/ora in cui la serie è stata riscontrata nella lista in corso
  * @param {Date} [params.now] Timestamp opzionale
  * @returns {Object|null}
  */
@@ -74,6 +75,7 @@ function buildAiringStateDocument({
     dubRecord = null,
     identity = null,
     orderIndex = null,
+    listSeenAt = null,
     now = new Date()
 } = {}) {
     let seasonList = [];
@@ -188,6 +190,12 @@ function buildAiringStateDocument({
 
     if (orderIndex !== null && orderIndex !== undefined && Number.isFinite(orderIndex)) {
         doc.orderIndex = orderIndex;
+    }
+
+    if (listSeenAt) {
+        doc.listSeenAt = listSeenAt instanceof Date
+            ? listSeenAt.toISOString()
+            : (typeof listSeenAt === 'number' ? new Date(listSeenAt).toISOString() : String(listSeenAt));
     }
 
     if (maxSubLatest) {
@@ -306,6 +314,21 @@ function mergeAiringDocuments(existing, incoming) {
 
     if (mergedEpisodes !== undefined) {
         mergedDoc.episodes = mergedEpisodes;
+    }
+
+    let mergedListSeenAt = undefined;
+    if (incoming.listSeenAt && existing.listSeenAt) {
+        const timeInc = new Date(incoming.listSeenAt).getTime();
+        const timeExist = new Date(existing.listSeenAt).getTime();
+        mergedListSeenAt = timeInc >= timeExist ? incoming.listSeenAt : existing.listSeenAt;
+    } else if (incoming.listSeenAt) {
+        mergedListSeenAt = incoming.listSeenAt;
+    } else if (existing.listSeenAt) {
+        mergedListSeenAt = existing.listSeenAt;
+    }
+
+    if (mergedListSeenAt) {
+        mergedDoc.listSeenAt = mergedListSeenAt;
     }
 
     const orderIndex = incoming.orderIndex !== undefined && incoming.orderIndex !== null
