@@ -20,7 +20,8 @@ const { fetchAllIndices } = require('./src/indici');
 const { parseIndexPage } = require('./src/parse');
 const { loadCatalogFromJsonl, matchCatalog } = require('./src/match');
 const { toRows, splitId, writeAnnotations, DEFAULT_FILENAME } = require('./src/writer');
-const { mergeAnnotationRows, inspectMerge } = require('./src/annotations');
+const { mergeAnnotationRows, inspectMerge, readAnnotationRows } = require('./src/annotations');
+const { resolveResidualCards, getTmdbApiKey } = require('./src/resolver');
 const { loadAnimeDubbedRows } = require('./src/anime');
 
 const WORKSPACE_DIR = path.resolve(__dirname, '..', '..');
@@ -45,7 +46,7 @@ const DEFAULT_TMP_DIR = resolveFallbackFile(
     path.resolve(WORKSPACE_DIR, '.scratch', 'doppiaggio-ita', 'tmp'),
     path.resolve(MAIN_REPO_DIR, '.scratch', 'doppiaggio-ita', 'tmp')
 );
-const HEARTBEAT_FILE = 'last-run.json';
+const DEFAULT_OUTPUT_PATH = path.join(path.dirname(DEFAULT_MOVIES_PATH), DEFAULT_FILENAME);const HEARTBEAT_FILE = 'last-run.json';
 const MAX_HEALTH_AGE_MS = 24 * 60 * 60 * 1000; // 24 ore
 
 function findMongoUri() {
@@ -78,9 +79,13 @@ function parseArgs(args) {
     const opts = {
         dryRun: false,
         healthCheck: false,
+        resolveIds: false,
+        limit: null,
+        maxCalls: Infinity,
+        tmdbCacheDir: null,
+        delay: 120,
         cacheDir: DEFAULT_CACHE_DIR,
-        fallbackDirs: fallbackDirsList,
-        moviesPath: DEFAULT_MOVIES_PATH,
+        fallbackDirs: fallbackDirsList,        moviesPath: DEFAULT_MOVIES_PATH,
         tvPath: DEFAULT_TV_PATH,
         outputPath: null,
         limitCatalog: null,
@@ -98,6 +103,19 @@ function parseArgs(args) {
             opts.healthCheck = true;
         } else if (arg === '--force-refresh') {
             opts.forceRefresh = true;
+        } else if (arg === '--resolve-ids') {
+            opts.resolveIds = true;
+        } else if (arg === '--limit' && i + 1 < args.length) {
+            const lim = parseInt(args[++i], 10);
+            if (!isNaN(lim) && lim > 0) opts.limit = lim;
+        } else if (arg === '--max-calls' && i + 1 < args.length) {
+            const mc = parseInt(args[++i], 10);
+            if (!isNaN(mc) && mc >= 0) opts.maxCalls = mc;
+        } else if (arg === '--tmdb-cache-dir' && i + 1 < args.length) {
+            opts.tmdbCacheDir = path.resolve(args[++i]);
+        } else if (arg === '--delay' && i + 1 < args.length) {
+            const d = parseInt(args[++i], 10);
+            if (!isNaN(d) && d >= 0) opts.delay = d;
         } else if (arg === '--cache-dir' && i + 1 < args.length) {
             opts.cacheDir = path.resolve(args[++i]);
         } else if (arg === '--movies-path' && i + 1 < args.length) {
@@ -131,22 +149,30 @@ Scraper indici Antonio Genna ("Il Mondo dei Doppiatori"), unione AnimeUnity
 Uso:
   node cli.js [opzioni]
 
-Opzioni:
-  --dry-run             Esegue parsing, unione e match senza scrivere annotazioni su disco
-  --health-check        Verifica il battito di salute (exit 0 se < 24h, exit 1 altrimenti)
+Opzioni base:
+  --dry-run             Esegue parsing, unione e match senza scrivere annotazioni su disco  --health-check        Verifica il battito di salute (exit 0 se < 24h, exit 1 altrimenti)
   --force-refresh       Ignora la cache locale e scarica le pagine di rete
   --cache-dir <dir>     Cartella cache delle pagine HTML (default: services/doppiaggi-source/.cache)
   --movies-path <file>  Percorso file master_movies.jsonl
   --tv-path <file>      Percorso file master_tv.jsonl
-  --output <file>       Percorso file di output annotazioni (preview)
+  --output <file>       Percorso file di output annotazioni
   --limit-catalog <n>   Tetto massimo di titoli catalogo da caricare (per debug rapido)
   --mongo-uri <uri>     URI MongoDB per la collezione anime_airing_state (default: env MONGODB_URI)
   --no-anime            Disattiva l'unione anime (produce unicamente le annotazioni Antonio Genna)
   --help, -h            Mostra questa guida
 
+Opzioni risoluzione TMDB ID (--resolve-ids):
+  --resolve-ids         Risolve le schede AG rimaste senza candidato tramite TMDB ID
+  --limit <n>           Tetto massimo di schede residue da esaminare
+  --max-calls <n>       Budget massimo chiamate API a TMDB (si ferma al raggiungimento)
+  --tmdb-cache-dir <d>  Cartella cache risposte TMDB (default: <cache-dir>/tmdb-api)
+  --delay <ms>          Ritardo tra chiamate di rete TMDB in ms (default: 120)
+
 Esempi:
   node cli.js --dry-run
   node cli.js --health-check
+  node cli.js --resolve-ids --limit 30
+  node cli.js --resolve-ids --max-calls 60
 `);
 }
 
@@ -333,6 +359,106 @@ async function main(customOpts = null) {
         console.log(`  - null totali:              ${mergeStats.mergedNull} (-${mergeStats.promotedRows} promosse a true)`);
     }
     console.log('===============================================================\n');
+
+    // 5. Risoluzione TMDB ID (se richiesta tramite --resolve-ids)
+    if (opts.resolveIds) {
+        console.log('===============================================================');
+        console.log('RISOLUZIONE SCHEDE RESIDUE PER TMDB ID');
+        console.log('===============================================================');
+
+        const residualCards = matchResult.agResults
+            .filter((r) => r.reason === 'no_candidate_in_db')
+            .map((r) => r.agEntry);
+
+        console.log(`[ResolveIDs] Schede AG senza candidato nel catalogo (residuo): ${residualCards.length}`);
+
+        const outputPath = opts.outputPath || DEFAULT_OUTPUT_PATH;
+        let baseRows = [];
+        if (fs.existsSync(outputPath)) {
+            baseRows = await readAnnotationRows(outputPath);
+            console.log(`[ResolveIDs] Caricate ${baseRows.length} annotazioni preesistenti da: ${outputPath}`);
+        } else {
+            const { toRows } = require('./src/writer');
+            baseRows = toRows(matchResult.annotations);
+            console.log(`[ResolveIDs] File annotazioni non trovato. Usate ${baseRows.length} annotazioni base del match catalogo.`);
+        }
+
+        const apiKey = getTmdbApiKey();
+        if (!apiKey) {
+            console.warn('[ResolveIDs] Avviso: Nessuna chiave TMDB_API_KEY trovata nell\'ambiente o nel file .env.');
+        }
+
+        const tmdbCacheDir = opts.tmdbCacheDir || path.join(opts.cacheDir, 'tmdb-api');
+        const fallbackDirs = [
+            path.join(DEFAULT_TMP_DIR, 'tmdb-api'),
+            DEFAULT_TMP_DIR
+        ];
+
+        console.log(`[ResolveIDs] Avvio risoluzione (limit: ${opts.limit || 'tutti'}, maxCalls: ${opts.maxCalls === Infinity ? 'illimitato' : opts.maxCalls})...\n`);
+
+        const resolveRes = await resolveResidualCards(residualCards, {
+            limit: opts.limit,
+            maxCalls: opts.maxCalls,
+            cacheDir: tmdbCacheDir,
+            fallbackDirs,
+            apiKey,
+            delayMs: opts.delay,
+            onProgress: ({ index, total, card, result, confirmedCount, callsMade, cacheHits, budgetExceeded }) => {
+                if (index === 1 || index % 50 === 0 || index === total || budgetExceeded) {
+                    const statusStr = result.confirmed && result.hit
+                        ? `CONFERMATO (${result.hit.type}:${result.hit.id} via ${result.hit.matchPath})`
+                        : `NON confermato (${result.reason})`;
+                    console.log(`  [ResolveIDs] [${index}/${total}] "${card.rawTitle}" -> ${statusStr} (tot confermati: ${confirmedCount}, chiamate: ${callsMade}, cache: ${cacheHits})`);
+                }
+            }
+        });
+
+        console.log('\n===============================================================');
+        console.log('RIASSUNTO RISOLUZIONE RESIDUO PER TMDB ID');
+        console.log('===============================================================');
+        console.log(`Schede esaminate:                 ${resolveRes.totalExamined}`);
+        console.log(`Identità provata (id confermati): ${resolveRes.confirmedCount} (${resolveRes.totalExamined ? ((resolveRes.confirmedCount / resolveRes.totalExamined) * 100).toFixed(1) : 0}%)`);
+        console.log(`  - via titolo italiano:          ${resolveRes.byPath.titolo}`);
+        console.log(`  - via titolo originale:         ${resolveRes.byPath.originale}`);
+        console.log(`  - via titoli alternativi:       ${resolveRes.byPath.alternativo}`);
+        console.log(`Non confermate / nessun match:    ${resolveRes.unconfirmedCount}`);
+        console.log(`Chiamate API effettive a TMDB:    ${resolveRes.callsMade}`);
+        console.log(`Risposte lette da cache su disco: ${resolveRes.cacheHits}`);
+        console.log(`Budget chiamate raggiunto:        ${resolveRes.budgetExceeded ? 'SI (esecuzione interrotta al limite del budget)' : 'NO'}`);
+        console.log('===============================================================\n');
+
+        if (opts.dryRun) {
+            console.log(`[Writer] Modalità dry-run: nessun file scritto (${resolveRes.resolvedRows.length} nuove righe risolte non salvate).`);
+            return { matchResult, resolveResult: resolveRes };
+        }
+
+        if (resolveRes.budgetExceeded) {
+            console.warn('[Writer] ATTENZIONE: Budget chiamate raggiunto prima di completare il residuo. Nessun file scritto per evitare un file incompleto spacciato per completo. Le chiamate effettuate sono conservate nella cache su disco per la prossima esecuzione.');
+            return { matchResult, resolveResult: resolveRes };
+        }
+
+        // Unione delle nuove righe risolte con le annotazioni di base
+        const finalRows = mergeAnnotationRows(baseRows, resolveRes.resolvedRows);
+        const writeResult = await writeAnnotations(finalRows, {
+            dryRun: false,
+            outputPath,
+            respectGuard: true,
+            source: 'antoniogenna.net/doppiaggio+tmdb-resolved'
+        });
+
+        if (writeResult.written) {
+            console.log(`[Writer] Annotazioni aggiornate con successo in: ${writeResult.path}`);
+            console.log(`[Writer]   ${writeResult.counts.rows} righe totali (true ${writeResult.counts.true} · null ${writeResult.counts.null}) · meta: ${writeResult.metaPath}`);
+        } else if (writeResult.reason === 'guard') {
+            const drop = (100 - (writeResult.counts.true / writeResult.previous.counts.true) * 100).toFixed(1);
+            console.error('[Writer] GUARDIA: le voci vere sono calate a ' + writeResult.counts.true +
+                ' da ' + writeResult.previous.counts.true + ' (-' + drop + '%). ' +
+                'Il file precedente NON è stato sovrascritto.');
+            process.exitCode = 2;
+        }
+
+        return { matchResult, resolveResult: resolveRes, writeResult };
+    }
 
     // 7. Scrittura annotazioni: NDJSON accanto al parquet/dump
     const outputPath = opts.outputPath || path.join(path.dirname(opts.moviesPath), DEFAULT_FILENAME);

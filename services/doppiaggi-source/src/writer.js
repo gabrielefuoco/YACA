@@ -55,6 +55,9 @@ function toRows(annotations) {
     const rows = [];
     for (const a of annotations || []) {
         if (!a || (a.ita !== true && a.ita !== null)) continue; // false (e tutto il resto) = assente dal file
+        // `splitId(id, type, explicitT)`: una riga già strutturata ha `t` e nessun `type`, e il `t` esplicito
+        // deve vincere sul prefisso dell'id. (Le due correzioni concorrenti dello stesso bug erano equivalenti:
+        // teniamo quella che passa il `t` come parametro dedicato.)
         const { t, id } = splitId(a.id, a.type, a.t);
         if (!Number.isFinite(id)) continue;
         rows.push({ t, id, ita: a.ita === true ? true : null });

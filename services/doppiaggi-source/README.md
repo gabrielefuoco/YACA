@@ -8,10 +8,10 @@ definitive "questo titolo è doppiato in italiano".
 il driver **`mongodb`** (per leggere lo stato degli anime in sola lettura, esattamente come `anime-source`) e
 resta **senza dipendenze native**.
 
-> **Stato**: completo. Scraper, parser, matcher, unione anime AG ∪ AnimeUnity e writer. Il file prodotto è un
-> **NDJSON**; il **parquet tipato** lo materializza il **core** (che ha già DuckDB) leggendolo: così il modulo
-> resta senza dipendenze native. Formato deciso dal ticket 04 della mappa `.scratch/doppiaggio-ita`.
-
+> **Stato**: completo. Scraper, parser, matcher, **unione anime AG ∪ AnimeUnity**, writer e
+> **risolutore TMDB ID**. Il file prodotto è un **NDJSON**; il **parquet tipato** lo materializza il **core**
+> (che ha già DuckDB) leggendolo: così il modulo resta **senza dipendenze native**. Formato deciso dal ticket 04
+> della mappa `.scratch/doppiaggio-ita`.
 ## Cosa fa
 
 1. **Indici** (`src/indici.js`) — scarica le **79 pagine d'indice**: le 4 zone utili (`film.htm`,
@@ -41,6 +41,14 @@ resta **senza dipendenze native**.
 4. **Unione Anime** (`src/anime.js`, `src/annotations.js`) — fonde le voci de Il Mondo dei Doppiatori con lo
    stato doppiaggi anime di AnimeUnity (`anime_airing_state`).
 5. **Writer** (`src/writer.js`) — scrive il file delle annotazioni e il suo meta con guardia atomica.
+6. **Risoluzione per TMDB ID** (`src/resolver.js`, sottocomando `--resolve-ids`) — risolve le schede AG rimaste
+   senza candidato nel catalogo (~3.500 voci) e le annota **anche se fuori catalogo**: la chiave è l'id, quindi
+   l'annotazione resta in attesa e diventa visibile quando il record entra in Tier 1.
+   - **prova di identità obbligatoria** (titolo italiano, originale o alternativo fra i nomi del record): la
+     ricerca da sola sbaglia (`Triple Z` → *The Six Triple Eight*);
+   - anno esatto e tipo dalla zona come disambiguatori per gli omonimi;
+   - cache su disco, contatore chiamate, ripresa dal punto e budget (`--max-calls`);
+   - merge con le annotazioni esistenti via `mergeAnnotationRows` (`true` > `null` > assente).
 
 ## Unione Anime (AG ∪ AnimeUnity)
 
@@ -51,28 +59,26 @@ su AnimeUnity (e non censito su Antonio Genna) perderebbe il badge.
 - **Regola del doppiaggio**: identica a quella del core in `src/data/animeAiringState.js:593-611` (`getDubEpisode`)
   e `173-174` (estrazione da `raw.dub` o `italian.dub.latest`, con fallback sull'episodio più recente con
   `dubIta: true` in `episodes[]`).
-- **Verifica del presupposto serie vs film (misurazione reale)**:
-  La collezione contiene **902 anime doppiati**.
-  - **562 id** esistono nel dump TV (`master_tv.jsonl`) → `t: "tv"`;
-  - **268 id** NON esistono nel dump TV ma esistono nel dump film (`master_movies.jsonl`) → sono **film anime**
-    (es. *Kimi no Na wa*, *Tenki no Ko*, *Suzume no Tojimari*, *THE FIRST SLAM DUNK*, *Promare*, *Redline*). Il
-    modulo assegna correttamente `t: "movie"`, consentendo a DuckDB di agganciare la colonna `ita` nel parquet dei film;
-  - **72 id** non sono presenti in nessuno dei due dump TMDB → default `t: "tv"`;
-  - **214 id** vivono in entrambi i dump (sovrapposizione degli spazi ID numerici TMDB movie vs tv): vengono
-    risolti prioritariamente su `t: "tv"` poiché rappresentano la serie anime TV (*Bleach*, *Boruto*, *Slime*),
-    evitando di marcare come doppiati film occidentali omonimi non correlati (*Anna Karenina*, *Dissection*).
-- **Precedenza nel merge** (`src/annotations.js`):
-  La funzione `mergeAnnotationRows(base, extra)` opera per chiave `(t, id)` con precedenza:
-  `true` > `null` > assente.
-  - Una prova positiva per-id di AnimeUnity **vince** su un `null` di AG (risolve l'omonimia);
-  - Un `true` esistente **non viene mai declassato**;
-  - L'output è ordinato stabilmente per `(t, id)`.
-- **Degrado e guardia**:
-  Se MongoDB non è raggiungibile o viene passato `--no-anime`, il giro si conclude regolarmente annotando solo
-  Antonio Genna ed emettendo un avviso esplicito di degrado. La **guardia del writer** (−2% soglia calo `true`)
-  impedisce di sovrascrivere un file precedente ricco con uno impoverito dall'assenza della sorgente anime (calo
-  misurato: −2,4%, exit code 2).
-
+- **Serie o film? Il dump tv NON basta a dirlo (misurato)**: il dump tv è **filtrato** (Tier 1), quindi una serie
+  fuori soglia sparisce e — se lo stesso numero esiste anche come film — il suo id finirebbe annotato come
+  `movie`, cioè un badge ITA su un film che non c'entra. Misurato il 01/10/2026 con l'**export TMDB completo**
+  (1.251.743 film + 232.806 serie, con i titoli originali): dei 260 id scritti come `movie`, **32 erano serie**
+  con una corsa di episodi (`Toushou Daimos` 44 ep → *Europa Europa*, `Kyojin no Hoshi` 182 ep, `Chou Denji
+  Robo Combattler V` 54, `Wagamama☆Fairy Mirumo de Pon!` 172), mentre i film veri hanno **1** episodio
+  (*Akira*, *Porco Rosso*, *Ponyo*, *Paprika*, *Metropolis*).
+  Da qui il **veto**: `maxEpisodeNumber > 3` → è una serie, `t: "tv"`, punto. Dopo la correzione: **228 id**
+  mappati `movie` (156 presenti solo nell'export film + 72 in entrambi con ≤ 3 episodi), **zero** con corsa di
+  episodi.
+- **Volumi reali**: la collezione ha **949 documenti**, di cui **902 anime doppiati** (45 solo sub, 2 con id non
+  numerico). 562 id stanno nel dump tv, 72 in nessuno dei due (annotazione in attesa), 214 in entrambi (vince
+  `tv`: è la serie).
+- **Precedenza nel merge** (`src/annotations.js`): `mergeAnnotationRows(base, extra)` opera per chiave `(t, id)`
+  con precedenza `true` > `null` > assente. Una prova positiva per-id di AnimeUnity **vince** su un `null` di AG
+  (risolve l'omonimia); un `true` **non viene mai declassato**; l'output è ordinato stabilmente per `(t, id)`.
+- **Degrado e guardia**: se MongoDB non risponde o si passa `--no-anime`, il giro si conclude annotando solo
+  Antonio Genna ed emettendo un **avviso esplicito**. La **guardia del writer** (−2% sui `true`) impedisce di
+  sovrascrivere un file ricco con uno impoverito dall'assenza della sorgente anime (calo misurato: −2,4%,
+  exit code 2).
 ## Il file prodotto
 
 Accanto al dump (dove sta il parquet) nascono due file:
@@ -105,6 +111,8 @@ node cli.js --dry-run --no-anime          # esegue solo Antonio Genna senza unio
 node cli.js --health-check                # battito (exit 0 se < 24h)
 node cli.js --force-refresh               # ignora la cache e riscarica gli indici
 node cli.js                               # giro completo: scrive le annotazioni accanto al dump
+node cli.js --resolve-ids --limit 30      # risoluzione a rate per TMDB ID (campione 30)
+node cli.js --resolve-ids --max-calls 60  # risoluzione con budget max 60 chiamate
 ```
 
 | opzione | effetto |
@@ -118,31 +126,35 @@ node cli.js                               # giro completo: scrive le annotazioni
 | `--limit-catalog <n>` | tetto di record da caricare, per debug |
 | `--mongo-uri <uri>` | URI MongoDB per la collezione anime_airing_state (default: env MONGODB_URI) |
 | `--no-anime` | disattiva l'unione anime (produce unicamente annotazioni AG) |
-
+| `--resolve-ids` | risolve le schede AG rimaste senza candidato tramite TMDB ID |
+| `--limit <n>` | tetto massimo di schede residue da esaminare |
+| `--max-calls <n>` | budget massimo chiamate API a TMDB (si arresta senza scrivere se superato) |
+| `--tmdb-cache-dir <dir>` | cartella cache risposte TMDB (default: `<cache-dir>/tmdb-api`) |
+| `--delay <ms>` | ritardo tra chiamate di rete TMDB in ms (default: 120) |
 ## Verifica reale (01/10/2026)
 
 Esecuzione reale con indici in cache e MongoDB connesso:
 
 | Metrica | Antonio Genna (base) | Unione AnimeUnity | Risultato finale |
 |---|---|---|---|
-| Voci / Documenti | 25.165 voci uniche | 902 anime doppiati | **24.105 righe** |
-| **`true`** | 19.126 record | +436 aggiunti · +38 promossi da null | **19.600 record** (+474) |
-| `null` | 4.543 record | -38 promossi a true | **4.505 record** |
-| `already true` | — | 428 confermati da entrambe | — |
+| Voci / Documenti | 25.165 voci uniche | 902 anime doppiati | **24.119 righe** |
+| **`true`** | 19.126 record | +450 aggiunti · +35 promossi da null | **19.611 record** (+485) |
+| `null` | 4.543 record | -35 promossi a true | **4.508 record** |
+| `already true` | — | 417 confermati da entrambe | — |
 | Record catalogo analizzati | 106.700 (89.829 film, 16.871 serie) | — | — |
 
 Tempo totale impiegato: **~6,2 secondi**.
 
 ```bash
-node --test tests/   # 47 test, tutti verdi
+node --test tests/   # 64 test, tutti verdi
 ```
 
-I test coprono:
-- Tre regole di parsing AG (lettera decorativa, inversione articolo, anno di disambiguazione);
-- Quattro percorsi di match e rifiuto rumore fuzzy;
-- Regola doppiaggio anime identica al core (`src/data/animeAiringState.js`);
-- Risoluzione `t: 'movie'` per film anime fuori dal dump TV;
-- Helper `mergeAnnotationRows` (precedenza `true` > `null` > assente, nessun declassamento, ordinamento `(t, id)`);
-- Degrado con avviso quando Mongo non è disponibile;
-- Formato NDJSON, atomicità writer e guardia sul calo dei `true`;
-- CLI flags e battito di salute.
+I test coprono: le tre regole di parsing (lettera decorativa, articolo invertito, anno di disambiguazione), i
+quattro percorsi di match, il rifiuto del rumore nel fuzzy stretto, il caso indecidibile che resta `null`, i
+record non toccati che restano `false`, la **chiave `(tipo, id)`**, il formato e l'atomicità del writer, la
+**guardia** sul calo dei `true`, il dry-run e il filtro delle cartelle escluse; l'**unione anime** (regola
+identica al core, **veto degli episodi**, `t: "movie"` per i film fuori dal dump tv, degrado con avviso quando
+Mongo non risponde) e `mergeAnnotationRows` (`true` > `null` > assente, nessun declassamento, ordinamento
+`(t, id)`); la **risoluzione TMDB ID** (identità provata via titolo/originale/alternativo, rifiuto quando nessun
+nome coincide, ripresa dal punto con cache, arresto a budget raggiunto senza scrivere un file incompleto,
+deduplica).

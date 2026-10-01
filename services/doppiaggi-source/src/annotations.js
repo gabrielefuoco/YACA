@@ -1,3 +1,6 @@
+const fs = require('fs');
+const readline = require('readline');
+
 /**
  * annotations.js
  * Gestione delle annotazioni del doppiaggio e regole di unione multi-fonte.
@@ -130,7 +133,42 @@ function inspectMerge(base = [], extra = []) {
     };
 }
 
+
+/**
+ * Legge un file di annotazioni NDJSON (quello scritto da writer.js) e ne ritorna le righe valide.
+ * Serve alla risoluzione per TMDB id, che rilegge il file esistente e ci unisce le righe nuove.
+ *
+ * Righe ignorate: JSON invalido, `ita` diverso da `true`/`null` (quindi `false`, che nel file non esiste
+ * per contratto), `t` diverso da `movie`/`tv`, `id` non numerico. File assente = nessuna riga, non un errore.
+ *
+ * @param {string} filePath
+ * @returns {Promise<Array<{t: "movie"|"tv", id: number, ita: boolean|null}>>}
+ */
+async function readAnnotationRows(filePath) {
+    if (!filePath || !fs.existsSync(filePath)) return [];
+
+    const rows = [];
+    const rl = readline.createInterface({ input: fs.createReadStream(filePath), crlfDelay: Infinity });
+    for await (const line of rl) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        let parsed;
+        try {
+            parsed = JSON.parse(trimmed);
+        } catch (_e) {
+            continue;
+        }
+        if (!parsed || (parsed.ita !== true && parsed.ita !== null)) continue;
+        const t = parsed.t === 'movie' || parsed.t === 'tv' ? parsed.t : null;
+        const id = Number(parsed.id);
+        if (!t || !Number.isFinite(id)) continue;
+        rows.push({ t, id, ita: parsed.ita });
+    }
+    return rows;
+}
+
 module.exports = {
     mergeAnnotationRows,
-    inspectMerge
+    inspectMerge,
+    readAnnotationRows
 };

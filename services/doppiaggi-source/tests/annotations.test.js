@@ -4,7 +4,10 @@
  */
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { mergeAnnotationRows, inspectMerge } = require('../src/annotations');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { mergeAnnotationRows, inspectMerge, readAnnotationRows } = require('../src/annotations');
 
 test('mergeAnnotationRows - aggiunge nuove righe assenti in base', () => {
     const base = [
@@ -141,4 +144,28 @@ test('inspectMerge - calcola correttamente le statistiche di aggiunta e promozio
     assert.equal(stats.promotedRows, 1);
     assert.equal(stats.alreadyTrue, 1);
     assert.equal(stats.downgradedRows, 0);
+});
+
+// Dal ramo della risoluzione per TMDB id: rilegge il file NDJSON esistente.
+test('annotations - readAnnotationRows: legge file NDJSON reale ignorando righe invalide', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'annotations-test-'));
+    const file = path.join(tmpDir, 'test_annotations.jsonl');
+    const content = [
+        '{"t":"movie","id":1,"ita":true}',
+        '{"t":"tv","id":2,"ita":null}',
+        '{"t":"movie","id":3,"ita":false}', // deve essere ignorato
+        'invalid json',                     // deve essere ignorato
+        ''
+    ].join('\n');
+    fs.writeFileSync(file, content, 'utf8');
+
+    const rows = await readAnnotationRows(file);
+    assert.equal(rows.length, 2);
+    assert.deepEqual(rows, [
+        { t: 'movie', id: 1, ita: true },
+        { t: 'tv', id: 2, ita: null }
+    ]);
+
+    const nonExistent = await readAnnotationRows(path.join(tmpDir, 'does-not-exist.jsonl'));
+    assert.deepEqual(nonExistent, []);
 });
