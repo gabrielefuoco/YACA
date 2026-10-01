@@ -23,6 +23,19 @@ const SUPPORTED_SCHEMA_VERSION = 1;
 const DEFAULT_TIMEOUT_MS = 5000;
 
 /**
+ * Sopra questo numero di episodi un documento non può essere un film.
+ *
+ * Serve perché il tipo NON si può dedurre dal nostro dump tv: quello è **filtrato** (Tier 1), quindi una
+ * serie fuori soglia sparisce dal dump e — se lo stesso numero esiste anche come film — il suo id
+ * finirebbe annotato come `movie`, cioè un badge ITA su un film che non c'entra.
+ * Misurato il 01/10/2026 sui 260 id scritti come `movie`: **30 erano serie** con una corsa di episodi
+ * (`Toushou Daimos` 44 ep → *Europa Europa*, `Kyojin no Hoshi` 182 ep, `Chou Denji Robo Combattler V` 54),
+ * mentre i film veri hanno **1** episodio (`Akira`, `Porco Rosso`, `Ponyo`). Vedi
+ * `../.scratch/doppiaggio-ita/tools/giudice-tipo-film-anime.js`.
+ */
+const MOVIE_MAX_EPISODES = 3;
+
+/**
  * Ritorna l'episodio doppiato più recente dal documento, oppure null se non è doppiato.
  * Legge `dub.episode` o `italian.dub.latest.episode`, con fallback sull'episodio più
  * recente con `dubIta: true` in `episodes[]`.
@@ -66,12 +79,28 @@ function isAnimeDubbed(doc) {
 }
 
 /**
+ * Numero di episodio più alto presente nel documento (0 se non c'è nessun episodio numerato).
+ * @param {object} doc
+ * @returns {number}
+ */
+function maxEpisodeNumber(doc) {
+    if (!doc || !Array.isArray(doc.episodes)) return 0;
+    let max = 0;
+    for (const ep of doc.episodes) {
+        const n = Number(ep && ep.episode);
+        if (Number.isFinite(n) && n > max) max = n;
+    }
+    return max;
+}
+
+/**
  * Converte documenti anime in righe di annotazione { t, id, ita: true }.
  *
- * Risoluzione t ('tv' vs 'movie'):
- * - Se `tvIds` contiene l'id -> t = 'tv' (anche se presente in movie: è la serie anime TV)
- * - Se `tvIds` non contiene l'id ma `movieIds` lo contiene -> t = 'movie' (es. Kimi no Na wa, Tenki no Ko)
- * - Se non presente in nessuno dei due (o set non forniti) -> t = 'tv' (default serie TV)
+ * Risoluzione t ('tv' vs 'movie'), in quest'ordine:
+ * 1. **veto degli episodi**: se il documento ha una corsa di episodi (`maxEpisodeNumber > 3`) è una serie,
+ *    punto: `t = 'tv'`. Il dump tv non basta a dirlo (è filtrato), la corsa di episodi sì;
+ * 2. se l'id **non** è nel dump tv ma **è** in quello film → `t = 'movie'` (es. *Kimi no Na wa*, *Ponyo*);
+ * 3. altrimenti → `t = 'tv'` (anche quando l'id non è in nessuno dei due: annotazione in attesa).
  *
  * @param {Array<object>} docs
  * @param {object} [options]
@@ -98,7 +127,7 @@ function animeDocsToRows(docs, { tvIds = null, movieIds = null } = {}) {
 
         const numId = Number(rawId);
         let t = 'tv';
-        if (tvIds && movieIds) {
+        if (maxEpisodeNumber(doc) <= MOVIE_MAX_EPISODES && tvIds && movieIds) {
             if (!tvIds.has(numId) && movieIds.has(numId)) {
                 t = 'movie';
             }
@@ -219,8 +248,10 @@ async function loadAnimeDubbedRows(opts = {}) {
 module.exports = {
     COLLECTION_NAME,
     SUPPORTED_SCHEMA_VERSION,
+    MOVIE_MAX_EPISODES,
     getDubEpisode,
     isAnimeDubbed,
+    maxEpisodeNumber,
     animeDocsToRows,
     fetchAnimeAiringDocs,
     loadAnimeDubbedRows

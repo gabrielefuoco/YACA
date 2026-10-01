@@ -8,6 +8,7 @@ const assert = require('node:assert/strict');
 const {
     getDubEpisode,
     isAnimeDubbed,
+    maxEpisodeNumber,
     animeDocsToRows,
     fetchAnimeAiringDocs,
     loadAnimeDubbedRows
@@ -208,4 +209,36 @@ test('anime.js + annotations: merge offline con tutte le casistiche', () => {
     const row300 = merged.find((r) => r.t === 'movie' && r.id === 300);
     assert.ok(row300);
     assert.equal(row300.ita, true);
+});
+
+test('anime.js - animeDocsToRows: la corsa di episodi vince sul dump tv filtrato (serie, non film)', () => {
+    // Il caso vero misurato il 01/10/2026: `Toushou Daimos` (serie, 44 episodi) ha un id che nel nostro
+    // dump tv NON c'è (è fuori Tier 1) e che esiste come film (*Europa Europa*). Senza il veto verrebbe
+    // annotato come `movie` → badge ITA su un film che non c'entra. Il film vero ha 1 episodio.
+    const docs = [
+        { _id: '8996', dub: { episode: 44 }, episodes: [{ season: 1, episode: 44, dubIta: true }] }, // serie
+        { _id: '11621', dub: { episode: 1 }, episodes: [{ season: 1, episode: 1, dubIta: true }] }   // Porco Rosso
+    ];
+    const tvIds = new Set(); // il dump tv filtrato non li contiene
+    const movieIds = new Set([8996, 11621]); // entrambi esistono come film nel dump
+
+    const rows = animeDocsToRows(docs, { tvIds, movieIds });
+    assert.deepEqual(rows, [
+        { t: 'tv', id: 8996, ita: true },    // la corsa di episodi vince: è una serie
+        { t: 'movie', id: 11621, ita: true } // 1 episodio: è il film, mappato dai dump
+    ]);
+});
+
+test('anime.js - maxEpisodeNumber e la soglia del veto (3 sì, 4 no)', () => {
+    assert.equal(maxEpisodeNumber({ episodes: [{ episode: 1 }, { episode: 12 }] }), 12);
+    assert.equal(maxEpisodeNumber({ episodes: [] }), 0);
+    assert.equal(maxEpisodeNumber({}), 0);
+    assert.equal(maxEpisodeNumber(null), 0);
+    assert.equal(maxEpisodeNumber({ episodes: [{ episode: 'x' }, { episode: null }] }), 0);
+
+    // Al limite: 3 episodi restano mappabili come film (un film in più parti), 4 no.
+    const tre = animeDocsToRows([{ _id: '10', dub: { episode: 1 }, episodes: [{ episode: 3 }] }], { tvIds: new Set(), movieIds: new Set([10]) });
+    const quattro = animeDocsToRows([{ _id: '10', dub: { episode: 1 }, episodes: [{ episode: 4 }] }], { tvIds: new Set(), movieIds: new Set([10]) });
+    assert.equal(tre[0].t, 'movie');
+    assert.equal(quattro[0].t, 'tv');
 });
