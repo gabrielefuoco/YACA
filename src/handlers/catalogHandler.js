@@ -3,7 +3,6 @@ const { getCacheConfig } = require('../cache/CacheManager');
 const { catalogRequestCache } = require('../cache/cacheInstances');
 const { getPresets } = require('../data/presets');
 const { generateRequestHash } = require('../utils/requestHash');
-const { getBaseId } = require('../utils/contentId');
 const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
 
 const { routeCatalogRequest } = require('../catalog/CatalogRouter');
