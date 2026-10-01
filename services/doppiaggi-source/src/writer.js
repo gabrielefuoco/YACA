@@ -52,7 +52,7 @@ function toRows(annotations) {
     const rows = [];
     for (const a of annotations || []) {
         if (!a || (a.ita !== true && a.ita !== null)) continue; // false (e tutto il resto) = assente dal file
-        const { t, id } = splitId(a.id, a.type);
+        const { t, id } = splitId(a.id, a.type || a.t);
         if (!Number.isFinite(id)) continue;
         rows.push({ t, id, ita: a.ita === true ? true : null });
     }
