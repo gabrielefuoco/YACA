@@ -11,6 +11,7 @@
  * annotazioni, ticket 04 della mappa doppiaggio-ita): qui si inietta via `options.itaSnapshot`.
  */
 
+const animeAiringState = require('../src/data/animeAiringState');
 const { applyPostCacheBadges } = require('../src/handlers/catalogHandler');
 
 const NOW = Date.UTC(2026, 8, 23, 12, 0, 0);
@@ -31,14 +32,13 @@ function itaSnapshotFor(docs) {
     return { byKey, count: byKey.size, trueCount: byKey.size, nullCount: 0, error: null };
 }
 
+/**
+ * Snapshot dello stato anime **con il builder vero** (`animeAiringState.buildSnapshot`): normalizza i
+ * documenti in `{tmdbId, kitsuId, sub, dub, episodes[]}`. Costruirne uno a mano con i documenti grezzi
+ * verifica una forma che la produzione non produce mai — ed è quello che era successo qui.
+ */
 function buildSnapshot(docs) {
-    const byTmdbId = new Map();
-    const byKitsuId = new Map();
-    for (const d of docs) {
-        if (d.ids?.tmdb !== undefined) byTmdbId.set(String(d.ids.tmdb), d);
-        if (d.ids?.kitsu !== undefined) byKitsuId.set(String(d.ids.kitsu), d);
-    }
-    return { docs, byTmdbId, byKitsuId, ignoredSchema: [], invalid: [], degraded: false };
+    return animeAiringState.buildSnapshot(docs);
 }
 
 function serieAnime({ kitsu, tmdb, dub }) {

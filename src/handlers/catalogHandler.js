@@ -285,9 +285,8 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
             // Lo stato anime è già in RAM ed è il ponte migliore (sa ids.tmdb di ciò che traccia);
             // `extractTmdbId` copre le card che un TMDB id ce l'hanno già.
             const doc = animeSnapshot ? findAiringStateDocument(animeSnapshot, item) : null;
-            // Due forme in circolazione: `animeAiringState.buildSnapshot` **normalizza** i documenti
-            // (`doc.tmdbId`), mentre altre fixture/snapshot portano il documento grezzo (`doc.ids.tmdb`).
-            const animeTmdbId = (doc && (doc.tmdbId || (doc.ids && doc.ids.tmdb))) || extractTmdbId(item);
+            // `buildSnapshot` normalizza i documenti: il campo è `doc.tmdbId`.
+            const animeTmdbId = (doc && doc.tmdbId) || extractTmdbId(item);
             const animeDubbed = animeTmdbId
                 ? itaAnnotations.isDubbed(itaSnapshot, item.type === 'movie' ? 'movie' : 'tv', Number(animeTmdbId))
                 : false;
