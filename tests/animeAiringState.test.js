@@ -540,8 +540,99 @@ describe('AnimeAiringState - lettura senza finestra e nuovi documenti (senza epi
         expect(includedIds).not.toContain('502');
         expect(includedIds).not.toContain('503');
 
-        // Ordine: 501 (orderIndex 0), 504 (orderIndex 3), 505 (orderIndex 4)
-        expect(includedIds).toEqual(['501', '504', '505']);
+        // Ordine: 505 (listSeenAt 1gg fa), 501 (listSeenAt 10gg fa), 504 (listSeenAt mancante, legacy 2h fa)
+        expect(includedIds).toEqual(['505', '501', '504']);
+    });
+
+    test('ordinamento getAiringEntries: airedAt decrescente vince su orderIndex; fallback su listSeenAt poi orderIndex', () => {
+        const docs = [
+            // Serie A: airedAt 10 giorni fa, orderIndex: 0 (in cima alla lista AnimeUnity)
+            {
+                _id: '1001',
+                schemaVersion: 1,
+                title: 'Aired 10gg fa, orderIndex 0',
+                sub: { season: 1, episode: 10, airedAt: daysAgo(10) },
+                listSeenAt: daysAgo(1),
+                orderIndex: 0,
+                updatedAt: daysAgo(1)
+            },
+            // Serie B: airedAt ieri (1 giorno fa), orderIndex: 5 (più in basso nella lista)
+            {
+                _id: '1002',
+                schemaVersion: 1,
+                title: 'Aired ieri, orderIndex 5',
+                sub: { season: 1, episode: 11, airedAt: daysAgo(1) },
+                listSeenAt: daysAgo(1),
+                orderIndex: 5,
+                updatedAt: daysAgo(1)
+            },
+            // Serie C: airedAt oggi su DUB (anche se SUB è vecchio) -> vince la più recente tra sub e dub
+            {
+                _id: '1003',
+                schemaVersion: 1,
+                title: 'Dub aired oggi, sub 12gg fa',
+                sub: { season: 1, episode: 8, airedAt: daysAgo(12) },
+                dub: { season: 1, episode: 6, airedAt: daysAgo(0.2) },
+                listSeenAt: daysAgo(1),
+                orderIndex: 8,
+                updatedAt: daysAgo(1)
+            },
+            // Serie D: airedAt mancante, ma listSeenAt fresco (2 giorni fa)
+            {
+                _id: '1004',
+                schemaVersion: 1,
+                title: 'Aired mancante, listSeen 2gg fa',
+                sub: { season: 1, episode: 1 },
+                listSeenAt: daysAgo(2),
+                orderIndex: 20,
+                updatedAt: daysAgo(2)
+            },
+            // Serie E: airedAt mancante, listSeenAt vecchio (8 giorni fa), orderIndex basso (1)
+            {
+                _id: '1005',
+                schemaVersion: 1,
+                title: 'Aired mancante, listSeen 8gg fa, orderIndex 1',
+                sub: { season: 1, episode: 2 },
+                listSeenAt: daysAgo(8),
+                orderIndex: 1,
+                updatedAt: daysAgo(8)
+            },
+            // Serie F: airedAt mancante, listSeenAt mancante, orderIndex 2
+            {
+                _id: '1006',
+                schemaVersion: 1,
+                title: 'Aired mancante, listSeen mancante, orderIndex 2',
+                sub: { season: 1, episode: 3 },
+                orderIndex: 2,
+                updatedAt: daysAgo(0.1)
+            },
+            // Serie G: airedAt mancante, listSeenAt mancante, orderIndex 9
+            {
+                _id: '1007',
+                schemaVersion: 1,
+                title: 'Aired mancante, listSeen mancante, orderIndex 9',
+                sub: { season: 1, episode: 4 },
+                orderIndex: 9,
+                updatedAt: daysAgo(0.1)
+            }
+        ];
+
+        const snapshot = animeAiringState.buildSnapshot(docs);
+        const entries = animeAiringState.getAiringEntries(snapshot, { now: NOW, listWindowDays: 14 });
+        const ids = entries.map(e => e.doc.tmdbId);
+
+        // 1. Serie con airedAt ordinate decrescente:
+        //    1003 (aired 0.2gg fa) > 1002 (aired 1gg fa) > 1001 (aired 10gg fa)
+        //    Nota che 1002 (ieri) PRECEDE 1001 (10gg fa) anche se 1001 ha orderIndex 0 vs 5!
+        expect(ids.slice(0, 3)).toEqual(['1003', '1002', '1001']);
+
+        // 2. Serie senza airedAt: fallback su listSeenAt decrescente:
+        //    1004 (listSeen 2gg fa) > 1005 (listSeen 8gg fa)
+        expect(ids.slice(3, 5)).toEqual(['1004', '1005']);
+
+        // 3. Serie senza airedAt e senza listSeenAt: fallback su orderIndex crescente:
+        //    1006 (orderIndex 2) > 1007 (orderIndex 9)
+        expect(ids.slice(5, 7)).toEqual(['1006', '1007']);
     });
 
     test('compatibilità: doc vecchi con episodes[] e freschi vengono inclusi da getAiringEntries', () => {

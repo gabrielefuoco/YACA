@@ -14,7 +14,7 @@
 
 const { AnimeUnityClient } = require('./src/animeunity');
 const { IdentityResolver } = require('./src/identity');
-const { buildAiringStateDocument, cleanTitle } = require('./src/aggregate');
+const { buildAiringStateDocument, cleanTitle, toIsoDate } = require('./src/aggregate');
 const { AiringStateStore } = require('./src/store');
 const { SeriesDiscoveryManager } = require('./src/discovery');
 
@@ -183,10 +183,56 @@ async function processTmdbGroup(group, animeClient, options = {}) {
             }
         }
 
+        // Recupero data di messa in onda (airedAt) per la variante sub
+        let subAiredAt = null;
+        if (seasonEntry.subRecord) {
+            const n = Number(seasonEntry.subRecord.real_episodes_count);
+            if (Number.isFinite(n) && n > 0 && animeClient && typeof animeClient.getEpisodes === 'function') {
+                const dub = seasonEntry.subRecord.dub !== undefined && seasonEntry.subRecord.dub !== null
+                    ? Number(seasonEntry.subRecord.dub)
+                    : 0;
+                try {
+                    const epData = await animeClient.getEpisodes(seasonEntry.subRecord.id, dub, { startRange: n, endRange: n });
+                    if (epData && Array.isArray(epData.episodes) && epData.episodes.length > 0 && epData.episodes[0].created_at) {
+                        subAiredAt = toIsoDate(epData.episodes[0].created_at);
+                    } else {
+                        console.warn(`[AnimeSource] Episodio ${n} vuoto o privo di created_at per sub "${group.title}" (id: ${seasonEntry.subRecord.id})`);
+                    }
+                } catch (err) {
+                    console.warn(`[AnimeSource] Recupero airedAt fallito per sub "${group.title}" (id: ${seasonEntry.subRecord.id}, ep: ${n}): ${err.message}`);
+                }
+            }
+            seasonEntry.subRecord.airedAt = subAiredAt;
+        }
+
+        // Recupero data di messa in onda (airedAt) per la variante doppiata (ITA)
+        let dubAiredAt = null;
+        if (seasonEntry.dubRecord) {
+            const n = Number(seasonEntry.dubRecord.real_episodes_count);
+            if (Number.isFinite(n) && n > 0 && animeClient && typeof animeClient.getEpisodes === 'function') {
+                const dub = seasonEntry.dubRecord.dub !== undefined && seasonEntry.dubRecord.dub !== null
+                    ? Number(seasonEntry.dubRecord.dub)
+                    : 1;
+                try {
+                    const epData = await animeClient.getEpisodes(seasonEntry.dubRecord.id, dub, { startRange: n, endRange: n });
+                    if (epData && Array.isArray(epData.episodes) && epData.episodes.length > 0 && epData.episodes[0].created_at) {
+                        dubAiredAt = toIsoDate(epData.episodes[0].created_at);
+                    } else {
+                        console.warn(`[AnimeSource] Episodio ${n} vuoto o privo di created_at per dub "${group.title}" (id: ${seasonEntry.dubRecord.id})`);
+                    }
+                } catch (err) {
+                    console.warn(`[AnimeSource] Recupero airedAt fallito per dub "${group.title}" (id: ${seasonEntry.dubRecord.id}, ep: ${n}): ${err.message}`);
+                }
+            }
+            seasonEntry.dubRecord.airedAt = dubAiredAt;
+        }
+
         seasons.push({
             season: seasonEntry.season,
             subRecord: seasonEntry.subRecord,
             dubRecord: seasonEntry.dubRecord,
+            subAiredAt,
+            dubAiredAt,
             identity: seasonEntry.identity
         });
     }

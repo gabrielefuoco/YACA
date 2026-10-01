@@ -55,6 +55,35 @@ function extractRealEpisode(record, type, title) {
     return num;
 }
 
+function toIsoDate(val) {
+    if (!val) return null;
+    if (val instanceof Date) {
+        return !isNaN(val.getTime()) ? val.toISOString() : null;
+    }
+    if (typeof val === 'number') {
+        const d = new Date(val);
+        return !isNaN(d.getTime()) ? d.toISOString() : null;
+    }
+    if (typeof val === 'string') {
+        const trimmed = val.trim();
+        if (!trimmed) return null;
+        if (trimmed.includes('T') && (trimmed.endsWith('Z') || trimmed.includes('+') || (trimmed.lastIndexOf('-') > 10))) {
+            const d = new Date(trimmed);
+            if (!isNaN(d.getTime())) return d.toISOString();
+        }
+        const withT = trimmed.replace(' ', 'T');
+        const dt = new Date(withT.endsWith('Z') || withT.includes('+') ? withT : withT + 'Z');
+        if (!isNaN(dt.getTime())) {
+            return dt.toISOString();
+        }
+        const fallback = new Date(trimmed);
+        if (!isNaN(fallback.getTime())) {
+            return fallback.toISOString();
+        }
+    }
+    return null;
+}
+
 /**
  * Aggrega i record AnimeUnity in un documento conforme a anime_airing_state.
  * Supporta input a singola stagione o multi-stagione.
@@ -63,6 +92,8 @@ function extractRealEpisode(record, type, title) {
  * @param {Array<Object>} [params.seasons] Lista di stagioni [{ season, subRecord, dubRecord, identity }]
  * @param {Object} [params.subRecord] Record archivio per sub (fallback singola stagione)
  * @param {Object} [params.dubRecord] Record archivio per doppiato
+ * @param {string|Date|number} [params.subAiredAt] Data messa in onda ultimo episodio sub
+ * @param {string|Date|number} [params.dubAiredAt] Data messa in onda ultimo episodio doppiato
  * @param {Object} [params.identity] Identità { tmdbId, kitsuId, anilistId, malId, season }
  * @param {number} [params.orderIndex] Indice posizionale nella lista sorgente
  * @param {string|Date|number} [params.listSeenAt] Data/ora in cui la serie è stata riscontrata nella lista in corso
@@ -73,6 +104,8 @@ function buildAiringStateDocument({
     seasons = null,
     subRecord = null,
     dubRecord = null,
+    subAiredAt = null,
+    dubAiredAt = null,
     identity = null,
     orderIndex = null,
     listSeenAt = null,
@@ -126,7 +159,8 @@ function buildAiringStateDocument({
         if (subRec) {
             latestSubStatus = subRec.status;
             const epNum = extractRealEpisode(subRec, 'sub', title);
-            const subCand = { season: seasonNum, episode: epNum };
+            const airedAt = toIsoDate(s.subAiredAt || subRec.airedAt || subAiredAt) || null;
+            const subCand = { season: seasonNum, episode: epNum, airedAt };
             if (compareEpisodes(subCand, maxSubLatest) > 0) {
                 maxSubLatest = subCand;
             }
@@ -147,7 +181,8 @@ function buildAiringStateDocument({
         if (dubRec) {
             latestDubStatus = dubRec.status;
             const epNum = extractRealEpisode(dubRec, 'dub', title);
-            const dubCand = { season: seasonNum, episode: epNum };
+            const airedAt = toIsoDate(s.dubAiredAt || dubRec.airedAt || dubAiredAt) || null;
+            const dubCand = { season: seasonNum, episode: epNum, airedAt };
             if (compareEpisodes(dubCand, maxDubLatest) > 0) {
                 maxDubLatest = dubCand;
             }
@@ -237,11 +272,43 @@ function mergeAiringDocuments(existing, incoming) {
 
     const subIncoming = incoming.sub || incoming.italian?.sub?.latest;
     const subExisting = existing.sub || existing.italian?.sub?.latest;
-    const subLatest = compareEpisodes(subIncoming, subExisting) >= 0 ? subIncoming : subExisting;
+    let subLatest = null;
+    if (subIncoming && subExisting) {
+        const cmp = compareEpisodes(subIncoming, subExisting);
+        if (cmp > 0) {
+            subLatest = subIncoming;
+        } else if (cmp < 0) {
+            subLatest = subExisting;
+        } else {
+            subLatest = {
+                ...subExisting,
+                ...subIncoming,
+                airedAt: subIncoming.airedAt || subExisting.airedAt || null
+            };
+        }
+    } else {
+        subLatest = subIncoming || subExisting || null;
+    }
 
     const dubIncoming = incoming.dub || incoming.italian?.dub?.latest;
     const dubExisting = existing.dub || existing.italian?.dub?.latest;
-    const dubLatest = compareEpisodes(dubIncoming, dubExisting) >= 0 ? dubIncoming : dubExisting;
+    let dubLatest = null;
+    if (dubIncoming && dubExisting) {
+        const cmp = compareEpisodes(dubIncoming, dubExisting);
+        if (cmp > 0) {
+            dubLatest = dubIncoming;
+        } else if (cmp < 0) {
+            dubLatest = dubExisting;
+        } else {
+            dubLatest = {
+                ...dubExisting,
+                ...dubIncoming,
+                airedAt: dubIncoming.airedAt || dubExisting.airedAt || null
+            };
+        }
+    } else {
+        dubLatest = dubIncoming || dubExisting || null;
+    }
 
     const isSimuldub = Boolean(
         (incoming.italian?.dub?.isSimuldub || existing.italian?.dub?.isSimuldub) ||
@@ -364,5 +431,6 @@ module.exports = {
     buildAiringStateDocument,
     mergeAiringDocuments,
     compareEpisodes,
-    cleanTitle
+    cleanTitle,
+    toIsoDate
 };

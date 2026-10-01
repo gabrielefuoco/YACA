@@ -308,9 +308,10 @@ describe('AiringStateProvider - catalogo novità anime', () => {
         });
 
         const metas = await getAiringStateCatalog(0);
-        // orderIndex 0 (One Piece 37854), poi orderIndex 1 (Conan 2362), poi doc vecchio senza orderIndex (Dandadan 240411)
-        expect(metas.map((m) => m._tmdbId)).toEqual([37854, 2362, 240411]);
-        expect(metas.map((m) => m.id)).toEqual(['kitsu:12', 'kitsu:210', 'kitsu:48269']);
+        // Prima chi ha una data di uscita nota (Dandadan: ultimo ep. 2 giorni fa),
+        // poi i doc senza data nell'ordine della lista: orderIndex 0 (One Piece 37854), orderIndex 1 (Conan 2362).
+        expect(metas.map((m) => m._tmdbId)).toEqual([240411, 37854, 2362]);
+        expect(metas.map((m) => m.id)).toEqual(['kitsu:48269', 'kitsu:12', 'kitsu:210']);
     });
 });
 

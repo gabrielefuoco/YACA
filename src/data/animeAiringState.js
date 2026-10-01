@@ -94,13 +94,19 @@ function normalizeLatest(value) {
     const season = toFiniteNumber(value.season);
     const normalizedSeason = season !== null && season > 0 ? season : 1;
     const episode = toFiniteNumber(value.episode);
+    const airedAt = normalizeTimestamp(value.airedAt);
+    const res = { season: normalizedSeason };
     if (episode !== null && episode > 0) {
-        return { season: normalizedSeason, episode };
+        res.episode = episode;
+    } else if (value.episode === null || value.episode === undefined) {
+        res.episode = null;
+    } else {
+        return null;
     }
-    if (value.episode === null || value.episode === undefined) {
-        return { season: normalizedSeason, episode: null };
+    if (airedAt !== null && airedAt !== undefined) {
+        res.airedAt = airedAt;
     }
-    return null;
+    return res;
 }
 
 function normalizeTimestamp(value) {
@@ -112,7 +118,11 @@ function normalizeTimestamp(value) {
         return Number.isFinite(value) ? value : null;
     }
     if (typeof value !== 'string' || !value.trim()) return null;
-    const time = Date.parse(value);
+    let time = Date.parse(value);
+    if (!Number.isFinite(time) && value.includes(' ')) {
+        const withT = value.trim().replace(' ', 'T');
+        time = Date.parse(withT.endsWith('Z') || withT.includes('+') ? withT : withT + 'Z');
+    }
     return Number.isFinite(time) ? time : null;
 }
 
@@ -282,6 +292,28 @@ function isInWindow(airedAt, nowMs, windowMs) {
     return airedAt !== null && airedAt <= nowMs && airedAt >= nowMs - windowMs;
 }
 
+function getDocAiredAt(doc) {
+    if (!doc) return null;
+    const subAired = normalizeTimestamp(doc.sub && doc.sub.airedAt);
+    const dubAired = normalizeTimestamp(doc.dub && doc.dub.airedAt);
+    if (subAired !== null && dubAired !== null) {
+        return Math.max(subAired, dubAired);
+    }
+    if (subAired !== null) return subAired;
+    if (dubAired !== null) return dubAired;
+    if (Array.isArray(doc.episodes) && doc.episodes.length > 0) {
+        let maxEp = null;
+        for (const ep of doc.episodes) {
+            const epAired = normalizeTimestamp(ep.airedAt);
+            if (epAired !== null && (maxEp === null || epAired > maxEp)) {
+                maxEp = epAired;
+            }
+        }
+        return maxEp;
+    }
+    return null;
+}
+
 /**
  * Flag della finestra per un documento: c'è un sub/ITA uscito negli ultimi N giorni?
  * `lastAiredAt` = data (ms) dell'episodio disponibile più recente nella finestra.
@@ -295,10 +327,11 @@ function getWindowInfo(doc, options = {}) {
     if (!Array.isArray(doc.episodes) || doc.episodes.length === 0) {
         const hasSub = Boolean(doc.sub);
         const hasDub = Boolean(doc.dub);
+        const airedAt = getDocAiredAt(doc);
         return {
             hasSub,
             hasDub,
-            lastAiredAt: doc.listSeenAt || doc.updatedAt || null
+            lastAiredAt: airedAt || doc.listSeenAt || doc.updatedAt || null
         };
     }
 
@@ -457,6 +490,7 @@ function getAiringEntries(snapshot, options = {}) {
         }
 
         const windowInfo = getWindowInfo(doc);
+        const docAiredAt = getDocAiredAt(doc);
 
         entries.push({
             doc,
@@ -465,19 +499,61 @@ function getAiringEntries(snapshot, options = {}) {
             orderIndex: doc.orderIndex !== undefined && doc.orderIndex !== null ? doc.orderIndex : null,
             hasSubInWindow: windowInfo.hasSub,
             hasDubInWindow: windowInfo.hasDub,
-            lastAiredAt: windowInfo.lastAiredAt || doc.listSeenAt || doc.updatedAt || null
+            airedAt: docAiredAt,
+            lastAiredAt: docAiredAt || windowInfo.lastAiredAt || doc.listSeenAt || doc.updatedAt || null
         });
     }
 
     entries.sort((a, b) => {
+        const airedA = a.airedAt;
+        const airedB = b.airedAt;
+        const hasAiredA = Number.isFinite(airedA) && airedA > 0;
+        const hasAiredB = Number.isFinite(airedB) && airedB > 0;
+
+        if (hasAiredA && hasAiredB) {
+            if (airedB !== airedA) {
+                return airedB - airedA;
+            }
+        } else if (hasAiredA) {
+            return -1;
+        } else if (hasAiredB) {
+            return 1;
+        }
+
+        // A parità o in mancanza di airedAt: listSeenAt decrescente
+        const seenA = a.doc && Number.isFinite(a.doc.listSeenAt) && a.doc.listSeenAt > 0 ? a.doc.listSeenAt : null;
+        const seenB = b.doc && Number.isFinite(b.doc.listSeenAt) && b.doc.listSeenAt > 0 ? b.doc.listSeenAt : null;
+        const hasSeenA = seenA !== null;
+        const hasSeenB = seenB !== null;
+
+        if (hasSeenA && hasSeenB) {
+            if (seenB !== seenA) {
+                return seenB - seenA;
+            }
+        } else if (hasSeenA) {
+            return -1;
+        } else if (hasSeenB) {
+            return 1;
+        }
+
+        // A parità o in mancanza di listSeenAt: orderIndex crescente
         const hasOrderA = Number.isFinite(a.orderIndex);
         const hasOrderB = Number.isFinite(b.orderIndex);
+
         if (hasOrderA && hasOrderB) {
-            return a.orderIndex - b.orderIndex;
+            if (a.orderIndex !== b.orderIndex) {
+                return a.orderIndex - b.orderIndex;
+            }
+        } else if (hasOrderA) {
+            return -1;
+        } else if (hasOrderB) {
+            return 1;
         }
-        if (hasOrderA) return -1;
-        if (hasOrderB) return 1;
-        return (b.lastAiredAt || 0) - (a.lastAiredAt || 0);
+
+        // Ultimo fallback su updatedAt decrescente
+        const updatedA = (a.doc && a.doc.updatedAt) || 0;
+        const updatedB = (b.doc && b.doc.updatedAt) || 0;
+        return updatedB - updatedA;
     });
 
     return entries;
@@ -594,6 +670,7 @@ module.exports = {
     getSnapshot,
     getNoveltyEntries,
     getAiringEntries,
+    getDocAiredAt,
     getCardInfo,
     getCardInfoForId,
     getWindowInfo,

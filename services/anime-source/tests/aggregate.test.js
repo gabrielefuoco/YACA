@@ -9,7 +9,7 @@ const {
     cleanTitle,
     compareEpisodes
 } = require('../src/aggregate');
-const { groupRecordsByTmdb } = require('../cli');
+const { groupRecordsByTmdb, processTmdbGroup } = require('../cli');
 const { IdentityResolver } = require('../src/identity');
 
 describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
@@ -59,12 +59,12 @@ describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
         assert.strictEqual(doc.perEpisodes, undefined, 'perEpisodes deve essere assente');
 
         // sub e dub diretti al top level
-        assert.deepStrictEqual(doc.sub, { season: 1, episode: 12 });
-        assert.deepStrictEqual(doc.dub, { season: 1, episode: 12 });
+        assert.deepStrictEqual(doc.sub, { season: 1, episode: 12, airedAt: null });
+        assert.deepStrictEqual(doc.dub, { season: 1, episode: 12, airedAt: null });
 
-        // latest come coppia { season, episode } per compatibilità
-        assert.deepStrictEqual(doc.italian.sub.latest, { season: 1, episode: 12 });
-        assert.deepStrictEqual(doc.italian.dub.latest, { season: 1, episode: 12 });
+        // latest come coppia { season, episode, airedAt } per compatibilità
+        assert.deepStrictEqual(doc.italian.sub.latest, { season: 1, episode: 12, airedAt: null });
+        assert.deepStrictEqual(doc.italian.dub.latest, { season: 1, episode: 12, airedAt: null });
 
         // schedule compatto
         assert.strictEqual(doc.schedule.status, 'Terminato');
@@ -72,7 +72,7 @@ describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
 
         // sources
         assert.strictEqual(doc.sources.length, 2);
-        assert.deepStrictEqual(doc.sources[0].latest, { season: 1, episode: 12 });
+        assert.deepStrictEqual(doc.sources[0].latest, { season: 1, episode: 12, airedAt: null });
     });
 
     test('TEST MULTI-STAGIONE: unisce Dandadan S1 e S2 in un solo documento con sub e dub della stagione massima', () => {
@@ -118,10 +118,10 @@ describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
         assert.strictEqual(doc.orderIndex, 0);
 
         // sub e dub al top level devono essere della stagione massima { season: 2, episode: 12 }
-        assert.deepStrictEqual(doc.sub, { season: 2, episode: 12 });
-        assert.deepStrictEqual(doc.dub, { season: 2, episode: 12 });
-        assert.deepStrictEqual(doc.italian.sub.latest, { season: 2, episode: 12 });
-        assert.deepStrictEqual(doc.italian.dub.latest, { season: 2, episode: 12 });
+        assert.deepStrictEqual(doc.sub, { season: 2, episode: 12, airedAt: null });
+        assert.deepStrictEqual(doc.dub, { season: 2, episode: 12, airedAt: null });
+        assert.deepStrictEqual(doc.italian.sub.latest, { season: 2, episode: 12, airedAt: null });
+        assert.deepStrictEqual(doc.italian.dub.latest, { season: 2, episode: 12, airedAt: null });
 
         // Nessun array episodes
         assert.strictEqual(doc.episodes, undefined);
@@ -142,9 +142,9 @@ describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
             now: fixedNow
         });
 
-        assert.deepStrictEqual(docSubOnly.sub, { season: 1, episode: 12 });
+        assert.deepStrictEqual(docSubOnly.sub, { season: 1, episode: 12, airedAt: null });
         assert.strictEqual(docSubOnly.dub, undefined);
-        assert.deepStrictEqual(docSubOnly.italian.sub.latest, { season: 1, episode: 12 });
+        assert.deepStrictEqual(docSubOnly.italian.sub.latest, { season: 1, episode: 12, airedAt: null });
         assert.strictEqual(docSubOnly.italian.dub, null);
 
         const docDubOnly = buildAiringStateDocument({
@@ -155,9 +155,9 @@ describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
         });
 
         assert.strictEqual(docDubOnly.sub, undefined);
-        assert.deepStrictEqual(docDubOnly.dub, { season: 1, episode: 12 });
+        assert.deepStrictEqual(docDubOnly.dub, { season: 1, episode: 12, airedAt: null });
         assert.strictEqual(docDubOnly.italian.sub, null);
-        assert.deepStrictEqual(docDubOnly.italian.dub.latest, { season: 1, episode: 12 });
+        assert.deepStrictEqual(docDubOnly.italian.dub.latest, { season: 1, episode: 12, airedAt: null });
     });
 
     test('quando real_episodes_count manca, lascia episode: null e non crasha', () => {
@@ -168,7 +168,7 @@ describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
         });
 
         assert.ok(docMissingCount);
-        assert.deepStrictEqual(docMissingCount.sub, { season: 1, episode: null });
+        assert.deepStrictEqual(docMissingCount.sub, { season: 1, episode: null, airedAt: null });
         assert.strictEqual(docMissingCount.dub, undefined);
     });
 
@@ -203,4 +203,105 @@ describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
         const mergedLegacy = mergeAiringDocuments(docBulk, { ...docBulk, title: 'Updated' });
         assert.strictEqual(mergedLegacy.listSeenAt, undefined, 'merge tra doc senza listSeenAt non imposta listSeenAt');
     });
+
+    test('airedAt: scritto in sub e dub in formato ISO (o null) e preservato nel merge', () => {
+        const subDate = '2026-09-27 17:47:24';
+        const dubDate = '2026-09-30 20:49:15';
+        const expectedSubIso = '2026-09-27T17:47:24.000Z';
+        const expectedDubIso = '2026-09-30T20:49:15.000Z';
+
+        const doc = buildAiringStateDocument({
+            subRecord: { ...mockSubRecordS1, airedAt: subDate },
+            dubRecord: { ...mockDubRecordS1, airedAt: dubDate },
+            identity: mockIdentityS1,
+            now: fixedNow
+        });
+
+        assert.ok(doc);
+        assert.deepStrictEqual(doc.sub, { season: 1, episode: 12, airedAt: expectedSubIso });
+        assert.deepStrictEqual(doc.dub, { season: 1, episode: 12, airedAt: expectedDubIso });
+        assert.deepStrictEqual(doc.italian.sub.latest, { season: 1, episode: 12, airedAt: expectedSubIso });
+        assert.deepStrictEqual(doc.italian.dub.latest, { season: 1, episode: 12, airedAt: expectedDubIso });
+
+        // Merge preserves airedAt
+        const incomingNoAired = buildAiringStateDocument({
+            subRecord: mockSubRecordS1,
+            dubRecord: mockDubRecordS1,
+            identity: mockIdentityS1,
+            now: fixedNow
+        });
+        const merged = mergeAiringDocuments(doc, incomingNoAired);
+        assert.strictEqual(merged.sub.airedAt, expectedSubIso);
+        assert.strictEqual(merged.dub.airedAt, expectedDubIso);
+    });
+
+    test('processTmdbGroup: per varianti con real_episodes_count = N > 0 fa richiesta minima con startRange/endRange = N e non blocca il ciclo se fallisce', async () => {
+        const calls = [];
+        const mockClient = {
+            findSubCounterpart: async () => null,
+            getEpisodes: async (animeId, dub, rangeOpts) => {
+                calls.push({ animeId, dub, rangeOpts });
+                if (animeId === 12) {
+                    return {
+                        episodes_count: 1180,
+                        episodes: [{ number: '1180', created_at: '2026-09-27 17:47:24' }]
+                    };
+                }
+                if (animeId === 2998) {
+                    return {
+                        episodes_count: 936,
+                        episodes: [{ number: '936', created_at: '2026-09-30 20:49:15' }]
+                    };
+                }
+                if (animeId === 99999) {
+                    throw new Error('Network timeout');
+                }
+                return null;
+            }
+        };
+
+        const testGroup = {
+            tmdbId: '37854',
+            title: 'One Piece',
+            orderIndex: 0,
+            seasonsMap: new Map([
+                [22, {
+                    season: 22,
+                    subRecord: { id: 12, dub: 0, real_episodes_count: 1180 },
+                    dubRecord: { id: 2998, dub: 1, real_episodes_count: 936 },
+                    identity: { tmdbId: '37854', season: 22 }
+                }]
+            ])
+        };
+
+        const doc = await processTmdbGroup(testGroup, mockClient, { listSeenAt: '2026-10-01T12:00:00.000Z' });
+
+        assert.ok(doc);
+        assert.strictEqual(calls.length, 2, 'Deve effettuare esattamente una chiamata minima per ciascuna variante');
+        assert.deepStrictEqual(calls[0], { animeId: 12, dub: 0, rangeOpts: { startRange: 1180, endRange: 1180 } });
+        assert.deepStrictEqual(calls[1], { animeId: 2998, dub: 1, rangeOpts: { startRange: 936, endRange: 936 } });
+
+        assert.strictEqual(doc.sub.airedAt, '2026-09-27T17:47:24.000Z');
+        assert.strictEqual(doc.dub.airedAt, '2026-09-30T20:49:15.000Z');
+
+        // Test resilienza: se getEpisodes lancia un errore, airedAt resta null e non crasha
+        const failingGroup = {
+            tmdbId: '99999',
+            title: 'Fail Show',
+            orderIndex: 1,
+            seasonsMap: new Map([
+                [1, {
+                    season: 1,
+                    subRecord: { id: 99999, dub: 0, real_episodes_count: 5 },
+                    dubRecord: null,
+                    identity: { tmdbId: '99999', season: 1 }
+                }]
+            ])
+        };
+
+        const failingDoc = await processTmdbGroup(failingGroup, mockClient);
+        assert.ok(failingDoc, 'Non deve bloccare il ciclo');
+        assert.strictEqual(failingDoc.sub.airedAt, null);
+    });
 });
+
