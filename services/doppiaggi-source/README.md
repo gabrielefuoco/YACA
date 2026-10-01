@@ -6,9 +6,9 @@ catalogo YACA. Produce le annotazioni "questo titolo è doppiato in italiano".
 È il gemello di `services/anime-source/`: modulo autonomo, CLI, test offline, zero dipendenze, nessun accesso
 al database del core.
 
-> **Stato**: completo. Scraper, parser, matcher e writer. Il file prodotto è un **NDJSON**; il **parquet
-> tipato** lo materializza il **core** (che ha già DuckDB) leggendolo: così il modulo resta **senza
-> dipendenze native**. Formato deciso dal ticket 04 della mappa `.scratch/doppiaggio-ita`.
+> **Stato**: completo. Scraper, parser, matcher, writer e risolutore TMDB ID. Il file prodotto è un **NDJSON**;
+> il **parquet tipato** lo materializza il **core** (che ha già DuckDB) leggendolo: così il modulo resta
+> **senza dipendenze native**. Formato deciso dal ticket 04 della mappa `.scratch/doppiaggio-ita`.
 
 ## Cosa fa
 
@@ -37,6 +37,13 @@ al database del core.
    - altrimenti **`null`**: il matcher **non sceglie mai** fra più candidati;
    - i record del catalogo che nessuna voce AG tocca restano **`false`**.
 4. **Writer** (`src/writer.js`) — scrive il file delle annotazioni e il suo meta.
+5. **Risoluzione per TMDB ID** (`src/resolver.js` e `src/annotations.js`) — sottocomando opzionale
+   separato (`--resolve-ids`) per risolvere le schede AG rimaste senza candidato nel catalogo (~3.500 voci)
+   e annotarle anche se fuori dal catalogo attuale:
+   - prova di identità obbligatoria (titolo italiano, originale o alternativo);
+   - anno esatto e tipo da zona come disambiguatori per gli omonimi;
+   - cache su disco delle risposte TMDB, contatore chiamate, ripresa dal punto e budget (`--max-calls`);
+   - merge con le annotazioni esistenti tramite `mergeAnnotationRows` (`true` > `null` > assente).
 
 ## Il file prodotto
 
@@ -74,6 +81,8 @@ node cli.js --dry-run --limit-catalog 500 # prova rapida
 node cli.js --health-check                # battito (exit 0 se < 24h)
 node cli.js --force-refresh               # ignora la cache e riscarica gli indici
 node cli.js                               # giro completo: scrive le annotazioni accanto al dump
+node cli.js --resolve-ids --limit 30      # risoluzione a rate per TMDB ID (campione 30)
+node cli.js --resolve-ids --max-calls 60  # risoluzione con budget max 60 chiamate
 ```
 
 | opzione | effetto |
@@ -85,11 +94,16 @@ node cli.js                               # giro completo: scrive le annotazioni
 | `--movies-path <file>` / `--tv-path <file>` | dump del catalogo (`master_movies.jsonl`, `master_tv.jsonl`) |
 | `--output <file>` | percorso del `.jsonl` (default: accanto al dump, `ita_annotations.jsonl`) |
 | `--limit-catalog <n>` | tetto di record da caricare, per debug |
+| `--resolve-ids` | risolve le schede AG rimaste senza candidato tramite TMDB ID |
+| `--limit <n>` | tetto massimo di schede residue da esaminare |
+| `--max-calls <n>` | budget massimo chiamate API a TMDB (si arresta senza scrivere se superato) |
+| `--tmdb-cache-dir <dir>` | cartella cache risposte TMDB (default: `<cache-dir>/tmdb-api`) |
+| `--delay <ms>` | ritardo tra chiamate di rete TMDB in ms (default: 120) |
 
 La cache già esistente in `.scratch/doppiaggio-ita/tmp/` viene usata come ripiego: in sviluppo **non serve
 rifare richieste di rete**.
 
-## Verifica (01/10/2026)
+## Verifica
 
 Dry run sul catalogo reale, 4,49 s:
 
@@ -105,10 +119,12 @@ Dry run sul catalogo reale, 4,49 s:
 Il file prodotto in quel giro: **23.669 righe** (`true` 19.126 · `null` 4.543), ~700 KB.
 
 ```bash
-node --test tests/   # 23 test, tutti verdi
+node --test tests/   # 43 test, tutti verdi
 ```
 
 I test coprono: le tre regole di parsing (incluse la lettera decorativa e l'articolo inglese), i quattro
 percorsi di match, il rifiuto del rumore nel fuzzy stretto, il caso indecidibile che resta `null`, i record
 non toccati che restano `false`, la **chiave `(tipo, id)`**, il formato e l'atomicità del writer, la
-**guardia** sul calo dei `true`, il dry-run e il filtro delle cartelle escluse.
+**guardia** sul calo dei `true`, il dry-run, il filtro delle cartelle escluse, l'unione e non declassamento
+in `mergeAnnotationRows`, e gli 8 scenari offline della **risoluzione TMDB ID** (titolo, originale, alternativo,
+rifiuto per non coincidenza, nessun risultato, ripresa dal punto con cache, arresto a budget raggiunto e deduplica).
