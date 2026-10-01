@@ -281,6 +281,25 @@ function isHiddenGemPopularityAllowed(value) {
     return Number.isFinite(popularity) && popularity <= HIDDEN_GEMS_MAX_POPULARITY;
 }
 
+const BOX_SET_YEAR_RANGE_REGEX = /\b(19|20)\d{2}\s*[-–—]\s*(19|20)\d{2}\b/;
+const BOX_SET_KEYWORD_REGEX = /\b(trilogy|trilogia|collection|collezione|anthology|antologia|complete)\b/i;
+
+function isCompilationOrBoxSet(item) {
+    if (!item) return false;
+    const target = item.rawTMDB || item.data || item;
+    const titles = [target.title, target.name, target.original_title, item.name, item.title].filter(Boolean);
+    if (titles.some(t => BOX_SET_YEAR_RANGE_REGEX.test(t))) {
+        return true;
+    }
+    const runtime = Number(target.runtime ?? item.runtime);
+    if (Number.isFinite(runtime) && runtime >= 240) {
+        if (titles.some(t => BOX_SET_KEYWORD_REGEX.test(t))) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function passesQualityFloor(item, mediaType = 'movie', isHiddenGems = false) {
     if (!item) return false;
     const target = item.rawTMDB || item.data || item;
@@ -293,8 +312,10 @@ function passesQualityFloor(item, mediaType = 'movie', isHiddenGems = false) {
         if (voteAvg !== undefined && voteAvg < 6.5) return false; // Ticket 17: allineato alla sorgente del fill (fetchTopRatedPeriodFallbackIds: vote_average.gte 6.5)
     }
 
-    // Exclude TV specials / episodes inside movie catalogs (Leva 4)
+    // Exclude TV specials / episodes inside movie catalogs (Leva 4) and compilations / box sets (Ticket 27)
     if (mediaType === 'movie') {
+        if (isCompilationOrBoxSet(item)) return false;
+
         const rawGenres = target.genre_ids || (target.genres ? target.genres.map(g => (typeof g === 'object' && g !== null ? (g.id ?? g) : g)) : []);
         const gids = rawGenres.map(Number);
         const kws = Array.isArray(target.keywords)
@@ -1517,5 +1538,7 @@ module.exports = {
     getAnimeProportion,
     isItemAnime,
     resolveAnimePolicy,
-    getEffectiveTypeSelectors
+    getEffectiveTypeSelectors,
+    isCompilationOrBoxSet,
+    passesQualityFloor
 };
