@@ -281,6 +281,50 @@ function isHiddenGemPopularityAllowed(value) {
     return Number.isFinite(popularity) && popularity <= HIDDEN_GEMS_MAX_POPULARITY;
 }
 
+const BOX_SET_YEAR_RANGE_REGEX = /\b(19|20)\d{2}\s*[-–—]\s*(19|20)\d{2}\b/;
+const BOX_SET_KEYWORD_REGEX = /\b(trilogy|trilogia|collection|collezione|anthology|antologia|complete)\b/i;
+
+function isCompilationOrBoxSet(item) {
+    if (!item) return false;
+    const target = item.rawTMDB || item.data || item;
+    const titles = [target.title, target.name, target.original_title, item.name, item.title].filter(Boolean);
+    if (titles.some(t => BOX_SET_YEAR_RANGE_REGEX.test(t))) {
+        return true;
+    }
+    const runtime = Number(target.runtime ?? item.runtime);
+    if (Number.isFinite(runtime) && runtime >= 240) {
+        if (titles.some(t => BOX_SET_KEYWORD_REGEX.test(t))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+const NON_NARRATIVE_GENRE_IDS = Object.freeze([10764, 10767, 10763]);
+
+function passesSeedNetworkNonNarrativeGate(item, mappedTopGenres) {
+    if (!item) return false;
+    const genreIds = getItemGenreIds(item).map(Number).filter(Number.isFinite);
+    const hasNonNarrative = genreIds.some(g => NON_NARRATIVE_GENRE_IDS.includes(g));
+    if (!hasNonNarrative) return true;
+    const mappedSet = new Set((mappedTopGenres || []).map(Number).filter(Number.isFinite));
+    return genreIds.some(g => NON_NARRATIVE_GENRE_IDS.includes(g) && mappedSet.has(g));
+}
+
+function passesSeedNetworkDnaGate(item, mappedTopGenres) {
+    if (!item) return false;
+    const mappedList = Array.isArray(mappedTopGenres) ? mappedTopGenres : [];
+    if (mappedList.length === 0) return true;
+
+    // Ticket 28: scarta formati non narrativi se non presenti nel DNA
+    if (!passesSeedNetworkNonNarrativeGate(item, mappedList)) return false;
+
+    // Ticket 29: tenere solo gli item i cui generi intersecano mappedTopGenres
+    const mappedSet = new Set(mappedList.map(Number).filter(Number.isFinite));
+    const genreIds = getItemGenreIds(item).map(Number).filter(Number.isFinite);
+    return genreIds.some(g => mappedSet.has(g));
+}
+
 function passesQualityFloor(item, mediaType = 'movie', isHiddenGems = false) {
     if (!item) return false;
     const target = item.rawTMDB || item.data || item;
@@ -293,8 +337,10 @@ function passesQualityFloor(item, mediaType = 'movie', isHiddenGems = false) {
         if (voteAvg !== undefined && voteAvg < 6.5) return false; // Ticket 17: allineato alla sorgente del fill (fetchTopRatedPeriodFallbackIds: vote_average.gte 6.5)
     }
 
-    // Exclude TV specials / episodes inside movie catalogs (Leva 4)
+    // Exclude TV specials / episodes inside movie catalogs (Leva 4) and compilations / box sets (Ticket 27)
     if (mediaType === 'movie') {
+        if (isCompilationOrBoxSet(item)) return false;
+
         const rawGenres = target.genre_ids || (target.genres ? target.genres.map(g => (typeof g === 'object' && g !== null ? (g.id ?? g) : g)) : []);
         const gids = rawGenres.map(Number);
         const kws = Array.isArray(target.keywords)
@@ -918,12 +964,15 @@ function enforceMaxStrandRun(items, maxRun = HERO_DIVERSITY_CAPS.strand, options
  * il fallback top-rated del periodo viene idratato da DuckDB, filtrato dal
  * pavimento di qualità e ordinato con lo stesso score VSM del profilo.
  */
-async function buildSeedNetworkFill({ finalItems, tmdbApiKey, mediaType, types, isKidsMode, profile, dnaFilters, globalProfile, typeSelectors = null, animePolicy = null }) {
+async function buildSeedNetworkFill({ finalItems, tmdbApiKey, mediaType, types, isKidsMode, profile, dnaFilters, globalProfile, typeSelectors = null, animePolicy = null, mappedTopGenres = null }) {
     const target = Math.max(0, SEED_NETWORK_TARGET_SIZE - finalItems.length);
     if (target === 0) return [];
 
     const effectiveSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
     const policy = animePolicy || resolveAnimePolicy(profile, typeSelectors, { isKidsMode });
+    const effectiveMappedTopGenres = (Array.isArray(mappedTopGenres) && mappedTopGenres.length > 0)
+        ? mappedTopGenres
+        : (profile ? mapGenreIdsToTarget(computeTopGenres(profile, 3)) : []);
 
     const usedIds = new Set(finalItems.map(item => normalizeContentId(item?.data?.id ?? '')).filter(Boolean));
     const fallbackSelectors = (policy === ANIME_POLICY_MODES.ONLY || policy === ANIME_POLICY_MODES.EXCLUDE) ? effectiveSelectors : (typeSelectors || null);
@@ -965,6 +1014,7 @@ async function buildSeedNetworkFill({ finalItems, tmdbApiKey, mediaType, types, 
         if (!matchesTypeSelectors(raw, effectiveSelectors)) continue;
         if (policy === ANIME_POLICY_MODES.ONLY && !isItemAnime(raw)) continue;
         if (policy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(raw)) continue;
+        if (!passesSeedNetworkDnaGate(raw, effectiveMappedTopGenres)) continue;
         const score = ProfileScorer.calculateItemMatch(raw, profile, { dnaFilters, globalProfile, kidsMode: isKidsMode, typeSelectors: effectiveSelectors, animePolicy: policy });
         if (isKidsMode && score <= 0) continue;
         usedIds.add(id);
@@ -1182,6 +1232,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         if (!matchesTypeSelectors(rawItem, effectiveTypeSelectors)) continue;
         if (animePolicy === ANIME_POLICY_MODES.ONLY && !isItemAnime(rawItem)) continue;
         if (animePolicy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(rawItem)) continue;
+        if (!passesSeedNetworkDnaGate(rawItem, mappedTopGenres)) continue;
         const itemGenres = rawItem.genre_ids || [];
         
         let hybridScore = calculateHybridScore(
@@ -1235,6 +1286,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
             if (!matchesTypeSelectors(tmdbData, effectiveTypeSelectors)) return null;
             if (animePolicy === ANIME_POLICY_MODES.ONLY && !isItemAnime(tmdbData)) return null;
             if (animePolicy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(tmdbData)) return null;
+            if (!passesSeedNetworkDnaGate(tmdbData, mappedTopGenres)) return null;
             if (typeof tmdbData.vote_count !== 'number') {
                 tmdbData.vote_count = typeof data.vote_count === 'number' ? data.vote_count : (data.rawTMDB?.vote_count ?? 0);
             }
@@ -1294,7 +1346,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     // top-rated (pavimento qualità + VSM) invece di lasciare pagine corte.
     if (finalItems.length < SEED_NETWORK_TARGET_SIZE) {
         const fillItems = await buildSeedNetworkFill({
-            finalItems, tmdbApiKey, mediaType, types, isKidsMode, profile, dnaFilters, globalProfile, typeSelectors: fallbackSelectors, animePolicy
+            finalItems, tmdbApiKey, mediaType, types, isKidsMode, profile, dnaFilters, globalProfile, typeSelectors: fallbackSelectors, animePolicy, mappedTopGenres
         });
         if (fillItems.length > 0) {
             const combined = finalizeHeroQualityCandidates(
@@ -1517,5 +1569,10 @@ module.exports = {
     getAnimeProportion,
     isItemAnime,
     resolveAnimePolicy,
-    getEffectiveTypeSelectors
+    getEffectiveTypeSelectors,
+    isCompilationOrBoxSet,
+    passesQualityFloor,
+    passesSeedNetworkNonNarrativeGate,
+    passesSeedNetworkDnaGate,
+    NON_NARRATIVE_GENRE_IDS
 };
