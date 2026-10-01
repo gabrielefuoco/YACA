@@ -9,7 +9,8 @@ const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
 const { routeCatalogRequest } = require('../catalog/CatalogRouter');
 const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
 const { formatStremioCatalog, sanitizeCatalogMeta, findLatestAiredEpisode } = require('../catalog/formatters/StremioFormatter');
-const StreamBadge = require('../db/models/StreamBadge');
+const itaAnnotations = require('../data/itaAnnotations');
+const duckDbStore = require('../db/duckDbStore');
 const animeAiringState = require('../data/animeAiringState');
 const { normalizeAnimeMarker, extractAnimeTmdbId } = require('../utils/animeIdentity');
 const animeMappingStore = require('../data/animeMappingStore');
@@ -159,6 +160,59 @@ function getLatestEpisodeInfo(item) {
     return null;
 }
 
+/**
+ * Chiave dell'annotazione per una card: `(tipo, tmdb id)`.
+ * `tmdb:…` è diretto; `tt…` passa dal ponte IMDb→TMDB in batch (nessuna chiamata API);
+ * `kitsu:…` passa dal mapping anime. `null` quando non c'è modo di risalire all'id.
+ */
+function annotationKeyFor(item, imdbMap = {}) {
+    const rawId = String(item.id || '').replace(/_ita_offset$/, '');
+    const cardType = item.type === 'movie' ? 'movie' : 'tv';
+
+    if (rawId.startsWith('tmdb:')) {
+        const parts = rawId.split(':');
+        const tmdbType = parts[1] === 'movie' ? 'movie' : (parts[1] === 'tv' ? 'tv' : null);
+        const id = Number(parts[2]);
+        return tmdbType && Number.isFinite(id) ? { type: tmdbType, id } : null;
+    }
+
+    if (rawId.startsWith('tt')) {
+        const mapped = imdbMap[rawId];
+        return mapped ? { type: mapped.type, id: mapped.id } : null;
+    }
+
+    if (rawId.startsWith('kitsu:')) {
+        const kitsuId = rawId.slice('kitsu:'.length).split(':')[0];
+        try {
+            const tmdbId = /^\d+$/.test(kitsuId) ? animeMappingStore.resolveTmdbFromKitsu(kitsuId) : null;
+            if (tmdbId) return { type: cardType, id: Number(tmdbId) };
+        } catch (_e) {
+            // difensivo: un mapping mancante non deve far fallire il catalogo
+        }
+        return null;
+    }
+
+    return null;
+}
+
+/** Ponte IMDb→TMDB per le card `tt…`: **una** query in batch, non una per card. */
+async function resolveImdbMap(metas) {
+    const ids = [...new Set(metas.map(item => String(item.id || '')).filter(id => id.startsWith('tt')))];
+    if (ids.length === 0) return {};
+    try {
+        const mapping = await duckDbStore.resolveImdbIds(ids);
+        const out = {};
+        for (const [imdbId, value] of Object.entries(mapping || {})) {
+            if (value && value.tmdbId) {
+                out[imdbId] = { type: value.type === 'tv' ? 'tv' : 'movie', id: Number(value.tmdbId) };
+            }
+        }
+        return out;
+    } catch (_e) {
+        return {};
+    }
+}
+
 async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta, type, baseId, options = {}) {
     if (!cachedData || !Array.isArray(cachedData.metas) || cachedData.metas.length === 0) {
         return cachedData || { metas: [] };
@@ -196,25 +250,18 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
         hostUrl
     };
 
-    // Escludiamo gli anime dallo scanner torrent ITA a monte (resta attivo per serie e film non-anime)
-    const nonAnimeMetas = metas.filter(item => !isItemAnime(item));
-    const itemIds = nonAnimeMetas
-        .map(item => getBaseId(item.id))
-        .filter(id => id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:') || id.startsWith('tt'));
-
-    let allBadges = [];
-    if (itemIds.length > 0) {
+    // Annotazioni ITA dal file prodotto dal modulo `services/doppiaggi-source`: una lettura per finestra
+    // (snapshot in RAM con TTL breve), non una query per item. Il core non scrive mai questo file.
+    let itaSnapshot = options.itaSnapshot || null;
+    if (!itaSnapshot) {
         try {
-            allBadges = await StreamBadge.find({ baseId: { $in: itemIds } }).lean();
-        } catch (badgeErr) {
-            console.error('[Catalog Post-Cache] Error fetching stream badges:', badgeErr.message);
+            itaSnapshot = await itaAnnotations.getSnapshot();
+        } catch (_e) {
+            itaSnapshot = null; // degrado deciso: nessun badge, nessuna eccezione
         }
     }
 
-    const getEpNum = (stremioId) => {
-        const parts = stremioId.split(':');
-        return parseInt(parts[parts.length - 1]) || 0;
-    };
+    const imdbMap = options.imdbMap || (await resolveImdbMap(metas.filter(item => !isItemAnime(item))));
 
     const processedMetas = [];
 
@@ -225,21 +272,16 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
         // La verità ITA arriva dallo stato esterno (anime_airing_state).
         // Badge ITA ovunque se il titolo è doppiato (formato 'ITA n'), ma MAI cloni nei cataloghi standard.
         if (isItemAnime(item)) {
-            const isAlreadyCloned = String(item.id).endsWith('_ita_offset');
+            // Fuori dal catalogo simulcast l'anime mostra SOLO il badge `ITA` secco (o niente):
+            // niente numero di episodio, niente badge di stagione. La verità è la colonna `ita`,
+            // che vale `true` anche per i doppiati solo AnimeUnity (l'unione la fa la build).
+            const animeKey = annotationKeyFor(item);
+            const animeDubbed = animeKey
+                ? itaAnnotations.isDubbed(itaSnapshot, animeKey.type, animeKey.id)
+                : false;
+            const animeItem = { ...item, _itaBadge: animeDubbed, _itaOnlyBadge: true };
 
-            const doc = animeSnapshot
-                ? findAiringStateDocument(animeSnapshot, item)
-                : null;
-
-            const dubEpisode = animeAiringState.getDubEpisode(doc);
-            // Fuori dal catalogo novità un anime mostra SOLO il badge ITA (o niente):
-            // niente badge episodio e niente badge di stagione. Il flag lo rispetta il formatter.
-            const animeItem = { ...item, _itaBadge: false, _itaOnlyBadge: true };
-            if (dubEpisode !== null) {
-                animeItem._forceBadgeText = `ITA ${dubEpisode}`;
-            }
-
-            if ((sanitizeOptions.shouldApplyEpisodeBadge || animeItem._forceBadgeText) && !isAlreadyCloned) {
+            if (sanitizeOptions.shouldApplyEpisodeBadge || animeDubbed) {
                 processedMetas.push(sanitizeCatalogMeta(animeItem, sanitizeOptions));
             } else {
                 processedMetas.push(animeItem);
@@ -247,78 +289,16 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
             continue;
         }
 
-        const id = String(item.id);
-        let bId = id;
-        if (id.startsWith('tmdb:') || id.startsWith('kitsu:') || id.startsWith('anilist:')) {
-            const parts = id.split(':');
-            bId = `${parts[0]}:${parts[1]}`;
-        }
+        // Un solo sguardo allo snapshot: `true` → badge, `null`/`false` → nessun badge.
+        // Niente cloni e niente offset: l'episodio doppiato non ci interessa (ticket 04).
+        const key = annotationKeyFor(item, imdbMap);
+        const dubbed = key ? itaAnnotations.isDubbed(itaSnapshot, key.type, key.id) : false;
+        const outItem = { ...item, _itaBadge: dubbed };
 
-        const itemBadges = allBadges.filter(b => b.baseId === bId);
-        const itaBadges = itemBadges.filter(b => b.hasIta === true);
-        const noItaBadges = itemBadges.filter(b => b.hasIta === false);
-        const isAlreadyCloned = id.endsWith('_ita_offset');
-
-        if (itaBadges.length > 0) {
-            // Troviamo maxItaEp e maxNoItaEp per calcolare l'offset
-            const sortedIta = itaBadges.map(b => getEpNum(b.stremioId)).sort((a, b) => a - b);
-            const sortedNoIta = noItaBadges.map(b => getEpNum(b.stremioId)).sort((a, b) => a - b);
-
-            const maxIta = sortedIta[sortedIta.length - 1];
-            const maxNoIta = sortedNoIta.find(ep => ep > maxIta);
-
-            const hasOffset = maxNoIta && (maxNoIta > maxIta);
-
-            if (hasOffset && !isAlreadyCloned && sanitizeOptions.shouldApplyEpisodeBadge && (item.type === 'series' || item.type === 'anime')) {
-                // 1. Elemento originale (Sub): badge ITA disattivato
-                const subItem = { ...item };
-                subItem._itaBadge = false;
-                if (sanitizeOptions.shouldApplyEpisodeBadge) {
-                    processedMetas.push(sanitizeCatalogMeta(subItem, sanitizeOptions));
-                } else {
-                    processedMetas.push(subItem);
-                }
-
-                // 2. Elemento clone (Dub): badge ITA attivato, forziamo stagione ed episodio
-                const dubItem = { ...item };
-                dubItem.id = `${item.id}_ita_offset`;
-                dubItem._itaBadge = true;
-
-                // Troviamo il badge specifico per recuperare stagione ed episodio originali
-                const maxItaBadge = itaBadges.find(b => getEpNum(b.stremioId) === maxIta);
-                let maxItaSeason = 1;
-                let maxItaEpisode = maxIta;
-                
-                if (maxItaBadge) {
-                    const parts = maxItaBadge.stremioId.split(':');
-                    if (maxItaBadge.stremioId.startsWith('tmdb:tv:')) {
-                        maxItaSeason = parseInt(parts[3]) || 1;
-                        maxItaEpisode = parseInt(parts[4]) || maxIta;
-                    } else if (parts.length === 4) {
-                        maxItaSeason = parseInt(parts[2]) || 1;
-                        maxItaEpisode = parseInt(parts[3]) || maxIta;
-                    }
-                }
-                
-                dubItem._forceSeason = maxItaSeason;
-                dubItem._forceEpisode = maxItaEpisode;
-
-                processedMetas.push(sanitizeCatalogMeta(dubItem, sanitizeOptions));
-            } else {
-                // Nessun offset: badge ITA standard
-                const standardItem = { ...item };
-                standardItem._itaBadge = true;
-                processedMetas.push(sanitizeCatalogMeta(standardItem, sanitizeOptions));
-            }
+        if (sanitizeOptions.shouldApplyEpisodeBadge) {
+            processedMetas.push(sanitizeCatalogMeta(outItem, sanitizeOptions));
         } else {
-            // Non ci sono flussi ita, disattiva il badge
-            const subItem = { ...item };
-            subItem._itaBadge = false;
-            if (sanitizeOptions.shouldApplyEpisodeBadge) {
-                processedMetas.push(sanitizeCatalogMeta(subItem, sanitizeOptions));
-            } else {
-                processedMetas.push(subItem);
-            }
+            processedMetas.push(outItem);
         }
     }
 
