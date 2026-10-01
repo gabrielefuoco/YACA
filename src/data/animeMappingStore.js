@@ -2,6 +2,17 @@ const axios = require('axios');
 const duckDbStore = require('../db/duckDbStore');
 // Logger non standard rimosso, usiamo console
 
+let loadAnimeOverrides;
+try {
+    loadAnimeOverrides = require('../../services/anime-source/src/overrides').loadAnimeOverrides;
+} catch (e) {
+    try {
+        loadAnimeOverrides = require('../../../services/anime-source/src/overrides').loadAnimeOverrides;
+    } catch (e2) {
+        loadAnimeOverrides = () => ({ version: 1, identities: [], certify: [] });
+    }
+}
+
 const ANIBRIDGE_URL = 'https://github.com/anibridge/anibridge-mappings/releases/download/v3/mappings.min.json';
 const FRIBB_MINI_URL = 'https://raw.githubusercontent.com/Fribb/anime-lists/master/anime-list-mini.json';
 const SYNC_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 ore
@@ -14,6 +25,7 @@ class AnimeMappingStore {
         this.tmdbToKitsuMovie = new Map();
         this.malToTmdb = new Map();
         this.anibridgeTmdbIds = new Set();
+        this.certifiedTmdbIds = new Set();
         this.animeTmdbIds = new Set();
         
         this.etags = {
@@ -27,6 +39,7 @@ class AnimeMappingStore {
 
     async init() {
         console.log('[AnimeMappingStore] Inizializzazione in corso...');
+        this.loadOverrides();
         await this.sync();
         
         // Avvia il polling in background ogni 12 ore
@@ -35,6 +48,31 @@ class AnimeMappingStore {
             this.syncInterval.unref();
         }
         this.isReady = true;
+    }
+
+    /**
+     * Carica gli ID certificati dalla sezione certify di anime-overrides.json
+     * @param {Object|string} [customDataOrPath]
+     */
+    loadOverrides(customDataOrPath) {
+        try {
+            const data = (customDataOrPath && typeof customDataOrPath === 'object' && Array.isArray(customDataOrPath.certify))
+                ? customDataOrPath
+                : loadAnimeOverrides(typeof customDataOrPath === 'string' ? customDataOrPath : undefined);
+
+            this.certifiedTmdbIds = new Set();
+            if (data && Array.isArray(data.certify)) {
+                for (const item of data.certify) {
+                    if (item && item.tmdbId != null && item.tmdbId !== '') {
+                        const clean = String(item.tmdbId).trim();
+                        if (clean) this.certifiedTmdbIds.add(clean);
+                    }
+                }
+            }
+            this._rebuildAnimeTmdbIds();
+        } catch (err) {
+            console.warn(`[AnimeMappingStore] Warning caricamento overrides: ${err.message}`);
+        }
     }
 
     async sync() {
@@ -84,8 +122,9 @@ class AnimeMappingStore {
             if (anibridgeUpdated && anibridgeData) {
                 this.buildAnibridgeIndex(anibridgeData);
             }
+            this.loadOverrides();
             
-            console.log(`[AnimeMappingStore] Sincronizzazione completata. TMDB chiavi: ${this.tmdbToAnimeNode.size}`);
+            console.log(`[AnimeMappingStore] Sincronizzazione completata. TMDB chiavi: ${this.tmdbToAnimeNode.size}, certificati: ${this.certifiedTmdbIds.size}`);
             
             // POPOLIAMO LA TABELLA ANIME IN DUCKDB PER LE QUERY SQL
             const idsToUpdate = this.animeTmdbIds.size > 0 ? Array.from(this.animeTmdbIds) : Array.from(this.tmdbToAnimeNode.keys());
@@ -110,6 +149,11 @@ class AnimeMappingStore {
         }
         if (this.tmdbToKitsuMovie) {
             for (const id of this.tmdbToKitsuMovie.keys()) {
+                combined.add(String(id));
+            }
+        }
+        if (this.certifiedTmdbIds) {
+            for (const id of this.certifiedTmdbIds) {
                 combined.add(String(id));
             }
         }
@@ -347,6 +391,7 @@ class AnimeMappingStore {
         const cleanId = String(id).replace(/^tmdb:(tv:|movie:)?/i, '').split(':')[0].trim();
         if (!cleanId) return false;
         if (this.animeTmdbIds.has(cleanId)) return true;
+        if (this.certifiedTmdbIds?.has(cleanId)) return true;
         if (this.tmdbToKitsuMovie?.has(cleanId)) return true;
         return false;
     }
