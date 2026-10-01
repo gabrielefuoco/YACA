@@ -144,13 +144,25 @@ Per evitare di superare i rate limit delle API esterne (TMDB, Kitsu, Trakt) e ga
 Per indicare visivamente all'utente la disponibilità del doppiaggio o delle novità in simulcast direttamente all'interno delle locandine dei cataloghi di Stremio, YACA implementa un sistema ad alte prestazioni basato sullo stato degli episodi.
 
 > [!IMPORTANT]
-> **Dismissione dello Scanner Torrent Asincrono (PendingScan)**:
-> In passato il sistema utilizzava uno scanner torrent asincrono con coda `PendingScan` e worker background. Tale architettura è stata interamente ritirata per eliminare il sovraccarico di rete sui proxy torrent e la persistenza di collezioni write-only.
-> L'idratazione dei badge ITA oggi avviene in modo deterministico ed efficiente:
-> - **Anime**: la disponibilità del doppiaggio proviene dallo stato esterno sincronizzato (`anime_airing_state`, AnimeWorld/Kitsu).
->   - **In tutti i cataloghi**: se il titolo ha un canale doppiato, riceve il badge `ITA n` (senza duplicare la card);
->   - **Nel catalogo novità** (`preset_anime_simulcast`): produce la card sub `EP n` e, se presente un'uscita doppiata recente, il clone `_ita_offset` con `ITA n`.
-> - **Contenuti Non-Anime**: non subiscono scansioni a vuoto in background; i metadati grafici sono applicati direttamente dai descrittori dei cataloghi.
+> **Lo scanner torrent non c'è più — né il proattivo né il reattivo.**
+> In passato il badge nasceva da una scansione torrent: prima un worker asincrono con coda `PendingScan`, poi
+> (dopo la sua rimozione) una **sonda viva** nel percorso degli stream, che a ogni apertura di un titolo
+> interrogava Torrentio/ICV e scriveva `streambadges` — scartando gli stream. Anche quella è stata rimossa
+> (01/10/2026): restituiva `{ streams: [] }` e non serviva a nient'altro.
+>
+> **Oggi la fonte è la colonna `ita`**, popolata dalle annotazioni de *Il Mondo dei Doppiatori* prodotte dal
+> modulo `services/doppiaggi-source` (mappa `.scratch/doppiaggio-ita`). Il merge nel parquet avviene nel
+> `SELECT` finale di `buildConversionSelect` (`scripts/convert_to_parquet.js`), con **`CASE` e mai `COALESCE`**
+> (il `null` è un terzo stato e va conservato).
+>
+> - **Badge**: legge uno **snapshot in RAM** del file delle annotazioni (`src/data/itaAnnotations.js`), non la
+>   colonna, così copre anche i **21 cataloghi** che non passano dal parquet (Trakt, hero, watchlist, simulcast);
+> - **Anime**: fuori dal catalogo novità il badge è **`ITA` secco** (niente numero di episodio, niente stagione);
+>   nel catalogo novità (`preset_anime_simulcast`) restano la card sub `EP n` e il clone `_ita_offset` con `ITA n`,
+>   letti da `anime_airing_state`;
+> - **Non-anime**: nessuna scansione, nessuna coda, nessun clone: la card resta singola con il badge `ITA`.
+> - **Degrado deciso**: se il file delle annotazioni manca, la colonna è `false` su tutto e i badge si spengono;
+>   un avviso non bloccante segnala il calo oltre il 2%. Il catalogo resta sempre fresco.
 
 ---
 

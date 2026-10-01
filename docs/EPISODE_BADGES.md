@@ -35,16 +35,46 @@ Le ottimizzazioni recenti per Kitsu includono:
 
 ## Badge per flussi Doppiati (ITA)
 
-Esistono due percorsi mutuamente esclusivi tra anime e non-anime:
+Il badge ITA dice una cosa sola: **questo titolo è doppiato in italiano**. La fonte è la colonna `ita` del
+catalogo, alimentata dalle annotazioni de *Il Mondo dei Doppiatori* (`antoniogenna.net`) che produce il modulo
+`services/doppiaggi-source` (mappa `.scratch/doppiaggio-ita`). Lo scanner torrent è stato **rimosso**: era un
+booleano per base id, sondava solo la S1E1 e alimentava una collezione che nessuno leggeva più.
 
-### Serie e Film Non-Anime (Scanner Torrent)
-Per i contenuti non-anime, `catalogHandler.js` legge i badge rilevati dallo scanner torrent (`StreamBadge`).
-- Se esiste un offset tra l'ultimo episodio andato in onda e l'ultimo episodio disponibile in italiano su torrent, l'elemento viene clonato con suffisso `_ita_offset` e le proprietà `_forceSeason` e `_forceEpisode` impostate sulla versione doppiata.
-- Se tutti gli episodi disponibili sono doppiati (o per i film con audio italiano), l'elemento mantiene la card singola con `_itaBadge: true`.
+### I tre stati
 
-### Anime (Stato Esterno `anime_airing_state`)
-I titoli anime sono **completamente esclusi dallo scanner torrent** e leggono la disponibilità del doppiaggio italiano dalla collezione `anime_airing_state` (`src/data/animeAiringState.js`), alimentata dal modulo esterno:
-- **Badge ITA su tutti i cataloghi**: in qualsiasi catalogo (popolari, top rated, generi, ricerca, ecc.), se un anime è presente nello stato con un canale doppiato (`italian.dub.latest` o episodi con `dubIta: true`), viene applicato il badge `ITA n` (dove `n` è l'episodio doppiato più recente). Il badge viene applicato via `_forceBadgeText: 'ITA n'` (con `_itaBadge: false`).
-- **Regola sul clone `_ita_offset`**: il clone esiste **esclusivamente nel catalogo novità** (`preset_anime_simulcast`), dove sussiste una distinzione temporale (una card sub `EP n` per i nuovi sub e una card dub `ITA n` con clone `_ita_offset` se è uscito un doppiato nella finestra di 14 giorni). Nei **cataloghi standard non nasce alcun clone**: il titolo compare come singola card con il badge `ITA n` e l'identificativo sottostante invariato (`kitsu:{id}` o `tmdb:{id}`).
-- **Costo zero**: nessuna query a MongoDB per singolo item; il controllo interroga lo snapshot in-memory (RAM con cache TTL breve) e i suoi indici O(1).
-- **Degrado silenzioso**: se MongoDB è offline, la collezione è vuota o il modulo esterno è fermo, nessun badge ITA viene applicato e non viene generata alcuna eccezione.
+| `ita` | significato | badge sul poster |
+|---|---|---|
+| `true` | doppiato: una scheda di AG identifica l'opera senza ambiguità | **`ITA`** |
+| `null` | indecisione: c'è una scheda AG ma non si sa *quale* opera sia | niente badge |
+| `false` | nessuna traccia di doppiaggio (o riga assente dal file) | niente badge |
+
+Il `null` **non produce badge** — un'ambiguità non si mostra — ma esiste perché il futuro filtro "solo ITA"
+lo **include**: meglio un dubbio in più che un doppiato in meno.
+
+### Come arriva sulla card
+
+Il badge si applica in `catalogHandler.applyPostCacheBadges` leggendo uno **snapshot in RAM** del file delle
+annotazioni (`src/data/itaAnnotations.js`, TTL ~60s, ~1,6 MB), **non** la colonna del parquet: **21 cataloghi**
+(9 Trakt, 8 hero, 3 watchlist, simulcast) non passano dal parquet e quella colonna non ce l'hanno. La colonna
+resta per i filtri SQL.
+
+La card va risolta in una chiave `(tipo, id)` — il tipo fa parte della chiave perché **5.933 id TMDB vivono in
+entrambe le tabelle**:
+
+- `tmdb:{id}` o `tmdb:{tipo}:{id}` → chiave diretta;
+- `tt…` → ponte IMDb→TMDB **in batch** sul parquet (`duckDbStore.resolveImdbIds`: una query, nessuna chiamata API);
+- `kitsu:…` → ponte dal mapping anime, o dallo stato anime (`doc.tmdbId`).
+
+### Anime
+
+Fuori dal catalogo novità un anime mostra **`ITA` secco**: niente numero di episodio, niente badge di stagione
+(`_itaBadge: true` + `_itaOnlyBadge: true`). Nel catalogo novità (`preset_anime_simulcast`) restano le due card:
+`EP n` per i sub e `ITA n` con il clone `_ita_offset` per il doppiato uscito nella finestra di 14 giorni, letti
+da `anime_airing_state` (`src/data/animeAiringState.js`).
+
+La verità ITA degli anime è l'**unione** tra le annotazioni di AG e lo stato AnimeUnity: l'unione la fa la build
+del file, così badge e filtro dicono la stessa cosa.
+
+- **Costo zero per item**: una lettura per finestra (snapshot), non una query per card.
+- **Degrado silenzioso**: file assente o rotto → snapshot vuoto, nessun badge, nessuna eccezione. Il catalogo
+  resta fresco; il badge si spegne.
