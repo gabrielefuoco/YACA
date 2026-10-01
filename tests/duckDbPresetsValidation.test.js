@@ -13,7 +13,7 @@ describe('DuckDB Native Presets & Architectural Optimizations', () => {
 
     test('All presets define native where and orderBy except simulcast', async () => {
         const presets = getPresets();
-        expect(presets.length).toBe(160);
+        expect(presets.length).toBe(161);
 
         for (const preset of presets) {
             if (preset.id === 'preset_anime_simulcast') {
