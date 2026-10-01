@@ -1,20 +1,15 @@
 /**
  * tests/animeBadgePolicy.test.js
  *
- * Regola dei badge sulle copertine degli anime (fix 2026-09-23):
+ * Regola dei badge sulle copertine degli anime (fix 2026-09-23, fonte cambiata il 01/10/2026):
  *  - nel catalogo novità (`preset_anime_simulcast`) restano i badge `EP n` (card sub) e
- *    `ITA n` (card doppiata);
- *  - FUORI dal catalogo novità la copertina mostra SOLO il badge ITA, o nessun badge:
- *    mai il badge episodio, mai il badge di stagione.
+ *    `ITA n` (card doppiata), letti da `anime_airing_state`;
+ *  - FUORI dal catalogo novità la copertina mostra SOLO il badge `ITA` secco, o nessun badge:
+ *    mai il badge episodio, mai il badge di stagione, mai un clone.
  *
- * Il caso di regressione è il secondo: un anime non doppiato finiva per mostrare il
- * badge episodio (calcolato dagli episodi TMDB), cosa che l'utente non vuole.
+ * La fonte fuori dal simulcast non è più lo scanner torrent ma la colonna `ita` (snapshot delle
+ * annotazioni, ticket 04 della mappa doppiaggio-ita): qui si inietta via `options.itaSnapshot`.
  */
-
-
-jest.mock('../src/db/models/StreamBadge', () => ({
-    find: jest.fn()
-}));
 
 const { applyPostCacheBadges } = require('../src/handlers/catalogHandler');
 
@@ -22,6 +17,19 @@ const NOW = Date.UTC(2026, 8, 23, 12, 0, 0);
 const daysAgo = (d) => new Date(NOW - d * 24 * 60 * 60 * 1000).toISOString();
 const HOST_URL = 'http://localhost:7860';
 const USER_CONFIG = { profiles: [{ id: 'global', settings: {} }], activeProfileId: 'global' };
+
+/**
+ * Snapshot delle annotazioni ITA: solo i doppiati finiscono nel file (riga assente = false).
+ * Costruito dai documenti dello stato anime usati dalle fixture.
+ */
+function itaSnapshotFor(docs) {
+    const byKey = new Map();
+    for (const d of docs) {
+        if (d.ids?.tmdb === undefined) continue;
+        if (d.italian?.dub?.latest) byKey.set(`tv:${d.ids.tmdb}`, true);
+    }
+    return { byKey, count: byKey.size, trueCount: byKey.size, nullCount: 0, error: null };
+}
 
 function buildSnapshot(docs) {
     const byTmdbId = new Map();
@@ -79,18 +87,19 @@ async function renderInCatalog(catalogId, kitsu, doc, extra = {}) {
         { id: catalogId },
         'series',
         catalogId,
-        { snapshot }
+        { snapshot, itaSnapshot: itaSnapshotFor([doc]) }
     );
     return result.metas[0];
 }
 
 describe('Badge sulle copertine degli anime (fuori dal catalogo novità)', () => {
-    test('anime DOPPIATO: badge ITA, nessun badge episodio, nessun clone', async () => {
+    test('anime DOPPIATO: badge ITA secco, nessun badge episodio, nessun clone', async () => {
         const doc = serieAnime({ kitsu: '48269', tmdb: 240411, dub: 8 });
         const item = await renderInCatalog('preset_pop_anime', '48269', doc);
 
         expect(item.id).toBe('kitsu:48269');           // card singola, id invariato
-        expect(item._forceBadgeText).toBe('ITA 8');    // badge ITA dallo stato esterno
+        expect(item._itaBadge).toBe(true);             // la colonna `ita` dice sì
+        expect(item._forceBadgeText).toBeUndefined();  // niente numero di episodio
         expect(item._itaOnlyBadge).toBe(true);         // niente badge episodio/stagione
         expect(String(item.poster)).toContain('/images/poster/'); // il badge c'è, sulla copertina
     });
@@ -100,6 +109,7 @@ describe('Badge sulle copertine degli anime (fuori dal catalogo novità)', () =>
         const item = await renderInCatalog('preset_pop_anime', '9', doc);
 
         expect(item._forceBadgeText).toBeUndefined();
+        expect(item._itaBadge).toBe(false);
         expect(item._itaOnlyBadge).toBe(true);
         // La copertina NON viene riscritta: nessun badge disegnato sopra
         expect(String(item.poster)).not.toContain('/images/poster/');

@@ -275,9 +275,14 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
             // Fuori dal catalogo simulcast l'anime mostra SOLO il badge `ITA` secco (o niente):
             // niente numero di episodio, niente badge di stagione. La verità è la colonna `ita`,
             // che vale `true` anche per i doppiati solo AnimeUnity (l'unione la fa la build).
-            const animeKey = annotationKeyFor(item);
-            const animeDubbed = animeKey
-                ? itaAnnotations.isDubbed(itaSnapshot, animeKey.type, animeKey.id)
+            //
+            // Chiave: le card anime sono spesso `kitsu:…`, mentre l'annotazione è per TMDB id.
+            // Lo stato anime è già in RAM ed è il ponte migliore (sa ids.tmdb di ciò che traccia);
+            // `extractTmdbId` copre le card che un TMDB id ce l'hanno già.
+            const doc = animeSnapshot ? findAiringStateDocument(animeSnapshot, item) : null;
+            const animeTmdbId = (doc && doc.ids && doc.ids.tmdb) || extractTmdbId(item);
+            const animeDubbed = animeTmdbId
+                ? itaAnnotations.isDubbed(itaSnapshot, item.type === 'movie' ? 'movie' : 'tv', Number(animeTmdbId))
                 : false;
             const animeItem = { ...item, _itaBadge: animeDubbed, _itaOnlyBadge: true };
 
