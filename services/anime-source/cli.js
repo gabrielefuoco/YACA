@@ -33,6 +33,7 @@ function parseArgs(args) {
         dubLimit: DEFAULT_DUB_LIMIT,
         healthCheck: false,
         refreshList: false,
+        refreshFallbacks: false,
         buildDubList: false,
         checkHome: false,
         help: false
@@ -63,6 +64,8 @@ function parseArgs(args) {
             opts.healthCheck = true;
         } else if (arg === '--refresh-list') {
             opts.refreshList = true;
+        } else if (arg === '--refresh-fallbacks') {
+            opts.refreshFallbacks = true;
         } else if (arg === '--build-dub-list') {
             opts.buildDubList = true;
         } else if (arg === '--check-home') {
@@ -90,6 +93,7 @@ Opzioni:
   --dub-limit <n>       Tetto massimo di serie per la passata doppiati (default: 2000)
   --health-check        Verifica il battito di salute (exit 0 se < 12h, exit 1 altrimenti)
   --refresh-list        Forza la riscoperta della lista serie in corso ignorando la cache di 24h
+  --refresh-fallbacks   Forza la riscansione dei fallback TMDB ignorando la cache locale
   --build-dub-list      Costruisce o forza la lista dei doppiati da AnimeUnity ed elabora i dati episodici
   --check-home          Esegue il controllo quotidiano dalla home page di AnimeUnity per nuovi titoli doppiati
   --mongo-uri <uri>     URI MongoDB (default: env MONGODB_URI o mongodb://localhost:27017/yaca)
@@ -283,6 +287,7 @@ async function main() {
             console.log(`  ${i + 1}. "${title}" | ID: ${r.id} | DUB: ${r.dub} | AniList: ${r.anilist_id} | MAL: ${r.mal_id} | Status: ${r.status}`);
         }
 
+        await identityResolver.enrichWithFallbacks(records, { dryRun: opts.dryRun, refreshFallbacks: opts.refreshFallbacks });
         const groups = groupRecordsByTmdb(records, identityResolver);
         console.log(`\n[AnimeSource] Record doppiati raggruppati in ${groups.length} titoli TMDB unificati.`);
 
@@ -333,6 +338,7 @@ async function main() {
                 console.log(`  -> Nuovo doppiato scoperto: "${r.title || r.title_eng}" (id: ${r.id}, dub: ${r.dub}, anilist: ${r.anilist_id})`);
             }
 
+            await identityResolver.enrichWithFallbacks(homeResult.newDubbedRecords, { dryRun: opts.dryRun, refreshFallbacks: opts.refreshFallbacks });
             const newGroups = groupRecordsByTmdb(homeResult.newDubbedRecords, identityResolver);
             console.log(`\n[AnimeSource] Elaborazione di ${newGroups.length} nuovi titoli TMDB dalla home...`);
             for (let i = 0; i < newGroups.length; i++) {
@@ -368,6 +374,7 @@ async function main() {
             }
 
             console.log(`[AnimeSource] Trovati ${records.length} record per "${opts.series}". Raggruppamento per TMDB ID...`);
+            await identityResolver.enrichWithFallbacks(records, { dryRun: opts.dryRun, refreshFallbacks: opts.refreshFallbacks });
             const groups = groupRecordsByTmdb(records, identityResolver);
 
             const targetLower = opts.series.trim().toLowerCase();
@@ -419,6 +426,7 @@ async function main() {
         }
         console.log('======================================================\n');
 
+        await identityResolver.enrichWithFallbacks(records, { dryRun: opts.dryRun, refreshFallbacks: opts.refreshFallbacks });
         const groups = groupRecordsByTmdb(records, identityResolver);
         console.log(`[AnimeSource] Record raggruppati in ${groups.length} titoli TMDB unificati.`);
 
