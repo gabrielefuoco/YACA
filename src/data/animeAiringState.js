@@ -27,6 +27,8 @@ const COLLECTION_NAME = 'anime_airing_state';
 const SUPPORTED_SCHEMA_VERSION = 1;
 const CACHE_TTL_MS = 60 * 1000;
 const NOVELTY_WINDOW_DAYS = 14;
+const AIRING_FRESHNESS_HOURS = 12;
+const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Proiezione: niente payload morto in RAM, solo i campi effettivamente consumati.
@@ -408,17 +410,33 @@ function getNoveltyEntries(snapshot, options = {}) {
 }
 
 /**
- * Tutti i documenti con sub o dub presenti, senza filtro finestra temporale.
- * Ordinati per orderIndex se presente, altrimenti come oggi (per data dell'ultimo episodio).
+ * Tutti i documenti con sub o dub presenti appartenenti al ciclo corrente di AnimeUnity.
+ * Filtro freschezza su updatedAt: default 12 ore (≈4 cicli da 3h), configurabile via options.
+ * Ordinati per orderIndex se presente, altrimenti per data più recente dell'ultimo episodio.
  */
-function getAiringEntries(snapshot) {
+function getAiringEntries(snapshot, options = {}) {
     const docs = snapshot && Array.isArray(snapshot.docs) ? snapshot.docs : [];
     const entries = [];
+
+    const opts = options && typeof options === 'object' ? options : {};
+    const nowMs = Number.isFinite(opts.now) ? opts.now : Date.now();
+    const freshnessHours = Number.isFinite(opts.freshnessHours) && opts.freshnessHours > 0
+        ? opts.freshnessHours
+        : AIRING_FRESHNESS_HOURS;
+    const maxAgeMs = Number.isFinite(opts.maxAgeMs) && opts.maxAgeMs > 0
+        ? opts.maxAgeMs
+        : freshnessHours * HOUR_MS;
+    const minUpdatedAt = nowMs - maxAgeMs;
 
     for (const doc of docs) {
         const hasSub = Boolean(doc.sub);
         const hasDub = Boolean(doc.dub);
         if (!hasSub && !hasDub) continue;
+
+        // Filtro di freschezza: solo i documenti aggiornati nell'ultimo ciclo
+        if (doc.updatedAt === null || doc.updatedAt === undefined || doc.updatedAt < minUpdatedAt) {
+            continue;
+        }
 
         const windowInfo = getWindowInfo(doc);
 
@@ -553,6 +571,7 @@ module.exports = {
     SUPPORTED_SCHEMA_VERSION,
     CACHE_TTL_MS,
     NOVELTY_WINDOW_DAYS,
+    AIRING_FRESHNESS_HOURS,
     getSnapshot,
     getNoveltyEntries,
     getAiringEntries,

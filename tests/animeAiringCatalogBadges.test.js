@@ -32,6 +32,7 @@ function buildFixtureDocs() {
             schemaVersion: 1,
             ids: { tmdb: 240411, kitsu: '48269' },
             title: 'Dandadan',
+            updatedAt: daysAgo(0.1),
             italian: {
                 sub: { latest: { season: 2, episode: 12 } },
                 dub: { latest: { season: 2, episode: 8 }, isSimuldub: true }
@@ -47,6 +48,7 @@ function buildFixtureDocs() {
             schemaVersion: 1,
             ids: { tmdb: 999002, kitsu: '222' },
             title: 'Dub Fermo',
+            updatedAt: daysAgo(0.1),
             italian: {
                 sub: { latest: { season: 1, episode: 20 } },
                 dub: { latest: { season: 1, episode: 5 } }
@@ -62,6 +64,7 @@ function buildFixtureDocs() {
             schemaVersion: 1,
             ids: { tmdb: 999004, kitsu: '444' },
             title: 'Solo Dub',
+            updatedAt: daysAgo(0.1),
             italian: {
                 sub: { latest: { season: 1, episode: 3 } },
                 dub: { latest: { season: 1, episode: 3 } }
@@ -81,6 +84,7 @@ function buildManyFixtureDocs(count) {
             schemaVersion: 1,
             ids: { tmdb: 100000 + i, kitsu: String(50000 + i) },
             title: `Anime Series ${i}`,
+            updatedAt: daysAgo(0.1),
             italian: {
                 sub: { latest: { season: 1, episode: i } }
             },
@@ -265,7 +269,8 @@ describe('AiringStateProvider - catalogo novità anime', () => {
                 ids: { tmdb: 37854, kitsu: '12' },
                 title: 'One Piece',
                 sub: { season: 22, episode: 1180 },
-                orderIndex: 0
+                orderIndex: 0,
+                updatedAt: daysAgo(0.1)
             },
             // Doc vecchio (con episodes[], senza orderIndex)
             {
@@ -274,7 +279,8 @@ describe('AiringStateProvider - catalogo novità anime', () => {
                 ids: { tmdb: 240411, kitsu: '48269' },
                 title: 'Dandadan',
                 italian: { sub: { latest: { season: 2, episode: 12 } } },
-                episodes: [{ season: 2, episode: 12, airedAt: daysAgo(2), subIta: true, dubIta: false }]
+                episodes: [{ season: 2, episode: 12, airedAt: daysAgo(2), subIta: true, dubIta: false }],
+                updatedAt: daysAgo(0.1)
             },
             // Doc nuovo (senza episodes[], con orderIndex: 1)
             {
@@ -283,7 +289,8 @@ describe('AiringStateProvider - catalogo novità anime', () => {
                 ids: { tmdb: 2362, kitsu: '210' },
                 title: 'Detective Conan',
                 sub: { season: 1, episode: 1100 },
-                orderIndex: 1
+                orderIndex: 1,
+                updatedAt: daysAgo(0.1)
             }
         ];
 
