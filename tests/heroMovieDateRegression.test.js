@@ -56,7 +56,7 @@ function cachedHeroGroup(mediaType, ids) {
     for (const slug of ['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered']) {
         catalogs[`yaca_${slug}_${suffix}`] = slug === owner ? ids : [];
     }
-    return { schemaVersion: 5, mediaType, catalogs };
+    return { schemaVersion: 6, mediaType, catalogs };
 }
 
 describe('Hero Catalogs Audit 02 Fixes', () => {

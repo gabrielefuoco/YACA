@@ -13,6 +13,7 @@ const mongoose = require('mongoose');
 
 const { applyKidsMode, isItemInappropriateForKids } = require('../utils/kidsModeFilters');
 const { normalizeAnimeMarker } = require('../utils/animeIdentity');
+const { resolveAnimePolicy, getEffectiveTypeSelectors } = require('./hybrid/animePolicy');
 
 function isItemAnime(item) {
     if (!item) return false;
@@ -78,7 +79,7 @@ const HERO_CATALOG_IDS = new Map([
 // Lo schema interno versiona l'allocazione: 4 invalida i blocchi schema 3
 // prodotti prima della garanzia pairwise verificata sul dataset completo.
 const HERO_CACHE_KEY_VERSION = 'v1';
-const HERO_CACHE_SCHEMA_VERSION = 5;
+const HERO_CACHE_SCHEMA_VERSION = 6;
 const HERO_MIN_FALLBACK_ITEMS = 10;
 const HERO_MAX_ITEMS_PER_CATALOG = 100;
 const activeHeroGroupBuilds = new Map();
@@ -321,6 +322,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     // kidsMode è un'impostazione del profilo YACA (AddonConfig), non del TasteProfile.
     const isKidsMode = getActiveKidsMode(userConfig, context);
     const typeSelectors = getActiveTypeSelectors(userConfig, context);
+    const effectiveTypeSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
     const configVersion = userConfig?.configVersion ?? userConfig?.config?.configVersion;
     const heroInfo = getHeroCatalogInfo(catalogId);
     const cacheKey = heroInfo
@@ -354,14 +356,14 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
             tmdbApiKey,
             kidsMode: isKidsMode,
             userConfig,
-            typeSelectors
+            typeSelectors: effectiveTypeSelectors
         }, cacheKey);
         recommendationIds = sharedGroup.catalogs[catalogId] || [];
         console.log(`[HeroPool] ${catalogId}: ${recommendationIds.length} assigned IDs (group=${cacheKey})`);
     } else {
         const buildRecommendIds = async () => {
             if (matchedPreset) {
-                const ids = await buildDirectPresetCatalog(catalogId, userId, context, tmdbApiKey, mediaType, isKidsMode, typeSelectors);
+                const ids = await buildDirectPresetCatalog(catalogId, userId, context, tmdbApiKey, mediaType, isKidsMode, effectiveTypeSelectors);
                 if (ids.length > 0) {
                     await hybridRecommendationsCache.set(cacheKey, { ids });
                     return ids;
@@ -531,9 +533,9 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     if (isKidsMode) {
         cleanResults = applyKidsMode(cleanResults);
     }
-    if (typeSelectors?.anime === 'only') {
+    if (effectiveTypeSelectors?.anime === 'only') {
         cleanResults = cleanResults.filter(isItemAnime);
-    } else if (typeSelectors?.anime === 'exclude') {
+    } else if (effectiveTypeSelectors?.anime === 'exclude') {
         cleanResults = cleanResults.filter(item => !isItemAnime(item));
     }
     if (skip === 0 && cleanResults.length > 0) {
