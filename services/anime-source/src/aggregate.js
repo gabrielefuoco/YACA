@@ -262,6 +262,16 @@ function mergeAiringDocuments(existing, incoming) {
     if (!existing) return incoming;
     if (!incoming) return existing;
 
+    /**
+     * Copia la base conservando la data di uscita nota (anche se la base non
+     * l'ha). Se nessuno dei due ha una data non aggiunge la chiave, cosi' i
+     * documenti legacy restano identici a prima.
+     */
+    const withAiredAt = (base, first, second) => {
+        const airedAt = (first && first.airedAt) || (second && second.airedAt) || null;
+        return airedAt ? { ...base, airedAt } : { ...base };
+    };
+
     const mergedTitle = incoming.title || existing.title;
     const mergedIds = {
         tmdb: incoming.ids?.tmdb || existing.ids?.tmdb,
@@ -276,15 +286,13 @@ function mergeAiringDocuments(existing, incoming) {
     if (subIncoming && subExisting) {
         const cmp = compareEpisodes(subIncoming, subExisting);
         if (cmp > 0) {
-            subLatest = subIncoming;
+            subLatest = withAiredAt(subIncoming, subIncoming, subExisting);
         } else if (cmp < 0) {
-            subLatest = subExisting;
+            // Il documento esistente resta avanti come numero, ma la data del ciclo
+            // corrente va conservata: i doc legacy non hanno airedAt.
+            subLatest = withAiredAt(subExisting, subIncoming, subExisting);
         } else {
-            subLatest = {
-                ...subExisting,
-                ...subIncoming,
-                airedAt: subIncoming.airedAt || subExisting.airedAt || null
-            };
+            subLatest = withAiredAt({ ...subExisting, ...subIncoming }, subIncoming, subExisting);
         }
     } else {
         subLatest = subIncoming || subExisting || null;
@@ -296,15 +304,11 @@ function mergeAiringDocuments(existing, incoming) {
     if (dubIncoming && dubExisting) {
         const cmp = compareEpisodes(dubIncoming, dubExisting);
         if (cmp > 0) {
-            dubLatest = dubIncoming;
+            dubLatest = withAiredAt(dubIncoming, dubIncoming, dubExisting);
         } else if (cmp < 0) {
-            dubLatest = dubExisting;
+            dubLatest = withAiredAt(dubExisting, dubIncoming, dubExisting);
         } else {
-            dubLatest = {
-                ...dubExisting,
-                ...dubIncoming,
-                airedAt: dubIncoming.airedAt || dubExisting.airedAt || null
-            };
+            dubLatest = withAiredAt({ ...dubExisting, ...dubIncoming }, dubIncoming, dubExisting);
         }
     } else {
         dubLatest = dubIncoming || dubExisting || null;

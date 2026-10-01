@@ -235,6 +235,37 @@ describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
         assert.strictEqual(merged.dub.airedAt, expectedDubIso);
     });
 
+    test('merge conserva airedAt anche quando il doc esistente ha un episodio piu\' alto (legacy senza data)', () => {
+        // Doc legacy: numero di episodi piu' alto (es. Bleach S2 13 vs 8 della lista) e nessuna data.
+        const legacy = {
+            _id: '30984',
+            schemaVersion: 1,
+            ids: { tmdb: '30984', kitsu: '1' },
+            title: 'Bleach: Sennen Kessen-hen - Kashin-tan',
+            sub: { season: 2, episode: 13 },
+            dub: { season: 2, episode: 13 },
+            italian: { sub: { latest: { season: 2, episode: 13 } }, dub: { latest: { season: 2, episode: 13 } } },
+            updatedAt: '2026-09-22T10:00:00.000Z'
+        };
+        const incoming = {
+            ...legacy,
+            sub: { season: 2, episode: 8, airedAt: '2026-09-12T18:47:02.000Z' },
+            dub: { season: 2, episode: 8, airedAt: '2026-09-15T20:00:00.000Z' },
+            italian: {
+                sub: { latest: { season: 2, episode: 8, airedAt: '2026-09-12T18:47:02.000Z' } },
+                dub: { latest: { season: 2, episode: 8, airedAt: '2026-09-15T20:00:00.000Z' } }
+            },
+            updatedAt: '2026-10-01T18:58:00.000Z'
+        };
+
+        const merged = mergeAiringDocuments(legacy, incoming);
+
+        assert.strictEqual(merged.sub.episode, 13, 'il numero piu' + ' alto resta (regola attuale)');
+        assert.strictEqual(merged.sub.airedAt, '2026-09-12T18:47:02.000Z', 'la data del ciclo corrente non si perde');
+        assert.strictEqual(merged.dub.airedAt, '2026-09-15T20:00:00.000Z');
+        assert.strictEqual(merged.italian.sub.latest.airedAt, '2026-09-12T18:47:02.000Z');
+    });
+
     test('processTmdbGroup: per varianti con real_episodes_count = N > 0 fa richiesta minima con startRange/endRange = N e non blocca il ciclo se fallisce', async () => {
         const calls = [];
         const mockClient = {
