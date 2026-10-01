@@ -272,6 +272,15 @@ function mergeAiringDocuments(existing, incoming) {
         return airedAt ? { ...base, airedAt } : { ...base };
     };
 
+    /**
+     * Il ciclo "In corso" (unico percorso che scrive listSeenAt) e' autorevole:
+     * il numero di episodi della lista vince sul valore precedente, che spesso
+     * arriva da logiche vecchie e resta gonfio. Le scritture parziali (controllo
+     * doppiati, passata archivio) continuano a fondersi col massimo.
+     */
+    const freshWins = Boolean(incoming.listSeenAt);
+    const hasEpisode = (v) => Boolean(v) && Number(v.episode) > 0;
+
     const mergedTitle = incoming.title || existing.title;
     const mergedIds = {
         tmdb: incoming.ids?.tmdb || existing.ids?.tmdb,
@@ -285,7 +294,9 @@ function mergeAiringDocuments(existing, incoming) {
     let subLatest = null;
     if (subIncoming && subExisting) {
         const cmp = compareEpisodes(subIncoming, subExisting);
-        if (cmp > 0) {
+        if (freshWins && hasEpisode(subIncoming)) {
+            subLatest = withAiredAt(subIncoming, subIncoming, subExisting);
+        } else if (cmp > 0) {
             subLatest = withAiredAt(subIncoming, subIncoming, subExisting);
         } else if (cmp < 0) {
             // Il documento esistente resta avanti come numero, ma la data del ciclo
@@ -303,7 +314,9 @@ function mergeAiringDocuments(existing, incoming) {
     let dubLatest = null;
     if (dubIncoming && dubExisting) {
         const cmp = compareEpisodes(dubIncoming, dubExisting);
-        if (cmp > 0) {
+        if (freshWins && hasEpisode(dubIncoming)) {
+            dubLatest = withAiredAt(dubIncoming, dubIncoming, dubExisting);
+        } else if (cmp > 0) {
             dubLatest = withAiredAt(dubIncoming, dubIncoming, dubExisting);
         } else if (cmp < 0) {
             dubLatest = withAiredAt(dubExisting, dubIncoming, dubExisting);

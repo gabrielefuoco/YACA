@@ -266,6 +266,41 @@ describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
         assert.strictEqual(merged.italian.sub.latest.airedAt, '2026-09-12T18:47:02.000Z');
     });
 
+    test('merge: la scrittura del ciclo "In corso" vince sul numero di episodi legacy', () => {
+        const legacy = {
+            _id: '30984',
+            schemaVersion: 1,
+            ids: { tmdb: '30984', kitsu: '1' },
+            title: 'Bleach: Sennen Kessen-hen - Kashin-tan',
+            sub: { season: 2, episode: 13 },
+            dub: { season: 2, episode: 13 },
+            updatedAt: '2026-09-22T10:00:00.000Z'
+        };
+
+        // Ciclo "In corso": sub fresco (8), doppiato assente in questo giro
+        const fresh = {
+            ...legacy,
+            sub: { season: 2, episode: 8, airedAt: '2026-09-12T18:47:02.000Z' },
+            dub: undefined,
+            listSeenAt: '2026-10-01T19:20:00.000Z',
+            updatedAt: '2026-10-01T19:20:00.000Z'
+        };
+
+        const merged = mergeAiringDocuments(legacy, fresh);
+        assert.strictEqual(merged.sub.episode, 8, 'il numero della lista vince');
+        assert.strictEqual(merged.sub.season, 2);
+        assert.strictEqual(merged.dub.episode, 13, 'variante assente nel ciclo: resta quella esistente');
+
+        // Scrittura non-ongoing (controllo doppiati / archivio): resta il massimo
+        const partial = { ...fresh, listSeenAt: undefined };
+        delete partial.listSeenAt;
+        assert.strictEqual(mergeAiringDocuments(legacy, partial).sub.episode, 13);
+
+        // Ciclo con conteggio non disponibile: non si azzera il badge
+        const nullEpisode = { ...fresh, sub: { season: 2, episode: null, airedAt: null } };
+        assert.strictEqual(mergeAiringDocuments(legacy, nullEpisode).sub.episode, 13);
+    });
+
     test('processTmdbGroup: per varianti con real_episodes_count = N > 0 fa richiesta minima con startRange/endRange = N e non blocca il ciclo se fallisce', async () => {
         const calls = [];
         const mockClient = {
