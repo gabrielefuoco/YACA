@@ -2,12 +2,15 @@
 /**
  * cli.js
  * CLI per il servizio doppiaggi-source di YACA.
- * Scraping di antoniogenna.net/doppiaggio/ e matching con il catalogo YACA.
+ * Scraping di antoniogenna.net/doppiaggio/, lettura anime_airing_state (AnimeUnity)
+ * e matching/unione con il catalogo YACA.
  *
  * Uso:
  *   node cli.js --dry-run
  *   node cli.js --health-check
  *   node cli.js --cache-dir <dir>
+ *   node cli.js --mongo-uri <uri>
+ *   node cli.js --no-anime
  *   node cli.js --help
  */
 
@@ -16,26 +19,74 @@ const path = require('path');
 const { fetchAllIndices } = require('./src/indici');
 const { parseIndexPage } = require('./src/parse');
 const { loadCatalogFromJsonl, matchCatalog } = require('./src/match');
-const { writeAnnotations, DEFAULT_FILENAME } = require('./src/writer');
+const { toRows, splitId, writeAnnotations, DEFAULT_FILENAME } = require('./src/writer');
+const { mergeAnnotationRows, inspectMerge } = require('./src/annotations');
+const { loadAnimeDubbedRows } = require('./src/anime');
 
+const WORKSPACE_DIR = path.resolve(__dirname, '..', '..');
+const MAIN_REPO_DIR = path.resolve(__dirname, '..', '..', '..', '..', 'YACA');
+
+function resolveFallbackFile(primary, fallback) {
+    if (fs.existsSync(primary)) return primary;
+    if (fs.existsSync(fallback)) return fallback;
+    return primary;
+}
+
+const DEFAULT_MOVIES_PATH = resolveFallbackFile(
+    path.resolve(WORKSPACE_DIR, '.cache', 'tmdb', 'master_movies.jsonl'),
+    path.resolve(MAIN_REPO_DIR, '.cache', 'tmdb', 'master_movies.jsonl')
+);
+const DEFAULT_TV_PATH = resolveFallbackFile(
+    path.resolve(WORKSPACE_DIR, '.cache', 'tmdb', 'master_tv.jsonl'),
+    path.resolve(MAIN_REPO_DIR, '.cache', 'tmdb', 'master_tv.jsonl')
+);
 const DEFAULT_CACHE_DIR = path.resolve(__dirname, '.cache');
-const DEFAULT_TMP_DIR = path.resolve(__dirname, '..', '..', '.scratch', 'doppiaggio-ita', 'tmp');
-const DEFAULT_MOVIES_PATH = path.resolve(__dirname, '..', '..', '.cache', 'tmdb', 'master_movies.jsonl');
-const DEFAULT_TV_PATH = path.resolve(__dirname, '..', '..', '.cache', 'tmdb', 'master_tv.jsonl');
+const DEFAULT_TMP_DIR = resolveFallbackFile(
+    path.resolve(WORKSPACE_DIR, '.scratch', 'doppiaggio-ita', 'tmp'),
+    path.resolve(MAIN_REPO_DIR, '.scratch', 'doppiaggio-ita', 'tmp')
+);
 const HEARTBEAT_FILE = 'last-run.json';
 const MAX_HEALTH_AGE_MS = 24 * 60 * 60 * 1000; // 24 ore
 
+function findMongoUri() {
+    if (process.env.MONGODB_URI) return process.env.MONGODB_URI;
+    if (process.env.MONGO_URI) return process.env.MONGO_URI;
+
+    const envPaths = [
+        path.resolve(WORKSPACE_DIR, '.env'),
+        path.resolve(MAIN_REPO_DIR, '.env')
+    ];
+    for (const ep of envPaths) {
+        if (fs.existsSync(ep)) {
+            try {
+                const content = fs.readFileSync(ep, 'utf8');
+                const m = content.match(/^MONGODB_URI=(.*)$/m) || content.match(/^MONGO_URI=(.*)$/m);
+                if (m && m[1].trim()) return m[1].trim();
+            } catch (_) {}
+        }
+    }
+    return null;
+}
+
 function parseArgs(args) {
+    const fallbackDirsList = [
+        DEFAULT_TMP_DIR,
+        path.resolve(MAIN_REPO_DIR, 'services', 'doppiaggi-source', '.cache'),
+        path.resolve(MAIN_REPO_DIR, '.scratch', 'doppiaggio-ita', 'tmp')
+    ].filter((d, idx, arr) => d && fs.existsSync(d) && arr.indexOf(d) === idx);
+
     const opts = {
         dryRun: false,
         healthCheck: false,
         cacheDir: DEFAULT_CACHE_DIR,
-        fallbackDirs: [DEFAULT_TMP_DIR],
+        fallbackDirs: fallbackDirsList,
         moviesPath: DEFAULT_MOVIES_PATH,
         tvPath: DEFAULT_TV_PATH,
         outputPath: null,
         limitCatalog: null,
         forceRefresh: false,
+        mongoUri: findMongoUri(),
+        disableAnime: false,
         help: false
     };
 
@@ -58,6 +109,10 @@ function parseArgs(args) {
         } else if (arg === '--limit-catalog' && i + 1 < args.length) {
             const lim = parseInt(args[++i], 10);
             if (!isNaN(lim) && lim > 0) opts.limitCatalog = lim;
+        } else if (arg === '--mongo-uri' && i + 1 < args.length) {
+            opts.mongoUri = args[++i];
+        } else if (arg === '--no-anime' || arg === '--disable-anime') {
+            opts.disableAnime = true;
         } else if (arg === '--help' || arg === '-h') {
             opts.help = true;
         }
@@ -70,13 +125,14 @@ function printHelp() {
     console.log(`
 YACA Doppiaggi Source Service
 =============================
-Scraper indici Antonio Genna ("Il Mondo dei Doppiatori") e matcher con catalogo YACA.
+Scraper indici Antonio Genna ("Il Mondo dei Doppiatori"), unione AnimeUnity
+(anime_airing_state) e matcher con catalogo YACA.
 
 Uso:
   node cli.js [opzioni]
 
 Opzioni:
-  --dry-run             Esegue parsing e match senza scrivere annotazioni su disco
+  --dry-run             Esegue parsing, unione e match senza scrivere annotazioni su disco
   --health-check        Verifica il battito di salute (exit 0 se < 24h, exit 1 altrimenti)
   --force-refresh       Ignora la cache locale e scarica le pagine di rete
   --cache-dir <dir>     Cartella cache delle pagine HTML (default: services/doppiaggi-source/.cache)
@@ -84,6 +140,8 @@ Opzioni:
   --tv-path <file>      Percorso file master_tv.jsonl
   --output <file>       Percorso file di output annotazioni (preview)
   --limit-catalog <n>   Tetto massimo di titoli catalogo da caricare (per debug rapido)
+  --mongo-uri <uri>     URI MongoDB per la collezione anime_airing_state (default: env MONGODB_URI)
+  --no-anime            Disattiva l'unione anime (produce unicamente le annotazioni Antonio Genna)
   --help, -h            Mostra questa guida
 
 Esempi:
@@ -126,8 +184,8 @@ function checkHealth(cacheDir) {
     }
 }
 
-async function main() {
-    const opts = parseArgs(process.argv.slice(2));
+async function main(customOpts = null) {
+    const opts = customOpts || parseArgs(process.argv.slice(2));
 
     if (opts.help) {
         printHelp();
@@ -146,13 +204,13 @@ async function main() {
     }
 
     console.log('===============================================================');
-    console.log('YACA DOPPIAGGI SOURCE - Scraper indici & Matcher catalogo');
+    console.log('YACA DOPPIAGGI SOURCE - Scraper AG & Unione AnimeUnity');
     console.log(`Modalità: ${opts.dryRun ? 'DRY-RUN (nessuna scrittura)' : 'NORMALE'}`);
     console.log('===============================================================\n');
 
     const startTime = Date.now();
 
-    // 1. Download / caricamento indici
+    // 1. Download / caricamento indici Antonio Genna
     console.log('[Indici] Recupero pagine d\'indice (4 zone utili)...');
     const indexPages = await fetchAllIndices({
         cacheDir: opts.cacheDir,
@@ -170,7 +228,7 @@ async function main() {
         process.exit(1);
     }
 
-    // 2. Parsing dei titoli
+    // 2. Parsing dei titoli Antonio Genna
     console.log('\n[Parse] Estrazione titoli e normalizzazione...');
     const agMapByHref = new Map();
     for (const page of indexPages) {
@@ -194,9 +252,58 @@ async function main() {
         console.warn('[Catalogo] Avviso: Nessun record caricato dal catalogo. Verifica i percorsi specificati.');
     }
 
-    // 4. Riconciliazione (Scala di match)
-    console.log('\n[Match] Esecuzione scala di match...');
+    // Set di id TV e Movie per la risoluzione precisa del tipo delle righe anime
+    const tvIds = new Set();
+    const movieIds = new Set();
+    for (const r of catalogRecords) {
+        const { t, id } = splitId(r.id, r.type, r.t);
+        if (t === 'tv') tvIds.add(id);
+        else if (t === 'movie') movieIds.add(id);
+    }
+
+    // 4. Riconciliazione (Scala di match) Antonio Genna
+    console.log('\n[Match] Esecuzione scala di match Antonio Genna...');
     const matchResult = matchCatalog(catalogRecords, agEntries);
+    const agRows = toRows(matchResult.annotations);
+
+    // 5. Unione Anime (anime_airing_state da MongoDB)
+    let animeRows = [];
+    let animeDegraded = false;
+    let animeDegradedReason = null;
+    let mergeStats = null;
+
+    if (opts.disableAnime) {
+        console.log('\n[Anime] Unione AnimeUnity disattivata (--no-anime). Procedo con le sole voci AG.');
+    } else {
+        console.log('\n[Anime] Recupero anime doppiati da collezione MongoDB anime_airing_state...');
+        const animeRes = await loadAnimeDubbedRows({
+            mongoUri: opts.mongoUri,
+            tvIds,
+            movieIds
+        });
+
+        if (!animeRes.ok) {
+            animeDegraded = true;
+            animeDegradedReason = animeRes.error;
+            console.warn(`[Anime] ATTENZIONE: Connessione MongoDB non riuscita (${animeRes.error}).`);
+            console.warn('[Anime] Procedo in modalità degradata: il file conterrà solo le annotazioni Antonio Genna.');
+        } else {
+            animeRows = animeRes.rows;
+            console.log(`[Anime] Trovati ${animeRows.length} anime doppiati da anime_airing_state.`);
+        }
+    }
+
+    // 6. Fusione multi-fonte con precedenza true > null > assente
+    let finalRows = agRows;
+    if (animeRows.length > 0) {
+        finalRows = mergeAnnotationRows(agRows, animeRows);
+        mergeStats = inspectMerge(agRows, animeRows);
+        console.log('\n[Anime] Unione AG ∪ AnimeUnity completata:');
+        console.log(`  - Righe aggiunte (nuove da AnimeUnity): ${mergeStats.addedRows}`);
+        console.log(`  - Righe promosse (da null AG a true):    ${mergeStats.promotedRows}`);
+        console.log(`  - Righe già true in entrambe le fonti:  ${mergeStats.alreadyTrue}`);
+        console.log(`  - Totale righe risultanti:              ${finalRows.length} (true: ${mergeStats.mergedTrue} · null: ${mergeStats.mergedNull})`);
+    }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
 
@@ -213,19 +320,30 @@ async function main() {
     console.log(`  - Omonimi irrisolti (null): ${matchResult.agStats.ambiguousNull} (${((matchResult.agStats.ambiguousNull / agEntries.length) * 100).toFixed(1)}%)`);
     console.log(`  - Non trovate nel DB:       ${matchResult.agStats.unmatchedZero} (${((matchResult.agStats.unmatchedZero / agEntries.length) * 100).toFixed(1)}%)`);
     console.log('---------------------------------------------------------------');
-    console.log('STATISTICHE SUI RECORD DEL CATALOGO:');
+    console.log('STATISTICHE SUL CATALOGO (SOLO AG):');
     console.log(`  - Totale record catalogo:   ${matchResult.catalogStats.total}`);
-    console.log(`  - true  (doppiati certi):   ${matchResult.catalogStats.trueCount} (${matchResult.catalogStats.total ? ((matchResult.catalogStats.trueCount / matchResult.catalogStats.total) * 100).toFixed(1) : 0}%)`);
-    console.log(`  - null  (indecisione omon.): ${matchResult.catalogStats.nullCount} (${matchResult.catalogStats.total ? ((matchResult.catalogStats.nullCount / matchResult.catalogStats.total) * 100).toFixed(1) : 0}%)`);
-    console.log(`  - false (non toccati):      ${matchResult.catalogStats.falseCount} (${matchResult.catalogStats.total ? ((matchResult.catalogStats.falseCount / matchResult.catalogStats.total) * 100).toFixed(1) : 0}%)`);
+    console.log(`  - true  (doppiati certi):   ${matchResult.catalogStats.trueCount}`);
+    console.log(`  - null  (indecisione omon.): ${matchResult.catalogStats.nullCount}`);
+    console.log(`  - false (non toccati):      ${matchResult.catalogStats.falseCount}`);
+    if (mergeStats) {
+        console.log('---------------------------------------------------------------');
+        console.log('STATISTICHE FINALI CON UNIONE ANIMEUNITY:');
+        console.log(`  - Righe totali annotate:    ${finalRows.length}`);
+        console.log(`  - true totali:              ${mergeStats.mergedTrue} (+${mergeStats.addedRows + mergeStats.promotedRows} rispetto ad AG sola)`);
+        console.log(`  - null totali:              ${mergeStats.mergedNull} (-${mergeStats.promotedRows} promosse a true)`);
+    }
     console.log('===============================================================\n');
 
-    // 5. Scrittura annotazioni: NDJSON accanto al parquet/dump (il parquet tipato lo fa il core)
+    // 7. Scrittura annotazioni: NDJSON accanto al parquet/dump
     const outputPath = opts.outputPath || path.join(path.dirname(opts.moviesPath), DEFAULT_FILENAME);
-    const writeResult = await writeAnnotations(matchResult.annotations, {
+    const sourceDesc = animeRows.length > 0
+        ? 'antoniogenna.net/doppiaggio ∪ anime_airing_state'
+        : 'antoniogenna.net/doppiaggio' + (animeDegraded ? ' (degradato: anime_airing_state assente)' : '');
+
+    const writeResult = await writeAnnotations(finalRows, {
         dryRun: opts.dryRun,
         outputPath,
-        source: 'antoniogenna.net/doppiaggio'
+        source: sourceDesc
     });
 
     if (writeResult.written) {
@@ -236,6 +354,9 @@ async function main() {
         console.error('[Writer] GUARDIA: le voci vere sono calate a ' + writeResult.counts.true +
             ' da ' + writeResult.previous.counts.true + ' (-' + drop + '%). ' +
             'Il file precedente NON è stato sovrascritto. Indagare prima di forzare.');
+        if (animeDegraded || opts.disableAnime) {
+            console.error('[Writer] NOTA: Il calo potrebbe essere causato dall\'assenza dell\'unione anime in questo giro.');
+        }
         process.exitCode = 2;
     } else {
         console.log(`[Writer] Modalità dry-run: nessun file scritto (${writeResult.counts.rows} righe che sarebbero scritte: true ${writeResult.counts.true} · null ${writeResult.counts.null}).`);
@@ -245,11 +366,26 @@ async function main() {
     writeHeartbeat(opts.cacheDir, {
         catalogStats: matchResult.catalogStats,
         agStats: matchResult.agStats,
+        anime: {
+            enabled: !opts.disableAnime,
+            degraded: animeDegraded,
+            degradedReason: animeDegradedReason,
+            count: animeRows.length,
+            mergeStats
+        },
+        counts: writeResult.counts,
         elapsedSeconds: elapsed
     });
     console.log('[HealthCheck] Battito di salute registrato.');
 
-    return matchResult;
+    return {
+        matchResult,
+        agRows,
+        animeRows,
+        finalRows,
+        mergeStats,
+        writeResult
+    };
 }
 
 if (require.main === module) {

@@ -1,14 +1,16 @@
 # yaca-doppiaggi-source
 
-Scraper degli indici de **Il Mondo dei Doppiatori** (`antoniogenna.net/doppiaggio/`) e matcher contro il
-catalogo YACA. Produce le annotazioni "questo titolo è doppiato in italiano".
+Scraper degli indici de **Il Mondo dei Doppiatori** (`antoniogenna.net/doppiaggio/`), lettura in sola lettura
+della collezione **`anime_airing_state`** (AnimeUnity) e matcher contro il catalogo YACA. Produce le annotazioni
+definitive "questo titolo è doppiato in italiano".
 
-È il gemello di `services/anime-source/`: modulo autonomo, CLI, test offline, zero dipendenze, nessun accesso
-al database del core.
+È il gemello di `services/anime-source/`: modulo autonomo con CLI e test offline. Ha come unica dipendenza
+il driver **`mongodb`** (per leggere lo stato degli anime in sola lettura, esattamente come `anime-source`) e
+resta **senza dipendenze native**.
 
-> **Stato**: completo. Scraper, parser, matcher e writer. Il file prodotto è un **NDJSON**; il **parquet
-> tipato** lo materializza il **core** (che ha già DuckDB) leggendolo: così il modulo resta **senza
-> dipendenze native**. Formato deciso dal ticket 04 della mappa `.scratch/doppiaggio-ita`.
+> **Stato**: completo. Scraper, parser, matcher, unione anime AG ∪ AnimeUnity e writer. Il file prodotto è un
+> **NDJSON**; il **parquet tipato** lo materializza il **core** (che ha già DuckDB) leggendolo: così il modulo
+> resta senza dipendenze native. Formato deciso dal ticket 04 della mappa `.scratch/doppiaggio-ita`.
 
 ## Cosa fa
 
@@ -36,7 +38,40 @@ al database del core.
      token in comune è **uno solo**, deve essere raro (df ≤ 3) — altrimenti è rumore (`6 Teen` → *Teen Wolf*);
    - altrimenti **`null`**: il matcher **non sceglie mai** fra più candidati;
    - i record del catalogo che nessuna voce AG tocca restano **`false`**.
-4. **Writer** (`src/writer.js`) — scrive il file delle annotazioni e il suo meta.
+4. **Unione Anime** (`src/anime.js`, `src/annotations.js`) — fonde le voci de Il Mondo dei Doppiatori con lo
+   stato doppiaggi anime di AnimeUnity (`anime_airing_state`).
+5. **Writer** (`src/writer.js`) — scrive il file delle annotazioni e il suo meta con guardia atomica.
+
+## Unione Anime (AG ∪ AnimeUnity)
+
+Fuori dal catalogo simulcast, il badge anime in YACA sarà la parola **`ITA` secca** letta direttamente dalla
+colonna `ita`. Se l'unione non avvenisse nella build del file di annotazioni, un anime doppiato presente **solo**
+su AnimeUnity (e non censito su Antonio Genna) perderebbe il badge.
+
+- **Regola del doppiaggio**: identica a quella del core in `src/data/animeAiringState.js:593-611` (`getDubEpisode`)
+  e `173-174` (estrazione da `raw.dub` o `italian.dub.latest`, con fallback sull'episodio più recente con
+  `dubIta: true` in `episodes[]`).
+- **Verifica del presupposto serie vs film (misurazione reale)**:
+  La collezione contiene **902 anime doppiati**.
+  - **562 id** esistono nel dump TV (`master_tv.jsonl`) → `t: "tv"`;
+  - **268 id** NON esistono nel dump TV ma esistono nel dump film (`master_movies.jsonl`) → sono **film anime**
+    (es. *Kimi no Na wa*, *Tenki no Ko*, *Suzume no Tojimari*, *THE FIRST SLAM DUNK*, *Promare*, *Redline*). Il
+    modulo assegna correttamente `t: "movie"`, consentendo a DuckDB di agganciare la colonna `ita` nel parquet dei film;
+  - **72 id** non sono presenti in nessuno dei due dump TMDB → default `t: "tv"`;
+  - **214 id** vivono in entrambi i dump (sovrapposizione degli spazi ID numerici TMDB movie vs tv): vengono
+    risolti prioritariamente su `t: "tv"` poiché rappresentano la serie anime TV (*Bleach*, *Boruto*, *Slime*),
+    evitando di marcare come doppiati film occidentali omonimi non correlati (*Anna Karenina*, *Dissection*).
+- **Precedenza nel merge** (`src/annotations.js`):
+  La funzione `mergeAnnotationRows(base, extra)` opera per chiave `(t, id)` con precedenza:
+  `true` > `null` > assente.
+  - Una prova positiva per-id di AnimeUnity **vince** su un `null` di AG (risolve l'omonimia);
+  - Un `true` esistente **non viene mai declassato**;
+  - L'output è ordinato stabilmente per `(t, id)`.
+- **Degrado e guardia**:
+  Se MongoDB non è raggiungibile o viene passato `--no-anime`, il giro si conclude regolarmente annotando solo
+  Antonio Genna ed emettendo un avviso esplicito di degrado. La **guardia del writer** (−2% soglia calo `true`)
+  impedisce di sovrascrivere un file precedente ricco con uno impoverito dall'assenza della sorgente anime (calo
+  misurato: −2,4%, exit code 2).
 
 ## Il file prodotto
 
@@ -59,18 +94,14 @@ ita_annotations.meta.json    conteggi, timestamp, schemaVersion
 - la scrittura è **atomica** (`.tmp` + `rename`): o il file vecchio, o quello nuovo, mai un file a metà;
 - **guardia**: se i `true` calano oltre il **2%** rispetto al meta precedente, il file **non viene
   sovrascritto** e il CLI esce con codice 2. È una regola del *file* (l'ultimo valido resta valido) — il
-  **merge** nel catalogo ha invece scelto di non bloccare mai il dump: due posti diversi, due decisioni.
+  **merge** nel catalogo ha invece scelto di non bloccare mai il dump: due posti diversi, due decisioni;
 - in dry-run non scrive niente e riporta quante righe scriverebbe.
-
-Da notare: i record del catalogo con titolo in **scrittura non latina** (cirillico, cinese, coreano, hindi)
-hanno chiave di normalizzazione vuota e vengono scartati in lettura. È voluto: un titolo in cirillico non sarà
-mai agganciato da un titolo italiano di AG, quindi restano `false`. Sono ~10.264 record su 116.964.
 
 ## Uso
 
 ```bash
-node cli.js --dry-run                     # parsing + match, non scrive niente
-node cli.js --dry-run --limit-catalog 500 # prova rapida
+node cli.js --dry-run                     # parsing + match + unione anime, non scrive niente
+node cli.js --dry-run --no-anime          # esegue solo Antonio Genna senza unione anime
 node cli.js --health-check                # battito (exit 0 se < 24h)
 node cli.js --force-refresh               # ignora la cache e riscarica gli indici
 node cli.js                               # giro completo: scrive le annotazioni accanto al dump
@@ -85,30 +116,33 @@ node cli.js                               # giro completo: scrive le annotazioni
 | `--movies-path <file>` / `--tv-path <file>` | dump del catalogo (`master_movies.jsonl`, `master_tv.jsonl`) |
 | `--output <file>` | percorso del `.jsonl` (default: accanto al dump, `ita_annotations.jsonl`) |
 | `--limit-catalog <n>` | tetto di record da caricare, per debug |
+| `--mongo-uri <uri>` | URI MongoDB per la collezione anime_airing_state (default: env MONGODB_URI) |
+| `--no-anime` | disattiva l'unione anime (produce unicamente annotazioni AG) |
 
-La cache già esistente in `.scratch/doppiaggio-ita/tmp/` viene usata come ripiego: in sviluppo **non serve
-rifare richieste di rete**.
+## Verifica reale (01/10/2026)
 
-## Verifica (01/10/2026)
+Esecuzione reale con indici in cache e MongoDB connesso:
 
-Dry run sul catalogo reale, 4,49 s:
+| Metrica | Antonio Genna (base) | Unione AnimeUnity | Risultato finale |
+|---|---|---|---|
+| Voci / Documenti | 25.165 voci uniche | 902 anime doppiati | **24.105 righe** |
+| **`true`** | 19.126 record | +436 aggiunti · +38 promossi da null | **19.600 record** (+474) |
+| `null` | 4.543 record | -38 promossi a true | **4.505 record** |
+| `already true` | — | 428 confermati da entrambe | — |
+| Record catalogo analizzati | 106.700 (89.829 film, 16.871 serie) | — | — |
 
-| | |
-|---|---|
-| pagine d'indice | 81 · **25.165 voci AG** |
-| catalogo | 106.700 record |
-| **`true`** | 19.531 voci (77,6%) · **19.126 record** |
-| `null` | 1.929 omonimi irrisolti · 4.543 record |
-| non trovate nel DB | 3.705 voci |
-| `false` | 83.031 record |
-
-Il file prodotto in quel giro: **23.669 righe** (`true` 19.126 · `null` 4.543), ~700 KB.
+Tempo totale impiegato: **~6,2 secondi**.
 
 ```bash
-node --test tests/   # 23 test, tutti verdi
+node --test tests/   # 47 test, tutti verdi
 ```
 
-I test coprono: le tre regole di parsing (incluse la lettera decorativa e l'articolo inglese), i quattro
-percorsi di match, il rifiuto del rumore nel fuzzy stretto, il caso indecidibile che resta `null`, i record
-non toccati che restano `false`, la **chiave `(tipo, id)`**, il formato e l'atomicità del writer, la
-**guardia** sul calo dei `true`, il dry-run e il filtro delle cartelle escluse.
+I test coprono:
+- Tre regole di parsing AG (lettera decorativa, inversione articolo, anno di disambiguazione);
+- Quattro percorsi di match e rifiuto rumore fuzzy;
+- Regola doppiaggio anime identica al core (`src/data/animeAiringState.js`);
+- Risoluzione `t: 'movie'` per film anime fuori dal dump TV;
+- Helper `mergeAnnotationRows` (precedenza `true` > `null` > assente, nessun declassamento, ordinamento `(t, id)`);
+- Degrado con avviso quando Mongo non è disponibile;
+- Formato NDJSON, atomicità writer e guardia sul calo dei `true`;
+- CLI flags e battito di salute.
