@@ -14,7 +14,6 @@
 
 const animeAiringState = require('../../data/animeAiringState');
 const animeMappingStore = require('../../data/animeMappingStore');
-const { F } = require('../../data/filters');
 const { getDuckDbCatalogFromPreset } = require('./DuckDbProvider');
 
 const PAGE_SIZE = 20;
@@ -26,7 +25,7 @@ const PAGE_SIZE = 20;
 async function getAiringStateCatalog(skip = 0) {
     try {
         const snapshot = await animeAiringState.getSnapshot();
-        const entries = animeAiringState.getNoveltyEntries(snapshot);
+        const entries = animeAiringState.getAiringEntries(snapshot);
 
         if (!entries || entries.length === 0) return [];
 
@@ -39,13 +38,9 @@ async function getAiringStateCatalog(skip = 0) {
 
         const metas = await getDuckDbCatalogFromPreset({
             type: 'series',
-            // Lo stato Kitsu/ airing può contenere donghua e webtoon. Per il
-            // catalogo Solo Anime l'identità deve essere provata dai metadati
-            // TMDB: lingua originale giapponese e genere Animazione.
+            // Nessun filtro lingua/genere: segue esattamente la lista sorgente AnimeUnity
             where: [
-                `"id" IN (${tmdbIds.join(',')})`,
-                F.lang('ja'),
-                F.genre(16)
+                `"id" IN (${tmdbIds.join(',')})`
             ],
             orderBy: '"id" ASC'
         }, 0, tmdbIds.length);

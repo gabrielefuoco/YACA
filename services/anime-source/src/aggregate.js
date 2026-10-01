@@ -40,27 +40,40 @@ function compareEpisodes(a, b) {
     return aEp - bEp;
 }
 
+function extractRealEpisode(record, type, title) {
+    if (!record) return null;
+    const raw = record.real_episodes_count;
+    if (raw === undefined || raw === null || raw === '') {
+        console.warn(`[AnimeSource] real_episodes_count mancante per "${title}" (${type}, id ${record.id})`);
+        return null;
+    }
+    const num = Number(raw);
+    if (!Number.isFinite(num)) {
+        console.warn(`[AnimeSource] real_episodes_count non numerico ("${raw}") per "${title}" (${type}, id ${record.id})`);
+        return null;
+    }
+    return num;
+}
+
 /**
- * Aggrega i record e gli episodi di AnimeUnity in un documento conforme a anime_airing_state.
+ * Aggrega i record AnimeUnity in un documento conforme a anime_airing_state.
  * Supporta input a singola stagione o multi-stagione.
- * 
+ *
  * @param {Object} params
- * @param {Array<Object>} [params.seasons] Lista di stagioni [{ season, subRecord, subEpisodes, dubRecord, dubEpisodes, identity }]
+ * @param {Array<Object>} [params.seasons] Lista di stagioni [{ season, subRecord, dubRecord, identity }]
  * @param {Object} [params.subRecord] Record archivio per sub (fallback singola stagione)
- * @param {Array<Object>} [params.subEpisodes] Lista episodi da info_api sub
  * @param {Object} [params.dubRecord] Record archivio per doppiato
- * @param {Array<Object>} [params.dubEpisodes] Lista episodi da info_api doppiato
  * @param {Object} [params.identity] Identità { tmdbId, kitsuId, anilistId, malId, season }
+ * @param {number} [params.orderIndex] Indice posizionale nella lista sorgente
  * @param {Date} [params.now] Timestamp opzionale
  * @returns {Object|null}
  */
 function buildAiringStateDocument({
     seasons = null,
     subRecord = null,
-    subEpisodes = [],
     dubRecord = null,
-    dubEpisodes = [],
     identity = null,
+    orderIndex = null,
     now = new Date()
 } = {}) {
     let seasonList = [];
@@ -70,9 +83,7 @@ function buildAiringStateDocument({
         seasonList = [{
             season: (identity && identity.season) || 1,
             subRecord,
-            subEpisodes: subEpisodes || [],
             dubRecord,
-            dubEpisodes: dubEpisodes || [],
             identity
         }];
     } else {
@@ -90,7 +101,6 @@ function buildAiringStateDocument({
     const titleSource = recordTitle(seasonList[0].subRecord) || recordTitle(seasonList[0].dubRecord);
     const title = cleanTitle(titleSource);
 
-    const epMap = new Map();
     const sources = [];
     const nowIso = now instanceof Date ? now.toISOString() : new Date(now).toISOString();
 
@@ -104,49 +114,19 @@ function buildAiringStateDocument({
         const seasonNum = Number(s.season) || (s.identity && Number(s.identity.season)) || 1;
         const subRec = s.subRecord;
         const dubRec = s.dubRecord;
-        const subEps = s.subEpisodes || [];
-        const dubEps = s.dubEpisodes || [];
 
-        if (subRec?.status === 'In corso' || dubRec?.status === 'In corso') {
+        const subStatus = subRec?.status;
+        const dubStatus = dubRec?.status;
+        if (subStatus === 'In corso' || subStatus === 'In Corso' || dubStatus === 'In corso' || dubStatus === 'In Corso') {
             anyInCorso = true;
-        }
-
-        // Sub episodes
-        let seasonMaxSubEp = 0;
-        for (const ep of subEps) {
-            const num = parseFloat(ep.number);
-            if (isNaN(num)) continue;
-            if (num > seasonMaxSubEp) seasonMaxSubEp = num;
-
-            let airedAt = null;
-            if (ep.created_at) {
-                try {
-                    airedAt = new Date(ep.created_at.replace(' ', 'T')).toISOString();
-                } catch {
-                    airedAt = null;
-                }
-            }
-
-            const key = `${seasonNum}:${num}`;
-            epMap.set(key, {
-                season: seasonNum,
-                episode: num,
-                airedAt,
-                subIta: true,
-                dubIta: false
-            });
-        }
-        if (subEps.length === 0 && subRec && subRec.episodes_count) {
-            seasonMaxSubEp = Number(subRec.episodes_count) || 0;
         }
 
         if (subRec) {
             latestSubStatus = subRec.status;
-            if (seasonMaxSubEp > 0) {
-                const subCand = { season: seasonNum, episode: seasonMaxSubEp };
-                if (compareEpisodes(subCand, maxSubLatest) > 0) {
-                    maxSubLatest = subCand;
-                }
+            const epNum = extractRealEpisode(subRec, 'sub', title);
+            const subCand = { season: seasonNum, episode: epNum };
+            if (compareEpisodes(subCand, maxSubLatest) > 0) {
+                maxSubLatest = subCand;
             }
             sources.push({
                 provider: 'animeunity',
@@ -155,57 +135,19 @@ function buildAiringStateDocument({
                 season: seasonNum,
                 title: recordTitle(subRec),
                 status: subRec.status,
-                episodesCount: subRec.episodes_count !== undefined ? Number(subRec.episodes_count) : seasonMaxSubEp,
-                latest: seasonMaxSubEp > 0 ? { season: seasonNum, episode: seasonMaxSubEp } : null,
+                episodesCount: epNum,
+                latest: subCand,
                 confidence: 1.0,
                 updatedAt: nowIso
             });
         }
 
-        // Dub episodes
-        let seasonMaxDubEp = 0;
-        for (const ep of dubEps) {
-            const num = parseFloat(ep.number);
-            if (isNaN(num)) continue;
-            if (num > seasonMaxDubEp) seasonMaxDubEp = num;
-
-            let airedAt = null;
-            if (ep.created_at) {
-                try {
-                    airedAt = new Date(ep.created_at.replace(' ', 'T')).toISOString();
-                } catch {
-                    airedAt = null;
-                }
-            }
-
-            const key = `${seasonNum}:${num}`;
-            if (epMap.has(key)) {
-                const existing = epMap.get(key);
-                existing.dubIta = true;
-                if (!existing.airedAt && airedAt) {
-                    existing.airedAt = airedAt;
-                }
-            } else {
-                epMap.set(key, {
-                    season: seasonNum,
-                    episode: num,
-                    airedAt,
-                    subIta: false,
-                    dubIta: true
-                });
-            }
-        }
-        if (dubEps.length === 0 && dubRec && dubRec.episodes_count) {
-            seasonMaxDubEp = Number(dubRec.episodes_count) || 0;
-        }
-
         if (dubRec) {
             latestDubStatus = dubRec.status;
-            if (seasonMaxDubEp > 0) {
-                const dubCand = { season: seasonNum, episode: seasonMaxDubEp };
-                if (compareEpisodes(dubCand, maxDubLatest) > 0) {
-                    maxDubLatest = dubCand;
-                }
+            const epNum = extractRealEpisode(dubRec, 'dub', title);
+            const dubCand = { season: seasonNum, episode: epNum };
+            if (compareEpisodes(dubCand, maxDubLatest) > 0) {
+                maxDubLatest = dubCand;
             }
             sources.push({
                 provider: 'animeunity',
@@ -214,8 +156,8 @@ function buildAiringStateDocument({
                 season: seasonNum,
                 title: recordTitle(dubRec),
                 status: dubRec.status,
-                episodesCount: dubRec.episodes_count !== undefined ? Number(dubRec.episodes_count) : seasonMaxDubEp,
-                latest: seasonMaxDubEp > 0 ? { season: seasonNum, episode: seasonMaxDubEp } : null,
+                episodesCount: epNum,
+                latest: dubCand,
                 confidence: 1.0,
                 updatedAt: nowIso
             });
@@ -226,32 +168,7 @@ function buildAiringStateDocument({
         anyInCorso && maxSubLatest && maxDubLatest
     );
 
-    const allEpisodes = Array.from(epMap.values());
-    // Ordiniamo gli episodi per data decrescente per prendere la coda più recente (~12-24)
-    // preservando al contempo la visibilità di entrambe le stagioni
-    const seasonsPresent = new Set(allEpisodes.map(e => e.season));
-    let recentQueue = [];
-
-    if (seasonsPresent.size > 1) {
-        // Multi-stagione: prendiamo gli episodi più recenti di ogni stagione
-        for (const sNum of seasonsPresent) {
-            const seasonEps = allEpisodes
-                .filter(e => e.season === sNum)
-                .sort((a, b) => a.episode - b.episode);
-            const tail = seasonEps.length > 12 ? seasonEps.slice(-12) : seasonEps;
-            recentQueue.push(...tail);
-        }
-    } else {
-        recentQueue = allEpisodes.length > 12 ? allEpisodes.slice(-12) : allEpisodes;
-    }
-
-    // Ordina la coda cronologicamente per stagione ed episodio
-    recentQueue.sort((a, b) => {
-        if (a.season !== b.season) return a.season - b.season;
-        return a.episode - b.episode;
-    });
-
-    return {
+    const doc = {
         _id: String(primaryIdentity.tmdbId),
         schemaVersion: 1,
         ids: {
@@ -265,21 +182,34 @@ function buildAiringStateDocument({
             status: anyInCorso ? 'In corso' : (latestSubStatus || latestDubStatus || 'Terminato'),
             nextEpisode: null
         },
-        italian: {
-            sub: {
-                latest: maxSubLatest,
-                status: latestSubStatus
-            },
-            dub: {
-                latest: maxDubLatest,
-                status: latestDubStatus,
-                isSimuldub
-            }
-        },
-        episodes: recentQueue,
         sources,
         updatedAt: nowIso
     };
+
+    if (orderIndex !== null && orderIndex !== undefined && Number.isFinite(orderIndex)) {
+        doc.orderIndex = orderIndex;
+    }
+
+    if (maxSubLatest) {
+        doc.sub = maxSubLatest;
+    }
+    if (maxDubLatest) {
+        doc.dub = maxDubLatest;
+    }
+
+    doc.italian = {
+        sub: maxSubLatest ? {
+            latest: maxSubLatest,
+            status: latestSubStatus
+        } : null,
+        dub: maxDubLatest ? {
+            latest: maxDubLatest,
+            status: latestDubStatus,
+            isSimuldub
+        } : null
+    };
+
+    return doc;
 }
 
 /**
@@ -297,54 +227,18 @@ function mergeAiringDocuments(existing, incoming) {
         mal: existing.ids?.mal || incoming.ids?.mal
     };
 
-    // Merge episodes
-    const epMap = new Map();
-    for (const ep of (existing.episodes || [])) {
-        epMap.set(`${ep.season}:${ep.episode}`, { ...ep });
-    }
-    for (const ep of (incoming.episodes || [])) {
-        const key = `${ep.season}:${ep.episode}`;
-        if (epMap.has(key)) {
-            const cur = epMap.get(key);
-            cur.subIta = cur.subIta || ep.subIta;
-            cur.dubIta = cur.dubIta || ep.dubIta;
-            if (ep.airedAt) cur.airedAt = ep.airedAt;
-        } else {
-            epMap.set(key, { ...ep });
-        }
-    }
+    const subIncoming = incoming.sub || incoming.italian?.sub?.latest;
+    const subExisting = existing.sub || existing.italian?.sub?.latest;
+    const subLatest = compareEpisodes(subIncoming, subExisting) >= 0 ? subIncoming : subExisting;
 
-    const allMerged = Array.from(epMap.values());
-    const seasonsPresent = new Set(allMerged.map(e => e.season));
-    let mergedEpisodes = [];
+    const dubIncoming = incoming.dub || incoming.italian?.dub?.latest;
+    const dubExisting = existing.dub || existing.italian?.dub?.latest;
+    const dubLatest = compareEpisodes(dubIncoming, dubExisting) >= 0 ? dubIncoming : dubExisting;
 
-    if (seasonsPresent.size > 1) {
-        for (const sNum of seasonsPresent) {
-            const seasonEps = allMerged
-                .filter(e => e.season === sNum)
-                .sort((a, b) => a.episode - b.episode);
-            const tail = seasonEps.length > 12 ? seasonEps.slice(-12) : seasonEps;
-            mergedEpisodes.push(...tail);
-        }
-    } else {
-        mergedEpisodes = allMerged.length > 12 ? allMerged.slice(-12) : allMerged;
-    }
-
-    mergedEpisodes.sort((a, b) => {
-        if (a.season !== b.season) return a.season - b.season;
-        return a.episode - b.episode;
-    });
-
-    // Merge latest
-    const subLatest = compareEpisodes(incoming.italian?.sub?.latest, existing.italian?.sub?.latest) >= 0
-        ? incoming.italian?.sub?.latest
-        : existing.italian?.sub?.latest;
-
-    const dubLatest = compareEpisodes(incoming.italian?.dub?.latest, existing.italian?.dub?.latest) >= 0
-        ? incoming.italian?.dub?.latest
-        : existing.italian?.dub?.latest;
-
-    const isSimuldub = Boolean(incoming.italian?.dub?.isSimuldub || existing.italian?.dub?.isSimuldub);
+    const isSimuldub = Boolean(
+        (incoming.italian?.dub?.isSimuldub || existing.italian?.dub?.isSimuldub) ||
+        (subLatest && dubLatest && (incoming.schedule?.status === 'In corso' || existing.schedule?.status === 'In corso'))
+    );
     const anyInCorso = incoming.schedule?.status === 'In corso' || existing.schedule?.status === 'In corso';
 
     // Merge sources
@@ -356,7 +250,48 @@ function mergeAiringDocuments(existing, incoming) {
         sourcesMap.set(`${s.animeId}_${s.dub}`, s);
     }
 
-    return {
+    // Merge episodes se presenti (retrocompatibilità per doc storici)
+    let mergedEpisodes = undefined;
+    if ((existing.episodes && existing.episodes.length > 0) || (incoming.episodes && incoming.episodes.length > 0)) {
+        const epMap = new Map();
+        for (const ep of (existing.episodes || [])) {
+            epMap.set(`${ep.season}:${ep.episode}`, { ...ep });
+        }
+        for (const ep of (incoming.episodes || [])) {
+            const key = `${ep.season}:${ep.episode}`;
+            if (epMap.has(key)) {
+                const cur = epMap.get(key);
+                cur.subIta = cur.subIta || ep.subIta;
+                cur.dubIta = cur.dubIta || ep.dubIta;
+                if (ep.airedAt) cur.airedAt = ep.airedAt;
+            } else {
+                epMap.set(key, { ...ep });
+            }
+        }
+
+        const allMerged = Array.from(epMap.values());
+        const seasonsPresent = new Set(allMerged.map(e => e.season));
+
+        if (seasonsPresent.size > 1) {
+            mergedEpisodes = [];
+            for (const sNum of seasonsPresent) {
+                const seasonEps = allMerged
+                    .filter(e => e.season === sNum)
+                    .sort((a, b) => a.episode - b.episode);
+                const tail = seasonEps.length > 12 ? seasonEps.slice(-12) : seasonEps;
+                mergedEpisodes.push(...tail);
+            }
+        } else {
+            mergedEpisodes = allMerged.length > 12 ? allMerged.slice(-12) : allMerged;
+        }
+
+        mergedEpisodes.sort((a, b) => {
+            if (a.season !== b.season) return a.season - b.season;
+            return a.episode - b.episode;
+        });
+    }
+
+    const mergedDoc = {
         _id: String(mergedIds.tmdb),
         schemaVersion: 1,
         ids: mergedIds,
@@ -365,21 +300,41 @@ function mergeAiringDocuments(existing, incoming) {
             status: anyInCorso ? 'In corso' : (incoming.schedule?.status || existing.schedule?.status || 'Terminato'),
             nextEpisode: null
         },
-        italian: {
-            sub: {
-                latest: subLatest || null,
-                status: incoming.italian?.sub?.status || existing.italian?.sub?.status || null
-            },
-            dub: {
-                latest: dubLatest || null,
-                status: incoming.italian?.dub?.status || existing.italian?.dub?.status || null,
-                isSimuldub
-            }
-        },
-        episodes: mergedEpisodes,
         sources: Array.from(sourcesMap.values()),
         updatedAt: incoming.updatedAt || new Date().toISOString()
     };
+
+    if (mergedEpisodes !== undefined) {
+        mergedDoc.episodes = mergedEpisodes;
+    }
+
+    const orderIndex = incoming.orderIndex !== undefined && incoming.orderIndex !== null
+        ? incoming.orderIndex
+        : existing.orderIndex;
+    if (orderIndex !== undefined && orderIndex !== null && Number.isFinite(orderIndex)) {
+        mergedDoc.orderIndex = orderIndex;
+    }
+
+    if (subLatest) {
+        mergedDoc.sub = subLatest;
+    }
+    if (dubLatest) {
+        mergedDoc.dub = dubLatest;
+    }
+
+    mergedDoc.italian = {
+        sub: subLatest ? {
+            latest: subLatest,
+            status: incoming.italian?.sub?.status || existing.italian?.sub?.status || null
+        } : null,
+        dub: dubLatest ? {
+            latest: dubLatest,
+            status: incoming.italian?.dub?.status || existing.italian?.dub?.status || null,
+            isSimuldub
+        } : null
+    };
+
+    return mergedDoc;
 }
 
 module.exports = {

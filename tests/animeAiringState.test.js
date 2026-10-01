@@ -362,3 +362,104 @@ describe('AnimeAiringState - identità della card', () => {
         expect(animeAiringState.resolveCardId(entry, null)).toBe('tmdb:555');
     });
 });
+
+describe('AnimeAiringState - lettura senza finestra e nuovi documenti (senza episodes[])', () => {
+    test('doc senza episodes[] con sub/dub: getWindowInfo e getCardInfo considerano i canali disponibili', () => {
+        const docNoEpisodes = {
+            _id: '37854',
+            schemaVersion: 1,
+            ids: { tmdb: 37854, kitsu: '12' },
+            title: 'One Piece',
+            sub: { season: 22, episode: 1180 },
+            dub: { season: 22, episode: 936 },
+            orderIndex: 0,
+            updatedAt: daysAgo(100) // data vecchia, ma presente nella lista!
+        };
+
+        const snapshot = animeAiringState.buildSnapshot([docNoEpisodes]);
+        const doc = snapshot.byTmdbId.get('37854');
+
+        const winInfo = animeAiringState.getWindowInfo(doc, WINDOW);
+        expect(winInfo.hasSub).toBe(true);
+        expect(winInfo.hasDub).toBe(true);
+
+        const cardInfo = animeAiringState.getCardInfo(doc, WINDOW);
+        expect(cardInfo).not.toBeNull();
+        expect(cardInfo.hasSubInWindow).toBe(true);
+        expect(cardInfo.hasDubInWindow).toBe(true);
+        expect(cardInfo.sub).toEqual({ season: 22, episode: 1180 });
+        expect(cardInfo.dub).toEqual({ season: 22, episode: 936 });
+
+        expect(animeAiringState.getDubEpisode(doc)).toBe(936);
+        expect(animeAiringState.getDubEpisodeForId(snapshot, 'kitsu:12')).toBe(936);
+    });
+
+    test('getAiringEntries restituisce tutti i documenti con sub o dub e ordina per orderIndex', () => {
+        const docs = [
+            {
+                _id: '100',
+                schemaVersion: 1,
+                title: 'Terzo in lista',
+                sub: { season: 1, episode: 5 },
+                orderIndex: 2
+            },
+            {
+                _id: '200',
+                schemaVersion: 1,
+                title: 'Primo in lista',
+                sub: { season: 1, episode: 1 },
+                orderIndex: 0
+            },
+            {
+                _id: '300',
+                schemaVersion: 1,
+                title: 'Secondo in lista',
+                dub: { season: 1, episode: 10 },
+                orderIndex: 1
+            },
+            {
+                _id: '400',
+                schemaVersion: 1,
+                title: 'Nessun sub o dub'
+            }
+        ];
+
+        const snapshot = animeAiringState.buildSnapshot(docs);
+        const entries = animeAiringState.getAiringEntries(snapshot);
+
+        expect(entries.map(e => e.doc.tmdbId)).toEqual(['200', '300', '100']);
+        expect(entries.find(e => e.doc.tmdbId === '400')).toBeUndefined();
+    });
+
+    test('compatibilità: doc vecchi con episodes[] e senza orderIndex vengono inclusi da getAiringEntries', () => {
+        const fixtureDocs = buildFixtureDocs(); // contiene anche serie conclusa 999001 (fuori finestra 14gg)
+        const snapshot = animeAiringState.buildSnapshot(fixtureDocs);
+
+        // Con getNoveltyEntries la serie 999001 era esclusa
+        expect(animeAiringState.getNoveltyEntries(snapshot, WINDOW).map(e => e.doc.tmdbId)).not.toContain('999001');
+
+        // Con getAiringEntries la serie 999001 è inclusa perché ha sub/dub
+        const airingEntries = animeAiringState.getAiringEntries(snapshot);
+        expect(airingEntries.map(e => e.doc.tmdbId)).toContain('999001');
+    });
+
+    test('doc con episode: null gestito senza errori', () => {
+        const docNullEp = {
+            _id: '888',
+            schemaVersion: 1,
+            title: 'Ep Null',
+            sub: { season: 1, episode: null }
+        };
+        const snapshot = animeAiringState.buildSnapshot([docNullEp]);
+        const doc = snapshot.byTmdbId.get('888');
+
+        expect(doc.sub).toEqual({ season: 1, episode: null });
+        const winInfo = animeAiringState.getWindowInfo(doc);
+        expect(winInfo.hasSub).toBe(true);
+        expect(winInfo.hasDub).toBe(false);
+
+        const cardInfo = animeAiringState.getCardInfo(doc);
+        expect(cardInfo.sub).toEqual({ season: 1, episode: null });
+        expect(cardInfo.dub).toBeNull();
+    });
+});

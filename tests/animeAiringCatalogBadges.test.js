@@ -144,11 +144,9 @@ describe('AiringStateProvider - catalogo novità anime', () => {
         expect(where).toContain('240411');
         expect(where).toContain('999002');
         expect(where).toContain('999004');
-        // Lo stato esterno può contenere donghua/webtoon: il gate identità
-        // resta obbligatorio e non viene sostituito dal namespace `kitsu:`.
-        expect(where).toContain('"original_language" = \'ja\'');
-        expect(where).toContain('"genres"');
-        expect(where).toContain('16');
+        // Nessun filtro lingua o genere restrittivo (decisione ticket 33: segue AnimeUnity)
+        expect(where).not.toContain('"original_language"');
+        expect(where).not.toContain('16');
     });
 
     test('rispetta la paginazione (skip) come gli altri provider', async () => {
@@ -256,6 +254,56 @@ describe('AiringStateProvider - catalogo novità anime', () => {
 
         const page2 = await getAiringStateCatalog(20);
         expect(page2).toEqual([]);
+    });
+
+    test('provider con doc vecchi E nuovi: preserva orderIndex per i nuovi e gestisce i vecchi', async () => {
+        const mixedDocs = [
+            // Doc nuovo (senza episodes[], con orderIndex: 0)
+            {
+                _id: '37854',
+                schemaVersion: 1,
+                ids: { tmdb: 37854, kitsu: '12' },
+                title: 'One Piece',
+                sub: { season: 22, episode: 1180 },
+                orderIndex: 0
+            },
+            // Doc vecchio (con episodes[], senza orderIndex)
+            {
+                _id: '240411',
+                schemaVersion: 1,
+                ids: { tmdb: 240411, kitsu: '48269' },
+                title: 'Dandadan',
+                italian: { sub: { latest: { season: 2, episode: 12 } } },
+                episodes: [{ season: 2, episode: 12, airedAt: daysAgo(2), subIta: true, dubIta: false }]
+            },
+            // Doc nuovo (senza episodes[], con orderIndex: 1)
+            {
+                _id: '2362',
+                schemaVersion: 1,
+                ids: { tmdb: 2362, kitsu: '210' },
+                title: 'Detective Conan',
+                sub: { season: 1, episode: 1100 },
+                orderIndex: 1
+            }
+        ];
+
+        animeAiringState.setDataSourceForTests(async () => mixedDocs);
+
+        getDuckDbCatalogFromPreset.mockImplementation(async (preset) => {
+            const ids = (String(preset.where.join(' ')).match(/\d+/g) || []).map(Number);
+            return ids.map((id) => ({
+                id: `tmdb:${id}`,
+                _tmdbId: id,
+                type: 'series',
+                name: `Serie ${id}`,
+                poster: `https://image.tmdb.org/t/p/w500/${id}.jpg`
+            }));
+        });
+
+        const metas = await getAiringStateCatalog(0);
+        // orderIndex 0 (One Piece 37854), poi orderIndex 1 (Conan 2362), poi doc vecchio senza orderIndex (Dandadan 240411)
+        expect(metas.map((m) => m._tmdbId)).toEqual([37854, 2362, 240411]);
+        expect(metas.map((m) => m.id)).toEqual(['kitsu:12', 'kitsu:210', 'kitsu:48269']);
     });
 });
 
