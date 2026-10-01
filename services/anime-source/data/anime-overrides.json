@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "note": "Override locali di mapping anime. identities: anilist/mal/tvdb -> tmdbId, usati dal servizio anime-source subito dopo il mapping ufficiale e prima del bridge TVDB e della ricerca per titolo; force: true scavalca anche il mapping ufficiale. certify: tmdb id da certificare come anime in F.anime, per titoli che mancano dall'indice: NON vanno messi i donghua (decisione ticket 45: i donghua hanno il catalogo dedicato preset_donghua e non devono entrare nei cataloghi anime).",
+  "identities": [
+    {
+      "anilist": 137653,
+      "mal": 55809,
+      "tvdb": 433335,
+      "tmdbId": 223911,
+      "season": 1,
+      "title": "Xian Ni",
+      "note": "donghua",
+      "addedAt": "2026-10-01"
+    },
+    {
+      "anilist": 153499,
+      "tvdb": 419586,
+      "tmdbId": 198182,
+      "season": 2,
+      "title": "Shen Yin Wangzuo 2",
+      "note": "donghua",
+      "addedAt": "2026-10-01"
+    },
+    {
+      "anilist": 115844,
+      "mal": 41219,
+      "tvdb": 384640,
+      "tmdbId": 106449,
+      "season": 1,
+      "title": "凡人修仙传",
+      "note": "donghua",
+      "addedAt": "2026-10-01"
+    },
+    {
+      "tvdb": 434304,
+      "tmdbId": 224839,
+      "season": 1,
+      "title": "遮天",
+      "note": "donghua",
+      "addedAt": "2026-10-01"
+    }
+  ],
+  "certify": []
+}

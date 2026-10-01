@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const { TmdbFallbackResolver } = require('./tmdbFallback');
 const { TvdbBridgeResolver } = require('./tvdbBridge');
+const { loadAnimeOverrides } = require('./overrides');
 
 const ANIBRIDGE_URL = 'https://github.com/anibridge/anibridge-mappings/releases/download/v3/mappings.min.json';
 const FRIBB_MINI_URL = 'https://raw.githubusercontent.com/Fribb/anime-lists/master/anime-list-mini.json';
@@ -48,9 +49,15 @@ class IdentityResolver {
         this.anilistToTvdb = new Map(); // anilistId -> { tvdbId: string, season: number }
         this.malToTvdb = new Map();      // malId -> { tvdbId: string, season: number }
 
+        this.overridesPath = options.overridesPath;
+        this.overridesData = options.overridesData || null;
+        this.overrideByAnilist = new Map();
+        this.overrideByMal = new Map();
+        this.overrideByTvdb = new Map();
+
         this.officialAnilist = new Set();
         this.officialMal = new Set();
-        this.resolutionLevelMap = new Map(); // 'anilist:X' | 'mal:Y' -> 'official' | 'bridge_tvdb' | 'title_fallback'
+        this.resolutionLevelMap = new Map(); // 'anilist:X' | 'mal:Y' -> 'official' | 'override' | 'bridge_tvdb' | 'title_fallback'
 
         this.isReady = false;
     }
@@ -60,15 +67,82 @@ class IdentityResolver {
      * @param {Object} params
      * @param {Array<Object>} [params.fribbData]
      * @param {Object} [params.anibridgeData]
+     * @param {Object} [params.overridesData]
      */
-    loadFromData({ fribbData, anibridgeData } = {}) {
+    loadFromData({ fribbData, anibridgeData, overridesData } = {}) {
         if (fribbData && Array.isArray(fribbData)) {
             this._buildFribbIndex(fribbData);
         }
         if (anibridgeData && typeof anibridgeData === 'object') {
             this._buildAnibridgeIndex(anibridgeData);
         }
+        if (overridesData !== undefined) {
+            this.loadOverrides(overridesData);
+        } else if (this.overridesData || this.overridesPath) {
+            this.loadOverrides(this.overridesData || this.overridesPath);
+        }
         this.isReady = true;
+    }
+
+    /**
+     * Carica gli override locali di mapping (fail-safe tramite loadAnimeOverrides)
+     * @param {Object|string} [overridesDataOrPath]
+     */
+    loadOverrides(overridesDataOrPath) {
+        let data;
+        if (overridesDataOrPath && typeof overridesDataOrPath === 'object' && Array.isArray(overridesDataOrPath.identities)) {
+            data = overridesDataOrPath;
+        } else if (typeof overridesDataOrPath === 'string') {
+            data = loadAnimeOverrides(overridesDataOrPath);
+        } else {
+            data = this.overridesData || loadAnimeOverrides(this.overridesPath);
+        }
+
+        this.overrideByAnilist.clear();
+        this.overrideByMal.clear();
+        this.overrideByTvdb.clear();
+
+        if (data && Array.isArray(data.identities)) {
+            for (const item of data.identities) {
+                if (!item || item.tmdbId == null || item.tmdbId === '') continue;
+                const entry = {
+                    tmdbId: String(item.tmdbId).trim(),
+                    season: Number(item.season) || 1,
+                    force: Boolean(item.force),
+                    anilist: item.anilist != null ? String(item.anilist).trim() : null,
+                    mal: item.mal != null ? String(item.mal).trim() : null,
+                    tvdb: item.tvdb != null ? String(item.tvdb).trim() : null,
+                    title: item.title || null,
+                    note: item.note || null,
+                    addedAt: item.addedAt || null
+                };
+                if (entry.anilist) this.overrideByAnilist.set(entry.anilist, entry);
+                if (entry.mal) this.overrideByMal.set(entry.mal, entry);
+                if (entry.tvdb) this.overrideByTvdb.set(entry.tvdb, entry);
+            }
+        }
+    }
+
+    /**
+     * Cerca un override configurato per anilistId, malId o tvdbId
+     * @param {Object} params
+     * @param {number|string} [params.anilistId]
+     * @param {number|string} [params.malId]
+     * @param {number|string} [params.tvdbId]
+     * @returns {Object|null}
+     */
+    getOverride({ anilistId, malId, tvdbId } = {}) {
+        const aId = anilistId != null ? String(anilistId).trim() : null;
+        const mId = malId != null ? String(malId).trim() : null;
+        let tId = tvdbId != null ? String(tvdbId).trim() : null;
+        if (!tId && (aId || mId)) {
+            const tvInfo = this.getTvdb({ anilistId: aId, malId: mId });
+            if (tvInfo && tvInfo.tvdbId) tId = String(tvInfo.tvdbId).trim();
+        }
+        return (aId && this.overrideByAnilist.get(aId)) ||
+               (mId && this.overrideByMal.get(mId)) ||
+               (tId && this.overrideByTvdb.get(tId)) ||
+               null;
     }
 
     _buildFribbIndex(fribbData) {
@@ -263,7 +337,10 @@ class IdentityResolver {
         });
 
         this.loadFromData({ fribbData, anibridgeData });
-        console.log(`[Identity] Indice inizializzato: ${this.anilistToTmdb.size} AniList->TMDB, ${this.malToTmdb.size} MAL->TMDB, ${this.kitsuToTmdb.size} Kitsu->TMDB, ${this.anilistToTvdb.size} AniList->TVDB, ${this.malToTvdb.size} MAL->TVDB`);
+        if (!this.overridesData && !this.overridesPath) {
+            this.loadOverrides();
+        }
+        console.log(`[Identity] Indice inizializzato: ${this.anilistToTmdb.size} AniList->TMDB, ${this.malToTmdb.size} MAL->TMDB, ${this.kitsuToTmdb.size} Kitsu->TMDB, ${this.anilistToTvdb.size} AniList->TVDB, ${this.malToTvdb.size} MAL->TVDB, ${this.overrideByAnilist.size + this.overrideByMal.size + this.overrideByTvdb.size} Overrides`);
     }
 
     /**
@@ -299,12 +376,19 @@ class IdentityResolver {
      * @param {number|string} [params.malId]
      * @returns {string|null}
      */
-    getResolutionLevel({ anilistId, malId } = {}) {
+    getResolutionLevel({ anilistId, malId, tvdbId } = {}) {
         const aId = anilistId ? String(anilistId) : null;
         const mId = malId ? String(malId) : null;
+        const override = this.getOverride({ anilistId, malId, tvdbId });
 
+        if (override && override.force) {
+            return 'override';
+        }
         if (this.isOfficiallyMapped({ anilistId, malId })) {
             return 'official';
+        }
+        if (override) {
+            return 'override';
         }
         if (aId && this.resolutionLevelMap.has('anilist:' + aId)) {
             return this.resolutionLevelMap.get('anilist:' + aId);
@@ -320,12 +404,28 @@ class IdentityResolver {
      * @param {Object} params
      * @param {number|string} [params.anilistId]
      * @param {number|string} [params.malId]
+     * @param {number|string} [params.tvdbId]
      * @returns {{ tmdbId: string, kitsuId: string|null, anilistId: number|null, malId: number|null, season: number, level: string }|null}
      */
-    resolve({ anilistId, malId } = {}) {
+    resolve({ anilistId, malId, tvdbId } = {}) {
         const aId = anilistId ? String(anilistId) : null;
         const mId = malId ? String(malId) : null;
+        const override = this.getOverride({ anilistId: aId, malId: mId, tvdbId });
 
+        // Livello 0: Override forzato (force: true) vince su tutto (anche sul mapping ufficiale)
+        if (override && override.force) {
+            const kitsuId = (aId && this.anilistToKitsu.get(aId)) || (mId && this.malToKitsu.get(mId)) || null;
+            return {
+                tmdbId: String(override.tmdbId),
+                kitsuId: kitsuId ? String(kitsuId) : null,
+                anilistId: aId ? Number(aId) : null,
+                malId: mId ? Number(mId) : null,
+                season: override.season || 1,
+                level: 'override'
+            };
+        }
+
+        // Livello 1: Mapping ufficiale (Fribb / AniBridge)
         let tmdbId = (aId && this.anilistToTmdb.get(aId)) || (mId && this.malToTmdb.get(mId)) || null;
         const kitsuId = (aId && this.anilistToKitsu.get(aId)) || (mId && this.malToKitsu.get(mId)) || null;
 
@@ -333,12 +433,24 @@ class IdentityResolver {
             tmdbId = this.kitsuToTmdb.get(kitsuId) || null;
         }
 
+        // Livello 1.5: Override normale (senza force), attivo solo se manca il mapping ufficiale
+        if (!tmdbId && override) {
+            return {
+                tmdbId: String(override.tmdbId),
+                kitsuId: kitsuId ? String(kitsuId) : null,
+                anilistId: aId ? Number(aId) : null,
+                malId: mId ? Number(mId) : null,
+                season: override.season || 1,
+                level: 'override'
+            };
+        }
+
         if (!tmdbId) {
             return null;
         }
 
         const season = (aId && this.anilistToSeason.get(aId)) || (mId && this.malToSeason.get(mId)) || 1;
-        const level = this.getResolutionLevel({ anilistId, malId }) || 'official';
+        const level = this.getResolutionLevel({ anilistId, malId, tvdbId }) || 'official';
 
         return {
             tmdbId: String(tmdbId),
@@ -372,13 +484,45 @@ class IdentityResolver {
         await this.fallbackResolver.loadCache();
 
         const enriched = [];
-        const stats = { official: 0, bridge_tvdb: 0, title_fallback: 0, unresolved: 0 };
+        const stats = { official: 0, override: 0, bridge_tvdb: 0, title_fallback: 0, unresolved: 0 };
         for (const rec of records) {
             const anilistId = rec.anilist_id;
             const malId = rec.mal_id;
             const aId = anilistId ? String(anilistId) : null;
             const mId = malId ? String(malId) : null;
             const rawTitle = rec.title || rec.title_eng || rec.title_it || rec.slug || `Anime #${rec.id}`;
+
+            const tvdbInfo = this.getTvdb({ anilistId, malId });
+            const recTvdb = rec.tvdb_id || rec.tvdbId || (tvdbInfo && tvdbInfo.tvdbId);
+            const override = this.getOverride({ anilistId, malId, tvdbId: recTvdb });
+
+            // 0. Livello Override con force: true vince su TUTTO (anche su mapping ufficiale)
+            if (override && override.force) {
+                const season = Number(override.season) || 1;
+                console.log(`[IdentityOverride] Record "${rawTitle}" (id: ${rec.id}) forzato livello=override in TMDB ${override.tmdbId} S${season} ("${override.title || ''}") [force: true]`);
+                if (aId) {
+                    this.anilistToTmdb.set(aId, String(override.tmdbId));
+                    this.anilistToSeason.set(aId, season);
+                    this.resolutionLevelMap.set('anilist:' + aId, 'override');
+                }
+                if (mId) {
+                    this.malToTmdb.set(mId, String(override.tmdbId));
+                    this.malToSeason.set(mId, season);
+                    this.resolutionLevelMap.set('mal:' + mId, 'override');
+                }
+                enriched.push({
+                    record: rec,
+                    level: 'override',
+                    match: {
+                        tmdbId: String(override.tmdbId),
+                        season,
+                        title: override.title,
+                        source: 'override'
+                    }
+                });
+                stats.override++;
+                continue;
+            }
 
             // 1. Livello Ufficiale: se già presente da Fribb/AniBridge, non fare nulla
             if (this.isOfficiallyMapped({ anilistId, malId })) {
@@ -387,9 +531,9 @@ class IdentityResolver {
             }
 
             // Se è già stato risolto in questo stesso batch (es. SUB seguito da DUB dello stesso anime)
-            const existing = this.resolve({ anilistId, malId });
+            const existing = this.resolve({ anilistId, malId, tvdbId: recTvdb });
             if (existing && existing.tmdbId) {
-                const currentLevel = this.getResolutionLevel({ anilistId, malId }) || 'bridge_tvdb';
+                const currentLevel = this.getResolutionLevel({ anilistId, malId, tvdbId: recTvdb }) || existing.level || 'bridge_tvdb';
                 stats[currentLevel] = (stats[currentLevel] || 0) + 1;
                 enriched.push({
                     record: rec,
@@ -403,8 +547,35 @@ class IdentityResolver {
                 continue;
             }
 
+            // 1.5. Livello Override Locale (senza force: vince su TVDB bridge e fallback titolo)
+            if (override) {
+                const season = Number(override.season) || 1;
+                console.log(`[IdentityOverride] Record "${rawTitle}" (id: ${rec.id}) risolto livello=override in TMDB ${override.tmdbId} S${season} ("${override.title || ''}")`);
+                if (aId) {
+                    if (!this.anilistToTmdb.has(aId)) this.anilistToTmdb.set(aId, String(override.tmdbId));
+                    this.anilistToSeason.set(aId, season);
+                    this.resolutionLevelMap.set('anilist:' + aId, 'override');
+                }
+                if (mId) {
+                    if (!this.malToTmdb.has(mId)) this.malToTmdb.set(mId, String(override.tmdbId));
+                    this.malToSeason.set(mId, season);
+                    this.resolutionLevelMap.set('mal:' + mId, 'override');
+                }
+                enriched.push({
+                    record: rec,
+                    level: 'override',
+                    match: {
+                        tmdbId: String(override.tmdbId),
+                        season,
+                        title: override.title,
+                        source: 'override'
+                    }
+                });
+                stats.override++;
+                continue;
+            }
+
             // 2. Livello Bridge TVDB → TMDB
-            const tvdbInfo = this.getTvdb({ anilistId, malId });
             let bridgeResolved = false;
 
             if (tvdbInfo && tvdbInfo.tvdbId) {
@@ -482,7 +653,7 @@ class IdentityResolver {
             }
         }
 
-        console.log(`[Identity] Livelli di risoluzione: ${stats.official} ufficiali (skip), ${stats.bridge_tvdb} bridge_tvdb, ${stats.title_fallback} title_fallback, ${stats.unresolved} non risolti.`);
+        console.log(`[Identity] Livelli di risoluzione: ${stats.official} ufficiali (skip), ${stats.override} override, ${stats.bridge_tvdb} bridge_tvdb, ${stats.title_fallback} title_fallback, ${stats.unresolved} non risolti.`);
 
         if (!dryRun) {
             this.tvdbBridgeResolver.saveCache();

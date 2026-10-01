@@ -13,5 +13,6 @@ RUN npm ci --omit=dev
 # Copia solo l'entrypoint e la cartella sorgente (escludendo test, node_modules e cache)
 COPY cli.js ./
 COPY src/ ./src/
+COPY data/ ./data/
 
 CMD ["node", "cli.js"]
