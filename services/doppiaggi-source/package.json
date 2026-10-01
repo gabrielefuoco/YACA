@@ -1,0 +1,13 @@
+{
+  "name": "yaca-doppiaggi-source",
+  "version": "1.0.0",
+  "description": "Italian dubbing source provider for YACA (antoniogenna.net scraper and matcher)",
+  "main": "cli.js",
+  "scripts": {
+    "test": "node --test tests/",
+    "start": "node cli.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
