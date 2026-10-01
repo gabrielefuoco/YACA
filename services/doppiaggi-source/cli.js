@@ -150,7 +150,8 @@ Uso:
   node cli.js [opzioni]
 
 Opzioni base:
-  --dry-run             Esegue parsing, unione e match senza scrivere annotazioni su disco  --health-check        Verifica il battito di salute (exit 0 se < 24h, exit 1 altrimenti)
+  --dry-run             Esegue parsing, unione e match senza scrivere annotazioni su disco
+  --health-check        Verifica il battito di salute (exit 0 se < 24h, exit 1 altrimenti)
   --force-refresh       Ignora la cache locale e scarica le pagine di rete
   --cache-dir <dir>     Cartella cache delle pagine HTML (default: services/doppiaggi-source/.cache)
   --movies-path <file>  Percorso file master_movies.jsonl
