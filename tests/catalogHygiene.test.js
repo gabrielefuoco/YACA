@@ -1,6 +1,8 @@
 const {
     isCompilationOrBoxSet,
-    passesQualityFloor
+    passesQualityFloor,
+    passesSeedNetworkNonNarrativeGate,
+    NON_NARRATIVE_GENRE_IDS
 } = require('../src/engines/hybrid/catalogStrategies');
 
 describe('Ticket 27: Cofanetti ed edizioni speciali nei cataloghi hero', () => {
@@ -69,5 +71,50 @@ describe('Ticket 27: Cofanetti ed edizioni speciali nei cataloghi hero', () => {
             expect(isCompilationOrBoxSet(wrappedItem)).toBe(true);
             expect(passesQualityFloor(wrappedItem, 'movie', true)).toBe(false);
         });
+    });
+});
+
+describe('Ticket 28: Formati non narrativi nel seed network', () => {
+    const profileDna = [35, 18, 80]; // Commedia, Dramma, Crime
+    const realityDna = [10764, 35, 18]; // Reality nel DNA
+
+    test('scarta The Kardashians (10764 Reality) quando il reality non è nel DNA', () => {
+        const theKardashians = {
+            id: 197067,
+            name: 'The Kardashians',
+            genre_ids: [10764]
+        };
+        expect(passesSeedNetworkNonNarrativeGate(theKardashians, profileDna)).toBe(false);
+    });
+
+    test('scarta Talk Show (10767) e News (10763) quando non nel DNA', () => {
+        expect(passesSeedNetworkNonNarrativeGate({ name: 'Late Night Talk', genre_ids: [10767] }, profileDna)).toBe(false);
+        expect(passesSeedNetworkNonNarrativeGate({ name: 'Daily News', genre_ids: [10763] }, profileDna)).toBe(false);
+    });
+
+    test('scarta formati non narrativi anche se accompagnati da generi del DNA (es. [18, 10764])', () => {
+        const hybridReality = {
+            name: 'Drama Reality Show',
+            genre_ids: [18, 10764]
+        };
+        expect(passesSeedNetworkNonNarrativeGate(hybridReality, profileDna)).toBe(false);
+    });
+
+    test('AMMETTE il reality se compare esplicitamente nel DNA del profilo', () => {
+        const theKardashians = {
+            id: 197067,
+            name: 'The Kardashians',
+            genre_ids: [10764]
+        };
+        expect(passesSeedNetworkNonNarrativeGate(theKardashians, realityDna)).toBe(true);
+    });
+
+    test('AMMETTE contenuti puramente narrativi senza formati non narrativi', () => {
+        const breakingBad = {
+            id: 1396,
+            name: 'Breaking Bad',
+            genre_ids: [18, 80]
+        };
+        expect(passesSeedNetworkNonNarrativeGate(breakingBad, profileDna)).toBe(true);
     });
 });
