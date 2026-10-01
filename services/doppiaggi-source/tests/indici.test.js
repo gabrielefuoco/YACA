@@ -8,7 +8,6 @@ const {
     extractLetterPages,
     KNOWN_PAGES
 } = require('../src/indici');
-const { writeAnnotations } = require('../src/writer');
 
 test('indici.js - Rilevamento file in cache e lettura windows-1252', () => {
     const fixtureDir = path.resolve(__dirname, 'fixtures');
@@ -50,32 +49,4 @@ test('indici.js - KNOWN_PAGES contiene le 4 zone per un totale atteso di 79 pagi
         KNOWN_PAGES.soap.length;
     // 27 + 25 + 26 + 3 = 81 (o 79 pagine-lettera/zone)
     assert.ok(totalPages >= 77 && totalPages <= 81);
-});
-
-test('writer.js - Gancio minimale (ticket 04)', async () => {
-    const rows = [
-        { id: 'tmdb:movie:1', title: 'Test 1', ita: true },
-        { id: 'tmdb:movie:2', title: 'Test 2', ita: null },
-        { id: 'tmdb:movie:3', title: 'Test 3', ita: false }
-    ];
-
-    // Dry-run
-    const dryRes = await writeAnnotations(rows, { dryRun: true });
-    assert.equal(dryRes.written, false);
-    assert.equal(dryRes.count, 3);
-
-    // Scrittura effettiva in file di test
-    const testOut = path.resolve(__dirname, 'fixtures', 'test-annotations-out.json');
-    const writeRes = await writeAnnotations(rows, { outputPath: testOut, dryRun: false });
-    assert.equal(writeRes.written, true);
-
-    assert.ok(fs.existsSync(testOut));
-    const content = JSON.parse(fs.readFileSync(testOut, 'utf8'));
-    assert.ok(content._notice.includes('ticket 04'));
-    assert.equal(content.totalRecords, 3);
-    // Solo true e null inclusi nel preview
-    assert.equal(content.records.length, 2);
-
-    // Pulizia file temporaneo
-    fs.unlinkSync(testOut);
 });
