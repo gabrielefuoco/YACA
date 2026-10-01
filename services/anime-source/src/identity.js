@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const { TmdbFallbackResolver } = require('./tmdbFallback');
+const { TvdbBridgeResolver } = require('./tvdbBridge');
 
 const ANIBRIDGE_URL = 'https://github.com/anibridge/anibridge-mappings/releases/download/v3/mappings.min.json';
 const FRIBB_MINI_URL = 'https://raw.githubusercontent.com/Fribb/anime-lists/master/anime-list-mini.json';
@@ -28,6 +29,11 @@ class IdentityResolver {
             apiKey: this.tmdbApiKey,
             fetch: this.fetchFn
         });
+        this.tvdbBridgeResolver = options.tvdbBridgeResolver || new TvdbBridgeResolver({
+            cacheDir: this.cacheDir,
+            apiKey: this.tmdbApiKey,
+            fetch: this.fetchFn
+        });
 
         this.anilistToTmdb = new Map();
         this.malToTmdb = new Map();
@@ -38,6 +44,13 @@ class IdentityResolver {
 
         this.anilistToSeason = new Map();
         this.malToSeason = new Map();
+
+        this.anilistToTvdb = new Map(); // anilistId -> { tvdbId: string, season: number }
+        this.malToTvdb = new Map();      // malId -> { tvdbId: string, season: number }
+
+        this.officialAnilist = new Set();
+        this.officialMal = new Set();
+        this.resolutionLevelMap = new Map(); // 'anilist:X' | 'mal:Y' -> 'official' | 'bridge_tvdb' | 'title_fallback'
 
         this.isReady = false;
     }
@@ -81,11 +94,19 @@ class IdentityResolver {
             }
 
             if (tmdbVal) {
-                if (anilistId && !this.anilistToTmdb.has(anilistId)) {
-                    this.anilistToTmdb.set(anilistId, tmdbVal);
+                if (anilistId) {
+                    if (!this.anilistToTmdb.has(anilistId)) {
+                        this.anilistToTmdb.set(anilistId, tmdbVal);
+                    }
+                    this.officialAnilist.add(anilistId);
+                    this.resolutionLevelMap.set('anilist:' + anilistId, 'official');
                 }
-                if (malId && !this.malToTmdb.has(malId)) {
-                    this.malToTmdb.set(malId, tmdbVal);
+                if (malId) {
+                    if (!this.malToTmdb.has(malId)) {
+                        this.malToTmdb.set(malId, tmdbVal);
+                    }
+                    this.officialMal.add(malId);
+                    this.resolutionLevelMap.set('mal:' + malId, 'official');
                 }
             }
         }
@@ -96,12 +117,24 @@ class IdentityResolver {
             if (clusterKey === '$meta' || !mappings || typeof mappings !== 'object') continue;
 
             const allNodes = [clusterKey, ...Object.keys(mappings)];
-            let clusterAnilist = null;
-            let clusterMal = null;
+            const anilistList = [];
+            const malList = [];
+            const tvdbList = [];
 
             for (const node of allNodes) {
-                if (node.startsWith('anilist:')) clusterAnilist = node.split(':')[1];
-                if (node.startsWith('mal:')) clusterMal = node.split(':')[1];
+                if (node.startsWith('anilist:')) anilistList.push(node.split(':')[1]);
+                if (node.startsWith('mal:')) malList.push(node.split(':')[1]);
+                if (node.startsWith('tvdb_show:') || node.startsWith('tvdb_movie:')) {
+                    const parts = node.split(':');
+                    const tvdbId = parts[1];
+                    let season = 1;
+                    if (parts.length > 2 && parts[2].startsWith('s')) {
+                        season = parseInt(parts[2].replace('s', ''), 10) || 1;
+                    }
+                    if (tvdbId) {
+                        tvdbList.push({ tvdbId: String(tvdbId), season });
+                    }
+                }
             }
 
             for (const providerKey of Object.keys(mappings)) {
@@ -115,18 +148,35 @@ class IdentityResolver {
 
                     if (tmdbId) {
                         const strTmdb = String(tmdbId);
-                        if (clusterAnilist) {
+                        for (const clusterAnilist of anilistList) {
                             if (!this.anilistToTmdb.has(clusterAnilist)) {
                                 this.anilistToTmdb.set(clusterAnilist, strTmdb);
                             }
                             this.anilistToSeason.set(clusterAnilist, season);
+                            this.officialAnilist.add(clusterAnilist);
+                            this.resolutionLevelMap.set('anilist:' + clusterAnilist, 'official');
                         }
-                        if (clusterMal) {
+                        for (const clusterMal of malList) {
                             if (!this.malToTmdb.has(clusterMal)) {
                                 this.malToTmdb.set(clusterMal, strTmdb);
                             }
                             this.malToSeason.set(clusterMal, season);
+                            this.officialMal.add(clusterMal);
+                            this.resolutionLevelMap.set('mal:' + clusterMal, 'official');
                         }
+                    }
+                }
+            }
+
+            for (const tv of tvdbList) {
+                for (const aId of anilistList) {
+                    if (!this.anilistToTvdb.has(aId)) {
+                        this.anilistToTvdb.set(aId, tv);
+                    }
+                }
+                for (const mId of malList) {
+                    if (!this.malToTvdb.has(mId)) {
+                        this.malToTvdb.set(mId, tv);
                     }
                 }
             }
@@ -213,15 +263,64 @@ class IdentityResolver {
         });
 
         this.loadFromData({ fribbData, anibridgeData });
-        console.log(`[Identity] Indice inizializzato: ${this.anilistToTmdb.size} AniList->TMDB, ${this.malToTmdb.size} MAL->TMDB, ${this.kitsuToTmdb.size} Kitsu->TMDB`);
+        console.log(`[Identity] Indice inizializzato: ${this.anilistToTmdb.size} AniList->TMDB, ${this.malToTmdb.size} MAL->TMDB, ${this.kitsuToTmdb.size} Kitsu->TMDB, ${this.anilistToTvdb.size} AniList->TVDB, ${this.malToTvdb.size} MAL->TVDB`);
     }
 
     /**
-     * Risolve un record AnimeUnity nell'identità unificata (TMDB + Kitsu)
+     * Verifica se il record possiede un mapping ufficiale pre-esistente (Fribb o AniBridge)
      * @param {Object} params
      * @param {number|string} [params.anilistId]
      * @param {number|string} [params.malId]
-     * @returns {{ tmdbId: string, kitsuId: string|null, anilistId: number|null, malId: number|null, season: number }|null}
+     * @returns {boolean}
+     */
+    isOfficiallyMapped({ anilistId, malId } = {}) {
+        const aId = anilistId ? String(anilistId) : null;
+        const mId = malId ? String(malId) : null;
+        return (aId && this.officialAnilist.has(aId)) || (mId && this.officialMal.has(mId)) || false;
+    }
+
+    /**
+     * Restituisce i metadati TVDB indicizzati (tvdb_id e stagione) da AniBridge
+     * @param {Object} params
+     * @param {number|string} [params.anilistId]
+     * @param {number|string} [params.malId]
+     * @returns {{ tvdbId: string, season: number }|null}
+     */
+    getTvdb({ anilistId, malId } = {}) {
+        const aId = anilistId ? String(anilistId) : null;
+        const mId = malId ? String(malId) : null;
+        return (aId && this.anilistToTvdb.get(aId)) || (mId && this.malToTvdb.get(mId)) || null;
+    }
+
+    /**
+     * Restituisce il livello che ha risolto il record ('official' | 'bridge_tvdb' | 'title_fallback' | null)
+     * @param {Object} params
+     * @param {number|string} [params.anilistId]
+     * @param {number|string} [params.malId]
+     * @returns {string|null}
+     */
+    getResolutionLevel({ anilistId, malId } = {}) {
+        const aId = anilistId ? String(anilistId) : null;
+        const mId = malId ? String(malId) : null;
+
+        if (this.isOfficiallyMapped({ anilistId, malId })) {
+            return 'official';
+        }
+        if (aId && this.resolutionLevelMap.has('anilist:' + aId)) {
+            return this.resolutionLevelMap.get('anilist:' + aId);
+        }
+        if (mId && this.resolutionLevelMap.has('mal:' + mId)) {
+            return this.resolutionLevelMap.get('mal:' + mId);
+        }
+        return null;
+    }
+
+    /**
+     * Risolve un record AnimeUnity nell'identità unificata (TMDB + Kitsu) in modo sincrono
+     * @param {Object} params
+     * @param {number|string} [params.anilistId]
+     * @param {number|string} [params.malId]
+     * @returns {{ tmdbId: string, kitsuId: string|null, anilistId: number|null, malId: number|null, season: number, level: string }|null}
      */
     resolve({ anilistId, malId } = {}) {
         const aId = anilistId ? String(anilistId) : null;
@@ -239,47 +338,118 @@ class IdentityResolver {
         }
 
         const season = (aId && this.anilistToSeason.get(aId)) || (mId && this.malToSeason.get(mId)) || 1;
+        const level = this.getResolutionLevel({ anilistId, malId }) || 'official';
 
         return {
             tmdbId: String(tmdbId),
             kitsuId: kitsuId ? String(kitsuId) : null,
             anilistId: aId ? Number(aId) : null,
             malId: mId ? Number(mId) : null,
-            season
+            season,
+            level
         };
     }
 
     /**
-     * Arricchisce i record non risolti cercando su TMDB tramite TmdbFallbackResolver.
-     * I mapping ufficiali vincono sempre; le mappe interne in memoria vengono popolate solo
-     * per le chiavi mancanti. In --dry-run non scrive su disco, solo log.
+     * Arricchisce i record non risolti seguendo l'ordine di priorità:
+     * 1. Ufficiale (AniBridge/Fribb) -> vince sempre
+     * 2. Bridge TVDB -> TMDB (/3/find/{tvdb_id}?external_source=tvdb_id)
+     * 3. Fallback per Titolo (/3/search/tv)
+     *
+     * In --dry-run non scrive su disco le cache di fallback/bridge.
      * @param {Array<Object>} records
      * @param {Object} [options]
      * @param {boolean} [options.dryRun]
      * @param {boolean} [options.refreshFallbacks]
-     * @returns {Promise<Array<{ record: Object, match: Object }>>}
+     * @returns {Promise<Array<{ record: Object, level: string, match: Object }>>}
      */
     async enrichWithFallbacks(records, options = {}) {
         if (!Array.isArray(records) || records.length === 0) return [];
         const dryRun = !!options.dryRun;
         const refreshFallbacks = !!options.refreshFallbacks;
 
+        await this.tvdbBridgeResolver.loadCache();
         await this.fallbackResolver.loadCache();
 
         const enriched = [];
+        const stats = { official: 0, bridge_tvdb: 0, title_fallback: 0, unresolved: 0 };
         for (const rec of records) {
             const anilistId = rec.anilist_id;
             const malId = rec.mal_id;
+            const aId = anilistId ? String(anilistId) : null;
+            const mId = malId ? String(malId) : null;
+            const rawTitle = rec.title || rec.title_eng || rec.title_it || rec.slug || `Anime #${rec.id}`;
 
-            // Il mapping ufficiale vince sempre: se già mappato, non fare nulla
-            const existing = this.resolve({ anilistId, malId });
-            if (existing && existing.tmdbId) {
+            // 1. Livello Ufficiale: se già presente da Fribb/AniBridge, non fare nulla
+            if (this.isOfficiallyMapped({ anilistId, malId })) {
+                stats.official++;
                 continue;
             }
 
-            const rawTitle = rec.title || rec.title_eng || rec.title_it || rec.slug || `Anime #${rec.id}`;
+            // Se è già stato risolto in questo stesso batch (es. SUB seguito da DUB dello stesso anime)
+            const existing = this.resolve({ anilistId, malId });
+            if (existing && existing.tmdbId) {
+                const currentLevel = this.getResolutionLevel({ anilistId, malId }) || 'bridge_tvdb';
+                stats[currentLevel] = (stats[currentLevel] || 0) + 1;
+                enriched.push({
+                    record: rec,
+                    level: currentLevel,
+                    match: {
+                        tmdbId: existing.tmdbId,
+                        season: existing.season,
+                        source: currentLevel
+                    }
+                });
+                continue;
+            }
 
-            const match = await this.fallbackResolver.resolveFallback({
+            // 2. Livello Bridge TVDB → TMDB
+            const tvdbInfo = this.getTvdb({ anilistId, malId });
+            let bridgeResolved = false;
+
+            if (tvdbInfo && tvdbInfo.tvdbId) {
+                const bridgeMatch = await this.tvdbBridgeResolver.resolveTvdb(tvdbInfo.tvdbId, {
+                    refresh: refreshFallbacks
+                });
+
+                if (bridgeMatch && bridgeMatch.tmdbId) {
+                    const season = Number(tvdbInfo.season) || 1;
+                    const cacheLabel = bridgeMatch.fromCache ? 'da cache' : 'nuova chiamata TMDB';
+                    console.log(`[IdentityBridge] Record "${rawTitle}" (id: ${rec.id}) risolto livello=bridge_tvdb in TMDB ${bridgeMatch.tmdbId} S${season} ("${bridgeMatch.name}") [tvdb:${tvdbInfo.tvdbId}, ${cacheLabel}]${dryRun ? ' (DRY-RUN)' : ''}`);
+
+                    if (aId) {
+                        if (!this.anilistToTmdb.has(aId)) this.anilistToTmdb.set(aId, String(bridgeMatch.tmdbId));
+                        this.anilistToSeason.set(aId, season);
+                        this.resolutionLevelMap.set('anilist:' + aId, 'bridge_tvdb');
+                    }
+                    if (mId) {
+                        if (!this.malToTmdb.has(mId)) this.malToTmdb.set(mId, String(bridgeMatch.tmdbId));
+                        this.malToSeason.set(mId, season);
+                        this.resolutionLevelMap.set('mal:' + mId, 'bridge_tvdb');
+                    }
+
+                    enriched.push({
+                        record: rec,
+                        level: 'bridge_tvdb',
+                        match: {
+                            tmdbId: String(bridgeMatch.tmdbId),
+                            name: bridgeMatch.name,
+                            season,
+                            tvdbId: tvdbInfo.tvdbId,
+                            source: 'tvdb_bridge'
+                        }
+                    });
+                    bridgeResolved = true;
+                    stats.bridge_tvdb++;
+                }
+            }
+
+            if (bridgeResolved) {
+                continue;
+            }
+
+            // 3. Livello Fallback Titolo (/3/search/tv)
+            const titleMatch = await this.fallbackResolver.resolveFallback({
                 title: rec.title,
                 title_eng: rec.title_eng,
                 title_it: rec.title_it,
@@ -289,24 +459,33 @@ class IdentityResolver {
                 malId
             }, { refreshFallbacks, dryRun });
 
-            if (match && match.tmdbId) {
-                console.log(`[IdentityFallback] Record "${rawTitle}" (id: ${rec.id}) risolto in TMDB ${match.tmdbId} ("${match.name}") [matched: "${match.matchedTitle}", conf: ${match.confidence}]${dryRun ? ' (DRY-RUN)' : ''}`);
+            if (titleMatch && titleMatch.tmdbId) {
+                console.log(`[IdentityFallback] Record "${rawTitle}" (id: ${rec.id}) risolto livello=title_fallback in TMDB ${titleMatch.tmdbId} ("${titleMatch.name}") [matched: "${titleMatch.matchedTitle}", conf: ${titleMatch.confidence}]${dryRun ? ' (DRY-RUN)' : ''}`);
 
-                const aId = anilistId ? String(anilistId) : null;
-                const mId = malId ? String(malId) : null;
-
-                if (aId && !this.anilistToTmdb.has(aId)) {
-                    this.anilistToTmdb.set(aId, String(match.tmdbId));
+                if (aId) {
+                    if (!this.anilistToTmdb.has(aId)) this.anilistToTmdb.set(aId, String(titleMatch.tmdbId));
+                    this.resolutionLevelMap.set('anilist:' + aId, 'title_fallback');
                 }
-                if (mId && !this.malToTmdb.has(mId)) {
-                    this.malToTmdb.set(mId, String(match.tmdbId));
+                if (mId) {
+                    if (!this.malToTmdb.has(mId)) this.malToTmdb.set(mId, String(titleMatch.tmdbId));
+                    this.resolutionLevelMap.set('mal:' + mId, 'title_fallback');
                 }
 
-                enriched.push({ record: rec, match });
+                enriched.push({
+                    record: rec,
+                    level: 'title_fallback',
+                    match: titleMatch
+                });
+                stats.title_fallback++;
+            } else {
+                stats.unresolved++;
             }
         }
 
+        console.log(`[Identity] Livelli di risoluzione: ${stats.official} ufficiali (skip), ${stats.bridge_tvdb} bridge_tvdb, ${stats.title_fallback} title_fallback, ${stats.unresolved} non risolti.`);
+
         if (!dryRun) {
+            this.tvdbBridgeResolver.saveCache();
             this.fallbackResolver.saveCache();
         }
 
@@ -316,7 +495,10 @@ class IdentityResolver {
 
 module.exports = {
     IdentityResolver,
+    TvdbBridgeResolver,
+    TmdbFallbackResolver,
     ANIBRIDGE_URL,
     FRIBB_MINI_URL,
     DEFAULT_MAX_AGE_MS
 };
+
