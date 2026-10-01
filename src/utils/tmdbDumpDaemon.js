@@ -1,5 +1,6 @@
 const TmdbDumpStore = require('./tmdbDumpStore');
 const TmdbDumpClient = require('./tmdbDumpClient');
+const { loadTrackedAiringIds, isTrackedAiringId } = require('./tmdbIngestPolicy');
 
 const apiKey = process.env.TMDB_API_KEY;
 
@@ -82,6 +83,7 @@ async function coldStart(store, client) {
 
         console.log(`[TmdbDump] Cold Start for ${mediaType}: resuming at ${startIndex}/${allIds.length} (${idsToFetch.length} remaining)`);
         
+        const trackedIds = await loadTrackedAiringIds();
         let batch = [];
 
         // Concorrenza del cold start: il dump è ~530k titoli e una richiesta alla volta
@@ -110,7 +112,7 @@ async function coldStart(store, client) {
                 dumpStatus.progress = actualIndex;
 
                 const rows = await Promise.all(slice.map(id =>
-                    mediaType === 'movies' ? client.fetchMovie(id) : client.fetchTv(id)
+                    mediaType === 'movies' ? client.fetchMovie(id, { trackedIds }) : client.fetchTv(id, { trackedIds })
                 ));
                 for (const row of rows) {
                     if (row) batch.push(row);
@@ -195,6 +197,7 @@ async function dailySync(store, client) {
 
         // Cross-reference con il DB locale (solo colonna ID)
         const localIds = await store.loadIds(mediaType);
+        const trackedIds = await loadTrackedAiringIds();
         
         // Scarica Daily Export per filtrare nuovi ID per popolarità
         dumpStatus.currentTask = `Downloading Daily Export for ${mediaType}`;
@@ -203,7 +206,7 @@ async function dailySync(store, client) {
 
         const idsToFetch = [];
         for (const id of changedIds) {
-            if (localIds.has(id) || popularSet.has(id)) {
+            if (localIds.has(id) || popularSet.has(id) || isTrackedAiringId(id, trackedIds)) {
                 idsToFetch.push(id);
             }
         }
@@ -224,14 +227,16 @@ async function dailySync(store, client) {
 
             try {
                 const row = mediaType === 'movies' 
-                    ? await client.fetchMovie(id) 
-                    : await client.fetchTv(id);
+                    ? await client.fetchMovie(id, { trackedIds }) 
+                    : await client.fetchTv(id, { trackedIds });
                     
                 if (row) {
                     toUpsert.push(row);
                 } else if (localIds.has(id)) {
-                    // Era nel DB ma ora è 404 o sotto soglia → rimuovi
-                    toDelete.push(id);
+                    // Era nel DB ma ora è 404 o sotto soglia → rimuovi SOLO se non è tracciato da anime_airing_state
+                    if (!isTrackedAiringId(id, trackedIds)) {
+                        toDelete.push(id);
+                    }
                 }
             } catch (err) {
                 console.error(`[TmdbDump] Failed to sync ${id}:`, err.message);

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const zlib = require('zlib');
 const readline = require('readline');
+const { shouldKeepTmdbRecord } = require('./tmdbIngestPolicy');
 
 const TMDB_GENRES_EN_MAP = {
     28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
@@ -105,7 +106,7 @@ class TmdbDumpClient {
         return null;
     }
 
-    async fetchMovie(id) {
+    async fetchMovie(id, options = {}) {
         const data = await this.fetchWithRetry(`${this.baseUrl}/movie/${id}`, {
             language: 'it-IT',
             append_to_response: 'keywords,credits,videos,images,recommendations,watch/providers,release_dates',
@@ -113,7 +114,9 @@ class TmdbDumpClient {
             include_video_language: 'it,en,null'
         });
         
-        if (!data || data.vote_count < 10) return null;
+        if (!data) return null;
+        const keep = await shouldKeepTmdbRecord(data.id, data.vote_count, options);
+        if (!keep) return null;
 
         const common = extractCommonTmdbData(data);
         const directors = (data.credits?.crew || []).filter(c => c.job === 'Director').map(c => ({id: c.id, name: c.name}));
@@ -152,7 +155,7 @@ class TmdbDumpClient {
         };
     }
 
-    async fetchTv(id) {
+    async fetchTv(id, options = {}) {
         const data = await this.fetchWithRetry(`${this.baseUrl}/tv/${id}`, {
             language: 'it-IT',
             append_to_response: 'keywords,credits,videos,images,recommendations,watch/providers,content_ratings,external_ids',
@@ -160,7 +163,9 @@ class TmdbDumpClient {
             include_video_language: 'it,en,null'
         });
         
-        if (!data || data.vote_count < 10) return null;
+        if (!data) return null;
+        const keep = await shouldKeepTmdbRecord(data.id, data.vote_count, options);
+        if (!keep) return null;
 
         const common = extractCommonTmdbData(data);
         const created_by = (data.created_by || []).map(c => ({id: c.id, name: c.name}));

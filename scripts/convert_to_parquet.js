@@ -178,19 +178,27 @@ async function convert({ dataDir, types = DEFAULT_TYPES } = {}) {
             await exec(con, query);
             if (!fs.existsSync(writerFile)) throw new Error(`Writer non ha creato ${writerFile}`);
 
-            const stats = await parquetStats(con, writerFile);
             // DuckDB/Windows mantiene il file aperto finché la connessione vive.
-            // Chiudere connessione e database prima del rename rende atomico anche l'isolated run.
+            // Chiudere connessione e database prima del rename evita conflitti di lock EBUSY su Windows.
             await closeDatabase(con, db);
             con = null;
             db = null;
             databaseClosed = true;
+
             // Quando esiste già un parquet, la sostituzione resta atomica: i
             // lettori vedono il vecchio file oppure il nuovo, mai un file parziale.
-            // Al primo avvio non esiste un destinatario, quindi DuckDB scrive
-            // direttamente sul nome finale (necessario anche su Windows, dove il
-            // modulo nativo può mantenere aperto il writer fino alla fine del processo).
             if (destinationExisted) await replaceFile(tmpParquetFile, parquetFile);
+
+            // Lettura statistiche sul file finale garantito
+            const statsDb = new duckdb.Database(':memory:');
+            const statsCon = statsDb.connect();
+            let stats;
+            try {
+                stats = await parquetStats(statsCon, parquetFile);
+            } finally {
+                await closeDatabase(statsCon, statsDb);
+            }
+
             const sizeBytes = fs.statSync(parquetFile).size;
             const duplicatesRemoved = inputStats.sourceRowCount - stats.uniqueIdCount;
             const result = { type, ...inputStats, ...stats, duplicatesRemoved, sizeBytes, skipped: false };
