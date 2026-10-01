@@ -16,7 +16,7 @@ const path = require('path');
 const { fetchAllIndices } = require('./src/indici');
 const { parseIndexPage } = require('./src/parse');
 const { loadCatalogFromJsonl, matchCatalog } = require('./src/match');
-const { writeAnnotations } = require('./src/writer');
+const { writeAnnotations, DEFAULT_FILENAME } = require('./src/writer');
 
 const DEFAULT_CACHE_DIR = path.resolve(__dirname, '.cache');
 const DEFAULT_TMP_DIR = path.resolve(__dirname, '..', '..', '.scratch', 'doppiaggio-ita', 'tmp');
@@ -220,21 +220,25 @@ async function main() {
     console.log(`  - false (non toccati):      ${matchResult.catalogStats.falseCount} (${matchResult.catalogStats.total ? ((matchResult.catalogStats.falseCount / matchResult.catalogStats.total) * 100).toFixed(1) : 0}%)`);
     console.log('===============================================================\n');
 
-    // 5. Scrittura annotazioni (gancio writer)
+    // 5. Scrittura annotazioni: NDJSON accanto al parquet/dump (il parquet tipato lo fa il core)
+    const outputPath = opts.outputPath || path.join(path.dirname(opts.moviesPath), DEFAULT_FILENAME);
     const writeResult = await writeAnnotations(matchResult.annotations, {
         dryRun: opts.dryRun,
-        outputPath: opts.outputPath,
-        metadata: {
-            catalogStats: matchResult.catalogStats,
-            agStats: matchResult.agStats,
-            elapsedSeconds: elapsed
-        }
+        outputPath,
+        source: 'antoniogenna.net/doppiaggio'
     });
 
     if (writeResult.written) {
-        console.log(`[Writer] Annotazioni salvate in: ${writeResult.path} (${writeResult.count} record con badge/segnalazione)`);
+        console.log(`[Writer] Annotazioni salvate in: ${writeResult.path}`);
+        console.log(`[Writer]   ${writeResult.counts.rows} righe (true ${writeResult.counts.true} · null ${writeResult.counts.null}) · meta: ${writeResult.metaPath}`);
+    } else if (writeResult.reason === 'guard') {
+        const drop = (100 - (writeResult.counts.true / writeResult.previous.counts.true) * 100).toFixed(1);
+        console.error('[Writer] GUARDIA: le voci vere sono calate a ' + writeResult.counts.true +
+            ' da ' + writeResult.previous.counts.true + ' (-' + drop + '%). ' +
+            'Il file precedente NON è stato sovrascritto. Indagare prima di forzare.');
+        process.exitCode = 2;
     } else {
-        console.log('[Writer] Modalità dry-run: Nessun file scritto su disco.');
+        console.log(`[Writer] Modalità dry-run: nessun file scritto (${writeResult.counts.rows} righe che sarebbero scritte: true ${writeResult.counts.true} · null ${writeResult.counts.null}).`);
     }
 
     // Registra battito di salute

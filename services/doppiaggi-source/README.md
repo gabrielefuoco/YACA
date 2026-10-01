@@ -6,9 +6,9 @@ catalogo YACA. Produce le annotazioni "questo titolo è doppiato in italiano".
 È il gemello di `services/anime-source/`: modulo autonomo, CLI, test offline, zero dipendenze, nessun accesso
 al database del core.
 
-> **Stato**: scraper e matcher completi e verificati. Il **formato del file di annotazioni non è deciso** —
-> `src/writer.js` è un gancio vuoto con `// TODO: formato deciso dal ticket 04` della mappa
-> `.scratch/doppiaggio-ita/`. Non inventare lo schema qui.
+> **Stato**: completo. Scraper, parser, matcher e writer. Il file prodotto è un **NDJSON**; il **parquet
+> tipato** lo materializza il **core** (che ha già DuckDB) leggendolo: così il modulo resta **senza
+> dipendenze native**. Formato deciso dal ticket 04 della mappa `.scratch/doppiaggio-ita`.
 
 ## Cosa fa
 
@@ -36,7 +36,31 @@ al database del core.
      token in comune è **uno solo**, deve essere raro (df ≤ 3) — altrimenti è rumore (`6 Teen` → *Teen Wolf*);
    - altrimenti **`null`**: il matcher **non sceglie mai** fra più candidati;
    - i record del catalogo che nessuna voce AG tocca restano **`false`**.
-4. **Writer** (`src/writer.js`) — gancio, formato in sospeso (ticket 04).
+4. **Writer** (`src/writer.js`) — scrive il file delle annotazioni e il suo meta.
+
+## Il file prodotto
+
+Accanto al dump (dove sta il parquet) nascono due file:
+
+```
+ita_annotations.jsonl        una riga per voce, solo true e null
+ita_annotations.meta.json    conteggi, timestamp, schemaVersion
+```
+
+```json
+{"t":"movie","id":5,"ita":true}
+{"t":"tv","id":1399,"ita":null}
+```
+
+- la chiave è **`(tipo, id)`**: **5.933 id TMDB vivono in *entrambe* le tabelle** (il `5920` è sia *Le 24 ore
+  di Le Mans* sia *The Mentalist*), quindi il tipo fa parte della chiave;
+- nel file finiscono **solo `true` e `null`**: l'**assenza di riga vale `false`**. I ~10.264 record con titolo
+  in scrittura non latina non entrano nel file e restano fuori per costruzione;
+- la scrittura è **atomica** (`.tmp` + `rename`): o il file vecchio, o quello nuovo, mai un file a metà;
+- **guardia**: se i `true` calano oltre il **2%** rispetto al meta precedente, il file **non viene
+  sovrascritto** e il CLI esce con codice 2. È una regola del *file* (l'ultimo valido resta valido) — il
+  **merge** nel catalogo ha invece scelto di non bloccare mai il dump: due posti diversi, due decisioni.
+- in dry-run non scrive niente e riporta quante righe scriverebbe.
 
 Da notare: i record del catalogo con titolo in **scrittura non latina** (cirillico, cinese, coreano, hindi)
 hanno chiave di normalizzazione vuota e vengono scartati in lettura. È voluto: un titolo in cirillico non sarà
@@ -49,6 +73,7 @@ node cli.js --dry-run                     # parsing + match, non scrive niente
 node cli.js --dry-run --limit-catalog 500 # prova rapida
 node cli.js --health-check                # battito (exit 0 se < 24h)
 node cli.js --force-refresh               # ignora la cache e riscarica gli indici
+node cli.js                               # giro completo: scrive le annotazioni accanto al dump
 ```
 
 | opzione | effetto |
@@ -58,7 +83,7 @@ node cli.js --force-refresh               # ignora la cache e riscarica gli indi
 | `--force-refresh` | ignora la cache locale |
 | `--cache-dir <dir>` | cartella cache delle pagine HTML (default `services/doppiaggi-source/.cache`) |
 | `--movies-path <file>` / `--tv-path <file>` | dump del catalogo (`master_movies.jsonl`, `master_tv.jsonl`) |
-| `--output <file>` | percorso del file di annotazioni (preview) |
+| `--output <file>` | percorso del `.jsonl` (default: accanto al dump, `ita_annotations.jsonl`) |
 | `--limit-catalog <n>` | tetto di record da caricare, per debug |
 
 La cache già esistente in `.scratch/doppiaggio-ita/tmp/` viene usata come ripiego: in sviluppo **non serve
@@ -77,10 +102,13 @@ Dry run sul catalogo reale, 4,49 s:
 | non trovate nel DB | 3.705 voci |
 | `false` | 83.031 record |
 
+Il file prodotto in quel giro: **23.669 righe** (`true` 19.126 · `null` 4.543), ~700 KB.
+
 ```bash
-node --test tests/   # 16 test, tutti verdi
+node --test tests/   # 23 test, tutti verdi
 ```
 
 I test coprono: le tre regole di parsing (incluse la lettera decorativa e l'articolo inglese), i quattro
 percorsi di match, il rifiuto del rumore nel fuzzy stretto, il caso indecidibile che resta `null`, i record
-non toccati che restano `false`, il gancio del writer e il filtro delle cartelle escluse.
+non toccati che restano `false`, la **chiave `(tipo, id)`**, il formato e l'atomicità del writer, la
+**guardia** sul calo dei `true`, il dry-run e il filtro delle cartelle escluse.
