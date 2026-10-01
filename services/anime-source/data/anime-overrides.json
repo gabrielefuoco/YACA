@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "note": "Override locali di mapping anime. identities: anilist/mal/tvdb -> tmdbId, usati dal servizio anime-source subito dopo il mapping ufficiale e prima del bridge TVDB e della ricerca per titolo; force: true scavalca anche il mapping ufficiale. certify: tmdb id da certificare come anime in F.anime, per titoli che mancano dall'indice: NON vanno messi i donghua (decisione ticket 45: i donghua hanno il catalogo dedicato preset_donghua e non devono entrare nei cataloghi anime).",
   "identities": [
     {
       "anilist": 137653,
@@ -39,26 +40,5 @@
       "addedAt": "2026-10-01"
     }
   ],
-  "certify": [
-    {
-      "tmdbId": 106449,
-      "title": "凡人修仙传",
-      "note": "donghua"
-    },
-    {
-      "tmdbId": 223911,
-      "title": "仙逆",
-      "note": "donghua"
-    },
-    {
-      "tmdbId": 198182,
-      "title": "神印王座",
-      "note": "donghua"
-    },
-    {
-      "tmdbId": 224839,
-      "title": "遮天",
-      "note": "donghua"
-    }
-  ]
+  "certify": []
 }

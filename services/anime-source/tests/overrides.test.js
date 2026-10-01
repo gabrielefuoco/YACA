@@ -272,18 +272,21 @@ describe('File Reale anime-overrides.json', () => {
         const overrides = loadAnimeOverrides(realFile);
         assert.strictEqual(overrides.version, 1);
         assert.ok(overrides.identities.length >= 4, 'Almeno 4 identità note');
-        assert.ok(overrides.certify.length >= 4, 'Almeno 4 certify noti');
 
         const ids = overrides.identities.map(i => i.tmdbId);
         assert.ok(ids.includes('223911'), 'Include Xian Ni (223911)');
         assert.ok(ids.includes('198182'), 'Include Shen Yin Wangzuo 2 (198182)');
         assert.ok(ids.includes('106449'), 'Include Fanren Xiuxian Chuan (106449)');
         assert.ok(ids.includes('224839'), 'Include Zhe Tian (224839)');
+    });
 
+    test('i donghua NON sono certificati come anime (decisione ticket 45)', () => {
+        // I donghua hanno il catalogo dedicato preset_donghua: certificarli qui li
+        // farebbe entrare in F.anime, quindi nei cataloghi anime.
+        const overrides = loadAnimeOverrides(path.join(__dirname, '../data/anime-overrides.json'));
         const certifiedIds = overrides.certify.map(c => c.tmdbId);
-        assert.ok(certifiedIds.includes('106449'));
-        assert.ok(certifiedIds.includes('223911'));
-        assert.ok(certifiedIds.includes('198182'));
-        assert.ok(certifiedIds.includes('224839'));
+        for (const id of ['106449', '223911', '198182', '224839']) {
+            assert.ok(!certifiedIds.includes(id), `Il donghua ${id} non deve essere in certify`);
+        }
     });
 });
