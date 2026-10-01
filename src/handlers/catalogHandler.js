@@ -70,8 +70,8 @@ function isAiringStateCatalog(baseId, catalogMeta) {
 }
 
 /**
- * Badge del catalogo novità anime: le due card (sub e ITA) leggono lo stato esterno,
- * non TMDB/StreamBadge. Card sub -> `EP {italian.sub.latest.episode}`;
+ * Badge del catalogo novità anime: le due card (sub e ITA) leggono lo stato esterno
+ * (`anime_airing_state`), non TMDB. Card sub -> `EP {italian.sub.latest.episode}`;
  * card ITA (clone `_ita_offset`) -> `ITA {italian.dub.latest.episode}` e solo se nella
  * finestra di 14 giorni è uscito un episodio doppiato. Entrambe condividono lo stesso id.
  * Non lancia mai: in caso di problemi serve le card senza badge.
@@ -241,7 +241,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
         }
     }
 
-    // Catalogo novità anime: i badge vengono dallo stato esterno, non da StreamBadge/TMDB.
+    // Catalogo novità anime: i badge vengono dallo stato esterno (`anime_airing_state`).
     if (isAiringStateCatalog(baseId, catalogMeta)) {
         return await applyAiringStateBadges(metas, { userConfig, hostUrl, catalogMeta, type, snapshot: animeSnapshot });
     }
