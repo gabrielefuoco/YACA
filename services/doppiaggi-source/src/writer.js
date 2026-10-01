@@ -36,7 +36,10 @@ function metaPathFor(outputPath) {
 }
 
 /** Da `tmdb:movie:123` + tipo -> `{ t: 'movie', id: 123 }`. Il tipo dell'id vince su quello della card. */
-function splitId(id, type) {
+function splitId(id, type, explicitT) {
+    if (explicitT === 'movie' || explicitT === 'tv') {
+        return { t: explicitT, id: Number(id) };
+    }
     const parts = String(id || '').split(':');
     const numeric = Number(parts[parts.length - 1]);
     const fromId = parts[1] === 'movie' || parts[1] === 'tv' ? parts[1] : null;
@@ -46,13 +49,13 @@ function splitId(id, type) {
 /**
  * Dalle annotazioni del matcher alle righe del file: solo `true`/`null`, in ordine stabile
  * (tipo, id) per avere diff leggibili e file confrontabili fra un giro e l'altro.
- * @param {Array<{id:string,type:string,ita:boolean|null}>} annotations
+ * @param {Array<{id:string,type:string,ita:boolean|null,t?:string}>} annotations
  */
 function toRows(annotations) {
     const rows = [];
     for (const a of annotations || []) {
         if (!a || (a.ita !== true && a.ita !== null)) continue; // false (e tutto il resto) = assente dal file
-        const { t, id } = splitId(a.id, a.type);
+        const { t, id } = splitId(a.id, a.type, a.t);
         if (!Number.isFinite(id)) continue;
         rows.push({ t, id, ita: a.ita === true ? true : null });
     }
@@ -140,6 +143,7 @@ module.exports = {
     DEFAULT_FILENAME,
     GUARD_THRESHOLD,
     metaPathFor,
+    splitId,
     toRows,
     writeAnnotations
 };
