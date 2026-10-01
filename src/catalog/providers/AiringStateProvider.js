@@ -28,13 +28,13 @@ async function getAiringStateCatalog(skip = 0) {
         const snapshot = await animeAiringState.getSnapshot();
         const entries = animeAiringState.getNoveltyEntries(snapshot);
 
-        const offset = Number(skip) > 0 ? Math.floor(Number(skip)) : 0;
-        if (entries.length === 0 || offset >= entries.length) return [];
+        if (!entries || entries.length === 0) return [];
 
-        const page = entries.slice(offset, offset + PAGE_SIZE);
-        const tmdbIds = page
-            .map((entry) => Number(entry.doc.tmdbId))
-            .filter((id) => Number.isFinite(id) && id > 0);
+        const tmdbIds = Array.from(new Set(
+            entries
+                .map((entry) => Number(entry.doc && entry.doc.tmdbId))
+                .filter((id) => Number.isFinite(id) && id > 0)
+        ));
         if (tmdbIds.length === 0) return [];
 
         const metas = await getDuckDbCatalogFromPreset({
@@ -59,17 +59,21 @@ async function getAiringStateCatalog(skip = 0) {
             if (key) hydrated.set(key, meta);
         }
 
-        // DuckDB non preserva l'ordine della lista: riordino sulla pagina dello stato.
-        const ordered = [];
-        for (const entry of page) {
-            const meta = hydrated.get(entry.doc.tmdbId);
+        // DuckDB non preserva l'ordine della lista: riordino sulla base delle novità dello stato.
+        const valid = [];
+        for (const entry of entries) {
+            const tmdbKey = String((entry.doc && entry.doc.tmdbId) || entry.tmdbId || '');
+            const meta = hydrated.get(tmdbKey);
             if (!meta) continue; // non idratabile da DuckDB: lo saltiamo (come il vecchio provider)
             const cardId = animeAiringState.resolveCardId(entry, animeMappingStore);
             if (cardId) meta.id = cardId;
-            ordered.push(meta);
+            valid.push(meta);
         }
 
-        return ordered;
+        const offset = Number(skip) > 0 ? Math.floor(Number(skip)) : 0;
+        if (offset >= valid.length) return [];
+
+        return valid.slice(offset, offset + PAGE_SIZE);
     } catch (error) {
         // Degrado: mai un errore all'utente, il catalogo semplicemente non si popola.
         console.error('[AiringStateProvider] Catalogo novità anime non disponibile:', error.message);

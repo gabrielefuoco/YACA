@@ -73,6 +73,25 @@ function buildFixtureDocs() {
     ];
 }
 
+function buildManyFixtureDocs(count) {
+    const docs = [];
+    for (let i = 1; i <= count; i++) {
+        docs.push({
+            _id: String(100000 + i),
+            schemaVersion: 1,
+            ids: { tmdb: 100000 + i, kitsu: String(50000 + i) },
+            title: `Anime Series ${i}`,
+            italian: {
+                sub: { latest: { season: 1, episode: i } }
+            },
+            episodes: [
+                { season: 1, episode: i, airedAt: daysAgo(i * 0.1), subIta: true, dubIta: false }
+            ]
+        });
+    }
+    return docs;
+}
+
 function item(id, name) {
     const rawPoster = `https://image.tmdb.org/t/p/w500/${String(id).replace(/:/g, '_')}.jpg`;
     return {
@@ -172,6 +191,71 @@ describe('AiringStateProvider - catalogo novità anime', () => {
         });
         await expect(getAiringStateCatalog(0)).resolves.toEqual([]);
         expect(getDuckDbCatalogFromPreset).not.toHaveBeenCalled();
+    });
+
+    test('riempie la pagina 1 con 20 item validi anche quando alcuni ID non si idratano (ticket 32)', async () => {
+        // 35 documenti totali nello snapshot
+        animeAiringState.setDataSourceForTests(async () => buildManyFixtureDocs(35));
+
+        // DuckDB simula l'idratazione escludendo i multipli di 3 (11 esclusi su 35 -> 24 validi)
+        // Tra i primi 20 della lista grezza, 6 sono multipli di 3. Con il vecchio slice(0, 20)
+        // la pagina 1 ne avrebbe restituiti solo 14 (buco).
+        getDuckDbCatalogFromPreset.mockImplementation(async (preset) => {
+            const ids = (String(preset.where.join(' ')).match(/\d+/g) || []).map(Number);
+            return ids
+                .filter((id) => (id - 100000) % 3 !== 0)
+                .map((id) => ({
+                    id: `tmdb:${id}`,
+                    _tmdbId: id,
+                    type: 'series',
+                    name: `Serie ${id}`,
+                    poster: `https://image.tmdb.org/t/p/w500/${id}.jpg`
+                }));
+        });
+
+        const page1 = await getAiringStateCatalog(0);
+        expect(page1).toHaveLength(20);
+
+        // Pagina 2 (skip = 20): deve restituire i restanti 4 validi (24 totali)
+        const page2 = await getAiringStateCatalog(20);
+        expect(page2).toHaveLength(4);
+
+        // Nessun duplicato tra pagina 1 e pagina 2
+        const page1Ids = new Set(page1.map((m) => m.id));
+        for (const meta of page2) {
+            expect(page1Ids.has(meta.id)).toBe(false);
+        }
+
+        // Tutti gli item restituiti sono validi (nessun multiplo di 3)
+        const allReturnedIds = [...page1, ...page2].map((m) => m._tmdbId);
+        expect(allReturnedIds).toHaveLength(24);
+        for (const id of allReturnedIds) {
+            expect((id - 100000) % 3).not.toBe(0);
+        }
+    });
+
+    test('quando i validi disponibili sono meno di 20 restituisce quelli presenti senza buchi e pagina 2 vuota', async () => {
+        // 20 documenti nello snapshot, 6 multipli di 3 scartati -> 14 validi disponibili
+        animeAiringState.setDataSourceForTests(async () => buildManyFixtureDocs(20));
+
+        getDuckDbCatalogFromPreset.mockImplementation(async (preset) => {
+            const ids = (String(preset.where.join(' ')).match(/\d+/g) || []).map(Number);
+            return ids
+                .filter((id) => (id - 100000) % 3 !== 0)
+                .map((id) => ({
+                    id: `tmdb:${id}`,
+                    _tmdbId: id,
+                    type: 'series',
+                    name: `Serie ${id}`,
+                    poster: `https://image.tmdb.org/t/p/w500/${id}.jpg`
+                }));
+        });
+
+        const page1 = await getAiringStateCatalog(0);
+        expect(page1).toHaveLength(14);
+
+        const page2 = await getAiringStateCatalog(20);
+        expect(page2).toEqual([]);
     });
 });
 
