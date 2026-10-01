@@ -362,3 +362,149 @@ describe('AnimeAiringState - identità della card', () => {
         expect(animeAiringState.resolveCardId(entry, null)).toBe('tmdb:555');
     });
 });
+
+describe('AnimeAiringState - lettura senza finestra e nuovi documenti (senza episodes[])', () => {
+    test('doc senza episodes[] con sub/dub: getWindowInfo e getCardInfo considerano i canali disponibili', () => {
+        const docNoEpisodes = {
+            _id: '37854',
+            schemaVersion: 1,
+            ids: { tmdb: 37854, kitsu: '12' },
+            title: 'One Piece',
+            sub: { season: 22, episode: 1180 },
+            dub: { season: 22, episode: 936 },
+            orderIndex: 0,
+            updatedAt: daysAgo(0.1)
+        };
+
+        const snapshot = animeAiringState.buildSnapshot([docNoEpisodes]);
+        const doc = snapshot.byTmdbId.get('37854');
+
+        const winInfo = animeAiringState.getWindowInfo(doc, WINDOW);
+        expect(winInfo.hasSub).toBe(true);
+        expect(winInfo.hasDub).toBe(true);
+
+        const cardInfo = animeAiringState.getCardInfo(doc, WINDOW);
+        expect(cardInfo).not.toBeNull();
+        expect(cardInfo.hasSubInWindow).toBe(true);
+        expect(cardInfo.hasDubInWindow).toBe(true);
+        expect(cardInfo.sub).toEqual({ season: 22, episode: 1180 });
+        expect(cardInfo.dub).toEqual({ season: 22, episode: 936 });
+
+        expect(animeAiringState.getDubEpisode(doc)).toBe(936);
+        expect(animeAiringState.getDubEpisodeForId(snapshot, 'kitsu:12')).toBe(936);
+    });
+
+    test('getAiringEntries restituisce tutti i documenti con sub o dub e ordina per orderIndex', () => {
+        const docs = [
+            {
+                _id: '100',
+                schemaVersion: 1,
+                title: 'Terzo in lista',
+                sub: { season: 1, episode: 5 },
+                orderIndex: 2,
+                updatedAt: daysAgo(0.1)
+            },
+            {
+                _id: '200',
+                schemaVersion: 1,
+                title: 'Primo in lista',
+                sub: { season: 1, episode: 1 },
+                orderIndex: 0,
+                updatedAt: daysAgo(0.1)
+            },
+            {
+                _id: '300',
+                schemaVersion: 1,
+                title: 'Secondo in lista',
+                dub: { season: 1, episode: 10 },
+                orderIndex: 1,
+                updatedAt: daysAgo(0.1)
+            },
+            {
+                _id: '400',
+                schemaVersion: 1,
+                title: 'Nessun sub o dub',
+                updatedAt: daysAgo(0.1)
+            }
+        ];
+
+        const snapshot = animeAiringState.buildSnapshot(docs);
+        const entries = animeAiringState.getAiringEntries(snapshot, { now: NOW });
+
+        expect(entries.map(e => e.doc.tmdbId)).toEqual(['200', '300', '100']);
+        expect(entries.find(e => e.doc.tmdbId === '400')).toBeUndefined();
+    });
+
+    test('filtro di freschezza: doc aggiornato adesso -> incluso; doc vecchio di 3 giorni -> escluso; doc vecchio con episodes[] -> escluso', () => {
+        const docs = [
+            // Doc aggiornato adesso (2 ore fa): incluso
+            {
+                _id: '101',
+                schemaVersion: 1,
+                title: 'Ciclo Corrente',
+                sub: { season: 1, episode: 10 },
+                updatedAt: daysAgo(2 / 24), // 2h fa
+                orderIndex: 0
+            },
+            // Doc vecchio di 3 giorni: escluso (storico)
+            {
+                _id: '102',
+                schemaVersion: 1,
+                title: 'Vecchio 3 giorni',
+                sub: { season: 1, episode: 5 },
+                updatedAt: daysAgo(3),
+                orderIndex: 1
+            },
+            // Doc vecchio con episodes[] (compatibilità storica): escluso se oltre la finestra di freschezza
+            {
+                _id: '103',
+                schemaVersion: 1,
+                title: 'Vecchio con episodes',
+                sub: { season: 1, episode: 12 },
+                episodes: [{ season: 1, episode: 12, airedAt: daysAgo(1), subIta: true, dubIta: false }],
+                updatedAt: daysAgo(3),
+                orderIndex: 2
+            }
+        ];
+
+        const snapshot = animeAiringState.buildSnapshot(docs);
+        const entries = animeAiringState.getAiringEntries(snapshot, { now: NOW, freshnessHours: 12 });
+
+        expect(entries.map(e => e.doc.tmdbId)).toEqual(['101']);
+        expect(entries.find(e => e.doc.tmdbId === '102')).toBeUndefined();
+        expect(entries.find(e => e.doc.tmdbId === '103')).toBeUndefined();
+    });
+
+    test('compatibilità: doc vecchi con episodes[] e freschi vengono inclusi da getAiringEntries', () => {
+        const fixtureDocs = buildFixtureDocs(); // 240411 ha updatedAt: daysAgo(0)
+        const snapshot = animeAiringState.buildSnapshot(fixtureDocs);
+
+        // Con getNoveltyEntries la serie 999001 (60 giorni fa) era esclusa
+        expect(animeAiringState.getNoveltyEntries(snapshot, WINDOW).map(e => e.doc.tmdbId)).not.toContain('999001');
+
+        // Dandadan (240411) è aggiornato a daysAgo(0), quindi è fresco ed entra in getAiringEntries
+        const airingEntries = animeAiringState.getAiringEntries(snapshot, { now: NOW });
+        expect(airingEntries.map(e => e.doc.tmdbId)).toContain('240411');
+    });
+
+    test('doc con episode: null gestito senza errori', () => {
+        const docNullEp = {
+            _id: '888',
+            schemaVersion: 1,
+            title: 'Ep Null',
+            sub: { season: 1, episode: null },
+            updatedAt: daysAgo(0.1)
+        };
+        const snapshot = animeAiringState.buildSnapshot([docNullEp]);
+        const doc = snapshot.byTmdbId.get('888');
+
+        expect(doc.sub).toEqual({ season: 1, episode: null });
+        const winInfo = animeAiringState.getWindowInfo(doc);
+        expect(winInfo.hasSub).toBe(true);
+        expect(winInfo.hasDub).toBe(false);
+
+        const cardInfo = animeAiringState.getCardInfo(doc);
+        expect(cardInfo.sub).toEqual({ season: 1, episode: null });
+        expect(cardInfo.dub).toBeNull();
+    });
+});

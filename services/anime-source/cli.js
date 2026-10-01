@@ -134,6 +134,7 @@ function groupRecordsByTmdb(records, identityResolver) {
             tmdbGroups.set(tmdbId, {
                 tmdbId,
                 title: cleanTitle(rawTitle),
+                orderIndex: tmdbGroups.size,
                 seasonsMap: new Map()
             });
         }
@@ -182,39 +183,18 @@ async function processTmdbGroup(group, animeClient, options = {}) {
             }
         }
 
-        let subEpisodes = [];
-        if (seasonEntry.subRecord) {
-            const subCount = Number(seasonEntry.subRecord.episodes_count) || 12;
-            const startRange = subCount > 100 ? Math.max(1, subCount - 50) : 1;
-            const endRange = subCount > 100 ? subCount : Math.min(100, Math.max(subCount, 12));
-            const subData = await animeClient.getEpisodes(seasonEntry.subRecord.id, 0, { startRange, endRange });
-            if (subData && Array.isArray(subData.episodes)) {
-                subEpisodes = subData.episodes;
-            }
-        }
-
-        let dubEpisodes = [];
-        if (seasonEntry.dubRecord) {
-            const dubCount = Number(seasonEntry.dubRecord.episodes_count) || 12;
-            const startRange = dubCount > 100 ? Math.max(1, dubCount - 50) : 1;
-            const endRange = dubCount > 100 ? dubCount : Math.min(100, Math.max(dubCount, 12));
-            const dubData = await animeClient.getEpisodes(seasonEntry.dubRecord.id, 1, { startRange, endRange });
-            if (dubData && Array.isArray(dubData.episodes)) {
-                dubEpisodes = dubData.episodes;
-            }
-        }
-
         seasons.push({
             season: seasonEntry.season,
             subRecord: seasonEntry.subRecord,
-            subEpisodes,
             dubRecord: seasonEntry.dubRecord,
-            dubEpisodes,
             identity: seasonEntry.identity
         });
     }
 
-    return buildAiringStateDocument({ seasons });
+    return buildAiringStateDocument({
+        seasons,
+        orderIndex: group.orderIndex
+    });
 }
 
 async function main() {

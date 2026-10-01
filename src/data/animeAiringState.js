@@ -27,6 +27,8 @@ const COLLECTION_NAME = 'anime_airing_state';
 const SUPPORTED_SCHEMA_VERSION = 1;
 const CACHE_TTL_MS = 60 * 1000;
 const NOVELTY_WINDOW_DAYS = 14;
+const AIRING_FRESHNESS_HOURS = 12;
+const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Proiezione: niente payload morto in RAM, solo i campi effettivamente consumati.
@@ -35,6 +37,9 @@ const PROJECTION = {
     schemaVersion: 1,
     'ids.kitsu': 1,
     title: 1,
+    sub: 1,
+    dub: 1,
+    orderIndex: 1,
     italian: 1,
     episodes: 1,
     updatedAt: 1
@@ -84,10 +89,16 @@ function toFiniteNumber(value) {
 
 function normalizeLatest(value) {
     if (!value || typeof value !== 'object') return null;
-    const episode = toFiniteNumber(value.episode);
-    if (episode === null || episode <= 0) return null;
     const season = toFiniteNumber(value.season);
-    return { season: season !== null && season > 0 ? season : 1, episode };
+    const normalizedSeason = season !== null && season > 0 ? season : 1;
+    const episode = toFiniteNumber(value.episode);
+    if (episode !== null && episode > 0) {
+        return { season: normalizedSeason, episode };
+    }
+    if (value.episode === null || value.episode === undefined) {
+        return { season: normalizedSeason, episode: null };
+    }
+    return null;
 }
 
 function normalizeTimestamp(value) {
@@ -147,8 +158,9 @@ function validateDocument(raw) {
             tmdbId,
             kitsuId: /^\d+$/.test(kitsuRaw) ? kitsuRaw : null,
             title: typeof raw.title === 'string' ? raw.title : null,
-            sub: normalizeLatest(raw.italian && raw.italian.sub && raw.italian.sub.latest),
-            dub: normalizeLatest(raw.italian && raw.italian.dub && raw.italian.dub.latest),
+            sub: normalizeLatest(raw.sub || (raw.italian && raw.italian.sub && raw.italian.sub.latest)),
+            dub: normalizeLatest(raw.dub || (raw.italian && raw.italian.dub && raw.italian.dub.latest)),
+            orderIndex: toFiniteNumber(raw.orderIndex),
             episodes: normalizeEpisodes(raw.episodes),
             updatedAt: normalizeTimestamp(raw.updatedAt)
         }
@@ -270,9 +282,24 @@ function isInWindow(airedAt, nowMs, windowMs) {
 /**
  * Flag della finestra per un documento: c'è un sub/ITA uscito negli ultimi N giorni?
  * `lastAiredAt` = data (ms) dell'episodio disponibile più recente nella finestra.
+ * Se episodes[] è assente o vuoto ma sub/dub ci sono, considerali disponibili
+ * (la "finestra" non è più una data: è la presenza nella lista).
  */
 function getWindowInfo(doc, options = {}) {
-    if (!doc || !Array.isArray(doc.episodes)) return { hasSub: false, hasDub: false, lastAiredAt: null };
+    if (!doc) return { hasSub: false, hasDub: false, lastAiredAt: null };
+
+    // Documenti nuovi senza episodes[]: la presenza nella lista certifica la disponibilità
+    if (!Array.isArray(doc.episodes) || doc.episodes.length === 0) {
+        const hasSub = Boolean(doc.sub);
+        const hasDub = Boolean(doc.dub);
+        return {
+            hasSub,
+            hasDub,
+            lastAiredAt: doc.updatedAt || null
+        };
+    }
+
+    // Documenti storici con episodes[]: verifica finestra temporale
     const { nowMs, windowMs } = resolveWindow(options);
     let hasSub = false;
     let hasDub = false;
@@ -383,6 +410,62 @@ function getNoveltyEntries(snapshot, options = {}) {
 }
 
 /**
+ * Tutti i documenti con sub o dub presenti appartenenti al ciclo corrente di AnimeUnity.
+ * Filtro freschezza su updatedAt: default 12 ore (≈4 cicli da 3h), configurabile via options.
+ * Ordinati per orderIndex se presente, altrimenti per data più recente dell'ultimo episodio.
+ */
+function getAiringEntries(snapshot, options = {}) {
+    const docs = snapshot && Array.isArray(snapshot.docs) ? snapshot.docs : [];
+    const entries = [];
+
+    const opts = options && typeof options === 'object' ? options : {};
+    const nowMs = Number.isFinite(opts.now) ? opts.now : Date.now();
+    const freshnessHours = Number.isFinite(opts.freshnessHours) && opts.freshnessHours > 0
+        ? opts.freshnessHours
+        : AIRING_FRESHNESS_HOURS;
+    const maxAgeMs = Number.isFinite(opts.maxAgeMs) && opts.maxAgeMs > 0
+        ? opts.maxAgeMs
+        : freshnessHours * HOUR_MS;
+    const minUpdatedAt = nowMs - maxAgeMs;
+
+    for (const doc of docs) {
+        const hasSub = Boolean(doc.sub);
+        const hasDub = Boolean(doc.dub);
+        if (!hasSub && !hasDub) continue;
+
+        // Filtro di freschezza: solo i documenti aggiornati nell'ultimo ciclo
+        if (doc.updatedAt === null || doc.updatedAt === undefined || doc.updatedAt < minUpdatedAt) {
+            continue;
+        }
+
+        const windowInfo = getWindowInfo(doc);
+
+        entries.push({
+            doc,
+            tmdbId: doc.tmdbId,
+            kitsuId: doc.kitsuId,
+            orderIndex: doc.orderIndex !== undefined && doc.orderIndex !== null ? doc.orderIndex : null,
+            hasSubInWindow: windowInfo.hasSub,
+            hasDubInWindow: windowInfo.hasDub,
+            lastAiredAt: windowInfo.lastAiredAt || doc.updatedAt || null
+        });
+    }
+
+    entries.sort((a, b) => {
+        const hasOrderA = Number.isFinite(a.orderIndex);
+        const hasOrderB = Number.isFinite(b.orderIndex);
+        if (hasOrderA && hasOrderB) {
+            return a.orderIndex - b.orderIndex;
+        }
+        if (hasOrderA) return -1;
+        if (hasOrderB) return 1;
+        return (b.lastAiredAt || 0) - (a.lastAiredAt || 0);
+    });
+
+    return entries;
+}
+
+/**
  * Trova il documento di stato a partire da un id item di catalogo
  * (`kitsu:123`, `kitsu:123_ita_offset`, `tmdb:456` o `456`).
  */
@@ -488,8 +571,10 @@ module.exports = {
     SUPPORTED_SCHEMA_VERSION,
     CACHE_TTL_MS,
     NOVELTY_WINDOW_DAYS,
+    AIRING_FRESHNESS_HOURS,
     getSnapshot,
     getNoveltyEntries,
+    getAiringEntries,
     getCardInfo,
     getCardInfoForId,
     getWindowInfo,
