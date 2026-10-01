@@ -1,6 +1,7 @@
 const duckdb = require('duckdb');
 const path = require('path');
 const fs = require('fs');
+const itaAnnotations = require('../src/data/itaAnnotations');
 
 const DEFAULT_TYPES = ['movies', 'tv'];
 
@@ -52,7 +53,36 @@ function hasFetchedAtColumn(con, jsonlFile) {
         .then((columns) => columns.some((column) => column.column_name === '_fetched_at'));
 }
 
-function buildConversionSelect(jsonlFile, includeFetchedAt) {
+/**
+ * Quanti `true` ha la colonna `ita` di un parquet. `null` se il file non c'è o se la colonna non
+ * esiste ancora (prima esecuzione dopo l'introduzione della colonna).
+ */
+async function countItaTrue(con, parquetFile) {
+    if (!fs.existsSync(parquetFile)) return null;
+    try {
+        const rows = await all(con, `SELECT count(*) AS n FROM read_parquet(${toSqlPath(parquetFile)}) WHERE ita`);
+        return Number(rows && rows[0] ? rows[0].n : 0);
+    } catch (_e) {
+        return null;
+    }
+}
+
+function buildConversionSelect(jsonlFile, includeFetchedAt, options = {}) {
+    const { annotationsPath = null, mediaType = null } = options;
+    const hasAnnotations = Boolean(annotationsPath && mediaType);
+
+    // Colonna `ita` (mappa doppiaggio-ita, ticket 04): tre stati, e **riga assente = false**.
+    // `CASE`, mai `COALESCE`: `COALESCE(ann.ita, false)` appiattirebbe il `null`, che nel filtro
+    // "solo ITA" significa *includi* — quindi un file con soli `null` mostrerebbe tutto il catalogo
+    // come doppiato. Se il file manca, la colonna è `false` su tutto (degrado deciso, non un errore).
+    const itaColumn = hasAnnotations
+        ? 'CASE WHEN ann.t IS NULL THEN false ELSE ann.ita END AS ita'
+        : 'CAST(false AS BOOLEAN) AS ita';
+    const itaJoin = hasAnnotations
+        ? `LEFT JOIN read_json_auto(${toSqlPath(annotationsPath)}, ignore_errors=true) AS ann
+                   ON ann.t = '${mediaType}' AND try_cast(ann.id AS BIGINT) = ranked.id`
+        : '';
+
     // _fetched_at è l'unico segnale temporale affidabile. Se manca, il numero
     // di riga del lettore JSON permette comunque di scegliere l'ultima append.
     // Un timestamp valido ha sempre precedenza rispetto a un record senza data.
@@ -78,10 +108,12 @@ function buildConversionSelect(jsonlFile, includeFetchedAt) {
             ) AS __yaca_duplicate_rank
             FROM source_rows
         )
-        SELECT * EXCLUDE (__yaca_source_row, __yaca_duplicate_rank)
+        SELECT ranked.* EXCLUDE (__yaca_source_row, __yaca_duplicate_rank),
+               ${itaColumn}
         FROM ranked
-        WHERE __yaca_duplicate_rank = 1
-        ORDER BY popularity DESC
+        ${itaJoin}
+        WHERE ranked.__yaca_duplicate_rank = 1
+        ORDER BY ranked.popularity DESC
     `;
 }
 
@@ -145,6 +177,9 @@ async function convert({ dataDir, types = DEFAULT_TYPES } = {}) {
     const results = [];
     let hasError = false;
 
+    // Annotazioni ITA prodotte da `services/doppiaggi-source` (mappa doppiaggio-ita, ticket 04).
+    const itaAnnotationsPath = itaAnnotations.annotationsPath();
+
     console.log('[DuckDB Convert] Avvio conversione JSONL in Parquet (ZSTD, dedup per id)...');
     console.time('Tempo totale conversione');
 
@@ -172,11 +207,29 @@ async function convert({ dataDir, types = DEFAULT_TYPES } = {}) {
             con = db.connect();
             const includeFetchedAt = await hasFetchedAtColumn(con, jsonlFile);
             const inputStats = await sourceStats(con, jsonlFile);
-            const select = buildConversionSelect(jsonlFile, includeFetchedAt);
+
+            // Annotazioni ITA: se il file non c'è la colonna è `false` su tutto (degrado deciso).
+            const annotationsPath = fs.existsSync(itaAnnotationsPath) ? itaAnnotationsPath : null;
+            if (!annotationsPath) {
+                console.warn(`[DuckDB Convert] Annotazioni ITA assenti (${itaAnnotationsPath}): la colonna ita sarà false su tutto.`);
+            }
+            const mediaType = type === 'movies' ? 'movie' : 'tv';
+            const previousItaCount = await countItaTrue(con, parquetFile);
+
+            const select = buildConversionSelect(jsonlFile, includeFetchedAt, { annotationsPath, mediaType });
             const query = `COPY (${select}) TO ${toSqlPath(writerFile)} (FORMAT PARQUET, COMPRESSION 'ZSTD')`;
 
             await exec(con, query);
             if (!fs.existsSync(writerFile)) throw new Error(`Writer non ha creato ${writerFile}`);
+
+            // Avviso **non bloccante** (decisione del ticket 04, D2): se i doppiati calano oltre il 2%
+            // rispetto al giro precedente il dump prosegue, ma lo si dice — il degrado silenzioso è una
+            // scelta, non un caso.
+            const newItaCount = await countItaTrue(con, writerFile);
+            if (previousItaCount && newItaCount !== null && newItaCount < previousItaCount * 0.98) {
+                const drop = (100 - (newItaCount / previousItaCount) * 100).toFixed(1);
+                console.warn(`[DuckDB Convert] ATTENZIONE: la colonna ita di ${type} è passata da ${previousItaCount} a ${newItaCount} doppiati (-${drop}%). Il dump prosegue: controllare le annotazioni.`);
+            }
 
             // DuckDB/Windows mantiene il file aperto finché la connessione vive.
             // Chiudere connessione e database prima del rename evita conflitti di lock EBUSY su Windows.
