@@ -448,11 +448,16 @@ describe('Ticket 21: shared hero diversity', () => {
         expect(cached.trakt.hiddenForInsufficientFallback).toBe(true);
     });
 
-    it('separa la cache per tipo, kidsMode e configVersion', () => {
+    it('separa la cache per tipo e kidsMode, e NON per la versione di configurazione', () => {
         const base = { userId: 'sim_user', context: 'sim_profile', mediaType: 'movie', kidsMode: false };
         const key = buildSharedHeroCacheKey({ ...base, configVersion: 'cfg-v1' });
 
-        expect(buildSharedHeroCacheKey({ ...base, configVersion: 'cfg-v2' })).not.toBe(key);
+        // Cambio di comportamento VOLUTO (02/10/2026), e misurato: `configVersion` è un nanoid
+        // rigenerato a ogni salvataggio della configurazione, e averlo in chiave orfanava la cache
+        // hero a ogni salvataggio che non c'entrava niente — in produzione 18 tasti su 23 erano
+        // orfani, la stessa coppia utente+profilo+tipo ricostruita 9 volte (21-42 s l'una).
+        // Ora la chiave NON lo contiene, quindi passarlo non cambia niente.
+        expect(buildSharedHeroCacheKey({ ...base, configVersion: 'cfg-v2' })).toBe(key);
         expect(buildSharedHeroCacheKey({ ...base, kidsMode: true, configVersion: 'cfg-v1' })).not.toBe(key);
         expect(buildSharedHeroCacheKey({ ...base, mediaType: 'series', configVersion: 'cfg-v1' })).not.toBe(key);
         expect(hybridRecommendationsCache.getWithStatus).not.toHaveBeenCalled();

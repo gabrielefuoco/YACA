@@ -398,9 +398,11 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
                 createKidsUserConfig()
             );
 
-            // La cache usa il kidsMode del profilo YACA e la configVersion.
+            // La cache usa il kidsMode del profilo YACA e il `context` (l'id del profilo).
+            // NON la configVersion: toglierla è un cambio voluto e misurato (v. il test gemello in
+            // heroDiversity.test.js), perché orfanava l'hero a ogni salvataggio della configurazione.
             expect(hybridRecommendationsCache.getWithStatus).toHaveBeenCalledWith(
-                'user_1_kids_profile_heroes_v1_movie_cvcfg-v1_kids'
+                'user_1_kids_profile_heroes_v1_movie_kids'
             );
 
             // Item 502 (Horror) MUST NOT be returned in kidsMode
@@ -485,7 +487,7 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
             expect(resultIds).not.toContain('tmdb:602');
         });
 
-        it('usa esclusivamente kidsMode e configVersion del profilo YACA per la cache', () => {
+        it('usa esclusivamente kidsMode e profilo per la cache, non la configVersion', () => {
             const kidsConfig = createKidsUserConfig('kids_profile', 'cfg-v2');
             const adultConfig = {
                 ...kidsConfig,
@@ -509,13 +511,15 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
             });
 
             expect(kidsKey).toContain('_kids');
-            expect(kidsKey).toContain('cfg-v2');
+            // La configVersion non entra più in chiave (cambio voluto e misurato): cambiarla non
+            // deve cambiare la chiave, altrimenti ogni salvataggio butta via un hero da 21-42 s.
+            expect(kidsKey).not.toContain('cfg-v2');
             expect(kidsKey).not.toBe(adultKey);
-            expect(kidsKey).not.toBe(nextVersionKey);
+            expect(kidsKey).toBe(nextVersionKey);
             expect(buildRecommendationCacheKey({
                 userId: 'sim_user', context: 'kids_profile', catalogId: 'yaca_true_blend_movies',
                 kidsMode: false, configVersion: 0
-            })).toContain('_cv0');
+            })).not.toContain('_cv');
         });
 
         it('blocca Archer e i titoli adult-animation anche nell espansione seed', async () => {
