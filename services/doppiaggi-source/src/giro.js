@@ -109,7 +109,7 @@ async function scriviConDiff(righe, opts = {}) {
             cambiati: artefatto.cambiati,
             diventatiDoppiati: artefatto.diventatiDoppiati,
             nonPiuDoppiati: artefatto.nonPiuDoppiati,
-            primoGiro: artefatto.path ? diff.primoGiro === true : false,
+            primoGiro: diff.primoGiro === true,
             oltreSoglia: artefatto.oltreSoglia === true,
             path: artefatto.path
         }
