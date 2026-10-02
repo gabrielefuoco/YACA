@@ -1,5 +1,20 @@
+const fs = require('fs');
+const path = require('path');
+
 const { EPISODE_CATALOG_IDS } = require('../constants');
 const { normalizeAnimeMarker } = require('../../utils/animeIdentity');
+// La convenzione del nome file NON viene riscritta qui: la produce il costruttore
+// (scripts/erdb-builder/build.js) ed è la stessa che chiede la rotta `/erdb-poster/:file`.
+// Un nome inventato qui produrrebbe file che la rotta non troverebbe mai: poster invisibile, zero errori.
+const { posterFileName } = require('../../../scripts/erdb-builder/build');
+// Unica fonte di verità sulla cartella dei poster: la stessa che serve la rotta statica e
+// in cui scrive il drenatore. Se le due divergessero, nessun file sarebbe mai servito.
+const { getCacheDir } = require('../../api/staticPosters');
+
+// Etichetta del badge "doppiato" nella cache: la stessa costante del costruttore
+// (scripts/erdb-builder/dump-list.js, BADGE_ITA). Non è un'invenzione: se non coincide,
+// il nome col suffisso semplicemente non esiste e si resta con l'URL di oggi.
+const BADGE_ITA = 'ITA';
 
 function findLatestAiredEpisode(videos) {
     if (!Array.isArray(videos) || videos.length === 0) return null;
@@ -129,6 +144,39 @@ function getErdbId(item, context = 'default') {
 }
 
 
+/**
+ * Il file del poster è nella cartella? Un file vuoto (download abortito) non conta:
+ * sostituire un URL funzionante con un'immagine vuota sarebbe una regressione.
+ * La cartella può non esistere (o non essere ancora montata): non è un errore.
+ */
+function esistePosterInCache(nomeFile) {
+    try {
+        const stats = fs.statSync(path.join(getCacheDir(), nomeFile));
+        return stats.isFile() && stats.size > 0;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * URL del poster già composto, se il file c'è: `{host}/erdb-poster/{nomeFile}`.
+ * Ritorna `null` in ogni altro caso (cartella vuota, nome non valido, file assente):
+ * il chiamante deve allora tenere l'URL di oggi, identico.
+ */
+function urlPosterInCache(hostUrl, erdbId, badge) {
+    if (!hostUrl || !erdbId) return null;
+
+    let nomeFile;
+    try {
+        nomeFile = posterFileName({ erdbId, badge });
+    } catch {
+        return null; // erdbId non utilizzabile: nessun nome, nessun file
+    }
+
+    if (!esistePosterInCache(nomeFile)) return null;
+    return `${hostUrl}/erdb-poster/${nomeFile}`;
+}
+
 function sanitizeCatalogMeta(item, options = {}) {
     if (!item) return item;
 
@@ -153,6 +201,7 @@ function sanitizeCatalogMeta(item, options = {}) {
 
     let sourceImage;
     let finalPosterShape = item.posterShape || 'poster';
+    let posterErdbId = null; // id ERDB del poster verticale: serve alla cache dei file già composti
 
     let tlBadge = null;
     let baseName = item._rawName || item.name || '';
@@ -231,6 +280,7 @@ function sanitizeCatalogMeta(item, options = {}) {
         finalPosterShape = 'landscape';
     } else {
         let erdbId = erdbConfig ? getErdbId(item, 'poster') : null;
+        posterErdbId = erdbId || null;
         if (erdbConfig && erdbId) {
             const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
             if (options.hostUrl && !badgeText && !tlBadge) {
@@ -310,6 +360,25 @@ function sanitizeCatalogMeta(item, options = {}) {
         if (!sanitizeCatalogMeta._loggedOnce) {
             // console.warn(`[Badge] Poster URL NOT rewritten! badgeText="${badgeText}", hostUrl="${hostUrl}", sourceImage="${sourceImage ? sourceImage.substring(0, 60) : 'null'}"`);
             sanitizeCatalogMeta._loggedOnce = true;
+        }
+    }
+
+    // ---- Cache dei poster già composti: si PREFERISCE il file, non si sostituisce la logica ----
+    // I file arrivano da fuori e oggi non ci sono ancora: quindi qui si guarda, e se il file
+    // c'è si serve quello (niente catena di hop, niente sharp). Se non c'è, `poster` resta
+    // esattamente quello che si sarebbe ottenuto senza questa riga.
+    //
+    // Il file può essere scelto solo se è la STESSA immagine che comporrebbe la rotta
+    // `/images/poster/...` di oggi: cioè niente badge, oppure il solo badge ITA (l'unico
+    // che la cache contiene, con suffisso `_ITA`). Con badge episodio o stagione la cache
+    // non può riprodurli: meglio l'URL di oggi, che li disegna, che un poster senza badge.
+    // Fuori dal ramo poster/ERDB (landscape, ERDB non configurato) la cache non c'entra.
+    if (hostUrl && erdbConfig && posterErdbId && finalPosterShape === 'poster') {
+        const soloIta = !tlBadge && badgeText === BADGE_ITA;
+        const senzaBadge = !badgeText && !tlBadge;
+        if (soloIta || senzaBadge) {
+            const urlInCache = urlPosterInCache(hostUrl, posterErdbId, soloIta ? BADGE_ITA : null);
+            if (urlInCache) poster = urlInCache;
         }
     }
 
