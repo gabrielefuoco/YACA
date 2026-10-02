@@ -1,6 +1,6 @@
 [Unit]
 Description=YACA Doppiaggi Source - Scraper indici Il Mondo dei Doppiatori & Unione Anime
-Documentation=file:///srv/yaca/docs/DOPPIAGGI_TIMER.md
+Documentation=file:///srv/yaca/docs/TIMER_DOPPIAGGI.md
 After=network-online.target docker.service
 Wants=network-online.target
 
