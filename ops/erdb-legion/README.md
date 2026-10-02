@@ -13,9 +13,11 @@ badge può venire **solo** da un'istanza nostra con la patch.
 
 La patch non è mai stata committata da nessuna parte: è vissuta **come modifiche non
 committate** in un clone locale, cioè a un `git checkout` dalla sparizione. Da lì è stata
-salvata qui, in [`patch/erdb-badge.patch`](patch/erdb-badge.patch).
+salvata qui, in [`patch/`](patch/), in due pezzi separati perché siano leggibili uno per uno.
 
-Cosa fa (36 righe, tre file):
+### `erdb-badge.patch` — il badge `ITA`
+
+36 righe, tre file:
 
 - `app/[type]/[...id]/route.ts` — legge `customBadge` dalla config del token **oppure**
   dal parametro `?badge=` dell'URL, sanificato (spazi collassati, `trim`, **max 16
@@ -29,7 +31,24 @@ Cosa fa (36 righe, tre file):
 Essendo un **testo**, ci sta anche `ITA 5`: badge e numero di episodio in una passata
 sola, che è la decisione 1 della mappa.
 
-Base: `949f64f` (`docs(changelog): update CHANGELOG for v0.7.5`) — **v0.7.5**.
+### `erdb-formato.patch` — il formato delle immagini
+
+5 righe. `pickOutputFormat` **accetta** un `acceptHeader` e **non lo legge mai**: serve
+sempre WebP, qualunque cosa chieda il client. Il chiamante glielo passa già, e la
+risposta porta `X-Content-Type-Options: nosniff` — quindi un client che parla solo JPEG
+**rifiuta** l'immagine, pur avendola chiesta come `.jpg`.
+
+Perché conta: il percorso vecchio componeva con **sharp**, che converte per estensione,
+quindi produceva JPEG veri. Il percorso nuovo avrebbe scritto **~13 GB di WebP chiamati
+`.jpg`**, senza che niente desse errore — e ce ne saremmo accorti a giro finito. La patch
+fa la negoziazione come si deve: chi preferisce WebP lo ottiene, chi no riceve JPEG, e
+**nel dubbio si sceglie JPEG** (la parte sicura: è ciò che il servizio produceva prima, ed
+è quello che assomigliano i file già in cache).
+
+Verificato dal vivo: senza `Accept`, con `Accept: image/jpeg` e con il `*/*` di curl, il
+magic number è `ff d8` — JPEG vero; con `Accept: image/webp` è `RIFF` — WebP.
+
+Base di entrambe: `949f64f` (`docs(changelog): update CHANGELOG for v0.7.5`) — **v0.7.5**.
 
 ## 2. Costruire l'immagine
 
@@ -41,6 +60,7 @@ nuovo potrebbe non applicarsi pulita.
 git clone https://github.com/realbestia1/erdb && cd erdb
 git checkout 949f64f
 git apply /percorso/di/ops/erdb-legion/patch/erdb-badge.patch
+git apply /percorso/di/ops/erdb-legion/patch/erdb-formato.patch
 docker build -t erdb-patch:0.7.5 .
 ```
 

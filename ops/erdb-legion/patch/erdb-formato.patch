@@ -1,0 +1,16 @@
+diff --git a/lib/ratingBadgeLogic.ts b/lib/ratingBadgeLogic.ts
+index 03420a3..a01bcf2 100644
+--- a/lib/ratingBadgeLogic.ts
++++ b/lib/ratingBadgeLogic.ts
+@@ -701,6 +701,11 @@ export const shouldRenderRatingValue = (value: string | null | undefined) => {
+ 
+ export const pickOutputFormat = (imageType: RenderImageType, acceptHeader?: string | null): OutputFormat => {
+   if (imageType === 'logo') return 'png';
++  // The accept header was declared but never read: every client got WebP while the response
++  // also carried `X-Content-Type-Options: nosniff`, so a client that only speaks JPEG refused
++  // the image even though the URL ends in .jpg. Honour it, falling back to JPEG when in doubt
++  // (which is what this service produced before, and what already-cached files look like).
++  if (acceptHeader && !acceptHeader.toLowerCase().includes('image/webp')) return 'jpeg';
+   // WebP is smaller than JPEG and is supported by current clients.
+   return 'webp';
+ };
