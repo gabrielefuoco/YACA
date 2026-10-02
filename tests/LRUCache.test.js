@@ -82,4 +82,14 @@ describe('LRUCache', () => {
         expect(cache.size).toBe(0);
         expect(cache.get('a')).toBeUndefined();
     });
+
+    it('should never store or return items when max is 0', () => {
+        const cache = new LRUCache({ max: 0 });
+        cache.set('a', 1);
+        cache.set('b', 2);
+
+        expect(cache.size).toBe(0);
+        expect(cache.get('a')).toBeUndefined();
+        expect(cache.has('a')).toBe(false);
+    });
 });

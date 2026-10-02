@@ -35,7 +35,7 @@ const catalogFallbackCache = new CacheManager('catalog_fallback', {
 });
 
 const catalogRequestCache = new CacheManager('tmdb_catalog', {
-    ramMax: 150,
+    ramMax: 0,
     ramTtlMs: TEN_MINUTES_MS,
     redisTtlMs: 14 * ONE_DAY_MS,
     swrMs: 12 * ONE_HOUR_MS

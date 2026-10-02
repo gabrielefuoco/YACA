@@ -10,6 +10,7 @@ class LRUCache {
     }
 
     get(key) {
+        if (this.max <= 0) return undefined;
         const entry = this.cache.get(key);
         if (!entry) return undefined;
 
@@ -25,6 +26,7 @@ class LRUCache {
     }
 
     set(key, value) {
+        if (this.max <= 0) return;
         // Delete first to refresh position
         if (this.cache.has(key)) {
             this.cache.delete(key);
@@ -40,6 +42,7 @@ class LRUCache {
     }
 
     has(key) {
+        if (this.max <= 0) return false;
         const entry = this.cache.get(key);
         if (!entry) return false;
 

@@ -63,7 +63,7 @@ describe('DuckDB Native Presets & Architectural Optimizations', () => {
     test('Cache RAM tuning: ramMax limits calibrated for container environment', () => {
         expect(aiPromptCache.lruFallback.max).toBe(50);
         expect(catalogFallbackCache.lruFallback.max).toBe(100);
-        expect(catalogRequestCache.lruFallback.max).toBe(150);
+        expect(catalogRequestCache.lruFallback.max).toBe(0);
         expect(simulcastDatesCache.lruFallback.max).toBe(100);
 
         const defaultManager = new CacheManager('test_default');
