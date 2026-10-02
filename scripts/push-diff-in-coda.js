@@ -215,6 +215,19 @@ async function pushDiffInCoda(opts = {}) {
         log.log('[PushDiff] artefatto di primo giro: nessun evento per contratto.');
     }
 
+    // Giro bloccato dalla guardia del writer: su disco non è cambiato niente, quindi l'artefatto
+    // è vuoto e qui non c'è niente da accodare. Si dice comunque, perché un artefatto vuoto con
+    // `guardia: true` è un'informazione, non un file morto.
+    //
+    // `cambiNonApplicati` NON viene letto, e non deve esserlo: sono i titoli che il giro avrebbe
+    // toccato e che non sono stati applicati, quindi nessun poster da rifare *adesso*. Il giorno
+    // in cui quei titoli verranno davvero doppiati, saranno un diff nuovo ad accodarli.
+    if (artefatto.guardia === true) {
+        const scartatiDalGiro = Number(artefatto.conteggioNonApplicati) || (Array.isArray(artefatto.cambiNonApplicati) ? artefatto.cambiNonApplicati.length : 0);
+        log.log(`[PushDiff] giro bloccato dalla guardia: nessun doppiaggio è cambiato, 0 eventi` +
+            (scartatiDalGiro > 0 ? ` (${scartatiDalGiro} cambi non applicati, non sono eventi).` : '.'));
+    }
+
     if (dryRun) {
         log.log(`[PushDiff] dry-run: ${eventi.length} cambiamenti in ${path.basename(filePath)}, nessuno spinto.`);
         return riassunto;

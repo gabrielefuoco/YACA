@@ -147,14 +147,21 @@ il cerchio e sostituisce la chiamata diretta a `writeAnnotations` nei due punti 
   che il confronto a due puntatori fa affidamento);
 - **dopo**, l'artefatto, ma **solo se la scrittura è avvenuta**;
 - la **guardia** (`reason: 'guard'`) non produce nessun evento: su disco resta il file vecchio, quindi
-  nessun doppiaggio è cambiato e nessun poster va rifato. L'artefatto non viene toccato: quello sul
-  disco resta il diff dell'ultimo giro **scritto**;
+  nessun doppiaggio è cambiato e nessun poster va rifato. L'artefatto viene **azzerato**
+  (`changes: []`, `guardia: true`, `motivo`): è il digest di quello che c'è su disco *adesso*, e lasciarci
+  dentro il diff del giro precedente farebbe ripubblicare a `push-diff-in-coda.js` eventi vecchi. I cambi
+  che il giro *avrebbe* applicato non si perdono: stanno in `cambiNonApplicati` (con
+  `conteggioNonApplicati`), **fuori** dalla lista che alimenta la coda. Se il diff non era calcolabile,
+  `cambiNonApplicati` è `null` e `diffNonCalcolato: true` lo dichiara;
+- in **dry-run** `computeDiff` non viene chiamato: un giro che non scrive non produce eventi, e in
+  dry-run non si tocca nessun file;
 - un diff che **esplode** (file precedente illeggibile, righe rotte) è loggato e il giro scrive lo
   stesso: perdere un giro di annotazioni per un diff sarebbe un guasto più grosso di un giro senza eventi;
 - nel log e nel battito (`last-run.json`) c'è il numero di cambi del giro.
 
 Lato app, `scripts/push-diff-in-coda.js` legge l'artefatto e spinge ogni cambiamento nella coda degli
-eventi (`push({tipo, id, badge})`, che deduplica da sola).
+eventi (`push({tipo, id, badge})`, che deduplica da sola). Un artefatto azzerato dalla guardia non
+produce nulla — ed è la protezione perché, il giorno dopo, il timer non ripubblichi eventi già serviti.
 
 ## Uso
 

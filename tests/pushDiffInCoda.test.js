@@ -26,6 +26,10 @@ const {
     pushDiffInCoda,
     main
 } = require('../scripts/push-diff-in-coda');
+// Il produttore dell'artefatto, dalla parte di `services/doppiaggi-source`: senza dipendenze
+// (fs/path/readline), quindi si può richiamare qui. Serve per il test di bordo più importante,
+// quello in cui il giro è stato bloccato dalla guardia.
+const { scriviConDiff } = require('../services/doppiaggi-source/src/giro');
 
 /**
  * Redis finto in memoria: solo i comandi che la coda usa davvero.
@@ -200,14 +204,67 @@ describe('push del diff dei doppiaggi nella coda degli eventi', () => {
         expect(await coda.take(10)).toEqual([{ tipo: 'movie', id: '5', badge: 'ITA' }]);
     });
 
-    test('artefatto di primo giro: nessun evento (per contratto)', async () => {
-        scriviArtefatto({ ...ARTEFATTO, primoGiro: true, cambiati: 0, changes: [] });
+    test('artefatto di primo giro: nessun evento (per contratto)', async () => {        scriviArtefatto({ ...ARTEFATTO, primoGiro: true, cambiati: 0, changes: [] });
 
         const esito = await pushDiffInCoda({ filePath: file, coda, log });
 
         expect(esito.primoGiro).toBe(true);
         expect(esito.spinte).toBe(0);
         expect(log.log).toHaveBeenCalledWith(expect.stringContaining('primo giro'));
+    });
+
+    test('un artefatto vero di un giro BLOCCATO dalla guardia non ripubblica niente', async () => {
+        // Giro vero, lato servizio: 20 doppiati, poi un giro che ne lascia uno solo → la guardia
+        // (−2% sui `true`) blocca la scrittura.
+        const out = path.join(dir, 'ita_annotations.jsonl');
+        const silenzio = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
+        await scriviConDiff(
+            Array.from({ length: 20 }, (_, i) => ({ t: 'movie', id: i + 1, ita: true })),
+            { outputPath: out, log: silenzio }
+        );
+        const bloccato = await scriviConDiff([{ t: 'movie', id: 1, ita: true }], { outputPath: out, log: silenzio });
+
+        expect(bloccato.reason).toBe('guard');
+        expect(fs.existsSync(file)).toBe(true); // l'artefatto c'è, ed è quello del giro bloccato
+
+        // Il giorno dopo il timer lo rilegge: deve spingere ZERO eventi, non quelli del giro
+        // precedente (che la coda non ricorda di aver già servito).
+        const esito = await pushDiffInCoda({ filePath: file, coda, log });
+
+        expect(esito.eventi).toBe(0);
+        expect(esito.spinte).toBe(0);
+        await expect(coda.take(10)).resolves.toEqual([]);
+        expect(log.log).toHaveBeenCalledWith(expect.stringContaining('bloccato dalla guardia'));
+
+        // E i 19 titoli che sarebbero spariti restano nell'artefatto, dichiarati e non accodati.
+        const artefatto = JSON.parse(fs.readFileSync(file, 'utf8'));
+        expect(artefatto.guardia).toBe(true);
+        expect(artefatto.conteggioNonApplicati).toBe(19);
+    });
+
+    test('un artefatto di guardia scritto a mano: 0 eventi, e lo dice', async () => {
+        scriviArtefatto({
+            schemaVersion: 1,
+            generato: '2026-10-02T16:00:00.000Z',
+            file: FILE_NAME,
+            primoGiro: false,
+            cap: 5000,
+            oltreSoglia: false,
+            cambiati: 0,
+            diventatiDoppiati: 0,
+            nonPiuDoppiati: 0,
+            guardia: true,
+            motivo: 'il giro non ha scritto (i true calano oltre la soglia): nessun doppiaggio è cambiato',
+            cambiNonApplicati: [{ tipo: 'movie', id: 7, badge: null }],
+            conteggioNonApplicati: 1,
+            changes: []
+        });
+
+        const esito = await pushDiffInCoda({ filePath: file, coda, log });
+
+        expect(esito.spinte).toBe(0);
+        await expect(coda.take(10)).resolves.toEqual([]);
+        expect(log.log).toHaveBeenCalledWith(expect.stringContaining('1 cambi non applicati'));
     });
 
     test('dry-run: legge e conta, non accoda', async () => {
