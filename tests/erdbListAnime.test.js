@@ -307,6 +307,18 @@ describe('Fribb + parquet -> lista (CLI, processo separato)', () => {
         expect(fs.readFileSync(out, 'utf8')).toBe('');
         expect(result.stdout).toMatch(/0 anime in lista/);
     });
+
+    test('tanti record non lasciano orecchie attaccate allo stream (la lista vera sono 40k)', () => {
+        makeFixtures(dataDir);
+        const molti = Array.from({ length: 60 }, (_, i) => ({ kitsu_id: 1000 + i, themoviedb_id: { tv: 1400 } }));
+        const out = path.join(dataDir, 'molti.jsonl');
+        const result = runDump(['--fribb', makeFribb(dataDir, molti), '--parquet', dataDir, '--out', out]);
+
+        expect(result.status).toBe(0);
+        expect(readList(out)).toHaveLength(60);
+        expect(result.stderr).toBe('');
+        expect(result.stderr).not.toMatch(/MaxListenersExceededWarning/);
+    });
 });
 
 describe('argomenti CLI', () => {

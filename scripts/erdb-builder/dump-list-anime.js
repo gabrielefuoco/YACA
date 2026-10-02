@@ -321,6 +321,13 @@ async function dump({ fribb, parquetDir = DEFAULT_PARQUET_DIR, out } = {}) {
         // richieste inutili identiche.
         const seen = new Set();
         const stream = fs.createWriteStream(tmpOut, { encoding: 'utf8' });
+        // Un solo listener per gli errori della scrittura, per tutta la durata del giro: qui si
+        // aggiungerebbe un listener a ogni strozzatura della write stream e Node lo segnalerebbe
+        // come leak (sulla lista vera, che ha ~40k righe, l'avrebbe segnalato da subito).
+        const streamError = new Promise((_, reject) => stream.once('error', reject));
+        streamError.catch(() => {}); // rifiuta sempre: l'attesa arriva dai `Promise.race` sotto
+        const attendeSvuoto = () => new Promise((resolve) => stream.once('drain', resolve));
+
         try {
             for (const record of records) {
                 // Doppiato = almeno uno degli id TMDB del record e' nella lista dei doppiati.
@@ -338,16 +345,10 @@ async function dump({ fribb, parquetDir = DEFAULT_PARQUET_DIR, out } = {}) {
                 conteggio.totale += 1;
                 if (entry.badge) conteggio.conBadge += 1;
                 if (!stream.write(entryToLine(entry))) {
-                    await new Promise((resolve, reject) => {
-                        stream.once('drain', resolve);
-                        stream.once('error', reject);
-                    });
+                    await Promise.race([attendeSvuoto(), streamError]);
                 }
             }
-            await new Promise((resolve, reject) => {
-                stream.once('error', reject);
-                stream.end(resolve);
-            });
+            await Promise.race([new Promise((resolve) => stream.end(resolve)), streamError]);
         } catch (error) {
             stream.destroy();
             throw error;
