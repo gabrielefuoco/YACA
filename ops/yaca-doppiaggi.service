@@ -1,0 +1,19 @@
+[Unit]
+Description=YACA Doppiaggi Source - Scraper indici Il Mondo dei Doppiatori & Unione Anime
+Documentation=file:///srv/yaca/docs/DOPPIAGGI_TIMER.md
+After=network-online.target docker.service
+Wants=network-online.target
+
+# Nota: il servizio gira come root per accedere al volume Docker /var/lib/docker/volumes/yaca_tmdb/_data
+# Le variabili d'ambiente (MONGODB_URI) sono lette da /srv/yaca/.env
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/srv/yaca/.env
+WorkingDirectory=/srv/yaca
+ExecStart=/bin/bash /srv/yaca/ops/yaca-doppiaggi.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
