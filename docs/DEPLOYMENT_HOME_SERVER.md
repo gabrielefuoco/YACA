@@ -165,6 +165,8 @@ Configurare le variabili minime necessarie:
 - `TORRENTIO_URL=https://torrentio.strem.fun`
 - `SYSTEM_LOG=console` (log su console Docker invece che su Atlas: è già il default)
 
+La cartella dei poster già composti (`ERDB_CACHE_DIR`, default `/data/erdb-cache`, montata come volume `yaca_erdb_cache`) si popola copiandoci dentro i poster prodotti fuori dal server con una build una tantum; la rotta `/erdb-poster/<file>` li serve da lì.
+
 ### 3.4 Autenticazione GHCR (se il repository/package è privato)
 Se l'immagine container su GitHub Container Registry non è resa pubblica:
 ```bash
