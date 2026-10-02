@@ -19,7 +19,8 @@ const path = require('path');
 const { fetchAllIndices } = require('./src/indici');
 const { parseIndexPage } = require('./src/parse');
 const { loadCatalogFromJsonl, matchCatalog } = require('./src/match');
-const { toRows, splitId, writeAnnotations, DEFAULT_FILENAME } = require('./src/writer');
+const { toRows, splitId, DEFAULT_FILENAME } = require('./src/writer');
+const { scriviConDiff } = require('./src/giro');
 const { mergeAnnotationRows, inspectMerge, readAnnotationRows } = require('./src/annotations');
 const { resolveResidualCards, getTmdbApiKey } = require('./src/resolver');
 const { loadAnimeDubbedRows } = require('./src/anime');
@@ -438,9 +439,11 @@ async function main(customOpts = null) {
             return { matchResult, resolveResult: resolveRes };
         }
 
-        // Unione delle nuove righe risolte con le annotazioni di base
+        // Unione delle nuove righe risolte con le annotazioni di base.
+        // `scriviConDiff` = il writer più il diff agganciato (calcolato prima della scrittura:
+        // è l'unico momento in cui su disco c'è ancora il giro precedente).
         const finalRows = mergeAnnotationRows(baseRows, resolveRes.resolvedRows);
-        const writeResult = await writeAnnotations(finalRows, {
+        const writeResult = await scriviConDiff(finalRows, {
             dryRun: false,
             outputPath,
             respectGuard: true,
@@ -467,7 +470,9 @@ async function main(customOpts = null) {
         ? 'antoniogenna.net/doppiaggio ∪ anime_airing_state'
         : 'antoniogenna.net/doppiaggio' + (animeDegraded ? ' (degradato: anime_airing_state assente)' : '');
 
-    const writeResult = await writeAnnotations(finalRows, {
+    // Il diff di doppiaggio è agganciato qui: calcolato **prima** della riscrittura (su disco c'è
+    // ancora il giro precedente) e scritto solo se il giro ha scritto davvero.
+    const writeResult = await scriviConDiff(finalRows, {
         dryRun: opts.dryRun,
         outputPath,
         source: sourceDesc
@@ -501,6 +506,17 @@ async function main(customOpts = null) {
             mergeStats
         },
         counts: writeResult.counts,
+        // Il numero di cambi è ciò che l'operatore guarda dopo un giro: dentro il battito è
+        // sopravvive al riavvio della finestra di log.
+        diff: writeResult.diff
+            ? {
+                path: writeResult.diff.path,
+                cambiati: writeResult.diff.cambiati,
+                diventatiDoppiati: writeResult.diventatiDoppiati,
+                nonPiuDoppiati: writeResult.diff.nonPiuDoppiati,
+                primoGiro: writeResult.diff.primoGiro
+            }
+            : null,
         elapsedSeconds: elapsed
     });
     console.log('[HealthCheck] Battito di salute registrato.');

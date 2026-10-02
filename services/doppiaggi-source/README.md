@@ -50,7 +50,10 @@ resta **senza dipendenze native**.
    - cache su disco, contatore chiamate, ripresa dal punto e budget (`--max-calls`);
    - merge con le annotazioni esistenti via `mergeAnnotationRows` (`true` > `null` > assente).
 7. **Diff fra due giri** (`src/diff.js`) — dice **quali titoli hanno cambiato doppiaggio**, cioè quali
-   poster vanno rifatti. Non è ancora agganciato al giro: è la funzione e il suo artefatto.
+   poster vanno rifatti. È agganciato al giro da `src/giro.js` (vedi sotto).
+8. **Il giro** (`src/giro.js`) — il passo di scrittura con il diff attaccato: calcola il diff **prima**
+   che il writer tocchi `ita_annotations.jsonl` (è l'unico momento in cui su disco c'è ancora il giro
+   precedente) e scrive l'artefatto **solo se il giro ha scritto**.
 
 ## Unione Anime (AG ∪ AnimeUnity)
 
@@ -130,7 +133,28 @@ dell'app (`push({tipo, id, badge})`).
 - un file che risulta **non ordinato** viene segnalato (`onAnomalia`): la fusione a due puntatori su
   righe disordinate darebbe eventi sbagliati in silenzio.
 
-Non è agganciato al writer (l'aggancio al giro è un passo dopo) e non tocca `ita_annotations.jsonl`.
+Il modulo `diff.js` fa solo il calcolo e non tocca mai `ita_annotations.jsonl`: a scrivere il file,
+e a decidere *quando* il confronto è possibile, è `giro.js`, qui sotto.
+
+### Il diff agganciato al giro (`src/giro.js`)
+
+Il diff da solo non serve a niente: è l'artefatto di un confronto che nessuno faceva. `giro.js` chiude
+il cerchio e sostituisce la chiamata diretta a `writeAnnotations` nei due punti in cui il CLI scrive
+(giro normale e `--resolve-ids`):
+
+- **prima** della scrittura, con `previousPath` = il percorso che verrà sovrascritto e `current` = le
+  righe nuove già ordinate dal `toRows` (l'ordinamento `(tipo, id)` non è un dettaglio: è su quello
+  che il confronto a due puntatori fa affidamento);
+- **dopo**, l'artefatto, ma **solo se la scrittura è avvenuta**;
+- la **guardia** (`reason: 'guard'`) non produce nessun evento: su disco resta il file vecchio, quindi
+  nessun doppiaggio è cambiato e nessun poster va rifato. L'artefatto non viene toccato: quello sul
+  disco resta il diff dell'ultimo giro **scritto**;
+- un diff che **esplode** (file precedente illeggibile, righe rotte) è loggato e il giro scrive lo
+  stesso: perdere un giro di annotazioni per un diff sarebbe un guasto più grosso di un giro senza eventi;
+- nel log e nel battito (`last-run.json`) c'è il numero di cambi del giro.
+
+Lato app, `scripts/push-diff-in-coda.js` legge l'artefatto e spinge ogni cambiamento nella coda degli
+eventi (`push({tipo, id, badge})`, che deduplica da sola).
 
 ## Uso
 
