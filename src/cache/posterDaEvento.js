@@ -75,8 +75,60 @@ function urlDaEvento(base, { tipo, id, badge } = {}) {
     return posterUrl(base, { erdbId: erdbIdDaEvento({ tipo, id }), badge });
 }
 
+/**
+ * Elenco degli id ERDB da rinfrescare per un evento: quello TMDB, piu' quello Kitsu
+ * se l'evento e' un anime.
+ *
+ * Perche' serve un elenco e non un id solo. Gli anime non sono serviti da TMDB ma da
+ * Kitsu: il poster nel file system si chiama `kitsu-265.jpg`, e l'evento che arriva
+ * dalla coda porta l'id TMDB. Se il drenatore rifacesse solo `tmdb:tv:123`, farebbe un
+ * file che la rotta `/erdb-poster/:file` non chiedera' MAI, e il poster vero resterebbe
+ * vecchio senza che nessuno se ne accorga. Quindi: entrambi, ognuno col poster giusto.
+ *
+ * `cercaKitsu(id, tipo)` e' INIETTATA (la mappa la passa chi chiama, vedi
+ * `src/data/animeMappingStore.js`: `resolveKitsuMovie` per i film, `resolveKitsu`
+ * per le serie) e non viene importata qui: questo modulo resta puro, senza rete ne'
+ * database, e i test non dipendono da dati reali. Se non c'e' mappatura (o non c'e'
+ * funzione, o la mappa e' rotta) l'elenco ha un elemento solo: il poster TMDB si
+ * rifa comunque, perche' un guasto della mappa non deve fermare il drenaggio.
+ *
+ * @param {{tipo: string, id: string|number, badge?: string}} evento
+ * @param {(id: string|number, tipo: string) => (string|number|null|undefined)} [cercaKitsu]
+ * @returns {string[]} id ERDB, prima il TMDB, poi il Kitsu (se c'e'). Nessun duplicato.
+ * @throws {Error} stessi casi di `erdbIdDaEvento` (tipo sconosciuto, id mancante).
+ */
+function erdbIdsDaEvento({ tipo, id } = {}, cercaKitsu) {
+    const tmdbId = erdbIdDaEvento({ tipo, id });
+    const idTesto = String(id).trim();
+
+    // Id gia' in forma Kitsu: e' gia' l'id ERDB giusto, la mappa non serve (e
+    // interrogarla con "kitsu:265" produrrebbe solo spazzatura).
+    if (idTesto.startsWith('kitsu:')) return [tmdbId];
+
+    let kitsuId = null;
+    if (typeof cercaKitsu === 'function') {
+        try {
+            const trovato = cercaKitsu(idTesto, tipo);
+            if (trovato !== null && trovato !== undefined && String(trovato).trim() !== '') {
+                const testo = String(trovato).trim();
+                // Accetta sia `265` sia `kitsu:265`: il prefisso non deve raddoppiare.
+                kitsuId = testo.startsWith('kitsu:') ? testo : `kitsu:${testo}`;
+            }
+        } catch (err) {
+            // Non si propaga: si logga e si va avanti con il solo id TMDB.
+            console.warn(`[posterDaEvento] cercaKitsu fallita per ${tipo}:${idTesto}: ${err.message}`);
+            kitsuId = null;
+        }
+    }
+
+    // Nessun duplicato: se le due forme coincidessero, la lista ne ha una sola.
+    if (!kitsuId || kitsuId === tmdbId) return [tmdbId];
+    return [tmdbId, kitsuId];
+}
+
 module.exports = {
     erdbIdDaEvento,
+    erdbIdsDaEvento,
     nomeFileDaEvento,
     urlDaEvento
 };
