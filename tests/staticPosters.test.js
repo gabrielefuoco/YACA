@@ -19,6 +19,7 @@ const path = require('path');
 const express = require('express');
 
 const registerStaticPostersRoute = require('../src/api/staticPosters');
+const { getCacheDir, DEFAULT_CACHE_DIR } = require('../src/api/staticPosters');
 
 const JPG_BYTES = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x01]);
 const WEBP_BYTES = Buffer.from('RIFF....WEBPVP8 fake-payload');
@@ -138,5 +139,35 @@ describe('Poster statici serviti come file', () => {
 
     test('il file fuori dalla cartella continua a esistere e a non essere raggiungibile', () => {
         expect(fs.existsSync(secretFile)).toBe(true);
+    });
+});
+
+describe('Cartella dei poster: unica fonte di verità', () => {
+    // Il drenatore scrive nella cartella che questa funzione restituisce: se le due risoluzioni
+    // divergessero, produrrebbe file che la rotta non troverebbe mai (poster invisibili, senza errori).
+    test('con ERDB_CACHE_DIR impostata restituisce quella cartella', () => {
+        const chosen = path.join(os.tmpdir(), 'cartella-del-drenatore');
+        process.env.ERDB_CACHE_DIR = chosen;
+        try {
+            expect(getCacheDir()).toBe(chosen);
+        } finally {
+            process.env.ERDB_CACHE_DIR = cacheDir;
+        }
+    });
+
+    test('senza ERDB_CACHE_DIR cade sul default /data/erdb-cache', () => {
+        const previous = process.env.ERDB_CACHE_DIR;
+        delete process.env.ERDB_CACHE_DIR;
+        try {
+            expect(getCacheDir()).toBe('/data/erdb-cache');
+            expect(getCacheDir()).toBe(DEFAULT_CACHE_DIR);
+        } finally {
+            if (previous === undefined) delete process.env.ERDB_CACHE_DIR;
+            else process.env.ERDB_CACHE_DIR = previous;
+        }
+    });
+
+    test('il default esportato è quello documentato', () => {
+        expect(DEFAULT_CACHE_DIR).toBe('/data/erdb-cache');
     });
 });
