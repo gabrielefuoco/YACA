@@ -3,6 +3,7 @@ const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const CacheManager = require('../cache/CacheManager');
 const animeMappingStore = require('../data/animeMappingStore');
 const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
+const { schedulePromotion } = require('../db/tier1LazyPromotion');
 const { normalizeAnimeMarker } = require('../utils/animeIdentity');
 
 // Cache per l'oggetto meta finale combinato
@@ -275,6 +276,16 @@ async function metaHandler(args, userConfig) {
                         // Fallback API live SOLO se non lo troviamo nel DB offline e i fallback non sono disabilitati.
                         if (!meta) {
                              meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, {});
+
+                             // DuckDB non l'ha servito ⇒ il titolo non è (ancora) in Tier 1: è il
+                             // momento giusto per scaricare i dettagli e promuoverlo (ticket 42).
+                             // Fire-and-forget e dentro un try/catch: la promozione **non** può mai
+                             // cambiare (o rallentare) la scheda che l'utente sta aprendo.
+                             if (meta) {
+                                 try {
+                                     schedulePromotion({ tmdbId, type, apiKey: tmdbApiKey });
+                                 } catch (_e) { /* promozione mai sul percorso di risposta */ }
+                             }
                         }
                         
                         if (meta) {
