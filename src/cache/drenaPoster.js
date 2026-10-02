@@ -27,6 +27,14 @@
  * la coda lo scarta da sola dopo 5 tentativi), e anche `take`/`done`/`fail` hanno il loro: una
  * coda che lancia non deve trasformare un guasto in un'eccezione non gestita.
  *
+ * IL PERCHÉ VIENE FUORI, NON SI RICAVA DA NESSUN LOG: il riepilogo porta anche `fallimenti`,
+ * una voce per ogni evento non rifatto, `{tipo, id, erdbId, motivo, dettaglio}`. `motivo` è un
+ * **codice corto e stabile** (`http_404`, `non_jpeg`, `timeout`, `rete`, `scrittura`,
+ * `cartella`, `risposta_illeggibile`, `corpo_illeggibile`, `tipo_sconosciuto`,
+ * `evento_malformato`, `altro`) e `dettaglio` la frase per
+ * l'occhio. Il codice è qui, dove i messaggi nascono: ricavarlo a chi legge il journal legava
+ * due file a una frase, e se la frase cambiava i motivi finivano tutti in `altro` — in silenzio.
+ *
  * UN EVENTO È CHIUSO O NON LO È: `done` solo se **tutti** gli id dell'evento sono finiti a
  * bene. Con `erdbIdsDaEvento` un evento anime ha due id (TMDB e Kitsu) e quindi due file: se il
  * secondo fallisce il primo è già a posto, ma l'evento torna al giro dopo e riscrive il primo
@@ -60,6 +68,45 @@ function eJpeg(buffer) {
 }
 
 /**
+ * Un errore che SA perché è successo: il messaggio per l'occhio, il codice per il conto.
+ *
+ * Il codice è dichiarato qui, sul posto dove il guasto nasce, e non lasciato a chi legge
+ * dopo: un messaggio cambiato non deve poter cambiare il nome del motivo nel riepilogo.
+ */
+function guasto(motivo, messaggio, cause) {
+    const err = new Error(messaggio, cause ? { cause } : undefined);
+    err.motivo = motivo;
+    return err;
+}
+
+/**
+ * Il codice del motivo: quello dichiarato sull'errore, o quello riconosciuto dal testo.
+ *
+ * La regex è la **rete di sicurezza** per i guasti che nascono fuori da questo file (la coda
+ * degli eventi, per esempio, che è un altro modulo e non ha motivo da dichiarare). Qui sopra
+ * ogni errore ha già il suo: se un giorno un messaggio cambia, il codice dichiarato resta
+ * quello giusto e la regex non viene neppure consultata.
+ *
+ * @param {Error|string} causa
+ * @returns {string} un codice corto, mai una frase
+ */
+function classificaMotivo(causa) {
+    if (causa && typeof causa === 'object') {
+        if (causa.motivo) return String(causa.motivo);
+        causa = causa.message || causa;
+    }
+    const testo = String(causa || '');
+    if (/timeout/i.test(testo)) return 'timeout';
+    const http = testo.match(/HTTP\s+(\d{3})/i);
+    if (http) return `http_${http[1]}`;
+    if (/non è un JPEG/i.test(testo)) return 'non_jpeg';
+    if (/richiesta fallita|ECONN|fetch failed|network/i.test(testo)) return 'rete';
+    if (/tipo sconosciuto/i.test(testo)) return 'tipo_sconosciuto';
+    if (/senza "?id"?|non in forma ERDB|id mancante|non riconosciuto/i.test(testo)) return 'evento_malformato';
+    return 'altro';
+}
+
+/**
  * Il `{tipo, id}` da cui ricavare nome file e URL di un id ERDB dell'elenco.
  *
  * `erdbIdsDaEvento` restituisce id già in forma ERDB (`tmdb:movie:265`, `kitsu:265`), mentre
@@ -76,7 +123,7 @@ function eventoDaErdbId(erdbId, evento) {
 
     const parti = testo.split(':');   // tmdb:<tipo>:<id>
     if (parti.length !== 3 || parti[0] !== 'tmdb' || !parti[1] || !parti[2]) {
-        throw new Error(`id ERDB non riconosciuto: ${JSON.stringify(erdbId)}`);
+        throw guasto('evento_malformato', `id ERDB non riconosciuto: ${JSON.stringify(erdbId)}`);
     }
     return { tipo: parti[1], id: parti[2], badge };
 }
@@ -97,27 +144,27 @@ async function scarica(url, { fetchImpl, timeoutMs }) {
         const richiesta = Promise.resolve().then(() => fetchImpl(url, opzioni));
         risposta = timeoutMs > 0 ? await _conTimeout(richiesta, timeoutMs, url) : await richiesta;
     } catch (err) {
-        throw new Error(`richiesta fallita: ${err && err.message ? err.message : err}`, { cause: err });
+        throw guasto(classificaMotivo(err), `richiesta fallita: ${err && err.message ? err.message : err}`, err);
     }
 
     if (!risposta || typeof risposta.arrayBuffer !== 'function') {
-        throw new Error(`risposta non leggibile da ${url}`);
+        throw guasto('risposta_illeggibile', `risposta non leggibile da ${url}`);
     }
     if (risposta.ok === false) {
-        throw new Error(`HTTP ${risposta.status} su ${url}`);
+        throw guasto(`http_${risposta.status}`, `HTTP ${risposta.status} su ${url}`);
     }
 
     let buffer;
     try {
         buffer = Buffer.from(await risposta.arrayBuffer());
     } catch (err) {
-        throw new Error(`corpo illeggibile: ${err && err.message ? err.message : err}`, { cause: err });
+        throw guasto('corpo_illeggibile', `corpo illeggibile: ${err && err.message ? err.message : err}`, err);
     }
 
     if (!eJpeg(buffer)) {
         const tipo = risposta.headers && typeof risposta.headers.get === 'function'
             ? risposta.headers.get('content-type') : null;
-        throw new Error(`la risposta non è un JPEG (${buffer.length} byte, content-type ${tipo || 'assente'})`);
+        throw guasto('non_jpeg', `la risposta non è un JPEG (${buffer.length} byte, content-type ${tipo || 'assente'})`);
     }
     return buffer;
 }
@@ -126,7 +173,7 @@ async function scarica(url, { fetchImpl, timeoutMs }) {
 function _conTimeout(richiesta, ms, url) {
     let timer = null;
     const scadenza = new Promise((_, respingi) => {
-        timer = setTimeout(() => respingi(new Error(`timeout dopo ${ms} ms su ${url}`)), ms);
+        timer = setTimeout(() => respingi(guasto('timeout', `timeout dopo ${ms} ms su ${url}`)), ms);
     });
     return Promise.race([richiesta, scadenza]).finally(() => clearTimeout(timer));
 }
@@ -146,7 +193,7 @@ async function scrivi(target, buffer) {
         try {
             await fs.promises.unlink(tmp);
         } catch (_) { /* non c'era: niente da dire */ }
-        throw err;
+        throw guasto('scrittura', err && err.message ? err.message : String(err), err);
     }
 }
 
@@ -169,7 +216,9 @@ async function scrivi(target, buffer) {
  * @param {number}   [opzioni.batch]       quanti eventi prendere (default 10)
  * @param {number}   [opzioni.timeoutMs]   timeout per richiesta (default 20000, `0` = nessuno)
  * @param {object}   [opzioni.log]         logger (default `console`)
- * @returns {Promise<{presi: number, resi: number, falliti: number}>}
+ * @returns {Promise<{presi: number, resi: number, falliti: number,
+ *   fallimenti: Array<{tipo: *, id: *, erdbId: string|null, motivo: string, dettaglio: string}>,
+ *   note: {take: number, cartella: number, chiusura: number}}>}
  */
 async function drena({
     take,
@@ -183,7 +232,18 @@ async function drena({
     timeoutMs = DEFAULT_TIMEOUT_MS,
     log = console
 } = {}) {
-    const riepilogo = { presi: 0, resi: 0, falliti: 0 };
+    // I tre contatori sono quelli di prima (chi li leggeva continua a leggere gli stessi);
+    // `fallimenti` dice **perché** e `note` raccoglie i guasti del giro che non sono un
+    // poster non rifatto (una coda che non risponde, una cartella inutilizzabile, una
+    // chiusura che lancia): anche questi escono in chiaro, perché erano tre righe di log che
+    // qualcuno leggeva a mano e che nessuno poteva più contare.
+    const riepilogo = {
+        presi: 0,
+        resi: 0,
+        falliti: 0,
+        fallimenti: [],
+        note: { take: 0, cartella: 0, chiusura: 0 }
+    };
 
     let eventi;
     try {
@@ -192,6 +252,7 @@ async function drena({
         // Una coda che non risponde è un giro vuoto, non un incidente: `take` è già pensata per
         // degradare, ma se le funzioni fossero rotte anche i caller devono stare in piedi.
         log.warn(`[DrenaPoster] take fallito: ${err && err.message ? err.message : err}`);
+        riepilogo.note.take += 1;
         return riepilogo;
     }
     if (!Array.isArray(eventi)) return riepilogo;
@@ -203,56 +264,93 @@ async function drena({
     try {
         await fs.promises.mkdir(outDir, { recursive: true });
     } catch (err) {
-        log.warn(`[DrenaPoster] cartella ${outDir} non utilizzabile: ${err && err.message ? err.message : err}`);
-        for (const evento of eventi) await _chiudi(fail, evento, log);
+        const spiegazione = `${err && err.message ? err.message : err}`;
+        log.warn(`[DrenaPoster] cartella ${outDir} non utilizzabile: ${spiegazione}`);
+        riepilogo.note.cartella += 1;
+        for (const evento of eventi) {
+            await _chiudi(fail, evento, riepilogo, log);
+            riepilogo.fallimenti.push(_voceFallimento(evento, null, 'cartella',
+                `cartella ${outDir} non utilizzabile: ${spiegazione}`));
+        }
         riepilogo.falliti = eventi.length;
         return riepilogo;
     }
 
     for (const evento of eventi) {
         let riuscito = true;
-        let primoMotivo;
+        // L'id ERDB che stava fallendo: senza, il perché di un guasto sarebbe "da qualche
+        // parte" invece di "questo file" (un evento anime ha due id e fallisce sul secondo).
+        let erdbId = null;
 
         try {
             const ids = erdbIdsDaEvento(evento, cercaKitsu);
-            for (const erdbId of ids) {
-                const { tipo, id, badge } = eventoDaErdbId(erdbId, evento);
+            for (const id of ids) {
+                erdbId = id;
+                const { tipo, id: idErdb, badge } = eventoDaErdbId(id, evento);
                 // Il nome e l'URL li decide `posterDaEvento`: qui non si riscrive niente.
-                const file = nomeFileDaEvento({ tipo, id, badge });
-                const url = urlDaEvento(base, { tipo, id, badge });
+                const file = nomeFileDaEvento({ tipo, id: idErdb, badge });
+                const url = urlDaEvento(base, { tipo, id: idErdb, badge });
                 const buffer = await scarica(url, { fetchImpl, timeoutMs });
                 await scrivi(path.join(outDir, file), buffer);
                 log.log(`[DrenaPoster] reso ${file}`);
             }
         } catch (err) {
             riuscito = false;
-            primoMotivo = err && err.message ? err.message : String(err);
-            log.warn(`[DrenaPoster] fallito ${evento && evento.tipo}:${evento && evento.id}: ${primoMotivo}`);
+            const dettaglio = err && err.message ? err.message : String(err);
+            riepilogo.fallimenti.push(_voceFallimento(evento, erdbId, classificaMotivo(err), dettaglio));
+            log.warn(`[DrenaPoster] fallito ${evento && evento.tipo}:${evento && evento.id}: ${dettaglio}`);
         }
 
         // Chiusura: `done` solo se tutti gli id sono andati, altrimenti `fail` (l'evento resta
         // in coda e viene ritentato).
         if (riuscito) {
             riepilogo.resi += 1;
-            await _chiudi(done, evento, log);
+            await _chiudi(done, evento, riepilogo, log);
         } else {
             riepilogo.falliti += 1;
-            await _chiudi(fail, evento, log);
+            await _chiudi(fail, evento, riepilogo, log);
         }
     }
 
     return riepilogo;
 }
 
+/**
+ * Una voce di `fallimenti`: **quale** evento, su **quale** id ERDB, e con **quale** motivo.
+ *
+ * `motivo` è il codice corto (`http_404`, `non_jpeg`, …) e `dettaglio` la frase per l'occhio:
+ * chi conta i motivi non deve leggere le frasi, chi li legge non deve contarli a mano.
+ */
+function _voceFallimento(evento, erdbId, motivo, dettaglio) {
+    return {
+        tipo: evento ? evento.tipo : null,
+        id: evento ? evento.id : null,
+        erdbId: erdbId || null,
+        motivo,
+        dettaglio: dettaglio || String(motivo)
+    };
+}
+
 /** Chiama `done` o `fail` senza mai propagare: la coda non dovrebbe lanciare, ma se lo fa
- *  l'evento resta in coda e verrà ritentato — meglio un doppione rifatto che un evento perso. */
-async function _chiudi(chiusura, evento, log) {
+ *  l'evento resta in coda e verrà ritentato — meglio un doppione rifatto che un evento perso.
+ *  Una chiusura rotta si conta in `note.chiusura`: il file c'è, ma nessuno lo sa chiuso. */
+async function _chiudi(chiusura, evento, riepilogo, log) {
     if (typeof chiusura !== 'function') return;
     try {
         await chiusura(evento);
     } catch (err) {
+        if (riepilogo && riepilogo.note) riepilogo.note.chiusura += 1;
         log.warn(`[DrenaPoster] chiusura fallita: ${err && err.message ? err.message : err}`);
     }
 }
 
-module.exports = { drena, eJpeg, scarica, scrivi, eventoDaErdbId, DEFAULT_BATCH, DEFAULT_TIMEOUT_MS };
+module.exports = {
+    drena,
+    eJpeg,
+    scarica,
+    scrivi,
+    eventoDaErdbId,
+    classificaMotivo,
+    DEFAULT_BATCH,
+    DEFAULT_TIMEOUT_MS
+};

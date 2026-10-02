@@ -25,8 +25,8 @@ const path = require('path');
 const {
     parseArgs,
     rigaRiepilogo,
+    gira,
     classificaMotivo,
-    contaRigaLog,
     adattatoreKitsu,
     aspettaRedis,
     main
@@ -39,6 +39,14 @@ const JPEG = Buffer.concat([
     Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]),
     Buffer.from('JFIF\0', 'ascii'),
     Buffer.alloc(32, 0x7a)
+]);
+
+/** WebP finto: dice `image/jpeg` ma i byte sono `RIFF…WEBP`, cioè non è un JPEG. */
+const WEBP = Buffer.concat([
+    Buffer.from('RIFF', 'ascii'),
+    Buffer.alloc(4, 0),
+    Buffer.from('WEBP', 'ascii'),
+    Buffer.alloc(16, 0x11)
 ]);
 
 /** Risposta finta, della sola forma che `drenaPoster` usa: `ok`, `status`, `arrayBuffer`. */
@@ -531,20 +539,21 @@ describe('il riepilogo', () => {
     });
 
     test('gli avvisi del giro non si confondono con i motivi dei fallimenti', () => {
-        const stato = { motivi: {}, note: {} };
-        contaRigaLog('[DrenaPoster] fallito tv:1396: HTTP 404 su http://x/poster/tmdb:tv:1396.jpg', stato);
-        contaRigaLog('[DrenaPoster] fallito movie:1: timeout dopo 20000 ms su http://x', stato);
-        contaRigaLog('[DrenaPoster] fallito tv:2: tipo sconosciuto nell\'evento: "film" (id: 5)', stato);
-        contaRigaLog('[DrenaPoster] fallito movie:3: la risposta non è un JPEG (0 byte)', stato);
-        contaRigaLog('[DrenaPoster] fallito movie:4: ENOSPC: spazio esaurito', stato);
-        contaRigaLog('[DrenaPoster] take fallito: redis giù', stato);
-        contaRigaLog('[DrenaPoster] chiusura fallita: redis giù', stato);
-        contaRigaLog('[DrenaPoster] reso tmdb-movie-1.jpg', stato);
+        // I motivi e gli avvisi vengono da due campi diversi di ciò che `drena` RESTITUISCE:
+        // un guasto del giro (`take`, cartella, chiusura) non è un poster non rifatto, e nel
+        // riepilogo devono stare in due voci diverse. Qui il conto è fatto a mano come fa
+        // lo script, per vedere che le due liste non si mangiano.
+        const riepilogo = {
+            presi: 5, resi: 1, falliti: 4, daRifare: 0, dryRun: false,
+            motivi: { http_404: 2, non_jpeg: 1, altro: 1 },
+            note: { take: 1, chiusura: 2 },
+            mappa: { chiamate: 0, storeNonPronto: 0, errori: 0, motivi: {} },
+            outDir: '/data/erdb-cache'
+        };
+        const riga = rigaRiepilogo(riepilogo);
 
-        expect(stato.motivi).toEqual({
-            http_404: 1, timeout: 1, tipo_sconosciuto: 1, non_jpeg: 1, altro: 1
-        });
-        expect(stato.note).toEqual({ take: 1, chiusura: 1 });
+        expect(riga).toMatch(/motivi: http_404=2, altro=1, non_jpeg=1/);
+        expect(riga).toMatch(/avvisi: chiusura=2, take=1/);
     });
 
     test('classificaMotivo: i motivi che contano sono distinguibili', () => {
@@ -651,5 +660,108 @@ describe('la corsa all\'avvio: Redis non è pronto quando parte il giro', () => 
         expect(log.linee.log.join('\n')).not.toMatch(/Redis non è ancora connesso/);
         // E l'attesa, guardata da vicino: una sola interrogazione, zero millisecondi.
         await expect(aspettaRedis(finto, { log })).resolves.toMatchObject({ pronto: true, interrogazioni: 1, attesaMs: 0 });
+    });
+});
+
+/**
+ * I MOTIVI VENGONO DALL'ELENCO, NON DAL LOG.
+ *
+ * Prima lo script contava i motivi **leggendo la riga di log** che `drenaPoster` scriveva e
+ * riconoscendoci dentro il motivo: funzionava, degradava in `altro` se il testo cambiava, ma
+ * legava due file a una frase. Qui si prova che il riepilogo guarda `drena.fallimenti`: si
+ * passa un `drena` finto che restituisce motivi noti (e che non scrive righe di log utili), e si
+ * verifica che il riepilogo li conti — quindi il test non dipende da nessuna riga di journal.
+ */
+describe('i motivi si contano su `drena.fallimenti`', () => {
+    /** Un `drena` finto: restituisce i fallimenti che vuole e non sa niente di log. */
+    const drenaFinto = (riepilogo, { righeDiLog = [] } = {}) => jest.fn(async (opzioni) => {
+        for (const riga of righeDiLog) opzioni.log.warn(riga);
+        return riepilogo;
+    });
+
+    test('un giro vero: 404 e non-JPEG insieme, due motivi separati nel riepilogo', async () => {
+        const coda = creaCoda([
+            { tipo: 'movie', id: 1, badge: null },      // 404: l'istanza non ce l'ha
+            { tipo: 'tv', id: 1396, badge: null },       // dice JPEG, è WebP
+            { tipo: 'movie', id: 27205, badge: 'ITA' }   // questo va a buon fine
+        ]);
+        const fetchImpl = async (url) => {
+            if (url.includes('tmdb:tv:1396')) return risposta(WEBP, { ok: true, status: 200 });
+            if (url.includes('tmdb:movie:1')) return risposta(Buffer.alloc(0), { ok: false, status: 404 });
+            return risposta(JPEG);
+        };
+
+        await expect(corri([], { coda, fetchImpl })).resolves.toBe(0);
+
+        expect(riepilogo()).toMatch(/3 presi, 1 resi, 2 falliti/);
+        expect(riepilogo()).toMatch(/motivi: http_404=1, non_jpeg=1/);
+        expect(chiusiDi(coda)).toEqual({ done: ['movie|27205'], fail: ['movie|1', 'tv|1396'] });
+    });
+
+    test('un `drena` finto: il riepilogo conta i motivi che riceve, non quelli che logga', async () => {
+        // Motivi che nessun testo di log potrebbe produrre: se qui il riepilogo li dicesse,
+        // significherebbe che sta ancora leggendo il journal.
+        const drenaImpl = drenaFinto({
+            presi: 4,
+            resi: 1,
+            falliti: 3,
+            fallimenti: [
+                { tipo: 'movie', id: 1, erdbId: 'tmdb:movie:1', motivo: 'http_404', dettaglio: 'HTTP 404 su http://x' },
+                { tipo: 'movie', id: 2, erdbId: 'tmdb:movie:2', motivo: 'http_404', dettaglio: 'HTTP 404 su http://x' },
+                { tipo: 'tv', id: 3, erdbId: 'tmdb:tv:3', motivo: 'non_jpeg', dettaglio: 'la risposta non è un JPEG (12 byte)' }
+            ],
+            note: { take: 0, cartella: 0, chiusura: 1 }
+        }, {
+            // Righe che, se qualcuno le leggesse, darebbero altri motivi: qui non contano.
+            righeDiLog: ['[DrenaPoster] fallito movie:1: timeout dopo 20000 ms su http://x']
+        });
+
+        const stato = await gira({
+            coda: creaCoda([{ tipo: 'movie', id: 1, badge: null }]),
+            fetchImpl: creaFetch({}),
+            store: null,
+            drenaImpl,
+            redis,
+            log,
+            base: BASE,
+            outDir: dir,
+            batch: 10
+        });
+        const riga = rigaRiepilogo(stato);
+
+        expect(riga).toMatch(/4 presi, 1 resi, 3 falliti/);
+        expect(riga).toMatch(/motivi: http_404=2, non_jpeg=1/);
+        expect(riga).not.toMatch(/timeout/);          // la riga di log non conta più
+        expect(riga).toMatch(/avvisi: chiusura=1/);   // le note arrivano dal riepilogo del giro
+        expect(drenaImpl).toHaveBeenCalledTimes(1);
+    });
+
+    test('un motivo nuovo che nessuno conosce passa nel riepilogo com\'è', async () => {
+        const drenaImpl = drenaFinto({
+            presi: 2, resi: 1, falliti: 1,
+            fallimenti: [{ tipo: 'movie', id: 1, erdbId: 'tmdb:movie:1', motivo: 'vortice_di_erp', dettaglio: 'boh' }],
+            note: { take: 0, cartella: 0, chiusura: 0 }
+        });
+
+        const stato = await gira({
+            coda: creaCoda([]), fetchImpl: creaFetch({}), store: null,
+            drenaImpl, redis, log, base: BASE, outDir: dir
+        });
+
+        // Nessuna lista chiusa di motivi: un guasto nuovo si racconta, non sparisce in `altro`.
+        expect(rigaRiepilogo(stato)).toMatch(/motivi: vortice_di_erp=1/);
+    });
+
+    test('nessuna lista di fallimenti: il riepilogo resta lo stesso (e non inventa motivi)', async () => {
+        const drenaImpl = drenaFinto({ presi: 3, resi: 3, falliti: 0 });
+
+        const stato = await gira({
+            coda: creaCoda([]), fetchImpl: creaFetch({}), store: null,
+            drenaImpl, redis, log, base: BASE, outDir: dir
+        });
+
+        const riga = rigaRiepilogo(stato);
+        expect(riga).toMatch(/3 presi, 3 resi, 0 falliti/);
+        expect(riga).not.toMatch(/motivi:/);
     });
 });
