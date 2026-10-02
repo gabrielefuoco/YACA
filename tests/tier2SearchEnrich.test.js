@@ -76,6 +76,20 @@ jest.mock('../src/utils/logger', () => ({ logError: jest.fn() }));
 /** L'indice FTS5 non serve qui: non si vuole alcun disco ne' alcuna rete. */
 jest.mock('../src/db/tier2Index', () => ({ Tier2SearchClient: jest.fn() }));
 
+jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
+    getDuckDbCatalogFromFilters: jest.fn(),
+    getDuckDbCatalogFromPreset: jest.fn(),
+    getDuckDbMetaDetails: jest.fn(),
+    buildPresetFromFilters: jest.fn((q = {}) => ({ type: q.type || 'movie', where: [], orderBy: 'popularity DESC' })),
+    mapSortBy: jest.fn(),
+    mapDuckDbRowToMeta: jest.fn()
+}));
+
+jest.mock('../src/catalog/providers/AiDiscoveryProvider', () => ({
+    executeCombinedSearch: jest.fn(),
+    executeUniversalPipeline: jest.fn()
+}));
+
 const API_KEY = 'chiave-di-prova';
 
 /** Un titolo grezzo come lo produce `mapTier2RowToMeta`: senza poster, descrizione e anno. */
@@ -485,5 +499,85 @@ describe('Arricchimento dei titoli del Tier 2', () => {
             expect(mockHttpCalls).toHaveLength(0);
             expect(mockCacheKeys).toHaveLength(0);
         });
+    });
+});
+
+describe('La ricerca standard risponde con i titoli del Tier 2 gia presentabili', () => {
+    let tier2Search;
+    let routeCatalogRequest;
+
+    beforeEach(() => {
+        ({ routeCatalogRequest } = require('../src/catalog/CatalogRouter'));
+        tier2Search = require('../src/catalog/tier2Search');
+        require('../src/catalog/providers/DuckDbProvider').getDuckDbCatalogFromFilters.mockResolvedValue([]);
+    });
+
+    afterEach(() => {
+        tier2Search.closeTier2Search();
+    });
+
+    /** L'indice FTS5 restituisce una riga grezza, come in produzione. */
+    function stubIndice(righe) {
+        const { Tier2SearchClient } = require('../src/db/tier2Index');
+        Tier2SearchClient.mockImplementation(() => ({
+            init: jest.fn(() => true),
+            search: jest.fn(() => righe),
+            close: jest.fn()
+        }));
+    }
+
+    function ricerca(apiKey = API_KEY) {
+        return routeCatalogRequest(
+            { id: 'yaca_search_standard', type: 'movie', extra: { search: 'avengers' } },
+            { apiKeys: { tmdb: apiKey } }, null, apiKey, {}
+        );
+    }
+
+    it('i titoli della coda lunga arrivano con poster, nome italiano, descrizione e anno', async () => {
+        stubIndice([{ id: '950387', type: 'movie', title: 'Avengers: Endgame', original_title: 'Avengers: Endgame', popularity: '90.1', release_date: null }]);
+        mockResponses['/movie/950387'] = dettaglioFilm(950387, {
+            titolo: 'Avengers: Endgame',
+            originale: 'Avengers: Endgame',
+            descrizione: "Dopo gli eventi di Infinity War, gli Avengers si riuniscono per un'ultima battaglia.",
+            anno: '2019',
+            poster: '/endgame.jpg'
+        });
+
+        const risultati = await ricerca();
+
+        expect(risultati).toHaveLength(1);
+        expect(risultati[0]).toMatchObject({
+            _tmdbId: 950387,
+            name: 'Avengers: Endgame',
+            poster: 'https://image.tmdb.org/t/p/w500/endgame.jpg',
+            releaseInfo: '2019'
+        });
+        expect(risultati[0].description).toContain('Infinity War');
+        expect(mockCacheKeys).toContain('tmdb_details_raw:full:v2:movie:950387');
+    });
+
+    it('i titoli locali restano intatti e non costano nessuna richiesta', async () => {
+        const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+        getDuckDbCatalogFromFilters.mockResolvedValue([locale(272, 'Batman Begins')]);
+        stubIndice([]);
+
+        const risultati = await ricerca();
+
+        expect(risultati).toEqual([locale(272, 'Batman Begins')]);
+        expect(mockHttpCalls).toHaveLength(0);
+    });
+
+    it('senza chiave TMDB la risposta e comunque quella del catalogo, grezza ma intatta', async () => {
+        stubIndice([{ id: '950387', type: 'movie', title: 'Avengers: Endgame', original_title: 'Avengers: Endgame', popularity: '90.1', release_date: null }]);
+        mockResponses['/movie/950387'] = dettaglioFilm(950387, {
+            titolo: 'Avengers: Endgame', originale: 'Avengers: Endgame',
+            descrizione: "Dopo gli eventi di Infinity War gli Avengers si riuniscono.", anno: '2019', poster: '/endgame.jpg'
+        });
+
+        const risultati = await ricerca(null);
+
+        expect(risultati[0]._tier2).toBe(true);
+        expect(risultati[0].poster).toBeNull();
+        expect(mockHttpCalls).toHaveLength(0);
     });
 });
