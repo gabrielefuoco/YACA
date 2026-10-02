@@ -171,3 +171,220 @@ describe('Cartella dei poster: unica fonte di verità', () => {
         expect(DEFAULT_CACHE_DIR).toBe('/data/erdb-cache');
     });
 });
+
+/**
+ * Il file che non c'è viene chiesto all'istanza ERDB locale e scritto in cartella.
+ *
+ * La cartella si riempie con un giro grosso fatto una volta e poi col drenatore (ogni 10
+ * minuti): senza questo passaggio un titolo nuovo resterebbe un 404 fino al giro successivo.
+ * Qui si verifica il contratto, che è fatto di "niente di nuovo che si rompe":
+ * - se l'istanza risponde un JPEG: 200, byte giusti, file scritto, e la seconda richiesta
+ *   non la richiama più (la cache si riempie da sola);
+ * - se l'istanza risponde 404, un errore o qualcosa che non è un JPEG: 404 come prima,
+ *   e in cartella non resta niente (nemmeno un `.tmp`);
+ * - senza `ERDB_LOCAL_BASE`, o con un nome che non è una forma nota, l'istanza non viene
+ *   nemmeno chiamata: il comportamento di oggi è intatto.
+ *
+ * L'istanza è un server HTTP vero su porta effimera, come gli altri test del repo: qui conta
+ * anche l'URL che arriva (`?badge=ITA`), quindi la richiesta deve fare davvero il giro.
+ */
+describe('Poster assente chiesto all\'istanza ERDB locale', () => {
+    const TOKEN = '/Tk-token-di-prova';
+    const JPEG_RISPOSTA = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x42, 0x01]);
+
+    let erdbServer;
+    let erdbBase;
+    let risposta;      // impostato da ogni test: {status, body, contentType}
+    let richieste;     // [{url}], in ordine di arrivo
+
+    const nomiInCartella = () => fs.readdirSync(cacheDir).sort();
+    const fileEsiste = (nome) => fs.existsSync(path.join(cacheDir, nome));
+    const rimuoviSePresente = (nome) => {
+        const p = path.join(cacheDir, nome);
+        if (fs.existsSync(p)) fs.rmSync(p);
+    };
+
+    beforeAll(async () => {
+        erdbServer = http.createServer((req, res) => {
+            richieste.push({ url: req.url });
+            const r = risposta || { status: 404, body: Buffer.from('non c\'e'), contentType: 'text/plain' };
+            res.writeHead(r.status, { 'Content-Type': r.contentType });
+            res.end(r.body);
+        });
+        await new Promise((resolve) => erdbServer.listen(0, '127.0.0.1', resolve));
+        erdbBase = `http://127.0.0.1:${erdbServer.address().port}${TOKEN}`;
+    });
+
+    afterAll(async () => {
+        delete process.env.ERDB_LOCAL_BASE;
+        if (erdbServer) await new Promise((resolve) => erdbServer.close(resolve));
+    });
+
+    beforeEach(() => {
+        richieste = [];
+        risposta = null;
+        process.env.ERDB_CACHE_DIR = cacheDir;
+    });
+
+    afterEach(() => {
+        delete process.env.ERDB_LOCAL_BASE;
+    });
+
+    test('istanza che risponde un JPEG: 200 con i byte giusti, file scritto, poi si serve da disco', async () => {
+        risposta = { status: 200, body: JPEG_RISPOSTA, contentType: 'image/jpeg' };
+        process.env.ERDB_LOCAL_BASE = erdbBase;
+
+        const nome = 'tmdb-movie-27205.jpg';
+        rimuoviSePresente(nome);
+
+        const primo = await request(`/erdb-poster/${nome}`);
+        expect(primo.status).toBe(200);
+        expect(primo.headers['content-type']).toBe('image/jpeg');
+        // Il file ora esiste: la cache di questa risposta è quella da hit, non quella del 404.
+        expect(primo.headers['cache-control']).toBe('public, max-age=86400');
+        expect(primo.body.equals(JPEG_RISPOSTA)).toBe(true);
+
+        // Scritto in cartella, e senza resti.
+        expect(fileEsiste(nome)).toBe(true);
+        expect(fs.readFileSync(path.join(cacheDir, nome)).equals(JPEG_RISPOSTA)).toBe(true);
+        expect(nomiInCartella()).not.toContain(`${nome}.tmp`);
+
+        // L'istanza è stata chiamata una volta sola, con l'indirizzo del costruttore.
+        expect(richieste.length).toBe(1);
+        expect(richieste[0].url).toBe('/Tk-token-di-prova/poster/tmdb:movie:27205.jpg');
+
+        // Seconda richiesta: il file c'è, l'istanza non viene più disturbata.
+        const secondo = await request(`/erdb-poster/${nome}`);
+        expect(secondo.status).toBe(200);
+        expect(secondo.headers['cache-control']).toBe('public, max-age=86400');
+        expect(secondo.body.equals(JPEG_RISPOSTA)).toBe(true);
+        expect(richieste.length).toBe(1);
+
+        rimuoviSePresente(nome);
+    });
+
+    test('istanza che risponde 404: la rotta risponde 404 e non scrive niente', async () => {
+        risposta = { status: 404, body: Buffer.from('assente'), contentType: 'text/plain' };
+        process.env.ERDB_LOCAL_BASE = erdbBase;
+
+        const nome = 'tmdb-movie-27206.jpg';
+        rimuoviSePresente(nome);
+
+        const res = await request(`/erdb-poster/${nome}`);
+        expect(res.status).toBe(404);
+        expect(res.headers['cache-control']).toBe('public, max-age=300');
+        expect(richieste.length).toBe(1);
+        expect(fileEsiste(nome)).toBe(false);
+        expect(nomiInCartella()).not.toContain(`${nome}.tmp`);
+    });
+
+    test('istanza che risponde 200 ma non un JPEG: 404 e nessun file in giro', async () => {
+        risposta = { status: 200, body: Buffer.from('<html>errore</html>'), contentType: 'text/html' };
+        process.env.ERDB_LOCAL_BASE = erdbBase;
+
+        const nome = 'tmdb-movie-27207.jpg';
+        rimuoviSePresente(nome);
+
+        const res = await request(`/erdb-poster/${nome}`);
+        expect(res.status).toBe(404);
+        expect(res.body.equals(Buffer.from('<html>errore</html>'))).toBe(false);
+        expect(richieste.length).toBe(1);
+        expect(fileEsiste(nome)).toBe(false);
+        expect(nomiInCartella()).not.toContain(`${nome}.tmp`);
+    });
+
+    test('istanza che non risponde (connessione rifiutata): 404, senza crash', async () => {
+        // Porta 1: nessuno ascolta, il fetch fallisce subito.
+        process.env.ERDB_LOCAL_BASE = 'http://127.0.0.1:1/Tk-token';
+
+        const nome = 'tmdb-tv-1396.jpg';
+        rimuoviSePresente(nome);
+
+        const res = await request(`/erdb-poster/${nome}`);
+        expect(res.status).toBe(404);
+        expect(fileEsiste(nome)).toBe(false);
+        expect(nomiInCartella()).not.toContain(`${nome}.tmp`);
+    });
+
+    test('senza ERDB_LOCAL_BASE: 404 e l\'istanza non viene mai chiamata', async () => {
+        risposta = { status: 200, body: JPEG_RISPOSTA, contentType: 'image/jpeg' };
+        delete process.env.ERDB_LOCAL_BASE;
+
+        const nome = 'tmdb-movie-27208.jpg';
+        rimuoviSePresente(nome);
+
+        const res = await request(`/erdb-poster/${nome}`);
+        expect(res.status).toBe(404);
+        expect(res.headers['cache-control']).toBe('public, max-age=300');
+        expect(richieste.length).toBe(0);
+        expect(fileEsiste(nome)).toBe(false);
+    });
+
+    test('un nome che erdbIdDaNomeFile rifiuta: 404 e l\'istanza non viene chiamata', async () => {
+        risposta = { status: 200, body: JPEG_RISPOSTA, contentType: 'image/jpeg' };
+        process.env.ERDB_LOCAL_BASE = erdbBase;
+
+        for (const nome of ['poster.jpg', 'anime-265.jpg', 'tmdb-movie-abc.jpg', 'tmdb-movie-27209_ENG.jpg']) {
+            rimuoviSePresente(nome);
+            const res = await request(`/erdb-poster/${nome}`);
+            expect(res.status).toBe(404);
+            expect(fileEsiste(nome)).toBe(false);
+        }
+        expect(richieste.length).toBe(0);
+    });
+
+    test('un nome con _ITA: l\'istanza viene chiamata con ?badge=ITA', async () => {
+        risposta = { status: 200, body: JPEG_RISPOSTA, contentType: 'image/jpeg' };
+        process.env.ERDB_LOCAL_BASE = erdbBase;
+
+        const nome = 'tmdb-movie-27205_ITA.jpg';
+        rimuoviSePresente(nome);
+
+        const res = await request(`/erdb-poster/${nome}`);
+        expect(res.status).toBe(200);
+        expect(res.body.equals(JPEG_RISPOSTA)).toBe(true);
+        expect(richieste.length).toBe(1);
+        expect(richieste[0].url).toBe('/Tk-token-di-prova/poster/tmdb:movie:27205.jpg?badge=ITA');
+        expect(fileEsiste(nome)).toBe(true);
+
+        rimuoviSePresente(nome);
+    });
+
+    test('un nome kitsu senza badge: l\'istanza viene chiamata senza query', async () => {
+        risposta = { status: 200, body: JPEG_RISPOSTA, contentType: 'image/jpeg' };
+        process.env.ERDB_LOCAL_BASE = erdbBase;
+
+        const nome = 'kitsu-265.jpg';
+        rimuoviSePresente(nome);
+
+        const res = await request(`/erdb-poster/${nome}`);
+        expect(res.status).toBe(200);
+        expect(richieste.length).toBe(1);
+        expect(richieste[0].url).toBe('/Tk-token-di-prova/poster/kitsu:265.jpg');
+
+        rimuoviSePresente(nome);
+    });
+
+    test('due richieste contemporanee sullo stesso poster assente: entrambe 200, file integro', async () => {
+        risposta = { status: 200, body: JPEG_RISPOSTA, contentType: 'image/jpeg' };
+        process.env.ERDB_LOCAL_BASE = erdbBase;
+
+        const nome = 'kitsu-266_ITA.jpg';
+        rimuoviSePresente(nome);
+
+        // Nessun lucchetto di richiesto: due richieste insieme rendono e scrivono due volte,
+        // e la scrittura è atomica, quindi il file non è mai mezzo.
+        const [a, b] = await Promise.all([
+            request(`/erdb-poster/${nome}`),
+            request(`/erdb-poster/${nome}`)
+        ]);
+        for (const res of [a, b]) {
+            expect(res.status).toBe(200);
+            expect(res.body.equals(JPEG_RISPOSTA)).toBe(true);
+        }
+        expect(fs.readFileSync(path.join(cacheDir, nome)).equals(JPEG_RISPOSTA)).toBe(true);
+        expect(nomiInCartella()).not.toContain(`${nome}.tmp`);
+
+        rimuoviSePresente(nome);
+    });
+});

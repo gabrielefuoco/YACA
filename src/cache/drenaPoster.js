@@ -183,9 +183,18 @@ function _conTimeout(richiesta, ms, url) {
  * atomico sulla stessa partizione, quindi la rotta non serve mai mezzo file. Se il rename
  * fallisce il `.tmp` viene rimosso: meglio un file mancante (l'evento verrà ritentato) di un
  * `.tmp` abbandonato che occupa disco e un giorno qualcuno rinomina per sbaglio.
+ *
+ * Il nome del temporaneo è UNICO per processo e per chiamata (`<file>.<pid>-<n>.tmp`), non un
+ * `.tmp` fisso: due scritture dello stesso file che partono insieme (la rotta che rende un
+ * poster al volo e il drenatore che lo rifà, o due richieste insieme) con un temporaneo
+ * condiviso si ruberebbero il file: la seconda rinomina troverebbe il `.tmp` già sparito
+ * (ENOENT) e il suo utente si prenderebbe un 404. Così ognuno scrive il suo e le due rinomine
+ * competono per il file finale, che è intero per definizione. Il temporaneo resta un `.tmp`
+ * (suffisso finale) se qualcosa va storto, quindi i controlli di igiene lo vedono ancora.
  */
+let _temporanei = 0;
 async function scrivi(target, buffer) {
-    const tmp = `${target}.tmp`;
+    const tmp = `${target}.${process.pid}-${++_temporanei}.tmp`;
     try {
         await fs.promises.writeFile(tmp, buffer);
         await fs.promises.rename(tmp, target);
