@@ -10,6 +10,7 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 EnvironmentFile=-/srv/yaca/.env
+Environment="PATH=/home/gabri/.local/share/mise/installs/node/22/bin:/usr/local/bin:/usr/bin:/bin"
 WorkingDirectory=/srv/yaca
 ExecStart=/bin/bash /srv/yaca/ops/yaca-doppiaggi.sh
 StandardOutput=journal

@@ -32,17 +32,47 @@ SERVICE_DIR="${BASE_DIR}/services/doppiaggi-source"
 CACHE_DIR="${CACHE_DIR:-${SERVICE_DIR}/.cache}"
 mkdir -p "${CACHE_DIR}"
 
-NODE_BIN="$(command -v node || echo /usr/bin/node)"
-if [ ! -x "${NODE_BIN}" ]; then
-  echo "[-] ERRORE: Interprete Node.js non trovato." >&2
+NODE_BIN=""
+for candidate in \
+  "/home/gabri/.local/share/mise/installs/node/22/bin/node" \
+  "/home/gabri/.local/share/mise/installs/node/latest/bin/node" \
+  "$(command -v node 2>/dev/null || true)" \
+  "/usr/local/bin/node" \
+  "/usr/bin/node"; do
+  if [ -n "${candidate}" ] && [ -x "${candidate}" ]; then
+    if "${candidate}" -v >/dev/null 2>&1; then
+      NODE_BIN="${candidate}"
+      break
+    fi
+  fi
+done
+
+if [ -z "${NODE_BIN}" ]; then
+  echo "[-] ERRORE: Interprete Node.js non trovato o non funzionante." >&2
   exit 1
 fi
+
+export PATH="$(dirname "${NODE_BIN}"):${PATH}"
 
 # 4. Bootstrap dipendenze del modulo se mancanti (modulo leggero: solo mongodb)
 if [ ! -d "${SERVICE_DIR}/node_modules/mongodb" ]; then
   echo "[i] Dipendenza 'mongodb' non trovata in ${SERVICE_DIR}. Eseguo npm install..."
-  NPM_BIN="$(command -v npm || echo /usr/bin/npm)"
-  if [ -x "${NPM_BIN}" ]; then
+  NPM_BIN=""
+  for candidate in \
+    "$(dirname "${NODE_BIN}")/npm" \
+    "/home/gabri/.local/share/mise/installs/node/22/bin/npm" \
+    "$(command -v npm 2>/dev/null || true)" \
+    "/usr/local/bin/npm" \
+    "/usr/bin/npm"; do
+    if [ -n "${candidate}" ] && [ -x "${candidate}" ]; then
+      if "${candidate}" -v >/dev/null 2>&1; then
+        NPM_BIN="${candidate}"
+        break
+      fi
+    fi
+  done
+
+  if [ -n "${NPM_BIN}" ]; then
     (cd "${SERVICE_DIR}" && "${NPM_BIN}" install --omit=dev --no-audit --no-fund)
   else
     echo "[-] ERRORE: npm non trovato per installare le dipendenze in ${SERVICE_DIR}." >&2
