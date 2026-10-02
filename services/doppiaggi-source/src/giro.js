@@ -77,7 +77,7 @@ async function scriviConDiff(righe, opts = {}) {
             // l'ultimo giro realmente applicato. (Log esplicito perché è una cosa che a freddo
             // sembra un buco: il file diff è più vecchio del jsonl solo in questo caso.)
             log.error(`[Diff] guardia: il giro non ha scritto, nessun evento. ` +
-                `L'artefatto resta quello dell'ultimo giro scritto (${diffPathFor(opzioniWriter.outputPath || '')}).`);
+                `L'artefatto resta quello dell'ultimo giro scritto (${diffPathFor(scrittura.path)}).`);
         }
         return { ...scrittura, diff: null };
     }
