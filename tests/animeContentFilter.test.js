@@ -7,13 +7,6 @@ jest.mock('../src/catalog/CatalogRouter', () => ({
     routeCatalogRequest: jest.fn()
 }));
 
-
-jest.mock('../src/db/models/StreamBadge', () => ({
-    find: jest.fn().mockReturnValue({
-        lean: jest.fn().mockResolvedValue([])
-    })
-}));
-
 describe('TICKET 13: Filtro dei contenuti anime dentro i cataloghi', () => {
 
     beforeEach(async () => {
