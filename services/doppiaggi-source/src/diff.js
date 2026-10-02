@@ -338,6 +338,10 @@ async function computeDiff(opts = {}) {
  * @param {string} [opts.diffPath] percorso esplicito del `.diff.json`
  * @param {string} [opts.generato] timestamp ISO (default adesso)
  * @param {number} [opts.cap] tetto sui cambi (default 5000)
+ * @param {object} [opts.extra] campi aggiuntivi del chiamante (es. `guardia`, `cambiNonApplicati`).
+ *        Vengono aggiunti, non sostituiti: i contatori derivati da `changes` tornano quelli di
+ *        `changes` **anche dopo** la fusione, perché un artefatto che mente sul numero è peggio di
+ *        un artefatto che non ha i campi che si aspettava.
  * @param {boolean} [opts.quiet=false] non logga
  * @returns {Promise<{written:boolean, path:string|null, cambiati:number, oltreSoglia:boolean, avviso:string|null}>}
  */
@@ -369,6 +373,18 @@ async function writeDiff(esito = {}, opts = {}) {
     if (oltreSoglia) {
         artefatto.avviso = `ATTENZIONE: ${changes.length} cambi in un giro, oltre il tetto di ${cap}. `
             + `Quasi certamente un guasto o un primo giro travestito: il numero sopra è quello reale, non un campione.`;
+    }
+
+    // Campi del chiamante (es. un giro bloccato dalla guardia scrive `guardia: true` e i cambi che
+    // non ha applicato). Aggiunti per ultimo, ma i quattro campi derivati vengono ricalcolati: se
+    // un `extra` contenesse `changes` o `cambiati`, l'invariante "i numeri descrivono `changes`"
+    // deve valere comunque.
+    if (opts.extra && typeof opts.extra === 'object') {
+        Object.assign(artefatto, opts.extra);
+        artefatto.changes = changes;
+        artefatto.cambiati = changes.length;
+        artefatto.diventatiDoppiati = diventatiDoppiati;
+        artefatto.nonPiuDoppiati = nonPiuDoppiati;
     }
 
     fs.mkdirSync(path.dirname(target), { recursive: true });

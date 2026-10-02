@@ -96,6 +96,17 @@ Salva l'output in `.agents/scratch/` (`catalogs_output.txt` o `catalog_state.jso
   - `--nocache`: Bypassa la cache per generare dati freschi
 * **Esecuzione rapida**: `node scripts/fetch_catalogs.js --text --nocache`
 
+### [push-diff-in-coda.js](../scripts/push-diff-in-coda.js)
+Legge `ita_annotations.diff.json` (l'artefatto del diff di doppiaggio scritto da
+`services/doppiaggi-source`) e spinge ogni cambiamento nella **coda degli eventi** (`src/cache/codaEventi.js`):
+i poster composti di un titolo che è diventato (o ha smesso di essere) doppiato vanno rifatti.
+La deduplica è della coda, quindi rilanciare lo script sullo stesso artefatto non raddoppia nulla.
+Un file assente, illeggibile o malformato è una condizione attesa: lo dice e esce con 0 (gira in un timer).
+* **Percorso**: `--file <path>`, altrimenti `ITA_DIFF_PATH`, altrimenti la cartella dei dump
+  (`ITA_DIFF_DIR` → `ITA_ANNOTATIONS_DIR` → `TMDB_DUMP_DIR` → `/data/tmdb` → `.cache/tmdb`)
+* **Opzioni**: `--dry-run` (legge e conta, non accoda), `--help`
+* **Esecuzione**: `node scripts/push-diff-in-coda.js` (o `--file /data/tmdb/ita_annotations.diff.json`)
+
 ### [convert_to_parquet.js](../scripts/convert_to_parquet.js)
 Converte il dump giornaliero JSONL esportato da TMDB in formato compresso Apache Parquet (ZSTD). Questo file alimenta il motore SQL in-memory DuckDB per interrogazioni istantanee.
 * **Esecuzione**: `node scripts/convert_to_parquet.js`

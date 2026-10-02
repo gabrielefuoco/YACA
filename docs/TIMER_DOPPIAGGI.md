@@ -109,6 +109,24 @@ wc -l /var/lib/docker/volumes/yaca_tmdb/_data/ita_annotations.jsonl
 cat /var/lib/docker/volumes/yaca_tmdb/_data/ita_annotations.meta.json
 ```
 
+A ogni giro scritto nasce anche `ita_annotations.diff.json`: **quali titoli hanno cambiato
+doppiaggio** (diventati doppiati / non più doppiati), cioè quali poster composti vanno rifatti.
+È calcolato *prima* della riscrittura del `.jsonl` (è l'unico momento in cui su disco c'è ancora il
+giro precedente) e nel `journalctl` la riga da cercare è `[Diff] N cambi di doppiaggio in questo giro`.
+
+```bash
+# I cambi dell'ultimo giro
+cat /var/lib/docker/volumes/yaca_tmdb/_data/ita_annotations.diff.json
+```
+
+Dal lato dell'app, `scripts/push-diff-in-coda.js` legge quell'artefatto e mette in coda
+(`src/cache/codaEventi.js`) un evento per ogni cambiamento, così i poster vengono ricomposti senza
+aspettare il TTL. È idempotente (a deduplicare è la coda) e si può lanciare anche a mano:
+
+```bash
+cd /srv/yaca && node scripts/push-diff-in-coda.js --file /data/tmdb/ita_annotations.diff.json
+```
+
 ---
 
 ## 6. Disinstallazione
