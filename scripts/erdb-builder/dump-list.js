@@ -131,19 +131,84 @@ function closeDatabase(con, db) {
     });
 }
 
-/** Scrive una riga rispettando la backpressure dello stream. */
-function writeLine(stream, line) {
-    if (stream.write(line)) return null;
-    return new Promise((resolve, reject) => {
-        stream.once('drain', resolve);
-        stream.once('error', reject);
+/**
+ * Un solo listener per gli errori della scrittura, per tutta la durata del giro.
+ *
+ * Attaccarlo qui dentro `writeLine` (cioe' a ogni strozzatura della write stream) accumula:
+ * `stream.once('error', ...)` resta sullo stream anche quando e' 'drain' ad aver risolto
+ * l'attesa, e a ogni riga strozzata ne resta uno. Su una lista vera (oltre 100k righe) Node lo
+ * segnala come MaxListenersExceededWarning e la memoria cresce con il catalogo. Qui si tiene
+ * invece l'errore e lo si ripassa a chi sta aspettando: l'errore non passa in silenzio, cambia
+ * solo *dove* viene ascoltato.
+ */
+function trackWriteErrors(stream) {
+    let failure = null;
+    let waiter = null; // l'attesa in corso (al massimo una: le scritture sono in sequenza)
+
+    stream.on('error', (error) => {
+        failure = error;
+        if (!waiter) return;
+        const inCorso = waiter;
+        waiter = null;
+        inCorso(error);
     });
+
+    return {
+        get error() {
+            return failure;
+        },
+        /** Aspetta che lo stream si svuoti, o l'errore se lo stream muore prima. */
+        waitDrain() {
+            if (failure) return Promise.reject(failure);
+            return new Promise((resolve, reject) => {
+                const onDrain = () => {
+                    waiter = null;
+                    resolve();
+                };
+                // Errore prima del drain: si stacca anche il listener 'drain', cosi' sullo
+                // stream non resta nulla di questa attesa.
+                const onFailure = (error) => {
+                    stream.removeListener('drain', onDrain);
+                    waiter = null;
+                    reject(error);
+                };
+                waiter = onFailure;
+                stream.once('drain', onDrain);
+            });
+        }
+    };
 }
 
-function closeStream(stream) {
+/** Scrive una riga rispettando la backpressure dello stream. */
+function writeLine(stream, line, errors) {
+    if (stream.write(line)) return null;
+    return errors.waitDrain();
+}
+
+/**
+ * Chiude lo stream e aspetta che abbia finito. Anche qui i listener sono due al massimo e non
+ * si accumulano: uno e' quello di `trackWriteErrors`, l'altro sparisce a fine attesa.
+ */
+function closeStream(stream, errors) {
+    if (errors.error) return Promise.reject(errors.error);
     return new Promise((resolve, reject) => {
-        stream.once('error', reject);
-        stream.end(resolve);
+        const cleanup = () => {
+            stream.removeListener('error', onError);
+            stream.removeListener('finish', onFinish);
+        };
+        const onError = (error) => {
+            cleanup();
+            reject(error);
+        };
+        const onFinish = () => {
+            cleanup();
+            // Se lo stream e' gia' rotto, 'finish' non dice niente di buono: l'errore vince.
+            if (errors.error) reject(errors.error);
+            else resolve();
+        };
+        stream.once('error', onError);
+        stream.once('finish', onFinish);
+        stream.end();
     });
 }
 
@@ -236,6 +301,9 @@ async function dump({ parquetDir = DEFAULT_PARQUET_DIR, out } = {}) {
     const db = new duckdb.Database(':memory:');
     const con = db.connect();
     const stream = fs.createWriteStream(tmpOut, { encoding: 'utf8' });
+    // Prende subito l'errore: uno che arriva mentre non c'e' nessuno in ascolto farebbe
+    // crashare il processo invece di fallire con un messaggio.
+    const errors = trackWriteErrors(stream);
 
     try {
         for (const source of SOURCES) {
@@ -255,11 +323,11 @@ async function dump({ parquetDir = DEFAULT_PARQUET_DIR, out } = {}) {
                 }
                 if (entry.badge) conteggio.conBadge += 1;
                 conteggio.totale += 1;
-                const backpressure = writeLine(stream, entryToLine(entry));
+                const backpressure = writeLine(stream, entryToLine(entry), errors);
                 if (backpressure) await backpressure;
             }
         }
-        await closeStream(stream);
+        await closeStream(stream, errors);
     } catch (error) {
         stream.destroy();
         fs.promises.unlink(tmpOut).catch(() => {});
@@ -316,6 +384,9 @@ module.exports = {
     toCatalogItem,
     rowToEntry,
     entryToLine,
+    trackWriteErrors,
+    writeLine,
+    closeStream,
     buildSummary,
     buildSelect,
     parseArgs,

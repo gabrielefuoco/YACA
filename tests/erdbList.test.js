@@ -1,10 +1,45 @@
 const { spawnSync } = require('child_process');
+const { EventEmitter } = require('events');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
 const dumpList = require('../scripts/erdb-builder/dump-list');
 const { getErdbId } = require('../src/catalog/formatters/StremioFormatter');
+
+/**
+ * Runner che passa il dump ma segna gli avvisi di Node. Il warning del leak di listener
+ * (MaxListenersExceededWarning) arriva su `process.on('warning')`: e' l'unica traccia del difetto,
+ * quindi il test lo intercetta li' invece di fidarsi dello stderr.
+ */
+const WARNING_RUNNER = `
+    const avvisi = [];
+    process.on('warning', (avviso) => avvisi.push(avviso.name + ': ' + avviso.message));
+    const dumpList = require(process.argv[1]);
+    dumpList.main(process.argv.slice(2)).then((riepilogo) => {
+        setTimeout(() => {
+            for (const avviso of avvisi) console.error('AVVISO ' + avviso);
+            process.exit(riepilogo ? 0 : 1);
+        });
+    }).catch((err) => { console.error(err && err.stack || err); process.exit(2); });
+`;
+
+/**
+ * Stream finto che simula la backpressure: `write` dice sempre "pieno" e il 'drain' arriva al
+ * turno successivo, come fa una write stream vera sotto carico.
+ */
+function fakeStrozzatoStream() {
+    const stream = new EventEmitter();
+    stream.write = () => {
+        setTimeout(() => stream.emit('drain'), 0);
+        return false;
+    };
+    stream.end = (callback) => {
+        if (callback) callback();
+        setTimeout(() => stream.emit('finish'), 0);
+    };
+    return stream;
+}
 
 const DUMP_SCRIPT = path.resolve(__dirname, '../scripts/erdb-builder/dump-list.js');
 
@@ -25,8 +60,15 @@ const FIXTURES_SCRIPT = `
     const run = (sql) => new Promise((resolve, reject) => con.exec(sql, (e) => e ? reject(e) : resolve()));
     (async () => {
         if (conIta) {
+            if (process.argv[3] === 'tanti') {
+                // 20k righe: abbastanza da far strutturare la write stream piu' volte (ogni
+                // strozzatura aggiungeva un listener di errore che non se ne andava piu').
+                await run("COPY (SELECT i::BIGINT AS id, (i % 3 = 0) AS ita FROM generate_series(1, 20000) t(i)) TO '" + q(path.join(dir, 'movies.parquet')) + "' (FORMAT PARQUET)");
+                await run("COPY (SELECT i::BIGINT AS id, (i % 3 = 0) AS ita FROM generate_series(20001, 24000) t(i)) TO '" + q(path.join(dir, 'tv.parquet')) + "' (FORMAT PARQUET)");
+            } else {
             await run("COPY (SELECT * FROM (VALUES (11::BIGINT, NULL), (27205::BIGINT, true), (157336::BIGINT, false)) t(id, ita)) TO '" + q(path.join(dir, 'movies.parquet')) + "' (FORMAT PARQUET)");
             await run("COPY (SELECT * FROM (VALUES (1399::BIGINT, true), (1400::BIGINT, NULL)) t(id, ita)) TO '" + q(path.join(dir, 'tv.parquet')) + "' (FORMAT PARQUET)");
+            }
         } else {
             await run("COPY (SELECT * FROM (VALUES (27205::BIGINT, 'Inception')) t(id, title)) TO '" + q(path.join(dir, 'movies.parquet')) + "' (FORMAT PARQUET)");
             await run("COPY (SELECT * FROM (VALUES (1399::BIGINT, 'Bob Ross')) t(id, name)) TO '" + q(path.join(dir, 'tv.parquet')) + "' (FORMAT PARQUET)");
@@ -35,13 +77,37 @@ const FIXTURES_SCRIPT = `
     })().catch((err) => { console.error(err); process.exit(1); });
 `;
 
-function makeFixtures(dir, { withIta = true } = {}) {
-    const result = spawnSync(process.execPath, ['-e', FIXTURES_SCRIPT, dir, withIta ? 'ita' : 'no-ita'], { encoding: 'utf8' });
+function makeFixtures(dir, { withIta = true, tante = false } = {}) {
+    const result = spawnSync(
+        process.execPath,
+        ['-e', FIXTURES_SCRIPT, dir, withIta ? 'ita' : 'no-ita', tante ? 'tanti' : 'pochi'],
+        { encoding: 'utf8' }
+    );
     if (result.status !== 0) throw new Error(`fixture non create: ${result.stderr}`);
 }
 
 function runDump(args) {
     return spawnSync(process.execPath, [DUMP_SCRIPT, ...args], { encoding: 'utf8' });
+}
+
+/** Gira il dump in un processo che riporta anche gli avvisi di Node. */
+function runDumpConAvvisi(args) {
+    return spawnSync(process.execPath, ['-e', WARNING_RUNNER, DUMP_SCRIPT, ...args], { encoding: 'utf8' });
+}
+
+/** Raccoglie i warning emessi mentre gira `fn`, senza sporcare il test runner. */
+async function raccogliAvvisi(fn) {
+    const avvisi = [];
+    const onWarning = (avviso) => avvisi.push(avviso);
+    process.on('warning', onWarning);
+    try {
+        await fn();
+        // L'avviso e' differito al tick successivo: senza questo await il test passerebbe sempre.
+        await new Promise((resolve) => setTimeout(resolve));
+    } finally {
+        process.removeListener('warning', onWarning);
+    }
+    return avvisi;
 }
 
 function readList(out) {
@@ -202,5 +268,97 @@ describe('argomenti CLI', () => {
 
     test('senza --out la funzione rifiuta di partire', async () => {
         await expect(dumpList.dump({ parquetDir: dumpList.DEFAULT_PARQUET_DIR })).rejects.toThrow(/--out/);
+    });
+});
+describe('scrittura del file: i listener non si accumulano', () => {
+    test('50 strozzature di backpressure lasciano un solo listener di errore', async () => {
+        const stream = fakeStrozzatoStream();
+        const errors = dumpList.trackWriteErrors(stream);
+
+        const avvisi = await raccogliAvvisi(async () => {
+            for (let i = 0; i < 50; i += 1) {
+                await dumpList.writeLine(stream, `{"erdbId":"tmdb:movie:${i}"}\n`, errors);
+            }
+        });
+
+        // Prima era uno per riga strozzata: `once('error')` resta sullo stream anche quando e'
+        // 'drain' ad aver risolto l'attesa, e Node segnalava MaxListenersExceededWarning.
+        expect(stream.listenerCount('error')).toBe(1);
+        expect(stream.listenerCount('drain')).toBe(0);
+        expect(avvisi.filter((avviso) => avviso.name === 'MaxListenersExceededWarning')).toEqual([]);
+    });
+
+    test('chiudere lo stream non aggiunge listener permanenti', async () => {
+        const stream = fakeStrozzatoStream();
+        const errors = dumpList.trackWriteErrors(stream);
+
+        await dumpList.closeStream(stream, errors);
+
+        expect(stream.listenerCount('error')).toBe(1);
+        expect(stream.listenerCount('finish')).toBe(0);
+        expect(stream.listenerCount('drain')).toBe(0);
+    });
+
+    test('su 24mila righe il giro non emette nessun avviso di Node', () => {
+        let dataDir;
+        try {
+            dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaca-erdb-list-avvisi-'));
+            makeFixtures(dataDir, { tante: true });
+            const out = path.join(dataDir, 'titoli.jsonl');
+            const result = runDumpConAvvisi(['--parquet', dataDir, '--out', out]);
+
+            expect(result.stderr).not.toMatch(/AVVISO/);
+            expect(result.stderr).not.toMatch(/MaxListenersExceededWarning/);
+            expect(result.status).toBe(0);
+            expect(fs.readFileSync(out, 'utf8').trim().split('\n')).toHaveLength(24000);
+        } finally {
+            if (dataDir) fs.rmSync(dataDir, { recursive: true, force: true });
+        }
+    });
+});
+
+describe('un errore di scrittura non passa in silenzio', () => {
+    test('errore durante l\'attesa di drain: la promise rigetta con quell\'errore', async () => {
+        const stream = new EventEmitter();
+        stream.write = () => false; // il buffer e' pieno e il drain non arriva
+        stream.end = (callback) => { if (callback) callback(); };
+        const errors = dumpList.trackWriteErrors(stream);
+
+        const attesa = dumpList.writeLine(stream, '{"erdbId":"tmdb:movie:1"}\n', errors);
+        const guasto = new Error('EACCES: permission denied');
+        stream.emit('error', guasto);
+
+        await expect(attesa).rejects.toThrow('EACCES');
+        expect(errors.error).toBe(guasto);
+        // Niente orfoni: sullo stream non resta un 'drain' che non arrivera\' mai.
+        expect(stream.listenerCount('drain')).toBe(0);
+    });
+
+    test('closeStream su uno stream rotto rigetta invece di risolversi', async () => {
+        const stream = new EventEmitter();
+        stream.write = () => true;
+        stream.end = () => setTimeout(() => stream.emit('error', new Error('ENOSPC: spazio esaurito')), 0);
+        const errors = dumpList.trackWriteErrors(stream);
+
+        await expect(dumpList.closeStream(stream, errors)).rejects.toThrow(/ENOSPC/);
+    });
+
+    test('cartella al posto del file: il giro fallisce e lo dice', () => {
+        let dataDir;
+        try {
+            dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaca-erdb-list-guasto-'));
+            makeFixtures(dataDir);
+            const out = path.join(dataDir, 'titoli.jsonl');
+            // dump-list scrive su <out>.tmp: e\' li\' che mettiamo la cartella.
+            fs.mkdirSync(`${out}.tmp`);
+
+            const result = runDump(['--parquet', dataDir, '--out', out]);
+
+            expect(result.status).toBe(1);
+            expect(result.stderr).toMatch(/Errore: (EISDIR|EACCES|EPERM)/);
+            expect(fs.existsSync(out)).toBe(false);
+        } finally {
+            if (dataDir) fs.rmSync(dataDir, { recursive: true, force: true });
+        }
     });
 });
