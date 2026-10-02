@@ -17,12 +17,38 @@ const ANIBRIDGE_URL = 'https://github.com/anibridge/anibridge-mappings/releases/
 const FRIBB_MINI_URL = 'https://raw.githubusercontent.com/Fribb/anime-lists/master/anime-list-mini.json';
 const SYNC_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 ore
 
+/**
+ * Motivi che `resolveKitsuDaTmdbId` può restituire. Sono stringhe corte e stabili:
+ * ci rispondono i log e i test, quindi non vanno riformulate.
+ *
+ *  - MAPPATO            c'è un id Kitsu: la mappa del titolo c'è.
+ *  - NON_E_UN_ANIME     l'id non è un anime: il chiamante può saltarlo in silenzio.
+ *  - ANIME_SENZA_KITSU  è un anime (Anibridge/certificati) ma questo store non ha
+ *                       ancora il suo Kitsu: NON è "non è un anime", è una nostra
+ *                       lacuna (ricalcolo da fare, non da dimenticare).
+ *  - STORE_NON_PRONTO   la mappa non è ancora caricata: errore transitorio nostro,
+ *                       da ritentare, non da confondere con "non è un anime".
+ *  - TIPO_NON_GESTITO   `tipo` diverso da movie/tv: evento malformato.
+ *  - ID_MANCANTE        l'id TMDB è vuoto o non utilizzabile.
+ */
+const MOTIVI_RESOLVE_KITSU = Object.freeze({
+    MAPPATO: 'mappato',
+    NON_E_UN_ANIME: 'non_e_un_anime',
+    ANIME_SENZA_KITSU: 'anime_senza_kitsu',
+    STORE_NON_PRONTO: 'store_non_pronto',
+    TIPO_NON_GESTITO: 'tipo_non_gestito',
+    ID_MANCANTE: 'id_mancante'
+});
+
 class AnimeMappingStore {
     constructor() {
         this.fribbIndex = { anidb: new Map(), anilist: new Map(), mal: new Map() };
         this.tmdbToAnimeNode = new Map();
         this.kitsuToTmdb = new Map();
         this.tmdbToKitsuMovie = new Map();
+        // Indice PIATTO tmdbId -> kitsuId, senza distinzione movie/tv: serve a chi
+        // ha solo un id TMDB e vuole un id Kitsu (vedi resolveKitsuDaTmdbId).
+        this.tmdbToKitsu = new Map();
         this.malToTmdb = new Map();
         this.anibridgeTmdbIds = new Set();
         this.certifiedTmdbIds = new Set();
@@ -35,6 +61,7 @@ class AnimeMappingStore {
         
         this.isReady = false;
         this.syncInterval = null;
+        this.motiviResolveKitsu = MOTIVI_RESOLVE_KITSU;
     }
 
     async init() {
@@ -152,6 +179,11 @@ class AnimeMappingStore {
                 combined.add(String(id));
             }
         }
+        if (this.tmdbToKitsu) {
+            for (const id of this.tmdbToKitsu.keys()) {
+                combined.add(String(id));
+            }
+        }
         if (this.certifiedTmdbIds) {
             for (const id of this.certifiedTmdbIds) {
                 combined.add(String(id));
@@ -164,6 +196,7 @@ class AnimeMappingStore {
         const newIndex = { anidb: new Map(), anilist: new Map(), mal: new Map() };
         const newKitsuToTmdb = new Map();
         const newTmdbToKitsuMovie = new Map();
+        const newTmdbToKitsu = new Map();
         const newMalToTmdb = new Map();
         
         for (const item of fribbData) {
@@ -193,6 +226,12 @@ class AnimeMappingStore {
                     if (tmdbIds.length > 0) {
                         const primaryTmdb = String(tmdbIds[0]);
                         newKitsuToTmdb.set(String(item.kitsu_id), primaryTmdb);
+                        // Indice piatto: TUTTE le varianti TMDB del gruppo (movie e tv
+                        // insieme) tornano al loro Kitsu. È l'unico modo che ha chi ha
+                        // solo l'id TMDB dell'evento, senza stagione né episodio.
+                        for (const tmdbId of tmdbIds) {
+                            newTmdbToKitsu.set(String(tmdbId), item.kitsu_id);
+                        }
                         if (item.mal_id) {
                             newMalToTmdb.set(String(item.mal_id), primaryTmdb);
                         }
@@ -208,6 +247,7 @@ class AnimeMappingStore {
         this.fribbIndex = newIndex;
         this.kitsuToTmdb = newKitsuToTmdb;
         this.tmdbToKitsuMovie = newTmdbToKitsuMovie;
+        this.tmdbToKitsu = newTmdbToKitsu;
         this.malToTmdb = newMalToTmdb;
         this._rebuildAnimeTmdbIds();
     }
@@ -395,6 +435,74 @@ class AnimeMappingStore {
 
     resolveKitsuFromMal(malId) {
         return this.fribbIndex.mal.get(String(malId));
+    }
+
+    /**
+     * Risolve l'id Kitsu di un titolo a partire dal solo id TMDB di un evento
+     * (la coda non ha stagione né episodio, quindi `resolveKitsu` non è utilizzabile).
+     *
+     * Restituisce un oggetto CON IL MOTIVO, non un id nudo: `resolveKitsuMovie` e
+     * `isAnimeTmdbId` rispondono `null` anche quando lo store non è ancora pronto,
+     * e per chi chiama "non è un anime" e "la mappa non è ancora caricata" diventerebbero
+     * la stessa cosa — con 8.263 poster dimenticati in silenzio. Qui i due casi sono
+     * separati da `motivo`.
+     *
+     * @param {string|number} tmdbId ID TMDB (accetta anche "tmdb:tv:123" e "123:1")
+     * @param {string} tipo 'movie' o 'tv'
+     * @returns {{kitsuId: string|null, motivo: string, tmdbId: string|null}}
+     *   `motivo` è uno di MOTIVI_RESOLVE_KITSU.
+     */
+    resolveKitsuDaTmdbId(tmdbId, tipo) {
+        const tipoNorm = tipo === null || tipo === undefined ? '' : String(tipo).trim().toLowerCase();
+        if (tipoNorm !== 'movie' && tipoNorm !== 'tv') {
+            return { kitsuId: null, motivo: MOTIVI_RESOLVE_KITSU.TIPO_NON_GESTITO, tmdbId: this._tmdbIdPuro(tmdbId) };
+        }
+
+        const idPuro = this._tmdbIdPuro(tmdbId);
+        if (!idPuro) {
+            return { kitsuId: null, motivo: MOTIVI_RESOLVE_KITSU.ID_MANCANTE, tmdbId: null };
+        }
+
+        // Ordine deliberato: un `tipo` malformato è un evento malformato anche a store
+        // scarico, quindi si dice subito; ma uno store non pronto è un problema nostro,
+        // non del titolo, e va distinto da "non è un anime".
+        if (!this.isReady) {
+            return { kitsuId: null, motivo: MOTIVI_RESOLVE_KITSU.STORE_NON_PRONTO, tmdbId: idPuro };
+        }
+
+        if (tipoNorm === 'movie') {
+            const kitsuMovie = this.resolveKitsuMovie(idPuro);
+            if (kitsuMovie !== null && kitsuMovie !== undefined && kitsuMovie !== '') {
+                return { kitsuId: String(kitsuMovie), motivo: MOTIVI_RESOLVE_KITSU.MAPPATO, tmdbId: idPuro };
+            }
+        } else {
+            const kitsuTv = this.tmdbToKitsu?.get(idPuro);
+            if (kitsuTv !== null && kitsuTv !== undefined && kitsuTv !== '') {
+                return { kitsuId: String(kitsuTv), motivo: MOTIVI_RESOLVE_KITSU.MAPPATO, tmdbId: idPuro };
+            }
+        }
+
+        // Non c'è un Kitsu in mappa. Ma se l'id è comunque riconosciuto come anime
+        // (Anibridge, overrides certificati) non è "non è un anime": è un anime di cui
+        // lo store non sa ancora il Kitsu. Motivo diverso, così il chiamante non lo
+        // liquida come "titolo normale da saltare".
+        if (this.isAnimeTmdbId(idPuro)) {
+            return { kitsuId: null, motivo: MOTIVI_RESOLVE_KITSU.ANIME_SENZA_KITSU, tmdbId: idPuro };
+        }
+
+        return { kitsuId: null, motivo: MOTIVI_RESOLVE_KITSU.NON_E_UN_ANIME, tmdbId: idPuro };
+    }
+
+    /**
+     * Riduce un id TMDB alla sua parte "nuda": accetta "123", 123, "tmdb:tv:123",
+     * "123:1" e ne ricava "123" (stessa normalizzazione di isAnimeTmdbId).
+     * @param {string|number} id
+     * @returns {string} '' se l'id non contiene niente di utilizzabile
+     */
+    _tmdbIdPuro(id) {
+        if (id === null || id === undefined || id === '') return '';
+        const clean = String(id).replace(/^tmdb:(tv:|movie:)?/i, '').split(':')[0].trim();
+        return clean;
     }
 
     /**
