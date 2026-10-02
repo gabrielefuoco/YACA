@@ -757,6 +757,31 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
 // gli "esiste" e corto per i "non c'è", così un 404 non costa 8 secondi di timeout a ogni render.
 const ERDB_POSITIVE_TTL_MS = 24 * 60 * 60 * 1000;
 const ERDB_NEGATIVE_TTL_MS = 6 * 60 * 60 * 1000;
+
+// PNG trasparente 1x1: risposta "onesta" quando non abbiamo né il poster ERDB né il
+// fallback TMDB. Stremio lo mostra come immagine vuota e, con un TTL corto, torna a
+// chiedere tra pochi minuti invece di congelare il buco a video.
+const TRANSPARENT_PNG_1X1 = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==',
+    'base64'
+);
+const FALLBACK_PLACEHOLDER_MAX_AGE_S = 300;
+
+function sendPlaceholderImage(res) {
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', `public, max-age=${FALLBACK_PLACEHOLDER_MAX_AGE_S}`);
+    return res.send(TRANSPARENT_PNG_1X1);
+}
+
+// Se il fallback manca comunque non dobbiamo reindirizzare a un URL vuoto: meglio
+// l'immagine segnaposto. Quando `fallback` c'è il comportamento è identico a prima.
+function redirectToFallbackOrPlaceholder(res, fallback) {
+    if (fallback) {
+        return res.redirect(302, fallback);
+    }
+    return sendPlaceholderImage(res);
+}
+
 const erdbHeadCache = new CacheManager('erdb_head', {
     ramMax: 2000,
     ramTtlMs: ERDB_POSITIVE_TTL_MS,
@@ -766,13 +791,21 @@ const erdbHeadCache = new CacheManager('erdb_head', {
 // Fallback route for ERDB posters that might 404 (e.g. unmapped Kitsu items)
 router.get('/images/fallback', async (req, res) => {
     const { url, fallback } = req.query;
-    if (!url || !fallback) {
-        return res.status(400).send('Missing url or fallback parameter');
+
+    // Questa rotta non deve MAI rispondere 4xx/5xx: il client Stremio mette in cache
+    // l'errore e il buco a video resta nero per sempre (172 titoli su 117.006 non si
+    // riparavano più). Se manca `url` ma c'è `fallback`, si reindirizza al fallback
+    // come quando `url` esiste; se mancano entrambi, si manda un'immagine valida.
+    if (!url) {
+        if (fallback) {
+            return res.redirect(302, fallback);
+        }
+        return sendPlaceholderImage(res);
     }
 
     const cached = await erdbHeadCache.get(url).catch(() => null);
     if (cached && typeof cached.ok === 'boolean') {
-        return res.redirect(302, cached.ok ? url : fallback);
+        return cached.ok ? res.redirect(302, url) : redirectToFallbackOrPlaceholder(res, fallback);
     }
 
     try {
@@ -784,7 +817,7 @@ router.get('/images/fallback', async (req, res) => {
         // Non esiste (404) o timeout: memorizzato in negativo, così non si ritenta a ogni render
         await erdbHeadCache.set(url, { ok: false }, ERDB_NEGATIVE_TTL_MS).catch(() => {});
         console.warn(`[Fallback] ERDB URL failed: ${url} (${err.message}). Using TMDB fallback...`);
-        res.redirect(302, fallback);
+        redirectToFallbackOrPlaceholder(res, fallback);
     }
 });
 
