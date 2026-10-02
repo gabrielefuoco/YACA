@@ -24,6 +24,7 @@ const stremioRoutes = require('./src/api/stremio');
 const tmdbRoutes = require('./src/api/tmdb');
 const adminRoutes = require('./src/api/admin');
 const catalogRoutes = require('./src/api/catalog');
+const registerStaticPostersRoute = require('./src/api/staticPosters');
 // Connessione MongoDB
 connectDB();
 
@@ -83,6 +84,9 @@ const staticOptions = {
 };
 app.use(express.static(path.join(__dirname, 'public'), staticOptions));
 app.use(express.static(path.join(__dirname, 'frontend', 'out'), staticOptions));
+
+// 2b. POSTER ERDB GIÀ COMPOSTI (serviti dalla cartella ERDB_CACHE_DIR, senza sharp)
+registerStaticPostersRoute(app);
 
 // 3. STREMIO ADDON ROUTES
 app.use('/', stremioRoutes);
