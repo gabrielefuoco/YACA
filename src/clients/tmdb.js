@@ -23,6 +23,7 @@ const {
 const { rateLimitedMap } = require('../utils/rateLimiter');
 const { generateRequestHash } = require('../utils/requestHash');
 const { logError } = require('../utils/logger');
+const { tmdbBudget, TMDB_CATEGORIES } = require('../utils/tmdbBudget');
 
 
 const CacheManager = require('../cache/CacheManager');
@@ -52,6 +53,24 @@ const createTmdbClient = (apiKey) => {
             region: DEFAULT_REGION
         },
         timeout: 20000
+    });
+
+    client.interceptors.request.use((config) => {
+        const category = config._category || tmdbBudget.determineCategory(config.url, config);
+        const budgetCheck = tmdbBudget.checkBudget(category, config.url);
+        if (!budgetCheck.allowed) {
+            config.adapter = async () => ({
+                data: null,
+                status: 200,
+                statusText: 'OK (TmdbBudget cap exceeded - soft degradation)',
+                headers: {},
+                config,
+                isBudgetSkipped: true
+            });
+            return config;
+        }
+        tmdbBudget.recordCall(category, config.url);
+        return config;
     });
 
     client.interceptors.response.use(res => res, async (err) => {
@@ -850,5 +869,7 @@ module.exports = {
     getTmdbIdByName,
     resolveImdbId,
     fetchTmdbEpisodes,
-    prioritizeLocalizedImages
+    prioritizeLocalizedImages,
+    tmdbBudget,
+    TMDB_CATEGORIES
 };
