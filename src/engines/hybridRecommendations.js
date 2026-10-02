@@ -92,22 +92,22 @@ function getHeroCatalogId(slug, mediaType) {
     return `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`;
 }
 
-function normalizeConfigVersion(configVersion) {
-    return configVersion === undefined || configVersion === null
-        ? 'unversioned'
-        : String(configVersion);
+// La chiave NON contiene `configVersion`, ed è una decisione misurata, non un'omissione.
+// `configVersion` è un nanoid rigenerato a ogni salvataggio della configurazione: rimetterlo qui
+// significa orfanare TUTTA la cache hero a ogni salvataggio che non c'entra niente. In produzione
+// il 02/10/2026: 18 tasti su 23 erano orfani, la stessa coppia utente+profilo+tipo ricostruita 9
+// volte — ognuna da 21-42 secondi.
+// A proteggere la cache bastano: il `context` (l'id del profilo attivo, che cambia quando cambia
+// il profilo), `kidsMode`, i `typeSelectors` e `HERO_CACHE_KEY_VERSION` per i hero — che è
+// l'interruttore giusto da alzare a mano quando cambia il modo in cui si costruiscono.
+function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, typeSelectors }) {
+    const animeSuffix = typeSelectors?.anime ? `_a_${typeSelectors.anime}` : '';
+    return `${userId}_${context}_${catalogId}${kidsMode ? '_kids' : ''}${animeSuffix}`;
 }
 
-function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, configVersion, typeSelectors }) {
-    const version = normalizeConfigVersion(configVersion);
+function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors }) {
     const animeSuffix = typeSelectors?.anime ? `_a_${typeSelectors.anime}` : '';
-    return `${userId}_${context}_${catalogId}_cv${encodeURIComponent(version)}${kidsMode ? '_kids' : ''}${animeSuffix}`;
-}
-
-function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, configVersion, typeSelectors }) {
-    const version = normalizeConfigVersion(configVersion);
-    const animeSuffix = typeSelectors?.anime ? `_a_${typeSelectors.anime}` : '';
-    return `${userId}_${context}_heroes_${HERO_CACHE_KEY_VERSION}_${mediaType}_cv${encodeURIComponent(version)}${kidsMode ? '_kids' : ''}${animeSuffix}`;
+    return `${userId}_${context}_heroes_${HERO_CACHE_KEY_VERSION}_${mediaType}${kidsMode ? '_kids' : ''}${animeSuffix}`;
 }
 
 function compareContentIds(a, b) {
@@ -323,11 +323,10 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     const isKidsMode = getActiveKidsMode(userConfig, context);
     const typeSelectors = getActiveTypeSelectors(userConfig, context);
     const effectiveTypeSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
-    const configVersion = userConfig?.configVersion ?? userConfig?.config?.configVersion;
     const heroInfo = getHeroCatalogInfo(catalogId);
     const cacheKey = heroInfo
-        ? buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode: isKidsMode, configVersion, typeSelectors })
-        : buildRecommendationCacheKey({ userId, context, catalogId, kidsMode: isKidsMode, configVersion, typeSelectors });
+        ? buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode: isKidsMode, typeSelectors })
+        : buildRecommendationCacheKey({ userId, context, catalogId, kidsMode: isKidsMode, typeSelectors });
 
     console.log(`[Hybrid Debug] getHybridCatalog called with catalogId=${catalogId}, userId=${userId}, context=${context}`);
     console.log(`[Hybrid Debug] profile loaded: ${!!profile}, isKidsMode=${isKidsMode}, cacheKey=${cacheKey}`);
