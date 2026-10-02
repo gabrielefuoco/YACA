@@ -21,12 +21,19 @@
  * 3. **Nel log c'è il numero di cambi**: è la riga che l'operatore guarda dopo un timer. Sta
  *    accanto alle altre del giro (`[Writer]`, `[Anime]`), non in un file a parte.
  *
+ * Sul `diff.js` si è aggiunto solo un campo `extra` in `writeDiff` (additivo, e i contatori
+ * derivati tornano quelli di `changes`): serve perché un giro bloccato dalla guardia debba poter
+ * scrivere un artefatto **vuoto ma marcato**, e quella forma non era esprimibile prima.
+ *
  * Il modulo è volutamente piccolo e non sa niente di scraping, Mongo o catalogo: fa da ponte fra
  * `writer.js` e `diff.js`, e come tale si può provare da solo (`tests/giro.test.js`).
  */
 
 const { toRows, writeAnnotations } = require('./writer');
-const { computeDiff, writeDiff, diffPathFor } = require('./diff');
+const { computeDiff, writeDiff } = require('./diff');
+
+/** Perché l'artefatto è vuoto: va detto dentro il file, non solo nel log. */
+const MOTIVO_GUARDIA = 'il giro non ha scritto (i true calano oltre la soglia): nessun doppiaggio è cambiato';
 
 /**
  * Scrive le annotazioni del giro e, se la scrittura è avvenuta, il diff con il giro precedente.
@@ -52,6 +59,8 @@ async function scriviConDiff(righe, opts = {}) {
     // ---- 1. il diff, PRIMA che il writer tocchi il file -------------------------------
     // `previousPath` è il percorso che verrà sovrascritto: adesso, e solo adesso, è il giro
     // precedente. Se il file non esiste, `computeDiff` lo dichiara primo giro e non produce eventi.
+    // In **dry-run non viene chiamato**: un giro che non scrive non produce eventi, e in dry-run non
+    // si tocca nessun file.
     let diff = null;
     if (!opzioniWriter.dryRun) {
         try {
@@ -71,15 +80,58 @@ async function scriviConDiff(righe, opts = {}) {
 
     // ---- 3. l'artefatto, solo se il giro ha davvero scritto ----------------------------
     if (!scrittura.written) {
-        if (scrittura.reason === 'guard') {
-            // Il file vecchio è ancora lì: nessun doppiaggio è cambiato, nessun poster da rifare.
-            // L'artefatto non viene toccato: quello sul disco è il diff del giro *scritto*, che è
-            // l'ultimo giro realmente applicato. (Log esplicito perché è una cosa che a freddo
-            // sembra un buco: il file diff è più vecchio del jsonl solo in questo caso.)
-            log.error(`[Diff] guardia: il giro non ha scritto, nessun evento. ` +
-                `L'artefatto resta quello dell'ultimo giro scritto (${diffPathFor(scrittura.path)}).`);
+        // Dry-run: nessun file toccato, nessun diff calcolato. È l'unico motivo per cui qui si
+        // torna senza scrivere niente.
+        if (scrittura.reason !== 'guard') return { ...scrittura, diff: null };
+
+        // Guardia. L'artefatto è il **digest di quello che c'è su disco adesso**, e su disco non è
+        // cambiato niente: quindi `changes: []`. Lasciare lì l'artefatto del giro precedente
+        // significherebbe ripubblicare domani i suoi eventi — e il giorno dopo
+        // `push-diff-in-coda.js` lo farebbe davvero, perché la coda non ha memoria di averli già
+        // serviti. La cronologia di un giro vive nel log, non in questo file.
+        //
+        // I cambi che il giro *avrebbe* applicato non si perdono e non si nascondo: stanno in
+        // `cambiNonApplicati`, fuori dalla lista che alimenta la coda, col perché accanto.
+        const nonApplicati = diff && Array.isArray(diff.changes) ? diff.changes : null;
+        let artefatto = null;
+        try {
+            artefatto = await writeDiff({ changes: [], primoGiro: false }, {
+                outputPath: scrittura.path,
+                quiet: true,
+                extra: {
+                    guardia: true,
+                    motivo: MOTIVO_GUARDIA,
+                    cambiNonApplicati: nonApplicati,
+                    conteggioNonApplicati: nonApplicati ? nonApplicati.length : null,
+                    diffNonCalcolato: diff === null
+                }
+            });
+        } catch (err) {
+            log.warn(`[Diff] artefatto di guardia non scritto (${err.message}): nessun evento, nessuna notizia.`);
         }
-        return { ...scrittura, diff: null };
+
+        const quanti = nonApplicati ? nonApplicati.length : null;
+        log.error(`[Diff] guardia: il giro NON ha scritto (${scrittura.reason}), nessun evento. ` +
+            `Il file delle annotazioni è ancora quello di prima e l'artefatto è azzerato` +
+            (quanti === null
+                ? ' (il diff di questo giro non era calcolabile).'
+                : ` (i ${quanti} cambi non applicati sono in ${artefatto ? artefatto.path : '?'} → cambiNonApplicati).`));
+
+        return {
+            ...scrittura,
+            diff: {
+                changes: [],
+                cambiati: 0,
+                diventatiDoppiati: 0,
+                nonPiuDoppiati: 0,
+                primoGiro: false,
+                oltreSoglia: false,
+                guardia: true,
+                cambiNonApplicati: quanti,
+                diffNonCalcolato: diff === null,
+                path: artefatto ? artefatto.path : null
+            }
+        };
     }
 
     if (!diff) {

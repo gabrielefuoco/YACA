@@ -108,7 +108,7 @@ test('giro - nel log del giro c\'è il numero di cambi', async () => {
     assert.match(ultimoGiro.testo, /non più doppiati: 1/);
 });
 
-test('giro - la guardia bloccata non produce eventi e non tocca l\'artefatto', async () => {
+test('giro - la guardia bloccata azzera l\'artefatto: nessun evento, e i cambi scartati restano visibili', async () => {
     const dir = tempDir();
     const out = path.join(dir, 'ita_annotations.jsonl');
     const log = logFinto();
@@ -119,7 +119,6 @@ test('giro - la guardia bloccata non produce eventi e non tocca l\'artefatto', a
     assert.equal(primo.written, true);
 
     const filePrima = fs.readFileSync(out, 'utf8');
-    const artefattoPrima = fs.readFileSync(diffPathFor(out), 'utf8');
 
     // Giro con un crollo dei doppiati: il writer lo blocca (sotto il -2%).
     const poche = [riga('movie', 1, true)];
@@ -127,17 +126,59 @@ test('giro - la guardia bloccata non produce eventi e non tocca l\'artefatto', a
 
     assert.equal(secondo.written, false);
     assert.equal(secondo.reason, 'guard');
-    assert.equal(secondo.diff, null, 'un giro che non ha scritto non genera eventi');
 
     // Il file delle annotazioni è quello vecchio: nessun doppiaggio è cambiato.
     assert.equal(fs.readFileSync(out, 'utf8'), filePrima);
     assert.equal(JSON.parse(fs.readFileSync(metaPathFor(out), 'utf8')).counts.true, 20);
-    // E l'artefatto è ancora quello dell'ultimo giro **scritto**: non viene inventato un diff
-    // per un giro che non è esistito.
-    assert.equal(fs.readFileSync(diffPathFor(out), 'utf8'), artefattoPrima);
+
+    // L'artefatto è il digest di quello che c'è su disco ADESSO: nessun cambiamento, quindi zero
+    // eventi. Lasciare il diff del giro precedente farebbe ripubblicare a `push-diff-in-coda.js`
+    // (il giorno dopo) eventi vecchi, che la coda non ricorda di aver già servito.
+    const artefatto = JSON.parse(fs.readFileSync(diffPathFor(out), 'utf8'));
+    assert.deepEqual(artefatto.changes, [], 'la lista che alimenta la coda è vuota');
+    assert.equal(artefatto.cambiati, 0);
+    assert.equal(artefatto.guardia, true);
+    assert.match(artefatto.motivo, /nessun doppiaggio è cambiato/);
+
+    // I 19 titoli che sarebbero spariti non sono persi: sono in un campo separato, dichiarato.
+    assert.equal(artefatto.conteggioNonApplicati, 19);
+    assert.equal(artefatto.cambiNonApplicati.length, 19);
+    assert.ok(artefatto.cambiNonApplicati.every((c) => c.badge === null));
+    assert.equal(artefatto.diffNonCalcolato, false);
+
+    const esito = secondo.diff;
+    assert.equal(esito.guardia, true);
+    assert.equal(esito.cambiati, 0);
+    assert.equal(esito.changes.length, 0, 'un giro che non ha scritto non genera eventi');
+    assert.equal(esito.cambiNonApplicati, 19);
+    assert.equal(esito.path, diffPathFor(out));
 
     const avviso = log.voci.find((v) => v.livello === 'error' && v.testo.includes('guardia'));
     assert.ok(avviso, 'il blocco della guardia è detto ad alta voce');
+    assert.match(avviso.testo, /i 19 cambi non applicati/);
+});
+
+test('giro - guardia con il diff rotto: l\'artefatto è comunque vuoto e dichiara che manca', async () => {
+    const dir = tempDir();
+    const out = path.join(dir, 'ita_annotations.jsonl');
+    const log = logFinto();
+
+    const molte = [];
+    for (let i = 1; i <= 20; i++) molte.push(riga('movie', i, true));
+    await scriviConDiff(molte, { outputPath: out, log });
+
+    const esito = await scriviConDiff([riga('movie', 1, true)], {
+        outputPath: out,
+        log,
+        calcolaDiff: async () => { throw new Error('EACCIS: file precedente illeggibile'); }
+    });
+
+    assert.equal(esito.reason, 'guard');
+    const artefatto = JSON.parse(fs.readFileSync(diffPathFor(out), 'utf8'));
+    assert.deepEqual(artefatto.changes, []);
+    assert.equal(artefatto.guardia, true);
+    assert.equal(artefatto.diffNonCalcolato, true);
+    assert.equal(artefatto.cambiNonApplicati, null, 'non sappiamo cosa ci sarebbe stato: non si inventa');
 });
 
 test('giro - un diff che esplode non ferma il giro: le annotazioni vengono scritte lo stesso', async () => {
@@ -193,9 +234,18 @@ test('giro - dry-run: non scrive niente e non calcola nessun diff', async () => 
     const dir = tempDir();
     const out = path.join(dir, 'ita_annotations.jsonl');
     const log = logFinto();
+    // Se il diff fosse calcolato in dry-run, la guardia lo farebbe leggere il file di un giro che
+    // non è stato scritto: si fa notare con un diff che esplode se lo chiamano.
+    const calcolato = [];
 
-    const esito = await scriviConDiff([riga('movie', 5, true)], { outputPath: out, dryRun: true, log });
+    const esito = await scriviConDiff([riga('movie', 5, true)], {
+        outputPath: out,
+        dryRun: true,
+        log,
+        calcolaDiff: async (args) => { calcolato.push(args); throw new Error('non doveva chiamarmi'); }
+    });
 
+    assert.equal(calcolato.length, 0, 'in dry-run computeDiff non viene chiamato');
     assert.equal(esito.written, false);
     assert.equal(esito.reason, 'dry-run');
     assert.equal(esito.diff, null);
