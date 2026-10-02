@@ -1,0 +1,15 @@
+[Unit]
+Description=Timer ogni 10 minuti per il drenatore dei poster (coda eventi)
+Documentation=file:///srv/yaca/docs/TIMER_POSTER.md
+
+[Timer]
+# Ogni 10 minuti. Gli eventi sono 10-50 al giorno e un risveglio a coda vuota costa ~0,7 s:
+# più stretto non serve, più largo farebbe aspettare troppo un poster appena enqueued.
+OnCalendar=*-*-* *:00,10,20,30,40,50:00
+Persistent=true
+# Jitter piccolo (come i 60 s del timer doppiaggi): evita che i job di notte e il giro di
+# giorno si sveglino tutti nello stesso istante.
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target

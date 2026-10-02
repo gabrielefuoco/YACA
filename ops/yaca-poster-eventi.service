@@ -1,0 +1,42 @@
+[Unit]
+Description=YACA Drena Poster - rifà i poster dei titoli presi dalla coda eventi
+Documentation=file:///srv/yaca/docs/TIMER_POSTER.md
+After=network-online.target docker.service
+Wants=network-online.target
+
+# Nota: il servizio gira come root per poter parlare con il demone Docker (`docker exec`).
+# Se `docker` non sta in /usr/bin sul server, cambia quel percorso qui dentro.
+#
+# PERCHÉ `docker exec` E NON NODE SULL'HOST (a differenza degli altri timer, che girano nativi):
+# lo script è `scripts/drena-coda-poster.js`, quindi ha bisogno delle dipendenze DELL'APP
+# (ioredis per la coda, better-sqlite3/DuckDB per la mappa anime) e della rete del compose
+# (`REDIS_URL=redis://redis:6379` non è risolvibile dall'host: `redis` è un nome interno).
+# Dentro `yaca-app` inoltre `ERDB_CACHE_DIR=/data/erdb-cache` è il volume `yaca_erdb_cache`,
+# cioè esattamente la cartella che serve la rotta `/erdb-poster/<file>`: fuori dal container
+# quella cartella non esiste.
+#
+# Le due variabili (base ERDB col token, cartella dei poster) sono lette da /srv/yaca/.env e
+# passate dentro il container con `-e`: è lo stesso .env che il compose dà a `yaca-app`, quindi
+# il drenatore e l'app non possono leggere due configurazioni diverse.
+#
+# Restart=no: Redis o ERDB giù NON sono un guasto di questa unità. Lo script esce 0 in quel caso
+# e gli eventi restano in coda (i tentativi e lo scarto li gestisce la coda, non questo timer).
+# L'unico 1 è la configurazione mancante (base ERDB assente), che è un errore da correggere a
+# mano: riavviare non lo corregge, quindi non si insiste.
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/srv/yaca/.env
+Environment="PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
+WorkingDirectory=/srv/yaca
+ExecStart=/usr/bin/docker exec --workdir /app -e ERDB_LOCAL_BASE=${ERDB_LOCAL_BASE} -e ERDB_CACHE_DIR=${ERDB_CACHE_DIR} yaca-app node scripts/drena-coda-poster.js
+Restart=no
+# Lo script ha già un watchdog interno di 10 minuti (coda + mappa anime). Il default di systemd
+# per un oneshot sono 90 s e taglierebbe un giro che sta caricando la mappa: qui si lascia il
+# posto, e chi taglia sul serio è il watchdog dello script.
+TimeoutStartSec=15min
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
