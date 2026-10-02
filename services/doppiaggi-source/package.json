@@ -4,7 +4,7 @@
   "description": "Italian dubbing source provider for YACA (antoniogenna.net scraper and matcher)",
   "main": "cli.js",
   "scripts": {
-    "test": "node --test 'tests/*.test.js'",
+    "test": "node --test",
     "start": "node cli.js"
   },
   "dependencies": {
