@@ -350,3 +350,47 @@ test('diff - runDiff: secondo giro, il file precedente e le righe nuove danno i 
         console.warn = warning;
     }
 });
+// `extra`: i campi che il chiamante aggiunge all'artefatto (un giro bloccato dalla guardia scrive
+// `guardia: true` e i cambi che non ha applicato). Serve che siano *aggiunti* e che i contatori
+// descrivano sempre `changes`: un artefatto che mente sul numero è peggio di uno senza i campi.
+test('diff - writeDiff: `extra` aggiunge i campi del chiamante senza alterare i contatori', async () => {
+    const dir = tempDir();
+    const out = path.join(dir, 'ita_annotations.jsonl');
+    scrivi(out, [{ t: 'movie', id: 5, ita: true }]);
+
+    const esito = await writeDiff({ changes: [], primoGiro: false }, {
+        outputPath: out,
+        quiet: true,
+        extra: {
+            guardia: true,
+            motivo: 'il giro non ha scritto',
+            cambiNonApplicati: [{ tipo: 'movie', id: 7, badge: null }],
+            conteggioNonApplicati: 1
+        }
+    });
+
+    assert.equal(esito.written, true);
+    const artefatto = JSON.parse(fs.readFileSync(esito.path, 'utf8'));
+    assert.equal(artefatto.guardia, true);
+    assert.match(artefatto.motivo, /non ha scritto/);
+    assert.equal(artefatto.conteggioNonApplicati, 1);
+    assert.deepEqual(artefatto.changes, [], 'la lista eventi resta quella di `changes`');
+    assert.equal(artefatto.cambiati, 0);
+});
+
+test('diff - writeDiff: un `extra` che menta sui contatori non può far mentire l\'artefatto', async () => {
+    const dir = tempDir();
+    const out = path.join(dir, 'ita_annotations.jsonl');
+    scrivi(out, [{ t: 'movie', id: 5, ita: true }]);
+
+    const esito = await writeDiff({ changes: [{ tipo: 'movie', id: 9, badge: BADGE_ITA }] }, {
+        outputPath: out,
+        quiet: true,
+        extra: { changes: [], cambiati: 0, diventatiDoppiati: 0, nonPiuDoppiati: 0 }
+    });
+
+    const artefatto = JSON.parse(fs.readFileSync(esito.path, 'utf8'));
+    assert.equal(artefatto.cambiati, 1, 'i contatori descrivono sempre `changes`');
+    assert.equal(artefatto.diventatiDoppiati, 1);
+    assert.deepEqual(artefatto.changes, [{ tipo: 'movie', id: 9, badge: BADGE_ITA }]);
+});
