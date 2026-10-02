@@ -9,6 +9,7 @@ const { normalizeToUniversalSchema } = require('../utils/resultMerger');
 const { getPresets } = require('../data/presets');
 const { getWatchlistCatalog } = require('./providers/WatchlistProvider');
 const { searchTier2, mergeLocalWithTier2 } = require('./tier2Search');
+const { enrichTier2Items } = require('./tier2Enrich');
 
 const PRESET_PAGE_SIZE = 20;
 
@@ -34,7 +35,11 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
             // l'export di TMDB porta e il catalogo locale no. Se l'indice manca, `searchTier2`
             // restituisce [] e la risposta è quella di sempre (soli locali).
             const tier2Items = searchTier2(search, { type, limit: PRESET_PAGE_SIZE });
-            return mergeLocalWithTier2(localItems, tier2Items);
+            const merged = mergeLocalWithTier2(localItems, tier2Items);
+            // I titoli del Tier 2 escono grezzi (solo id, titolo originale, popolarita'): qui
+            // vengono riempiti riusando il percorso TMDB gia' in uso, con concorrenza e budget
+            // di tempo. Se il budget scade restano grezzi e si completano alla richiesta dopo.
+            return await enrichTier2Items(merged, { apiKey: tmdbApiKey });
         }
         // Il fallback o la ricerca AI profonda rimangono sulla vecchia pipeline
         return await executeCombinedSearch(search, userConfig, type, skip, activeProfileSettings, tmdbFetchOptions);

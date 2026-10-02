@@ -104,6 +104,19 @@ La risoluzione fisica dei dati è delegata ai provider dedicati in `src/catalog/
 - **HybridProvider.js**:
     Collega il motore di raccomandazione ibrido generatore di cataloghi speciali basati sul profilo psicofisico dei gusti dell'utente (Taste Profile) come *True Blend* o *Hidden Gems*.
 
+### Ricerca su due livelli (Tier 1 locale + indice FTS5 del Tier 2)
+
+La ricerca standard (`yaca_search_standard`) interroga due insiemi e li fondisce in un'unica pagina: prima i **titoli locali** di [DuckDbProvider.js](../src/catalog/providers/DuckDbProvider.js) (117k titoli con titolo italiano e poster pronti), poi quelli dell'indice FTS5 del **Tier 2** (1.485.129 titoli dell'export TMDB) letti da [tier2Search.js](../src/catalog/tier2Search.js). In caso di id in comune vince il locale. Se l'indice manca o e' illeggibile la risposta e' esattamente quella di prima.
+
+I titoli del Tier 2 nascono **grezzi** (solo id, titolo originale e popolarita') e portano il marchio `_tier2`. A riempierli (poster, titolo localizzato, descrizione, anno) interviene [tier2Enrich.js](../src/catalog/tier2Enrich.js), che **riusa** il percorso di dettaglio gia' in uso quando si apre una scheda: `getTmdbMetaDetails` in [tmdb.js](../src/clients/tmdb.js), con la sua cache `tmdb_details_raw`. Nessun client TMDB e nessuna cache nuovi.
+
+Tre regole tengono la ricerca veloce:
+- **concorrenza limitata** a 5 titoli insieme e **budget di tempo** complessivo (3,5 s): scaduto il budget si restituisce quello che e' pronto, il resto resta grezzo e si completa alla richiesta successiva, quando la cache e' calda;
+- **mai un'eccezione**: una chiamata fallita lascia grezzo solo quel titolo, gli altri si arricchiscono lo stesso;
+- **zero richieste di rete** quando la pagina non contiene risultati del Tier 2 (il caso normale della maggior parte delle ricerche).
+
+Si arricchisce **solo la pagina restituita** e i titoli locali non si toccano mai.
+
 ### Cataloghi Custom e Dismissione Matchmaker
 I cataloghi personalizzati salvati in `AddonConfig.customCatalogs` (inclusi i cataloghi generati con prefisso `custom_matchmaker_*`) sono gestiti come liste statiche `manual_list`. L'esecuzione avviene tramite fast-path batch in `AiDiscoveryProvider.js` aggregando tutti gli ID in un'unica clausola `id IN (...)` su DuckDB a latenza zero. Il motore Tinder-style interattivo del Matchmaker è stato interamente rimosso dal core di YACA ed estratto nel repository autonomo `/APP/matchmaker`.
 
