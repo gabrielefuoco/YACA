@@ -66,7 +66,23 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
         where.push(`NOT (${F.anime})`);
     }
 
-    if (q['vote_count.gte']) where.push(F.minVotes(q['vote_count.gte']));
+    if (q.permissive_recent && q['vote_count.gte']) {
+        const standardFloor = q['vote_count.gte'];
+        const recentFloor = typeof q.recent_vote_floor === 'number' ? q.recent_vote_floor : 0;
+        let recentDate = q.recent_since;
+        if (!recentDate) {
+            const d = new Date();
+            if (isTv) {
+                d.setMonth(d.getMonth() - 6);
+            } else {
+                d.setMonth(d.getMonth() - 2);
+            }
+            recentDate = d.toISOString().split('T')[0];
+        }
+        where.push(F.permissiveFloor(standardFloor, recentDate, recentFloor, isTv));
+    } else if (q['vote_count.gte']) {
+        where.push(F.minVotes(q['vote_count.gte']));
+    }
     if (q['vote_count.lte']) where.push(F.maxVotes(q['vote_count.lte']));
     if (q['vote_average.gte']) where.push(F.minScore(q['vote_average.gte']));
     if (q['popularity.lte']) where.push(F.maxPopularity(q['popularity.lte']));

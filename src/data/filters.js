@@ -64,6 +64,17 @@ const F = {
     minScore: (n) => `"vote_average" >= ${n}`,
     maxPopularity: (n) => `"popularity" <= ${n}`,
     minRuntime: (m) => `"runtime" >= ${m}`,
+    // Ticket 35: Pavimento permissivo sui recenti (discovery permissiva)
+    permissiveFloor: (standardFloor, recentDate, recentFloor = 0, isTv = false) => {
+        const col = isTv ? '"first_air_date"' : '"release_date"';
+        if (!recentDate || standardFloor <= recentFloor) {
+            return `"vote_count" >= ${standardFloor}`;
+        }
+        if (recentFloor > 0) {
+            return `("vote_count" >= ${standardFloor} OR (${col} IS NOT NULL AND ${col} >= '${recentDate}' AND "vote_count" >= ${recentFloor}))`;
+        }
+        return `("vote_count" >= ${standardFloor} OR (${col} IS NOT NULL AND ${col} >= '${recentDate}'))`;
+    },
     status: (value) => {
         const safe = String(value || '').replace(/'/g, "''");
         return safe ? `"status" = '${safe}'` : '1=0';
