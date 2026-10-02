@@ -34,6 +34,16 @@
  * consumerebbe 5 tentativi per evento per scoprire la stessa cosa ogni volta. Meglio un
  * systemctl status che dice "manca la base" che un journal pieno di 404.
  *
+ * LA CORSA ALL'AVVIO È IL GUASTO CHE SEMBRA SANO. `src/cache/redisClient.js` si connette in
+ * modo **asincrono**: quando questo script lo richiede, il socket non è ancora pronto e
+ * `isAvailable` è `false`. Un `take` a quel punto non prende niente e non solleva niente
+ * (`enableOfflineQueue: false` fa degradare `codaEventi` in lista vuota), quindi il giro si
+ * chiude "0 presi" con codice 0 **senza aver mai guardato la coda**. Sui poster semplici
+ * quello non si vede: semplicemente non si aggiornano mai, e il timer gira ogni 10 minuti
+ * senza drenare. Per questo, **prima del primo `take`** si aspetta il client (vedi
+ * `aspettaRedis`): e se proprio non si connette, si dice a chiare che è quello il motivo —
+ * "coda vuota" e "coda non guardata" sono due guasti opposti e vanno detti con parole diverse.
+ *
  * LA MAPPA DEGLI ANIME È IL PEZZO CHE FA PAURA. `resolveKitsuDaTmdbId` restituisce
  * `{kitsuId, motivo}`, mentre `drena` vuole `cercaKitsu(id, tipo) -> id | niente`: qui c'è
  * l'adattatore, che **conta** i motivi e in particolare `store_non_pronto`. Non è una riga
@@ -66,6 +76,14 @@ const DEFAULT_ATTESA_MAPPA_MS = 90000;
 // Il tetto del processo intero, con `unref` (vedi in fondo): 10 richieste da 20 s + la mappa.
 const DEFAULT_TIMEOUT_GIRO_MS = 600000;
 
+// Il tetto dell'attesa di Redis e il passo con cui si riprova. Il tetto è corto **per
+// scelta**: il client si connette in decine di millisecondi quando tutto va bene, e su una
+// macchina lenta un secondo è già generoso. Il tetto non serve a "guarire" Redis (nessuno
+// aspetta 10 s un socket che non arriverà): serve a coprire il tempo di connessione vero. E
+// a che cosa succede dopo non importa: è il timer, dieci minuti dopo, a riprovare.
+const DEFAULT_ATTESA_REDIS_MS = 10000;
+const INTERVALLO_ATTESA_REDIS_MS = 100;
+
 const HELP = [
     'Drena la coda degli eventi: rifà i poster dei titoli diventati (o non più) doppiati.',
     'Gira su timer: una raffica breve, poi esce. Non lancia mai (codice 0 anche se Redis',
@@ -77,6 +95,8 @@ const HELP = [
     `  --batch <n>       quanti eventi per giro (default ${DEFAULT_BATCH})`,
     `  --timeout <ms>    timeout per richiesta (default ${DEFAULT_TIMEOUT_MS}, 0 = nessuno)`,
     `  --attesa-mappa <ms>  attesa massima del caricamento mappa anime (default ${DEFAULT_ATTESA_MAPPA_MS})`,
+    `  --attesa-redis <ms>  attesa massima che Redis si connetta, prima di guardare la coda`,
+    `                    (default ${DEFAULT_ATTESA_REDIS_MS}); se scade il giro salta e lo dice`,
     '  --dry-run         dice cosa farebbe: nessun download, nessuna scrittura, nessun done/fail',
     '  --help, -h        questo messaggio'
 ].join('\n');
@@ -92,6 +112,22 @@ const MESSAGGIO_BASE = [
     '  `systemctl status yaca-drena` per vedere il journal, `journalctl -u yaca-drena` per il seguito.',
     '  Esce 1 perché è una configurazione da correggere, non un guasto da riprovare domani.'
 ].join('\n');
+
+/**
+ * La riga del giro saltato: **una**, e scritta in modo che da sola si capiscano tre cose
+ * distinte — che non è successo nulla, che non è una coda vuota, e che il timer riproverà.
+ * `codaEventi` con Redis giù restituisce una lista vuota senza lanciare, quindi la
+ * differenza fra "non c'era niente" e "non ho potuto guardare" sta tutta qui: senza questa
+ * frase il journal dice `0 presi` e sembra tutto sano.
+ *
+ * @param {number} tettoMs il tetto che è scaduto
+ * @returns {string} il testo del motivo, senza il prefisso `[Drena]` (chi lo stampa ce lo mette)
+ */
+function messaggioRedisNonPronto(tettoMs) {
+    return `Redis NON pronto dopo ${tettoMs} ms: questo giro NON ha drenato niente, `
+        + 'e non è che la coda fosse vuota — è che non sono riuscito a guardarla. '
+        + 'Nessun file scritto e nessun allarme: il timer riproverà al giro dopo.';
+}
 
 /**
  * Numero positivo da riga di comando, col default quando non c'è.
@@ -117,7 +153,7 @@ function interoPositivo(valore, flag, defaulto) {
  * @param {string[]} [argv]
  * @param {object}   [env]
  * @returns {{base: string|null, out: string|null, batch: number, timeoutMs: number,
- *            attesaMappaMs: number, dryRun: boolean, help: boolean}}
+ *            attesaMappaMs: number, attesaRedisMs: number, dryRun: boolean, help: boolean}}
  */
 function parseArgs(argv = [], env = process.env) {
     const opts = {
@@ -126,6 +162,7 @@ function parseArgs(argv = [], env = process.env) {
         batch: DEFAULT_BATCH,
         timeoutMs: DEFAULT_TIMEOUT_MS,
         attesaMappaMs: DEFAULT_ATTESA_MAPPA_MS,
+        attesaRedisMs: DEFAULT_ATTESA_REDIS_MS,
         dryRun: false,
         help: false
     };
@@ -152,6 +189,7 @@ function parseArgs(argv = [], env = process.env) {
             case '--batch': opts.batch = interoPositivo(valoreDi(flag, inline), flag, DEFAULT_BATCH); break;
             case '--timeout': opts.timeoutMs = interoPositivo(valoreDi(flag, inline), flag, DEFAULT_TIMEOUT_MS); break;
             case '--attesa-mappa': opts.attesaMappaMs = interoPositivo(valoreDi(flag, inline), flag, DEFAULT_ATTESA_MAPPA_MS); break;
+            case '--attesa-redis': opts.attesaRedisMs = interoPositivo(valoreDi(flag, inline), flag, DEFAULT_ATTESA_REDIS_MS); break;
             case '--dry-run': opts.dryRun = true; break;
             case '--help':
             case '-h': opts.help = true; break;
@@ -284,6 +322,69 @@ async function preparaMappa({ store, log, dryRun = false, attesaMs = DEFAULT_ATT
     return { cercaKitsu: adattatoreKitsu(store, stato, log), stato };
 }
 
+/** Una dormita semplice, e non un `setTimeout` lasciato appeso: qui si aspetta sul serio. */
+function _dormi(ms) {
+    return new Promise((risolvi) => { setTimeout(risolvi, ms); });
+}
+
+/**
+ * Aspetta che il client Redis sia pronto, **prima del primo `take`**.
+ *
+ * PERCHÉ STA QUI E NON NEL CLIENT: `redisClient` si connette da solo e in modo asincrono, e
+ * la cache dell'app ha bene a degradare quando Redis non c'è (è una cache: si ricostruisce).
+ * Qui no: un `take` su un socket non ancora pronto non prende niente e non lancia niente
+ * (`enableOfflineQueue: false` fa degradare `codaEventi` in lista vuota), quindi il giro
+ * finirebbe "0 presi" senza aver guardato niente, con codice 0, e i poster non si
+ * aggiornerebbero mai senza che nessuno se ne accorga. Il rimedio è nel solo posto dove il
+ * guasto esiste — lo script da timer — e non in un modulo che l'app condivide.
+ *
+ * `isAvailable` è una **getter**: non si può aspettare un evento (non c'è), si può solo
+ * chiederlo. Quindi si interroga a brevi intervalli, con un tetto, e si esce comunque: il
+ * tetto non è un'attesa di guarigione, è il tempo entro cui una connessione sana è già
+ * arrivata. Finito il tetto la risposta è "non guardare niente" e la decisione la prende
+ * `gira`.
+ *
+ * @param {object} [redis] il client condiviso (o `null`: senza client non c'è niente da aspettare)
+ * @param {object} [opzioni]
+ * @param {number} [opzioni.tettoMs]       aspetta massima (default `DEFAULT_ATTESA_REDIS_MS`)
+ * @param {number} [opzioni.intervalloMs]  passo fra un'interrogazione e l'altra
+ * @param {object} [opzioni.log]
+ * @returns {Promise<{pronto: boolean, interrogazioni: number, attesaMs: number}>}
+ */
+async function aspettaRedis(redis, {
+    tettoMs = DEFAULT_ATTESA_REDIS_MS,
+    intervalloMs = INTERVALLO_ATTESA_REDIS_MS,
+    log = console
+} = {}) {
+    const subito = { pronto: true, interrogazioni: 0, attesaMs: 0 };
+    // Una sola lettura per decidere: `isAvailable` è una getter e qua non si fa niente di
+    // più. Senza client, o con un client che non espone la proprietà (uno stub, un fake):
+    // niente da aspettare, e non si deve inventare un'attesa su una proprietà inesistente.
+    if (!redis) return subito;
+    const ora = redis.isAvailable;
+    if (ora === true) return { ...subito, interrogazioni: 1 };
+    if (typeof ora === 'undefined') return subito;
+
+    if (!(tettoMs > 0)) return { pronto: false, interrogazioni: 1, attesaMs: 0 };
+    const passo = Math.max(1, Math.min(intervalloMs > 0 ? intervalloMs : INTERVALLO_ATTESA_REDIS_MS, tettoMs));
+
+    const inizio = Date.now();
+    let interrogazioni = 1;
+    log.log(`[Drena] Redis non è ancora connesso: aspetto al massimo ${tettoMs} ms (ogni ${passo} ms) ` +
+        'prima di guardare la coda…');
+
+    while (Date.now() - inizio < tettoMs) {
+        await _dormi(passo);
+        interrogazioni += 1;
+        if (redis.isAvailable === true) {
+            const attesaMs = Date.now() - inizio;
+            log.log(`[Drena] Redis connesso dopo ${attesaMs} ms: guardo la coda.`);
+            return { pronto: true, interrogazioni, attesaMs };
+        }
+    }
+    return { pronto: false, interrogazioni, attesaMs: Date.now() - inizio };
+}
+
 /** Dopo `ms` la promessa è un fallimento: un caricamento che non finisce non tiene il timer. */
 function _conTimeout(promessa, ms, cosa) {
     if (!(ms > 0)) return promessa;
@@ -364,10 +465,19 @@ function testoConti(conteggi) {
  * Idem `avvisi: redis=1`: con Redis giù `codaEventi.take` degrada e restituisce una lista
  * vuota, quindi "0 presi" sembrerebbe una coda svuotata quando in realtà non si è guardata
  * niente. Sono due fatti opposti e la differenza è tutta lì.
+ *
+ * Un giro **saltato** (Redis mai connesso, vedi `aspettaRedis`) non usa i numeri: `0 presi`
+ * in quel caso sarebbe la bug più difficile da vedere di tutta la catena, quindi la riga
+ * ristampa il motivo per cui non è successo nulla.
  */
 function rigaRiepilogo(r) {
-    const parti = [`[Drena] ${r.presi} presi, ${r.resi} resi, ${r.falliti} falliti`];
-    if (r.dryRun) parti.push(`dry-run: ${r.daRifare} da rifare, ${r.falliti} non interpretabili`);
+    const parti = [];
+    if (r.saltato) {
+        parti.push(`[Drena] giro saltato: ${r.saltato}`);
+    } else {
+        parti.push(`[Drena] ${r.presi} presi, ${r.resi} resi, ${r.falliti} falliti`);
+    }
+    if (r.dryRun && !r.saltato) parti.push(`dry-run: ${r.daRifare} da rifare, ${r.falliti} non interpretabili`);
 
     const motivi = testoConti(r.motivi);
     if (motivi) parti.push(`motivi: ${motivi}`);
@@ -405,6 +515,7 @@ function rigaRiepilogo(r) {
  * @param {number}   [opzioni.batch]
  * @param {number}   [opzioni.timeoutMs]
  * @param {number}   [opzioni.attesaMappaMs]
+ * @param {number}   [opzioni.attesaRedisMs]
  * @param {boolean}  [opzioni.dryRun]
  * @returns {Promise<object>} il riepilogo
  */
@@ -419,6 +530,7 @@ async function gira({
     batch = DEFAULT_BATCH,
     timeoutMs = DEFAULT_TIMEOUT_MS,
     attesaMappaMs = DEFAULT_ATTESA_MAPPA_MS,
+    attesaRedisMs = DEFAULT_ATTESA_REDIS_MS,
     dryRun = false
 } = {}) {
     const stato = {
@@ -433,8 +545,24 @@ async function gira({
         // `dry-run: 0 da rifare` e `out=undefined` proprio nei due casi che contano.
         dryRun,
         base,
-        outDir
+        outDir,
+        // Il giro NON è andato avanti, e perché. Vuoto = giro normale; una frase = saltato,
+        // e il riepilogo allora non deve stampare `0 presi`, che sembrerebbe una coda svuotata.
+        saltato: null
     };
+
+    // PRIMA DI QUALUNQUE COSA CHE TOCCA LA CODA. Il client Redis si connette in modo
+    // asincrono e un `take` su un socket non ancora pronto restituisce una lista vuota
+    // senza lanciare: il giro chiuderebbe "0 presi" con codice 0 senza aver guardato niente,
+    // e i poster semplici non si aggiornerebbero mai senza che nessuno se ne accorga. Quindi
+    // si aspetta il client, e se non arriva si dice che è quello il motivo — non "coda vuota".
+    const attesa = await aspettaRedis(redis, { tettoMs: attesaRedisMs, log });
+    if (!attesa.pronto) {
+        stato.note.redis = 1;
+        stato.saltato = messaggioRedisNonPronto(attesaRedisMs);
+        log.warn(`[Drena] ${stato.saltato}`);
+        return stato;
+    }
 
     if (dryRun) {
         await dryRunGiro({ coda, log, store, redis, base, outDir, batch, attesaMappaMs, stato });
@@ -661,6 +789,7 @@ async function main(argv = process.argv.slice(2), env = process.env, dip = {}) {
             batch: opts.batch,
             timeoutMs: opts.timeoutMs,
             attesaMappaMs: opts.attesaMappaMs,
+            attesaRedisMs: opts.attesaRedisMs,
             dryRun: opts.dryRun
         });
 
@@ -710,9 +839,13 @@ if (require.main === module) {
 module.exports = {
     STORE_NON_PRONTO,
     DEFAULT_ATTESA_MAPPA_MS,
+    DEFAULT_ATTESA_REDIS_MS,
+    INTERVALLO_ATTESA_REDIS_MS,
     DEFAULT_TIMEOUT_GIRO_MS,
     HELP,
     MESSAGGIO_BASE,
+    messaggioRedisNonPronto,
+    aspettaRedis,
     parseArgs,
     interoPositivo,
     adattatoreKitsu,
