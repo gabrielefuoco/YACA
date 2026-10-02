@@ -19,6 +19,8 @@ const CONTENT_TYPES = {
     '.webp': 'image/webp'
 };
 
+// Unica fonte di verità sulla cartella dei poster: la riusa anche il drenatore, così i due
+// non possono divergere (se divergessero i file prodotti non sarebbero mai serviti).
 const getCacheDir = () => process.env.ERDB_CACHE_DIR || DEFAULT_CACHE_DIR;
 
 // Il parametro della rotta arriva già decodificato (`%2e%2e%2f` è già `../`), quindi qui si
@@ -92,3 +94,5 @@ const registerStaticPostersRoute = (app) => {
 
 module.exports = registerStaticPostersRoute;
 module.exports.registerStaticPostersRoute = registerStaticPostersRoute;
+module.exports.getCacheDir = getCacheDir;
+module.exports.DEFAULT_CACHE_DIR = DEFAULT_CACHE_DIR;
