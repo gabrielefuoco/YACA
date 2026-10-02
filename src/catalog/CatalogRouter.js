@@ -8,6 +8,7 @@ const { getDuckDbCatalogFromFilters, getDuckDbCatalogFromPreset, mapSortBy, buil
 const { normalizeToUniversalSchema } = require('../utils/resultMerger');
 const { getPresets } = require('../data/presets');
 const { getWatchlistCatalog } = require('./providers/WatchlistProvider');
+const { searchTier2, mergeLocalWithTier2 } = require('./tier2Search');
 
 const PRESET_PAGE_SIZE = 20;
 
@@ -22,13 +23,18 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
     // SCENARIO 1: RICERCA VIVA TESTUALE
     if (search) {
         if (baseId === 'yaca_search_standard') {
-            return await getDuckDbCatalogFromFilters(
+            const localItems = await getDuckDbCatalogFromFilters(
                 { _search: search },
                 type,
                 skip,
                 PRESET_PAGE_SIZE,
                 activeProfileSettings
             );
+            // La coda lunga: l'indice FTS5 del Tier 2 risponde con gli stessi 1,45M titoli che
+            // l'export di TMDB porta e il catalogo locale no. Se l'indice manca, `searchTier2`
+            // restituisce [] e la risposta è quella di sempre (soli locali).
+            const tier2Items = searchTier2(search, { type, limit: PRESET_PAGE_SIZE });
+            return mergeLocalWithTier2(localItems, tier2Items);
         }
         // Il fallback o la ricerca AI profonda rimangono sulla vecchia pipeline
         return await executeCombinedSearch(search, userConfig, type, skip, activeProfileSettings, tmdbFetchOptions);
