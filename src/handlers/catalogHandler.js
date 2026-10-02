@@ -68,6 +68,100 @@ function isAiringStateCatalog(baseId, catalogMeta) {
     return baseId === 'preset_anime_simulcast' || AIRING_STATE_PROVIDERS.has(catalogMeta?._provider);
 }
 
+// Interruttore GLOBALE dei cataloghi: si alza quando cambia il MODO in cui nascono
+// badge e poster, e per scelta invalida tutte le chiavi. Resta nella chiave accanto
+// all'impronta del singolo catalogo.
+// 18: badge ITA dalle annotazioni (antoniogenna.net) invece che dalla collezione streambadges,
+//     e politica episodi corretta (ITA secco fuori dal simulcast). Senza questo bump i cataloghi
+//     già in cache — fino a 14 giorni — continuerebbero a servire i badge vecchi.
+const BADGE_CATALOG_VERSION = 18;
+
+/**
+ * Serializza la definizione di un catalogo in forma canonica: chiavi ordinate,
+ * array nel loro ordine. Due definizioni equivalenti producono la stessa stringa,
+ * arrivino da un preset, da Mongo o da un oggetto inline. `JSON.stringify` da solo
+ * dipenderebbe dall'ordine delle chiavi e la chiave di cache cambierebbe a ogni
+ * salvataggio senza che il catalogo sia cambiato.
+ */
+function canonicalCatalogDefinition(definition) {
+    const value = definition && typeof definition.toObject === 'function'
+        ? definition.toObject()
+        : definition;
+
+    if (value === null || typeof value !== 'object') {
+        const json = JSON.stringify(value); // `undefined` e funzioni diventano 'null'
+        return json === undefined ? 'null' : json;
+    }
+    if (value instanceof Date) return JSON.stringify(value.toISOString());
+    if (Array.isArray(value)) return `[${value.map(canonicalCatalogDefinition).join(',')}]`;
+
+    const entries = Object.keys(value)
+        .filter(key => key !== '_id' && key !== '__v') // rumore di Mongo: non descrive il catalogo
+        .sort()
+        .map(key => `${JSON.stringify(key)}:${canonicalCatalogDefinition(value[key])}`);
+    return `{${entries.join(',')}}`;
+}
+
+/**
+ * Risolve la definizione del catalogo richiesto: prima i preset di codice, poi i
+ * cataloghi del profilo attivo, infine i custom. `null` per i cataloghi "standard"
+ * (ricerca, watchlist), la cui definizione vive nel router e non nella configurazione.
+ */
+function resolveCatalogDefinition(id, userConfig, baseId) {
+    if (baseId === 'yaca_search_history') return null;
+
+    const fromPresets = getPresets().find(p => p.id === baseId || p.id === id);
+    if (fromPresets) return fromPresets;
+
+    const activeProfile = userConfig?.profiles?.find(p => p.id === userConfig.activeProfileId);
+    if (activeProfile && activeProfile.catalogs) {
+        const fromProfile = activeProfile.catalogs.find(c => c.id === id);
+        if (fromProfile) return fromProfile;
+    }
+    if (userConfig?.customCatalogs) {
+        return userConfig.customCatalogs.find(c => c.id === id) || null;
+    }
+
+    return null;
+}
+
+/**
+ * Chiave di cache della pagina di catalogo. Ci finisce tutto ciò che cambia il
+ * risultato — e nient'altro.
+ *
+ * Al posto del vecchio `configVersion` c'è `catalogDef`: l'impronta canonica della
+ * definizione di QUESTO catalogo (`where`, `orderBy`, `queries`, `isAnime`, provider…).
+ * `configVersion` era un contatore rigenerato a ogni salvataggio: bastava salvare un
+ * profilo per rendere orfane tutte le chiavi di tutti i cataloghi, anche quelli che
+ * non erano cambiati.
+ */
+function buildCatalogCacheKey({
+    id,
+    type,
+    extra,
+    directFilters,
+    skip,
+    catalogMeta,
+    userConfig,
+    activeProfileSettings,
+    badgeVersion = BADGE_CATALOG_VERSION
+} = {}) {
+    return generateRequestHash(id, {
+        type,
+        extra,
+        directFilters,
+        user: userConfig?.userId,
+        profile: userConfig?.activeProfileId,
+        kidsMode: activeProfileSettings?.kidsMode,
+        typeSelectors: activeProfileSettings?.typeSelectors,
+        // Il formatter sceglie poster orizzontale o verticale: è un interruttore del
+        // profilo, quindi resta in chiave come `kidsMode` e `typeSelectors`.
+        landscape: Boolean(activeProfileSettings?.isLandscapeEnabled),
+        catalogDef: canonicalCatalogDefinition(catalogMeta),
+        badgeV: badgeVersion
+    }, skip, type);
+}
+
 /**
  * Badge del catalogo novità anime: le due card (sub e ITA) leggono lo stato esterno
  * (`anime_airing_state`), non TMDB. Card sub -> `EP {italian.sub.latest.episode}`;
@@ -333,46 +427,13 @@ async function catalogHandler(args, userConfig, hostUrl) {
     }
     const tmdbClient = createTmdbClient(tmdbApiKey);
     const { cacheOptions: tmdbFetchOptions } = getCacheConfig(userConfig.ttl);
-    
-    // We bump this version whenever we make significant changes to how posters or badges are generated
-    // 18: badge ITA dalle annotazioni (antoniogenna.net) invece che dalla collezione streambadges,
-    //     e politica episodi corretta (ITA secco fuori dal simulcast). Senza questo bump i cataloghi
-    //     già in cache — fino a 14 giorni — continuerebbero a servire i badge vecchi.
-    const BADGE_CATALOG_VERSION = 18;
 
-    // Check Full CACHE Request
-    const requestCacheKey = generateRequestHash(id, { 
-        type, 
-        extra, 
-        directFilters, 
-        user: userConfig.userId, 
-        profile: userConfig.activeProfileId, 
-        kidsMode: activeProfileSettings.kidsMode,
-        typeSelectors: activeProfileSettings.typeSelectors,
-        configVersion: userConfig.configVersion || userConfig.config?.configVersion,
-        badgeV: BADGE_CATALOG_VERSION
-    }, skip, type);
-    
-    let catalogMeta = null;
     let baseId = id;
     if (id && id.startsWith('yaca_preset_')) {
         baseId = id.replace('yaca_preset_', '');
     }
 
-    if (baseId !== 'yaca_search_history') {
-        const presets = getPresets();
-        catalogMeta = presets.find(p => p.id === baseId || p.id === id);
-
-        if (!catalogMeta && userConfig) {
-            const activeProfile = userConfig.profiles?.find(p => p.id === userConfig.activeProfileId);
-            if (activeProfile && activeProfile.catalogs) {
-                catalogMeta = activeProfile.catalogs.find(c => c.id === id);
-            }
-            if (!catalogMeta && userConfig.customCatalogs) {
-                catalogMeta = userConfig.customCatalogs.find(c => c.id === id);
-            }
-        }
-    }
+    const catalogMeta = resolveCatalogDefinition(id, userConfig, baseId);
 
     // GUARDIA SELETTORI DI TIPO (Ticket 09 / Spec 06):
     // Se il catalogo richiesto è un suggerimento non conforme ai selettori del profilo attivo -> { metas: [] }
@@ -380,6 +441,20 @@ async function catalogHandler(args, userConfig, hostUrl) {
     if (!isCatalogConformant(targetCatalog, activeProfileSettings?.typeSelectors)) {
         return { metas: [] };
     }
+
+    // Check Full CACHE Request. La chiave nasce DOPO la risoluzione del catalogo,
+    // perché la sua definizione è uno degli ingredienti.
+    const requestCacheKey = buildCatalogCacheKey({
+        id,
+        type,
+        extra,
+        directFilters,
+        skip,
+        catalogMeta,
+        userConfig,
+        activeProfileSettings,
+        badgeVersion: BADGE_CATALOG_VERSION
+    });
 
     // managed SWR: Fetch or Revalidate
     const { ttl } = getCacheConfig(userConfig.ttl);
@@ -569,6 +644,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
 module.exports = {
     catalogHandler,
+    BADGE_CATALOG_VERSION,
+    buildCatalogCacheKey,
+    canonicalCatalogDefinition,
+    resolveCatalogDefinition,
     applyAiringStateBadges,
     isAiringStateCatalog,
     applyPostCacheBadges,
