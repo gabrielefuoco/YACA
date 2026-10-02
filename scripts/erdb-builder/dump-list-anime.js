@@ -269,7 +269,8 @@ function printSummary(summary) {
 // ---------------------------------------------------------------------------
 
 /**
- * Scrive la lista JSONL degli anime con id Kitsu e id TMDB, in ordine di id Kitsu.
+ * Scrive la lista JSONL degli anime che hanno sia un id Kitsu sia un id TMDB, nell'ordine in
+ * cui compaiono nell'indice (nessun riordino: l'indice e' gia' stabile tra due scaricamenti).
  * Opzioni: { fribb, parquetDir, out }
  * Ritorna il riepilogo { totale, conBadge, senzaBadge, saltati, motivi }.
  */
@@ -285,7 +286,7 @@ async function dump({ fribb, parquetDir = DEFAULT_PARQUET_DIR, out } = {}) {
     if (!fs.existsSync(resolvedFribb)) throw new Error(`Indice Fribb non trovato: ${resolvedFribb}`);
 
     // L'indice si legge e si valida per primo: se e' sbagliato (o non e' un array), inutile
-    // anche accendere DuckDB. Il file e' una-flat di ~40k record: 6 MB, si legge tutto in memoria.
+    // anche accendere DuckDB. Sono ~40k record, 6 MB: si legge tutto in memoria.
     let records;
     try {
         records = JSON.parse(fs.readFileSync(resolvedFribb, 'utf8'));
@@ -306,7 +307,7 @@ async function dump({ fribb, parquetDir = DEFAULT_PARQUET_DIR, out } = {}) {
     const con = db.connect();
 
     // Due Set di id doppiati (movie e tv): il badge si decide con una membership, non con una
-    // query per ogni record. 39.577 recordanime contro milioni di righe di catalogo: senza
+    // query per ogni record. 39.577 record anime contro milioni di righe di catalogo: senza
     // questo, ogni giro costerebbe decine di migliaia di query.
     const doppiati = {};
     try {
