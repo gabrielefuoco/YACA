@@ -2,6 +2,7 @@ const axios = require('axios');
 const zlib = require('zlib');
 const readline = require('readline');
 const { shouldKeepTmdbRecord } = require('./tmdbIngestPolicy');
+const { tmdbBudget, TMDB_CATEGORIES } = require('./tmdbBudget');
 
 const TMDB_GENRES_EN_MAP = {
     28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
@@ -64,6 +65,13 @@ class TmdbDumpClient {
     }
 
     async fetchWithRetry(url, params = {}, retries = 5) {
+        const budgetCheck = tmdbBudget.checkBudget(TMDB_CATEGORIES.BACKFILL, url);
+        if (!budgetCheck.allowed) {
+            console.warn(`[TmdbDumpClient] Cap raggiunto per BACKFILL (${url}), skip chiamata con degrado morbido`);
+            return null;
+        }
+        tmdbBudget.recordCall(TMDB_CATEGORIES.BACKFILL, url);
+
         const config = {
             params: { api_key: this.apiKey, ...params },
             timeout: 15000 // 15s timeout
