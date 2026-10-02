@@ -335,7 +335,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const { cacheOptions: tmdbFetchOptions } = getCacheConfig(userConfig.ttl);
     
     // We bump this version whenever we make significant changes to how posters or badges are generated
-    const BADGE_CATALOG_VERSION = 17;
+    // 18: badge ITA dalle annotazioni (antoniogenna.net) invece che dalla collezione streambadges,
+    //     e politica episodi corretta (ITA secco fuori dal simulcast). Senza questo bump i cataloghi
+    //     già in cache — fino a 14 giorni — continuerebbero a servire i badge vecchi.
+    const BADGE_CATALOG_VERSION = 18;
 
     // Check Full CACHE Request
     const requestCacheKey = generateRequestHash(id, { 
