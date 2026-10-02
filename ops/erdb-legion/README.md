@@ -100,3 +100,42 @@ tutto il resto è inutile. È la stessa prova fatta quando la patch è nata
 
 L'output (la cartella dei poster composti) va copiato sul mate nel volume servito da
 `/erdb-poster/`. Da lì in poi lavora solo il mate, sugli eventi. Il Legion si spegne.
+
+## 7. Il giro grosso sul Legion — e le due trappole che l'hanno rallentato di 15 volte
+
+L'harness è [`costruisci.js`](costruisci.js): avvolge `build.js` con un **timeout per richiesta**
+(`build.js` non ne ha: una richiesta appesa bloccherebbe un worker per sempre), logga l'avanzamento ogni
+minuto ed **esce** se non cresce il numero di file (il rilancio è di chi sta sopra). La ripresa è del
+costruttore: un file presente e non vuoto viene saltato, quindi ogni rilancio non ricomincia da capo.
+
+**Trappola 1 — il provider di stream.** ERDB, per disegnare i badge di risoluzione (`4K`, `HDR`), interroga
+**un provider di stream per ogni poster**: `lib/routeConfig.ts` lo ha come *default scritto nel codice*
+(`icv.stremio-italia.eu/...`). Misurato: **4 tentativi per poster, ~2 s l'uno**, con la CPU al 2% — il giro
+girava a **1,7 poster/s** (cioè ~20 ore) *aspettando i torrent*, non calcolando. Spegnere `streamBadges` nel
+token **non basta**: ferma il disegno, non la chiamata.
+
+Rimedio: un **interlocutore finto** che risponde all'istante "nessuno stream"
+([`finto-provider.js`](finto-provider.js)) e la variabile
+`ERDB_STREAM_BADGES_PROVIDER_URL=http://host.docker.internal:3112/`. Così non c'è nessun ritentativo, nessuna
+chiamata esce verso l'esterno, e il risultato è **esattamente la decisione 6 della mappa**: zero badge di
+risoluzione. Effetto: **1,7 → 9,2 poster/s**.
+
+**Trappola 2 — la concorrenza oltre il punto buono peggiora.** Misurato sullo stesso giro:
+
+| worker ERDB | resa |
+|---|---|
+| 12 | ~4,5/s |
+| **16** | **~9/s** ← il punto buono |
+| 24 | ~6,9/s (CPU *più bassa*: è contesa, non mancanza di muscolo) |
+| 32 | ~4,4/s e centinaia di fallimenti |
+
+La contesa è su SQLite (ogni worker scrive la sua cache in `erdb.db`). Oltre ~16 il sistema si rallenta da
+solo. Non alzare "perché sembra vuoto": la CPU bassa era sintomo di attesa, non di margine.
+
+**Numeri veri, per chi rifà il conto:** 125.270 titoli, ~138 KB per poster → **~17 GB** (la stima della mappa
+diceva 13-14). Circa **4 ore** a 9/s su questa macchina. I fallimenti sono ~4% e sono **puliti** (zero file
+`.tmp`, zero file vuoti: titoli che davvero non esistono su TMDB), e la ripresa li ritenta.
+
+**A prova di spegnimento.** Il contenitore gira con `--restart unless-stopped` (Docker Desktop si riavvia da
+solo con Windows), il sorvegliante ha un **candelotto** per non partire doppio ed è nella cartella *Esecuzione
+automatica*. Un riavvio non fa perdere niente: i poster già scritti restano e vengono saltati.
