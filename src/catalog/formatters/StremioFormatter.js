@@ -412,5 +412,8 @@ function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled,
 module.exports = {
     formatStremioCatalog,
     sanitizeCatalogMeta,
-    findLatestAiredEpisode
+    findLatestAiredEpisode,
+    // Esportata perche' e' l'unica fonte di verita' degli id ERDB: anche gli script
+    // offline (es. scripts/erdb-builder/dump-list.js) costruiscono cosi' le liste di poster.
+    getErdbId
 };
