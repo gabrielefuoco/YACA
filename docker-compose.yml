@@ -37,6 +37,8 @@ services:
     volumes:
       - yaca_tmdb:/data/tmdb
       - yaca_badges:/data/badges
+      # Poster già composti, prodotti fuori e copiati qui: serviti da /erdb-poster/<file>
+      - yaca_erdb_cache:/data/erdb-cache
     mem_limit: 1536m
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
@@ -107,5 +109,7 @@ volumes:
     name: yaca_tmdb
   yaca_badges:
     name: yaca_badges
+  yaca_erdb_cache:
+    name: yaca_erdb_cache
   yaca_anime_source_cache:
     name: yaca_anime_source_cache
