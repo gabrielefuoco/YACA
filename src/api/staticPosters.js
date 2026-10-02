@@ -3,6 +3,10 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 
+const { erdbIdDaNomeFile } = require('../cache/posterDaEvento');
+const { posterUrl } = require('../../scripts/erdb-builder/build');
+const { scarica, scrivi } = require('../cache/drenaPoster');
+
 // Cartella dei poster già composti: in produzione è un volume montato in /data/erdb-cache,
 // in sviluppo/test la si punta altrove con ERDB_CACHE_DIR.
 const DEFAULT_CACHE_DIR = '/data/erdb-cache';
@@ -47,6 +51,81 @@ const sendNotFound = (res) => {
     return res.status(404).json({ error: 'Poster non trovato' });
 };
 
+/*
+ * TETTO DI TEMPO PER LA RICHIESTA A ERDB.
+ *
+ * Il drenatore può aspettare 20 s (`DEFAULT_TIMEOUT_MS` in `drenaPoster.js`): gira ogni 10
+ * minuti e un poster che arriva tardi è comunque arrivato in tempo. Qui no: sotto questa
+ * richiesta c'è una persona che aspetta un'immagine, e 20 s di pagina bianca sono un guasto
+ * che l'utente vede. Dopo 5 s si risponde 404 come oggi, e il drenatore farà il suo giro più
+ * tardi senza che nessuno resti appeso.
+ */
+const TIMEOUT_ERDB_MS = 5000;
+
+/** Il file c'è davvero ed è un file? Una cartella che non esiste non è un errore, è un no. */
+const filePresente = (filePath) => {
+    try {
+        return fs.statSync(filePath).isFile();
+    } catch {
+        return false;
+    }
+};
+
+/**
+ * Il file non è in cartella: lo si chiede all'istanza ERDB locale e lo si scrive.
+ *
+ * PERCHÉ: la cartella si riempie con un giro grosso fatto una volta (fuori, su un'altra
+ * macchina) e poi solo col drenatore (ogni 10 minuti). Quindi un titolo nuovo — o uno dei
+ * pochi che il giro grosso non è riuscito a rendere — resterebbe un 404 fino al giro
+ * successivo. Chiedendolo qui il poster arriva subito e la cache si riempie da sola.
+ *
+ * Il download e la verifica "è un JPEG con i byte" sono quelli del drenatore (`scarica`,
+ * `drenaPoster.js`): due modi di scaricare lo stesso file che possono divergere sono due
+ * modi in cui un WebP finisce chiamato `.jpg`. Idem la scrittura atomica (`scrivi`): la
+ * rotta non deve mai vedere mezzo file, e con la scrittura in due tempi due richieste
+ * contemporanee dello stesso poster sono innocue (non serve un lucchetto).
+ *
+ * **NON LANCIA MAI e non risponde mai**: qualunque cosa vada storto (istanza muta, errore,
+ * risposta che non è un JPEG, scrittura impossibile) il risultato è `false` e la rotta
+ * risponde 404 come prima. Una rotta non deve poter fallire per una rete che non risponde.
+ *
+ * @returns {Promise<boolean>} `true` se il file è stato scritto in cartella.
+ */
+const chiediPosterAErdb = async (fileName, filePath) => {
+    // Senza base non c'è nessuna istanza da chiedere: il comportamento resta quello di oggi
+    // (404), che è anche quello di sviluppo e dei test.
+    const base = String(process.env.ERDB_LOCAL_BASE || '').trim();
+    if (!base) return false;
+
+    // Giro indietro nome -> id ERDB. Se il nome non è una forma nota non si indovina:
+    // un id sbagliato chiederebbe a ERDB il poster di un titolo DIVERSO e lo metterebbe in
+    // cache sotto il nome giusto: un errore che non si vede più.
+    const riconosciuto = erdbIdDaNomeFile(fileName);
+    if (!riconosciuto) return false;
+
+    // L'indirizzo lo costruisce il costruttore (`?badge=` incluso): qui non si riscrive.
+    const url = posterUrl(base, riconosciuto);
+
+    let buffer;
+    try {
+        buffer = await scarica(url, { fetchImpl: globalThis.fetch, timeoutMs: TIMEOUT_ERDB_MS });
+    } catch (err) {
+        console.warn(`[StaticPosters] ERDB non ha dato il poster di ${fileName}: ${err && err.message ? err.message : err}`);
+        return false;
+    }
+
+    try {
+        await scrivi(filePath, buffer);
+    } catch (err) {
+        // `scrivi` ha già tolto il temporaneo: in cartella non resta niente.
+        console.warn(`[StaticPosters] scrittura fallita per ${fileName}: ${err && err.message ? err.message : err}`);
+        return false;
+    }
+
+    console.log(`[StaticPosters] reso al volo da ERDB: ${fileName}`);
+    return true;
+};
+
 router.get('/erdb-poster/:file', (req, res) => {
     const fileName = req.params.file;
 
@@ -65,25 +144,47 @@ router.get('/erdb-poster/:file', (req, res) => {
         return sendNotFound(res);
     }
 
-    // La cartella può non esistere (o non essere ancora montata): non è un errore, è un 404.
-    let stats;
-    try {
-        stats = fs.statSync(filePath);
-    } catch {
-        return sendNotFound(res);
-    }
-    if (!stats.isFile()) return sendNotFound(res);
+    // Il file può non esserci, e la cartella può non esistere (o non essere ancora montata):
+    // nessuna delle due è un errore, è un 404... se ERDB è raggiungibile, prima un tentativo.
+    const chiedi = async () => {
+        let reso;
+        try {
+            reso = await chiediPosterAErdb(fileName, filePath);
+        } catch (err) {
+            // Difesa in profondità: `chiediPosterAErdb` non lancia, ma una rotta che butta
+            // un'eccezione su una rete che non risponde è un guasto nuovo.
+            console.warn(`[StaticPosters] richiesta a ERDB fallita per ${fileName}: ${err && err.message ? err.message : err}`);
+            reso = false;
+        }
+        // Se il file ora c'è lo si serve da disco (stessi header di un file già presente:
+        // il `Cache-Control` è quello da HIT perché il file è in cartella, ora).
+        // Se ERDB non ha risposto, è il 404 di prima: la rotta non serve mai mezzo poster.
+        return reso ? inviaFile(res, filePath, contentType) : sendNotFound(res);
+    };
 
+    if (!filePresente(filePath)) return chiedi();
+
+    return inviaFile(res, filePath, contentType);
+});
+
+/**
+ * Serve il file dalla cartella con il content-type già deciso.
+ * Il `Cache-Control` è quello da HIT anche per il file appena reso al volo: il file c'è, e
+ * da questo momento in poi è un file in cartella come gli altri.
+ */
+const inviaFile = (res, filePath, contentType) => {
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', CACHE_CONTROL_HIT);
     return res.sendFile(filePath, { cacheControl: false, dotfiles: 'deny' }, (err) => {
         // Il file può sparire tra il controllo e l'invio: in quel caso 404, non una mezza risposta.
         if (err && !res.headersSent) sendNotFound(res);
     });
-});
+};
 
 /**
  * Registra la rotta GET /erdb-poster/:file sull'app Express.
+ * Se il file non è in cartella e c'è `ERDB_LOCAL_BASE`, il poster viene chiesto all'istanza
+ * ERDB locale e scritto in cartella prima di essere servito.
  * I poster arrivano già composti da fuori e vengono letti dalla cartella indicata da
  * process.env.ERDB_CACHE_DIR (default /data/erdb-cache).
  */
