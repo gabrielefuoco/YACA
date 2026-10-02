@@ -173,17 +173,33 @@ class AnimeMappingStore {
                 if (item.mal_id) newIndex.mal.set(String(item.mal_id), item.kitsu_id);
                 
                 if (item.themoviedb_id) {
-                    const tmdbVal = typeof item.themoviedb_id === 'object' && item.themoviedb_id !== null
-                        ? (item.themoviedb_id.tv || item.themoviedb_id.movie)
-                        : item.themoviedb_id;
+                    const rawTmdb = item.themoviedb_id;
+                    const tmdbVal = typeof rawTmdb === 'object' && rawTmdb !== null
+                        ? (rawTmdb.tv || rawTmdb.movie)
+                        : rawTmdb;
 
-                    if (tmdbVal) {
-                        newKitsuToTmdb.set(String(item.kitsu_id), String(tmdbVal));
+                    // Nel file vero `themoviedb_id.movie` è un ARRAY di id numerici
+                    // (1-4 varianti dello stesso film: rifacimenti, compilation, uscite
+                    // alternative). String() su quell'array produceva "128,1390599",
+                    // che non è un id TMDB: la mappa in avanti finiva spazzatura e la
+                    // doppiatura cercata per id TMDB non trovava niente.
+                    // In avanti vale il PRIMO id (contratto della mappa: una sola TMDB
+                    // per Kitsu/MAL); in dietro vanno registrati TUTTI, così ogni
+                    // titolo TMDB del gruppo sa tornare al suo Kitsu.
+                    const tmdbIds = Array.isArray(tmdbVal)
+                        ? tmdbVal.filter(id => id !== null && id !== undefined && id !== '')
+                        : (tmdbVal ? [tmdbVal] : []);
+
+                    if (tmdbIds.length > 0) {
+                        const primaryTmdb = String(tmdbIds[0]);
+                        newKitsuToTmdb.set(String(item.kitsu_id), primaryTmdb);
                         if (item.mal_id) {
-                            newMalToTmdb.set(String(item.mal_id), String(tmdbVal));
+                            newMalToTmdb.set(String(item.mal_id), primaryTmdb);
                         }
-                        if (item.type === 'Movie' || (typeof item.themoviedb_id === 'object' && item.themoviedb_id.movie)) {
-                            newTmdbToKitsuMovie.set(String(tmdbVal), item.kitsu_id);
+                        if (item.type === 'Movie' || (typeof rawTmdb === 'object' && rawTmdb !== null && rawTmdb.movie)) {
+                            for (const tmdbId of tmdbIds) {
+                                newTmdbToKitsuMovie.set(String(tmdbId), item.kitsu_id);
+                            }
                         }
                     }
                 }
