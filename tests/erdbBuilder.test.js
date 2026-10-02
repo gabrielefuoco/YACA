@@ -40,50 +40,65 @@ async function makeTmpDir() {
 }
 
 describe('posterFileName (funzione pura)', () => {
-    test('produce il nome documentato: movie_27205_ITA.jpg', () => {
-        expect(builder.posterFileName({ type: 'movie', id: 27205, badge: 'ITA' }))
-            .toBe('movie_27205_ITA.jpg');
+    test('produce il nome documentato: tmdb-movie-27205_ITA.jpg', () => {
+        expect(builder.posterFileName({ erdbId: 'tmdb:movie:27205', badge: 'ITA' }))
+            .toBe('tmdb-movie-27205_ITA.jpg');
     });
 
-    test('accetta id numerici o stringhe indistintamente', () => {
-        expect(builder.posterFileName({ type: 'series', id: 1399, badge: 'ENG' }))
-            .toBe('series_1399_ENG.jpg');
-        expect(builder.posterFileName({ type: 'series', id: '1399', badge: 'ENG' }))
-            .toBe('series_1399_ENG.jpg');
+    test('i due punti dell\'erdbId diventano trattini, mai due underscore', () => {
+        expect(builder.posterFileName({ erdbId: 'kitsu:1234', badge: 'ITA' }))
+            .toBe('kitsu-1234_ITA.jpg');
+        expect(builder.posterFileName({ erdbId: 'tmdb:tv:1399', badge: 'ENG' }))
+            .toBe('tmdb-tv-1399_ENG.jpg');
     });
 
-    test('senza badge il nome resta deterministico e senza doppio underscore', () => {
-        expect(builder.posterFileName({ type: 'anime', id: 1535, badge: '' }))
-            .toBe('anime_1535.jpg');
-        expect(builder.posterFileName({ type: 'anime', id: 1535 }))
-            .toBe('anime_1535.jpg');
+    test('gli ID gia\' pronti passano come sono', () => {
+        // IMDb: prefisso "imdb:" da usare, cosi' tt... resta tt...
+        expect(builder.posterFileName({ erdbId: 'tt1234567', badge: 'ITA' }))
+            .toBe('tt1234567_ITA.jpg');
+        expect(builder.posterFileName({ erdbId: 'anilist:1535' }))
+            .toBe('anilist-1535.jpg');
+        expect(builder.posterFileName({ erdbId: 'mal:21' }))
+            .toBe('mal-21.jpg');
+        expect(builder.posterFileName({ erdbId: 'anidb:1234' }))
+            .toBe('anidb-1234.jpg');
+    });
+
+    test('senza badge il nome resta deterministico e senza underscore finale', () => {
+        expect(builder.posterFileName({ erdbId: 'tmdb:movie:27205', badge: '' }))
+            .toBe('tmdb-movie-27205.jpg');
+        expect(builder.posterFileName({ erdbId: 'tmdb:movie:27205' }))
+            .toBe('tmdb-movie-27205.jpg');
     });
 
     test('ripulisce i caratteri non sicuri per il filesystem', () => {
-        expect(builder.posterFileName({ type: 'tv show', id: '../../etc', badge: 'ITA/2' }))
-            .toBe('tv_show_.._.._etc_ITA_2.jpg');
+        expect(builder.posterFileName({ erdbId: '../../etc/passwd', badge: 'ITA/2' }))
+            .toBe('etc-passwd_ITA_2.jpg');
     });
 
     test('e\' deterministica: stesse voci -> stesso nome', () => {
-        const entry = { type: 'movie', id: 27205, badge: 'ITA' };
+        const entry = { erdbId: 'tmdb:movie:27205', badge: 'ITA' };
         expect(builder.posterFileName(entry)).toBe(builder.posterFileName(entry));
     });
 
-    test('rifiuta voci senza type o id', () => {
-        expect(() => builder.posterFileName({ id: 1 })).toThrow(/type/);
-        expect(() => builder.posterFileName({ type: 'movie' })).toThrow(/id/);
+    test('rifiuta voci senza erdbId', () => {
+        expect(() => builder.posterFileName({ badge: 'ITA' })).toThrow(/erdbId/);
+        expect(() => builder.posterFileName({ erdbId: '   ' })).toThrow(/erdbId/);
+        expect(() => builder.posterFileName({ erdbId: ':::' })).toThrow(/erdbId/);
     });
 });
 
 describe('posterUrl (funzione pura)', () => {
-    test('costruisce {base}/poster/{type}:{id}.jpg?badge={badge}', () => {
-        expect(builder.posterUrl('https://easyratingsdb.com/CHIAVE', { type: 'movie', id: 27205, badge: 'ITA' }))
-            .toBe('https://easyratingsdb.com/CHIAVE/poster/movie:27205.jpg?badge=ITA');
+    test('costruisce {base}/poster/{erdbId}.jpg?badge={badge}', () => {
+        expect(builder.posterUrl('https://easyratingsdb.com/Tk-xxxx', { erdbId: 'tmdb:movie:27205', badge: 'ITA' }))
+            .toBe('https://easyratingsdb.com/Tk-xxxx/poster/tmdb:movie:27205.jpg?badge=ITA');
     });
 
     test('toglie lo slash finale della base e omette badge se assente', () => {
-        expect(builder.posterUrl('https://easyratingsdb.com/CHIAVE/', { type: 'series', id: 1399 }))
-            .toBe('https://easyratingsdb.com/CHIAVE/poster/series:1399.jpg');
+        expect(builder.posterUrl('https://easyratingsdb.com/Tk-xxxx/', { erdbId: 'tt1234567' }))
+            .toBe('https://easyratingsdb.com/Tk-xxxx/poster/tt1234567.jpg');
+        expect(builder.posterUrl('https://easyratingsdb.com/Tk-xxxx', { erdbId: 'kitsu:1234' }))
+            .toBe('https://easyratingsdb.com/Tk-xxxx/poster/kitsu:1234.jpg');
     });
 });
 
@@ -108,30 +123,31 @@ describe('isReusable (logica di ripresa)', () => {
 describe('parseJsonl', () => {
     test('legge una riga per titolo e ignora righe vuote o commenti', () => {
         const { entries, errors } = builder.parseJsonl([
-            '{"type":"movie","id":27205,"badge":"ITA"}',
+            '{"erdbId":"tmdb:movie:27205","badge":"ITA"}',
             '',
             '# un commento',
-            '{"type":"series","id":1399}'
+            '{"erdbId":"tt1234567"}'
         ].join('\n'));
 
         expect(entries).toEqual([
-            { type: 'movie', id: '27205', badge: 'ITA' },
-            { type: 'series', id: '1399', badge: '' }
+            { erdbId: 'tmdb:movie:27205', badge: 'ITA' },
+            { erdbId: 'tt1234567', badge: '' }
         ]);
         expect(errors).toEqual([]);
     });
 
     test('le righe rotte finiscono in errors con il numero di riga', () => {
         const { entries, errors } = builder.parseJsonl([
-            '{"type":"movie","id":1}',
+            '{"erdbId":"tmdb:movie:27205"}',
             '{rotta',
-            '{"badge":"ITA"}'
+            '{"badge":"ITA"}' // manca erdbId
         ].join('\n'));
 
         expect(entries).toHaveLength(1);
         expect(errors).toHaveLength(2);
         expect(errors[0].line).toBe(2);
         expect(errors[1].line).toBe(3);
+        expect(errors[1].motivo).toMatch(/erdbId/);
     });
 });
 
@@ -177,14 +193,14 @@ describe('run: ripresa su cartella reale', () => {
 
     test('scarica tutto al primo giro e scrive report.json', async () => {
         await writeList([
-            { type: 'movie', id: 27205, badge: 'ITA' },
-            { type: 'series', id: 1399, badge: 'ENG' }
+            { erdbId: 'tmdb:movie:27205', badge: 'ITA' },
+            { erdbId: 'tmdb:tv:1399', badge: 'ENG' }
         ]);
         const { fakeFetch, calls } = createFakeFetch();
 
         const report = await builder.run({
             list: listFile,
-            base: 'https://easyratingsdb.com/CHIAVE',
+            base: 'https://easyratingsdb.com/Tk-xxxx',
             out: path.join(outDir, 'poster'),
             delay: 0,
             fetchImpl: fakeFetch
@@ -192,27 +208,27 @@ describe('run: ripresa su cartella reale', () => {
 
         expect(report).toMatchObject({ totale: 2, resi: 2, saltati: 0, falliti: 0 });
         expect(calls).toEqual([
-            'https://easyratingsdb.com/CHIAVE/poster/movie:27205.jpg?badge=ITA',
-            'https://easyratingsdb.com/CHIAVE/poster/series:1399.jpg?badge=ENG'
+            'https://easyratingsdb.com/Tk-xxxx/poster/tmdb:movie:27205.jpg?badge=ITA',
+            'https://easyratingsdb.com/Tk-xxxx/poster/tmdb:tv:1399.jpg?badge=ENG'
         ]);
 
         const posterDir = path.join(outDir, 'poster');
         expect(await fs.promises.readdir(posterDir)).toEqual(
-            expect.arrayContaining(['movie_27205_ITA.jpg', 'series_1399_ENG.jpg', 'report.json'])
+            expect.arrayContaining(['tmdb-movie-27205_ITA.jpg', 'tmdb-tv-1399_ENG.jpg', 'report.json'])
         );
     });
 
     test('secondo giro sullo stesso out: salta tutto e non rifà richieste', async () => {
         await writeList([
-            { type: 'movie', id: 27205, badge: 'ITA' },
-            { type: 'series', id: 1399, badge: 'ENG' }
+            { erdbId: 'tmdb:movie:27205', badge: 'ITA' },
+            { erdbId: 'tmdb:tv:1399', badge: 'ENG' }
         ]);
         const posterDir = path.join(outDir, 'poster');
 
-        await builder.run({ list: listFile, base: 'https://easyratingsdb.com/CHIAVE', out: posterDir, delay: 0, fetchImpl: createFakeFetch().fakeFetch });
+        await builder.run({ list: listFile, base: 'https://easyratingsdb.com/Tk-xxxx', out: posterDir, delay: 0, fetchImpl: createFakeFetch().fakeFetch });
 
         const { fakeFetch, calls } = createFakeFetch();
-        const report = await builder.run({ list: listFile, base: 'https://easyratingsdb.com/CHIAVE', out: posterDir, delay: 0, fetchImpl: fakeFetch });
+        const report = await builder.run({ list: listFile, base: 'https://easyratingsdb.com/Tk-xxxx', out: posterDir, delay: 0, fetchImpl: fakeFetch });
 
         expect(report).toMatchObject({ totale: 2, resi: 0, saltati: 2, falliti: 0 });
         expect(calls).toEqual([]); // nessuna richiesta: la ripresa funziona
@@ -221,14 +237,14 @@ describe('run: ripresa su cartella reale', () => {
     test('file gia\' presente e NON vuoto -> saltato, anche senza rete disponibile', async () => {
         const posterDir = path.join(outDir, 'poster');
         await fs.promises.mkdir(posterDir, { recursive: true });
-        await fs.promises.writeFile(path.join(posterDir, 'movie_27205_ITA.jpg'), 'poster gia\' scaricato');
+        await fs.promises.writeFile(path.join(posterDir, 'tmdb-movie-27205_ITA.jpg'), 'poster gia\' scaricato');
 
-        await writeList([{ type: 'movie', id: 27205, badge: 'ITA' }]);
+        await writeList([{ erdbId: 'tmdb:movie:27205', badge: 'ITA' }]);
 
         const fakeFetch = async () => { throw new Error('la rete non deve essere toccata'); };
         const report = await builder.run({
             list: listFile,
-            base: 'https://easyratingsdb.com/CHIAVE',
+            base: 'https://easyratingsdb.com/Tk-xxxx',
             out: posterDir,
             delay: 0,
             fetchImpl: fakeFetch
@@ -240,41 +256,41 @@ describe('run: ripresa su cartella reale', () => {
     test('file presente ma VUOTO -> rifatto (download abortito non blocca)', async () => {
         const posterDir = path.join(outDir, 'poster');
         await fs.promises.mkdir(posterDir, { recursive: true });
-        await fs.promises.writeFile(path.join(posterDir, 'movie_27205_ITA.jpg'), ''); // 0 byte
+        await fs.promises.writeFile(path.join(posterDir, 'tmdb-movie-27205_ITA.jpg'), ''); // 0 byte
 
-        await writeList([{ type: 'movie', id: 27205, badge: 'ITA' }]);
+        await writeList([{ erdbId: 'tmdb:movie:27205', badge: 'ITA' }]);
 
         const { fakeFetch, calls } = createFakeFetch();
         const report = await builder.run({
             list: listFile,
-            base: 'https://easyratingsdb.com/CHIAVE',
+            base: 'https://easyratingsdb.com/Tk-xxxx',
             out: posterDir,
             delay: 0,
             fetchImpl: fakeFetch
         });
 
         expect(report).toMatchObject({ totale: 1, resi: 1, saltati: 0, falliti: 0 });
-        expect(calls).toHaveLength(1);
-        const stat = await fs.promises.stat(path.join(posterDir, 'movie_27205_ITA.jpg'));
+        expect(calls).toEqual(['https://easyratingsdb.com/Tk-xxxx/poster/tmdb:movie:27205.jpg?badge=ITA']);
+        const stat = await fs.promises.stat(path.join(posterDir, 'tmdb-movie-27205_ITA.jpg'));
         expect(stat.size).toBeGreaterThan(0);
     });
 
     test('misto: solo i file mancanti o vuoti vengono riscaricati', async () => {
         const posterDir = path.join(outDir, 'poster');
         await fs.promises.mkdir(posterDir, { recursive: true });
-        await fs.promises.writeFile(path.join(posterDir, 'movie_27205_ITA.jpg'), 'gia fatto');
-        await fs.promises.writeFile(path.join(posterDir, 'series_1399_ENG.jpg'), '');
+        await fs.promises.writeFile(path.join(posterDir, 'tmdb-movie-27205_ITA.jpg'), 'gia fatto');
+        await fs.promises.writeFile(path.join(posterDir, 'kitsu-1234_ITA.jpg'), '');
 
         await writeList([
-            { type: 'movie', id: 27205, badge: 'ITA' },   // salvato
-            { type: 'series', id: 1399, badge: 'ENG' },   // vuoto -> rifatto
-            { type: 'anime', id: 1535, badge: 'ITA' }    // mai visto -> rifatto
+            { erdbId: 'tmdb:movie:27205', badge: 'ITA' }, // salvato
+            { erdbId: 'kitsu:1234', badge: 'ITA' },         // vuoto -> rifatto
+            { erdbId: 'tt1234567', badge: 'ITA' }          // mai visto -> rifatto
         ]);
 
         const { fakeFetch, calls } = createFakeFetch();
         const report = await builder.run({
             list: listFile,
-            base: 'https://easyratingsdb.com/CHIAVE',
+            base: 'https://easyratingsdb.com/Tk-xxxx',
             out: posterDir,
             delay: 0,
             fetchImpl: fakeFetch
@@ -282,16 +298,16 @@ describe('run: ripresa su cartella reale', () => {
 
         expect(report).toMatchObject({ totale: 3, resi: 2, saltati: 1, falliti: 0 });
         expect(calls).toEqual([
-            'https://easyratingsdb.com/CHIAVE/poster/series:1399.jpg?badge=ENG',
-            'https://easyratingsdb.com/CHIAVE/poster/anime:1535.jpg?badge=ITA'
+            'https://easyratingsdb.com/Tk-xxxx/poster/kitsu:1234.jpg?badge=ITA',
+            'https://easyratingsdb.com/Tk-xxxx/poster/tt1234567.jpg?badge=ITA'
         ]);
     });
 
     test('i fallimenti finiscono nel report con il motivo', async () => {
-        // fallOn conta le richieste in ordine: la prima (id 1) risponde 404.
+        // la prima richiesta (tmdb:movie:1) risponde 404.
         await writeList([
-            { type: 'movie', id: 1, badge: 'ITA' },
-            { type: 'movie', id: 2, badge: 'ITA' }
+            { erdbId: 'tmdb:movie:1', badge: 'ITA' },
+            { erdbId: 'tmdb:movie:2', badge: 'ITA' }
         ]);
         const posterDir = path.join(outDir, 'poster');
         const { fakeFetch } = createFakeFetch({ failOn: new Set([1]) });
@@ -306,17 +322,17 @@ describe('run: ripresa su cartella reale', () => {
 
         expect(report).toMatchObject({ resi: 1, falliti: 1 });
         expect(report.fallimenti).toHaveLength(1);
-        expect(report.fallimenti[0]).toMatchObject({ type: 'movie', id: '1', motivo: 'HTTP 404' });
+        expect(report.fallimenti[0]).toMatchObject({ erdbId: 'tmdb:movie:1', motivo: 'HTTP 404' });
         // il fallito non lascia file sporchi in giro
-        expect(fs.existsSync(path.join(posterDir, 'movie_1_ITA.jpg'))).toBe(false);
+        expect(fs.existsSync(path.join(posterDir, 'tmdb-movie-1_ITA.jpg'))).toBe(false);
     });
 
     test('report.json su disco contiene resi, saltati, falliti e durata', async () => {
-        await writeList([{ type: 'movie', id: 27205, badge: 'ITA' }]);
+        await writeList([{ erdbId: 'tmdb:movie:27205', badge: 'ITA' }]);
         const posterDir = path.join(outDir, 'poster');
         await builder.run({
             list: listFile,
-            base: 'https://easyratingsdb.com/CHIAVE',
+            base: 'https://easyratingsdb.com/Tk-xxxx',
             out: posterDir,
             delay: 0,
             fetchImpl: createFakeFetch().fakeFetch
@@ -331,7 +347,7 @@ describe('run: ripresa su cartella reale', () => {
 
     test('la pausa (--delay) viene applicata fra le richieste', async () => {
         const rows = [];
-        for (let id = 1; id <= 3; id++) rows.push({ type: 'movie', id, badge: 'ITA' });
+        for (let id = 1; id <= 3; id++) rows.push({ erdbId: `tmdb:movie:${id}`, badge: 'ITA' });
         await writeList(rows);
 
         const tempi = [];

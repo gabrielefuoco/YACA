@@ -10,7 +10,7 @@
  *   node scripts/erdb-builder/build.js --list titoli.jsonl --base https://easyratingsdb.com/CHIAVE --out cache/erdb
  *
  * Opzioni:
- *   --list <file>        lista JSONL, una riga per titolo: {"type":"movie","id":27205,"badge":"ITA"}
+ *   --list <file>        lista JSONL, una riga per titolo: {"erdbId":"tmdb:movie:27205","badge":"ITA"}
  *   --base <url>         base ERDB (obbligatoria)
  *   --out <dir>          cartella di destinazione (creata se manca)
  *   --delay <ms>         pausa fra una richiesta e l'altra (default 300)
@@ -30,6 +30,21 @@ const REPORT_FILE = 'report.json';
 // Funzioni pure (testabili senza rete e senza filesystem)
 // ---------------------------------------------------------------------------
 
+/**
+ * Ripulisce l'`erdbId` per usarlo come nome file.
+ * I ':' che separano i segmenti (`tmdb:movie:27205`) non possono stare in un
+ * nome file: diventano trattini, quindi `tmdb-movie-27205`.
+ * Il formato dell'`erdbId` NON viene reinterpretato qui: lo produce gia' la funzione
+ * `getErdbId` dell'app, che resta l'unica fonte di verita.
+ */
+function sanitizeErdbId(value) {
+    if (value === undefined || value === null) return '';
+    return String(value)
+        .trim()
+        .replace(/[^A-Za-z0-9._-]+/g, '-') // i ':' (e qualsiasi altro separatore) -> '-'
+        .replace(/^[-._]+|[-._]+$/g, '');
+}
+
 /** Ripulisce un pezzo di nome file mantenendolo leggibile e deterministico. */
 function sanitizePart(value) {
     if (value === undefined || value === null) return '';
@@ -39,28 +54,27 @@ function sanitizePart(value) {
 }
 
 /**
- * Nome file deterministico per un poster: `movie_27205_ITA.jpg`.
+ * Nome file deterministico per un poster: `tmdb-movie-27205_ITA.jpg`.
  * Funzione pura: stesse voci in ingresso -> stesso nome in uscita, sempre.
  */
 function posterFileName(entry) {
-    const type = sanitizePart(entry.type);
-    const id = sanitizePart(entry.id);
-    if (!type) {
-        throw new Error(`campo "type" mancante o non valido: ${JSON.stringify(entry)}`);
-    }
-    if (!id) {
-        throw new Error(`campo "id" mancante o non valido: ${JSON.stringify(entry)}`);
+    const erdbId = sanitizeErdbId(entry.erdbId);
+    if (!erdbId) {
+        throw new Error(`campo "erdbId" mancante o non valido: ${JSON.stringify(entry)}`);
     }
     const badge = entry.badge === undefined || entry.badge === null || entry.badge === ''
         ? ''
         : `_${sanitizePart(entry.badge)}`;
-    return `${type}_${id}${badge}.jpg`;
+    return `${erdbId}${badge}.jpg`;
 }
 
-/** URL del poster: `{base}/poster/{type}:{id}.jpg?badge={badge}` (badge omesso se assente). */
+/**
+ * URL del poster: `{base}/poster/{erdbId}.jpg?badge={badge}` (badge omesso se assente).
+ * L'`erdbId` va nel path cosi' com'e', come nell'app: i ':' sono leciti in un path segment.
+ */
 function posterUrl(base, entry) {
     const cleanBase = String(base).replace(/\/+$/, '');
-    const url = `${cleanBase}/poster/${entry.type}:${entry.id}.jpg`;
+    const url = `${cleanBase}/poster/${entry.erdbId}.jpg`;
     if (entry.badge === undefined || entry.badge === null || entry.badge === '') {
         return url;
     }
@@ -84,17 +98,19 @@ function isUsableImage(buffer, contentType) {
         buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
 }
 
-/** Normalizza una riga JSONL in `{type, id, badge}` oppure lancia. */
+/**
+ * Normalizza una riga JSONL in `{erdbId, badge}` oppure lancia.
+ * L'`erdbId` arriva gia' pronto dalla lista (lo produce `getErdbId` nell'app):
+ * qui non si applicano le regole di conversione, cosi' resta una sola fonte di verita'.
+ */
 function normalizeEntry(raw) {
     if (!raw || typeof raw !== 'object') {
         throw new Error('la riga non e\' un oggetto JSON');
     }
-    const type = raw.type === undefined || raw.type === null ? '' : String(raw.type).trim();
-    const id = raw.id === undefined || raw.id === null ? '' : String(raw.id).trim();
-    if (!type) throw new Error('campo "type" mancante');
-    if (!id) throw new Error('campo "id" mancante');
+    const erdbId = raw.erdbId === undefined || raw.erdbId === null ? '' : String(raw.erdbId).trim();
+    if (!erdbId) throw new Error('campo "erdbId" mancante');
     const badge = raw.badge === undefined || raw.badge === null ? '' : String(raw.badge).trim();
-    return { type, id, badge };
+    return { erdbId, badge };
 }
 
 /**
@@ -199,7 +215,7 @@ function parseArgs(argv = []) {
 const HELP = [
     'Costruisce la cache locale dei poster ERDB (ripartibile: salta i file gia\' scaricati).',
     '',
-    '  --list <file>       lista JSONL: {"type":"movie","id":27205,"badge":"ITA"}',
+    '  --list <file>       lista JSONL: {"erdbId":"tmdb:movie:27205","badge":"ITA"}',
     '  --base <url>        base ERDB, obbligatoria',
     '  --out <dir>         cartella di destinazione',
     `  --delay <ms>        pausa fra le richieste (default ${DEFAULT_DELAY})`,
@@ -293,8 +309,7 @@ async function run({
                 if (onProgress) onProgress({ entry, esito: 'reso', bytes: result.bytes, posizione: position + 1, totale: entries.length });
             } catch (err) {
                 fallimenti.push({
-                    type: entry.type,
-                    id: entry.id,
+                    erdbId: entry.erdbId,
                     badge: entry.badge,
                     file: fileName,
                     motivo: err && err.message ? err.message : String(err)
@@ -376,7 +391,7 @@ async function main(argv = process.argv.slice(2)) {
         delay: options.delay,
         concurrency: options.concurrency,
         onProgress: ({ esito, entry, posizione, totale }) => {
-            const etichetta = `${entry.type}:${entry.id}${entry.badge ? ` (${entry.badge})` : ''}`;
+            const etichetta = `${entry.erdbId}${entry.badge ? ` (${entry.badge})` : ''}`;
             if (esito === 'reso') console.log(`[${posizione}/${totale}] reso    ${etichetta}`);
             else if (esito === 'saltato') console.log(`[${posizione}/${totale}] saltato ${etichetta}`);
             else console.log(`[${posizione}/${totale}] FALLITO ${etichetta}`);
@@ -400,6 +415,7 @@ module.exports = {
     REPORT_FILE,
     HELP,
     sanitizePart,
+    sanitizeErdbId,
     posterFileName,
     posterUrl,
     isReusable,
