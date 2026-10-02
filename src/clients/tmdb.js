@@ -569,9 +569,14 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
 }
 
 /**
- * Ottiene i dettagli completi per il Meta Handler di Stremio
+ * Ottiene i dettagli completi per il Meta Handler di Stremio.
+ *
+ * `options.skipEpisodes` serve agli chiamanti che hanno bisogno solo della scheda (per esempio
+ * l'arricchimento dei risultati di ricerca): salta il download delle stagioni, che ha senso
+ * solo quando l'utente apre la scheda. Il resto del percorso, cache `tmdb_details_raw`
+ * compresa, resta identico.
  */
-async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
+async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}, options = {}) {
     const tmdbId = id.replace('tmdb:', '').trim();
 
     if (!/^\d+$/.test(tmdbId)) {
@@ -780,7 +785,8 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}) {
 
     // Se è una serie TV, scarica gli episodi per popolare la griglia in Stremio
     // Skip episode fetching for anime — metaHandler will use Kitsu episodes instead
-    if (type === 'series' && data.number_of_seasons && !isAnime) {
+    // Skip anche quando lo chiamante ha dichiarato di non volere la griglia episodi.
+    if (!options.skipEpisodes && type === 'series' && data.number_of_seasons && !isAnime) {
         meta.videos = await fetchTmdbEpisodes(
             client,
             tmdbId,
