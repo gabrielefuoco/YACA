@@ -22,6 +22,26 @@ const { posterFileName, posterUrl } = require('../../scripts/erdb-builder/build'
 // Qualunque altro valore e' un evento malformato e deve farsi sentire (vedi `erdbIdDaEvento`).
 const TIPI_NOTI = new Set(['movie', 'tv']);
 
+/*
+ * Il giro INDIETRO (dal nome file all'id ERDB) e' diverso da quello in avanti per una
+ * ragione sola: la trasformazione e' lossy. `sanitizeErdbId` (costruttore) scrive i ':'
+ * come '-', quindi `tmdb:movie:27205` e `tmdb-movie-27205` finiscono nello stesso file e
+ * viceversa: dal nome NON si ricava un id se non riconoscendo le forme note.
+ * Percio' qui sotto ci sono solo forme note, niente euristiche: un nome non riconosciuto
+ * dà `null` (nessuna cache, si risponde 404), mentre un id sbagliato chiederebbe a ERDB
+ * il poster di un titolo DIVERSO e lo metterebbe in cache sotto il nome giusto: un errore
+ * che non si vede piu'.
+ */
+
+// Le uniche estensioni che la rotta serve: se il nome non ne ha una di queste, non e' un
+// poster che la rotta chiederebbe (vedi `CONTENT_TYPES` in `src/api/staticPosters.js`).
+const ESTENSIONE_ROTTA = /\.(?:jpg|jpeg|webp)$/i;
+
+// Le due uniche famiglie di nomi note. Il gruppo del badge e' opzionale e ammette solo
+// `ITA`: un badge non previsto non viene "indovinato" (vedi nota sui buchi in fondo al file).
+const NOME_TMDB = /^tmdb-(movie|tv)-(\d+)(?:_(ITA))?$/;
+const NOME_KITSU = /^kitsu-(\d+)(?:_(ITA))?$/;
+
 /**
  * Ricostruisce l'id ERDB di un evento: `tmdb:movie:27205`, `tmdb:tv:1396`, `kitsu:265`.
  *
@@ -60,6 +80,69 @@ function erdbIdDaEvento({ tipo, id } = {}) {
 function nomeFileDaEvento({ tipo, id, badge } = {}) {
     return posterFileName({ erdbId: erdbIdDaEvento({ tipo, id }), badge });
 }
+
+/**
+ * Giro INDIETRO: dal nome file di un poster all'id ERDB da chiedere a ERDB.
+ *
+ * Serve a chi deve decidere se un file esiste davvero (la rotta statica risponde 404 se
+ * manca, e un 404 puo' voler dire "non e' ancora arrivato", non "non esiste"): dal nome
+ * che la rotta ha ricevuto si ricava l'id da chiedere a ERDB.
+ *
+ * Funzione PURA e TOTALE: non lancia mai. Una rotta non deve poter fallire per una
+ * stringa sbagliata: qui la risposta sbagliata è `null` ("non lo so", e la rotta risponde
+ * 404 come deve), non un'eccezione. Per questo qui, a differenza di `erdbIdDaEvento`,
+ * nessun ingresso fa sollevare: un evento malformato si becca in coda, un nome strano
+ * arriva dalla rete.
+ *
+ * Riconosce SOLO le forme note:
+ *   `tmdb-movie-<cifre>[_ITA].jpg`, `tmdb-tv-<cifre>[_ITA].jpg`, `kitsu-<cifre>[_ITA].jpg`
+ * (estensione anche `.jpeg`/`.webp`, come accetta la rotta). Tutto il resto -> `null`.
+ *
+ * @param {string} nomeFile nome grezzo, come arriva alla rotta (`tmdb-movie-27205_ITA.jpg`)
+ * @returns {{erdbId: string, badge: string|null}|null} `badge` vale `null` se il nome non
+ *   ne porta, altrimenti la stringa del suffisso (`'ITA'`).
+ */
+function erdbIdDaNomeFile(nomeFile) {
+    // La rotta passa sempre una stringa: tutto il resto non e' un nome, e non si indovina.
+    if (typeof nomeFile !== 'string' || nomeFile === '') return null;
+
+    const nome = nomeFile.trim();
+    if (!nome) return null;
+
+    // Stesse condizioni di `isSafeFileName` nella rotta: nessun nome che attraversa
+    // directory o risale. Qui non viene mai usato un nome cosi' (non si tocca il file
+    // system), ma un nome che contiene un separatore non e' un nome file conosciuto e
+    // restituirci un id sarebbe indovinare.
+    if (nome.includes('/') || nome.includes('\\') || nome.includes('..') || nome.includes('\0')) {
+        return null;
+    }
+
+    const estensione = ESTENSIONE_ROTTA.exec(nome);
+    if (!estensione) return null;
+    const base = nome.slice(0, nome.length - estensione[0].length);
+
+    const tmdb = NOME_TMDB.exec(base);
+    if (tmdb) {
+        return { erdbId: `tmdb:${tmdb[1]}:${tmdb[2]}`, badge: tmdb[3] || null };
+    }
+
+    const kitsu = NOME_KITSU.exec(base);
+    if (kitsu) {
+        return { erdbId: `kitsu:${kitsu[1]}`, badge: kitsu[2] || null };
+    }
+
+    // Prefisso ignoto (`tmdb-xxx-...`, `anime-...`), id non numerico, nome troncato.
+    return null;
+}
+
+/*
+ * BUCHI NOTI (scelti, non dimenticati): il costruttore puo' produrre anche
+ * `tmdb-tv-1399_ENG.jpg` (badge qualunque, vedi `sanitizePart`) e questo inverso NON lo
+ * riconosce -> `null`. Motivo: il badge non e' una parte dell'id, e accettarne uno
+ * qualsiasi non aggiungerebbe casi utili: se il chiamante ha un badge da richiedere usa
+ * quello che gia' conosce. Se un giorno serve, la regola e' una lista chiusa di badge
+ * (`ITA`, `ENG`, ...), non un carattere jolly.
+ */
 
 /**
  * URL del poster lato ERDB: `{base}/poster/{erdbId}.jpg?badge={badge}`.
@@ -128,6 +211,7 @@ function erdbIdsDaEvento({ tipo, id } = {}, cercaKitsu) {
 
 module.exports = {
     erdbIdDaEvento,
+    erdbIdDaNomeFile,
     erdbIdsDaEvento,
     nomeFileDaEvento,
     urlDaEvento

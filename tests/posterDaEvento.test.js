@@ -1,4 +1,4 @@
-const { erdbIdDaEvento, erdbIdsDaEvento, nomeFileDaEvento, urlDaEvento } = require('../src/cache/posterDaEvento');
+const { erdbIdDaEvento, erdbIdDaNomeFile, erdbIdsDaEvento, nomeFileDaEvento, urlDaEvento } = require('../src/cache/posterDaEvento');
 
 /*
  * I nomi file attesi qui sono SCRITTI A MANO, non presi da `posterFileName`.
@@ -178,5 +178,127 @@ describe('posterDaEvento - erdbIdsDaEvento (l\'elenco, con gli anime)', () => {
         expect(erdbIdsDaEvento({ tipo: 'movie', id: 265, badge: 'ITA' }, CERCA_KITSU_MOVIE)
             .map((erdbId) => erdbId.replace(/:/g, '-') + '_ITA.jpg'))
             .toEqual(['tmdb-movie-265_ITA.jpg', 'kitsu-265_ITA.jpg']);
+    });
+});
+
+/*
+ * IL GIRO INDIETRO: dal nome file che la rotta riceve all'id ERDB da chiedere a ERDB.
+ *
+ * Qui sotto i nomi attesi sono SCRITTI A MANO, mai ricavati con `nomeFileDaEvento`: se il
+ * giro completo si confrontasse con la funzione in avanti sarebbe una tautologia (passerebbe
+ * anche se entrambe sbagliassero insieme). I letterali sono l'ancora.
+ */
+describe('posterDaEvento - erdbIdDaNomeFile (giro indietro)', () => {
+    test('le tre forme note tornano indietro (letterali)', () => {
+        expect(erdbIdDaNomeFile('tmdb-movie-27205_ITA.jpg'))
+            .toEqual({ erdbId: 'tmdb:movie:27205', badge: 'ITA' });
+        expect(erdbIdDaNomeFile('tmdb-tv-1396.jpg'))
+            .toEqual({ erdbId: 'tmdb:tv:1396', badge: null });
+        expect(erdbIdDaNomeFile('kitsu-265.jpg'))
+            .toEqual({ erdbId: 'kitsu:265', badge: null });
+    });
+
+    test('estensioni diverse: la rotta serve anche .jpeg e .webp', () => {
+        expect(erdbIdDaNomeFile('tmdb-movie-27205_ITA.jpeg'))
+            .toEqual({ erdbId: 'tmdb:movie:27205', badge: 'ITA' });
+        expect(erdbIdDaNomeFile('kitsu-265.webp'))
+            .toEqual({ erdbId: 'kitsu:265', badge: null });
+        // Estensione ignorata come fa la rotta (`extname().toLowerCase()`).
+        expect(erdbIdDaNomeFile('tmdb-tv-1396.JPG'))
+            .toEqual({ erdbId: 'tmdb:tv:1396', badge: null });
+    });
+
+    test('id non numerico: null (meglio nessuno che un id sbagliato)', () => {
+        expect(erdbIdDaNomeFile('tmdb-movie-abc_ITA.jpg')).toBeNull();
+        expect(erdbIdDaNomeFile('tmdb-movie-27205a.jpg')).toBeNull();
+        expect(erdbIdDaNomeFile('tmdb-movie-.jpg')).toBeNull();
+        expect(erdbIdDaNomeFile('kitsu-abc.jpg')).toBeNull();
+        // Id multi-segmento: i ':' diventano '-' e viceversa non si sa, non si indovina.
+        expect(erdbIdDaNomeFile('tmdb-27205.jpg')).toBeNull();
+    });
+
+    test('prefisso ignoto o nome troncato: null', () => {
+        expect(erdbIdDaNomeFile('tmdb-anime-265.jpg')).toBeNull();
+        expect(erdbIdDaNomeFile('anime-265.jpg')).toBeNull();
+        expect(erdbIdDaNomeFile('tmdb-movie.jpg')).toBeNull();
+        expect(erdbIdDaNomeFile('kitsu.jpg')).toBeNull();
+        expect(erdbIdDaNomeFile('27205.jpg')).toBeNull();
+    });
+
+    test('estensione ignota o assente: null (la rotta non li servirebbe)', () => {
+        expect(erdbIdDaNomeFile('kitsu-265.png')).toBeNull();
+        expect(erdbIdDaNomeFile('kitsu-265.gif')).toBeNull();
+        expect(erdbIdDaNomeFile('kitsu-265')).toBeNull();
+    });
+
+    test('separatori e risalimenti: null', () => {
+        expect(erdbIdDaNomeFile('sub/kitsu-265.jpg')).toBeNull();
+        expect(erdbIdDaNomeFile('cartella\\kitsu-265.jpg')).toBeNull();
+        expect(erdbIdDaNomeFile('..\\kitsu-265.jpg')).toBeNull();
+        expect(erdbIdDaNomeFile('../kitsu-265.jpg')).toBeNull();
+        expect(erdbIdDaNomeFile('kitsu-265.jpg/../altro')).toBeNull();
+        expect(erdbIdDaNomeFile('kitsu-265\0.jpg')).toBeNull();
+    });
+
+    test('ingressi che non sono nomi: null, e MAI un\'eccezione', () => {
+        for (const rotto of [undefined, null, '', '   ', 265, {}, [], ['kitsu-265.jpg']]) {
+            expect(() => erdbIdDaNomeFile(rotto)).not.toThrow();
+            expect(erdbIdDaNomeFile(rotto)).toBeNull();
+        }
+    });
+
+    test('giro completo: evento -> nome file -> stesso erdbId (letterali accanto)', () => {
+        const casi = [
+            {
+                evento: { tipo: 'movie', id: 27205 },
+                nomeAtteso: 'tmdb-movie-27205.jpg',
+                erdbIdAtteso: 'tmdb:movie:27205',
+                badgeAtteso: null
+            },
+            {
+                evento: { tipo: 'movie', id: 27205, badge: 'ITA' },
+                nomeAtteso: 'tmdb-movie-27205_ITA.jpg',
+                erdbIdAtteso: 'tmdb:movie:27205',
+                badgeAtteso: 'ITA'
+            },
+            {
+                evento: { tipo: 'tv', id: 1396 },
+                nomeAtteso: 'tmdb-tv-1396.jpg',
+                erdbIdAtteso: 'tmdb:tv:1396',
+                badgeAtteso: null
+            },
+            {
+                evento: { tipo: 'tv', id: 1396, badge: 'ITA' },
+                nomeAtteso: 'tmdb-tv-1396_ITA.jpg',
+                erdbIdAtteso: 'tmdb:tv:1396',
+                badgeAtteso: 'ITA'
+            },
+            {
+                evento: { tipo: 'movie', id: 'kitsu:265', badge: 'ITA' },
+                nomeAtteso: 'kitsu-265_ITA.jpg',
+                erdbIdAtteso: 'kitsu:265',
+                badgeAtteso: 'ITA'
+            },
+            {
+                evento: { tipo: 'tv', id: 'kitsu:265' },
+                nomeAtteso: 'kitsu-265.jpg',
+                erdbIdAtteso: 'kitsu:265',
+                badgeAtteso: null
+            }
+        ];
+
+        for (const { evento, nomeAtteso, erdbIdAtteso, badgeAtteso } of casi) {
+            // Il nome prodotto dal costruttore deve essere proprio quello scritto qui:
+            // se non lo fosse, il giro sotto passerebbe sul nome sbagliato.
+            expect(nomeFileDaEvento(evento)).toBe(nomeAtteso);
+
+            const indietro = erdbIdDaNomeFile(nomeAtteso);
+            expect(indietro).not.toBeNull();
+            expect(indietro.erdbId).toBe(erdbIdAtteso);
+            expect(indietro.badge).toBe(badgeAtteso);
+
+            // E l'id cercato indietro e' lo stesso di quello ricavato in avanti.
+            expect(indietro.erdbId).toBe(erdbIdDaEvento(evento));
+        }
     });
 });
