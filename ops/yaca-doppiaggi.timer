@@ -1,0 +1,11 @@
+[Unit]
+Description=Timer due volte al giorno (04:00 e 16:00) per le annotazioni doppiaggi ITA
+Documentation=file:///srv/yaca/docs/TIMER_DOPPIAGGI.md
+
+[Timer]
+OnCalendar=*-*-* 04,16:00:00
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target
