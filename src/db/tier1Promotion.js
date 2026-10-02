@@ -20,6 +20,12 @@ const path = require('path');
  *
  * Nota: questo modulo **non** aggancia la promozione a `metaHandler` e **non** ricostruisce i
  * parquet. Scrive la riga e basta; il resto è lavoro di chi chiama.
+ *
+ * **Contratto per chi chiama**: `toTier1Line` restituisce l'**oggetto** riga (stesso schema e
+ * stesso ordine di chiavi delle righe del file); `toTier1Json` ne restituisce la stringa;
+ * `promoteToTier1(percorso, dettagli, tipo)` è il punto di ingresso e risponde
+ * `{ scritto, motivo, id, tipo, percorso }`. `percorso` è opzionale: se manca si usa il
+ * `master_*.jsonl` della cartella dati per quel tipo.
  */
 
 const CHUNK_SIZE = 1 << 20; // 1 MB: blocchi grossi, ma abbastanza piccoli da non trattenere il file
