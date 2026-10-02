@@ -49,6 +49,8 @@ resta **senza dipendenze native**.
    - anno esatto e tipo dalla zona come disambiguatori per gli omonimi;
    - cache su disco, contatore chiamate, ripresa dal punto e budget (`--max-calls`);
    - merge con le annotazioni esistenti via `mergeAnnotationRows` (`true` > `null` > assente).
+7. **Diff fra due giri** (`src/diff.js`) — dice **quali titoli hanno cambiato doppiaggio**, cioè quali
+   poster vanno rifatti. Non è ancora agganciato al giro: è la funzione e il suo artefatto.
 
 ## Unione Anime (AG ∪ AnimeUnity)
 
@@ -86,6 +88,7 @@ Accanto al dump (dove sta il parquet) nascono due file:
 ```
 ita_annotations.jsonl        una riga per voce, solo true e null
 ita_annotations.meta.json    conteggi, timestamp, schemaVersion
+ita_annotations.diff.json    i cambi di doppiaggio dell'ultimo giro (scritto da src/diff.js)
 ```
 
 ```json
@@ -102,6 +105,32 @@ ita_annotations.meta.json    conteggi, timestamp, schemaVersion
   sovrascritto** e il CLI esce con codice 2. È una regola del *file* (l'ultimo valido resta valido) — il
   **merge** nel catalogo ha invece scelto di non bloccare mai il dump: due posti diversi, due decisioni;
 - in dry-run non scrive niente e riporta quante righe scriverebbe.
+
+## Il diff fra due giri (`src/diff.js`)
+
+I poster composti sono file statici serviti come immagini: un file vale per mesi finché il titolo non
+cambia. Ma quando un titolo **diventa doppiato** — o **smette** di esserlo — quel file è vecchio, e
+aspettare il TTL non è un'opzione. Il diff è la sorgente degli eventi per la coda degli eventi
+dell'app (`push({tipo, id, badge})`).
+
+- `computeChanges(righeVecchie, righeNuove)` funzione pura: `false`/`null`/assente → `true` dà
+  `{tipo, id, badge: 'ITA'}`, `true` → altro dà `{tipo, id, badge: null}` (**togliere** il badge è un
+  evento quanto metterlo), tutto il resto non produce niente;
+- **sfrutta l'ordinamento `(tipo, id)`** dei due file (per quello il writer li scrive in ordine):
+  il confronto è una fusione a **due puntatori** su sorgenti lazy, quindi in memoria sta solo la
+  coppia di righe sotto esame — non 24.000 righe, e il codice non deve sapere quanti titoli ci sono;
+- **primo giro → nessun evento**: se il file precedente non esiste il diff è vuoto. Senza questo i
+  ~19.000 doppiati del primo giro sembrerebbero "nuovi" e la coda chiederebbe 19.000 poster in un
+  colpo. Il vuoto è dichiarato nel log e nell'artefatto (`primoGiro: true`);
+- l'esito finisce in **`ita_annotations.diff.json`**, accanto agli altri file, con scrittura atomica
+  (`.tmp` + `rename`): `generato`, `cambiati`, `diventatiDoppiati`, `nonPiuDoppiati`, `changes`;
+- **tetto di 5.000 cambi per giro**: oltre, è quasi certamente un guasto o un primo giro travestito →
+  avviso forte e file scritto **comunque**, con il numero vero dentro (`oltreSoglia`, `avviso`):
+  un artefatto che mente sul numero è peggio di un artefatto che ne riporta uno enorme;
+- un file che risulta **non ordinato** viene segnalato (`onAnomalia`): la fusione a due puntatori su
+  righe disordinate darebbe eventi sbagliati in silenzio.
+
+Non è agganciato al writer (l'aggancio al giro è un passo dopo) e non tocca `ita_annotations.jsonl`.
 
 ## Uso
 
@@ -146,7 +175,7 @@ Esecuzione reale con indici in cache e MongoDB connesso:
 Tempo totale impiegato: **~6,2 secondi**.
 
 ```bash
-node --test tests/   # 64 test, tutti verdi
+node --test tests/   # 84 test, tutti verdi
 ```
 
 I test coprono: le tre regole di parsing (lettera decorativa, articolo invertito, anno di disambiguazione), i
@@ -157,4 +186,6 @@ identica al core, **veto degli episodi**, `t: "movie"` per i film fuori dal dump
 Mongo non risponde) e `mergeAnnotationRows` (`true` > `null` > assente, nessun declassamento, ordinamento
 `(t, id)`); la **risoluzione TMDB ID** (identità provata via titolo/originale/alternativo, rifiuto quando nessun
 nome coincide, ripresa dal punto con cache, arresto a budget raggiunto senza scrivere un file incompleto,
-deduplica).
+deduplica); il **diff fra due giri** (diventa/smette doppiato, invarianti, righe solo da una parte, **primo
+giro vuoto**, file in ordine diverso senza falsi eventi, sorgenti lazy, tetto oltre 5.000 con il numero
+vero, scrittura atomica dell'artefatto).
