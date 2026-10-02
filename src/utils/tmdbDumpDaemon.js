@@ -23,6 +23,17 @@ async function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
 
+async function buildTier2Index() {
+    try {
+        const { buildTier2 } = require('../db/tier2Index');
+        console.log('[TmdbDump] Ricostruzione indice Tier 2 e SQLite FTS5 su disco...');
+        const res = await buildTier2();
+        console.log(`[TmdbDump] Indice Tier 2 completato: ${res.count} record in ${res.durationSeconds}s`);
+    } catch (tier2Err) {
+        console.error('[TmdbDump] Errore durante la build Tier 2 FTS5:', tier2Err.message);
+    }
+}
+
 async function convertAndReloadDuckDb() {
     dumpStatus.currentTask = 'Converting Parquet and Reloading DuckDB...';
     console.log('[TmdbDump] Esecuzione conversione in Parquet...');
@@ -41,6 +52,9 @@ async function convertAndReloadDuckDb() {
         duckDbStore.isInitialized = false;
         await duckDbStore.init();
         console.log('[TmdbDump] DuckDB riavviato con successo e connesso ai nuovi Parquet.');
+
+        // Tier 2: indice export TMDB + FTS5 su disco (ticket #40)
+        await buildTier2Index();
     } catch (convertErr) {
         console.error('[TmdbDump] Errore durante la conversione Parquet / Reload DuckDB:', convertErr);
     }
