@@ -28,6 +28,7 @@ const {
     classificaMotivo,
     contaRigaLog,
     adattatoreKitsu,
+    aspettaRedis,
     main
 } = require('../scripts/drena-coda-poster');
 
@@ -65,6 +66,19 @@ function creaCoda(eventi) {
         async done(e) { chiusi.done.push(chiave(e)); return true; },
         async fail(e) { chiusi.fail.push(chiave(e)); return false; }
     };
+}
+
+/**
+ * Coda che fa cadere Redis **durante** il giro: parte con `isAvailable: true` (quindi
+ * l'attesa di `aspettaRedis` passa) e la spegne al primo `take`. Serve ai due casi in cui
+ * Redis era pronto e poi è andato via: è la situazione che `take` risolve in lista vuota
+ * senza lanciare, e che il riepilogo deve continuare a distinguere da "coda vuota".
+ */
+function spegneRedis(redis, eventi) {
+    const coda = creaCoda(eventi);
+    const take = coda.take;
+    coda.take = async (n) => { redis.isAvailable = false; return take(n); };
+    return coda;
 }
 
 /** `fetch` finto: per URL restituisce il buffer promesso, altrimenti 404 (ERDB che non c'è). */
@@ -144,7 +158,10 @@ const corri = (argv, dip = {}) => main(
 );
 
 const filePresenti = () => fs.readdirSync(dir).sort();
-const riepilogo = () => log.linee.log.concat(log.linee.warn).find((l) => l.includes('presi,'));
+// La riga di chiusura del giro: quella dei numeri, o quella del giro saltato (che non ha
+// numeri da mostrare, e non deve fingere di averli).
+const riepilogo = () => log.linee.log.concat(log.linee.warn)
+    .find((l) => l.includes('presi,') || l.includes('giro saltato'));
 
 describe('parseArgs - i default', () => {
     test('senza nulla sulla riga di comando viene tutto da $ERDB_LOCAL_BASE', () => {
@@ -272,9 +289,11 @@ describe('--dry-run', () => {
         expect(riepilogo()).not.toMatch(/redis=1/);
     });
 
-    test('Redis giù: "0 presi" non è "coda vuota", e il riepilogo lo distingue', async () => {
-        redis.isAvailable = false;
-        const codice = await corri(['--dry-run']);
+    test('Redis che cade DOPO l\'attesa: "0 presi" non è "coda vuota", e il riepilogo lo distingue', async () => {
+        // Il client è pronto quando il giro parte (quindi l'attesta passa) e cade mentre il
+        // giro legge la coda: è il caso che `take` risolve in lista vuota senza lanciare.
+        const coda = spegneRedis(redis, []);
+        const codice = await corri(['--dry-run'], { coda });
         expect(codice).toBe(0);
         expect(log.linee.warn.join('\n')).toMatch(/Redis non raggiungibile/);
         expect(riepilogo()).toMatch(/avvisi: redis=1/);
@@ -407,9 +426,11 @@ describe('non lancia mai', () => {
         expect(riepilogo()).toMatch(/avvisi: take=1/);
     });
 
-    test('coda che ritorna lista vuota ma Redis non c\'è: giro vuoto e avvisato', async () => {
-        redis.isAvailable = false;
-        await expect(corri([])).resolves.toBe(0);
+    test('coda che ritorna lista vuota ma Redis non c\'è più: giro vuoto e avvisato', async () => {
+        // Anche qui Redis era pronto all'avvio (l'attesa passa) e sparisce dopo: se invece
+        // non fosse mai stato pronto, il giro verrebbe saltato prima del primo `take`.
+        const coda = spegneRedis(redis, []);
+        await expect(corri([], { coda })).resolves.toBe(0);
         expect(riepilogo()).toMatch(/0 presi, 0 resi, 0 falliti/);
         expect(riepilogo()).toMatch(/avvisi: redis=1/);
         expect(log.linee.warn.join('\n')).toMatch(/non perché la coda fosse vuota/);
@@ -557,3 +578,78 @@ describe('--help e gli errori di battitura', () => {
 function chiusiDi(coda) {
     return { done: coda.chiusi.done, fail: coda.chiusi.fail };
 }
+describe('la corsa all\'avvio: Redis non è pronto quando parte il giro', () => {
+    /**
+     * Client finto con la stessa forma del vero: `isAvailable` è una **getter** (non
+     * un campo), perché è una getter anche in `redisClient.js` e la corsa è proprio lì.
+     * Diventa pronto alla `n` interrogazione: prima no, poi sì, come un socket che si apre.
+     */
+    function clientCheProntoDopo(n) {
+        const finto = { lette: 0, quit: jest.fn(async () => 'OK'), disconnect: jest.fn() };
+        Object.defineProperty(finto, 'isAvailable', {
+            get() { finto.lette += 1; return finto.lette >= n; }
+        });
+        return finto;
+    }
+
+    test('diventa pronto dopo N interrogazioni: il giro DRENA davvero', async () => {
+        const finto = clientCheProntoDopo(3);
+        const coda = creaCoda([{ tipo: 'movie', id: 27205, badge: 'ITA' }]);
+        const fetchImpl = creaFetch({ [urlFilm('ITA')]: risposta(JPEG) });
+
+        const codice = await corri([], { coda, fetchImpl, redisClient: finto });
+
+        expect(codice).toBe(0);
+        // Il punto del compito: senza l'attesa questo giro avrebbe finito qui, con "0 presi".
+        expect(finto.lette).toBeGreaterThanOrEqual(3);
+        expect(coda.take).toBeDefined();
+        expect(filePresenti()).toEqual(['tmdb-movie-27205_ITA.jpg']);
+        expect(chiusiDi(coda)).toEqual({ done: ['movie|27205'], fail: [] });
+        expect(log.linee.warn.join('\n')).not.toMatch(/Redis NON pronto/);
+    });
+
+    test('non diventa MAI pronto: nessun take, nessuna scrittura, codice 0, e la riga che lo dice', async () => {
+        const finto = { quit: jest.fn(async () => 'OK'), disconnect: jest.fn(), isAvailable: false };
+        const coda = creaCoda([{ tipo: 'movie', id: 27205, badge: 'ITA' }]);
+        const presa = jest.spyOn(coda, 'take');
+        const fetchImpl = creaFetch({ [urlFilm('ITA')]: risposta(JPEG) });
+
+        // Tetto corto: qui si testa la decisione, non la pazienza.
+        const codice = await corri(['--attesa-redis', '250'], { coda, fetchImpl, redisClient: finto });
+
+        expect(codice).toBe(0);              // il timer riproverà: non è un guasto da allarme
+        expect(presa).not.toHaveBeenCalled(); // la coda non è stata guardata: questo è il punto
+        expect(fetchImpl.richieste).toEqual([]);
+        expect(filePresenti()).toEqual([]);
+        expect(chiusiDi(coda)).toEqual({ done: [], fail: [] });
+
+        // La riga che si legge da `journalctl`: deve dire che Redis non era pronto E che
+        // non è una coda vuota. Una generica "coda vuota" qui è la bug, non il rimedio.
+        const detto = log.linee.warn.join('\n');
+        expect(detto).toMatch(/Redis NON pronto dopo 250 ms/);
+        expect(detto).toMatch(/non è che la coda fosse vuota/);
+        expect(detto).toMatch(/timer riproverà/);
+        // E non si traveste da giro normale nella riga di riepilogo.
+        expect(riepilogo()).toMatch(/giro saltato/);
+        expect(riepilogo()).not.toMatch(/0 presi, 0 resi, 0 falliti/);
+        // Il client va chiuso comunque: altrimenti il processo resta vivo sul socket.
+        expect(finto.quit).toHaveBeenCalledTimes(1);
+    });
+
+    test('già pronto: nessuna attesa aggiuntiva (una sola interrogazione, nessuna dormita)', async () => {
+        const finto = clientCheProntoDopo(1);
+        const coda = creaCoda([]);
+
+        const inizio = Date.now();
+        await corri([], { coda, redisClient: finto });
+        const durata = Date.now() - inizio;
+
+        // Una domanda, una risposta, e via: nessun `setTimeout`, nessuna dormita.
+        expect(finto.lette).toBeLessThanOrEqual(2);   // l'attesa + la nota di fine giro
+        // Il passo è 100 ms: un giro normale che lo aspettasse si sentirebbe. Qui no.
+        expect(durata).toBeLessThan(100);
+        expect(log.linee.log.join('\n')).not.toMatch(/Redis non è ancora connesso/);
+        // E l'attesa, guardata da vicino: una sola interrogazione, zero millisecondi.
+        await expect(aspettaRedis(finto, { log })).resolves.toMatchObject({ pronto: true, interrogazioni: 1, attesaMs: 0 });
+    });
+});
