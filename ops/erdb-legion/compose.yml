@@ -1,0 +1,24 @@
+services:
+  erdb:
+    # Costruita con ops/erdb-legion/README.md — NON è ghcr.io/realbestia1/erdb:latest
+    # (quella non sa disegnare ITA: la patch è nostra, 36 righe).
+    image: erdb-patch:0.7.5
+    container_name: erdb-legion
+    ports:
+      # 3100 fuori: il 3000 sul Legion può essere occupato da altro.
+      - "3100:3000"
+    environment:
+      PORT: "3000"
+      # Il Legion è tutto nostro e fa una passata sola: qui si può parallellizzare.
+      # Sull'istanza PUBBLICA la cortesia imponeva 1: su questa no.
+      ERDB_WORKERS: auto
+      NODE_ENV: production
+    volumes:
+      - ./dati:/app/data
+      # Lo script del token si esegue dentro il contenitore (better-sqlite3 è già nell'immagine),
+      # quindi lo si monta: così resta la copia del repo, senza duplicati da tenere allineati.
+      - ./inserisci-token.js:/app/inserisci-token.js:ro
+    restart: unless-stopped
+
+# Niente volumi nominati: i dati stanno in ./dati, si vedono, si copiano e si cancellano
+# senza passare da docker. Il giro è una tantum: la cartella si butta quando ha finito.

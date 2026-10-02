@@ -1,0 +1,83 @@
+diff --git a/app/[type]/[...id]/route.ts b/app/[type]/[...id]/route.ts
+index 42a3b0c..414952b 100644
+--- a/app/[type]/[...id]/route.ts
++++ b/app/[type]/[...id]/route.ts
+@@ -227,6 +227,11 @@ export async function GET(
+   const posterVignetteEnabledRaw = tokenConfig.posterVignette ?? request.nextUrl.searchParams.get('posterVignette');
+   const posterVignetteEnabled = posterVignetteEnabledRaw === false || posterVignetteEnabledRaw === 'false' || posterVignetteEnabledRaw === 'off' ? false : true;
+   const posterGenrePosition = normalizePosterGenrePosition(tokenConfig.posterGenrePosition || request.nextUrl.searchParams.get('posterGenrePosition'));
++  const customBadge = (tokenConfig.customBadge ?? request.nextUrl.searchParams.get('badge') ?? '')
++    .toString()
++    .replace(/\s+/g, ' ')
++    .trim()
++    .slice(0, 16) || null;
+   // Removed duplicate posterConfiguratorPreset declaration
+   const backdropRatings = getRatings('backdropRatingPreferences', 'backdropRatings') ?? globalRatings;
+   const thumbnailRatings =
+@@ -666,6 +671,7 @@ export async function GET(
+       effectiveRatingPreferences.join(',') || 'none',
+       mdblistCacheSeed,
+       simklCacheSeed,
++      customBadge || '-',
+       ...extra,
+     ].join('|');
+   const dedupeKey = buildCacheKey([fanartKey ? 'fanart' : 'no-fanart', tokenUpdatedAt.toString()]);
+@@ -3817,6 +3823,7 @@ export async function GET(
+           rankingPosition,
+           posterConfiguratorPreset,
+           posterVignetteEnabled,
++          customBadge,
+           cacheControl: storageCacheControl,
+         },
+         phases
+diff --git a/lib/imageRenderer.ts b/lib/imageRenderer.ts
+index 37ab086..e7180df 100644
+--- a/lib/imageRenderer.ts
++++ b/lib/imageRenderer.ts
+@@ -2391,6 +2391,34 @@ export const renderWithSharp = async (
+       }
+     }
+ 
++    const customBadgeText = (input.customBadge || '').trim();
++    if (customBadgeText && input.imageType !== 'logo') {
++      const badgeFontSize = Math.max(12, Math.round((input.qualityBadgeFontSize ?? input.badgeFontSize) * 0.8));
++      const badgePaddingX = input.qualityBadgePaddingX ?? input.badgePaddingX;
++      const badgePaddingY = input.qualityBadgePaddingY ?? input.badgePaddingY;
++      const badgeWidth = Math.min(
++        Math.max(1, input.outputWidth - input.posterRowHorizontalInset * 2),
++        estimateBadgeWidth(customBadgeText, badgeFontSize, badgePaddingX, 0, input.badgeGap, false, 'standard')
++      );
++      const badgeHeight = estimateBadgeHeight(badgeFontSize, badgePaddingX, badgePaddingY, 0, 'standard');
++      const badgeSvg = buildBadgeSvg({
++        width: badgeWidth,
++        height: badgeHeight,
++        iconSize: 0,
++        fontSize: badgeFontSize,
++        paddingX: badgePaddingX,
++        gap: input.badgeGap,
++        accentColor: '#ffffff',
++        monogram: '',
++        value: customBadgeText,
++        ratingStyle: 'glass',
++        ratingsColorMode: 'colored',
++        contentLayout: 'standard',
++      });
++      overlays.push({ input: Buffer.from(badgeSvg), top: input.badgeTopOffset, left: input.posterRowHorizontalInset });
++      addPosterBlockingRect(input.posterRowHorizontalInset, input.badgeTopOffset, badgeWidth, badgeHeight);
++    }
++
+     composePosterGenreBadge();
+ 
+     const background =
+diff --git a/lib/routeTypes.ts b/lib/routeTypes.ts
+index ab3d298..b5bb698 100644
+--- a/lib/routeTypes.ts
++++ b/lib/routeTypes.ts
+@@ -125,6 +125,7 @@ export type FastRenderInput = {
+   rankingPosition: RankingPosition;
+   posterConfiguratorPreset?: string | null;
+   posterVignetteEnabled?: boolean;
++  customBadge?: string | null;
+   cacheControl: string;
+ };
+ 
