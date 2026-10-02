@@ -17,6 +17,13 @@
  * decide `posterDaEvento` (che a sua volta chiama il costruttore), quindi non si riscrivono
  * qui: un nome inventato produrrebbe file che la rotta non chiederebbe mai.
  *
+ * I MOTIVI DEI FALLIMENTI ARRIVANO GIÀ CONTATI. `drena` restituisce i suoi conteggi e, accanto,
+ * l'elenco dei fallimenti con il codice del motivo (`http_404`, `non_jpeg`, …) e gli avvisi del
+ * giro: qui si sommano e si mettono nella riga di riepilogo, senza leggere nessuna riga di log.
+ * Prima si faceva il contrario — si contava la riga `[DrenaPoster] fallito …` con una regex —
+ * e funzionava, ma i due file erano legati da una frase: se la frase cambiava, i motivi
+ * finivano tutti in `altro` e la riga di riepilogo sembrava regolarissima.
+ *
  * GIRA SU TIMER, non sempre acceso: una raffica breve, un lotto piccolo, poi esce. Per questo
  * **non lancia mai**: dentro un timer un'eccezione non gestita uccide il processo e nessuno se
  * ne accorge. Redis giù, ERDB giù, evento malformato: si logga e si esce con **0**. L'unica
@@ -53,7 +60,10 @@
  */
 
 const drenaPoster = require('../src/cache/drenaPoster');
-const { drena, eventoDaErdbId, DEFAULT_BATCH, DEFAULT_TIMEOUT_MS } = drenaPoster;
+const { drena, eventoDaErdbId, classificaMotivo, DEFAULT_BATCH, DEFAULT_TIMEOUT_MS } = drenaPoster;
+// `classificaMotivo` è del modulo del giro e vive lì perché è lì che nascono i messaggi: nel
+// giro vero i motivi arrivano già scritti in `drena.fallimenti` e questo file non li tocca
+// affatto. Qui serve solo per il `--dry-run`, che non chiama `drena` e produce i suoi guasti.
 // Il nome del file e l'elenco degli id da rinfrescare: entrambi li decide
 // `posterDaEvento`, che è pure il posto dove si vede se a un evento serve anche il Kitsu.
 const { erdbIdsDaEvento, nomeFileDaEvento } = require('../src/cache/posterDaEvento');
@@ -395,57 +405,6 @@ function _conTimeout(promessa, ms, cosa) {
     return Promise.race([promessa, scadenza]).finally(() => clearTimeout(timer));
 }
 
-/** Il motivo di un fallimento, raggruppato in un numero piccolo di voci. */
-function classificaMotivo(messaggio) {
-    const testo = String(messaggio || '');
-    if (/timeout/i.test(testo)) return 'timeout';
-    const http = testo.match(/HTTP\s+(\d{3})/i);
-    if (http) return `http_${http[1]}`;
-    if (/non è un JPEG/i.test(testo)) return 'non_jpeg';
-    if (/richiesta fallita|ECONN|fetch failed|network/i.test(testo)) return 'rete';
-    if (/tipo sconosciuto/i.test(testo)) return 'tipo_sconosciuto';
-    if (/senza "?id"?|non in forma ERDB|id mancante/i.test(testo)) return 'evento_malformato';
-    return 'altro';
-}
-
-/**
- * La riga di log che `drenaPoster` scrive a ogni fallimento è l'unico posto dove il motivo
- * compare (`drena` restituisce solo i conteggi, non i perché). Si conta da lì, quindi la
- * riga di `drenaPoster` e questa regex sono accoppiate: se il testo cambia, qui non si
- * distingue più `http_404` da `timeout` e finisce tutto in `altro` — che è comunque un
- * conteggio onesto, mai un crash. Il separatore è il PRIMO `: ` della riga (quello fra
- * l'id e il motivo): pigro, finirebbe col messaggio.
- */
-function contaRigaLog(linea, stato) {
-    const testo = String(linea || '');
-    const fallito = testo.match(/^\[DrenaPoster\]\s+fallito\s+.*?:\s+(.+)$/);
-    if (fallito) {
-        const motivo = classificaMotivo(fallito[1]);
-        stato.motivi[motivo] = (stato.motivi[motivo] || 0) + 1;
-        return;
-    }
-    // Non è un fallimento di evento: è un avviso del giro. Si conta a parte, così nel
-    // riepilogo "perché sono falliti" resta solo quello che è davvero un poster non rifatto.
-    if (/^\[DrenaPoster\]\s+take fallito/.test(testo)) stato.note.take = (stato.note.take || 0) + 1;
-    else if (/^\[DrenaPoster\]\s+cartella .* non utilizzabile/.test(testo)) stato.note.cartella = (stato.note.cartella || 0) + 1;
-    else if (/^\[DrenaPoster\]\s+chiusura fallita/.test(testo)) stato.note.chiusura = (stato.note.chiusura || 0) + 1;
-}
-
-/**
- * Il logger che passa a `drena`: fa da tramite e, sul canale degli avvisi, conta i motivi.
- * @returns {object} un logger con la stessa forma (`log`, `warn`)
- */
-function loggerCheConta(log, stato) {
-    const testo = (...args) => args.map((a) => (typeof a === 'string' ? a : String(a))).join(' ');
-    return {
-        log: (...args) => log.log(...args),
-        warn: (...args) => {
-            contaRigaLog(testo(...args), stato);
-            log.warn(...args);
-        }
-    };
-}
-
 /** `motivi: http_404=1, timeout=1` — per count decrescente, poi per nome (riproducibile). */
 function testoConti(conteggi) {
     return Object.keys(conteggi || {})
@@ -509,6 +468,8 @@ function rigaRiepilogo(r) {
  * @param {object}   [opzioni.coda]        la coda degli eventi (default: quella dell'app)
  * @param {Function} [opzioni.fetchImpl]   `fetch` iniettabile
  * @param {object}   [opzioni.store]       `animeMappingStore` (default: caricato su richiesta)
+ * @param {Function} [opzioni.drenaImpl]   il giro vero (default: `drenaPoster.drena`; nei
+ *   test un finto, per provare che il riepilogo legge l'elenco dei fallimenti e non il log)
  * @param {object}   [opzioni.log]
  * @param {string}   [opzioni.base]        base ERDB, col token
  * @param {string}   [opzioni.outDir]      cartella dei poster
@@ -523,6 +484,7 @@ async function gira({
     coda,
     fetchImpl,
     store,
+    drenaImpl = drena,
     redis = null,
     log = console,
     base,
@@ -582,7 +544,7 @@ async function gira({
         }
         stato.mappa = mappa;
 
-        const riepilogo = await drena({
+        const riepilogo = await drenaImpl({
             take: (n) => coda.take(n),
             done: (evento) => coda.done(evento),
             fail: (evento) => coda.fail(evento),
@@ -592,12 +554,13 @@ async function gira({
             fetchImpl,
             batch,
             timeoutMs,
-            log: loggerCheConta(log, stato)
+            log
         });
 
         stato.presi = riepilogo.presi;
         stato.resi = riepilogo.resi;
         stato.falliti = riepilogo.falliti;
+        _contaMotivi(stato, riepilogo);
         _notaRedis(stato, redis, log);
     }
 
@@ -629,6 +592,30 @@ async function _serveMappa({ coda, batch, log }) {
         log.warn(`[Drena] non riesco a sbirciare la coda (${err && err.message ? err.message : err}): ` +
             'carico la mappa anime per sicurezza.');
         return true;
+    }
+}
+
+/**
+ * Il riepilogo di fine giro, costruito da quello che `drena` **restituisce**: i motivi si
+ * contano su `fallimenti` (una voce per evento, con il suo codice) e gli avvisi del giro su
+ * `note`. Non si legge nessuna riga di log: due file legati da una frase sono un
+ * accoppiamento che regge finché la frase non cambia, e quando cambia finisce tutto in
+ * `altro` senza che nessuno se ne accorga.
+ *
+ * Il codice si copia com'è: è il modulo del giro a sapere cosa è un 404 e cosa è un
+ * timeout, qui si sa solo quanto ce ne sono stati (`http_404=7`).
+ */
+function _contaMotivi(stato, riepilogo) {
+    const fallimenti = Array.isArray(riepilogo && riepilogo.fallimenti) ? riepilogo.fallimenti : [];
+    for (const voce of fallimenti) {
+        const motivo = voce && voce.motivo ? String(voce.motivo) : 'altro';
+        stato.motivi[motivo] = (stato.motivi[motivo] || 0) + 1;
+    }
+    const note = (riepilogo && riepilogo.note) || {};
+    for (const chiave of Object.keys(note)) {
+        const numero = Number(note[chiave]);
+        if (!Number.isFinite(numero) || numero <= 0) continue;
+        stato.note[chiave] = (stato.note[chiave] || 0) + numero;
     }
 }
 
@@ -851,8 +838,6 @@ module.exports = {
     adattatoreKitsu,
     preparaMappa,
     classificaMotivo,
-    contaRigaLog,
-    loggerCheConta,
     testoConti,
     rigaRiepilogo,
     gira,

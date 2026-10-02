@@ -20,12 +20,16 @@
  * - un `fetch` che esplode su un evento non ferma gli altri del lotto;
  * - `done`/`fail` ricevono la chiave giusta (`tipo|id`, come la coda identifica un evento);
  * - un `.tmp` non resta in giro quando la scrittura fallisce.
+ *
+ * I conteggi si confrontano con `toMatchObject` e non con `toEqual`: il riepilogo porta ora
+ * anche `fallimenti` e `note`, e il contratto che qui interessa è che i tre numeri siano
+ * giusti (le liste hanno un contratto loro, in fondo a questo file).
  */
 
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { drena } = require('../src/cache/drenaPoster');
+const { drena, classificaMotivo } = require('../src/cache/drenaPoster');
 
 const BASE = 'http://127.0.0.1:3100/Tk-prova';
 
@@ -113,7 +117,7 @@ describe('drenaPoster - coda vuota', () => {
         const coda = creaCoda([]);
         const riepilogo = await gira({ ...coda, fetchImpl });
 
-        expect(riepilogo).toEqual({ presi: 0, resi: 0, falliti: 0 });
+        expect(riepilogo).toMatchObject({ presi: 0, resi: 0, falliti: 0 });
         expect(fs.readdirSync(dir)).toEqual([]);
         expect(fetchImpl.richieste).toEqual([]);
         expect(coda.chiusi.done).toEqual([]);
@@ -127,7 +131,7 @@ describe('drenaPoster - coda vuota', () => {
             fail: async () => {},
             fetchImpl: creaFetch({})
         });
-        expect(riepilogo).toEqual({ presi: 0, resi: 0, falliti: 0 });
+        expect(riepilogo).toMatchObject({ presi: 0, resi: 0, falliti: 0 });
     });
 });
 
@@ -138,7 +142,7 @@ describe('drenaPoster - il file che viene scritto', () => {
 
         const riepilogo = await gira({ ...coda, fetchImpl });
 
-        expect(riepilogo).toEqual({ presi: 1, resi: 1, falliti: 0 });
+        expect(riepilogo).toMatchObject({ presi: 1, resi: 1, falliti: 0 });
         expect(fs.readdirSync(dir)).toEqual(['tmdb-movie-27205_ITA.jpg']);
 
         const scritto = fs.readFileSync(path.join(dir, 'tmdb-movie-27205_ITA.jpg'));
@@ -157,7 +161,7 @@ describe('drenaPoster - il file che viene scritto', () => {
 
         const riepilogo = await gira({ ...coda, fetchImpl });
 
-        expect(riepilogo).toEqual({ presi: 1, resi: 1, falliti: 0 });
+        expect(riepilogo).toMatchObject({ presi: 1, resi: 1, falliti: 0 });
         expect(fs.readdirSync(dir)).toEqual(['tmdb-movie-27205.jpg']);
     });
 
@@ -194,7 +198,7 @@ describe('drenaPoster - gli anime (due file per un evento)', () => {
         const riepilogo = await gira({ ...coda, cercaKitsu, fetchImpl });
 
         expect(cercaKitsu).toHaveBeenCalledWith('1234', 'tv');
-        expect(riepilogo).toEqual({ presi: 1, resi: 1, falliti: 0 });
+        expect(riepilogo).toMatchObject({ presi: 1, resi: 1, falliti: 0 });
         expect(fs.readdirSync(dir).sort()).toEqual(['kitsu-9876.jpg', 'tmdb-tv-1234.jpg']);
         // Un solo evento, quindi una sola chiusura.
         expect(coda.chiusi.done).toEqual(['tv|1234']);
@@ -207,7 +211,7 @@ describe('drenaPoster - gli anime (due file per un evento)', () => {
 
         const riepilogo = await gira({ ...coda, cercaKitsu, fetchImpl });
 
-        expect(riepilogo).toEqual({ presi: 1, resi: 0, falliti: 1 });
+        expect(riepilogo).toMatchObject({ presi: 1, resi: 0, falliti: 1 });
         expect(coda.chiusi.done).toEqual([]);
         expect(coda.chiusi.fail).toEqual(['tv|1234']);
         expect(filePresente('tmdb-tv-1234.jpg')).toBe(true);
@@ -218,7 +222,7 @@ describe('drenaPoster - gli anime (due file per un evento)', () => {
         const coda = creaCoda([{ tipo: 'movie', id: 27205, badge: null }]);
         const riepilogo = await gira({ ...coda, cercaKitsu: () => null, fetchImpl: creaFetch({ [urlFilm(null)]: risposta(JPEG) }) });
 
-        expect(riepilogo).toEqual({ presi: 1, resi: 1, falliti: 0 });
+        expect(riepilogo).toMatchObject({ presi: 1, resi: 1, falliti: 0 });
         expect(fs.readdirSync(dir)).toEqual(['tmdb-movie-27205.jpg']);
     });
 });
@@ -229,7 +233,7 @@ describe('drenaPoster - i guasti sono fail, non eccezioni', () => {
         // `fetch` senza la risposta in mappa: torna 404.
         const riepilogo = await gira({ ...coda, fetchImpl: creaFetch({}) });
 
-        expect(riepilogo).toEqual({ presi: 1, resi: 0, falliti: 1 });
+        expect(riepilogo).toMatchObject({ presi: 1, resi: 0, falliti: 1 });
         expect(fs.readdirSync(dir)).toEqual([]);
         expect(coda.chiusi.fail).toEqual(['movie|27205']);
     });
@@ -244,7 +248,7 @@ describe('drenaPoster - i guasti sono fail, non eccezioni', () => {
 
         const riepilogo = await gira({ ...coda, fetchImpl });
 
-        expect(riepilogo).toEqual({ presi: 1, resi: 0, falliti: 1 });
+        expect(riepilogo).toMatchObject({ presi: 1, resi: 0, falliti: 1 });
         expect(fs.readdirSync(dir)).toEqual([]);
         expect(coda.chiusi.fail).toEqual(['movie|27205']);
         expect(coda.chiusi.done).toEqual([]);
@@ -253,7 +257,7 @@ describe('drenaPoster - i guasti sono fail, non eccezioni', () => {
     test('corpo vuoto: fail (il magic non c\'è)', async () => {
         const coda = creaCoda([{ tipo: 'movie', id: 27205, badge: 'ITA' }]);
         const riepilogo = await gira({ ...coda, fetchImpl: creaFetch({ [urlFilm('ITA')]: risposta(Buffer.alloc(0)) }) });
-        expect(riepilogo).toEqual({ presi: 1, resi: 0, falliti: 1 });
+        expect(riepilogo).toMatchObject({ presi: 1, resi: 0, falliti: 1 });
         expect(fs.readdirSync(dir)).toEqual([]);
     });
 
@@ -270,7 +274,7 @@ describe('drenaPoster - i guasti sono fail, non eccezioni', () => {
 
         const riepilogo = await gira({ ...coda, fetchImpl });
 
-        expect(riepilogo).toEqual({ presi: 3, resi: 2, falliti: 1 });
+        expect(riepilogo).toMatchObject({ presi: 3, resi: 2, falliti: 1 });
         expect(coda.chiusi.done).toEqual(['movie|1', 'movie|3']);
         expect(coda.chiusi.fail).toEqual(['movie|2']);
         expect(fs.readdirSync(dir).sort()).toEqual(['tmdb-movie-1.jpg', 'tmdb-movie-3.jpg']);
@@ -284,7 +288,7 @@ describe('drenaPoster - i guasti sono fail, non eccezioni', () => {
             fetchImpl: creaFetch({ [urlFilm(null)]: risposta(JPEG) })
         });
 
-        expect(riepilogo).toEqual({ presi: 1, resi: 1, falliti: 0 });
+        expect(riepilogo).toMatchObject({ presi: 1, resi: 1, falliti: 0 });
         expect(filePresente('tmdb-movie-27205.jpg')).toBe(true);
     });
 
@@ -294,7 +298,7 @@ describe('drenaPoster - i guasti sono fail, non eccezioni', () => {
 
         const riepilogo = await gira({ ...coda, fetchImpl, timeoutMs: 30 });
 
-        expect(riepilogo).toEqual({ presi: 1, resi: 0, falliti: 1 });
+        expect(riepilogo).toMatchObject({ presi: 1, resi: 0, falliti: 1 });
         expect(coda.chiusi.fail).toEqual(['movie|27205']);
         expect(fs.readdirSync(dir)).toEqual([]);
     });
@@ -308,7 +312,7 @@ describe('drenaPoster - i guasti sono fail, non eccezioni', () => {
 
         const riepilogo = await gira({ ...coda, fetchImpl });
 
-        expect(riepilogo).toEqual({ presi: 2, resi: 1, falliti: 1 });
+        expect(riepilogo).toMatchObject({ presi: 2, resi: 1, falliti: 1 });
         expect(coda.chiusi.fail).toEqual(['film|27205']);
         expect(coda.chiusi.done).toEqual(['movie|1396']);
     });
@@ -324,7 +328,7 @@ describe('drenaPoster - scrittura atomica', () => {
 
         const riepilogo = await gira({ ...coda, fetchImpl: creaFetch({ [urlFilm(null)]: risposta(JPEG) }) });
 
-        expect(riepilogo).toEqual({ presi: 1, resi: 0, falliti: 1 });
+        expect(riepilogo).toMatchObject({ presi: 1, resi: 0, falliti: 1 });
         // Nessun `.tmp` abbandonato: un file orfano occupa disco e un giorno qualcuno lo rinomina.
         expect(fs.readdirSync(dir).filter((n) => n.endsWith('.tmp'))).toEqual([]);
         expect(coda.chiusi.fail).toEqual(['movie|27205']);
@@ -334,5 +338,131 @@ describe('drenaPoster - scrittura atomica', () => {
         const coda = creaCoda([{ tipo: 'movie', id: 27205, badge: null }]);
         await gira({ ...coda, fetchImpl: creaFetch({ [urlFilm(null)]: risposta(JPEG) }) });
         expect(fs.readdirSync(dir).filter((n) => n.endsWith('.tmp'))).toEqual([]);
+    });
+});
+/**
+ * IL PERCHÉ ESCE DALLA FUNZIONE, NON DAL LOG.
+ *
+ * Il chiamante (lo script da timer) deve poter dire "3 falliti, e sono stati 3 `http_404`"
+ * senza leggere una riga di journal e riconoscerci dentro un motivo: due file legati da una
+ * frase si rompono nel momento in cui la frase cambia, e si rompono in silenzio (tutto
+ * finisce in `altro`, il riepilogo sembra regolare). Qui il motivo è un **codice** decido dove
+ * il guasto nasce, e l'elenco dice anche *quale* evento e *quale* id ERDB.
+ */
+describe('drenaPoster - i fallimenti si spiegano da sé', () => {
+    test('un 404 e un non-JPEG: due voci con due motivi diversi e leggibili', async () => {
+        const coda = creaCoda([
+            { tipo: 'movie', id: 1, badge: null },
+            { tipo: 'tv', id: 1396, badge: null }
+        ]);
+        const fetchImpl = async (url) => (url.includes('tmdb:movie:1')
+            ? risposta(Buffer.alloc(0), { ok: false, status: 404 })          // ERDB: non c'è
+            : risposta(WEBP, { contentType: 'image/jpeg' }));                 // dice JPEG, è WebP
+
+        const riepilogo = await gira({ ...coda, fetchImpl });
+
+        // I tre contatori sono quelli di prima: chi li leggeva continua a leggere gli stessi.
+        expect(riepilogo).toMatchObject({ presi: 2, resi: 0, falliti: 2 });
+        expect(riepilogo.fallimenti).toHaveLength(2);
+        // I motivi sono DIVERSI e sono codici, non frasi: un 404 e un formato sbagliato non
+        // possono finire nella stessa voce (prima finivano, se il testo cambiava).
+        expect(riepilogo.fallimenti.map((f) => f.motivo)).toEqual(['http_404', 'non_jpeg']);
+        // E la voce sa QUALE evento e QUALE id ERDB: un evento anime ne ha due, e il motivo
+        // serve per quello che è andato storto.
+        expect(riepilogo.fallimenti.map((f) => `${f.tipo}:${f.id}`)).toEqual(['movie:1', 'tv:1396']);
+        expect(riepilogo.fallimenti.map((f) => f.erdbId)).toEqual(['tmdb:movie:1', 'tmdb:tv:1396']);
+        // La frase resta, per l'occhio: il codice è per il conto.
+        expect(riepilogo.fallimenti[0].dettaglio).toMatch(/HTTP 404/);
+        expect(riepilogo.fallimenti[1].dettaglio).toMatch(/non è un JPEG/);
+        // Un giro senza guasti del giro stesso: gli avvisi sono a zero, non assenti.
+        expect(riepilogo.note).toEqual({ take: 0, cartella: 0, chiusura: 0 });
+    });
+
+    test('gli altri guasti hanno ciascuno il suo codice', async () => {
+        const rete = await gira({
+            ...creaCoda([{ tipo: 'movie', id: 1, badge: null }]),
+            fetchImpl: async () => { throw new Error('ECONNRESET'); }
+        });
+        const scadenza = await gira({
+            ...creaCoda([{ tipo: 'movie', id: 2, badge: null }]),
+            fetchImpl: () => new Promise(() => {}),          // appesa per sempre
+            timeoutMs: 30
+        });
+        const malformato = await gira({
+            ...creaCoda([{ tipo: 'film', id: 3, badge: null }]),
+            fetchImpl: creaFetch({})
+        });
+
+        expect(rete.fallimenti.map((f) => f.motivo)).toEqual(['rete']);
+        expect(scadenza.fallimenti.map((f) => f.motivo)).toEqual(['timeout']);
+        expect(malformato.fallimenti.map((f) => f.motivo)).toEqual(['tipo_sconosciuto']);
+        // Sono codici corti: il chiamante li conta, non li legge.
+        for (const riepilogo of [rete, scadenza, malformato]) {
+            for (const voce of riepilogo.fallimenti) {
+                expect(voce.motivo).toMatch(/^[a-z_]+(\d+)?$/);
+            }
+        }
+    });
+
+    test('un giro riuscito non inventa fallimenti', async () => {
+        const coda = creaCoda([{ tipo: 'movie', id: 27205, badge: 'ITA' }]);
+        const riepilogo = await gira({ ...coda, fetchImpl: creaFetch({ [urlFilm('ITA')]: risposta(JPEG) }) });
+
+        expect(riepilogo).toMatchObject({ presi: 1, resi: 1, falliti: 0 });
+        expect(riepilogo.fallimenti).toEqual([]);
+    });
+
+    test('take che lancia: l\'avviso del giro esce strutturato (non più da una riga di log)', async () => {
+        const riepilogo = await gira({
+            take: async () => { throw new Error('redis giù'); },
+            done: async () => {},
+            fail: async () => {},
+            fetchImpl: creaFetch({})
+        });
+
+        expect(riepilogo).toMatchObject({ presi: 0, resi: 0, falliti: 0 });
+        expect(riepilogo.note.take).toBe(1);
+    });
+
+    test('una chiusura che lancia si conta, e il giro finisce lo stesso', async () => {
+        const riepilogo = await gira({
+            take: async () => [{ tipo: 'movie', id: 27205, badge: null }],
+            done: async () => { throw new Error('redis giù'); },
+            fail: async () => { throw new Error('redis giù'); },
+            fetchImpl: creaFetch({ [urlFilm(null)]: risposta(JPEG) })
+        });
+
+        expect(riepilogo).toMatchObject({ presi: 1, resi: 1, falliti: 0 });
+        expect(riepilogo.note.chiusura).toBe(1);
+    });
+
+    test('cartella inutilizzabile: ogni evento è fallito, e si sa che è per la cartella', async () => {
+        // Una cartella che è un file: `mkdir` non può funzionare, senza dipendere da permessi.
+        const outDir = path.join(dir, 'file-e-non-cartella');
+        fs.writeFileSync(outDir, 'non una cartella');
+
+        const riepilogo = await gira({
+            ...creaCoda([{ tipo: 'movie', id: 1, badge: null }, { tipo: 'movie', id: 2, badge: null }]),
+            fetchImpl: creaFetch({}),
+            outDir
+        });
+
+        expect(riepilogo).toMatchObject({ presi: 2, resi: 0, falliti: 2 });
+        expect(riepilogo.fallimenti.map((f) => f.motivo)).toEqual(['cartella', 'cartella']);
+        // Nessun id ERDB: nessuna richiesta è mai partita, quindi dirlo sarebbe inventare.
+        expect(riepilogo.fallimenti[0].erdbId).toBeNull();
+        expect(riepilogo.fallimenti[0].dettaglio).toMatch(/non utilizzabile/);
+        expect(riepilogo.note.cartella).toBe(1);
+    });
+
+    test('classificaMotivo: il codice dichiarato vince, il testo è la rete di sicurezza', () => {
+        // Dichiarato sul guasto: conta quello, anche se il messaggio dice altro.
+        expect(classificaMotivo({ motivo: 'non_jpeg', message: 'HTTP 500 su http://x' })).toBe('non_jpeg');
+        // Non dichiarato (un errore che viene da un altro modulo): si riconosce dal testo.
+        expect(classificaMotivo(new Error('HTTP 404 su http://x'))).toBe('http_404');
+        expect(classificaMotivo('la risposta non è un JPEG (12 byte)')).toBe('non_jpeg');
+        expect(classificaMotivo('timeout dopo 20000 ms su http://x')).toBe('timeout');
+        expect(classificaMotivo('richiesta fallita: fetch failed')).toBe('rete');
+        expect(classificaMotivo('boh')).toBe('altro');
     });
 });
