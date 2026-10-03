@@ -18,6 +18,11 @@
  *   - **resta gratis quando non serve**: senza risultati del Tier 2 non parte nessuna
  *     richiesta di rete (il caso normale della maggior parte delle ricerche).
  *
+ * Il nome italiano che arriva qui non viene buttato: viene **imparato** (`src/db/learnedNames.js`),
+ * cosi' dalla ricerca successiva quel titolo del Tier 2 si trova anche per il suo nome italiano.
+ * E' una scrittura fire-and-forget e non promozionale: nessun Tier 1, nessun file di catalogo,
+ * il titolo resta di seconda classe e semplicemente smette di essere irraggiungibile.
+ *
  * Si arricchiscono **solo i titoli della pagina gia' restituita**: nessuna pagina successiva
  * viene anticipata, nessun risultato locale viene toccato.
  */
@@ -59,6 +64,45 @@ let _tmdb = null;
 function getTmdbModule() {
     if (!_tmdb) _tmdb = require('../clients/tmdb');
     return _tmdb;
+}
+
+/** L'archivio dei nomi apperti pesa poco, ma si carica solo se c'e' qualcosa da imparare. */
+let _learnedNames = null;
+function getLearnedNamesModule() {
+    if (!_learnedNames) _learnedNames = require('../db/learnedNames');
+    return _learnedNames;
+}
+
+/** L'anno del dettaglio TMDB (`release_date` / `first_air_date`), o quello gia' nell'item. */
+function detailYear(details) {
+    const raw = (details && (details.release_date || details.first_air_date)) || '';
+    const year = String(raw).slice(0, 4);
+    return /^\d{4}$/.test(year) ? year : null;
+}
+
+/**
+ * Impara il nome italiano di un titolo appena arricchito. **Non solleva e non blocca**:
+ * la scrittura parte in background e ogni suo errore resta dentro l'archivio.
+ * Un nome che coincide con il titolo originale non viene scritto (non c'e' nulla da imparare).
+ */
+function rememberLearnedName(item, details) {
+    try {
+        const { learnNames } = getLearnedNamesModule();
+        const tmdbId = tier2TmdbId(item);
+        if (!tmdbId || !item.name) return;
+
+        learnNames([{
+            tmdbId,
+            type: item.type,
+            titleIt: item.name,
+            originalTitle: (details && (details.original_title || details.original_name))
+                || (item.rawTMDB && (item.rawTMDB.original_title || item.rawTMDB.title))
+                || '',
+            year: (item.releaseInfo && String(item.releaseInfo).slice(0, 4)) || detailYear(details)
+        }]).catch(() => { });
+    } catch (_err) {
+        // L'archivio non c'e' o e' rotto: l'arricchimento ha gia' finito, la risposta e' uguale.
+    }
 }
 
 /** Un risultato e' del Tier 2 solo se porta il marchio messo da `mapTier2RowToMeta`. */
@@ -150,7 +194,8 @@ async function enrichTier2Items(items, options = {}) {
             if (!item) return;
 
             try {
-                applyDetails(item, await loadDetails(apiKey, item));
+                const details = await loadDetails(apiKey, item);
+                if (applyDetails(item, details)) rememberLearnedName(item, details);
             } catch (_err) {
                 // Quel titolo resta grezzo: nessuna eccezione esce da qui, gli altri vanno avanti.
             }
@@ -183,5 +228,6 @@ module.exports = {
     isTier2Item,
     tier2TmdbId,
     applyDetails,
+    rememberLearnedName,
     enrichTier2Items
 };

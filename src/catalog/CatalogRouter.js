@@ -8,7 +8,7 @@ const { getDuckDbCatalogFromFilters, getDuckDbCatalogFromPreset, mapSortBy, buil
 const { normalizeToUniversalSchema } = require('../utils/resultMerger');
 const { getPresets } = require('../data/presets');
 const { getWatchlistCatalog } = require('./providers/WatchlistProvider');
-const { searchTier2, mergeLocalWithTier2 } = require('./tier2Search');
+const { searchTier2, searchLearnedTitles, mergeLocalWithTier2, LEARNED_PAGE_SIZE } = require('./tier2Search');
 const { enrichTier2Items } = require('./tier2Enrich');
 
 const PRESET_PAGE_SIZE = 20;
@@ -36,10 +36,16 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
             // restituisce [] e la risposta è quella di sempre (soli locali).
             const tier2Items = searchTier2(search, { type, limit: PRESET_PAGE_SIZE });
             const merged = mergeLocalWithTier2(localItems, tier2Items);
+            // I nomi appresi: i titoli del Tier 2 gia' mostrati una volta, che da allora
+            // si possono cercare anche per il loro nome italiano. Vanno in **coda** e senza
+            // duplicare (mergeLocalWithTier2 tiene gli id gia' usciti), quindi non spostano
+            // nulla di quanto e' gia' stato trovato. Con la tabella vuota non cambia niente.
+            const learnedItems = await searchLearnedTitles(search, { type, limit: LEARNED_PAGE_SIZE });
             // I titoli del Tier 2 escono grezzi (solo id, titolo originale, popolarita'): qui
             // vengono riempiti riusando il percorso TMDB gia' in uso, con concorrenza e budget
             // di tempo. Se il budget scade restano grezzi e si completano alla richiesta dopo.
-            return await enrichTier2Items(merged, { apiKey: tmdbApiKey });
+            // Vale anche per i nomi appresi: la cache dei dettagli e' calda per definitione.
+            return await enrichTier2Items(mergeLocalWithTier2(merged, learnedItems), { apiKey: tmdbApiKey });
         }
         // Il fallback o la ricerca AI profonda rimangono sulla vecchia pipeline
         return await executeCombinedSearch(search, userConfig, type, skip, activeProfileSettings, tmdbFetchOptions);
