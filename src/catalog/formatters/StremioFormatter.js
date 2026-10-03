@@ -177,6 +177,25 @@ function urlPosterInCache(hostUrl, erdbId, badge) {
     return `${hostUrl}/erdb-poster/${nomeFile}`;
 }
 
+/**
+ * Logo su `image.tmdb.org`, se l'item ce l'ha in `rawTMDB.images.logos`.
+ *
+ * PERCHÉ: il meta che arriva da DuckDB (`getDuckDbMetaDetails`) non riempie `meta.logo`,
+ * porta solo `rawTMDB.images.logos[].file_path` (TMDB ce l'ha già, in inglese o in italiano).
+ * Prima li copriva l'URL di ERDB; togliendo ERDB, senza questo il logo sparisce dalla scheda.
+ * Stessa scelta di `src/clients/tmdb.js`: logo italiano se c'è, altrimenti il primo.
+ */
+function logoTmdbDaRaw(item) {
+    const logos = item?.rawTMDB?.images?.logos;
+    if (!Array.isArray(logos) || logos.length === 0) return undefined;
+
+    const itLogo = logos.find(l => l && l.iso_639_1 === 'it');
+    const target = itLogo || logos.find(l => l && l.file_path);
+    if (!target || !target.file_path) return undefined;
+
+    return `https://image.tmdb.org/t/p/w500${target.file_path}`;
+}
+
 function sanitizeCatalogMeta(item, options = {}) {
     if (!item) return item;
 
@@ -184,7 +203,8 @@ function sanitizeCatalogMeta(item, options = {}) {
     // più perso dalla seconda sanitizzazione/cache.
     normalizeAnimeMarker(item);
 
-    const { shouldApplyEpisodeBadge, isLandscapeEnabled, userConfig, hostUrl } = options;
+    // `userConfig` non serve più: l'immagine non dipende più dalla configurazione ERDB del profilo.
+    const { shouldApplyEpisodeBadge, isLandscapeEnabled, hostUrl } = options;
     let badgeText = (shouldApplyEpisodeBadge || item._forceBadgeText) ? getEpisodeBadgeText(item) : null;
 
     if (item._itaBadge) {
@@ -195,13 +215,12 @@ function sanitizeCatalogMeta(item, options = {}) {
         }
     }
 
-    // Resolve ERDB config
-    const activeProfile = userConfig?.profiles?.find(p => p.id === userConfig.activeProfileId);
-    const erdbConfig = activeProfile?.settings?.erdbConfig || process.env.ERDB_CONFIG;
-
     let sourceImage;
     let finalPosterShape = item.posterShape || 'poster';
-    let posterErdbId = null; // id ERDB del poster verticale: serve alla cache dei file già composti
+    // Id del poster verticale nella convenzione ERDB: serve SOLO come chiave per la cache
+    // dei file già composti (`/erdb-poster/<nome>`). Non costruisce più nessuna URL remota:
+    // le immagini non passano più dall'istanza ERDB pubblica.
+    let posterErdbId = getErdbId(item, 'poster') || null;
 
     let tlBadge = null;
     let baseName = item._rawName || item.name || '';
@@ -266,77 +285,30 @@ function sanitizeCatalogMeta(item, options = {}) {
     baseName = baseName.replace(/\s*(?:-|–|—)?\s*\(?\s*(Stagione|Season)\s*\d+\s*\)?\s*/gi, '').trim();
 
     if (isLandscapeEnabled) {
-        let erdbId = erdbConfig ? getErdbId(item, 'backdrop') : null;
-        if (erdbConfig && erdbId) {
-            const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbId}.jpg`;
-            if (options.hostUrl && !badgeText && !tlBadge) {
-                sourceImage = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item._rawPoster || item.background || item.poster || '')}`;
-            } else {
-                sourceImage = erdbUrl;
-            }
-        } else {
-            sourceImage = item._rawPoster || item.background || item.poster;
-        }
+        // Landscape = immagine orizzontale: il backdrop di TMDB, non il poster verticale.
+        // I poster in cache sono verticali, quindi qui la cache non c'entra (vedi sotto).
+        sourceImage = item.background || item._rawPoster || item.poster;
         finalPosterShape = 'landscape';
+        posterErdbId = null;
     } else {
-        let erdbId = erdbConfig ? getErdbId(item, 'poster') : null;
-        posterErdbId = erdbId || null;
-        if (erdbConfig && erdbId) {
-            const erdbUrl = `https://easyratingsdb.com/${erdbConfig}/poster/${erdbId}.jpg`;
-            if (options.hostUrl && !badgeText && !tlBadge) {
-                sourceImage = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(item._rawPoster || item.poster || '')}`;
-            } else {
-                sourceImage = erdbUrl;
-            }
-        } else {
-            sourceImage = item._rawPoster || item.poster;
-        }
+        sourceImage = item._rawPoster || item.poster;
     }
 
     // Save _rawPoster for idempotency on repeated formats (e.g. applyPostCacheBadges)
     const rawPoster = item._rawPoster || sourceImage;
 
 
-    let background = item.background;
-    let erdbBgId = erdbConfig ? getErdbId(item, 'backdrop') : null;
-    let logo = item.logo;
-    let videos = item.videos;
-
-    if (erdbConfig && erdbBgId) {
-        background = `https://easyratingsdb.com/${erdbConfig}/backdrop/${erdbBgId}.jpg`;
-        const erdbLogoUrl = `https://easyratingsdb.com/${erdbConfig}/logo/${erdbBgId}.png`;
-        logo = erdbLogoUrl;
-
-        if (Array.isArray(videos) && videos.length > 0) {
-            videos = videos.map(v => {
-                if (v && v.season !== undefined && v.episode !== undefined) {
-                    // ERDB richiede l'ID nativo TMDB per le thumbnail degli episodi.
-                    // Evitiamo di usare getErdbId() perché preferisce l'IMDb ID (tt...), che
-                    // raggruppa gli anime in una singola stagione e causa 404 (fallback).
-                    let rawTmdbId = item.rawTMDB ? item.rawTMDB.id : (item._tmdbId || null);
-                    if (!rawTmdbId && item.id && item.id.startsWith('tmdb:')) {
-                        rawTmdbId = item.id.split(':')[1];
-                    }
-
-                    if (rawTmdbId) {
-                        let type = item.type === 'movie' ? 'movie' : 'tv';
-                        let episodeErdbId = `tmdb:${type}:${rawTmdbId}:${v.season}:${v.episode}`;
-                        let tmdbKey = process.env.TMDB_API_KEY || '';
-                        let thumbnail = `https://easyratingsdb.com/${erdbConfig}/thumbnail/${episodeErdbId}.jpg?tmdbKey=${tmdbKey}`;
-                        if (options.hostUrl && v.thumbnail) {
-                            thumbnail = `${options.hostUrl}/images/fallback?url=${encodeURIComponent(thumbnail)}&fallback=${encodeURIComponent(v.thumbnail)}`;
-                        }
-                        return {
-                            ...v,
-                            thumbnail: thumbnail
-                        };
-                    }
-                }
-                return v;
-            });
-        }
-    }
-
+    // Sfondo, logo e miniature: **non più ERDB**.
+    // - `background` e `logo` arrivano già da TMDB (`src/clients/tmdb.js`, `image.tmdb.org`):
+    //   qui non li si sovrascrive più, si usa quello che c'è. Il logo può mancare sul meta
+    //   ricostruito da DuckDB (che porta solo `rawTMDB.images.logos`): in quel caso lo si
+    //   ricava da lì, sempre da TMDB — togliere ERDB non deve far sparire il logo dalla scheda.
+    // - `videos`: ogni episodio porta già il proprio `thumbnail` di TMDB (è il `still_path`,
+    //   costruito in `fetchTmdbEpisodes`). Una scheda con 373 episodi non deve più fare 373
+    //   richieste a un server remoto per disegnare le miniature.
+    const background = item.background;
+    const logo = item.logo || logoTmdbDaRaw(item);
+    const videos = item.videos;
 
 
     // Anime fuori dal catalogo novità: fuori resta SOLO il badge ITA, quindi la stagione non si mostra.
@@ -364,16 +336,18 @@ function sanitizeCatalogMeta(item, options = {}) {
     }
 
     // ---- Cache dei poster già composti: si PREFERISCE il file, non si sostituisce la logica ----
-    // I file arrivano da fuori e oggi non ci sono ancora: quindi qui si guarda, e se il file
-    // c'è si serve quello (niente catena di hop, niente sharp). Se non c'è, `poster` resta
-    // esattamente quello che si sarebbe ottenuto senza questa riga.
+    // I file arrivano da fuori: qui si guarda, e se il file c'è si serve quello (niente catena
+    // di hop, niente sharp). Se non c'è, `poster` resta il poster di TMDB.
     //
-    // Il file può essere scelto solo se è la STESSA immagine che comporrebbe la rotta
-    // `/images/poster/...` di oggi: cioè niente badge, oppure il solo badge ITA (l'unico
-    // che la cache contiene, con suffisso `_ITA`). Con badge episodio o stagione la cache
-    // non può riprodurli: meglio l'URL di oggi, che li disegna, che un poster senza badge.
-    // Fuori dal ramo poster/ERDB (landscape, ERDB non configurato) la cache non c'entra.
-    if (hostUrl && erdbConfig && posterErdbId && finalPosterShape === 'poster') {
+    // Stessa regola dei cataloghi, invariata: il file può essere scelto solo se è la STESSA
+    // immagine che comporrebbe la rotta `/images/poster/...`, cioè niente badge oppure il solo
+    // badge ITA (l'unico che la cache contiene, con suffisso `_ITA`). Con badge episodio o
+    // stagione la cache non può riprodurli: meglio l'URL che li disegna, che un poster senza
+    // badge. Fuori dal ramo poster (landscape) la cache non c'entra: i file sono verticali.
+    //
+    // Nota: la cache è NOSTRA, non richiede ERDB pubblico (né configurato, né raggiungibile):
+    // senza `erdbConfig` la cartella è semplicemente vuota e si resta sul poster di TMDB.
+    if (hostUrl && posterErdbId && finalPosterShape === 'poster') {
         const soloIta = !tlBadge && badgeText === BADGE_ITA;
         const senzaBadge = !badgeText && !tlBadge;
         if (soloIta || senzaBadge) {

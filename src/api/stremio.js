@@ -552,6 +552,10 @@ router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:t
     // Security check: validate the original image URL host
     try {
         const parsedUrl = new URL(originalUrl);
+        // `easyratingsdb.com` non è più nell'elenco delle fonti: il formatter non produce più
+        // URL ERDB (le immagini vengono da TMDB, dalla cache locale o da Kitsu). Resta qui
+        // solo per i badge già composti e richiesti con la chiave di allora: toglierlo
+        // cambierebbe la risposta di quelle richieste da 302 a 403 senza guadagnare niente.
         const allowedHosts = [
             'image.tmdb.org',
             'easyratingsdb.com',
