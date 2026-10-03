@@ -653,7 +653,28 @@ async function catalogHandler(args, userConfig, hostUrl) {
     // congelati — ed è così che un titolo già unito continuava a comparire due volte.
     const WATCHLIST_TTL_MS = 2 * 60 * 1000;
     const isWatchlistCatalog = typeof id === 'string' && id.startsWith('yaca_watchlist');
-    const effectiveTtl = isWatchlistCatalog ? Math.min(ttl, WATCHLIST_TTL_MS) : ttl;
+
+    // Finestra giornaliera: questi preset hanno la data di oggi dentro la propria
+    // definizione (`todayStr` in src/data/presets.js), e la definizione finisce
+    // nell'impronta che costruisce la chiave di cache. La chiave quindi cambia
+    // ogni giorno: la voce di ieri non verrà più riletta, ma resterebbe in Redis
+    // per i 14 giorni standard — e una al giorno per ogni utente è spazzatura
+    // che non serve a nessuno. Non si può togliere la data (è il filtro della
+    // query: senza, "Film: Nuove Uscite" diventa "tutti i film per popolarità"),
+    // quindi si accorcia solo la vita della voce di ieri: 36 ore coprono la
+    // giornata più qualche ora di richieste ritardate, e la chiave inutile muore
+    // entro il giorno dopo invece di accumularsi.
+    const DAILY_WINDOW_CATALOG_IDS = new Set([
+        'preset_new_movies',      // Film: Nuove Uscite   (primary_release_date.lte = oggi)
+        'preset_new_series',      // Serie TV: Novità    (first_air_date.lte = oggi)
+        'preset_new_series_eps'   // Serie: Episodi Recenti (air_date.lte = oggi)
+    ]);
+    const DAILY_WINDOW_TTL_MS = 36 * 60 * 60 * 1000; // 36 ore
+    const isDailyWindowCatalog = typeof id === 'string' && DAILY_WINDOW_CATALOG_IDS.has(id);
+
+    let effectiveTtl = ttl;
+    if (isWatchlistCatalog) effectiveTtl = Math.min(effectiveTtl, WATCHLIST_TTL_MS);
+    if (isDailyWindowCatalog) effectiveTtl = Math.min(effectiveTtl, DAILY_WINDOW_TTL_MS);
 
     // SWR handling. Il cronometro copre la sola parte costosa (cache + eventuale
     // costruzione), non i badge post-cache né la risposta HTTP.

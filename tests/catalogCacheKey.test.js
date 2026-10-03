@@ -289,3 +289,78 @@ describe('Tempo di costruzione di un catalogo ([CatalogTiming])', () => {
         expect(routeCatalogRequest).toHaveBeenCalledTimes(1);
     });
 });
+
+/**
+ * Tre preset hanno la data di oggi dentro la definizione (`src/data/presets.js`),
+ * e la definizione finisce nella chiave di cache: la chiave cambia ogni giorno,
+ * quindi la voce di ieri non verrà più riletta ma (con il TTL standard di 14
+ * giorni) resterebbe in Redis fino a domani. Per questi tre il TTL è accorciato
+ * a 36 ore; per tutti gli altri resta quello standard.
+ *
+ * Il TTL applicato è osservabile: l'handler lo passa a `catalogRequestCache`
+ * come terzo argomento di `getOrFetch`/`set`.
+ */
+describe('TTL della cache cataloghi per i cataloghi a finestra giornaliera', () => {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const STANDARD_TTL_MS = 14 * DAY_MS;
+    const DAILY_WINDOW_TTL_MS = 36 * 60 * 60 * 1000;
+
+    const userConfig = {
+        userId: 'user-ttl',
+        configVersion: 'ttl-v1',
+        activeProfileId: 'p-ttl',
+        apiKeys: { tmdb: 'fake_tmdb_key' },
+        profiles: [
+            {
+                id: 'p-ttl',
+                name: 'TTL',
+                settings: { kidsMode: false, typeSelectors: { film: true, serie: true, anime: null } }
+            }
+        ],
+        customCatalogs: []
+    };
+
+    /** Esegue l'handler con la cache già colpita e restituisce il TTL applicato. */
+    async function ttlAppliedTo(catalogId, type) {
+        // `jest.spyOn` su un metodo già spionato restituisce la stessa mock:
+        // `mockClear` azzera le chiamate di un test precedente.
+        const getOrFetch = jest.spyOn(catalogRequestCache, 'getOrFetch')
+            .mockResolvedValue({ metas: [] })
+            .mockClear();
+
+        await catalogHandler({ id: catalogId, type, extra: { skip: 0 } }, userConfig, 'http://localhost:7000');
+
+        expect(getOrFetch).toHaveBeenCalledTimes(1);
+        return getOrFetch.mock.calls[0][2];
+    }
+
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        await catalogRequestCache.clear();
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('1. Film: Nuove Uscite ha il TTL corto (36 ore), non quello standard', async () => {
+        await expect(ttlAppliedTo('preset_new_movies', 'movie')).resolves.toBe(DAILY_WINDOW_TTL_MS);
+    });
+
+    it('2. anche gli altri due della finestra giornaliera', async () => {
+        await expect(ttlAppliedTo('preset_new_series', 'series')).resolves.toBe(DAILY_WINDOW_TTL_MS);
+        await expect(ttlAppliedTo('preset_new_series_eps', 'series')).resolves.toBe(DAILY_WINDOW_TTL_MS);
+    });
+
+    it('3. un preset normale resta con il TTL standard di 14 giorni', async () => {
+        await expect(ttlAppliedTo('preset_pop_series', 'series')).resolves.toBe(STANDARD_TTL_MS);
+        await expect(ttlAppliedTo('preset_top_rated_movies', 'movie')).resolves.toBe(STANDARD_TTL_MS);
+    });
+
+    it('4. il TTL corto è circa 36 ore: supera il giorno (la chiave resta valida tutta la giornata) ma non i due', async () => {
+        const ttl = await ttlAppliedTo('preset_new_movies', 'movie');
+
+        expect(ttl).toBeGreaterThan(DAY_MS);
+        expect(ttl).toBeLessThan(2 * DAY_MS);
+    });
+});
