@@ -189,6 +189,57 @@ async function applyKitsuMappingToMeta(meta, tmdbId) {
 
 
 
+/**
+ * Allinea gli id dei video alla forma con cui è arrivata la richiesta.
+ *
+ * Stremio chiede poi gli stream con gli id che trova in `meta.videos`: se la scheda è aperta
+ * con l'id IMDb (`tt0108778`) ma gli episodi portano `tmdb:1668:S:E`, le fonti che conoscono
+ * solo gli id IMDb non rispondono → una sola fonte, e quella che risponde non riconosce
+ * l'episodio → sempre lo stesso. La forma giusta è quindi quella della richiesta: gli id
+ * nascono "sbagliati" solo quando l'id IMDb si è perso (arriva dai dati TMDB via
+ * `append_to_response`, che viene chiesto solo a cache vuota), ma a Stremio la forma che
+ * conta è quella che ha usato lui per aprire la scheda.
+ *
+ * ATTENZIONE — la trappola: `meta.videos` arriva da `tvEpisodesCache`, cioè è lo stesso
+ * array (e gli stessi oggetti video) conservati in cache. Riscrivere ids *sull'oggetto
+ * ricevuto* avvelenerebbe la cache: la richiesta successiva con l'altra forma troverebbe
+ * gli id della prima. Qui si lavora quindi su una copia e si restituisce una meta nuova,
+ * lasciando intatti l'oggetto in cache e l'array degli episodi.
+ *
+ * Gli anime non si toccano: hanno già il loro percorso (`kitsu:...`) e il fallback sugli
+ * id nativi TMDB è voluto.
+ *
+ * @param {Object} meta Scheda (non viene mutata).
+ * @param {string} requestedId Id come richiesto da Stremio, senza il suffisso `_ita_offset`.
+ * @returns {Object} Scheda con gli id allineati (la stessa se non c'è nulla da fare).
+ */
+function alignVideoIdsToRequestedForm(meta, requestedId) {
+    if (!meta || typeof requestedId !== 'string' || !requestedId.startsWith('tt')) return meta;
+    if (!Array.isArray(meta.videos) || meta.videos.length === 0) return meta;
+    if (normalizeAnimeMarker(meta)) return meta;
+
+    let rewritten = false;
+    const videos = meta.videos.map((video) => {
+        if (!video || typeof video.id !== 'string') return video;
+
+        const parts = video.id.split(':');
+        // Id episodio = <prefisso>:<stagione>:<episodio> (o `kitsu:<kitsuId>:<episodio>`).
+        if (parts.length < 3 || video.id.startsWith('kitsu:')) return video;
+
+        const season = video.season !== undefined && video.season !== null ? video.season : parts[parts.length - 2];
+        const episode = video.episode !== undefined && video.episode !== null ? video.episode : parts[parts.length - 1];
+
+        const alignedId = `${requestedId}:${season}:${episode}`;
+        if (alignedId === video.id) return video;
+
+        rewritten = true;
+        return { ...video, id: alignedId };
+    });
+
+    if (!rewritten) return meta;
+    return { ...meta, videos };
+}
+
 async function resolveAnimeEpisodes(metaObj, tmdbId, tmdbApiKey) {
     if (metaObj._numberOfSeasons) {
         const source = metaObj._isAnime ? 'Anime' : 'TMDB';
@@ -327,7 +378,12 @@ async function metaHandler(args, userConfig) {
             // Ripristina l'ID richiesto originale per Stremio (incluso eventuale _ita_offset)
             meta.id = originalId;
 
-            return { meta };
+            // Gli id degli episodi devono avere la forma con cui è arrivata la richiesta
+            // (`tt…:S:E` se aperta con l'IMDb, `tmdb:…:S:E` altrimenti). La riscrittura
+            // lavora su una copia: `meta.videos` è anche ciò che sta in `tvEpisodesCache`.
+            const metaAllineata = alignVideoIdsToRequestedForm(meta, id);
+
+            return { meta: metaAllineata };
         }
 
         return { meta: null };
@@ -341,6 +397,7 @@ async function metaHandler(args, userConfig) {
 module.exports = {
     metaHandler,
     applyKitsuMappingToMeta,
+    alignVideoIdsToRequestedForm,
     getKitsuMappingStats,
     resetKitsuMappingStats
 };
