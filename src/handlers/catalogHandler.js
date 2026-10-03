@@ -229,6 +229,20 @@ async function applyAiringStateBadges(metas, {
     }
 }
 
+/**
+ * Una riga sola, greppabile con la parola chiave fissa `[CatalogTiming]`:
+ * quale catalogo, quanto ha costato (ms), quanti titoli ha prodotto, e se è stato
+ * un HIT (servito dalla cache) o una BUILD (costruito davvero, ora).
+ *
+ * Fino a qui il costo di una costruzione non era misurabile: il codice scriveva
+ * solo due `console.error` sui percorsi d'errore, quindi la domanda "la cache dei
+ * cataloghi vale la pena?" si decideva alla cieca.
+ */
+function logCatalogTiming({ id, catalog, cache, ms, titles }) {
+    const count = Array.isArray(titles) ? titles.length : (Number(titles) || 0);
+    console.log(`[CatalogTiming] id=${id} catalog=${catalog} cache=${cache} ms=${ms} titles=${count}`);
+}
+
 function getLatestEpisodeInfo(item) {
     if (!item) return null;
     
@@ -458,8 +472,18 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
     // managed SWR: Fetch or Revalidate
     const { ttl } = getCacheConfig(userConfig.ttl);
-    
+
+    // MISURA (solo log, nessun cambio di comportamento): quante volte, in questa
+    // richiesta, il catalogo è stato davvero costruito. Se resta 0 la cache ha
+    // risolto la richiesta e il tempo speso è quello di un HIT.
+    let builds = 0;
+
     const fetchCatalog = async () => {
+        builds += 1;
+        const buildStartedAt = Date.now();
+        // Titoli prodotti dalla costruzione: resta 0 se il ramo "nessun risultato"
+        // o se la costruzione è esplosa (l'errore lo dice già la riga poco sotto).
+        let builtMetas = 0;
         try {
             // Aggiungo hostUrl ad extra per essere passato ai provider se serve (es. Trakt)
             const routerArgs = { ...args, extra: { ...extra, hostUrl } };
@@ -605,10 +629,22 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 catalogMeta
             );
 
+            builtMetas = formattedData?.metas?.length || 0;
             return formattedData;
         } catch (e) {
             console.error(`[CATALOG] Error in catalog generation pipeline:`, e);
             throw e;
+        } finally {
+            // Copre tutti i punti di uscita della costruzione (risultati vuoti,
+            // catalogo formattato, errore): una riga per costruzione, mai una per
+            // richiesta.
+            logCatalogTiming({
+                id,
+                catalog: baseId,
+                cache: 'build',
+                ms: Date.now() - buildStartedAt,
+                titles: builtMetas
+            });
         }
     };
 
@@ -619,7 +655,9 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const isWatchlistCatalog = typeof id === 'string' && id.startsWith('yaca_watchlist');
     const effectiveTtl = isWatchlistCatalog ? Math.min(ttl, WATCHLIST_TTL_MS) : ttl;
 
-    // SWR handling
+    // SWR handling. Il cronometro copre la sola parte costosa (cache + eventuale
+    // costruzione), non i badge post-cache né la risposta HTTP.
+    const requestStartedAt = Date.now();
     let responseData;
     if (extra?.search || baseId === 'yaca_search_history') {
         responseData = await fetchCatalog();
@@ -629,6 +667,13 @@ async function catalogHandler(args, userConfig, hostUrl) {
             // [OTTIMIZZAZIONE] Se il catalogo è intatto (fresh) e il demone sta solo riscaldando,
             // non ci serve eseguire applyPostCacheBadges (che costa migliaia di letture/scritture al DB).
             // Usciamo immediatamente restituendo il catalogo dalla cache.
+            logCatalogTiming({
+                id,
+                catalog: baseId,
+                cache: 'hit',
+                ms: Date.now() - requestStartedAt,
+                titles: cachedStatus.value?.metas
+            });
             return cachedStatus.value;
         } else {
             const freshData = await fetchCatalog();
@@ -637,6 +682,19 @@ async function catalogHandler(args, userConfig, hostUrl) {
         }
     } else {
         responseData = await catalogRequestCache.getOrFetch(requestCacheKey, fetchCatalog, effectiveTtl);
+    }
+
+    // `fetchCatalog` non è mai partita: la cache ha servito il catalogo. Il costo
+    // della BUILD l'ha già loggata lei, questa riga dice solo quanto costa il vuoto.
+    // Non serve ricostruire la logica della cache: basta sapere se è partita.
+    if (builds === 0) {
+        logCatalogTiming({
+            id,
+            catalog: baseId,
+            cache: 'hit',
+            ms: Date.now() - requestStartedAt,
+            titles: responseData?.metas
+        });
     }
 
     return await applyPostCacheBadges(responseData, userConfig, hostUrl, catalogMeta, type, baseId);

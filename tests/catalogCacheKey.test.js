@@ -13,8 +13,18 @@
 const {
     buildCatalogCacheKey,
     resolveCatalogDefinition,
-    BADGE_CATALOG_VERSION
+    BADGE_CATALOG_VERSION,
+    catalogHandler
 } = require('../src/handlers/catalogHandler');
+const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+const { catalogRequestCache } = require('../src/cache/cacheInstances');
+
+// Il router è l'unica parte costosa: lo sostituiamo per pilotare i risultati
+// senza toccare provider e rete. Gli altri test del file sono funzioni pure e
+// non lo usano.
+jest.mock('../src/catalog/CatalogRouter', () => ({
+    routeCatalogRequest: jest.fn()
+}));
 
 const CATALOG_ID = 'yaca_custom_drama';
 
@@ -151,5 +161,131 @@ describe('Chiave di cache dei cataloghi', () => {
         });
 
         expect(key).toMatch(/^[a-f0-9]{64}$/);
+    });
+});
+
+/**
+ * Il costo di una costruzione era invisibile: nessun tempo scritto da nessuna
+ * parte, quindi "la cache dei cataloghi vale la pena?" si decideva alla cieca.
+ * Una riga sola lo rende misurabile: `[CatalogTiming] id=… catalog=… cache=hit|build ms=… titles=…`.
+ */
+describe('Tempo di costruzione di un catalogo ([CatalogTiming])', () => {
+    const ITEMS = [
+        { id: 'tmdb:101', type: 'series', name: 'Alpha' },
+        { id: 'tmdb:102', type: 'series', name: 'Beta' }
+    ];
+
+    const userConfig = {
+        userId: 'user-timing',
+        activeProfileId: 'p-timing',
+        apiKeys: { tmdb: 'fake_tmdb_key' },
+        profiles: [
+            {
+                id: 'p-timing',
+                name: 'Timing',
+                settings: { kidsMode: false, typeSelectors: { film: true, serie: true, anime: null } }
+            }
+        ]
+    };
+
+    const args = { id: 'preset_pop_series', type: 'series', extra: { skip: 0 } };
+
+    /** Esegue `fn` e restituisce solo le righe `[CatalogTiming]` emesse. */
+    async function timingLinesOf(fn) {
+        const lines = [];
+        const spy = jest.spyOn(console, 'log').mockImplementation((...logged) => {
+            const line = logged.map(String).join(' ');
+            if (line.includes('[CatalogTiming]')) lines.push(line);
+        });
+        try {
+            await fn();
+        } finally {
+            spy.mockRestore();
+        }
+        return lines;
+    }
+
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        await catalogRequestCache.clear();
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('1. costruzione: una riga con id del catalogo, durata, titoli prodotti e cache=build', async () => {
+        routeCatalogRequest.mockResolvedValueOnce(ITEMS);
+
+        const lines = await timingLinesOf(() => catalogHandler(args, userConfig, 'http://localhost:7000'));
+
+        expect(lines).toHaveLength(1);
+        expect(lines[0]).toContain('id=preset_pop_series');
+        expect(lines[0]).toContain('catalog=preset_pop_series');
+        expect(lines[0]).toContain('cache=build');
+        expect(lines[0]).toMatch(/\bms=\d+\b/);   // la durata è un numero di millisecondi
+        expect(lines[0]).toContain('titles=2');    // quanti titoli ha prodotto
+    });
+
+    it('2. costruzione vuota: la riga c\'è lo stesso, con titles=0', async () => {
+        routeCatalogRequest.mockResolvedValueOnce([]);
+
+        const lines = await timingLinesOf(() => catalogHandler(args, userConfig, 'http://localhost:7000'));
+
+        expect(lines).toHaveLength(1);
+        expect(lines[0]).toContain('cache=build');
+        expect(lines[0]).toContain('titles=0');
+        expect(lines[0]).toMatch(/\bms=\d+\b/);
+    });
+
+    it('3. cache hit: la riga dice cache=hit, il catalogo NON viene ricostruito e la risposta non cambia', async () => {
+        // La cache dei cataloghi sta solo su Redis (L1 disabilitata, ramMax: 0):
+        // in test non c'è Redis, quindi simuliamo l'hit al punto in cui l'handler
+        // parla con la cache. Ciò che conta è che `fetchCatalog` non venga chiamata.
+        const cached = { metas: [{ id: 'tmdb:900', name: 'Dalla cache' }] };
+        const getOrFetch = jest.spyOn(catalogRequestCache, 'getOrFetch')
+            .mockResolvedValue(cached);
+        routeCatalogRequest.mockResolvedValue(ITEMS);
+
+        const response = await catalogHandler(args, userConfig, 'http://localhost:7000');
+
+        const lines = await timingLinesOf(() => catalogHandler(args, userConfig, 'http://localhost:7000'));
+
+        expect(getOrFetch).toHaveBeenCalledTimes(2);
+        expect(routeCatalogRequest).not.toHaveBeenCalled();  // nessuna ricostruzione
+        expect(lines).toHaveLength(1);
+        expect(lines[0]).toContain('id=preset_pop_series');
+        expect(lines[0]).toContain('cache=hit');
+        expect(lines[0]).not.toContain('cache=build');
+        expect(lines[0]).toMatch(/\bms=\d+\b/);
+        expect(lines[0]).toContain('titles=1');
+        expect(response).toHaveProperty('metas'); // l'hit non rompe la risposta
+    });
+
+    it('4. warmup: la cache fresca logga un hit, la cache scaduta una build', async () => {
+        const cached = { metas: [{ id: 'tmdb:901', name: 'Gia caldo' }] };
+        jest.spyOn(catalogRequestCache, 'getWithStatus')
+            .mockResolvedValueOnce({ value: cached, status: 'fresh' });
+
+        const warmArgs = { ...args, extra: { ...args.extra, warmupMode: true } };
+        const freshLines = await timingLinesOf(() => catalogHandler(warmArgs, userConfig, 'http://localhost:7000'));
+
+        expect(freshLines).toHaveLength(1);
+        expect(freshLines[0]).toContain('cache=hit');
+        expect(freshLines[0]).toContain('titles=1');
+        expect(routeCatalogRequest).not.toHaveBeenCalled();
+
+        // Stessa chiave, ma la cache non ha più niente di fresco: il riscaldamento
+        // deve costruire, e la riga deve dirlo.
+        jest.spyOn(catalogRequestCache, 'getWithStatus')
+            .mockResolvedValueOnce({ value: undefined, status: 'miss' });
+        routeCatalogRequest.mockResolvedValueOnce(ITEMS);
+
+        const staleLines = await timingLinesOf(() => catalogHandler(warmArgs, userConfig, 'http://localhost:7000'));
+
+        expect(staleLines).toHaveLength(1);
+        expect(staleLines[0]).toContain('cache=build');
+        expect(staleLines[0]).toContain('titles=2');
+        expect(routeCatalogRequest).toHaveBeenCalledTimes(1);
     });
 });
