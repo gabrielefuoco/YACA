@@ -13,6 +13,12 @@
  * Degrado morbido: se l'indice non c'è, è illeggibile o la query fallisce, `searchTier2`
  * restituisce `[]` e la ricerca prosegue esattamente come prima (soli titoli locali).
  * L'indisponibilità viene segnalata **una volta sola**, per non sporcare il log a ogni ricerca.
+ *
+ * Terza fonte, piccola: i **nomi appresi** (`src/db/learnedNames.js`). Sono i nomi italiani dei
+ * titoli del Tier 2 che l'arricchimento ha già visto una volta: cercarli prima non poteva
+ * funzionare perché quel nome non esisteva da nessuna parte, adesso esiste. Vengono uniti **in
+ * coda** e deduplicati per id, quindi non riordinano e non duplicano nulla di quanto è già
+ * uscito. Anche qui degrado morbido: archivio assente o rotto => `[]`.
  */
 
 const { Tier2SearchClient } = require('../db/tier2Index');
@@ -23,9 +29,22 @@ const TIER2_FLAG = '_tier2';
 // Quanti titoli del Tier 2 aggiungere a una pagina di ricerca (20 = PRESET_PAGE_SIZE).
 const TIER2_PAGE_SIZE = 20;
 
+// Quanti nomi appresi aggiungere. Sono un di piu', non il cuore della pagina: 5 bastano a far
+// emergere il titolo che l'utente sta cercando per nome, senza spostare il resto in giu'.
+const LEARNED_PAGE_SIZE = 5;
+
 let _client = null;
 let _clientBroken = false;
 let _unavailableLogged = false;
+let _learnedBroken = false;
+let _learnedUnavailableLogged = false;
+
+/** L'archivio dei nomi appresi contiene `better-sqlite3`: si carica solo se serve davvero. */
+let _learnedNames = null;
+function getLearnedNamesModule() {
+    if (!_learnedNames) _learnedNames = require('../db/learnedNames');
+    return _learnedNames;
+}
 
 /** Il client tiene aperto l'handle SQLite: si riusa, non si riapre a ogni ricerca. */
 function getTier2Client() {
@@ -49,6 +68,7 @@ function closeTier2Search() {
     }
     _client = null;
     _clientBroken = false;
+    _learnedBroken = false;
 }
 
 /** `series` (come arriva dal catalogo Stremio) è `tv` nell'indice. */
@@ -132,6 +152,69 @@ function searchTier2(search, { type = 'movie', limit = TIER2_PAGE_SIZE } = {}) {
 }
 
 /**
+ * Rende una riga dell'archivio dei nomi appresi un meta Stremio, **nello stesso formato** di
+ * `mapTier2RowToMeta`: e' un titolo del Tier 2, solo che questa volta conosce il suo nome
+ * italiano e l'anno. Resta marcato come Tier 2, quindi l'arricchimento lo riempie lo stesso
+ * (la cache dei dettagli è calda: è il titolo che l'utente ha già visto uscire).
+ */
+function mapLearnedRowToMeta(row) {
+    const id = toTmdbId(row && row.tmdb_id);
+    if (!id) return null;
+
+    const isTv = row.media_type === 'tv';
+    const name = row.title_it || row.original_title || 'Unknown';
+
+    return {
+        id: `tmdb:${id}`,
+        _tmdbId: id,
+        type: isTv ? 'series' : 'movie',
+        name,
+        poster: null,
+        posterShape: 'poster',
+        background: null,
+        description: '',
+        releaseInfo: row.year || null,
+        popularity: 0,
+        genres: [],
+        genre_ids: [],
+        rawTMDB: {
+            id,
+            title: row.original_title || null,
+            original_title: row.original_title || null,
+            popularity: 0,
+            release_date: row.year || null
+        },
+        [TIER2_FLAG]: true
+    };
+}
+
+/**
+ * Interroga l'archivio dei **nomi appresi** con lo stesso testo della ricerca.
+ * Non solleva mai: archivio assente, illeggibile o corrotto => `[]`, cioè esattamente la
+ * risposta di prima che la tabella esistesse. L'indisponibilità si segnala una volta sola.
+ */
+async function searchLearnedTitles(search, { type = 'movie', limit = LEARNED_PAGE_SIZE } = {}) {
+    if (_learnedBroken) return [];
+    if (!search || typeof search !== 'string' || !search.trim()) return [];
+
+    try {
+        const { searchLearnedNames } = getLearnedNamesModule();
+        const rows = await searchLearnedNames(search, { type: toTier2Type(type), limit });
+        return (rows || []).map(mapLearnedRowToMeta).filter(Boolean);
+    } catch (err) {
+        _learnedBroken = true;
+        if (!_learnedUnavailableLogged) {
+            _learnedUnavailableLogged = true;
+            console.warn(
+                `[LearnedNames] Archivio dei nomi appresi non utilizzabile: la ricerca continua come prima.`,
+                err && err.message
+            );
+        }
+        return [];
+    }
+}
+
+/**
  * Fusione: **prima** i titoli locali (nell'ordine e con i filtri di oggi: hanno titolo italiano
  * e poster pronti), **poi** i risultati del Tier 2 nell'ordine di rilevanza dell'indice.
  * In caso di id in comune vince il locale e il Tier 2 viene scartato; i duplicati interni ai
@@ -160,9 +243,12 @@ function mergeLocalWithTier2(localItems = [], tier2Items = []) {
 module.exports = {
     TIER2_FLAG,
     TIER2_PAGE_SIZE,
+    LEARNED_PAGE_SIZE,
     searchTier2,
+    searchLearnedTitles,
     mergeLocalWithTier2,
     mapTier2RowToMeta,
+    mapLearnedRowToMeta,
     toTier2Type,
     closeTier2Search
 };

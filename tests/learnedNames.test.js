@@ -11,7 +11,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { LearnedNamesStore, learnNames, searchLearnedNames, normalizeText, titleTokens, toLearnableRow, MAX_ROWS } = require('../src/db/learnedNames');
+const { LearnedNamesStore, learnNames, searchLearnedNames, normalizeText, titleTokens, toLearnableRow, MAX_ROWS, PRUNE_TARGET } = require('../src/db/learnedNames');
 
 /** Una cartella temporanea che sparisce a fine test (Windows: qualche tentativo, non e' un test). */
 function tempDir(nome) {
@@ -158,17 +158,17 @@ describe('si scrive solo il nuovo', () => {
         store.write(tante);
 
         // Il tetto e' applicato nella stessa transazione della scrittura: la tabella non
-        // supera mai MAX_ROWS, e a uscire e' la coda' piu' vecchia.
-        expect(store.count()).toBe(MAX_ROWS);
+        // supera mai MAX_ROWS e quando lo supera scende al 90% (potatura amortizzata).
+        expect(store.count()).toBe(PRUNE_TARGET);
         const rimasti = store.search(['titolo', 'appreso'], { limit: MAX_ROWS + 10 }).map(r => r.tmdb_id);
-        expect(rimasti).toHaveLength(MAX_ROWS);
+        expect(rimasti).toHaveLength(PRUNE_TARGET);
         // Il primo scritto e' sparito, l'ultimo e' rimasto.
         expect(rimasti).not.toContain(1);
         expect(rimasti).toContain(MAX_ROWS + 50);
 
-        // Una scrittura successiva non gonfia la tabella.
+        // Una scrittura successiva non gonfia la tabella (e non ripota: siamo sotto il tetto).
         store.write([voce({ tmdbId: 999999, titleIt: 'Ultimo Imparato', originalTitle: 'Last Learned' })]);
-        expect(store.count()).toBe(MAX_ROWS);
+        expect(store.count()).toBe(PRUNE_TARGET + 1);
         expect(store.search(['ultimo', 'imparato'], {})).toHaveLength(1);
     });
 });

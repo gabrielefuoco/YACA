@@ -36,9 +36,12 @@ const fs = require('fs');
 const DB_FILE = 'learned_names.db';
 
 // Tetto di crescita: la tabella e' una **cache** di nomi, non un archivio di consultazione.
-// Se si riempie (navigazione lunga e molto diversificata) si butta via il coda' piu' vecchia:
+// Se si riempie (navigazione lunga e molto diversificata) si butta via la coda' piu' vecchia:
 // i nomi buttati non si perdono, tornano a essere imparati alla prima ricerca che li riporta in pagina.
+// Si pota fino al 90% del tetto, non fino al tetto: cosi' la potatura capita una volta ogni
+// mille-nomila scritture e non a ogni pagina arricchita.
 const MAX_ROWS = 20000;
+const PRUNE_TARGET = Math.floor(MAX_ROWS * 0.9);
 
 // Dopo quanti errori consecutivi di scrittura l'archivio si dichiara inutilizzabile: evita di
 // riprovare (e ripetere il log) per tutta la vita su un filesystem che non scrive.
@@ -79,6 +82,8 @@ function titleTokens(value) {
     return clean.split(' ').filter(t => t.length > 0);
 }
 
+// Nessun indice su `title_search`: la ricerca e' per **sottostringa** (`LIKE '%token%'`) e un
+// indice B-tree non la puo' servire, quindi scriverlo e scansirlo sarebbe solo costo.
 const SCHEMA = `
     CREATE TABLE IF NOT EXISTS learned_names (
         tmdb_id        INTEGER NOT NULL,
@@ -90,7 +95,6 @@ const SCHEMA = `
         learned_at     INTEGER NOT NULL,
         PRIMARY KEY (media_type, tmdb_id)
     );
-    CREATE INDEX IF NOT EXISTS learned_names_title ON learned_names (title_search);
 `;
 
 class LearnedNamesStore {
@@ -130,6 +134,7 @@ class LearnedNamesStore {
                 SELECT rowid FROM learned_names ORDER BY learned_at ASC, rowid ASC LIMIT ?
             )
         `);
+        this._size = null;   // quante righe crediamo di avere: si conta una volta sola
         return db;
     }
 
@@ -168,14 +173,23 @@ class LearnedNamesStore {
         try {
             this._open();
             const now = Date.now();
+            // Il conteggio delle righe vive in memoria: `COUNT(*)` a ogni scrittura costerebbe
+            // una scansione dell'intera tabella per niente (sono poche migliaia di righe, ma
+            // la si paga a ogni pagina arricchita).
+            if (this._size === null) this._size = Number(this._count.get().n) || 0;
+
             const tx = this.db.transaction((batch) => {
-                for (const r of batch) this._insert.run(r.tmdbId, r.mediaType, r.titleIt, r.searchText, r.originalTitle, r.year, now);
+                let inserted = 0;
+                for (const r of batch) inserted += this._insert.run(r.tmdbId, r.mediaType, r.titleIt, r.searchText, r.originalTitle, r.year, now).changes;
+                return inserted;
             });
-            tx(rows);
+            this._size += tx(rows);
 
             // Tetto di crescita: la coda' piu' vecchia esce, il resto resta.
-            const { n } = this._count.get();
-            if (Number(n) > MAX_ROWS) this._prune.run(Number(n) - MAX_ROWS);
+            if (this._size > MAX_ROWS) {
+                this._prune.run(this._size - PRUNE_TARGET);
+                this._size = PRUNE_TARGET;
+            }
 
             this.writeErrors = 0;
             return rows.length;
@@ -188,6 +202,7 @@ class LearnedNamesStore {
             this._insert = null;
             this._count = null;
             this._prune = null;
+            this._size = null;
             return 0;
         }
     }
@@ -240,6 +255,7 @@ class LearnedNamesStore {
         this._insert = null;
         this._count = null;
         this._prune = null;
+        this._size = null;
         this.disabled = false;
         this.writeErrors = 0;
     }
@@ -331,6 +347,7 @@ module.exports = {
     LearnedNamesStore,
     DB_FILE,
     MAX_ROWS,
+    PRUNE_TARGET,
     normalizeText,
     titleTokens,
     toLearnableRow,
