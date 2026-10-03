@@ -4,10 +4,9 @@
  * Il formatter (`sanitizeCatalogMeta`) che PREFERISCE il poster già composto nella cache
  * servita da `GET /erdb-poster/:file`, invece di comporre il poster al volo.
  *
- * Il contratto conta in un solo verso: finché i file non ci sono (ed è il caso di oggi)
- * l'URL deve essere IDENTICO a quello di prima, parametro per parametro. Qui l'URL di prima
- * è scritto a mano, non ricalcolato: se un giorno cambiasse, il confronto fallirebbe e
- * si vedrebbe subito che la cache ha rotto qualcosa.
+ * Il contratto conta in un solo verso: finché il file non c'è, l'URL deve essere quello di
+ * prima — cioè il poster di TMDB, com'era prima di rimuovere le URL dell'istanza ERDB
+ * pubblica (le immagini della scheda non passano più da `easyratingsdb.com`).
  *
  * I nomi file sono scritti a mano (`tmdb-movie-27205.jpg`, `tmdb-movie-27205_ITA.jpg`), non
  * presi da `posterFileName`: un nome sbagliato è proprio il fallimento silenzioso che la
@@ -35,10 +34,9 @@ let rootDir;
 const precedenteCacheDir = process.env.ERDB_CACHE_DIR;
 const precedenteErdbConfig = process.env.ERDB_CONFIG;
 
-/** L'URL che il formatter produceva PRIMA: scritto a mano, è l'invariante del test. */
-function urlDiPrima(erdbId, fallback) {
-    const erdbUrl = `https://easyratingsdb.com/${ERDB_CHIAVE}/poster/${erdbId}.jpg`;
-    return `${HOST}/images/fallback?url=${encodeURIComponent(erdbUrl)}&fallback=${encodeURIComponent(fallback)}`;
+/** L'URL che il formatter produce SENZA il file in cache: il poster di TMDB, così com'era. */
+function urlDiPrima() {
+    return RAW_POSTER;
 }
 
 /** Item di catalogo: film TMDB 27205. */
@@ -98,34 +96,36 @@ describe('Formatter: preferisce il poster già composto quando il file c\'è', (
 });
 
 describe('Formatter: senza file (o cartella assente) l\'URL è quello di prima', () => {
-    test('file assente: URL identico a quello di prima', () => {
+    test('file assente: si resta sul poster di TMDB', () => {
         const meta = sanitizeCatalogMeta({ ...film(), id: 'tmdb:999999', tmdbId: 999999 }, OPZIONI);
-        expect(meta.poster).toBe(urlDiPrima('tmdb:movie:999999', RAW_POSTER));
+        expect(meta.poster).toBe(urlDiPrima());
     });
 
-    test('cartella inesistente: nessun errore, URL di prima', () => {
+    test('cartella inesistente: nessun errore, poster di TMDB', () => {
         const precedente = process.env.ERDB_CACHE_DIR;
         process.env.ERDB_CACHE_DIR = path.join(rootDir, 'cartella-che-non-esiste');
         try {
             const meta = sanitizeCatalogMeta(film(), OPZIONI);
-            expect(meta.poster).toBe(urlDiPrima('tmdb:movie:27205', RAW_POSTER));
+            expect(meta.poster).toBe(urlDiPrima());
         } finally {
             process.env.ERDB_CACHE_DIR = precedente;
         }
     });
 
-    test('file vuoto (scarico abortito): URL di prima, meglio che un\'immagine vuota', () => {
+    test('file vuoto (scarico abortito): poster di TMDB, meglio che un\'immagine vuota', () => {
         const meta = sanitizeCatalogMeta({ ...film(), id: 'tmdb:1399', type: 'series' }, OPZIONI);
         expect(fs.existsSync(path.join(cacheDir, 'tmdb-tv-1399.jpg'))).toBe(true);
-        expect(meta.poster).toBe(urlDiPrima('tmdb:tv:1399', RAW_POSTER));
+        expect(meta.poster).toBe(urlDiPrima());
     });
 
-    test('senza ERDB configurato la cache non viene neppure guardata', () => {
+    test('senza ERDB configurato la cache locale basta: il file c\'è e viene servito', () => {
+        // La cache è NOSTRA: non chiede niente all'istanza ERDB, quindi non ha bisogno
+        // che ERDB sia configurato per essere guardata.
         const precedente = process.env.ERDB_CONFIG;
         delete process.env.ERDB_CONFIG;
         try {
             const meta = sanitizeCatalogMeta(film(), OPZIONI);
-            expect(meta.poster).toBe(RAW_POSTER);
+            expect(meta.poster).toBe(`${HOST}/erdb-poster/tmdb-movie-27205.jpg`);
         } finally {
             process.env.ERDB_CONFIG = precedente;
         }
