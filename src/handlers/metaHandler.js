@@ -240,6 +240,60 @@ function alignVideoIdsToRequestedForm(meta, requestedId) {
     return { ...meta, videos };
 }
 
+/**
+ * Costruisce la scheda da restituire a partire dall'ingresso di cache, senza mutarlo.
+ *
+ * `cachedMeta` è l'oggetto che `finalMetaCache` conserva per riferimento, e la chiave di
+ * cache (`meta_<tmdbId>_<type>`) non contiene la forma con cui è arrivata la richiesta:
+ * `tt0108778` e `tmdb:1668` leggono e scrivono **la stessa voce**. Scrivere quindi
+ * `meta.id` o `behaviorHints.defaultVideoId` sull'ingresso significa che la richiesta
+ * successiva — con l'altra forma — erediti i segni di questa, e `defaultVideoId` (il campo
+ * con cui Stremio sceglie il video da aprire) resterebbe appiccicoso sulla forma sbagliata.
+ *
+ * Stessa forma della correzione di `alignVideoIdsToRequestedForm`: si lavora su una copia.
+ * La copia è **superficiale**, e va bene: gli unici due campi scritti qui (`id` e
+ * `behaviorHints`) stanno al primo livello, quindi copiare `behaviorHints` è sufficiente a
+ * non toccare l'oggetto in cache. `videos` resta condiviso, ed è già così per costruzione:
+ * `alignVideoIdsToRequestedForm` ne copia i singoli episodi quando li riscrive.
+ *
+ * @param {Object} cachedMeta Scheda in cache (non viene mutata).
+ * @param {Object} params
+ * @param {string} params.requestedId Id come richiesto da Stremio, senza il suffisso `_ita_offset`.
+ * @param {string} params.originalId Id grezzo come richiesto, con l'eventuale `_ita_offset`.
+ * @param {string} params.type `movie` o `series`.
+ * @returns {Object} Scheda pronta per la risposta.
+ */
+function buildResponseMeta(cachedMeta, { requestedId, originalId, type }) {
+    const risposta = { ...cachedMeta };
+
+    // `behaviorHints` è annidato: copiarlo è obbligatorio, altrimenti la scrittura qui sotto
+    // muterebbe comunque l'oggetto conservato in cache.
+    if (cachedMeta.behaviorHints && typeof cachedMeta.behaviorHints === 'object') {
+        risposta.behaviorHints = { ...cachedMeta.behaviorHints };
+    }
+
+    // Anche il boundary anime normalizza sulla copia: il marker di questa risposta non
+    // viene più scritto nell'oggetto in cache.
+    normalizeAnimeMarker(risposta);
+
+    // Per richieste con tmdb: ID, manteniamo l'IMDB ID risolto per compatibilità streaming
+    if (requestedId.startsWith('tmdb:') && risposta.id && risposta.id.startsWith('tt')) {
+        if (risposta.behaviorHints && type === 'movie') {
+            risposta.behaviorHints.defaultVideoId = risposta.id;
+        }
+    } else if (!requestedId.startsWith('tmdb:')) {
+        // Per kitsu: e altri ID (non tradotti), forziamo l'ID originale
+        risposta.id = requestedId;
+    }
+
+    // Ripristina l'ID richiesto originale per Stremio (incluso eventuale _ita_offset)
+    risposta.id = originalId;
+
+    // Gli id degli episodi devono avere la forma con cui è arrivata la richiesta
+    // (`tt…:S:E` se aperta con l'IMDb, `tmdb:…:S:E` altrimenti).
+    return alignVideoIdsToRequestedForm(risposta, requestedId);
+}
+
 async function resolveAnimeEpisodes(metaObj, tmdbId, tmdbApiKey) {
     if (metaObj._numberOfSeasons) {
         const source = metaObj._isAnime ? 'Anime' : 'TMDB';
@@ -361,29 +415,10 @@ async function metaHandler(args, userConfig) {
 
 
         if (meta) {
+            // `meta` qui è l'ingresso di cache: non lo si riscrive, lo si *deriva*.
             // Anche una entry dalla cache storica deve rispettare il boundary
             // corrente prima di raggiungere formatter e consumer.
-            normalizeAnimeMarker(meta);
-
-            // Per richieste con tmdb: ID, manteniamo l'IMDB ID risolto per compatibilità streaming
-            if (id.startsWith('tmdb:') && meta.id && meta.id.startsWith('tt')) {
-                if (meta.behaviorHints && type === 'movie') {
-                    meta.behaviorHints.defaultVideoId = meta.id;
-                }
-            } else if (!id.startsWith('tmdb:')) {
-                // Per kitsu: e altri ID (non tradotti), forziamo l'ID originale
-                meta.id = id;
-            }
-
-            // Ripristina l'ID richiesto originale per Stremio (incluso eventuale _ita_offset)
-            meta.id = originalId;
-
-            // Gli id degli episodi devono avere la forma con cui è arrivata la richiesta
-            // (`tt…:S:E` se aperta con l'IMDb, `tmdb:…:S:E` altrimenti). La riscrittura
-            // lavora su una copia: `meta.videos` è anche ciò che sta in `tvEpisodesCache`.
-            const metaAllineata = alignVideoIdsToRequestedForm(meta, id);
-
-            return { meta: metaAllineata };
+            return { meta: buildResponseMeta(meta, { requestedId: id, originalId, type }) };
         }
 
         return { meta: null };
@@ -398,6 +433,7 @@ module.exports = {
     metaHandler,
     applyKitsuMappingToMeta,
     alignVideoIdsToRequestedForm,
+    buildResponseMeta,
     getKitsuMappingStats,
     resetKitsuMappingStats
 };
