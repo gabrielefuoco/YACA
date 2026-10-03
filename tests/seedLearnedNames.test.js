@@ -14,16 +14,48 @@
  * (quello è `tests/learnedNames.test.js`). Nessuna rete: il client Redis è finto.
  */
 
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const { spawnSync } = require('child_process');
+
+/** Lo script vero, per il test del codice di uscita (è un processo nuovo: niente mock). */
+const SCRIPT = path.join(__dirname, '..', 'scripts', 'seed_learned_names.js');
+
+/**
+ * Percorso dell'archivio finto: il file **non** viene mai aperto (il negozio è finto), ma lo
+ * script chiede `fs.existsSync` prima di contare le righe, quindi il test lo crea davvero.
+ */
+const mockPercorso = path.join(os.tmpdir(), 'seed-learned-names-test.db');
+
+/**
+ * Quante righe il finto archivio dichiara di avere, e se il file esiste: `_righeInTabella`
+ * chiede il conto **al momento**, e non lo deduce dai candidati.
+ */
+const mockRigheTabella = { n: 0, esiste: false };
+
 jest.mock('../src/db/learnedNames', () => ({
     learnNames: jest.fn(async () => 0),
     searchLearnedNames: jest.fn(async () => []),
-    learnedNamesPath: () => '/tmp/learned_names.db',
-    closeLearnedNames: jest.fn()
+    learnedNamesPath: () => mockPercorso,
+    closeLearnedNames: jest.fn(),
+    // Stessa regola di `toLearnableRow`: il nome vale solo se c'è ed è diverso dall'originale.
+    toLearnableRow: jest.fn((entry) => {
+        if (!entry || !entry.titleIt || !entry.originalTitle) return null;
+        if (entry.titleIt.trim() === entry.originalTitle.trim()) return null;
+        return { tmdbId: entry.tmdbId, mediaType: entry.type, titleIt: entry.titleIt };
+    }),
+    // Il conteggio delle righe davvero in tabella, letto ora: `esiste: false` = archivio assente.
+    LearnedNamesStore: jest.fn(function LearnedNamesStoreFinta() {
+        this.count = jest.fn(() => (mockRigheTabella.esiste ? mockRigheTabella.n : 0));
+        this.close = jest.fn();
+    })
 }));
 
 const archivio = require('../src/db/learnedNames');
 const {
     main,
+    codiceUscita,
     parseKey,
     toEntry,
     aspettaRedis,
@@ -71,6 +103,14 @@ beforeEach(() => {
     archivio.learnNames.mockClear().mockResolvedValue(0);
     archivio.searchLearnedNames.mockClear().mockResolvedValue([]);
     archivio.closeLearnedNames.mockClear();
+    archivio.toLearnableRow.mockClear();
+    mockRigheTabella.n = 0;
+    mockRigheTabella.esiste = false;
+    try { fs.rmSync(mockPercorso, { force: true }); } catch (_err) { /* non c'era */ }
+});
+
+afterAll(() => {
+    try { fs.rmSync(mockPercorso, { force: true }); } catch (_err) { /* non c'era */ }
 });
 
 describe('parseKey: le due famiglie di chiavi', () => {
@@ -82,11 +122,16 @@ describe('parseKey: le due famiglie di chiavi', () => {
         expect(parseKey('tmdb_details_raw:v2:movie:49051')).toEqual({ mediaType: 'movie', tmdbId: 49051 });
     });
 
-    test('`tv` resta `tv`, e le serie di tmdb.js sono `tv`', () => {
-        expect(parseKey('tmdb_details_raw:full:v2:tv:1396')).toEqual({ mediaType: 'tv', tmdbId: 1396 });
+    test('`series` resta una serie: `tv` e `series` sono la STESSA cosa per la tabella', () => {
+        // La chiave `full:v2:*` nasce da `getTmdbMetaDetails`, che riceve il tipo Stremio
+        // ('series', cfr. `metaHandler` e `loadDetailsFromTmdb`); quella `v2:*` da
+        // `getTmdbMovieDetails`, che riceve gia' 'tv'. Vanno entrambe lette come `tv`.
+        expect(parseKey('tmdb_details_raw:full:v2:series:1421')).toEqual({ mediaType: 'tv', tmdbId: 1421 });
+        expect(parseKey('tmdb_details_raw:v2:series:1421')).toEqual({ mediaType: 'tv', tmdbId: 1421 });
+        // Il punto del guasto: `series` finiva a `movie`, quindi ogni serie imparata finiva
+        // con l'etichetta sbagliata e non la trovava più nessuna ricerca di serie.
+        expect(parseKey('tmdb_details_raw:v2:series:1421').mediaType).not.toBe('movie');
         expect(parseKey('tmdb_details_raw:v2:tv:1396')).toEqual({ mediaType: 'tv', tmdbId: 1396 });
-        // `series` non è il tipo di tmdb.js, ma se arrivasse non deve diventare `movie`.
-        expect(parseKey('tmdb_details_raw:v2:series:1396')).toEqual({ mediaType: 'movie', tmdbId: 1396 });
     });
 
     test('il resto è rumore: fuori forma, altro namespace, prefix, chiave senza id', () => {
@@ -253,5 +298,143 @@ describe('le due famiglie di chiavi vengono lette entrambe', () => {
             const m = p.replace('*', 'movie:1');
             expect(parseKey(m)).not.toBeNull();
         });
+    });
+});
+
+/*
+ * T37-c: le tre cose che la riga finale e il codice di uscita sbagliavano.
+ */
+
+describe('le serie vengono scritte come serie, non come film', () => {
+    test('`parseKey` sulle due famiglie di una serie dà `tv` (non `movie`)', () => {
+        // Le due forme vere: `full:v2:series` (getTmdbMetaDetails, tipo Stremio) e
+        // `v2:tv` (getTmdbMovieDetails, tipo già normalizzato).
+        expect(parseKey('tmdb_details_raw:full:v2:series:1421')).toEqual({ mediaType: 'tv', tmdbId: 1421 });
+        expect(parseKey('tmdb_details_raw:v2:series:1421')).toEqual({ mediaType: 'tv', tmdbId: 1421 });
+        expect(parseKey('tmdb_details_raw:v2:movie:1421')).toEqual({ mediaType: 'movie', tmdbId: 1421 });
+    });
+
+    test('dal seed end-to-end: una voce di `...:series:<id>` arriva a `learnNames` come `tv`', async () => {
+        const finto = clientCheProntoDopo(1, [
+            ['tmdb_details_raw:full:v2:series:1421', busta({ name: 'Sherlock', original_name: 'Sherlock' })],
+            ['tmdb_details_raw:v2:tv:1396', busta({ name: 'Il trono di spade', original_name: 'Game of Thrones' })]
+        ]);
+        archivio.learnNames.mockResolvedValue(2);
+
+        const esito = await main({ redis: finto, log });
+
+        expect(esito).toEqual({ scanned: 2, written: 2 });
+        const voci = archivio.learnNames.mock.calls[0][0];
+        // `media_type` della tabella è 'movie'|'tv' (cfr. `toLearnableRow`): una serie scritta
+        // come film non la trova più nessuna ricerca di serie.
+        expect(voci).toEqual(expect.arrayContaining([
+            expect.objectContaining({ tmdbId: 1421, type: 'tv', titleIt: 'Sherlock' }),
+            expect.objectContaining({ tmdbId: 1396, type: 'tv' })
+        ]));
+        expect(voci.every(v => v.type !== 'movie')).toBe(true);
+    });
+});
+
+describe('la riga finale: ogni numero dice la sua cosa', () => {
+    test('i candidati letti non si chiamano più "tabella", e il totale viene letto davvero', async () => {
+        const finto = clientCheProntoDopo(1, [
+            ['tmdb_details_raw:full:v2:movie:129', busta({ title: 'La città degli spiriti', original_title: 'Spirited Away' })]
+        ]);
+        archivio.learnNames.mockResolvedValue(1);
+        mockRigheTabella.n = 168;              // le 168 righe già in tabella
+        mockRigheTabella.esiste = true;
+        fs.writeFileSync(mockPercorso, '');     // il file c'è: il conteggio si può fare
+
+        await main({ redis: finto, log });
+
+        const riepilogo = log.linee.log.filter(l => l.includes('Candidati letti')).join('\n');
+        // Il numero dei candidati letti da Redis non è il contenuto della tabella: non lo si
+        // chiama più "tabella", e il conteggio delle righe lo si chiede all'archivio.
+        expect(riepilogo).not.toMatch(/tabella: \d+ voci/);
+        expect(riepilogo).toMatch(/Candidati letti: 1/);
+        expect(riepilogo).toMatch(/righe scritte: 1/);
+        expect(riepilogo).toMatch(/righe in tabella: 168/);
+    });
+
+    test('archivio assente: il totale è dichiarato non leggibile, non ZERO righe', async () => {
+        const finto = clientCheProntoDopo(1, [
+            ['tmdb_details_raw:v2:movie:1', busta({ title: 'Ok', original_title: 'No' })]
+        ]);
+        archivio.learnNames.mockResolvedValue(1);
+        mockRigheTabella.esiste = false;
+
+        await main({ redis: finto, log });
+
+        const riepilogo = log.linee.log.join('\n');
+        expect(riepilogo).toMatch(/righe in tabella: non leggibile/);
+    });
+
+    test('la verifica cerca un nome davvero scritto, non il primo candidato letto', async () => {
+        const finto = clientCheProntoDopo(1, [
+            // Il primo candidato è uno SCARTATO da `toLearnableRow` (nome = originale):
+            // è il caso che faceva stampare "0 risultati" anche con il seed riuscito.
+            ['tmdb_details_raw:v2:movie:49051', busta({ title: 'Blade Runner', original_title: 'Blade Runner' })],
+            ['tmdb_details_raw:v2:movie:129', busta({ title: 'La città degli spiriti', original_title: 'Spirited Away' })]
+        ]);
+        archivio.learnNames.mockResolvedValue(1);
+        archivio.searchLearnedNames.mockResolvedValue([{ tmdb_id: 129, media_type: 'movie' }]);
+
+        await main({ redis: finto, log });
+
+        const riepilogo = log.linee.log.join('\n');
+        expect(riepilogo).toMatch(/verifica ricerca: 1 risultato\/i per "La città degli spiriti" \(movie\)/);
+        // Non si è verificato il primo candidato, che non è finito in tabella.
+        expect(riepilogo).not.toMatch(/Blade Runner/);
+        // E la verifica usa il filtro di tipo con cui l'app cerca (`media_type = ?`).
+        expect(archivio.searchLearnedNames).toHaveBeenCalledWith('La città degli spiriti', { type: 'movie', limit: 1 });
+    });
+
+    test('nessun candidato scrivibile: la verifica è dichiarata saltata, non un "0 risultati"', async () => {
+        const finto = clientCheProntoDopo(1, [
+            ['tmdb_details_raw:v2:movie:49051', busta({ title: 'Blade Runner', original_title: 'Blade Runner' })]
+        ]);
+        archivio.learnNames.mockResolvedValue(0);
+
+        await main({ redis: finto, log });
+
+        expect(archivio.searchLearnedNames).not.toHaveBeenCalled();
+        const riepilogo = log.linee.log.join('\n');
+        expect(riepilogo).toMatch(/verifica ricerca: saltata/);
+        expect(riepilogo).not.toMatch(/0 risultati/);
+    });
+});
+
+describe('il codice di uscita: "non è successo niente" non è "fatto"', () => {
+    test('attesa scaduta (Redis non connesso): codice diverso da zero', () => {
+        expect(codiceUscita({ scanned: 0, written: 0 }, { dryRun: false })).toBe(1);
+    });
+
+    test('il comando vero, con Redis che non si connette, esce non-zero', () => {
+        // `NODE_ENV=test` fa di `redisClient` lo stub di test: `isAvailable` resta sempre falso,
+        // quindi l'attesa scade deterministicamente, senza rete e senza toccare SQLite.
+        const esito = spawnSync(process.execPath, [SCRIPT, '--attesa-redis', '60'], {
+            encoding: 'utf8',
+            timeout: 30000,
+            env: { ...process.env, NODE_ENV: 'test', LEARNED_NAMES_DB: path.join(__dirname, 'tmp-non-esiste', 'x.db') }
+        });
+        expect(esito.signal).toBeNull();
+        expect(esito.status).not.toBe(0);
+        expect(esito.stderr).toMatch(/Redis NON connesso/);
+    });
+
+    test('dry-run: 0 anche senza scrivere (non si scrive per scelta, non per guasto)', () => {
+        expect(codiceUscita({ scanned: 12, written: 0 }, { dryRun: true })).toBe(0);
+    });
+
+    test('seed avvenuto: 0', () => {
+        expect(codiceUscita({ scanned: 447, written: 300 }, { dryRun: false })).toBe(0);
+        expect(codiceUscita(null, { dryRun: false })).toBe(1);
+    });
+
+    test('e `main` con l\'attesa scaduta non scrive niente (la decisione la prende il codice)', async () => {
+        const finto = clientCheProntoDopo(999);
+        const esito = await main({ redis: finto, log, attesaRedisMs: 60 });
+        expect(esito).toEqual({ scanned: 0, written: 0 });
+        expect(codiceUscita(esito, { dryRun: false })).toBe(1);
     });
 });

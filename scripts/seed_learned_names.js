@@ -17,6 +17,8 @@
  * Non promuove niente: scrive solo `id`, nome italiano, titolo originale e anno. Nessuna chiamata
  * di rete a TMDB, nessun Tier 1 toccato. Se Redis non e' raggiungibile esce dicendolo — ma
  * **lo aspetta**, perche' `redisClient` si connette da solo e in modo asincrono (vedi sotto).
+ * E quando il seed **non** e' avvenuto esce con codice diverso da zero: altrimenti, per chi
+ * scripta il comando, "Redis NON connesso" e "fatto" sono la stessa cosa.
  *
  * LA CORSA ALL'AVVIO, PERCHE' ESISTE `aspettaRedis`: `redisClient` si connette da solo, e in un
  * processo una tantum (`docker exec`) il socket non e' ancora pronto quando lo script guarda
@@ -28,8 +30,19 @@
  * Uso:  node scripts/seed_learned_names.js [--dry-run] [--attesa-redis <ms>]
  */
 
+const fs = require('fs');
 const redisClient = require('../src/cache/redisClient');
-const { learnNames, searchLearnedNames, learnedNamesPath, closeLearnedNames } = require('../src/db/learnedNames');
+const {
+    learnNames,
+    searchLearnedNames,
+    learnedNamesPath,
+    closeLearnedNames,
+    // Stessa regola con cui l'archivio decide cosa è scrivibile: serve a sapere quali candidati
+    // sono davvero finiti in tabella (gli altri li scarta lui, es. nome identico all'originale).
+    toLearnableRow,
+    // Serve solo per contare le righe davvero presenti nella tabella, senza aprirla in scrittura.
+    LearnedNamesStore
+} = require('../src/db/learnedNames');
 
 // Le due famiglie di chiavi, esattamente come le costruisce `src/clients/tmdb.js`.
 // `KEY_PATTERNS` e' l'unico posto in cui sono nominate: `parseKey` accetta le due forme
@@ -46,12 +59,26 @@ const INTERVALLO_ATTESA_REDIS_MS = 100;
  * La chiave di cache porta gia' il tipo e l'id, in **due** forme:
  * `tmdb_details_raw:full:v2:movie:950387` e `tmdb_details_raw:v2:movie:49051`.
  * Il segmento `full` c'e' solo nella prima famiglia, quindi e' opzionale.
+ *
+ * Sul tipo, la chiave **non** e' uniforme e qui si appiattisce di proposito, perche' la tabella
+ * `learned_names` ha una convenzione sola — `media_type` in `'movie'|'tv'`:
+ *   - la famiglia `full:v2:*` nasce da `getTmdbMetaDetails` (`src/clients/tmdb.js`), che riceve
+ *     il tipo **Stremio**: `'series'` (`src/handlers/metaHandler.js`, `loadDetailsFromTmdb` in
+ *     `src/catalog/tier2Enrich.js` passa `'series'`);
+ *   - la famiglia `v2:*` nasce da `getTmdbMovieDetails`, che invece riceve gia' `'tv'`
+ *     (`src/catalog/processors/MetadataHydrator.js`).
+ * Quindi in Redis le serie compaiono con **due** nomi diversi, e vanno entrambe lette come `tv`:
+ * e' il valore che l'app usa in scrittura (`toLearnableRow` in `src/db/learnedNames.js`) e che
+ * chiede in lettura (`toTier2Type` in `src/catalog/tier2Search.js`, che filtra per
+ * `media_type = 'tv'`). Rimandare `series` a `movie` — com'era prima — scriveva tutte le serie
+ * come film: non le trovava la ricerca serie e ne inquinava quella dei film.
+ *
  * @returns {{mediaType: 'movie'|'tv', tmdbId: number}|null}
  */
 function parseKey(key) {
     const m = /^tmdb_details_raw:(?:full:)?v2:(movie|series|tv):(\d+)$/.exec(String(key));
     if (!m) return null;
-    return { mediaType: m[1] === 'tv' ? 'tv' : 'movie', tmdbId: Number(m[2]) };
+    return { mediaType: m[1] === 'movie' ? 'movie' : 'tv', tmdbId: Number(m[2]) };
 }
 
 /** Una dormita semplice, e non un `setTimeout` lasciato appeso: qui si aspetta sul serio. */
@@ -126,6 +153,28 @@ function toEntry(key, envelope) {
     };
 }
 
+/**
+ * Quante righe ci sono **davvero** nella tabella, lette ora (non dedotte dai candidati).
+ * Solo lettura: se il file non esiste non viene creato, e un archivio illeggibile si dichiara
+ * `null` invece di far finta di valere zero.
+ * @returns {{righe: number|null, letto: boolean}}
+ */
+function _righeInTabella() {
+    try {
+        const percorso = learnedNamesPath();
+        if (!percorso || !fs.existsSync(percorso)) return { righe: 0, letto: false };
+        const store = new LearnedNamesStore({ dbPath: percorso });
+        try {
+            const n = store.count();
+            return { righe: Number.isFinite(n) ? n : null, letto: true };
+        } finally {
+            store.close();
+        }
+    } catch (_err) {
+        return { righe: null, letto: false };
+    }
+}
+
 /** Tutte le chiavi delle due famiglie, in un solo elenco (i `keys` si chiedono una volta per pattern). */
 async function _chiavi(redis) {
     const chiavi = [];
@@ -183,13 +232,51 @@ async function main({
     }
 
     const written = await learnNames(entries);
+    const inTabella = _righeInTabella();
+
     // Un nome imparato e' subito cercabile: una prova sola, per non dichiarare vittoria a vuoto.
-    const prova = await searchLearnedNames((entries[0] || {}).titleIt || '', { limit: 1 });
-    log.log(`[LearnedNames] Righe scritte: ${written} | tabella: ${entries.length} voci` +
-        `${doppioni > 0 ? `, ${doppioni} chiavi doppie fra le due famiglie` : ''}, ` +
-        `verifica ricerca: ${prova.length} risultati`);
+    // La prova guarda **un nome che e' stato scritto davvero**: i candidati non sono tutti
+    // scrivibili (`toLearnableRow` scarta, fra gli altri, chi ha il nome italiano identico
+    // all'originale — in produzione sono la maggior parte), e verificare uno di quelli poteva
+    // stampare "0 risultati" anche con il seed riuscito. Se non c'e' niente da verificare, la
+    // riga lo dice: una verifica che puo' mentire e' peggio di nessuna verifica.
+    const scrivibili = entries.filter(e => toLearnableRow(e) !== null);
+    const daVerificare = scrivibili[0] || null;
+    let verifica;
+    if (daVerificare) {
+        // Con lo stesso filtro di tipo che usa la ricerca dell'app: cosi' verifica anche
+        // l'etichetta `media_type` con cui la riga e' finita in tabella.
+        const trovati = await searchLearnedNames(daVerificare.titleIt, { type: daVerificare.type, limit: 1 });
+        verifica = `${trovati.length} risultato/i per "${daVerificare.titleIt}" (${daVerificare.type})`;
+    } else {
+        verifica = `saltata: nessun candidato con un nome diverso dall'originale`;
+    }
+
+    // Tre numeri, e ognuno dice la sua cosa: i candidati vengono **letti da Redis**, le righe
+    // sono quelle che l'archivio ha tentato di scrivere, e il totale e' **letto dalla tabella**.
+    // Prima la riga finale chiamava "tabella" il numero dei candidati letti.
+    log.log(`[LearnedNames] Candidati letti: ${entries.length}` +
+        `${doppioni > 0 ? ` (${doppioni} chiavi doppie fra le due famiglie)` : ''} | ` +
+        `righe scritte: ${written} | ` +
+        `righe in tabella: ${inTabella.letto ? inTabella.righe : 'non leggibile'} | ` +
+        `verifica ricerca: ${verifica}`);
     closeLearnedNames();
     return { scanned: chiavi.length, written };
+}
+
+/**
+ * Il codice di uscita del comando. `0` solo se il seed e' **avvenuto** (o se era un `--dry-run`,
+ * dove per scelta non si scrive niente). Tutto il resto — Redis non connesso, archivio
+ * assente, archivio inutilizzabile, archivio vuoto — e' "non e' successo niente": prima
+ * `process.exit(0)` non guardava la differenza e riusciva lo stesso.
+ *
+ * @param {{scanned: number, written: number}|null} esito
+ * @param {{dryRun?: boolean}} [opzioni]
+ * @returns {number}
+ */
+function codiceUscita(esito, { dryRun = false } = {}) {
+    if (dryRun) return 0;
+    return esito && Number(esito.written) > 0 ? 0 : 1;
 }
 
 if (require.main === module) {
@@ -199,7 +286,15 @@ if (require.main === module) {
     const attesaRedisMs = i >= 0 && Number.isFinite(Number(argv[i + 1])) && Number(argv[i + 1]) > 0
         ? Number(argv[i + 1])
         : DEFAULT_ATTESA_REDIS_MS;
-    main({ dryRun, attesaRedisMs }).then(() => process.exit(0)).catch(err => {
+    main({ dryRun, attesaRedisMs }).then(esito => {
+        const codice = codiceUscita(esito, { dryRun });
+        if (codice !== 0) {
+            console.error('[LearnedNames] Seed NON avvenuto: nessuna riga scritta. ' +
+                'Il codice di uscita e\' diverso da zero perche\' qualcosa che lo scripta ' +
+                'non deve leggere "fatto" dove non e\' successo niente.');
+        }
+        process.exit(codice);
+    }).catch(err => {
         console.error('[LearnedNames] Errore durante il seed:', err.message);
         process.exit(1);
     });
@@ -207,6 +302,7 @@ if (require.main === module) {
 
 module.exports = {
     main,
+    codiceUscita,
     parseKey,
     toEntry,
     aspettaRedis,
