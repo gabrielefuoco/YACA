@@ -4,7 +4,8 @@ const CacheManager = require('../cache/CacheManager');
 const animeMappingStore = require('../data/animeMappingStore');
 const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
 const { schedulePromotion } = require('../db/tier1LazyPromotion');
-const { normalizeAnimeMarker } = require('../utils/animeIdentity');
+const { normalizeAnimeMarker, extractAnimeTmdbId } = require('../utils/animeIdentity');
+const itaAnnotations = require('../data/itaAnnotations');
 
 // Cache per l'oggetto meta finale combinato
 const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 300, ramTtlMs: 3600000, swrMs: 600000 });
@@ -294,6 +295,40 @@ function buildResponseMeta(cachedMeta, { requestedId, originalId, type }) {
     return alignVideoIdsToRequestedForm(risposta, requestedId);
 }
 
+/**
+ * "Questo titolo è doppiato", per il solo file del poster in cache.
+ *
+ * PERCHÉ SERVE SULLA SCHEDA: i file con badge esistono **solo** per i titoli doppiati
+ * (`tmdb-movie-27205_ITA.jpg`). Nella griglia dei cataloghi a saperlo è `applyPostCacheBadges`,
+ * che mette `_itaBadge` sulla card e da lì il formatter vede `badgeText === 'ITA'`. Sulla scheda
+ * quel badge non viene mostrato, quindi niente informava il formatter e il file giusto non veniva
+ * neppure cercato: la scheda restava sul poster di TMDB proprio sui titoli italiani.
+ *
+ * RIUSO, NON SECONDA STRADA: stessa lettura dei cataloghi (`applyPostCacheBadges` chiama
+ * `itaAnnotations.getSnapshot()`), cioè uno snapshot in RAM con TTL di 60 s condiviso da tutto il
+ * processo — non una query per titolo. La chiave `(tipo, id TMDB)` la scheda la porta già
+ * (`_tmdbId`, altrimenti `rawTMDB.id` o il suo stesso id `tmdb:`): nessuna rete, nessun DB.
+ *
+ * NON è un badge: il chiamante lo usa solo per scegliere il file in cache
+ * (`itaCacheBadge` in `sanitizeCatalogMeta`), quindi sulla scheda non compare nulla di nuovo.
+ * `null` (omonimia irrisolta) e `false` (nessuna traccia) valgono `false`, come per i cataloghi;
+ * se il file delle annotazioni manca o è rotto lo snapshot è vuoto e il poster resta quello di oggi.
+ *
+ * @param {Object} meta Scheda (non viene mutata).
+ * @param {string} type `movie` o `series`.
+ * @returns {Promise<boolean>} `true` solo se le annotazioni dicono "doppiato".
+ */
+async function isMetaDubbed(meta, type) {
+    try {
+        const tmdbId = extractAnimeTmdbId(meta);
+        if (!tmdbId) return false;
+        const snapshot = await itaAnnotations.getSnapshot();
+        return itaAnnotations.isDubbed(snapshot, type === 'movie' ? 'movie' : 'tv', tmdbId);
+    } catch (_e) {
+        return false; // degrado deciso: nessun badge, nessuna eccezione sul percorso di risposta
+    }
+}
+
 async function resolveAnimeEpisodes(metaObj, tmdbId, tmdbApiKey) {
     if (metaObj._numberOfSeasons) {
         const source = metaObj._isAnime ? 'Anime' : 'TMDB';
@@ -431,6 +466,7 @@ async function metaHandler(args, userConfig) {
 
 module.exports = {
     metaHandler,
+    isMetaDubbed,
     applyKitsuMappingToMeta,
     alignVideoIdsToRequestedForm,
     buildResponseMeta,

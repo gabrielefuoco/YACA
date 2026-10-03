@@ -345,13 +345,22 @@ function sanitizeCatalogMeta(item, options = {}) {
     // stagione la cache non può riprodurli: meglio l'URL che li disegna, che un poster senza
     // badge. Fuori dal ramo poster (landscape) la cache non c'entra: i file sono verticali.
     //
+    // LA SCHEDA (`itaCacheBadge`): lì il badge ITA **non** viene mostrato, quindi `badgeText`
+    // resta vuoto e senza questa opzione si cercherebbe il file liscio, che per un titolo
+    // doppiato non esiste (la cache ne contiene solo la versione con badge): la scheda resterebbe
+    // sul poster di TMDB mentre la griglia ha poster con badge e voto. `itaCacheBadge` dice solo
+    // "per il file in cache il badge da usare è ITA": NON tocca `badgeText`, non mostra nulla,
+    // cambia unicamente il poster (che è la correzione voluta). Viene dai catalogi
+    // (`applyPostCacheBadges` → `itaAnnotations`), letto in `isMetaDubbed` (`src/handlers/metaHandler.js`).
+    //
     // Nota: la cache è NOSTRA, non richiede ERDB pubblico (né configurato, né raggiungibile):
     // senza `erdbConfig` la cartella è semplicemente vuota e si resta sul poster di TMDB.
     if (hostUrl && posterErdbId && finalPosterShape === 'poster') {
         const soloIta = !tlBadge && badgeText === BADGE_ITA;
         const senzaBadge = !badgeText && !tlBadge;
         if (soloIta || senzaBadge) {
-            const urlInCache = urlPosterInCache(hostUrl, posterErdbId, soloIta ? BADGE_ITA : null);
+            const cacheBadge = (soloIta || (senzaBadge && options.itaCacheBadge === true)) ? BADGE_ITA : null;
+            const urlInCache = urlPosterInCache(hostUrl, posterErdbId, cacheBadge);
             if (urlInCache) poster = urlInCache;
         }
     }

@@ -42,7 +42,7 @@ if (textToSVG) {
 
 const BadgeDiskCache = require('../utils/BadgeDiskCache');
 const { catalogHandler } = require('../handlers/catalogHandler');
-const { metaHandler } = require('../handlers/metaHandler');
+const { metaHandler, isMetaDubbed } = require('../handlers/metaHandler');
 const { streamHandler } = require('../handlers/streamHandler');
 const { parseExtra } = require('../utils/helpers');
 const { getPresets } = require('../data/presets');
@@ -462,7 +462,12 @@ router.get(['/:userHandle/meta/:type/:id.json', '/:userHandle/:configVersion/met
                 isLandscapeEnabled: false, // Poster remains portrait
                 userConfig,
                 hostUrl,
-                isMetaDetail: true
+                isMetaDetail: true,
+                // SOLO per il poster: i file in cache dei titoli doppiati hanno il suffisso `_ITA`
+                // e senza questo la scheda li cercerebbe senza suffisso, non li troverebbe e
+                // resterebbe sul poster di TMDB. Non imposta alcun badge: sulla scheda non
+                // compare niente di nuovo, cambia solo il poster. Stessa lettura dei cataloghi.
+                itaCacheBadge: await isMetaDubbed(response.meta, type)
             });
         }
 
