@@ -96,8 +96,13 @@ journalctl -u yaca-doppiaggi.service -n 100 --no-pager
 ### 5.4 Verifica Battito di Salute (`--health-check`)
 Il modulo scrive un battito di salute in `last-run.json`. È possibile interrogarlo in qualsiasi momento (restituisce exit 0 se l'ultimo giro è avvenuto da meno di 24 ore):
 ```bash
-sudo /srv/yaca/ops/yaca-doppiaggi.sh --health-check
+sudo bash /srv/yaca/ops/yaca-doppiaggi.sh --health-check
 ```
+
+> Nota (03/10/2026): il `bash` davanti non è un vezzo. Lo script era committato **senza il bit
+eseguibile**, quindi il comando senza `bash` rispondeva `comando non trovato` — la verifica di fine
+mappa `doppiaggio-ita` se n'è accorta. Il bit ora c'è, ma la riga resta con `bash` perché funzioni
+anche se il file viene copiato perdendo i permessi.
 
 ### 5.5 Ispezione dei file prodotti
 I file vengono scritti accanto ai dump JSONL:
