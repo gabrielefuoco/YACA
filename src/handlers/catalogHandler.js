@@ -654,20 +654,51 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const WATCHLIST_TTL_MS = 2 * 60 * 1000;
     const isWatchlistCatalog = typeof id === 'string' && id.startsWith('yaca_watchlist');
 
-    // Finestra giornaliera: questi preset hanno la data di oggi dentro la propria
-    // definizione (`todayStr` in src/data/presets.js), e la definizione finisce
-    // nell'impronta che costruisce la chiave di cache. La chiave quindi cambia
-    // ogni giorno: la voce di ieri non verrà più riletta, ma resterebbe in Redis
-    // per i 14 giorni standard — e una al giorno per ogni utente è spazzatura
-    // che non serve a nessuno. Non si può togliere la data (è il filtro della
-    // query: senza, "Film: Nuove Uscite" diventa "tutti i film per popolarità"),
-    // quindi si accorcia solo la vita della voce di ieri: 36 ore coprono la
-    // giornata più qualche ora di richieste ritardate, e la chiave inutile muore
-    // entro il giorno dopo invece di accumularsi.
+    // Chiave che gira ogni giorno: sette preset la cui definizione contiene una
+    // data, quindi la loro impronta (e la chiave di cache costruita da
+    // `buildCatalogCacheKey`) cambia a mezzanotte. La voce di ieri non verrà più
+    // riletta, ma con il TTL standard resterebbe in Redis per 14 giorni: una al
+    // giorno per ogni utente, spazzatura che non serve a nessuno (~12 profili × 4
+    // preset × 14 giorni ≈ 670 chiavi morte, la stessa ordine di grandezza delle
+    // orfane ripulite il 2026-10-03).
+    //
+    // Le due ragioni per cui la data c'è sono diverse, ed è per questo che stanno
+    // qui tutte e sette:
+    //
+    //  - I TRE "nuove uscite": la data È il filtro della query
+    //    (`primary_release_date.lte`, `first_air_date.lte`, `air_date.lte` =
+    //    `todayStr` in src/data/presets.js). Non si può toglierla: senza,
+    //    "Film: Nuove Uscite" diventa "tutti i film per popolarità". La finestra
+    //    resta giornaliera per definizione, e con lei la chiave.
+    //
+    //  - I QUATTRO anime tematici: la data NON è il filtro, è un valore derivato
+    //    che finisce dentro `where` senza che la query lo nomini. `permissive_recent`
+    //    (`F.permissiveFloor`, vedi buildPresetFromFilters) apre la fila ai titoli
+    //    con `first_air_date >= (oggi - 6 mesi)` in modo che una serie uscita di
+    //    recente entri anche sotto la soglia di voti. Tolta quella data la query
+    //    cambierebbe, ma non per scelta: qui si accorcia solo la vita della voce.
+    //
+    // 36 ore coprono la giornata più qualche ora di richieste ritardate, e la
+    // chiave inutile muore entro il giorno dopo invece di accumularsi.
+    //
+    // IL NOME È IMPRECISO, per ammetterlo: `DAILY_WINDOW` descrive il caso dei
+    // tre "nuove uscite" (la finestra di novità è giornaliera) e non gli anime,
+    // dove la finestra è semestrale: conta davvero solo al cambio di mese, ma il
+    // valore è ricalcolato (`oggi - 6 mesi`) a ogni richiesta, quindi la stringa
+    // cambia ogni giorno e la chiave con essa. Il vero criterio è "la chiave ruota
+    // ogni giorno". Rinominarlo in qualcosa come `DAILY_ROTATING_CATALOG_IDS`
+    // toccerebbe questo punto, i test e i due helper qui sotto: si è lasciato il
+    // nome e si è scritto il perché.
     const DAILY_WINDOW_CATALOG_IDS = new Set([
-        'preset_new_movies',      // Film: Nuove Uscite   (primary_release_date.lte = oggi)
-        'preset_new_series',      // Serie TV: Novità    (first_air_date.lte = oggi)
-        'preset_new_series_eps'   // Serie: Episodi Recenti (air_date.lte = oggi)
+        // --- data = filtro della query (finestra di novità) ---
+        'preset_new_movies',      // Film: Nuove Uscite    (primary_release_date.lte = oggi)
+        'preset_new_series',      // Serie TV: Novità     (first_air_date.lte = oggi)
+        'preset_new_series_eps',  // Serie: Episodi Recenti (air_date.lte = oggi)
+        // --- data = valore derivato in `where`, non filtro (permissive_recent) ---
+        'preset_anime_shonen',    // Anime: Battle Shōnen  (first_air_date >= oggi - 6 mesi)
+        'preset_anime_shoujo',    // Anime: Shōjo (Romantico)
+        'preset_anime_mecha',     // Anime: Mecha & Robot
+        'preset_anime_isekai'     // Anime: Isekai & Fantasy
     ]);
     const DAILY_WINDOW_TTL_MS = 36 * 60 * 60 * 1000; // 36 ore
     const isDailyWindowCatalog = typeof id === 'string' && DAILY_WINDOW_CATALOG_IDS.has(id);

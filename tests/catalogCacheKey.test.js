@@ -291,11 +291,14 @@ describe('Tempo di costruzione di un catalogo ([CatalogTiming])', () => {
 });
 
 /**
- * Tre preset hanno la data di oggi dentro la definizione (`src/data/presets.js`),
- * e la definizione finisce nella chiave di cache: la chiave cambia ogni giorno,
- * quindi la voce di ieri non verrà più riletta ma (con il TTL standard di 14
- * giorni) resterebbe in Redis fino a domani. Per questi tre il TTL è accorciato
- * a 36 ore; per tutti gli altri resta quello standard.
+ * Sette preset hanno una definizione che cambia da sola ogni giorno:
+ *  - i tre "nuove uscite", dove la data È il filtro della query;
+ *  - i quattro anime tematici, dove la data è un valore derivato
+ *    (`permissive_recent` finisce dentro `where`) e non il filtro.
+ * In entrambi i casi la definizione finisce nell'impronta della chiave di cache,
+ * quindi la chiave ruota: la voce di ieri non verrà più riletta ma (con il TTL
+ * standard di 14 giorni) resterebbe in Redis fino a domani. Per questi sette il
+ * TTL è accorciato a 36 ore; per tutti gli altri resta quello standard.
  *
  * Il TTL applicato è osservabile: l'handler lo passa a `catalogRequestCache`
  * come terzo argomento di `getOrFetch`/`set`.
@@ -357,7 +360,19 @@ describe('TTL della cache cataloghi per i cataloghi a finestra giornaliera', () 
         await expect(ttlAppliedTo('preset_top_rated_movies', 'movie')).resolves.toBe(STANDARD_TTL_MS);
     });
 
-    it('4. il TTL corto è circa 36 ore: supera il giorno (la chiave resta valida tutta la giornata) ma non i due', async () => {
+    it('4. i quattro anime tematici hanno il TTL corto (data derivata dentro `where`)', async () => {
+        await expect(ttlAppliedTo('preset_anime_shonen', 'series')).resolves.toBe(DAILY_WINDOW_TTL_MS);
+        await expect(ttlAppliedTo('preset_anime_shoujo', 'series')).resolves.toBe(DAILY_WINDOW_TTL_MS);
+        await expect(ttlAppliedTo('preset_anime_mecha', 'series')).resolves.toBe(DAILY_WINDOW_TTL_MS);
+        await expect(ttlAppliedTo('preset_anime_isekai', 'series')).resolves.toBe(DAILY_WINDOW_TTL_MS);
+    });
+
+    it('5. gli altri preset anime (nessuna data dentro) restano al TTL standard', async () => {
+        await expect(ttlAppliedTo('preset_anime_seinen', 'series')).resolves.toBe(STANDARD_TTL_MS);
+        await expect(ttlAppliedTo('preset_anime_action', 'series')).resolves.toBe(STANDARD_TTL_MS);
+    });
+
+    it('6. il TTL corto è circa 36 ore: supera il giorno (la chiave resta valida tutta la giornata) ma non i due', async () => {
         const ttl = await ttlAppliedTo('preset_new_movies', 'movie');
 
         expect(ttl).toBeGreaterThan(DAY_MS);
