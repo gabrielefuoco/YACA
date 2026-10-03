@@ -1,6 +1,7 @@
 const { getPresets } = require('../src/data/presets');
 const { buildCatalogQuery } = require('../src/db/queryBuilder');
 const duckDbStore = require('../src/db/duckDbStore');
+const { buildPresetFromFilters } = require('../src/catalog/providers/DuckDbProvider');
 const { F } = require('../src/data/filters');
 const {
     passesQualityFloor,
@@ -134,7 +135,9 @@ describe('Ticket 35: Pavimenti di visibilità dei sottosoglia', () => {
             const q = preset.queries[0];
             expect(q['vote_count.gte']).toBe(50);
             expect(q.permissive_recent).toBe(true);
-            expect(typeof q.recent_since).toBe('string');
+            // recent_since è deliberatamente assente: il provider ricalcola
+            // la stessa soglia (-6 mesi) e la definizione resta stabile nel tempo.
+            expect(q.recent_since).toBeUndefined();
 
             // La clausola where deve usare il pavimento permissivo OR
             const permissiveWhere = preset.where.find(w => typeof w === 'string' && w.includes('"vote_count" >= 50 OR'));
@@ -166,6 +169,45 @@ describe('Ticket 35: Pavimenti di visibilità dei sottosoglia', () => {
             expect(result[0].recent_sottosoglia).toBe(true); // RECENTE SOTTOSOGLIA: AMMESSO
             expect(result[0].old_sottosoglia).toBe(false);   // VECCHIO SOTTOSOGLIA: BLOCCATO
             expect(result[0].old_classic).toBe(true);       // VECCHIO CLASSICO: AMMESSO
+        });
+    });
+
+    describe('3b. Equivalenza: recent_since esplicito vs ricalcolato dal provider', () => {
+        const presets = getPresets();
+        const animeThemeIds = ['preset_anime_shonen', 'preset_anime_shoujo', 'preset_anime_mecha', 'preset_anime_isekai'];
+
+        // Stessa formula di `src/data/presets.js` (identica a quella del provider).
+        const dSeries = new Date();
+        dSeries.setMonth(dSeries.getMonth() - 6);
+        const sixMonthsAgoStr = dSeries.toISOString().split('T')[0];
+
+        test.each(animeThemeIds)('%s: senza recent_since la where è IDENTICA a quella con recent_since', (id) => {
+            const preset = presets.find(p => p.id === id);
+            expect(preset).toBeDefined();
+            const q = preset.queries[0];
+
+            // Con data esplicita nella definizione (come era prima)
+            const conDataEsplicita = buildPresetFromFilters(
+                { ...q, recent_since: sixMonthsAgoStr },
+                preset.type
+            );
+            // Senza: il provider ricalcola la soglia da solo (DuckDbProvider.js:72-84)
+            const conDataRicalcolata = buildPresetFromFilters({ ...q }, preset.type);
+
+            // Le due where devono coincidere stringa per stringa: togliere
+            // recent_since non deve cambiare la query eseguita.
+            expect(conDataRicalcolata.where).toEqual(conDataEsplicita.where);
+            // E devono coincidere anche con la where già compilata nel preset.
+            expect(conDataRicalcolata.where).toEqual(preset.where);
+        });
+
+        test('Il pavimento permissivo resta ancorato alla finestra di -6 mesi', () => {
+            const preset = presets.find(p => p.id === 'preset_anime_shonen');
+            const where = buildPresetFromFilters({ ...preset.queries[0] }, preset.type).where
+                .find(w => typeof w === 'string' && w.includes('"vote_count" >= 50 OR'));
+            expect(where).toBe(
+                `("vote_count" >= 50 OR ("first_air_date" IS NOT NULL AND "first_air_date" >= '${sixMonthsAgoStr}'))`
+            );
         });
     });
 
