@@ -119,9 +119,46 @@ echo "  Dump catalogo : ${TMDB_DIR}"
 echo "  Cache indici  : ${CACHE_DIR}"
 echo "  Output target : ${TMDB_DIR}/ita_annotations.jsonl"
 
-# 7. Esecuzione CLI
-exec "${NODE_BIN}" "${SERVICE_DIR}/cli.js" \
-  --movies-path "${MOVIES_PATH}" \
-  --tv-path "${TV_PATH}" \
-  --cache-dir "${CACHE_DIR}" \
-  "$@"
+  # 7. Esecuzione CLI
+  #    Niente `exec`: dopo la CLI c'e' la push del diff in coda (passo 8). Con `exec` il processo
+  #    verrebbe sostituito e quel passo non esisterebbe mai — ed e' esattamente com'era prima.
+  set +e
+  "${NODE_BIN}" "${SERVICE_DIR}/cli.js" \
+    --movies-path "${MOVIES_PATH}" \
+    --tv-path "${TV_PATH}" \
+    --cache-dir "${CACHE_DIR}" \
+    "$@"
+  CLI_STATUS=$?
+  set -e
+
+  if [ "${CLI_STATUS}" -ne 0 ]; then
+    echo "[-] ERRORE: il giro dei doppiaggi e' uscito con stato ${CLI_STATUS}." >&2
+  fi
+
+  # 8. Push del diff in coda eventi — SENZA QUESTO PASSO LA CATENA E' FERMA AL PRIMO ANELLO.
+  #    Il diff dice quali titoli hanno cambiato doppiaggio; la coda li fa ricomporre dal drenatore
+  #    (ops/yaca-poster-eventi.timer) senza aspettare il TTL. Finche' era un comando a mano, i
+  #    poster cambiati restavano vecchi finche' qualcuno non se ne ricordava.
+  #    Dentro `yaca-app` perche' li' ci sono le tre cose che servono: le dipendenze dell'app
+  #    (ioredis per la coda), la rete del compose (REDIS_URL=redis://redis:6379 non e'
+  #    risolvibile dall'host) e il volume `yaca_tmdb` montato su /data/tmdb.
+  #    Lo script e' idempotente — a deduplicare e' la coda — quindi si puo' lanciare anche a vuoto.
+  DIFF_PATH="${TMDB_DIR}/ita_annotations.diff.json"
+  if [ "${CLI_STATUS}" -eq 0 ] && [ -f "${DIFF_PATH}" ]; then
+    echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Push del diff in coda eventi..."
+    if docker exec --workdir /app yaca-app node scripts/push-diff-in-coda.js --file /data/tmdb/ita_annotations.diff.json; then
+      echo "  [+] diff spinto: i poster cambiati sono in coda."
+    else
+      # Volutamente rumoroso, e volutamente un fallimento: un guasto qui non si vede da nessun'altra
+      # parte, e significa poster vecchi in silenzio. Meglio la pagina dei failed del timer che un
+      # guasto invisibile — la lezione della mappa poster-erdb.
+      echo "[-] ERRORE: push del diff fallita. I poster cambiati NON verranno ricomposti" >&2
+      echo "    finche' non riesce. Comando a mano:" >&2
+      echo "      docker exec --workdir /app yaca-app node scripts/push-diff-in-coda.js --file /data/tmdb/ita_annotations.diff.json" >&2
+      exit 1
+    fi
+  else
+    echo "[i] Nessun diff da spingere (giro fallito o file assente: ${DIFF_PATH})."
+  fi
+
+  exit "${CLI_STATUS}"
