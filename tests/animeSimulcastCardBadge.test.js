@@ -2,9 +2,9 @@
  * Le due cause per cui le card del catalogo "Simulcast (Nuovi Episodi)" restavano col poster
  * nudo di TMDB (ticket: badge assente su 28 card su 69 in produzione il 04/10/2026).
  *
- *  1. `getCardInfo` scartava i titoli giusti: sui documenti storici contava solo gli episodi
- *     dentro i 14 giorni, mentre l'episodio fresco sta in `sub.latest`/`dub.latest`.
- *     Con la regola dell'utente («basta anche un episodio doppiato») la finestra non c'è più.
+ *  1. Il badge veniva da una lettura che guardava i campi NOSTRI (`episodes[]`, `sub.latest`,
+ *     `dub.latest`) invece che dalla fonte: sui documenti storici contava episodi del 2018 e non
+ *     trovava niente. Ticket 52: il numero e il canale vengono dalla HOME (`homeReleases`).
  *  2. Il documento non veniva trovato: la card è un `kitsu:` stagionale (da Anibridge → Fribb,
  *     giro che non ha bisogno di TMDB) e il ritorno per TMDB non esiste senza `themoviedb_id`.
  *     Il documento ora viaggia con la card (`_airingDocTmdbId`).
@@ -33,8 +33,9 @@ const CATALOG_META = { _provider: 'airing_state', showEpisodeBadge: true };
 
 /**
  * Il caso di produzione: documento storico. `episodes[]` è l'archivio (2018-2025, tutte le date
- * fuori dai 14 giorni), l'episodio fresco sta solo nei `latest`. `dub.latest.airedAt` è null
- * su molti documenti reali (Blue Box, Ranma, Overgeared): la logica non deve toccarlo.
+ * fuori dai 14 giorni) e i `latest` portano numeri vecchi: la home è l'unica che sa quando è
+ * uscito qualcosa, e per questo arriva con `homeReleases`. `dub.latest.airedAt` è null su molti
+ * documenti reali (Blue Box, Ranma, Overgeared): la logica non deve toccarlo.
  */
 function documentoStorico({ tmdb, kitsuDoc, titolo, subEp, dubEp, dubAiredAt = null, storicoFinoA = null }) {
     return {
@@ -42,6 +43,11 @@ function documentoStorico({ tmdb, kitsuDoc, titolo, subEp, dubEp, dubAiredAt = n
         schemaVersion: 1,
         ids: { tmdb, kitsu: String(kitsuDoc) },
         title: titolo,
+        homeReleases: {
+            checkedAt: daysAgo(0.1),
+            sub: { episode: subEp, airedAt: daysAgo(1) },
+            dub: dubEp > 0 ? { episode: dubEp, airedAt: dubAiredAt || daysAgo(2) } : null
+        },
         italian: {
             sub: { latest: { season: 1, episode: subEp } },
             dub: { latest: { season: 1, episode: dubEp, airedAt: dubAiredAt }, isSimuldub: true }
@@ -60,21 +66,22 @@ function card(id, name) {
     return { id, type: 'series', name, poster: rawPoster, _rawName: name, _rawPoster: rawPoster };
 }
 
-describe('Causa 1 — il badge non ha più finestra temporale', () => {
+describe('Causa 1 — il badge viene dalla home, non dai nostri campi', () => {
     let snapshot;
 
     beforeEach(() => {
         jest.spyOn(Date, 'now').mockReturnValue(NOW);
         jest.spyOn(console, 'warn').mockImplementation(() => {});
         snapshot = animeAiringState.buildSnapshot([
-            // Blue Box: storico 2018-2025, fresco solo nei `latest`, dub senza data
+            // Blue Box: storico 2018-2025, la home ha visto sub 7 e dub 5
             documentoStorico({ tmdb: 207347, kitsuDoc: 48239, titolo: 'Blue Box', subEp: 7, dubEp: 5 }),
-            // Doppiato fermo a 5 mesi: la nuova regola lo dichiara ITA lo stesso
+            // Documento in cui la home ha visto solo il sub (il dub non è uscito): una card
             {
                 _id: '30984',
                 schemaVersion: 1,
                 ids: { tmdb: 30984, kitsu: '49444' },
                 title: 'BLEACH',
+                homeReleases: { checkedAt: daysAgo(0.1), sub: { episode: 24, airedAt: daysAgo(1) }, dub: null },
                 italian: {
                     sub: { latest: { season: 1, episode: 24 } },
                     dub: { latest: { season: 1, episode: 9 }, isSimuldub: true }
@@ -86,22 +93,22 @@ describe('Causa 1 — il badge non ha più finestra temporale', () => {
                 listSeenAt: daysAgo(0.1),
                 updatedAt: daysAgo(0.1)
             },
-            // Documento che non dichiara niente: nessuna card (degrado, non un'eccezione)
+            // Documento che la fonte non nomina: nessuna card con badge
             { _id: '111', schemaVersion: 1, ids: { tmdb: 111, kitsu: '999' }, title: 'Muto', listSeenAt: daysAgo(1) }
         ]);
     });
 
     afterEach(() => jest.restoreAllMocks());
 
-    test('episodes[] storico + sub.latest/dub.latest freschi -> due card (EP 7 / ITA 5)', () => {
+    test('episodes[] storico e `latest` vecchi: due card, i numeri sono quelli della home (EP 7 / ITA 5)', () => {
         const doc = snapshot.byTmdbId.get('207347');
         // Il ramo vecchio: nessun episodio dentro i 14 giorni, quindi nessuna card.
         expect(animeAiringState.getWindowInfo(doc, { now: NOW, windowDays: 14 }).hasSub).toBe(false);
 
         const info = animeAiringState.getCardInfo(doc);
         expect(info).not.toBeNull();
-        expect(info.sub).toEqual({ season: 1, episode: 7 });
-        expect(info.dub).toEqual({ season: 1, episode: 5 });
+        expect(info.sub).toEqual({ episode: 7 });
+        expect(info.dub).toEqual({ episode: 5 });
     });
 
     test('il badge arriva fino al poster: la card non resta il TMDB nudo', async () => {
@@ -118,8 +125,9 @@ describe('Causa 1 — il badge non ha più finestra temporale', () => {
         expect(result.metas[1].poster).toContain('ITA%205');
     });
 
-    test('doppiaggio fermo da 5 mesi: ITA lo stesso (la regola dell\'utente)', async () => {
+    test('la home ha visto solo il sub (il dub è fermo): una card sola, niente clone ITA', async () => {
         const doc = snapshot.byTmdbId.get('30984');
+        // Il nostro `dub.latest` dice 9: non conta più, la fonte non ha visto uscite doppiate.
         expect(animeAiringState.getWindowInfo(doc, { now: NOW, windowDays: 14 }).hasDub).toBe(false);
 
         const result = await applyAiringStateBadges([card('kitsu:49444', 'BLEACH')], {
@@ -130,40 +138,34 @@ describe('Causa 1 — il badge non ha più finestra temporale', () => {
             snapshot
         });
 
-        expect(result.metas).toHaveLength(2);
+        expect(result.metas).toHaveLength(1);
+        expect(result.metas[0].id).toBe('kitsu:49444');
         expect(result.metas[0].poster).toContain('EP%2024');
-        expect(result.metas[1].id).toBe('kitsu:49444_ita_offset');
-        expect(result.metas[1].poster).toContain('ITA%209');
     });
 
-    test('senza `latest` il numero viene dall\'episodio dichiarato più recente', () => {
-        const senzaLatest = animeAiringState.buildSnapshot([{
-            _id: '555', schemaVersion: 1, ids: { tmdb: 555, kitsu: '55' }, title: 'Solo archivio',
-            episodes: [
-                { season: 1, episode: 3, airedAt: daysAgo(500), subIta: true, dubIta: false },
-                { season: 2, episode: 1, airedAt: daysAgo(20), subIta: true, dubIta: true }
-            ]
+    test('i nostri campi non fabbricano badge: la home dice la sua, e solo quella', () => {
+        const soloNostri = animeAiringState.buildSnapshot([{
+            _id: '557', schemaVersion: 1, ids: { tmdb: 557, kitsu: '57' }, title: 'Solo nostri',
+            sub: { season: 1, episode: 3, airedAt: daysAgo(1) },
+            dub: { season: 1, episode: 4, airedAt: daysAgo(1) },
+            episodes: [{ season: 1, episode: 4, airedAt: daysAgo(1), subIta: true, dubIta: true }]
         }]);
-        const info = animeAiringState.getCardInfo(senzaLatest.byTmdbId.get('555'));
-        expect(info.sub).toEqual({ season: 2, episode: 1 });
-        expect(info.dub).toEqual({ season: 2, episode: 1 });
-    });
+        // Nessuna passata home: nessuna card, nessun numero inventato.
+        expect(animeAiringState.getCardInfo(soloNostri.byTmdbId.get('557'))).toBeNull();
 
-    test('episodi senza data: non vengono scartati, vince la numerazione più alta', () => {
-        const senzaDate = animeAiringState.buildSnapshot([{
-            _id: '556', schemaVersion: 1, ids: { tmdb: 556, kitsu: '56' }, title: 'Senza date',
-            episodes: [
-                { season: 1, episode: 2, airedAt: null, subIta: true, dubIta: false },
-                { season: 1, episode: 4, airedAt: null, subIta: true, dubIta: true }
-            ]
+        // Con la passata home, i numeri vengono da lì (EP 3 / ITA 4) e non dai `latest`.
+        const conHome = animeAiringState.buildSnapshot([{
+            _id: '557', schemaVersion: 1, ids: { tmdb: 557, kitsu: '57' }, title: 'Solo nostri',
+            homeReleases: { checkedAt: daysAgo(0.1), sub: { episode: 3, airedAt: daysAgo(1) }, dub: { episode: 4, airedAt: daysAgo(1) } },
+            sub: { season: 1, episode: 99 },
+            dub: { season: 1, episode: 98 }
         }]);
-        const info = animeAiringState.getCardInfo(senzaDate.byTmdbId.get('556'));
-        expect(info).not.toBeNull();
-        expect(info.sub).toEqual({ season: 1, episode: 4 });
-        expect(info.dub).toEqual({ season: 1, episode: 4 });
+        const info = animeAiringState.getCardInfo(conHome.byTmdbId.get('557'));
+        expect(info.sub).toEqual({ episode: 3 });
+        expect(info.dub).toEqual({ episode: 4 });
     });
 
-    test('documento che non dichiara nulla -> nessuna card, mai eccezioni', async () => {
+    test('documento che la fonte non nomina -> nessuna card, mai eccezioni', async () => {
         const result = await applyAiringStateBadges([card('kitsu:999', 'Muto')], {
             userConfig: USER_CONFIG,
             hostUrl: HOST,
@@ -182,6 +184,11 @@ describe('Causa 2 — il documento viaggia con la card', () => {
     // Black Clover: ids.kitsu = 13209, la card è `kitsu:50024` (Kitsu stagionale da Anibridge).
     const BLACK_CLOVER = {
         _id: '73223', schemaVersion: 1, ids: { tmdb: 73223, kitsu: '13209' }, title: 'Black Clover',
+        homeReleases: {
+            checkedAt: daysAgo(0.1),
+            sub: { episode: 1, airedAt: daysAgo(1) },
+            dub: { episode: 120, airedAt: daysAgo(2) }
+        },
         italian: { sub: { latest: { season: 2, episode: 1 } }, dub: { latest: { season: 1, episode: 120 } } },
         episodes: [{ season: 2, episode: 1, airedAt: daysAgo(1), subIta: true, dubIta: false }],
         listSeenAt: daysAgo(0.1), updatedAt: daysAgo(0.1)
@@ -265,19 +272,21 @@ describe('Causa 2 — il documento viaggia con la card', () => {
     });
 });
 /**
- * Episodio 0: la serie **annunciata**.
+ * Episodio 0: la serie **annunciata**, cioè quella che non è ancora uscita.
  *
- * La fonte (AnimeUnity) mette in "In Corso" anche la stagione che non è ancora iniziata, con
- * `real_episodes_count: 0`; il writer lo copia senza clamp e il documento porta
- * `sub = { season: 2, episode: 0 }`. `normalizeLatest` rifiuta lo zero (un episodio 0 non esiste)
- * e il documento arriva al filtro con `sub = dub = null`: la voce veniva SCARTATA e una serie che
- * la fonte dichiara in corso semplicemente non compariva in catalogo (misurato su produzione il
- * 04/10/2026: `Aoashi` 126437 e `Oji-san wa Kawaii Mono ga Osuki.` 330505, assenti dal catalogo).
+ * PRIMA (regola provata il 04/10/2026 e superata il giorno stesso dalla fonte nuova): la lista
+ * "In Corso" la dava per in corso con `real_episodes_count: 0`, il documento portava
+ * `sub = { season: 2, episode: 0 }`, `normalizeLatest` rifiutava lo zero (un episodio 0 non
+ * esiste) e la voce veniva scartata dal filtro: una serie annunciata semplicemente non
+ * compariva. La cura era farla entrare senza badge.
  *
- * La cura NON è accettare lo zero — `EP 0` è un badge peggio di nessun badge — ma far entrare la
- * voce e lasciare che `getCardInfo` torni `null`: la card nasce nuda.
+ * ADESSO (ticket 52, la fonte è la home): la regola dell'utente è "chi ha un episodio uscito
+ * nelle ultime due settimane", e un'annunciata non ha episodi usciti — non è sulla home, non ha
+ * `homeReleases`, quindi non entra. Non è più un caso speciale da gestire: è la stessa regola
+ * degli altri, applicata senza eccezioni. Il caso `episode: 0` resta però innocuo: la
+ * normalizzazione lo rifiuta e nessun `EP 0` può esistere.
  */
-describe('Episodio 0 — la serie annunciata entra in catalogo, senza badge', () => {
+describe('Episodio 0 — la serie annunciata non entra, e non può mostrare EP 0', () => {
     // I due titoli veri del 04/10/2026, presi dalla collezione di produzione.
     const AOASHI_2 = {
         _id: '126437',
@@ -317,12 +326,17 @@ describe('Episodio 0 — la serie annunciata entra in catalogo, senza badge', ()
         orderIndex: 60
     };
 
-    // Una serie normale: non deve cambiare niente.
+    // Una serie normale: la home l'ha vista uscire, quindi entra come prima.
     const CON_EPISODI = {
         _id: '240411',
         schemaVersion: 1,
         ids: { tmdb: 240411, kitsu: '48269' },
         title: 'Dandadan',
+        homeReleases: {
+            checkedAt: daysAgo(0.1),
+            sub: { episode: 12, airedAt: daysAgo(2) },
+            dub: { episode: 8, airedAt: daysAgo(3) }
+        },
         sub: { season: 2, episode: 12, airedAt: daysAgo(2) },
         dub: { season: 2, episode: 8, airedAt: daysAgo(3) },
         episodes: [
@@ -334,8 +348,7 @@ describe('Episodio 0 — la serie annunciata entra in catalogo, senza badge', ()
         orderIndex: 1
     };
 
-    // Documento legacy senza `listSeenAt`: "annunciata" è una positività della lista, non un
-    // campo mancante. Questo resta fuori, come prima.
+    // Documento legacy senza `listSeenAt`: resta fuori come prima.
     const LEGACY_SENZA_LISTA = {
         _id: '400',
         schemaVersion: 1,
@@ -362,33 +375,19 @@ describe('Episodio 0 — la serie annunciata entra in catalogo, senza badge', ()
         const doc = snapshot.byTmdbId.get('126437');
         expect(doc.sub).toBeNull();
         expect(doc.dub).toBeNull();
-        expect(animeAiringState.getDeclaredInfo(doc)).toEqual({ hasSub: false, hasDub: false, lastAiredAt: doc.listSeenAt });
+        expect(doc.home).toBeNull();
         expect(animeAiringState.getCardInfo(doc)).toBeNull();
         expect(animeAiringState.getDubEpisode(doc)).toBeNull();
     });
 
-    test('sub = { episode: 0 } senza dub -> la voce C\'È in getAiringEntries e getCardInfo è null', () => {
+    test('serie annunciata: la voce NON è in getAiringEntries (la home non l\'ha nominata)', () => {
         const entries = animeAiringState.getAiringEntries(snapshot, { now: NOW });
         const ids = entries.map((e) => e.doc.tmdbId);
 
-        expect(ids).toContain('126437');
-        expect(ids).toContain('330505');
-        // Il normale resta, il legacy senza lista resta fuori.
+        expect(ids).not.toContain('126437');
+        expect(ids).not.toContain('330505');
+        expect(ids).not.toContain('330506');
         expect(ids).toContain('240411');
-        expect(ids).not.toContain('400');
-
-        const doc = snapshot.byTmdbId.get('126437');
-        expect(animeAiringState.getCardInfo(doc)).toBeNull();
-    });
-
-    test('solo doppiato annunciato (dub = { episode: 0 }) -> stessa cosa', () => {
-        const entries = animeAiringState.getAiringEntries(snapshot, { now: NOW });
-        expect(entries.map((e) => e.doc.tmdbId)).toContain('330506');
-
-        const doc = snapshot.byTmdbId.get('330506');
-        expect(doc.sub).toBeNull();
-        expect(doc.dub).toBeNull();
-        expect(animeAiringState.getCardInfo(doc)).toBeNull();
     });
 
     test('una serie con episodi veri resta invariata: EP n e ITA n come prima', () => {
@@ -396,8 +395,8 @@ describe('Episodio 0 — la serie annunciata entra in catalogo, senza badge', ()
         expect(entries.map((e) => e.doc.tmdbId)).toContain('240411');
 
         const info = animeAiringState.getCardInfo(snapshot.byTmdbId.get('240411'));
-        expect(info.sub).toEqual({ season: 2, episode: 12, airedAt: expect.any(Number) });
-        expect(info.dub).toEqual({ season: 2, episode: 8, airedAt: expect.any(Number) });
+        expect(info.sub).toEqual({ episode: 12 });
+        expect(info.dub).toEqual({ episode: 8 });
     });
 
     test('la serie annunciata non è una novità: il backfill non ha niente da importare', () => {
@@ -421,14 +420,11 @@ describe('Episodio 0 — la serie annunciata entra in catalogo, senza badge', ()
         });
 
         const perId = new Map(result.metas.map((m) => [m.id, m]));
-        expect(perId.has('kitsu:49883')).toBe(true);
-        expect(perId.has('kitsu:99999')).toBe(true);
-        expect(perId.has('kitsu:49883_ita_offset')).toBe(false);
-        expect(perId.has('kitsu:99999_ita_offset')).toBe(false);
+        // Le annunciate non hanno badge e non producono clone.
         expect(perId.get('kitsu:49883')._forceBadgeText).toBeUndefined();
         expect(perId.get('kitsu:99999')._forceBadgeText).toBeUndefined();
-
-        // Il poster non è composto con nessun badge: resta il nudo.
+        expect(perId.has('kitsu:49883_ita_offset')).toBe(false);
+        expect(perId.has('kitsu:99999_ita_offset')).toBe(false);
         expect(perId.get('kitsu:49883').poster).toBe('https://image.tmdb.org/t/p/w500/kitsu_49883.jpg');
 
         // La serie normale è intatta.
@@ -438,7 +434,8 @@ describe('Episodio 0 — la serie annunciata entra in catalogo, senza badge', ()
 
     test('il badge TMDB calcolato alla costruzione del catalogo viene tolto alle card annunciate', async () => {
         // TMDB sa già quando uscirà l'episodio 1 e `showEpisodeBadge` è true su questo preset:
-        // alla costruzione la card si compone con `S2 E1`.
+        // alla costruzione la card si compone con `S2 E1`. La fonte non ha detto niente, quindi
+        // quel badge è inventato e sparisce.
         const built = formatStremioCatalog([{
             ...card('kitsu:49883', 'Aoashi'),
             _airingDocTmdbId: '126437',
@@ -479,22 +476,7 @@ describe('Episodio 0 — la serie annunciata entra in catalogo, senza badge', ()
         expect(result.metas[0].poster).toBe(pass1.metas[0].poster);
     });
 
-    test('una card con badge TMDB ma senza stato perde l\'episodio, e resta senza clone', async () => {
-        // Il caso reale: Aoashi 2 ha `sub = { season: 2, episode: 0 }` → nessun documento → nessuna
-        // card ITA. Il poster deve essere quello nudo di TMDB, non quello con `S2 E1`.
-        const built = formatStremioCatalog(
-            [{ ...card('kitsu:49883', 'Aoashi'), _airingDocTmdbId: '126437', tmdbSeason: 2 }],
-            'preset_anime_simulcast', 'series', USER_CONFIG, false, HOST, CATALOG_META
-        );
-        const result = await applyAiringStateBadges(built.metas, {
-            userConfig: USER_CONFIG, hostUrl: HOST, catalogMeta: CATALOG_META, type: 'series', snapshot
-        });
-
-        expect(result.metas).toHaveLength(1);
-        expect(result.metas[0].poster).toBe('https://image.tmdb.org/t/p/w500/kitsu_49883.jpg');
-    });
-
-    test('flusso vero: il provider mette in pagina la serie annunciata e la card nasce nuda', async () => {
+    test('flusso vero: il provider mette in pagina solo quello che la fonte ha visto', async () => {
         getDuckDbCatalogFromPreset.mockReset();
         getDuckDbCatalogFromPreset.mockImplementation(async (preset) => {
             const ids = (String(preset.where.join(' ')).match(/\d+/g) || []).map(Number);
@@ -506,8 +488,8 @@ describe('Episodio 0 — la serie annunciata entra in catalogo, senza badge', ()
         animeAiringState.setDataSourceForTests(async () => [AOASHI_2, OJI_SAN, CON_EPISODI]);
 
         const built = await getAiringStateCatalog(0);
-        // Le tre voci entrano: Aoashi prende l'id Kitsu del documento, Oji-san non ha Kitsu -> TMDB.
-        expect(built.map((m) => m.id).sort()).toEqual(['kitsu:48269', 'kitsu:49883', 'tmdb:330505']);
+        // Solo Dandadan: le due annunciate non sono sulla home, quindi non hanno pagina.
+        expect(built.map((m) => m.id)).toEqual(['kitsu:48269']);
 
         const pass1 = formatStremioCatalog(built, 'preset_anime_simulcast', 'series', USER_CONFIG, false, HOST, CATALOG_META);
         const pass2 = await applyAiringStateBadges(pass1.metas, {
@@ -516,11 +498,6 @@ describe('Episodio 0 — la serie annunciata entra in catalogo, senza badge', ()
         });
 
         const perId = new Map(pass2.metas.map((m) => [m.id, m]));
-        // Nessuna delle due annunciate ha badge.
-        expect(perId.get('kitsu:49883')._forceBadgeText).toBeUndefined();
-        expect(perId.get('tmdb:330505')._forceBadgeText).toBeUndefined();
-        expect(pass2.metas.filter((m) => String(m.id).endsWith('_ita_offset')).map((m) => m.id))
-            .toEqual(['kitsu:48269_ita_offset']);
         expect(perId.get('kitsu:48269').poster).toContain('EP%2012');
         expect(perId.get('kitsu:48269_ita_offset').poster).toContain('ITA%208');
 

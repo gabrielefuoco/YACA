@@ -4,8 +4,12 @@
  * Catalogo "Simulcast (Nuovi Episodi)" alimentato dallo stato scritto dal modulo esterno
  * (`anime_airing_state`, contratto ticket 07) — sostituisce AnilistProvider.
  *
- * Contenuto: serie con almeno un episodio (sub o ITA) uscito negli ultimi 14 giorni,
- * ordinate per data dell'ultimo episodio disponibile (più recente in testa).
+ * CONTENUTO (ticket 52, 04/10/2026): le serie che la HOME di AnimeUnity mostra come uscite
+ * negli ultimi 14 giorni (`homeReleases`), ordinate per data dell'ultimo episodio uscito,
+ * più recente in testa. La finestra l'ha applicata la fonte, sul dato della fonte
+ * (`created_at`): qui non c'è nessuna finestra nostra, nessun `listSeenAt`, nessun
+ * `updatedAt`. Un titolo senza episodi di home non entra — e la serie annunciata (zero
+ * episodi) non c'è.
  * L'idratamento dei metadati resta su DuckDB (query batch `id IN (...)`), come prima.
  *
  * L'id della card è `kitsu:{id}` quando risolvibile (stessa identità di metaHandler/streaming),
@@ -27,7 +31,11 @@ async function getAiringStateCatalog(skip = 0) {
         const snapshot = await animeAiringState.getSnapshot();
         const entries = animeAiringState.getAiringEntries(snapshot);
 
-        if (!entries || entries.length === 0) return [];
+        if (!entries || entries.length === 0) {
+            // Nessun titolo dalla home nelle due settimane: catalogo vuoto, senza eccezioni.
+            // È un esito legittimo (la fonte non ha nulla di nuovo), non un degrado.
+            return [];
+        }
 
         const tmdbIds = Array.from(new Set(
             entries

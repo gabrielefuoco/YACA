@@ -4,11 +4,21 @@
  * Lettore lato YACA della collezione `anime_airing_state` scritta dal modulo esterno
  * `services/anime-source` (contratto: ticket `07`, consumo: ticket `13`).
  *
- * Regole del contratto implementate qui:
+ * IL CATALOGO "Simulcast (Nuovi Episodi)" LEGGE `homeReleases` (ticket 52, 04/10/2026):
+ * chi ha un episodio uscito nelle ultime due settimane, secondo la HOME di AnimeUnity
+ * paginata. `EP n` è il campo `number` dell'item della home, `ITA n` è l'omonimo canale
+ * dichiarato da `anime.dub`. La finestra l'ha già applicata la fonte, sul dato della fonte
+ * (`created_at`): qui NON c'è nessuna finestra sui nostri campi, nessuna `AIRING_FRESHNESS_HOURS`
+ * e nessun `listSeenAt`/`updatedAt`. Un solo dato di freschezza resta, ed è sempre della
+ * fonte: `homeReleases.checkedAt`, quando l'abbiamo visto l'ultima volta (`HOME_MAX_AGE_DAYS`).
+ *
+ * Cosa resta in vita e perché (non è tutto morto):
+ *  - `sub`/`dub`/`italian` e `episodes[]` restano letti per i DUE consumatori che non sono
+ *    il simulcast: il backfill di novità (`getNoveltyEntries`, vedi `scripts/backfill-airing-anime.js`)
+ *    e l'unione delle annotazioni ITA (`services/doppiaggi-source`, che legge `dub`/`episodes[]`
+ *    e il `mediaType` dichiarato).
  *  - `_id` = TMDB id in stringa (chiave di dedup/lookup);
  *  - `schemaVersion` = 1; i documenti con versione più alta vengono IGNORATI (degrado, mai crash);
- *  - `italian.sub.latest` / `italian.dub.latest` = `{ season, episode }`;
- *  - `episodes[]` = `{ season, episode, airedAt, subIta, dubIta }`;
  *  - validazione difensiva: leggiamo e normalizziamo SOLO i campi che usiamo, il resto è ignorato.
  *
  * Resilienza:
@@ -27,10 +37,19 @@ const COLLECTION_NAME = 'anime_airing_state';
 const SUPPORTED_SCHEMA_VERSION = 1;
 const CACHE_TTL_MS = 60 * 1000;
 const NOVELTY_WINDOW_DAYS = 14;
-const AIRING_FRESHNESS_HOURS = 12;
-const LIST_WINDOW_DAYS = 14;
-const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Quanto può essere vecchia la conferma della fonte (`homeReleases.checkedAt`) prima che il
+ * lettore smetta di considerare il titolo "in simulcast".
+ *
+ * PERCHÉ UN LIMITE E NON ZERO: se il servizio `anime-source` resta fermo (rete, container,
+ * deploy) la collezione non si azzera — e servire una lista di due settimane fa come "le
+ * ultime due settimane" è la bugia più economica da raccontare. Dopo tre giorni di silenzio
+ * il catalogo vuoto è la risposta onesta: non sappiamo, e non inventiamo. Tre giorni, non uno,
+ * perché il giro completo è giornaliero: due passate perse di fila devono poter passare.
+ */
+const HOME_MAX_AGE_DAYS = 3;
 
 // Proiezione: niente payload morto in RAM, solo i campi effettivamente consumati.
 const PROJECTION = {
@@ -43,6 +62,7 @@ const PROJECTION = {
     orderIndex: 1,
     italian: 1,
     episodes: 1,
+    homeReleases: 1,
     listSeenAt: 1,
     updatedAt: 1
 };
@@ -54,6 +74,8 @@ function emptySnapshot() {
         byKitsuId: new Map(),
         ignoredSchema: 0,
         invalid: 0,
+        homeInWindow: 0,
+        homeStale: 0,
         degraded: false,
         fetchedAt: 0,
         lastError: null
@@ -146,6 +168,36 @@ function normalizeEpisodes(value) {
 }
 
 /**
+ * Una voce `homeReleases`: cosa ha visto la fonte su quell'anime.
+ * `{ checkedAt, sub: {episode, airedAt}|null, dub: {episode, airedAt}|null }`
+ *
+ * Un episodio senza numero non è un episodio (0, assente, non numerico → `null`), quindi la
+ * serie annunciata — che sulla home non c'è, e qui non c'è neppure — non può produrre un
+ * `EP 0`: non avrebbe niente da mostrare.
+ */
+function normalizeHomeReleases(value) {
+    if (!value || typeof value !== 'object') return null;
+
+    const episodeOf = (raw) => {
+        if (!raw || typeof raw !== 'object') return null;
+        const episode = toFiniteNumber(raw.episode);
+        if (episode === null || episode <= 0) return null;
+        const airedAt = normalizeTimestamp(raw.airedAt);
+        return airedAt === null ? { episode } : { episode, airedAt };
+    };
+
+    const sub = episodeOf(value.sub);
+    const dub = episodeOf(value.dub);
+    if (!sub && !dub) return null;
+
+    return {
+        checkedAt: normalizeTimestamp(value.checkedAt),
+        sub,
+        dub
+    };
+}
+
+/**
  * Normalizza un documento grezzo. Ritorna `{ doc }` oppure `{ reason: 'schema' | 'invalid' }`.
  * `schema` = versione non supportata (da ignorare senza interpretare i campi);
  * `invalid` = documento malformato (manca un `_id` TMDB valido).
@@ -174,6 +226,7 @@ function validateDocument(raw) {
             dub: normalizeLatest(raw.dub || (raw.italian && raw.italian.dub && raw.italian.dub.latest)),
             orderIndex: toFiniteNumber(raw.orderIndex),
             episodes: normalizeEpisodes(raw.episodes),
+            home: normalizeHomeReleases(raw.homeReleases),
             listSeenAt: normalizeTimestamp(raw.listSeenAt),
             updatedAt: normalizeTimestamp(raw.updatedAt)
         }
@@ -182,6 +235,7 @@ function validateDocument(raw) {
 
 function buildSnapshot(rawDocs) {
     const snapshot = emptySnapshot();
+    const nowMs = Date.now();
     for (const raw of rawDocs) {
         const result = validateDocument(raw);
         if (result.reason === 'schema') {
@@ -197,6 +251,11 @@ function buildSnapshot(rawDocs) {
         if (result.doc.kitsuId) {
             snapshot.byKitsuId.set(result.doc.kitsuId, result.doc);
         }
+        if (isHomeStale(result.doc.home, nowMs)) {
+            snapshot.homeStale++;
+        } else if (result.doc.home) {
+            snapshot.homeInWindow++;
+        }
     }
     return snapshot;
 }
@@ -208,7 +267,7 @@ function logRefresh(snapshot, error) {
         const now = Date.now();
         const key = error
             ? `err:${error.message}`
-            : `ok:${snapshot.docs.length}:${snapshot.ignoredSchema}:${snapshot.invalid}`;
+            : `ok:${snapshot.docs.length}:${snapshot.ignoredSchema}:${snapshot.invalid}:${snapshot.homeInWindow}:${snapshot.homeStale}`;
 
         if (cache.lastLogKey === key && now - cache.lastLogAt < CACHE_TTL_MS) return;
         cache.lastLogKey = key;
@@ -219,11 +278,12 @@ function logRefresh(snapshot, error) {
             console.warn(`[AnimeAiringState] Lettura ${COLLECTION_NAME} fallita (${error.message}); servo ${served}.`);
             return;
         }
-        if (snapshot.ignoredSchema > 0 || snapshot.invalid > 0) {
+        if (snapshot.ignoredSchema > 0 || snapshot.invalid > 0 || snapshot.homeStale > 0) {
             console.warn(
                 `[AnimeAiringState] ${snapshot.docs.length} serie valide; ` +
                 `${snapshot.ignoredSchema} ignorate (schemaVersion > ${SUPPORTED_SCHEMA_VERSION}); ` +
-                `${snapshot.invalid} scartate (documento malformato).`
+                `${snapshot.invalid} scartate (documento malformato); ` +
+                `home: ${snapshot.homeInWindow} in finestra, ${snapshot.homeStale} con conferma più vecchia di ${HOME_MAX_AGE_DAYS} giorni.`
             );
         }
     } catch (_e) {
@@ -292,67 +352,59 @@ function isInWindow(airedAt, nowMs, windowMs) {
     return airedAt !== null && airedAt <= nowMs && airedAt >= nowMs - windowMs;
 }
 
-function getDocAiredAt(doc) {
-    if (!doc) return null;
-    const subAired = normalizeTimestamp(doc.sub && doc.sub.airedAt);
-    const dubAired = normalizeTimestamp(doc.dub && doc.dub.airedAt);
-    if (subAired !== null && dubAired !== null) {
-        return Math.max(subAired, dubAired);
-    }
-    if (subAired !== null) return subAired;
-    if (dubAired !== null) return dubAired;
-    if (Array.isArray(doc.episodes) && doc.episodes.length > 0) {
-        let maxEp = null;
-        for (const ep of doc.episodes) {
-            const epAired = normalizeTimestamp(ep.airedAt);
-            if (epAired !== null && (maxEp === null || epAired > maxEp)) {
-                maxEp = epAired;
-            }
-        }
-        return maxEp;
-    }
-    return null;
+/**
+ * La conferma della fonte è troppo vecchia per essere ancora "le ultime due settimane"?
+ * `checkedAt` assente non è un "vecchio": è "non lo sappiamo", e la dichiarazione vale
+ * (è comunque la fonte a scrivere quel campo; se manca è un bug del writer, non del lettore).
+ */
+function isHomeStale(home, nowMs) {
+    if (!home) return false;
+    if (home.checkedAt === null) return false;
+    return (nowMs - home.checkedAt) > HOME_MAX_AGE_DAYS * DAY_MS;
 }
 
 /**
- * I canali che il documento **dichiara**, senza guardare nessuna data.
+ * LA REGOLA DEL CATALOGO NOVITÀ (ticket 52, 04/10/2026): nel catalogo sta chi ha un episodio
+ * uscito nelle ultime due settimane, e lo dice la HOME di AnimeUnity (`homeReleases`).
  *
- * È la regola decisa dall'utente il 04/10/2026, parole sue: «non mi frega che il
- * doppiaggio è fermo, basta anche un episodio doppiato per considerare la serie ITA».
- * Quindi la card non ha finestra temporale né soglia di freschezza: se il documento dichiara
- * un episodio tradotto, la serie è ITA — un doppiaggio fermo a mesi vale lo stesso.
+ * Un posto solo, due usi: l'appartenenza alla lista (`getAiringEntries`) e il numero sui
+ * badge (`getCardInfo`). Una regola sola vuol dire che non possono divergere: è la stessa
+ * domanda, "la fonte ha detto che questo episodio è uscito?", con la stessa risposta.
  *
- * PERCHÉ È UNA FUNZIONE DIVERSA DA `getWindowInfo`: la finestra di 14 giorni risponde a un'altra
- * domanda — *quali titoli sono una novità* (`getNoveltyEntries`, il backfill) — e lì la data è
- * il filtro. Sulla card era invece un falso negativo: sui documenti storici (Blue Box, Bleach,
- * Ranma 1/2) `episodes[]` è l'archivio 2018-2025 e l'episodio fresco sta solo in
- * `sub.latest`/`dub.latest`, quindi il ramo "documenti storici" contava i 14 giorni, non
- * trovava niente, `getCardInfo` tornava `null` e la card restava col poster nudo di TMDB.
- * Misurato su produzione il 04/10/2026: 26 card su 65 senza badge per questa ragione.
+ * - `sub`/`dub` null → niente: la card non entra, e non nasce nessun `EP 0`;
+ * - conferma più vecchia di `HOME_MAX_AGE_DAYS` → non entra (la fonte non parla da troppo);
+ * - `lastAiredAt` = la data dell'ultimo episodio che la fonte ha visto, che è anche l'ordine
+ *   della lista (più recente in testa), e adesso VERO perché viene dalla fonte.
  *
- * @returns {{hasSub: boolean, hasDub: boolean, lastAiredAt: number|null}}
+ * Non guarda `episodes[]`, non guarda `listSeenAt`, non guarda `updatedAt`: sono i nostri
+ * campi, e non c'entrano con l'essere in onda.
+ *
+ * @returns {{hasSub: boolean, hasDub: boolean, sub: Object|null, dub: Object|null, lastAiredAt: number|null, checkedAt: number|null}|null}
  */
-function getDeclaredInfo(doc) {
-    if (!doc) return { hasSub: false, hasDub: false, lastAiredAt: null };
+function getHomeInfo(doc, options = {}) {
+    if (!doc || !doc.home) return null;
 
-    let hasSub = Boolean(doc.sub);
-    let hasDub = Boolean(doc.dub);
-    let lastAiredAt = null;
-    const consider = (value) => {
-        const at = normalizeTimestamp(value);
-        if (at !== null && (lastAiredAt === null || at > lastAiredAt)) lastAiredAt = at;
+    const opts = normalizeOptions(options);
+    const nowMs = Number.isFinite(opts.now) ? opts.now : Date.now();
+    const maxAgeDays = Number.isFinite(opts.maxAgeDays) && opts.maxAgeDays > 0 ? opts.maxAgeDays : HOME_MAX_AGE_DAYS;
+
+    const home = doc.home;
+    if (!home.sub && !home.dub) return null;
+    if (home.checkedAt !== null && (nowMs - home.checkedAt) > maxAgeDays * DAY_MS) return null;
+
+    const lastAiredAt = Math.max(
+        home.sub && home.sub.airedAt !== null && home.sub.airedAt !== undefined ? home.sub.airedAt : null,
+        home.dub && home.dub.airedAt !== null && home.dub.airedAt !== undefined ? home.dub.airedAt : null
+    );
+
+    return {
+        hasSub: Boolean(home.sub),
+        hasDub: Boolean(home.dub),
+        sub: home.sub ? { episode: home.sub.episode } : null,
+        dub: home.dub ? { episode: home.dub.episode } : null,
+        lastAiredAt: Number.isFinite(lastAiredAt) ? lastAiredAt : null,
+        checkedAt: home.checkedAt
     };
-
-    for (const episode of Array.isArray(doc.episodes) ? doc.episodes : []) {
-        if (episode.subIta) hasSub = true;
-        if (episode.dubIta) hasDub = true;
-        // La data resta un dato di ordinamento, non un filtro: non si butta via.
-        if (episode.subIta || episode.dubIta) consider(episode.airedAt);
-    }
-    consider(doc.sub && doc.sub.airedAt);
-    consider(doc.dub && doc.dub.airedAt);
-
-    return { hasSub, hasDub, lastAiredAt: lastAiredAt || doc.listSeenAt || doc.updatedAt || null };
 }
 
 /**
@@ -361,8 +413,8 @@ function getDeclaredInfo(doc) {
  * Se episodes[] è assente o vuoto ma sub/dub ci sono, considerali disponibili
  * (la "finestra" non è più una data: è la presenza nella lista).
  *
- * Serve alla **novità** (quali titoli attraversano il backfill), NON al badge della card:
- * per il badge vale `getDeclaredInfo`.
+ * Serve al **backfill di novità** (`getNoveltyEntries`, `scripts/backfill-airing-anime.js`),
+ * NON al catalogo simulcast: per il catalogo vale `getHomeInfo`, cioè la home.
  */
 function getWindowInfo(doc, options = {}) {
     if (!doc) return { hasSub: false, hasDub: false, lastAiredAt: null };
@@ -371,11 +423,15 @@ function getWindowInfo(doc, options = {}) {
     if (!Array.isArray(doc.episodes) || doc.episodes.length === 0) {
         const hasSub = Boolean(doc.sub);
         const hasDub = Boolean(doc.dub);
-        const airedAt = getDocAiredAt(doc);
+        let lastAiredAt = null;
+        for (const value of [doc.sub && doc.sub.airedAt, doc.dub && doc.dub.airedAt]) {
+            const at = normalizeTimestamp(value);
+            if (at !== null && (lastAiredAt === null || at > lastAiredAt)) lastAiredAt = at;
+        }
         return {
             hasSub,
             hasDub,
-            lastAiredAt: airedAt || doc.listSeenAt || doc.updatedAt || null
+            lastAiredAt: lastAiredAt || doc.listSeenAt || doc.updatedAt || null
         };
     }
 
@@ -405,79 +461,27 @@ function compareEpisodeRefs(a, b) {
 }
 
 /**
- * L'episodio più recente che il documento dichiara e che soddisfa `predicate`.
- * **Nessuna finestra**: per la card vale la dichiarazione, non la data (cfr. `getDeclaredInfo`).
- * A parità di data vince la numerazione più alta; un episodio senza data non viene scartato,
- * vale come il più vecchio (il documento lo dichiara: basta).
+ * Informazioni per le due card di un documento: la STESSA regola che decide l'appartenenza
+ * al catalogo (`getHomeInfo`), letta sul campo che la fonte scrive.
+ * - `sub`: `EP {episode}` dalla home, presente se la fonte ha visto un episodio sub in finestra;
+ * - `dub`: `ITA {episode}`, presente se la fonte ha visto un episodio doppiato in finestra.
+ *
+ * Ritorna null quando il documento non porta episodi di home, ed è anche l'esito giusto per
+ * una serie **annunciata**: non è sulla home, quindi non entra e non mostra niente.
+ * Nessun `EP 0`: il numero viene dalla fonte e, se la fonte non dà un numero, la card non
+ * porta quel canale.
  */
-function findNewestEpisode(doc, predicate) {
-    if (!doc || !Array.isArray(doc.episodes)) return null;
-    let best = null;
-    let bestAiredAt = null;
-    for (const episode of doc.episodes) {
-        if (!predicate(episode)) continue;
-        const airedAt = normalizeTimestamp(episode.airedAt);
-        if (
-            best === null ||
-            (airedAt !== null && (bestAiredAt === null || airedAt > bestAiredAt)) ||
-            (airedAt === bestAiredAt && compareEpisodeRefs(episode, best) > 0)
-        ) {
-            best = episode;
-            bestAiredAt = airedAt;
-        }
-    }
-    return best;
-}
-
-/**
- * Informazioni per le due card di un documento.
- * - `sub`: episodio del badge sub (`italian.sub.latest`, altrimenti l'ultimo sub dichiarato);
- * - `dub`: episodio del badge ITA, presente se e solo se il documento dichiara ALMENO UN
- *   episodio doppiato, a qualunque data (vedi `getDeclaredInfo`).
- * Ritorna null se il documento non dichiara né sub né dub — e questa è anche la risposta giusta
- * per una serie **annunciata** (`sub = { season: 2, episode: 0 }`: la lista la dà per in corso ma
- * non è ancora uscito niente). `null` è ciò che tiene la card **senza badge**: accettare lo zero
- * qui produrrebbe `EP 0`, che è un badge peggio di nessun badge.
- */
-function getCardInfo(doc) {
-    if (!doc) return null;
-    const declared = getDeclaredInfo(doc);
-    if (!declared.hasSub && !declared.hasDub) return null;
-
-    let sub = null;
-    if (declared.hasSub) {
-        if (doc.sub) {
-            sub = doc.sub;
-        } else {
-            const episode = findNewestEpisode(doc, (ep) => ep.subIta);
-            if (episode) sub = { season: episode.season, episode: episode.episode };
-        }
-    }
-
-    let dub = null;
-    if (declared.hasDub) {
-        if (doc.dub) {
-            dub = doc.dub;
-        } else {
-            const episode = findNewestEpisode(doc, (ep) => ep.dubIta);
-            if (episode) dub = { season: episode.season, episode: episode.episode };
-        }
-    }
-
-    if (!sub && !dub) return null;
-
-    return {
-        sub,
-        dub,
-        hasSub: declared.hasSub,
-        hasDub: declared.hasDub,
-        lastAiredAt: declared.lastAiredAt
-    };
+function getCardInfo(doc, options = {}) {
+    return getHomeInfo(doc, options);
 }
 
 /**
  * Lista delle novità (finestra 14 giorni) ordinata per data dell'ultimo episodio
  * disponibile, più recente in testa.
+ *
+ * CONSUMATORE DIVERSO, STESSI DOCUMENTI: questa lista risponde a "quali titoli sono una
+ * novità per il backfill TMDB", e per quello continua a usare `episodes[]` e le nostre date.
+ * Il catalogo simulcast non passa di qui (vedi `getAiringEntries`).
  */
 function getNoveltyEntries(snapshot, options = {}) {
     const docs = snapshot && Array.isArray(snapshot.docs) ? snapshot.docs : [];
@@ -501,141 +505,53 @@ function getNoveltyEntries(snapshot, options = {}) {
 }
 
 /**
- * Tutti i documenti appartenenti alla lista "In corso" di AnimeUnity, ordinati per orderIndex
- * se presente, altrimenti per listSeenAt/updatedAt decrescente.
+ * LE VOCI DEL CATALOGO "Simulcast (Nuovi Episodi)": chi ha un episodio uscito nelle ultime
+ * due settimane, secondo la HOME di AnimeUnity. Ordine: l'ultimo episodio uscito, prima.
  *
- * Regola di appartenenza (configurabile):
- * - se doc.listSeenAt c'è -> includi finché (now - listSeenAt) <= 14 giorni (default LIST_WINDOW_DAYS)
- * - se manca (transizione, doc legacy) -> includi solo se (now - updatedAt) <= 12 ore (default AIRING_FRESHNESS_HOURS)
+ * È tutta la regola in un posto solo (`getHomeInfo`): niente `listSeenAt`, niente
+ * `updatedAt`, niente `AIRING_FRESHNESS_HOURS`, niente `episodes[]`, niente `orderIndex`.
+ * Non è una scelta estetica: sono i campi con cui il simulcast di oggi decideva, e nessuno
+ * dei due dice "essere in onda" (il `listSeenAt` vuol dire "essere nella lista In corso",
+ * l'`updatedAt` vuol dire "quando l'abbiamo scritto"). La home sì: la sua data è la data
+ * dell'uscita.
  *
- * PERCHÉ LA CHIAVE NON È "HA sub O dub": una serie **annunciata** non ha episodi. AnimeUnity la
- * mette in "In Corso" con `real_episodes_count: 0`, il writer lo copia senza clamp
- * (`extractRealEpisode` in `services/anime-source/src/aggregate.js`) e il documento porta
- * `sub = { season: 2, episode: 0 }`. `normalizeLatest` giustamente rifiuta lo zero — un episodio 0
- * non esiste, e `EP 0` sarebbe un badge peggio di nessun badge — quindi il documento arriva qui con
- * `sub = dub = null` e il vecchio filtro (`if (!hasSub && !hasDub) continue`) lo scartava:
- * una serie che la fonte dichiara "in corso" semplicemente non compariva nel catalogo.
- * Misurato su produzione il 04/10/2026: 2 documenti su 962 (`Aoashi` 126437, `Oji-san` 330505).
+ * Cosa è morto con la regola vecchia: la finestra di 14 giorni sui nostri campi, le 12 ore
+ * di freschezza, `sub.latest`/`dub.latest` come fonte del badge, e il ramo `normalizeLatest`
+ * con il caso zero — la serie annunciata non è sulla home, quindi non entra, e `EP 0` non
+ * esiste più nemmeno come possibilità.
  *
- * LA CURA NON È ACCETTARE LO ZERO: la voce entra e basta. `getCardInfo` su un documento che non
- * dichiara episodi ritorna `null`, quindi la card nasce **senza badge** — l'esito giusto per una
- * serie annunciata. Nessun `EP 0`, nessun `ITA 0`.
- *
- * LA DOMANDA È "IL DOCUMENTO DICHIARA UN EPISODIO?" (`getDeclaredInfo`, la stessa funzione che
- * decide il badge), non "il documento ha `sub`/`dub`?". E la guardia `listSeenAt` è voluta:
- * "annunciata" è una positività della lista "In corso", non la conseguenza di un campo mancante —
- * un documento legacy senza `listSeenAt` potrebbe essere solo un documento che ha perso il `sub`,
- * e quelli restano fuori come prima.
+ * @returns {Array<{doc, tmdbId, kitsuId, subEpisode, dubEpisode, hasSub, hasDub, lastAiredAt}>}
  */
 function getAiringEntries(snapshot, options = {}) {
     const docs = snapshot && Array.isArray(snapshot.docs) ? snapshot.docs : [];
     const entries = [];
 
-    const opts = options && typeof options === 'object' ? options : {};
-    const nowMs = Number.isFinite(opts.now) ? opts.now : Date.now();
-
-    const listDays = Number.isFinite(opts.listWindowDays) && opts.listWindowDays > 0
-        ? opts.listWindowDays
-        : LIST_WINDOW_DAYS;
-    const listMaxAgeMs = Number.isFinite(opts.listMaxAgeMs) && opts.listMaxAgeMs > 0
-        ? opts.listMaxAgeMs
-        : listDays * DAY_MS;
-
-    const freshnessHours = Number.isFinite(opts.freshnessHours) && opts.freshnessHours > 0
-        ? opts.freshnessHours
-        : AIRING_FRESHNESS_HOURS;
-    const legacyMaxAgeMs = Number.isFinite(opts.maxAgeMs) && opts.maxAgeMs > 0
-        ? opts.maxAgeMs
-        : freshnessHours * HOUR_MS;
-
     for (const doc of docs) {
-        const seenInList = doc.listSeenAt !== null && doc.listSeenAt !== undefined;
-
-        const isIncluded = seenInList
-            ? (nowMs - doc.listSeenAt) <= listMaxAgeMs
-            : (doc.updatedAt !== null && doc.updatedAt !== undefined && (nowMs - doc.updatedAt) <= legacyMaxAgeMs);
-
-        if (!isIncluded) {
-            continue;
-        }
-
-        // Serie annunciata: nessun episodio dichiarato. Entra in catalogo (la lista la dà per in
-        // corso) e senza badge. Senza `listSeenAt` non si sa nulla: resta fuori come prima.
-        const declared = getDeclaredInfo(doc);
-        if (!declared.hasSub && !declared.hasDub && !seenInList) {
-            continue;
-        }
-
-        const windowInfo = getWindowInfo(doc);
-        const docAiredAt = getDocAiredAt(doc);
+        const home = getHomeInfo(doc, options);
+        if (!home) continue;
 
         entries.push({
             doc,
             tmdbId: doc.tmdbId,
             kitsuId: doc.kitsuId,
-            orderIndex: doc.orderIndex !== undefined && doc.orderIndex !== null ? doc.orderIndex : null,
-            hasSubInWindow: windowInfo.hasSub,
-            hasDubInWindow: windowInfo.hasDub,
-            airedAt: docAiredAt,
-            lastAiredAt: docAiredAt || windowInfo.lastAiredAt || doc.listSeenAt || doc.updatedAt || null
+            hasSub: home.hasSub,
+            hasDub: home.hasDub,
+            subEpisode: home.sub ? home.sub.episode : null,
+            dubEpisode: home.dub ? home.dub.episode : null,
+            lastAiredAt: home.lastAiredAt
         });
     }
 
+    // Più recente prima; a parità di data l'ordine è stabile (titolo): due titoli usciti
+    // lo stesso giorno non devono cambiare posto a ogni richiesta.
     entries.sort((a, b) => {
-        const airedA = a.airedAt;
-        const airedB = b.airedAt;
-        const hasAiredA = Number.isFinite(airedA) && airedA > 0;
-        const hasAiredB = Number.isFinite(airedB) && airedB > 0;
-
-        if (hasAiredA && hasAiredB) {
-            if (airedB !== airedA) {
-                return airedB - airedA;
-            }
-        } else if (hasAiredA) {
-            return -1;
-        } else if (hasAiredB) {
-            return 1;
-        }
-
-        // A parità o in mancanza di airedAt: listSeenAt decrescente
-        const seenA = a.doc && Number.isFinite(a.doc.listSeenAt) && a.doc.listSeenAt > 0 ? a.doc.listSeenAt : null;
-        const seenB = b.doc && Number.isFinite(b.doc.listSeenAt) && b.doc.listSeenAt > 0 ? b.doc.listSeenAt : null;
-        const hasSeenA = seenA !== null;
-        const hasSeenB = seenB !== null;
-
-        if (hasSeenA && hasSeenB) {
-            if (seenB !== seenA) {
-                return seenB - seenA;
-            }
-        } else if (hasSeenA) {
-            return -1;
-        } else if (hasSeenB) {
-            return 1;
-        }
-
-        // A parità o in mancanza di listSeenAt: orderIndex crescente
-        const hasOrderA = Number.isFinite(a.orderIndex);
-        const hasOrderB = Number.isFinite(b.orderIndex);
-
-        if (hasOrderA && hasOrderB) {
-            if (a.orderIndex !== b.orderIndex) {
-                return a.orderIndex - b.orderIndex;
-            }
-        } else if (hasOrderA) {
-            return -1;
-        } else if (hasOrderB) {
-            return 1;
-        }
-
-        // Ultimo fallback su updatedAt decrescente
-        const updatedA = (a.doc && a.doc.updatedAt) || 0;
-        const updatedB = (b.doc && b.doc.updatedAt) || 0;
-        return updatedB - updatedA;
+        const delta = (b.lastAiredAt || 0) - (a.lastAiredAt || 0);
+        if (delta !== 0) return delta;
+        return String((a.doc && a.doc.title) || '').localeCompare(String((b.doc && b.doc.title) || ''));
     });
 
     return entries;
 }
-
 /**
  * Trova il documento di stato a partire da un id item di catalogo
  * (`kitsu:123`, `kitsu:123_ita_offset`, `tmdb:456` o `456`).
@@ -662,8 +578,8 @@ function findDocument(snapshot, itemId) {
     return null;
 }
 
-function getCardInfoForId(snapshot, itemId) {
-    return getCardInfo(findDocument(snapshot, itemId));
+function getCardInfoForId(snapshot, itemId, options = {}) {
+    return getCardInfo(findDocument(snapshot, itemId), options);
 }
 
 /**
@@ -804,16 +720,14 @@ module.exports = {
     SUPPORTED_SCHEMA_VERSION,
     CACHE_TTL_MS,
     NOVELTY_WINDOW_DAYS,
-    AIRING_FRESHNESS_HOURS,
-    LIST_WINDOW_DAYS,
+    HOME_MAX_AGE_DAYS,
     getSnapshot,
     getNoveltyEntries,
     getAiringEntries,
-    getDocAiredAt,
     getCardInfo,
     getCardInfoForId,
     getWindowInfo,
-    getDeclaredInfo,
+    getHomeInfo,
     findDocument,
     getDubEpisode,
     getDubEpisodeForId,

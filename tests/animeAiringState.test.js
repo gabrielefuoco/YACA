@@ -1,7 +1,10 @@
 /**
- * Test del lettore `anime_airing_state` (ticket 13): fixture locali, nessun Mongo vivo.
+ * Test del lettore `anime_airing_state` (ticket 13; regola del catalogo novità aggiornata dal
+ * ticket 52: la fonte è la HOME di AnimeUnity, `homeReleases`).
+ * Fixture locali, nessun Mongo vivo.
  * Copre: degrado (collezione vuota/errore), schemaVersion più alta ignorata, validazione
- * difensiva, finestra 14 giorni, card sub/ITA, ordinamento e risoluzione identità.
+ * difensiva, il backfill di novità (finestra 14 giorni sulle nostre date, consumatore
+ * diverso), card sub/ITA dalla home, freschezza della fonte, ordinamento e identità.
  */
 
 const animeAiringState = require('../src/data/animeAiringState');
@@ -14,12 +17,18 @@ const WINDOW = { now: NOW, windowDays: 14 };
 function buildFixtureDocs() {
     return [
         {
-            // Serie in corso: sub recente (EP 12) e doppiato recente (ITA 8)
+            // Serie in corso: la home ha visto l'episodio sub di 2 giorni fa e quello doppiato
+            // di 3 giorni fa -> due card (EP 12 / ITA 8)
             _id: '240411',
             schemaVersion: 1,
             ids: { tmdb: 240411, kitsu: '48269', anilist: 171018, mal: 57334 },
             title: 'Dandadan',
             schedule: { status: 'In corso', nextEpisode: null },
+            homeReleases: {
+                checkedAt: daysAgo(0.1),
+                sub: { episode: 12, airedAt: daysAgo(2) },
+                dub: { episode: 8, airedAt: daysAgo(3) }
+            },
             italian: {
                 sub: { latest: { season: 2, episode: 12 }, status: 'In corso' },
                 dub: { latest: { season: 2, episode: 8 }, status: 'In corso', isSimuldub: true }
@@ -35,7 +44,8 @@ function buildFixtureDocs() {
             updatedAt: daysAgo(0)
         },
         {
-            // Serie conclusa: tutto fuori finestra
+            // Serie conclusa 60 giorni fa: la home non la nomina, quindi per il catalogo non
+            // esiste (per il backfill di novità resta comunque fuori finestra).
             _id: '999001',
             schemaVersion: 1,
             ids: { tmdb: 999001, kitsu: '111' },
@@ -49,11 +59,16 @@ function buildFixtureDocs() {
             ]
         },
         {
-            // Doppiato fermo: il sub è nella finestra, il dub no -> niente card ITA
+            // Doppiato fermo a 40 giorni: la home ha visto solo il sub -> nessuna card ITA
             _id: '999002',
             schemaVersion: 1,
             ids: { tmdb: 999002, kitsu: '222' },
             title: 'Dub Fermo',
+            homeReleases: {
+                checkedAt: daysAgo(0.1),
+                sub: { episode: 20, airedAt: daysAgo(1) },
+                dub: null
+            },
             italian: {
                 sub: { latest: { season: 1, episode: 20 }, status: 'In corso' },
                 dub: { latest: { season: 1, episode: 5 }, status: 'In corso', isSimuldub: false }
@@ -64,11 +79,16 @@ function buildFixtureDocs() {
             ]
         },
         {
-            // Solo doppiato nella finestra: in catalogo con la sola card ITA
+            // Solo doppiato nella finestra: card base nuda + card ITA
             _id: '999004',
             schemaVersion: 1,
             ids: { tmdb: 999004, kitsu: '444' },
             title: 'Solo Dub',
+            homeReleases: {
+                checkedAt: daysAgo(0.1),
+                sub: null,
+                dub: { episode: 3, airedAt: daysAgo(4) }
+            },
             italian: {
                 sub: { latest: { season: 1, episode: 3 }, status: 'Terminato' },
                 dub: { latest: { season: 1, episode: 3 }, status: 'In corso', isSimuldub: false }
@@ -242,7 +262,7 @@ describe('AnimeAiringState - validazione e schemaVersion', () => {
     });
 });
 
-describe('AnimeAiringState - finestra 14 giorni e card', () => {
+describe('AnimeAiringState - card dalla home (la fonte del catalogo novità)', () => {
     let snapshot;
 
     beforeAll(() => {
@@ -253,38 +273,38 @@ describe('AnimeAiringState - finestra 14 giorni e card', () => {
         const info = animeAiringState.getCardInfo(getDoc(snapshot, 240411), WINDOW);
         expect(info.hasSub).toBe(true);
         expect(info.hasDub).toBe(true);
-        expect(info.sub).toEqual({ season: 2, episode: 12 });
-        expect(info.dub).toEqual({ season: 2, episode: 8 });
+        expect(info.sub).toEqual({ episode: 12 });
+        expect(info.dub).toEqual({ episode: 8 });
     });
 
-    test('serie conclusa: la dichiarazione vale anche fuori dalla finestra (regola del 04/10/2026)', () => {
-        // Il documento dichiara sub e doppiato, ma 60 giorni fa: la card c'è lo stesso, perché
-        // «basta anche un episodio doppiato per considerare la serie ITA». La novità
-        // (`getNoveltyEntries`) continua invece a usare la finestra: è un'altra domanda.
+    test('serie conclusa: se la home non la nomina, per il catalogo non esiste', () => {
+        // Il documento dichiara sub e doppiato, ma 60 giorni fa e la home non l'ha visto:
+        // nessuna card. La novità (`getNoveltyEntries`, backfill) continua a usare le nostre
+        // date: è un'altra domanda, e lì questa serie resta fuori finestra come prima.
         expect(animeAiringState.getNoveltyEntries(snapshot, WINDOW).map((e) => e.doc.tmdbId))
             .not.toContain('999001');
 
         const info = animeAiringState.getCardInfo(getDoc(snapshot, 999001), WINDOW);
-        expect(info).not.toBeNull();
-        expect(info.sub).toEqual({ season: 1, episode: 12 });
-        expect(info.dub).toEqual({ season: 1, episode: 12 });
+        expect(info).toBeNull();
         expect(animeAiringState.getWindowInfo(getDoc(snapshot, 999001), WINDOW).hasSub).toBe(false);
+        expect(animeAiringState.getAiringEntries(snapshot, WINDOW).map((e) => e.doc.tmdbId))
+            .not.toContain('999001');
     });
 
-    test('doppiato fermo: la card ITA c\'è anche se il doppiaggio è vecchio', () => {
+    test('doppiato fermo: nessuna card ITA (la home non ha visto uscite doppiate)', () => {
         const info = animeAiringState.getCardInfo(getDoc(snapshot, 999002), WINDOW);
         expect(info.hasSub).toBe(true);
-        expect(info.hasDub).toBe(true);
-        expect(info.sub).toEqual({ season: 1, episode: 20 });
-        expect(info.dub).toEqual({ season: 1, episode: 5 });
+        expect(info.hasDub).toBe(false);
+        expect(info.sub).toEqual({ episode: 20 });
+        expect(info.dub).toBeNull();
     });
 
-    test('solo doppiato dichiarato: il `sub.latest` del documento dà la card sub', () => {
+    test('solo doppiato: la card base non ha `sub`, ma c\'è il clone ITA', () => {
         const info = animeAiringState.getCardInfo(getDoc(snapshot, 999004), WINDOW);
-        expect(info.hasSub).toBe(true);
+        expect(info.hasSub).toBe(false);
         expect(info.hasDub).toBe(true);
-        expect(info.sub).toEqual({ season: 1, episode: 3 });
-        expect(info.dub).toEqual({ season: 1, episode: 3 });
+        expect(info.sub).toBeNull();
+        expect(info.dub).toEqual({ episode: 3 });
     });
 
     test('serie senza stato: getCardInfoForId ritorna null', () => {
@@ -372,13 +392,18 @@ describe('AnimeAiringState - identità della card', () => {
     });
 });
 
-describe('AnimeAiringState - lettura senza finestra e nuovi documenti (senza episodes[])', () => {
-    test('doc senza episodes[] con sub/dub: getWindowInfo e getCardInfo considerano i canali disponibili', () => {
+describe('AnimeAiringState - documenti senza episodes[], e cosa NON decide più niente', () => {
+    test('doc senza episodes[] con sub/dub: getWindowInfo le vede, la card chiede alla home', () => {
         const docNoEpisodes = {
             _id: '37854',
             schemaVersion: 1,
             ids: { tmdb: 37854, kitsu: '12' },
             title: 'One Piece',
+            homeReleases: {
+                checkedAt: daysAgo(0.1),
+                sub: { episode: 1180, airedAt: daysAgo(1) },
+                dub: { episode: 936, airedAt: daysAgo(2) }
+            },
             sub: { season: 22, episode: 1180 },
             dub: { season: 22, episode: 936 },
             orderIndex: 0,
@@ -388,272 +413,120 @@ describe('AnimeAiringState - lettura senza finestra e nuovi documenti (senza epi
         const snapshot = animeAiringState.buildSnapshot([docNoEpisodes]);
         const doc = snapshot.byTmdbId.get('37854');
 
+        // Il backfill di novità continua a leggere i nostri campi: è un altro consumatore.
         const winInfo = animeAiringState.getWindowInfo(doc, WINDOW);
         expect(winInfo.hasSub).toBe(true);
         expect(winInfo.hasDub).toBe(true);
 
+        // La card, invece, prende i numeri dalla home.
         const cardInfo = animeAiringState.getCardInfo(doc, WINDOW);
         expect(cardInfo).not.toBeNull();
-        expect(cardInfo.hasSub).toBe(true);
-        expect(cardInfo.hasDub).toBe(true);
-        expect(cardInfo.sub).toEqual({ season: 22, episode: 1180 });
-        expect(cardInfo.dub).toEqual({ season: 22, episode: 936 });
+        expect(cardInfo.sub).toEqual({ episode: 1180 });
+        expect(cardInfo.dub).toEqual({ episode: 936 });
 
         expect(animeAiringState.getDubEpisode(doc)).toBe(936);
         expect(animeAiringState.getDubEpisodeForId(snapshot, 'kitsu:12')).toBe(936);
     });
 
-    test('getAiringEntries restituisce tutti i documenti con sub o dub e ordina per orderIndex', () => {
+    test('senza passata home la card non c\'è, ma il backfill la vede lo stesso', () => {
+        const senzaHome = animeAiringState.buildSnapshot([{
+            _id: '37855',
+            schemaVersion: 1,
+            ids: { tmdb: 37855, kitsu: '13' },
+            title: 'Non nominata dalla home',
+            sub: { season: 1, episode: 5, airedAt: daysAgo(1) },
+            episodes: [{ season: 1, episode: 5, airedAt: daysAgo(1), subIta: true, dubIta: false }]
+        }]);
+        const doc = senzaHome.byTmdbId.get('37855');
+
+        expect(animeAiringState.getCardInfo(doc, WINDOW)).toBeNull();
+        expect(animeAiringState.getAiringEntries(senzaHome, { now: NOW })).toEqual([]);
+        expect(animeAiringState.getNoveltyEntries(senzaHome, WINDOW).map((e) => e.doc.tmdbId))
+            .toEqual(['37855']);
+    });
+
+    test('getAiringEntries: dentro solo chi ha una passata home, ordine = ultimo episodio uscito', () => {
         const docs = [
-            {
-                _id: '100',
-                schemaVersion: 1,
-                title: 'Terzo in lista',
-                sub: { season: 1, episode: 5 },
-                orderIndex: 2,
-                updatedAt: daysAgo(0.1)
-            },
-            {
-                _id: '200',
-                schemaVersion: 1,
-                title: 'Primo in lista',
-                sub: { season: 1, episode: 1 },
-                orderIndex: 0,
-                updatedAt: daysAgo(0.1)
-            },
-            {
-                _id: '300',
-                schemaVersion: 1,
-                title: 'Secondo in lista',
-                dub: { season: 1, episode: 10 },
-                orderIndex: 1,
-                updatedAt: daysAgo(0.1)
-            },
-            {
-                _id: '400',
-                schemaVersion: 1,
-                title: 'Nessun sub o dub',
-                updatedAt: daysAgo(0.1)
-            }
+            { _id: '100', schemaVersion: 1, title: 'Uscito 5 giorni fa', homeReleases: { checkedAt: daysAgo(0.1), sub: { episode: 5, airedAt: daysAgo(5) }, dub: null }, orderIndex: 2 },
+            { _id: '200', schemaVersion: 1, title: 'Uscito ieri', homeReleases: { checkedAt: daysAgo(0.1), sub: { episode: 1, airedAt: daysAgo(1) }, dub: { episode: 3, airedAt: daysAgo(0.5) } }, orderIndex: 0 },
+            { _id: '300', schemaVersion: 1, title: 'Solo doppiato', homeReleases: { checkedAt: daysAgo(0.1), sub: null, dub: { episode: 10, airedAt: daysAgo(2) } }, orderIndex: 1 },
+            { _id: '400', schemaVersion: 1, title: 'Niente home', sub: { season: 1, episode: 5 }, updatedAt: daysAgo(0.1) }
         ];
 
         const snapshot = animeAiringState.buildSnapshot(docs);
         const entries = animeAiringState.getAiringEntries(snapshot, { now: NOW });
 
-        expect(entries.map(e => e.doc.tmdbId)).toEqual(['200', '300', '100']);
-        expect(entries.find(e => e.doc.tmdbId === '400')).toBeUndefined();
+        // `orderIndex` non conta più: 200 (0.5 gg, il dub) prima di 300 (2 gg) prima di 100 (5 gg).
+        expect(entries.map((e) => e.doc.tmdbId)).toEqual(['200', '300', '100']);
+        expect(entries.map((e) => [e.subEpisode, e.dubEpisode])).toEqual([[1, 3], [null, 10], [5, null]]);
+        expect(entries.find((e) => e.doc.tmdbId === '400')).toBeUndefined();
     });
 
-    test('filtro di freschezza: doc aggiornato adesso -> incluso; doc vecchio di 3 giorni -> escluso; doc vecchio con episodes[] -> escluso', () => {
+    test('la freschezza è quella della fonte: `checkedAt`, e n\'altro', () => {
+        const clock = jest.spyOn(Date, 'now').mockReturnValue(NOW);
+        const doc = (id, checkedAtDays) => ({
+            _id: id,
+            schemaVersion: 1,
+            title: `Titolo ${id}`,
+            homeReleases: { checkedAt: daysAgo(checkedAtDays), sub: { episode: 5, airedAt: daysAgo(1) }, dub: null },
+            listSeenAt: daysAgo(0.1),
+            updatedAt: daysAgo(0.1)
+        });
+        const snapshot = animeAiringState.buildSnapshot([doc('601', 0.2), doc('602', 2.5), doc('603', 4)]);
+
+        const entries = animeAiringState.getAiringEntries(snapshot, { now: NOW });
+        // 601 confermato ieri e 602 due giorni fa entrano; 603 non ha conferma da quattro giorni.
+        expect(entries.map((e) => e.doc.tmdbId)).toEqual(['601', '602']);
+        expect(snapshot.homeInWindow).toBe(2);
+        expect(snapshot.homeStale).toBe(1);
+        clock.mockRestore();
+    });
+
+    test('`listSeenAt` e `updatedAt` non decidono più l\'appartenenza (i 5 scenari del vecchio brief)', () => {
+        // Prima decidevano: listSeenAt entro 14 giorni, altrimenti updatedAt entro 12 ore. Ora la
+        // domanda è una sola — la home ha visto l\'episodio? — e questi due campi non la pongono.
         const docs = [
-            // Doc aggiornato adesso (2 ore fa): incluso
-            {
-                _id: '101',
-                schemaVersion: 1,
-                title: 'Ciclo Corrente',
-                sub: { season: 1, episode: 10 },
-                updatedAt: daysAgo(2 / 24), // 2h fa
-                orderIndex: 0
-            },
-            // Doc vecchio di 3 giorni: escluso (storico)
-            {
-                _id: '102',
-                schemaVersion: 1,
-                title: 'Vecchio 3 giorni',
-                sub: { season: 1, episode: 5 },
-                updatedAt: daysAgo(3),
-                orderIndex: 1
-            },
-            // Doc vecchio con episodes[] (compatibilità storica): escluso se oltre la finestra di freschezza
-            {
-                _id: '103',
-                schemaVersion: 1,
-                title: 'Vecchio con episodes',
-                sub: { season: 1, episode: 12 },
-                episodes: [{ season: 1, episode: 12, airedAt: daysAgo(1), subIta: true, dubIta: false }],
-                updatedAt: daysAgo(3),
-                orderIndex: 2
-            }
+            { _id: '701', schemaVersion: 1, title: 'listSeenAt 10gg fa, senza home', listSeenAt: daysAgo(10), sub: { season: 1, episode: 10 }, updatedAt: daysAgo(10) },
+            { _id: '702', schemaVersion: 1, title: 'listSeenAt fresco, senza home', listSeenAt: daysAgo(0.1), sub: { season: 1, episode: 8 }, updatedAt: daysAgo(0.1) },
+            { _id: '703', schemaVersion: 1, title: 'updatedAt vecchio ma home confermata', updatedAt: daysAgo(25), homeReleases: { checkedAt: daysAgo(0.1), sub: { episode: 12, airedAt: daysAgo(1) }, dub: null } },
+            { _id: '704', schemaVersion: 1, title: 'aggiornato adesso ma senza home', updatedAt: daysAgo(2 / 24), sub: { season: 1, episode: 6 } },
+            { _id: '705', schemaVersion: 1, title: 'home confermata e listSeenAt vecchissimo', listSeenAt: daysAgo(20), homeReleases: { checkedAt: daysAgo(0.1), sub: { episode: 4, airedAt: daysAgo(0.4) }, dub: null } }
         ];
 
         const snapshot = animeAiringState.buildSnapshot(docs);
-        const entries = animeAiringState.getAiringEntries(snapshot, { now: NOW, freshnessHours: 12 });
+        const included = animeAiringState.getAiringEntries(snapshot, { now: NOW }).map((e) => e.doc.tmdbId);
 
-        expect(entries.map(e => e.doc.tmdbId)).toEqual(['101']);
-        expect(entries.find(e => e.doc.tmdbId === '102')).toBeUndefined();
-        expect(entries.find(e => e.doc.tmdbId === '103')).toBeUndefined();
+        expect(included).toContain('703');
+        expect(included).toContain('705');
+        expect(included).not.toContain('701');
+        expect(included).not.toContain('702');
+        expect(included).not.toContain('704');
+        // Ordine dalla fonte: 704 no; 705 (0.4 gg) prima di 703 (1 gg).
+        expect(included).toEqual(['705', '703']);
     });
 
-    test('regola di appartenenza listSeenAt (14 giorni) vs legacy (12h): 5 scenari del brief', () => {
-        const docs = [
-            // 1. Doc con listSeenAt di 10 giorni fa -> INCLUSO
-            {
-                _id: '501',
-                schemaVersion: 1,
-                title: 'ListSeen 10gg fa',
-                sub: { season: 1, episode: 10 },
-                listSeenAt: daysAgo(10),
-                updatedAt: daysAgo(10),
-                orderIndex: 0
-            },
-            // 2. Doc con listSeenAt di 20 giorni fa -> ESCLUSO
-            {
-                _id: '502',
-                schemaVersion: 1,
-                title: 'ListSeen 20gg fa',
-                sub: { season: 1, episode: 8 },
-                listSeenAt: daysAgo(20),
-                updatedAt: daysAgo(20),
-                orderIndex: 1
-            },
-            // 3. Doc legacy (solo updatedAt vecchio, senza listSeenAt) -> ESCLUSO
-            {
-                _id: '503',
-                schemaVersion: 1,
-                title: 'Legacy vecchio 3gg',
-                sub: { season: 1, episode: 5 },
-                updatedAt: daysAgo(3),
-                orderIndex: 2
-            },
-            // 4. Doc legacy aggiornato ora (senza listSeenAt, transizione) -> INCLUSO
-            {
-                _id: '504',
-                schemaVersion: 1,
-                title: 'Legacy fresco 2h',
-                sub: { season: 1, episode: 6 },
-                updatedAt: daysAgo(2 / 24),
-                orderIndex: 3
-            },
-            // 5. Doc in corso con listSeenAt recente ma updatedAt vecchio -> INCLUSO
-            {
-                _id: '505',
-                schemaVersion: 1,
-                title: 'ListSeen fresco ma updatedAt vecchio',
-                sub: { season: 1, episode: 12 },
-                listSeenAt: daysAgo(1),
-                updatedAt: daysAgo(25),
-                orderIndex: 4
-            }
-        ];
-
-        const snapshot = animeAiringState.buildSnapshot(docs);
-        const entries = animeAiringState.getAiringEntries(snapshot, { now: NOW, listWindowDays: 14, freshnessHours: 12 });
-        const includedIds = entries.map(e => e.doc.tmdbId);
-
-        // Casi inclusi: 501 (10gg fa), 504 (legacy 2h fa), 505 (listSeen 1gg fa con updatedAt 25gg fa)
-        expect(includedIds).toContain('501');
-        expect(includedIds).toContain('504');
-        expect(includedIds).toContain('505');
-
-        // Casi esclusi: 502 (20gg fa), 503 (legacy 3gg fa)
-        expect(includedIds).not.toContain('502');
-        expect(includedIds).not.toContain('503');
-
-        // Ordine: 505 (listSeenAt 1gg fa), 501 (listSeenAt 10gg fa), 504 (listSeenAt mancante, legacy 2h fa)
-        expect(includedIds).toEqual(['505', '501', '504']);
+    test('a parità di data l\'ordine è stabile (titolo), non un ordineIndex sparito', () => {
+        const stessoGiorno = (id, titolo, orderIndex) => ({
+            _id: id, schemaVersion: 1, title: titolo, orderIndex,
+            homeReleases: { checkedAt: daysAgo(0.1), sub: { episode: 1, airedAt: daysAgo(3) }, dub: null }
+        });
+        const snapshot = animeAiringState.buildSnapshot([
+            stessoGiorno('801', 'Zeta', 0),
+            stessoGiorno('802', 'Alfa', 9),
+            stessoGiorno('803', 'Mida', 4)
+        ]);
+        const entries = animeAiringState.getAiringEntries(snapshot, { now: NOW });
+        expect(entries.map((e) => e.doc.title)).toEqual(['Alfa', 'Mida', 'Zeta']);
     });
 
-    test('ordinamento getAiringEntries: airedAt decrescente vince su orderIndex; fallback su listSeenAt poi orderIndex', () => {
-        const docs = [
-            // Serie A: airedAt 10 giorni fa, orderIndex: 0 (in cima alla lista AnimeUnity)
-            {
-                _id: '1001',
-                schemaVersion: 1,
-                title: 'Aired 10gg fa, orderIndex 0',
-                sub: { season: 1, episode: 10, airedAt: daysAgo(10) },
-                listSeenAt: daysAgo(1),
-                orderIndex: 0,
-                updatedAt: daysAgo(1)
-            },
-            // Serie B: airedAt ieri (1 giorno fa), orderIndex: 5 (più in basso nella lista)
-            {
-                _id: '1002',
-                schemaVersion: 1,
-                title: 'Aired ieri, orderIndex 5',
-                sub: { season: 1, episode: 11, airedAt: daysAgo(1) },
-                listSeenAt: daysAgo(1),
-                orderIndex: 5,
-                updatedAt: daysAgo(1)
-            },
-            // Serie C: airedAt oggi su DUB (anche se SUB è vecchio) -> vince la più recente tra sub e dub
-            {
-                _id: '1003',
-                schemaVersion: 1,
-                title: 'Dub aired oggi, sub 12gg fa',
-                sub: { season: 1, episode: 8, airedAt: daysAgo(12) },
-                dub: { season: 1, episode: 6, airedAt: daysAgo(0.2) },
-                listSeenAt: daysAgo(1),
-                orderIndex: 8,
-                updatedAt: daysAgo(1)
-            },
-            // Serie D: airedAt mancante, ma listSeenAt fresco (2 giorni fa)
-            {
-                _id: '1004',
-                schemaVersion: 1,
-                title: 'Aired mancante, listSeen 2gg fa',
-                sub: { season: 1, episode: 1 },
-                listSeenAt: daysAgo(2),
-                orderIndex: 20,
-                updatedAt: daysAgo(2)
-            },
-            // Serie E: airedAt mancante, listSeenAt vecchio (8 giorni fa), orderIndex basso (1)
-            {
-                _id: '1005',
-                schemaVersion: 1,
-                title: 'Aired mancante, listSeen 8gg fa, orderIndex 1',
-                sub: { season: 1, episode: 2 },
-                listSeenAt: daysAgo(8),
-                orderIndex: 1,
-                updatedAt: daysAgo(8)
-            },
-            // Serie F: airedAt mancante, listSeenAt mancante, orderIndex 2
-            {
-                _id: '1006',
-                schemaVersion: 1,
-                title: 'Aired mancante, listSeen mancante, orderIndex 2',
-                sub: { season: 1, episode: 3 },
-                orderIndex: 2,
-                updatedAt: daysAgo(0.1)
-            },
-            // Serie G: airedAt mancante, listSeenAt mancante, orderIndex 9
-            {
-                _id: '1007',
-                schemaVersion: 1,
-                title: 'Aired mancante, listSeen mancante, orderIndex 9',
-                sub: { season: 1, episode: 4 },
-                orderIndex: 9,
-                updatedAt: daysAgo(0.1)
-            }
-        ];
-
-        const snapshot = animeAiringState.buildSnapshot(docs);
-        const entries = animeAiringState.getAiringEntries(snapshot, { now: NOW, listWindowDays: 14 });
-        const ids = entries.map(e => e.doc.tmdbId);
-
-        // 1. Serie con airedAt ordinate decrescente:
-        //    1003 (aired 0.2gg fa) > 1002 (aired 1gg fa) > 1001 (aired 10gg fa)
-        //    Nota che 1002 (ieri) PRECEDE 1001 (10gg fa) anche se 1001 ha orderIndex 0 vs 5!
-        expect(ids.slice(0, 3)).toEqual(['1003', '1002', '1001']);
-
-        // 2. Serie senza airedAt: fallback su listSeenAt decrescente:
-        //    1004 (listSeen 2gg fa) > 1005 (listSeen 8gg fa)
-        expect(ids.slice(3, 5)).toEqual(['1004', '1005']);
-
-        // 3. Serie senza airedAt e senza listSeenAt: fallback su orderIndex crescente:
-        //    1006 (orderIndex 2) > 1007 (orderIndex 9)
-        expect(ids.slice(5, 7)).toEqual(['1006', '1007']);
-    });
-
-    test('compatibilità: doc vecchi con episodes[] e freschi vengono inclusi da getAiringEntries', () => {
-        const fixtureDocs = buildFixtureDocs(); // 240411 ha updatedAt: daysAgo(0)
+    test('documento senza home ma con episodi freschi: il backfill continua a vederlo', () => {
+        const fixtureDocs = buildFixtureDocs();
         const snapshot = animeAiringState.buildSnapshot(fixtureDocs);
 
-        // Con getNoveltyEntries la serie 999001 (60 giorni fa) era esclusa
+        // Il backfill esclude 999001 (conclusa 60 giorni fa)...
         expect(animeAiringState.getNoveltyEntries(snapshot, WINDOW).map(e => e.doc.tmdbId)).not.toContain('999001');
-
-        // Dandadan (240411) è aggiornato a daysAgo(0), quindi è fresco ed entra in getAiringEntries
-        const airingEntries = animeAiringState.getAiringEntries(snapshot, { now: NOW });
-        expect(airingEntries.map(e => e.doc.tmdbId)).toContain('240411');
+        // ...e per il simulcast vale la home: 999001 non c'è, perché la fonte non la nomina.
+        expect(animeAiringState.getAiringEntries(snapshot, { now: NOW }).map(e => e.doc.tmdbId)).not.toContain('999001');
     });
 
     test('doc con episode: null gestito senza errori', () => {
@@ -662,6 +535,7 @@ describe('AnimeAiringState - lettura senza finestra e nuovi documenti (senza epi
             schemaVersion: 1,
             title: 'Ep Null',
             sub: { season: 1, episode: null },
+            homeReleases: { checkedAt: daysAgo(0.1), sub: null, dub: null },
             updatedAt: daysAgo(0.1)
         };
         const snapshot = animeAiringState.buildSnapshot([docNullEp]);
@@ -672,8 +546,9 @@ describe('AnimeAiringState - lettura senza finestra e nuovi documenti (senza epi
         expect(winInfo.hasSub).toBe(true);
         expect(winInfo.hasDub).toBe(false);
 
-        const cardInfo = animeAiringState.getCardInfo(doc);
-        expect(cardInfo.sub).toEqual({ season: 1, episode: null });
-        expect(cardInfo.dub).toBeNull();
+        // Un episodio che non esiste (null) non è un episodio di home: nessuna card.
+        expect(doc.home).toBeNull();
+        expect(animeAiringState.getCardInfo(doc)).toBeNull();
+        expect(animeAiringState.getAiringEntries(snapshot, { now: NOW })).toEqual([]);
     });
 });
