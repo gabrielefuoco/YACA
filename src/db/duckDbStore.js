@@ -2,6 +2,8 @@ const duckdb = require('duckdb');
 const path = require('path');
 const fs = require('fs');
 
+const TMDB_IMDB_CACHE_MAX = 500;
+
 class DuckDbStore {
     constructor() {
         this.db = null;
@@ -15,6 +17,10 @@ class DuckDbStore {
             
         this.moviesParquetPath = path.join(this.basePath, 'movies.parquet');
         this.tvParquetPath = path.join(this.basePath, 'tv.parquet');
+
+        // TMDB id → IMDb id letti dal dump: solo i risultati trovati (mai i "non trovato",
+        // così un titolo promosso a Tier 1 dopo è visibile subito).
+        this.tmdbImdbIdCache = new Map();
     }
 
     async init() {
@@ -233,6 +239,93 @@ class DuckDbStore {
             }
         }
         return mapping;
+    }
+
+    /**
+     * Risolve TMDB id → IMDb id leggendo la colonna `imdb_id` dei parquet (`movies`/`tv`).
+     *
+     * È il verso opposto di `resolveImdbIds`, e serve a non fare richieste di rete: se il titolo
+     * è nel dump (Tier 1) l'id IMDb è già qui, quindi non serve chiederlo a TMDB. Quando il
+     * titolo non c'è — cioè è la coda lunga — semplicemente non risponde, e il chiamante cade
+     * sulla strada che usava prima (cache `tmdb_imdb_id`, e rete solo se proprio serve).
+     *
+     * Non è una cache: se il titolo viene promosso a Tier 1 la risposta cambia subito, quindi
+     * qui si tengono solo gli id trovati (bounded), mai i "non trovato".
+     *
+     * @param {Array<string|number>} tmdbIds
+     * @param {'movie'|'tv'|'both'} [type] Tabella da leggere (default: entrambe).
+     * @returns {Promise<Record<string, string>>} `{ '<tmdbId>': 'tt…' }`
+     */
+    async resolveTmdbToImdb(tmdbIds, type = 'both') {
+        if (!Array.isArray(tmdbIds) || tmdbIds.length === 0) return {};
+
+        const wanted = type === 'movie' || type === 'tv' ? type : 'both';
+        const ids = Array.from(new Set(
+            tmdbIds
+                .map(raw => Number(String(raw ?? '').replace(/^tmdb:/i, '').trim()))
+                .filter(n => Number.isInteger(n) && n > 0)
+        ));
+        if (ids.length === 0) return {};
+
+        const mapping = {};
+        const tables = wanted === 'both' ? ['movies', 'tv'] : [wanted === 'movie' ? 'movies' : 'tv'];
+        const inList = ids.join(',');
+
+        for (const table of tables) {
+            // Senza parquet non c'è dump: si risponde vuoto **senza** inizializzare DuckDB,
+            // così questa strada non può costringere un cold start a un processo che
+            // del dump (per ora) non si serve.
+            const parquetPath = table === 'movies' ? this.moviesParquetPath : this.tvParquetPath;
+            if (!fs.existsSync(parquetPath)) continue;
+
+            const rows = await this.resolveTmdbToImdbUncached(table, inList);
+            for (const row of rows) {
+                const imdbId = row.imdb_id ? String(row.imdb_id).trim() : '';
+                if (!/^tt\d+$/.test(imdbId)) continue;
+                const key = String(Number(row.id));
+                if (!mapping[key]) {
+                    mapping[key] = imdbId;
+                    this.rememberTmdbImdbId(key, imdbId);
+                }
+            }
+        }
+
+        for (const id of ids) {
+            const key = String(id);
+            if (mapping[key]) continue;
+            const cached = this.tmdbImdbIdCache.get(key);
+            if (cached) mapping[key] = cached;
+        }
+
+        return mapping;
+    }
+
+    /**
+     * Lettura singola dal dump, con cache dei soli risultati trovati.
+     * @param {string} table `movies` o `tv`.
+     * @param {string} inList Lista di id già sanitizzata (interi separati da virgola).
+     * @returns {Promise<Array<{id: number, imdb_id: string}>>}
+     */
+    async resolveTmdbToImdbUncached(table, inList) {
+        const sql = `SELECT CAST(id AS BIGINT) AS id, imdb_id FROM ${table} WHERE id IN (${inList})`;
+        try {
+            const rows = await this.query(sql);
+            return Array.isArray(rows) ? rows : [];
+        } catch (err) {
+            // Dump vecchio senza la colonna `imdb_id`, tabella assente, parquet non
+            // caricato: degrado deciso, il chiamante cade sulla strada che usava prima.
+            console.warn('[DuckDbStore] resolveTmdbToImdb: lettura da', table, 'fallita:', err.message);
+            return [];
+        }
+    }
+
+    /** Cache bounded dei soli id trovati nel dump (bounded FIFO, come le altre mappe in RAM). */
+    rememberTmdbImdbId(key, imdbId) {
+        if (this.tmdbImdbIdCache.size >= TMDB_IMDB_CACHE_MAX) {
+            const oldest = this.tmdbImdbIdCache.keys().next().value;
+            if (oldest !== undefined) this.tmdbImdbIdCache.delete(oldest);
+        }
+        this.tmdbImdbIdCache.set(key, imdbId);
     }
 
     /**

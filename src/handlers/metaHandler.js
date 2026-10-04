@@ -5,6 +5,7 @@ const animeMappingStore = require('../data/animeMappingStore');
 const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
 const { schedulePromotion } = require('../db/tier1LazyPromotion');
 const { normalizeAnimeMarker, extractAnimeTmdbId } = require('../utils/animeIdentity');
+const duckDbStore = require('../db/duckDbStore');
 const itaAnnotations = require('../data/itaAnnotations');
 
 // Cache per l'oggetto meta finale combinato
@@ -259,18 +260,23 @@ function alignVideoIdsToRequestedForm(meta, requestedId, imdbIdPerEpisodi) {
 }
 
 /**
- * Id IMDb del titolo per gli id degli episodi, dalla cache dedicata `tmdb_imdb_id`
- * (`resolveImdbId`: una chiamata ogni 7 giorni per titolo, e la negativa pure).
+ * Id IMDb del titolo per gli id degli episodi, prima dal dump e poi dalla cache dedicata.
  *
- * NON `external_ids`: quelli arrivano dentro i dettagli TMDB (`append_to_response`), che
- * vengono chiesti **solo a cache dei dettagli vuota** — dalla seconda richiesta in poi la
- * scheda non li porta più. È la trappola che ha fatto restare gli episodi in forma `tmdb:`
- * anche quando l'id IMDb c'era. Qui la fonte è una cache dedicata all'id IMDb: se c'è, c'è
- * sempre (anche se è "non c'è", per 7 giorni).
+ * L'ORDINE È IL PUNTO. Prima `resolveImdbId`, cioè la cache `tmdb_imdb_id`, che al primo giro
+ * chiama TMDB via rete (`/external_ids`). Ma il dump ha già la colonna `imdb_id`: se il titolo
+ * è in Tier 1 l'id è lì, e chiederlo alla rete è una richiesta che il dump rende inutile
+ * (che è il motivo per cui il dump esiste: *non* dover fare mai richieste di rete). Quindi:
  *
- * Degrada a `null` (⇒ la forma della richiesta resta) quando l'id non è noto, quando non
- * c'è nulla da riscrivere (nessun episodio, anime, richiesta già in forma IMDb) e quando la
- * risoluzione solleva: la risposta non deve mai dipendere da una rete.
+ *   1. dump (DuckDB, `movies`/`tv`, colonna `imdb_id`) → zero rete per i titoli di Tier 1;
+ *   2. cache `tmdb_imdb_id` + rete, solo per la coda lunga (Tier 2, non nel dump).
+ *
+ * Entrambe le strade degradano a `null` senza mai far fallire la risposta: se il dump non c'è,
+ * se la cartella non esiste, se la colonna manca o se la query solleva, si comporta come prima.
+ *
+ * NON `external_ids` dai dettagli TMDB: quelli arrivano dentro `append_to_response`, chiesti
+ * **solo a cache dei dettagli vuota** — dalla seconda richiesta in poi la scheda non li porta
+ * più. È la trappola che ha fatto restare gli episodi in forma `tmdb:` anche quando l'id IMDb
+ * c'era.
  *
  * @param {Object} meta Scheda (non viene mutata).
  * @param {Object} params
@@ -291,12 +297,100 @@ async function resolveImdbIdPerEpisodi(meta, { requestedId, tmdbId, type, apiKey
     if (typeof requestedId === 'string' && requestedId.startsWith('tt')) return null;
     if (!tmdbId) return null;
 
+    // 1) Il dump: nessuna rete quando il titolo è in Tier 1.
+    const dalDump = await resolveImdbIdFromDump(tmdbId, type);
+    if (dalDump) return dalDump;
+
+    // 2) Coda lunga (Tier 2): cache dedicata, e rete solo se proprio non c'è.
     try {
         const imdbId = await resolveImdbId(String(tmdbId), type === 'movie' ? 'movie' : 'tv', apiKey);
         return typeof imdbId === 'string' && imdbId.startsWith('tt') ? imdbId : null;
     } catch (_e) {
         return null;
     }
+}
+
+/**
+ * Id IMDb di un titolo letto dal dump (parquet DuckDB, colonna `imdb_id`).
+ * `null` quando il titolo non è nel dump, quando il dump non è disponibile, o quando la
+ * lettura solleva: in tutti e tre i casi il chiamante cade sulla strada di prima.
+ *
+ * @param {string|number} tmdbId
+ * @param {string} type `movie` o `series`.
+ * @returns {Promise<string|null>} Id IMDb (`tt…`) o `null`.
+ */
+async function resolveImdbIdFromDump(tmdbId, type) {
+    try {
+        if (!duckDbStore || typeof duckDbStore.resolveTmdbToImdb !== 'function') return null;
+        const mapping = await duckDbStore.resolveTmdbToImdb([String(tmdbId)], type === 'movie' ? 'movie' : 'tv');
+        if (!mapping || typeof mapping !== 'object') return null;
+        const imdbId = mapping[String(tmdbId)] ?? mapping[String(Number(tmdbId))];
+        return typeof imdbId === 'string' && imdbId.startsWith('tt') ? imdbId : null;
+    } catch (_e) {
+        return null;
+    }
+}
+
+/**
+ * La lista episodi che vede Stremio: nessun episodio imposto, gli speciali in fondo.
+ *
+ * 1. **NESSUN `defaultVideoId` sulle serie.** Decisione testuale dell'umano: «stremio non deve
+ *    aprirmi nessun episodio quando apro una serie. deve darmi la lista e basta. è l'user che
+ *    sceglie che episodio vedere». Oggi nessun codice lo scrive sulle serie (solo sui film, dove
+ *    il video è uno solo e non è una scelta): qui non lo si scrive e, se una voce di cache ne
+ *    portasse uno (entry vecchia, o altro writer), sulla **copia** di risposta viene tolto.
+ * 2. **Gli speciali (stagione 0) in fondo alla lista**, non tolti. `fetchTmdbEpisodes` riempie
+ *    le stagioni in ordine 0..N, quindi la lista comincia dagli speciali — misurato su dati
+ *    veri il 03/10/2026: Game of Thrones ha 314 voci in stagione 0, Friends 39 su 267. Sono in
+ *    gran parte duplicati e robaccia, e finivano in cima. Non è che gli speciali siano sbagliati:
+ *    è che sono la coda, non l'inizio. Stremio raggruppa per stagione, quindi per chi cerca
+ *    davvero uno speciale la sua posizione in coda non cambia nulla (sono lì, etichettati
+ *    "Stagione 0"); l'ordine conta per il primo elemento della lista, che è quello che Stremio
+ *    aprirebbe in mancanza di un default.
+ *
+ * L'ordine relativo di tutto il resto è invariato: è una partizione stabile, non un sort.
+ * I film non hanno video e non ci passano; gli anime sono esclusi perché il loro percorso
+ * (`kitsu:`) funziona e l'ordine di oggi è voluto.
+ *
+ * ATTENZIONE — la trappola: `meta.videos` è l'array conservato in cache (`tvEpisodesCache`, e
+ * dentro `finalMetaCache`). Qui si costruisce un array NUOVO con gli stessi oggetti video:
+ * nessuna scrittura, quindi la cache resta quella di prima.
+ *
+ * @param {Object} meta Scheda (non viene mutata).
+ * @param {Object} params
+ * @param {string} params.type Tipo della scheda.
+ * @param {boolean} params.isAnime Se la scheda è un anime (percorso Kitsu: da lasciare com'è).
+ * @returns {Object} Scheda pronta per la risposta.
+ */
+function preparaListaEpisodi(meta, { type, isAnime }) {
+    if (!meta || type !== 'series' || isAnime) return meta;
+
+    let risposta = meta;
+
+    // Nessun episodio imposto: se la voce di cache porta un `defaultVideoId` (non dovrebbe,
+    // sulle serie non lo scrive nessuno) la risposta non lo espone — è la copia, quindi
+    // l'oggetto in cache non viene toccato.
+    if (risposta.behaviorHints && risposta.behaviorHints.defaultVideoId !== undefined) {
+        const behaviorHints = { ...risposta.behaviorHints };
+        delete behaviorHints.defaultVideoId;
+        risposta = { ...risposta, behaviorHints };
+    }
+
+    const videos = risposta.videos;
+    if (!Array.isArray(videos) || videos.length < 2) return risposta;
+
+    const normali = [];
+    const speciali = [];
+    for (const video of videos) {
+        const season = video && video.season !== undefined && video.season !== null ? Number(video.season) : null;
+        (season === 0 ? speciali : normali).push(video);
+    }
+
+    // Nessuno speciale da spostare, o lista composta solo da speciali (l'ordine non cambierebbe):
+    // si restituisce la scheda com'è, senza copie inutili.
+    if (speciali.length === 0 || normali.length === 0) return risposta;
+
+    return { ...risposta, videos: [...normali, ...speciali] };
 }
 
 /**
@@ -352,7 +446,12 @@ function buildResponseMeta(cachedMeta, { requestedId, originalId, type, imdbIdPe
     // Gli id degli episodi vanno in forma IMDb (`tt…:S:E`) quando l'id IMDb è noto; altrimenti
     // restano nella forma della richiesta. `meta.id` invece non si tocca: resta quella della
     // richiesta, perché su quell'id Stremio tiene libreria e stato "visto" del titolo.
-    return alignVideoIdsToRequestedForm(risposta, requestedId, imdbIdPerEpisodi);
+    const allineata = alignVideoIdsToRequestedForm(risposta, requestedId, imdbIdPerEpisodi);
+
+    // Sui film `defaultVideoId` è il film stesso (c'è un video solo, non è una scelta: lasciare
+    // il campo vuoto aprirebbe un id diverso da quello su cui è costruita la scheda). Sulle
+    // serie la decisione è l'opposta: nessun episodio imposto, e gli speciali in fondo alla lista.
+    return preparaListaEpisodi(allineata, { type, isAnime: risposta._isAnime === true });
 }
 
 /**
@@ -535,6 +634,7 @@ module.exports = {
     isMetaDubbed,
     applyKitsuMappingToMeta,
     alignVideoIdsToRequestedForm,
+    preparaListaEpisodi,
     buildResponseMeta,
     getKitsuMappingStats,
     resetKitsuMappingStats
