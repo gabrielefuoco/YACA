@@ -306,7 +306,10 @@ function pianoDaDocumenti(docs, mappingStore) {
 function riepilogo(piano) {
     const daScrivereTotale = (piano.daScrivere.movie || 0) + (piano.daScrivere.tv || 0);
     const giaTotale = (piano.giaDichiarati.movie || 0) + (piano.giaDichiarati.tv || 0);
-    const restanoSenza = piano.totale - giaTotale - daScrivereTotale - piano.campoNonValido - piano.idNonValido - piano.bloccati;
+    // "Restano senza" = dopo il giro non avranno un tipo che a valle venga riconosciuto. Ci
+    // finiscono anche il campo non valido e i bloccati, ed è per questo che le tre righe sotto
+    // dicono chi sono: un numero solo, senza le sue tre righe, sarebbe una bugia di comodo.
+    const restanoSenza = piano.totale - giaTotale - daScrivereTotale;
     const L = [];
     L.push('─'.repeat(72));
     L.push(`[Backfill mediaType] documenti letti: ${piano.totale}`);
@@ -483,10 +486,12 @@ async function caricaStoreMappa(log = console.log) {
  * (mappa non pronta, scritture fallite, URI mancante). Il silenzio non è mai un successo.
  *
  * @param {string[]} argv
- * @param {{env?: object}} [ambiente] Per i test: `{ MONGODB_URI, noMongo: true }`.
+ * @param {{env?: object, store?: object, collection?: object}} [dipendenze]
+ *   Test: `env` (senza `MONGODB_URI` lo script esce 1), `store` (mappa iniettata, niente rete)
+ *   e `collection` (Mongo finto, niente connessione). In produzione i due non si passano.
  * @returns {Promise<number>}
  */
-async function main(argv = process.argv.slice(2), ambiente = {}) {
+async function main(argv = process.argv.slice(2), dipendenze = {}) {
     let opts;
     try {
         opts = parseArgs(argv);
@@ -508,16 +513,16 @@ Opzioni:
         return 0;
     }
 
-    const envPath = trovaEnv(opts.env);
-    const env = ambiente.noMongo ? ambiente : { ...process.env };
-    if (!ambiente.noMongo && envPath) {
+    const iniettato = Boolean(dipendenze.store || dipendenze.collection);
+    const envPath = iniettato ? null : trovaEnv(opts.env);
+    const env = dipendenze.env || process.env;
+    if (!iniettato && envPath) {
         require('dotenv').config({ path: envPath });
-        Object.assign(env, process.env);
         console.log(`[Backfill mediaType] .env: ${envPath}`);
     }
 
-    const uri = opts.mongoUri || ambiente.MONGODB_URI || env.MONGODB_URI || env.MONGO_URI || null;
-    if (!uri && !ambiente.noMongo) {
+    const uri = opts.mongoUri || env.MONGODB_URI || env.MONGO_URI || null;
+    if (!uri && !dipendenze.collection) {
         console.error('[Backfill mediaType] MONGODB_URI non trovata: passo --env=/percorso/.env (o --mongo-uri).');
         return 1;
     }
@@ -525,22 +530,32 @@ Opzioni:
     console.log(`[Backfill mediaType] MODALITÀ: ${opts.apply ? '⚠️  APPLICAZIONE (scrive)' : '🔍 DRY-RUN (non scrive nulla)'}`);
 
     // 1. La mappa prima di tutto: senza mappa non c'è una decisione, solo un'uscita 1.
-    const store = await caricaStoreMappa();
+    let store = dipendenze.store || null;
+    if (!store) {
+        try {
+            store = await caricaStoreMappa();
+        } catch (err) {
+            console.error(`[Backfill mediaType] ${err.message}`);
+            return 1;
+        }
+    }
 
     // 2. I documenti. Lettura e basta: il driver nativo sulla connessione mongoose è quello che
     //    usa anche `src/data/animeAiringState.js`, e qui non si definisce nessun model (gli `_id`
     //    sono stringa e nessun casting serve).
     let mongoose;
-    let collection;
+    let collection = dipendenze.collection || null;
     let connessioneAperta = false;
     try {
-        mongoose = require('mongoose');
-        if (mongoose.connection && mongoose.connection.readyState === 1) {
-            collection = mongoose.connection.db.collection(COLLECTION_NAME);
-        } else {
-            await mongoose.connect(uri, { serverSelectionTimeoutMS: opts.timeoutMs });
-            connessioneAperta = true;
-            collection = mongoose.connection.db.collection(COLLECTION_NAME);
+        if (!collection) {
+            mongoose = require('mongoose');
+            if (mongoose.connection && mongoose.connection.readyState === 1) {
+                collection = mongoose.connection.db.collection(COLLECTION_NAME);
+            } else {
+                await mongoose.connect(uri, { serverSelectionTimeoutMS: opts.timeoutMs });
+                connessioneAperta = true;
+                collection = mongoose.connection.db.collection(COLLECTION_NAME);
+            }
         }
     } catch (err) {
         console.error(`[Backfill mediaType] Connessione Mongo fallita: ${err.message}`);
