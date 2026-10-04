@@ -70,6 +70,11 @@ Tre confini da non confondere:
 
 `typeSelectors` finisce nella chiave di cache della richiesta: senza, due profili con selettori diversi si servirebbero a vicenda lo stesso catalogo.
 
+> [!WARNING]
+> **Come una nuova impostazione di profilo arriva al backend — e perché non dà errori.** `settings.typeSelectors` (e qualunque `settings.*` futuro) attraversa due mappe *allow-list* scritte a mano in [frontend/src/lib/utils.ts](../frontend/src/lib/utils.ts): `profilesToApiPayload()` in scrittura e `mapBackendProfile()` in lettura. Un campo assente da una delle due **non solleva nulla**: il backend non lo vede e il sintomo è «ho spuntato Solo Anime, il manifest è identico». Il lato server è innocente — `profileProcessor` salva `settings` con uno spread (`{...(input.settings || {})}`) e filtra con `isCatalogConformant()` — quindi se i selettori non arrivano il bug è *sempre* da quel lato, mai da `catalogKind.js`.
+>
+> La verifica pronta (compila il `utils.ts` reale, chiama le due funzioni e poi confronta il manifest sui due casi) è `node scripts/qa/verifyTypeSelectors.js --base-url http://127.0.0.1:7032 --frontend-utils frontend/src/lib/utils.ts --strict-pass`, descritta in [TESTING_UTILITIES.md §3](TESTING_UTILITIES.md#verifytypeselectorsjs). Aggiungere un campo nuovo vuol dire aggiungerlo **a entrambe** le mappe e passare da quella verifica.
+
 > [!NOTE]
 > Non esiste più il filtro «già visti» (`hideWatched`): era applicato solo ad alcuni percorsi e non scriveva mai il proprio flag, quindi era codice morto al 100%. Con la sua rimozione è sparito anche il refill multi-pagina dei provider, e il dedup residuo è **namespace-aware** (`getBaseId` in `contentId.js`: `kitsu:1100` ≠ `tmdb:1100`, cosa che `normalizeContentId` non distingue perché taglia i prefissi).
 
@@ -156,8 +161,11 @@ Per evitare di superare i rate limit delle API esterne (TMDB, Kitsu, Trakt) e ga
 
 | Tier | Tecnologia | Scopo | Durata Tipica |
 | :--- | :--- | :--- | :--- |
-| **L1 (Local RAM)** | LRU Cache in memoria | Evitare letture da Database per le richieste calde e ravvicinate. | 10 Minuti |
-| **L2 (Database)** | MongoDB (`CacheEntry`) | Persistenza distribuita dei cataloghi elaborati e dei mapping di ID. | 24 Ore |
+| **L1 (Local RAM)** | LRU Cache in memoria | Evitare letture dal backend per le richieste calde e ravvicinate. | 10 Minuti |
+| **L2 (Distribuito)** | **Redis** (`redisClient`, chiave `namespace:key`) | Persistenza dei cataloghi elaborati e dei mapping di ID fra istanze e riavvii. | 24 Ore |
+
+> [!IMPORTANT]
+> **La L2 è Redis, non MongoDB.** La cache su `CacheEntry` è stata dismessa: misurato su Atlas il 20/09/2026, le collection `caches`, `imagecaches` e `cacheentries` erano tutte a **0 documenti**, mentre il `CacheManager` scrive e legge solo Redis. Ogni riferimento a «L2 = MongoDB / TTL Index» in questo documento o in appunti precedenti descrive un mondo che non esiste più; i TTL vivono in `CacheManager._getRedisKey` + `EXPIRE`, e in RAM per la L1.
 
 ### Meccanismi di Protezione Avanzati:
 

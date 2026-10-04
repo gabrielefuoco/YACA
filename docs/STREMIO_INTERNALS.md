@@ -87,7 +87,10 @@ Nel proxy dei flussi ([streamHandler.js](../src/handlers/streamHandler.js)), sor
 ## 3. Workaround per le Limitazioni di Stremio
 
 ### A. Paginazione Dinamica (Skip e Lookahead)
-Stremio richiede i cataloghi in blocchi paginati trasmettendo il parametro `skip` (in multipli di 20, es: `skip=20`, `skip=40`). 
+Stremio richiede i cataloghi in blocchi paginati trasmettendo il parametro `skip`. La **pagina canonica del client è 100** (`CATALOG_PAGE_SIZE` in `stremio-core/src/constants.rs`, letto da fonte primaria il 20/09/2026) e vale una regola che spiega metà dei comportamenti surprising di YACA: **una risposta con meno di 100 elementi è letta come "catalogo finito"** e Stremio smette di chiedere.
+
+YACA invece ragiona su una pagina di **20** (`ITEMS_PER_PAGE` in [src/config.js](../src/config.js), `PRESET_PAGE_SIZE` in [CatalogRouter.js](../src/catalog/CatalogRouter.js), `WATCHLIST_PAGE_SIZE`, `PAGE_SIZE` della Universal Pipeline). Tradotto: sui cataloghi che rispondono 20 — preset, hero, watchlist, ricerca, simulcast — `skip` non viene mai esercitato, perché Stremio considera finita la pagina alla prima. Solo il percorso DuckDB «non preset», che passa `limit = 100` ([CatalogRouter.js](../src/catalog/CatalogRouter.js#L84)), può effettivamente scorrere. Non è un bug da correggere d'ufficcio: la pagina restituita è già il prodotto finito del motore, ed è la scelta che tiene la cache L1 utile. Ma se un giorno un catalogo deve scorrere, il numero da allineare è **100**, non 20.
+
 Le API di TMDB richiedono invece il parametro `page` (base 1, 20 elementi per pagina).
 - **Problema**: L'interleaving e il consensus scoring richiedono i dati di più query contemporaneamente. Se richiedessimo una sola pagina per ciascuna query, l'intersezione o l'alternazione potrebbe non produrre abbastanza elementi univoci per riempire la pagina da 20 elementi richiesta da Stremio, provocando cataloghi "troncati" o vuoti.
 - **Soluzione**: Quando `skip === 0` (caricamento iniziale della prima pagina), YACA attiva il **Lookahead** nella Universal Pipeline, scaricando in parallelo fino a **3 pagine TMDB** (valore definito da `PAGES_PER_REQUEST` in [src/config.js](../src/config.js)) per ogni query attiva. I risultati vengono fusi, ordinati e solo i primi 20 elementi finali vengono ritornati a Stremio. Per le pagine successive (`skip > 0`), viene scaricata una sola pagina per query per minimizzare la latenza.
@@ -95,6 +98,67 @@ Le API di TMDB richiedono invece il parametro `page` (base 1, 20 elementi per pa
 ### B. Protezione e Controllo dell'URL di Installazione
 Stremio apre l'interfaccia di configurazione cliccando sull'icona dell'ingranaggio dell'addon installato inviando una chiamata a `/:userHandle/configure`. 
 Per evitare leak del token dell'utente (UUID) nei log o nei referral del browser, l'endpoint `/:userHandle/configure` in [stremio.js](../src/api/stremio.js) intercetta la chiamata e reindirizza immediatamente l'utente all'interfaccia frontend protetta (`FRONTEND_URL`), dove la sessione viene convalidata in modo sicuro tramite JWT (JSON Web Token).
+
+### C. Il tetto di 8 KB del manifest — l'unico limite che YACA non presidia
+
+Il protocollo ha un tetto rigido: **il manifest serializzato non può superare 8192 byte**. L'SDK ufficiale (`stremio-addon-sdk/src/builder.js`) lo controlla e *lancia* un errore. Il tetto esiste anche lato backend Stremio, ed è quello che morde davvero: `updateStremioAddonCollection` chiama `POST /api/addonCollectionSet` ([src/utils/stremioAddon.js](../src/utils/stremioAddon.js#L124)) e se il descriptor eccede la quota riceve `{"error":"Max descriptor size reached"}` — l'addon semplicemente **non viene salvato** nell'account, senza alcun messaggio utile lato YACA.
+
+YACA non usa l'SDK (Express nativo), quindi **non esiste nessun guard**: oggi il tetto si scopre solo quando il sync dell'account fallisce. I pesi reali misurati il 20/09/2026 (`JSON.stringify` + `Buffer.byteLength` sul manifest simulato di `src/api/stremio.js`):
+
+| Voce | Byte |
+|---|---|
+| boilerplate del manifest, 0 cataloghi | 654 |
+| catalogo base con `extra: [{name:'skip'}]` | ~95 |
+| catalogo preset con selettore di ordinamento + `skip` | ~204 |
+
+| Preset attivi | Cataloghi | Byte | Oltre 8192? |
+|---|---|---|---|
+| 7 (**default YACA**) | 23 | 3.936 | no |
+| 20 | 36 | 6.680 | no |
+| 27 | 43 | 8.181 | no |
+| **28** | 44 | **8.382** | **sì** |
+| 160 (tutti) | 176 | 37.049 | sì |
+
+(I conteggi includono la base di 16 cataloghi di allora: oggi la base fissa è 7 — 2 ricerca TMDB, 2 ricerca AI, 3 watchlist — più fino a 8 hero, quindi ~100 byte in meno.)
+
+La regola operativa: **oltre ~25 preset selezionati il manifest va tenuto sotto il tetto con un guard esplicito**, non sperando che l'utente non arrivedi. Il default (7 preset, 3,9 KB) sta a metà strada: c'è margine per il caso normale, nessuno per «ho selezionato tutto».
+
+### D. Mai un 4xx su una risorsa: le risposte vuote sono HTTP 200
+
+Un catalogo, un meta o uno stream senza risultati si rispondono **sempre con 200** e il payload vuoto (`{metas: []}`, `{meta: null}`, `{streams: []}`). Un 4xx/5xx viene interpretato dal client come *addon rotto* e mostra un banner rosso, disaccoppiando l'addon per qualche tempo.
+
+YACA è conforme: `handle` sconosciuto, contenuto assente ed eccezione runtime producono tutti 200 con payload vuoto ([stremio.js](../src/api/stremio.js#L413), `:447`, `:486`, e il `catch` del catalogo). L'unica risposta non-200 del protocollo è il **manifest** con handle sconosciuto (400, `stremio.js:389`).
+
+Lo stesso vale per la cache: i valori di `Cache-Control` sono in **secondi** (`max-age=60` = un minuto), e `stale-while-revalidate` / `stale-if-error` **non vengono mai emessi**: lo SWR di YACA è interamente interno (L1 RAM + L2 Redis), il client e i proxy davanti non lo vedono.
+
+### E. `anime` e `other`: tipi legali ma assenti dal TypeScript ufficiale
+
+`manifest.types` è un `Vec<String]` in `stremio-core` e l'esempio del doctest ufficiale è `["anime","series","movies"]`; il linter non controlla l'appartenenza a un set chiuso. Non compaiono però nell'union `ContentType` del pacchetto npm, quindi un addon che li dichiara è formalmente "fuori standard" e funziona: [stremio.js](../src/api/stremio.js#L373) dichiara `['movie','series','anime','other']` senza problemi.
+
+La conseguenza pratica va ricordata quando si aggiunge un tipo: **Cinemeta risponde solo a `movie` e `series`**, quindi per `anime`/`other` i metadati devono arrivare da YACA; e per lo streaming i prefissi sono quelli del provider (`kitsu:`, `tt`), non `tmdb:` — vedi §2.
+
+### F. Il manifest dinamico e la sua riconciliazione all'avvio
+
+Stremio conserva il manifest che ha scaricato quando l'addon è stato installato: cambiare i preset non aggiorna nulla finché **l'URL di installazione non cambia**. Ecco perché l'URL è `${HOST_URL}/{userId}/{configVersion}/manifest.json` e `configVersion` è un `nanoid(8)` ([configure/index.js](../src/api/configure/index.js#L127)) usato come cache-buster puro.
+
+Il bump non è affidato a chi salva: all'avvio `reconcileManifests()` ([manifestReconciler.js](../src/utils/manifestReconciler.js)) confronta l'impronta salvata con quella di adesso e, se differisce, rigenera `configVersion`, mette `pendingStremioResync = true` e chiama `updateStremioAddonCollection`. L'impronta ([manifestFingerprint.js](../src/utils/manifestFingerprint.js)) copre solo ciò che cambia il manifest pubblico — `activeProfileId`, i profili proiettati su (id, nome, `selectedPresets`, ordine cataloghi, cataloghi con `id/name/type/isAnime/mergedFrom`, `typeSelectors`, `kidsMode`), i custom e una **firma delle definizioni** (id/nome/tipo di hero e preset). Segreti, DNA, pesi di scoring e filtri dei cataloghi sono esclusi apposta: non cambiano il manifest e non devono invalidare nulla.
+
+Tre conseguenze pratiche:
+
+1. **Rinominare un preset o un hero invalida il manifest di tutti gli utenti** (cambia la `definitionsSignature`), non solo del proprio. È il prezzo dell'automazione: senza, il rename resterebbe invisibile fino a un salvataggio manuale.
+2. **L'ordine degli array conta, l'ordine delle chiavi no**: `catalogOrder` e `selectedPresets` sono preservati, `Object.keys` sono ordinati in canonico.
+3. **Il resync è ritentato, non perso**: se `updateStremioAddonCollection` fallisce il flag resta `true` e si riprova al prossimo avvio. Tutto il percorso è mai-fatale e si disattiva con `DISABLE_MANIFEST_RECONCILE=1`.
+
+Contratti coperti da [manifestFingerprint.test.js](../tests/manifestFingerprint.test.js) e [manifestReconciler.test.js](../tests/manifestReconciler.test.js).
+
+### G. Chi è `userHandle`: due tabelle, un solo handle
+
+Ogni route di protocollo è `/:userHandle/...` e `resolveUserConfig(handle)` ([UserConfig.js](../src/models/UserConfig.js#L301-L319)) accetta **due identificatori diversi** per la stessa persona, in quest'ordine:
+
+1. **`addonUuid`** — UUID v4 dell'`AddonConfig`, il documento **anonimo** che contiene profili, cataloghi, DNA e scelte UI (e non contiene `userId`);
+2. **`userId`** — NanoID dell'`UserAccount`, che porta le credenziali private (authKey Stremio, token Trakt, chiavi TMDB/Mistral) e un puntatore `addonUuid`.
+
+È la separazione *Two-Table Split*: il manifest e i cataloghi si possono servire da una tabella che non contiene nessun segreto, mentre le chiavi restano nell'altra. Due conseguenze pratiche: un `/:userHandle/manifest.json` può essere messo in cache o condiviso senza esporre credenziali, e l'URL d'installazione può cambiare forma (`/{userId}/{configVersion}/manifest.json`) senza toccare l'anonimato dell'`AddonConfig`.
 
 ---
 
