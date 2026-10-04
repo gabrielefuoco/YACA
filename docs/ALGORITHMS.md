@@ -47,8 +47,7 @@ La fusione è in [dnaExtractor.js](../src/utils/dnaExtractor.js#L160-L212) e avv
 > [!NOTE]
 > **Casi degenere**: se uno solo dei due vettori è non vuoto, quello prende il peso $1.0$ e l'altro $0$; se sono entrambi vuoti `V_final` è `{}`. Un profilo con `V_final` vuoto è un profilo *freddo*: non è un errore, cambia il comportamento di scoring (§2) e va trattato come tale nei test.
 
-> [!WARNING]
-> ~~Curva lineare $W_{active} = \min(T/50, 1)\cdot 0.85$~~ — **valido fino al 2026-09-24, obsoleto da allora**. Il codice applica la curva $0.85\,T/(T+50)$; la formula lineare è stata sostituita insieme alla rimozione degli assi autoriali.
+> ~~Curva lineare $W_{active} = \min(T/50, 1)\cdot 0.85$~~ — **non corrisponde al codice**. Il codice applica la curva $0.85\,T/(T+50)$; la formula lineare è stata sostituita insieme alla rimozione degli assi autoriali. Se la trovi altrove (wiki, appunti, ticket), è superata.
 
 ---
 
@@ -63,9 +62,9 @@ Per ovviare ai limiti di latenza imposti dalle API esterne di TMDB durante la sc
 graph TD
     A[Pool Iniziale di Candidati DuckDB/Parquet] --> B["Tier 1: calculateLightScore (in RAM)"]
     B --> C[Taglio selettivo sul pool del catalogo]
-    C --> D["Tier 2: calculateItemMatch"]
-    D --> E[Arricchimento Istantaneo da Parquet/DuckDB]
-    E --> F[Curva log tematica + cap di diversità]
+    C --> E[Arricchimento Istantaneo da Parquet/DuckDB]
+    E --> D["Tier 2: calculateItemMatch"]
+    D --> F[Curva log tematica + cap di diversità]
     F --> G[Penalità Impressioni]
     G --> H[Ordinamento Finale & Cache Redis L2]
 ```
@@ -96,7 +95,7 @@ Presente in **entrambi** i tier, con soglie diverse. In Tier 1 un genere dell'it
 Viene applicato solo ai sopravvissuti del Tier 1.
 1.  **Arricchimento metadati a zero latenza**: Recupera le keyword esatte, crediti (regista e primi 5 attori) e parametri tematici direttamente dal database locale Parquet tramite il motore in-memory **DuckDB** (`DuckDbProvider.js`). Il modello legacy `TmdbScoringData` su MongoDB e le chiamate dirette all'API TMDB per lo scoring sono stati completamente dismessi: il dataset locale offre dati completi a zero chiamate esterne e latenza < 10ms.
 2.  **Calcolo Affinità Completa** (`ProfileScorer.calculateItemMatch`), in quest'ordine:
-    *   **Score tematico con curva logaritmica** (soft-cap): la somma grezza dei pesi di generi e keyword viene passata da $S$ a $S_{scored}$ con $$S_{scored} = 10.0 \cdot \left(1 - e^{-S/20}\right)$$, così il punteggio satura verso 10 senza che un solo tema dominante lo faccia esplodere. Se il profilo ha dei **cluster** (`V_clusters`), lo score è il massimo pesato per massa fra i cluster ([ProfileScorer.js](../src/profile/ProfileScorer.js#L190-L209)).
+    *   **Score tematico con curva logaritmica** (soft-cap): la somma grezza dei pesi di generi e keyword viene passata da $S$ a $S_{scored}$ con $$S_{scored} = 10.0 \cdot \left(1 - e^{-S/20}\right)$$, così il punteggio satura verso 10 senza che un solo tema dominante lo faccia esplodere. Se il profilo ha dei **cluster** (`V_clusters`), lo score è il massimo pesato per massa fra i cluster ([ProfileScorer.js](../src/profile/ProfileScorer.js#L190-L208)).
     *   ~~Asi Tematici (98%) + Asi Autoriali (2%)~~ → **non esistono più assi autoriali**: registi e cast non entrano nel DNA (§1) e il codice lo dichiara esplicitamente ([ProfileScorer.js](../src/profile/ProfileScorer.js#L232-L233)). Il genre/keyword è l'unico segnale del profilo.
     *   **Moltiplicatore DNA**: se sono stati impostati filtri DNA manuali e l'item non ne rispetta *nessuno*, il punteggio viene abbattuto a $0.1\times$ (`computeDnaMultiplier`).
     *   **Moltiplicatore anime**: in base alla politica del profilo (§7), da $0.40$ a $1.25$.
@@ -124,7 +123,7 @@ Dove:
 Lo score finale fonde l'affinità calcolata dall'utente con la qualità bayesiana dell'opera secondo i pesi definiti nel profilo (es. `traktWeight` per l'affinità, `tmdbWeight` per la qualità globale).
 
 > [!NOTE]  
-> **DuckDB: due formule diverse, non confonderle.** Il preset nativi (`DuckDbProvider.js`) non delegano *questa* formula a DuckDB: l'ordinamento `S.BAYESIAN` è un altro prodotto, `vote_average * LOG10(vote_count)`, pensato per ordinare in modo monotono senza sanzione per i titoli poco votati ([filters.js](../src/data/filters.js#L127), `:144`). La forma a media pesata vera e propria è `S.QUALITY`: $$Q = \frac{R \cdot v + m \cdot C}{v + m} \quad (m = 500,\; C = 6.8)$$ con la popolarità come tie-breaker ([filters.js](../src/data/filters.js#L131), `:146`). **I due parametri sono diversi da quelli di Node**: $m = 500$ / $C = 6.8$ in SQL contro $m = 300$ / $C = 6.5$ in `src/config.js`. Il commento nel codice spiega la scelta di `QUALITY`: *un 8.9 con 1.100 voti non deve battere un 8.4 con 24.000*. La formula di Node resta quella di IMDb e gira solo sui candidati già filtrati.
+> **DuckDB: due formule diverse, non confonderle.** I preset nativi (`DuckDbProvider.js`) non delegano *questa* formula a DuckDB: l'ordinamento `S.BAYESIAN` è un altro prodotto, `vote_average * LOG10(vote_count)`, pensato per ordinare in modo monotono senza sanzione per i titoli poco votati ([filters.js](../src/data/filters.js#L127), `:144`). La forma a media pesata vera e propria è `S.QUALITY`: $$Q = \frac{R \cdot v + m \cdot C}{v + m} \quad (m = 500,\; C = 6.8)$$ con la popolarità come tie-breaker ([filters.js](../src/data/filters.js#L131), `:146`). **I due parametri sono diversi da quelli di Node**: $m = 500$ / $C = 6.8$ in SQL contro $m = 300$ / $C = 6.5$ in `src/config.js`. Il commento nel codice spiega la scelta di `QUALITY`: *un 8.9 con 1.100 voti non deve battere un 8.4 con 24.000*. La formula di Node resta quella di IMDb e gira solo sui candidati già filtrati.
 
 ---
 
@@ -138,7 +137,7 @@ Per evitare che i caroselli di raccomandazione del frontend rimangano congelati 
     $$Penalty = \max\left(0.2, 1.0 - (D - 2) \cdot 0.2\right)$$
 *   Il punteggio finale viene moltiplicato per questa penalità, spingendo progressivamente i contenuti vecchi verso il basso per fare spazio a nuove scoperte.
 
-La funzione è `calculateImpressionPenalty(seenDays)` ([dataFetchers.js](../src/engines/hybrid/dataFetchers.js#L384-L389)) ed è applicata in tre punti delle strategie hero, **prima** del taglio finale ai 120 candidati: moltiplicarla solo alla fine non serve a niente, perché un titolo già escluso dal pool non ha punteggio da penalizzare.
+La funzione è `calculateImpressionPenalty(seenDays)` ([dataFetchers.js](../src/engines/hybrid/dataFetchers.js#L384-L389)) ed è applicata in tre punti delle strategie hero, durante la valutazione dei candidati e **prima** che questi vengano scelti per il catalogo: moltiplicare solo alla fine non serve a niente, perché un titolo già escluso dal pool non ha punteggio da penalizzare.
 
 > [!NOTE]
 > La penalità è **volutamente dipendente dal tempo** e rende i cataloghi non riproducibili bit-per-bit a distanza di giorni. I test di scoring devono fissare `seenDates` o disattivare la lettura delle impressioni: un test che fallisce solo "domani" è un test sul tempo, non sullo score.
@@ -186,7 +185,7 @@ Queste regole valgono per ogni catalogo e sono la ragione per cui la stessa rich
 `PRESET_PAGE_SIZE = 20` ([CatalogRouter.js](../src/catalog/CatalogRouter.js#L14)) si applica **solo** ai cataloghi `preset_*`; tutti gli altri usano 100 ([CatalogRouter.js](../src/catalog/CatalogRouter.js#L84)). Non esiste refill: una pagina restituita vale per quello che è.
 
 ### 6.2 Ordinamento deterministico (il tie-breaker `id ASC`)
-`buildCatalogQuery()` appende `, id ASC` a **ogni** `ORDER BY` che non lo contiene già ([queryBuilder.js](../src/db/queryBuilder.js#L96)). Senza quel termine SQLite/DuckDB può restituire le righe concludenti in ordine arbitrario: la seconda pagina ripeteva la prima e la terza correggeva la seconda. Il contratto completo dell'ordinamento di un preset è quindi *il suo `orderBy` seguito da `id ASC`*, e va verificato così — per esempio `preset_burton`: `"popularity" DESC NULLS LAST, "vote_count" DESC, "id" ASC`, testato sul **contratto** (popolarità ↓, poi voti ↓, poi id ↑) e non sui titoli specifici, che cambiano a ogni aggiornamento del dump TMDB.
+`buildCatalogQuery()` appende `, id ASC` a **ogni** `ORDER BY` che non lo contiene già ([queryBuilder.js](../src/db/queryBuilder.js#L96)). Senza quel termine il motore può restituire le righe concludenti in ordine arbitrario: la seconda pagina ripeteva la prima e la terza correggeva la seconda. Il contratto completo dell'ordinamento di un preset è quindi *il suo `orderBy` seguito da `id ASC`*, e va verificato così — per esempio `preset_burton`: `"popularity" DESC NULLS LAST, "vote_count" DESC, "id" ASC`, testato sul **contratto** (popolarità ↓, poi voti ↓, poi id ↑) e non sui titoli specifici, che cambiano a ogni aggiornamento del dump TMDB.
 
 ### 6.3 Filtro obbligatorio e dedup
 Ogni query parte da `adult = false` ([queryBuilder.js](../src/db/queryBuilder.js#L23)). I preset che possono restituire righe duplicate dal dump usano `uniqueById`, risolto con `row_number() OVER (PARTITION BY id)` ([queryBuilder.js](../src/db/queryBuilder.js#L98-L100)).
@@ -221,7 +220,7 @@ Due livelli distinti, spesso confusi: *identità* (che cosa è un anime) e *poli
 La regola canonica è in [animeIdentity.js](../src/utils/animeIdentity.js#L1-L14): un contenuto è anime se il suo `tmdbId` è presente in `anime_mappings`, **oppure** ha genere 16 *e* (`original_language === 'ja'` **oppure** una keyword TMDB contiene "anime", escludendo i qualificatori `anime-inspired` / `influenced` / `style` per non catturare produzioni occidentali). `normalizeAnimeMarker()` stabilisce un unico default, `ANIME_MARKER_DEFAULT = false`: **senza prove non si abilita niente** — niente enrichment Kitsu, niente filtri anime, niente badge. Un `_isAnime` già presente nel payload è autorevole e viene solo propagato.
 
 > [!NOTE]
-> La predicato **SQL** usato nei preset è volutamente più stretto e **non** valuta le keyword:
+> Il predicato **SQL** usato nei preset è volutamente più stretto e **non** valuta le keyword:
 > `id IN anime_mappings OR (genres contiene 16 AND original_language = 'ja')` ([filters.js](../src/data/filters.js#L110)). È una divergenza deliberata e commentata nel codice (le keyword in SQL produrrebbero falsi positivi), quindi un preset basato su keyword anime può dare un insieme più piccolo del corrispondente `normalizeAnimeMarker()` sugli stessi item. Non è un bug da correggere: è il motivo per cui i due percorsi vanno tenuti distinti.
 
 ### 7.2 Politica: risoluzione e moltiplicatori
