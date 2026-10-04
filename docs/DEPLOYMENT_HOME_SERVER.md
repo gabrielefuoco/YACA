@@ -12,7 +12,10 @@ Questo runbook operativo documenta l'installazione, la configurazione, l'esposiz
 - [ ] L'ultima GitHub Action **verde**, con l'immagine presente su GHCR (`ghcr.io/gabrielefuoco/yaca:latest`)
 - [ ] Nessun dominio richiesto: l'esposizione pubblica passa da Tailscale Funnel
 
-Ordine di esecuzione: **§2** installazione + checklist → **§3** file e primo avvio → **§4** Funnel e `HOST_URL` → **§5** cold start (10-12 h, in background) → **§6** accesso admin → **§7** backup e monitoring (quando vuoi).
+> [!WARNING]
+> **I segreti del vecchio Hugging Face Space non esistono più.** Lo Space è morto e i suoi secrets sono andati con lui: `MONGODB_URI`, `TMDB_API_KEY`, `MISTRAL_API_KEY`, `JWT_SECRET` e `ADMIN_PASS` vanno **rigenerati o recuperati** prima della fase C. Non tentare di recuperarli dal server: non ci sono.
+
+Ordine di esecuzione: **§2** installazione + checklist → **§3** file e primo avvio → **§4** Funnel e `HOST_URL` → **§5** cold start (una notte, in background) → **§6** accesso admin → **§7** backup e monitoring (quando vuoi).
 
 ---
 
@@ -153,9 +156,7 @@ nano /srv/yaca/.env
 ```
 
 Configurare le variabili minime necessarie:
-- `PORT=7860`
 - `HOST_URL=https://<nome-nodo>.<tailnet>.ts.net` (verrà popolato/verificato dopo l'avvio di Tailscale Funnel)
-- `REDIS_URL=redis://redis:6379`
 - `MONGODB_URI=<stringa-di-connessione-atlas>`
 - `TMDB_API_KEY=<tua-chiave-api-tmdb>`
 - `MISTRAL_API_KEY=<tua-chiave-mistral>`
@@ -163,7 +164,15 @@ Configurare le variabili minime necessarie:
 - `ADMIN_PASS=<password-admin-desiderata>`
 - `TRAKT_CLIENT_ID` e `TRAKT_CLIENT_SECRET` (se abilitati)
 - `TORRENTIO_URL=https://torrentio.strem.fun`
-- `SYSTEM_LOG=console` (log su console Docker invece che su Atlas: è già il default)
+- `SYSTEM_LOG=console` (log su console Docker invece che su Atlas: è già il default; `SYSTEM_LOG=mongo` riaccende la scrittura su Atlas)
+
+> [!IMPORTANT]
+> **`PORT` e `REDIS_URL` nel `.env` non hanno effetto**: sono già presenti in `ops/server.env.example` e sono *sovrascritti* dal blocco `environment:` di `docker-compose.yml`, che è il contratto di deploy. Cambiarli lì non cambia il comportamento (e non è un errore: i valori di default sono quelli giusti). Se serve una porta diversa, si cambia il compose, non il `.env`. Lo stesso vale per `YACA_TAG`: è letto dal compose per scegliere il tag dell'immagine, non dall'app.
+
+Variabili opzionali ma che vale la pena conoscere prima di un problema:
+
+- `MISTRAL_MODEL` — modello del motore di ricerca AI, default `open-mistral-nemo`. **Non hardcodare `mistral-small-latest`**: su alcuni piani ha `limit-req-minute = 0`, ogni chiamata torna 429 e la ricerca AI degrada in silenzio a zero risultati.
+- `TMDB_DUMP_CONCURRENCY` (default 8) e `TMDB_DUMP_DELAY_MS` (default 285) — ritmo del cold start, vedi §5.
 
 La cartella dei poster già composti (`ERDB_CACHE_DIR`, default `/data/erdb-cache`, montata come volume `yaca_erdb_cache`) si popola copiandoci dentro i poster prodotti fuori dal server con una build una tantum; la rotta `/erdb-poster/<file>` li serve da lì.
 
@@ -267,17 +276,22 @@ Se il manifest JSON risponde correttamente, l'addon è pronto per essere install
 
 ---
 
-## 5. Cold Start TMDB Daemon (10–12 Ore)
+## 5. Cold Start TMDB Daemon (una notte)
 
 ### 5.1 Come Funziona
-All'avvio del container `app`, se la variabile `TMDB_API_KEY` è valida e il volume `/data/tmdb` non contiene ancora i 5 file completi (`movies.parquet`, `tv.parquet`, `master_movies.jsonl`, `master_tv.jsonl`, `cursor.json`), il processo in background `TmdbDumpDaemon` avvia automaticamente il cold start:
-- Elabora ~87.000 film e ~35.000 serie TV.
-- Esegue richieste API TMDB con una pausa prudenziale di 285 ms per evitare rate limiting.
-- Durata stimata: **dalle 10 alle 12 ore**.
-- Occupazione finale su disco: **~150–200 MB** memorizzati nel volume Docker `yaca_tmdb`.
+All'avvio del container `app`, se la variabile `TMDB_API_KEY` è valida e i dati completi non sono già presenti nel volume `/data/tmdb`, il processo in background `TmdbDumpDaemon` avvia automaticamente il cold start:
+- Scarica l'export giornaliero di TMDB e recupera i dettagli di **tutti i titoli, film e serie** (~533.000 al 2026-10, la conta cresce con TMDB).
+- Esegue le richieste in parallelo con `TMDB_DUMP_CONCURRENCY` richieste in volo (default **8**) e una pausa di `TMDB_DUMP_DELAY_MS` ms fra un gruppo e il successivo (default **285**) per non incappare nel rate limit.
+- Durata stimata con i default: **~9 ore**. Sequenziale (concurrency 1) la stessa mole sarebbe ~3 giorni.
+- Occupazione finale su disco: ordine di **150–200 MB** nel volume Docker `yaca_tmdb`; la conversione JSONL → parquet avviene alla fine e richiede pochi secondi.
+
+Il criterio di completezza non è "i 5 file esistono" ma: **i due JSONL `master_movies.jsonl` e `master_tv.jsonl` esistono e `cursor.json` ha `completed.movies` e `completed.tv` a `true`**. I parquet sono un **derivato**: se esiste un JSONL preesistente, il daemon riconverte al boot anche senza rete (`Pre-existing JSONL detected. Running boot conversion...`) e poi hot-reloada DuckDB. Per questo un parquet assente non fa ripartire il cold start, e un parquet già presente non lo evita.
 
 > [!NOTE]
-> Durante queste 10–12 ore, l'addon è già funzionante e risponde a Stremio; i cataloghi e le raccomandazioni si popoleranno progressivamente man mano che il dump avanza.
+> Durante il cold start l'addon è **già funzionante** e risponde a Stremio; cataloghi e raccomandazioni si popoleranno progressivamente man mano che il dump avanza. Al termine il daemon passa in `dailySync` e poi cicla ogni ora.
+
+> [!WARNING]
+> ~~"Elabora ~87.000 film e ~35.000 serie TV, ~120.000 chiamate, 10-12 ore"~~ — **valido fino al 2026-09-20, obsoleto**: era la stima della ricerca di progetto, basata su un export parziale. Il codice e `ops/server.env.example` parlano di ~533.000 titoli. Alzare `TMDB_DUMP_CONCURRENCY` accelera, ma il limite pratico è TMDB e la banda di casa: una concorrenza troppo alta fa fallire il cold start a metà (il cursore riprende, ma si perde tempo).
 
 ### 5.2 Monitoraggio del Cold Start
 È possibile monitorare lo stato di avanzamento in tempo reale tramite i log di Docker:
@@ -392,6 +406,7 @@ Non installare agenti pesanti sul server. Configurare un servizio esterno gratui
 
 ### 7.4 Manutenzione Ordinaria
 - **Aggiornamenti automatici app**: Watchtower controlla GHCR ogni 3600 secondi (1 ora). Quando una nuova commit entra su `main`, la GitHub Action compila l'immagine, Watchtower effettua il pull ed esegue il restart a zero downtime dell'app, rimuovendo la vecchia immagine.
+  L'immagine di Watchtower **non è `containrrr/watchtower`**: il compose usa il fork mantenuto `ghcr.io/nicholas-fedor/watchtower`. Il progetto originale non è più aggiornato e il suo client parla l'API Docker 1.25 mentre Engine 29 richiede ≥ 1.40, quindi va in crash-loop. Il fork è drop-in: stesse label `com.centurylinklabs.watchtower.enable` e stesse variabili `WATCHTOWER_*`. Non "sostituirlo" con l'upstream.
 - **Pulizia spazio disco**: Quando lo spazio libero scende verso i 30 GB, ripulire le cache di build e immagini orfane:
   ```bash
   docker system prune -f
@@ -405,8 +420,12 @@ Non installare agenti pesanti sul server. Configurare un servizio esterno gratui
 | Sintomo | Causa | Rimedio |
 |---|---|---|
 | Watchtower non aggiorna mai l'app | package GHCR privato e container senza credenziali | rendi pubblico il package, oppure `sudo docker login ghcr.io` + scommenta in `docker-compose.yml` il mount `/root/.docker/config.json:/config.json:ro` e poi `docker compose up -d watchtower` |
+| Watchtower in crash-loop | immagine `containrrr/watchtower` (upstream, non più mantenuto, API Docker 1.25) | tieni il fork `ghcr.io/nicholas-fedor/watchtower` già presente nel compose |
 | Poster con URL sbagliati o manifest con host errato | `HOST_URL` non aggiornato dopo il Funnel | correggi `.env` e **`docker compose up -d app`** (`restart` non rilegge il `.env`) |
-| Cataloghi vuoti per ore | cold start TMDB in corso, oppure `TMDB_API_KEY` assente | `curl -H "x-admin-password: <ADMIN_PASS>" http://127.0.0.1:7860/api/admin/tmdb-dump/status` |
+| Il volume `yaca_tmdb` resta vuoto e il cold start riparte a ogni riavvio | `TmdbDumpStore` sceglie `/data/tmdb` solo se esiste `/data`: senza volume montato scrive silenziosamente in `.cache/tmdb` dentro il container, che sparisce a ogni `docker compose up` | verifica `docker compose config` e `docker volume ls \| grep yaca_tmdb`; il path del container deve contenere `master_movies.jsonl` |
+| `ls /data/db` dal nome di qualche documentazione | path fantasma del vecchio Mongo locale | non montarlo: i dati utente stanno su Atlas via `MONGODB_URI`, il resto è rigenerabile |
+| Cataloghi vuoti per ore | cold start TMDB in corso, oppure `TMDB_API_KEY` assente | `curl -H "x-admin-pass: <ADMIN_PASS>" http://127.0.0.1:7860/api/admin/tmdb-dump/status` |
+| La ricerca AI non restituisce nulla | modello Mistral senza quota (`limit-req-minute = 0`, es. `mistral-small-latest`): ogni chiamata è 429 e il fallback è silenzioso | `MISTRAL_MODEL=open-mistral-nemo` nel `.env` (è il default), poi `docker compose up -d app` |
 | Backup notturno mai eseguito | rclone configurato per l'utente, ma il servizio gira come root | `sudo rclone config` (remote `r2`), oppure `User=<utente>` nel unit systemd |
 | Dopo un blackout l'app non riparte | spegnimento sporco (batteria rimossa) | riavvia il server; i dati utente sono su Atlas e i parquet si rigenerano — in ultima istanza si reinstalla |
 
