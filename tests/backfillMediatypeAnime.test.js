@@ -425,4 +425,13 @@ describe('main: il contratto con chi lo lancia', () => {
         const detto = log.mock.calls.map((c) => String(c[0])).join('\n');
         expect(detto).toMatch(/--apply\s+scrive davvero \(default: DRY-RUN/);
     });
+
+    test('il dry-run con --solo-film dice il numero che si scriverebbe davvero', async () => {
+        const coll = collectionFinta(DOCS);
+        expect(await main(['--solo-film'], { env: {}, store: mappaFinta(), collection: coll })).toBe(0);
+        const detto = log.mock.calls.map((c) => String(c[0])).join('\n');
+        expect(detto).toMatch(/DRY-RUN: 1 documenti prenderebbero il tipo/); // solo Jin-Roh
+        expect(detto).toMatch(/--solo-film: da scrivere 1 film, 1 serie restano senza il campo/);
+        expect(coll.chiamate).toHaveLength(0);
+    });
 });

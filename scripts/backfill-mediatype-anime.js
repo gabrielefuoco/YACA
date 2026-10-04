@@ -671,16 +671,19 @@ Opzioni:
             return 1;
         }
 
+        // La selezione per `--solo-film` va PRIMA del verdetto del dry-run: un dry-run che dice
+        // "903 prenderebbero il tipo" mentre col flag ne prenderebbero 216 sta mentendo sulla
+        // domanda che gli è stata posta, ed è proprio sul numero che il mandato legge.
+        const daScrivere = opts.soloFilm ? piano.scritte.filter((s) => s.a === 'movie') : piano.scritte;
+        if (opts.soloFilm) {
+            console.log(`[Backfill mediaType] --solo-film: da scrivere ${daScrivere.length} film, ${piano.scritte.length - daScrivere.length} serie restano senza il campo.`);
+        }
+
         if (!opts.apply) {
-            const daScrivere = piano.scritte.length;
-            console.log(`[Backfill mediaType] DRY-RUN: ${daScrivere} documenti prenderebbero il tipo. Nessuna scrittura eseguita.`);
+            console.log(`[Backfill mediaType] DRY-RUN: ${daScrivere.length} documenti prenderebbero il tipo. Nessuna scrittura eseguita.`);
             return 0;
         }
 
-        const daScrivere = opts.soloFilm ? piano.scritte.filter((s) => s.a === 'movie') : piano.scritte;
-        if (opts.soloFilm) {
-            console.log(`[Backfill mediaType] --solo-film: scrivo ${daScrivere.length} film, ${piano.scritte.length - daScrivere.length} serie restano senza il campo.`);
-        }
         const daScrivereOra = opts.limit && opts.limit > 0 && opts.limit < daScrivere.length
             ? daScrivere.slice(0, opts.limit)
             : daScrivere;
