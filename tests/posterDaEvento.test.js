@@ -1,4 +1,4 @@
-const { erdbIdDaEvento, erdbIdDaNomeFile, erdbIdsDaEvento, nomeFileDaEvento, urlDaEvento } = require('../src/cache/posterDaEvento');
+const { erdbIdDaEvento, erdbIdDaNomeFile, erdbIdsDaEvento, eventoDaNomeFile, nomeFileDaEvento, urlDaEvento } = require('../src/cache/posterDaEvento');
 
 /*
  * I nomi file attesi qui sono SCRITTI A MANO, non presi da `posterFileName`.
@@ -300,5 +300,77 @@ describe('posterDaEvento - erdbIdDaNomeFile (giro indietro)', () => {
             // E l'id cercato indietro e' lo stesso di quello ricavato in avanti.
             expect(indietro.erdbId).toBe(erdbIdDaEvento(evento));
         }
+    });
+});
+
+/*
+ * `eventoDaNomeFile`: il giro indietro che finisce nella **coda**.
+ *
+ * Serve a chi ha visto un file mancare e vuole che il drenatore lo produca: la coda
+ * accetta solo `{tipo, id, badge}` e la rotta `/erdb-poster/:file` ha in mano solo il
+ * nome. Quindi qui si verifica che dall'evento si torni esattamente al nome di prima:
+ * un evento che rifà un file DIVERSO è il fallimento che non si vede (il poster viene
+ * prodotto e nessuno lo chiede).
+ */
+describe('posterDaEvento - eventoDaNomeFile (dal nome alla coda)', () => {
+    test('le tre forme note diventano eventi (letterali)', () => {
+        expect(eventoDaNomeFile('tmdb-movie-27205_ITA.jpg'))
+            .toEqual({ tipo: 'movie', id: '27205', badge: 'ITA' });
+        expect(eventoDaNomeFile('tmdb-tv-1396.jpg'))
+            .toEqual({ tipo: 'tv', id: '1396', badge: null });
+        // Gli anime: l'id resta in forma ERDB, che è l'unica che il drenatore riesca a
+        // rifare in un `kitsu-*.jpg` senza interrogare la mappa.
+        expect(eventoDaNomeFile('kitsu-265.jpg'))
+            .toEqual({ tipo: 'kitsu', id: 'kitsu:265', badge: null });
+        expect(eventoDaNomeFile('tmdb-movie-823_ITA.jpg'))
+            .toEqual({ tipo: 'movie', id: '823', badge: 'ITA' });
+    });
+
+    test('estensioni diverse (.jpeg, .webp, maiuscole): stesso evento', () => {
+        const atteso = { tipo: 'movie', id: '27205', badge: 'ITA' };
+        expect(eventoDaNomeFile('tmdb-movie-27205_ITA.jpeg')).toEqual(atteso);
+        expect(eventoDaNomeFile('tmdb-movie-27205_ITA.webp')).toEqual(atteso);
+        expect(eventoDaNomeFile('tmdb-movie-27205_ITA.JPG')).toEqual(atteso);
+    });
+
+    test('il badge assente è `null`, non `undefined` né stringa vuota', () => {
+        // La coda distingue `ITA` da `null` (due file diversi): un undefined qui
+        // diventerebbe `null` solo per caso, e vuol dire che il contratto non è esplicito.
+        const evento = eventoDaNomeFile('tmdb-tv-1396.jpg');
+        expect(evento.badge).toBeNull();
+        expect(eventoDaNomeFile('kitsu-265_ITA.jpg')).toEqual({ tipo: 'kitsu', id: 'kitsu:265', badge: 'ITA' });
+    });
+
+    test('andata e ritorno: `nomeFileDaEvento(eventoDaNomeFile(nome))` è lo stesso nome', () => {
+        // Il giro completo e' l'unica cosa che conta: il drenatore, dall'evento, deve
+        // ricavare il file che la rotta aveva chiesto.
+        for (const nome of [
+            'tmdb-movie-27205_ITA.jpg',
+            'tmdb-movie-27205.jpg',
+            'tmdb-tv-1396_ITA.jpg',
+            'tmdb-tv-1396.jpg',
+            'kitsu-265.jpg',
+            'kitsu-265_ITA.jpg'
+        ]) {
+            expect(nomeFileDaEvento(eventoDaNomeFile(nome))).toBe(nome);
+        }
+    });
+
+    test('un nome non riconosciuto non diventa un evento: `null`, nessun id inventato', () => {
+        for (const nome of [
+            'poster.jpg', 'anime-265.jpg', 'tmdb-anime-265.jpg', 'tmdb-movie-abc.jpg',
+            'tmdb-movie-27205_ENG.jpg', 'tmdb-27205.jpg', 'kitsu-265.png', 'nota.txt',
+            '', '   ', null, undefined, 42, {}
+        ]) {
+            expect(eventoDaNomeFile(nome)).toBeNull();
+        }
+    });
+
+    test('non solleva mai: un nome strano e\' `null`, non un\'eccezione', () => {
+        // Una rotta non puo\' fallire per una stringa sbagliata: qui la risposta sbagliata
+        // e\' "non lo so" (`null`), e la rotta risponde 404 come deve.
+        expect(() => eventoDaNomeFile({ tipo: 1 })).not.toThrow();
+        expect(() => eventoDaNomeFile('tmdb-movie-../../etc/passwd.jpg')).not.toThrow();
+        expect(eventoDaNomeFile('tmdb-movie-../../etc/passwd.jpg')).toBeNull();
     });
 });
