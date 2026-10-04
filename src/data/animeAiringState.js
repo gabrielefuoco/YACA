@@ -434,7 +434,10 @@ function findNewestEpisode(doc, predicate) {
  * - `sub`: episodio del badge sub (`italian.sub.latest`, altrimenti l'ultimo sub dichiarato);
  * - `dub`: episodio del badge ITA, presente se e solo se il documento dichiara ALMENO UN
  *   episodio doppiato, a qualunque data (vedi `getDeclaredInfo`).
- * Ritorna null se il documento non dichiara né sub né dub.
+ * Ritorna null se il documento non dichiara né sub né dub — e questa è anche la risposta giusta
+ * per una serie **annunciata** (`sub = { season: 2, episode: 0 }`: la lista la dà per in corso ma
+ * non è ancora uscito niente). `null` è ciò che tiene la card **senza badge**: accettare lo zero
+ * qui produrrebbe `EP 0`, che è un badge peggio di nessun badge.
  */
 function getCardInfo(doc) {
     if (!doc) return null;
@@ -498,11 +501,31 @@ function getNoveltyEntries(snapshot, options = {}) {
 }
 
 /**
- * Tutti i documenti con sub o dub presenti appartenenti alla lista "In corso" di AnimeUnity.
+ * Tutti i documenti appartenenti alla lista "In corso" di AnimeUnity, ordinati per orderIndex
+ * se presente, altrimenti per listSeenAt/updatedAt decrescente.
+ *
  * Regola di appartenenza (configurabile):
  * - se doc.listSeenAt c'è -> includi finché (now - listSeenAt) <= 14 giorni (default LIST_WINDOW_DAYS)
  * - se manca (transizione, doc legacy) -> includi solo se (now - updatedAt) <= 12 ore (default AIRING_FRESHNESS_HOURS)
- * Ordinati per orderIndex se presente, altrimenti per listSeenAt/updatedAt decrescente.
+ *
+ * PERCHÉ LA CHIAVE NON È "HA sub O dub": una serie **annunciata** non ha episodi. AnimeUnity la
+ * mette in "In Corso" con `real_episodes_count: 0`, il writer lo copia senza clamp
+ * (`extractRealEpisode` in `services/anime-source/src/aggregate.js`) e il documento porta
+ * `sub = { season: 2, episode: 0 }`. `normalizeLatest` giustamente rifiuta lo zero — un episodio 0
+ * non esiste, e `EP 0` sarebbe un badge peggio di nessun badge — quindi il documento arriva qui con
+ * `sub = dub = null` e il vecchio filtro (`if (!hasSub && !hasDub) continue`) lo scartava:
+ * una serie che la fonte dichiara "in corso" semplicemente non compariva nel catalogo.
+ * Misurato su produzione il 04/10/2026: 2 documenti su 962 (`Aoashi` 126437, `Oji-san` 330505).
+ *
+ * LA CURA NON È ACCETTARE LO ZERO: la voce entra e basta. `getCardInfo` su un documento che non
+ * dichiara episodi ritorna `null`, quindi la card nasce **senza badge** — l'esito giusto per una
+ * serie annunciata. Nessun `EP 0`, nessun `ITA 0`.
+ *
+ * LA DOMANDA È "IL DOCUMENTO DICHIARA UN EPISODIO?" (`getDeclaredInfo`, la stessa funzione che
+ * decide il badge), non "il documento ha `sub`/`dub`?". E la guardia `listSeenAt` è voluta:
+ * "annunciata" è una positività della lista "In corso", non la conseguenza di un campo mancante —
+ * un documento legacy senza `listSeenAt` potrebbe essere solo un documento che ha perso il `sub`,
+ * e quelli restano fuori come prima.
  */
 function getAiringEntries(snapshot, options = {}) {
     const docs = snapshot && Array.isArray(snapshot.docs) ? snapshot.docs : [];
@@ -526,18 +549,20 @@ function getAiringEntries(snapshot, options = {}) {
         : freshnessHours * HOUR_MS;
 
     for (const doc of docs) {
-        const hasSub = Boolean(doc.sub);
-        const hasDub = Boolean(doc.dub);
-        if (!hasSub && !hasDub) continue;
+        const seenInList = doc.listSeenAt !== null && doc.listSeenAt !== undefined;
 
-        let isIncluded = false;
-        if (doc.listSeenAt !== null && doc.listSeenAt !== undefined) {
-            isIncluded = (nowMs - doc.listSeenAt) <= listMaxAgeMs;
-        } else {
-            isIncluded = doc.updatedAt !== null && doc.updatedAt !== undefined && (nowMs - doc.updatedAt) <= legacyMaxAgeMs;
-        }
+        const isIncluded = seenInList
+            ? (nowMs - doc.listSeenAt) <= listMaxAgeMs
+            : (doc.updatedAt !== null && doc.updatedAt !== undefined && (nowMs - doc.updatedAt) <= legacyMaxAgeMs);
 
         if (!isIncluded) {
+            continue;
+        }
+
+        // Serie annunciata: nessun episodio dichiarato. Entra in catalogo (la lista la dà per in
+        // corso) e senza badge. Senza `listSeenAt` non si sa nulla: resta fuori come prima.
+        const declared = getDeclaredInfo(doc);
+        if (!declared.hasSub && !declared.hasDub && !seenInList) {
             continue;
         }
 
