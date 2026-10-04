@@ -87,13 +87,48 @@ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
 echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 ```
 
-**Attenzione (verificato il 04/10/2026)**: sul mate l'impostazione è stata fatta a mano e **non è persistita da niente** — nessuna unit systemd, nessun cron, nessun `/etc/sysfs.conf`, nessun `rc.local`. Al riavvio la CPU **torna a un terzo** e nessuno se ne accorge, perché tutto continua a funzionare, solo più lento. Per renderla stabile:
+**Attenzione (verificato il 04/10/2026)**: sul mate l'impostazione era stata fatta a mano e **non era persistita da niente** — nessuna unit systemd, nessun cron, nessun `/etc/sysfs.conf`, nessun `rc.local`. Al riavvio la CPU **torna a un terzo** e nessuno se ne accorge, perché tutto continua a funzionare, solo più lento.
+
+Il pacchetto `cpufrequtils` **non esiste più su Debian 13 (trixie)** (nessun candidato da installare): la via stabile è una unit minima, fatta e **provata** il 04/10/2026.
+
+```sh
+# /usr/local/bin/cpu-governor.sh
+#!/bin/sh
+for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+  [ -w "$g" ] && echo performance > "$g"
+done
+```
+
+```ini
+# /etc/systemd/system/cpu-governor.service
+[Unit]
+Description=CPU governor a performance (il mate e' un server sempre acceso)
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/cpu-governor.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+```
 
 ```bash
-sudo apt install -y cpufrequtils
-echo 'GOVERNOR="performance"' | sudo tee /etc/default/cpufrequtils
-sudo systemctl enable --now cpufrequtils
+sudo chmod +x /usr/local/bin/cpu-governor.sh
+sudo systemctl daemon-reload
+sudo systemctl enable --now cpu-governor.service
 ```
+
+**Come si prova senza riavviare** (ed è la prova che è stata fatta): si guasta a mano e si fa ripartire la unit —
+
+```bash
+echo powersave | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+sudo systemctl restart cpu-governor
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor   # deve dire performance
+```
+
+Esito reale: `powersave` → la unit → `performance`. Con `is-enabled` = `enabled` e il symlink in `multi-user.target.wants`, la stessa cosa succede al boot.
 
 **Se il mate sembra lento su qualcosa di CPU, il primo sospetto è il governor.**
 
