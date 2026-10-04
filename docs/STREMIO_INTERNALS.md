@@ -18,6 +18,21 @@ Il client Stremio non offre un meccanismo nativo per cambiare profilo dall'inter
 Le piattaforme di streaming collegate a Stremio (come Torrentio o Anime Kitsu) gestiscono i flussi per gli anime unicamente se la richiesta contiene l'ID nativo di Kitsu (formato `kitsu:<kitsuId>:<episode>`). 
 Tuttavia, i motori di raccomandazione di YACA e le API di ricerca globale operano prevalentemente su metadati TMDB (formato `tmdb:<tmdbId>`), che forniscono catalogazione, generi e affinità nettamente superiori per l'AI.
 
+> **Misurato il 03/10/2026 — la forma dell'id decide chi risponde.** Lo stesso principio vale per le **serie**, non solo per gli anime. Interrogando Torrentio con due forme dello stesso episodio:
+>
+> | id richiesto | stream restituiti |
+> |---|---|
+> | `tt0108778:1:1` | **53** |
+> | `tmdb:1668:1:1` | **0** |
+>
+> La forma `tmdb:` **non è capita** dagli addon di streaming: la convenzione dell'ecosistema è IMDb. Sintomo per l'utente: "mi funziona una sorgente su tre", e cliccando un episodio sembra sempre lo stesso.
+>
+> **La regola**: gli id dei video (`meta.videos[].id`) vanno costruiti in forma IMDb (`tt…:S:E`) **quando l'id IMDb è noto**, qualunque forma abbia usato la richiesta. L'id della **serie** (`meta.id`) invece resta quello della richiesta — Stremio tiene libreria e stato "visto" sull'id del titolo, e cambiarlo azzera la libreria dell'utente. Cambiano **solo** gli id degli episodi.
+>
+> Nota: l'id IMDb per un titolo Tier 1 va risolto **dal dump DuckDB** (colonna `imdb_id` di `movies`/`tv`), non con una chiamata a TMDB — è il senso del dump.
+>
+> La stessa logica vale per gli anime (`kitsu:…:ep`), documentata qui sotto.
+
 ### La Soluzione: Traduzione Bidirezionale degli ID tramite Mapping Store
 YACA implementa un'architettura ad alta efficienza basata su mapping statici pre-elaborati in [animeMappingStore.js](../src/data/animeMappingStore.js) e sulla regola canonica di rilevamento in [animeIdentity.js](../src/utils/animeIdentity.js):
 
