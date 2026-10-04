@@ -322,14 +322,17 @@ async function applyAiringStateBadges(metas, {
                 // catalogo il badge episodio era già stato calcolato da TMDB (`showEpisodeBadge` è
                 // true su questo preset): una serie **annunciata** — che è proprio il caso in cui
                 // non c'è nessuno stato, perché `sub.episode = 0` viene normalizzato a `null` — si
-                // porterebbe dietro un `S2 E1` inventato. Qui il badge del simulcast viene SEMPRE e
-                // SOLO dallo stato esterno, quindi "nessuno stato" vuol dire "nessun badge".
-                // Per chi oggi non ha badge il risultato è identico (l'URL del poster non cambia).
-                processed.push(senzaRiferimentoAiring(sanitizeCatalogMeta({
-                    ...item,
-                    _itaBadge: false,
-                    _itaOnlyBadge: true
-                }, { ...sanitizeOptions, shouldApplyEpisodeBadge: false })));
+                // porterebbe dietro un `S2 E1` inventato. Qui il badge episodio viene SEMPRE e SOLO
+                // dallo stato esterno, quindi "nessuno stato" vuol dire "nessun episodio da
+                // contare". Il badge di stagione (top-left) dipende da `tmdbSeason`/`videos`, che il
+                // formatter non porta in output: al secondo passaggio sparisce — ma è già così per
+                // ogni card del catalogo (misurato su produzione il 04/10/2026: 0 poster su 29 con
+                // `tlBadge`), quindi qui non cambia niente. Per chi non ha badge episodio l'URL del
+                // poster resta identico.
+                processed.push(senzaRiferimentoAiring(sanitizeCatalogMeta(
+                    { ...item, _itaBadge: false },
+                    { ...sanitizeOptions, shouldApplyEpisodeBadge: false }
+                )));
                 continue;
             }
 
