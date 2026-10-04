@@ -104,15 +104,23 @@ describe('le due chiavi della cache dei cataloghi (ticket 47)', () => {
     });
 
     test('per un catalogo NON condiviso la chiave è quella di sempre: hash congelato', () => {
-        // Guardia: togliere `user`/`profile` dai preset è voluto, toglierli altrove no. Questo hash
-        // è stato calcolato **su `main`** il 04/10/2026, prima di ogni modifica, per una watchlist.
-        // Verificato identico sul ramo: per i cataloghi non condivisi la chiave non è cambiata di un
-        // byte, quindi la loro cache non si svuota. Se questo test diventa rosso, si svuota — e dal
-        // codice non si vedrebbe.
-        const format = chiavi(...WATCHLIST, utente('REMO', 'global'), {
-            kidsMode: true,
-            typeSelectors: { kind: 'series' }
-        }).format;
+        // Guardia sulla **composizione**. Con gli stessi ingredienti di allora (badgeVersion 19) e per
+        // un catalogo non condiviso, la chiave deve dare l'hash calcolato su `main` il 04/10/2026:
+        // per watchlist, hero e merged la separazione non ha cambiato un byte, quindi la loro cache
+        // non si svuota. Se questo test diventa rosso, si svuota — e dal codice non si vedrebbe.
+        //
+        // La versione dei badge è un'altra cosa, e si alza apposta: il 04/10 è passata da 18 a 19
+        // (badge ITA sui non-anime) e poi a 20 (i film escono con l'id IMDb). Qui è fissata alla 19
+        // per isolare la composizione dal bump: due cose diverse, due test diversi.
+        const format = buildCatalogCacheKey({
+            id: 'yaca_watchlist_series',
+            baseId: 'yaca_watchlist_series',
+            type: 'series',
+            catalogMeta: { id: 'yaca_watchlist_series', type: 'series', name: 'yaca_watchlist_series' },
+            userConfig: utente('REMO', 'global'),
+            activeProfileSettings: { kidsMode: true, typeSelectors: { kind: 'series' } },
+            badgeVersion: 19
+        });
         expect(format).toBe('7eca66a53c7781eb065017a74046c4e1091b8481977c5fa0656462233c2e7cd0');
     });
 });
