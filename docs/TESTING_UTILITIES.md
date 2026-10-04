@@ -146,7 +146,7 @@ Script di migrazione sicura del database per normalizzare record orfani o con `i
 
 #### Perché la libreria ha dei documenti senza `itemId` (e cosa ne è stato fatto)
 
-Misurato sulla libreria di produzione il **20/09/2026** (368 item): **169 documenti legacy** senza `itemId` (la loro chiave è `_id`) e **70 titoli presenti due volte**. La causa è una, ed è un trucco che si paga: il sync fa upsert con filtro `{ addonUuid, itemId }`, quindi per un titolo che esiste **solo** come documento legacy il filtro non trova nulla e **crea un secondo documento**. Lo stesso difetto spiega perché l'indice unico `{ addonUuid, itemId }` dichiarato nel modello non era mai entrato in funzione: non può essere creato finché esistono più documenti con `itemId` nullo per lo stesso `addonUuid`.
+Misurato sulla libreria di produzione il **20/09/2026** (368 item): **169 documenti legacy** senza `itemId` (la loro chiave è `_id`) e **70 titoli presenti due volte**. La causa è una sola: il sync fa upsert con filtro `{ addonUuid, itemId }`, quindi per un titolo che esiste **solo** come documento legacy il filtro non trova nulla e **crea un secondo documento**. Lo stesso difetto spiega perché l'indice unico `{ addonUuid, itemId }` dichiarato nel modello non era mai entrato in funzione: non può essere creato finché esistono più documenti con `itemId` nullo per lo stesso `addonUuid`.
 
 Le quattro regole che tengono la libreria sane, e che vale la pena non reintrodurre:
 
