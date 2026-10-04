@@ -191,11 +191,10 @@ Per indicare visivamente all'utente la disponibilità del doppiaggio o delle nov
 >   colonna, così copre anche i **21 cataloghi** che non passano dal parquet (Trakt, hero, watchlist, simulcast);
 > - **Anime**: fuori dal catalogo novità il badge è **`ITA` secco** (niente numero di episodio, niente stagione);
 >   nel catalogo novità (`preset_anime_simulcast`) restano la card sub `EP n` e il clone `_ita_offset` con `ITA n`,
->   letti da `anime_airing_state`;
-> - **Dove arrivano i doppiati anime**: le annotazioni le scrive `services/doppiaggi-source`, che legge anche la
->   collezione `anime_airing_state` (i doppiati del portale) e ne emette una riga per titolo. È quel passaggio —
->   non il modulo anime, non il parquet — che fa comparire il badge ITA sugli anime in **tutti** i cataloghi normali,
->   mentre nel catalogo novità vale lo stato esterno letto dal provider.
+>   letti da `anime_airing_state`. Le righe di annotazione per gli anime le scrive `services/doppiaggi-source`,
+>   che legge a sua volta `anime_airing_state` (i doppiati del portale): è quel passaggio — non il modulo anime,
+>   non il parquet — che fa comparire il badge ITA sugli anime in **tutti** i cataloghi normali, mentre nel
+>   catalogo novità vale lo stato esterno letto dal provider;
 > - **Non-anime**: nessuna scansione, nessuna coda, nessun clone: la card resta singola con il badge `ITA`.
 > - **Degrado deciso**: se il file delle annotazioni manca, la colonna è `false` su tutto e i badge si spengono;
 >   un avviso non bloccante segnala il calo oltre il 2%. Il catalogo resta sempre fresco.
