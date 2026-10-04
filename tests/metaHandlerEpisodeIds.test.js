@@ -1,14 +1,21 @@
 /**
- * Id degli episodi = forma con cui è arrivata la richiesta.
+ * Gli id degli episodi sono in forma IMDb (`tt…:S:E`) quando l'id IMDb è noto.
  *
- * Friends aperta in Stremio mostrava una sola fonte di stream e qualunque episodio scelto
- * dava sempre lo stesso: gli id dei video erano `tmdb:1668:S:E` anche quando la richiesta
- * era `tt0108778`, perché l'id IMDb si perde (arriva da `external_ids`, chiesto solo a cache
- * vuota) e Stremio poi cerca gli stream con quegli id.
+ * L'umano apre le serie dai **nostri** cataloghi, che danno id `tmdb:` (misurato in
+ * produzione il 03/10/2026: 20 card su 20). Stremio poi chiede gli stream agli altri addon
+ * con gli id che trova in `meta.videos`, e gli addon non capiscono `tmdb:`: misurato su
+ * Torrentio, `tt0108778:1:1` dà 53 stream e `tmdb:1668:1:1` ne dà 0. Sintomo: "una sorgente
+ * su tre" e, cliccando un episodio, sempre lo stesso.
+ *
+ * Quindi: la forma degli id degli episodi è **IMDb quando l'id IMDb si conosce**, qualunque
+ * forma abbia usato la richiesta; `meta.id` invece resta la forma della richiesta (su quell'id
+ * Stremio tiene libreria e stato "visto" del titolo). Se l'id IMDb non si conosce, gli episodi
+ * restano nella forma della richiesta: non si inventa niente.
  *
  * Qui si prova il contratto di `metaHandler` con la cache degli episodi **piena**, cioè nel
  * caso che oggi si rompe: `fetchTmdbEpisodes` restituisce sempre lo stesso array (come
- * `tvEpisodesCache`) e la seconda richiesta, con l'altra forma, deve ricevere la sua.
+ * `tvEpisodesCache`), con id `tmdb:` — l'id IMDb si perde, perché arriva dai dati TMDB via
+ * `append_to_response`, chiesti solo a cache vuota.
  */
 
 // Cache in memoria condivisa da tutte le istanze (namespace → Map), per valore e per
@@ -21,6 +28,10 @@ const mockStore = new Map();
 // Finto `tvEpisodesCache`: senza questo, ogni richiesta ricreerebbe gli episodi e la prova
 // della cache avvelenata non avrebbe senso.
 const mockEpisodesCache = new Map();
+
+// Finto `imdbIdCache` (`tmdb_imdb_id`, la cache dedicata all'id IMDb): `resolveImdbId` è la
+// sola sorgente ammessa per l'id degli episodi, e su questa mappa si decide se è noto o no.
+const mockImdbIds = new Map();
 
 jest.mock('../src/cache/CacheManager', () => {
     class FakeCacheManager {
@@ -37,6 +48,7 @@ jest.mock('../src/cache/CacheManager', () => {
                 : { value: undefined, status: 'miss' };
         }
         async set(key, value) {
+            // Per riferimento, come la cache vera: nessuna copia qui dentro.
             this._store().set(key, value);
         }
     }
@@ -50,7 +62,8 @@ jest.mock('../src/id_mapping/id_cache', () => ({
 jest.mock('../src/data/animeMappingStore', () => ({
     resolveKitsu: jest.fn(() => null),
     resolveKitsuMovie: jest.fn(() => null),
-    resolveTmdbFromKitsu: jest.fn(() => null)
+    resolveTmdbFromKitsu: jest.fn(() => null),
+    isAnimeTmdbId: jest.fn(() => false)
 }));
 
 // Copia fedele di `fetchTmdbEpisodes`: usa `imdbId` solo quando è disponibile e, dalla
@@ -58,13 +71,26 @@ jest.mock('../src/data/animeMappingStore', () => ({
 jest.mock('../src/clients/tmdb', () => ({
     getTmdbMetaDetails: jest.fn(async () => null),
     createTmdbClient: jest.fn(() => ({})),
+    resolveImdbId: jest.fn(async (tmdbId) => (mockImdbIds.has(String(tmdbId)) ? mockImdbIds.get(String(tmdbId)) : null)),
     fetchTmdbEpisodes: jest.fn(async (client, tmdbId, totalSeasons, imdbId) => {
         const key = String(tmdbId);
         if (mockEpisodesCache.has(key)) return mockEpisodesCache.get(key);
 
         const videos = [
-            { id: imdbId ? `${imdbId}:1:1` : `tmdb:${tmdbId}:1:1`, title: 'Primo episodio', season: 1, episode: 1 },
-            { id: imdbId ? `${imdbId}:1:2` : `tmdb:${tmdbId}:1:2`, title: 'Secondo episodio', season: 1, episode: 2 }
+            {
+                id: imdbId ? `${imdbId}:1:1` : `tmdb:${tmdbId}:1:1`,
+                title: 'Primo episodio',
+                season: 1,
+                episode: 1,
+                thumbnail: 'https://image.tmdb.org/t/p/w500/still-1.jpg'
+            },
+            {
+                id: imdbId ? `${imdbId}:1:2` : `tmdb:${tmdbId}:1:2`,
+                title: 'Secondo episodio',
+                season: 1,
+                episode: 2,
+                thumbnail: 'https://image.tmdb.org/t/p/w500/still-2.jpg'
+            }
         ];
         mockEpisodesCache.set(key, videos);
         return videos;
@@ -80,13 +106,16 @@ jest.mock('../src/db/tier1LazyPromotion', () => ({
 }));
 
 const { metaHandler } = require('../src/handlers/metaHandler');
+const { resolveImdbId } = require('../src/clients/tmdb');
 const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
 const animeMappingStore = require('../src/data/animeMappingStore');
 
 const ID_IMDB = 'tt0108778';
 const ID_TMDB = 'tmdb:1668';
+const CACHE_NS = 'final_meta_cache';
+const CACHE_KEY = 'meta_1668_series';
 
-/** Scheda serie in Tier 1 (DuckDB): senza id IMDb, come nella realtà dei titoli in catalogo. */
+/** Scheda serie in Tier 1 (DuckDB): l'id è quello nativo, senza id IMDb. */
 function schedaSerie({ anime = false, tmdbId = '1668' } = {}) {
     return {
         id: `tmdb:${tmdbId}`,
@@ -103,11 +132,18 @@ function userConfig() {
     return { apiKeys: { tmdb: 'test-key' } };
 }
 
-describe('metaHandler: gli id degli episodi seguono la forma della richiesta', () => {
+/** L'oggetto che `finalMetaCache` ha davvero in mano, per riferimento. */
+function inCache(key = CACHE_KEY) {
+    return mockStore.get(CACHE_NS).get(key);
+}
+
+describe('metaHandler: gli id degli episodi sono IMDb quando l\'id IMDb è noto', () => {
     beforeEach(() => {
         mockStore.clear();
         mockEpisodesCache.clear();
+        mockImdbIds.clear();
         getDuckDbMetaDetails.mockReset();
+        resolveImdbId.mockClear();
         animeMappingStore.resolveKitsu.mockReset().mockReturnValue(null);
         jest.spyOn(console, 'log').mockImplementation(() => {});
     });
@@ -116,7 +152,31 @@ describe('metaHandler: gli id degli episodi seguono la forma della richiesta', (
         jest.restoreAllMocks();
     });
 
-    test('una serie aperta con l\'id IMDb riceve episodi con l\'id IMDb', async () => {
+    test('aperta con tmdb: (come dai nostri cataloghi) → episodi tt…, ma meta.id resta tmdb:', async () => {
+        mockImdbIds.set('1668', ID_IMDB);
+        getDuckDbMetaDetails.mockImplementation(async () => schedaSerie());
+
+        const res = await metaHandler({ type: 'series', id: ID_TMDB }, userConfig());
+
+        // `meta.id` non si tocca: su quell'id Stremio tiene libreria e stato "visto".
+        expect(res.meta.id).toBe(ID_TMDB);
+        expect(res.meta.videos.map(v => v.id)).toEqual([
+            'tt0108778:1:1',
+            'tt0108778:1:2'
+        ]);
+        // Nessun altro campo dei video è stato toccato.
+        expect(res.meta.videos[0]).toEqual({
+            id: 'tt0108778:1:1',
+            title: 'Primo episodio',
+            season: 1,
+            episode: 1,
+            thumbnail: 'https://image.tmdb.org/t/p/w500/still-1.jpg'
+        });
+        expect(resolveImdbId).toHaveBeenCalledWith('1668', 'tv', 'test-key');
+    });
+
+    test('aperta con l\'id IMDb → episodi tt… (invariato)', async () => {
+        mockImdbIds.set('1668', ID_IMDB);
         getDuckDbMetaDetails.mockImplementation(async () => schedaSerie());
 
         const res = await metaHandler({ type: 'series', id: ID_IMDB }, userConfig());
@@ -126,9 +186,13 @@ describe('metaHandler: gli id degli episodi seguono la forma della richiesta', (
             'tt0108778:1:1',
             'tt0108778:1:2'
         ]);
+        // L'id IMDb è già nella richiesta: nessuna risoluzione (e nessuna rete) serve.
+        expect(resolveImdbId).not.toHaveBeenCalled();
     });
 
-    test('una serie aperta con tmdb: riceve episodi tmdb: (invariato)', async () => {
+    test('id IMDb non noto → gli episodi restano nella forma della richiesta (ripiego)', async () => {
+        // `mockImdbIds` vuota: la cache dedicata non ha l'id (assente davvero, o non ancora
+        // risolto). Niente da inventare: gli id restano quelli che hanno.
         getDuckDbMetaDetails.mockImplementation(async () => schedaSerie());
 
         const res = await metaHandler({ type: 'series', id: ID_TMDB }, userConfig());
@@ -138,32 +202,49 @@ describe('metaHandler: gli id degli episodi seguono la forma della richiesta', (
             'tmdb:1668:1:1',
             'tmdb:1668:1:2'
         ]);
+        expect(resolveImdbId).toHaveBeenCalledTimes(1); // si è provato, una volta: è in cache
     });
 
-    test('la seconda richiesta con l\'altra forma riceve la sua: la cache non è avvelenata', async () => {
+    test('la cache non viene avvelenata: id IMDb in cache, id nativi intatti', async () => {
+        mockImdbIds.set('1668', ID_IMDB);
         getDuckDbMetaDetails.mockImplementation(async () => schedaSerie());
 
-        // 1) apertura IMDb: gli episodi devono diventare tt…
-        const imdb = await metaHandler({ type: 'series', id: ID_IMDB }, userConfig());
-        expect(imdb.meta.videos[0].id).toBe('tt0108778:1:1');
+        // 1) apertura `tmdb:` dal catalogo → gli episodi escono in forma IMDb.
+        const daCatalogo = await metaHandler({ type: 'series', id: ID_TMDB }, userConfig());
+        expect(daCatalogo.meta.videos.map(v => v.id)).toEqual([
+            'tt0108778:1:1',
+            'tt0108778:1:2'
+        ]);
 
-        // 2) stessa serie aperta con tmdb: gli id devono tornare tmdb:, non tt…
-        const tmdb = await metaHandler({ type: 'series', id: ID_TMDB }, userConfig());
-        expect(tmdb.meta.videos.map(v => v.id)).toEqual([
+        // 2) l'array degli episodi in `tvEpisodesCache` è lo stesso oggetto che i provider
+        //    hanno prodotto: se la riscrittura fosse avvenuta su ricevuto, qui sarebbe tt…
+        const episodiInCache = mockEpisodesCache.get('1668');
+        expect(episodiInCache.map(v => v.id)).toEqual([
             'tmdb:1668:1:1',
             'tmdb:1668:1:2'
         ]);
 
-        // 3) e riaprendo con l'IMDb tornano tt…: nessuna contaminazione fra le due forme.
-        const imdbDiNuovo = await metaHandler({ type: 'series', id: ID_IMDB }, userConfig());
-        expect(imdbDiNuovo.meta.videos[0].id).toBe('tt0108778:1:1');
-
-        // La cache degli episodi conserva ancora la forma nativa: è la prova che la
-        // riscrittura è avvenuta su una copia e non sull'oggetto in cache.
-        expect(mockEpisodesCache.get('1668').map(v => v.id)).toEqual([
+        // 3) e la scheda in `finalMetaCache` conserva i suoi video nativi: le due richieste
+        //    successive (l'altra forma, e un id con suffisso) non devono trovarci dentro tt…
+        const cached = inCache();
+        expect(cached.videos).toBe(episodiInCache);
+        expect(cached.videos.map(v => v.id)).toEqual([
             'tmdb:1668:1:1',
             'tmdb:1668:1:2'
         ]);
+
+        // 4) riaprendo con l'altra forma la risposta è coerente con la richiesta su `meta.id`
+        //    e gli episodi restano in forma IMDb: nessuna contaminazione fra le due forme.
+        const daImdb = await metaHandler({ type: 'series', id: ID_IMDB }, userConfig());
+        expect(daImdb.meta.id).toBe(ID_IMDB);
+        expect(daImdb.meta.videos.map(v => v.id)).toEqual([
+            'tt0108778:1:1',
+            'tt0108778:1:2'
+        ]);
+
+        // 5) e la risposta non è letteralmente l'oggetto in cache.
+        expect(daImdb.meta).not.toBe(cached);
+        expect(daImdb.meta.videos[0]).not.toBe(episodiInCache[0]);
     });
 
     test('gli anime restano come sono: gli id Kitsu e il fallback nativo non vengono toccati', async () => {
@@ -171,6 +252,7 @@ describe('metaHandler: gli id degli episodi seguono la forma della richiesta', (
         animeMappingStore.resolveKitsu.mockImplementation((tmdbId, season, episode) =>
             episode === 1 ? { success: true, kitsuId: '9876', kitsuEpisode: 5 } : { success: false }
         );
+        mockImdbIds.set('999', 'tt0098800');
         getDuckDbMetaDetails.mockImplementation(async () => schedaSerie({ anime: true, tmdbId: '999' }));
 
         const res = await metaHandler({ type: 'series', id: 'tt0098800' }, userConfig());
@@ -180,5 +262,24 @@ describe('metaHandler: gli id degli episodi seguono la forma della richiesta', (
             'kitsu:9876:5',   // percorso anime: non riscritto
             'tmdb:999:1:2'    // fallback nativo: non riscritto
         ]);
+
+        // Anche aperta dal catalogo (`tmdb:`) l'anime resta su Kitsu, e l'id IMDb non viene
+        // nemmeno cercato: sugli anime la forma degli id è un'altra strada.
+        animeMappingStore.resolveKitsu.mockClear();
+        animeMappingStore.resolveKitsu.mockImplementation((tmdbId, season, episode) =>
+            episode === 1 ? { success: true, kitsuId: '9876', kitsuEpisode: 5 } : { success: false }
+        );
+        mockStore.clear();
+        mockEpisodesCache.clear();
+        getDuckDbMetaDetails.mockImplementation(async () => schedaSerie({ anime: true, tmdbId: '999' }));
+
+        const daTmdb = await metaHandler({ type: 'series', id: 'tmdb:999' }, userConfig());
+
+        expect(daTmdb.meta.id).toBe('tmdb:999');
+        expect(daTmdb.meta.videos.map(v => v.id)).toEqual([
+            'kitsu:9876:5',
+            'tmdb:999:1:2'
+        ]);
+        expect(resolveImdbId).not.toHaveBeenCalled();
     });
 });

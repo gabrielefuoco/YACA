@@ -1,4 +1,4 @@
-const { getTmdbMetaDetails, fetchTmdbEpisodes, createTmdbClient } = require('../clients/tmdb');
+const { getTmdbMetaDetails, fetchTmdbEpisodes, createTmdbClient, resolveImdbId } = require('../clients/tmdb');
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const CacheManager = require('../cache/CacheManager');
 const animeMappingStore = require('../data/animeMappingStore');
@@ -191,33 +191,50 @@ async function applyKitsuMappingToMeta(meta, tmdbId) {
 
 
 /**
- * Allinea gli id dei video alla forma con cui è arrivata la richiesta.
+ * Gli id degli episodi vanno in forma IMDb (`tt…:S:E`), se l'id IMDb è noto.
  *
- * Stremio chiede poi gli stream con gli id che trova in `meta.videos`: se la scheda è aperta
- * con l'id IMDb (`tt0108778`) ma gli episodi portano `tmdb:1668:S:E`, le fonti che conoscono
- * solo gli id IMDb non rispondono → una sola fonte, e quella che risponde non riconosce
- * l'episodio → sempre lo stesso. La forma giusta è quindi quella della richiesta: gli id
- * nascono "sbagliati" solo quando l'id IMDb si è perso (arriva dai dati TMDB via
- * `append_to_response`, che viene chiesto solo a cache vuota), ma a Stremio la forma che
- * conta è quella che ha usato lui per aprire la scheda.
+ * PERCHÉ SEMPRE IMDb, e non "la forma della richiesta": l'umano apre le serie dai nostri
+ * cataloghi, che danno id `tmdb:` (misurato in produzione il 03/10/2026: 20 card su 20).
+ * Stremio poi chiede gli stream **agli altri addon** con gli id che trova in `meta.videos`,
+ * e gli addon non capiscono la forma `tmdb:`. Misurato su Torrentio: `tt0108778:1:1` → 53
+ * stream, `tmdb:1668:1:1` → 0 stream. Con la forma della richiesta gli episodi restavano
+ * `tmdb:` (che è la forma con cui l'umano apre) e il sintomo era "una sorgente su tre" con
+ * l'episodio sempre uguale. L'id IMDb, invece, è *sempre* la forma che le fonti capiscono:
+ * quindi si usa quando si può, e si cade al comportamento di prima solo quando non si può.
+ *
+ * Il fallback resta la forma della richiesta: senza l'id IMDb non c'è niente di meglio da
+ * mettere, e cambiare `meta.id` (che è la forma della richiesta per costruzione) non è
+ * un'opzione — Stremio tiene libreria e stato "visto" del titolo su quell'id.
  *
  * ATTENZIONE — la trappola: `meta.videos` arriva da `tvEpisodesCache`, cioè è lo stesso
  * array (e gli stessi oggetti video) conservati in cache. Riscrivere ids *sull'oggetto
- * ricevuto* avvelenerebbe la cache: la richiesta successiva con l'altra forma troverebbe
- * gli id della prima. Qui si lavora quindi su una copia e si restituisce una meta nuova,
- * lasciando intatti l'oggetto in cache e l'array degli episodi.
+ * ricevuto* avvelenerebbe la cache. Qui si lavora quindi su una copia e si restituisce una
+ * meta nuova, lasciando intatti l'oggetto in cache e l'array degli episodi.
  *
  * Gli anime non si toccano: hanno già il loro percorso (`kitsu:...`) e il fallback sugli
- * id nativi TMDB è voluto.
+ * id nativi TMDB è voluto. Gli id `kitsu:` dentro la lista non si toccano per lo stesso
+ * motivo, e nessun altro campo del video viene scritto.
  *
  * @param {Object} meta Scheda (non viene mutata).
  * @param {string} requestedId Id come richiesto da Stremio, senza il suffisso `_ita_offset`.
+ * @param {string} [imdbIdPerEpisodi] Id IMDb del titolo, se risolto (forma `tt…`).
  * @returns {Object} Scheda con gli id allineati (la stessa se non c'è nulla da fare).
  */
-function alignVideoIdsToRequestedForm(meta, requestedId) {
-    if (!meta || typeof requestedId !== 'string' || !requestedId.startsWith('tt')) return meta;
+function alignVideoIdsToRequestedForm(meta, requestedId, imdbIdPerEpisodi) {
+    if (!meta) return meta;
     if (!Array.isArray(meta.videos) || meta.videos.length === 0) return meta;
     if (normalizeAnimeMarker(meta)) return meta;
+
+    // L'id IMDb quando è noto; altrimenti la forma della richiesta, se è già IMDb.
+    const prefisso =
+        typeof imdbIdPerEpisodi === 'string' && imdbIdPerEpisodi.startsWith('tt')
+            ? imdbIdPerEpisodi
+            : typeof requestedId === 'string' && requestedId.startsWith('tt')
+                ? requestedId
+                : null;
+
+    // Né id IMDb né richiesta in forma IMDb: gli id degli episodi restano quelli che hanno.
+    if (!prefisso) return meta;
 
     let rewritten = false;
     const videos = meta.videos.map((video) => {
@@ -230,7 +247,7 @@ function alignVideoIdsToRequestedForm(meta, requestedId) {
         const season = video.season !== undefined && video.season !== null ? video.season : parts[parts.length - 2];
         const episode = video.episode !== undefined && video.episode !== null ? video.episode : parts[parts.length - 1];
 
-        const alignedId = `${requestedId}:${season}:${episode}`;
+        const alignedId = `${prefisso}:${season}:${episode}`;
         if (alignedId === video.id) return video;
 
         rewritten = true;
@@ -239,6 +256,47 @@ function alignVideoIdsToRequestedForm(meta, requestedId) {
 
     if (!rewritten) return meta;
     return { ...meta, videos };
+}
+
+/**
+ * Id IMDb del titolo per gli id degli episodi, dalla cache dedicata `tmdb_imdb_id`
+ * (`resolveImdbId`: una chiamata ogni 7 giorni per titolo, e la negativa pure).
+ *
+ * NON `external_ids`: quelli arrivano dentro i dettagli TMDB (`append_to_response`), che
+ * vengono chiesti **solo a cache dei dettagli vuota** — dalla seconda richiesta in poi la
+ * scheda non li porta più. È la trappola che ha fatto restare gli episodi in forma `tmdb:`
+ * anche quando l'id IMDb c'era. Qui la fonte è una cache dedicata all'id IMDb: se c'è, c'è
+ * sempre (anche se è "non c'è", per 7 giorni).
+ *
+ * Degrada a `null` (⇒ la forma della richiesta resta) quando l'id non è noto, quando non
+ * c'è nulla da riscrivere (nessun episodio, anime, richiesta già in forma IMDb) e quando la
+ * risoluzione solleva: la risposta non deve mai dipendere da una rete.
+ *
+ * @param {Object} meta Scheda (non viene mutata).
+ * @param {Object} params
+ * @param {string} params.requestedId Id come richiesto da Stremio, senza il suffisso `_ita_offset`.
+ * @param {string} params.tmdbId Id TMDB del titolo.
+ * @param {string} params.type `movie` o `series`.
+ * @param {string} params.apiKey Chiave TMDB.
+ * @returns {Promise<string|null>} Id IMDb (`tt…`) o `null`.
+ */
+async function resolveImdbIdPerEpisodi(meta, { requestedId, tmdbId, type, apiKey }) {
+    if (!meta || !Array.isArray(meta.videos) || meta.videos.length === 0) return null;
+    // Boundary anime letto su una copia: `normalizeAnimeMarker` *scrive* `_isAnime` e qui
+    // l'oggetto è l'ingresso di cache, che non si tocca mai. Stesso verdetto che darà
+    // `buildResponseMeta` sulla copia che sta per costruire.
+    if (normalizeAnimeMarker({ ...meta })) return null;
+    // Richiesta già in forma IMDb: il prefisso degli episodi è l'id della richiesta, nessuna
+    // risoluzione (e nessuna rete) serve.
+    if (typeof requestedId === 'string' && requestedId.startsWith('tt')) return null;
+    if (!tmdbId) return null;
+
+    try {
+        const imdbId = await resolveImdbId(String(tmdbId), type === 'movie' ? 'movie' : 'tv', apiKey);
+        return typeof imdbId === 'string' && imdbId.startsWith('tt') ? imdbId : null;
+    } catch (_e) {
+        return null;
+    }
 }
 
 /**
@@ -262,9 +320,10 @@ function alignVideoIdsToRequestedForm(meta, requestedId) {
  * @param {string} params.requestedId Id come richiesto da Stremio, senza il suffisso `_ita_offset`.
  * @param {string} params.originalId Id grezzo come richiesto, con l'eventuale `_ita_offset`.
  * @param {string} params.type `movie` o `series`.
+ * @param {string} [params.imdbIdPerEpisodi] Id IMDb del titolo, se risolto (forma `tt…`).
  * @returns {Object} Scheda pronta per la risposta.
  */
-function buildResponseMeta(cachedMeta, { requestedId, originalId, type }) {
+function buildResponseMeta(cachedMeta, { requestedId, originalId, type, imdbIdPerEpisodi }) {
     const risposta = { ...cachedMeta };
 
     // `behaviorHints` è annidato: copiarlo è obbligatorio, altrimenti la scrittura qui sotto
@@ -290,9 +349,10 @@ function buildResponseMeta(cachedMeta, { requestedId, originalId, type }) {
     // Ripristina l'ID richiesto originale per Stremio (incluso eventuale _ita_offset)
     risposta.id = originalId;
 
-    // Gli id degli episodi devono avere la forma con cui è arrivata la richiesta
-    // (`tt…:S:E` se aperta con l'IMDb, `tmdb:…:S:E` altrimenti).
-    return alignVideoIdsToRequestedForm(risposta, requestedId);
+    // Gli id degli episodi vanno in forma IMDb (`tt…:S:E`) quando l'id IMDb è noto; altrimenti
+    // restano nella forma della richiesta. `meta.id` invece non si tocca: resta quella della
+    // richiesta, perché su quell'id Stremio tiene libreria e stato "visto" del titolo.
+    return alignVideoIdsToRequestedForm(risposta, requestedId, imdbIdPerEpisodi);
 }
 
 /**
@@ -357,10 +417,10 @@ async function metaHandler(args, userConfig) {
         const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
         if (!tmdbApiKey) throw new Error("TMDB API key mancante");
         let meta = null;
+        let tmdbId = null;
 
         // Fetch metadata via TMDB
         if (id.startsWith('tmdb:') || id.startsWith('tt') || id.startsWith('kitsu:')) {
-            let tmdbId = null;
             if (id.startsWith('tmdb:')) {
                 tmdbId = id.replace('tmdb:', '');
             } else if (id.startsWith('tt')) {
@@ -453,7 +513,13 @@ async function metaHandler(args, userConfig) {
             // `meta` qui è l'ingresso di cache: non lo si riscrive, lo si *deriva*.
             // Anche una entry dalla cache storica deve rispettare il boundary
             // corrente prima di raggiungere formatter e consumer.
-            return { meta: buildResponseMeta(meta, { requestedId: id, originalId, type }) };
+            const imdbIdPerEpisodi = await resolveImdbIdPerEpisodi(meta, {
+                requestedId: id,
+                tmdbId,
+                type,
+                apiKey: tmdbApiKey
+            });
+            return { meta: buildResponseMeta(meta, { requestedId: id, originalId, type, imdbIdPerEpisodi }) };
         }
 
         return { meta: null };
