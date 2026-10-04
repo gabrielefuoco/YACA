@@ -11,6 +11,7 @@ const path = require('path');
 const { TmdbFallbackResolver } = require('./tmdbFallback');
 const { TvdbBridgeResolver } = require('./tvdbBridge');
 const { loadAnimeOverrides } = require('./overrides');
+const { normalizeMediaType } = require('./aggregate');
 
 const ANIBRIDGE_URL = 'https://github.com/anibridge/anibridge-mappings/releases/download/v3/mappings.min.json';
 const FRIBB_MINI_URL = 'https://raw.githubusercontent.com/Fribb/anime-lists/master/anime-list-mini.json';
@@ -45,6 +46,12 @@ class IdentityResolver {
 
         this.anilistToSeason = new Map();
         this.malToSeason = new Map();
+
+        // Tipo dichiarato dalla fonte ('movie'|'tv'), per la stessa chiave del
+        // TMDB a cui si riferisce. Se la fonte non lo dichiara, la chiave manca.
+        this.anilistToMediaType = new Map();
+        this.malToMediaType = new Map();
+        this.kitsuToMediaType = new Map();
 
         this.anilistToTvdb = new Map(); // anilistId -> { tvdbId: string, season: number }
         this.malToTvdb = new Map();      // malId -> { tvdbId: string, season: number }
@@ -145,6 +152,42 @@ class IdentityResolver {
                null;
     }
 
+    /**
+     * Scrive il tipo dichiarato dalla fonte accanto all'id a cui si riferisce.
+     * Chiamata SOLO quando l'id TMDB viene effettivamente impostato: il tipo
+     * descrive quell'id, quindi non sopravvive a un id riscritto.
+     * @param {Map<string,string>} map anilistToMediaType | malToMediaType | kitsuToMediaType
+     * @param {string} key
+     * @param {*} value tipo grezzo dalla fonte ('tv'|'movie'|null)
+     */
+    _setMediaType(map, key, value) {
+        const type = normalizeMediaType(value);
+        if (type) {
+            map.set(key, type);
+        } else {
+            map.delete(key);
+        }
+    }
+
+    /**
+     * Tipo dichiarato dalla fonte per un'identita' ('movie'|'tv'), o null se la
+     * fonte non lo dichiara. Non e' un default: null significa "non dichiarato".
+     * @param {Object} params
+     * @param {number|string} [params.anilistId]
+     * @param {number|string} [params.malId]
+     * @param {number|string} [params.kitsuId]
+     * @returns {'movie'|'tv'|null}
+     */
+    getMediaType({ anilistId, malId, kitsuId } = {}) {
+        const aId = anilistId != null ? String(anilistId) : null;
+        const mId = malId != null ? String(malId) : null;
+        const kId = kitsuId != null ? String(kitsuId) : null;
+        return (aId && this.anilistToMediaType.get(aId)) ||
+               (mId && this.malToMediaType.get(mId)) ||
+               (kId && this.kitsuToMediaType.get(kId)) ||
+               null;
+    }
+
     _buildFribbIndex(fribbData) {
         for (const item of fribbData) {
             const kitsuId = item.kitsu_id ? String(item.kitsu_id) : null;
@@ -152,10 +195,21 @@ class IdentityResolver {
             const malId = item.mal_id ? String(item.mal_id) : null;
 
             let tmdbVal = null;
+            let tmdbType = null;
             if (item.themoviedb_id) {
-                tmdbVal = typeof item.themoviedb_id === 'object' && item.themoviedb_id !== null
-                    ? (item.themoviedb_id.tv || item.themoviedb_id.movie)
-                    : item.themoviedb_id;
+                if (typeof item.themoviedb_id === 'object' && item.themoviedb_id !== null) {
+                    // La forma {tv, movie} dichiara anche il tipo: si ricorda
+                    // quale ramo ha vinto (precedenza tv, come prima).
+                    if (item.themoviedb_id.tv) {
+                        tmdbVal = item.themoviedb_id.tv;
+                        tmdbType = 'tv';
+                    } else if (item.themoviedb_id.movie) {
+                        tmdbVal = item.themoviedb_id.movie;
+                        tmdbType = 'movie';
+                    }
+                } else {
+                    tmdbVal = item.themoviedb_id;
+                }
                 if (tmdbVal) tmdbVal = String(tmdbVal);
             }
 
@@ -164,6 +218,7 @@ class IdentityResolver {
                 if (malId) this.malToKitsu.set(malId, kitsuId);
                 if (tmdbVal) {
                     this.kitsuToTmdb.set(kitsuId, tmdbVal);
+                    this._setMediaType(this.kitsuToMediaType, kitsuId, tmdbType);
                 }
             }
 
@@ -171,6 +226,7 @@ class IdentityResolver {
                 if (anilistId) {
                     if (!this.anilistToTmdb.has(anilistId)) {
                         this.anilistToTmdb.set(anilistId, tmdbVal);
+                        this._setMediaType(this.anilistToMediaType, anilistId, tmdbType);
                     }
                     this.officialAnilist.add(anilistId);
                     this.resolutionLevelMap.set('anilist:' + anilistId, 'official');
@@ -178,6 +234,7 @@ class IdentityResolver {
                 if (malId) {
                     if (!this.malToTmdb.has(malId)) {
                         this.malToTmdb.set(malId, tmdbVal);
+                        this._setMediaType(this.malToMediaType, malId, tmdbType);
                     }
                     this.officialMal.add(malId);
                     this.resolutionLevelMap.set('mal:' + malId, 'official');
@@ -215,6 +272,8 @@ class IdentityResolver {
                 if (providerKey.startsWith('tmdb_show:') || providerKey.startsWith('tmdb_movie:')) {
                     const parts = providerKey.split(':');
                     const tmdbId = parts[1];
+                    // Il prefisso dichiara gia' il tipo: show -> tv, movie -> movie.
+                    const mediaType = normalizeMediaType(providerKey.startsWith('tmdb_movie:') ? 'movie' : 'tv');
                     let season = 1;
                     if (parts.length > 2) {
                         season = parseInt(parts[2].replace('s', ''), 10) || 1;
@@ -225,6 +284,7 @@ class IdentityResolver {
                         for (const clusterAnilist of anilistList) {
                             if (!this.anilistToTmdb.has(clusterAnilist)) {
                                 this.anilistToTmdb.set(clusterAnilist, strTmdb);
+                                this._setMediaType(this.anilistToMediaType, clusterAnilist, mediaType);
                             }
                             this.anilistToSeason.set(clusterAnilist, season);
                             this.officialAnilist.add(clusterAnilist);
@@ -233,6 +293,7 @@ class IdentityResolver {
                         for (const clusterMal of malList) {
                             if (!this.malToTmdb.has(clusterMal)) {
                                 this.malToTmdb.set(clusterMal, strTmdb);
+                                this._setMediaType(this.malToMediaType, clusterMal, mediaType);
                             }
                             this.malToSeason.set(clusterMal, season);
                             this.officialMal.add(clusterMal);
@@ -405,7 +466,7 @@ class IdentityResolver {
      * @param {number|string} [params.anilistId]
      * @param {number|string} [params.malId]
      * @param {number|string} [params.tvdbId]
-     * @returns {{ tmdbId: string, kitsuId: string|null, anilistId: number|null, malId: number|null, season: number, level: string }|null}
+     * @returns {{ tmdbId: string, kitsuId: string|null, anilistId: number|null, malId: number|null, season: number, level: string, mediaType: 'movie'|'tv'|null }|null}
      */
     resolve({ anilistId, malId, tvdbId } = {}) {
         const aId = anilistId ? String(anilistId) : null;
@@ -421,7 +482,10 @@ class IdentityResolver {
                 anilistId: aId ? Number(aId) : null,
                 malId: mId ? Number(mId) : null,
                 season: override.season || 1,
-                level: 'override'
+                level: 'override',
+                // L'override forzato sostituisce l'id TMDB: il tipo dichiarato dalla
+                // fonte ufficiale descrive il vecchio id, quindi non viene riportato.
+                mediaType: null
             };
         }
 
@@ -441,7 +505,8 @@ class IdentityResolver {
                 anilistId: aId ? Number(aId) : null,
                 malId: mId ? Number(mId) : null,
                 season: override.season || 1,
-                level: 'override'
+                level: 'override',
+                mediaType: this.getMediaType({ anilistId: aId, malId: mId, kitsuId })
             };
         }
 
@@ -458,7 +523,8 @@ class IdentityResolver {
             anilistId: aId ? Number(aId) : null,
             malId: mId ? Number(mId) : null,
             season,
-            level
+            level,
+            mediaType: this.getMediaType({ anilistId: aId, malId: mId, kitsuId })
         };
     }
 
@@ -541,6 +607,7 @@ class IdentityResolver {
                     match: {
                         tmdbId: existing.tmdbId,
                         season: existing.season,
+                        mediaType: existing.mediaType,
                         source: currentLevel
                     }
                 });
@@ -585,16 +652,25 @@ class IdentityResolver {
 
                 if (bridgeMatch && bridgeMatch.tmdbId) {
                     const season = Number(tvdbInfo.season) || 1;
+                    // /3/find dichiara se il risultato e' una serie o un film: il tipo
+                    // viaggia con l'id che andiamo a salvare.
+                    const mediaType = normalizeMediaType(bridgeMatch.mediaType);
                     const cacheLabel = bridgeMatch.fromCache ? 'da cache' : 'nuova chiamata TMDB';
-                    console.log(`[IdentityBridge] Record "${rawTitle}" (id: ${rec.id}) risolto livello=bridge_tvdb in TMDB ${bridgeMatch.tmdbId} S${season} ("${bridgeMatch.name}") [tvdb:${tvdbInfo.tvdbId}, ${cacheLabel}]${dryRun ? ' (DRY-RUN)' : ''}`);
+                    console.log(`[IdentityBridge] Record "${rawTitle}" (id: ${rec.id}) risolto livello=bridge_tvdb in TMDB ${bridgeMatch.tmdbId} S${season} ("${bridgeMatch.name}") [tvdb:${tvdbInfo.tvdbId}, ${mediaType || 'tipo non dichiarato'}, ${cacheLabel}]${dryRun ? ' (DRY-RUN)' : ''}`);
 
                     if (aId) {
-                        if (!this.anilistToTmdb.has(aId)) this.anilistToTmdb.set(aId, String(bridgeMatch.tmdbId));
+                        if (!this.anilistToTmdb.has(aId)) {
+                            this.anilistToTmdb.set(aId, String(bridgeMatch.tmdbId));
+                            this._setMediaType(this.anilistToMediaType, aId, mediaType);
+                        }
                         this.anilistToSeason.set(aId, season);
                         this.resolutionLevelMap.set('anilist:' + aId, 'bridge_tvdb');
                     }
                     if (mId) {
-                        if (!this.malToTmdb.has(mId)) this.malToTmdb.set(mId, String(bridgeMatch.tmdbId));
+                        if (!this.malToTmdb.has(mId)) {
+                            this.malToTmdb.set(mId, String(bridgeMatch.tmdbId));
+                            this._setMediaType(this.malToMediaType, mId, mediaType);
+                        }
                         this.malToSeason.set(mId, season);
                         this.resolutionLevelMap.set('mal:' + mId, 'bridge_tvdb');
                     }
@@ -607,6 +683,7 @@ class IdentityResolver {
                             name: bridgeMatch.name,
                             season,
                             tvdbId: tvdbInfo.tvdbId,
+                            mediaType,
                             source: 'tvdb_bridge'
                         }
                     });
@@ -620,6 +697,10 @@ class IdentityResolver {
             }
 
             // 3. Livello Fallback Titolo (/3/search/tv)
+            // Nota: qui il tipo NON viene dichiarato. Il resolver cerca solo in
+            // /3/search/tv, quindi un 'tv' qui sarebbe artefatto della strategia
+            // di ricerca, non informazione della fonte: il documento resta senza
+            // tipo e le decisioni restano a valle.
             const titleMatch = await this.fallbackResolver.resolveFallback({
                 title: rec.title,
                 title_eng: rec.title_eng,
