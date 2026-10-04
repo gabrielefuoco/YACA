@@ -35,6 +35,29 @@ const DEFAULT_TIMEOUT_MS = 5000;
  */
 const MOVIE_MAX_EPISODES = 3;
 
+/** Tipi che `anime_airing_state` può dichiarare in `mediaType` (vedi `services/anime-source`). */
+const MEDIA_TYPES = ['movie', 'tv'];
+
+/**
+ * Il tipo **dichiarato** dalla fonte, o `null` se il documento non lo dichiara.
+ *
+ * Il campo è scritto solo quando la fonte lo dichiara e non è mai inventato
+ * (`services/anime-source/src/aggregate.js:251` e `:432`), quindi la sua assenza è
+ * informazione: "nessuno ha detto niente", non "serie". Perciò qui non si colma
+ * nessun buco e non si deduce nulla: si legge e basta, e un valore non riconosciuto
+ * vale come non dichiarato (la regola sui dump resta la risposta).
+ *
+ * @param {object} doc Documento da anime_airing_state
+ * @returns {'movie'|'tv'|null}
+ */
+function declaredMediaType(doc) {
+    if (!doc || typeof doc !== 'object') return null;
+    const raw = doc.mediaType;
+    if (typeof raw !== 'string') return null;
+    const v = raw.trim().toLowerCase();
+    return MEDIA_TYPES.includes(v) ? v : null;
+}
+
 /**
  * Ritorna l'episodio doppiato più recente dal documento, oppure null se non è doppiato.
  * Legge `dub.episode` o `italian.dub.latest.episode`, con fallback sull'episodio più
@@ -96,7 +119,12 @@ function maxEpisodeNumber(doc) {
 /**
  * Converte documenti anime in righe di annotazione { t, id, ita: true }.
  *
- * Risoluzione t ('tv' vs 'movie'), in quest'ordine:
+ * Risoluzione t ('tv' vs 'movie'):
+ * 0. **il tipo dichiarato vince**: se il documento porta `mediaType` ('movie'|'tv'), quello è il `t`.
+ *    È la dichiarazione della fonte (non un indovinello): *Jin-Roh*, *Totoro*, *Mononoke* sono film e senza
+ *    questa riga escono `tv:<id>`, mentre il badge si cerca con `movie:<id>` — cioè non si trova.
+ *    Ticket 50 della mappa motore-raccomandazioni. Quando il campo non c'è (i documenti già in produzione,
+ *    o le fonti che non dichiarano il tipo) si applica la regola di prima, invariata:
  * 1. **veto degli episodi**: se il documento ha una corsa di episodi (`maxEpisodeNumber > 3`) è una serie,
  *    punto: `t = 'tv'`. Il dump tv non basta a dirlo (è filtrato), la corsa di episodi sì;
  * 2. se l'id **non** è nel dump tv ma **è** in quello film → `t = 'movie'` (es. *Kimi no Na wa*, *Ponyo*);
@@ -126,10 +154,16 @@ function animeDocsToRows(docs, { tvIds = null, movieIds = null } = {}) {
         if (!/^\d+$/.test(rawId)) continue;
 
         const numId = Number(rawId);
-        let t = 'tv';
-        if (maxEpisodeNumber(doc) <= MOVIE_MAX_EPISODES && tvIds && movieIds) {
-            if (!tvIds.has(numId) && movieIds.has(numId)) {
-                t = 'movie';
+
+        // Il tipo dichiarato dalla fonte è la risposta: la regola sui dump è un ripiego per i
+        // documenti che non lo dichiarano (i 954 già scritti), e non deve più avere voce su quelli.
+        let t = declaredMediaType(doc);
+        if (!t) {
+            t = 'tv';
+            if (maxEpisodeNumber(doc) <= MOVIE_MAX_EPISODES && tvIds && movieIds) {
+                if (!tvIds.has(numId) && movieIds.has(numId)) {
+                    t = 'movie';
+                }
             }
         }
 
@@ -142,6 +176,23 @@ function animeDocsToRows(docs, { tvIds = null, movieIds = null } = {}) {
 
     return rows;
 }
+
+/**
+ * Campi chiesti a MongoDB per ogni documento.
+ *
+ * Stessa proiezione per la lettura vera e per le collection mock dei test: altrimenti un mock
+ * potrebbe nascondere un campo mancante, ed è successo (`mediaType` non era proiettato, quindi
+ * in produzione il tipo dichiarato non arrivava e la riga ripartiva dall'indovinello sui dump).
+ */
+const DOC_PROJECTION = {
+    _id: 1,
+    schemaVersion: 1,
+    title: 1,
+    dub: 1,
+    italian: 1,
+    episodes: 1,
+    mediaType: 1
+};
 
 /**
  * Legge i documenti da MongoDB anime_airing_state (sola lettura).
@@ -157,7 +208,7 @@ function animeDocsToRows(docs, { tvIds = null, movieIds = null } = {}) {
 async function fetchAnimeAiringDocs(opts = {}) {
     if (opts.collection && typeof opts.collection.find === 'function') {
         try {
-            const docs = await opts.collection.find({}).toArray();
+            const docs = await opts.collection.find({}, { projection: { ...DOC_PROJECTION } }).toArray();
             return { ok: true, docs };
         } catch (err) {
             return { ok: false, docs: [], error: err.message };
@@ -197,14 +248,7 @@ async function fetchAnimeAiringDocs(opts = {}) {
         const collection = db.collection(COLLECTION_NAME);
 
         const docs = await collection.find({}, {
-            projection: {
-                _id: 1,
-                schemaVersion: 1,
-                title: 1,
-                dub: 1,
-                italian: 1,
-                episodes: 1
-            }
+            projection: { ...DOC_PROJECTION }
         }).toArray();
 
         return { ok: true, docs };
@@ -247,11 +291,13 @@ async function loadAnimeDubbedRows(opts = {}) {
 
 module.exports = {
     COLLECTION_NAME,
+    DOC_PROJECTION,
     SUPPORTED_SCHEMA_VERSION,
     MOVIE_MAX_EPISODES,
     getDubEpisode,
     isAnimeDubbed,
     maxEpisodeNumber,
+    declaredMediaType,
     animeDocsToRows,
     fetchAnimeAiringDocs,
     loadAnimeDubbedRows

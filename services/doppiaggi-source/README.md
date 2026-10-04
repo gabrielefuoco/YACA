@@ -64,6 +64,14 @@ su AnimeUnity (e non censito su Antonio Genna) perderebbe il badge.
 - **Regola del doppiaggio**: identica a quella del core in `src/data/animeAiringState.js:593-611` (`getDubEpisode`)
   e `173-174` (estrazione da `raw.dub` o `italian.dub.latest`, con fallback sull'episodio più recente con
   `dubIta: true` in `episodes[]`).
+- **Il tipo dichiarato dalla fonte vince, e non è un indovinello**: `anime_airing_state` porta `mediaType`
+  (`'movie'|'tv'`), scritto **solo** quando la fonte lo dichiara e mai inventato
+  (`services/anime-source/src/aggregate.js`). Se il documento lo dichiara, quello è il `t` della riga: è la
+  dichiarazione della fonte, non una deduzione. Prima la riga usciva `tv` per default e `movie` solo per
+  assenza dai dump, quindi i film anime doppiati fuori dai dump (*Jin-Roh*, *Totoro*, *Mononoke*…) finivano
+  `tv:<id>` mentre il badge cerca `movie:<id>` — non si trovava (ticket 50). Quando il campo manca (i 954
+  documenti già in produzione: verificato in lettura il 04/10/2026, `mediaType` presente in **0**) valgono
+  le regole sotto, invariate.
 - **Serie o film? Il dump tv NON basta a dirlo (misurato)**: il dump tv è **filtrato** (Tier 1), quindi una serie
   fuori soglia sparisce e — se lo stesso numero esiste anche come film — il suo id finirebbe annotato come
   `movie`, cioè un badge ITA su un film che non c'entra. Misurato il 01/10/2026 con l'**export TMDB completo**
@@ -213,7 +221,7 @@ I test coprono: le tre regole di parsing (lettera decorativa, articolo invertito
 quattro percorsi di match, il rifiuto del rumore nel fuzzy stretto, il caso indecidibile che resta `null`, i
 record non toccati che restano `false`, la **chiave `(tipo, id)`**, il formato e l'atomicità del writer, la
 **guardia** sul calo dei `true`, il dry-run e il filtro delle cartelle escluse; l'**unione anime** (regola
-identica al core, **veto degli episodi**, `t: "movie"` per i film fuori dal dump tv, degrado con avviso quando
+identica al core, **il tipo dichiarato** `mediaType` quando c'è, **veto degli episodi**, `t: "movie"` per i film fuori dal dump tv, degrado con avviso quando
 Mongo non risponde) e `mergeAnnotationRows` (`true` > `null` > assente, nessun declassamento, ordinamento
 `(t, id)`); la **risoluzione TMDB ID** (identità provata via titolo/originale/alternativo, rifiuto quando nessun
 nome coincide, ripresa dal punto con cache, arresto a budget raggiunto senza scrivere un file incompleto,
