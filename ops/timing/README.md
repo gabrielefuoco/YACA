@@ -47,5 +47,7 @@ node ops/timing/analyze-idle.js ./prof.json
 
 `kill -USR1` apre l'ispettore V8 **soltanto sul loopback del container** (la porta 9229
 non è pubblicata in `docker-compose.yml`), non tocca codice né dati, e `probe-profile.js`
-lo richiude appena finito. È l'unico modo per misurare *dentro* il processo senza
-deployare una riga di log: il resto (tempo HTTP, connessioni, byte, Redis) è tutto esterno.
+prova a chiuderlo a fine misura. **Attenzione**: su Node 20 `require('inspector').close()`
+NON chiude un ispettore avviato da `SIGUSR1`, quindi la 9229 resta in ascolto dentro il
+container fino al prossimo riavvio. È innocua (non è raggiungibile dall'host e non cambia i
+tempi di risposta, verificato prima/dopo), ma va saputa.

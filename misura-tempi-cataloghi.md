@@ -210,3 +210,14 @@ node ops/timing/analyze-profile.js /tmp/p.json ; node ops/timing/analyze-idle.js
 `ops/timing/README.md` spiega ogni strumento. Il profilo si chiude da solo
 (`Runtime.evaluate → require('inspector').close()`): l'ispettore era aperto solo sul loopback
 del container e per pochi secondi.
+
+### Residuo dichiarato
+
+`require('inspector').close()` **non** chiude un ispettore aperto con `SIGUSR1` (su Node 20 è
+un no-op in quel caso): dopo l'ultimo profilo la porta 9229 resta in ascolto **solo sul
+loopback del container**, che non è pubblicato in `docker-compose.yml` (dal mate
+`curl 127.0.0.1:9229` non risponde, e 9229 non compare fra le porte in ascolto dell'host).
+Non è raggiungibile da fuori e non cambia le risposte: prima e dopo il profiling i tempi sono
+identici (catalogo caldo 108-110 ms, health 200 in ~1 ms). Si chiude al prossimo riavvio del
+container, che è l'unica cosa che servirebbe fare — e che **non** ho fatto per non deployare.
+
