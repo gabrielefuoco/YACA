@@ -104,7 +104,11 @@ function isAiringStateCatalog(baseId, catalogMeta) {
 //     e la card porta con sé il riferimento al proprio documento (`_airingDocTmdbId`).
 //     Senza bump, le pagine già in cache non avrebbero né la regola nuova né il riferimento:
 //     continuerebbero a servire il poster nudo per giorni.
-const BADGE_CATALOG_VERSION = 21;
+// 22: entra in catalogo anche la serie **annunciata** (la lista "In corso" la vede, ma nessun
+//     episodio è ancora uscito: `sub = { season: 2, episode: 0 }`, normalizzato a `null`).
+//     Sono DUE card in più nella pagina, quindi le chiavi già in cache continuerebbero a servire
+//     una lista vecchia per 14 giorni: senza bump i titoli annunciati non si vedrebbero.
+const BADGE_CATALOG_VERSION = 22;
 
 /**
  * Serializza la definizione di un catalogo in forma canonica: chiavi ordinate,
@@ -313,7 +317,19 @@ async function applyAiringStateBadges(metas, {
             const info = animeAiringState.getCardInfo(doc);
             if (!info) {
                 // Nessuno stato per questa serie: la card resta, senza badge.
-                processed.push(senzaRiferimentoAiring({ ...item, _itaBadge: false }));
+                //
+                // Si ri-formattta invece di passare l'item così com'è, perché alla costruzione del
+                // catalogo il badge episodio era già stato calcolato da TMDB (`showEpisodeBadge` è
+                // true su questo preset): una serie **annunciata** — che è proprio il caso in cui
+                // non c'è nessuno stato, perché `sub.episode = 0` viene normalizzato a `null` — si
+                // porterebbe dietro un `S2 E1` inventato. Qui il badge del simulcast viene SEMPRE e
+                // SOLO dallo stato esterno, quindi "nessuno stato" vuol dire "nessun badge".
+                // Per chi oggi non ha badge il risultato è identico (l'URL del poster non cambia).
+                processed.push(senzaRiferimentoAiring(sanitizeCatalogMeta({
+                    ...item,
+                    _itaBadge: false,
+                    _itaOnlyBadge: true
+                }, { ...sanitizeOptions, shouldApplyEpisodeBadge: false })));
                 continue;
             }
 
