@@ -301,14 +301,22 @@ const UserConfig = {
     async resolveUserConfig(handle) {
         if (!handle) return null;
 
-        // Try UUID-based lookup (AddonConfig table) first
-        const addonConfig = await AddonConfig.findOne({ uuid: handle }).lean().catch(() => null);
+        // Le due query del ramo UUID non dipendono l'una dall'altra (entrambe usano
+        // solo `handle`): partono insieme e il ramo si decide a valle, quando i due
+        // risultati sono arrivati. Erano due round trip serializzati su due
+        // collection diverse: ~90% del tempo di una richiesta.
+        const [addonConfig, accountByUuid] = await Promise.all([
+            AddonConfig.findOne({ uuid: handle }).lean().catch(() => null),
+            UserAccount.findOne({ addonUuid: handle }).lean().catch(() => null)
+        ]);
+
+        // UUID-based lookup (AddonConfig table) — stessa precedenza di prima
         if (addonConfig) {
-            const account = await UserAccount.findOne({ addonUuid: handle }).lean().catch(() => null);
-            return this._buildResolvedConfig(account, addonConfig);
+            return this._buildResolvedConfig(accountByUuid, addonConfig);
         }
 
-        // Try userId-based lookup
+        // userId-based lookup: parte solo se il ramo UUID non ha risolto. La query
+        // su AddonConfig qui non si può anticipare, dipende da account.addonUuid.
         const account = await UserAccount.findOne({ userId: handle }).lean().catch(() => null);
         if (account?.addonUuid) {
             const config = await AddonConfig.findOne({ uuid: account.addonUuid }).lean().catch(() => null);
