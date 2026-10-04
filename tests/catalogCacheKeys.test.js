@@ -1,101 +1,118 @@
 /**
  * tests/catalogCacheKeys.test.js
  *
- * Ticket 47 — le due chiavi della cache dei cataloghi.
+ * Ticket 47 — le due chiavi della cache dei cataloghi, e chi le condivide.
  *
- * La chiave di oggi contiene tutto: contenuto e presentazione, utente compreso. Per
+ * Oggi la chiave contiene tutto: contenuto e presentazione, utente compreso. Per
  * `preset_adult_animation` in produzione esistono **20 chiavi distinte** che contengono la stessa
  * lista di titoli, perché ogni profilo ne crea una sua.
  *
- * La separazione serve a questo:
- *  - `buildCatalogContentKey` → cosa entra nel catalogo. **Uguale** per profili diversi: è la chiave
- *    della selezione (livello 1), che si può condividere.
- *  - `buildCatalogCacheKey`  → contenuto + chi guarda e come. **Diversa** per profili diversi: è la
- *    chiave del formato (livello 2), che resta per profilo.
+ * La regola, verificata il 04/10/2026 leggendo chi produce i campi:
+ *  - i **preset** non portano niente dell'utente → la loro chiave non contiene `user`/`profile`;
+ *  - **watchlist** (libreria personale), **hero** (DNA e `_yacaMatch`), **custom** e **merged**
+ *    (che possono avere come sorgente una watchlist, `CatalogRouter.js:101-103`) restano per profilo.
  *
- * Questi test difendono la proprietà, non l'implementazione: se qualcuno rimette `user` nel
- * contenuto, il primo test diventa rosso e spiega perché.
+ * Questi test difendono la proprietà, non l'implementazione: se qualcuno rimette `user` nella
+ * chiave di un preset, il secondo test diventa rosso; se lo toglie da una watchlist, il terzo.
  */
 
-const { buildCatalogCacheKey, buildCatalogContentKey } = require('../src/handlers/catalogHandler');
+const {
+    buildCatalogCacheKey,
+    buildCatalogContentKey
+} = require('../src/handlers/catalogHandler');
 
-const CATALOGO = { id: 'preset_adult_animation', type: 'series' };
-const DEFINIZIONE = { id: 'preset_adult_animation', type: 'series', name: 'Adult Animation' };
+const utente = (userId, profileId) => ({ userId, activeProfileId: profileId });
 
-const utente = (userId, profileId, extra = {}) => ({
-    userId,
-    activeProfileId: profileId,
-    ...extra
-});
-
-const chiavi = (userConfig, activeProfileSettings = {}) => ({
+const chiavi = (id, baseId, userConfig, activeProfileSettings = {}) => ({
     content: buildCatalogContentKey({
-        ...CATALOGO,
-        catalogMeta: DEFINIZIONE,
+        id,
+        baseId,
+        type: 'series',
+        catalogMeta: { id: baseId, type: 'series', name: baseId },
+        userConfig,
         activeProfileSettings
     }),
     format: buildCatalogCacheKey({
-        ...CATALOGO,
-        catalogMeta: DEFINIZIONE,
+        id,
+        baseId,
+        type: 'series',
+        catalogMeta: { id: baseId, type: 'series', name: baseId },
         userConfig,
         activeProfileSettings
     })
 });
 
+// Un preset vero (sta in `getPresets()`), e tre cataloghi che non lo sono.
+const PRESET = ['yaca_preset_preset_adult_animation', 'preset_adult_animation'];
+const WATCHLIST = ['yaca_watchlist_series', 'yaca_watchlist_series'];
+const HERO = ['yaca_true_blend_movies', 'yaca_true_blend_movies'];
+const MERGED = ['yaca_merged_qualcosa', 'merged_qualcosa'];
+
 describe('le due chiavi della cache dei cataloghi (ticket 47)', () => {
-    test('il CONTENUTO e\' lo stesso per due profili diversi', () => {
-        const a = chiavi(utente('REOZrGNRr3', 'global'));
-        const b = chiavi(utente('ALTROUTENTE', 'cinema-autore'));
+    test('un PRESET: contenuto e formato identici per due profili diversi', () => {
+        const a = chiavi(...PRESET, utente('REOZrGNRr3', 'global'));
+        const b = chiavi(...PRESET, utente('ALTROUTENTE', 'cinema-autore'));
         expect(a.content).toBe(b.content);
+        // È il guadagno: le 20 chiavi di adult_animation diventano 1.
+        expect(a.format).toBe(b.format);
     });
 
-    test('il FORMATO e\' diverso per due profili diversi', () => {
-        const a = chiavi(utente('REOZrGNRr3', 'global'));
-        const b = chiavi(utente('ALTROUTENTE', 'cinema-autore'));
+    test('una WATCHLIST resta per profilo', () => {
+        const a = chiavi(...WATCHLIST, utente('REOZrGNRr3', 'global'));
+        const b = chiavi(...WATCHLIST, utente('ALTROUTENTE', 'cinema-autore'));
+        expect(a.format).not.toBe(b.format);
+        expect(a.content).not.toBe(b.content);
+    });
+
+    test('un HERO resta per profilo (DNA e _yacaMatch)', () => {
+        const a = chiavi(...HERO, utente('REOZrGNRr3', 'global'));
+        const b = chiavi(...HERO, utente('ALTROUTENTE', 'cinema-autore'));
+        expect(a.format).not.toBe(b.format);
+    });
+
+    test('un MERGED resta per profilo (può avere una watchlist come sorgente)', () => {
+        const a = chiavi(...MERGED, utente('REOZrGNRr3', 'global'));
+        const b = chiavi(...MERGED, utente('ALTROUTENTE', 'cinema-autore'));
         expect(a.format).not.toBe(b.format);
     });
 
     test('il contenuto cambia quando cambia cosa entra nel catalogo', () => {
-        const base = chiavi(utente('u', 'global'));
-        const kids = chiavi(utente('u', 'global'), { kidsMode: true });
-        const selectors = chiavi(utente('u', 'global'), { typeSelectors: { kind: 'series' } });
+        const base = chiavi(...PRESET, utente('u', 'global'));
+        const kids = chiavi(...PRESET, utente('u', 'global'), { kidsMode: true });
+        const selectors = chiavi(...PRESET, utente('u', 'global'), { typeSelectors: { kind: 'series' } });
         expect(kids.content).not.toBe(base.content);
         expect(selectors.content).not.toBe(base.content);
     });
 
     test('la presentazione NON tocca il contenuto', () => {
-        const base = chiavi(utente('u', 'global'));
-        const landscape = chiavi(utente('u', 'global'), { isLandscapeEnabled: true });
-        // Il poster orizzontale è presentazione: cambia il formato, non la selezione.
+        const base = chiavi(...PRESET, utente('u', 'global'));
+        const landscape = chiavi(...PRESET, utente('u', 'global'), { isLandscapeEnabled: true });
         expect(landscape.content).toBe(base.content);
         expect(landscape.format).not.toBe(base.format);
     });
 
     test('la versione dei badge NON tocca il contenuto', () => {
-        const args = { ...CATALOGO, catalogMeta: DEFINIZIONE, userConfig: utente('u', 'global') };
-        const v18 = buildCatalogCacheKey({ ...args, badgeVersion: 18 });
-        const v19 = buildCatalogCacheKey({ ...args, badgeVersion: 19 });
-        const content18 = buildCatalogContentKey({ ...args, badgeVersion: 18 });
-        const content19 = buildCatalogContentKey({ ...args, badgeVersion: 19 });
-        expect(v18).not.toBe(v19);            // il badge è presentazione: invalida il formato
-        expect(content18).toBe(content19);    // la selezione non si tocca
+        const args = {
+            id: PRESET[0], baseId: PRESET[1], type: 'series',
+            catalogMeta: { id: PRESET[1], type: 'series' },
+            userConfig: utente('u', 'global')
+        };
+        expect(buildCatalogCacheKey({ ...args, badgeVersion: 18 }))
+            .not.toBe(buildCatalogCacheKey({ ...args, badgeVersion: 19 }));
+        expect(buildCatalogContentKey({ ...args, badgeVersion: 18 }))
+            .toBe(buildCatalogContentKey({ ...args, badgeVersion: 19 }));
     });
 
-    test('la chiave del formato e\' quella di sempre: hash congelato', () => {
-        // La separazione NON deve invalidare la cache esistente: il `formatKey` composto con gli
-        // stessi ingredienti di prima deve produrre lo stesso hash di `main`. Questo valore è
-        // stato calcolato su `main` il 04/10/2026, prima della separazione. Se cambia, la cache
-        // di tutti i cataloghi si svuota — e nessuno se ne accorgerebbe guardando il codice.
-        const format = chiavi(utente('REMO', 'global'), { kidsMode: true, typeSelectors: { kind: 'series' } });
-        const conBadge19 = buildCatalogCacheKey({
-            ...CATALOGO,
-            catalogMeta: DEFINIZIONE,
-            userConfig: { userId: 'REMO', activeProfileId: 'global' },
-            activeProfileSettings: { kidsMode: true, typeSelectors: { kind: 'series' } },
-            badgeVersion: 19
-        });
-        expect(conBadge19).toBe('cabf1514f87ca941c5ffc2822142b369c0c8088dbd13253e14d9c587e0ddcbd0');
-        // `chiavi()` non passa badgeVersion: usa il default, che oggi è 19.
-        expect(format.format).toBe(conBadge19);
+    test('per un catalogo NON condiviso la chiave è quella di sempre: hash congelato', () => {
+        // Guardia: togliere `user`/`profile` dai preset è voluto, toglierli altrove no. Questo hash
+        // è stato calcolato **su `main`** il 04/10/2026, prima di ogni modifica, per una watchlist.
+        // Verificato identico sul ramo: per i cataloghi non condivisi la chiave non è cambiata di un
+        // byte, quindi la loro cache non si svuota. Se questo test diventa rosso, si svuota — e dal
+        // codice non si vedrebbe.
+        const format = chiavi(...WATCHLIST, utente('REMO', 'global'), {
+            kidsMode: true,
+            typeSelectors: { kind: 'series' }
+        }).format;
+        expect(format).toBe('7eca66a53c7781eb065017a74046c4e1091b8481977c5fa0656462233c2e7cd0');
     });
 });

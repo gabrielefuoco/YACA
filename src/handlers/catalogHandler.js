@@ -130,15 +130,21 @@ function resolveCatalogDefinition(id, userConfig, baseId) {
 }
 
 /**
- * Chiave di cache della pagina di catalogo. Ci finisce tutto ciò che cambia il
- * risultato — e nient'altro.
+ * Gli id dei preset, per riconoscere un preset **vero** da un catalogo che gli somiglia.
  *
- * Al posto del vecchio `configVersion` c'è `catalogDef`: l'impronta canonica della
- * definizione di QUESTO catalogo (`where`, `orderBy`, `queries`, `isAnime`, provider…).
- * `configVersion` era un contatore rigenerato a ogni salvataggio: bastava salvare un
- * profilo per rendere orfane tutte le chiavi di tutti i cataloghi, anche quelli che
- * non erano cambiati.
+ * Non è una regex sul nome, e non è pignoleria: un catalogo custom o merged si chiama come vuole,
+ * e un merged può avere come sorgente i cataloghi del profilo — anche una watchlist
+ * (`CatalogRouter.js:101-103`). Quindi il suo contenuto **può** dipendere dall'utente, e una regex
+ * lo condividerebbe. `getPresets()` è l'elenco esatto.
+ *
+ * Gli id sono statici: la data che `getPresets()` calcola a ogni chiamata sta dentro le query, non
+ * negli id. Il Set si costruisce una volta sola.
  */
+const PRESET_IDS = new Set(getPresets().map(p => p.id));
+
+
+
+
 /**
  * Gli ingredienti del **contenuto**: cosa decide quali titoli entrano nel catalogo.
  *
@@ -158,28 +164,46 @@ function catalogContentParams({ type, extra, directFilters, catalogMeta, activeP
 }
 
 /**
- * La chiave del livello 1: la **selezione** dei titoli (id ordinati, ~500 byte), condivisibile fra
- * profili perché non contiene chi guarda. Vedi `catalogContentParams`.
+ * La chiave del livello 1: la **selezione** dei titoli, condivisibile fra profili — ma solo dove
+ * è sicuro condividerla. Per un catalogo non condiviso (watchlist, hero, custom, merged) l'utente
+ * entra anche qui: senza, la chiave del contenuto sarebbe identica per due utenti diversi, e chi un
+ * giorno la usasse per cachare la selezione condividererebbe una libreria personale senza
+ * accorgersene.
  */
 function buildCatalogContentKey({
     id,
+    baseId,
     type,
     extra,
     directFilters,
     skip,
     catalogMeta,
+    userConfig,
     activeProfileSettings
 } = {}) {
-    return generateRequestHash(
-        id,
-        catalogContentParams({ type, extra, directFilters, catalogMeta, activeProfileSettings }),
-        skip,
-        type
-    );
+    const condiviso = PRESET_IDS.has(baseId);
+    return generateRequestHash(id, {
+        ...catalogContentParams({ type, extra, directFilters, catalogMeta, activeProfileSettings }),
+        ...(condiviso ? {} : {
+            user: userConfig?.userId,
+            profile: userConfig?.activeProfileId
+        })
+    }, skip, type);
 }
 
+/**
+ * Chiave di cache della pagina di catalogo. Ci finisce tutto ciò che cambia il
+ * risultato — e nient'altro.
+ *
+ * Al posto del vecchio `configVersion` c'è `catalogDef`: l'impronta canonica della
+ * definizione di QUESTO catalogo (`where`, `orderBy`, `queries`, `isAnime`, provider…).
+ * `configVersion` era un contatore rigenerato a ogni salvataggio: bastava salvare un
+ * profilo per rendere orfane tutte le chiavi di tutti i cataloghi, anche quelli che
+ * non erano cambiati.
+ */
 function buildCatalogCacheKey({
     id,
+    baseId,
     type,
     extra,
     directFilters,
@@ -189,10 +213,23 @@ function buildCatalogCacheKey({
     activeProfileSettings,
     badgeVersion = BADGE_CATALOG_VERSION
 } = {}) {
+    // Un **preset** non porta niente dell'utente: i campi per-utente (`_yacaMatch`,
+    // `traktAvailable`) nascono solo nel motore ibrido, che costruisce hero e Trakt
+    // (`hybridRecommendations.js:496`, `catalogStrategies.js:1440`). Quindi la sua chiave non deve
+    // contenere `user`/`profile` — sono pura frammentazione, ed è da lì che nascono le **20 chiavi**
+    // di `preset_adult_animation` e le 11 di `preset_ghibli` che contengono la stessa lista.
+    //
+    // Per tutto il resto la chiave resta per profilo, e non per prudenza: la watchlist è la
+    // libreria personale, gli hero hanno il DNA, i custom e i merged possono avere come sorgente
+    // una watchlist.
+    const condiviso = PRESET_IDS.has(baseId);
+
     return generateRequestHash(id, {
         ...catalogContentParams({ type, extra, directFilters, catalogMeta, activeProfileSettings }),
-        user: userConfig?.userId,
-        profile: userConfig?.activeProfileId,
+        ...(condiviso ? {} : {
+            user: userConfig?.userId,
+            profile: userConfig?.activeProfileId
+        }),
         // Il formatter sceglie poster orizzontale o verticale: è un interruttore del
         // profilo, quindi resta in chiave come `kidsMode` e `typeSelectors`.
         landscape: Boolean(activeProfileSettings?.isLandscapeEnabled),
@@ -507,6 +544,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
     // perché la sua definizione è uno degli ingredienti.
     const requestCacheKey = buildCatalogCacheKey({
         id,
+        baseId,
         type,
         extra,
         directFilters,
