@@ -139,6 +139,45 @@ function resolveCatalogDefinition(id, userConfig, baseId) {
  * profilo per rendere orfane tutte le chiavi di tutti i cataloghi, anche quelli che
  * non erano cambiati.
  */
+/**
+ * Gli ingredienti del **contenuto**: cosa decide quali titoli entrano nel catalogo.
+ *
+ * Non c'è l'utente, e non è una dimenticanza: due profili che chiedono lo stesso preset devono
+ * ricevere la stessa lista di titoli, e quindi poterla condividere. È la chiave del livello 1
+ * (la **selezione**, ticket 47).
+ */
+function catalogContentParams({ type, extra, directFilters, catalogMeta, activeProfileSettings } = {}) {
+    return {
+        type,
+        extra,
+        directFilters,
+        kidsMode: activeProfileSettings?.kidsMode,
+        typeSelectors: activeProfileSettings?.typeSelectors,
+        catalogDef: canonicalCatalogDefinition(catalogMeta)
+    };
+}
+
+/**
+ * La chiave del livello 1: la **selezione** dei titoli (id ordinati, ~500 byte), condivisibile fra
+ * profili perché non contiene chi guarda. Vedi `catalogContentParams`.
+ */
+function buildCatalogContentKey({
+    id,
+    type,
+    extra,
+    directFilters,
+    skip,
+    catalogMeta,
+    activeProfileSettings
+} = {}) {
+    return generateRequestHash(
+        id,
+        catalogContentParams({ type, extra, directFilters, catalogMeta, activeProfileSettings }),
+        skip,
+        type
+    );
+}
+
 function buildCatalogCacheKey({
     id,
     type,
@@ -151,17 +190,12 @@ function buildCatalogCacheKey({
     badgeVersion = BADGE_CATALOG_VERSION
 } = {}) {
     return generateRequestHash(id, {
-        type,
-        extra,
-        directFilters,
+        ...catalogContentParams({ type, extra, directFilters, catalogMeta, activeProfileSettings }),
         user: userConfig?.userId,
         profile: userConfig?.activeProfileId,
-        kidsMode: activeProfileSettings?.kidsMode,
-        typeSelectors: activeProfileSettings?.typeSelectors,
         // Il formatter sceglie poster orizzontale o verticale: è un interruttore del
         // profilo, quindi resta in chiave come `kidsMode` e `typeSelectors`.
         landscape: Boolean(activeProfileSettings?.isLandscapeEnabled),
-        catalogDef: canonicalCatalogDefinition(catalogMeta),
         badgeV: badgeVersion
     }, skip, type);
 }
@@ -769,6 +803,7 @@ module.exports = {
     catalogHandler,
     BADGE_CATALOG_VERSION,
     buildCatalogCacheKey,
+    buildCatalogContentKey,
     canonicalCatalogDefinition,
     resolveCatalogDefinition,
     applyAiringStateBadges,
