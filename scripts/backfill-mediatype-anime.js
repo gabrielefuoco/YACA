@@ -84,6 +84,8 @@ const AZIONI = Object.freeze({
  *  CAMPO_NON_VALIDO     porta il campo ma non è 'movie'/'tv' (o non è una stringa): non è una
  *                       dichiarazione, ma non lo si sovrascrive senza sapere chi l'ha messo.
  *  FILM_IN_MAPPA        `resolveKitsuMovie` non nullo: l'id TMDB è un film (AniBridge/Fribb).
+ *  FILM_VETO_EPISODI    la mappa dice film ma il documento ha una corsa di episodi (> 3): solo
+ *                       con `--veto-episodi`, che è la stessa soglia del veto del writer.
  *  ANIME_TV_IN_MAPPA    non è un film e la mappa lo conosce come anime: serie.
  *  ID_NON_IN_MAPPA      la mappa non conosce affatto quell'id: serie per default (vedi sotto).
  *  MAPPA_NON_PRONTA     store non pronto: BLOCCA (mai `tv` tirato a caso).
@@ -93,6 +95,7 @@ const MOTIVI = Object.freeze({
     GIA_DICHIARATO: 'gia_dichiarato',
     CAMPO_NON_VALIDO: 'campo_non_valido',
     FILM_IN_MAPPA: 'film_in_mappa',
+    FILM_VETO_EPISODI: 'film_veto_episodi',
     ANIME_TV_IN_MAPPA: 'anime_tv_in_mappa',
     ID_NON_IN_MAPPA: 'id_non_in_mappa',
     MAPPA_NON_PRONTA: 'mappa_non_pronta',
@@ -156,6 +159,24 @@ function maxEpisodeNumber(doc) {
 }
 
 /**
+ * Il documento è doppiato in italiano? **Non lo reimpianto**: chiamo `getDubEpisode` di
+ * `src/data/animeAiringState.js`, che è la funzione che il reader usa davvero. Una copia qui
+ * divergerebbe al primo episodio doppiato fuori finestra e nessuno se ne accorgerebbe.
+ *
+ * Serve per una domanda che il riepilogo deve poter rispondere: quanti dei film che
+ * diventerebbero `movie` hanno **anche** il doppiaggio. Gli altri sono film in onda senza dop,
+ * dichiarare il loro tipo è giusto ma non cambia nessuna annotazione: contarli insieme ai primi
+ * farebbe sembrare il backfill molto più grosso di quanto sia.
+ */
+function haDoppiaggio(doc) {
+    try {
+        return require('../src/data/animeAiringState').getDubEpisode(doc) !== null;
+    } catch (_e) {
+        return false;
+    }
+}
+
+/**
  * IL CUORE: che tipo ha questo documento, e che cosa ne facciamo.
  *
  * Funzione pura salvo lo store, che è iniettato — è questo che rende il contratto testabile senza
@@ -167,14 +188,19 @@ function maxEpisodeNumber(doc) {
  *
  * @param {object} doc Documento grezzo di `anime_airing_state`.
  * @param {{isReady?: boolean, resolveKitsuMovie?: Function, isAnimeTmdbId?: Function}} mappingStore
+ * @param {{vetoEpisodi?: boolean}} [opzioni] `vetoEpisodi`: se la mappa dice film ma il documento
+ *   ha una corsa di episodi, si scrive `tv` — la stessa soglia del veto del writer
+ *   (`MOVIE_MAX_EPISODES`). **Spento di default**: di norma la mappa decide, e il veto è una
+ *   correzione che spetta a chi lancia lo script, non un ripiego nascosto. Il dry-run stampa
+ *   comunque i due documenti in cui i due pareri si contraddicono, così la scelta è informata.
  * @returns {{azione: string, motivo: string, tmdbId: number|null, titolo: string, dichiarato: string|null,
- *            da: string|null, a: string|null, maxEpisodi: number}}
+ *            da: string|null, a: string|null, maxEpisodi: number, doppiato: boolean}}
  */
-function decideMediaType(doc, mappingStore) {
+function decideMediaType(doc, mappingStore, opzioni = {}) {
     const tmdbId = idTmdbDaDoc(doc);
     const titolo = titoloDaDoc(doc);
     const dichiarato = normalizeMediaType(doc && doc.mediaType);
-    const base = { tmdbId, titolo, dichiarato, maxEpisodi: maxEpisodeNumber(doc) };
+    const base = { tmdbId, titolo, dichiarato, maxEpisodi: maxEpisodeNumber(doc), doppiato: haDoppiaggio(doc) };
 
     // 1. La fonte ha già parlato. Non si tocca: `mediaType` è la sua dichiarazione e questo script
     //    non è più `anime-source`. Nota che conta: i 57 documenti che lo hanno oggi (tutti `tv`)
@@ -204,6 +230,9 @@ function decideMediaType(doc, mappingStore) {
     // 4. È un film? Lo dice la mappa certificata, non un indovinello sugli episodi.
     const kitsuMovie = mappingStore.resolveKitsuMovie(tmdbId);
     if (kitsuMovie !== null && kitsuMovie !== undefined && kitsuMovie !== '') {
+        if (opzioni.vetoEpisodi === true && base.maxEpisodi > MOVIE_MAX_EPISODES) {
+            return { ...base, azione: AZIONI.SCRIVI, motivo: MOTIVI.FILM_VETO_EPISODI, da: null, a: 'tv' };
+        }
         return { ...base, azione: AZIONI.SCRIVI, motivo: MOTIVI.FILM_IN_MAPPA, da: null, a: 'movie' };
     }
 
@@ -230,11 +259,16 @@ function pianoVuoto() {
         daScrivere: { movie: 0, tv: 0 },
         bloccati: 0,
         perMotivo: {},
-        // Controllo incrociato: un `movie` con una corsa di episodi sarebbe una contraddizione.
+        // Controllo incrociato: un `movie` con una corsa di episodi sarebbe una contraddizione fra
+        // la mappa e il documento. Non è un errore dello script: è un id che vive nelle due
+        // tabelle di TMDB, e il veto del writer li mette a serie per default.
         filmConCorsaEpisodi: [],
         serieSenzaCorsaEpisodi: 0,
+        // Quanti dei tipi che scriveremmo hanno il doppiaggio: sono gli unici la cui chiave di
+        // annotazione cambia davvero (`animeDocsToRows` scrive righe solo per i doppiati).
+        doppiati: { movie: 0, tv: 0 },
         scritte: [],
-        lasciati: [],
+        campioni: { dichiarati: [], campoNonValido: [], idNonValido: [] },
         bloccatiLista: []
     };
 }
@@ -243,7 +277,8 @@ function pianoVuoto() {
 function rigaVoce(v) {
     const da = v.da || v.dichiarato || '—';
     const a = v.a || '—';
-    return `${v.tmdbId === null ? '(id?)' : v.tmdbId} "${v.titolo}" [${da} → ${a}] ${v.motivo} (ep. max ${v.maxEpisodi})`;
+    const dop = v.doppiato ? ', doppiato' : '';
+    return `${v.tmdbId === null ? `(id?)` : v.tmdbId} "${v.titolo}" [${da} → ${a}] ${v.motivo} (ep. max ${v.maxEpisodi}${dop})`;
 }
 
 /**
@@ -253,13 +288,14 @@ function rigaVoce(v) {
  *
  * @param {Array<object>} docs Documenti grezzi.
  * @param {object} mappingStore
+ * @param {{vetoEpisodi?: boolean}} [opzioni] Cfr. `decideMediaType`.
  * @returns {object} piano
  */
-function pianoDaDocumenti(docs, mappingStore) {
+function pianoDaDocumenti(docs, mappingStore, opzioni = {}) {
     const piano = pianoVuoto();
     for (const doc of Array.isArray(docs) ? docs : []) {
         piano.totale++;
-        const v = decideMediaType(doc, mappingStore);
+        const v = decideMediaType(doc, mappingStore, opzioni);
         piano.perMotivo[v.motivo] = (piano.perMotivo[v.motivo] || 0) + 1;
 
         if (v.azione === AZIONI.BLOCCA) {
@@ -270,31 +306,40 @@ function pianoDaDocumenti(docs, mappingStore) {
 
         if (v.motivo === MOTIVI.GIA_DICHIARATO) {
             piano.giaDichiarati[v.dichiarato] = (piano.giaDichiarati[v.dichiarato] || 0) + 1;
-            if (piano.lasciati.length < 20) piano.lasciati.push(rigaVoce(v));
+            if (piano.campioni.dichiarati.length < 10) piano.campioni.dichiarati.push(rigaVoce(v));
             continue;
         }
 
         if (v.motivo === MOTIVI.CAMPO_NON_VALIDO) {
             piano.campoNonValido++;
-            if (piano.lasciati.length < 20) piano.lasciati.push(rigaVoce(v));
+            if (piano.campioni.campoNonValido.length < 10) piano.campioni.campoNonValido.push(rigaVoce(v));
             continue;
         }
 
         if (v.motivo === MOTIVI.ID_NON_VALIDO) {
             piano.idNonValido++;
-            if (piano.lasciati.length < 20) piano.lasciati.push(rigaVoce(v));
+            if (piano.campioni.idNonValido.length < 10) piano.campioni.idNonValido.push(rigaVoce(v));
             continue;
         }
 
         // Da qui in poi il documento è nostro: lo scriviamo.
         piano.daScrivere[v.a] = (piano.daScrivere[v.a] || 0) + 1;
+        if (v.doppiato) piano.doppiati[v.a] = (piano.doppiati[v.a] || 0) + 1;
         if (v.a === 'movie' && v.maxEpisodi > MOVIE_MAX_EPISODES) {
             piano.filmConCorsaEpisodi.push(rigaVoce(v));
         }
         if (v.a === 'tv' && v.maxEpisodi > 0 && v.maxEpisodi <= MOVIE_MAX_EPISODES) {
             piano.serieSenzaCorsaEpisodi++;
         }
-        piano.scritte.push({ _id: String(doc._id).trim(), tmdbId: v.tmdbId, titolo: v.titolo, a: v.a, motivo: v.motivo, maxEpisodi: v.maxEpisodi });
+        piano.scritte.push({
+            _id: String(doc._id).trim(),
+            tmdbId: v.tmdbId,
+            titolo: v.titolo,
+            a: v.a,
+            motivo: v.motivo,
+            maxEpisodi: v.maxEpisodi,
+            doppiato: v.doppiato
+        });
     }
     return piano;
 }
@@ -323,6 +368,7 @@ function riepilogo(piano) {
     if (motivi.length) {
         L.push(`  per motivo: ${motivi.map((m) => `${m}=${piano.perMotivo[m]}`).join(', ')}`);
     }
+    L.push(`  dei quali DOPPIATI (cambiano la chiave):  movie ${piano.doppiati.movie || 0}, tv ${piano.doppiati.tv || 0}`);
     L.push(`  controllo incrociato: movie con corsa di episodi (> ${MOVIE_MAX_EPISODES}) = ${piano.filmConCorsaEpisodi.length}, tv con 1-3 episodi = ${piano.serieSenzaCorsaEpisodi}`);
     L.push('─'.repeat(72));
     return L.join('\n');
@@ -359,7 +405,12 @@ const PROIEZIONE = {
     schemaVersion: 1,
     title: 1,
     mediaType: 1,
-    episodes: 1
+    episodes: 1,
+    // Per `getDubEpisode` (`src/data/animeAiringState.js`): senza questi due il documento sembrerebbe
+    // non doppiato e il riepilogo conterebbe come "cambiano la chiave" solo chi ha doppiato un episodio
+    // elencato in `episodes[]`.
+    dub: 1,
+    italian: 1
 };
 
 /**
@@ -407,6 +458,7 @@ function parseArgs(argv = []) {
         dbName: null,
         limit: null,
         sample: 20,
+        vetoEpisodi: false,
         timeoutMs: 20000
     };
     for (let i = 0; i < argv.length; i++) {
@@ -418,6 +470,7 @@ function parseArgs(argv = []) {
 
         if (arg === '--help' || arg === '-h') opts.help = true;
         else if (flag === '--apply') opts.apply = true;
+        else if (flag === '--veto-episodi') opts.vetoEpisodi = true;
         else if (flag === '--env') opts.env = valore('--env');
         else if (flag === '--mongo-uri') opts.mongoUri = valore('--mongo-uri');
         else if (flag === '--db') opts.dbName = valore('--db');
@@ -504,6 +557,7 @@ async function main(argv = process.argv.slice(2), dipendenze = {}) {
         console.log(`Uso: node scripts/backfill-mediatype-anime.js [opzioni]
 Opzioni:
   --apply            scrive davvero (default: DRY-RUN, nessuna scrittura)
+  --veto-episodi     se la mappa dice film ma il documento ha una corsa di episodi, scrive tv
   --env=PERCORSO     .env da leggere (default: il più vicino, poi il checkout principale)
   --mongo-uri=URI    connessione esplicita, ha precedenza su MONGODB_URI
   --db=NOME          nome del database (default: dalla URI)
@@ -566,11 +620,14 @@ Opzioni:
         const docs = await collection.find({}, { projection: PROIEZIONE }).toArray();
         console.log(`[Backfill mediaType] ${docs.length} documenti in ${COLLECTION_NAME}.`);
 
-        const piano = pianoDaDocumenti(docs, store);
+        const piano = pianoDaDocumenti(docs, store, { vetoEpisodi: opts.vetoEpisodi });
         console.log(riepilogo(piano));
 
         if (piano.filmConCorsaEpisodi.length) {
-            console.warn(`[Backfill mediaType] ATTENZIONE: ${piano.filmConCorsaEpisodi.length} documenti che la mappa dice film hanno una corsa di episodi:`);
+            const rimedio = opts.vetoEpisodi
+                ? '(con --veto-episodi sono già stati messi a tv)'
+                : '(senza --veto-episodi restano movie: lo dice il veto del writer, non questo piano)';
+            console.warn(`[Backfill mediaType] ATTENZIONE: ${piano.filmConCorsaEpisodi.length} documenti che la mappa dice film hanno una corsa di episodi ${rimedio}:`);
             for (const r of piano.filmConCorsaEpisodi.slice(0, 10)) console.warn(`  ${r}`);
         }
 
@@ -579,9 +636,14 @@ Opzioni:
             console.log(`[Backfill mediaType] Primi casi (${campione.length}):`);
             for (const r of campione) console.log(r);
         }
-        if (piano.lasciati.length) {
-            console.log('[Backfill mediaType] Primi documenti già dichiarati / non toccati:');
-            for (const r of piano.lasciati) console.log(`  ${r}`);
+        if (piano.campioni.dichiarati.length) {
+            console.log('[Backfill mediaType] Primi documenti che dichiarano già il tipo (lasciati stare):');
+            for (const r of piano.campioni.dichiarati) console.log(`  ${r}`);
+        }
+        for (const [nome, elenco] of [['campo non valido', piano.campioni.campoNonValido], ['id non valido', piano.campioni.idNonValido]]) {
+            if (!elenco.length) continue;
+            console.log(`[Backfill mediaType] Primi documenti con ${nome} (lasciati stare):`);
+            for (const r of elenco) console.log(`  ${r}`);
         }
 
         if (piano.bloccati > 0) {

@@ -233,6 +233,58 @@ describe('pianoDaDocumenti: i numeri', () => {
         expect(piano.filmConCorsaEpisodi[0]).toMatch(/823/);
         expect(MOVIE_MAX_EPISODES).toBe(3);
     });
+
+    test('i documenti malformati finiscono in un campiano loro, non spariscono', () => {
+        const piano = pianoDaDocumenti([
+            doc(823, { mediaType: 'serie' }),
+            { _id: 'x-1', title: 'Rottame' },
+            { _id: '', title: 'Vuoto' }
+        ], mappaFinta());
+        expect(piano.campioni.campoNonValido).toHaveLength(1);
+        expect(piano.campioni.idNonValido).toHaveLength(2);
+        expect(piano.scritte).toHaveLength(0);
+    });
+
+    test('conta i doppiati: sono gli unici la cui chiave di annotazione cambia', () => {
+        // `getDubEpisode` guarda `dub.episode`, poi `episodes[]` con `dubIta`.
+        const piano = pianoDaDocumenti([
+            doc(823, { title: 'Jin-Roh', dub: { season: 1, episode: 1 } }),
+            doc(129, { title: 'Spirited Away', episodes: [{ episode: 1, dubIta: true }] }),
+            doc(8392, { title: 'Totoro' }),                        // film in onda, senza dop
+            doc(5112, { title: 'Serie', dub: { season: 1, episode: 4 } })
+        ], mappaFinta());
+        expect(piano.doppiati).toEqual({ movie: 2, tv: 1 });
+        expect(piano.daScrivere).toEqual({ movie: 3, tv: 1 });
+        expect(riepilogo(piano)).toMatch(/DOPPIATI \(cambiano la chiave\):\s+movie 2, tv 1/);
+    });
+});
+
+describe('il veto degli episodi è una correzione esplicita, non un ripiego', () => {
+    const DOC = [doc(823, { title: 'Serie che la mappa dice film', episodes: [{ episode: 1 }, { episode: 9 }] })];
+
+    test('di default la mappa vince e il documento resta movie (ma viene segnalato)', () => {
+        const piano = pianoDaDocumenti(DOC, mappaFinta());
+        expect(piano.daScrivere).toEqual({ movie: 1, tv: 0 });
+        expect(piano.scritte[0].motivo).toBe(MOTIVI.FILM_IN_MAPPA);
+        expect(piano.filmConCorsaEpisodi).toHaveLength(1);
+    });
+
+    test('con --veto-episodi vince il veto, col motivo che dice perché', () => {
+        const piano = pianoDaDocumenti(DOC, mappaFinta(), { vetoEpisodi: true });
+        expect(piano.daScrivere).toEqual({ movie: 0, tv: 1 });
+        expect(piano.scritte[0].motivo).toBe(MOTIVI.FILM_VETO_EPISODI);
+        expect(piano.perMotivo[MOTIVI.FILM_VETO_EPISODI]).toBe(1);
+    });
+
+    test('il veto non tocca i film veri (un episodio)', () => {
+        const piano = pianoDaDocumenti([doc(129, { episodes: [{ episode: 1 }] })], mappaFinta(), { vetoEpisodi: true });
+        expect(piano.daScrivere).toEqual({ movie: 1, tv: 0 });
+    });
+
+    test('parseArgs: --veto-episodi è spento di default', () => {
+        expect(parseArgs([]).vetoEpisodi).toBe(false);
+        expect(parseArgs(['--veto-episodi']).vetoEpisodi).toBe(true);
+    });
 });
 
 describe('applicaPiano: la scrittura è condizionata', () => {
