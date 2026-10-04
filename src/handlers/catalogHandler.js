@@ -78,7 +78,10 @@ function isAiringStateCatalog(baseId, catalogMeta) {
 //     card ri-formattava solo se era attivo il badge episodio, quindi nei cataloghi normali il
 //     badge ITA restava un'etichetta che nessuno disegnava: Il Padrino e Breaking Bad doppiati,
 //     e senza badge. Stesso motivo del 18: senza bump, le card in cache servono il poster vecchio.
-const BADGE_CATALOG_VERSION = 19;
+// 20: i film escono con l'id IMDb (`allineaIdFilm`), o gli altri addon non rispondono alla richiesta
+//     di stream. Le card in cache sono state formattate prima, quindi non portano `_imdbId`: senza
+//     bump resterebbero con l'id `tmdb:` fino alla scadenza e la correzione sembrerebbe inerte.
+const BADGE_CATALOG_VERSION = 20;
 
 /**
  * Serializza la definizione di un catalogo in forma canonica: chiavi ordinate,
