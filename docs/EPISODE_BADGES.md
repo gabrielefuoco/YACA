@@ -65,6 +65,39 @@ entrambe le tabelle**:
 - `tt…` → ponte IMDb→TMDB **in batch** sul parquet (`duckDbStore.resolveImdbIds`: una query, nessuna chiamata API);
 - `kitsu:…` → ponte dal mapping anime, o dallo stato anime (`doc.tmdbId`).
 
+### Perché il poster va **ri-formattato** (ticket 15)
+
+Il poster di una card viene scelto quando la card è formattata e messa in cache — cioè **prima** che le
+annotazioni ITA siano lette. `applyPostCacheBadges` aggiunge `_itaBadge` dopo: se la card non viene
+ri-formattata, il poster non viene ricalcolato e il badge resta un'etichetta che **nessuno disegna**.
+
+```js
+// ramo anime — ri-formatta sempre, se doppiato
+if (sanitizeOptions.shouldApplyEpisodeBadge || animeDubbed) {
+    processedMetas.push(sanitizeCatalogMeta(animeItem, sanitizeOptions));
+}
+
+// ramo non-anime — deve ri-formattare anche lui
+if (dubbed || sanitizeOptions.shouldApplyEpisodeBadge) {
+    processedMetas.push(sanitizeCatalogMeta(outItem, sanitizeOptions));
+} else {
+    processedMetas.push(outItem);
+}
+```
+
+Fino al 04/10/2026 il ramo non-anime ri-formattava **solo** col badge episodio attivo — e per un catalogo film
+`type === 'movie'` basta a escluderlo, quindi non ri-formattava mai. Risultato: **Il Padrino, Pulp Fiction,
+Interstellar, Breaking Bad** doppiati e senza badge, mentre gli anime (che ri-formattavano) lo avevano. Il difetto
+non era nei dati: era nell'ordine delle due formattazioni.
+
+Due conseguenze da ricordare quando si tocca questo percorso:
+
+- **`BADGE_CATALOG_VERSION`** (`catalogHandler.js`) va **alzato** a ogni cambio del modo in cui nascono badge e
+  poster, o le card già in cache (fino a 14 giorni) continuano a servire il poster vecchio e la correzione
+  sembra non funzionare. È successo due volte: versione 18 e versione 19.
+- La **scheda** e il **catalogo** sono percorsi diversi: la scheda passa `itaCacheBadge` e mostra il badge anche
+  quando la griglia no. Verificare sempre **entrambi** — il difetto del ticket 15 si vedeva solo nella griglia.
+
 ### Anime
 
 Fuori dal catalogo novità un anime mostra **`ITA` secco**: niente numero di episodio, niente badge di stagione
@@ -72,8 +105,12 @@ Fuori dal catalogo novità un anime mostra **`ITA` secco**: niente numero di epi
 `EP n` per i sub e `ITA n` con il clone `_ita_offset` per il doppiato uscito nella finestra di 14 giorni, letti
 da `anime_airing_state` (`src/data/animeAiringState.js`).
 
-La verità ITA degli anime è l'**unione** tra le annotazioni di AG e lo stato AnimeUnity: l'unione la fa la build
-del file, così badge e filtro dicono la stessa cosa.
+La verità ITA degli anime è l'**unione** tra le annotazioni di AG e lo stato AnimeUnity. L'unione **non** la fa la
+build del parquet (`scripts/convert_to_parquet.js` legge e converte soltanto): la fa
+`services/doppiaggi-source` (`cli.js`, `mergeAnnotationRows`), che legge `anime_airing_state` e scrive le righe
+unite in `ita_annotations.jsonl`. Se quel passaggio salta — servizio fermo, `--no-anime`, collezione vuota — la
+build non se ne accorge e il badge ITA degli anime **sparisce da tutti i cataloghi in silenzio**: il file meta
+resta onesto (`source` senza `∪ anime_airing_state`) e dal 04/10/2026 il giro lo dice anche nel log.
 
 - **Costo zero per item**: una lettura per finestra (snapshot), non una query per card.
 - **Degrado silenzioso**: file assente o rotto → snapshot vuoto, nessun badge, nessuna eccezione. Il catalogo
