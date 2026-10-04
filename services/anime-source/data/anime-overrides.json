@@ -38,7 +38,23 @@
       "title": "遮天",
       "note": "donghua",
       "addedAt": "2026-10-01"
+    },
+    {
+      "anilist": 209032,
+      "mal": 63667,
+      "tmdbId": 286361,
+      "season": 2,
+      "title": "Mahou no Shimai LuluttoLilly Part 2",
+      "note": "NON e' un donghua: e' anime. TMDB lo chiama 'Magical Sisters LuluttoLilly' e il match per titolo non passa (mahou no shimai != magical sisters). Serve anche la voce in certify, perche' Fribb non ha il themoviedb_id e l'app non lo riconoscerebbe come anime.",
+      "addedAt": "2026-10-04"
     }
   ],
-  "certify": []
+  "certify": [
+    {
+      "tmdbId": 286361,
+      "title": "Magical Sisters LuluttoLilly",
+      "note": "anime giapponese assente dall'indice Fribb/AniBridge con id TMDB: senza questa voce l'app non lo tratta come anime e la card non entra nei cataloghi anime. Aggiunto insieme all'override di mapping del 04/10/2026.",
+      "addedAt": "2026-10-04"
+    }
+  ]
 }
