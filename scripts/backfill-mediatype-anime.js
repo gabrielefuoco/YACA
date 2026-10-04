@@ -48,6 +48,16 @@
  *     nostra decisione e la riscrittura di `anime-source` si risolve a favore di chi scrive per
  *     ultimo, che in questo caso è la fonte.
  *
+ * E LE DUE DIREZIONI DEL RISCHIO, che non sono uguali e non si possono nascondere dietro un numero:
+ *  - **`movie` è la direzione che il ticket chiede** (un film annotato `tv:` è il difetto), e per i
+ *    film veri mappa e documento dicono la stessa cosa;
+ *  - **`tv` è la direzione che può togliere un badge**: un documento con 1-3 episodi il cui id è
+ *    nel dump film e non in quello serie oggi esce `movie:` (regola 2 di `animeDocsToRows`), e se
+ *    gli scriviamo `tv` esce `tv:` — che la riparazione del lettore (`allowTypeFallback`) non può
+ *    più recuperare, perché la riparazione chiede che la mappa dica *film* e qui non lo dice.
+ *    Quei documenti sono contati (`piano.ambigui`) e `--solo-film` li lascia stare: il difetto del
+ *    ticket è sui film, e i film si riparano anche da soli.
+ *
  * `updatedAt` NON si tocca: quel campo è la finestra di freschezza di `animeAiringState` (48h) e di
  * `backfill-airing-anime.js`. Rinfrescarlo qui rimetterebbe in coda film che non sono in onda.
  */
@@ -264,6 +274,10 @@ function pianoVuoto() {
         // tabelle di TMDB, e il veto del writer li mette a serie per default.
         filmConCorsaEpisodi: [],
         serieSenzaCorsaEpisodi: 0,
+        // Documenti che scriveremmo `tv` ma che hanno la forma di un film (1-3 episodi) e sono
+        // doppiati: sono gli unici in cui la dichiarazione può *differire* da quello che la regola
+        // sui dump fa oggi. Tutti gli altri `tv` hanno una corsa di episodi: sono `tv` prima e dopo.
+        ambigui: 0,
         // Quanti dei tipi che scriveremmo hanno il doppiaggio: sono gli unici la cui chiave di
         // annotazione cambia davvero (`animeDocsToRows` scrive righe solo per i doppiati).
         doppiati: { movie: 0, tv: 0 },
@@ -330,6 +344,7 @@ function pianoDaDocumenti(docs, mappingStore, opzioni = {}) {
         }
         if (v.a === 'tv' && v.maxEpisodi > 0 && v.maxEpisodi <= MOVIE_MAX_EPISODES) {
             piano.serieSenzaCorsaEpisodi++;
+            if (v.doppiato) piano.ambigui++;
         }
         piano.scritte.push({
             _id: String(doc._id).trim(),
@@ -369,6 +384,7 @@ function riepilogo(piano) {
         L.push(`  per motivo: ${motivi.map((m) => `${m}=${piano.perMotivo[m]}`).join(', ')}`);
     }
     L.push(`  dei quali DOPPIATI (cambiano la chiave):  movie ${piano.doppiati.movie || 0}, tv ${piano.doppiati.tv || 0}`);
+    L.push(`  ATTENZIONE tv con forma film (1-3 ep. e doppiato): ${piano.ambigui} — la dichiarazione può cambiare la chiave che oggi esce dai dump (--solo-film li lascia stare)`);
     L.push(`  controllo incrociato: movie con corsa di episodi (> ${MOVIE_MAX_EPISODES}) = ${piano.filmConCorsaEpisodi.length}, tv con 1-3 episodi = ${piano.serieSenzaCorsaEpisodi}`);
     L.push('─'.repeat(72));
     return L.join('\n');
@@ -459,6 +475,7 @@ function parseArgs(argv = []) {
         limit: null,
         sample: 20,
         vetoEpisodi: false,
+        soloFilm: false,
         timeoutMs: 20000
     };
     for (let i = 0; i < argv.length; i++) {
@@ -471,6 +488,7 @@ function parseArgs(argv = []) {
         if (arg === '--help' || arg === '-h') opts.help = true;
         else if (flag === '--apply') opts.apply = true;
         else if (flag === '--veto-episodi') opts.vetoEpisodi = true;
+        else if (flag === '--solo-film') opts.soloFilm = true;
         else if (flag === '--env') opts.env = valore('--env');
         else if (flag === '--mongo-uri') opts.mongoUri = valore('--mongo-uri');
         else if (flag === '--db') opts.dbName = valore('--db');
@@ -558,6 +576,7 @@ async function main(argv = process.argv.slice(2), dipendenze = {}) {
 Opzioni:
   --apply            scrive davvero (default: DRY-RUN, nessuna scrittura)
   --veto-episodi     se la mappa dice film ma il documento ha una corsa di episodi, scrive tv
+  --solo-film        scrive solo i movie: i tv restano senza campo (la direzione che può togliere un badge)
   --env=PERCORSO     .env da leggere (default: il più vicino, poi il checkout principale)
   --mongo-uri=URI    connessione esplicita, ha precedenza su MONGODB_URI
   --db=NOME          nome del database (default: dalla URI)
@@ -658,12 +677,18 @@ Opzioni:
             return 0;
         }
 
-        const daScrivere = opts.limit && opts.limit > 0 ? piano.scritte.slice(0, opts.limit) : piano.scritte;
-        if (opts.limit && opts.limit > 0 && opts.limit < piano.scritte.length) {
-            console.log(`[Backfill mediaType] --limit=${opts.limit}: scrivo i primi ${daScrivere.length} di ${piano.scritte.length}.`);
+        const daScrivere = opts.soloFilm ? piano.scritte.filter((s) => s.a === 'movie') : piano.scritte;
+        if (opts.soloFilm) {
+            console.log(`[Backfill mediaType] --solo-film: scrivo ${daScrivere.length} film, ${piano.scritte.length - daScrivere.length} serie restano senza il campo.`);
         }
-        console.log(`[Backfill mediaType] Scrivo ${daScrivere.length} documenti (filtro: il campo non deve esistere).`);
-        const esito = await applicaPiano(collection, daScrivere);
+        const daScrivereOra = opts.limit && opts.limit > 0 && opts.limit < daScrivere.length
+            ? daScrivere.slice(0, opts.limit)
+            : daScrivere;
+        if (daScrivereOra.length !== daScrivere.length) {
+            console.log(`[Backfill mediaType] --limit=${opts.limit}: scrivo i primi ${daScrivereOra.length} di ${daScrivere.length}.`);
+        }
+        console.log(`[Backfill mediaType] Scrivo ${daScrivereOra.length} documenti (filtro: il campo non deve esistere).`);
+        const esito = await applicaPiano(collection, daScrivereOra);
         console.log(`[Backfill mediaType] Scritti ${esito.applicati}, saltati ${esito.saltati}, errori ${esito.errori}.`);
         return esito.errori > 0 ? 1 : 0;
     } finally {

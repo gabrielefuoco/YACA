@@ -285,6 +285,30 @@ describe('il veto degli episodi è una correzione esplicita, non un ripiego', ()
         expect(parseArgs([]).vetoEpisodi).toBe(false);
         expect(parseArgs(['--veto-episodi']).vetoEpisodi).toBe(true);
     });
+
+    test('i tv con forma film sono contati: sono la direzione che può togliere un badge', () => {
+        const piano = pianoDaDocumenti([
+            doc(5112, { dub: { season: 1, episode: 1 }, episodes: [{ episode: 1 }] }),// serie, 1 ep, doppiata
+            doc(26209, { episodes: [{ episode: 1 }, { episode: 2 }] }),        // serie, 2 ep, NON doppiata
+            doc(300001, { dub: { season: 1, episode: 7 }, episodes: [{ episode: 7 }] }) // corsa di episodi
+        ], mappaFinta());
+        expect(piano.serieSenzaCorsaEpisodi).toBe(2);
+        expect(piano.ambigui).toBe(1); // solo il primo: forma film E doppiato
+        expect(riepilogo(piano)).toMatch(/ATTENZIONE tv con forma film .*: 1/);
+    });
+
+    test('--solo-film scrive solo i movie, e --limit vale sul risultato', async () => {
+        const coll = collectionFinta([
+            doc(823), doc(129), doc(5112), doc(26209), doc(57, { mediaType: 'tv' })
+        ]);
+        const codice = await main(['--apply', '--solo-film'], { env: {}, store: mappaFinta(), collection: coll });
+        expect(codice).toBe(0);
+        expect(coll.stato.get('823').mediaType).toBe('movie');
+        expect(coll.stato.get('129').mediaType).toBe('movie');
+        expect(coll.stato.get('5112').mediaType).toBeUndefined(); // serie: restano senza
+        expect(coll.stato.get('26209').mediaType).toBeUndefined();
+        expect(coll.stato.get('57').mediaType).toBe('tv'); // chi dichiarava non si tocca
+    });
 });
 
 describe('applicaPiano: la scrittura è condizionata', () => {
