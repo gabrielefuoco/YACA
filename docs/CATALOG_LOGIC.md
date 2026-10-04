@@ -20,10 +20,10 @@ graph TD
     subgraph Fetch Pipeline
         G -->|Route Request| H[CatalogRouter.js]
         H -->|Risolve| I[Providers]
-        I -->|Filtro Post-Fetch| J[Wrong Media Type & Kids Mode]
+        I -->|Boundary Anime| M["normalizeAnimeMarker → _isAnime"]
+        M -->|Filtro Post-Fetch| J[Wrong Media Type, Kids Mode & Selettori di Tipo]
         J -->|Badge Episodi| L[MetadataHydrator.js]
-        L -->|Traduttore Anime| M[TmdbToKitsuMapper.js]
-        M -->|Sort Simulcast| N[Simulcast Sorting]
+        L -->|Sort Simulcast| N[Simulcast Sorting]
         N -->|Formatta| O[StremioFormatter.js]
     end
     
@@ -36,25 +36,42 @@ graph TD
 1. **Routing Iniziale**: L'endpoint `/catalog/:type/:id.json` in [stremio.js](../src/api/stremio.js) cattura la richiesta da Stremio, estraendo parametri come `id`, `type` ed `extra` (che contiene filtri come `skip`, `search` o `genre`).
 2. **Orchestratore**: La richiesta viene deferita a `catalogHandler` in [catalogHandler.js](../src/handlers/catalogHandler.js).
 3. **Generazione dell'Hash di Richiesta**: Viene calcolato un hash univoco tramite `generateRequestHash` per identificare la richiesta. Questo hash tiene conto di:
-   - ID e tipo di catalogo.
+   - ID e tipo di catalogo, e l'impronta della sua definizione canonica (`where`, `orderBy`, `queries`, `isAnime`, provider…): cambiare un preset invalida le voci di cache che lo avevano servito.
    - Parametri di paginazione (`skip`).
    - Configurazione specifica dell'utente (ID utente, ID profilo attivo).
-   - Impostazioni del profilo (es. `kidsMode`).
+   - Impostazioni del profilo (`kidsMode`, `typeSelectors`, orientamento poster).
    - Versione della configurazione (`configVersion` per il cache-busting).
    - Versione dei badge degli episodi (`BADGE_CATALOG_VERSION`).
 4. **Strategia SWR (Stale-While-Revalidate)**:
    - Se l'hash è presente in cache ed è **fresh**, viene restituito immediatamente.
    - Se è **stale** (nella finestra SWR), viene restituito subito il dato archiviato e viene avviata una Promise asincrona in background per aggiornare la cache.
    - Se è un **miss**, la pipeline attende la risoluzione sincrona della fetch.
-5. **Risoluzione del Catalogo**: `routeCatalogRequest` in [CatalogRouter.js](../src/catalog/CatalogRouter.js) mappa l'ID del catalogo al provider corretto.
+5. **Risoluzione del Catalogo**: `routeCatalogRequest` in [CatalogRouter.js](../src/catalog/CatalogRouter.js) mappa l'ID del catalogo al provider corretto. **Subito prima**, se il catalogo richiesto non è conforme ai selettori di tipo del profilo attivo, `catalogHandler` risponde `{ metas: [] }`: copre la finestra in cui Stremio ha ancora in mano il manifest vecchio, senza maierrorizzare.
 6. **Filtri Post-Fetch**:
    - **Esclusione di tipi errati**: Filtra elementi il cui `media_type` non corrisponde alla richiesta (es. rimuove film da richieste di serie).
-   - **Kids Mode Fallback**: Se il profilo ha la modalità bambini attiva, esclude contenuti con generi horror (27), thriller (53) e crime (80).
+   - **Kids Mode**: se il profilo ha la modalità bambini attiva è un **hard filter**, non un ripiego — vale per i 4 cataloghi hero come per i preset, ed è applicato sia alle query DuckDB sia ai pool e ai risultati finali. Esclude i generi horror (27), thriller (53) e crime (80), **25 keyword adulte** e le certificazioni `TV-MA`/`NC-17`/`R`/`X`, ed è **fail-closed**: un item di cui non si conoscono né generi né keyword viene trattato come non adatto.
+   - **Selettori di tipo del profilo**: con `anime: 'exclude'` escono gli item anime, con `'only'` restano i soli anime (vedi § 1.1). Nessun refill: una pagina più corta è accettata, e un item senza marcatore **resta** (fail-open).
 7. **Post-Processing**:
+   - **Boundary anime**: ogni item in uscita dal routing passa da `normalizeAnimeMarker`, che espone `_isAnime`. È il punto in cui si decide tutto ciò che riguarda gli anime: clone ITA, filtri e badge (vedi § 1.1 e [KITSU_MAPPING.md](KITSU_MAPPING.md)).
    - **Hydration & Badge**: Se il catalogo prevede badge per gli episodi (es. simulcast o nuove uscite), arricchisce i metadati recuperando le informazioni sugli episodi.
-   - **TMDB to Kitsu**: Traduce gli ID degli anime in ID Kitsu per garantire la compatibilità con i motori di streaming.
-   - **Simulcast Sorting**: per il catalogo novità anime (`preset_anime_simulcast`) l'ordinamento per data dell'ultimo episodio disponibile è già applicato da `AiringStateProvider.js` leggendo `anime_airing_state` (finestra 14 giorni).
+   - **Simulcast Sorting**: per il catalogo novità anime (`preset_anime_simulcast`) l'ordinamento temporale è già applicato da `AiringStateProvider.js` leggendo `anime_airing_state`: quel ramo esce prima di qualsiasi ordinamento qui sotto.
 8. **Formattazione Stremio**: I metadati normalizzati vengono convertiti nel formato finale Stremio Meta Preview tramite [StremioFormatter.js](../src/catalog/formatters/StremioFormatter.js).
+
+### 1.1 I selettori di tipo del profilo (`Solo Film` / `Solo Serie` / `Solo Anime` / `No Anime`)
+
+Un profilo può restringere i **cataloghi di suggerimento** per media e per argomento anime, con tre checkbox in `profile.settings.typeSelectors` (`film`, `serie`, `anime: 'only' | 'exclude' | null`). Sono due gruppi **ortogonali**: `Solo Anime` da solo vale per anime film **e** anime serie, `Solo Serie` + `Solo Anime` vale per le sole anime serie. Campo assente = nessun vincolo, quindi i profili esistenti non cambiano comportamento.
+
+L'identità di un catalogo (`kind = { mediaSet, anime: 'yes' | 'no' | 'mixed' }`) è calcolata da un solo helper, [catalogKind.js](../src/catalog/catalogKind.js), con registry esplicito per gli 8 hero e i cataloghi fissi, `type` + `isAnime` per i preset, `type` per i custom e **unione** delle sorgenti per i merged. Lo stesso helper risponde alla domanda «perché questo catalogo è nascosto?» (`getIncompatibilityReason`), così manifest, backend e dashboard non possono divergere.
+
+Tre confini da non confondere:
+- **Suggerimenti vs strumenti**: preset, hero, custom e merged sono soggetti; `yaca_search_standard`, `yaca_search_ai` e le tre watchlist restano **sempre** visibili e il loro contenuto non viene filtrato.
+- **Catalogo vs contenuto**: la dimensione media si applica al catalogo (un catalogo film contiene già film), quella anime anche ai singoli item.
+- **Il dashboard non cancella**: un catalogo non conforme già presente resta salvato nel profilo, grigio e con badge «Nascosto dai selettori», riordinabile e rimovibile. `/api/configure` non rifiuta e non butta via nulla.
+
+`typeSelectors` finisce nella chiave di cache della richiesta: senza, due profili con selettori diversi si servirebbero a vicenda lo stesso catalogo.
+
+> [!NOTE]
+> Non esiste più il filtro «già visti» (`hideWatched`): era applicato solo ad alcuni percorsi e non scriveva mai il proprio flag, quindi era codice morto al 100%. Con la sua rimozione è sparito anche il refill multi-pagina dei provider e il dedup è **namespace-aware** (`kitsu:1100` ≠ `tmdb:1100`).
 
 ---
 
