@@ -4,6 +4,8 @@ Questo runbook operativo documenta l'installazione, la configurazione, l'esposiz
 
 ---
 
+> **Piattaforme rimosse il 04/10/2026**: Hugging Face Spaces, VPS Hetzner, Render e Cloudflare Worker **non si usano più**. I documenti che li descrivevano (`DEPLOYMENT_OPS.md`, `DEPLOYMENT_VPS_HETZNER.md`) sono stati cancellati, insieme alle variabili `SPACE_HOST` e `RENDER_EXTERNAL_URL` nel codice. Questo è l'unico deploy: se incontri un riferimento a quelle piattaforme o a un reverse proxy Caddy, è un residuo da rimuovere, non una configurazione da ripristinare.
+
 ## 0. Cosa ti serve prima di iniziare
 
 - [ ] Chiavetta USB con **Debian 12 netinst** (o Ubuntu Server 24.04) — nessun ambiente grafico
