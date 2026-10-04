@@ -139,3 +139,5 @@ mentre si lavorava.
 Se un doc non viene toccato mentre la sua mappa si chiude, invecchia — ed è esattamente
 quello che è successo a `PRESETS`, `ALGORITHMS` e `KITSU_MAPPING`: fermi da un mese mentre
 il codice cambiava sotto.
+
+**Verifica a mano delle citazioni (deciso il 04/10/2026)**: niente controlli automatici — la verifica la fa l'agente quando congela una mappa. Per ogni `file:riga` citato: il file esiste ancora? è cambiato da quando la mappa è stata scritta? Il 03/10/2026 questo controllo a mano ha trovato tre file citati che erano stati **rimossi a luglio e agosto** (`kitsu.js`, `sync_entities.js`, `TmdbProvider.js`) e un numero di schema superato di due versioni. È il genere di divergenza che nessuno nota finché non ci sbatte contro.

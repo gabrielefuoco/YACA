@@ -146,6 +146,8 @@ Il catalogo novità anime non nasce da una query TMDB/DuckDB ma da una collezion
 
 Il modulo possiede il contratto, il core solo lo legge: nessuno nel core scrive `anime_airing_state`, e il lettore non pretende di sapere se il modulo è vivo. Il segnale di freschezza esiste (battito + healthcheck, soglia 12 ore) ma resta **operativo**: nessuna notifica, nessuna dashboard, si guarda il container quando si sospetta.
 
+> **Deciso il 04/10/2026**: la selezione del catalogo novità **è questa lista** — l'appartenenza alla collezione "In corso" del portale, non una finestra di giorni. La mappa `anime-layer` (ticket 09 e 13) descriveva *"serie con almeno un episodio sub o ITA nelle ultime 14 settimane, ordinate per data dell'ultimo episodio"*: era l'intenzione iniziale, superata dal codice. Quella vecchia regola sopravvive solo in `scripts/backfill-airing-anime.js`. Il codice vince.
+
 ---
 
 ## 4. Architettura del Caching L1/L2
