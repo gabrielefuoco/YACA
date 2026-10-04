@@ -133,7 +133,7 @@ Lo stesso vale per la cache: i valori di `Cache-Control` sono in **secondi** (`m
 
 ### E. `anime` e `other`: tipi legali ma assenti dal TypeScript ufficiale
 
-`manifest.types` è un `Vec<String]` in `stremio-core` e l'esempio del doctest ufficiale è `["anime","series","movies"]`; il linter non controlla l'appartenenza a un set chiuso. Non compaiono però nell'union `ContentType` del pacchetto npm, quindi un addon che li dichiara è formalmente "fuori standard" e funziona ([stremio.js](../src/api/stremio.js#L213) dichiara `['movie','series','anime','other']`).
+`manifest.types` è un `Vec<String]` in `stremio-core` e l'esempio del doctest ufficiale è `["anime","series","movies"]`; il linter non controlla l'appartenenza a un set chiuso. Non compaiono però nell'union `ContentType` del pacchetto npm, quindi un addon che li dichiara è formalmente "fuori standard" e funziona ([stremio.js](../src/api/stremio.js#L373) dichiara `['movie','series','anime','other']`, e lo stesso vale per gli `idPrefixes` della risorsa `stream`).
 
 La conseguenza pratica va ricordata quando si aggiunge un tipo: **Cinemeta risponde solo a `movie` e `series`**, quindi per `anime`/`other` i metadati devono arrivare da YACA; e per lo streaming i prefissi sono quelli del provider (`kitsu:`, `tt`), non `tmdb:` — vedi §2.
 
@@ -150,6 +150,15 @@ Tre conseguenze pratiche:
 3. **Il resync è ritentato, non perso**: se `updateStremioAddonCollection` fallisce il flag resta `true` e si riprova al prossimo avvio. Tutto il percorso è mai-fatale e si disattiva con `DISABLE_MANIFEST_RECONCILE=1`.
 
 Contratti coperti da [manifestFingerprint.test.js](../tests/manifestFingerprint.test.js) e [manifestReconciler.test.js](../tests/manifestReconciler.test.js).
+
+### G. Chi è `userHandle`: due tabelle, un solo handle
+
+Ogni route di protocollo è `/:userHandle/...` e `resolveUserConfig(handle)` ([UserConfig.js](../src/models/UserConfig.js#L301-L319)) accetta **due identificatori diversi** per la stessa persona, in quest'ordine:
+
+1. **`addonUuid`** — UUID v4 dell'`AddonConfig`, il documento **anonimo** che contiene profili, cataloghi, DNA e scelte UI (e non contiene `userId`);
+2. **`userId`** — NanoID dell'`UserAccount`, che porta le credenziali private (authKey Stremio, token Trakt, chiavi TMDB/Mistral) e un puntatore `addonUuid`.
+
+È la separazione *Two-Table Split*: il manifest e i cataloghi si possono servire da una tabella che non contiene nessun segreto, mentre le chiavi restano nell'altra. Due conseguenze pratiche: un `/:userHandle/manifest.json` può essere messo in cache o condiviso senza esporre credenziali, e l'URL d'installazione può cambiare forma (`/{userId}/{configVersion}/manifest.json`) senza toccare l'anonimato dell'`AddonConfig`.
 
 ---
 
