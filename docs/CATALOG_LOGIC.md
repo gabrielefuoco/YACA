@@ -20,10 +20,10 @@ graph TD
     subgraph Fetch Pipeline
         G -->|Route Request| H[CatalogRouter.js]
         H -->|Risolve| I[Providers]
-        I -->|Filtro Post-Fetch| J[Wrong Media Type & Kids Mode]
+        I -->|Boundary Anime| M["normalizeAnimeMarker → _isAnime"]
+        M -->|Filtro Post-Fetch| J[Wrong Media Type, Kids Mode & Selettori di Tipo]
         J -->|Badge Episodi| L[MetadataHydrator.js]
-        L -->|Traduttore Anime| M[TmdbToKitsuMapper.js]
-        M -->|Sort Simulcast| N[Simulcast Sorting]
+        L -->|Sort Simulcast| N[Simulcast Sorting]
         N -->|Formatta| O[StremioFormatter.js]
     end
     
@@ -36,25 +36,42 @@ graph TD
 1. **Routing Iniziale**: L'endpoint `/catalog/:type/:id.json` in [stremio.js](../src/api/stremio.js) cattura la richiesta da Stremio, estraendo parametri come `id`, `type` ed `extra` (che contiene filtri come `skip`, `search` o `genre`).
 2. **Orchestratore**: La richiesta viene deferita a `catalogHandler` in [catalogHandler.js](../src/handlers/catalogHandler.js).
 3. **Generazione dell'Hash di Richiesta**: Viene calcolato un hash univoco tramite `generateRequestHash` per identificare la richiesta. Questo hash tiene conto di:
-   - ID e tipo di catalogo.
+   - ID e tipo di catalogo, e l'impronta della sua definizione canonica (`where`, `orderBy`, `queries`, `isAnime`, provider…): cambiare un preset invalida le voci di cache che lo avevano servito.
    - Parametri di paginazione (`skip`).
    - Configurazione specifica dell'utente (ID utente, ID profilo attivo).
-   - Impostazioni del profilo (es. `kidsMode`).
+   - Impostazioni del profilo (`kidsMode`, `typeSelectors`, orientamento poster).
    - Versione della configurazione (`configVersion` per il cache-busting).
    - Versione dei badge degli episodi (`BADGE_CATALOG_VERSION`).
 4. **Strategia SWR (Stale-While-Revalidate)**:
    - Se l'hash è presente in cache ed è **fresh**, viene restituito immediatamente.
    - Se è **stale** (nella finestra SWR), viene restituito subito il dato archiviato e viene avviata una Promise asincrona in background per aggiornare la cache.
    - Se è un **miss**, la pipeline attende la risoluzione sincrona della fetch.
-5. **Risoluzione del Catalogo**: `routeCatalogRequest` in [CatalogRouter.js](../src/catalog/CatalogRouter.js) mappa l'ID del catalogo al provider corretto.
+5. **Risoluzione del Catalogo**: `routeCatalogRequest` in [CatalogRouter.js](../src/catalog/CatalogRouter.js) mappa l'ID del catalogo al provider corretto. **Prima ancora**, se il catalogo richiesto non è conforme ai selettori di tipo del profilo attivo, `catalogHandler` risponde `{ metas: [] }`: copre la finestra in cui Stremio ha ancora in mano il manifest vecchio, senza mai tirare un errore.
 6. **Filtri Post-Fetch**:
    - **Esclusione di tipi errati**: Filtra elementi il cui `media_type` non corrisponde alla richiesta (es. rimuove film da richieste di serie).
-   - **Kids Mode Fallback**: Se il profilo ha la modalità bambini attiva, esclude contenuti con generi horror (27), thriller (53) e crime (80).
+   - **Kids Mode**: se il profilo ha la modalità bambini attiva è un **hard filter**, non un ripiego — vale per i 4 cataloghi hero come per i preset, ed è applicato sia alle query DuckDB sia ai pool e ai risultati finali. Esclude i generi horror (27), thriller (53) e crime (80), **23 keyword adulte** e le certificazioni `TV-MA`/`NC-17`/`R`/`X`, ed è **fail-closed**: un item di cui non si conoscono né generi né keyword viene trattato come non adatto.
+   - **Selettori di tipo del profilo**: con `anime: 'exclude'` escono gli item anime, con `'only'` restano i soli anime (vedi § 1.1). Nessun refill: una pagina più corta è accettata, e un item senza marcatore **resta** (fail-open).
 7. **Post-Processing**:
+   - **Boundary anime**: ogni item in uscita dal routing passa da `normalizeAnimeMarker`, che espone `_isAnime`. È il punto in cui si decide tutto ciò che riguarda gli anime: clone ITA, filtri e badge (vedi § 1.1 e [KITSU_MAPPING.md](KITSU_MAPPING.md)).
    - **Hydration & Badge**: Se il catalogo prevede badge per gli episodi (es. simulcast o nuove uscite), arricchisce i metadati recuperando le informazioni sugli episodi.
-   - **TMDB to Kitsu**: Traduce gli ID degli anime in ID Kitsu per garantire la compatibilità con i motori di streaming.
-   - **Simulcast Sorting**: per il catalogo novità anime (`preset_anime_simulcast`) l'ordinamento per data dell'ultimo episodio disponibile è già applicato da `AiringStateProvider.js` leggendo `anime_airing_state` (finestra 14 giorni).
+   - **Simulcast Sorting**: per il catalogo novità anime (`preset_anime_simulcast`) l'ordinamento temporale è già applicato da `AiringStateProvider.js` leggendo `anime_airing_state`: quel ramo esce prima di qualsiasi ordinamento qui sotto.
 8. **Formattazione Stremio**: I metadati normalizzati vengono convertiti nel formato finale Stremio Meta Preview tramite [StremioFormatter.js](../src/catalog/formatters/StremioFormatter.js).
+
+### 1.1 I selettori di tipo del profilo (`Solo Film` / `Solo Serie` / `Solo Anime` / `No Anime`)
+
+Un profilo può restringere i **cataloghi di suggerimento** per media e per argomento anime, con tre checkbox in `profile.settings.typeSelectors` (`film`, `serie`, `anime: 'only' | 'exclude' | null`). Sono due gruppi **ortogonali**: `Solo Anime` da solo vale per anime film **e** anime serie, `Solo Serie` + `Solo Anime` vale per le sole anime serie. Campo assente = nessun vincolo, quindi i profili esistenti non cambiano comportamento.
+
+L'identità di un catalogo (`kind = { mediaSet, anime: 'yes' | 'no' | 'mixed' }`) è calcolata da un solo helper, [catalogKind.js](../src/catalog/catalogKind.js), con registry esplicito per gli 8 hero e i cataloghi fissi, `type` + `isAnime` per i preset, `type` per i custom e **unione** delle sorgenti per i merged. Lo stesso helper risponde alla domanda «perché questo catalogo è nascosto?» (`getIncompatibilityReason`), così manifest, backend e dashboard non possono divergere.
+
+Tre confini da non confondere:
+- **Suggerimenti vs strumenti**: preset, hero, custom e merged sono soggetti; `yaca_search_standard`, `yaca_search_ai` e le tre watchlist restano **sempre** visibili e il loro contenuto non viene filtrato.
+- **Catalogo vs contenuto**: la dimensione media si applica al catalogo (un catalogo film contiene già film), quella anime anche ai singoli item.
+- **Il dashboard non cancella**: un catalogo non conforme già presente resta salvato nel profilo, grigio e con badge «Nascosto dai selettori», riordinabile e rimovibile. `/api/configure` non rifiuta e non butta via nulla.
+
+`typeSelectors` finisce nella chiave di cache della richiesta: senza, due profili con selettori diversi si servirebbero a vicenda lo stesso catalogo.
+
+> [!NOTE]
+> Non esiste più il filtro «già visti» (`hideWatched`): era applicato solo ad alcuni percorsi e non scriveva mai il proprio flag, quindi era codice morto al 100%. Con la sua rimozione è sparito anche il refill multi-pagina dei provider, e il dedup residuo è **namespace-aware** (`getBaseId` in `contentId.js`: `kitsu:1100` ≠ `tmdb:1100`, cosa che `normalizeContentId` non distingue perché taglia i prefissi).
 
 ---
 
@@ -98,9 +115,9 @@ La risoluzione fisica dei dati è delegata ai provider dedicati in `src/catalog/
 
 - **DuckDbProvider.js**: Motore principale. Genera risultati analitici a latenza zero partendo da file Parquet TMDB off-grid. Utilizza il modulo `queryBuilder.js` per risolvere i filtri in codice SQL nativo (inclusa la Full-Text Search).
 - **AiDiscoveryProvider.js**: Si occupa dei task generativi (Universal Pipeline). Sebbene elabori query intelligenti, alla base demanda a `DuckDbProvider` la vera e propria interrogazione (grazie all'intercettore `legacyTmdbAdapter.js` per compatibilità VSM).
-- **TmdbProvider.js / KitsuProvider.js**: Provider legacy o di fallback per risoluzioni via rete API nei casi dove il DB locale non dispone dei dati.
+- **~~TmdbProvider.js / KitsuProvider.js~~ (rimossi)**: non esistono più. `KitsuProvider` è sparito il **2026-07-09** (commit `a028ff6`, lo stesso che ha introdotto `animeMappingStore`) e `TmdbProvider` il **2026-07-20** (`01440ea`, con le query AI dirotte su DuckDB). Oggi ogni catalogo risolto dal router o gira su DuckDB o chiama un provider dedicato qui sotto; non esiste più il fallback di rete "legacy" per i preset.
 - **TraktProvider.js**: Provider specifico per la piattaforma Trakt.tv.
-- **AiringStateProvider.js**: Alimenta il catalogo `preset_anime_simulcast` ("Simulcast - Nuovi Episodi") leggendo lo stato scritto dal modulo esterno nella collezione MongoDB `anime_airing_state` (contratto in `services/anime-source`). Seleziona le serie con almeno un episodio sub o ITA negli ultimi 14 giorni, le ordina per data dell'ultimo episodio disponibile e le idrata da DuckDB con una query batch (`id IN (...)`). Niente più AniList.
+- **AiringStateProvider.js**: Alimenta il catalogo `preset_anime_simulcast` ("Simulcast - Nuovi Episodi") leggendo lo stato scritto dal modulo esterno nella collezione MongoDB `anime_airing_state` (contratto in `services/anime-source`). Seleziona i documenti **della lista "In corso"** di AnimeUnity che hanno sub o doppiaggio — l'appartenenza si misura su `listSeenAt` (≤ 14 giorni; fallback a `updatedAt` ≤ 12 ore per i documenti che non hanno ancora quel campo) — e li ordina per data dell'ultimo episodio uscito, con spareggi deterministici (`listSeenAt` desc, `orderIndex` asc, `updatedAt` desc). Idrata da DuckDB con una query batch (`id IN (...)`) e **riordina sulla pagina di stato**, perché DuckDB non preserva l'ordine con cui è stato interrogato; imposta l'id `kitsu:{id}` quando risolvibile (la stessa lingua del `metaHandler`) e salta gli item non idratabili. Pagine da 20. Niente più AniList, ma l'id del preset è rimasto invariato e `anilist_simulcast` resta accettato come marker legacy.
 - **HybridProvider.js**:
     Collega il motore di raccomandazione ibrido generatore di cataloghi speciali basati sul profilo psicofisico dei gusti dell'utente (Taste Profile) come *True Blend* o *Hidden Gems*.
 
@@ -122,10 +139,12 @@ I cataloghi personalizzati salvati in `AddonConfig.customCatalogs` (inclusi i ca
 
 ### Stato esterno `anime_airing_state`
 
-Il catalogo novità anime non nasce da una query TMDB/DuckDB ma da una collezione MongoDB scritta dal modulo esterno `services/anime-source` (contratto: `_id` = TMDB id in stringa, `schemaVersion`, `italian.sub/dub.latest` come `{season, episode}`, `episodes[]` con `subIta`/`dubIta`). Il lettore è `src/data/animeAiringState.js`:
+Il catalogo novità anime non nasce da una query TMDB/DuckDB ma da una collezione MongoDB scritta dal modulo esterno `services/anime-source` (contratto: `_id` = TMDB id in stringa, `schemaVersion`, `italian.sub/dub.latest` come `{season, episode}`, `episodes[]` con `subIta`/`dubIta`, e i campi di lista `listSeenAt`/`orderIndex`/`updatedAt` che dicono «questa serie era in corso l'ultima volta che ho guardato»). Il lettore è `src/data/animeAiringState.js`:
 - valida solo i campi che consuma e ignora i documenti con `schemaVersion` più alta;
 - tiene una cache L1 in RAM con TTL ~60s: una query per snapshot, non una per item;
 - non lancia mai: su errore serve l'ultimo stato noto (anche stantio) o il vuoto, con un log aggregato (una riga per refresh).
+
+Il modulo possiede il contratto, il core solo lo legge: nessuno nel core scrive `anime_airing_state`, e il lettore non pretende di sapere se il modulo è vivo. Il segnale di freschezza esiste (battito + healthcheck, soglia 12 ore) ma resta **operativo**: nessuna notifica, nessuna dashboard, si guarda il container quando si sospetta.
 
 ---
 
@@ -172,7 +191,10 @@ Per indicare visivamente all'utente la disponibilità del doppiaggio o delle nov
 >   colonna, così copre anche i **21 cataloghi** che non passano dal parquet (Trakt, hero, watchlist, simulcast);
 > - **Anime**: fuori dal catalogo novità il badge è **`ITA` secco** (niente numero di episodio, niente stagione);
 >   nel catalogo novità (`preset_anime_simulcast`) restano la card sub `EP n` e il clone `_ita_offset` con `ITA n`,
->   letti da `anime_airing_state`;
+>   letti da `anime_airing_state`. Le righe di annotazione per gli anime le scrive `services/doppiaggi-source`,
+>   che legge a sua volta `anime_airing_state` (i doppiati del portale): è quel passaggio — non il modulo anime,
+>   non il parquet — che fa comparire il badge ITA sugli anime in **tutti** i cataloghi normali, mentre nel
+>   catalogo novità vale lo stato esterno letto dal provider;
 > - **Non-anime**: nessuna scansione, nessuna coda, nessun clone: la card resta singola con il badge `ITA`.
 > - **Degrado deciso**: se il file delle annotazioni manca, la colonna è `false` su tutto e i badge si spengono;
 >   un avviso non bloccante segnala il calo oltre il 2%. Il catalogo resta sempre fresco.
@@ -187,4 +209,4 @@ I comportamenti di caching e di interconnessione con i provider sono influenzati
 *   `REDIS_URL`: URL di connessione a Redis per il caching L2 distribuito (default: `redis://127.0.0.1:6379`).
 *   `TMDB_API_KEY`: API Key utilizzata per interrogare TMDB e per arricchire i metadati.
 *   `MISTRAL_API_KEY`: Chiave API per Mistral AI, necessaria per abilitare la ricerca semantica Live Search.
-*   `KITSU_ENDPOINT`: Endpoint dell'API di Kitsu (default: `https://kitsu.io/api/edge`).
+*   `KITSU_ENDPOINT`: Endpoint dell'API di Kitsu (default: `https://kitsu.io/api/edge`) — **vestigio**: è dichiarato in `src/config.js` ma nessun modulo del core lo legge, perché il mapping Kitsu passa da Anibridge/Fribb e il core non fa query a Kitsu. Se si aggiunge un consumer, la variabile torna ad avere un significato.
