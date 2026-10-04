@@ -9,6 +9,7 @@ const {
     getDubEpisode,
     isAnimeDubbed,
     maxEpisodeNumber,
+    declaredMediaType,
     animeDocsToRows,
     fetchAnimeAiringDocs,
     loadAnimeDubbedRows
@@ -241,4 +242,139 @@ test('anime.js - maxEpisodeNumber e la soglia del veto (3 sì, 4 no)', () => {
     const quattro = animeDocsToRows([{ _id: '10', dub: { episode: 1 }, episodes: [{ episode: 4 }] }], { tvIds: new Set(), movieIds: new Set([10]) });
     assert.equal(tre[0].t, 'movie');
     assert.equal(quattro[0].t, 'tv');
+});
+
+// ---------------------------------------------------------------------------
+// Ticket 50: il tipo dichiarato dalla fonte vince sull'indovinello sui dump.
+// Senza questo i film anime doppiati escono `tv:<id>` e il badge si cerca `movie:<id>`.
+// ---------------------------------------------------------------------------
+
+test('anime.js - mediaType dichiarato "movie" vince anche quando la regola attuale direbbe "tv"', () => {
+    // Il caso vero: *Jin-Roh* (TMDB 823) e gli altri film anime doppiati. Non è nel dump tv,
+    // la regola attuale cadrebbe sul default 'tv' e il badge (che cerca movie:823) non troverebbe nulla.
+    const docs = [
+        { _id: '823', mediaType: 'movie', dub: { episode: 1 }, episodes: [{ season: 1, episode: 1, dubIta: true }] }
+    ];
+    const tvIds = new Set(); // il dump tv non lo contiene
+    const movieIds = new Set(); // e nemmeno il dump film: la sola fonte di verità è il documento
+
+    const rows = animeDocsToRows(docs, { tvIds, movieIds });
+    assert.deepEqual(rows, [{ t: 'movie', id: 823, ita: true }]);
+});
+
+test('anime.js - mediaType dichiarato "tv" vince sul veto dei dump (anche con una sola puntata)', () => {
+    // Il caso in direzione opposta: una serie brevissima che i dump non distinguerebbero,
+    // dichiarata 'tv' dalla fonte. Se la regola attuale avesse la parola uscirebbe 'movie'.
+    const docs = [
+        { _id: '12345', mediaType: 'tv', dub: { episode: 1 }, episodes: [{ season: 1, episode: 1, dubIta: true }] }
+    ];
+    const tvIds = new Set();
+    const movieIds = new Set([12345]); // solo nel dump film: l'indovinello direbbe 'movie'
+
+    const rows = animeDocsToRows(docs, { tvIds, movieIds });
+    assert.deepEqual(rows, [{ t: 'tv', id: 12345, ita: true }]);
+});
+
+test('anime.js - senza mediaType il comportamento resta esattamente quello di prima', () => {
+    // I 954 documenti già in produzione non hanno il campo: le tre regole di prima devono valere
+    // immutate (veto episodi -> regola sui dump -> default tv).
+    const docs = [
+        // 1 episodio, solo nel dump film -> 'movie' (regola 2, invariata)
+        { _id: '372058', dub: { episode: 1 }, episodes: [{ season: 1, episode: 1, dubIta: true }] },
+        // corsa di episodi -> 'tv' anche se il solo id film coincide (regola 1, invariata)
+        { _id: '8996', dub: { episode: 44 }, episodes: [{ season: 1, episode: 44, dubIta: true }] },
+        // nei due dump -> vince 'tv' (regola 2, invariata)
+        { _id: '30984', dub: { episode: 1 } },
+        // in nessun dump -> default 'tv' (regola 3, invariata)
+        { _id: '999999', dub: { episode: 1 } },
+        // senza set di dump e senza mediaType -> 'tv' (nessuna regola applicabile, invariata)
+        { _id: '55555', dub: { episode: 1 } }
+    ];
+    const tvIds = new Set([30984, 8996]);
+    const movieIds = new Set([372058, 30984, 8996]);
+
+    const rows = animeDocsToRows(docs, { tvIds, movieIds });
+    assert.deepEqual(rows, [
+        { t: 'movie', id: 372058, ita: true },
+        { t: 'tv', id: 8996, ita: true },
+        { t: 'tv', id: 30984, ita: true },
+        { t: 'tv', id: 999999, ita: true },
+        { t: 'tv', id: 55555, ita: true }
+    ]);
+});
+
+test('anime.js - senza mediaType la riga e\' byte per byte quella di prima, anche senza dump', () => {
+    // Stessi documenti, stessi set vuoti: senza il campo deve uscire esattamente 'tv' ovunque,
+    // cioè nessuna riga cambia tipo per il solo fatto che il campo non ci sia ancora.
+    const docs = [
+        { _id: '1', dub: { episode: 1 } },
+        { _id: '2', mediaType: undefined, dub: { episode: 7 } },
+        { _id: '3', mediaType: null, dub: { episode: 1 } },
+        { _id: '4', mediaType: '', dub: { episode: 1 } },
+        { _id: '5', mediaType: '   ', dub: { episode: 1 } }
+    ];
+    const rows = animeDocsToRows(docs);
+    assert.deepEqual(rows, [
+        { t: 'tv', id: 1, ita: true },
+        { t: 'tv', id: 2, ita: true },
+        { t: 'tv', id: 3, ita: true },
+        { t: 'tv', id: 4, ita: true },
+        { t: 'tv', id: 5, ita: true }
+    ]);
+});
+
+test('anime.js - declaredMediaType: legge il campo, e non inventa nulla', () => {
+    assert.equal(declaredMediaType({ mediaType: 'movie' }), 'movie');
+    assert.equal(declaredMediaType({ mediaType: 'tv' }), 'tv');
+    assert.equal(declaredMediaType({ mediaType: ' MOVIE ' }), 'movie', 'normalizza come la fonte');
+    assert.equal(declaredMediaType({}), null);
+    assert.equal(declaredMediaType(null), null);
+    assert.equal(declaredMediaType({ mediaType: null }), null);
+    assert.equal(declaredMediaType({ mediaType: 42 }), null);
+    assert.equal(declaredMediaType({ mediaType: 'tvshow' }), null, 'un valore ignoto non è una dichiarazione');
+});
+
+test('anime.js - mediaType dichiarato non vale sugli altri casi che restano scartati', () => {
+    // Lo dichiaratore non cambia le altre porte: non doppiato, schema troppo nuovo, id non numerico.
+    const docs = [
+        { _id: '1', mediaType: 'movie', sub: { episode: 3 } },
+        { _id: '2', mediaType: 'movie', schemaVersion: 2, dub: { episode: 1 } },
+        { _id: 'abc', mediaType: 'movie', dub: { episode: 1 } }
+    ];
+    assert.deepEqual(animeDocsToRows(docs), []);
+});
+
+test('anime.js - fetch: la proiezione chiede mediaType, o il tipo dichiarato non arriverebbe', async () => {
+    // Se la proiezione non includesse il campo, in produzione il documento arriverebbe senza tipo
+    // e la riga ripartirebbe dall'indovinello: la correzione sarebbe solo nei test.
+    let proiezione = null;
+    const mockCollection = {
+        find: (_filter, opts) => {
+            proiezione = opts && opts.projection;
+            return {
+                toArray: async () => [{ _id: '823', mediaType: 'movie', dub: { episode: 1 } }]
+            };
+        }
+    };
+
+    const res = await fetchAnimeAiringDocs({ collection: mockCollection });
+    assert.equal(res.ok, true);
+    assert.ok(proiezione && typeof proiezione === 'object', 'la proiezione deve essere presente');
+    assert.equal(proiezione.mediaType, 1, 'mediaType deve essere nella proiezione');
+
+    const rowsRes = await loadAnimeDubbedRows({ collection: mockCollection });
+    assert.deepEqual(rowsRes.rows, [{ t: 'movie', id: 823, ita: true }]);
+});
+
+test('anime.js - due documenti dello stesso id con tipi diversi: entrambe le righe restano', () => {
+    // Il dedup è sulla chiave (t, id): cambiare il tipo dichiarato cambia la chiave, quindi non
+    // si perde nulla rispetto a prima (prima le due righe avrebbero avuto la stessa chiave).
+    const docs = [
+        { _id: '777', mediaType: 'movie', dub: { episode: 1 } },
+        { _id: '777', mediaType: 'tv', dub: { episode: 1 } }
+    ];
+    assert.deepEqual(animeDocsToRows(docs), [
+        { t: 'movie', id: 777, ita: true },
+        { t: 'tv', id: 777, ita: true }
+    ]);
 });
