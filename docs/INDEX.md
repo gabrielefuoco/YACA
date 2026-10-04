@@ -116,3 +116,26 @@ Di seguito sono elencate le variabili d'ambiente effettivamente supportate ed es
 | `TRAKT_CLIENT_ID` | No | Client ID di Trakt.tv per abilitare la sincronizzazione. |
 | `TRAKT_CLIENT_SECRET` | No | Client Secret di Trakt.tv per completare il flow di autenticazione. |
 | `CORS_ALLOWED_ORIGINS` | No | Origini CORS consentite per le API pubbliche. |
+
+---
+
+## Come si mantengono questi documenti
+
+Le **mappe di lavoro** stanno in `.scratch/<mappa>/` (una mappa + i suoi ticket). Sono
+**locali**: `.scratch/` è nel `.gitignore`, quindi non viaggiano con un clone e non esistono
+su altre macchine. Contengono il racconto di come si è arrivati a una decisione — le misure,
+i vicoli ciechi, gli errori — ed è per questo che spiegano meglio del codice.
+
+**Quando una mappa si chiude**, si raccoglie qui quello che non dipende dalla sessione:
+
+- le **regole** che valgono ancora (formati, contratti, convenzioni);
+- le **misure** che motivano una scelta, con la data;
+- i **vincoli** scoperti per forza — le trappole già pagate.
+
+Nella mappa resta il racconto, nel doc va il distillato. **Il codice vince sempre**: la mappa
+è una storia, il doc descrive il codice **com'è adesso**, non come i ticket lo descrivevano
+mentre si lavorava.
+
+Se un doc non viene toccato mentre la sua mappa si chiude, invecchia — ed è esattamente
+quello che è successo a `PRESETS`, `ALGORITHMS` e `KITSU_MAPPING`: fermi da un mese mentre
+il codice cambiava sotto.
