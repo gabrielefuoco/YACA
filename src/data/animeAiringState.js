@@ -315,10 +315,54 @@ function getDocAiredAt(doc) {
 }
 
 /**
+ * I canali che il documento **dichiara**, senza guardare nessuna data.
+ *
+ * È la regola decisa dall'utente il 04/10/2026, parole sue: «non mi frega che il
+ * doppiaggio è fermo, basta anche un episodio doppiato per considerare la serie ITA».
+ * Quindi la card non ha finestra temporale né soglia di freschezza: se il documento dichiara
+ * un episodio tradotto, la serie è ITA — un doppiaggio fermo a mesi vale lo stesso.
+ *
+ * PERCHÉ È UNA FUNZIONE DIVERSA DA `getWindowInfo`: la finestra di 14 giorni risponde a un'altra
+ * domanda — *quali titoli sono una novità* (`getNoveltyEntries`, il backfill) — e lì la data è
+ * il filtro. Sulla card era invece un falso negativo: sui documenti storici (Blue Box, Bleach,
+ * Ranma 1/2) `episodes[]` è l'archivio 2018-2025 e l'episodio fresco sta solo in
+ * `sub.latest`/`dub.latest`, quindi il ramo "documenti storici" contava i 14 giorni, non
+ * trovava niente, `getCardInfo` tornava `null` e la card restava col poster nudo di TMDB.
+ * Misurato su produzione il 04/10/2026: 26 card su 65 senza badge per questa ragione.
+ *
+ * @returns {{hasSub: boolean, hasDub: boolean, lastAiredAt: number|null}}
+ */
+function getDeclaredInfo(doc) {
+    if (!doc) return { hasSub: false, hasDub: false, lastAiredAt: null };
+
+    let hasSub = Boolean(doc.sub);
+    let hasDub = Boolean(doc.dub);
+    let lastAiredAt = null;
+    const consider = (value) => {
+        const at = normalizeTimestamp(value);
+        if (at !== null && (lastAiredAt === null || at > lastAiredAt)) lastAiredAt = at;
+    };
+
+    for (const episode of Array.isArray(doc.episodes) ? doc.episodes : []) {
+        if (episode.subIta) hasSub = true;
+        if (episode.dubIta) hasDub = true;
+        // La data resta un dato di ordinamento, non un filtro: non si butta via.
+        if (episode.subIta || episode.dubIta) consider(episode.airedAt);
+    }
+    consider(doc.sub && doc.sub.airedAt);
+    consider(doc.dub && doc.dub.airedAt);
+
+    return { hasSub, hasDub, lastAiredAt: lastAiredAt || doc.listSeenAt || doc.updatedAt || null };
+}
+
+/**
  * Flag della finestra per un documento: c'è un sub/ITA uscito negli ultimi N giorni?
  * `lastAiredAt` = data (ms) dell'episodio disponibile più recente nella finestra.
  * Se episodes[] è assente o vuoto ma sub/dub ci sono, considerali disponibili
  * (la "finestra" non è più una data: è la presenza nella lista).
+ *
+ * Serve alla **novità** (quali titoli attraversano il backfill), NON al badge della card:
+ * per il badge vale `getDeclaredInfo`.
  */
 function getWindowInfo(doc, options = {}) {
     if (!doc) return { hasSub: false, hasDub: false, lastAiredAt: null };
@@ -360,19 +404,26 @@ function compareEpisodeRefs(a, b) {
     return (Number(a && a.episode) || 0) - (Number(b && b.episode) || 0);
 }
 
-function findNewestEpisode(doc, predicate, options = {}) {
+/**
+ * L'episodio più recente che il documento dichiara e che soddisfa `predicate`.
+ * **Nessuna finestra**: per la card vale la dichiarazione, non la data (cfr. `getDeclaredInfo`).
+ * A parità di data vince la numerazione più alta; un episodio senza data non viene scartato,
+ * vale come il più vecchio (il documento lo dichiara: basta).
+ */
+function findNewestEpisode(doc, predicate) {
     if (!doc || !Array.isArray(doc.episodes)) return null;
-    const { nowMs, windowMs } = resolveWindow(options);
     let best = null;
+    let bestAiredAt = null;
     for (const episode of doc.episodes) {
-        if (!isInWindow(episode.airedAt, nowMs, windowMs)) continue;
         if (!predicate(episode)) continue;
+        const airedAt = normalizeTimestamp(episode.airedAt);
         if (
-            !best ||
-            episode.airedAt > best.airedAt ||
-            (episode.airedAt === best.airedAt && compareEpisodeRefs(episode, best) > 0)
+            best === null ||
+            (airedAt !== null && (bestAiredAt === null || airedAt > bestAiredAt)) ||
+            (airedAt === bestAiredAt && compareEpisodeRefs(episode, best) > 0)
         ) {
             best = episode;
+            bestAiredAt = airedAt;
         }
     }
     return best;
@@ -380,31 +431,32 @@ function findNewestEpisode(doc, predicate, options = {}) {
 
 /**
  * Informazioni per le due card di un documento.
- * - `sub`: episodio del badge sub (da `italian.sub.latest`, fallback all'ultimo sub in finestra);
- * - `dub`: episodio del badge ITA, presente SOLO se nella finestra è uscito un doppiato.
- * Ritorna null se il documento non ha nulla nella finestra.
+ * - `sub`: episodio del badge sub (`italian.sub.latest`, altrimenti l'ultimo sub dichiarato);
+ * - `dub`: episodio del badge ITA, presente se e solo se il documento dichiara ALMENO UN
+ *   episodio doppiato, a qualunque data (vedi `getDeclaredInfo`).
+ * Ritorna null se il documento non dichiara né sub né dub.
  */
-function getCardInfo(doc, options = {}) {
+function getCardInfo(doc) {
     if (!doc) return null;
-    const windowInfo = getWindowInfo(doc, options);
-    if (!windowInfo.hasSub && !windowInfo.hasDub) return null;
+    const declared = getDeclaredInfo(doc);
+    if (!declared.hasSub && !declared.hasDub) return null;
 
     let sub = null;
-    if (windowInfo.hasSub) {
+    if (declared.hasSub) {
         if (doc.sub) {
             sub = doc.sub;
         } else {
-            const episode = findNewestEpisode(doc, (ep) => ep.subIta, options);
+            const episode = findNewestEpisode(doc, (ep) => ep.subIta);
             if (episode) sub = { season: episode.season, episode: episode.episode };
         }
     }
 
     let dub = null;
-    if (windowInfo.hasDub) {
+    if (declared.hasDub) {
         if (doc.dub) {
             dub = doc.dub;
         } else {
-            const episode = findNewestEpisode(doc, (ep) => ep.dubIta, options);
+            const episode = findNewestEpisode(doc, (ep) => ep.dubIta);
             if (episode) dub = { season: episode.season, episode: episode.episode };
         }
     }
@@ -414,9 +466,9 @@ function getCardInfo(doc, options = {}) {
     return {
         sub,
         dub,
-        hasSubInWindow: windowInfo.hasSub,
-        hasDubInWindow: windowInfo.hasDub,
-        lastAiredAt: windowInfo.lastAiredAt
+        hasSub: declared.hasSub,
+        hasDub: declared.hasDub,
+        lastAiredAt: declared.lastAiredAt
     };
 }
 
@@ -585,8 +637,8 @@ function findDocument(snapshot, itemId) {
     return null;
 }
 
-function getCardInfoForId(snapshot, itemId, options = {}) {
-    return getCardInfo(findDocument(snapshot, itemId), options);
+function getCardInfoForId(snapshot, itemId) {
+    return getCardInfo(findDocument(snapshot, itemId));
 }
 
 /**
@@ -736,6 +788,7 @@ module.exports = {
     getCardInfo,
     getCardInfoForId,
     getWindowInfo,
+    getDeclaredInfo,
     findDocument,
     getDubEpisode,
     getDubEpisodeForId,

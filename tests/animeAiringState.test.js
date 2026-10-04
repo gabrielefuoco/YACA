@@ -251,30 +251,39 @@ describe('AnimeAiringState - finestra 14 giorni e card', () => {
 
     test('serie in corso: sub EP 12 e card ITA presente con ITA 8', () => {
         const info = animeAiringState.getCardInfo(getDoc(snapshot, 240411), WINDOW);
-        expect(info.hasSubInWindow).toBe(true);
-        expect(info.hasDubInWindow).toBe(true);
+        expect(info.hasSub).toBe(true);
+        expect(info.hasDub).toBe(true);
         expect(info.sub).toEqual({ season: 2, episode: 12 });
         expect(info.dub).toEqual({ season: 2, episode: 8 });
     });
 
-    test('serie conclusa: fuori dalla finestra, nessuna card', () => {
-        expect(animeAiringState.getCardInfo(getDoc(snapshot, 999001), WINDOW)).toBeNull();
+    test('serie conclusa: la dichiarazione vale anche fuori dalla finestra (regola del 04/10/2026)', () => {
+        // Il documento dichiara sub e doppiato, ma 60 giorni fa: la card c'è lo stesso, perché
+        // «basta anche un episodio doppiato per considerare la serie ITA». La novità
+        // (`getNoveltyEntries`) continua invece a usare la finestra: è un'altra domanda.
+        expect(animeAiringState.getNoveltyEntries(snapshot, WINDOW).map((e) => e.doc.tmdbId))
+            .not.toContain('999001');
+
+        const info = animeAiringState.getCardInfo(getDoc(snapshot, 999001), WINDOW);
+        expect(info).not.toBeNull();
+        expect(info.sub).toEqual({ season: 1, episode: 12 });
+        expect(info.dub).toEqual({ season: 1, episode: 12 });
         expect(animeAiringState.getWindowInfo(getDoc(snapshot, 999001), WINDOW).hasSub).toBe(false);
     });
 
-    test('doppiato fermo: card ITA assente, badge sub presente', () => {
+    test('doppiato fermo: la card ITA c\'è anche se il doppiaggio è vecchio', () => {
         const info = animeAiringState.getCardInfo(getDoc(snapshot, 999002), WINDOW);
-        expect(info.hasSubInWindow).toBe(true);
-        expect(info.hasDubInWindow).toBe(false);
+        expect(info.hasSub).toBe(true);
+        expect(info.hasDub).toBe(true);
         expect(info.sub).toEqual({ season: 1, episode: 20 });
-        expect(info.dub).toBeNull();
+        expect(info.dub).toEqual({ season: 1, episode: 5 });
     });
 
-    test('solo doppiato nella finestra: solo card ITA', () => {
+    test('solo doppiato dichiarato: il `sub.latest` del documento dà la card sub', () => {
         const info = animeAiringState.getCardInfo(getDoc(snapshot, 999004), WINDOW);
-        expect(info.hasSubInWindow).toBe(false);
-        expect(info.hasDubInWindow).toBe(true);
-        expect(info.sub).toBeNull();
+        expect(info.hasSub).toBe(true);
+        expect(info.hasDub).toBe(true);
+        expect(info.sub).toEqual({ season: 1, episode: 3 });
         expect(info.dub).toEqual({ season: 1, episode: 3 });
     });
 
@@ -385,8 +394,8 @@ describe('AnimeAiringState - lettura senza finestra e nuovi documenti (senza epi
 
         const cardInfo = animeAiringState.getCardInfo(doc, WINDOW);
         expect(cardInfo).not.toBeNull();
-        expect(cardInfo.hasSubInWindow).toBe(true);
-        expect(cardInfo.hasDubInWindow).toBe(true);
+        expect(cardInfo.hasSub).toBe(true);
+        expect(cardInfo.hasDub).toBe(true);
         expect(cardInfo.sub).toEqual({ season: 22, episode: 1180 });
         expect(cardInfo.dub).toEqual({ season: 22, episode: 936 });
 

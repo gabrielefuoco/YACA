@@ -415,7 +415,7 @@ describe('Badge sub/ITA dal documento di stato', () => {
         expect(mappingStore.resolveTmdbFromKitsu).toHaveBeenCalledWith('50427');
     });
 
-    test('doppiato fermo: nessuna card ITA, badge sub corretto', async () => {
+    test('doppiato fermo: la card ITA c\'è comunque (regola dell\'utente del 04/10/2026)', async () => {
         const metas = [item('kitsu:222', 'Dub Fermo')];
         const result = await applyAiringStateBadges(metas, {
             userConfig: USER_CONFIG,
@@ -425,13 +425,14 @@ describe('Badge sub/ITA dal documento di stato', () => {
             snapshot
         });
 
-        expect(result.metas).toHaveLength(1);
+        expect(result.metas).toHaveLength(2);
         expect(result.metas[0].id).toBe('kitsu:222');
         expect(result.metas[0].poster).toContain('EP%2020');
-        expect(result.metas[0].id).not.toContain('_ita_offset');
+        expect(result.metas[1].id).toBe('kitsu:222_ita_offset');
+        expect(result.metas[1].poster).toContain('ITA%205');
     });
 
-    test('solo doppiato nella finestra: unica card ITA', async () => {
+    test('sub.latest dichiarato + solo doppiato: due card, EP 3 e ITA 3', async () => {
         const metas = [item('kitsu:444', 'Solo Dub')];
         const result = await applyAiringStateBadges(metas, {
             userConfig: USER_CONFIG,
@@ -441,9 +442,11 @@ describe('Badge sub/ITA dal documento di stato', () => {
             snapshot
         });
 
-        expect(result.metas).toHaveLength(1);
-        expect(result.metas[0].id).toBe('kitsu:444_ita_offset');
-        expect(result.metas[0].poster).toContain('ITA%203');
+        expect(result.metas).toHaveLength(2);
+        expect(result.metas[0].id).toBe('kitsu:444');
+        expect(result.metas[0].poster).toContain('EP%203');
+        expect(result.metas[1].id).toBe('kitsu:444_ita_offset');
+        expect(result.metas[1].poster).toContain('ITA%203');
     });
 
     test('serie senza stato: card servita senza badge, nessuna eccezione', async () => {

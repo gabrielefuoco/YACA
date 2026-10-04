@@ -62,6 +62,13 @@ async function getAiringStateCatalog(skip = 0) {
             if (!meta) continue; // non idratabile da DuckDB: lo saltiamo (come il vecchio provider)
             const cardId = animeAiringState.resolveCardId(entry, animeMappingStore);
             if (cardId) meta.id = cardId;
+            // Il documento viaggia con la card. Il badge viene applicato DOPO la cache, quando
+            // la meta ha perso l'id TMDB e l'id della card è un `kitsu:` stagionale che
+            // `findAiringStateDocument` non riesce a riportare al documento (vedi il commento
+            // lì): qui la provenienza è ancora nota, quindi gliela si scrive. È un puntatore,
+            // non una copia: il documento si rilegge dallo snapshot (fresco, non invecchiato
+            // dentro la cache) e `applyAiringStateBadges` toglie il campo prima della risposta.
+            meta._airingDocTmdbId = tmdbKey;
             valid.push(meta);
         }
 
