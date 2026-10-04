@@ -393,6 +393,14 @@ function sanitizeCatalogMeta(item, options = {}) {
     if (item._yacaMatch !== undefined) {
         baseItem._yacaMatch = item._yacaMatch;
     }
+    // Provenienza della card del catalogo novità anime: serve a ritrovare il documento
+    // `anime_airing_state` nella fase dei badge, che gira dopo la cache e quando l'id della
+    // card è già diventato `kitsu:` (vedi `findAiringStateDocument`). Va avanti come `_yacaMatch`
+    // — interno, tolto prima della risposta — ma solo se c'è: qui non si sa ancora se questa
+    // pagina verrà riletta dalla cache o meno.
+    if (item._airingDocTmdbId !== undefined) {
+        baseItem._airingDocTmdbId = item._airingDocTmdbId;
+    }
     // L'id IMDb viaggia fino a qui: serve all'ultimo passo della risposta, dove l'id di un film
     // diventa quello che Stremio passa agli altri addon (vedi `allineaIdFilm` in catalogHandler).
     if (item._imdbId) {

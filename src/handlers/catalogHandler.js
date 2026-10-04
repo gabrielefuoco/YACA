@@ -30,9 +30,27 @@ function isItemAnime(item) {
  * Trova il documento airing-state della card. La card può usare un Kitsu ID
  * stagionale risolto da Anibridge, diverso da `doc.ids.kitsu`: in quel caso lo
  * riportiamo all'opera base TMDB prima della lookup snapshot.
+ *
+ * IL RIFERIMENTO CHE VIAGGIA CON LA CARD (`_airingDocTmdbId`) viene letto per primo, e chiude
+ * un giro vizioso che nessuna delle tre lookup sotto può chiudere. Misurato il 04/10/2026:
+ * la card è `kitsu:50024` (Black Clover) ma il documento ha `ids.kitsu = 13209` → nessun match
+ * diretto; e il ritorno per TMDB (`resolveTmdbFromKitsu`) torna `null` perché l'indice inverso
+ * di `animeMappingStore` si riempie solo per le voci Fribb che hanno un `themoviedb_id`, e quelle
+ * non ce l'hanno. Perché l'id della card sia nato senza TMDB è il percorso normale: Anibridge →
+ * anilist/mal → Fribb → kitsu, e quel giro non ha bisogno di TMDB. Il ritorno sì, ed è la
+ * variante (a) non lo risolve: senza `themoviedb_id` non c'è un TMDB da mettere nell'indice.
+ * Il provider (`AiringStateProvider`) sa già quale documento ha prodotto la card: glielo
+ * facciamo scrivere sulla meta, come `_yacaMatch`, e non è un campo che finisce nel JSON
+ * servito (`applyAiringStateBadges` lo toglie prima della risposta).
  */
 function findAiringStateDocument(snapshot, item, mappingStore = animeMappingStore) {
     if (!snapshot || !item) return null;
+
+    const viaggio = item._airingDocTmdbId;
+    if (viaggio && snapshot.byTmdbId) {
+        const byViaggio = snapshot.byTmdbId.get(String(viaggio));
+        if (byViaggio) return byViaggio;
+    }
 
     const direct = animeAiringState.findDocument(snapshot, item.id);
     if (direct) return direct;
@@ -81,7 +99,12 @@ function isAiringStateCatalog(baseId, catalogMeta) {
 // 20: i film escono con l'id IMDb (`allineaIdFilm`), o gli altri addon non rispondono alla richiesta
 //     di stream. Le card in cache sono state formattate prima, quindi non portano `_imdbId`: senza
 //     bump resterebbero con l'id `tmdb:` fino alla scadenza e la correzione sembrerebbe inerte.
-const BADGE_CATALOG_VERSION = 20;
+// 21: la card del catalogo novità anime non ha più finestra temporale — è ITA se il documento
+//     dichiara ALMENO UN episodio doppiato, a qualunque data (regola dell'utente del 04/10/2026) —
+//     e la card porta con sé il riferimento al proprio documento (`_airingDocTmdbId`).
+//     Senza bump, le pagine già in cache non avrebbero né la regola nuova né il riferimento:
+//     continuerebbero a servire il poster nudo per giorni.
+const BADGE_CATALOG_VERSION = 21;
 
 /**
  * Serializza la definizione di un catalogo in forma canonica: chiavi ordinate,
@@ -241,11 +264,23 @@ function buildCatalogCacheKey({
 }
 
 /**
+ * Il riferimento al documento viaggia con la meta per arrivare alla fase dei badge (che gira
+ * DOPO la cache, quando la card ha perso l'id TMDB). Non è un dato da servire: qui viene tolto,
+ * e la copia è perché l'oggetto in cache non va modificato sul posto.
+ */
+function senzaRiferimentoAiring(item) {
+    if (!item || item._airingDocTmdbId === undefined) return item;
+    const copia = { ...item };
+    delete copia._airingDocTmdbId;
+    return copia;
+}
+
+/**
  * Badge del catalogo novità anime: le due card (sub e ITA) leggono lo stato esterno
  * (`anime_airing_state`), non TMDB. Card sub -> `EP {italian.sub.latest.episode}`;
- * card ITA (clone `_ita_offset`) -> `ITA {italian.dub.latest.episode}` e solo se nella
- * finestra di 14 giorni è uscito un episodio doppiato. Entrambe condividono lo stesso id.
- * Non lancia mai: in caso di problemi serve le card senza badge.
+ * card ITA (clone `_ita_offset`) -> `ITA {italian.dub.latest.episode}`, presente se il
+ * documento dichiara almeno un episodio doppiato (nessuna finestra: vedi `getDeclaredInfo`).
+ * Entrambe condividono lo stesso id. Non lancia mai: in caso di problemi serve le card senza badge.
  */
 async function applyAiringStateBadges(metas, {
     userConfig,
@@ -271,32 +306,32 @@ async function applyAiringStateBadges(metas, {
         const processed = [];
         for (const item of metas) {
             if (String(item.id).endsWith('_ita_offset')) {
-                processed.push(item);
+                processed.push(senzaRiferimentoAiring(item));
                 continue;
             }
             const doc = findAiringStateDocument(state, item, mappingStore);
             const info = animeAiringState.getCardInfo(doc);
             if (!info) {
                 // Nessuno stato per questa serie: la card resta, senza badge.
-                processed.push({ ...item, _itaBadge: false });
+                processed.push(senzaRiferimentoAiring({ ...item, _itaBadge: false }));
                 continue;
             }
 
             if (info.sub) {
-                processed.push(sanitizeCatalogMeta({
+                processed.push(senzaRiferimentoAiring(sanitizeCatalogMeta({
                     ...item,
                     _itaBadge: false,
                     _forceBadgeText: `EP ${info.sub.episode}`
-                }, sanitizeOptions));
+                }, sanitizeOptions)));
             }
 
             if (info.dub) {
-                processed.push(sanitizeCatalogMeta({
+                processed.push(senzaRiferimentoAiring(sanitizeCatalogMeta({
                     ...item,
                     id: `${item.id}_ita_offset`,
                     _itaBadge: false,
                     _forceBadgeText: `ITA ${info.dub.episode}`
-                }, sanitizeOptions));
+                }, sanitizeOptions)));
             }
         }
 
