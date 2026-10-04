@@ -101,8 +101,6 @@ Per evitare leak del token dell'utente (UUID) nei log o nei referral del browser
 ## 4. Variabili d'Ambiente Coinvolte nei Workaround
 
 *   `HOST_URL`: L'URL pubblico in cui è ospitato l'addon. Viene usato per generare gli URL del manifest e per costruire i link di configurazione.
-*   `RENDER_EXTERNAL_URL`: Fallback per `HOST_URL` se l'applicazione è ospitata su Render.
-*   `SPACE_HOST`: Hostname di Hugging Face Spaces (es. `<username>-yaca.hf.space`), utilizzato per calcolare automaticamente l'URL pubblico qualora non sia configurato un `HOST_URL` esplicito.
 *   `FRONTEND_URL`: L'URL dell'applicazione frontend di YACA (Next.js/React) utilizzato per i redirect sicuri dalla schermata di configurazione di Stremio.
 *   `TMDB_API_KEY`: Necessaria per richiedere gli External ID e convertire gli ID in Kitsu.
 *   `ERDB_CONFIG`: Stringa di configurazione di Easy Ratings DB, utilizzata per arricchire i certificati dell'età (ad es. per il Kids Mode).

@@ -51,10 +51,9 @@ function validateManifestUrl(manifestUrl) {
         const parsed = new URL(manifestUrl);
         if (!parsed.pathname.endsWith('/manifest.json')) return false;
 
-        const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;
-        const spaceHost = process.env.SPACE_HOST ? `https://${process.env.SPACE_HOST}` : null;
+        const explicitHost = process.env.HOST_URL;
         const localDefault = 'http://localhost:7000';
-        const allowedOrigin = explicitHost || spaceHost || localDefault;
+        const allowedOrigin = explicitHost || localDefault;
         const allowedHost = new URL(allowedOrigin).hostname;
 
         return isAllowedUrl(parsed.href, [allowedHost]);

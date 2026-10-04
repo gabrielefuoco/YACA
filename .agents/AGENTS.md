@@ -30,8 +30,9 @@ Queste regole si applicano a tutto il progetto YACA e definiscono il comportamen
 - In caso di decisioni di design complesse o ambigue, l'agente deve consigliare e incoraggiare l'utilizzo di comandi come `/grill-me` (intervista e Q&A) per allineare la visione tecnica prima di scrivere codice massivo.
 - L'agente sa che l'utente preferisce tool flessibili da riga di comando (CLI) con argomenti opzionali, e che utilizza ampiamente output in JSON per lo sviluppo.
 
-## 6. Ambiente e Deployment (Hugging Face & MongoDB)
-- **Architettura**: YACA gira come container Docker su Hugging Face Spaces (Porta `7860`, con `--expose-gc` per gestire la memoria).
+## 6. Ambiente e Deployment (Home Server & MongoDB)
+- **Architettura**: YACA gira come container Docker sul server di casa (`mate`), dietro **Tailscale Funnel**, porta `7860`, con `--expose-gc` per gestire la memoria. Il deploy è automatico: GitHub Actions → GHCR → Watchtower. La procedura sta in `docs/DEPLOYMENT_HOME_SERVER.md`.
+- **Piattaforme rimosse (2026-10)**: Hugging Face Spaces, VPS Hetzner, Render e Cloudflare Worker **non si usano più**. I documenti e il codice che li riguardavano sono stati cancellati. Se incontri un riferimento a `SPACE_HOST`, `RENDER_EXTERNAL_URL`, `hf.space` o a un reverse proxy Caddy, è un **residuo da rimuovere**, non una configurazione da ripristinare.
 - **Cloudflare Worker Obsoleto**: Tutta la logica legata a Cloudflare Worker è stata rimossa dal progetto. Qualsiasi script (es. `npm run deploy:worker`) o implementazione proxy deve essere gestita nativamente tramite `axios` o `fetch` aggirando i blocchi IPv6.
 - **Gestione Segreti**: Usa sempre il database stateful su **MongoDB Atlas** per salvare le configurazioni utente (`UserAccount`, `AddonConfig`).
 

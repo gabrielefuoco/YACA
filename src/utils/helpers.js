@@ -74,14 +74,11 @@ function resolveHostUrl(req) {
     let host;
 
     // 1. Explicitly configured URL (Highest priority)
-    const explicitHost = process.env.HOST_URL || process.env.RENDER_EXTERNAL_URL;
+    const explicitHost = process.env.HOST_URL;
     if (explicitHost) {
         host = explicitHost;
-    } else if (process.env.SPACE_HOST) {
-        // 2. Legacy fallback space host detection
-        host = `https://${process.env.SPACE_HOST}`;
     } else {
-        // 3. Reverse Proxy Headers
+        // 2. Reverse Proxy Headers
         const forwardedHost = req.headers?.['x-forwarded-host'];
         const forwardedProto = req.headers?.['x-forwarded-proto'];
         

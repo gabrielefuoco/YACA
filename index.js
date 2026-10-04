@@ -190,7 +190,7 @@ let server;
 if (require.main === module) {
     server = app.listen(PORT, () => {
         console.log(`🚀 YACA Server in esecuzione su http://localhost:${PORT}`);
-        if (!process.env.HOST_URL && !process.env.RENDER_EXTERNAL_URL) {
+        if (!process.env.HOST_URL) {
             console.warn('⚠️ HOST_URL non configurato nel file .env. Verranno usati gli header proxy (X-Forwarded-Host/X-Forwarded-Proto) quando disponibili.');
         }
 

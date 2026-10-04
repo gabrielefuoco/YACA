@@ -47,10 +47,6 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 ### 1. 🚀 Deployment e Operazioni
 *   **[DEPLOYMENT_HOME_SERVER.md](DEPLOYMENT_HOME_SERVER.md)**
     *   *Descrizione*: Guida architetturale e operativa per il deployment principale in self-hosting su **Home Server (`mate`)** tramite Docker Compose, Tailscale (`mate.taild24589.ts.net:7860`), GitHub Container Registry (GHCR) e aggiornamenti automatici tramite Watchtower.
-*   **[DEPLOYMENT_OPS.md](DEPLOYMENT_OPS.md)**
-    *   *Descrizione*: Guida per il deployment dell'applicazione su container Docker (incluso Hugging Face Spaces). Copre la configurazione e il setup del database **MongoDB Atlas** e la gestione delle variabili d'ambiente.
-*   **[DEPLOYMENT_VPS_HETZNER.md](DEPLOYMENT_VPS_HETZNER.md)**
-    *   *Descrizione*: Guida all'architettura e deployment alternativo su VPS Hetzner con Docker e Caddy come reverse proxy HTTPS.
 
 ### 2. 🦆 Motore Dati e Query In-Memory
 *   **[DUCKDB_ARCHITECTURE.md](DUCKDB_ARCHITECTURE.md)**

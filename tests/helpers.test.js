@@ -58,11 +58,9 @@ describe('getProfileDnaFilters', () => {
 
 describe('resolveHostUrl', () => {
     const originalHost = process.env.HOST_URL;
-    const originalRenderHost = process.env.RENDER_EXTERNAL_URL;
 
     afterEach(() => {
         process.env.HOST_URL = originalHost;
-        process.env.RENDER_EXTERNAL_URL = originalRenderHost;
     });
 
     it('prefers explicit environment host when configured', () => {
@@ -73,7 +71,6 @@ describe('resolveHostUrl', () => {
 
     it('uses forwarded host/proto when present', () => {
         process.env.HOST_URL = '';
-        process.env.RENDER_EXTERNAL_URL = '';
         const req = {
             headers: {
                 'x-forwarded-host': 'edge.example.com, proxy.local',
@@ -87,7 +84,6 @@ describe('resolveHostUrl', () => {
 
     it('falls back to request protocol and host', () => {
         process.env.HOST_URL = '';
-        process.env.RENDER_EXTERNAL_URL = '';
         const req = { headers: {}, protocol: 'http', get: () => 'localhost:7000' };
         expect(resolveHostUrl(req)).toBe('http://localhost:7000');
     });

@@ -12,7 +12,6 @@ Abbiamo creato una documentazione dettagliata e modulare per ogni componente del
 
 ### Documenti Chiave:
 - [🚀 Self-Hosting su Home Server (`mate`)](docs/DEPLOYMENT_HOME_SERVER.md): Guida completa al deploy Docker Compose, Tailscale, Watchtower e GHCR.
-- [☁️ Deploy Alternativo VPS Hetzner](docs/DEPLOYMENT_VPS_HETZNER.md): Architettura multi-container con reverse proxy Caddy HTTPS.
 - [🦆 Architettura DuckDB In-Memory](docs/DUCKDB_ARCHITECTURE.md): Pre-filtraggio a zero chiamate TMDB tramite dataset Parquet ZSTD.
 - [🧬 Algoritmi di Scoring e VSM](docs/ALGORITHMS.md): Taste Profile pesato, Bayesian Rating IMDb e rotazione delle impression.
 - [🤖 Motore AI & Live Search Router](docs/AI_ENGINE.md): Mappatura del linguaggio naturale da barra di ricerca Stremio a parametri strutturati.
@@ -40,7 +39,7 @@ Abbiamo creato una documentazione dettagliata e modulare per ogni componente del
 ## 🏛️ Architettura di Sistema
 
 ```
-Internet ──HTTPS──> Tailscale Funnel / Caddy ──> 127.0.0.1:7860
+Internet ──HTTPS──> Tailscale Funnel ──> 127.0.0.1:7860
                                                     ├─> container app (Node.js + DuckDB, RAM cap 1.5 GB)
                                                     ├─> container redis (Cache L2, cap 300 MB)
                                                     ├─> container anime-source (Worker sincronizzazione)
@@ -53,7 +52,7 @@ GitHub Actions main ──> GHCR (ghcr.io/gabrielefuoco/yaca:latest) ──> Wat
 
 ## 🚀 Deployment in Produzione (Self-Hosting Docker)
 
-La configurazione di riferimento di YACA è un deploy headless su Home Server (`mate`) o VPS tramite Docker Compose:
+La configurazione di riferimento di YACA è un deploy headless su Home Server (`mate`) tramite Docker Compose:
 
 1. **Clona la configurazione o crea il `docker-compose.yml`**:
    Configura i servizi `app`, `redis`, `anime-source` e `watchtower` come dettagliato in [docs/DEPLOYMENT_HOME_SERVER.md](docs/DEPLOYMENT_HOME_SERVER.md).
@@ -76,7 +75,6 @@ La configurazione di riferimento di YACA è un deploy headless su Home Server (`
 
 4. **Esposizione Pubblica**:
    - Tramite **Tailscale Funnel**: `tailscale funnel 7860 on`
-   - O tramite **Reverse Proxy Caddy** con certificato HTTPS Let's Encrypt automatico.
 
 5. **Aggiornamenti Automatici**:
    Watchtower controlla periodicamente il registro GHCR (`ghcr.io/gabrielefuoco/yaca:latest`) e riavvia il container senza interruzione di servizio.
