@@ -361,7 +361,7 @@ class SeriesDiscoveryManager {
         this._ensureCacheDir();
         const iso = timestamp instanceof Date ? timestamp.toISOString() : new Date(timestamp).toISOString();
         const data = { timestamp: iso };
-        fs.writeFileSync(this.lastHomeFullRunFile, JSON.stringify(data, null, 2), 'utf8');
+        fs.writeFileSync(this.lastHomeFullFile, JSON.stringify(data, null, 2), 'utf8');
         return data;
     }
 

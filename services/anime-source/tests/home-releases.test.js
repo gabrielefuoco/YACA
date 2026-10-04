@@ -11,6 +11,9 @@
 
 const { test, describe } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 const { AnimeUnityClient } = require('../src/animeunity');
 const {
@@ -20,6 +23,7 @@ const {
     mergeAiringDocuments
 } = require('../src/aggregate');
 const { groupHomeRowsByTmdb, collectHomeAnimes } = require('../cli');
+const { SeriesDiscoveryManager } = require('../src/discovery');
 
 const NOW = Date.parse('2026-10-04T20:00:00Z');
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -276,6 +280,22 @@ describe('groupHomeRowsByTmdb — l\'identità, l\'unico lavoro che resta', () =
         assert.strictEqual(unresolved.length, 1);
         assert.strictEqual(unresolved[0].animeId, 200);
         assert.strictEqual(buildHomeStateDocument({ tmdbId: null, homeReleases: {} }), null);
+    });
+});
+
+describe('Il battito della passata completa (serve a non rifarla due volte al giorno)', () => {
+    test('si scrive, si rilegge, e prima del primo giro vale zero', () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaca-home-beat-'));
+        const discovery = new SeriesDiscoveryManager({ cacheDir: dir });
+
+        // Zero = "mai fatto": al primo avvio il giro completo parte subito.
+        assert.strictEqual(discovery.lastHomeFullRunAt(), 0);
+        discovery.writeHomeFullHeartbeat();
+        const scritto = discovery.lastHomeFullRunAt();
+        assert.ok(scritto > 0, 'il battito deve rileggersi');
+        assert.ok(Math.abs(scritto - Date.now()) < 5000);
+
+        fs.rmSync(dir, { recursive: true, force: true });
     });
 });
 

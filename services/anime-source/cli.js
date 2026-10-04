@@ -740,8 +740,35 @@ async function main() {
         process.exit(0);
     }
 
-    // Esecuzione normale scansione serie in corso (prima: è quella che alimenta il catalogo novità
-    // e che scrive il battito di salute, così il container diventa healthy in pochi minuti)
+    // LA HOME PARTE PRIMA DI TUTTO (ticket 52). È la fonte del catalogo novità: al riavvio del
+    // container la lista deve essere quella di adesso, non quella di tre ore fa, e la scansione
+    // dell'archivio (che chiama `/info_api` per ogni serie) mette via minuti. Il giro completo
+    // parte subito solo se l'ultimo risale a più di 24 ore: è quello che copre le due settimane.
+    let lastFullAt = discoveryManager.lastHomeFullRunAt();
+    let lastFullHomeItems = null;
+    let lastHomeCheckTime = Date.now();
+    const giraHomeCompletaSeTocca = async () => {
+        const esito = await runHomePass({ full: true });
+        lastFullHomeItems = esito && Array.isArray(esito.items) ? esito.items : null;
+        lastFullAt = Date.now();
+        return esito;
+    };
+    if (!opts.dryRun && !opts.once) {
+        try {
+            await runHomePass({ full: false, announce: true });
+            if (!lastFullAt || (Date.now() - lastFullAt) >= HOME_FULL_MS) {
+                await giraHomeCompletaSeTocca();
+                // Il controllo dei doppiati riusa gli item appena letti: una richiesta in meno.
+                await runDailyHomeCheck(lastFullHomeItems);
+                lastHomeCheckTime = Date.now();
+            }
+        } catch (err) {
+            console.error(`[AnimeSource] Passata home in avvio fallita: ${err.message}`);
+        }
+    }
+
+    // Esecuzione normale scansione serie in corso (prima: è quella che scrive il battito di
+    // salute, così il container diventa healthy in pochi minuti)
     await runScan();
 
     if (opts.dryRun || opts.once) {
@@ -760,32 +787,6 @@ async function main() {
 
     // Modalità continua (in container/daemon)
     console.log(`[AnimeSource] Entrato in modalità continua (home: prima pagina ogni ${Math.round(HOME_INCREMENTAL_MS / 60000)} minuti, giro completo ogni ${Math.round(HOME_FULL_MS / 3600000)}h; scansione "In corso" ogni ${Math.round(REFRESH_AIRING_MS / 3600000)}h). Premi Ctrl+C per uscire.`);
-
-    // La home parte SUBITO, prima della scansione dell'archivio: è la fonte del catalogo
-    // novità, e al riavvio del container la lista deve essere quella di adesso, non quella
-    // di tre ore fa. Il giro completo parte subito solo se non è stato fatto nelle ultime
-    // 24 ore (è quello che copre le due settimane).
-    let lastFullAt = discoveryManager.lastHomeFullRunAt();
-    let lastFullHomeItems = null;
-    const giraHomeCompletaSeTocca = async () => {
-        const esito = await runHomePass({ full: true });
-        lastFullHomeItems = esito && Array.isArray(esito.items) ? esito.items : null;
-        lastFullAt = Date.now();
-        return esito;
-    };
-    try {
-        await runHomePass({ full: false, announce: true });
-        if (!lastFullAt || (Date.now() - lastFullAt) >= HOME_FULL_MS) {
-            await giraHomeCompletaSeTocca();
-            // Il controllo dei doppiati riusa gli item appena letti: una richiesta in meno.
-            await runDailyHomeCheck(lastFullHomeItems);
-            lastHomeCheckTime = Date.now();
-        }
-    } catch (err) {
-        console.error(`[AnimeSource] Passata home in avvio fallita: ${err.message}`);
-    }
-
-    let lastHomeCheckTime = Date.now();
     const interval = setInterval(async () => {
         try {
             console.log('[AnimeSource] Esecuzione scansione periodica...');
