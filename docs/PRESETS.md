@@ -39,6 +39,10 @@ const { F, S } = require('./filters');
 *   `type` *(string - richiesto)*: `movie` o `series`.
 *   `where` *(array - richiesto)*: Un array di espressioni SQL o chiamate a `F.*`. **Gli elementi nell'array sono uniti con `AND`.**
 *   `orderBy` *(string - opzionale)*: L'espressione di ordinamento SQL, spesso definita dalle costanti `S.*` (es. `S.POPULAR`, `S.TOP_RATED`, `S.BAYESIAN`).
+*   `isAnime` *(boolean - opzionale)*: «Questo catalogo è anime». **Non è un filtro SQL**: non finisce in `where`. Serve ai selettori di tipo del profilo (§ 5) e al filtro post-fetch che tiene **solo** gli item anime (§ 5.2). La `category` non dice niente sull'argomento: gli anime per bambini stanno in «Bambini & Famiglia» e i donghua stanno in «Solo Anime» senza essere preset anime.
+
+> [!NOTE]
+> Nei preset reali `where` e `orderBy` quasi mai si scrivono a mano: `getPresets()` chiama `buildPresetFromFilters(p.queries[0], p.type)` e ricava il `where` dal blocco query in stile TMDB (`with_genres`, `with_keywords`, `sort_by`, …). Il `where` scritto a mano nel preset **ha la precedenza** e non viene ricostruito.
 
 ### 1.1 La Logica AND/OR
 La DSL risolve elegantemente il problema dei raggruppamenti logici complessi:
@@ -46,18 +50,27 @@ La DSL risolve elegantemente il problema dei raggruppamenti logici complessi:
 - **AND implicito**: L'array `where` esegue l'intersezione di tutte le clausole.
 - **AND tra array interni**: Funzioni specifiche come `F.allGenres(28, 12)` costringono l'intersezione esatta di più ID (il film deve avere *sia* il genere 28 *sia* il 12).
 
+### 1.2 L'unico filtro che resta solo ai film: `with_crew`
+Nella tabella `tv` del parquet TMDB ci sono `cast` e `watch_providers_it/us`, ma **non** `directors` e `writers` (le serie usano `created_by`). Per questo `buildPresetFromFilters` lascia `with_crew` (`F.crew`, che cerca su entrambe le colonne) sotto il guard `!isTv`: applicarlo a un preset `series` non dà risultati sbagliati, fa **esplodere DuckDB** con `Referenced column directors not found in FROM clause`.
+
+`with_cast` e `with_watch_providers` invece valgono **anche** per le serie: sono state separate dal gate per quello. Quindi «cercare persone» e «cercare piattaforme» su una serie è legittimo; «cercare il regista» no, e il motivo è di schema, non di policy.
+
 ---
 
-## 2. Sync Offline delle Entità (`sync_entities.js`)
+## 2. Sync Offline delle Entità (`sync_entities.js`) — script non più nel repo
 
 Nel vecchio sistema, gli ID di TMDB per persone, compagnie e keyword venivano mappati manualmente in pesanti dizionari in testa a `presets.js` (es. `TMDB_PEOPLE`). 
 Nel nuovo ecosistema SQL-First, gli ID numerici vengono usati direttamente nei preset (es. `F.crew(525)`).
 
-Per mantenere le interfacce utente parlanti e poter mappare un ID al suo nome testuale reale senza colpire le API di TMDB, viene eseguito offline lo script `scripts/sync_entities.js`.
-Questo script:
-1. Legge tutti gli ID sparsi in `presets.js`.
-2. Interroga il dump parquet di DuckDB.
-3. Genera il file statico `src/data/entities.json` contenente una mappatura istantanea `ID -> Nome`.
+Per mantenere le interfacce utente parlanti e poter mappare un ID al suo nome testuale reale senza colpire le API di TMDB, era previsto uno script offline, `scripts/sync_entities.js`, che:
+1. Leggeva tutti gli ID sparsi in `presets.js`.
+2. Interrogava il dump parquet di DuckDB.
+3. Generava il file statico `src/data/entities.json` contenente una mappatura istantanea `ID -> Nome`.
+
+> [!CAUTION]
+> **`scripts/sync_entities.js` non esiste più**: è stato rimosso il **2026-08-15** nel commit `45bd78f` («purge dead code, scratch and regenerable data»). Sopravvive il **risultato**, non il generatore: `src/data/entities.json` c'è ancora e `filters.js` lo carica all'avvio (`companies`, `people.directors/actors`, `networks`, `keywords`).
+>
+> Quindi: il file va **rigenerato fuori dal repo** se serve, e nessuno in questo repository può farlo con un comando documentato. Se un ID non ha nome, il sintomo è un'etichetta vuota in dashboard — non un errore.
 
 ---
 
@@ -80,7 +93,7 @@ Il flusso dei preset è gestito in modalità 100% offline:
 
 ### 4.1 Default Curato per Ogni Preset
 Ogni catalogo preset definisce un proprio ordinamento predefinito e curato, identificato dalla proprietà `orderBy`.
-Durante la generazione dei preset da [presets.js](../src/data/presets.js), la funzione `buildPresetFromFilters` analizza il parametro `sort_by` specificato nel blocco query del preset (`p.queries[0].sort_by`) e calcola l'espressione SQL corrispondente invocando [`mapSortBy(s, type)`](../src/catalog/providers/DuckDbProvider.js#L14).
+Durante la generazione dei preset da [presets.js](../src/data/presets.js), la funzione `buildPresetFromFilters` analizza il parametro `sort_by` specificato nel blocco query del preset (`p.queries[0].sort_by`) e calcola l'espressione SQL corrispondente invocando [`mapSortBy(s, type)`](../src/catalog/providers/DuckDbProvider.js#L31).
 
 Se un preset definisce già un `orderBy` esplicito a livello di radice, questo ha la precedenza (`orderBy: p.orderBy || duck.orderBy`).
 
@@ -115,15 +128,19 @@ const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS 
 ```
 
 #### Regola di Esposizione nel Manifest
-* **Solo sui Preset Utente**: Il selettore `sortBy` è esposto **esclusivamente sui cataloghi dei preset utente** (`profile.catalogs` e `customCatalogs`) definiti dall'utente o derivati dai template di profilo ([stremio.js:52,68](../src/api/stremio.js)).
-* **Non sugli Hero Catalogs**: I cataloghi Hero (`yaca_true_blend_*`, `yaca_seed_network_*`, `yaca_hidden_gems_*`, `yaca_trakt_filtered_*`) e la Watchlist (`yaca_watchlist_*`) usano esclusivamente `extra: [{ name: 'skip' }]`. Il loro ordinamento è algoritmico, basato sul DNA dell'utente o sull'ordine di aggiunta alla libreria, e non deve essere alterato dal client.
-* **Non sui cataloghi non ordinabili (Simulcast)**: Cataloghi come `preset_anime_simulcast` dichiarano `_provider === 'airing_state'` e `sortable: false`. Per essi la funzione helper `getCatalogExtra()` ritorna `[{ name: 'skip' }]`, rimuovendo il selettore `sortBy` dal manifesto di Stremio ed evitando che l'utente veda opzioni che la route ignorerebbe.
+* **Solo sui Preset Utente**: Il selettore `sortBy` è esposto **esclusivamente sui cataloghi dei preset utente** (`profile.catalogs` e `customCatalogs`) definiti dall'utente o derivati dai template di profilo ([stremio.js:54,71](../src/api/stremio.js)). La scelta è **data-driven**, non cablata sugli id: `getCatalogExtra(cat)` restituisce `[{ name: 'skip' }]` quando il catalogo dichiara `sortable === false` o `_provider === 'airing_state'` (anche risolvendo il preset canonico in `presets.js`, se il salvato in profilo è vecchio), e `presetExtra` in tutti gli altri casi.
+* **Non sugli Hero Catalogs**: I cataloghi Hero (`yaca_true_blend_*`, `yaca_seed_network_*`, `yaca_hidden_gems_*`, `yaca_trakt_filtered_*`) e la Watchlist (`yaca_watchlist_movies|series|anime`) usano esclusivamente `extra: [{ name: 'skip' }]`. Il loro ordinamento è algoritmico, basato sul DNA dell'utente o sull'ordine di aggiunta alla libreria, e non deve essere alterato dal client.
+* **Non sulle ricerche**: `yaca_search_standard` e `yaca_search_ai` espongono `searchExtra` (`[{ name: 'search', isRequired: true }]`): l'unico controllo utile è il testo cercato.
+* **Non sui cataloghi non ordinabili (Simulcast)**: `preset_anime_simulcast` dichiara `_provider: 'airing_state'` e `sortable: false`. Per essi `getCatalogExtra()` ritorna `[{ name: 'skip' }]`, rimuovendo il selettore `sortBy` dal manifesto di Stremio ed evitando che l'utente veda opzioni che la route ignorerebbe. Il flag `sortable` viene conservato in `profileProcessor` quando il preset viene salvato nel profilo: senza quella propagazione la regola si perderebbe alla prima sincronizzazione dei template.
+
+> [!NOTE]
+> `anilist_simulcast` resta accettato come **marker legacy** dello stesso percorso (AniList è stata eliminata, l'id del preset no): chi ha la configurazione già installata continua a funzionare senza dover migrare nulla.
 
 #### Comportamento a Runtime
 1. **Navigazione Normale**: Quando un utente apre un catalogo preset su Stremio senza selezionare alcun filtro di ordinamento, la richiesta non include `sortBy`. Il backend esegue la query SQL utilizzando il default curato `catalogMeta.orderBy`.
 2. **Selezione Utente**: Se l'utente seleziona una voce nel menu a tendina di Stremio (es. "Voto Medio"):
-   - L'endpoint estrae `extra.sortBy` e lo traduce in formato TMDB tramite `getSortByValue()` (`stremio.js:60`).
-   - Il [CatalogRouter](../src/catalog/CatalogRouter.js#L83-L86) rileva `sortBy` e sovrascrive temporaneamente l'ordinamento:
+   - L'endpoint estrae `extra.sortBy` e lo traduce in formato TMDB tramite `getSortByValue()` (`stremio.js:62`, chiamata a riga 427).
+   - Il [CatalogRouter](../src/catalog/CatalogRouter.js#L79-L82) rileva `sortBy` e sovrascrive temporaneamente l'ordinamento:
      ```javascript
      if (sortBy) {
          const { mapSortBy } = require('./providers/DuckDbProvider');
@@ -131,4 +148,47 @@ const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS 
      }
      ```
    - DuckDB esegue la query con il nuovo `orderBy` e restituisce i risultati ordinati secondo la preferenza temporanea dell'utente.
+3. **Cataloghi merged**: sul percorso della Universal Pipeline non c'è un `orderBy` da sovrascrivere — l'override finisce nel `sort_by` di **ogni** query che compone il merge ([CatalogRouter.js:126-129](../src/catalog/CatalogRouter.js)), così tutte le sorgente rispettano la scelta dell'utente invece di una sola.
 
+---
+
+## 5. I Preset e i Selettori di Tipo del Profilo
+
+Un profilo può dichiarare tre selettori, in `profile.settings.typeSelectors`:
+
+```javascript
+{
+    film:  false,                    // Solo Film
+    serie: false,                   // Solo Serie
+    anime: 'only' | 'exclude' | null // Solo Anime | No Anime | nessun vincolo
+}
+```
+
+**Campo assente = nessun vincolo**: un profilo senza selettori si comporta esattamente come prima. Sono due gruppi **ortogonali** e la combinazione conta (`Solo Serie` + `Solo Anime` = solo anime serie, `Solo Anime` da solo = anime film **e** anime serie): l'anime è un modificatore, non una partizione dei media.
+
+### 5.1 L'identità di un catalogo: `kind`
+
+La conformità di un preset non si deduce da `category` (gli anime per bambini stanno in «Bambini & Famiglia», i donghua nella categoria «Solo Anime» ma **non** sono preset anime) né dal nome. L'unico helper è [catalogKind.js](../src/catalog/catalogKind.js):
+
+```
+kind = { mediaSet: ['film' | 'serie'], anime: 'yes' | 'no' | 'mixed' }
+```
+
+- **preset** → `type` + il flag `isAnime` di radice;
+- **8 hero e cataloghi fissi** → registry esplicito nel modulo (suffisso `_movies`/`_series`);
+- **custom / Matchmaker** → `type` dichiarato (`anime` → `anime: 'yes'`);
+- **merged** → **unione** delle sorgenti: né tutte anime né tutte non-anime → `anime: 'mixed'`.
+
+La regola di conformità è `mediaSet ⊆ media ammessi` **E** (`only` → `anime === 'yes'`, `exclude` → `anime === 'no'`); `mixed` e gli ignoti sono conformi solo senza vincolo anime. Conservativa nelle due direzioni: meglio un catalogo in più nel manifest che uno che l'utente crede di vedere e non vede.
+
+### 5.2 Dove il vincolo agisce (e dove no)
+
+1. **Manifest** — un preset non conforme non viene dichiarato. È la garanzia primaria, e vale anche per gli 8 hero.
+2. **Guardia nel backend** — `catalogHandler` risponde `{ metas: [] }` a una richiesta diretta di un catalogo non conforme: copre la finestra in cui Stremio ha ancora il manifest vecchio. Nessun errore, degradazione.
+3. **Contenuti** — con `anime: 'exclude'` spariscono gli item `_isAnime`, con `'only'` restano **solo** quelli. Il perimetro è l'unico choke point del post-processing, quindi vale per preset, hero e custom/merged, **non** per ricerche e watchlist (che restano sempre raggiungibili con qualsiasi combinazione di selettori).
+4. **Dashboard** — i non conformi restano visibili ma spenti, con il motivo; chi sono attivi e nascosti si possono comunque riordinare e rimuovere. `/api/configure` non rifiuta e non cancella nulla: il profilo conserva quello che l'utente aveva scelto.
+
+Tre avvertenze operative:
+- `typeSelectors` finisce **nella chiave di cache** della richiesta: senza, due profili con selettori diversi si risponderebbero a vicenda lo stesso catalogo.
+- Il filtro item è **fail-open**: un item senza marker resta. Una lista più corta è accettata, un refill no.
+- I template di profilo sono allineati alla regola: i 3 omogenei (`tpl_movies`, `tpl_series`, `tpl_otaku`) preimpostano i selettori, i 13 misti li azzerano. Applicare un template «riallinea» il profilo invece di lasciare lo stato del template precedente.
