@@ -4,6 +4,26 @@
  * in un unico documento di stato conforme al contratto di YACA (schemaVersion: 1).
  */
 
+/**
+ * Tipi media ammessi nel documento `anime_airing_state`.
+ * `mediaType` dichiara il tipo COSI' COME LO DICHIARA LA FONTE (Fribb, AniBridge,
+ * bridge TVDB->TMDB). Non e' un default: se la fonte non distingue film e serie
+ * il campo resta ASSENTE, ed e' un'assenza informazione ("la fonte non lo dice"),
+ * non un "tv" da correggere piu' avanti.
+ */
+const MEDIA_TYPES = ['movie', 'tv'];
+
+/**
+ * Normalizza un tipo media in 'movie' | 'tv', o null se assente/irriconoscibile.
+ * @param {*} value
+ * @returns {'movie'|'tv'|null}
+ */
+function normalizeMediaType(value) {
+    if (typeof value !== 'string') return null;
+    const v = value.trim().toLowerCase();
+    return MEDIA_TYPES.includes(v) ? v : null;
+}
+
 function cleanTitle(rawTitle) {
     if (!rawTitle || typeof rawTitle !== 'string') return '';
     return rawTitle
@@ -94,7 +114,7 @@ function toIsoDate(val) {
  * @param {Object} [params.dubRecord] Record archivio per doppiato
  * @param {string|Date|number} [params.subAiredAt] Data messa in onda ultimo episodio sub
  * @param {string|Date|number} [params.dubAiredAt] Data messa in onda ultimo episodio doppiato
- * @param {Object} [params.identity] Identità { tmdbId, kitsuId, anilistId, malId, season }
+ * @param {Object} [params.identity] Identità { tmdbId, kitsuId, anilistId, malId, season, mediaType }
  * @param {number} [params.orderIndex] Indice posizionale nella lista sorgente
  * @param {string|Date|number} [params.listSeenAt] Data/ora in cui la serie è stata riscontrata nella lista in corso
  * @param {Date} [params.now] Timestamp opzionale
@@ -135,6 +155,10 @@ function buildAiringStateDocument({
 
     const titleSource = recordTitle(seasonList[0].subRecord) || recordTitle(seasonList[0].dubRecord);
     const title = cleanTitle(titleSource);
+
+    // Tipo dichiarato dalla fonte per l'identita' principale (null se la fonte
+    // non lo dichiara: in quel caso il documento non porta il campo).
+    const mediaType = normalizeMediaType(primaryIdentity && primaryIdentity.mediaType);
 
     const sources = [];
     const nowIso = now instanceof Date ? now.toISOString() : new Date(now).toISOString();
@@ -222,6 +246,11 @@ function buildAiringStateDocument({
         sources,
         updatedAt: nowIso
     };
+
+    // Solo se la fonte lo dichiara: assente resta "non dichiarato", non "tv".
+    if (mediaType) {
+        doc.mediaType = mediaType;
+    }
 
     if (orderIndex !== null && orderIndex !== undefined && Number.isFinite(orderIndex)) {
         doc.orderIndex = orderIndex;
@@ -396,6 +425,15 @@ function mergeAiringDocuments(existing, incoming) {
         updatedAt: incoming.updatedAt || new Date().toISOString()
     };
 
+    // Il merge ricostruisce il documento da zero: `mediaType` va nella whitelist
+    // qui come in buildAiringStateDocument, altrimenti sparisce a ogni merge.
+    // incoming vince quando la dichiara, existing fa da ripiego, nessuno dei due
+    // -> nessuna chiave (mai inventata).
+    const mergedMediaType = normalizeMediaType(incoming.mediaType) || normalizeMediaType(existing.mediaType);
+    if (mergedMediaType) {
+        mergedDoc.mediaType = mergedMediaType;
+    }
+
     if (mergedEpisodes !== undefined) {
         mergedDoc.episodes = mergedEpisodes;
     }
@@ -449,5 +487,6 @@ module.exports = {
     mergeAiringDocuments,
     compareEpisodes,
     cleanTitle,
+    normalizeMediaType,
     toIsoDate
 };
