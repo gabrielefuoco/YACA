@@ -509,7 +509,14 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
                     overview,
                     thumbnail: ep.still_path ? `https://image.tmdb.org/t/p/w500${ep.still_path}` : null
                 };
-            }, { batchSize: 5, delayMs: 40 }); // Increased batch size for faster processing of large lists
+            // QUI NON C'È RETE. Gli episodi sono già dentro `seasonData` (arrivano con
+            // `append_to_response`): questo ciclo legge e costruisce oggetti, e basta.
+            // Il `delayMs: 40` che c'era prima dormiva 40 ms per worker dopo ogni episodio:
+            // su I Simpson (39 stagioni, 888 episodi, misurati in produzione il 04/10/2026)
+            // erano ~6,2 s di sonno puro sulla scheda fredda, contro ~56 ms a caldo, e non
+            // proteggeva nessuna API. Il limite di qui è solo quanta memoria si tiene
+            // viva: `batchSize` (concurrency) fa già da tetto.
+            }, { batchSize: 5, delayMs: 0 });
         };
 
         // Process seasons: build episodes with overview fallback where needed
@@ -544,7 +551,19 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
             } catch (_e) {
                 return buildEpisodesFromSeason(seasonData);
             }
-        }, { batchSize: 3, delayMs: 200 });
+        // QUI C'È RETE (una richiesta `season/N?language=en-US` per le stagioni senza
+            // overview italiano, e una seconda nella lingua originale se serve), ma il delay
+            // non è quello che tiene la conta: il tetto è `batchSize: 3`, cioè 3 richieste
+            // in volo. Misurato il 04/10/2026 contro il TMDB vero, caso peggiore (tutte le
+            // 39 stagioni chiedono il fallback, 3 giri = 117 richieste a concurrency 3):
+            // `delayMs: 200` → 13.781 ms, `delayMs: 0` → 4.312 ms, e in entrambi i casi
+            // 0 risposte 429 (gli unici errori sono 3 HTTP 404 di stagioni inesistenti,
+            // uguali nelle due configurazioni). Sul caso reale di I Simpson, dove solo 9
+            // stagioni su 39 fanno richieste, il ciclo costa 2.872 ms con il delay e 410 ms
+            // senza, a parità di rete (~1,1 s di latenza): ~2,4 s di sonno per nulla.
+            // Dietro resta comunque il retry sui 429 di `createAxiosClient` e i cap di
+            // `tmdbBudget`.
+        }, { batchSize: 3, delayMs: 0 });
 
         const videos = seasonVideoChunks.filter(Boolean).flat();
 
