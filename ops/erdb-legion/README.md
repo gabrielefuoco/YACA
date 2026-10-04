@@ -48,17 +48,24 @@ fa la negoziazione come si deve: chi preferisce WebP lo ottiene, chi no riceve J
 Verificato dal vivo: senza `Accept`, con `Accept: image/jpeg` e con il `*/*` di curl, il
 magic number è `ff d8` — JPEG vero; con `Accept: image/webp` è `RIFF` — WebP.
 
-Base di entrambe: `949f64f` (`docs(changelog): update CHANGELOG for v0.7.5`) — **v0.7.5**.
+Base di entrambe: `8251427` (`badge custom (ITA / numero episodio) via ?badge= o customBadge nel token`) — cioè **v0.7.5 più quella commit**, non v0.7.5 da sola.
+
+> **Verificato il 04/10/2026.** Il documento diceva `949f64f`, che è il **genitore** di `8251427`:
+sbagliato, e chi avesse ricostruito seguendo questa pagina avrebbe trovato conflitti. La prova: le
+due patch **annullano esattamente** le modifiche presenti nel clone (`git apply --reverse --check`
+pulito su entrambe) e il loro codice **usa** `customBadge`, il campo che `8251427` introduce in
+`lib/routeTypes.ts`. La commit tocca gli stessi tre file di `erdb-badge.patch`
+(`app/[type]/[...id]/route.ts`, `lib/imageRenderer.ts`, `lib/routeTypes.ts`): è la sua base.
 
 ## 2. Costruire l'immagine
 
-Serve un clone dell'upstream **fissato a `949f64f`** e non a `:latest`: l'autore taglia
+Serve un clone dell'upstream **fissato a `8251427`** e non a `:latest`: l'autore taglia
 4-6 release al giorno e la patch è additiva su righe precise, quindi su un albero più
 nuovo potrebbe non applicarsi pulita.
 
 ```bash
 git clone https://github.com/realbestia1/erdb && cd erdb
-git checkout 949f64f
+git checkout 8251427
 git apply /percorso/di/ops/erdb-legion/patch/erdb-badge.patch
 git apply /percorso/di/ops/erdb-legion/patch/erdb-formato.patch
 docker build -t erdb-patch:0.7.5 .
