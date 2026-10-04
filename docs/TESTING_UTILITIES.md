@@ -189,6 +189,50 @@ cmd //c "dir /AL C:\percorso\del\worktree"     # non deve piu' stampare JUNCTION
 
 `ls` e `find` di Git Bash **non attraversano** le giunzioni: una cartella piena può sembrare vuota. Per vedere la verità: `cmd //c "dir /AL <cartella>"`.
 
+### La procedura che funziona per rimuovere un worktree (imparata male, il 04/10/2026)
+
+Rimuovere un worktree ha distrutto le dipendenze condivise **tre volte in un pomeriggio**. Questa è la sequenza che non lo fa, e i motivi per cui le altre non funzionano.
+
+**1. Le giunzioni sono in più punti.** Non solo `<worktree>/node_modules`: ogni worktree ne ha una anche in `frontend/node_modules`, e i worktree dei servizi possono averne nelle loro cartelle. Vanno cercate **tutte**.
+
+**2. Il test va fatto senza silenziare, e deve accettare qualsiasi reparse point.**
+
+```bash
+cd /c/Users/gabri/APP/.YACA.worktrees/<worktree>
+cmd //c "dir /AL"            # in RELATIVO: nessun percorso da escapare
+cmd //c "dir /AL" | grep -icE "junction|symlink"
+```
+
+Due trappole che mi hanno morso: `fsutil reparsepoint query` **silenziato** (`>/dev/null 2>&1`) non dice niente quando fallisce, e un test che cerca il tag `0xa0000003` **non vede i symlink** (tag diverso) — e un symlink si cancella esattamente come una giunzione. Il segnale giusto è: **il comando riesce = è un reparse point**, qualunque sia il tag.
+
+**3. I percorsi Windows assoluti passati da bash non si scrivono a mano.** Ogni `\` in più o in meno cambia il risultato **in silenzio** (mi è successo quattro volte in un'ora: `C:\\Users` vs `C:\Users`, e `printf` che legge `\U` come escape unicode). E `dir C:/Users/...` legge `/Users` come una **opzione** e restituisce il vuoto. Per questo: **percorsi relativi**, entrando nella cartella.
+
+**4. Il collegamento si toglie con `rmdir`, senza `/s`.**
+
+```bash
+cd <worktree> && cmd //c "rmdir node_modules"   # toglie il LINK
+```
+
+Senza `/s` `rmdir` toglie il collegamento e **rifiuta** di cancellare una cartella vera non vuota: la sicurezza sta nel comando, non nell'attenzione di chi lo lancia.
+
+**5. Il cancello, prima e dopo ogni rimozione.**
+
+```bash
+ls /c/Users/gabri/APP/.yaca-nm/node_modules | wc -l        # atteso 441
+ls /c/Users/gabri/APP/YACA/frontend/node_modules | wc -l   # atteso ~302
+```
+
+È l'unica verifica che non mente, ed è quella che ha fermato il danno tre volte su tre.
+
+**6. `npm ci` svuota prima di installare.** Se fallisce a metà, le dipendenze stanno **peggio** di prima (oggi: 441 → 335 → 5 → 0, un gradino per tentativo). Il blocco tipico è un **file in uso**: oggi era `duckdb.node`, tenuto da un `node.exe` che eseguiva uno script in `%TEMP%` lasciato da uno slave. Prima di ripristinare, controlla chi lo tiene e **uccidilo per PID** (mai per nome immagine), poi `npm ci`.
+
+```bash
+# chi tiene un file, per processo (senza filtrare per nome nella propria riga di comando)
+powershell.exe -NoProfile -Command "Get-Process -Name node | ForEach-Object { \$p=\$_; try { \$m=\$p.Modules | Where-Object { \$_.FileName -like '*duckdb*' }; if (\$m) { 'PID ' + \$p.Id } } catch {} }"
+```
+
+**7. Le cartelle degli slave restano occupate.** Dopo la rimozione della giunzione, `rm -rf` risponde *"Device or resource busy"*: non è un processo node, è il **pannello del terminale** dello slave che ha quella cartella come directory corrente. Non si liberano finché la sessione non chiude — e le toglie il teardown della sessione. A quel punto la rimozione è sicura, perché le giunzioni non ci sono più.
+
 ### Se le dipendenze spariscono
 
 ```bash
