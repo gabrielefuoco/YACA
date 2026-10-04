@@ -386,7 +386,10 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
         if (isItemAnime(item)) {
             // Fuori dal catalogo simulcast l'anime mostra SOLO il badge `ITA` secco (o niente):
             // niente numero di episodio, niente badge di stagione. La verità è la colonna `ita`,
-            // che vale `true` anche per i doppiati solo AnimeUnity (l'unione la fa la build).
+            // che vale `true` anche per i doppiati solo AnimeUnity. L'unione NON la fa la build
+            // del parquet: la fa `services/doppiaggi-source`, che legge `anime_airing_state`.
+            // La build legge solo `ita_annotations.jsonl`: se quel passaggio salta, il badge ITA
+            // degli anime sparisce da tutti i cataloghi senza che nessuno se ne accorga.
             //
             // Chiave: le card anime sono spesso `kitsu:…`, mentre l'annotazione è per TMDB id.
             // Lo stato anime è già in RAM ed è il ponte migliore (sa ids.tmdb di ciò che traccia);
