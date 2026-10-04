@@ -104,7 +104,11 @@ function isAiringStateCatalog(baseId, catalogMeta) {
 //     e la card porta con sé il riferimento al proprio documento (`_airingDocTmdbId`).
 //     Senza bump, le pagine già in cache non avrebbero né la regola nuova né il riferimento:
 //     continuerebbero a servire il poster nudo per giorni.
-const BADGE_CATALOG_VERSION = 21;
+// 22: entra in catalogo anche la serie **annunciata** (la lista "In corso" la vede, ma nessun
+//     episodio è ancora uscito: `sub = { season: 2, episode: 0 }`, normalizzato a `null`).
+//     Sono DUE card in più nella pagina, quindi le chiavi già in cache continuerebbero a servire
+//     una lista vecchia per 14 giorni: senza bump i titoli annunciati non si vedrebbero.
+const BADGE_CATALOG_VERSION = 22;
 
 /**
  * Serializza la definizione di un catalogo in forma canonica: chiavi ordinate,
@@ -313,7 +317,22 @@ async function applyAiringStateBadges(metas, {
             const info = animeAiringState.getCardInfo(doc);
             if (!info) {
                 // Nessuno stato per questa serie: la card resta, senza badge.
-                processed.push(senzaRiferimentoAiring({ ...item, _itaBadge: false }));
+                //
+                // Si ri-formattta invece di passare l'item così com'è, perché alla costruzione del
+                // catalogo il badge episodio era già stato calcolato da TMDB (`showEpisodeBadge` è
+                // true su questo preset): una serie **annunciata** — che è proprio il caso in cui
+                // non c'è nessuno stato, perché `sub.episode = 0` viene normalizzato a `null` — si
+                // porterebbe dietro un `S2 E1` inventato. Qui il badge episodio viene SEMPRE e SOLO
+                // dallo stato esterno, quindi "nessuno stato" vuol dire "nessun episodio da
+                // contare". Il badge di stagione (top-left) dipende da `tmdbSeason`/`videos`, che il
+                // formatter non porta in output: al secondo passaggio sparisce — ma è già così per
+                // ogni card del catalogo (misurato su produzione il 04/10/2026: 0 poster su 29 con
+                // `tlBadge`), quindi qui non cambia niente. Per chi non ha badge episodio l'URL del
+                // poster resta identico.
+                processed.push(senzaRiferimentoAiring(sanitizeCatalogMeta(
+                    { ...item, _itaBadge: false },
+                    { ...sanitizeOptions, shouldApplyEpisodeBadge: false }
+                )));
                 continue;
             }
 
