@@ -126,10 +126,24 @@ cat /var/lib/docker/volumes/yaca_tmdb/_data/ita_annotations.diff.json
 
 Dal lato dell'app, `scripts/push-diff-in-coda.js` legge quell'artefatto e mette in coda
 (`src/cache/codaEventi.js`) un evento per ogni cambiamento, così i poster vengono ricomposti senza
-aspettare il TTL. È idempotente (a deduplicare è la coda) e si può lanciare anche a mano:
+aspettare il TTL.
+
+**Dal 04/10/2026 la push è dentro il giro** (`ops/yaca-doppiaggi.sh`, passo 8), non più un comando a
+mano. Finché era manuale i poster cambiati restavano vecchi finché qualcuno non se ne ricordava — e
+il diff è un **delta**: un cambiamento riportato in un giro non ricompare in quello dopo, quindi una
+push dimenticata è una perdita **permanente** (quel poster resta vecchio fino al TTL della sua fascia,
+che per un titolo concluso è **200 giorni**). Gira dentro `yaca-app` perché lì ci sono le tre cose che
+servono: le dipendenze dell'app (ioredis), la rete del compose e il volume `yaca_tmdb` su `/data/tmdb`.
+
+Lo script **aspetta che Redis sia connesso** (`--attesa-redis <ms>`, default 10 s) prima di spingere, e
+**esce 1** se un evento non è finito in coda: distinguere "era già in coda" da "non ci sono riuscito"
+è l'unica cosa che impedisce a un guasto di passare per un successo. La riga finale dice tre numeri
+(spinte, già in coda, falliti) e **nomina** gli eventi perduti.
+
+A mano resta possibile, ed è idempotente (a deduplicare è la coda):
 
 ```bash
-cd /srv/yaca && node scripts/push-diff-in-coda.js --file /data/tmdb/ita_annotations.diff.json
+docker exec --workdir /app yaca-app node scripts/push-diff-in-coda.js --file /data/tmdb/ita_annotations.diff.json
 ```
 
 ---
