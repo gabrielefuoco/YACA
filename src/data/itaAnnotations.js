@@ -16,6 +16,9 @@
  *
  * DEGRADO (deciso, non un incidente): se il file manca o è rotto lo snapshot è **vuoto** e nessun
  * badge viene applicato. Il catalogo resta fresco; il badge si spegne. Non lancia mai.
+ *
+ * FALLBACK A DUE TIPI (ticket 50): la chiave resta `(tipo, tmdb id)`, ma **solo per i film anime**
+ * il lettore può chiedere `tv:<id>` quando `movie:<id>` non c'è. Vedi `getStatus`.
  */
 
 const fs = require('fs');
@@ -154,23 +157,55 @@ async function getSnapshot(options = {}) {
 }
 
 /**
- * Stato di un titolo: `true` doppiato, `null` indecisione, `false` nessuna traccia (o file assente).
+ * FALLBACK A DUE TIPI — la guardia, e perché non può essere cieca.
+ *
+ * Il difetto (ticket 50): il writer delle annotazioni **non conosce il tipo** dell'anime e lo
+ * ri-indovina (`services/doppiaggi-source/src/anime.js`, `tv` per default). I 35 film anime
+ * doppiati annotati come `tv` (Howl, Spirited Away, Totoro, Jin-Roh…) non trovavano più la propria
+ * chiave: **0 poster `_ITA`**. La cura completa è scrivere il tipo nel documento, ma per quei 954
+ * documenti già scritti il lettore deve accorgersene da solo.
+ *
+ * PERCHÉ LA CHIAVE PRIMARIA HA SEMPRE PREVALENZA: se `movie:<id>` c'è, quella è la risposta — il
+ * fallback non è mai consultato, quindi i 225 film annotati giusti non cambiano.
+ *
+ * PERCHÉ SOLO `movie` → `tv`, E SOLO SE IL CHIAMANTE LO CHIEDE (`allowTypeFallback`):
+ *  1. **direzione**: il difetto è "un film annotato come serie". La direzione opposta (serie
+ *     annotate `movie`, 4 casi) è un altro errore e risolverla qui assegnerebbe un badge che il
+ *     writer non può giustificare: la cura di entrambe sta nel documento.
+ *  2. **la guardia non è facoltativa**: 5.933 id TMDB vivono in entrambe le tabelle, quindi un
+ *     fallback cieco avrebbe messo il badge di *Jin-Roh* su *WWF Superstars* e su altre 4.509 card
+ *     film (misurato il 04/10/2026 sull'istantanea di produzione: 4.539 candidate, 30 riparate).
+ *     Perciò il fallback scatta solo quando il chiamante può **provare** che quell'id è proprio
+ *     il film anime cercato: documento `anime_airing_state` = film doppiato **e** id TMDB
+ *     riconosciuto come film dalla mappa certificata
+ *     (`animeAiringState.isDubbedFilmDocForCard`, che sa perché servono entrambe). Una card
+ *     non-anime non ha invece alcun difetto di tipo: il suo tipo arriva da TMDB ed è autorevole.
+ *
  * @param {object} snapshot
- * @param {'movie'|'tv'} type
+ * @param {'movie'|'tv'} type Tipo **dichiarato dalla card**.
  * @param {number|string} tmdbId
+ * @param {{allowTypeFallback?: boolean}} [options] `allowTypeFallback: true` solo con la prova
+ *        del documento anime (vedi sopra). Di default `false`: nessun chiamante cambia.
  */
-function getStatus(snapshot, type, tmdbId) {
+function getStatus(snapshot, type, tmdbId, options = {}) {
     if (!snapshot || !snapshot.byKey) return false;
     const id = Number(tmdbId);
     if (!Number.isFinite(id)) return false;
-    const key = `${type === 'movie' ? 'movie' : 'tv'}:${id}`;
-    if (!snapshot.byKey.has(key)) return false;
-    return snapshot.byKey.get(key);
+    const tipo = type === 'movie' ? 'movie' : 'tv';
+    const key = `${tipo}:${id}`;
+    if (snapshot.byKey.has(key)) return snapshot.byKey.get(key);
+    if (tipo !== 'movie' || options.allowTypeFallback !== true) return false;
+    const otherKey = `tv:${id}`; // l'unico tipo con cui si può riparare: vedi la guardia
+    if (!snapshot.byKey.has(otherKey)) return false;
+    return snapshot.byKey.get(otherKey);
 }
 
-/** Solo per il badge: `true` se doppiato. `null` e `false` non producono badge. */
-function isDubbed(snapshot, type, tmdbId) {
-    return getStatus(snapshot, type, tmdbId) === true;
+/**
+ * Solo per il badge: `true` se doppiato. `null` e `false` non producono badge.
+ * @param {{allowTypeFallback?: boolean}} [options] Cfr. `getStatus`.
+ */
+function isDubbed(snapshot, type, tmdbId, options = {}) {
+    return getStatus(snapshot, type, tmdbId, options) === true;
 }
 
 /** Solo per i test. */

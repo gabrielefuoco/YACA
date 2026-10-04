@@ -7,6 +7,7 @@ const { schedulePromotion } = require('../db/tier1LazyPromotion');
 const { normalizeAnimeMarker, extractAnimeTmdbId } = require('../utils/animeIdentity');
 const duckDbStore = require('../db/duckDbStore');
 const itaAnnotations = require('../data/itaAnnotations');
+const animeAiringState = require('../data/animeAiringState');
 
 // Cache per l'oggetto meta finale combinato
 const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 300, ramTtlMs: 3600000, swrMs: 600000 });
@@ -473,6 +474,14 @@ function buildResponseMeta(cachedMeta, { requestedId, originalId, type, imdbIdPe
  * `null` (omonimia irrisolta) e `false` (nessuna traccia) valgono `false`, come per i cataloghi;
  * se il file delle annotazioni manca o è rotto lo snapshot è vuoto e il poster resta quello di oggi.
  *
+ * TICKET 50 — fallback a due tipi, e perché serve anche qui: senza, la scheda di *Jin-Roh*
+ * (annotato `tv`) non trovava `tmdb-movie-823_ITA.jpg` e restava sul poster di TMDB, cioè la metà
+ * del difetto che i cataloghi riparano. La guardia è la stessa dei cataloghi: le due prove di
+ * `animeAiringState.isDubbedFilmDocForCard` (documento = film doppiato, e id TMDB = film secondo
+ * la mappa certificata). Per non caricare lo snapshot delle annotazioni anime quando non serve,
+ * la prova si chiede **dopo** il miss della chiave primaria — che è anche l'unico caso in cui il
+ * fallback potrebbe cambiare la risposta.
+ *
  * @param {Object} meta Scheda (non viene mutata).
  * @param {string} type `movie` o `series`.
  * @returns {Promise<boolean>} `true` solo se le annotazioni dicono "doppiato".
@@ -482,9 +491,28 @@ async function isMetaDubbed(meta, type) {
         const tmdbId = extractAnimeTmdbId(meta);
         if (!tmdbId) return false;
         const snapshot = await itaAnnotations.getSnapshot();
-        return itaAnnotations.isDubbed(snapshot, type === 'movie' ? 'movie' : 'tv', tmdbId);
+        const tipo = type === 'movie' ? 'movie' : 'tv';
+        // Chiave `(tipo, id)` presente: è la risposta, il fallback non si guarda nemmeno.
+        if (itaAnnotations.getStatus(snapshot, tipo, tmdbId) !== false) {
+            return itaAnnotations.isDubbed(snapshot, tipo, tmdbId);
+        }
+        const doc = await findAiringDocByTmdbId(tmdbId);
+        return itaAnnotations.isDubbed(snapshot, tipo, tmdbId, {
+            allowTypeFallback: animeAiringState.isDubbedFilmDocForCard(doc, tmdbId, animeMappingStore)
+        });
     } catch (_e) {
         return false; // degrado deciso: nessun badge, nessuna eccezione sul percorso di risposta
+    }
+}
+
+/** Documento `anime_airing_state` di un id TMDB, o `null` (stato assente/rotto: mai un'eccezione). */
+async function findAiringDocByTmdbId(tmdbId) {
+    try {
+        const state = await animeAiringState.getSnapshot();
+        if (!state || !state.byTmdbId) return null;
+        return state.byTmdbId.get(String(tmdbId)) || null;
+    } catch (_e) {
+        return null;
     }
 }
 
