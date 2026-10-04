@@ -115,3 +115,48 @@ Converte il dump giornaliero JSONL esportato da TMDB in formato compresso Apache
 Script di migrazione sicura del database per normalizzare record orfani o con `itemId: null` all'interno della collezione `UserLibraryItem`.
 * **Esecuzione (Dry-run)**: `node scripts/migrate_library_itemid_null.js`
 * **Applicazione effettiva**: `node scripts/migrate_library_itemid_null.js --apply`
+
+---
+
+## 4. Ambiente locale: worktree, dipendenze condivise e giunzioni
+
+Su questa macchina le dipendenze del backend **non** sono installate dentro il repo: stanno in una cartella condivisa, e il repo e i worktree ci puntano con **giunzioni** NTFS.
+
+```
+C:\Users\gabri\APP\.yaca-nm\node_modules   <- le dipendenze vere (~441 pacchetti)
+C:\Users\gabri\APP\YACA\node_modules       -> junction alla cartella sopra
+<worktree>\node_modules                     -> junction a YACA\node_modules   (catena a due livelli)
+<worktree>\.cache                           -> junction a YACA\.cache
+```
+
+Il frontend è diverso: `frontend/node_modules` è un **install vero** (~400 pacchetti), non una giunzione.
+
+### La regola
+
+**Prima di qualunque cancellazione ricorsiva** (`rmdir /s`, `Remove-Item -Recurse`, `git worktree remove`) togli la giunzione **e verifica che sia sparita**:
+
+```bash
+fsutil reparsepoint delete "C:\percorso\del\worktree\node_modules"
+cmd //c "dir /AL C:\percorso\del\worktree"     # non deve piu' stampare JUNCTION
+```
+
+`fsutil reparsepoint delete` rimuove **il collegamento**, non il bersaglio: è l'unico comando sicuro. `rmdir`, `Remove-Item -Recurse` e `git worktree remove` **seguono** la giunzione e cancellano la cartella condivisa.
+
+**Non silenziare mai l'output di `fsutil`** (`>/dev/null`): è così che il 04/10/2026 il comando è fallito in silenzio e il passo successivo ha svuotato `.yaca-nm/node_modules`, `YACA/node_modules` e `frontend/node_modules` in un colpo solo — la quarta volta. La regola che conta non è il comando: è **verificare ogni passo distruttivo prima di fare il successivo**.
+
+### Nota per chi usa Git Bash
+
+`ls` e `find` di Git Bash **non attraversano** le giunzioni: una cartella piena può sembrare vuota. Per vedere la verità: `cmd //c "dir /AL <cartella>"`.
+
+### Se le dipendenze spariscono
+
+```bash
+# backend: la cartella condivisa non ha un package.json proprio, va copiato
+cp YACA/package.json YACA/package-lock.json .yaca-nm/
+cd .yaca-nm && npm ci --no-audit --no-fund        # ~40 s, 441 voci
+
+# frontend: install vero
+cd YACA/frontend && npm ci --no-audit --no-fund   # ~20 s, ~300 voci
+```
+
+Dopo il ripristino, `npx jest tests/helpers.test.js` deve dare **10/10**: se dice `Cannot find module`, la copia non è finita.

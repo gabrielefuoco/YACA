@@ -23,7 +23,11 @@ const {
     extractTmdbId
 } = require('../src/handlers/catalogHandler');
 
-const NOW = Date.UTC(2026, 8, 22, 12, 0, 0);
+// Le date dei fixture seguono l'orologio VERO. Il codice confronta con `Date.now()` e la
+// finestra è di 14 giorni: con un NOW congelato il test era verde il giorno in cui è stato
+// scritto e poi scadeva da solo. Il 04/10/2026 falliva perché l'episodio "di 3 giorni fa"
+// era in realtà di 15 — e per giorni è stato archiviato come "rosso per dati mancanti".
+const NOW = Date.now();
 const daysAgo = (days) => new Date(NOW - days * 24 * 60 * 60 * 1000).toISOString();
 const USER_CONFIG = { profiles: [{ id: 'global', settings: {} }], activeProfileId: 'global' };
 const HOST_URL = 'http://localhost:7860';
