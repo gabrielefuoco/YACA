@@ -290,6 +290,11 @@ function mapDuckDbRowToMeta(item, isMovie = true) {
     const meta = {
         id: `tmdb:${item.id}`,
         _tmdbId: sanitizeBigInt(item.id),
+        // L'id IMDb del titolo, quando il parquet ce l'ha. Non sostituisce `id` qui: dentro il
+        // codice l'id `tmdb:` serve a decine di ricerche (badge, poster in cache, mappa IMDb).
+        // Serve a chi formatta la risposta, che è l'unico punto in cui l'id diventa quello che
+        // vede Stremio — e per un film deve essere IMDb, o gli altri addon non rispondono.
+        _imdbId: item.imdb_id || null,
         type: isMovie ? 'movie' : 'series',
         name,
         poster,
@@ -420,6 +425,7 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
         const metaObj = {
             id: `tmdb:${item.id}`,
             _tmdbId: sanitizeBigInt(item.id),
+            _imdbId: item.imdb_id || null,
             type: isMovie ? 'movie' : 'series',
             name,
             poster,
@@ -430,7 +436,7 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
             imdbRating: item.vote_average ? Number(item.vote_average).toFixed(1) : undefined,
             popularity: sanitizeBigInt(item.popularity) || 0,
             genre_ids: parsedGenres.map(g => (g && typeof g === 'object' ? g.id : g)),
-            behaviorHints: isMovie ? { defaultVideoId: `tmdb:${item.id}` } : { hasScheduledVideos: true },
+            behaviorHints: isMovie ? { defaultVideoId: item.imdb_id || `tmdb:${item.id}` } : { hasScheduledVideos: true },
             rawTMDB
         };
 

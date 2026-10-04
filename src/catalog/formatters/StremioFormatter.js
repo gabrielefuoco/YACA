@@ -393,6 +393,11 @@ function sanitizeCatalogMeta(item, options = {}) {
     if (item._yacaMatch !== undefined) {
         baseItem._yacaMatch = item._yacaMatch;
     }
+    // L'id IMDb viaggia fino a qui: serve all'ultimo passo della risposta, dove l'id di un film
+    // diventa quello che Stremio passa agli altri addon (vedi `allineaIdFilm` in catalogHandler).
+    if (item._imdbId) {
+        baseItem._imdbId = item._imdbId;
+    }
 
     if (item._forceBadgeText !== undefined) {
         baseItem._forceBadgeText = item._forceBadgeText;

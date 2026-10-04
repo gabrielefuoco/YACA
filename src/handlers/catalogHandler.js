@@ -834,7 +834,37 @@ async function catalogHandler(args, userConfig, hostUrl) {
         });
     }
 
-    return await applyPostCacheBadges(responseData, userConfig, hostUrl, catalogMeta, type, baseId);
+    return allineaIdFilm(await applyPostCacheBadges(responseData, userConfig, hostUrl, catalogMeta, type, baseId));
+}
+
+/**
+ * Per un **film** l'id che Stremio consegna agli altri addon è quello della scheda: non c'è un video
+ * separato come per le serie. L'ecosistema però parla IMDb, non `tmdb:`. Misurato il 04/10/2026 con
+ * Torrentio: `movie/tt0068646` (Il Padrino) risponde **58 stream**, `movie/tmdb:238` risponde **0**.
+ * Quindi un film aperto dal catalogo restava con il solo addon che capisce `tmdb:`.
+ *
+ * Le serie non c'entrano: lì Stremio usa l'id del **video**, che è già in forma IMDb.
+ *
+ * La sostituzione avviene **qui**, sull'output, e non nel provider: dentro il codice l'id `tmdb:`
+ * serve a decine di ricerche (badge ITA, poster in cache, mappa IMDb) e cambiarle tutte sarebbe un
+ * rischio senza vantaggio. A Stremio serve solo l'ultima parola.
+ *
+ * Il suffisso `_ita_offset` (clone doppiato del catalogo novità) si conserva: è parte dell'identità
+ * della card, non dell'id.
+ */
+function allineaIdFilm(risposta) {
+    if (!risposta || !Array.isArray(risposta.metas)) return risposta;
+    for (const meta of risposta.metas) {
+        if (!meta || meta.type !== 'movie' || !meta._imdbId) continue;
+        const id = String(meta.id || '');
+        if (id.startsWith('tt')) continue;
+        const suffisso = id.endsWith('_ita_offset') ? '_ita_offset' : '';
+        meta.id = `${meta._imdbId}${suffisso}`;
+        if (meta.behaviorHints && meta.behaviorHints.defaultVideoId) {
+            meta.behaviorHints.defaultVideoId = meta.id;
+        }
+    }
+    return risposta;
 }
 
 module.exports = {
@@ -842,6 +872,7 @@ module.exports = {
     BADGE_CATALOG_VERSION,
     buildCatalogCacheKey,
     buildCatalogContentKey,
+    allineaIdFilm,
     canonicalCatalogDefinition,
     resolveCatalogDefinition,
     applyAiringStateBadges,
