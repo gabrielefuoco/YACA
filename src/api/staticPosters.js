@@ -3,7 +3,7 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 
-const { erdbIdDaNomeFile } = require('../cache/posterDaEvento');
+const { erdbIdDaNomeFile, eventoDaNomeFile } = require('../cache/posterDaEvento');
 const { posterUrl } = require('../../scripts/erdb-builder/build');
 const { scarica, scrivi } = require('../cache/drenaPoster');
 
@@ -72,6 +72,54 @@ const filePresente = (filePath) => {
 };
 
 /**
+ * Mette l'evento in coda perché il drenatore (`scripts/drena-coda-poster.js`, ogni 10 minuti)
+ * renda il poster più tardi, con i suoi 20 s di tempo.
+ *
+ * PERCHÉ: il tetto di 5 s di questa rotta è più corto del render a freddo di un anime
+ * (8,6-11,8 s misurati: Jikan è irraggiungibile dal mate ed ERDB ritenta 4 volte). Quindi
+ * il caso NON è raro: sono decine di id esposti (ticket 10 di poster-erdb), e senza questa
+ * push nessuno lo richiede e il 404 resta 404 per sempre — il file che nessuno produce e
+ * nessuno chiede. Con la push la prima richiesta risponde come prima e la seconda arriva
+ * dalla cache.
+ *
+ * NON SI ASPETTA NESSUNO: la `push` è lanciata e dimenticata, con il suo `catch`. Sotto
+ * questa rotta c'è una persona che aspetta un'immagine: un guasto della coda (Redis giù,
+ * una `push` rotta) deve restare un guasto della coda, non un 500 e non dieci secondi di
+ * pagina bianca. Per questo anche il `require` è pigro: `codaEventi` tira dentro il client
+ * Redis, e una rotta che serve file statici non deve aprire un socket solo perché in quel
+ * momento non è arrivato un byte.
+ *
+ * LA DEDUPLICA È DELLA CODA (`tipo|id` già in attesa ⇒ niente): qui non c'è nessun memo
+ * e nessun file di stato. Un utente che ricarica una pagina piena di 404 può spingere
+ * mille volte lo stesso evento: la coda ne mette uno, e gli altri sono `false`.
+ *
+ * Il nome che non è una forma nota non produce nessun evento (`eventoDaNomeFile` → `null`):
+ * non c'è niente da chiedere, e inventare un id produrrebbe un file che nessuno cerca.
+ */
+const mettiInCoda = (fileName) => {
+    const evento = eventoDaNomeFile(fileName);
+    if (!evento) return;
+    const chiave = `${evento.tipo}|${evento.id}`;
+
+    try {
+        // `require` pigro, dentro il `try`: se il modulo non si carica è un "non posso",
+        // non un guasto che deve uscire dalla rotta.
+        const coda = require('../cache/codaEventi');
+        Promise.resolve(coda.push(evento))
+            .then((accodato) => {
+                // Solo quando è entrato davvero: se era già in attesa è idempotenza, e
+                // una riga per ogni ricarica di pagina riempirebbe il journal di rumore.
+                if (accodato) console.log(`[StaticPosters] in coda per il drenatore: ${chiave} (${fileName})`);
+            })
+            .catch((err) => {
+                console.warn(`[StaticPosters] evento ${chiave} non accodato: ${err && err.message ? err.message : err}`);
+            });
+    } catch (err) {
+        console.warn(`[StaticPosters] coda eventi non raggiungibile per ${fileName}: ${err && err.message ? err.message : err}`);
+    }
+};
+
+/**
  * Il file non è in cartella: lo si chiede all'istanza ERDB locale e lo si scrive.
  *
  * PERCHÉ: la cartella si riempie con un giro grosso fatto una volta (fuori, su un'altra
@@ -88,6 +136,12 @@ const filePresente = (filePath) => {
  * **NON LANCIA MAI e non risponde mai**: qualunque cosa vada storto (istanza muta, errore,
  * risposta che non è un JPEG, scrittura impossibile) il risultato è `false` e la rotta
  * risponde 404 come prima. Una rotta non deve poter fallire per una rete che non risponde.
+ *
+ * E quando il risultato è `false` per una richiesta **partita** l'evento va in coda
+ * (`mettiInCoda`): il 404 che risponde all'utente resta quello di oggi, ma il file
+ * adesso è nella lista di chi dovrà produrlo. I due rientri anticipati (`base` vuota,
+ * nome non riconosciuto) non accodano niente: a quel punto non è mancato un render, è
+ * mancata la configurazione, e accodare un id che nessuno ha chiesto sarebbe spazzatura.
  *
  * @returns {Promise<boolean>} `true` se il file è stato scritto in cartella.
  */
@@ -111,6 +165,7 @@ const chiediPosterAErdb = async (fileName, filePath) => {
         buffer = await scarica(url, { fetchImpl: globalThis.fetch, timeoutMs: TIMEOUT_ERDB_MS });
     } catch (err) {
         console.warn(`[StaticPosters] ERDB non ha dato il poster di ${fileName}: ${err && err.message ? err.message : err}`);
+        mettiInCoda(fileName);
         return false;
     }
 
@@ -119,6 +174,9 @@ const chiediPosterAErdb = async (fileName, filePath) => {
     } catch (err) {
         // `scrivi` ha già tolto il temporaneo: in cartella non resta niente.
         console.warn(`[StaticPosters] scrittura fallita per ${fileName}: ${err && err.message ? err.message : err}`);
+        // Il render è riuscito ma il file non c'è: per l'utente è lo stesso 404, quindi
+        // lo stesso evento da rendere più tardi (stavolta con ERDB già caldo).
+        mettiInCoda(fileName);
         return false;
     }
 
