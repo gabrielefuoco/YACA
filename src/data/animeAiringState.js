@@ -610,6 +610,68 @@ function getDubEpisode(doc) {
     return null;
 }
 
+/**
+ * Soglia del veto: oltre, il documento è una serie. **Copia di `MOVIE_MAX_EPISODES`** in
+ * `services/doppiaggi-source/src/anime.js` (il writer delle annotazioni): se le due soglie
+ * divergono, il lettore e il writer non concordano più su cosa sia un film.
+ */
+const MOVIE_MAX_EPISODES = 3;
+
+/**
+ * Il documento è un **film doppiato**? È la prova che il lettore delle annotazioni esige prima di
+ * accettare il fallback a due tipi (ticket 50: `allowTypeFallback` in `src/data/itaAnnotations.js`).
+ *
+ * PERCHÉ SERVE LA PROVA E NON BASTA `isAnime`: il badge si mette su una card, e un id TMDB film può
+ * essere anche l'id di una serie (5.933 id vivono in entrambe le tabelle). Misurato il 04/10/2026
+ * sull'istantanea di produzione: fra le card film che un fallback cieco avrebbe fatto diventare
+ * "doppiate", 196 hanno un documento anime e **152 di quelle sono serie** — il badge sarebbe
+ * finito su 152 film estranei. Il veto sugli episodi (lo stesso del writer) li tiene fuori: i film
+ * veri hanno 1 episodio, le serie una corsa.
+ *
+ * @param {object} doc Documento normalizzato (`buildSnapshot`).
+ * @returns {boolean}
+ */
+function isDubbedFilmDoc(doc) {
+    if (!doc) return false;
+    if (getDubEpisode(doc) === null) return false; // nessuna traccia di doppiaggio: nessun badge
+    let maxEp = 0;
+    for (const ep of Array.isArray(doc.episodes) ? doc.episodes : []) {
+        const n = Number(ep && ep.episode);
+        if (Number.isFinite(n) && n > maxEp) maxEp = n;
+    }
+    return maxEp <= MOVIE_MAX_EPISODES;
+}
+
+/**
+ * LE DUE PROVE che autorizzano il fallback a due tipi del ticket 50 (il lettore delle annotazioni
+ * pretende entrambe, cfr. `allowTypeFallback` in `src/data/itaAnnotations.js`).
+ *
+ *  1. **È un film doppiato**: lo dice il documento, col veto sugli episodi. Le serie restano fuori
+ *     (una serie ha una corsa di episodi; un film ne ha uno).
+ *  2. **Quell'id TMDB è davvero un film**: lo dice la mappa certificata, che tiene il tipo
+ *     (`themoviedb_id.movie` di Fribb → `resolveKitsuMovie`). È la seconda metà della guardia,
+ *     e non è un dettaglio: il documento anime porta un solo id, e per molti titoli è **l'id
+ *     della serie** (TMDB cataloga anche film e serie con lo stesso numero, quindi l'id esiste in
+ *     entrambe le tabelle). Se l'id è quello di una serie, la card `movie:<id>` è **un film
+ *     estraneo** — misurato il 04/10/2026: dei 104 id che passano la prova 1, 74 non hanno il film
+ *     e finirebbero col badge di *Jin-Roh*; con la prova 2 ne restano 30, e sono tutti film veri
+ *     (Nausicaä, Totoro, Jin-Roh, Perfect Blue, Tokyo Godfathers…).
+ *
+ * La prova 2 è il tipo che il writer delle annotazioni conosce e butta via (ticket 50, punto 1):
+ * qui non lo si ricostruisce, lo si legge dalla stessa fonte certificata.
+ *
+ * @param {object|null} doc Documento anime normalizzato della card.
+ * @param {number|string} tmdbId Id TMDB della card (quello su cui il badge andrebbe).
+ * @param {object} mappingStore `animeMappingStore` (iniettato: questo modulo non lo richiede).
+ * @returns {boolean}
+ */
+function isDubbedFilmDocForCard(doc, tmdbId, mappingStore) {
+    if (!isDubbedFilmDoc(doc)) return false;
+    if (!mappingStore || typeof mappingStore.resolveKitsuMovie !== 'function') return false;
+    const kitsuId = mappingStore.resolveKitsuMovie(tmdbId);
+    return kitsuId !== null && kitsuId !== undefined && kitsuId !== '';
+}
+
 function getDubEpisodeForId(snapshot, itemId) {
     return getDubEpisode(findDocument(snapshot, itemId));
 }
@@ -677,6 +739,8 @@ module.exports = {
     findDocument,
     getDubEpisode,
     getDubEpisodeForId,
+    isDubbedFilmDoc,
+    isDubbedFilmDocForCard,
     resolveCardId,
     validateDocument,
     buildSnapshot,

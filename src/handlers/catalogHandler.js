@@ -453,6 +453,52 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
 
     const imdbMap = options.imdbMap || (await resolveImdbMap(metas.filter(item => !isItemAnime(item))));
 
+    /**
+     * Documento `anime_airing_state` di un id TMDB. Caricamento pigro e una volta sola: lo
+     * snapshot resta quello in RAM (60 s), e senza il fallback nessuno chiede nulla.
+     */
+    let animeSnapshotPromise = null;
+    async function animeDocFor(tmdbId) {
+        if (tmdbId === null || tmdbId === undefined) return null;
+        if (!animeSnapshot) {
+            if (!animeSnapshotPromise) {
+                animeSnapshotPromise = animeAiringState.getSnapshot()
+                    .then(s => { animeSnapshot = s || animeSnapshot; return animeSnapshot; })
+                    .catch(() => null); // degrado deciso: nessun badge, nessuna eccezione
+            }
+            await animeSnapshotPromise;
+        }
+        if (!animeSnapshot || !animeSnapshot.byTmdbId) return null;
+        return animeSnapshot.byTmdbId.get(String(tmdbId)) || null;
+    }
+
+    /**
+     * Badge ITA di una card: la chiave `(tipo, id)` e, **solo per i film**, il fallback all'altro
+     * tipo del ticket 50.
+     *
+     * PERCHÉ IL FALLBACK È GUARDATO (e non può essere cieco): il writer delle annotazioni non
+     * conosce il tipo dell'anime e lo ri-indovina (`tv` per default), quindi 35 film anime
+     * doppiati — Howl, Totoro, Jin-Roh… — cercavano `movie:<id>` in uno snapshot che ha solo
+     * `tv:<id>`: nessun badge, nessun poster `_ITA`. Ma 5.933 id TMDB vivono in entrambe le
+     * tabelle: misurato il 04/10/2026 sull'istantanea di produzione, 4.539 card film avrebbero
+     * preso il badge, quasi tutte non hanno niente a che fare con l'animazione (è il badge di
+     * *Jin-Roh* che finisce su *WWF Superstars*). Le **due prove** che lo autorizzano stanno in
+     * `animeAiringState.isDubbedFilmDocForCard`: il documento è un film doppiato, e quell'id TMDB
+     * è un film secondo la mappa certificata. Restano 30 card su 4.539, tutte film anime veri.
+     *
+     * La prova è sull'**id**, non sulla card: la card può arrivare come `kitsu:…` o come film
+     * senza genere, e la classificazione anime è troppo fragile per far da guardia.
+     */
+    async function itaDubbed(tipo, tmdbId) {
+        if (tmdbId === null || tmdbId === undefined) return false;
+        const conChiave = itaAnnotations.isDubbed(itaSnapshot, tipo, tmdbId);
+        if (conChiave || tipo !== 'movie') return conChiave;
+        const doc = await animeDocFor(tmdbId);
+        return itaAnnotations.isDubbed(itaSnapshot, tipo, tmdbId, {
+            allowTypeFallback: animeAiringState.isDubbedFilmDocForCard(doc, tmdbId, animeMappingStore)
+        });
+    }
+
     const processedMetas = [];
 
     for (let i = 0; i < metas.length; i++) {
@@ -475,9 +521,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
             const doc = animeSnapshot ? findAiringStateDocument(animeSnapshot, item) : null;
             // `buildSnapshot` normalizza i documenti: il campo è `doc.tmdbId`.
             const animeTmdbId = (doc && doc.tmdbId) || extractTmdbId(item);
-            const animeDubbed = animeTmdbId
-                ? itaAnnotations.isDubbed(itaSnapshot, item.type === 'movie' ? 'movie' : 'tv', Number(animeTmdbId))
-                : false;
+            const animeDubbed = await itaDubbed(item.type === 'movie' ? 'movie' : 'tv', animeTmdbId);
             const animeItem = { ...item, _itaBadge: animeDubbed, _itaOnlyBadge: true };
 
             if (sanitizeOptions.shouldApplyEpisodeBadge || animeDubbed) {
@@ -491,7 +535,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
         // Un solo sguardo allo snapshot: `true` → badge, `null`/`false` → nessun badge.
         // Niente cloni e niente offset: l'episodio doppiato non ci interessa (ticket 04).
         const key = annotationKeyFor(item, imdbMap);
-        const dubbed = key ? itaAnnotations.isDubbed(itaSnapshot, key.type, key.id) : false;
+        const dubbed = key ? await itaDubbed(key.type, key.id) : false;
         const outItem = { ...item, _itaBadge: dubbed };
 
         // Il poster è già stato scelto quando la card è stata formattata e messa in cache, cioè
