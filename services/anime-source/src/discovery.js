@@ -16,6 +16,10 @@ const AIRING_SERIES_FILE = 'airing-series.json';
 const DUBBED_SERIES_FILE = 'dubbed-series.json';
 const LAST_RUN_FILE = 'last-run.json';
 const LAST_HOME_RUN_FILE = 'last-home-run.json';
+// Quando è stata fatta l'ULTIMA passata COMPLETA della home (giro paginato fino alla finestra).
+// La passata incrementale (prima pagina, ogni 15 minuti) non lo tocca: non guarda abbastanza
+// indietro da poter dire "le ultime due settimane sono queste".
+const LAST_HOME_FULL_RUN_FILE = 'last-home-full-run.json';
 const MAX_HEALTH_AGE_MS = 12 * 60 * 60 * 1000; // 12 ore (ticket 18)
 const MAX_LIST_AGE_MS = 24 * 60 * 60 * 1000;   // 24 ore (ticket 20)
 
@@ -26,6 +30,7 @@ class SeriesDiscoveryManager {
         this.dubbedListFile = path.join(this.cacheDir, DUBBED_SERIES_FILE);
         this.heartbeatFile = path.join(this.cacheDir, LAST_RUN_FILE);
         this.lastHomeRunFile = path.join(this.cacheDir, LAST_HOME_RUN_FILE);
+        this.lastHomeFullFile = path.join(this.cacheDir, LAST_HOME_FULL_RUN_FILE);
         this.maxHealthAgeMs = options.maxHealthAgeMs || MAX_HEALTH_AGE_MS;
         this.maxListAgeMs = options.maxListAgeMs || MAX_LIST_AGE_MS;
     }
@@ -348,6 +353,35 @@ class SeriesDiscoveryManager {
     }
 
     /**
+     * Scrive il battito dell'ultima passata COMPLETA della home (giro paginato).
+     * @param {Date} [timestamp]
+     * @returns {Object}
+     */
+    writeHomeFullHeartbeat(timestamp = new Date()) {
+        this._ensureCacheDir();
+        const iso = timestamp instanceof Date ? timestamp.toISOString() : new Date(timestamp).toISOString();
+        const data = { timestamp: iso };
+        fs.writeFileSync(this.lastHomeFullFile, JSON.stringify(data, null, 2), 'utf8');
+        return data;
+    }
+
+    /**
+     * Quando è stata fatta l'ultima passata completa della home, in ms (0 se mai).
+     * Serve al ciclo continuo per non rifare il giro completo a ogni avvio.
+     * @returns {number}
+     */
+    lastHomeFullRunAt() {
+        if (!fs.existsSync(this.lastHomeFullFile)) return 0;
+        try {
+            const data = JSON.parse(fs.readFileSync(this.lastHomeFullFile, 'utf8'));
+            const ts = data && data.timestamp ? new Date(data.timestamp).getTime() : NaN;
+            return Number.isFinite(ts) ? ts : 0;
+        } catch {
+            return 0;
+        }
+    }
+
+    /**
      * Aggiornamento quotidiano dalla home page di AnimeUnity:
      * - Legge le ultime uscite dalla home
      * - Estrae i titoli con dub: 1
@@ -356,21 +390,25 @@ class SeriesDiscoveryManager {
      * - Se la home è irraggiungibile o cambia formato, la lista NON si azzera
      * @param {Object} params
      * @param {Object} params.client Istanza di AnimeUnityClient
+     * @param {Array<Object>} [params.homeItems] Item già letti (evita una seconda richiesta
+     *   alla home quando il chiamante ha appena fatto il giro: la cortesia vale anche per noi)
      * @returns {Promise<{ newDubbedRecords: Array<Object>, dubbedReleases: Array<Object>, totalKnown: number, fromCache: boolean, errorOrEmpty?: boolean }>}
      */
-    async checkDailyHomeUpdates({ client } = {}) {
+    async checkDailyHomeUpdates({ client, homeItems = null } = {}) {
         const cached = this.loadCachedDubbedList();
         const knownRecords = (cached && Array.isArray(cached.records)) ? cached.records : [];
         const knownIds = new Set(knownRecords.map(r => Number(r.id)));
 
-        let homeItems = [];
-        try {
-            homeItems = await client.getLatestReleasesFromHome();
-        } catch (err) {
-            console.error(`[Discovery] Errore lettura home page AnimeUnity: ${err.message}`);
+        let items = Array.isArray(homeItems) ? homeItems : null;
+        if (!items) {
+            try {
+                items = await client.getLatestReleasesFromHome();
+            } catch (err) {
+                console.error(`[Discovery] Errore lettura home page AnimeUnity: ${err.message}`);
+            }
         }
 
-        if (!Array.isArray(homeItems) || homeItems.length === 0) {
+        if (!Array.isArray(items) || items.length === 0) {
             console.warn('[Discovery] Lettura home page fallita o vuota. Mantengo valida la lista doppiati corrente.');
             return {
                 newDubbedRecords: [],
@@ -385,7 +423,7 @@ class SeriesDiscoveryManager {
         const newDubbedRecords = [];
         const seenNewIds = new Set();
 
-        for (const item of homeItems) {
+        for (const item of items) {
             const anime = item.anime || item;
             if (!anime || Number(anime.dub) !== 1) continue;
 
@@ -422,5 +460,6 @@ module.exports = {
     AIRING_SERIES_FILE,
     DUBBED_SERIES_FILE,
     LAST_RUN_FILE,
-    LAST_HOME_RUN_FILE
+    LAST_HOME_RUN_FILE,
+    LAST_HOME_FULL_RUN_FILE
 };

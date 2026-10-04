@@ -54,7 +54,7 @@ graph TD
 7. **Post-Processing**:
    - **Boundary anime**: ogni item in uscita dal routing passa da `normalizeAnimeMarker`, che espone `_isAnime`. È il punto in cui si decide tutto ciò che riguarda gli anime: clone ITA, filtri e badge (vedi § 1.1 e [KITSU_MAPPING.md](KITSU_MAPPING.md)).
    - **Hydration & Badge**: Se il catalogo prevede badge per gli episodi (es. simulcast o nuove uscite), arricchisce i metadati recuperando le informazioni sugli episodi.
-   - **Simulcast Sorting**: per il catalogo novità anime (`preset_anime_simulcast`) l'ordinamento temporale è già applicato da `AiringStateProvider.js` leggendo `anime_airing_state`: quel ramo esce prima di qualsiasi ordinamento qui sotto.
+   - **Simulcast Sorting**: per il catalogo novità anime (`preset_anime_simulcast`) l'ordinamento temporale è già applicato da `AiringStateProvider.js` leggendo `homeReleases` di `anime_airing_state` (l'ultimo episodio che la home ha mostrato come uscito): quel ramo esce prima di qualsiasi ordinamento qui sotto.
 8. **Formattazione Stremio**: I metadati normalizzati vengono convertiti nel formato finale Stremio Meta Preview tramite [StremioFormatter.js](../src/catalog/formatters/StremioFormatter.js).
 
 ### 1.1 I selettori di tipo del profilo (`Solo Film` / `Solo Serie` / `Solo Anime` / `No Anime`)
@@ -122,7 +122,7 @@ La risoluzione fisica dei dati è delegata ai provider dedicati in `src/catalog/
 - **AiDiscoveryProvider.js**: Si occupa dei task generativi (Universal Pipeline). Sebbene elabori query intelligenti, alla base demanda a `DuckDbProvider` la vera e propria interrogazione (grazie all'intercettore `legacyTmdbAdapter.js` per compatibilità VSM).
 - **~~TmdbProvider.js / KitsuProvider.js~~ (rimossi)**: non esistono più. `KitsuProvider` è sparito il **2026-07-09** (commit `a028ff6`, lo stesso che ha introdotto `animeMappingStore`) e `TmdbProvider` il **2026-07-20** (`01440ea`, con le query AI dirotte su DuckDB). Oggi ogni catalogo risolto dal router o gira su DuckDB o chiama un provider dedicato qui sotto; non esiste più il fallback di rete "legacy" per i preset.
 - **TraktProvider.js**: Provider specifico per la piattaforma Trakt.tv.
-- **AiringStateProvider.js**: Alimenta il catalogo `preset_anime_simulcast` ("Simulcast - Nuovi Episodi") leggendo lo stato scritto dal modulo esterno nella collezione MongoDB `anime_airing_state` (contratto in `services/anime-source`). Seleziona i documenti **della lista "In corso"** di AnimeUnity che hanno sub o doppiaggio — l'appartenenza si misura su `listSeenAt` (≤ 14 giorni; fallback a `updatedAt` ≤ 12 ore per i documenti che non hanno ancora quel campo) — e li ordina per data dell'ultimo episodio uscito, con spareggi deterministici (`listSeenAt` desc, `orderIndex` asc, `updatedAt` desc). Idrata da DuckDB con una query batch (`id IN (...)`) e **riordina sulla pagina di stato**, perché DuckDB non preserva l'ordine con cui è stato interrogato; imposta l'id `kitsu:{id}` quando risolvibile (la stessa lingua del `metaHandler`) e salta gli item non idratabili. Pagine da 20. Niente più AniList, ma l'id del preset è rimasto invariato e `anilist_simulcast` resta accettato come marker legacy.
+- **AiringStateProvider.js**: Alimenta il catalogo `preset_anime_simulcast` ("Simulcast - Nuovi Episodi") leggendo lo stato scritto dal modulo esterno nella collezione MongoDB `anime_airing_state` (contratto in `services/anime-source`). Seleziona i documenti che la **HOME di AnimeUnity** mostra come usciti negli ultimi **14 giorni** — il campo `homeReleases` (`{ checkedAt, sub: {episode, airedAt}, dub: {episode, airedAt} }`), scritto dal modulo con due cadenze: prima pagina ogni 15 minuti, giro paginato completo una volta al giorno — e li ordina per data dell'ultimo episodio uscito (a parità, per titolo, così la pagina è stabile). Idrata da DuckDB con una query batch (`id IN (...)`) e **riordina sulla pagina di stato**, perché DuckDB non preserva l'ordine con cui è stato interrogato; imposta l'id `kitsu:{id}` quando risolvibile (la stessa lingua del `metaHandler`) e salta gli item non idratabili. Pagine da 20. Niente più AniList, ma l'id del preset è rimasto invariato e `anilist_simulcast` resta accettato come marker legacy. TTL della cache di questo catalogo: **20 minuti** (`SIMULCAST_TTL_MS`), maggiore della cadenza del check della fonte.
 - **HybridProvider.js**:
     Collega il motore di raccomandazione ibrido generatore di cataloghi speciali basati sul profilo psicofisico dei gusti dell'utente (Taste Profile) come *True Blend* o *Hidden Gems*.
 
@@ -144,14 +144,14 @@ I cataloghi personalizzati salvati in `AddonConfig.customCatalogs` (inclusi i ca
 
 ### Stato esterno `anime_airing_state`
 
-Il catalogo novità anime non nasce da una query TMDB/DuckDB ma da una collezione MongoDB scritta dal modulo esterno `services/anime-source` (contratto: `_id` = TMDB id in stringa, `schemaVersion`, `italian.sub/dub.latest` come `{season, episode}`, `episodes[]` con `subIta`/`dubIta`, e i campi di lista `listSeenAt`/`orderIndex`/`updatedAt` che dicono «questa serie era in corso l'ultima volta che ho guardato»). Il lettore è `src/data/animeAiringState.js`:
+Il catalogo novità anime non nasce da una query TMDB/DuckDB ma da una collezione MongoDB scritta dal modulo esterno `services/anime-source`. Per il **catalogo novità** il campo che conta è `homeReleases`: `{ checkedAt, sub: {episode, airedAt}, dub: {episode, airedAt} }`, cioè l'ultimo episodio che la **HOME di AnimeUnity** (paginata) ha mostrato come uscito, per canale. Restano nel contratto `italian.sub/dub.latest`, `episodes[]` con `subIta`/`dubIta`, `mediaType` e i campi di lista `listSeenAt`/`orderIndex`/`updatedAt`, ma per altri consumatori (backfill di novità, unione delle annotazioni ITA). Il lettore è `src/data/animeAiringState.js`:
 - valida solo i campi che consuma e ignora i documenti con `schemaVersion` più alta;
 - tiene una cache L1 in RAM con TTL ~60s: una query per snapshot, non una per item;
 - non lancia mai: su errore serve l'ultimo stato noto (anche stantio) o il vuoto, con un log aggregato (una riga per refresh).
 
 Il modulo possiede il contratto, il core solo lo legge: nessuno nel core scrive `anime_airing_state`, e il lettore non pretende di sapere se il modulo è vivo. Il segnale di freschezza esiste (battito + healthcheck, soglia 12 ore) ma resta **operativo**: nessuna notifica, nessuna dashboard, si guarda il container quando si sospetta.
 
-> **Deciso il 04/10/2026**: la selezione del catalogo novità **è questa lista** — l'appartenenza alla collezione "In corso" del portale, non una finestra di giorni. La mappa `anime-layer` (ticket 09 e 13) descriveva *"serie con almeno un episodio sub o ITA nelle ultime 14 settimane, ordinate per data dell'ultimo episodio"*: era l'intenzione iniziale, superata dal codice. Quella vecchia regola sopravvive solo in `scripts/backfill-airing-anime.js`. Il codice vince.
+> **Deciso il 04/10/2026 (ticket 52)**: la selezione del catalogo novità è **la home**: nel catalogo sta chi ha un episodio uscito nelle ultime due settimane, e lo dice `homeReleases`. `EP n` è il campo `number` dell'item della home, `ITA n` il canale `dub` dell'anime. La finestra l'applica il modulo, sul dato della fonte (`created_at`), e non c'è più nessuna finestra sui campi nostri: `listSeenAt`, `updatedAt`, `episodes[]` e le 12 ore di freschezza non decidono più l'appartenenza. L'unico segnale di freschezza è `homeReleases.checkedAt` (3 giorni, `HOME_MAX_AGE_DAYS`). Le serie annunciate (zero episodi) non sono sulla home e quindi non entrano. La regola vecchia sopravvive solo in `scripts/backfill-airing-anime.js`, che risponde a un'altra domanda.
 
 ---
 
@@ -201,7 +201,7 @@ Per indicare visivamente all'utente la disponibilità del doppiaggio o delle nov
 >   colonna, così copre anche i **21 cataloghi** che non passano dal parquet (Trakt, hero, watchlist, simulcast);
 > - **Anime**: fuori dal catalogo novità il badge è **`ITA` secco** (niente numero di episodio, niente stagione);
 >   nel catalogo novità (`preset_anime_simulcast`) restano la card sub `EP n` e il clone `_ita_offset` con `ITA n`,
->   letti da `anime_airing_state`. Le righe di annotazione per gli anime le scrive `services/doppiaggi-source`,
+>   letti da `anime_airing_state` → `homeReleases` (la HOME di AnimeUnity, vedi §3). Le righe di annotazione per gli anime le scrive `services/doppiaggi-source`,
 >   che legge a sua volta `anime_airing_state` (i doppiati del portale): è quel passaggio — non il modulo anime,
 >   non il parquet — che fa comparire il badge ITA sugli anime in **tutti** i cataloghi normali, mentre nel
 >   catalogo novità vale lo stato esterno letto dal provider;

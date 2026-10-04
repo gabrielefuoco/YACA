@@ -75,6 +75,171 @@ function extractRealEpisode(record, type, title) {
     return num;
 }
 
+// ─── La fonte del catalogo novità: la HOME di AnimeUnity ────────────────────
+//
+// Il catalogo "Simulcast (Nuovi Episodi)" non guarda `sub.latest`/`dub.latest` né un
+// episodes[] storico: guarda gli ITEM USCITI CHE LA FONTE DICHE, e nient'altro. Ogni item
+// porta la sua data (`created_at`) e il suo numero (`number`); il canale lo dichiara l'anime
+// (`anime.dub`). Qui si applica la finestra e si tiene, per ogni anime e canale, l'episodio
+// più recente. Nessuna data "nostra" (nessun `listSeenAt`, nessun `updatedAt`): l'unica
+// finestra è quella della fonte.
+
+/** Finestra del catalogo novità, in giorni. Misurata: sei pagine = 14 giorni. */
+const HOME_WINDOW_DAYS = 14;
+const DAY_MS = 24 * 60 * 60 * 1000;
+/**
+ * Tolleranza per un `created_at` nel futuro. Il sito e il container possono avere l'orologio
+ * un po' indietro: un item con data di qualche ora nel futuro è uscito, non è un miraggio.
+ */
+const HOME_FUTURE_SLACK_MS = 6 * 60 * 60 * 1000;
+
+function homeAiredAtMs(item) {
+    if (!item) return NaN;
+    const iso = toIsoDate(item.created_at);
+    if (!iso) return NaN;
+    return Date.parse(iso);
+}
+
+/** Il più recente tra due righe home: vince la data, a parità la numerazione più alta. */
+function isMoreRecentHomeRow(a, b) {
+    if (!b) return true;
+    const at = Date.parse(a.airedAt);
+    const bt = Date.parse(b.airedAt);
+    if (Number.isFinite(at) && Number.isFinite(bt) && at !== bt) return at > bt;
+    return Number(a.episode) > Number(b.episode);
+}
+
+/**
+ * Gli item della home diventano righe `homeReleases`: UNA per anime e canale, con
+ * l'episodio più recente dentro la finestra.
+ *
+ * `EP n` viene dal campo `number` dell'item e il canale dal campo `dub` dell'anime: sono
+ * campi diversi e si leggono da posti diversi, quindi non si possono confondere. Un item
+ * senza numero (0, assente, non numerico) non è un episodio: si scarta.
+ *
+ * @param {Array<Object>} items Item della home (`{number, created_at, anime: {id, dub}}`)
+ * @param {Object} [options]
+ * @param {number} [options.now] "Adesso" in ms (test)
+ * @param {number} [options.windowDays=14]
+ * @returns {Array<{animeId: number, dub: 0|1, episode: number, airedAt: string}>} Più recente in testa
+ */
+function summarizeHomeItems(items, options = {}) {
+    const nowMs = Number.isFinite(options.now) ? Number(options.now) : Date.now();
+    const windowDays = Number.isFinite(options.windowDays) && options.windowDays > 0
+        ? Number(options.windowDays)
+        : HOME_WINDOW_DAYS;
+    const windowStartMs = nowMs - windowDays * DAY_MS;
+
+    const rows = new Map();
+
+    for (const item of Array.isArray(items) ? items : []) {
+        const anime = item && item.anime && typeof item.anime === 'object' ? item.anime : null;
+        if (!anime) continue;
+
+        const animeId = Number(anime.id);
+        if (!Number.isFinite(animeId) || animeId <= 0) continue;
+
+        const airedAtMs = homeAiredAtMs(item);
+        if (!Number.isFinite(airedAtMs)) continue;
+        if (airedAtMs < windowStartMs) continue;                 // fuori dalle due settimane
+        if (airedAtMs > nowMs + HOME_FUTURE_SLACK_MS) continue;  // data impossibile: rumore
+
+        const episode = Number(item.number);
+        if (!Number.isFinite(episode) || episode <= 0) continue; // episodio 0 non è un episodio
+
+        const row = {
+            animeId,
+            dub: Number(anime.dub) === 1 ? 1 : 0,
+            episode,
+            airedAt: toIsoDate(item.created_at)
+        };
+
+        const key = `${animeId}_${row.dub}`;
+        const attuale = rows.get(key);
+        if (isMoreRecentHomeRow(row, attuale)) rows.set(key, row);
+    }
+
+    return Array.from(rows.values()).sort((a, b) => {
+        const delta = Date.parse(b.airedAt) - Date.parse(a.airedAt);
+        if (Number.isFinite(delta) && delta !== 0) return delta;
+        return b.episode - a.episode;
+    });
+}
+
+/**
+ * Le righe home di UN titolo (tutte le varianti AnimeUnity che cadono sullo stesso TMDB)
+ * nel campo `homeReleases` del documento.
+ *
+ * `checkedAt` è il momento in cui la fonte ha visto quell'anime: è il dato di freschezza
+ * DELLA FONTE, e serve al lettore per capire quanto è vecchia questa informazione.
+ *
+ * @param {Array<{dub: 0|1, episode: number, airedAt: string}>} rows
+ * @param {Object} [options]
+ * @param {string|Date|number} [options.checkedAt]
+ * @returns {{checkedAt: string, sub: {episode: number, airedAt: string}|null, dub: {episode: number, airedAt: string}|null}}
+ */
+function buildHomeReleases(rows, options = {}) {
+    const checkedAtIso = toIsoDate(options.checkedAt) || toIsoDate(new Date());
+
+    let sub = null;
+    let dub = null;
+
+    for (const row of Array.isArray(rows) ? rows : []) {
+        if (!row || !Number.isFinite(Number(row.episode))) continue;
+        const canale = Number(row.dub) === 1 ? 'dub' : 'sub';
+        const candidato = { episode: Number(row.episode), airedAt: toIsoDate(row.airedAt) };
+        const attuale = canale === 'dub' ? dub : sub;
+        if (isMoreRecentHomeRow(candidato, attuale)) {
+            if (canale === 'dub') dub = candidato;
+            else sub = candidato;
+        }
+    }
+
+    return { checkedAt: checkedAtIso, sub, dub };
+}
+
+/**
+ * Documento MINIMO per la passata home: id, identità, titolo e `homeReleases`.
+ *
+ * PERCHÉ MINIMO E NON IL DOCUMENTO DEL CICLO: la passata home gira ogni 15 minuti e non deve
+ * toccare `sub.latest`, `dub.latest`, `episodes[]`, `sources` o `mediaType` — quelli sono di
+ * chi conosce l'archivio e l'API delle stagioni. Il merge (`mergeAiringDocuments`) conserva
+ * tutto il resto, quindi il documento si aggiorna di un campo e niente più.
+ *
+ * Il titolo sulla home è, per definizione, in corso: se la fonte dichiara lo stato lo
+ * portiamo, altrimenti `In corso` (non `Terminato`: sarebbe inventare una fine).
+ *
+ * @returns {Object|null} null se non c'è identità o nessun episodio in finestra
+ */
+function buildHomeStateDocument({
+    tmdbId = null,
+    kitsuId = null,
+    anilistId = null,
+    malId = null,
+    title = null,
+    status = null,
+    homeReleases = null,
+    now = new Date()
+} = {}) {
+    if (!tmdbId || !homeReleases) return null;
+    if (!homeReleases.sub && !homeReleases.dub) return null;
+
+    return {
+        _id: String(tmdbId),
+        schemaVersion: 1,
+        ids: {
+            tmdb: Number(tmdbId) || tmdbId,
+            kitsu: kitsuId !== null && kitsuId !== undefined && kitsuId !== '' ? String(kitsuId) : null,
+            anilist: anilistId ? Number(anilistId) || anilistId : null,
+            mal: malId ? Number(malId) || malId : null
+        },
+        title: title || null,
+        schedule: { status: status || 'In corso', nextEpisode: null },
+        homeReleases,
+        updatedAt: toIsoDate(now) || toIsoDate(new Date())
+    };
+}
+
 function toIsoDate(val) {
     if (!val) return null;
     if (val instanceof Date) {
@@ -467,6 +632,16 @@ function mergeAiringDocuments(existing, incoming) {
         mergedDoc.dub = dubLatest;
     }
 
+    // `homeReleases` (la fonte del catalogo novità) è un campo a sé: chi arriva dalla
+    // passata home lo aggiorna, chi arriva dal ciclo dell'archivio non lo tocca e non lo
+    // perde. incoming vince per intero perché la passata home è l'unica a saperlo.
+    const homeReleases = (incoming.homeReleases && typeof incoming.homeReleases === 'object')
+        ? incoming.homeReleases
+        : (existing.homeReleases && typeof existing.homeReleases === 'object' ? existing.homeReleases : null);
+    if (homeReleases) {
+        mergedDoc.homeReleases = homeReleases;
+    }
+
     mergedDoc.italian = {
         sub: subLatest ? {
             latest: subLatest,
@@ -488,5 +663,9 @@ module.exports = {
     compareEpisodes,
     cleanTitle,
     normalizeMediaType,
-    toIsoDate
+    summarizeHomeItems,
+    buildHomeReleases,
+    buildHomeStateDocument,
+    toIsoDate,
+    HOME_WINDOW_DAYS
 };

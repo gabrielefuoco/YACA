@@ -268,10 +268,11 @@ curl -i http://127.0.0.1:7860/health
 Risposta attesa: `HTTP/1.1 200 OK` con payload JSON indicante stato `ok` o uptime.
 
 ### 3.7 Servizio Anime Source (`anime-source`)
-Modulo worker autonomo in background che scansiona periodicamente le serie anime in corso e popola la collezione `anime_airing_state` su MongoDB per i badge di trasmissione.
+Modulo worker autonomo in background che scansiona periodicamente le serie anime in corso e popola la collezione `anime_airing_state` su MongoDB per i badge di trasmissione e per il catalogo "Simulcast (Nuovi Episodi)".
 - **Verifica stato**: `docker compose ps` (deve risultare `healthy`; diventa `unhealthy` se non completa un giro con successo da oltre 12 ore).
 - **Health check manuale**: `docker compose exec anime-source node cli.js --health-check` (exit code `0` se recente, `1` se obsoleto o assente).
-- **Verifica dati su MongoDB**: verificare che la collezione contenga documenti (`db.anime_airing_state.countDocuments()`).
+- **Verifica dati su MongoDB**: verificare che la collezione contenga documenti (`db.anime_airing_state.countDocuments()`) e che quelli del catalogo novità abbiano `homeReleases` (`db.anime_airing_state.countDocuments({ homeReleases: { $exists: true } })`).
+- **Due cadenze sulla HOME di AnimeUnity** (ticket 52): `--home` (prima pagina, ogni 15 minuti) e `--home-full` (giro paginato fino a coprire le due settimane, una volta al giorno). Il giro completo parte subito all'avvio solo se l'ultimo risale a più di 24 ore. La prima pagina copre ~27 ore di uscite, quindi il check ogni 15 minuti non può perdere un episodio; la cortesia (`_courtesyWait`, 350 ms fra le richieste) è dentro il client.
 
 ---
 

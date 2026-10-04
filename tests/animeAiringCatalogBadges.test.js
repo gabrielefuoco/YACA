@@ -1,8 +1,9 @@
 /**
- * Test del catalogo "novità anime" e dei badge sub/ITA (ticket 13).
+ * Test del catalogo "novità anime" e dei badge sub/ITA (ticket 13, regola aggiornata dal
+ * ticket 52: la fonte è la HOME di AnimeUnity, `homeReleases`).
  * Fixture locali del documento di stato: nessun Mongo e nessun DuckDB reale.
- * Copre: ordinamento/finestra 14 giorni, paginazione, id `kitsu:` condiviso,
- * card ITA presente solo se il doppiato è uscito nella finestra, degrado.
+ * Copre: ordinamento per ultimo episodio uscito, paginazione, id `kitsu:` condiviso,
+ * card base nuda quando la home ha visto solo il doppiaggio, degrado.
  */
 
 jest.mock('../src/catalog/providers/DuckDbProvider', () => {
@@ -32,6 +33,11 @@ function buildFixtureDocs() {
             schemaVersion: 1,
             ids: { tmdb: 240411, kitsu: '48269' },
             title: 'Dandadan',
+            homeReleases: {
+                checkedAt: daysAgo(0.1),
+                sub: { episode: 12, airedAt: daysAgo(2) },
+                dub: { episode: 8, airedAt: daysAgo(3) }
+            },
             updatedAt: daysAgo(0.1),
             italian: {
                 sub: { latest: { season: 2, episode: 12 } },
@@ -43,11 +49,17 @@ function buildFixtureDocs() {
             ]
         },
         {
-            // 1 giorno fa: sub attivo, doppiato fermo da 40 giorni -> una card (EP 20)
+            // 1 giorno fa: sub attivo, doppiato fermo da 40 giorni. La home ha visto solo il sub:
+            // una card sola (EP 20). Il doppiaggio fermo NON porta badge ITA: non è uscito niente.
             _id: '999002',
             schemaVersion: 1,
             ids: { tmdb: 999002, kitsu: '222' },
             title: 'Dub Fermo',
+            homeReleases: {
+                checkedAt: daysAgo(0.1),
+                sub: { episode: 20, airedAt: daysAgo(1) },
+                dub: null
+            },
             updatedAt: daysAgo(0.1),
             italian: {
                 sub: { latest: { season: 1, episode: 20 } },
@@ -59,11 +71,16 @@ function buildFixtureDocs() {
             ]
         },
         {
-            // 4 giorni fa: solo doppiato nella finestra -> una card ITA (ITA 3)
+            // 4 giorni fa: la home ha visto solo il doppiato -> card base nuda + clone ITA 3
             _id: '999004',
             schemaVersion: 1,
             ids: { tmdb: 999004, kitsu: '444' },
             title: 'Solo Dub',
+            homeReleases: {
+                checkedAt: daysAgo(0.1),
+                sub: null,
+                dub: { episode: 3, airedAt: daysAgo(4) }
+            },
             updatedAt: daysAgo(0.1),
             italian: {
                 sub: { latest: { season: 1, episode: 3 } },
@@ -84,6 +101,11 @@ function buildManyFixtureDocs(count) {
             schemaVersion: 1,
             ids: { tmdb: 100000 + i, kitsu: String(50000 + i) },
             title: `Anime Series ${i}`,
+            homeReleases: {
+                checkedAt: daysAgo(0.1),
+                sub: { episode: i, airedAt: daysAgo(i * 0.1) },
+                dub: null
+            },
             updatedAt: daysAgo(0.1),
             italian: {
                 sub: { latest: { season: 1, episode: i } }
@@ -133,7 +155,7 @@ describe('AiringStateProvider - catalogo novità anime', () => {
         animeAiringState.resetForTests();
     });
 
-    test('ordina per ultimo episodio disponibile e usa lo stesso id kitsu per le due card', async () => {
+    test('ordina per ultimo episodio uscito (la data della fonte) e usa lo stesso id kitsu', async () => {
         animeAiringState.setDataSourceForTests(async () => buildFixtureDocs());
 
         const metas = await getAiringStateCatalog(0);
@@ -260,36 +282,45 @@ describe('AiringStateProvider - catalogo novità anime', () => {
         expect(page2).toEqual([]);
     });
 
-    test('provider con doc vecchi E nuovi: preserva orderIndex per i nuovi e gestisce i vecchi', async () => {
+    test('provider con documenti dalle date diverse: l\'ordine è quello della home', async () => {
         const mixedDocs = [
-            // Doc nuovo (senza episodes[], con orderIndex: 0)
             {
+                // orderIndex 0 ma uscita 8 giorni fa: la home comanda, non l'ordine della lista
                 _id: '37854',
                 schemaVersion: 1,
                 ids: { tmdb: 37854, kitsu: '12' },
                 title: 'One Piece',
-                sub: { season: 22, episode: 1180 },
+                homeReleases: { checkedAt: daysAgo(0.1), sub: { episode: 1180, airedAt: daysAgo(8) }, dub: null },
                 orderIndex: 0,
                 updatedAt: daysAgo(0.1)
             },
-            // Doc vecchio (con episodes[], senza orderIndex)
             {
                 _id: '240411',
                 schemaVersion: 1,
                 ids: { tmdb: 240411, kitsu: '48269' },
                 title: 'Dandadan',
+                homeReleases: { checkedAt: daysAgo(0.1), sub: { episode: 12, airedAt: daysAgo(2) }, dub: null },
                 italian: { sub: { latest: { season: 2, episode: 12 } } },
                 episodes: [{ season: 2, episode: 12, airedAt: daysAgo(2), subIta: true, dubIta: false }],
                 updatedAt: daysAgo(0.1)
             },
-            // Doc nuovo (senza episodes[], con orderIndex: 1)
             {
                 _id: '2362',
                 schemaVersion: 1,
                 ids: { tmdb: 2362, kitsu: '210' },
                 title: 'Detective Conan',
-                sub: { season: 1, episode: 1100 },
+                homeReleases: { checkedAt: daysAgo(0.1), sub: { episode: 1100, airedAt: daysAgo(1) }, dub: null },
                 orderIndex: 1,
+                updatedAt: daysAgo(0.1)
+            },
+            {
+                // Nessuna passata home: non entra, per quanto sia fresco e pieno di episodi
+                _id: '999999',
+                schemaVersion: 1,
+                ids: { tmdb: 999999, kitsu: '999' },
+                title: 'Mai sulla home',
+                sub: { season: 1, episode: 5, airedAt: daysAgo(0.2) },
+                listSeenAt: daysAgo(0.1),
                 updatedAt: daysAgo(0.1)
             }
         ];
@@ -308,10 +339,10 @@ describe('AiringStateProvider - catalogo novità anime', () => {
         });
 
         const metas = await getAiringStateCatalog(0);
-        // Prima chi ha una data di uscita nota (Dandadan: ultimo ep. 2 giorni fa),
-        // poi i doc senza data nell'ordine della lista: orderIndex 0 (One Piece 37854), orderIndex 1 (Conan 2362).
-        expect(metas.map((m) => m._tmdbId)).toEqual([240411, 37854, 2362]);
-        expect(metas.map((m) => m.id)).toEqual(['kitsu:48269', 'kitsu:12', 'kitsu:210']);
+        // Ordine = data dell'ultimo episodio uscito (la home): Conan (1 gg), Dandadan (2 gg),
+        // One Piece (8 gg). `orderIndex` e il documento senza passata home non contano.
+        expect(metas.map((m) => m._tmdbId)).toEqual([2362, 240411, 37854]);
+        expect(metas.map((m) => m.id)).toEqual(['kitsu:210', 'kitsu:48269', 'kitsu:12']);
     });
 });
 
@@ -368,6 +399,7 @@ describe('Badge sub/ITA dal documento di stato', () => {
                 schemaVersion: 1,
                 ids: { kitsu: '49746' },
                 title: 'Re:ZERO -Starting Life in Another World-',
+                homeReleases: { checkedAt: daysAgo(0.1), sub: { episode: 18, airedAt: daysAgo(1) }, dub: null },
                 italian: { sub: { latest: { season: 1, episode: 18 } } },
                 episodes: [
                     { season: 1, episode: 18, airedAt: daysAgo(1), subIta: true, dubIta: false }
@@ -378,6 +410,7 @@ describe('Badge sub/ITA dal documento di stato', () => {
                 schemaVersion: 1,
                 ids: { kitsu: '50622' },
                 title: 'Samurai Troopers - I cinque samurai: La nuova leggenda delle armature',
+                homeReleases: { checkedAt: daysAgo(0.1), sub: { episode: 12, airedAt: daysAgo(2) }, dub: null },
                 italian: { sub: { latest: { season: 1, episode: 12 } } },
                 episodes: [
                     { season: 1, episode: 12, airedAt: daysAgo(2), subIta: true, dubIta: false }
@@ -415,7 +448,7 @@ describe('Badge sub/ITA dal documento di stato', () => {
         expect(mappingStore.resolveTmdbFromKitsu).toHaveBeenCalledWith('50427');
     });
 
-    test('doppiato fermo: la card ITA c\'è comunque (regola dell\'utente del 04/10/2026)', async () => {
+    test('doppiato fermo da 40 giorni: una card sola, nessun ITA (la home non lo nomina)', async () => {
         const metas = [item('kitsu:222', 'Dub Fermo')];
         const result = await applyAiringStateBadges(metas, {
             userConfig: USER_CONFIG,
@@ -425,14 +458,15 @@ describe('Badge sub/ITA dal documento di stato', () => {
             snapshot
         });
 
-        expect(result.metas).toHaveLength(2);
+        // La regola è cambiata con la fonte (ticket 52): non è "basta un episodio doppiato
+        // dichiarato", è "la home ha visto un doppiato uscito nelle ultime due settimane".
+        expect(result.metas).toHaveLength(1);
         expect(result.metas[0].id).toBe('kitsu:222');
         expect(result.metas[0].poster).toContain('EP%2020');
-        expect(result.metas[1].id).toBe('kitsu:222_ita_offset');
-        expect(result.metas[1].poster).toContain('ITA%205');
+        expect(result.metas[0].poster).not.toContain('ITA');
     });
 
-    test('sub.latest dichiarato + solo doppiato: due card, EP 3 e ITA 3', async () => {
+    test('la home ha visto solo il doppiato: card base nuda + clone ITA 3', async () => {
         const metas = [item('kitsu:444', 'Solo Dub')];
         const result = await applyAiringStateBadges(metas, {
             userConfig: USER_CONFIG,
@@ -443,8 +477,10 @@ describe('Badge sub/ITA dal documento di stato', () => {
         });
 
         expect(result.metas).toHaveLength(2);
+        // La card base non sparisce: non ha `EP` da mostrare, e un titolo perso è peggio di una
+        // card senza badge.
         expect(result.metas[0].id).toBe('kitsu:444');
-        expect(result.metas[0].poster).toContain('EP%203');
+        expect(result.metas[0].poster).toBe(metas[0].poster);
         expect(result.metas[1].id).toBe('kitsu:444_ita_offset');
         expect(result.metas[1].poster).toContain('ITA%203');
     });

@@ -112,10 +112,13 @@ describe('Chiave di cache dei cataloghi', () => {
     });
 
     it('4. badgeV diverso: la chiave cambia, l\'invalidazione globale dei badge resta', () => {
-        const base = keyFor(makeUserConfig(), { badgeVersion: 18 });
+        // Il riferimento è la versione corrente: ogni bump deve cambiare la chiave, e non deve
+        // farlo per un motivo diverso (i test che fissano un numero vecchio alzano rossi a ogni
+        // bump senza dire nulla).
+        const base = keyFor(makeUserConfig(), { badgeVersion: BADGE_CATALOG_VERSION });
 
-        expect(keyFor(makeUserConfig(), { badgeVersion: 17 })).not.toBe(base);
-        expect(keyFor(makeUserConfig(), { badgeVersion: 19 })).not.toBe(base);
+        expect(keyFor(makeUserConfig(), { badgeVersion: BADGE_CATALOG_VERSION - 1 })).not.toBe(base);
+        expect(keyFor(makeUserConfig(), { badgeVersion: BADGE_CATALOG_VERSION - 2 })).not.toBe(base);
         expect(keyFor(makeUserConfig(), { badgeVersion: BADGE_CATALOG_VERSION })).toBe(base);
     });
 
@@ -377,5 +380,70 @@ describe('TTL della cache cataloghi per i cataloghi a finestra giornaliera', () 
 
         expect(ttl).toBeGreaterThan(DAY_MS);
         expect(ttl).toBeLessThan(2 * DAY_MS);
+    });
+});
+
+/**
+ * Il catalogo novità anime ha una freschezza che viene dalla fonte, non dal profilo: il servizio
+ * `anime-source` legge la prima pagina della home di AnimeUnity ogni 15 minuti (ticket 52).
+ * Se il catalogo restasse sul TTL del profilo (giorni), l'utente vedrebbe la lista di ieri anche
+ * con la fonte aggiornata: il check ogni 15 minuti sarebbe sprecato. Il TTL scende quindi a 20
+ * minuti — >= la cadenza del check (con 15 si pagherebbe la corsa a vuoto), e abbastanza lontano
+ * da ricostruire la lista a ogni richiesta.
+ */
+describe('TTL del catalogo novità anime: lo dice la fonte, non il profilo', () => {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const STANDARD_TTL_MS = 14 * DAY_MS;
+    const HOME_CHECK_MS = 15 * 60 * 1000;
+    const SIMULCAST_TTL_MS = 20 * 60 * 1000;
+
+    const userConfig = {
+        userId: 'user-ttl-sim',
+        configVersion: 'ttl-sim-v1',
+        activeProfileId: 'p-ttl-sim',
+        apiKeys: { tmdb: 'fake_tmdb_key' },
+        profiles: [
+            {
+                id: 'p-ttl-sim',
+                name: 'TTL',
+                settings: { kidsMode: false, typeSelectors: { film: true, serie: true, anime: null } }
+            }
+        ],
+        customCatalogs: []
+    };
+
+    async function ttlAppliedTo(catalogId, type) {
+        const getOrFetch = jest.spyOn(catalogRequestCache, 'getOrFetch')
+            .mockResolvedValue({ metas: [] })
+            .mockClear();
+
+        await catalogHandler({ id: catalogId, type, extra: { skip: 0 } }, userConfig, 'http://localhost:7000');
+
+        expect(getOrFetch).toHaveBeenCalledTimes(1);
+        return getOrFetch.mock.calls[0][2];
+    }
+
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        await catalogRequestCache.clear();
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('il simulcast non eredita il TTL del profilo', async () => {
+        await expect(ttlAppliedTo('preset_anime_simulcast', 'series')).resolves.toBe(SIMULCAST_TTL_MS);
+    });
+
+    it('il TTL non è più corto della cadenza del check della fonte (15 minuti)', async () => {
+        const ttl = await ttlAppliedTo('preset_anime_simulcast', 'series');
+        expect(ttl).toBeGreaterThanOrEqual(HOME_CHECK_MS);
+        expect(ttl).toBeLessThan(DAY_MS);
+    });
+
+    it('i cataloghi vicini non cambiano', async () => {
+        await expect(ttlAppliedTo('preset_anime_seinen', 'series')).resolves.toBe(STANDARD_TTL_MS);
+        await expect(ttlAppliedTo('preset_pop_series', 'series')).resolves.toBe(STANDARD_TTL_MS);
     });
 });

@@ -108,7 +108,11 @@ function isAiringStateCatalog(baseId, catalogMeta) {
 //     episodio è ancora uscito: `sub = { season: 2, episode: 0 }`, normalizzato a `null`).
 //     Sono DUE card in più nella pagina, quindi le chiavi già in cache continuerebbero a servire
 //     una lista vecchia per 14 giorni: senza bump i titoli annunciati non si vedrebbero.
-const BADGE_CATALOG_VERSION = 22;
+// 23: la fonte del catalogo novità è la HOME di AnimeUnity (`homeReleases`, ticket 52): cambiano
+//     i TITOLI (non è più la lista "In corso") e i NUMERI sui badge (`EP n`/`ITA n` vengono dal
+//     campo `number` dell'item). Le pagine già in cache servirebbero la lista vecchia per 14
+//     giorni: senza bump il cambio non si vedrebbe.
+const BADGE_CATALOG_VERSION = 23;
 
 /**
  * Serializza la definizione di un catalogo in forma canonica: chiavi ordinate,
@@ -281,10 +285,12 @@ function senzaRiferimentoAiring(item) {
 
 /**
  * Badge del catalogo novità anime: le due card (sub e ITA) leggono lo stato esterno
- * (`anime_airing_state`), non TMDB. Card sub -> `EP {italian.sub.latest.episode}`;
- * card ITA (clone `_ita_offset`) -> `ITA {italian.dub.latest.episode}`, presente se il
- * documento dichiara almeno un episodio doppiato (nessuna finestra: vedi `getDeclaredInfo`).
- * Entrambe condividono lo stesso id. Non lancia mai: in caso di problemi serve le card senza badge.
+ * (`anime_airing_state`), non TMDB. Card base -> `EP {episodio dalla home}`; card ITA (clone
+ * `_ita_offset`) -> `ITA {episodio doppiato dalla home}`. Entrambe condividono lo stesso id.
+ * I numeri vengono dalla HOME di AnimeUnity (`homeReleases`, ticket 52): la card base esiste
+ * anche quando la fonte non ha visto un episodio sub in finestra (titolo doppiato e basta:
+ * la card resta nuda, e il clone porta `ITA n`). Non lancia mai: in caso di problemi serve le
+ * card senza badge.
  */
 async function applyAiringStateBadges(metas, {
     userConfig,
@@ -320,15 +326,14 @@ async function applyAiringStateBadges(metas, {
                 //
                 // Si ri-formattta invece di passare l'item così com'è, perché alla costruzione del
                 // catalogo il badge episodio era già stato calcolato da TMDB (`showEpisodeBadge` è
-                // true su questo preset): una serie **annunciata** — che è proprio il caso in cui
-                // non c'è nessuno stato, perché `sub.episode = 0` viene normalizzato a `null` — si
-                // porterebbe dietro un `S2 E1` inventato. Qui il badge episodio viene SEMPRE e SOLO
-                // dallo stato esterno, quindi "nessuno stato" vuol dire "nessun episodio da
-                // contare". Il badge di stagione (top-left) dipende da `tmdbSeason`/`videos`, che il
-                // formatter non porta in output: al secondo passaggio sparisce — ma è già così per
-                // ogni card del catalogo (misurato su produzione il 04/10/2026: 0 poster su 29 con
-                // `tlBadge`), quindi qui non cambia niente. Per chi non ha badge episodio l'URL del
-                // poster resta identico.
+                // true su questo preset): una serie che la fonte non nomina si porterebbe dietro
+                // un `S2 E1` inventato. Qui il badge episodio viene SEMPRE e SOLO dalla home,
+                // quindi "nessuno stato" vuol dire "nessun episodio da contare". Il badge di
+                // stagione (top-left) dipende da `tmdbSeason`/`videos`, che il formatter non porta
+                // in output: al secondo passaggio sparisce — ma è già così per ogni card del
+                // catalogo (misurato su produzione il 04/10/2026: 0 poster su 29 con `tlBadge`),
+                // quindi qui non cambia niente. Per chi non ha badge episodio l'URL del poster
+                // resta identico.
                 processed.push(senzaRiferimentoAiring(sanitizeCatalogMeta(
                     { ...item, _itaBadge: false },
                     { ...sanitizeOptions, shouldApplyEpisodeBadge: false }
@@ -336,13 +341,20 @@ async function applyAiringStateBadges(metas, {
                 continue;
             }
 
-            if (info.sub) {
-                processed.push(senzaRiferimentoAiring(sanitizeCatalogMeta({
+            // La card base esiste SEMPRE. Se la fonte ha visto un episodio sub in finestra porta
+            // `EP n`; se il titolo è doppiato e basta, resta nuda invece di sparire dal catalogo
+            // (era quello che succedeva: senza `info.sub` la base non veniva pushata e il titolo
+            // restava solo come clone ITA — un titolo in meno per l'utente).
+            processed.push(senzaRiferimentoAiring(info.sub
+                ? sanitizeCatalogMeta({
                     ...item,
                     _itaBadge: false,
                     _forceBadgeText: `EP ${info.sub.episode}`
-                }, sanitizeOptions)));
-            }
+                }, sanitizeOptions)
+                : sanitizeCatalogMeta(
+                    { ...item, _itaBadge: false },
+                    { ...sanitizeOptions, shouldApplyEpisodeBadge: false }
+                )));
 
             if (info.dub) {
                 processed.push(senzaRiferimentoAiring(sanitizeCatalogMeta({
@@ -889,9 +901,27 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const DAILY_WINDOW_TTL_MS = 36 * 60 * 60 * 1000; // 36 ore
     const isDailyWindowCatalog = typeof id === 'string' && DAILY_WINDOW_CATALOG_IDS.has(id);
 
+    // Il catalogo novità anime ha una freschezza sua, e la decide la fonte, non il profilo.
+    //
+    // Il servizio `anime-source` legge la prima pagina della HOME di AnimeUnity ogni 15 minuti
+    // (ticket 52): una nuova uscita entra in `homeReleases` entro un quarto d'ora. Con il TTL del
+    // profilo — giorni — l'utente continuerebbe a vedere la lista di ieri anche se la fonte è
+    // aggiornata: è la stessa trappola che il ticket 47 ha già pagato con i preset a rotazione.
+    //
+    // PERCHÉ 20 MINUTI e non 15: il TTL deve essere >= la cadenza del check, altrimenti si paga il
+    // rischio di servire una pagina costruita PRIMA dell'ultima lettura della fonte (con 15 la
+    // corsa è continua e metà delle ricostruzioni verrebbe buttata). 20 dà un margine di 5 minuti
+    // e al massimo una ricostruzione ogni 20 minuti per pagina di catalogo (~72 al giorno, su
+    // una build misurata in 15-30 ms: è spazzatura, non un costo). Sotto i ~5 minuti invece la
+    // ricostruzione ripartirebbe a ogni raffreddamento di cache e ogni richiesta riscriverebbe
+    // la lista: peggio di quanto sia fresco.
+    const SIMULCAST_TTL_MS = 20 * 60 * 1000;
+    const isAiringStateCatalogId = isAiringStateCatalog(baseId, catalogMeta);
+
     let effectiveTtl = ttl;
     if (isWatchlistCatalog) effectiveTtl = Math.min(effectiveTtl, WATCHLIST_TTL_MS);
     if (isDailyWindowCatalog) effectiveTtl = Math.min(effectiveTtl, DAILY_WINDOW_TTL_MS);
+    if (isAiringStateCatalogId) effectiveTtl = Math.min(effectiveTtl, SIMULCAST_TTL_MS);
 
     // SWR handling. Il cronometro copre la sola parte costosa (cache + eventuale
     // costruzione), non i badge post-cache né la risposta HTTP.

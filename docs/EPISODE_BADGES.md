@@ -101,9 +101,12 @@ Due conseguenze da ricordare quando si tocca questo percorso:
 ### Anime
 
 Fuori dal catalogo novità un anime mostra **`ITA` secco**: niente numero di episodio, niente badge di stagione
-(`_itaBadge: true` + `_itaOnlyBadge: true`). Nel catalogo novità (`preset_anime_simulcast`) restano le due card:
-`EP n` per i sub e `ITA n` con il clone `_ita_offset` per il doppiato uscito nella finestra di 14 giorni, letti
-da `anime_airing_state` (`src/data/animeAiringState.js`).
+(`_itaBadge: true` + `_itaOnlyBadge: true`). Nel catalogo novità (`preset_anime_simulcast`) ci sono le due card:
+`EP n` per i sub e `ITA n` sul clone `_ita_offset` per il doppiato, entrambi presi dalla **HOME di AnimeUnity**
+(campo `homeReleases` di `anime_airing_state`, scritto dal modulo `services/anime-source`: prima pagina ogni 15
+minuti, giro completo delle due settimane una volta al giorno). `EP n` è il numero dell'item della home, `ITA n`
+il canale che l'anime dichiara (`dub: 1`). Un titolo che la fonte ha visto solo doppiato resta con la card base
+nuda e il clone `ITA n`; un titolo che la fonte non nomina non entra. Lettura in `src/data/animeAiringState.js`.
 
 La verità ITA degli anime è l'**unione** tra le annotazioni di AG e lo stato AnimeUnity. L'unione **non** la fa la
 build del parquet (`scripts/convert_to_parquet.js` legge e converte soltanto): la fa

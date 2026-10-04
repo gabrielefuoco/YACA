@@ -128,7 +128,8 @@ describe('Identità anime e badge fuori dal catalogo novità', () => {
 
     describe('Un solo clone ITA, e solo nel catalogo novità', () => {
         test('in catalogo simulcast vince lo stato esterno e produce al piu un solo clone ITA', async () => {
-            // Mock snapshot di animeAiringState con sub + dub per Dandadan
+            // Mock snapshot di animeAiringState: la home ha visto l'episodio sub di 2 giorni fa
+            // e quello doppiato di 3 giorni fa (ticket 52: i numeri vengono da `homeReleases`).
             jest.spyOn(animeAiringState, 'getSnapshot').mockResolvedValue(
                 animeAiringState.buildSnapshot([
                     {
@@ -136,6 +137,11 @@ describe('Identità anime e badge fuori dal catalogo novità', () => {
                         schemaVersion: 1,
                         ids: { tmdb: 240411, kitsu: '48269' },
                         title: 'Dandadan',
+                        homeReleases: {
+                            checkedAt: daysAgo(0.1),
+                            sub: { episode: 12, airedAt: daysAgo(2) },
+                            dub: { episode: 8, airedAt: daysAgo(3) }
+                        },
                         italian: {
                             sub: { latest: { season: 2, episode: 12 } },
                             dub: { latest: { season: 2, episode: 8 }, isSimuldub: true }
