@@ -146,3 +146,39 @@ diceva 13-14). Circa **4 ore** a 9/s su questa macchina. I fallimenti sono ~4% e
 **A prova di spegnimento.** Il contenitore gira con `--restart unless-stopped` (Docker Desktop si riavvia da
 solo con Windows), il sorvegliante ha un **candelotto** per non partire doppio ed è nella cartella *Esecuzione
 automatica*. Un riavvio non fa perdere niente: i poster già scritti restano e vengono saltati.
+
+---
+
+## 8. I limiti dell'ERDB pubblico — e perché esiste l'istanza nostra
+
+Fatti misurati fra l'01 e il 03/10/2026 su `easyratingsdb.com`. Sono i motivi per cui YACA non può
+semplicemente "usare l'ERDB online".
+
+- **Il badge `ITA` non lo può disegnare.** L'istanza pubblica non ha la patch: serve per i **voti** e per il
+  poster di base. Ogni `ITA` (e ogni `EP n`) viene dalla **nostra** istanza. Per la coda lunga (Tier 2) e per i
+  titoli non ancora resi non basta quindi l'ERDB online: la nostra istanza deve saper rendere al volo.
+- **Cacha i suoi 404 per 4 ore** (`Cache-Control: max-age=14400`, dietro Cloudflare: `cf-cache-status: HIT`,
+  `Age` osservato 157-174). Conseguenza dichiarata e accettata: **un poster appena comparso può restare
+  invisibile fino a 4 ore**, e non c'è niente che possiamo fare senza colpire il loro origine a ogni richiesta
+  (scortesia, e più lento). Il badge nuovo ha un ritardo massimo di 4 ore, non di secondi.
+- **Il provider lento è MDBList** — i voti extra (Rotten Tomatoes, Metacritic, Trakt): `mdb;dur` fino a 5 s nel
+  `Server-Timing`, fino a **25,9 s** misurati. Spento, sul poster resta **un** voto (TMDB o IMDb), che è quanto
+  serve. Con i provider ridotti al minimo il render scende a **1,37 s per poster** (mediana su 20 poster
+  freddi: 0,48 s di rendering, 0,31 s di chiamata TMDB; RAM di picco **84 MB**, **71 KB** per file).
+- **Il voto IMDb non viene dalla rete**: ERDB si scarica un dataset IMDb locale (~500 MB, `lib/imdbDataset.ts`).
+  Il nostro DuckDB non lo alimenta — ERDB è autosufficiente — ma ha già `imdb_id`, che è ciò che serve a ERDB.
+- **Sa misurare sé stesso**: `X-ERDB-Cache: hit|miss|shared` e
+  `Server-Timing: auth, tmdb, mdb, stream, render, total`. È l'oracolo quando un poster non arriva.
+- **Il rendering non è mai stato il problema**: il nostro compositing `sharp` era 47 ms (5-7%), e l'HEAD verso
+  ERDB assorbiva il **65-85%** della latenza. A caldo le rotte nostre rispondono in 3 ms.
+
+### La trappola delle cache negative (il "poster che non torna")
+
+Due cache si **sommano**: Redis `erdb_head` tiene `{ok:false}` per **6 ore**, e Cloudflare tiene il 404 di ERDB
+per **4**. Un poster che compare resta quindi invisibile fino a **6 ore**. Non è permanente: **sembra** tale,
+perché non si invalida. La nostra cache negativa si può invalidare a evento; la loro no.
+
+L'unico buco *davvero* permanente era un errore nostro: `/images/fallback` rispondeva **HTTP 400** quando il
+parametro `fallback` era vuoto, e il client Stremio **cacha quel 400 congelandolo a video**. Erano **172 titoli
+su 117.006 (0,147%)** — 157 film, 15 serie — e per il restante 99,85% c'è sempre una copertina TMDB che copre.
+Chiuso dal ticket 05 della mappa.

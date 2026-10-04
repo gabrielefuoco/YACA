@@ -76,6 +76,27 @@ EOF
 sudo systemctl restart zramswap
 ```
 
+**Il governor della CPU — e il fatto che non è persistito.** Su una macchina che fa il server (sempre accesa e alimentata) il risparmio energetico costa caro: con `scaling_governor = powersave` la CPU del mate girava a **1100 MHz su 3400 disponibili** — temperature basse (33-42 °C), quindi non era calore — e ogni lavoro legato alla CPU andava **tre volte più lento**: il rendering dei poster in primo luogo. Sulla rete l'effetto è piccolo (4,35 → 4,75 MB/s).
+
+```bash
+# Verifica (powersave = sospetto)
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
+
+# Impostazione a caldo (vale fino al riavvio)
+echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+```
+
+**Attenzione (verificato il 04/10/2026)**: sul mate l'impostazione è stata fatta a mano e **non è persistita da niente** — nessuna unit systemd, nessun cron, nessun `/etc/sysfs.conf`, nessun `rc.local`. Al riavvio la CPU **torna a un terzo** e nessuno se ne accorge, perché tutto continua a funzionare, solo più lento. Per renderla stabile:
+
+```bash
+sudo apt install -y cpufrequtils
+echo 'GOVERNOR="performance"' | sudo tee /etc/default/cpufrequtils
+sudo systemctl enable --now cpufrequtils
+```
+
+**Se il mate sembra lento su qualcosa di CPU, il primo sospetto è il governor.**
+
 ### 2.3 Checklist Operativa Headless (Primo Boot)
 1. **Autenticazione SSH a chiave**:
    Configurare la chiave pubblica in `~/.ssh/authorized_keys`, quindi disattivare le password in `/etc/ssh/sshd_config`:
