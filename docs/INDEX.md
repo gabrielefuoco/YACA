@@ -79,6 +79,8 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 ### 9. 🧬 Configurazione e Gestione dei Preset
 *   **[PRESETS.md](PRESETS.md)**
     *   *Descrizione*: Approfondimento sul sistema di cataloghi pre-configurati (preset) di YACA in `src/data/presets.js`. Spiega come sono strutturati, il dizionario degli attori/registi TMDB_PEOPLE e l'uso degli script CLI in `scripts/` per l'analisi e la validazione dei cataloghi.
+*   **[PRESETS_DATE.md](PRESETS_DATE.md)**
+    *   *Descrizione*: Perché sette preset hanno la data di oggi dentro la definizione: che forma ha, chi la calcola, cosa cambierebbe togliendola e perché finisce nella chiave della cache. **Recuperato il 04/10/2026 da un commit orfano** che non era mergiato su nessun ramo.
 
 ### 10. 🧪 Testing e Strumenti di Amministrazione
 *   **[TESTING_UTILITIES.md](TESTING_UTILITIES.md)**
