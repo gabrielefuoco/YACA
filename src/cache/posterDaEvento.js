@@ -12,8 +12,10 @@
  *    non chiederebbe mai: poster invisibile, nessun errore da nessuna parte.
  *    Per questo `posterFileName` e `posterUrl` vengono riusati, non reimplementati.
  *
- * Modulo puro: niente I/O, niente rete, niente Redis. Solo funzioni che da una voce
- * in coda ricavano stringhe.
+ * C'e' anche il giro inverso, `eventoDaNomeFile`: dal nome che la rotta sta servendo
+ * all'evento `{tipo, id, badge}` da mettere in coda quando quel file non si riesce a
+ * produrre. Stessa direzione di questa, portata indietro: la coda accetta solo
+ * `{tipo, id, badge}` e il nome file li contiene gia' tutti.
  */
 
 const { posterFileName, posterUrl } = require('../../scripts/erdb-builder/build');
@@ -135,6 +137,48 @@ function erdbIdDaNomeFile(nomeFile) {
     return null;
 }
 
+/**
+ * Giro INDIETRO verso la **coda**: dal nome file all'evento `{tipo, id, badge}`.
+ *
+ * Serve a chi ha scoperto che un file manca e vuole che qualcuno lo produca: la coda
+ * accetta solo `{tipo, id, badge}` (`src/cache/codaEventi.js`) e la rotta
+ * `/erdb-poster/:file` ha in mano solo il nome. Il nome contiene gia' tutto — tipo, id,
+ * badge — quindi qui non si inventa niente: si rilegge quello che c'era.
+ *
+ * PERCHE' ESISTE (e non un `erdbIdDaEvento` rifatto al contrario): il giro indietro e'
+ * lossy e pero' conosciuto: `erdbIdDaNomeFile` riconosce solo forme note e su tutto il
+ * resto restituisce `null`. Qui nessuna euristica e nessun id indovinato: un nome non
+ * riconosciuto non e' un evento da accodare, e' una richiesta che nessuno ha fatto.
+ *
+ * Il `badge` si passa cosi' com'e', `null` compreso: toglierlo e' un lavoro come metterlo
+ * e la coda sa distinguerlo (`ITA` vs `null` produce due file diversi).
+ *
+ * I Kitsu portano l'id **gia' in forma ERDB** (`kitsu:265`) perche' e' l'unica forma che
+ * il drenatore riesca a rifare in un `kitsu-265.jpg` senza interrogare la mappa: e il
+ * `tipo` dichiarato non serve (con un id Kitsu `erdbIdDaEvento` lo ignora e riusa l'id),
+ * quindi qui vale quello che il nome file dice. La chiave della coda resta leggibile.
+ *
+ * Funzione PURA e TOTALE, come `erdbIdDaNomeFile`: non lancia mai, e quello che non sa
+ * restituire e' `null` ("non lo so"), non un'eccezione.
+ *
+ * @param {string} nomeFile nome grezzo, come arriva alla rotta (`tmdb-movie-823_ITA.jpg`)
+ * @returns {{tipo: string, id: string, badge: string|null}|null}
+ */
+function eventoDaNomeFile(nomeFile) {
+    const riconosciuto = erdbIdDaNomeFile(nomeFile);
+    if (!riconosciuto) return null;
+
+    const { erdbId, badge } = riconosciuto;
+    if (erdbId.startsWith('kitsu:')) {
+        return { tipo: 'kitsu', id: erdbId, badge: badge === undefined ? null : badge };
+    }
+
+    // `tmdb:<tipo>:<id>`: il tipo e l'id sono gia' separati e non vanno reinterpretati.
+    const parti = erdbId.split(':');
+    if (parti.length !== 3 || !parti[1] || !parti[2]) return null;
+    return { tipo: parti[1], id: parti[2], badge: badge === undefined ? null : badge };
+}
+
 /*
  * BUCHI NOTI (scelti, non dimenticati): il costruttore puo' produrre anche
  * `tmdb-tv-1399_ENG.jpg` (badge qualunque, vedi `sanitizePart`) e questo inverso NON lo
@@ -213,6 +257,7 @@ module.exports = {
     erdbIdDaEvento,
     erdbIdDaNomeFile,
     erdbIdsDaEvento,
+    eventoDaNomeFile,
     nomeFileDaEvento,
     urlDaEvento
 };
