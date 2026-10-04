@@ -74,7 +74,11 @@ function isAiringStateCatalog(baseId, catalogMeta) {
 // 18: badge ITA dalle annotazioni (antoniogenna.net) invece che dalla collezione streambadges,
 //     e politica episodi corretta (ITA secco fuori dal simulcast). Senza questo bump i cataloghi
 //     già in cache — fino a 14 giorni — continuerebbero a servire i badge vecchi.
-const BADGE_CATALOG_VERSION = 18;
+// 19: il poster viene ricalcolato anche per i titoli NON-anime doppiati (ticket 15). Prima la
+//     card ri-formattava solo se era attivo il badge episodio, quindi nei cataloghi normali il
+//     badge ITA restava un'etichetta che nessuno disegnava: Il Padrino e Breaking Bad doppiati,
+//     e senza badge. Stesso motivo del 18: senza bump, le card in cache servono il poster vecchio.
+const BADGE_CATALOG_VERSION = 19;
 
 /**
  * Serializza la definizione di un catalogo in forma canonica: chiavi ordinate,
@@ -416,7 +420,13 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
         const dubbed = key ? itaAnnotations.isDubbed(itaSnapshot, key.type, key.id) : false;
         const outItem = { ...item, _itaBadge: dubbed };
 
-        if (sanitizeOptions.shouldApplyEpisodeBadge) {
+        // Il poster è già stato scelto quando la card è stata formattata e messa in cache, cioè
+        // PRIMA che le annotazioni ITA venissero lette. Senza ri-formattare, `_itaBadge` resta
+        // un'etichetta che nessuno disegna: il poster non viene più ricalcolato.
+        // Gli anime lo facevano già (`|| animeDubbed` nel ramo sopra); i non-anime solo quando il
+        // badge episodio è attivo — cioè quasi mai, perché basta `type === 'movie'` a escluderlo.
+        // Risultato: Il Padrino e Breaking Bad doppiati e senza badge (ticket 15).
+        if (dubbed || sanitizeOptions.shouldApplyEpisodeBadge) {
             processedMetas.push(sanitizeCatalogMeta(outItem, sanitizeOptions));
         } else {
             processedMetas.push(outItem);
