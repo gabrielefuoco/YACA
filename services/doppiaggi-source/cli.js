@@ -331,6 +331,15 @@ async function main(customOpts = null) {
         console.log(`  - Righe promosse (da null AG a true):    ${mergeStats.promotedRows}`);
         console.log(`  - Righe già true in entrambe le fonti:  ${mergeStats.alreadyTrue}`);
         console.log(`  - Totale righe risultanti:              ${finalRows.length} (true: ${mergeStats.mergedTrue} · null: ${mergeStats.mergedNull})`);
+    } else {
+        // L'unione NON è avvenuta e nessuno lo diceva. Non è un errore: può essere `--no-anime`
+        // o una collezione vuota. Ma il badge ITA degli anime sparirà dai cataloghi finché
+        // l'unione non torna a produrre righe, e senza questa riga il giro sembrava riuscito.
+        // Il file meta è già onesto (`source` senza `∪ anime_airing_state`): questa è la riga
+        // che lo rende visibile nel log del timer, dove si guarda davvero.
+        console.warn('[Anime] ATTENZIONE: unione saltata — 0 righe da anime_airing_state.');
+        console.warn('[Anime] Il file conterrà SOLO le annotazioni Antonio Genna: il badge ITA degli anime');
+        console.warn('[Anime] resterà assente dai cataloghi finché questa unione non produce righe.');
     }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
