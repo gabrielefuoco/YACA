@@ -673,6 +673,11 @@ function getDubEpisodeForId(snapshot, itemId) {
  * Id Stremio della card. Le due card (sub e ITA) condividono lo stesso id:
  * preferiamo la risoluzione di YACA (`animeMappingStore`, la stessa lingua di metaHandler),
  * con fallback sull'`ids.kitsu` del documento e infine sul TMDB id.
+ *
+ * PERCHE' IL RIFERIMENTO VIENE DA `sub`/`dub` E NON DA `homeReleases`: qui si risolve
+ * l'IDENTITÀ, non l'appartenenza. La mappa Anibridge è per `(tmdb, stagione, episodio TMDB)` e
+ * la stagione la sa il ciclo dell'archivio, non la home (l'item della home non porta la
+ * stagione). È l'unico pezzo che questo disegno non toglie, ed è rimasto com'era.
  */
 function resolveCardId(entry, mappingStore = null) {
     const doc = entry && entry.doc ? entry.doc : entry;
