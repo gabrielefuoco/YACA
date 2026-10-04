@@ -39,7 +39,7 @@ Due cose da sapere prima di toccarla:
 - **Le chiavi che arrivano allo store sono `${tmdbId}:${season}`**, non l'id nudo. La sanificazione in `duckDbStore.updateAnimeMapping` deve estrarre la parte prima del `:`, deduplicare (una serie con N stagioni produce N chiavi con lo stesso id, altrimenti `INSERT` duplicati su `PRIMARY KEY`) e scartare i non numerici. Senza questo passaggio la tabella resta **vuota** e `F.anime` non matcha nulla, in silenzio: il sintomo è un filtro anime vuoto, non un errore.
 - **La regola SQL è la regola canonica meno le keyword**, per scelta: in SQL si valuta solo store OR (16 AND `ja`). Le keyword restano fuori perché sono fragili e generano falsi positivi. Chi scrive un filtro anime nuovo in SQL deve saperlo.
 
-La copertura della tabella non è totale e va ricordata quando si contano i titoli: misurata il 2026-09-22 sullo stato del modulo, 235 documenti davano 114 match in `tv`, **99 in `movies`** e 64 nessun match (copertura 73%).
+La copertura **del parquet** non è totale, e questo è il motivo per cui il catalogo novità può risultare più corto dello stato: misurata il 2026-09-22 (sessione della mappa anime, ticket *Misura: quante serie dello stato non esistono nel parquet*), su 235 documenti di stato 114 trovavano una riga in `tv`, **99 in `movies`** e 64 in nessuna delle due (copertura 73%). Chi non ha una riga nel parquet viene semplicemente **saltato** dal provider, in silenzio — e i film anime restano fuori dal catalogo novità per costruzione, perché quel catalogo è di tipo `series` (confine accettato: vedi [CATALOG_LOGIC.md](CATALOG_LOGIC.md) § 3).
 
 ## 2. Risoluzione Episodica e Consensus Voting in `metaHandler`
 In `src/handlers/metaHandler.js`, per le serie anime:
