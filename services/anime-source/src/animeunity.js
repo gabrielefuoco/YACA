@@ -9,6 +9,15 @@ const { cleanTitle } = require('./aggregate');
 const DEFAULT_BASE_URL = process.env.ANIMEUNITY_BASE_URL || 'https://www.animeunity.so';
 const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 
+// Finestra del "chi è in simulcast": due settimane. Misurata il 04/10/2026, sei pagine
+// della home coprono esattamente 14 giorni (30 item per pagina, ordine per data).
+const HOME_WINDOW_DAYS = 14;
+// Tetto di pagine per un giro completo: rete di sicurezza, NON una taratura. Con la
+// regola "prendi pagine finché la più vecchia è dentro la finestra" il numero di pagine
+// dipende solo da quanti episodi escono al giorno; il tetto serve solo a non girare
+// all'infinito se il sito rispondesse sempre con pagine piene di item freschi.
+const HOME_MAX_PAGES = 25;
+
 function decodeHtmlEntities(str) {
     if (!str || typeof str !== 'string') return '';
     return str
@@ -422,14 +431,18 @@ class AnimeUnityClient {
     }
 
     /**
-     * Recupera le ultime uscite dalla home page di AnimeUnity (componente layout-items con items-json)
-     * @returns {Promise<Array<Object>>} Lista di item episodio (ciascuno con .anime, .number, .created_at, ecc.)
+     * UNA pagina della home (pagina 1 = la radice, pagina N = `/?page=N`).
+     * È l'unico posto che conosce l'URL: il resto del modulo ragiona su "pagine".
+     * @param {number} [page=1]
+     * @returns {Promise<Array<Object>>} Item episodio della pagina ([] se la pagina non c'è più)
      */
-    async getLatestReleasesFromHome() {
+    async _fetchHomePage(page = 1) {
         await this._courtesyWait();
 
+        const url = Number(page) <= 1 ? this.baseUrl : `${this.baseUrl}/?page=${page}`;
+
         try {
-            const res = await this.fetchFn(this.baseUrl, {
+            const res = await this.fetchFn(url, {
                 headers: {
                     'User-Agent': this.userAgent,
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
@@ -437,16 +450,93 @@ class AnimeUnityClient {
             });
 
             if (!res.ok) {
-                console.error(`[AnimeUnity] Richiesta home page fallita con status ${res.status}`);
+                console.error(`[AnimeUnity] Richiesta home pagina ${page} fallita con status ${res.status}`);
                 return [];
             }
 
             const html = await res.text();
             return extractHomeItems(html);
         } catch (err) {
-            console.error(`[AnimeUnity] Errore durante il fetch della home page: ${err.message}`);
+            console.error(`[AnimeUnity] Errore durante il fetch della home (pagina ${page}): ${err.message}`);
             return [];
         }
+    }
+
+    /**
+     * Le ultime uscite dalla home page di AnimeUnity (componente layout-items con items-json).
+     * È la PRIMA pagina: le 30 uscite più recenti (misurato il 04/10/2026: ~27 ore di uscite).
+     * @returns {Promise<Array<Object>>} Lista di item episodio (ciascuno con .anime, .number, .created_at, ecc.)
+     */
+    async getLatestReleasesFromHome() {
+        return this._fetchHomePage(1);
+    }
+
+    /**
+     * Il giro completo della home, paginato: "le ultime due settimane" lette dalla fonte.
+     *
+     * LA REGOLA SI AUTO-CORREGGE: l'elenco è ordinato per data, quindi si scava finché
+     * l'item PIÙ VECCHIO di una pagina cade fuori dalla finestra. Non c'è nessun numero
+     * di pagine da tarare: oggi sono sei, domani potrebbero essere otto, e la regola
+     * continua a essere giusta. Il tetto `maxPages` è solo la rete di sicurezza.
+     *
+     * La pagina che fa scattare la finestra viene INCLUSA: la decisione "dentro o fuori"
+     * spetta a `summarizeHomeItems` (aggregate.js), che lavora item per item.
+     *
+     * @param {Object} [options]
+     * @param {number} [options.windowDays=14] Finestra in giorni
+     * @param {number} [options.now] "Adesso" in ms (test)
+     * @param {number} [options.maxPages=25] Tetto di pagine (rete di sicurezza)
+     * @returns {Promise<{items: Array<Object>, pages: Array<Object>, stoppedBy: string, windowStartMs: number, windowEndMs: number, windowDays: number}>}
+     *   `stoppedBy`: 'window' (la pagina più vecchia è uscita), 'empty' (pagina vuota),
+     *   'max_pages' (tetto), 'unreachable' (nemmeno la prima pagina ha risposto).
+     */
+    async getHomeReleases(options = {}) {
+        const windowDays = Number.isFinite(options.windowDays) && options.windowDays > 0
+            ? Number(options.windowDays)
+            : HOME_WINDOW_DAYS;
+        const nowMs = Number.isFinite(options.now) ? Number(options.now) : Date.now();
+        const windowStartMs = nowMs - windowDays * 24 * 60 * 60 * 1000;
+        const maxPages = Number.isFinite(options.maxPages) && options.maxPages > 0
+            ? Math.floor(Number(options.maxPages))
+            : HOME_MAX_PAGES;
+
+        const items = [];
+        const pages = [];
+        let stoppedBy = 'max_pages';
+
+        for (let page = 1; page <= maxPages; page++) {
+            const pageItems = await this._fetchHomePage(page);
+
+            if (!Array.isArray(pageItems) || pageItems.length === 0) {
+                stoppedBy = page === 1 ? 'unreachable' : 'empty';
+                break;
+            }
+
+            items.push(...pageItems);
+
+            let oldestMs = null;
+            let newestMs = null;
+            for (const item of pageItems) {
+                const at = item && item.created_at ? Date.parse(String(item.created_at).replace(' ', 'T') + 'Z') : NaN;
+                if (!Number.isFinite(at)) continue;
+                if (oldestMs === null || at < oldestMs) oldestMs = at;
+                if (newestMs === null || at > newestMs) newestMs = at;
+            }
+
+            pages.push({
+                page,
+                count: pageItems.length,
+                oldestAt: oldestMs === null ? null : new Date(oldestMs).toISOString(),
+                newestAt: newestMs === null ? null : new Date(newestMs).toISOString()
+            });
+
+            if (oldestMs !== null && oldestMs < windowStartMs) {
+                stoppedBy = 'window';
+                break;
+            }
+        }
+
+        return { items, pages, stoppedBy, windowStartMs, windowEndMs: nowMs, windowDays };
     }
 
     /**
@@ -493,5 +583,7 @@ module.exports = {
     AnimeUnityClient,
     decodeHtmlEntities,
     extractArchiveRecords,
-    extractHomeItems
+    extractHomeItems,
+    HOME_WINDOW_DAYS,
+    HOME_MAX_PAGES
 };
