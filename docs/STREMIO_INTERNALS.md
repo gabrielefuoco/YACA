@@ -101,7 +101,7 @@ Per evitare leak del token dell'utente (UUID) nei log o nei referral del browser
 
 ### C. Il tetto di 8 KB del manifest — l'unico limite che YACA non presidia
 
-Il protocollo ha un tetto rigido: **il manifest serializzato non può superare 8192 byte**. L'SDK ufficiale (`stremio-addon-sdk/src/builder.js`) lo controlla e *lancia*; il tetto esiste anche lato backend Stremio, che è quello che fa male: `updateStremioAddonCollection` chiama `POST /api/addonCollectionSet` ([src/utils/stremioAddon.js](../src/utils/stremioAddon.js#L124)) e se il descriptor eccede la quota riceve `{"error":"Max descriptor size reached"}` — l'addon semplicemente **non viene salvato** nell'account, senza messaggio utile lato YACA.
+Il protocollo ha un tetto rigido: **il manifest serializzato non può superare 8192 byte**. L'SDK ufficiale (`stremio-addon-sdk/src/builder.js`) lo controlla e *lancia* un errore. Il tetto esiste anche lato backend Stremio, ed è quello che morde davvero: `updateStremioAddonCollection` chiama `POST /api/addonCollectionSet` ([src/utils/stremioAddon.js](../src/utils/stremioAddon.js#L124)) e se il descriptor eccede la quota riceve `{"error":"Max descriptor size reached"}` — l'addon semplicemente **non viene salvato** nell'account, senza alcun messaggio utile lato YACA.
 
 YACA non usa l'SDK (Express nativo), quindi **non esiste nessun guard**: oggi il tetto si scopre solo quando il sync dell'account fallisce. I pesi reali misurati il 20/09/2026 (`JSON.stringify` + `Buffer.byteLength` sul manifest simulato di `src/api/stremio.js`):
 
@@ -133,13 +133,13 @@ Lo stesso vale per la cache: i valori di `Cache-Control` sono in **secondi** (`m
 
 ### E. `anime` e `other`: tipi legali ma assenti dal TypeScript ufficiale
 
-`manifest.types` è un `Vec<String]` in `stremio-core` e l'esempio del doctest ufficiale è `["anime","series","movies"]`; il linter non controlla l'appartenenza a un set chiuso. Non compaiono però nell'union `ContentType` del pacchetto npm, quindi un addon che li dichiara è formalmente "fuori standard" e funziona ([stremio.js](../src/api/stremio.js#L373) dichiara `['movie','series','anime','other']`, e lo stesso vale per gli `idPrefixes` della risorsa `stream`).
+`manifest.types` è un `Vec<String]` in `stremio-core` e l'esempio del doctest ufficiale è `["anime","series","movies"]`; il linter non controlla l'appartenenza a un set chiuso. Non compaiono però nell'union `ContentType` del pacchetto npm, quindi un addon che li dichiara è formalmente "fuori standard" e funziona: [stremio.js](../src/api/stremio.js#L373) dichiara `['movie','series','anime','other']` senza problemi.
 
 La conseguenza pratica va ricordata quando si aggiunge un tipo: **Cinemeta risponde solo a `movie` e `series`**, quindi per `anime`/`other` i metadati devono arrivare da YACA; e per lo streaming i prefissi sono quelli del provider (`kitsu:`, `tt`), non `tmdb:` — vedi §2.
 
 ### F. Il manifest dinamico e la sua riconciliazione all'avvio
 
-Stremio conserva il manifest ha scaricato quando l'addon è stato installato: cambiare i preset non aggiorna nulla finché **l'URL di installazione non cambia**. Ecco perché l'URL è `${HOST_URL}/{userId}/{configVersion}/manifest.json` e `configVersion` è un `nanoid(8)` ([configure/index.js](../src/api/configure/index.js#L127)) usato come cache-buster puro.
+Stremio conserva il manifest che ha scaricato quando l'addon è stato installato: cambiare i preset non aggiorna nulla finché **l'URL di installazione non cambia**. Ecco perché l'URL è `${HOST_URL}/{userId}/{configVersion}/manifest.json` e `configVersion` è un `nanoid(8)` ([configure/index.js](../src/api/configure/index.js#L127)) usato come cache-buster puro.
 
 Il bump non è affidato a chi salva: all'avvio `reconcileManifests()` ([manifestReconciler.js](../src/utils/manifestReconciler.js)) confronta l'impronta salvata con quella di adesso e, se differisce, rigenera `configVersion`, mette `pendingStremioResync = true` e chiama `updateStremioAddonCollection`. L'impronta ([manifestFingerprint.js](../src/utils/manifestFingerprint.js)) copre solo ciò che cambia il manifest pubblico — `activeProfileId`, i profili proiettati su (id, nome, `selectedPresets`, ordine cataloghi, cataloghi con `id/name/type/isAnime/mergedFrom`, `typeSelectors`, `kidsMode`), i custom e una **firma delle definizioni** (id/nome/tipo di hero e preset). Segreti, DNA, pesi di scoring e filtri dei cataloghi sono esclusi apposta: non cambiano il manifest e non devono invalidare nulla.
 

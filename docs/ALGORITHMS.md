@@ -221,7 +221,7 @@ Contratti da non violare:
 
 **Il grafo dei generi non è casuale, e non deve tornarlo.** `getKeywordsForNodes` ([HierarchicalGraph.js](../src/engines/graph/HierarchicalGraph.js#L195-L199)) raccoglie le keyword dei figli L1 e, se sono più di 30, le **ordina alfabeticamente e tiene le prime 30**: deterministico per costruzione. La versione precedente campionava 30 keyword a caso (`sort(random).slice(0,30)`) e lo stesso nodo restituiva set diversi a ogni chiamata — misurato su 25 dei 469 nodi L2, quello con più keyword ne ha 57: pool diverso a ogni cache miss, ranking irreproducibile, cache che non colpisce. Il taglio deterministico è il contratto di [diag.recommender.h8.determinism.test.js](../tests/diag.recommender.h8.determinism.test.js).
 
-> La suite `tests/diag.recommender.*` è nata come contrato rosso-capace della diagnosi del motore (20/09/2026): ogni file fissa un invariante scoperto in quel debugging e deve restare verde. L'inventario è in [TESTING_UTILITIES.md §1](TESTING_UTILITIES.md#la-suite-di-contratto-diagrecommender).
+> La suite `tests/diag.recommender.*` è nata come contratto rosso-capace della diagnosi del motore (20/09/2026): ogni file fissa un invariante scoperto in quel debugging e deve restare verde. L'inventario è in [TESTING_UTILITIES.md §1](TESTING_UTILITIES.md#la-suite-di-contratto-diagrecommender).
 
 ---
 
