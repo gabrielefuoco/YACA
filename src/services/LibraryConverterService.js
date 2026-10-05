@@ -11,6 +11,30 @@ const LibrarySyncService = require('./LibrarySyncService');
 const { selectConvertibleItems } = require('./libraryConversionAdmission');
 const { resolveTmdbIdentity } = require('./libraryIdentityResolution');
 
+// La mappatura Kitsu→TMDB che l'app già tiene in memoria (Anibridge + Fribb,
+// ~8.2k chiavi, aggiornata da sola): qui è solo una lettura, nessuna rete e
+// nessuna nuova fonte. Se il modulo non è disponibile, gli item Kitsu restano
+// non risolti — non si finge niente.
+let animeMappingStore = null;
+try {
+    animeMappingStore = require('../data/animeMappingStore');
+} catch (_e) {
+    animeMappingStore = null;
+}
+
+/** TMDB id di un Kitsu id, dalla mappatura condivisa. `null` se assente o store non pronto. */
+function lookupKitsuIdInMapping(kitsuId) {
+    if (!animeMappingStore) return null;
+    try {
+        const mapped = typeof animeMappingStore.resolveTmdbFromKitsu === 'function'
+            ? animeMappingStore.resolveTmdbFromKitsu(kitsuId)
+            : animeMappingStore.kitsuToTmdb?.get(String(kitsuId));
+        return (mapped === null || mapped === undefined || mapped === '') ? null : mapped;
+    } catch (_err) {
+        return null;
+    }
+}
+
 const BATCH_SIZE = 500; // Process all items
 
 class LibraryConverterService {
@@ -55,10 +79,11 @@ class LibraryConverterService {
                     let tmdbData = null;
                     const strId = String(item.itemId || item._id);
 
-                    // «Da questo id, quale TMDB id?» è una funzione alimentata dalla
-                    // ricerca esterna: stessa regola di sempre (`tt…` via ricerca,
-                    // `tmdb:…` diretto, `kitsu:…` ancora non risolto), ma verificabile
-                    // da sola nei test. Se l'item ha già un tmdbId non si rileva nulla.
+                    // «Da questo id, quale TMDB id?» è una funzione alimentata dalle sue
+                    // dipendenze: `tt…` via ricerca esterna, `tmdb:…` diretto,
+                    // `kitsu:…` via la mappatura locale condivisa (nessuna rete in più),
+                    // e verificabile da sola nei test. Se l'item ha già un tmdbId non si
+                    // rileva nulla.
                     if (!tmdbId) {
                         const identity = await resolveTmdbIdentity(strId, {
                             lookupImdbId: async (imdbId) => {
@@ -69,7 +94,8 @@ class LibraryConverterService {
                                     ? searchRes.data.movie_results
                                     : (searchRes.data.tv_results?.length > 0 ? searchRes.data.tv_results : null);
                                 return results ? results[0] : null;
-                            }
+                            },
+                            lookupKitsuId: lookupKitsuIdInMapping
                         });
                         tmdbId = identity.tmdbId || tmdbId;
                         tmdbData = identity.tmdbData || tmdbData;
