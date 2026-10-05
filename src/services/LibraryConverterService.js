@@ -10,6 +10,12 @@ const { resolvePoster, TMDB_IMAGE_BASE } = require('../utils/posterResolver');
 const LibrarySyncService = require('./LibrarySyncService');
 const { selectConvertibleItems } = require('./libraryConversionAdmission');
 const { resolveTmdbIdentity } = require('./libraryIdentityResolution');
+const {
+    decideConversionOutcome,
+    applyConversionOutcome,
+    buildConversionState,
+    summarizeUnresolvedRun
+} = require('./libraryConversionOutcome');
 
 // La mappatura Kitsu→TMDB che l'app già tiene in memoria (Anibridge + Fribb,
 // ~8.2k chiavi, aggiornata da sola): qui è solo una lettura, nessuna rete e
@@ -72,6 +78,10 @@ class LibraryConverterService {
 
             console.log(`[LibraryConverter] Processing ${unmappedItems.length} items...`);
             const changes = [];
+            // Un item che il giro non risolve non viene dato per convertito: resta
+            // eleggibile al giro dopo (la mappatura si aggiorna da sola). Alla fine
+            // del giro lo diciamo in una riga sola, per l'operatore.
+            const results = [];
 
             for (const item of unmappedItems) {
                 try {
@@ -84,8 +94,9 @@ class LibraryConverterService {
                     // `kitsu:…` via la mappatura locale condivisa (nessuna rete in più),
                     // e verificabile da sola nei test. Se l'item ha già un tmdbId non si
                     // rileva nulla.
+                    let identity = null;
                     if (!tmdbId) {
-                        const identity = await resolveTmdbIdentity(strId, {
+                        identity = await resolveTmdbIdentity(strId, {
                             lookupImdbId: async (imdbId) => {
                                 const searchRes = await tmdbClient.get(`/find/${imdbId}`, {
                                     params: { external_source: 'imdb_id', language: 'it-IT' }
@@ -99,9 +110,16 @@ class LibraryConverterService {
                         });
                         tmdbId = identity.tmdbId || tmdbId;
                         tmdbData = identity.tmdbData || tmdbData;
-                        if (!identity.resolved) {
-                            console.log(`[LibraryConverter] Identity unresolved for ${strId}: ${identity.reason}`);
-                        }
+                    }
+
+                    // L'esito del giro per questo item: convertito sì o no, e con
+                    // quale motivo se no. Da qui in poi `mapped` segue l'esito, non il
+                    // fatto di essere passati dal ciclo.
+                    const outcome = decideConversionOutcome({ tmdbId, identity });
+                    tmdbId = outcome.resolved ? outcome.tmdbId : null;
+                    results.push({ itemId: strId, outcome });
+                    if (!outcome.resolved) {
+                        console.log(`[LibraryConverter] Identity unresolved for ${strId}: ${outcome.reason}`);
                     }
 
                     if (tmdbId && !tmdbData) {
@@ -171,8 +189,9 @@ class LibraryConverterService {
 
                     // Update db
                     item.itemId = item.itemId || item._id;
-                    item.tmdbId = tmdbId;
-                    item.mapped = true;
+                    const written = applyConversionOutcome(item, outcome);
+                    item.tmdbId = written.tmdbId;
+                    item.mapped = written.mapped;
                     item.name = meta.name;
                     item.poster = meta.poster;
                     await item.save();
@@ -196,7 +215,13 @@ class LibraryConverterService {
                 console.log('[LibraryConverter] Datastore update success:', res.data.success);
             }
 
-            console.log(`[LibraryConverter] Conversion batch finished for user ${userId}`);
+            const { converted, unresolved } = buildConversionState(results);
+            const unresolvedLine = summarizeUnresolvedRun(unresolved);
+            if (unresolvedLine) {
+                console.log(`[LibraryConverter] ${unresolvedLine}`);
+            }
+
+            console.log(`[LibraryConverter] Conversion batch finished for user ${userId} (${converted} convertiti, ${unresolved.length} rimasti in coda)`);
 
         } catch (error) {
             console.error(`[LibraryConverter] Fatal error:`, error.message);
