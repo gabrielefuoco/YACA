@@ -8,6 +8,7 @@ const { buildStremioLibraryPayload } = require('../utils/stremioAddon');
 const duckDbStore = require('../db/duckDbStore');
 const { resolvePoster, TMDB_IMAGE_BASE } = require('../utils/posterResolver');
 const LibrarySyncService = require('./LibrarySyncService');
+const { selectConvertibleItems } = require('./libraryConversionAdmission');
 
 const BATCH_SIZE = 500; // Process all items
 
@@ -27,13 +28,17 @@ class LibraryConverterService {
             const tmdbClient = createTmdbClient(user.apiKeys.tmdb || process.env.TMDB_API_KEY);
             const userConfig = await AddonConfig.findOne({ uuid: user.addonUuid }).lean();
 
-            // Find items that are not mapped yet (i duplicati marcati restano fuori)
-            const unmappedItems = await UserLibraryItem.find({
+            // Gli stessi criteri di sempre (non convertito, non rimosso, non un duplicato
+            // marcato): la query è il pre-filo che non carica in memoria la libreria
+            // intera, la decisione vera è `selectConvertibleItems` — i soli campi
+            // dell'item, senza query annidate — così è verificabile da sola nei test.
+            const candidates = await UserLibraryItem.find({
                 addonUuid: user.addonUuid,
                 mapped: false,
                 removed: false,
                 duplicateOf: null
             }).limit(BATCH_SIZE);
+            const unmappedItems = selectConvertibleItems(candidates);
 
             if (unmappedItems.length === 0) {
                 console.log(`[LibraryConverter] No unmapped items found for user ${userId}.`);
