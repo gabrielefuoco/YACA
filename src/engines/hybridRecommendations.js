@@ -14,7 +14,7 @@ const mongoose = require('mongoose');
 const { applyKidsMode, isItemInappropriateForKids } = require('../utils/kidsModeFilters');
 const { normalizeAnimeMarker } = require('../utils/animeIdentity');
 const { resolveAnimePolicy, getEffectiveTypeSelectors } = require('./hybrid/animePolicy');
-const { isProfileSyncDue } = require('./profileStaleness');
+const { isProfileSyncDue, isStremioSyncDue } = require('./profileStaleness');
 
 function isItemAnime(item) {
     if (!item) return false;
@@ -570,13 +570,29 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 }
 
 /**
+ * La parte Stremio (likes/loved) ha una cadenza PROPRIA, scritta sulla configurazione a
+ * ogni sync (`config.lastStremioSync` + `config.nextSyncInterval`, 8 ore ± jitter).
+ * Prima veniva governata dalla staleness del profilo, che è mossa anche dal sync Trakt:
+ * il campo si scriveva e nessuno lo leggeva. Qui la decisione è isolata e si legge il
+ * campo. Intervallo assente o non sensato → default di 8 ore.
+ *
+ * @param {object|null} userConfig configurazione risolta che porta il bookkeeping del sync
+ * @returns {boolean} true se il sync Stremio è dovuto adesso
+ */
+function isStremioSyncDueForUser(userConfig) {
+    const config = userConfig?.config || userConfig || {};
+    return isStremioSyncDue(config.lastStremioSync, new Date(), config.nextSyncInterval);
+}
+
+/**
  * Incremental user profile synchronization from Trakt history.
  */
 async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context = 'global', userConfig = null) {
     if (!userId || !traktToken || !tmdbApiKey) return false;
 
     try {
-        // Sincronizzazione periodica Stremio likes/loved (Mega Update first-party)
+        // La parte Stremio non è più legata alla staleness del profilo: la chiama la sua
+        // stessa cadenza. Dopo un sync, la richiesta successiva non la riaccende.
         const stremioKey = userConfig?.apiKeys?.stremio || userConfig?.stremioKey;
         let stremioKeyToUse = stremioKey;
         if (!stremioKeyToUse) {
@@ -586,7 +602,7 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
                 stremioKeyToUse = account?.apiKeys?.stremio;
             } catch (_e) {}
         }
-        if (stremioKeyToUse) {
+        if (stremioKeyToUse && isStremioSyncDueForUser(userConfig)) {
             try {
                 const { syncAllStremioData } = require('../utils/stremioAddon');
                 await syncAllStremioData(userId, stremioKeyToUse, context);
@@ -625,6 +641,7 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
 
 module.exports = {
     getHybridCatalog,
+    isStremioSyncDueForUser,
     getActiveKidsMode,
     buildRecommendationCacheKey,
     buildSharedHeroCacheKey,
