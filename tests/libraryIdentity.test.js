@@ -5,7 +5,10 @@
  */
 jest.mock('../src/db/duckDbStore', () => ({ query: jest.fn() }));
 jest.mock('../src/data/animeMappingStore', () => ({
-    kitsuToTmdb: new Map([['7278', '46004']]),
+    kitsuToTmdb: new Map([['7278', '46004'], ['534', '12477']]),
+    // Fribb dichiara il tipo che viaggia con l'id: 7278 (Date A Live) è una serie,
+    // 534 (La tomba delle lucciole) è un film.
+    resolveMediaTypeFromKitsu: jest.fn((kitsuId) => (kitsuId === '7278' ? 'tv' : (kitsuId === '534' ? 'movie' : null))),
     init: jest.fn()
 }));
 
@@ -123,6 +126,58 @@ describe('planDuplicateMarks', () => {
         ]);
 
         expect(plan.get('kitsu:7278')).toBe('tt2575684');
+    });
+
+    test('film e serie sono due namespace: lo stesso numero TMDB non aggancia l\'opera sbagliata', async () => {
+        // 12477 è "La tomba delle lucciole" in movies ed è la serie "Fourth Reading" in tv.
+        // Indicizzando le due tabelle in una mappa sola vinceva l'ultima riga (la serie):
+        // `tmdb:12477` non risolveva a `tt0095327` e il film restava su due card.
+        duckDbStore.query.mockImplementation((sql) => {
+            if (sql.includes('FROM movies')) return Promise.resolve([{ id: '12477', imdb_id: 'tt0095327' }]);
+            if (sql.includes('FROM tv')) return Promise.resolve([{ id: '12477', imdb_id: null }]);
+            return Promise.resolve([]);
+        });
+
+        const plan = await planDuplicateMarks([
+            { itemId: 'tt0095327', type: 'movie', name: 'La tomba delle lucciole', year: '1988' },
+            { itemId: 'tmdb:12477', type: 'movie', name: 'La tomba delle lucciole', year: '1988' },
+            { itemId: 'kitsu:534', type: 'anime', name: 'La tomba delle lucciole', year: '1988' },
+        ]);
+
+        expect(plan.get('tt0095327')).toBe(null); // il primario è l'id che Stremio apre meglio
+        expect(plan.get('tmdb:12477')).toBe('tt0095327');
+        expect(plan.get('kitsu:534')).toBe('tt0095327');
+    });
+
+    test('una serie con lo stesso numero TMDB di un film resta un\'altra cosa', async () => {
+        duckDbStore.query.mockImplementation((sql) => {
+            if (sql.includes('FROM movies')) return Promise.resolve([{ id: '12477', imdb_id: 'tt0095327' }]);
+            if (sql.includes('FROM tv')) return Promise.resolve([{ id: '12477', imdb_id: null }]);
+            return Promise.resolve([]);
+        });
+
+        const plan = await planDuplicateMarks([
+            { itemId: 'tt0095327', type: 'movie', name: 'La tomba delle lucciole', year: '1988' },
+            { itemId: 'tmdb:12477', type: 'series', name: 'Fourth Reading', year: '' },
+        ]);
+
+        expect(plan.get('tt0095327')).toBe(null);
+        expect(plan.get('tmdb:12477')).toBe(null);
+    });
+
+    test('con il tipo ignoto e lo stesso numero in entrambe le tabelle non si indovina', async () => {
+        duckDbStore.query.mockImplementation((sql) => {
+            if (sql.includes('FROM movies')) return Promise.resolve([{ id: '12477', imdb_id: 'tt0095327' }]);
+            if (sql.includes('FROM tv')) return Promise.resolve([{ id: '12477', imdb_id: null }]);
+            return Promise.resolve([]);
+        });
+
+        const plan = await planDuplicateMarks([
+            { itemId: 'tmdb:12477', type: 'anime', name: 'Senza tipo certo', year: '' },
+            { itemId: 'tt0095327', type: 'movie', name: 'La tomba delle lucciole', year: '1988' },
+        ]);
+
+        expect(plan.get('tmdb:12477')).toBe(null);
     });
 
     test('gli item rimossi non contano come duplicati', async () => {

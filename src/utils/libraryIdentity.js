@@ -19,6 +19,7 @@
 
 const duckDbStore = require('../db/duckDbStore');
 const UserLibraryItem = require('../db/models/UserLibraryItem');
+const { resolveItemMediaType } = require('../services/libraryMediaTypeResolution');
 let animeMappingStore = null;
 try {
     animeMappingStore = require('../data/animeMappingStore');
@@ -123,44 +124,80 @@ async function fetchRows(table, { ids = [], imdbIds = [] }) {
 }
 
 /**
- * Chiave canonica per ogni itemId risolvibile.
+ * Chiave canonica per ogni item risolvibile.
  * Ordine: `tt<imdb>` (id preferito da Stremio) → `tmdb:<id>` → null se irrisolvibile.
  *
- * @param {string[]} itemIds
- * @returns {Promise<Map<string, string|null>>}
+ * Il numero TMDB non basta da solo: film e serie sono **due namespace numerici
+ * sovrapposti** (12477 è La tomba delle lucciole in `movies` e la serie "Fourth
+ * Reading" in `tv`). Indicizzare le righe delle due tabelle in una mappa sola fa
+ * vincere l'ultima — la riga di serie — e il film non aggancia più il proprio id
+ * IMDb. La tabella la sceglie il tipo dell'item, con la regola del ticket 12
+ * (`resolveItemMediaType`); quando il tipo non è certo si accetta l'id che esiste
+ * in una sola tabella, e se esiste in entrambe non si indovina.
+ *
+ * @param {Array<{itemId: string, type?: string, tmdbId?: number|string}>} items
+ * @returns {Promise<Map<string, string|null>>} chiave dell'item (ripulita) → chiave canonica
  */
-async function resolveCanonicalKeys(itemIds) {
+async function resolveCanonicalKeys(items = []) {
     const keys = new Map();
     const lookups = [];
 
-    for (const itemId of itemIds) {
-        const key = extractLookupKeys(itemId);
-        lookups.push({ itemId, key });
-        keys.set(itemId, null);
+    for (const item of items) {
+        const itemKey = String(item?.itemId ?? item ?? '').trim();
+        if (!itemKey) continue;
+        const key = extractLookupKeys(itemKey);
+        // Il tipo serve solo agli id TMDB: gli id IMDb sono unici fra film e serie.
+        const mediaType = key?.kind === 'id'
+            ? resolveItemMediaType(item, { mappingStore: animeMappingStore, tmdbId: key.value })
+            : null;
+        lookups.push({ itemKey, key, mediaType });
+        keys.set(itemKey, null);
     }
 
-    const idValues = Array.from(new Set(lookups.filter(l => l.key?.kind === 'id').map(l => l.key.value)));
-    const imdbValues = Array.from(new Set(lookups.filter(l => l.key?.kind === 'imdb').map(l => l.key.value)));
+    const valuesOf = (predicate) => Array.from(new Set(lookups.filter(predicate).map(l => l.key.value)));
+    const imdbValues = valuesOf(l => l.key?.kind === 'imdb');
+    const movieIds = valuesOf(l => l.key?.kind === 'id' && l.mediaType === 'movie');
+    const tvIds = valuesOf(l => l.key?.kind === 'id' && l.mediaType === 'tv');
+    const unknownIds = valuesOf(l => l.key?.kind === 'id' && !l.mediaType);
 
     const [movieRows, tvRows] = await Promise.all([
-        fetchRows('movies', { ids: idValues, imdbIds: imdbValues }),
-        fetchRows('tv', { ids: idValues, imdbIds: imdbValues })
+        fetchRows('movies', { ids: [...movieIds, ...unknownIds], imdbIds: imdbValues }),
+        fetchRows('tv', { ids: [...tvIds, ...unknownIds], imdbIds: imdbValues })
     ]);
 
-    const byId = new Map();
+    const canonicalOf = (row) => (row.imdb_id ? String(row.imdb_id).toLowerCase() : `tmdb:${row.id}`);
+    const indexById = (rows) => {
+        const byId = new Map();
+        for (const row of rows || []) {
+            if (row && row.id !== undefined && row.id !== null) byId.set(String(row.id), row);
+        }
+        return byId;
+    };
+    const movieById = indexById(movieRows);
+    const tvById = indexById(tvRows);
     const byImdb = new Map();
     for (const row of [...(movieRows || []), ...(tvRows || [])]) {
-        if (!row) continue;
-        const canonical = row.imdb_id ? String(row.imdb_id).toLowerCase() : (row.id ? `tmdb:${row.id}` : null);
-        if (!canonical) continue;
-        if (row.id !== undefined && row.id !== null) byId.set(String(row.id), canonical);
-        if (row.imdb_id) byImdb.set(String(row.imdb_id).toLowerCase(), canonical);
+        if (row?.imdb_id) byImdb.set(String(row.imdb_id).toLowerCase(), canonicalOf(row));
     }
 
-    for (const { itemId, key } of lookups) {
+    for (const { itemKey, key, mediaType } of lookups) {
         if (!key) continue;
-        const canonical = key.kind === 'imdb' ? byImdb.get(key.value) : byId.get(key.value);
-        if (canonical) keys.set(itemId, canonical);
+        if (key.kind === 'imdb') {
+            const canonical = byImdb.get(key.value);
+            if (canonical) keys.set(itemKey, canonical);
+            continue;
+        }
+
+        const movieRow = movieById.get(key.value);
+        const tvRow = tvById.get(key.value);
+        // Tipo dichiarato: si guarda solo la sua tabella. Tipo ignoto: l'id deve
+        // esistere in una sola — se esiste in entrambe non si indovina.
+        const row = mediaType === 'movie'
+            ? movieRow
+            : mediaType === 'tv'
+                ? tvRow
+                : (movieRow && tvRow ? null : (movieRow || tvRow));
+        if (row) keys.set(itemKey, canonicalOf(row));
     }
 
     return keys;
@@ -189,7 +226,7 @@ async function planDuplicateMarks(items = []) {
     }
     if (active.length === 0) return plan;
 
-    const canonicalKeys = await resolveCanonicalKeys(Array.from(storedByKey.keys()));
+    const canonicalKeys = await resolveCanonicalKeys(active);
 
     // Gruppi per chiave canonica; se un id non è risolvibile si prova col titolo+anno
     // (l'anno deve coincidere quando entrambi sono presenti).
@@ -246,7 +283,9 @@ async function applyDuplicateMarks(addonUuid) {
     if (!addonUuid) return { duplicates: 0, cleared: 0 };
 
     const items = await UserLibraryItem.collection
-        .find({ addonUuid }, { projection: { itemId: 1, type: 1, name: 1, year: 1, _mtime: 1, _ctime: 1, removed: 1, duplicateOf: 1 } })
+        // Il tipo dell'item decide la tabella (ticket 15) e `resolveItemMediaType`
+        // legge anche `tmdbId` e i campi grafici (prefisso `tmdb:tv:` / `tmdb:movie:`).
+        .find({ addonUuid }, { projection: { itemId: 1, type: 1, name: 1, year: 1, _mtime: 1, _ctime: 1, removed: 1, duplicateOf: 1, tmdbId: 1, poster: 1, logo: 1, background: 1 } })
         .toArray();
 
     const plan = await planDuplicateMarks(items);
