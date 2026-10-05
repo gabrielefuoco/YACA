@@ -21,6 +21,7 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const { connectMongo } = require('../../src/utils/mongoConnect');
 
 const ADDON_UUID = 'ff7084d8-904b-42d9-91f5-ea2b4ae37590';
 const APPLY = process.argv.includes('--apply');
@@ -37,7 +38,7 @@ const better = (a, b) => {
 };
 
 (async () => {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await connectMongo(process.env.MONGODB_URI, { mongoose });
     const col = mongoose.connection.collection('userlibraryitems');
 
     const docs = await col.find({ addonUuid: ADDON_UUID }).toArray();

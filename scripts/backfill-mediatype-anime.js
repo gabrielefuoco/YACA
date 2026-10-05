@@ -622,10 +622,11 @@ Opzioni:
     try {
         if (!collection) {
             mongoose = require('mongoose');
+            const { connectMongo } = require('../src/utils/mongoConnect');
             if (mongoose.connection && mongoose.connection.readyState === 1) {
                 collection = mongoose.connection.db.collection(COLLECTION_NAME);
             } else {
-                await mongoose.connect(uri, { serverSelectionTimeoutMS: opts.timeoutMs });
+                await connectMongo(uri, { mongoose, connectOptions: { serverSelectionTimeoutMS: opts.timeoutMs } });
                 connessioneAperta = true;
                 collection = mongoose.connection.db.collection(COLLECTION_NAME);
             }

@@ -17,6 +17,7 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+const { connectMongo } = require('../src/utils/mongoConnect');
 const { sanitizeDnaVector } = require('../src/data/keywordIds');
 
 function parseArgs(argv) {
@@ -38,7 +39,7 @@ async function main() {
         return;
     }
 
-    await mongoose.connect(process.env.MONGODB_URI);
+    await connectMongo(process.env.MONGODB_URI, { mongoose });
     const filter = args.owner ? { owner: args.owner } : {};
     const profiles = await mongoose.connection.collection('tasteprofiles').find(filter).toArray();
 

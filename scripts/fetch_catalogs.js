@@ -3,10 +3,11 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const { connectMongo } = require('../src/utils/mongoConnect');
 
 async function getLocalConfig() {
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
+        await connectMongo(process.env.MONGODB_URI, { mongoose });
         const db = mongoose.connection.db;
         const account = await db.collection('useraccounts').findOne({});
         await mongoose.disconnect();

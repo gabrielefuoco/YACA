@@ -1,5 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
+const { connectMongo } = require('../src/utils/mongoConnect');
 const UserAccount = require('../src/db/models/UserAccount');
 const AddonConfig = require('../src/db/models/AddonConfig');
 const TasteProfile = require('../src/models/TasteProfile');
@@ -29,7 +30,7 @@ async function run() {
     }
 
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
+        await connectMongo(process.env.MONGODB_URI, { mongoose });
         console.log("Connected to MongoDB Atlas.");
 
         let user = null;
