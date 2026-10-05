@@ -61,6 +61,8 @@ const addonConfigSchema = new mongoose.Schema({
             erdbConfig: String,
             manualDNA: [mongoose.Schema.Types.Mixed],
             suggestedDNA: [mongoose.Schema.Types.Mixed],
+            // Scritto da updateSyncTimestamp: senza la dichiarazione, strict lo scarta.
+            lastSync: Date,
             typeSelectors: {
                 film: { type: Boolean, default: false },
                 serie: { type: Boolean, default: false },
@@ -82,7 +84,12 @@ const addonConfigSchema = new mongoose.Schema({
         activeProfileId: String,
         configVersion: String,
         manifestFingerprint: String,
-        pendingStremioResync: { type: Boolean, default: false }
+        pendingStremioResync: { type: Boolean, default: false },
+        // Bookkeeping del sync Stremio scritto da updateSyncTimestamp (src/utils/stremioAddon.js):
+        // se non sono dichiarati qui, mongoose in strict li elimina dall'update, che resta vuoto,
+        // e MongoDB rifiuta l'arrayFilters di `profiles.$[elem]` facendo fallire tutto il sync.
+        lastStremioSync: Date,
+        nextSyncInterval: Number
     },
     syncStatus: {
         isSyncing: { type: Boolean, default: false },
