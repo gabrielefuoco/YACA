@@ -1,6 +1,9 @@
 const { resolvePoster } = require('../src/utils/posterResolver');
 const LibrarySyncService = require('../src/services/LibrarySyncService');
 const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+const { stremioClient } = require('../src/clients/stremio');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
 
 // Mock duckDbStore in memory
 jest.mock('../src/db/duckDbStore', () => ({
@@ -335,6 +338,106 @@ describe('7. Il sync non riporta indietro copertine di host ritirati', () => {
 
         expect(normalized).toBe(0);
         expect(ops[0].updateOne.update.$set.poster).toBe('https://mate.taild24589.ts.net/a/b.jpg');
+    });
+});
+
+describe('8. Il sync scrive gli id normalizzati (niente duplicati)', () => {
+    // Stremio conserva l'id come arriva (`tmdb: 12477 `): l'upsert lo usava per il
+    // confronto, non trovava `tmdb:12477` già in archivio e creava un documento
+    // nuovo (205 → 206). La regola di normalizzazione è quella già usata in
+    // lettura (`normalizeLibraryId`), qui applicata in scrittura.
+
+    const leanList = (docs) => ({ lean: jest.fn().mockResolvedValue(docs) });
+
+    afterEach(() => jest.restoreAllMocks());
+
+    test('rinomina il documento già in archivio con l\'id sporco invece di crearne un altro', async () => {
+        jest.spyOn(UserLibraryItem, 'find').mockReturnValue(leanList([{ itemId: 'tmdb: 12477 ' }]));
+        const updateOne = jest.spyOn(UserLibraryItem.collection, 'updateOne')
+            .mockResolvedValue({ modifiedCount: 1 });
+
+        const repaired = await LibrarySyncService.repairStoredItemIds('uuid-r', [{ _id: 'tmdb: 12477 ' }]);
+
+        expect(repaired).toBe(1);
+        expect(updateOne).toHaveBeenCalledWith(
+            { addonUuid: 'uuid-r', itemId: 'tmdb: 12477 ' },
+            { $set: { itemId: 'tmdb:12477' } }
+        );
+    });
+
+    test('se il documento normalizzato c\'è già non rinomina quello sporco', async () => {
+        jest.spyOn(UserLibraryItem, 'find').mockReturnValue(leanList([
+            { itemId: 'tmdb:12477' },
+            { itemId: 'tmdb: 12477 ' }
+        ]));
+        const updateOne = jest.spyOn(UserLibraryItem.collection, 'updateOne')
+            .mockResolvedValue({ modifiedCount: 1 });
+
+        const repaired = await LibrarySyncService.repairStoredItemIds('uuid-r', [{ _id: 'tmdb: 12477 ' }]);
+
+        expect(repaired).toBe(0);
+        expect(updateOne).not.toHaveBeenCalled();
+    });
+
+    test('gli id non normalizzabili (o già normali) restano come sono: nessuna scrittura', async () => {
+        const findSpy = jest.spyOn(UserLibraryItem, 'find');
+        const updateOne = jest.spyOn(UserLibraryItem.collection, 'updateOne')
+            .mockResolvedValue({ modifiedCount: 1 });
+
+        expect(await LibrarySyncService.repairStoredItemIds(null, [{ _id: 'tmdb: 12477 ' }])).toBe(0);
+        expect(await LibrarySyncService.repairStoredItemIds('uuid-r', [{ _id: 'tmdb:12477' }])).toBe(0);
+        expect(await LibrarySyncService.repairStoredItemIds('uuid-r', [{ _id: '   ' }])).toBe(0);
+        expect(await LibrarySyncService.repairStoredItemIds('uuid-r', [])).toBe(0);
+        expect(findSpy).not.toHaveBeenCalled();
+        expect(updateOne).not.toHaveBeenCalled();
+    });
+
+    describe('giro di sync vero', () => {
+        const mountSync = (stremioItems, storedDocs = []) => {
+            jest.spyOn(UserAccount, 'findOne').mockResolvedValue({
+                userId: 'u1',
+                addonUuid: 'uuid-sync',
+                apiKeys: { stremio: 'key' }
+            });
+            jest.spyOn(AddonConfig, 'findOne').mockResolvedValue({
+                uuid: 'uuid-sync',
+                save: jest.fn().mockResolvedValue(true),
+                syncStatus: {}
+            });
+            stremioClient.post = jest.fn().mockResolvedValue({ data: { result: stremioItems } });
+            jest.spyOn(UserLibraryItem, 'find')
+                .mockReturnValue(leanList(storedDocs.length ? storedDocs.map(d => ({ ...d })) : []));
+            jest.spyOn(UserLibraryItem.collection, 'updateOne').mockResolvedValue({ modifiedCount: 1 });
+            jest.spyOn(UserLibraryItem, 'bulkWrite').mockResolvedValue({});
+            jest.spyOn(UserLibraryItem.collection, 'find')
+                .mockReturnValue({ toArray: jest.fn().mockResolvedValue([]) });
+            return jest.spyOn(UserLibraryItem, 'bulkWrite');
+        };
+
+        test('l\'id in forma sporca aggiorna il documento normalizzato, senza crearne un secondo', async () => {
+            const bulkWrite = mountSync(
+                [{ _id: 'tmdb: 12477 ', name: 'Fight Club', type: 'movie', poster: 'https://ex.com/p.jpg', tmdbId: 550 }],
+                [{ itemId: 'tmdb: 12477 ', poster: 'https://ex.com/old.jpg' }]
+            );
+
+            await LibrarySyncService.syncLibraryForUser('u1');
+
+            expect(bulkWrite).toHaveBeenCalledTimes(1);
+            const ops = bulkWrite.mock.calls[0][0];
+            expect(ops).toHaveLength(1);
+            expect(ops[0].updateOne.filter).toEqual({ addonUuid: 'uuid-sync', itemId: 'tmdb:12477' });
+            expect(ops[0].updateOne.update.$set.itemId).toBe('tmdb:12477');
+        });
+
+        test('un id non normalizzabile viene scritto così com\'è, senza id inventati', async () => {
+            const bulkWrite = mountSync([{ _id: 'anilist: 9999 ', name: 'Anime', type: 'anime', poster: 'https://ex.com/a.jpg' }]);
+
+            await LibrarySyncService.syncLibraryForUser('u1');
+
+            const ops = bulkWrite.mock.calls[0][0];
+            expect(ops[0].updateOne.filter.itemId).toBe('anilist: 9999');
+            expect(ops[0].updateOne.update.$set.itemId).toBe('anilist: 9999');
+        });
     });
 });
 

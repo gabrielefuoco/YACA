@@ -4,7 +4,7 @@ const UserLibraryItem = require('../db/models/UserLibraryItem');
 const { stremioClient } = require('../clients/stremio');
 const { isAnimeContent } = require('../utils/animeIdentity');
 const { resolvePoster } = require('../utils/posterResolver');
-const { normalizeLegacyPosterHost } = require('../utils/libraryIdentity');
+const { normalizeLegacyPosterHost, normalizeLibraryId } = require('../utils/libraryIdentity');
 let animeMappingStore = null;
 try {
     animeMappingStore = require('../data/animeMappingStore');
@@ -140,6 +140,73 @@ class LibrarySyncService {
             console.warn('[LibrarySync] Preservazione copertine non-fatale:', err.message);
             return 0;
         }
+    }
+
+    /**
+     * Id normalizzato per la scrittura: la stessa regola che l'app usa in lettura.
+     * Se l'id non è normalizzabile (vuoto) si torna alla stringa grezza, così
+     * nessun id viene inventato.
+     *
+     * @param {*} rawId
+     * @returns {string}
+     */
+    static normalizeSyncItemId(rawId) {
+        const raw = String(rawId ?? '').trim();
+        if (!raw) return '';
+        return normalizeLibraryId(raw) || raw;
+    }
+
+    /**
+     * Aggancia i documenti già in archivio che hanno l'identificativo nella forma
+     * sporca (spazi, maiuscole): li rinomina nella forma normalizzata, così
+     * l'upsert del giro li aggiorna invece di crearne un duplicato.
+     *
+     * Va chiamata PRIMA del bulkWrite. Se il documento normalizzato esiste già
+     * non si tocca nulla: le due forme in archivio sono un caso di duplicato che
+     * spetta a `applyDuplicateMarks` (che segnala ma non cancella).
+     *
+     * @param {String} addonUuid
+     * @param {Array} items item in arrivo da Stremio (con `_id`)
+     * @returns {Promise<number>} quanti documenti sono stati rinominati
+     */
+    static async repairStoredItemIds(addonUuid, items = []) {
+        if (!addonUuid || !Array.isArray(items) || items.length === 0) return 0;
+
+        // id normalizzato → varianti sporche in arrivo (serve solo se diverse)
+        const dirtyVariants = new Map();
+        for (const item of items) {
+            const raw = String(item?._id ?? item?.itemId ?? '').trim();
+            if (!raw) continue;
+            const normalized = LibrarySyncService.normalizeSyncItemId(raw);
+            if (!normalized || normalized === raw) continue;
+            if (!dirtyVariants.has(normalized)) dirtyVariants.set(normalized, new Set());
+            dirtyVariants.get(normalized).add(raw);
+        }
+        if (dirtyVariants.size === 0) return 0;
+
+        const raw = UserLibraryItem.collection;
+        let repaired = 0;
+        for (const [normalized, variants] of dirtyVariants) {
+            const candidates = Array.from(variants).sort();
+            const stored = await UserLibraryItem
+                .find({ addonUuid, itemId: { $in: [...candidates, normalized] } }, { itemId: 1 })
+                .lean();
+
+            if ((stored || []).some(doc => doc && doc.itemId === normalized)) continue;
+
+            // Solo il primo: le altre varianti sporche (se ci sono) restano in archivio
+            // e vengono marcate come duplicate, non si uniscono a caso.
+            const target = (stored || []).find(doc => doc && doc.itemId && doc.itemId !== normalized);
+            if (!target) continue;
+
+            await raw.updateOne({ addonUuid, itemId: target.itemId }, { $set: { itemId: normalized } });
+            repaired += 1;
+        }
+
+        if (repaired > 0) {
+            console.log(`[LibrarySync] Identificativi normalizzati in archivio: ${repaired}`);
+        }
+        return repaired;
     }
 
     /**
@@ -287,7 +354,13 @@ class LibrarySyncService {
 
             await LibrarySyncService.deduplicateUserLibrary(user.addonUuid);
 
+            // Gli id che Stremio conserva come arrivano (`tmdb: 12477 `) vengono
+            // normalizzati in scrittura: prima si aggancia il documento già in
+            // archivio (rinominandolo), poi l'upsert lo aggiorna senza duplicarlo.
+            await LibrarySyncService.repairStoredItemIds(user.addonUuid, items);
+
             const bulkOps = await Promise.all(items.map(async item => {
+                const itemId = LibrarySyncService.normalizeSyncItemId(item._id);
                 const resolvedTmdbId = imdbMap.get(item._id) || (item.tmdbId ? String(item.tmdbId) : null);
                 const finalType = classifySyncItemType(item, resolvedTmdbId);
                 let poster = item.poster;
@@ -301,7 +374,7 @@ class LibrarySyncService {
                 }
 
                 const updateFields = {
-                    itemId: item._id,
+                    itemId,
                     type: finalType,
                     name: item.name,
                     poster: poster || null,
@@ -321,7 +394,7 @@ class LibrarySyncService {
 
                 return {
                     updateOne: {
-                        filter: { addonUuid: user.addonUuid, itemId: item._id },
+                        filter: { addonUuid: user.addonUuid, itemId },
                         update: { $set: updateFields },
                         upsert: true
                     }
