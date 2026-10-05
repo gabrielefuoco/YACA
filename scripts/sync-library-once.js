@@ -14,6 +14,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const UserAccount = require('../src/db/models/UserAccount');
 const LibrarySyncService = require('../src/services/LibrarySyncService');
+const animeMappingStore = require('../src/data/animeMappingStore');
 
 function parseArgs(argv) {
     const args = { userId: null, all: false };
@@ -34,6 +35,18 @@ async function main() {
     // Atlas risponde in qualche secondo al primo giro: i 10s di default del buffer
     // non bastano e la query muore "buffering timed out" senza toccare il DB.
     await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 30000, bufferTimeoutMS: 60000 });
+
+    // La mappatura Kitsu→TMDB vive in memoria nel processo dell'app: qui il processo
+    // è nuovo, quindi si inizializza lo store condiviso (la stessa sorgente che l'app
+    // usa all'avvio). Senza, gli item Kitsu non si risolvono e il piano dei duplicati
+    // resta incompleto — lo stesso tranello annotato in `convert-library-once.js`.
+    try {
+        await animeMappingStore.init();
+        console.log(`Mapping Kitsu→TMDB caricato: ${animeMappingStore.kitsuToTmdb?.size ?? 0} chiavi`);
+    } catch (err) {
+        console.warn(`Mapping Kitsu→TMDB non disponibile (${err.message}): il piano dei duplicati resterà incompleto per gli item Kitsu`);
+    }
+
     const userIds = args.all
         ? (await UserAccount.find({}, { userId: 1 }).lean()).map(u => u.userId).filter(Boolean)
         : [args.userId];
