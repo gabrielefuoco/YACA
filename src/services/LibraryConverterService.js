@@ -9,6 +9,7 @@ const duckDbStore = require('../db/duckDbStore');
 const { resolvePoster, TMDB_IMAGE_BASE } = require('../utils/posterResolver');
 const LibrarySyncService = require('./LibrarySyncService');
 const { selectConvertibleItems } = require('./libraryConversionAdmission');
+const { resolveTmdbIdentity } = require('./libraryIdentityResolution');
 
 const BATCH_SIZE = 500; // Process all items
 
@@ -53,22 +54,28 @@ class LibraryConverterService {
                     let tmdbId = item.tmdbId;
                     let tmdbData = null;
                     const strId = String(item.itemId || item._id);
-                    const isImdb = strId.startsWith('tt');
-                    const isTmdb = strId.startsWith('tmdb:');
-                    
-                    if (isImdb && !tmdbId) {
-                        const searchRes = await tmdbClient.get(`/find/${strId}`, {
-                            params: { external_source: 'imdb_id', language: 'it-IT' }
+
+                    // «Da questo id, quale TMDB id?» è una funzione alimentata dalla
+                    // ricerca esterna: stessa regola di sempre (`tt…` via ricerca,
+                    // `tmdb:…` diretto, `kitsu:…` ancora non risolto), ma verificabile
+                    // da sola nei test. Se l'item ha già un tmdbId non si rileva nulla.
+                    if (!tmdbId) {
+                        const identity = await resolveTmdbIdentity(strId, {
+                            lookupImdbId: async (imdbId) => {
+                                const searchRes = await tmdbClient.get(`/find/${imdbId}`, {
+                                    params: { external_source: 'imdb_id', language: 'it-IT' }
+                                });
+                                const results = searchRes.data.movie_results?.length > 0
+                                    ? searchRes.data.movie_results
+                                    : (searchRes.data.tv_results?.length > 0 ? searchRes.data.tv_results : null);
+                                return results ? results[0] : null;
+                            }
                         });
-                        if (searchRes.data.movie_results?.length > 0) {
-                            tmdbData = searchRes.data.movie_results[0];
-                            tmdbId = tmdbData.id;
-                        } else if (searchRes.data.tv_results?.length > 0) {
-                            tmdbData = searchRes.data.tv_results[0];
-                            tmdbId = tmdbData.id;
+                        tmdbId = identity.tmdbId || tmdbId;
+                        tmdbData = identity.tmdbData || tmdbData;
+                        if (!identity.resolved) {
+                            console.log(`[LibraryConverter] Identity unresolved for ${strId}: ${identity.reason}`);
                         }
-                    } else if (isTmdb && !tmdbId) {
-                        tmdbId = strId.split(':').pop();
                     }
 
                     if (tmdbId && !tmdbData) {
