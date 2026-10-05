@@ -105,7 +105,7 @@ Utility di lookup per ispezionare gli account utente, le configurazioni addon e 
 Utility per simulare richieste client, estrarre lo stato formattato dei cataloghi e validare i badge degli episodi e i flussi bypassando Stremio.
 Salva l'output in `.agents/scratch/` (`catalogs_output.txt` o `catalog_state.json`).
 * **Opzioni principali**:
-  - `--url <base>`: URL base dell'istanza YACA (default `http://127.0.0.1:7860`, o es. `https://mate.taild24589.ts.net`)
+  - `--url <base>`: URL base dell'istanza YACA (default `http://127.0.0.1:7860`, o es. `https://mate.hyena-alphard.ts.net`)
   - `--config <addonUuid>`: UUID dell'addon da testare (se omesso, recuperato automaticamente dal DB)
   - `--catalogs <id1,id2>`: Filtra cataloghi specifici
   - `--text`: Output in formato testuale sintetico

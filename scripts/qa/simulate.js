@@ -18,7 +18,7 @@ const { parseArgs, loadSpec, log, fail } = require('./lib/common');
 const { materializeProfiles, teardownSimData, closeDb } = require('./lib/atlas');
 const { runFetch } = require('./lib/fetch');
 
-const DEFAULT_BASE_URL = (process.env.YACA_BASE_URL || 'https://mate.taild24589.ts.net').replace(/\/+$/, '');
+const DEFAULT_BASE_URL = (process.env.YACA_BASE_URL || 'https://mate.hyena-alphard.ts.net').replace(/\/+$/, '');
 
 const HELP = `
 YACA — harness di simulazione profili (ticket 10)

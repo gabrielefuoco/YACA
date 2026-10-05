@@ -26,9 +26,15 @@ try {
     animeMappingStore = null;
 }
 
-/** Host di vecchie installazioni che non servono più le immagini (HF Space, dev locale). */
+/**
+ * Host di vecchie installazioni che non servono più le immagini (HF Space, dev locale) e i nomi
+ * tailnet ritirati: la tailnet è stata rinominata in `hyena-alphard.ts.net` il 2026-10-05 e il
+ * vecchio nome non risolve più, quindi i poster salvati con quello vanno riportati all'host
+ * corrente a ogni lettura.
+ */
 const LEGACY_APP_HOSTS = [
     'gabriele-fuoco-yaca.hf.space',
+    'mate.taild24589.ts.net',
     'http://localhost:7000',
     'https://localhost:7000'
 ];

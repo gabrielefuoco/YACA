@@ -37,18 +37,28 @@ describe('normalizeTitle', () => {
 });
 
 describe('normalizeLegacyPosterHost', () => {
+    // La tailnet è stata rinominata il 2026-10-05: questo è l'host corrente, il vecchio
+    // (`mate.taild24589.ts.net`) è ritirato e non risolve più.
+    const CURRENT = 'https://mate.hyena-alphard.ts.net';
+
     test('riscrive i poster del vecchio HF Space verso l host corrente', () => {
         const poster = 'https://gabriele-fuoco-yaca.hf.space/images/poster/movie/tt0095327/ITA/23?t=1';
-        expect(normalizeLegacyPosterHost(poster, 'https://mate.taild24589.ts.net'))
-            .toBe('https://mate.taild24589.ts.net/images/poster/movie/tt0095327/ITA/23?t=1');
+        expect(normalizeLegacyPosterHost(poster, CURRENT))
+            .toBe(`${CURRENT}/images/poster/movie/tt0095327/ITA/23?t=1`);
+    });
+
+    test('riscrive i poster del vecchio nome tailnet, ritirato con la rinomina', () => {
+        const poster = 'https://mate.taild24589.ts.net/images/poster/movie/tt1/ITA/24?t=2';
+        expect(normalizeLegacyPosterHost(poster, CURRENT))
+            .toBe(`${CURRENT}/images/poster/movie/tt1/ITA/24?t=2`);
     });
 
     test('non tocca i poster di altri host', () => {
         const tmdb = 'https://image.tmdb.org/t/p/w500/abc.jpg';
-        const mate = 'https://mate.taild24589.ts.net/images/poster/movie/tt1/ITA/24?original=https%3A%2F%2Fgabriele-fuoco-yaca.hf.space%2Fx.jpg';
-        expect(normalizeLegacyPosterHost(tmdb, 'https://mate.taild24589.ts.net')).toBe(tmdb);
+        const alreadyCurrent = `${CURRENT}/images/poster/movie/tt1/ITA/24?original=https%3A%2F%2Fgabriele-fuoco-yaca.hf.space%2Fx.jpg`;
+        expect(normalizeLegacyPosterHost(tmdb, CURRENT)).toBe(tmdb);
         // Il vecchio host compare solo nel parametro: il poster è già corretto
-        expect(normalizeLegacyPosterHost(mate, 'https://mate.taild24589.ts.net')).toBe(mate);
+        expect(normalizeLegacyPosterHost(alreadyCurrent, CURRENT)).toBe(alreadyCurrent);
     });
 
     test('senza host corrente o con poster vuoto non cambia nulla', () => {

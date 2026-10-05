@@ -1,7 +1,7 @@
 # Harness di simulazione profili (`scripts/qa/`)
 
 CLI per eseguire gli 8 profili di test di YACA sulla pipeline reale di produzione
-(`https://mate.taild24589.ts.net`) **senza toccare il profilo reale `REOZrGNRr3`**.
+(`https://mate.hyena-alphard.ts.net`) **senza toccare il profilo reale `REOZrGNRr3`**.
 
 - Spec dei profili: [`profiles.spec.json`](./profiles.spec.json) (modificare qui → rilanciare `profiles`).
 - Protocollo di revisione (verdetti P/B/N, classi di catalogo, soglie): `.scratch/simulazione-profili/rubric.md`.
@@ -11,7 +11,7 @@ CLI per eseguire gli 8 profili di test di YACA sulla pipeline reale di produzion
 
 - `.env` nella root con `MONGODB_URI` e `TMDB_API_KEY` (la chiave viene scritta **solo** nel
   `UserAccount` di test; nessun token Trakt/Stremio viene copiato).
-- Server di produzione raggiungibile (default `https://mate.taild24589.ts.net`, override `--url`/`YACA_BASE_URL`).
+- Server di produzione raggiungibile (default `https://mate.hyena-alphard.ts.net`, override `--url`/`YACA_BASE_URL`).
 - Il server legge i profili da Atlas a ogni richiesta: dopo `profiles` non serve riavviarlo.
 
 ## Comandi
@@ -53,7 +53,7 @@ I due scenari freddi sono **due giri**: `profiles` (absent) → `fetch` → `rev
 
 | Flag | Default | Descrizione |
 |---|---|---|
-| `--url <base>` | `https://mate.taild24589.ts.net` | Base URL del server |
+| `--url <base>` | `https://mate.hyena-alphard.ts.net` | Base URL del server |
 | `--run <dir>` | nuova `<timestamp>` in `.scratch/simulazione-profili/runs/` | Run dir di destinazione |
 | `--profiles a,b` | tutti | Filtra i profili (id o nome) |
 | `--only id1,id2` | tutti i cataloghi del manifest | Filtra i cataloghi (id completo o base id senza `yaca_preset_`) |

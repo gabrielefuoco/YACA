@@ -46,7 +46,7 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 
 ### 1. 🚀 Deployment e Operazioni
 *   **[DEPLOYMENT_HOME_SERVER.md](DEPLOYMENT_HOME_SERVER.md)**
-    *   *Descrizione*: Guida architetturale e operativa per il deployment principale in self-hosting su **Home Server (`mate`)** tramite Docker Compose, Tailscale (`mate.taild24589.ts.net:7860`), GitHub Container Registry (GHCR) e aggiornamenti automatici tramite Watchtower.
+    *   *Descrizione*: Guida architetturale e operativa per il deployment principale in self-hosting su **Home Server (`mate`)** tramite Docker Compose, Tailscale (`mate.hyena-alphard.ts.net:7860`), GitHub Container Registry (GHCR) e aggiornamenti automatici tramite Watchtower.
 
 ### 2. 🦆 Motore Dati e Query In-Memory
 *   **[DUCKDB_ARCHITECTURE.md](DUCKDB_ARCHITECTURE.md)**

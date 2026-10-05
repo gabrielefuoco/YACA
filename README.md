@@ -64,7 +64,7 @@ La configurazione di riferimento di YACA è un deploy headless su Home Server (`
    TMDB_API_KEY=la_tua_tmdb_api_key
    MISTRAL_API_KEY=la_tua_mistral_api_key
    JWT_SECRET=genera_con_crypto_randomBytes
-   HOST_URL=https://mate.taild24589.ts.net
+   HOST_URL=https://mate.hyena-alphard.ts.net
    PORT=7860
    ```
 

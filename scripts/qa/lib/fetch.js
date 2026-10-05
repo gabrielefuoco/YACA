@@ -22,7 +22,7 @@ const {
     sleep
 } = require('./common');
 
-const DEFAULT_BASE_URL = (process.env.YACA_BASE_URL || 'https://mate.taild24589.ts.net').replace(/\/+$/, '');
+const DEFAULT_BASE_URL = (process.env.YACA_BASE_URL || 'https://mate.hyena-alphard.ts.net').replace(/\/+$/, '');
 const SEARCH_CATALOG_IDS = new Set(['yaca_search_standard', 'yaca_search_ai']);
 const DEFAULT_TIMEOUT_MS = 15000;
 
