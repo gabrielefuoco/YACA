@@ -2,7 +2,8 @@
  * La risoluzione dell'identità: «da questo id di item, quale TMDB id?». È il
  * passo che il ciclo di conversione faceva inline, con una ricerca esterna e un
  * paio di `startsWith`. Qui è una funzione alimentata dalle sue dipendenze, quindi
- * i test coprono i quattro casi senza rete e senza database.
+ * i test coprono i casi senza rete e senza database: compresa la mappatura
+ * Kitsu→TMDB condivisa, che qui è una finestra finta.
  */
 const {
     RESOLUTION_REASONS,
@@ -64,13 +65,61 @@ describe('resolveTmdbIdentity', () => {
         expect(lookup.calls).toEqual([]);
     });
 
-    test('un id kitsu: oggi non è risolto — quel ramo non c\'è ancora', async () => {
+    test('un id kitsu: senza mappatura fornita non è risolto', async () => {
         const lookup = fakeLookup();
         const verdict = await resolveTmdbIdentity('kitsu:7278', { lookupImdbId: lookup });
 
         expect(verdict.resolved).toBe(false);
         expect(verdict.reason).toBe(RESOLUTION_REASONS.UNSUPPORTED_SOURCE);
         expect(lookup.calls).toEqual([]);
+    });
+
+    test('un id kitsu: presente nella mappatura prende il suo TMDB id, senza rete', async () => {
+        const lookup = fakeLookup();
+        const lookupKitsuId = fakeLookup({ 142: 128, 10: 15373 });
+        const verdict = await resolveTmdbIdentity('kitsu:142', { lookupImdbId: lookup, lookupKitsuId });
+
+        expect(verdict).toEqual({
+            resolved: true,
+            tmdbId: 128,
+            tmdbData: null,
+            reason: RESOLUTION_REASONS.FOUND_VIA_KITSU_MAP
+        });
+        expect(lookupKitsuId.calls).toEqual(['142']);
+        expect(lookup.calls).toEqual([]);
+    });
+
+    test('un id kitsu: assente dalla mappatura resta non risolto — non è «dato per convertito»', async () => {
+        const lookup = fakeLookup();
+        const lookupKitsuId = fakeLookup();
+        const verdict = await resolveTmdbIdentity('kitsu:99999999', { lookupImdbId: lookup, lookupKitsuId });
+
+        expect(verdict).toEqual({
+            resolved: false,
+            tmdbId: null,
+            tmdbData: null,
+            reason: RESOLUTION_REASONS.NOT_FOUND
+        });
+        expect(lookupKitsuId.calls).toEqual(['99999999']);
+        expect(lookup.calls).toEqual([]);
+    });
+
+    test('la mappatura kitsu che fallisce non è un errore: l\'item resta non risolto', async () => {
+        const verdict = await resolveTmdbIdentity('kitsu:142', {
+            lookupKitsuId: () => { throw new Error('store non pronto'); }
+        });
+
+        expect(verdict.resolved).toBe(false);
+        expect(verdict.reason).toBe(RESOLUTION_REASONS.NOT_FOUND);
+    });
+
+    test('un id kitsu: senza numero non viene risolto', async () => {
+        const lookupKitsuId = fakeLookup();
+        const verdict = await resolveTmdbIdentity('kitsu:', { lookupKitsuId });
+
+        expect(verdict.resolved).toBe(false);
+        expect(verdict.reason).toBe(RESOLUTION_REASONS.UNSUPPORTED_SOURCE);
+        expect(lookupKitsuId.calls).toEqual([]);
     });
 
     test('un id che non si riconosce non è risolto', async () => {
