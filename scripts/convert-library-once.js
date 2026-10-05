@@ -97,7 +97,7 @@ async function main() {
     const before = {};
     for (const user of users) {
         const c = await census(raw, user.addonUuid);
-        before[user.userId] = { eleggibili: c.eleggibili.length, duplicati: c.duplicati.length, ids: new Set(c.eleggibili.map(d => String(d.itemId))) };
+        before[user.userId] = { duplicati: c.duplicati.length, ids: new Set(c.eleggibili.map(d => String(d.itemId))) };
     }
 
     if (!animeMappingStore.isReady) {
@@ -115,7 +115,7 @@ async function main() {
         const dopo = await census(raw, user.addonUuid);
         const convertiti = dopo.eleggibili.filter(d => before[user.userId].ids.has(String(d.itemId))).length;
         console.log(`\n=== esito ${user.userId} ===`);
-        console.log(`  rimessi in coda: ${before[user.userId].eleggibili.length}`);
+        console.log(`  rimessi in coda (prima del giro): ${before[user.userId].ids.size}`);
         console.log(`  ancora senza TMDB id: ${dopo.eleggibili.length} (di cui ${convertiti} non convertiti dal giro)`);
         console.log(`  duplicati marcati, fuori per progetto: ${dopo.duplicati.length}`);
         for (const doc of dopo.eleggibili) console.log(`    residuo: ${JSON.stringify({ itemId: doc.itemId, name: doc.name, mapped: doc.mapped })}`);
