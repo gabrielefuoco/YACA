@@ -5,10 +5,10 @@ const duckDbStore = require('../db/duckDbStore');
 let loadAnimeOverrides;
 try {
     loadAnimeOverrides = require('../../services/anime-source/src/overrides').loadAnimeOverrides;
-} catch (e) {
+} catch (_e) {
     try {
         loadAnimeOverrides = require('../../../services/anime-source/src/overrides').loadAnimeOverrides;
-    } catch (e2) {
+    } catch (_e2) {
         loadAnimeOverrides = () => ({ version: 1, identities: [], certify: [] });
     }
 }
@@ -45,12 +45,15 @@ class AnimeMappingStore {
         this.fribbIndex = { anidb: new Map(), anilist: new Map(), mal: new Map() };
         this.tmdbToAnimeNode = new Map();
         this.kitsuToTmdb = new Map();
+        this.kitsuToTmdbType = new Map();
         this.tmdbToKitsuMovie = new Map();
         // Indice PIATTO tmdbId -> kitsuId, senza distinzione movie/tv: serve a chi
         // ha solo un id TMDB e vuole un id Kitsu (vedi resolveKitsuDaTmdbId).
         this.tmdbToKitsu = new Map();
         this.malToTmdb = new Map();
         this.anibridgeTmdbIds = new Set();
+        this.anibridgeShowTmdbIds = new Set();
+        this.anibridgeMovieTmdbIds = new Set();
         this.certifiedTmdbIds = new Set();
         this.animeTmdbIds = new Set();
         
@@ -90,7 +93,7 @@ class AnimeMappingStore {
             this.certifiedTmdbIds = new Set();
             if (data && Array.isArray(data.certify)) {
                 for (const item of data.certify) {
-                    if (item && item.tmdbId != null && item.tmdbId !== '') {
+                    if (item && item.tmdbId !== null && item.tmdbId !== undefined && item.tmdbId !== '') {
                         const clean = String(item.tmdbId).trim();
                         if (clean) this.certifiedTmdbIds.add(clean);
                     }
@@ -195,6 +198,7 @@ class AnimeMappingStore {
     buildFribbIndex(fribbData) {
         const newIndex = { anidb: new Map(), anilist: new Map(), mal: new Map() };
         const newKitsuToTmdb = new Map();
+        const newKitsuToTmdbType = new Map();
         const newTmdbToKitsuMovie = new Map();
         const newTmdbToKitsu = new Map();
         const newMalToTmdb = new Map();
@@ -207,9 +211,31 @@ class AnimeMappingStore {
                 
                 if (item.themoviedb_id) {
                     const rawTmdb = item.themoviedb_id;
-                    const tmdbVal = typeof rawTmdb === 'object' && rawTmdb !== null
-                        ? (rawTmdb.tv || rawTmdb.movie)
-                        : rawTmdb;
+                    let detectedType = null;
+                    let tmdbVal = null;
+
+                    if (typeof rawTmdb === 'object' && rawTmdb !== null) {
+                        if (rawTmdb.tv !== undefined && rawTmdb.tv !== null && rawTmdb.tv !== '') {
+                            detectedType = 'tv';
+                            tmdbVal = rawTmdb.tv;
+                        } else if (rawTmdb.movie !== undefined && rawTmdb.movie !== null && rawTmdb.movie !== '') {
+                            detectedType = 'movie';
+                            tmdbVal = rawTmdb.movie;
+                        } else {
+                            tmdbVal = rawTmdb;
+                        }
+                    } else if (rawTmdb) {
+                        tmdbVal = rawTmdb;
+                    }
+
+                    if (!detectedType) {
+                        const itemType = String(item.type || '').toUpperCase();
+                        if (itemType === 'MOVIE') {
+                            detectedType = 'movie';
+                        } else if (['TV', 'OVA', 'ONA', 'SPECIAL'].includes(itemType)) {
+                            detectedType = 'tv';
+                        }
+                    }
 
                     // Nel file vero `themoviedb_id.movie` è un ARRAY di id numerici
                     // (1-4 varianti dello stesso film: rifacimenti, compilation, uscite
@@ -226,6 +252,9 @@ class AnimeMappingStore {
                     if (tmdbIds.length > 0) {
                         const primaryTmdb = String(tmdbIds[0]);
                         newKitsuToTmdb.set(String(item.kitsu_id), primaryTmdb);
+                        if (detectedType) {
+                            newKitsuToTmdbType.set(String(item.kitsu_id), detectedType);
+                        }
                         // Indice piatto: TUTTE le varianti TMDB del gruppo (movie e tv
                         // insieme) tornano al loro Kitsu. È l'unico modo che ha chi ha
                         // solo l'id TMDB dell'evento, senza stagione né episodio.
@@ -235,7 +264,7 @@ class AnimeMappingStore {
                         if (item.mal_id) {
                             newMalToTmdb.set(String(item.mal_id), primaryTmdb);
                         }
-                        if (item.type === 'Movie' || (typeof rawTmdb === 'object' && rawTmdb !== null && rawTmdb.movie)) {
+                        if (detectedType === 'movie' || item.type === 'Movie' || (typeof rawTmdb === 'object' && rawTmdb !== null && rawTmdb.movie)) {
                             for (const tmdbId of tmdbIds) {
                                 newTmdbToKitsuMovie.set(String(tmdbId), item.kitsu_id);
                             }
@@ -246,6 +275,7 @@ class AnimeMappingStore {
         }
         this.fribbIndex = newIndex;
         this.kitsuToTmdb = newKitsuToTmdb;
+        this.kitsuToTmdbType = newKitsuToTmdbType;
         this.tmdbToKitsuMovie = newTmdbToKitsuMovie;
         this.tmdbToKitsu = newTmdbToKitsu;
         this.malToTmdb = newMalToTmdb;
@@ -255,6 +285,8 @@ class AnimeMappingStore {
     buildAnibridgeIndex(anibridgeData) {
         const newIndex = new Map();
         const newAnibridgeTmdbIds = new Set();
+        const newAnibridgeShowTmdbIds = new Set();
+        const newAnibridgeMovieTmdbIds = new Set();
         
         const parseRange = (str) => {
             const [start, end] = str.split('-').map(Number);
@@ -286,6 +318,11 @@ class AnimeMappingStore {
 
                     if (tmdbId) {
                         newAnibridgeTmdbIds.add(String(tmdbId));
+                        if (providerKey.startsWith('tmdb_show:')) {
+                            newAnibridgeShowTmdbIds.add(String(tmdbId));
+                        } else if (providerKey.startsWith('tmdb_movie:')) {
+                            newAnibridgeMovieTmdbIds.add(String(tmdbId));
+                        }
                     }
 
                     const key = `${tmdbId}:${season}`;
@@ -308,6 +345,8 @@ class AnimeMappingStore {
         }
         this.tmdbToAnimeNode = newIndex;
         this.anibridgeTmdbIds = newAnibridgeTmdbIds;
+        this.anibridgeShowTmdbIds = newAnibridgeShowTmdbIds;
+        this.anibridgeMovieTmdbIds = newAnibridgeMovieTmdbIds;
         this._rebuildAnimeTmdbIds();
     }
 
@@ -416,6 +455,48 @@ class AnimeMappingStore {
     resolveTmdbFromKitsu(kitsuId) {
         if (!this.isReady) return null;
         return this.kitsuToTmdb.get(String(kitsuId)) || null;
+    }
+
+    /**
+     * Risolve il tipo ('tv' o 'movie') associato a un Kitsu ID dalla mappatura.
+     * @param {string|number} kitsuId
+     * @returns {'tv'|'movie'|null}
+     */
+    resolveMediaTypeFromKitsu(kitsuId) {
+        if (!this.isReady) return null;
+        return this.kitsuToTmdbType.get(String(kitsuId)) || null;
+    }
+
+    /**
+     * Risolve TMDB id e tipo associati a un Kitsu ID dalla mappatura.
+     * @param {string|number} kitsuId
+     * @returns {{tmdbId: string, type: 'tv'|'movie'|null}|null}
+     */
+    resolveTmdbEntryFromKitsu(kitsuId) {
+        if (!this.isReady) return null;
+        const tmdbId = this.kitsuToTmdb.get(String(kitsuId));
+        if (!tmdbId) return null;
+        const type = this.kitsuToTmdbType.get(String(kitsuId)) || null;
+        return { tmdbId, type };
+    }
+
+    /**
+     * Risolve il tipo ('tv' o 'movie') a partire dal solo id TMDB per un'opera anime
+     * (consultazione O(1) in memoria da Anibridge e Fribb).
+     * @param {string|number} tmdbId
+     * @returns {'tv'|'movie'|null}
+     */
+    resolveMediaTypeDaTmdbId(tmdbId) {
+        if (!this.isReady) return null;
+        const idPuro = this._tmdbIdPuro(tmdbId);
+        if (!idPuro) return null;
+        if (this.anibridgeMovieTmdbIds?.has(idPuro) || this.resolveKitsuMovie(idPuro)) {
+            return 'movie';
+        }
+        if (this.anibridgeShowTmdbIds?.has(idPuro) || this.tmdbToAnimeNode?.has(idPuro + ':1')) {
+            return 'tv';
+        }
+        return null;
     }
 
     /**

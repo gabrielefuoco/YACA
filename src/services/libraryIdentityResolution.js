@@ -86,16 +86,29 @@ async function resolveTmdbIdentity(rawId, deps = {}) {
             return notResolved(RESOLUTION_REASONS.UNSUPPORTED_SOURCE);
         }
         let tmdbId;
+        let mediaType = null;
         try {
-            tmdbId = await lookupKitsuId(kitsuId);
+            const rawMapped = await lookupKitsuId(kitsuId);
+            if (rawMapped && typeof rawMapped === 'object') {
+                tmdbId = rawMapped.tmdbId !== undefined ? rawMapped.tmdbId : null;
+                mediaType = rawMapped.type || rawMapped.mediaType || null;
+            } else {
+                tmdbId = rawMapped;
+            }
         } catch (_err) {
             // Mappa non pronta o guasta: l'item resta semplicemente non risolto e
             // torna eleggibile al giro dopo (la mappa si aggiorna da sola).
             tmdbId = null;
+            mediaType = null;
         }
-        return (tmdbId !== null && tmdbId !== undefined && tmdbId !== '')
-            ? { resolved: true, tmdbId, tmdbData: null, reason: RESOLUTION_REASONS.FOUND_VIA_KITSU_MAP }
-            : notResolved(RESOLUTION_REASONS.NOT_FOUND);
+        if (tmdbId !== null && tmdbId !== undefined && tmdbId !== '') {
+            const result = { resolved: true, tmdbId, tmdbData: null, reason: RESOLUTION_REASONS.FOUND_VIA_KITSU_MAP };
+            if (mediaType) {
+                result.mediaType = mediaType;
+            }
+            return result;
+        }
+        return notResolved(RESOLUTION_REASONS.NOT_FOUND);
     }
 
     // tutto il resto: fonti che il ciclo ancora non sa risolvere.

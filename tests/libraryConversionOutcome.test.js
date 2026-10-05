@@ -57,6 +57,19 @@ describe('decideConversionOutcome', () => {
             reason: RESOLUTION_REASONS.FOUND_VIA_KITSU_MAP
         });
     });
+
+    test('un item con tipo non noto resta non risolto col motivo AMBIGUOUS_TYPE', () => {
+        const outcome = decideConversionOutcome({
+            tmdbId: 128,
+            ambiguousType: true
+        });
+
+        expect(outcome).toEqual({
+            resolved: false,
+            tmdbId: null,
+            reason: OUTCOME_REASONS.AMBIGUOUS_TYPE
+        });
+    });
 });
 
 describe('un giro: chi non si risolve resta in coda', () => {
@@ -150,6 +163,13 @@ describe('summarizeUnresolvedRun', () => {
         const line = summarizeUnresolvedRun([{ itemId: 'kitsu:1', reason: RESOLUTION_REASONS.NOT_FOUND }]);
         expect(line).toBe(
             '1 item non risolto resta in coda (1 assenti dalla mappatura): torneranno nel giro dopo'
+        );
+    });
+
+    test('item con tipo non noto viene descritto come tipo non noto nel riepilogo', () => {
+        const line = summarizeUnresolvedRun([{ itemId: 'kitsu:55555', reason: OUTCOME_REASONS.AMBIGUOUS_TYPE }]);
+        expect(line).toBe(
+            '1 item non risolto resta in coda (1 tipo non noto): torneranno nel giro dopo'
         );
     });
 });

@@ -11,6 +11,7 @@ const LibrarySyncService = require('./LibrarySyncService');
 const { selectConvertibleItems } = require('./libraryConversionAdmission');
 const { resolveTmdbIdentity } = require('./libraryIdentityResolution');
 const {
+    OUTCOME_REASONS,
     decideConversionOutcome,
     applyConversionOutcome,
     buildConversionState,
@@ -20,6 +21,10 @@ const {
     applyConversionAttempt,
     summarizeParkedRun
 } = require('./libraryConversionRetry');
+const {
+    resolveItemMediaType,
+    resolveTargetTableAndEndpoint
+} = require('./libraryMediaTypeResolution');
 
 // La mappatura Kitsu→TMDB che l'app già tiene in memoria (Anibridge + Fribb,
 // ~8.2k chiavi, aggiornata da sola): qui è solo una lettura, nessuna rete e
@@ -36,10 +41,18 @@ try {
 function lookupKitsuIdInMapping(kitsuId) {
     if (!animeMappingStore) return null;
     try {
+        if (typeof animeMappingStore.resolveTmdbEntryFromKitsu === 'function') {
+            const entry = animeMappingStore.resolveTmdbEntryFromKitsu(kitsuId);
+            if (entry && entry.tmdbId) return entry;
+        }
         const mapped = typeof animeMappingStore.resolveTmdbFromKitsu === 'function'
             ? animeMappingStore.resolveTmdbFromKitsu(kitsuId)
             : animeMappingStore.kitsuToTmdb?.get(String(kitsuId));
-        return (mapped === null || mapped === undefined || mapped === '') ? null : mapped;
+        if (mapped === null || mapped === undefined || mapped === '') return null;
+        const type = typeof animeMappingStore.resolveMediaTypeFromKitsu === 'function'
+            ? animeMappingStore.resolveMediaTypeFromKitsu(kitsuId)
+            : null;
+        return type ? { tmdbId: mapped, type } : mapped;
     } catch (_err) {
         return null;
     }
@@ -122,10 +135,27 @@ class LibraryConverterService {
                         tmdbData = identity.tmdbData || tmdbData;
                     }
 
+                    // Risoluzione del tipo (film vs serie) secondo la regola del ticket 12
+                    const mediaType = resolveItemMediaType(item, {
+                        identity,
+                        mappingStore: animeMappingStore,
+                        tmdbId
+                    });
+
                     // L'esito del giro per questo item: convertito sì o no, e con
                     // quale motivo se no. Da qui in poi `mapped` segue l'esito, non il
                     // fatto di essere passati dal ciclo.
-                    const outcome = decideConversionOutcome({ tmdbId, identity });
+                    // Se l'id TMDB c'è ma il tipo non è noto: NON SI INDOVINA MAI -> resta non risolto.
+                    let outcome;
+                    if (tmdbId && !mediaType) {
+                        outcome = decideConversionOutcome({
+                            tmdbId: null,
+                            identity: { resolved: false, tmdbId: null, reason: OUTCOME_REASONS.AMBIGUOUS_TYPE }
+                        });
+                    } else {
+                        outcome = decideConversionOutcome({ tmdbId, identity });
+                    }
+
                     tmdbId = outcome.resolved ? outcome.tmdbId : null;
                     // Il tetto: quanti tentativi ha consumato e, se sono finiti, resta
                     // parcheggiato (dato a parte, non un `mapped: true` mascherato).
@@ -139,70 +169,26 @@ class LibraryConverterService {
                         console.log(`[LibraryConverter] Identity unresolved for ${strId}: ${outcome.reason}`);
                     }
 
-                    if (tmdbId && !tmdbData) {
-                        try {
-                            const table = (item.type === 'series' || item.type === 'tv') ? 'tv' : 'movies';
-                            const duckRows = await duckDbStore.query(`SELECT * FROM ${table} WHERE id = ? LIMIT 1`, [Number(tmdbId)]);
-                            if (duckRows && duckRows.length > 0) {
-                                tmdbData = duckRows[0];
-                            }
-                        } catch (_duckErr) {}
-
-                        if (!tmdbData) {
+                    if (outcome.resolved && tmdbId && !tmdbData) {
+                        const { table, endpoint } = resolveTargetTableAndEndpoint(mediaType, tmdbId);
+                        if (table) {
                             try {
-                                const endpoint = item.type === 'series' ? `/tv/${tmdbId}` : `/movie/${tmdbId}`;
+                                const duckRows = await duckDbStore.query(`SELECT * FROM ${table} WHERE id = ? LIMIT 1`, [Number(tmdbId)]);
+                                if (duckRows && duckRows.length > 0) {
+                                    tmdbData = duckRows[0];
+                                }
+                            } catch (_duckErr) {}
+                        }
+
+                        if (!tmdbData && endpoint) {
+                            try {
                                 const detailRes = await tmdbClient.get(endpoint, { params: { language: 'it-IT' } });
                                 tmdbData = detailRes.data;
-                            } catch (e) {
+                            } catch (_e) {
                                 console.warn(`[LibraryConverter] Failed to fetch TMDB details for ${tmdbId}`);
                             }
                         }
                     }
-
-                    let posterCandidate = tmdbData?.poster_path
-                        ? `${TMDB_IMAGE_BASE}${tmdbData.poster_path}`
-                        : item.poster;
-
-                    if (!posterCandidate) {
-                        posterCandidate = await resolvePoster({
-                            itemId: item.itemId || item._id,
-                            tmdbId,
-                            type: item.type,
-                            name: item.name
-                        }, { tmdbClient });
-                    }
-
-                    // We proceed even if tmdbData is null, to apply badges to Kitsu or fallback items!
-                    let meta = {
-                        id: item.itemId || item._id, // Keep the original stremio id
-                        tmdbId: tmdbId,
-                        type: item.type,
-                        name: tmdbData?.title || tmdbData?.name || item.name,
-                        poster: posterCandidate || item.poster || null,
-                        posterShape: 'poster',
-                        background: tmdbData?.backdrop_path ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path}` : item.background,
-                        releaseInfo: (tmdbData?.release_date || tmdbData?.first_air_date || item.year || '').split('-')[0],
-                        _itaBadge: true, // Force Italian badge
-                        rawTMDB: tmdbData // Pass to formatter
-                    };
-
-                    const sanitizeOptions = {
-                        userConfig,
-                        hostUrl: hostUrl || process.env.BASE_URL || 'http://localhost:7000',
-                        shouldApplyEpisodeBadge: false
-                    };
-
-                    meta = sanitizeCatalogMeta(meta, sanitizeOptions);
-
-                    // Force cache bust on the poster so stremio re-downloads it
-                    if (meta.poster) {
-                        meta.poster = meta.poster.includes('?') 
-                            ? `${meta.poster}&t=${Date.now()}` 
-                            : `${meta.poster}?t=${Date.now()}`;
-                    }
-
-                    // Prepare for datastorePut
-                    changes.push(buildStremioLibraryPayload(meta, item));
 
                     // Update db
                     item.itemId = item.itemId || item._id;
@@ -212,8 +198,56 @@ class LibraryConverterService {
                     item.conversionAttempts = attempt.conversionAttempts;
                     item.parkedAt = attempt.parkedAt;
                     item.parkedReason = attempt.parkedReason;
-                    item.name = meta.name;
-                    item.poster = meta.poster;
+
+                    if (outcome.resolved) {
+                        let posterCandidate = tmdbData?.poster_path
+                            ? `${TMDB_IMAGE_BASE}${tmdbData.poster_path}`
+                            : item.poster;
+
+                        if (!posterCandidate) {
+                            posterCandidate = await resolvePoster({
+                                itemId: item.itemId || item._id,
+                                tmdbId,
+                                type: mediaType || item.type,
+                                name: item.name
+                            }, { tmdbClient });
+                        }
+
+                        let meta = {
+                            id: item.itemId || item._id, // Keep the original stremio id
+                            tmdbId: tmdbId,
+                            type: item.type,
+                            name: tmdbData?.title || tmdbData?.name || item.name,
+                            poster: posterCandidate || item.poster || null,
+                            posterShape: 'poster',
+                            background: tmdbData?.backdrop_path ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path}` : item.background,
+                            releaseInfo: (tmdbData?.release_date || tmdbData?.first_air_date || item.year || '').split('-')[0],
+                            _itaBadge: true, // Force Italian badge
+                            rawTMDB: tmdbData // Pass to formatter
+                        };
+
+                        const sanitizeOptions = {
+                            userConfig,
+                            hostUrl: hostUrl || process.env.BASE_URL || 'http://localhost:7000',
+                            shouldApplyEpisodeBadge: false
+                        };
+
+                        meta = sanitizeCatalogMeta(meta, sanitizeOptions);
+
+                        // Force cache bust on the poster so stremio re-downloads it
+                        if (meta.poster) {
+                            meta.poster = meta.poster.includes('?') 
+                                ? `${meta.poster}&t=${Date.now()}` 
+                                : `${meta.poster}?t=${Date.now()}`;
+                        }
+
+                        // Prepare for datastorePut
+                        changes.push(buildStremioLibraryPayload(meta, item));
+
+                        item.name = meta.name;
+                        item.poster = meta.poster;
+                    }
+
                     await item.save();
                     
                     // Small delay to avoid rate limit

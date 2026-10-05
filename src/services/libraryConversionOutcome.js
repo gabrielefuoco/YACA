@@ -24,7 +24,8 @@ const { RESOLUTION_REASONS } = require('./libraryIdentityResolution');
 
 /** Motivi dell'esito che non vengono dalla risoluzione dell'identità. */
 const OUTCOME_REASONS = Object.freeze({
-    ITEM_ALREADY_HAS_TMDB_ID: 'item-has-tmdb-id'
+    ITEM_ALREADY_HAS_TMDB_ID: 'item-has-tmdb-id',
+    AMBIGUOUS_TYPE: 'ambiguous-type'
 });
 
 /**
@@ -34,7 +35,8 @@ const OUTCOME_REASONS = Object.freeze({
  */
 const UNRESOLVED_LABELS = Object.freeze({
     [RESOLUTION_REASONS.NOT_FOUND]: 'assenti dalla mappatura',
-    [RESOLUTION_REASONS.UNSUPPORTED_SOURCE]: 'fonte non gestita'
+    [RESOLUTION_REASONS.UNSUPPORTED_SOURCE]: 'fonte non gestita',
+    [OUTCOME_REASONS.AMBIGUOUS_TYPE]: 'tipo non noto'
 });
 
 /** Motivo di fallback quando un item non risolto non ha un motivo conosciuto. */
@@ -52,11 +54,20 @@ function hasTmdbId(tmdbId) {
  * Decide l'esito di un item a partire dal TMDB id (eventualmente già presente
  * sull'item) e dal verdetto della risoluzione dell'identità.
  *
- * @param {{tmdbId?: number|string|null, identity?: {resolved?: boolean, tmdbId?: number|string|null, reason?: string}|null}} input
+ * @param {{tmdbId?: number|string|null, identity?: {resolved?: boolean, tmdbId?: number|string|null, reason?: string}|null, ambiguousType?: boolean}} input
  * @returns {{resolved: boolean, tmdbId: number|string|null, reason: string}}
  */
 function decideConversionOutcome(input = {}) {
-    const { tmdbId, identity } = input || {};
+    const { tmdbId, identity, ambiguousType } = input || {};
+
+    if (ambiguousType === true || identity?.reason === OUTCOME_REASONS.AMBIGUOUS_TYPE) {
+        return {
+            resolved: false,
+            tmdbId: null,
+            reason: OUTCOME_REASONS.AMBIGUOUS_TYPE
+        };
+    }
+
     const fromIdentity = hasTmdbId(identity?.tmdbId) ? identity.tmdbId : null;
 
     if (fromIdentity !== null) {
