@@ -22,6 +22,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const { MongoClient } = require('mongodb');
+const { withRetry } = require('../src/utils/retry');
 
 const COLLECTION = 'streambadges';
 
@@ -78,7 +79,11 @@ async function main() {
         process.exit(2);
     }
 
-    const client = await MongoClient.connect(uri);
+    // Un singhiozzo DNS verso Atlas non deve chiudere il giro: si ritenta e si dice.
+    const client = await withRetry(() => MongoClient.connect(uri), {
+        onRetry: ({ attempt, error, delayMs }) =>
+            console.warn(`[-] Connessione Atlas fallita (${error.message}): ritento fra ${delayMs}ms (tentativo ${attempt + 1}/3).`)
+    });
     const collezione = client.db().collection(COLLECTION);
 
     try {

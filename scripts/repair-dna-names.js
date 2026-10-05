@@ -1,5 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
+const { connectMongo } = require('../src/utils/mongoConnect');
 const AddonConfig = require('../src/db/models/AddonConfig');
 const UserAccount = require('../src/db/models/UserAccount');
 const {
@@ -40,7 +41,7 @@ async function repairDnaNames() {
     }
 
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
+        await connectMongo(process.env.MONGODB_URI, { mongoose });
         console.log('Connesso a MongoDB Atlas.\n');
 
         let query = {};

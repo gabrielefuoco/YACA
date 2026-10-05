@@ -56,6 +56,12 @@ if ! command -v rclone >/dev/null 2>&1; then
   exit 1
 fi
 
+# Senza nessuno dei due non c'è un giro da ritentare: si dice e si esce subito.
+if ! command -v mongodump >/dev/null 2>&1 && ! command -v docker >/dev/null 2>&1; then
+  echo "[-] ERRORE: Né 'mongodump' né 'docker' sono disponibili per generare il dump." >&2
+  exit 1
+fi
+
 # Configurazione cartella temporanea e cleanup automatico su exit
 TMP_DIR="$(mktemp -d -t yaca-backup-XXXXXX)"
 cleanup() {
@@ -69,24 +75,47 @@ ARCHIVE_PATH="${TMP_DIR}/${ARCHIVE_NAME}"
 
 echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Avvio dump database MongoDB Atlas..."
 
-# Esecuzione dump: tenta mongodump nativo o ricorre al container docker
-if command -v mongodump >/dev/null 2>&1; then
-  mongodump --uri="${MONGODB_URI}" --archive="${ARCHIVE_PATH}" --gzip
-elif command -v docker >/dev/null 2>&1; then
-  echo "[i] 'mongodump' non trovato sull'host. Esecuzione tramite container Docker (mongo:7)..."
-  # Due dettagli non negoziabili, verificati il 2026-09-22:
-  #  - `--entrypoint mongodump`: invocare `mongodump` come comando del container lo fa passare
-  #    dall'entrypoint dell'immagine, che cambia utente e fa fallire la scrittura con
-  #    "permission denied" sulla cartella montata. Con --entrypoint il binario parte diretto.
-  #  - `--user` + `HOME=/tmp`: il file deve nascere con l'uid dell'invocante (root sotto systemd),
-  #    altrimenti il resto dello script non lo può leggere/copiare.
-  docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp --entrypoint mongodump \
-    -v "${TMP_DIR}:/backup" mongo:7 \
-    --uri="${MONGODB_URI}" --archive="/backup/${ARCHIVE_NAME}" --gzip
-else
-  echo "[-] ERRORE: Né 'mongodump' né 'docker' sono disponibili per generare il dump." >&2
-  exit 1
-fi
+# Un tentativo di dump verso Atlas: mongodump nativo, altrimenti il container.
+# È una funzione perché il ritentativo qui sotto la richiama.
+dump_una_volta() {
+  if command -v mongodump >/dev/null 2>&1; then
+    mongodump --uri="${MONGODB_URI}" --archive="${ARCHIVE_PATH}" --gzip
+  else
+    echo "[i] 'mongodump' non trovato sull'host. Esecuzione tramite container Docker (mongo:7)..."
+    # Due dettagli non negoziabili, verificati il 2026-09-22:
+    #  - `--entrypoint mongodump`: invocare `mongodump` come comando del container lo fa passare
+    #    dall'entrypoint dell'immagine, che cambia utente e fa fallire la scrittura con
+    #    "permission denied" sulla cartella montata. Con --entrypoint il binario parte diretto.
+    #  - `--user` + `HOME=/tmp`: il file deve nascere con l'uid dell'invocante (root sotto systemd),
+    #    altrimenti il resto dello script non lo può leggere/copiare.
+    docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp --entrypoint mongodump \
+      -v "${TMP_DIR}:/backup" mongo:7 \
+      --uri="${MONGODB_URI}" --archive="/backup/${ARCHIVE_NAME}" --gzip
+  fi
+}
+
+# Esecuzione dump con RITENTATIVO: un singhiozzo DNS verso Atlas non è un guasto.
+# Il backup delle 03:00 è un giro che non guarda: se ESERVFAIL cade per due secondi
+# sul lookup SRV e il backup salta, il giorno di restore scopre che manca.
+# Qui non si può usare `withRetry` di src/utils/retry.js (è JavaScript e questo è
+# un timer bash): la stessa idea in bash è un loop con attesa breve e una riga di log.
+# Stesso tetto del codice (3 tentativi) e stessa attesa breve (10s, non minuti).
+DUMP_TENTATIVI="${DUMP_TENTATIVI:-3}"
+DUMP_ATTESA_S="${DUMP_ATTESA_S:-10}"
+
+tentativo=1
+while :; do
+  if dump_una_volta; then
+    break
+  fi
+  if [ "${tentativo}" -ge "${DUMP_TENTATIVI}" ]; then
+    echo "[-] ERRORE: dump verso Atlas fallito dopo ${tentativo} tentativi: non è un singhiozzo, l'host o l'URI sono da correggere." >&2
+    exit 1
+  fi
+  echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] [!] Dump verso Atlas fallito (tentativo ${tentativo}/${DUMP_TENTATIVI}): singhiozzo di rete o DNS, ritento fra ${DUMP_ATTESA_S}s."
+  sleep "${DUMP_ATTESA_S}"
+  tentativo=$((tentativo + 1))
+done
 
 # Verifica che il file di archivio sia stato creato e non sia vuoto
 if [ ! -s "${ARCHIVE_PATH}" ]; then

@@ -21,6 +21,7 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+const { connectMongo } = require('../src/utils/mongoConnect');
 const UserLibraryItem = require('../src/db/models/UserLibraryItem');
 const {
     normalizeLegacyPosterHost,
@@ -54,7 +55,7 @@ async function main() {
         process.exit(1);
     }
 
-    await mongoose.connect(process.env.MONGODB_URI);
+    await connectMongo(process.env.MONGODB_URI, { mongoose });
 
     // Il mapping Kitsu→TMDB è ciò che unisce gli id anime in produzione: senza,
     // due copie dello stesso anime (kitsu:… e tt…) non verrebbero riconosciute.

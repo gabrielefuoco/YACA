@@ -28,6 +28,7 @@ const envPath = fs.existsSync(path.resolve(__dirname, '../.env'))
 require('dotenv').config({ path: envPath });
 
 const mongoose = require('mongoose');
+const { connectMongo } = require('../src/utils/mongoConnect');
 
 function normalizeLegacyId(rawId) {
     if (!rawId) return null;
@@ -144,7 +145,7 @@ if (require.main === module) {
 
         try {
             console.log('Connessione a MongoDB...');
-            await mongoose.connect(mongoUri);
+            await connectMongo(mongoUri, { mongoose });
             console.log('Connessione stabilita.');
 
             await migrateLibraryItemIdNull();

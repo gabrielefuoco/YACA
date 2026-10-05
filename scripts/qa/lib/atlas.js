@@ -20,7 +20,9 @@ async function connectDb() {
     if (!mongooseRef) mongooseRef = require('mongoose');
     if (mongooseRef.connection.readyState === 1) return mongooseRef.connection.db;
     if (!process.env.MONGODB_URI) fail('MONGODB_URI mancante: impossibile contattare Atlas.');
-    await mongooseRef.connect(process.env.MONGODB_URI);
+    // Ritentativo: senza, un ESERVFAIL di due secondi chiude la simulazione (ticket 12).
+    const { connectMongo } = require('../../../src/utils/mongoConnect');
+    await connectMongo(process.env.MONGODB_URI, { mongoose: mongooseRef });
     return mongooseRef.connection.db;
 }
 

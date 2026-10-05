@@ -29,6 +29,7 @@ const duckdb = require('duckdb');
 const TmdbDumpStore = require('../src/utils/tmdbDumpStore');
 const TmdbDumpClient = require('../src/utils/tmdbDumpClient');
 const animeAiringState = require('../src/data/animeAiringState');
+const { connectMongo } = require('../src/utils/mongoConnect');
 const { convert } = require('./convert_to_parquet');
 
 function sleep(ms) {
@@ -117,7 +118,10 @@ async function resolveTrackedIds(options) {
             throw new Error('MONGODB_URI non definita in .env e nessun --ids o --from-file specificato.');
         }
         console.log('[Backfill] Connessione a MongoDB Atlas...');
-        await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 15000 });
+        await connectMongo(process.env.MONGODB_URI, {
+            mongoose,
+            connectOptions: { serverSelectionTimeoutMS: 15000 }
+        });
         console.log('[Backfill] MongoDB connesso.');
     }
 
