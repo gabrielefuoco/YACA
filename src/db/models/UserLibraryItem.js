@@ -20,7 +20,15 @@ const userLibraryItemSchema = new mongoose.Schema({
     mapped: { type: Boolean, default: false },
     // Stesso titolo presente con id diversi (tt… / tmdb:… / kitsu:…): il documento
     // secondario punta al primario e viene nascosto da dashboard e cataloghi.
-    duplicateOf: { type: String, default: null }
+    duplicateOf: { type: String, default: null },
+    // Tetto ai tentativi di conversione (src/services/libraryConversionRetry.js):
+    // quanti giri ha fallito questo item e, se sono finiti, quando e perché è stato
+    // parcheggiato. Sono dati: rimetterlo in giro è azzerarli, nessun codice da toccare.
+    // `parkedAt` è il campo che distingue «parcheggiato» da «ancora in coda»
+    // (entrambi hanno mapped: false), e «parcheggiato» da «convertito» (mapped: true).
+    conversionAttempts: { type: Number, default: 0 },
+    parkedAt: { type: Date, default: null },
+    parkedReason: { type: String, default: null }
 }, { 
     timestamps: true 
 });
