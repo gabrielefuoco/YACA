@@ -14,6 +14,7 @@ const mongoose = require('mongoose');
 const { applyKidsMode, isItemInappropriateForKids } = require('../utils/kidsModeFilters');
 const { normalizeAnimeMarker } = require('../utils/animeIdentity');
 const { resolveAnimePolicy, getEffectiveTypeSelectors } = require('./hybrid/animePolicy');
+const { isProfileSyncDue } = require('./profileStaleness');
 
 function isItemAnime(item) {
     if (!item) return false;
@@ -332,10 +333,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     console.log(`[Hybrid Debug] profile loaded: ${!!profile}, isKidsMode=${isKidsMode}, cacheKey=${cacheKey}`);
 
     if (profile) {
-        const now = new Date();
-        const lastUpdatedMs = profile.lastUpdated ? new Date(profile.lastUpdated).getTime() : 0;
-        const isStale = (now.getTime() - lastUpdatedMs) > (1000 * 60 * 60 * 12);
-        if (isStale) {
+        if (isProfileSyncDue(profile.lastUpdated, new Date())) {
             // console.log(`[Hybrid] Sincronizzazione profilo per ${userId} (${context})...`);
             syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context, userConfig).then(async (synced) => {
                 if (synced) {
