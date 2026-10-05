@@ -170,33 +170,50 @@ class LibrarySyncService {
      * @returns {Promise<number>} quanti documenti sono stati rinominati
      */
     static async repairStoredItemIds(addonUuid, items = []) {
-        if (!addonUuid || !Array.isArray(items) || items.length === 0) return 0;
+        if (!addonUuid) return 0;
 
-        // id normalizzato → varianti sporche in arrivo (serve solo se diverse)
+        // id normalizzato → varianti sporche da agganciare (serve solo se diverse)
         const dirtyVariants = new Map();
-        for (const item of items) {
-            const raw = String(item?._id ?? item?.itemId ?? '').trim();
-            if (!raw) continue;
-            const normalized = LibrarySyncService.normalizeSyncItemId(raw);
-            if (!normalized || normalized === raw) continue;
+        const addVariant = (value) => {
+            // Il confronto è con la stringa ORIGINALE: uno `itemId: "tt0095327 "` è
+            // sporco anche se lo `trim()` lo rende identico a quello normalizzato.
+            const original = String(value ?? '');
+            if (!original.trim()) return;
+            const normalized = LibrarySyncService.normalizeSyncItemId(original);
+            if (!normalized || normalized === original) return;
             if (!dirtyVariants.has(normalized)) dirtyVariants.set(normalized, new Set());
-            dirtyVariants.get(normalized).add(raw);
+            dirtyVariants.get(normalized).add(original);
+        };
+        for (const item of (Array.isArray(items) ? items : [])) addVariant(item?._id ?? item?.itemId);
+
+        // Letture e scritture passano dalla collection grezza: il modello non applica
+        // le projection come qui (restituirebbe solo `_id`) e su questi documenti
+        // l'`_id` può essere una stringa, che il modello casterebbe a ObjectId.
+        const raw = UserLibraryItem.collection;
+        const findIds = (itemIds) => raw
+            .find({ addonUuid, itemId: { $in: itemIds } }, { projection: { itemId: 1 } })
+            .toArray();
+
+        // Gli id sporchi già in archivio entrano nello stesso piano: il giro sistema
+        // anche quelli che Stremio non ha più rimandato, finché restano agganciabili.
+        try {
+            const storedDocs = await raw.find({ addonUuid }, { projection: { itemId: 1 } }).toArray();
+            for (const doc of storedDocs) addVariant(doc?.itemId);
+        } catch (err) {
+            console.warn('[LibrarySync] Lettura id in archivio non-fatale:', err.message);
         }
         if (dirtyVariants.size === 0) return 0;
 
-        const raw = UserLibraryItem.collection;
         let repaired = 0;
         for (const [normalized, variants] of dirtyVariants) {
             const candidates = Array.from(variants).sort();
-            const stored = await UserLibraryItem
-                .find({ addonUuid, itemId: { $in: [...candidates, normalized] } }, { itemId: 1 })
-                .lean();
+            const stored = await findIds([...candidates, normalized]);
 
-            if ((stored || []).some(doc => doc && doc.itemId === normalized)) continue;
+            if (stored.some(doc => doc && doc.itemId === normalized)) continue;
 
             // Solo il primo: le altre varianti sporche (se ci sono) restano in archivio
-            // e vengono marcate come duplicate, non si uniscono a caso.
-            const target = (stored || []).find(doc => doc && doc.itemId && doc.itemId !== normalized);
+            // e vengono marcate come duplicate dal sync, non si uniscono a caso.
+            const target = stored.find(doc => doc && doc.itemId && doc.itemId !== normalized);
             if (!target) continue;
 
             await raw.updateOne({ addonUuid, itemId: target.itemId }, { $set: { itemId: normalized } });
