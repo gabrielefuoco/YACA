@@ -266,6 +266,78 @@ describe('User Library Deduplication & Poster Resolution', () => {
     });
 });
 
+describe('7. Il sync non riporta indietro copertine di host ritirati', () => {
+    // Il 2026-10-05 la tailnet è stata rinominata: `mate.taild24589.ts.net` non
+    // risolve più, quello corrente è `mate.hyena-alphard.ts.net`. Stremio conserva
+    // gli URL vecchi in libreria, quindi senza normalizzare in scrittura ogni giro
+    // rimetterebbe in archivio le copertine rotte (la riparazione verrebbe disfatta).
+    const CURRENT = 'https://mate.hyena-alphard.ts.net';
+    let previousHost;
+
+    beforeEach(() => {
+        previousHost = process.env.HOST_URL;
+        process.env.HOST_URL = CURRENT;
+    });
+
+    afterEach(() => {
+        if (previousHost === undefined) delete process.env.HOST_URL;
+        else process.env.HOST_URL = previousHost;
+    });
+
+    const op = (fields) => ({
+        updateOne: {
+            filter: { addonUuid: 'uuid-h', itemId: fields.itemId },
+            update: { $set: fields },
+            upsert: true
+        }
+    });
+
+    test('riscrive all host corrente la copertina con host ritirato, percorso e parametri intatti', async () => {
+        const ops = [op({
+            itemId: 'tt0137523',
+            poster: 'https://mate.taild24589.ts.net/images/poster/movie/tt0137523/ITA/23?t=1',
+            background: 'https://mate.taild24589.ts.net/images/background/x.jpg',
+            logo: 'https://image.tmdb.org/t/p/original/logo.jpg'
+        })];
+
+        const normalized = await LibrarySyncService.normalizeSyncPosterHosts(ops);
+
+        expect(normalized).toBe(1);
+        expect(ops[0].updateOne.update.$set.poster)
+            .toBe(`${CURRENT}/images/poster/movie/tt0137523/ITA/23?t=1`);
+        // sfondo e logo restano come arrivano: nessuno dei due va riscritto
+        expect(ops[0].updateOne.update.$set.background)
+            .toBe('https://mate.taild24589.ts.net/images/background/x.jpg');
+        expect(ops[0].updateOne.update.$set.logo)
+            .toBe('https://image.tmdb.org/t/p/original/logo.jpg');
+    });
+
+    test('non tocca le copertine di host esterni (TMDB, easyratingsdb, Kitsu, TVDB)', async () => {
+        const external = {
+            'https://image.tmdb.org/t/p/w500/abc.jpg': 'tt1',
+            'https://artworks.thetvdb.com/banners/v1/banner.jpg': 'tt2',
+            'https://media.kitsu.io/anime/cover/1.jpg': 'kitsu:1',
+            'https://images.easyratingsdb.com/movie/1.jpg': 'tt3'
+        };
+        const ops = Object.entries(external).map(([poster, itemId]) => op({ itemId, poster }));
+
+        const normalized = await LibrarySyncService.normalizeSyncPosterHosts(ops);
+
+        expect(normalized).toBe(0);
+        expect(ops.map(o => o.updateOne.update.$set.poster)).toEqual(Object.keys(external));
+    });
+
+    test('senza HOST_URL configurato non modifica nulla', async () => {
+        delete process.env.HOST_URL;
+        const ops = [op({ itemId: 'tt1', poster: 'https://mate.taild24589.ts.net/a/b.jpg' })];
+
+        const normalized = await LibrarySyncService.normalizeSyncPosterHosts(ops);
+
+        expect(normalized).toBe(0);
+        expect(ops[0].updateOne.update.$set.poster).toBe('https://mate.taild24589.ts.net/a/b.jpg');
+    });
+});
+
 describe('6. Priorità di consolidamento: mai preferire un documento rimosso', () => {
     test('la query ordina per removed, poi mapped, poi _mtime', async () => {
         const sortMock = jest.fn().mockResolvedValue([]);

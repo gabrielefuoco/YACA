@@ -4,6 +4,7 @@ const UserLibraryItem = require('../db/models/UserLibraryItem');
 const { stremioClient } = require('../clients/stremio');
 const { isAnimeContent } = require('../utils/animeIdentity');
 const { resolvePoster } = require('../utils/posterResolver');
+const { normalizeLegacyPosterHost } = require('../utils/libraryIdentity');
 let animeMappingStore = null;
 try {
     animeMappingStore = require('../data/animeMappingStore');
@@ -139,6 +140,43 @@ class LibrarySyncService {
             console.warn('[LibrarySync] Preservazione copertine non-fatale:', err.message);
             return 0;
         }
+    }
+
+    /**
+     * Riscrive nelle ops le copertine che puntano a un host ritirato (vecchio HF
+     * Space, vecchio nome tailnet) verso l'host corrente, con la stessa regola già
+     * usata in lettura.
+     *
+     * Serve perché Stremio conserva in libreria gli URL così come sono: senza
+     * normalizzare qui in scrittura, ogni giro di sync rimetterebbe in archivio le
+     * copertine vecchie e annullerebbe la riparazione del giro precedente. Solo
+     * `poster` viene riscritto: sfondo e logo restano come arrivano. Le copertine
+     * di host esterni (TMDB, Kitsu, TVDB, easyratingsdb) non sono host legacy e
+     * restano intatte.
+     *
+     * @param {Array} bulkOps ops nel formato `{ updateOne: { filter, update, upsert } }`
+     * @returns {Promise<number>} quante copertine sono state riscritte
+     */
+    static async normalizeSyncPosterHosts(bulkOps = []) {
+        if (!Array.isArray(bulkOps) || bulkOps.length === 0) return 0;
+        const currentHost = process.env.HOST_URL;
+        if (!currentHost) return 0;
+
+        let normalized = 0;
+        for (const op of bulkOps) {
+            const set = op?.updateOne?.update?.$set;
+            if (!set || typeof set.poster !== 'string' || !set.poster.trim()) continue;
+            const fixed = normalizeLegacyPosterHost(set.poster, currentHost);
+            if (fixed && fixed !== set.poster) {
+                set.poster = fixed;
+                normalized++;
+            }
+        }
+
+        if (normalized > 0) {
+            console.log(`[LibrarySync] Copertine normalizzate sull'host corrente: ${normalized}`);
+        }
+        return normalized;
     }
 
     /**
@@ -291,6 +329,7 @@ class LibrarySyncService {
             }));
 
             if (bulkOps.length > 0) {
+                await LibrarySyncService.normalizeSyncPosterHosts(bulkOps);
                 await LibrarySyncService.preserveExistingPosters(user.addonUuid, bulkOps);
                 await UserLibraryItem.bulkWrite(bulkOps, { ordered: false });
             }
