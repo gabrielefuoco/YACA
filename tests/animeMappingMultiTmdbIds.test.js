@@ -107,4 +107,15 @@ describe('AnimeMappingStore: id TMDB multipli nei record Fribb', () => {
         expect(animeMappingStore.resolveTmdbFromKitsu(9003)).toBe('4242');
         expect(animeMappingStore.resolveKitsuMovie(4242)).toBe(9003);
     });
+
+    test('la mappatura conserva il tipo (tv vs movie) ricevuto da Fribb', () => {
+        expect(animeMappingStore.resolveMediaTypeFromKitsu(1376)).toBe('movie');
+        expect(animeMappingStore.resolveTmdbEntryFromKitsu(1376)).toEqual({ tmdbId: '128', type: 'movie' });
+
+        expect(animeMappingStore.resolveMediaTypeFromKitsu(265)).toBe('tv');
+        expect(animeMappingStore.resolveTmdbEntryFromKitsu(265)).toEqual({ tmdbId: '26209', type: 'tv' });
+
+        expect(animeMappingStore.resolveMediaTypeFromKitsu(501)).toBe('movie');
+        expect(animeMappingStore.resolveMediaTypeFromKitsu(502)).toBe('movie');
+    });
 });

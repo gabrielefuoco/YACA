@@ -89,6 +89,32 @@ describe('resolveTmdbIdentity', () => {
         expect(lookup.calls).toEqual([]);
     });
 
+    test('un id kitsu con tipo nella mappatura conserva il tipo (tv o movie)', async () => {
+        const lookup = fakeLookup();
+        const lookupKitsuId = fakeLookup({
+            10: { tmdbId: '30981', type: 'tv' },
+            142: { tmdbId: '128', type: 'movie' }
+        });
+
+        const v1 = await resolveTmdbIdentity('kitsu:10', { lookupImdbId: lookup, lookupKitsuId });
+        expect(v1).toEqual({
+            resolved: true,
+            tmdbId: '30981',
+            mediaType: 'tv',
+            tmdbData: null,
+            reason: RESOLUTION_REASONS.FOUND_VIA_KITSU_MAP
+        });
+
+        const v2 = await resolveTmdbIdentity('kitsu:142', { lookupImdbId: lookup, lookupKitsuId });
+        expect(v2).toEqual({
+            resolved: true,
+            tmdbId: '128',
+            mediaType: 'movie',
+            tmdbData: null,
+            reason: RESOLUTION_REASONS.FOUND_VIA_KITSU_MAP
+        });
+    });
+
     test('un id kitsu: assente dalla mappatura resta non risolto — non è «dato per convertito»', async () => {
         const lookup = fakeLookup();
         const lookupKitsuId = fakeLookup();
