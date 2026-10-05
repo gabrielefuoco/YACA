@@ -344,6 +344,12 @@ const UserConfig = {
             customCatalogs: addonConfig?.customCatalogs || [],
             activeProfileId: addonConfig?.config?.activeProfileId,
             configVersion: addonConfig?.config?.configVersion,
+            // Bookkeeping della cadenza Stremio: senza questi la decisione «è ora di
+            // sincronizzare likes/loved?» non ha niente su cui basarsi (8 ore ± jitter).
+            lastStremioSync: addonConfig?.config?.lastStremioSync || null,
+            nextSyncInterval: typeof addonConfig?.config?.nextSyncInterval === 'number'
+                ? addonConfig.config.nextSyncInterval
+                : null,
             syncStatus: addonConfig?.syncStatus
         };
     },
