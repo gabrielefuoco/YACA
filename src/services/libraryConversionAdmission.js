@@ -13,19 +13,23 @@
  *   - `already-mapped`  l'item è già convertito (mapped: true)
  *   - `removed`         l'utente l'ha rimosso dalla libreria (removed: true)
  *   - `duplicate`       è un duplicato marcato e punta al primario (duplicateOf)
+ *   - `parked`          ha esaurito i tentativi (parkedAt, vedi libraryConversionRetry)
  */
+
+const { isParked, PARKED_REASONS } = require('./libraryConversionRetry');
 
 /** Motivi di esclusione, in costanti per evitare stringhe sparse nei test e nei log. */
 const EXCLUSION_REASONS = Object.freeze({
     ALREADY_MAPPED: 'already-mapped',
     REMOVED: 'removed',
-    DUPLICATE: 'duplicate'
+    DUPLICATE: 'duplicate',
+    ...PARKED_REASONS
 });
 
 /**
  * Valuta un singolo item della libreria.
  *
- * @param {{mapped?: boolean, removed?: boolean, duplicateOf?: string|null}} item
+ * @param {{mapped?: boolean, removed?: boolean, duplicateOf?: string|null, parkedAt?: Date|string|null}} item
  * @returns {{eligible: boolean, reason: string|null}} `reason` è null quando l'item è eleggibile
  */
 function evaluateConversionAdmission(item) {
@@ -41,6 +45,11 @@ function evaluateConversionAdmission(item) {
     }
     if (item.duplicateOf !== null && item.duplicateOf !== undefined && item.duplicateOf !== '') {
         return { eligible: false, reason: EXCLUSION_REASONS.DUPLICATE };
+    }
+    // Un item parcheggiato ha esaurito i tentativi: torna in coda solo se qualcuno
+    // lo rimette in giro azzerando i campi del parcheggio (cambio di dato, non di codice).
+    if (isParked(item)) {
+        return { eligible: false, reason: EXCLUSION_REASONS.PARKED };
     }
 
     return { eligible: true, reason: null };

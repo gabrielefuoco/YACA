@@ -16,6 +16,10 @@ const {
     buildConversionState,
     summarizeUnresolvedRun
 } = require('./libraryConversionOutcome');
+const {
+    applyConversionAttempt,
+    summarizeParkedRun
+} = require('./libraryConversionRetry');
 
 // La mappatura Kitsu→TMDB che l'app già tiene in memoria (Anibridge + Fribb,
 // ~8.2k chiavi, aggiornata da sola): qui è solo una lettura, nessuna rete e
@@ -67,7 +71,11 @@ class LibraryConverterService {
                 addonUuid: user.addonUuid,
                 mapped: false,
                 removed: false,
-                duplicateOf: null
+                duplicateOf: null,
+                // Gli item che hanno esaurito i tentativi non si riprovano: tornano in
+                // coda solo se qualcuno li rimette in giro azzerando i campi del
+                // parcheggio (cambio di dato, non di codice).
+                parkedAt: null
             }).limit(BATCH_SIZE);
             const unmappedItems = selectConvertibleItems(candidates);
 
@@ -79,9 +87,11 @@ class LibraryConverterService {
             console.log(`[LibraryConverter] Processing ${unmappedItems.length} items...`);
             const changes = [];
             // Un item che il giro non risolve non viene dato per convertito: resta
-            // eleggibile al giro dopo (la mappatura si aggiorna da sola). Alla fine
-            // del giro lo diciamo in una riga sola, per l'operatore.
+            // eleggibile al giro dopo (la mappatura si aggiorna da sola) finché non
+            // esaurisce i tentativi: allora resta in coda ma parcheggiato, col motivo.
+            // Alla fine del giro lo diciamo in una riga sola, per l'operatore.
             const results = [];
+            const parked = [];
 
             for (const item of unmappedItems) {
                 try {
@@ -117,7 +127,14 @@ class LibraryConverterService {
                     // fatto di essere passati dal ciclo.
                     const outcome = decideConversionOutcome({ tmdbId, identity });
                     tmdbId = outcome.resolved ? outcome.tmdbId : null;
+                    // Il tetto: quanti tentativi ha consumato e, se sono finiti, resta
+                    // parcheggiato (dato a parte, non un `mapped: true` mascherato).
+                    const attempt = applyConversionAttempt(item, outcome);
                     results.push({ itemId: strId, outcome });
+                    if (attempt.parked) {
+                        parked.push({ itemId: strId, reason: attempt.parkedReason, attempts: attempt.conversionAttempts });
+                        console.log(`[LibraryConverter] Parked ${strId} after ${attempt.conversionAttempts} attempts: ${attempt.parkedReason}`);
+                    }
                     if (!outcome.resolved) {
                         console.log(`[LibraryConverter] Identity unresolved for ${strId}: ${outcome.reason}`);
                     }
@@ -192,6 +209,9 @@ class LibraryConverterService {
                     const written = applyConversionOutcome(item, outcome);
                     item.tmdbId = written.tmdbId;
                     item.mapped = written.mapped;
+                    item.conversionAttempts = attempt.conversionAttempts;
+                    item.parkedAt = attempt.parkedAt;
+                    item.parkedReason = attempt.parkedReason;
                     item.name = meta.name;
                     item.poster = meta.poster;
                     await item.save();
@@ -221,7 +241,12 @@ class LibraryConverterService {
                 console.log(`[LibraryConverter] ${unresolvedLine}`);
             }
 
-            console.log(`[LibraryConverter] Conversion batch finished for user ${userId} (${converted} convertiti, ${unresolved.length} rimasti in coda)`);
+            const parkedLine = summarizeParkedRun(parked);
+            if (parkedLine) {
+                console.log(`[LibraryConverter] ${parkedLine}`);
+            }
+
+            console.log(`[LibraryConverter] Conversion batch finished for user ${userId} (${converted} convertiti, ${unresolved.length} rimasti in coda, ${parked.length} parcheggiati)`);
 
         } catch (error) {
             console.error(`[LibraryConverter] Fatal error:`, error.message);
