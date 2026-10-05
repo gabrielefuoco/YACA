@@ -31,7 +31,9 @@ async function main() {
         process.exit(1);
     }
 
-    await mongoose.connect(process.env.MONGODB_URI);
+    // Atlas risponde in qualche secondo al primo giro: i 10s di default del buffer
+    // non bastano e la query muore "buffering timed out" senza toccare il DB.
+    await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 30000, bufferTimeoutMS: 60000 });
     const userIds = args.all
         ? (await UserAccount.find({}, { userId: 1 }).lean()).map(u => u.userId).filter(Boolean)
         : [args.userId];
