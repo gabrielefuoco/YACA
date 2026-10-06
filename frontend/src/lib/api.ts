@@ -130,6 +130,13 @@ export const api = {
     del(`/api/profiles/${encodeURIComponent(profileId)}/library/${encodeURIComponent(itemId)}?userId=${encodeURIComponent(userId)}`),
   reorderLibrary: (profileId: string, userId: string, itemIds: string[]) =>
     put(`/api/profiles/${encodeURIComponent(profileId)}/library/reorder`, { userId, itemIds }),
+
+  // Anteprima + esecuzione 
+  // Rimuovi titoli visti: l'anteprima dichiara N, l'esecuzione rimuove esattamente N card.
+  getWatchedLibraryPreview: (profileId: string, userId: string) =>
+    get(`/api/profiles/${encodeURIComponent(profileId)}/library/watched?userId=${encodeURIComponent(userId)}`),
+  removeWatchedLibrary: (profileId: string, userId: string) =>
+    post(`/api/profiles/${encodeURIComponent(profileId)}/library/watched`, { userId }),
   
   convertLibrary: (profileId: string, userId: string) =>
     post(`/api/profiles/${encodeURIComponent(profileId)}/convert-library`, { userId }),
