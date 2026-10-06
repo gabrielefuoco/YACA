@@ -26,7 +26,12 @@ export function PosterImage({
   fallbackClassName = '',
   showFallbackTitle = true,
 }: PosterImageProps) {
-  const [failed, setFailed] = useState(false);
+  // L'esito del caricamento è legato alla SORGENTE che è fallita, non a un booleano
+  // sciolto: quando `src` cambia, il fallimento vecchio non vale più e l'immagine
+  // riprova da sola. Con un `failed: boolean` un poster fallito una volta restava
+  // fallito per sempre, anche dopo che il sync lo aveva riallineato a un URL nuovo.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const failed = Boolean(src) && failedSrc === src;
 
   if (!src || failed) {
     return (
@@ -46,7 +51,7 @@ export function PosterImage({
       alt={alt}
       className={className}
       loading="lazy"
-      onError={() => setFailed(true)}
+      onError={() => setFailedSrc(src ?? null)}
     />
   );
 }

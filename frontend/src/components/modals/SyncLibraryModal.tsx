@@ -10,6 +10,8 @@ interface SyncLibraryModalProps {
   onConfirm: () => Promise<void>
   isProcessing: boolean
   processingCount: number | null
+  /** Chiamata quando l'elaborazione finisce (successo o errore): il pannello può rileggere la libreria. */
+  onConversionFinished?: () => void
 }
 
 export function SyncLibraryModal({
@@ -17,8 +19,21 @@ export function SyncLibraryModal({
   onOpenChange,
   onConfirm,
   isProcessing,
-  processingCount
+  processingCount,
+  onConversionFinished
 }: SyncLibraryModalProps) {
+
+  // A fine conversione il dato sul server è nuovo, ma il pannello no: senza questa
+  // richiesta restava indietro finché qualcuno non ricaricava la pagina. Si guarda la
+  // TRANSIZIONE true→false (non il valore): all'apertura il modal è fermo e non deve
+  // chiedere niente, e una rilettura a vuoto non fa danni ma non serve.
+  const wasProcessing = React.useRef(false)
+  React.useEffect(() => {
+    if (wasProcessing.current && !isProcessing) {
+      onConversionFinished?.()
+    }
+    wasProcessing.current = isProcessing
+  }, [isProcessing, onConversionFinished])
   
   return (
     <Dialog open={open} onOpenChange={isProcessing ? undefined : onOpenChange}>

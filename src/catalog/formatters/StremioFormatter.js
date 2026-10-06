@@ -10,6 +10,10 @@ const { posterFileName } = require('../../../scripts/erdb-builder/build');
 // Unica fonte di verità sulla cartella dei poster: la stessa che serve la rotta statica e
 // in cui scrive il drenatore. Se le due divergessero, nessun file sarebbe mai servito.
 const { getCacheDir } = require('../../api/staticPosters');
+// La versione del badge è condivisa col refresh al sync (`src/utils/libraryPosterRefresh.js`):
+// unica fonte di verità, così il riallineamento non punta a un numero diverso da quello che
+// il formatter scrive negli URL nuovi.
+const { BADGE_IMG_VERSION } = require('./posterBadgeVersion');
 
 // Etichetta del badge "doppiato" nella cache: la stessa costante del costruttore
 // (scripts/erdb-builder/dump-list.js, BADGE_ITA). Non è un'invenzione: se non coincide,
@@ -315,7 +319,6 @@ function sanitizeCatalogMeta(item, options = {}) {
     if (item._itaOnlyBadge) tlBadge = null;
 
     let poster = sourceImage;
-    const BADGE_IMG_VERSION = 24; // Bump to force Stremio to re-download badge images
     if ((badgeText || tlBadge) && hostUrl && sourceImage) {
         const typeParam = item.type || 'series';
         const idParam = item.id || 'unknown';
