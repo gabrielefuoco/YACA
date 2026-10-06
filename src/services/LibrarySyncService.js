@@ -264,6 +264,71 @@ class LibrarySyncService {
     }
 
     /**
+     * Confronta due item di libreria per l'elezione del primario tra duplicati.
+     * Criteri in ordine di priorità:
+     * 1. Non-rimosso prima: un documento attivo (removed: false / falsy) vince su uno rimosso (removed: true).
+     * 2. Mappato prima: un documento già mappato con successo (mapped: true) vince su uno non mappato.
+     * 3. Preferenza identificatore: gli ID IMDb (tt...) e gli item con risoluzione canonica hanno la precedenza per compatibilità Stremio.
+     * 4. Più recente: timestamp Stremio (_ctime o _mtime più recente vince).
+     * 5. Tie-breaker deterministico su itemId (localeCompare) per evitare instabilità/saltellamenti.
+     *
+     * @param {Object} a
+     * @param {Object} b
+     * @returns {number}
+     */
+    static compareLibraryItemsForPrimary(a, b) {
+        if (!a && !b) return 0;
+        if (!a) return 1;
+        if (!b) return -1;
+
+        // 1. Non-rimosso prima
+        const aRemoved = Boolean(a.removed);
+        const bRemoved = Boolean(b.removed);
+        if (aRemoved !== bRemoved) {
+            return aRemoved ? 1 : -1;
+        }
+
+        // 2. Mappato prima
+        const aMapped = Boolean(a.mapped);
+        const bMapped = Boolean(b.mapped);
+        if (aMapped !== bMapped) {
+            return bMapped ? 1 : -1;
+        }
+
+        // 3. Preferenza identificatore: IMDb (tt...) e canonico
+        const aKey = String(a.itemId || a._id || a.itemKey || '');
+        const bKey = String(b.itemId || b._id || b.itemKey || '');
+        const aIsImdb = /^tt\d+/i.test(aKey);
+        const bIsImdb = /^tt\d+/i.test(bKey);
+        const aPref = (a.canonical ? 1 : 0) + (aIsImdb ? 1 : 0);
+        const bPref = (b.canonical ? 1 : 0) + (bIsImdb ? 1 : 0);
+        if (aPref !== bPref) {
+            return bPref - aPref;
+        }
+
+        // 4. Timestamp più recente (_ctime o _mtime)
+        const aTime = new Date(a._ctime || a._mtime || a.updatedAt || 0).getTime() || 0;
+        const bTime = new Date(b._ctime || b._mtime || b.updatedAt || 0).getTime() || 0;
+        if (aTime !== bTime) {
+            return bTime - aTime;
+        }
+
+        // 5. Spareggio deterministico su itemId
+        return aKey.localeCompare(bKey);
+    }
+
+    /**
+     * Elegge l'item primario tra un gruppo di candidati duplicati.
+     * @param {Array<Object>} candidates
+     * @returns {Object|null}
+     */
+    static electPrimaryLibraryItem(candidates = []) {
+        if (!Array.isArray(candidates) || candidates.length === 0) return null;
+        const sorted = [...candidates].sort(LibrarySyncService.compareLibraryItemsForPrimary);
+        return sorted[0];
+    }
+
+    /**
      * Consolida e deduplica gli elementi della libreria per un dato addonUuid.
      * Riconcilia documenti legacy senza itemId con i record unificati, mantenendo il record più ricco.
      *
@@ -276,7 +341,8 @@ class LibrarySyncService {
             // Priorità al documento da tenere: prima i NON rimossi (`removed: 1` con `false` prima di `true`),
             // poi i mappati, poi i più recenti. Senza `removed` in testa si rischiava di tenere
             // un documento rimosso ed eliminare quello che l'utente vede in libreria.
-            const items = await UserLibraryItem.find({ addonUuid }).sort({ removed: 1, mapped: -1, _mtime: -1 });
+            const rawItems = await UserLibraryItem.find({ addonUuid }).sort({ removed: 1, mapped: -1, _mtime: -1 });
+            const items = Array.isArray(rawItems) ? [...rawItems].sort(LibrarySyncService.compareLibraryItemsForPrimary) : [];
             const seen = new Map();
             const toDeleteIds = [];
             const legacyIds = [];

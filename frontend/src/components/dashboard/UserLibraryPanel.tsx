@@ -9,6 +9,7 @@ import { Loader2, Library, CheckSquare, Square, Trash2, ArrowUpDown, RefreshCw }
 import { MyList } from '@/types';
 
 import { SyncLibraryModal } from '@/components/modals/SyncLibraryModal';
+import { getCanonicalLibraryKey } from '@/lib/libraryCanonical';
 
 interface UserLibraryPanelProps {
   profileId: string;
@@ -121,10 +122,11 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
     setDragIndex(null);
   };
 
-  // Deduplica difensiva per evitare chiavi duplicate e render multipli
+  // Deduplica difensiva su chiave canonica: evita chiavi duplicate e render multipli
+  // senza confondere film e serie con lo stesso ID numerico TMDB o variazioni di namespace.
   const uniqueItems = Array.from(
     items.reduce<Map<string, any>>((map, item) => {
-      const key = item._id || item.itemId;
+      const key = getCanonicalLibraryKey(item);
       if (key && !map.has(key)) map.set(key, item);
       return map;
     }, new Map<string, any>()).values()
