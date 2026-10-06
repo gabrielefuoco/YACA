@@ -22,6 +22,7 @@ function createGlobalProfile(): Profile {
       newPrompts: [],
       presetOverrides: {},
       catalogOrder: [...HERO_PRESET_IDS],
+      libraryOrder: [],
       heroPresetsInitialized: true,
     },
     existingCatalogs: [],
@@ -43,6 +44,7 @@ function createDefaultProfile(name: string = 'Profilo Principale'): Profile {
       newPrompts: [],
       presetOverrides: {},
       catalogOrder: [...HERO_PRESET_IDS],
+      libraryOrder: [],
       heroPresetsInitialized: true,
     },
     existingCatalogs: [],
@@ -230,6 +232,21 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
     );
   }, []);
 
+  const reorderLibrary = useCallback((profileId: string, itemIds: string[]) => {
+    setProfiles((prev: Profile[]) =>
+      prev.map((p: Profile) => {
+        if (p.id !== profileId) return p;
+        return {
+          ...p,
+          raw_ui_state: {
+            ...p.raw_ui_state,
+            libraryOrder: itemIds,
+          },
+        };
+      })
+    );
+  }, []);
+
   const removeCatalog = useCallback((profileId: string, catalogId: string) => {
     setProfiles((prev: Profile[]) =>
       prev.map((p: Profile) => {
@@ -296,6 +313,7 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
     removeProfile,
     togglePreset,
     reorderCatalogs,
+    reorderLibrary,
     removeCatalog,
     addCatalog,
     updateCatalog,

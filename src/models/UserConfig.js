@@ -140,6 +140,9 @@ const UserConfig = {
                         if (Array.isArray(mergedRawUi.catalogOrder)) {
                             mergedRawUi.catalogOrder = [...new Set(mergedRawUi.catalogOrder)];
                         }
+                        if (Array.isArray(mergedRawUi.libraryOrder)) {
+                            mergedRawUi.libraryOrder = [...new Set(mergedRawUi.libraryOrder)];
+                        }
 
                         return { 
                             ...existing, 

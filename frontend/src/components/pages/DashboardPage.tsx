@@ -275,6 +275,8 @@ export function DashboardPage({
               <UserLibraryPanel
                 profileId={editingProfile.id}
                 userId={userId}
+                profile={editingProfile}
+                onUpdateProfile={onUpdateProfile}
                 onCreateCatalog={(list) => {
                   onSaveMyList(list);
                   setActiveTab('active');
