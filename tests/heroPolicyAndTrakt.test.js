@@ -401,8 +401,10 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
             // La cache usa il kidsMode del profilo YACA e il `context` (l'id del profilo).
             // NON la configVersion: toglierla è un cambio voluto e misurato (v. il test gemello in
             // heroDiversity.test.js), perché orfanava l'hero a ogni salvataggio della configurazione.
+            // `v2` dal ticket 17: i pool dei hero cambiano composizione, quindi la chiave cambia
+            // con loro — se questo test rosseggia per un bump, il bump è da fare apposta.
             expect(hybridRecommendationsCache.getWithStatus).toHaveBeenCalledWith(
-                'user_1_kids_profile_heroes_v1_movie_kids'
+                'user_1_kids_profile_heroes_v2_movie_kids'
             );
 
             // Item 502 (Horror) MUST NOT be returned in kidsMode

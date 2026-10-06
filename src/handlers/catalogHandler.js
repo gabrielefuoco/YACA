@@ -105,7 +105,10 @@ function isAiringStateCatalog(baseId, catalogMeta) {
 //     i TITOLI (non è più la lista "In corso") e i NUMERI sui badge (`EP n`/`ITA n` vengono dal
 //     campo `number` dell'item). Le pagine già in cache servirebbero la lista vecchia per 14
 //     giorni: senza bump il cambio non si vedrebbe.
-const BADGE_CATALOG_VERSION = 23;
+// Bump 23 -> 24 (ticket 14/18/32): la chiave del catalogo invalida le voci vecchie.
+// Senza il bump le correzioni non si vedrebbero per il TTL di `tmdb_catalog` (14 giorni):
+// titoli riparati, tie-breaker dell'ordinamento e rimozione di merge/interleave.
+const BADGE_CATALOG_VERSION = 24;
 
 /**
  * Serializza la definizione di un catalogo in forma canonica: chiavi ordinate,
