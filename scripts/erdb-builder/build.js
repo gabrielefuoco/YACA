@@ -53,16 +53,25 @@ function sanitizePart(value) {
         .replace(/^_+|_+$/g, '');
 }
 
+// La versione del poster la calcola questo modulo condiviso: e' l'unico modo perche'
+// l'app e il dump offline costruiscano lo STESSO nome per lo stesso poster.
+const { calcolaVersionePoster } = require('../../src/catalog/formatters/posterBadgeVersion');
+
 /**
- * Nome file deterministico per un poster: `tmdb-movie-27205_ITA.jpg`.
+ * Nome file deterministico per un poster: `tmdb-movie-27205-a1b2c3d4_ITA.jpg`.
  * Funzione pura: stesse voci in ingresso -> stesso nome in uscita, sempre.
+ *
+ * La versione fa parte del nome ed e' **derivata dal contenuto** (id + badge + disegno):
+ * e' quello che rende il file autodescrittivo, e che permette al dump offline di produrre
+ * nomi che l'app riconosce senza che nessuno debba ricordarsi di alzare un numero.
  */
 function posterFileName(entry) {
     const erdbId = sanitizeErdbId(entry.erdbId);
     if (!erdbId) {
         throw new Error(`campo "erdbId" mancante o non valido: ${JSON.stringify(entry)}`);
     }
-    const version = entry.version || entry.v;
+    // Un chiamante puo' passare una versione esplicita (solo i test lo fanno): quella vince.
+    const version = entry.version || entry.v || calcolaVersionePoster({ erdbId, badge: entry.badge || null });
     const versionPart = version ? `-${sanitizePart(version)}` : '';
     const badge = entry.badge === undefined || entry.badge === null || entry.badge === ''
         ? ''

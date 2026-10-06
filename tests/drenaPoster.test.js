@@ -143,9 +143,9 @@ describe('drenaPoster - il file che viene scritto', () => {
         const riepilogo = await gira({ ...coda, fetchImpl });
 
         expect(riepilogo).toMatchObject({ presi: 1, resi: 1, falliti: 0 });
-        expect(fs.readdirSync(dir)).toEqual(['tmdb-movie-27205_ITA.jpg']);
+        expect(fs.readdirSync(dir)).toEqual(['tmdb-movie-27205-460b8042_ITA.jpg']);
 
-        const scritto = fs.readFileSync(path.join(dir, 'tmdb-movie-27205_ITA.jpg'));
+        const scritto = fs.readFileSync(path.join(dir, 'tmdb-movie-27205-460b8042_ITA.jpg'));
         expect(scritto.equals(JPEG)).toBe(true);
         // Magic riletto dal file su disco: è quello che la rotta servirà.
         expect(scritto[0]).toBe(0xff);
@@ -162,17 +162,17 @@ describe('drenaPoster - il file che viene scritto', () => {
         const riepilogo = await gira({ ...coda, fetchImpl });
 
         expect(riepilogo).toMatchObject({ presi: 1, resi: 1, falliti: 0 });
-        expect(fs.readdirSync(dir)).toEqual(['tmdb-movie-27205.jpg']);
+        expect(fs.readdirSync(dir)).toEqual(['tmdb-movie-27205-9dd1156a.jpg']);
     });
 
     test('sovrascrive: il file che c\'era era vecchio', async () => {
-        fs.writeFileSync(path.join(dir, 'tmdb-movie-27205_ITA.jpg'), Buffer.from('vecchio'));
+        fs.writeFileSync(path.join(dir, 'tmdb-movie-27205-460b8042_ITA.jpg'), Buffer.from('vecchio'));
 
         const coda = creaCoda([{ tipo: 'movie', id: 27205, badge: 'ITA' }]);
         await gira({ ...coda, fetchImpl: creaFetch({ [urlFilm('ITA')]: risposta(JPEG) }) });
 
         // Diverso giro grosso: qui il file esiste proprio perché il poster è cambiato.
-        expect(fs.readFileSync(path.join(dir, 'tmdb-movie-27205_ITA.jpg')).equals(JPEG)).toBe(true);
+        expect(fs.readFileSync(path.join(dir, 'tmdb-movie-27205-460b8042_ITA.jpg')).equals(JPEG)).toBe(true);
     });
 
     test('la richiesta dichiara image/jpeg e va all\'URL del costruttore', async () => {
@@ -199,7 +199,7 @@ describe('drenaPoster - gli anime (due file per un evento)', () => {
 
         expect(cercaKitsu).toHaveBeenCalledWith('1234', 'tv');
         expect(riepilogo).toMatchObject({ presi: 1, resi: 1, falliti: 0 });
-        expect(fs.readdirSync(dir).sort()).toEqual(['kitsu-9876.jpg', 'tmdb-tv-1234.jpg']);
+        expect(fs.readdirSync(dir).sort()).toEqual(['kitsu-9876-19d5fba6.jpg', 'tmdb-tv-1234-e10e0f81.jpg']);
         // Un solo evento, quindi una sola chiusura.
         expect(coda.chiusi.done).toEqual(['tv|1234']);
     });
@@ -214,8 +214,8 @@ describe('drenaPoster - gli anime (due file per un evento)', () => {
         expect(riepilogo).toMatchObject({ presi: 1, resi: 0, falliti: 1 });
         expect(coda.chiusi.done).toEqual([]);
         expect(coda.chiusi.fail).toEqual(['tv|1234']);
-        expect(filePresente('tmdb-tv-1234.jpg')).toBe(true);
-        expect(filePresente('kitsu-9876.jpg')).toBe(false);
+        expect(filePresente('tmdb-tv-1234-e10e0f81.jpg')).toBe(true);
+        expect(filePresente('kitsu-9876-19d5fba6.jpg')).toBe(false);
     });
 
     test('nessuna mappatura: un file solo, e l\'evento è chiuso lo stesso', async () => {
@@ -223,7 +223,7 @@ describe('drenaPoster - gli anime (due file per un evento)', () => {
         const riepilogo = await gira({ ...coda, cercaKitsu: () => null, fetchImpl: creaFetch({ [urlFilm(null)]: risposta(JPEG) }) });
 
         expect(riepilogo).toMatchObject({ presi: 1, resi: 1, falliti: 0 });
-        expect(fs.readdirSync(dir)).toEqual(['tmdb-movie-27205.jpg']);
+        expect(fs.readdirSync(dir)).toEqual(['tmdb-movie-27205-9dd1156a.jpg']);
     });
 });
 
@@ -277,7 +277,7 @@ describe('drenaPoster - i guasti sono fail, non eccezioni', () => {
         expect(riepilogo).toMatchObject({ presi: 3, resi: 2, falliti: 1 });
         expect(coda.chiusi.done).toEqual(['movie|1', 'movie|3']);
         expect(coda.chiusi.fail).toEqual(['movie|2']);
-        expect(fs.readdirSync(dir).sort()).toEqual(['tmdb-movie-1.jpg', 'tmdb-movie-3.jpg']);
+        expect(fs.readdirSync(dir).sort()).toEqual(['tmdb-movie-1-8ca90b27.jpg', 'tmdb-movie-3-5d5ffa82.jpg']);
     });
 
     test('done/fail che lanciano: il giro finisce lo stesso', async () => {
@@ -289,7 +289,7 @@ describe('drenaPoster - i guasti sono fail, non eccezioni', () => {
         });
 
         expect(riepilogo).toMatchObject({ presi: 1, resi: 1, falliti: 0 });
-        expect(filePresente('tmdb-movie-27205.jpg')).toBe(true);
+        expect(filePresente('tmdb-movie-27205-9dd1156a.jpg')).toBe(true);
     });
 
     test('timeout: il fetch non risponde e il giro va avanti lo stesso', async () => {
@@ -324,7 +324,7 @@ describe('drenaPoster - scrittura atomica', () => {
 
         // Il rename su una cartella non può funzionare (EISDIR/EPERM): il fallimento della
         // scrittura è garantito senza dipendere da permessi o da un disco pieno.
-        fs.mkdirSync(path.join(dir, 'tmdb-movie-27205.jpg'));
+        fs.mkdirSync(path.join(dir, 'tmdb-movie-27205-9dd1156a.jpg'));
 
         const riepilogo = await gira({ ...coda, fetchImpl: creaFetch({ [urlFilm(null)]: risposta(JPEG) }) });
 

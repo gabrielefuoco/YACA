@@ -30,7 +30,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { BADGE_IMG_VERSION, calcolaVersionePoster } = require('../catalog/formatters/posterBadgeVersion');
+const { BADGE_IMG_VERSION } = require('../catalog/formatters/posterBadgeVersion');
 const { erdbIdDaNomeFile } = require('../cache/posterDaEvento');
 const { posterFileName } = require('../../scripts/erdb-builder/build');
 const { normalizeLegacyPosterHost } = require('./libraryIdentity');
@@ -161,13 +161,12 @@ function refreshStaticPoster(poster, options = {}) {
         if (options.hostUrl) source = normalizeLegacyPosterHost(source, options.hostUrl);
     }
 
-    const version = options.badgeVersion !== undefined
-        ? String(options.badgeVersion)
-        : calcolaVersionePoster({ erdbId, badge, source });
-
+    // La versione la deriva `posterFileName` dal contenuto (id + badge + disegno):
+    // qui non si ricalcola, altrimenti l'app tornerebbe ad avere una sua idea del nome
+    // e il dump offline un'altra. `options.badgeVersion` resta come override per i test.
     let nuovoFile;
     try {
-        nuovoFile = posterFileName({ erdbId, badge, version });
+        nuovoFile = posterFileName({ erdbId, badge, version: options.badgeVersion });
     } catch {
         return poster;
     }

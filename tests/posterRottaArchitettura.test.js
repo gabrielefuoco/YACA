@@ -169,14 +169,14 @@ describe('3. Versione calcolata dal contenuto', () => {
         expect(BADGE_IMG_VERSION).toBe(calcolaVersioneDisegno());
     });
 
-    test('calcolaVersionePoster cambia quando cambia il badge o la sorgente', () => {
+    test('calcolaVersionePoster cambia quando cambia il badge e NON dipende dalla sorgente', () => {
         const v1 = calcolaVersionePoster({ erdbId: 'tmdb:movie:1', badge: 'EP 1', source: 'https://tmdb/1.jpg' });
         const v2 = calcolaVersionePoster({ erdbId: 'tmdb:movie:1', badge: 'EP 2', source: 'https://tmdb/1.jpg' });
         const v3 = calcolaVersionePoster({ erdbId: 'tmdb:movie:1', badge: 'EP 1', source: 'https://tmdb/2.jpg' });
         const v1bis = calcolaVersionePoster({ erdbId: 'tmdb:movie:1', badge: 'EP 1', source: 'https://tmdb/1.jpg' });
 
         expect(v1).not.toBe(v2);
-        expect(v1).not.toBe(v3);
+        expect(v1).toBe(v3); // NON dipende dalla sorgente (concordanza app + dump offline)
         expect(v1).toBe(v1bis); // Deterministica
     });
 });

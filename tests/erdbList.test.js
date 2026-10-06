@@ -220,8 +220,8 @@ describe('parquet -> lista (CLI, processo separato)', () => {
             { erdbId: 'tmdb:tv:1399', badge: 'ITA' },
             { erdbId: 'tmdb:tv:1400', badge: '' }
         ]);
-        expect(build.posterFileName(entries[1])).toBe('tmdb-movie-27205_ITA.jpg');
-        expect(build.posterFileName(entries[0])).toBe('tmdb-movie-11.jpg');
+        expect(build.posterFileName(entries[1])).toBe('tmdb-movie-27205-460b8042_ITA.jpg');
+        expect(build.posterFileName(entries[0])).toBe('tmdb-movie-11-a38dbf1f.jpg');
     });
 
     test('parquet senza la colonna ita: si avvisa e si lista senza badge', () => {

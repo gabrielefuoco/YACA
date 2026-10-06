@@ -57,10 +57,10 @@ beforeAll(() => {
     fs.mkdirSync(cacheDir);
 
     // I due file che la cache "ufficiale" avrebbe per questo titolo: liscio e con badge ITA.
-    fs.writeFileSync(path.join(cacheDir, 'tmdb-movie-27205.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
-    fs.writeFileSync(path.join(cacheDir, 'tmdb-movie-27205_ITA.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
+    fs.writeFileSync(path.join(cacheDir, 'tmdb-movie-27205-9dd1156a.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
+    fs.writeFileSync(path.join(cacheDir, 'tmdb-movie-27205-460b8042_ITA.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
     // Un file vuoto: scarico abortito. Non deve MAI sostituire un URL funzionante.
-    fs.writeFileSync(path.join(cacheDir, 'tmdb-tv-1399.jpg'), Buffer.alloc(0));
+    fs.writeFileSync(path.join(cacheDir, 'tmdb-tv-1399-1e78a7c5.jpg'), Buffer.alloc(0));
 
     process.env.ERDB_CACHE_DIR = cacheDir;
     process.env.ERDB_CONFIG = ERDB_CHIAVE;
@@ -77,12 +77,12 @@ afterAll(() => {
 describe('Formatter: preferisce il poster già composto quando il file c\'è', () => {
     test('senza badge, il file presente porta all\'URL statico col nome esatto', () => {
         const meta = sanitizeCatalogMeta(film(), OPZIONI);
-        expect(meta.poster).toBe(`${HOST}/erdb-poster/tmdb-movie-27205.jpg`);
+        expect(meta.poster).toBe(`${HOST}/erdb-poster/tmdb-movie-27205-9dd1156a.jpg`);
     });
 
     test('titolo doppiato col solo badge ITA: nome col suffisso, non quello liscio', () => {
         const meta = sanitizeCatalogMeta(film({ _itaBadge: true }), OPZIONI);
-        expect(meta.poster).toBe(`${HOST}/erdb-poster/tmdb-movie-27205_ITA.jpg`);
+        expect(meta.poster).toBe(`${HOST}/erdb-poster/tmdb-movie-27205-460b8042_ITA.jpg`);
     });
 
     test('il resto del meta non cambia: solo il poster', () => {
@@ -114,7 +114,7 @@ describe('Formatter: senza file (o cartella assente) l\'URL è quello di prima',
 
     test('file vuoto (scarico abortito): poster di TMDB, meglio che un\'immagine vuota', () => {
         const meta = sanitizeCatalogMeta({ ...film(), id: 'tmdb:1399', type: 'series' }, OPZIONI);
-        expect(fs.existsSync(path.join(cacheDir, 'tmdb-tv-1399.jpg'))).toBe(true);
+        expect(fs.existsSync(path.join(cacheDir, 'tmdb-tv-1399-1e78a7c5.jpg'))).toBe(true);
         expect(meta.poster).toBe(urlDiPrima());
     });
 
@@ -125,7 +125,7 @@ describe('Formatter: senza file (o cartella assente) l\'URL è quello di prima',
         delete process.env.ERDB_CONFIG;
         try {
             const meta = sanitizeCatalogMeta(film(), OPZIONI);
-            expect(meta.poster).toBe(`${HOST}/erdb-poster/tmdb-movie-27205.jpg`);
+            expect(meta.poster).toBe(`${HOST}/erdb-poster/tmdb-movie-27205-9dd1156a.jpg`);
         } finally {
             process.env.ERDB_CONFIG = precedente;
         }

@@ -183,13 +183,12 @@ function urlPosterInCache(hostUrl, erdbId, badge) {
 }
 
 /**
- * Versione del poster composto: dipende dal CONTENUTO (id ERDB, badge, immagine sorgente) e
- * dalla versione del disegno. Cambia quando cambia una delle tre cose, garantendo cache-busting on demand.
+ * Versione del poster composto: dipende dal CONTENUTO (id ERDB e badge) e dalla versione
+ * del disegno, e la calcola `posterFileName` insieme al nome del file.
+ * NON dipende dall'immagine sorgente: la sorgente la conosce solo l'app, mentre il nome
+ * del file lo devono saper calcolare anche il dump offline e il builder (vedi
+ * `posterBadgeVersion.js`).
  */
-function versionePosterComposto({ erdbId, badge, source } = {}) {
-    return calcolaVersionePoster({ erdbId, badge, source });
-}
-
 /**
  * URL del poster composto: `{host}/erdb-poster/{nomeFile}[?fallback=…][&badge=…][&tlBadge=…]`.
  * Il nome del file include la versione del contenuto (`<nome>-<versione>.jpg`), rendendo
@@ -198,13 +197,15 @@ function versionePosterComposto({ erdbId, badge, source } = {}) {
  * La rotta `/erdb-poster/:file` lo rende al volo quando manca (istanza ERDB locale + coda del drenatore).
  * Non si guarda preventivamente se il file c'è.
  */
-function urlPosterComposto(hostUrl, { erdbId, badge, source, tlBadge, version } = {}) {
+function urlPosterComposto(hostUrl, { erdbId, badge, source, tlBadge } = {}) {
     if (!hostUrl || !erdbId) return null;
 
-    const v = version || versionePosterComposto({ erdbId, badge, source });
+    // La versione sta dentro il nome, e la deriva `posterFileName` dal contenuto:
+    // e' la stessa funzione che usa il dump offline, quindi i due lati non possono
+    // divergere (un nome scritto a mano qui sarebbe la ricaduta del ticket 30).
     let nomeFile;
     try {
-        nomeFile = posterFileName({ erdbId, badge: badge || null, version: v });
+        nomeFile = posterFileName({ erdbId, badge: badge || null });
     } catch {
         return null;
     }
@@ -605,6 +606,5 @@ module.exports = {
     urlPosterDaRottaLegacy,
     scomponiPosterComposto,
     posterRinfrescato,
-    versionePosterComposto,
     BADGE_IMG_VERSION
 };

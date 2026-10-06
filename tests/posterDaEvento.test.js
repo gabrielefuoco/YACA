@@ -43,26 +43,26 @@ describe('posterDaEvento - id ERDB', () => {
 });
 
 describe('posterDaEvento - nome file (letterali, non prodotti dal costruttore)', () => {
-    test('film con badge: tmdb-movie-27205_ITA.jpg', () => {
-        expect(nomeFileDaEvento({ tipo: 'movie', id: 27205, badge: 'ITA' })).toBe('tmdb-movie-27205_ITA.jpg');
-        expect(nomeFileDaEvento({ tipo: 'movie', id: '27205', badge: 'ITA' })).toBe('tmdb-movie-27205_ITA.jpg');
+    test('film con badge: tmdb-movie-27205-460b8042_ITA.jpg', () => {
+        expect(nomeFileDaEvento({ tipo: 'movie', id: 27205, badge: 'ITA' })).toBe('tmdb-movie-27205-460b8042_ITA.jpg');
+        expect(nomeFileDaEvento({ tipo: 'movie', id: '27205', badge: 'ITA' })).toBe('tmdb-movie-27205-460b8042_ITA.jpg');
     });
 
-    test('film senza badge: tmdb-movie-27205.jpg', () => {
-        expect(nomeFileDaEvento({ tipo: 'movie', id: 27205 })).toBe('tmdb-movie-27205.jpg');
+    test('film senza badge: tmdb-movie-27205-9dd1156a.jpg', () => {
+        expect(nomeFileDaEvento({ tipo: 'movie', id: 27205 })).toBe('tmdb-movie-27205-9dd1156a.jpg');
         // Badge vuoto o assente valgono come "senza badge".
-        expect(nomeFileDaEvento({ tipo: 'movie', id: 27205, badge: '' })).toBe('tmdb-movie-27205.jpg');
-        expect(nomeFileDaEvento({ tipo: 'movie', id: 27205, badge: null })).toBe('tmdb-movie-27205.jpg');
+        expect(nomeFileDaEvento({ tipo: 'movie', id: 27205, badge: '' })).toBe('tmdb-movie-27205-9dd1156a.jpg');
+        expect(nomeFileDaEvento({ tipo: 'movie', id: 27205, badge: null })).toBe('tmdb-movie-27205-9dd1156a.jpg');
     });
 
     test('serie con e senza badge', () => {
-        expect(nomeFileDaEvento({ tipo: 'tv', id: 1396, badge: 'ITA' })).toBe('tmdb-tv-1396_ITA.jpg');
-        expect(nomeFileDaEvento({ tipo: 'tv', id: 1396 })).toBe('tmdb-tv-1396.jpg');
+        expect(nomeFileDaEvento({ tipo: 'tv', id: 1396, badge: 'ITA' })).toBe('tmdb-tv-1396-fbbcf456_ITA.jpg');
+        expect(nomeFileDaEvento({ tipo: 'tv', id: 1396 })).toBe('tmdb-tv-1396-85723d99.jpg');
     });
 
     test('anime: il nome conserva il prefisso "kitsu" (sanitizzato in trattino)', () => {
-        expect(nomeFileDaEvento({ tipo: 'tv', id: 'kitsu:265' })).toBe('kitsu-265.jpg');
-        expect(nomeFileDaEvento({ tipo: 'movie', id: 'kitsu:265', badge: 'ITA' })).toBe('kitsu-265_ITA.jpg');
+        expect(nomeFileDaEvento({ tipo: 'tv', id: 'kitsu:265' })).toBe('kitsu-265-a4facb96.jpg');
+        expect(nomeFileDaEvento({ tipo: 'movie', id: 'kitsu:265', badge: 'ITA' })).toBe('kitsu-265-18ec029e_ITA.jpg');
     });
 
     test('id numerico e id stringa danno lo stesso nome (stesso titolo)', () => {
@@ -251,37 +251,37 @@ describe('posterDaEvento - erdbIdDaNomeFile (giro indietro)', () => {
         const casi = [
             {
                 evento: { tipo: 'movie', id: 27205 },
-                nomeAtteso: 'tmdb-movie-27205.jpg',
+                nomeAtteso: 'tmdb-movie-27205-9dd1156a.jpg',
                 erdbIdAtteso: 'tmdb:movie:27205',
                 badgeAtteso: null
             },
             {
                 evento: { tipo: 'movie', id: 27205, badge: 'ITA' },
-                nomeAtteso: 'tmdb-movie-27205_ITA.jpg',
+                nomeAtteso: 'tmdb-movie-27205-460b8042_ITA.jpg',
                 erdbIdAtteso: 'tmdb:movie:27205',
                 badgeAtteso: 'ITA'
             },
             {
                 evento: { tipo: 'tv', id: 1396 },
-                nomeAtteso: 'tmdb-tv-1396.jpg',
+                nomeAtteso: 'tmdb-tv-1396-85723d99.jpg',
                 erdbIdAtteso: 'tmdb:tv:1396',
                 badgeAtteso: null
             },
             {
                 evento: { tipo: 'tv', id: 1396, badge: 'ITA' },
-                nomeAtteso: 'tmdb-tv-1396_ITA.jpg',
+                nomeAtteso: 'tmdb-tv-1396-fbbcf456_ITA.jpg',
                 erdbIdAtteso: 'tmdb:tv:1396',
                 badgeAtteso: 'ITA'
             },
             {
                 evento: { tipo: 'movie', id: 'kitsu:265', badge: 'ITA' },
-                nomeAtteso: 'kitsu-265_ITA.jpg',
+                nomeAtteso: 'kitsu-265-18ec029e_ITA.jpg',
                 erdbIdAtteso: 'kitsu:265',
                 badgeAtteso: 'ITA'
             },
             {
                 evento: { tipo: 'tv', id: 'kitsu:265' },
-                nomeAtteso: 'kitsu-265.jpg',
+                nomeAtteso: 'kitsu-265-a4facb96.jpg',
                 erdbIdAtteso: 'kitsu:265',
                 badgeAtteso: null
             }
@@ -313,16 +313,25 @@ describe('posterDaEvento - erdbIdDaNomeFile (giro indietro)', () => {
  * prodotto e nessuno lo chiede).
  */
 describe('posterDaEvento - eventoDaNomeFile (dal nome alla coda)', () => {
-    test('le tre forme note diventano eventi (letterali)', () => {
+    test('le forme note diventano eventi (letterali, con e senza versione)', () => {
+        // Nomi senza versione (file vecchi ancora sul disco)
         expect(eventoDaNomeFile('tmdb-movie-27205_ITA.jpg'))
             .toEqual({ tipo: 'movie', id: '27205', badge: 'ITA' });
         expect(eventoDaNomeFile('tmdb-tv-1396.jpg'))
             .toEqual({ tipo: 'tv', id: '1396', badge: null });
-        // Gli anime: l'id resta in forma ERDB, che è l'unica che il drenatore riesca a
-        // rifare in un `kitsu-*.jpg` senza interrogare la mappa.
         expect(eventoDaNomeFile('kitsu-265.jpg'))
             .toEqual({ tipo: 'kitsu', id: 'kitsu:265', badge: null });
         expect(eventoDaNomeFile('tmdb-movie-823_ITA.jpg'))
+            .toEqual({ tipo: 'movie', id: '823', badge: 'ITA' });
+
+        // Nomi con versione (nuovo formato condiviso app + dump)
+        expect(eventoDaNomeFile('tmdb-movie-27205-460b8042_ITA.jpg'))
+            .toEqual({ tipo: 'movie', id: '27205', badge: 'ITA' });
+        expect(eventoDaNomeFile('tmdb-tv-1396-85723d99.jpg'))
+            .toEqual({ tipo: 'tv', id: '1396', badge: null });
+        expect(eventoDaNomeFile('kitsu-265-a4facb96.jpg'))
+            .toEqual({ tipo: 'kitsu', id: 'kitsu:265', badge: null });
+        expect(eventoDaNomeFile('tmdb-movie-823-74697101_ITA.jpg'))
             .toEqual({ tipo: 'movie', id: '823', badge: 'ITA' });
     });
 
@@ -345,12 +354,12 @@ describe('posterDaEvento - eventoDaNomeFile (dal nome alla coda)', () => {
         // Il giro completo e' l'unica cosa che conta: il drenatore, dall'evento, deve
         // ricavare il file che la rotta aveva chiesto.
         for (const nome of [
-            'tmdb-movie-27205_ITA.jpg',
-            'tmdb-movie-27205.jpg',
-            'tmdb-tv-1396_ITA.jpg',
-            'tmdb-tv-1396.jpg',
-            'kitsu-265.jpg',
-            'kitsu-265_ITA.jpg'
+            'tmdb-movie-27205-460b8042_ITA.jpg',
+            'tmdb-movie-27205-9dd1156a.jpg',
+            'tmdb-tv-1396-fbbcf456_ITA.jpg',
+            'tmdb-tv-1396-85723d99.jpg',
+            'kitsu-265-a4facb96.jpg',
+            'kitsu-265-18ec029e_ITA.jpg'
         ]) {
             expect(nomeFileDaEvento(eventoDaNomeFile(nome))).toBe(nome);
         }

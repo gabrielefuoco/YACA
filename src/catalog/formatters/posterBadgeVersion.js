@@ -25,17 +25,21 @@ const BADGE_IMG_VERSION = calcolaVersioneDisegno();
 
 /**
  * Versione del poster composto specifico: dipende dal disegno (BADGE_IMG_VERSION),
- * dall'identificatore del titolo (id ERDB), dal badge testuale e dall'immagine sorgente.
- * Cambia quando cambia l'immagine sorgente o il badge, garantendo cache-busting on demand.
+ * dall'identificatore del titolo (id ERDB) e dal badge testuale.
+ *
+ * NON dipende dall'immagine sorgente, e non e' una dimenticanza: la sorgente e' un
+ * URL che solo l'app conosce (il poster dell'item), mentre il nome del file lo devono
+ * saper calcolare **entrambi i lati** — l'app e il dump offline di `scripts/erdb-builder`.
+ * Se la versione dipendesse dalla sorgente, il dump produrrebbe nomi che l'app non
+ * chiede, e la precomposizione dei poster con badge sarebbe lavoro sprecato.
+ *
+ * Cosa non copre, di conseguenza: un cambio del poster **alla sorgente** a parita' di
+ * `erdbId` e badge non invalida il composto. E' lo stesso comportamento dei poster nudi
+ * (che non hanno versione affatto), quindi il sistema e' coerente con se stesso.
  */
-function calcolaVersionePoster({ erdbId, id, type, badge, source } = {}) {
-    const rawErdbId = erdbId || id || '';
-    const rawType = type || '';
-    const rawBadge = badge || '';
-    const rawSource = String(source || '').trim();
-
+function calcolaVersionePoster({ erdbId, badge } = {}) {
     return crypto.createHash('sha1')
-        .update(`${BADGE_IMG_VERSION}|${rawErdbId}|${rawType}|${rawBadge}|${rawSource}`)
+        .update(`${BADGE_IMG_VERSION}|${erdbId || ''}|${badge || ''}`)
         .digest('hex')
         .slice(0, 8);
 }

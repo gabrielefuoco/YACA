@@ -40,40 +40,40 @@ async function makeTmpDir() {
 }
 
 describe('posterFileName (funzione pura)', () => {
-    test('produce il nome documentato: tmdb-movie-27205_ITA.jpg', () => {
+    test('produce il nome documentato: tmdb-movie-27205-460b8042_ITA.jpg', () => {
         expect(builder.posterFileName({ erdbId: 'tmdb:movie:27205', badge: 'ITA' }))
-            .toBe('tmdb-movie-27205_ITA.jpg');
+            .toBe('tmdb-movie-27205-460b8042_ITA.jpg');
     });
 
     test('i due punti dell\'erdbId diventano trattini, mai due underscore', () => {
         expect(builder.posterFileName({ erdbId: 'kitsu:1234', badge: 'ITA' }))
-            .toBe('kitsu-1234_ITA.jpg');
+            .toBe('kitsu-1234-bc095c86_ITA.jpg');
         expect(builder.posterFileName({ erdbId: 'tmdb:tv:1399', badge: 'ENG' }))
-            .toBe('tmdb-tv-1399_ENG.jpg');
+            .toBe('tmdb-tv-1399-c12a8acb_ENG.jpg');
     });
 
     test('gli ID gia\' pronti passano come sono', () => {
         // IMDb: prefisso "imdb:" da usare, cosi' tt... resta tt...
         expect(builder.posterFileName({ erdbId: 'tt1234567', badge: 'ITA' }))
-            .toBe('tt1234567_ITA.jpg');
+            .toBe('tt1234567-9a9b5034_ITA.jpg');
         expect(builder.posterFileName({ erdbId: 'anilist:1535' }))
-            .toBe('anilist-1535.jpg');
+            .toBe('anilist-1535-beac6f4a.jpg');
         expect(builder.posterFileName({ erdbId: 'mal:21' }))
-            .toBe('mal-21.jpg');
+            .toBe('mal-21-49634723.jpg');
         expect(builder.posterFileName({ erdbId: 'anidb:1234' }))
-            .toBe('anidb-1234.jpg');
+            .toBe('anidb-1234-fb3d2519.jpg');
     });
 
     test('senza badge il nome resta deterministico e senza underscore finale', () => {
         expect(builder.posterFileName({ erdbId: 'tmdb:movie:27205', badge: '' }))
-            .toBe('tmdb-movie-27205.jpg');
+            .toBe('tmdb-movie-27205-9dd1156a.jpg');
         expect(builder.posterFileName({ erdbId: 'tmdb:movie:27205' }))
-            .toBe('tmdb-movie-27205.jpg');
+            .toBe('tmdb-movie-27205-9dd1156a.jpg');
     });
 
     test('ripulisce i caratteri non sicuri per il filesystem', () => {
         expect(builder.posterFileName({ erdbId: '../../etc/passwd', badge: 'ITA/2' }))
-            .toBe('etc-passwd_ITA_2.jpg');
+            .toBe('etc-passwd-6bfb861b_ITA_2.jpg');
     });
 
     test('e\' deterministica: stesse voci -> stesso nome', () => {
@@ -214,7 +214,7 @@ describe('run: ripresa su cartella reale', () => {
 
         const posterDir = path.join(outDir, 'poster');
         expect(await fs.promises.readdir(posterDir)).toEqual(
-            expect.arrayContaining(['tmdb-movie-27205_ITA.jpg', 'tmdb-tv-1399_ENG.jpg', 'report.json'])
+            expect.arrayContaining(['tmdb-movie-27205-460b8042_ITA.jpg', 'tmdb-tv-1399-c12a8acb_ENG.jpg', 'report.json'])
         );
     });
 
@@ -237,7 +237,7 @@ describe('run: ripresa su cartella reale', () => {
     test('file gia\' presente e NON vuoto -> saltato, anche senza rete disponibile', async () => {
         const posterDir = path.join(outDir, 'poster');
         await fs.promises.mkdir(posterDir, { recursive: true });
-        await fs.promises.writeFile(path.join(posterDir, 'tmdb-movie-27205_ITA.jpg'), 'poster gia\' scaricato');
+        await fs.promises.writeFile(path.join(posterDir, 'tmdb-movie-27205-460b8042_ITA.jpg'), 'poster gia\' scaricato');
 
         await writeList([{ erdbId: 'tmdb:movie:27205', badge: 'ITA' }]);
 
@@ -256,7 +256,7 @@ describe('run: ripresa su cartella reale', () => {
     test('file presente ma VUOTO -> rifatto (download abortito non blocca)', async () => {
         const posterDir = path.join(outDir, 'poster');
         await fs.promises.mkdir(posterDir, { recursive: true });
-        await fs.promises.writeFile(path.join(posterDir, 'tmdb-movie-27205_ITA.jpg'), ''); // 0 byte
+        await fs.promises.writeFile(path.join(posterDir, 'tmdb-movie-27205-460b8042_ITA.jpg'), ''); // 0 byte
 
         await writeList([{ erdbId: 'tmdb:movie:27205', badge: 'ITA' }]);
 
@@ -271,15 +271,15 @@ describe('run: ripresa su cartella reale', () => {
 
         expect(report).toMatchObject({ totale: 1, resi: 1, saltati: 0, falliti: 0 });
         expect(calls).toEqual(['https://easyratingsdb.com/Tk-xxxx/poster/tmdb:movie:27205.jpg?badge=ITA']);
-        const stat = await fs.promises.stat(path.join(posterDir, 'tmdb-movie-27205_ITA.jpg'));
+        const stat = await fs.promises.stat(path.join(posterDir, 'tmdb-movie-27205-460b8042_ITA.jpg'));
         expect(stat.size).toBeGreaterThan(0);
     });
 
     test('misto: solo i file mancanti o vuoti vengono riscaricati', async () => {
         const posterDir = path.join(outDir, 'poster');
         await fs.promises.mkdir(posterDir, { recursive: true });
-        await fs.promises.writeFile(path.join(posterDir, 'tmdb-movie-27205_ITA.jpg'), 'gia fatto');
-        await fs.promises.writeFile(path.join(posterDir, 'kitsu-1234_ITA.jpg'), '');
+        await fs.promises.writeFile(path.join(posterDir, 'tmdb-movie-27205-460b8042_ITA.jpg'), 'gia fatto');
+        await fs.promises.writeFile(path.join(posterDir, 'kitsu-1234-bc095c86_ITA.jpg'), '');
 
         await writeList([
             { erdbId: 'tmdb:movie:27205', badge: 'ITA' }, // salvato
@@ -324,7 +324,7 @@ describe('run: ripresa su cartella reale', () => {
         expect(report.fallimenti).toHaveLength(1);
         expect(report.fallimenti[0]).toMatchObject({ erdbId: 'tmdb:movie:1', motivo: 'HTTP 404' });
         // il fallito non lascia file sporchi in giro
-        expect(fs.existsSync(path.join(posterDir, 'tmdb-movie-1_ITA.jpg'))).toBe(false);
+        expect(fs.existsSync(path.join(posterDir, 'tmdb-movie-1-57f1c9f6_ITA.jpg'))).toBe(false);
     });
 
     test('report.json su disco contiene resi, saltati, falliti e durata', async () => {

@@ -150,7 +150,7 @@ test('istanza che non risponde entro il tetto: 404 come oggi E l\'evento in coda
     process.env.ERDB_LOCAL_BASE = erdbBase;
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const nome = 'tmdb-movie-823_ITA.jpg';
+    const nome = 'tmdb-movie-823-74697101_ITA.jpg';
     expect(fileEsiste(nome)).toBe(false);
 
     const inizio = Date.now();

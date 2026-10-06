@@ -237,8 +237,8 @@ describe('Fribb + parquet -> lista (CLI, processo separato)', () => {
         expect(errors).toEqual([]);
         expect(entries[0]).toEqual({ erdbId: 'kitsu:48269', badge: 'ITA' });
         expect(entries[1]).toEqual({ erdbId: 'kitsu:48270', badge: '' });
-        expect(build.posterFileName(entries[0])).toBe('kitsu-48269_ITA.jpg');
-        expect(build.posterFileName(entries[1])).toBe('kitsu-48270.jpg');
+        expect(build.posterFileName(entries[0])).toBe('kitsu-48269-047d2516_ITA.jpg');
+        expect(build.posterFileName(entries[1])).toBe('kitsu-48270-13eebf6a.jpg');
     });
 
     test('nessun file a meta\': l\'indice si scrive su .tmp e compare solo alla fine', () => {

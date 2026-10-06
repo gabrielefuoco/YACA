@@ -126,10 +126,10 @@ beforeAll((done) => {
     fs.mkdirSync(cacheDir);
 
     // File finti: conta solo che esistano e non siano vuoti (è tutto ciò che il formatter guarda).
-    fs.writeFileSync(path.join(cacheDir, 'tmdb-movie-27205_ITA.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
-    fs.writeFileSync(path.join(cacheDir, 'tmdb-tv-1396.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
-    fs.writeFileSync(path.join(cacheDir, 'tmdb-movie-823_ITA.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
-    fs.writeFileSync(path.join(cacheDir, 'tmdb-movie-1399_ITA.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
+    fs.writeFileSync(path.join(cacheDir, 'tmdb-movie-27205-460b8042_ITA.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
+    fs.writeFileSync(path.join(cacheDir, 'tmdb-tv-1396-85723d99.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
+    fs.writeFileSync(path.join(cacheDir, 'tmdb-movie-823-74697101_ITA.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
+    fs.writeFileSync(path.join(cacheDir, 'tmdb-movie-1399-7b9a0153_ITA.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
 
     annotationsFile = path.join(rootDir, 'ita_annotations.jsonl');
     process.env.ERDB_CACHE_DIR = cacheDir;
@@ -180,7 +180,7 @@ describe('Scheda: il poster dei titoli doppiati viene dalla cache', () => {
     test('doppiato con il file `_ITA` in cache → il file, non il poster di TMDB', async () => {
         annotazioni([{ t: 'movie', id: DOPPIATO_CON_FILE.id, ita: true }]);
         const meta = await apriScheda(DOPPIATO_CON_FILE);
-        expect(meta.poster).toBe(`${baseUrl}/erdb-poster/tmdb-movie-27205_ITA.jpg`);
+        expect(meta.poster).toBe(`${baseUrl}/erdb-poster/tmdb-movie-27205-460b8042_ITA.jpg`);
         senzaErdb(meta);
     });
 
@@ -195,7 +195,7 @@ describe('Scheda: il poster dei titoli doppiati viene dalla cache', () => {
         // `ita: null` = omonimia irrisolta: come `false`, non è doppiato (stessa regola dei cataloghi).
         annotazioni([{ t: 'tv', id: NON_DOPPIATO_CON_FILE.id, ita: null }]);
         const meta = await apriScheda(NON_DOPPIATO_CON_FILE);
-        expect(meta.poster).toBe(`${baseUrl}/erdb-poster/tmdb-tv-1396.jpg`);
+        expect(meta.poster).toBe(`${baseUrl}/erdb-poster/tmdb-tv-1396-85723d99.jpg`);
         senzaErdb(meta);
     });
 
@@ -272,7 +272,7 @@ describe('Scheda: fallback a due tipi per i film anime (Ticket 50)', () => {
     test('film anime annotato `tv` → il poster col badge dalla cache', async () => {
         annotazioni([{ t: 'tv', id: FILM_ANIME.id, ita: true }]);
         const meta = await apriScheda(FILM_ANIME);
-        expect(meta.poster).toBe(`${baseUrl}/erdb-poster/tmdb-movie-823_ITA.jpg`);
+        expect(meta.poster).toBe(`${baseUrl}/erdb-poster/tmdb-movie-823-74697101_ITA.jpg`);
         senzaErdb(meta);
     });
 

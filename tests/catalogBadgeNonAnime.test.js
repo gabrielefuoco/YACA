@@ -50,7 +50,7 @@ const card = (id, type, nome) => ({
 
 beforeAll(() => {
     cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaca-badge-nonanime-'));
-    for (const file of ['tmdb-movie-238_ITA.jpg', 'tmdb-tv-1396_ITA.jpg']) {
+    for (const file of ['tmdb-movie-238-e5611aea_ITA.jpg', 'tmdb-tv-1396-fbbcf456_ITA.jpg']) {
         fs.writeFileSync(path.join(cacheDir, file), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
     }
     process.env.ERDB_CACHE_DIR = cacheDir;
@@ -76,7 +76,7 @@ describe('badge ITA sui titoli non-anime (ticket 15)', () => {
             { baseId: 'preset_top_rated_movies' }
         );
         expect(out.metas[0]._itaBadge).toBe(true);
-        expect(out.metas[0].poster).toBe(`${HOST_URL}/erdb-poster/tmdb-movie-238_ITA.jpg`);
+        expect(out.metas[0].poster).toBe(`${HOST_URL}/erdb-poster/tmdb-movie-238-e5611aea_ITA.jpg`);
     });
 
     test('una SERIE doppiata in un catalogo normale esce col poster _ITA', async () => {
@@ -86,7 +86,7 @@ describe('badge ITA sui titoli non-anime (ticket 15)', () => {
             { baseId: 'preset_top_rated_series', type: 'series' }
         );
         expect(out.metas[0]._itaBadge).toBe(true);
-        expect(out.metas[0].poster).toBe(`${HOST_URL}/erdb-poster/tmdb-tv-1396_ITA.jpg`);
+        expect(out.metas[0].poster).toBe(`${HOST_URL}/erdb-poster/tmdb-tv-1396-fbbcf456_ITA.jpg`);
     });
 
     test('un titolo NON doppiato resta col poster di TMDB (nessun badge)', async () => {
@@ -112,7 +112,7 @@ describe('badge ITA sui titoli non-anime (ticket 15)', () => {
     });
 
     test('la card non doppiata non viene toccata nemmeno se la cache ha il file _ITA', async () => {
-        // Il file `tmdb-tv-1396_ITA.jpg` esiste in cache, ma la serie non è doppiata: nessun badge.
+        // Il file `tmdb-tv-1396-fbbcf456_ITA.jpg` esiste in cache, ma la serie non è doppiata: nessun badge.
         const out = await esegui(
             [card('tmdb:1396', 'series', 'Breaking Bad')],
             snapshot([['tv:1396', false]]),

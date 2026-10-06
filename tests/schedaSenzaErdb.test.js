@@ -30,7 +30,7 @@ const HOST = 'http://localhost:7860';
 const RAW_POSTER = 'https://image.tmdb.org/t/p/w500/7c24eQ6oQCOrFeyzJP7qWklDYhn.jpg';
 const RAW_BACKGROUND = 'https://image.tmdb.org/t/p/original/suFvSpqPhe6VGx6anammfgBzKqNF.jpg';
 const RAW_LOGO = 'https://image.tmdb.org/t/p/w500/c8zFv7hYqbBL0EW43XK4Cu9hT0.jpg';
-const FILE_IN_CACHE = 'tmdb-tv-1396.jpg';
+const FILE_IN_CACHE = 'tmdb-tv-1396-85723d99.jpg';
 
 const USER_CONFIG = { profiles: [{ id: 'global', settings: {} }], activeProfileId: 'global' };
 const OPZIONI_SCHEDA = {

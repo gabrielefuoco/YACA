@@ -275,8 +275,8 @@ describe('--dry-run', () => {
         // I nomi sono quelli veri, scritti a mano: se il dry-run dicesse `tmdb_movie_27205`
         // ci sarebbe un nome diverso da quello della rotta, e qui non si vedrebbe.
         const detto = log.linee.log.join('\n');
-        expect(detto).toMatch(/tmdb-movie-27205_ITA\.jpg/);
-        expect(detto).toMatch(/tmdb-tv-1396\.jpg/);
+        expect(detto).toMatch(/tmdb-movie-27205-460b8042_ITA\.jpg/);
+        expect(detto).toMatch(/tmdb-tv-1396-85723d99\.jpg/);
         expect(riepilogo()).toMatch(/dry-run: 2 da rifare/);
     });
 
@@ -316,8 +316,8 @@ describe('una corsa vera', () => {
         const codice = await corri([], { coda, fetchImpl, store: creaStorePronto() });
 
         expect(codice).toBe(0);
-        expect(filePresenti()).toEqual(['tmdb-movie-27205_ITA.jpg']);
-        expect(fs.readFileSync(path.join(dir, 'tmdb-movie-27205_ITA.jpg')).equals(JPEG)).toBe(true);
+        expect(filePresenti()).toEqual(['tmdb-movie-27205-460b8042_ITA.jpg']);
+        expect(fs.readFileSync(path.join(dir, 'tmdb-movie-27205-460b8042_ITA.jpg')).equals(JPEG)).toBe(true);
         // La trappola: `done` con una stringa chiude niente, in silenzio.
         expect(chiusiDi(coda)).toEqual({ done: ['movie|27205'], fail: [] });
         expect(riepilogo()).toMatch(/1 presi, 1 resi, 0 falliti/);
@@ -335,7 +335,7 @@ describe('una corsa vera', () => {
 
         expect(codice).toBe(0);
         expect(store.risolti).toEqual([{ id: '9876', tipo: 'tv' }]);
-        expect(filePresenti()).toEqual(['kitsu-9999.jpg', 'tmdb-tv-9876.jpg']);
+        expect(filePresenti()).toEqual(['kitsu-9999-b34654c4.jpg', 'tmdb-tv-9876-6ed4d894.jpg']);
         expect(chiusiDi(coda)).toEqual({ done: ['tv|9876'], fail: [] });
     });
 
@@ -358,7 +358,7 @@ describe('la mappa degli anime non pronta', () => {
 
         expect(codice).toBe(0);
         // Il lato TMDB si rifà comunque: un guasto della mappa non deve fermare il drenaggio.
-        expect(filePresenti()).toEqual(['tmdb-tv-9876.jpg']);
+        expect(filePresenti()).toEqual(['tmdb-tv-9876-6ed4d894.jpg']);
         // E l'avviso c'è, perché 8.263 poster dimenticati in silenzio è il guasto che
         // questo caso deve rendere impossibile.
         const avvisi = log.linee.warn.join('\n');
@@ -386,7 +386,7 @@ describe('la mappa degli anime non pronta', () => {
             fetchImpl: creaFetch({ [`${BASE}/poster/kitsu:265.jpg`]: risposta(JPEG) })
         });
         expect(store.init).not.toHaveBeenCalled();
-        expect(filePresenti()).toEqual(['kitsu-265.jpg']);
+        expect(filePresenti()).toEqual(['kitsu-265-a4facb96.jpg']);
 
         // Lotto con un id TMDB: adesso sì, e viene detto se non è riuscita a caricarsi.
         store.init.mockClear();
@@ -453,7 +453,7 @@ describe('non lancia mai', () => {
         const fetchImpl = creaFetch({ [urlFilm(null)]: risposta(JPEG) });
 
         await expect(corri([], { coda, fetchImpl })).resolves.toBe(0);
-        expect(filePresenti()).toEqual(['tmdb-movie-27205.jpg']);
+        expect(filePresenti()).toEqual(['tmdb-movie-27205-9dd1156a.jpg']);
     });
 
     test('`quit` che lancia: il codice di uscita è lo stesso (0)', async () => {
@@ -612,7 +612,7 @@ describe('la corsa all\'avvio: Redis non è pronto quando parte il giro', () => 
         // Il punto del compito: senza l'attesa questo giro avrebbe finito qui, con "0 presi".
         expect(finto.lette).toBeGreaterThanOrEqual(3);
         expect(coda.take).toBeDefined();
-        expect(filePresenti()).toEqual(['tmdb-movie-27205_ITA.jpg']);
+        expect(filePresenti()).toEqual(['tmdb-movie-27205-460b8042_ITA.jpg']);
         expect(chiusiDi(coda)).toEqual({ done: ['movie|27205'], fail: [] });
         expect(log.linee.warn.join('\n')).not.toMatch(/Redis NON pronto/);
     });
