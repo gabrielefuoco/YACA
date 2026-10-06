@@ -13,7 +13,7 @@ export interface TypeSelectors {
 
 export interface CatalogKind {
   mediaSet: ('film' | 'serie')[];
-  anime: 'yes' | 'no' | 'mixed';
+  anime: 'yes' | 'no' | 'mixed' | 'agnostic';
 }
 
 export interface ProfileSettings {

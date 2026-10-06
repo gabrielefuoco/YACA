@@ -9,14 +9,14 @@ const ALWAYS_VISIBLE_IDS = new Set([
 ]);
 
 const HERO_REGISTRY: Record<string, CatalogKind> = {
-  yaca_true_blend_movies: { mediaSet: ['film'], anime: 'no' },
-  yaca_true_blend_series: { mediaSet: ['serie'], anime: 'no' },
-  yaca_seed_network_movies: { mediaSet: ['film'], anime: 'no' },
-  yaca_seed_network_series: { mediaSet: ['serie'], anime: 'no' },
-  yaca_hidden_gems_movies: { mediaSet: ['film'], anime: 'no' },
-  yaca_hidden_gems_series: { mediaSet: ['serie'], anime: 'no' },
-  yaca_trakt_filtered_movies: { mediaSet: ['film'], anime: 'no' },
-  yaca_trakt_filtered_series: { mediaSet: ['serie'], anime: 'no' },
+  yaca_true_blend_movies: { mediaSet: ['film'], anime: 'agnostic' },
+  yaca_true_blend_series: { mediaSet: ['serie'], anime: 'agnostic' },
+  yaca_seed_network_movies: { mediaSet: ['film'], anime: 'agnostic' },
+  yaca_seed_network_series: { mediaSet: ['serie'], anime: 'agnostic' },
+  yaca_hidden_gems_movies: { mediaSet: ['film'], anime: 'agnostic' },
+  yaca_hidden_gems_series: { mediaSet: ['serie'], anime: 'agnostic' },
+  yaca_trakt_filtered_movies: { mediaSet: ['film'], anime: 'agnostic' },
+  yaca_trakt_filtered_series: { mediaSet: ['serie'], anime: 'agnostic' },
 };
 
 function stripPresetPrefix(id?: string): string {
@@ -80,28 +80,16 @@ export function isCatalogConformant(catalog: any, typeSelectors?: TypeSelectors 
     return true;
   }
 
-  const film = Boolean(typeSelectors.film);
-  const serie = Boolean(typeSelectors.serie);
   const anime = typeSelectors.anime || null;
-
-  if (!film && !serie && !anime) {
+  if (!anime) {
     return true;
   }
 
   const kind = getFrontendCatalogKind(catalog);
 
-  let mediaAmmessi: Set<string>;
-  if ((!film && !serie) || (film && serie)) {
-    mediaAmmessi = new Set(['film', 'serie']);
-  } else if (film && !serie) {
-    mediaAmmessi = new Set(['film']);
-  } else {
-    mediaAmmessi = new Set(['serie']);
-  }
-
-  const mediaSet = kind.mediaSet || [];
-  if (mediaSet.length > 0 && !mediaSet.every((m) => mediaAmmessi.has(m))) {
-    return false;
+  // Hero agnostici sulla dimensione anime: decide la animePolicy a valle (ticket 15)
+  if (kind.anime === 'agnostic') {
+    return true;
   }
 
   if (anime === 'only' && kind.anime !== 'yes') {
@@ -119,26 +107,8 @@ export function getIncompatibilityReason(catalog: any, typeSelectors?: TypeSelec
     return null;
   }
 
-  const film = Boolean(typeSelectors?.film);
-  const serie = Boolean(typeSelectors?.serie);
   const anime = typeSelectors?.anime || null;
-
   const kind = getFrontendCatalogKind(catalog);
-
-  let mediaAmmessi: Set<string>;
-  if ((!film && !serie) || (film && serie)) {
-    mediaAmmessi = new Set(['film', 'serie']);
-  } else if (film && !serie) {
-    mediaAmmessi = new Set(['film']);
-  } else {
-    mediaAmmessi = new Set(['serie']);
-  }
-
-  const mediaSet = kind.mediaSet || [];
-  if (mediaSet.length > 0 && !mediaSet.every((m) => mediaAmmessi.has(m))) {
-    if (film && !serie) return 'Non compatibile: profilo Solo Film';
-    if (!film && serie) return 'Non compatibile: profilo Solo Serie';
-  }
 
   if (anime === 'only' && kind.anime !== 'yes') {
     return 'Non compatibile: profilo Solo Anime';

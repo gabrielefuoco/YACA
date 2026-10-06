@@ -281,20 +281,6 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
           <h2 className="text-sm sm:text-lg font-black uppercase tracking-widest">DNA Engine</h2>
         </div>
 
-        {/* Solo Anime Incompatibility Banner */}
-        {profile?.settings?.typeSelectors?.anime === 'only' && (
-          <div className="p-3.5 sm:p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-amber-900 shadow-sm animate-in fade-in duration-200">
-            <span className="material-symbols-outlined text-amber-600 text-lg sm:text-xl shrink-0 mt-0.5">warning</span>
-            <div className="flex flex-col gap-0.5">
-              <p className="text-xs sm:text-sm font-bold">
-                I cataloghi Hero TMDB non sono compatibili con il profilo Solo Anime
-              </p>
-              <p className="text-[10px] sm:text-xs text-amber-800/80 font-medium">
-                Gli Hero Catalogs (True Blend, Seed Network, Hidden Gems, Trakt Filtered) sono basati su cinema e serie TV occidentali e non verranno inclusi nel manifest per questo profilo.
-              </p>
-            </div>
-          </div>
-        )}
 
         <div className="flex flex-col gap-4 sm:gap-6">
           {HERO_CATALOGS_BASE.map((catalog) => {
@@ -306,21 +292,13 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
             const isMoviesEnabled = selectedPresets.includes(idMovies);
             const isSeriesEnabled = selectedPresets.includes(idSeries);
 
-            const selectors = profile.settings?.typeSelectors;
-            const isSoloAnime = selectors?.anime === 'only';
-            const isMoviesExcluded = Boolean(selectors?.serie && !selectors?.film);
-            const isSeriesExcluded = Boolean(selectors?.film && !selectors?.serie);
-
-            const movieDisabled = isSoloAnime || isMoviesExcluded;
-            const seriesDisabled = isSoloAnime || isSeriesExcluded;
-
-            const isCatalogDisabled = (!isMoviesEnabled || movieDisabled) && (!isSeriesEnabled || seriesDisabled);
+            const isCatalogDisabled = !isMoviesEnabled && !isSeriesEnabled;
             
             // Tolerance Meter logic
             let toleranceColor = 'bg-primary';
             let toleranceLabel = 'Bilanciata';
             let toleranceDesc = 'Mantiene un buon equilibrio tra il tuo DNA e titoli molto popolari.';
-            let activeId = (!movieDisabled && isMoviesEnabled) ? idMovies : idSeries;
+            let activeId = isMoviesEnabled ? idMovies : idSeries;
 
             if (catalog.idBase.includes('hidden_gems')) {
               toleranceColor = 'bg-red-500';
@@ -344,31 +322,19 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                       <span className="text-sm font-bold text-marrow-light">{catalog.label}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <label htmlFor={movieSwitchId} className={`inline-flex items-center gap-1.5 text-[10px] font-bold font-mono ${movieDisabled ? 'text-marrow-light/30 cursor-not-allowed' : 'text-marrow-light/60'}`}>
+                      <label htmlFor={movieSwitchId} className="inline-flex items-center gap-1.5 text-[10px] font-bold font-mono text-marrow-light/60">
                         FILM
-                        {movieDisabled && (
-                          <span className="text-[9px] text-amber-600 font-sans font-semibold">
-                            {isSoloAnime ? '(escluso: Solo Anime)' : '(escluso: Solo Serie)'}
-                          </span>
-                        )}
                         <Switch
                           id={movieSwitchId}
-                          disabled={movieDisabled}
-                          checked={isMoviesEnabled && !movieDisabled}
+                          checked={isMoviesEnabled}
                           onCheckedChange={(checked: boolean) => toggleHeroCatalog(idMovies, checked)}
                         />
                       </label>
-                      <label htmlFor={seriesSwitchId} className={`inline-flex items-center gap-1.5 text-[10px] font-bold font-mono ${seriesDisabled ? 'text-marrow-light/30 cursor-not-allowed' : 'text-marrow-light/60'}`}>
+                      <label htmlFor={seriesSwitchId} className="inline-flex items-center gap-1.5 text-[10px] font-bold font-mono text-marrow-light/60">
                         SERIE
-                        {seriesDisabled && (
-                          <span className="text-[9px] text-amber-600 font-sans font-semibold">
-                            {isSoloAnime ? '(escluso: Solo Anime)' : '(escluso: Solo Film)'}
-                          </span>
-                        )}
                         <Switch
                           id={seriesSwitchId}
-                          disabled={seriesDisabled}
-                          checked={isSeriesEnabled && !seriesDisabled}
+                          checked={isSeriesEnabled}
                           onCheckedChange={(checked: boolean) => toggleHeroCatalog(idSeries, checked)}
                         />
                       </label>

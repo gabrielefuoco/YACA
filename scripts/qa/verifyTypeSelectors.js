@@ -283,8 +283,11 @@ async function runABRealProof(baseUrl, testUser, baselineUtilsModule, fixedUtils
 
     console.log(`  Fixed {anime:'only'}    -> Manifest: ${fOnly.manifestCount} cataloghi | typeSelectors inviato: ${JSON.stringify(fOnly.sentPayloadSettings.typeSelectors)}`);
     console.log(`  Fixed {anime:'exclude'} -> Manifest: ${fEx.manifestCount} cataloghi | typeSelectors inviato: ${JSON.stringify(fEx.sentPayloadSettings.typeSelectors)}`);
-    const fixedChanged = (fOnly.manifestCount === 9 && fEx.manifestCount === 11);
-    console.log(`  Verifica Lato Fixed: il manifest CAMBIA come atteso (9 vs 11) -> FIX CONFERMATO: ${fixedChanged ? 'SÌ' : 'NO'}`);
+    const fOnlyHasHeroes = fOnly.manifestCatalogs.some(c => c.id === 'yaca_true_blend_movies') && fOnly.manifestCatalogs.some(c => c.id === 'yaca_true_blend_series');
+    const fOnlyFiltersNonAnime = !fOnly.manifestCatalogs.some(c => c.id === 'yaca_preset_preset_pop_movies') && fOnly.manifestCatalogs.some(c => c.id === 'yaca_preset_preset_ghibli');
+    const fExFiltersAnime = fEx.manifestCatalogs.some(c => c.id === 'yaca_preset_preset_pop_movies') && !fEx.manifestCatalogs.some(c => c.id === 'yaca_preset_preset_ghibli');
+    const fixedChanged = (fOnly.manifestCount === 11 && fEx.manifestCount === 11 && fOnlyHasHeroes && fOnlyFiltersNonAnime && fExFiltersAnime);
+    console.log(`  Verifica Lato Fixed: il manifest include hero catalogs e filtra i preset (11 vs 11) -> FIX CONFERMATO: ${fixedChanged ? 'SÌ' : 'NO'}`);
 
     // Dettaglio Item campionati
     console.log(`\n  Dettaglio Item nei due lati:`);
@@ -404,9 +407,7 @@ function analyzeCatalogExclusion(fOnly, fEx) {
     console.log(`   I cataloghi non conformi sono COMPLETAMENTE ASSENTI DAL MANIFEST (come deve essere).`);
     console.log(`   Stremio riceve manifest.catalogs con SOLI cataloghi conformi: NESSUNA riga vuota renderizzata!`);
     console.log(`\n2. CATALOGHI ESCLUSI DAL MANIFEST (ASSENTI):`);
-    console.log(`   - In "Solo Anime" (4 esclusi):`);
-    console.log(`     * yaca_true_blend_movies (Hero film non-anime)`);
-    console.log(`     * yaca_true_blend_series (Hero serie non-anime)`);
+    console.log(`   - In "Solo Anime" (2 esclusi - gli hero sono inclusi come policy-agnostic):`);
     console.log(`     * yaca_preset_preset_pop_movies (Preset film non-anime)`);
     console.log(`     * yaca_preset_preset_pop_series (Preset serie non-anime)`);
     console.log(`   - In "No Anime" (2 esclusi):`);
@@ -459,7 +460,7 @@ async function main() {
     console.log(`[${unitRes.check1_1.verdict}] 1. Frontend Unit: profilesToApiPayload serializza typeSelectors`);
     console.log(`[${unitRes.check1_2.verdict}] 2. Frontend Unit: mapBackendProfile deserializza typeSelectors`);
     console.log(`[${unitRes.check1_3.verdict}] 3. Frontend Unit: sanitizeTypeSelectors sanitizza valori sporchi`);
-    console.log(`[${abRes.verdict}] 4. Prova A/B Reale: Baseline non cambia (13==13) vs Fix cambia (9!=11)`);
+    console.log(`[${abRes.verdict}] 4. Prova A/B Reale: Baseline non cambia (13==13) vs Fix filtra i preset e include hero (11==11)`);
     console.log(`[${rtRes.verdict}] 5. Round-Trip Completo: 4 stati validi + recupero valori sporchi`);
 
     const allPassed = unitRes.check1_1.pass &&
