@@ -80,6 +80,7 @@ export interface Profile {
     newPrompts: string[];
     presetOverrides: Record<string, unknown>;
     catalogOrder: string[];
+    libraryOrder?: string[];
     heroPresetsInitialized?: boolean;
   };
   existingCatalogs: Catalog[];

@@ -527,72 +527,32 @@ router.delete('/:id/library/:itemId', async (req, res) => {
 
 /**
  * PUT /api/profiles/:id/library/reorder
- * Reorder library items by manipulating _ctime
+ * Reorder library items by updating raw_ui_state.libraryOrder in profile configuration
  */
 router.put('/:id/library/reorder', async (req, res) => {
+    const { id: profileId } = req.params;
     const userId = req.body.userId;
-    const { itemIds } = req.body; // Array of _ids in the desired new order (first is newest)
+    const { itemIds } = req.body; // Array of _ids in the desired new order
     if (!userId || !Array.isArray(itemIds)) return res.status(400).json({ error: 'Invalid payload' });
 
     try {
         const account = await UserAccount.findOne({ userId }).lean();
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
-        const UserLibraryItem = require('../db/models/UserLibraryItem');
-        
-        let baseTime = Date.now();
+        const addonConfig = await AddonConfig.findOne({ uuid: account.addonUuid });
+        if (!addonConfig) return res.status(404).json({ error: 'User not found' });
 
-        const changes = [];
-        // itemIds are passed in visual order (index 0 is top left, so it should have the highest _ctime)
-        for (let i = 0; i < itemIds.length; i++) {
-            const itemId = itemIds[i];
-            // each subsequent item gets a slightly older _ctime
-            const newCtime = new Date(baseTime - (i * 1000));
-            const newMtime = newCtime;
-            
-            const updated = await UserLibraryItem.findOneAndUpdate(
-                {
-                    addonUuid: account.addonUuid,
-                    $or: [{ itemId: itemId }, { _id: itemId }]
-                },
-                { $set: { _ctime: newCtime, _mtime: newMtime } },
-                { returnDocument: 'after' }
-            );
+        const profile = (addonConfig.profiles || []).find(p => p.id === profileId);
+        if (!profile) return res.status(404).json({ error: 'Profile not found' });
 
-            if (updated) {
-                changes.push({
-                    _id: updated.itemId || updated._id,
-                    type: updated.type,
-                    name: updated.name || '',
-                    poster: updated.poster || null,
-                    posterShape: updated.posterShape || 'poster',
-                    background: updated.background || null,
-                    logo: updated.logo || null,
-                    year: updated.year || null,
-                    removed: updated.removed || false,
-                    temp: updated.temp || false,
-                    _ctime: newCtime,
-                    _mtime: newMtime,
-                    state: updated.state
-                });
-            }
-        }
+        const cleanOrder = [...new Set(itemIds.map(String))];
 
-        if (changes.length > 0 && account.apiKeys?.stremio) {
-            const { stremioClient } = require('../clients/stremio');
-            // Batch push to Stremio
-            const chunkSize = 100;
-            for (let i = 0; i < changes.length; i += chunkSize) {
-                const chunk = changes.slice(i, i + chunkSize);
-                await stremioClient.post('/api/datastorePut', {
-                    authKey: account.apiKeys.stremio,
-                    collection: 'libraryItem',
-                    changes: chunk
-                });
-            }
-        }
+        await AddonConfig.updateOne(
+            { uuid: account.addonUuid, 'profiles.id': profileId },
+            { $set: { 'profiles.$.raw_ui_state.libraryOrder': cleanOrder } }
+        );
 
-        res.json({ success: true });
+        res.json({ success: true, libraryOrder: cleanOrder });
     } catch (err) {
         console.error(`[ProfileAPI] Error reordering library:`, err.message);
         res.status(500).json({ error: 'Internal server error' });

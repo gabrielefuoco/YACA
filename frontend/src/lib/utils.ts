@@ -36,6 +36,7 @@ export interface BackendProfile {
     selectedPresets?: string[];
     presetOverrides?: Record<string, unknown>;
     catalogOrder?: string[];
+    libraryOrder?: string[];
   };
 }
 
@@ -109,6 +110,7 @@ export function profilesToApiPayload(profiles: Profile[]) {
     selectedPresets: p.raw_ui_state.selectedPresets,
     presetOverrides: p.raw_ui_state.presetOverrides,
     catalogOrder: p.raw_ui_state.catalogOrder,
+    libraryOrder: p.raw_ui_state.libraryOrder ?? [],
     heroPresetsInitialized: p.raw_ui_state.heroPresetsInitialized ?? true,
     existingCatalogs: p.existingCatalogs,
     newPrompts: p.raw_ui_state.newPrompts,
@@ -151,6 +153,7 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
 
   let selectedPresets = Array.isArray(rawUi.selectedPresets) ? rawUi.selectedPresets : [];
   const catalogOrder = Array.isArray(rawUi.catalogOrder) ? rawUi.catalogOrder : [];
+  const libraryOrder = Array.isArray(rawUi.libraryOrder) ? rawUi.libraryOrder : [];
   const heroPresetsInitialized = (rawUi as Record<string, unknown>).heroPresetsInitialized ?? false;
 
   const HERO_PRESET_IDS = [
@@ -177,6 +180,7 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
       newPrompts: [],
       presetOverrides: rawUi.presetOverrides ?? {},
       catalogOrder,
+      libraryOrder,
       heroPresetsInitialized: true,
     },
     existingCatalogs,

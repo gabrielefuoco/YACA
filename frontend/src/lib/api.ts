@@ -6,6 +6,26 @@ function getCsrfTokenFromCookie() {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+async function handleResponse(res: Response) {
+  if (!res.ok) {
+    let errorMsg = `HTTP ${res.status}: ${res.statusText}`;
+    try {
+      const errData = await res.json();
+      if (errData && typeof errData === 'object') {
+        errorMsg = errData.error || errData.message || JSON.stringify(errData);
+      }
+    } catch {
+      // Non-JSON error response
+    }
+    const error = new Error(errorMsg);
+    (error as any).status = res.status;
+    (error as any).response = res;
+    throw error;
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
 async function post(url: string, body?: object) {
   const csrfToken = getCsrfTokenFromCookie();
   const headers = csrfToken
@@ -17,12 +37,12 @@ async function post(url: string, body?: object) {
     credentials: 'include',
     body: body ? JSON.stringify(body) : undefined,
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 async function get(url: string) {
   const res = await fetch(url, { credentials: 'include' });
-  return res.json();
+  return handleResponse(res);
 }
 
 async function put(url: string, body?: object) {
@@ -36,7 +56,7 @@ async function put(url: string, body?: object) {
     credentials: 'include',
     body: body ? JSON.stringify(body) : undefined,
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 async function del(url: string) {
@@ -49,7 +69,7 @@ async function del(url: string) {
     headers,
     credentials: 'include',
   });
-  return res.json();
+  return handleResponse(res);
 }
 
 export const api = {

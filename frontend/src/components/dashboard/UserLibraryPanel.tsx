@@ -6,23 +6,32 @@ import { PosterImage } from '@/components/shared/PosterImage';
 import { Button } from '@/components/ui/button';
 import { generateId } from '@/lib/utils';
 import { Loader2, Library, CheckSquare, Square, Trash2, ArrowUpDown, RefreshCw } from 'lucide-react';
-import { MyList } from '@/types';
+import { MyList, Profile } from '@/types';
 
 import { SyncLibraryModal } from '@/components/modals/SyncLibraryModal';
 
 interface UserLibraryPanelProps {
   profileId: string;
   userId: string;
+  profile?: Profile;
+  onUpdateProfile?: (id: string, updates: Partial<Profile>) => void;
   onCreateCatalog: (list: MyList) => void;
 }
 
-export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLibraryPanelProps) {
+export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, onCreateCatalog }: UserLibraryPanelProps) {
   const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [sortMode, setSortMode] = useState<'date_desc' | 'date_asc' | 'name_asc'>('date_desc');
+  const [sortMode, setSortMode] = useState<'custom' | 'date_desc' | 'date_asc' | 'name_asc'>('custom');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [libraryOrder, setLibraryOrder] = useState<string[]>(profile?.raw_ui_state?.libraryOrder ?? []);
+
+  useEffect(() => {
+    if (profile?.raw_ui_state?.libraryOrder) {
+      setLibraryOrder(profile.raw_ui_state.libraryOrder);
+    }
+  }, [profile?.raw_ui_state?.libraryOrder, profileId]);
   
   // Sync Modal State
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -98,12 +107,35 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
   };
 
   const handleReorder = async (reorderedItems: any[]) => {
+    const previousItems = items;
+    const previousOrder = libraryOrder;
+    const newOrder = reorderedItems.map(i => i._id || i.itemId);
+
     setItems(reorderedItems);
+    setLibraryOrder(newOrder);
+    if (onUpdateProfile && profile) {
+      onUpdateProfile(profileId, {
+        raw_ui_state: {
+          ...profile.raw_ui_state,
+          libraryOrder: newOrder,
+        },
+      });
+    }
+
     try {
-      await api.reorderLibrary(profileId, userId, reorderedItems.map(i => i._id));
+      await api.reorderLibrary(profileId, userId, newOrder);
     } catch (e) {
-      console.error(e);
-      fetchLibrary(); // revert on fail
+      console.error('[UserLibraryPanel] Error reordering library, rolling back:', e);
+      setItems(previousItems);
+      setLibraryOrder(previousOrder);
+      if (onUpdateProfile && profile) {
+        onUpdateProfile(profileId, {
+          raw_ui_state: {
+            ...profile.raw_ui_state,
+            libraryOrder: previousOrder,
+          },
+        });
+      }
     }
   };
 
@@ -114,11 +146,14 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
 
   const handleDrop = (targetIndex: number) => {
     if (dragIndex === null || dragIndex === targetIndex) return;
-    const reordered = [...items];
+    const reordered = [...sortedItems];
     const [moved] = reordered.splice(dragIndex, 1);
     reordered.splice(targetIndex, 0, moved);
-    handleReorder(reordered);
     setDragIndex(null);
+    if (sortMode !== 'custom') {
+      setSortMode('custom');
+    }
+    handleReorder(reordered);
   };
 
   // Deduplica difensiva per evitare chiavi duplicate e render multipli
@@ -140,10 +175,22 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
     return poster.startsWith('/') ? `https://image.tmdb.org/t/p/w500${poster}` : poster;
   };
 
+  const effectiveLibraryOrder = libraryOrder.length > 0
+    ? libraryOrder
+    : (profile?.raw_ui_state?.libraryOrder ?? []);
+  const orderMap = new Map(effectiveLibraryOrder.map((id, i) => [id, i]));
+
   const sortedItems = [...uniqueItems].sort((a, b) => {
     if (sortMode === 'name_asc') return (a.name || '').localeCompare(b.name || '');
     if (sortMode === 'date_asc') return new Date(a._ctime).getTime() - new Date(b._ctime).getTime();
-    return 0; // date_desc is default from API and DB
+    if (sortMode === 'date_desc') return new Date(b._ctime).getTime() - new Date(a._ctime).getTime();
+
+    const aId = a._id || a.itemId;
+    const bId = b._id || b.itemId;
+    const aOrder = orderMap.get(aId) ?? Number.MAX_SAFE_INTEGER;
+    const bOrder = orderMap.get(bId) ?? Number.MAX_SAFE_INTEGER;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return new Date(b._ctime).getTime() - new Date(a._ctime).getTime();
   });
 
   const toggleSelection = (id: string, e?: React.MouseEvent) => {
@@ -212,11 +259,16 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setSortMode(s => s === 'date_desc' ? 'name_asc' : s === 'name_asc' ? 'date_asc' : 'date_desc')}
+            onClick={() => setSortMode(s => {
+              if (s === 'custom') return 'date_desc';
+              if (s === 'date_desc') return 'name_asc';
+              if (s === 'name_asc') return 'date_asc';
+              return 'custom';
+            })}
             className="text-xs font-bold text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white min-h-[38px] touch-manipulation"
           >
             <ArrowUpDown className="h-4 w-4 mr-1" />
-            Ordina: {sortMode === 'date_desc' ? 'Più Recenti' : sortMode === 'name_asc' ? 'A-Z' : 'Meno Recenti'}
+            Ordina: {sortMode === 'custom' ? 'Personalizzato' : sortMode === 'date_desc' ? 'Più Recenti' : sortMode === 'name_asc' ? 'A-Z' : 'Meno Recenti'}
           </Button>
           <Button
             variant={isSelectionMode ? 'default' : 'outline'}
@@ -273,10 +325,10 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
             return (
               <div
                 key={item._id}
-                draggable={!isSelectionMode && sortMode === 'date_desc'}
+                draggable={!isSelectionMode}
                 onDragStart={() => handleDragStart(index)}
                 onDragOver={(e) => {
-                  if (!isSelectionMode && sortMode === 'date_desc') e.preventDefault();
+                  if (!isSelectionMode) e.preventDefault();
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
@@ -285,7 +337,7 @@ export function UserLibraryPanel({ profileId, userId, onCreateCatalog }: UserLib
                 onClick={() => isSelectionMode && toggleSelection(item._id)}
                 className={`
                   relative group aspect-[2/3] rounded-xl overflow-hidden cursor-pointer transition-all duration-300
-                  ${!isSelectionMode && sortMode === 'date_desc' ? 'cursor-grab active:cursor-grabbing hover:-translate-y-1 hover:shadow-xl' : ''}
+                  ${!isSelectionMode ? 'cursor-grab active:cursor-grabbing hover:-translate-y-1 hover:shadow-xl' : ''}
                   ${isSelected ? 'ring-4 ring-primary shadow-lg shadow-primary/20 scale-[0.98]' : 'shadow-md'}
                 `}
               >

@@ -156,6 +156,9 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
             raw_ui_state: {
                 selectedPresets: Array.isArray(input.selectedPresets) ? [...new Set(input.selectedPresets)] : [],
                 catalogOrder: Array.isArray(input.catalogOrder) ? [...new Set(input.catalogOrder)] : [],
+                libraryOrder: Array.isArray(input.libraryOrder)
+                    ? [...new Set(input.libraryOrder)]
+                    : (Array.isArray(input.raw_ui_state?.libraryOrder) ? [...new Set(input.raw_ui_state.libraryOrder)] : []),
                 newPrompts: Array.isArray(input.newPrompts) ? input.newPrompts : [],
                 heroPresetsInitialized: input.heroPresetsInitialized ?? false
             },
