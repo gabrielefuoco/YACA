@@ -5,7 +5,7 @@ import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { PosterImage } from '@/components/shared/PosterImage';
 import { Button } from '@/components/ui/button';
 import { generateId } from '@/lib/utils';
-import { Loader2, Library, CheckSquare, Square, Trash2, ArrowUpDown, RefreshCw } from 'lucide-react';
+import { Loader2, Library, CheckSquare, Square, Trash2, ArrowUpDown, RefreshCw, EyeOff } from 'lucide-react';
 import { MyList, Profile } from '@/types';
 
 import { SyncLibraryModal } from '@/components/modals/SyncLibraryModal';
@@ -25,6 +25,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [sortMode, setSortMode] = useState<'custom' | 'date_desc' | 'date_asc' | 'name_asc'>('custom');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [isRemovingWatched, setIsRemovingWatched] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [libraryOrder, setLibraryOrder] = useState<string[]>(profile?.raw_ui_state?.libraryOrder ?? []);
 
@@ -104,6 +105,38 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
       setSelectedIds(newSel);
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  /**
+   * "Rimuovi visti": prima l'anteprima dichiara quanti titoli visibili toccherà,
+   * poi l'esecuzione rimuove esattamente quelle card (soft-delete + push Stremio).
+   * Il conteggio è obbligatorio: nessuna azione parte senza conferma esplicita.
+   */
+  const handleRemoveWatched = async () => {
+    if (!userId || isRemovingWatched) return;
+    setIsRemovingWatched(true);
+    try {
+      const preview = await api.getWatchedLibraryPreview(profileId, userId);
+      const previewCount = Number(preview?.count) || 0;
+      if (previewCount === 0) {
+        alert('Nessun titolo visto da rimuovere.');
+        return;
+      }
+      const confirmed = confirm(
+        `Rimuovere ${previewCount} titoli visti dalla libreria?\n\n` +
+        'Spariranno anche i duplicati collegati. I titoli visti restano nella cronologia del profilo.'
+      );
+      if (!confirmed) return;
+
+      const result = await api.removeWatchedLibrary(profileId, userId);
+      await fetchLibrary();
+      alert(`Rimossi ${result?.count ?? previewCount} titoli visti.`);
+    } catch (e) {
+      console.error('[UserLibraryPanel] Error removing watched items:', e);
+      alert('Errore nella rimozione dei titoli visti');
+    } finally {
+      setIsRemovingWatched(false);
     }
   };
 
@@ -257,6 +290,18 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
           >
             <RefreshCw className="h-3.5 w-3.5 mr-1" /> 
             Converti in YACA
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isRemovingWatched}
+            onClick={handleRemoveWatched}
+            className="text-xs font-bold text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white min-h-[38px] touch-manipulation"
+          >
+            {isRemovingWatched
+              ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+              : <EyeOff className="h-3.5 w-3.5 mr-1" />}
+            Rimuovi visti
           </Button>
           <Button
             variant="outline"

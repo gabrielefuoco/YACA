@@ -539,6 +539,69 @@ router.delete('/:id/library/:itemId', async (req, res) => {
 });
 
 /**
+ * GET /api/profiles/:id/library/watched
+ * Anteprima read-only dell'azione "Rimuovi titoli visti": dichiara quanti titoli
+ * visibili spariranno dal pannello (e quanti record totali, duplicati inclusi).
+ * Non scrive su MongoDB e non chiama Stremio.
+ */
+router.get('/:id/library/watched', async (req, res) => {
+    const userId = req.query.userId;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    try {
+        const account = await UserAccount.findOne({ userId }).lean();
+        if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
+
+        const { previewWatchedLibrary } = require('../services/libraryWatchedService');
+        const preview = await previewWatchedLibrary({ addonUuid: account.addonUuid });
+
+        res.json({
+            count: preview.count,
+            totalRecords: preview.totalRecords,
+            items: preview.items.map(item => ({
+                itemId: String(item.itemId || item._id || '').trim(),
+                name: item.name || '',
+                type: item.type || ''
+            }))
+        });
+    } catch (err) {
+        console.error(`[ProfileAPI] Error previewing watched library:`, err.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * POST /api/profiles/:id/library/watched
+ * Esegue l'azione "Rimuovi titoli visti": soft-delete locale (`removed: true`,
+ * `_mtime` fresco) + push a Stremio a blocchi. Sincrona e idempotente: con zero
+ * titoli visti non scrive e non chiama Stremio.
+ */
+router.post('/:id/library/watched', async (req, res) => {
+    const userId = req.body.userId;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    try {
+        const account = await UserAccount.findOne({ userId }).lean();
+        if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
+
+        // Senza authKey il push a Stremio non parte e i titoli risusciterebbero al
+        // sync successivo: meglio rifiutare l'azione che fingere una rimozione.
+        if (!account.apiKeys?.stremio) return res.status(400).json({ error: 'Stremio API Key missing' });
+
+        const { removeWatchedLibrary } = require('../services/libraryWatchedService');
+        const result = await removeWatchedLibrary({
+            addonUuid: account.addonUuid,
+            stremioAuthKey: account.apiKeys.stremio
+        });
+
+        res.json(result);
+    } catch (err) {
+        console.error(`[ProfileAPI] Error removing watched library:`, err.message);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
  * PUT /api/profiles/:id/library/reorder
  * Reorder library items by updating raw_ui_state.libraryOrder in profile configuration
  */
