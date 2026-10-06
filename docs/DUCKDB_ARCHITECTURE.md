@@ -34,8 +34,27 @@ Ogni funzione restituisce un frammento SQL.
 ### C. `src/catalog/providers/DuckDbProvider.js`
 Il provider che connette la logica astratta al database fisico di esecuzione. Esegue `queryBuilder.js`, incanala i dati grezzi estratti (spesso in ~10-15ms) e mappa le colonne lette nella sintassi unificata di risposta *Stremio Light Meta*, che arricchirà il frontend senza effettuare alcuna richiesta web.
 
-### D. `scripts/sync_entities.js`
-Rimuove la necessità di definire in modo verboso gli hash-map o i dizionari (es. ID -> Nome Regista). Scansiona i preset, estrae gli ID di crew/cast/keyword/generi, li risolve tramite chiamate in locale al DuckDB, e produce staticamente il dizionario `src/data/entities.json`, caricato all'avvio.
+### D. Il dump TMDB e la politica dei titoli
+
+> [!NOTE]
+> `scripts/sync_entities.js` **non esiste più**: la risoluzione degli ID di crew/cast/keyword è oggi fatta a runtime da `src/data/filters.js` e dal grafo gerarchico, non da un dizionario statico precompilato.
+
+**I titoli arrivano da TMDB con una politica esplicita: italiano → inglese → originale** (ticket 14).
+
+Il problema che l'ha resa necessaria: `tmdbDumpClient` interroga TMDB con `language: 'it-IT'` e **nessun fallback**. Quando la traduzione italiana non esiste, l'API non restituisce un campo vuoto — restituisce l'**originale**, che per un anime è la stringa giapponese. Quel valore finiva tal quale in `name` (serie) / `title` (film) nel parquet, e da lì nella card: misurato, **716 serie su 3.177** e **1.845 film su 4.351** con caratteri CJK nel titolo mostrato.
+
+Come funziona oggi:
+
+1. le richieste includono `translations` in `append_to_response`, quindi **non servono chiamate in più** per avere i titoli alternativi;
+2. `resolveIngestTitle` sceglie: italiano se esiste, altrimenti inglese, altrimenti l'originale;
+3. il record porta anche le colonne dedicate **`title_en`** (film) e **`name_en`** (serie), così la policy resta verificabile a valle;
+4. `DuckDbProvider.resolveDisplayTitle` risolve il nome da mostrare **prima** di `_rawName`, quindi il formatter e i badge episodio vedono già il titolo giusto.
+
+**Attenzione ai nomi dei campi, sono diversi fra film e serie**: i film usano `title`/`original_title`, le serie `name`/`original_name`. Una correzione che ne copre uno solo lascia l'altro rotto.
+
+**Retrocompatibilità**: i parquet esistenti non hanno le colonne nuove. All'avvio `duckDbStore` esegue `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, quindi un parquet vecchio si carica senza errori e le colonne risultano `NULL`.
+
+**I titoli già compromessi non si riparano da soli**: la policy agisce in **ingestione**, quindi vale per i titoli futuri. Il backfill dei visibili è `scripts/backfill-cjk-titles.js` (misurabile con `scripts/qa/measure-cjk-titles.js`): ~715 chiamate e ~3 minuti per i soli titoli che possono affiorare in vetrina.
 
 ---
 

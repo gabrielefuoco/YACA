@@ -21,6 +21,15 @@ Le logiche di calcolo e raccomandazione si trovano principalmente in:
 
 YACA modella l'identità cinematografica dell'utente usando un approccio basato sul **Vector Space Model (VSM)**. Le preferenze dell'utente sono rappresentate da un vettore multidimensionale i cui elementi sono coppie chiavi-valore del tipo `prefisso:valore` (es. `g:28` per il genere Action, `k:12984` per la keyword *time travel*, `o:JP` per il Giappone, `L2:t_272` per un topos del grafo gerarchico).
 
+> [!NOTE]
+> **Il motore matematico vive in un modulo solo**: [src/dna/dnaEngine.js](../src/dna/dnaEngine.js) (ticket 22). Contiene estrazione statica e attiva, rarità, saturazione, clustering, scoring VSM e la fusione `computeFinalDNA`; **non fa I/O** — niente Mongo, niente DuckDB, niente HTTP. I vecchi percorsi (`src/utils/dnaExtractor.js`, `dnaRarity.js`, `tasteClusters.js`) sono oggi **thin-shim** che riesportano il modulo, così gli script e i tool esistenti continuano a funzionare senza modifiche.
+>
+> Due cose da non rompere se si tocca il modulo:
+> - **`globalDfCache` è una variabile di modulo**, iniettata all'avvio da `src/db/duckDbStore.js:361`. Se il modulo ne istanziasse una propria copia non sincronizzata, la rarità ricadrebbe **in silenzio** sui fallback stimati, alterando i pesi senza errori né log. C'è un test che la verifica per identità.
+> - **Le due scale di normalizzazione sono diverse di proposito**: `sanitizeDnaVector` (in `keywordIds.js`) porta a **somma 100** ed è la scala *persistita*; `normalizeVector` (nel motore) porta a **somma 1** ed è un passaggio algebrico **interno** a `computeFinalDNA` per fondere distribuzioni unitarie. Unificarle è un errore: non sono lo stesso standard visto da due lati.
+>
+> **Il difetto corretto dal ticket 22**: `V_active` veniva scritto in **due scale** — `ProfileBuilder` salvava la saturazione per chiave (somma libera, ~1472), mentre l'endpoint `POST /api/profiles/:id/dna` rinormalizzava la somma a 100. Due percorsi, due significati dello stesso vettore. Ora entrambi usano `computeActiveDNA` (saturazione + normalizzazione a 100), con `V_final` invariato (max|Δ| = 3.55e-15) e i characterization test a fissarlo.
+
 > [!IMPORTANT]
 > **Le persone non fanno parte del DNA.** Le chiavi `d:` (crew/registi) e `a:` (cast) vengono scartate sia in generazione sia in lettura: `isPersonDnaKey()` le riconosce e `stripPersonKeys()` le rimuove dentro `normalizeVector()` ([dnaExtractor.js](../src/utils/dnaExtractor.js#L113-L125)). Un `V_final` salvato prima di questa decisione viene ripulito al momento in cui viene riletto, senza migrazione. Motivo dichiarato nel codice: le persone rendevano il DNA troppo restrittivo. **Non esistono quindi assi autoriali nello score**: vedi §2.
 
@@ -149,9 +158,9 @@ La funzione è `calculateImpressionPenalty(seenDays)` ([dataFetchers.js](../src/
 
 ---
 
-## 5. Algoritmi di Merging e Interleaving
+## 5. Combinazione delle liste multiple
 
-Quando il sistema esegue una ricerca avanzata composta da query multiple o fonde cataloghi pre-compilati, utilizza due strategie di unificazione:
+Quando il sistema esegue una ricerca avanzata composta da query multiple, usa il consensus scoring:
 
 ### A. Consensus Scoring (Fattore Consenso)
 Quando i risultati provengono da ricerche parallele (es. le 3 vibrazioni del *True Blend*), è molto probabile che alcuni titoli appaiano in più di una lista.
@@ -159,10 +168,8 @@ Quando i risultati provengono da ricerche parallele (es. le 3 vibrazioni del *Tr
     $$ConsensusBonus = C^2 - 1$$
 *   Un titolo che soddisfa più criteri contemporaneamente viene spinto verso l'alto. Ad esempio, se un titolo appare in 3 liste diverse, riceve un bonus di $+8.0$ sul punteggio finale.
 
-### B. Interleaving Alternato (Round-Robin)
-Per le liste che non implementano un punteggio unico e devono preservare la parità di rappresentazione dei vari filtri (es. cataloghi misti):
-*   La funzione `interleaveMultipleResults` unisce le liste alternando un elemento per ciascuna sorgente in modalità round-robin (es. [Lista1[0], Lista2[0], Lista3[0], Lista1[1]...]).
-*   Durante il processo, viene eseguita la deduplicazione in tempo reale basata su ID normalizzati.
+> [!NOTE]
+> **L'interleaving alternato non esiste più** (ticket 32): `interleaveMultipleResults` è stato rimosso con il merge dei cataloghi, che era il solo a richiederlo. Le liste multiple oggi si combinano solo con il consensus scoring qui sopra.
 
 ### C. Diversity Caps (Tetti di Diversità)
 Per evitare che una singola saga (es. tutti i film di Harry Potter) o un singolo genere occupi interamente le prime posizioni delle raccomandazioni, viene eseguito un filtraggio di diversità in coda allo scoring ([ProfileScorer.js](../src/profile/ProfileScorer.js#L519-L566), `applyDiversityCaps`). I titoli eccedenti i limiti vengono rimossi dalla pagina corrente e rimandati a quella successiva.
@@ -211,7 +218,7 @@ Contratti da non violare:
 
 *   **Disgiunzione per priorità**: i candidati vengono assegnati ai quattro blocchi nell'ordine fisso `true_blend → seed_network → hidden_gems → trakt_filtered`, ogni ID può essere preso una volta sola ([hybridRecommendations.js](../src/engines/hybridRecommendations.js#L73-L84), `:131-L152`). L'ordine dei blocchi è un requisito, non l'ordine delle richieste HTTP.
 *   **Validazione all'ingressa dalla cache**: un blocco in cache non viene servito se contiene lo stesso ID in due hero. Il numero di schema garantisce la *forma* del payload, non la sua *correttezza*: uno snapshot allocato da una versione precedente può essere ben formato e sbagliato, e viene scartato ([hybridRecommendations.js](../src/engines/hybridRecommendations.js#L156-L172)). Oggi `HERO_CACHE_SCHEMA_VERSION = 6` — alzare il numero è l'interruttore manuale per invalidare tutto.
-*   **La chiave non contiene `configVersion`**, di proposito. Metterlo significherebbe orfanare l'intera cache hero a ogni salvataggio di configurazione: misurato in produzione il 2026-10-02, 18 chiavi su 23 erano orfane e la stessa terna utente+profilo+tipo veniva ricostruita 9 volte, 21-42 s ciascuna. A proteggere la cache bastano `context`, `kidsMode`, `typeSelectors` e la versione della chiave.
+*   **La chiave non contiene `configVersion`**, di proposito. Metterlo significherebbe orfanare l'intera cache hero a ogni salvataggio di configurazione: misurato in produzione il 2026-10-02, 18 chiavi su 23 erano orfane e la stessa terna utente+profilo+tipo veniva ricostruita 9 volte, 21-42 s ciascuna. A proteggere la cache bastano `context`, `kidsMode`, `typeSelectors` e la **versione della chiave** — oggi `v2`, alzata dal ticket 17 perché i pool cambiano composizione (senza il bump i risultati vecchi sarebbero rimasti in cache per tutto il TTL di 7 giorni).
 *   **Build concorrente unificata**: due richieste simultanee dello stesso gruppo condividono la stessa promise (`activeHeroGroupBuilds`).
 *   **Degrade dichiarato**: senza token Trakt l'hero `trakt_filtered` cade sul fallback popolare; se il fallback restituisce meno di 10 item il catalogo viene **nascosto** (`metas: []`) invece di servire una lista corta che sembrerebbe una scelta editoriale.
 
@@ -247,14 +254,30 @@ La regola canonica è in [animeIdentity.js](../src/utils/animeIdentity.js#L1-L14
 | Politica | × su anime | × su non-anime |
 |---|---|---|
 | `only` | 1.25 | 0.40 |
-| `favored` | 1.15 | 1.00 |
+| `favored` | 1.15 | **0.85** |
 | `neutral` | 1.00 | 1.00 |
 | `exclude` | 0.40 | 1.00 |
 
 Il moltiplicatore è applicato al punteggio VSM **e** al punteggio ibrido dei seed ([catalogStrategies.js](../src/engines/hybrid/catalogStrategies.js#L1269-L1273)).
 
+> [!IMPORTANT]
+> Sotto `favored` il non-anime scende a **0.85** (ticket 17). Prima restava a 1.00, quindi la «preferenza» era un vantaggio del 15% che il fattore qualità bayesiano e il cap di diversità cancellavano senza sforzo: misurato, un profilo con DNA anime riceveva ~10% di anime nei hero — la stessa quota di un profilo dichiaratamente non-anime.
+
 ### 7.3 I selettori anche come filtro di catalogo
-Gli stessi `typeSelectors` filtrano i **cataloghi**, non solo i punteggi: `isCatalogConformant()` ([catalogKind.js](../src/catalog/catalogKind.js#L187-L239)) esclude dal manifest i cataloghi incompatibili con `film` / `serie` / `anime`. Un catalogo non conforme è **assente dal manifest** — nessuna riga vuota in Stremio — mentre la guardia "0 item" vale solo per richieste HTTP dirette. I cataloghi di utility e libreria personale sono sempre visibili per design.
+Gli stessi `typeSelectors` filtrano i **cataloghi**, non solo i punteggi: `isCatalogConformant()` ([catalogKind.js](../src/catalog/catalogKind.js#L187-L239)) esclude dal manifest i cataloghi incompatibili con la dimensione anime. Un catalogo non conforme è **assente dal manifest** — nessuna riga vuota in Stremio — mentre la guardia "0 item" vale solo per richieste HTTP dirette. I cataloghi di utility e libreria personale sono sempre visibili per design.
+
+**Gli 8 hero sono `agnostic`** (ticket 15): il kind non li esclude mai, quindi sotto `Solo Anime` compaiono e servono contenuto anime, invece di sparire. Il filtraggio lo fa la `animePolicy` a valle, con la stessa macchina dei preset.
 
 > [!IMPORTANT]
-> Un selettore senza `anime` non è un errore: `film: false, serie: false, anime: null` significa *nessun vincolo*, ed è il default dei profili iniziali. La retrocompatibilità è totale: l'assenza di `typeSelectors` lascia passare tutto.
+> La dimensione media (`film`/`serie`) **non filtra più**: i selettori `Solo Film` / `Solo Serie` sono stati rimossi (ticket 16). Un profilo salvato con `film: false` o `serie: true` continua a funzionare — i campi restano nello schema e vengono tollerati, ma non vengono letti. L'assenza di `typeSelectors` lascia passare tutto.
+
+### 7.4 Come la politica anime governa i pool dei hero
+
+Quattro innesti, tutti a **costo zero di chiamate TMDB** (le sorgenti sono DuckDB), aggiunti dal ticket 17 senza toccare gli algoritmi dei quattro builder:
+
+1.  **Clausola anime nel canale Generi Primari** ([catalogStrategies.js](../src/engines/hybrid/catalogStrategies.js#L686-L691)): vale anche sotto `favored`, non solo sotto `only`. Prima, con `favored`, quel canale pescava 200 titoli di qualità e 200 di popolarità **senza alcun filtro anime**: fino a 400 blockbuster live-action nel pool a monte.
+2.  **Sotto-filoni anime** ([ProfileScorer.js](../src/profile/ProfileScorer.js#L465-L472)): gli anime non collidono più tutti su un unico `strand:anime`, ma su `strand:anime:<genere>` con un cap dedicato (`animeStrand`, [catalogStrategies.js](../src/engines/hybrid/catalogStrategies.js#L58)). Prima il cap rigido a 3 si saturava subito e l'overflow (`strandOverflow * 200`, `:215`) faceva vincere i non-anime nel refill.
+3.  **Moltiplicatore simmetrico**: vedi la tabella in §7.2.
+4.  **I due fallback di `buildFilteredCatalog`** (`:765`, `:811`) ricevono `effectiveTypeSelectors` invece dei `typeSelectors` grezzi: prima, in caso di svuotamento, la fallback chain perdeva l'intento anime del profilo.
+
+Effetto misurato su un profilo con DNA anime: la quota anime in pagina 1 passa dal **15% al 100%** (soglia di accettazione ≥ 80%). La misura è stata fatta sui dati locali; la conferma in produzione è la verifica end-to-end dopo il deploy.

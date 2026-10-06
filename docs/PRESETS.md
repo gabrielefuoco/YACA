@@ -91,6 +91,12 @@ Il flusso dei preset è gestito in modalità 100% offline:
 
 ## 4. Ordinamento e Gestione `orderBy` / `sortBy`
 
+La traduzione dei criteri vive in un modulo solo: [src/catalog/catalogSorting.js](../src/catalog/catalogSorting.js) (ticket 18). Contiene il vocabolario utente, i **default dichiarati per famiglia** (discovery: popolarità; simulcast: data dell'ultimo episodio; watchlist: `_mtime DESC`; hero: score di affinità) e la traduzione verso SQL e verso il comparatore in-memory. `mapSortBy` è **spostata** lì, non duplicata: `DuckDbProvider` la riesporta per compatibilità.
+
+**Il DNA resta un reranker interno**: non esiste una voce «Per te» nel vocabolario utente. I preset DuckDB non calcolano l'affinità, e calcolarla costerebbe latenza su ogni pagina.
+
+**I tie-breaker dei preset non vengono più piallati** (ticket 18): ricevendo un `sortBy` dall'utente, `CatalogRouter` estrae le clausole secondarie del preset (es. `vote_count DESC, id ASC`) e le riappende sotto il nuovo ordinamento primario, evitando di duplicare le colonne già ordinate. Prima la scelta dell'utente sostituiva l'intero `orderBy`, quindi due titoli con lo stesso voto potevano cambiare posizione fra una pagina e l'altra.
+
 ### 4.1 Default Curato per Ogni Preset
 Ogni catalogo preset definisce un proprio ordinamento predefinito e curato, identificato dalla proprietà `orderBy`.
 Durante la generazione dei preset da [presets.js](../src/data/presets.js), la funzione `buildPresetFromFilters` analizza il parametro `sort_by` specificato nel blocco query del preset (`p.queries[0].sort_by`) e calcola l'espressione SQL corrispondente invocando [`mapSortBy(s, type)`](../src/catalog/providers/DuckDbProvider.js#L31).
@@ -151,38 +157,38 @@ const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS 
      }
      ```
    - DuckDB esegue la query con il nuovo `orderBy` e restituisce i risultati ordinati secondo la preferenza temporanea dell'utente.
-3. **Cataloghi merged**: sul percorso della Universal Pipeline non c'è un `orderBy` da sovrascrivere — l'override finisce nel `sort_by` di **ogni** query che compone il merge ([CatalogRouter.js:126-129](../src/catalog/CatalogRouter.js)), così tutte le sorgente rispettano la scelta dell'utente invece di una sola.
+3. **Catalogo dell'utente a più query**: sul percorso della Universal Pipeline non c'è un `orderBy` da sovrascrivere — l'override finisce nel `sort_by` di **ogni** query che lo compone ([CatalogRouter.js](../src/catalog/CatalogRouter.js)), così tutte le sorgenti rispettano la scelta dell'utente invece di una sola.
 
 ---
 
-## 5. I Preset e i Selettori di Tipo del Profilo
+## 5. I Preset e il Selettore Anime del Profilo
 
-Un profilo può dichiarare tre selettori, in `profile.settings.typeSelectors`:
+Un profilo può dichiarare un selettore sulla dimensione anime, in `profile.settings.typeSelectors`:
 
 ```javascript
 {
-    film:  false,                    // Solo Film
-    serie: false,                   // Solo Serie
     anime: 'only' | 'exclude' | null // Solo Anime | No Anime | nessun vincolo
 }
 ```
 
-**Campo assente = nessun vincolo**: un profilo senza selettori si comporta esattamente come prima. Sono due gruppi **ortogonali** e la combinazione conta (`Solo Serie` + `Solo Anime` = solo anime serie, `Solo Anime` da solo = anime film **e** anime serie): l'anime è un modificatore, non una partizione dei media.
+**Campo assente = nessun vincolo**: un profilo senza selettore lascia passare tutto.
+
+> [!NOTE]
+> I selettori `film` / `serie` sono stati **rimossi** (ticket 16): erano ridondanti con i preset mono-tipo e con gli switch dei hero, e nessun profilo li usava. I campi restano tollerati in un profilo salvato ma non vengono più letti.
 
 ### 5.1 L'identità di un catalogo: `kind`
 
 La conformità di un preset non si deduce da `category` (gli anime per bambini stanno in «Bambini & Famiglia», i donghua nella categoria «Solo Anime» ma **non** sono preset anime) né dal nome. L'unico helper è [catalogKind.js](../src/catalog/catalogKind.js):
 
 ```
-kind = { mediaSet: ['film' | 'serie'], anime: 'yes' | 'no' | 'mixed' }
+kind = { mediaSet: ['film' | 'serie'], anime: 'yes' | 'no' | 'mixed' | 'agnostic' }
 ```
 
 - **preset** → `type` + il flag `isAnime` di radice;
-- **8 hero e cataloghi fissi** → registry esplicito nel modulo (suffisso `_movies`/`_series`);
-- **custom / Matchmaker** → `type` dichiarato (`anime` → `anime: 'yes'`);
-- **merged** → **unione** delle sorgenti: né tutte anime né tutte non-anime → `anime: 'mixed'`.
+- **8 hero e cataloghi fissi** → registry esplicito nel modulo (suffisso `_movies`/`_series`); gli hero sono **`agnostic`**;
+- **custom / Matchmaker** → `type` dichiarato (`anime` → `anime: 'yes'`).
 
-La regola di conformità è `mediaSet ⊆ media ammessi` **E** (`only` → `anime === 'yes'`, `exclude` → `anime === 'no'`); `mixed` e gli ignoti sono conformi solo senza vincolo anime. Conservativa nelle due direzioni: meglio un catalogo in più nel manifest che uno che l'utente crede di vedere e non vede.
+La regola di conformità è `only` → `anime === 'yes'`, `exclude` → `anime === 'no'`, e **`agnostic` è sempre conforme**: il kind non decide sulla dimensione anime, la decide la `animePolicy` a valle. `mixed` e gli ignoti sono conformi solo senza vincolo anime.
 
 ### 5.2 Dove il vincolo agisce (e dove no)
 

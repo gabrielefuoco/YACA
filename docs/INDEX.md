@@ -139,3 +139,15 @@ quello che è successo a `PRESETS`, `ALGORITHMS` e `KITSU_MAPPING`: fermi da un 
 il codice cambiava sotto.
 
 **Verifica a mano delle citazioni (deciso il 04/10/2026)**: niente controlli automatici — la verifica la fa l'agente quando congela una mappa. Per ogni `file:riga` citato: il file esiste ancora? è cambiato da quando la mappa è stata scritta? Il 03/10/2026 questo controllo a mano ha trovato tre file citati che erano stati **rimossi a luglio e agosto** (`kitsu.js`, `sync_entities.js`, `TmdbProvider.js`) e un numero di schema superato di due versioni. È il genere di divergenza che nessuno nota finché non ci sbatte contro.
+
+### Marcatura delle decisioni superate (convenzione, 06/10/2026)
+
+Una decisione presa in una mappa può essere **superata** da un ticket successivo: quando succede, si annota **nella mappa dove la decisione è stata presa**, non solo nella mappa nuova. Una riga, subito sotto la decisione:
+
+```
+> **Superata il <data>** dal ticket <N> della mappa `<nome-mappa>`: <perché>.
+```
+
+Serve perché le mappe restano leggibili per anni: senza il marcatore, chi le rilegge da sole crede ancora valida una scelta che il codice ha già abbandonato — ed è esattamente il modo in cui `streamHandler` è rimasto documentato come proxy dei flussi per mesi dopo essere diventato un guscio vuoto.
+
+Corollario, sull'ordine dei lavori: **i documenti si allineano quando il codice è fermo.** Allinearli mentre si implementa significa rincorrere un bersaglio che si sposta, e produrre doc che sono già sbagliati quando li si finisce di scrivere.

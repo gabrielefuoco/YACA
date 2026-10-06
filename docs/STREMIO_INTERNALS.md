@@ -74,11 +74,12 @@ All'interno di [metaHandler.js](../src/handlers/metaHandler.js):
 - Ogni episodio TMDB viene risolto tramite `animeMappingStore.resolveKitsu(tmdbId, season, episode)` applicando un algoritmo di **consensus voting** ponderato tra i provider.
 - Se risolto con successo, l'ID dell'episodio per Stremio diventa `kitsu:{kitsuId}:{kitsuEpisode}` (compatibile con i tracker Torrentio/Anime Kitsu). In caso di collisione o assenza di mapping, viene mantenuto l'ID TMDB nativo come fallback di sicurezza.
 
-#### 5. Doppia Query in Parallelo e De-duplicazione dei Flussi (Stream Proxying)
-Nel proxy dei flussi ([streamHandler.js](../src/handlers/streamHandler.js)), sorge un problema analogo a livello di tracker torrent (es. Torrentio o il Corsaro Viola):
-- **Problema dei flussi Kitsu:** I torrent italiani (con doppiaggio o sub ITA) vengono caricati e associati dagli indexer quasi esclusivamente sotto l'ID IMDb della serie (es. `tt4508902`). Interrogando il proxy esclusivamente con l'ID Kitsu (`kitsu:10740:1`), si ottenevano pochissimi risultati internazionali sub-eng e zero risultati italiani, causando il mancato badge **ITA** (falso negativo salvato in cache).
-- **Risoluzione parallela:** Quando YACA riceve una richiesta di stream per un ID Kitsu (`kitsu:id:season:episode`), traduce preventivamente l'ID Kitsu nel rispettivo ID IMDb (ricavando la stagione e l'episodio TMDB corrispondenti) e avvia due richieste asincrone parallele al proxy: una per l'ID Kitsu e una per l'ID IMDb.
-- **Fusione e De-duplicazione:** I flussi restituiti da entrambe le query vengono fusi in RAM ed eliminati i duplicati basandosi sull'identificatore univoco del torrent (`infoHash`) o sul link (`url` / `externalUrl`). Questa unione garantisce il massimo assortimento di flussi (sia le release subbate specifiche per anime indicizzate su Kitsu, sia i doppiaggi italiani tradizionali indicizzati su IMDb) e permette a YACA di applicare correttamente il badge **ITA** sui cataloghi anime in base alla presenza reale di tracce italiane.
+#### 5. Proxy dei flussi: rimosso
+
+> [!NOTE]
+> **YACA non fa più da proxy ai flussi** (commit `6443a87`). `streamHandler.js` è oggi un guscio di 31 righe che ritorna `{ streams: [] }`: la doppia query parallela Kitsu+IMDb, la fusione e la deduplicazione per `infoHash`/`url` non esistono più nel codice.
+>
+> Il badge **ITA** non dipendeva da quella scansione già prima della rimozione — nasce dalla colonna `ita` del catalogo — quindi la sua logica resta valida e la trovi qui sotto.
 - **Badge ITA: una sola fonte, letta in RAM.** Il badge ITA non nasce più da una scansione torrent: la fonte è la **colonna `ita`** del catalogo, popolata dalle annotazioni de *Il Mondo dei Doppiatori* che produce il modulo `services/doppiaggi-source`. Ha **tre stati** — `true` (doppiato), `null` (indecisione da omonimia), `false` (nessuna traccia) — e il badge si applica solo sul `true`. Il badge legge uno **snapshot in RAM** del file delle annotazioni (`src/data/itaAnnotations.js`, TTL ~60s) invece della colonna del parquet, così copre anche i cataloghi che non passano dal parquet (Trakt, hero, watchlist, simulcast); la colonna resta per i filtri SQL. Degrado deciso: file assente → snapshot vuoto, nessun badge, nessuna eccezione. Dettagli in [EPISODE_BADGES.md](EPISODE_BADGES.md) e [CATALOG_LOGIC.md](CATALOG_LOGIC.md#5-il-sistema-dei-badge-ita-anime--stato-episodi).
 
 
@@ -141,12 +142,12 @@ La conseguenza pratica va ricordata quando si aggiunge un tipo: **Cinemeta rispo
 
 Stremio conserva il manifest che ha scaricato quando l'addon è stato installato: cambiare i preset non aggiorna nulla finché **l'URL di installazione non cambia**. Ecco perché l'URL è `${HOST_URL}/{userId}/{configVersion}/manifest.json` e `configVersion` è un `nanoid(8)` ([configure/index.js](../src/api/configure/index.js#L127)) usato come cache-buster puro.
 
-Il bump non è affidato a chi salva: all'avvio `reconcileManifests()` ([manifestReconciler.js](../src/utils/manifestReconciler.js)) confronta l'impronta salvata con quella di adesso e, se differisce, rigenera `configVersion`, mette `pendingStremioResync = true` e chiama `updateStremioAddonCollection`. L'impronta ([manifestFingerprint.js](../src/utils/manifestFingerprint.js)) copre solo ciò che cambia il manifest pubblico — `activeProfileId`, i profili proiettati su (id, nome, `selectedPresets`, ordine cataloghi, cataloghi con `id/name/type/isAnime/mergedFrom`, `typeSelectors`, `kidsMode`), i custom e una **firma delle definizioni** (id/nome/tipo di hero e preset). Segreti, DNA, pesi di scoring e filtri dei cataloghi sono esclusi apposta: non cambiano il manifest e non devono invalidare nulla.
+Il bump non è affidato a chi salva: all'avvio `reconcileManifests()` ([manifestReconciler.js](../src/utils/manifestReconciler.js)) confronta l'impronta salvata con quella di adesso e, se differisce, rigenera `configVersion`, mette `pendingStremioResync = true` e chiama `updateStremioAddonCollection`. L'impronta ([manifestFingerprint.js](../src/utils/manifestFingerprint.js)) copre solo ciò che cambia il manifest pubblico — `activeProfileId`, i profili proiettati su (id, nome, `selectedPresets`, ordine cataloghi, cataloghi con `id/name/type/isAnime`, `typeSelectors`, `kidsMode`), i custom e una **firma delle definizioni** (id/nome/tipo di hero e preset). Segreti, DNA, pesi di scoring e filtri dei cataloghi sono esclusi apposta: non cambiano il manifest e non devono invalidare nulla.
 
 Tre conseguenze pratiche:
 
 1. **Rinominare un preset o un hero invalida il manifest di tutti gli utenti** (cambia la `definitionsSignature`), non solo del proprio. È il prezzo dell'automazione: senza, il rename resterebbe invisibile fino a un salvataggio manuale.
-2. **L'ordine degli array conta, l'ordine delle chiavi no**: `catalogOrder` e `selectedPresets` sono preservati, `Object.keys` sono ordinati in canonico.
+2. **L'ordine degli array conta, l'ordine delle chiavi no**: `catalogOrder`, `libraryOrder` e `selectedPresets` sono preservati, `Object.keys` sono ordinati in canonico.
 3. **Il resync è ritentato, non perso**: se `updateStremioAddonCollection` fallisce il flag resta `true` e si riprova al prossimo avvio. Tutto il percorso è mai-fatale e si disattiva con `DISABLE_MANIFEST_RECONCILE=1`.
 
 Contratti coperti da [manifestFingerprint.test.js](../tests/manifestFingerprint.test.js) e [manifestReconciler.test.js](../tests/manifestReconciler.test.js).

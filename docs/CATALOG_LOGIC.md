@@ -1,6 +1,6 @@
 # Gestione della Logica dei Cataloghi e Pipeline dei Dati
 
-Questo documento analizza in dettaglio l'architettura dei cataloghi di **YACA**, descrivendo come le richieste provenienti da Stremio vengono elaborate, instradate ai vari provider, unite o alternate (interleaved), filtrate e infine memorizzate nella cache per ottimizzare le prestazioni.
+Questo documento analizza in dettaglio l'architettura dei cataloghi di **YACA**, descrivendo come le richieste provenienti da Stremio vengono elaborate, instradate ai vari provider, filtrate e infine memorizzate nella cache per ottimizzare le prestazioni.
 
 ---
 
@@ -40,8 +40,8 @@ graph TD
    - Parametri di paginazione (`skip`).
    - Configurazione specifica dell'utente (ID utente, ID profilo attivo).
    - Impostazioni del profilo (`kidsMode`, `typeSelectors`, orientamento poster).
-   - Versione della configurazione (`configVersion` per il cache-busting).
-   - Versione dei badge degli episodi (`BADGE_CATALOG_VERSION`).
+   - Versione della configurazione canonica del catalogo (`catalogDef`: l'impronta di `where`, `orderBy`, `queries`, `isAnime`, provider…). Ha sostituito `configVersion` come ingrediente della chiave: quest'ultimo era un contatore rigenerato a ogni salvataggio, quindi bastava salvare un profilo per svuotare la cache di tutti.
+   - Versione dei badge degli episodi (`BADGE_CATALOG_VERSION`: 24 dal ticket 14/18/32).
 4. **Strategia SWR (Stale-While-Revalidate)**:
    - Se l'hash è presente in cache ed è **fresh**, viene restituito immediatamente.
    - Se è **stale** (nella finestra SWR), viene restituito subito il dato archiviato e viene avviata una Promise asincrona in background per aggiornare la cache.
@@ -57,14 +57,19 @@ graph TD
    - **Simulcast Sorting**: per il catalogo novità anime (`preset_anime_simulcast`) l'ordinamento temporale è già applicato da `AiringStateProvider.js` leggendo `homeReleases` di `anime_airing_state` (l'ultimo episodio che la home ha mostrato come uscito): quel ramo esce prima di qualsiasi ordinamento qui sotto.
 8. **Formattazione Stremio**: I metadati normalizzati vengono convertiti nel formato finale Stremio Meta Preview tramite [StremioFormatter.js](../src/catalog/formatters/StremioFormatter.js).
 
-### 1.1 I selettori di tipo del profilo (`Solo Film` / `Solo Serie` / `Solo Anime` / `No Anime`)
+### 1.1 Il selettore `Solo Anime` / `No Anime`
 
-Un profilo può restringere i **cataloghi di suggerimento** per media e per argomento anime, con tre checkbox in `profile.settings.typeSelectors` (`film`, `serie`, `anime: 'only' | 'exclude' | null`). Sono due gruppi **ortogonali**: `Solo Anime` da solo vale per anime film **e** anime serie, `Solo Serie` + `Solo Anime` vale per le sole anime serie. Campo assente = nessun vincolo, quindi i profili esistenti non cambiano comportamento.
+Un profilo può restringere i **cataloghi di suggerimento** sulla dimensione anime, con un solo selettore in `profile.settings.typeSelectors` (`anime: 'only' | 'exclude' | null`). **Campo assente = nessun vincolo**, quindi un profilo senza selettori lascia passare tutto.
 
-L'identità di un catalogo (`kind = { mediaSet, anime: 'yes' | 'no' | 'mixed' }`) è calcolata da un solo helper, [catalogKind.js](../src/catalog/catalogKind.js), con registry esplicito per gli 8 hero e i cataloghi fissi, `type` + `isAnime` per i preset, `type` per i custom e **unione** delle sorgenti per i merged. Lo stesso helper risponde alla domanda «perché questo catalogo è nascosto?» (`getIncompatibilityReason`), così manifest, backend e dashboard non possono divergere.
+> [!NOTE]
+> I selettori `Solo Film` / `Solo Serie` **non esistono più** (ticket 16). Erano ridondanti — i 161 preset sono già mono-tipo e ogni hero ha i suoi switch indipendenti — e nessun profilo li usava. I campi `film`/`serie` restano tollerati in un profilo salvato, ma non vengono più letti.
+
+L'identità di un catalogo (`kind = { mediaSet, anime: 'yes' | 'no' | 'mixed' | 'agnostic' }`) è calcolata da un solo helper, [catalogKind.js](../src/catalog/catalogKind.js), con registry esplicito per gli 8 hero e i cataloghi fissi, `type` + `isAnime` per i preset e `type` per i custom. Lo stesso helper risponde alla domanda «perché questo catalogo è nascosto?» (`getIncompatibilityReason`), così manifest, backend e dashboard non possono divergere.
+
+**Gli 8 hero sono `agnostic`** (ticket 15): il kind non decide più sulla dimensione anime, quindi non li esclude mai. È la `animePolicy` a valle a governare il contenuto, con la stessa macchina che vale per i preset — prima quella macchina esisteva ma non girava mai sotto `Solo Anime`, perché il gate li spegneva prima.
 
 Tre confini da non confondere:
-- **Suggerimenti vs strumenti**: preset, hero, custom e merged sono soggetti; `yaca_search_standard`, `yaca_search_ai` e le tre watchlist restano **sempre** visibili e il loro contenuto non viene filtrato.
+- **Suggerimenti vs strumenti**: preset, hero e custom sono soggetti; `yaca_search_standard`, `yaca_search_ai` e le tre watchlist restano **sempre** visibili e il loro contenuto non viene filtrato.
 - **Catalogo vs contenuto**: la dimensione media si applica al catalogo (un catalogo film contiene già film), quella anime anche ai singoli item.
 - **Il dashboard non cancella**: un catalogo non conforme già presente resta salvato nel profilo, grigio e con badge «Nascosto dai selettori», riordinabile e rimovibile. `/api/configure` non rifiuta e non butta via nulla.
 
@@ -80,32 +85,24 @@ Tre confini da non confondere:
 
 ---
 
-## 2. Merging e Interleaving (Universal Pipeline)
+## 2. La Universal Pipeline (query multiple e consenso)
 
-Per cataloghi complessi generati dall'intelligenza artificiale o cataloghi uniti (merged), YACA implementa la **Universal Pipeline** all'interno di [AiDiscoveryProvider.js](../src/catalog/providers/AiDiscoveryProvider.js). Questa pipeline gestisce l'esecuzione di query multiple parallele e la combinazione dei risultati tramite due strategie di presentazione:
+Per i cataloghi generati dall'intelligenza artificiale che compongono più query, YACA usa la **Universal Pipeline** dentro [AiDiscoveryProvider.js](../src/catalog/providers/AiDiscoveryProvider.js): le query vengono eseguite in parallelo e i risultati combinati con il **Consensus Scoring**:
 
 ```mermaid
-graph TD
-    A[Universal Pipeline] --> B{Strategy?}
-    B -->|Interleave| C[Alterna risultati delle query]
-    B -->|Popularity / Consensus| D[Applica Consensus Scoring]
-    
-    C --> E[Deduplica per ID normalized]
+ graph TD
+    A[Universal Pipeline] --> B[Esegue le query in parallelo]
+    B --> D[Applica Consensus Scoring]
+    D --> E[Deduplica per ID namespace-aware]
     E --> F[Slice della pagina]
-    
-    D --> G[Calcola consensusCount & consensusBonus]
-    G --> H[Ordina per: Bonus + Popularity]
-    H --> I[Slice top 20 items]
 ```
 
-### A. Strategia Interleave (Alternanza dei Risultati)
-L'interleaving unisce i risultati di $N$ query differenti alternandoli ciclicamente (es. $Q1_1, Q2_1, Q3_1, Q1_2, Q2_2, Q3_2...$). 
-La logica è implementata in `interleaveMultipleResults` all'interno di [resultMerger.js](../src/utils/resultMerger.js):
-- Ciascuna query viene paginata in modo indipendente calcolando un parametro `perQuerySkip` (es. `Math.floor(skip / N)`).
-- Durante l'unione, gli elementi duplicati (stesso ID namespace-aware) vengono saltati per garantire l'univocità nel catalogo finale.
+> [!NOTE]
+> **L'interleaving e il merge fra cataloghi non esistono più** (ticket 32). Erano due cose diverse — il merge aggregava due cataloghi scelti dall'utente, l'interleave era l'algoritmo a pettine che li fondeva — ed erano entrambe inutilizzate: su 73 cataloghi reali, **0** usavano merge o interleave. Con loro se ne sono andati `interleaveMultipleResults`, `MergeModal`, il supporto in `CatalogRouter` e `catalogKind`, e la possibilità di **editare un preset**: resta la **duplicazione**, che è il flusso corretto. Un catalogo salvato con `source: 'merged'` o `filters.merge` viene normalizzato senza errori, ma il merge non viene più eseguito.
 
-### B. Strategia Popularity & Consensus (Consenso)
-Quando non viene richiesto l'interleaving, YACA combina i risultati di query multiple premiando la convergenza tramite la funzione `applyConsensusScoring` in [resultMerger.js](../src/utils/resultMerger.js):
+### Strategia Popularity & Consensus (Consenso)
+
+YACA combina i risultati di query multiple premiando la convergenza tramite `applyConsensusScoring` in [resultMerger.js](../src/utils/resultMerger.js):
 - Viene mappato ogni elemento tracciando il numero di query in cui appare (`consensusCount`).
 - Viene calcolato un **Consensus Bonus**:
   $$\text{consensusBonus} = (\text{consensusCount}^2) - 1$$

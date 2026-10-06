@@ -79,9 +79,9 @@ La codebase del frontend è organizzata in modo modulare nella cartella [fronten
 *   **`app/`**: Contiene il routing e il layout globale di Next.js.
     *   [page.tsx](../frontend/src/app/page.tsx): È il punto di ingresso dell'applicazione (SPA). Gestisce le inizializzazioni, il caricamento del profilo utente e decide se mostrare la schermata di login ([LoginPage.tsx](../frontend/src/components/pages/LoginPage.tsx)) o il pannello di controllo ([DashboardPage.tsx](../frontend/src/components/pages/DashboardPage.tsx)).
 *   **`components/`**: Diviso per area funzionale:
-    *   `dashboard/`: Pannelli interattivi che compongono la dashboard (es. gestione cataloghi, DNA radar chart, impostazioni).
+    *   `dashboard/`: Pannelli interattivi che compongono la dashboard (es. gestione cataloghi, DNA radar chart, impostazioni). Il pannello **Libreria utente** mostra i titoli salvati, con l'ordine scelto dall'utente (`raw_ui_state.libraryOrder`, lo stesso meccanismo di `catalogOrder`) e l'azione **«Rimuovi titoli visti»**: un'anteprima dichiara quanti titoli saranno toccati, poi la rimozione è un tombstone locale più un push a Stremio. Vedi [ALGORITHMS.md](ALGORITHMS.md) per la parte server.
     *   `layout/`: Componenti strutturali come l'Header e la barra di navigazione a tab.
-    *   `modals/`: Finestre di dialogo (es. per il merge dei cataloghi, l'autenticazione a Trakt).
+    *   `modals/`: Finestre di dialogo (es. per l'autenticazione a Trakt, la sincronizzazione della libreria, la modifica di un catalogo dell'utente).
     *   `shared/`: Componenti riutilizzabili (es. poster, badge dei tipi, barre di ricerca con autocompletamento).
     *   `ui/`: Componenti grafici atomici a basso livello (pulsanti, input, dialoghi basati su Radix UI e Shadcn).
 *   **`hooks/`**: Custom hooks che incapsulano lo stato applicativo:
