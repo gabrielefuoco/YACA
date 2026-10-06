@@ -47,33 +47,6 @@ export function ProfileManager({
 
   const currentSelectors = editingProfile?.settings?.typeSelectors || { film: false, serie: false, anime: null };
 
-  const handleToggleFilm = () => {
-    if (!editingProfile) return;
-    const newSelectors = {
-      ...currentSelectors,
-      film: !currentSelectors.film
-    };
-    onUpdateProfile?.(editingProfile.id, {
-      settings: {
-        ...editingProfile.settings,
-        typeSelectors: newSelectors
-      }
-    });
-  };
-
-  const handleToggleSerie = () => {
-    if (!editingProfile) return;
-    const newSelectors = {
-      ...currentSelectors,
-      serie: !currentSelectors.serie
-    };
-    onUpdateProfile?.(editingProfile.id, {
-      settings: {
-        ...editingProfile.settings,
-        typeSelectors: newSelectors
-      }
-    });
-  };
 
   const handleToggleAnimeOnly = () => {
     if (!editingProfile) return;
@@ -234,28 +207,6 @@ export function ProfileManager({
           </div>
 
           <div className="flex flex-wrap items-center gap-3 sm:gap-6">
-            {/* Gruppo 1: Media (Film / Serie) - Indipendenti */}
-            <div className="flex items-center gap-2 p-1 bg-white/80 rounded-lg border border-marrow-light/10 shadow-xs">
-              <label className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-marrow-deep cursor-pointer hover:text-primary transition-colors select-none">
-                <input
-                  type="checkbox"
-                  checked={Boolean(currentSelectors.film)}
-                  onChange={handleToggleFilm}
-                  className="rounded border-marrow-light/30 text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer accent-primary"
-                />
-                <span>Solo Film</span>
-              </label>
-              <span className="text-marrow-light/20">|</span>
-              <label className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-marrow-deep cursor-pointer hover:text-primary transition-colors select-none">
-                <input
-                  type="checkbox"
-                  checked={Boolean(currentSelectors.serie)}
-                  onChange={handleToggleSerie}
-                  className="rounded border-marrow-light/30 text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer accent-primary"
-                />
-                <span>Solo Serie</span>
-              </label>
-            </div>
 
             {/* Gruppo 2: Anime (Solo Anime / No Anime) - Mutuamente esclusivi */}
             <div className="flex items-center gap-2 p-1 bg-white/80 rounded-lg border border-marrow-light/10 shadow-xs">

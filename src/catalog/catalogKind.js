@@ -22,15 +22,15 @@ const FIXED_CATALOGS_REGISTRY = {
     'yaca_watchlist_series': { mediaSet: ['serie'], anime: 'no', alwaysVisible: true },
     'yaca_watchlist_anime': { mediaSet: ['film', 'serie'], anime: 'yes', alwaysVisible: true },
 
-    // 8 Hero Catalogs (Phase 4)
-    'yaca_true_blend_movies': { mediaSet: ['film'], anime: 'no', alwaysVisible: false },
-    'yaca_true_blend_series': { mediaSet: ['serie'], anime: 'no', alwaysVisible: false },
-    'yaca_seed_network_movies': { mediaSet: ['film'], anime: 'no', alwaysVisible: false },
-    'yaca_seed_network_series': { mediaSet: ['serie'], anime: 'no', alwaysVisible: false },
-    'yaca_hidden_gems_movies': { mediaSet: ['film'], anime: 'no', alwaysVisible: false },
-    'yaca_hidden_gems_series': { mediaSet: ['serie'], anime: 'no', alwaysVisible: false },
-    'yaca_trakt_filtered_movies': { mediaSet: ['film'], anime: 'no', alwaysVisible: false },
-    'yaca_trakt_filtered_series': { mediaSet: ['serie'], anime: 'no', alwaysVisible: false },
+    // 8 Hero Catalogs (Phase 4) - agnostici sulla dimensione anime (Opzione B, ticket 15)
+    'yaca_true_blend_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },
+    'yaca_true_blend_series': { mediaSet: ['serie'], anime: 'agnostic', alwaysVisible: false },
+    'yaca_seed_network_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },
+    'yaca_seed_network_series': { mediaSet: ['serie'], anime: 'agnostic', alwaysVisible: false },
+    'yaca_hidden_gems_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },
+    'yaca_hidden_gems_series': { mediaSet: ['serie'], anime: 'agnostic', alwaysVisible: false },
+    'yaca_trakt_filtered_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },
+    'yaca_trakt_filtered_series': { mediaSet: ['serie'], anime: 'agnostic', alwaysVisible: false },
 };
 
 const ALWAYS_VISIBLE_IDS = new Set(
@@ -172,12 +172,11 @@ function getCatalogKind(catalog, options = {}) {
 /**
  * Valuta se un catalogo è conforme ai selettori di tipo del profilo attivo.
  *
- * Regola spec (decisione 4):
- * mediaSet ⊆ mediaAmmessi
- *   AND (anime='only'    → kind.anime === 'yes')
- *   AND (anime='exclude' → kind.anime === 'no')
- * mediaAmmessi: nessuno o entrambi → {film,serie} · Solo Film → {film} · Solo Serie → {serie}
- * `mixed` e ignoti conformi solo con anime:null.
+ * Regola spec (Ticket 15 & 16):
+ * - I selettori Solo Film / Solo Serie sono rimossi: film/serie smettono di essere letti.
+ * - Solo la dimensione anime (only / exclude) governa la conformità.
+ * - Gli 8 cataloghi Hero sono agnostici sulla dimensione anime (anime: 'agnostic'):
+ *   il kind smette di decidere, demandando il filtraggio alla animePolicy a valle.
  *
  * @param {Object|string} catalogOrKind
  * @param {Object|null|undefined} typeSelectors
@@ -191,16 +190,14 @@ function isCatalogConformant(catalogOrKind, typeSelectors, options = {}) {
         return true;
     }
 
-    // Assenza di selettori = nessun vincolo (retrocompatibilità totale)
+    // Assenza di selettori o selettore anime non impostato = nessun vincolo
     if (!typeSelectors) {
         return true;
     }
 
-    const film = Boolean(typeSelectors.film);
-    const serie = Boolean(typeSelectors.serie);
     const anime = typeSelectors.anime || null;
 
-    if (!film && !serie && !anime) {
+    if (!anime) {
         return true;
     }
 
@@ -208,26 +205,12 @@ function isCatalogConformant(catalogOrKind, typeSelectors, options = {}) {
         ? catalogOrKind
         : getCatalogKind(catalogOrKind, options);
 
-    // 1. mediaAmmessi
-    let mediaAmmessi;
-    if ((!film && !serie) || (film && serie)) {
-        mediaAmmessi = new Set(['film', 'serie']);
-    } else if (film && !serie) {
-        mediaAmmessi = new Set(['film']);
-    } else {
-        mediaAmmessi = new Set(['serie']);
+    // Hero agnostici sulla dimensione anime: decide la animePolicy a valle (ticket 15)
+    if (kind.anime === 'agnostic') {
+        return true;
     }
 
-    // mediaSet ⊆ mediaAmmessi
-    const mediaSet = kind.mediaSet || [];
-    if (mediaSet.length > 0) {
-        const isSubset = mediaSet.every(m => mediaAmmessi.has(m));
-        if (!isSubset) {
-            return false;
-        }
-    }
-
-    // 2. anime condition
+    // Anime condition
     if (anime === 'only') {
         if (kind.anime !== 'yes') {
             return false;
@@ -254,28 +237,11 @@ function getIncompatibilityReason(catalogOrKind, typeSelectors, options = {}) {
         return null;
     }
 
-    const film = Boolean(typeSelectors?.film);
-    const serie = Boolean(typeSelectors?.serie);
     const anime = typeSelectors?.anime || null;
 
     const kind = (catalogOrKind && Array.isArray(catalogOrKind.mediaSet) && catalogOrKind.anime)
         ? catalogOrKind
         : getCatalogKind(catalogOrKind, options);
-
-    let mediaAmmessi;
-    if ((!film && !serie) || (film && serie)) {
-        mediaAmmessi = new Set(['film', 'serie']);
-    } else if (film && !serie) {
-        mediaAmmessi = new Set(['film']);
-    } else {
-        mediaAmmessi = new Set(['serie']);
-    }
-
-    const mediaSet = kind.mediaSet || [];
-    if (mediaSet.length > 0 && !mediaSet.every(m => mediaAmmessi.has(m))) {
-        if (film && !serie) return 'Non compatibile: profilo Solo Film';
-        if (!film && serie) return 'Non compatibile: profilo Solo Serie';
-    }
 
     if (anime === 'only' && kind.anime !== 'yes') {
         return 'Non compatibile: profilo Solo Anime';
