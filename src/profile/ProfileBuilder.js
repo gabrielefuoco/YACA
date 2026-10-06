@@ -2,9 +2,17 @@ const TasteProfile = require('../models/TasteProfile');
 const WatchHistory = require('../models/WatchHistory');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
-const { extractActiveDNAFromTmdbData, computeFinalDNA, calculateWeightedInteractions } = require('../utils/dnaExtractor');
-const { computeTimeDecay, applyLogSaturation, calculateProfileRelevance, calculateFlatnessMetrics } = require('../utils/dnaRarity');
-const { clusterTasteSignals, shouldRecomputeClusters } = require('../utils/tasteClusters');
+const {
+    extractActiveDNAFromTmdbData,
+    computeFinalDNA,
+    calculateWeightedInteractions,
+    computeTimeDecay,
+    applyLogSaturation,
+    calculateProfileRelevance,
+    calculateFlatnessMetrics,
+    clusterTasteSignals,
+    shouldRecomputeClusters
+} = require('../dna/dnaEngine');
 
 class ProfileBuilder {
     /**
