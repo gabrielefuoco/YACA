@@ -231,16 +231,74 @@ async function planDuplicateMarks(items = []) {
     // Gruppi per chiave canonica; se un id non è risolvibile si prova col titolo+anno
     // (l'anno deve coincidere quando entrambi sono presenti).
     const groups = new Map();
+    const canonicalByTitle = new Map();
+
+    // 1. Prima raggruppiamo per chiave canonica risolta
     for (const item of active) {
         const itemKey = String(item.itemId).trim();
         const canonical = canonicalKeys.get(itemKey);
+        if (canonical) {
+            if (!groups.has(canonical)) groups.set(canonical, []);
+            groups.get(canonical).push({ itemKey, canonical: true, item });
+
+            const title = normalizeTitle(item.name);
+            if (title) {
+                const year = item.year ? String(item.year).slice(0, 4) : '';
+                canonicalByTitle.set(`title:${title}|${year}`, canonical);
+                if (year) canonicalByTitle.set(`title:${title}|`, canonical);
+            }
+        }
+    }
+
+    // 2. Poi inseriamo gli item senza chiave canonica, provando ad agganciarli al
+    // gruppo canonico col medesimo titolo+anno o creando un gruppo di fallback
+    const titleGroups = new Map();
+    for (const item of active) {
+        const itemKey = String(item.itemId).trim();
+        const canonical = canonicalKeys.get(itemKey);
+        if (canonical) continue;
+
         const title = normalizeTitle(item.name);
+        if (!title) continue;
         const year = item.year ? String(item.year).slice(0, 4) : '';
-        const fallback = title ? `title:${title}|${year}` : null;
-        const key = canonical || fallback;
-        if (!key) continue;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push({ itemKey, canonical: Boolean(canonical), item });
+
+        // Controlla se c'è un gruppo canonico per questo titolo
+        const matchedCanonical = canonicalByTitle.get(`title:${title}|${year}`) || canonicalByTitle.get(`title:${title}|`);
+        if (matchedCanonical && groups.has(matchedCanonical)) {
+            groups.get(matchedCanonical).push({ itemKey, canonical: false, item });
+            continue;
+        }
+
+        // Altrimenti raggruppa con altri fallback compatibili per titolo
+        let matchedKey = null;
+        for (const [tKey, existingGroup] of titleGroups.entries()) {
+            if (!tKey.startsWith(`title:${title}|`)) continue;
+            const existingYear = tKey.slice(`title:${title}|`.length);
+            if (!existingYear || !year || existingYear === year) {
+                matchedKey = tKey;
+                if (year && !existingYear) {
+                    titleGroups.delete(tKey);
+                    const newKey = `title:${title}|${year}`;
+                    existingGroup.push({ itemKey, canonical: false, item });
+                    titleGroups.set(newKey, existingGroup);
+                    matchedKey = '__merged__';
+                }
+                break;
+            }
+        }
+
+        if (matchedKey === '__merged__') {
+            continue;
+        } else if (matchedKey) {
+            titleGroups.get(matchedKey).push({ itemKey, canonical: false, item });
+        } else {
+            const fallbackKey = `title:${title}|${year}`;
+            titleGroups.set(fallbackKey, [{ itemKey, canonical: false, item }]);
+        }
+    }
+
+    for (const [key, entries] of titleGroups.entries()) {
+        groups.set(key, entries);
     }
 
     for (const entries of groups.values()) {
@@ -255,12 +313,16 @@ async function planDuplicateMarks(items = []) {
             return {
                 itemKey: entry.itemKey,
                 preference: (entry.canonical ? 1 : 0) + (isImdb ? 1 : 0),
+                mapped: entry.item?.mapped === true ? 1 : 0,
+                removed: entry.item?.removed === true ? 1 : 0,
                 timestamp
             };
         });
 
         scored.sort((a, b) => (
-            (b.preference - a.preference)
+            (a.removed - b.removed)
+            || (b.mapped - a.mapped)
+            || (b.preference - a.preference)
             || (b.timestamp - a.timestamp)
             || a.itemKey.localeCompare(b.itemKey)
         ));
@@ -285,7 +347,7 @@ async function applyDuplicateMarks(addonUuid) {
     const items = await UserLibraryItem.collection
         // Il tipo dell'item decide la tabella (ticket 15) e `resolveItemMediaType`
         // legge anche `tmdbId` e i campi grafici (prefisso `tmdb:tv:` / `tmdb:movie:`).
-        .find({ addonUuid }, { projection: { itemId: 1, type: 1, name: 1, year: 1, _mtime: 1, _ctime: 1, removed: 1, duplicateOf: 1, tmdbId: 1, poster: 1, logo: 1, background: 1 } })
+        .find({ addonUuid }, { projection: { itemId: 1, type: 1, name: 1, year: 1, _mtime: 1, _ctime: 1, removed: 1, mapped: 1, duplicateOf: 1, tmdbId: 1, poster: 1, logo: 1, background: 1 } })
         .toArray();
 
     const plan = await planDuplicateMarks(items);

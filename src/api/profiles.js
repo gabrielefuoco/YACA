@@ -425,17 +425,32 @@ router.post('/:id/library', async (req, res) => {
         const account = await UserAccount.findOne({ userId }).lean();
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
+        const LibrarySyncService = require('../services/LibrarySyncService');
+        const normalizedItemId = LibrarySyncService.normalizeSyncItemId(item.id);
+        if (!normalizedItemId) {
+            return res.status(400).json({ error: 'Invalid item id' });
+        }
+
         const now = new Date();
         let poster = item.poster || '';
         if (!poster) {
             const { resolvePoster } = require('../utils/posterResolver');
-            const resolved = await resolvePoster({ itemId: item.id, type: item.type, name: item.name });
+            const resolved = await resolvePoster({ itemId: normalizedItemId, type: item.type, name: item.name });
             if (resolved) poster = resolved;
         }
 
+        const UserLibraryItem = require('../db/models/UserLibraryItem');
+        let existing = await UserLibraryItem.findOne({
+            addonUuid: account.addonUuid,
+            $or: [{ itemId: normalizedItemId }, { _id: normalizedItemId }, { itemId: item.id }, { _id: item.id }]
+        });
+
+        // NON sovrascrivere _ctime se già esistente o se specificato nell'item
+        const ctime = existing?._ctime || (item._ctime ? new Date(item._ctime) : now);
+
         const doc = {
             addonUuid: account.addonUuid,
-            itemId: item.id,
+            itemId: normalizedItemId,
             type: item.type,
             name: item.name || '',
             poster,
@@ -444,24 +459,22 @@ router.post('/:id/library', async (req, res) => {
             year: item.year ? item.year.toString() : '',
             removed: false,
             temp: false,
-            _ctime: now,
+            _ctime: ctime,
             _mtime: now,
             mapped: false // Force converter to pick it up later
         };
 
-        const UserLibraryItem = require('../db/models/UserLibraryItem');
-        let existing = await UserLibraryItem.findOne({
-            addonUuid: account.addonUuid,
-            $or: [{ itemId: item.id }, { _id: item.id }]
-        });
-
         if (existing) {
             Object.assign(existing, doc);
-            existing.itemId = item.id;
+            existing.itemId = normalizedItemId;
             await existing.save();
         } else {
             await UserLibraryItem.create(doc);
         }
+
+        // Applica i marcatori duplicateOf per evitare duplicati attivi
+        const { applyDuplicateMarks } = require('../utils/libraryIdentity');
+        await applyDuplicateMarks(account.addonUuid);
 
         let hostUrl = process.env.BASE_URL;
         if (!hostUrl) {

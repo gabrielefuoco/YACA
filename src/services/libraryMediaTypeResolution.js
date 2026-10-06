@@ -19,17 +19,63 @@
  *    - VIETATO tirare a indovinare, VIETATO fallback predefinito su movies o tv.
  */
 
+let duckDbStore = null;
+try {
+    duckDbStore = require('../db/duckDbStore');
+} catch (_e) {
+    duckDbStore = null;
+}
+
+const unresolvedTypeLog = [];
+const MAX_UNRESOLVED_LOG = 500;
+
+/**
+ * Traccia un item il cui tipo non è stato possibile risolvere con certezza.
+ * Le discordanze e le ambiguità vanno tracciate, mai nascoste né indovinate.
+ *
+ * @param {Object} item
+ * @param {string} reason
+ * @returns {Object}
+ */
+function trackUnresolvedType(item, reason) {
+    const entry = {
+        itemId: item?.itemId || item?._id || item?.id || 'unknown',
+        name: item?.name || '',
+        rawType: item?.type || '',
+        reason: String(reason || 'Tipo non risolvibile'),
+        timestamp: new Date()
+    };
+    unresolvedTypeLog.push(entry);
+    // Tetto: il log è diagnostico, non un accumulatore. Senza questo, un processo
+    // long-running che sincronizza spesso crescerebbe senza limite (un item non
+    // risolvibile per sync ⇒ una voce in RAM per sempre).
+    if (unresolvedTypeLog.length > MAX_UNRESOLVED_LOG) unresolvedTypeLog.shift();
+    console.warn(`[MediaTypeResolution] Tipo non risolvibile per ${entry.itemId} (${entry.name || 'senza nome'}): ${entry.reason}`);
+    return entry;
+}
+
+function getUnresolvedTypeLog() {
+    return [...unresolvedTypeLog];
+}
+
+function clearUnresolvedTypeLog() {
+    unresolvedTypeLog.length = 0;
+}
+
 /**
  * Risolve il media type ('tv' o 'movie') di un item di libreria.
  * Ritorna null se il tipo non è noto con certezza (NON SI INDOVINA MAI).
  *
  * @param {Object} item L'item di libreria da esaminare
- * @param {Object} [deps] Dipendenze opzionali: { identity, mappingStore, tmdbId }
+ * @param {Object} [deps] Dipendenze opzionali: { identity, mappingStore, tmdbId, movieRows, tvRows }
  * @returns {'tv'|'movie'|null}
  */
 function resolveItemMediaType(item, deps = {}) {
-    if (!item) return null;
-    const { identity, mappingStore, tmdbId: explicitTmdbId } = deps || {};
+    if (!item) {
+        trackUnresolvedType(item, 'Item assente o nullo');
+        return null;
+    }
+    const { identity, mappingStore, tmdbId: explicitTmdbId, movieRows, tvRows } = deps || {};
 
     const rawType = String(item.type || '').trim().toLowerCase();
 
@@ -87,8 +133,91 @@ function resolveItemMediaType(item, deps = {}) {
         }
     }
 
+    // D) Consultazione righe DB passate in deps sincrone se presenti
+    if (Array.isArray(movieRows) || Array.isArray(tvRows)) {
+        const inMovies = Boolean(movieRows && movieRows.length > 0);
+        const inTv = Boolean(tvRows && tvRows.length > 0);
+        if (inMovies && !inTv) return 'movie';
+        if (inTv && !inMovies) return 'tv';
+        if (inMovies && inTv) {
+            trackUnresolvedType(item, 'Collisione DB sincrona: presente sia in movies che in tv');
+            return null;
+        }
+    }
+
     // LIVELLO 4: REGOLA FONDAMENTALE DI BLOCCO: NON SI INDOVINA MAI
+    trackUnresolvedType(item, 'Tipo non risolvibile: nessuna prova certa da mapping/identità/artwork');
     return null;
+}
+
+/**
+ * Risolve il media type consultando direttamente il database DuckDB (tabelle movies e tv).
+ * Il DB è la legge sul tipo: se una serie o un film è classificato come tale nel DB,
+ * quello è il suo tipo canonico. Se compare in entrambe le tabelle o in nessuna,
+ * non si indovina e l'anomalia viene tracciata.
+ *
+ * @param {Object} item
+ * @param {Object} [deps] Dipendenze: { duckDbStore, mappingStore, identity, tmdbId }
+ * @returns {Promise<'tv'|'movie'|null>}
+ */
+async function resolveMediaTypeFromDb(item, deps = {}) {
+    if (!item) {
+        trackUnresolvedType(item, 'Item assente o nullo');
+        return null;
+    }
+
+    // 1. Prova prima la risoluzione sincrona (tipo certo, mappingStore, identity)
+    const syncType = resolveItemMediaType(item, deps);
+    if (syncType) return syncType;
+
+    // 2. Interrogazione del DB locale
+    const store = deps.duckDbStore || duckDbStore;
+    if (!store || typeof store.query !== 'function') {
+        trackUnresolvedType(item, 'duckDbStore non disponibile per lookup DB');
+        return null;
+    }
+
+    const explicitId = deps.tmdbId || deps.identity?.tmdbId || item?.tmdbId;
+    let cleanId = '';
+    if (explicitId) {
+        cleanId = String(explicitId).replace(/^tmdb:(tv:|movie:)?/i, '').split(':')[0].trim();
+    } else {
+        const rawId = String(item.itemId || item._id || item.id || '').trim();
+        const tmdbMatch = rawId.match(/^tmdb:(?:tv:|movie:)?(\d+)/i) || rawId.match(/^(\d+)$/);
+        if (tmdbMatch) cleanId = tmdbMatch[1];
+    }
+
+    if (!cleanId || !/^\d+$/.test(cleanId)) {
+        trackUnresolvedType(item, `Nessun TMDB ID numerico per lookup DB (${item.itemId || item._id})`);
+        return null;
+    }
+
+    try {
+        const numId = Number(cleanId);
+        const [movieRows, tvRows] = await Promise.all([
+            store.query('SELECT CAST(id AS VARCHAR) AS id FROM movies WHERE id = ? LIMIT 1', [numId]).catch(() => []),
+            store.query('SELECT CAST(id AS VARCHAR) AS id FROM tv WHERE id = ? LIMIT 1', [numId]).catch(() => [])
+        ]);
+
+        const inMovies = Array.isArray(movieRows) && movieRows.length > 0;
+        const inTv = Array.isArray(tvRows) && tvRows.length > 0;
+
+        if (inMovies && !inTv) return 'movie';
+        if (inTv && !inMovies) return 'tv';
+        if (inMovies && inTv) {
+            // Collisione: presente in entrambe le tabelle del DB TMDB
+            // NON SI INDOVINA MAI
+            trackUnresolvedType(item, `Collisione DB: TMDB ID ${cleanId} presente sia in movies che in tv`);
+            return null;
+        }
+
+        // Assente da entrambe le tabelle del DB
+        trackUnresolvedType(item, `TMDB ID ${cleanId} assente sia da movies che da tv`);
+        return null;
+    } catch (err) {
+        trackUnresolvedType(item, `Errore durante query DB: ${err.message}`);
+        return null;
+    }
 }
 
 /**
@@ -112,5 +241,9 @@ function resolveTargetTableAndEndpoint(mediaType, tmdbId) {
 
 module.exports = {
     resolveItemMediaType,
-    resolveTargetTableAndEndpoint
+    resolveMediaTypeFromDb,
+    resolveTargetTableAndEndpoint,
+    trackUnresolvedType,
+    getUnresolvedTypeLog,
+    clearUnresolvedTypeLog
 };
