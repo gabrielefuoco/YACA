@@ -52,6 +52,7 @@ I file all'interno di [tests/](../tests) coprono diverse aree critiche:
 | `libraryReorder.test.js` | Che il riordino scriva `libraryOrder` **senza toccare** `_ctime`/`_mtime` e senza push a Stremio. |
 | `heroAnimeFavoredSeam.test.js` | Le quattro leve anime dei hero, con la quota attesa ≥ 80% in pagina 1. |
 | `dnaCharacterization.test.js` · `dnaEngineExtraction.test.js` (in `tests/characterization/`) | Il comportamento del motore DNA **congelato prima dell'estrazione** (40 test golden master) e la **purezza** del modulo, `globalDfCache` per identità compresa. Sono l'unica suite in una sottocartella: stanno lì perché il loro contratto è «il motore si è mosso senza cambiare», non «questa funzione fa X». |
+| `dnaScalesInvariant.test.js` | Che le **tre convenzioni di normalizzazione** del DNA restino distinte (somma 100 = persistita, somma 1 = interna, norma euclidea 1 = coseno) e che i **due percorsi di scrittura** di `V_active` restino consistenti. Non verifica cosa fa una funzione: verifica che nessuno le unifichi «per pulizia» rompendo i pesi dei profili salvati. |
 | `ticket14TitlePolicy.test.js` | La policy `IT → EN → JA` in ingestione e la lettura dei parquet vecchi senza le colonne nuove. |
 
 ### La suite di contratto `diag.recommender.*`
