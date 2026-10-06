@@ -1,10 +1,12 @@
+const LRUCache = require('../../utils/LRUCache');
+
 const RESOLUTION_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const RESOLUTION_CACHE_MAX_ENTRIES = 256;
 
 // La cache è volutamente locale al processo: i ID TMDB di keyword/persone sono
 // globali e non dipendono dall'utente. Cache anche i miss evita di ripetere una
 // ricerca che ha già restituito zero risultati.
-const resolutionCache = new Map();
+const resolutionCache = new LRUCache({ max: RESOLUTION_CACHE_MAX_ENTRIES, ttl: RESOLUTION_CACHE_TTL_MS });
 const pendingResolutions = new Map();
 
 function clearAiFilterResolutionCache() {
@@ -17,24 +19,12 @@ function cacheKeyFor(endpoint, name) {
 }
 
 function readResolutionCache(key) {
-    const cached = resolutionCache.get(key);
-    if (!cached) return { hit: false, id: null };
-
-    if (cached.expiresAt <= Date.now()) {
-        resolutionCache.delete(key);
-        return { hit: false, id: null };
-    }
-    return { hit: true, id: cached.id };
+    if (!resolutionCache.has(key)) return { hit: false, id: null };
+    return { hit: true, id: resolutionCache.get(key) };
 }
 
 function writeResolutionCache(key, id) {
-    // Map mantiene l'ordine di inserimento: il primo elemento è la-voce più vecchia.
-    if (resolutionCache.size >= RESOLUTION_CACHE_MAX_ENTRIES && !resolutionCache.has(key)) {
-        const oldestKey = resolutionCache.keys().next().value;
-        resolutionCache.delete(oldestKey);
-    }
-    resolutionCache.delete(key);
-    resolutionCache.set(key, { id: id || null, expiresAt: Date.now() + RESOLUTION_CACHE_TTL_MS });
+    resolutionCache.set(key, id || null);
 }
 
 function validTmdbId(id) {

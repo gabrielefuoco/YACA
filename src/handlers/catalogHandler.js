@@ -15,16 +15,9 @@ const { normalizeAnimeMarker, extractAnimeTmdbId } = require('../utils/animeIden
 const animeMappingStore = require('../data/animeMappingStore');
 const { isCatalogConformant, isAlwaysVisible } = require('../catalog/catalogKind');
 const { applyKidsMode } = require('../utils/kidsModeFilters');
+const { isItemAnime } = require('../engines/hybrid/animePolicy');
 
 const extractTmdbId = extractAnimeTmdbId;
-
-/**
- * Consumer del contratto normalizzato. Il resolver è condiviso con i dettagli,
- * ma un payload già attraversato dal boundary non viene riclassificato.
- */
-function isItemAnime(item) {
-    return normalizeAnimeMarker(item) === true;
-}
 
 /**
  * Trova il documento airing-state della card. La card può usare un Kitsu ID
@@ -195,34 +188,6 @@ function catalogContentParams({ type, extra, directFilters, catalogMeta, activeP
         typeSelectors: activeProfileSettings?.typeSelectors,
         catalogDef: canonicalCatalogDefinition(catalogMeta)
     };
-}
-
-/**
- * La chiave del livello 1: la **selezione** dei titoli, condivisibile fra profili — ma solo dove
- * è sicuro condividerla. Per un catalogo non condiviso (watchlist, hero, custom, merged) l'utente
- * entra anche qui: senza, la chiave del contenuto sarebbe identica per due utenti diversi, e chi un
- * giorno la usasse per cachare la selezione condividererebbe una libreria personale senza
- * accorgersene.
- */
-function buildCatalogContentKey({
-    id,
-    baseId,
-    type,
-    extra,
-    directFilters,
-    skip,
-    catalogMeta,
-    userConfig,
-    activeProfileSettings
-} = {}) {
-    const condiviso = PRESET_IDS.has(baseId);
-    return generateRequestHash(id, {
-        ...catalogContentParams({ type, extra, directFilters, catalogMeta, activeProfileSettings }),
-        ...(condiviso ? {} : {
-            user: userConfig?.userId,
-            profile: userConfig?.activeProfileId
-        })
-    }, skip, type);
 }
 
 /**
@@ -1002,7 +967,6 @@ module.exports = {
     catalogHandler,
     BADGE_CATALOG_VERSION,
     buildCatalogCacheKey,
-    buildCatalogContentKey,
     allineaIdFilm,
     canonicalCatalogDefinition,
     resolveCatalogDefinition,

@@ -25,19 +25,16 @@
  * pavimenti di visibilità dei cataloghi restano quelli di sempre (qui non si tocca niente).
  */
 
+const LRUCache = require('../utils/LRUCache');
+
 /** Tetto delle voci del memo: sono `tipo:id`, interi e stringhe corte, ma il container è finito. */
 const MAX_MEMO_KEYS = 500;
 
-/** `tipo:id` → esito della promozione. Inserimento ordinato: a saturazione esce la più vecchia. */
-const memoEsiti = new Map();
+/** `tipo:id` → esito della promozione. LRUCache a capienza finita: a saturazione esce la più vecchia. */
+const memoEsiti = new LRUCache({ max: MAX_MEMO_KEYS });
 
 function rememberEsito(key, esito) {
-    memoEsiti.delete(key);
     memoEsiti.set(key, esito);
-    while (memoEsiti.size > MAX_MEMO_KEYS) {
-        const piuVecchia = memoEsiti.keys().next().value;
-        memoEsiti.delete(piuVecchia);
-    }
 }
 
 /**
@@ -134,7 +131,11 @@ function resetPromotionMemo() {
 
 /** Contenuto del memo, per diagnostica. */
 function getPromotionMemo() {
-    return new Map(memoEsiti);
+    const map = new Map();
+    for (const [k, entry] of memoEsiti.cache.entries()) {
+        map.set(k, entry.value);
+    }
+    return map;
 }
 
 module.exports = {

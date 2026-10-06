@@ -17,21 +17,12 @@
  */
 
 const {
-    buildCatalogCacheKey,
-    buildCatalogContentKey
+    buildCatalogCacheKey
 } = require('../src/handlers/catalogHandler');
 
 const utente = (userId, profileId) => ({ userId, activeProfileId: profileId });
 
 const chiavi = (id, baseId, userConfig, activeProfileSettings = {}) => ({
-    content: buildCatalogContentKey({
-        id,
-        baseId,
-        type: 'series',
-        catalogMeta: { id: baseId, type: 'series', name: baseId },
-        userConfig,
-        activeProfileSettings
-    }),
     format: buildCatalogCacheKey({
         id,
         baseId,
@@ -48,11 +39,10 @@ const WATCHLIST = ['yaca_watchlist_series', 'yaca_watchlist_series'];
 const HERO = ['yaca_true_blend_movies', 'yaca_true_blend_movies'];
 const MERGED = ['yaca_merged_qualcosa', 'merged_qualcosa'];
 
-describe('le due chiavi della cache dei cataloghi (ticket 47)', () => {
-    test('un PRESET: contenuto e formato identici per due profili diversi', () => {
+describe('le chiavi della cache dei cataloghi (ticket 47)', () => {
+    test('un PRESET: formato identico per due profili diversi', () => {
         const a = chiavi(...PRESET, utente('REOZrGNRr3', 'global'));
         const b = chiavi(...PRESET, utente('ALTROUTENTE', 'cinema-autore'));
-        expect(a.content).toBe(b.content);
         // È il guadagno: le 20 chiavi di adult_animation diventano 1.
         expect(a.format).toBe(b.format);
     });
@@ -61,7 +51,6 @@ describe('le due chiavi della cache dei cataloghi (ticket 47)', () => {
         const a = chiavi(...WATCHLIST, utente('REOZrGNRr3', 'global'));
         const b = chiavi(...WATCHLIST, utente('ALTROUTENTE', 'cinema-autore'));
         expect(a.format).not.toBe(b.format);
-        expect(a.content).not.toBe(b.content);
     });
 
     test('un HERO resta per profilo (DNA e _yacaMatch)', () => {
@@ -76,22 +65,21 @@ describe('le due chiavi della cache dei cataloghi (ticket 47)', () => {
         expect(a.format).not.toBe(b.format);
     });
 
-    test('il contenuto cambia quando cambia cosa entra nel catalogo', () => {
+    test('il formato cambia quando cambiano i filtri', () => {
         const base = chiavi(...PRESET, utente('u', 'global'));
         const kids = chiavi(...PRESET, utente('u', 'global'), { kidsMode: true });
         const selectors = chiavi(...PRESET, utente('u', 'global'), { typeSelectors: { kind: 'series' } });
-        expect(kids.content).not.toBe(base.content);
-        expect(selectors.content).not.toBe(base.content);
+        expect(kids.format).not.toBe(base.format);
+        expect(selectors.format).not.toBe(base.format);
     });
 
-    test('la presentazione NON tocca il contenuto', () => {
+    test('la presentazione tocca il formato', () => {
         const base = chiavi(...PRESET, utente('u', 'global'));
         const landscape = chiavi(...PRESET, utente('u', 'global'), { isLandscapeEnabled: true });
-        expect(landscape.content).toBe(base.content);
         expect(landscape.format).not.toBe(base.format);
     });
 
-    test('la versione dei badge NON tocca il contenuto', () => {
+    test('la versione dei badge tocca il formato', () => {
         const args = {
             id: PRESET[0], baseId: PRESET[1], type: 'series',
             catalogMeta: { id: PRESET[1], type: 'series' },
@@ -99,8 +87,6 @@ describe('le due chiavi della cache dei cataloghi (ticket 47)', () => {
         };
         expect(buildCatalogCacheKey({ ...args, badgeVersion: 18 }))
             .not.toBe(buildCatalogCacheKey({ ...args, badgeVersion: 19 }));
-        expect(buildCatalogContentKey({ ...args, badgeVersion: 18 }))
-            .toBe(buildCatalogContentKey({ ...args, badgeVersion: 19 }));
     });
 
     test('per un catalogo NON condiviso la chiave è quella di sempre: hash congelato', () => {
