@@ -147,6 +147,9 @@ node_modules/
 .scratch/**/venv/
 .scratch/**/runs/
 .scratch/**/data/
+# Anteprima di debug scritta da tests/dnaChartGrouping.test.js a ogni giro: è un
+# artefatto, non un documento — versionarlo sporcherebbe il working tree a ogni test.
+.scratch/*.html
 
 # Binaries
 *.exe
