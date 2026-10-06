@@ -5,6 +5,7 @@ const { stremioClient } = require('../clients/stremio');
 const { isAnimeContent } = require('../utils/animeIdentity');
 const { resolvePoster } = require('../utils/posterResolver');
 const { normalizeLegacyPosterHost, normalizeLibraryId } = require('../utils/libraryIdentity');
+const { refreshLibraryPoster } = require('../utils/libraryPosterRefresh');
 let animeMappingStore = null;
 try {
     animeMappingStore = require('../data/animeMappingStore');
@@ -264,6 +265,43 @@ class LibrarySyncService {
     }
 
     /**
+     * Riallinea le copertine COMPOSTE che Stremio ha in libreria.
+     *
+     * IL PROBLEMA CHE RISOLVE: per un item convertito, Stremio in libreria non ha l'URL
+     * di TMDB ma l'URL che YACA stessa le ha spinto (`/images/poster/<tipo>/<id>/<episodio>/<versione>`).
+     * Copiarlo verbatim — che è quello che fa la creazione delle ops — non cambia niente:
+     * sarebbe la stessa URL vecchia, con la stessa versione, quindi l'immagine resta ferma
+     * per sempre (era il caso degli item a `/ITA/23`). Qui il valore viene ricalcolato:
+     * versione corrente nel percorso, sorgenti annidate risolte, `t` dei composti statici
+     * riallineato all'`mtime` del file (vedi `src/utils/libraryPosterRefresh.js`).
+     *
+     * Vale per TUTTI gli item in arrivo, anche per i `mapped: true` che il convertitore
+     * non visita più: il sync li rilegge a ogni giro.
+     *
+     * @param {Array} bulkOps ops nel formato `{ updateOne: { filter, update, upsert } }`
+     * @returns {Promise<number>} quante copertine sono state riallineate
+     */
+    static async refreshSyncPosters(bulkOps = []) {
+        if (!Array.isArray(bulkOps) || bulkOps.length === 0) return 0;
+
+        let refreshed = 0;
+        for (const op of bulkOps) {
+            const set = op?.updateOne?.update?.$set;
+            if (!set || typeof set.poster !== 'string' || !set.poster.trim()) continue;
+            const fixed = refreshLibraryPoster(set.poster, { hostUrl: process.env.HOST_URL });
+            if (fixed && fixed !== set.poster) {
+                set.poster = fixed;
+                refreshed++;
+            }
+        }
+
+        if (refreshed > 0) {
+            console.log(`[LibrarySync] Copertine composte riallineate: ${refreshed}`);
+        }
+        return refreshed;
+    }
+
+    /**
      * Confronta due item di libreria per l'elezione del primario tra duplicati.
      * Criteri in ordine di priorità:
      * 1. Non-rimosso prima: un documento attivo (removed: false / falsy) vince su uno rimosso (removed: true).
@@ -485,8 +523,14 @@ class LibrarySyncService {
             }));
 
             if (bulkOps.length > 0) {
-                await LibrarySyncService.normalizeSyncPosterHosts(bulkOps);
+                // Ordine: prima si ripristina la copertina già in archivio quando quella in
+                // arrivo è vuota, POI la si ripara/riallinea. Al contrario un poster
+                // ripristinato (spento su Stremio, `resolvePoster` a vuoto) salterebbe sia
+                // la normalizzazione dell'host sia il refresh dei composti, restando
+                // stantio per sempre.
                 await LibrarySyncService.preserveExistingPosters(user.addonUuid, bulkOps);
+                await LibrarySyncService.normalizeSyncPosterHosts(bulkOps);
+                await LibrarySyncService.refreshSyncPosters(bulkOps);
                 await UserLibraryItem.bulkWrite(bulkOps, { ordered: false });
             }
 

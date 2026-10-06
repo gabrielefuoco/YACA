@@ -444,6 +444,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
         onConfirm={handleSyncConfirm}
         isProcessing={isSyncProcessing}
         processingCount={syncProcessingCount}
+        onConversionFinished={fetchLibrary}
       />
     </div>
   );
