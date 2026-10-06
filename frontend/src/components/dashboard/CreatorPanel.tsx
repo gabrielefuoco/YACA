@@ -97,7 +97,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
   // Global state
   const [name, setName] = useState('');
   const [type, setType] = useState<'movie' | 'series'>('movie');
-  const [presentationStrategy, setPresentationStrategy] = useState<'popularity' | 'interleave'>('popularity');
   const [showEpisodeBadge, setShowEpisodeBadge] = useState(false);
   const [isAnime, setIsAnime] = useState(false);
 
@@ -189,7 +188,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
     if (editCatalog) {
       setName(editCatalog.name || '');
       setType(editCatalog.type || 'movie');
-      setPresentationStrategy(editCatalog.presentation_strategy || 'popularity');
       setShowEpisodeBadge(editCatalog.showEpisodeBadge || false);
       setIsAnime(Boolean(editCatalog.isAnime || (editCatalog.filters as any)?.isAnime));
 
@@ -213,7 +211,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
     } else {
       setName('');
       setType('movie');
-      setPresentationStrategy('popularity');
       setShowEpisodeBadge(false);
       setIsAnime(false);
       setBlocks([createEmptyBlock()]);
@@ -307,10 +304,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
         });
         // Preview using normalized filters from the first UI block
         setPreviewFilters(buildFiltersFromBlock(newBlocks[0]));
-
-        if (result?.presentation_strategy === 'interleave') {
-          setPresentationStrategy('interleave');
-        }
       }
     } catch (e) { console.error('AI generation failed:', e); }
     updateBlock(blockId, { aiLoading: false });
@@ -363,7 +356,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       const queries = blocks.map(buildQueryBlock);
       setPreviewFilters({
         queries,
-        presentation_strategy: presentationStrategy,
         ...(isAnime ? { isAnime: true } : {})
       });
     } else {
@@ -373,14 +365,14 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       });
     }
     setPreviewType(type);
-  }, [blocks, type, presentationStrategy, isAnime, buildQueryBlock, buildFiltersFromBlock]);
+  }, [blocks, type, isAnime, buildQueryBlock, buildFiltersFromBlock]);
 
-  // Auto-update global preview when presentation, type or isAnime changes
+  // Auto-update global preview when type or isAnime changes
   useEffect(() => {
     if (previewFilters) {
       handleManualPreview();
     }
-  }, [presentationStrategy, type, isAnime]);
+  }, [type, isAnime]);
 
   const handleSave = async () => {
     const staticBlock = blocks.find(b => b.strategy === 'static_list');
@@ -407,7 +399,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                };
              })
           }],
-          presentation_strategy: presentationStrategy,
           emoji: '🤖'
         };
         onAddCatalog(catalog);
@@ -429,13 +420,12 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       type,
       source: editCatalog ? editCatalog.source : 'manual',
       queries,
-      presentation_strategy: presentationStrategy,
       showEpisodeBadge: type === 'series' ? showEpisodeBadge : undefined,
       isAnime: isAnime ? true : undefined,
       // For multi-query: put queries[] in filters so the backend normalizer picks them up
       // For single-query: flatten the block as a simple filters object
       filters: blocks.length > 1
-        ? { queries, presentation_strategy: presentationStrategy, ...(isAnime ? { isAnime: true } : {}) }
+        ? { queries, ...(isAnime ? { isAnime: true } : {}) }
         : { ...buildFiltersFromBlock(blocks[0]), ...(isAnime ? { isAnime: true } : {}) },
       emoji: editCatalog ? editCatalog.emoji : '🎨',
     };
@@ -992,35 +982,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Row 2: Presentation Strategy */}
-        <div className="flex flex-col sm:flex-row sm:items-center items-start gap-1 sm:gap-3 pt-1">
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-            <span className="text-marrow-deep font-black uppercase tracking-wide text-[9px] sm:text-[10px] whitespace-nowrap">Presentazione</span>
-            <span className="relative group">
-              <Info className="h-3.5 w-3.5 text-marrow-light/60 cursor-help" />
-              <span className="absolute bottom-full left-0 sm:left-1/2 sm:-translate-x-1/2 mb-2 w-64 rounded-lg bg-primary-dark text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
-                <strong>Popularity:</strong> ordina tutti i risultati per popolarità globale.
-                <br /><strong>Interleave:</strong> alterna i risultati di ogni query per massima varietà (consensus scoring).
-              </span>
-            </span>
-          </div>
-          <div className="flex gap-1.5 w-full sm:w-auto">
-            {(['popularity', 'interleave'] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setPresentationStrategy(s)}
-                className={`flex-1 sm:flex-none rounded-lg border px-3 sm:px-4 py-2 sm:py-1.5 text-[10px] sm:text-xs font-bold transition-all min-h-[40px] touch-manipulation flex items-center justify-center ${presentationStrategy === s
-                  ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
-                  : 'border-marrow-light/20 bg-white/50 text-marrow-light hover:text-primary hover:border-primary/50'
-                  }`}
-              >
-                {s === 'popularity' ? '🏆 Popularity' : '🔀 Interleave'}
-              </button>
-            ))}
           </div>
         </div>
 

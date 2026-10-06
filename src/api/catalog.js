@@ -196,7 +196,7 @@ router.post('/preview-catalog', async (req, res) => {
 
         const isAnimeRequested = Boolean(discoverFilters?.isAnime || customFilters?.isAnime || req.body.isAnime);
 
-        if (customFilters?.merge || discoverFilters?.queries) {
+        if (discoverFilters?.queries) {
             try {
                 const previewFilters = (discoverFilters && Object.keys(discoverFilters).length > 0) ? discoverFilters : customFilters;
                 if (isAnimeRequested && previewFilters && typeof previewFilters === 'object') {
@@ -232,7 +232,7 @@ router.post('/preview-catalog', async (req, res) => {
                     results: items
                 });
             } catch (err) {
-                console.error("Errore preview multi-query/merge:", err);
+                console.error("Errore preview multi-query:", err);
                 return res.status(500).json({ error: 'Errore nel generare anteprima' });
             }
         }

@@ -98,21 +98,12 @@ describe('Ticket 14: Fix Cataloghi & Manifest', () => {
         });
     });
 
-    describe('2. BUG-03-B: Merged custom con sorgenti in userConfig.customCatalogs', () => {
-        test('routeCatalogRequest risolve sorgenti merged da userConfig.customCatalogs con precedenza profilo -> custom -> preset', async () => {
+    describe('2. BUG-03-B: Cataloghi custom legacy con sorgenti esterne', () => {
+        test('un catalogo merged legacy non fa crashare il router e degrada sulla universal pipeline', async () => {
             const userConfig = {
                 activeProfileId: 'p1',
-                profiles: [{
-                    id: 'p1',
-                    catalogs: [
-                        { id: 'src_from_profile', queries: [{ with_genres: '28' }] }
-                    ]
-                }],
-                customCatalogs: [
-                    { id: 'src_from_custom', queries: [{ with_genres: '878' }] },
-                    // Questo ha lo stesso id del profilo: il profilo deve vincere
-                    { id: 'src_from_profile', queries: [{ with_genres: '999' }] }
-                ]
+                profiles: [{ id: 'p1', catalogs: [] }],
+                customCatalogs: []
             };
 
             const catalogMeta = {
@@ -121,7 +112,7 @@ describe('Ticket 14: Fix Cataloghi & Manifest', () => {
                 source: 'merged',
                 filters: {
                     merge: {
-                        sources: ['src_from_profile', 'src_from_custom']
+                        sources: ['src_a', 'src_b']
                     }
                 }
             };
@@ -130,7 +121,6 @@ describe('Ticket 14: Fix Cataloghi & Manifest', () => {
                 return Promise.resolve(universalCatalog.queries);
             });
 
-            // Invochiamo routeCatalogRequest
             const result = await routeCatalogRequest(
                 { id: 'merged_catalog_test', type: 'movie', extra: {} },
                 userConfig,
@@ -141,17 +131,13 @@ describe('Ticket 14: Fix Cataloghi & Manifest', () => {
                 catalogMeta
             );
 
-            // Verifica che le query del catalogo universale abbiano unito profilo e custom
+            // Il merge non esiste più: il catalogo salvato viene normalizzato come una
+            // normalissima query discovery e servito senza eccezioni.
             expect(executeUniversalPipeline).toHaveBeenCalled();
             const calledUniversalCatalog = executeUniversalPipeline.mock.calls[0][0];
-            expect(calledUniversalCatalog.queries).toBeDefined();
-            expect(calledUniversalCatalog.queries.length).toBe(2);
-            expect(calledUniversalCatalog.queries[0]).toEqual({ with_genres: '28' });
-            expect(calledUniversalCatalog.queries[1]).toEqual({ with_genres: '878' });
-            expect(result).toEqual([
-                { with_genres: '28' },
-                { with_genres: '878' }
-            ]);
+            expect(calledUniversalCatalog.queries).toHaveLength(1);
+            expect(calledUniversalCatalog.queries[0].strategy).toBe('discovery');
+            expect(result).toEqual(calledUniversalCatalog.queries);
         });
     });
 

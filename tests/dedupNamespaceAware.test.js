@@ -1,4 +1,4 @@
-const { interleaveMultipleResults, applyConsensusScoring } = require('../src/utils/resultMerger');
+const { applyConsensusScoring } = require('../src/utils/resultMerger');
 const { getBaseId, normalizeContentId } = require('../src/utils/contentId');
 
 describe('BUG-02: Dedup Namespace-Aware (kitsu vs tmdb collision fix)', () => {
@@ -21,38 +21,6 @@ describe('BUG-02: Dedup Namespace-Aware (kitsu vs tmdb collision fix)', () => {
             expect(tmdbBase).toBe('tmdb:1100');
             // Con getBaseId non c'è collisione tra namespace differenti
             expect(kitsuBase).not.toBe(tmdbBase);
-        });
-    });
-
-    describe('interleaveMultipleResults (resultMerger)', () => {
-        it('NON collassa kitsu:1100 e tmdb:1100 nello stesso set: entrambi devono essere presenti', () => {
-            const kitsuItems = [{ id: 'kitsu:1100', name: 'Anime 1100' }];
-            const tmdbItems = [{ id: 'tmdb:1100', name: 'Movie 1100' }];
-
-            const result = interleaveMultipleResults([kitsuItems, tmdbItems], 10, 0);
-
-            expect(result).toHaveLength(2);
-            expect(result.map(i => i.id)).toEqual(['kitsu:1100', 'tmdb:1100']);
-        });
-
-        it('deduplica correttamente item con lo stesso namespace e id', () => {
-            const list1 = [{ id: 'kitsu:1100', name: 'Anime 1100 copy 1' }];
-            const list2 = [{ id: 'kitsu:1100', name: 'Anime 1100 copy 2' }];
-
-            const result = interleaveMultipleResults([list1, list2], 10, 0);
-
-            expect(result).toHaveLength(1);
-            expect(result[0].id).toBe('kitsu:1100');
-            expect(result[0].name).toBe('Anime 1100 copy 1');
-        });
-
-        it('deduplica correttamente item numerici o generici', () => {
-            const list1 = [{ id: 123 }, { id: 'tt999' }];
-            const list2 = [{ id: 123 }, { id: 'tt999' }, { id: 456 }];
-
-            const result = interleaveMultipleResults([list1, list2], 10, 0);
-
-            expect(result.map(i => i.id)).toEqual([123, 123, 'tt999', 456].filter((v, idx, a) => a.indexOf(v) === idx));
         });
     });
 

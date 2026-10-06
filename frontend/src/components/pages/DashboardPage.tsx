@@ -80,15 +80,8 @@ export function DashboardPage({
 
 
   const handleEditCatalog = (catalog: Catalog) => {
-    let catToEdit = { ...catalog };
-    if (catalog.source === 'preset') {
-      const preset = presets.find(p => p.id === catalog.id);
-      if (preset) {
-        catToEdit.filters = preset.filters;
-        catToEdit.queries = preset.queries;
-      }
-    }
-    setEditingCatalog(catToEdit);
+    if (catalog.source === 'preset') return;
+    setEditingCatalog({ ...catalog });
     setIsEditOpen(true);
   };
 
@@ -106,7 +99,7 @@ export function DashboardPage({
     // Ensure filters is populated from queries if missing (especially for presets)
     if (!filters && queries) {
       if (queries.length > 1) {
-        filters = { queries: JSON.parse(JSON.stringify(queries)), presentation_strategy: catalog.presentation_strategy || 'popularity' };
+        filters = { queries: JSON.parse(JSON.stringify(queries)) };
       } else if (queries.length === 1) {
         filters = JSON.parse(JSON.stringify(queries[0]));
       }
@@ -119,7 +112,6 @@ export function DashboardPage({
       source: 'manual',
       filters,
       queries,
-      presentation_strategy: catalog.presentation_strategy || 'popularity',
       emoji: catalog.emoji || '🎨',
     };
     onAddCatalog(editingProfileId, duplicated);
@@ -231,7 +223,6 @@ export function DashboardPage({
                 profile={editingProfile}
                 onReorder={(catalogs) => onReorderCatalogs(editingProfileId, catalogs)}
                 onRemove={(id) => onRemoveCatalog(editingProfileId, id)}
-                onMerge={(catalog) => onAddCatalog(editingProfileId, catalog)}
                 onEdit={handleEditCatalog}
                 onDuplicate={handleDuplicateCatalog}
                 presets={presets}
@@ -299,8 +290,6 @@ export function DashboardPage({
           setIsEditOpen(false);
         }}
         catalog={editingCatalog}
-        onAddCatalog={(cat) => onAddCatalog(editingProfileId, cat)}
-        onRemoveCatalog={(id) => onRemoveCatalog(editingProfileId, id)}
         onUpdateCatalog={(cat) => onUpdateCatalog(editingProfileId, cat)}
       />
     </div>

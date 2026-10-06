@@ -2,14 +2,11 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { CreatorPanel } from '@/components/dashboard/CreatorPanel';
 import { Catalog } from '@/types';
-import { generateId } from '@/lib/utils';
 
 interface EditCatalogModalProps {
   open: boolean;
   onClose: () => void;
   catalog: Catalog | null;
-  onAddCatalog: (catalog: Catalog) => void;
-  onRemoveCatalog: (id: string) => void;
   onUpdateCatalog: (catalog: Catalog) => void;
 }
 
@@ -17,8 +14,6 @@ export function EditCatalogModal({
   open,
   onClose,
   catalog,
-  onAddCatalog,
-  onRemoveCatalog,
   onUpdateCatalog,
 }: EditCatalogModalProps) {
   if (!catalog) return null;
@@ -39,17 +34,7 @@ export function EditCatalogModal({
           <CreatorPanel
             editCatalog={catalog}
             onAddCatalog={(updatedCatalog) => {
-              if (catalog.source === 'preset') {
-                // Preset modification: save as custom, remove original preset
-                onAddCatalog({
-                  ...updatedCatalog,
-                  id: 'custom_' + generateId(),
-                  source: 'manual',
-                });
-                onRemoveCatalog(catalog.id);
-              } else {
-                onUpdateCatalog(updatedCatalog);
-              }
+              onUpdateCatalog(updatedCatalog);
               onClose();
             }}
             onCancel={onClose}
