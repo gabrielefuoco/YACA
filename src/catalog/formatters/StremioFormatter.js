@@ -13,7 +13,8 @@ const { getCacheDir } = require('../../api/staticPosters');
 // La versione del badge è condivisa col refresh al sync (`src/utils/libraryPosterRefresh.js`):
 // unica fonte di verità, così il riallineamento non punta a un numero diverso da quello che
 // il formatter scrive negli URL nuovi.
-const { BADGE_IMG_VERSION } = require('./posterBadgeVersion');
+const { BADGE_IMG_VERSION, calcolaVersionePoster } = require('./posterBadgeVersion');
+const { erdbIdDaNomeFile } = require('../../cache/posterDaEvento');
 
 // Etichetta del badge "doppiato" nella cache: la stessa costante del costruttore
 // (scripts/erdb-builder/dump-list.js, BADGE_ITA). Non è un'invenzione: se non coincide,
@@ -182,6 +183,123 @@ function urlPosterInCache(hostUrl, erdbId, badge) {
 }
 
 /**
+ * Versione del poster composto: dipende dal CONTENUTO (id ERDB, badge, immagine sorgente) e
+ * dalla versione del disegno. Cambia quando cambia una delle tre cose, garantendo cache-busting on demand.
+ */
+function versionePosterComposto({ erdbId, badge, source } = {}) {
+    return calcolaVersionePoster({ erdbId, badge, source });
+}
+
+/**
+ * URL del poster composto: `{host}/erdb-poster/{nomeFile}[?fallback=…][&badge=…][&tlBadge=…]`.
+ * Il nome del file include la versione del contenuto (`<nome>-<versione>.jpg`), rendendo
+ * il file autodescrittivo e la cache intrinsecamente consistente.
+ *
+ * La rotta `/erdb-poster/:file` lo rende al volo quando manca (istanza ERDB locale + coda del drenatore).
+ * Non si guarda preventivamente se il file c'è.
+ */
+function urlPosterComposto(hostUrl, { erdbId, badge, source, tlBadge, version } = {}) {
+    if (!hostUrl || !erdbId) return null;
+
+    const v = version || versionePosterComposto({ erdbId, badge, source });
+    let nomeFile;
+    try {
+        nomeFile = posterFileName({ erdbId, badge: badge || null, version: v });
+    } catch {
+        return null;
+    }
+
+    const parametri = [];
+    if (source) parametri.push(`fallback=${encodeURIComponent(source)}`);
+    if (badge) parametri.push(`badge=${encodeURIComponent(badge)}`);
+    if (tlBadge) parametri.push(`tlBadge=${encodeURIComponent(tlBadge)}`);
+
+    const query = parametri.length > 0 ? `?${parametri.join('&')}` : '';
+    return `${hostUrl}/erdb-poster/${nomeFile}${query}`;
+}
+
+/**
+ * Riconosce un poster composto NOSTRO e ne restituisce gli ingredienti.
+ * Supporta sia la forma corrente statica (`/erdb-poster/...`) sia la forma legacy (`/images/poster/...`).
+ */
+function scomponiPosterComposto(poster) {
+    const value = String(poster || '').trim();
+    if (!value) return null;
+
+    let url;
+    try {
+        url = new URL(value);
+    } catch {
+        return null;
+    }
+
+    // Forma statica: /erdb-poster/<file>
+    const statico = url.pathname.match(/^\/erdb-poster\/([^/]+)$/);
+    if (statico) {
+        let riconosciuto;
+        try {
+            riconosciuto = erdbIdDaNomeFile(decodeURIComponent(statico[1]));
+        } catch {
+            riconosciuto = null;
+        }
+        if (!riconosciuto) return null;
+        const badge = url.searchParams.get('badge') || riconosciuto.badge || null;
+        const source = url.searchParams.get('fallback') || null;
+        return { forma: 'statica', erdbId: riconosciuto.erdbId, badge, source, versione: riconosciuto.versione || null };
+    }
+
+    // Forma legacy: /images/poster/<tipo>/<id>/<badge>/<versione> (o senza la versione).
+    const legacy = url.pathname.match(/^\/images\/poster\/([^/]+)\/([^/]+)\/([^/]+)(?:\/([^/]+))?$/);
+    if (!legacy) return null;
+
+    let id;
+    let tipo;
+    let badge;
+    try {
+        tipo = decodeURIComponent(legacy[1]);
+        id = decodeURIComponent(legacy[2]);
+        badge = legacy[3] === '_' ? null : decodeURIComponent(legacy[3]);
+    } catch {
+        return null;
+    }
+
+    const erdbId = getErdbId({ id, type: tipo });
+    if (!erdbId) return null;
+
+    const source = url.searchParams.get('original') || url.searchParams.get('fallback') || null;
+    return { forma: 'legacy', erdbId, badge, source };
+}
+
+/**
+ * URL del poster composto a partire dai parametri della ROTTA LEGACY `/images/poster/…`.
+ * Usata come trampolino 302 verso la rotta statica.
+ */
+function urlPosterDaRottaLegacy(hostUrl, { type, id, episode, tlBadge, source } = {}) {
+    const erdbId = getErdbId({ id, type });
+    if (!erdbId) return null;
+
+    const badge = episode && episode !== '_' ? String(episode) : null;
+    return urlPosterComposto(hostUrl, { erdbId, badge, source: source || null, tlBadge });
+}
+
+/**
+ * Rinfresca il poster di un item di libreria riportandolo alla forma corrente.
+ */
+function posterRinfrescato({ poster, storedPoster, itemId, type, tmdbId, hostUrl } = {}) {
+    const composto = scomponiPosterComposto(poster) || scomponiPosterComposto(storedPoster);
+    if (!composto) return poster;
+
+    const erdbId = getErdbId({ id: itemId, type, tmdbId }) || composto.erdbId;
+    const aggiornato = urlPosterComposto(hostUrl, {
+        erdbId,
+        badge: composto.badge,
+        source: composto.source
+    });
+    return aggiornato || poster;
+}
+
+
+/**
  * Logo su `image.tmdb.org`, se l'item ce l'ha in `rawTMDB.images.logos`.
  *
  * PERCHÉ: il meta che arriva da DuckDB (`getDuckDbMetaDetails`) non riempie `meta.logo`,
@@ -320,15 +438,16 @@ function sanitizeCatalogMeta(item, options = {}) {
 
     let poster = sourceImage;
     if ((badgeText || tlBadge) && hostUrl && sourceImage) {
-        const typeParam = item.type || 'series';
-        const idParam = item.id || 'unknown';
-        const fallbackPoster = encodeURIComponent(item._rawPoster || item.poster || sourceImage);
-        const episodeParam = badgeText ? encodeURIComponent(badgeText) : '_';
-        
-        // Put BADGE_IMG_VERSION in the path so Stremio doesn't ignore query params for image caching
-        poster = `${hostUrl}/images/poster/${typeParam}/${encodeURIComponent(idParam)}/${episodeParam}/${BADGE_IMG_VERSION}?original=${encodeURIComponent(sourceImage)}&fallback=${fallbackPoster}`;
-        if (tlBadge) {
-            poster += `&tlBadge=${encodeURIComponent(tlBadge)}`;
+        if (!posterErdbId && item.id) {
+            posterErdbId = getErdbId(item, 'poster') || getErdbId(item);
+        }
+        if (posterErdbId) {
+            poster = urlPosterComposto(hostUrl, {
+                erdbId: posterErdbId,
+                badge: badgeText,
+                source: sourceImage,
+                tlBadge
+            }) || sourceImage;
         }
     } else if (badgeText) {
         // Log why poster URL wasn't rewritten (only first time to avoid spam)
@@ -339,32 +458,29 @@ function sanitizeCatalogMeta(item, options = {}) {
     }
 
     // ---- Cache dei poster già composti: si PREFERISCE il file, non si sostituisce la logica ----
-    // I file arrivano da fuori: qui si guarda, e se il file c'è si serve quello (niente catena
-    // di hop, niente sharp). Se non c'è, `poster` resta il poster di TMDB.
-    //
-    // Stessa regola dei cataloghi, invariata: il file può essere scelto solo se è la STESSA
-    // immagine che comporrebbe la rotta `/images/poster/...`, cioè niente badge oppure il solo
-    // badge ITA (l'unico che la cache contiene, con suffisso `_ITA`). Con badge episodio o
-    // stagione la cache non può riprodurli: meglio l'URL che li disegna, che un poster senza
-    // badge. Fuori dal ramo poster (landscape) la cache non c'entra: i file sono verticali.
-    //
-    // LA SCHEDA (`itaCacheBadge`): lì il badge ITA **non** viene mostrato, quindi `badgeText`
-    // resta vuoto e senza questa opzione si cercherebbe il file liscio, che per un titolo
-    // doppiato non esiste (la cache ne contiene solo la versione con badge): la scheda resterebbe
-    // sul poster di TMDB mentre la griglia ha poster con badge e voto. `itaCacheBadge` dice solo
-    // "per il file in cache il badge da usare è ITA": NON tocca `badgeText`, non mostra nulla,
-    // cambia unicamente il poster (che è la correzione voluta). Viene dai catalogi
-    // (`applyPostCacheBadges` → `itaAnnotations`), letto in `isMetaDubbed` (`src/handlers/metaHandler.js`).
-    //
-    // Nota: la cache è NOSTRA, non richiede ERDB pubblico (né configurato, né raggiungibile):
-    // senza `erdbConfig` la cartella è semplicemente vuota e si resta sul poster di TMDB.
+    // Se il file c'è si serve quello (hit statico immediato). Se non c'è:
+    // - per titoli doppiati (soloIta o itaCacheBadge) si rimanda a urlPosterComposto per rendering on-miss;
+    // - per titoli non doppiati e senza badge, si resta sul poster di TMDB (nessuna composizione necessaria).
     if (hostUrl && posterErdbId && finalPosterShape === 'poster') {
         const soloIta = !tlBadge && badgeText === BADGE_ITA;
         const senzaBadge = !badgeText && !tlBadge;
-        if (soloIta || senzaBadge) {
-            const cacheBadge = (soloIta || (senzaBadge && options.itaCacheBadge === true)) ? BADGE_ITA : null;
+        if (soloIta) {
+            const urlInCache = urlPosterInCache(hostUrl, posterErdbId, BADGE_ITA);
+            if (urlInCache) {
+                poster = urlInCache;
+            } else {
+                poster = urlPosterComposto(hostUrl, {
+                    erdbId: posterErdbId,
+                    badge: BADGE_ITA,
+                    source: sourceImage
+                }) || poster;
+            }
+        } else if (senzaBadge) {
+            const cacheBadge = (options.itaCacheBadge === true) ? BADGE_ITA : null;
             const urlInCache = urlPosterInCache(hostUrl, posterErdbId, cacheBadge);
-            if (urlInCache) poster = urlInCache;
+            if (urlInCache) {
+                poster = urlInCache;
+            }
         }
     }
 
@@ -483,5 +599,12 @@ module.exports = {
     findLatestAiredEpisode,
     // Esportata perche' e' l'unica fonte di verita' degli id ERDB: anche gli script
     // offline (es. scripts/erdb-builder/dump-list.js) costruiscono cosi' le liste di poster.
-    getErdbId
+    getErdbId,
+    urlPosterInCache,
+    urlPosterComposto,
+    urlPosterDaRottaLegacy,
+    scomponiPosterComposto,
+    posterRinfrescato,
+    versionePosterComposto,
+    BADGE_IMG_VERSION
 };

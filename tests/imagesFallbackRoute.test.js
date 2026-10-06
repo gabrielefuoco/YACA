@@ -1,7 +1,6 @@
 const express = require('express');
 const axios = require('axios');
 const http = require('http');
-const sharp = require('sharp');
 const stremioRouter = require('../src/api/stremio');
 
 // La rotta /images/fallback non deve MAI rispondere 4xx/5xx: il client Stremio mette in
@@ -85,10 +84,9 @@ describe('Rotta /images/fallback', () => {
         // Il corpo è un PNG davvero decodificabile, non una stringa d'errore.
         const png = Buffer.from(res.data);
         expect(png.subarray(1, 4).toString('ascii')).toBe('PNG');
-        const meta = await sharp(png).metadata();
-        expect(meta.format).toBe('png');
-        expect(meta.width).toBe(1);
-        expect(meta.height).toBe(1);
+        expect(png.subarray(12, 16).toString('ascii')).toBe('IHDR');
+        expect(png.readUInt32BE(16)).toBe(1);
+        expect(png.readUInt32BE(20)).toBe(1);
     });
 
     test('(2b) fallback vuoto (fallback=) → immagine valida, mai 4xx/5xx', async () => {

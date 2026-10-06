@@ -552,10 +552,11 @@ describe('Badge sub/ITA dal documento di stato', () => {
         const sub = pass2.metas.find((m) => m.id === 'kitsu:48269');
         const dub = pass2.metas.find((m) => m.id === 'kitsu:48269_ita_offset');
         expect(sub.poster).toContain('EP%2012');
-        expect(dub.poster).toContain('ITA%208');
-        // Un solo livello di proxy immagine, non due annidati.
-        expect(sub.poster.match(/\/images\/poster\//g)).toHaveLength(1);
-        expect(dub.poster.match(/\/images\/poster\//g)).toHaveLength(1);
+        // Un solo livello di proxy immagine erdb-poster, non due annidati.
+        expect(sub.poster.match(/\/erdb-poster\//g)).toHaveLength(1);
+        expect(dub.poster.match(/\/erdb-poster\//g)).toHaveLength(1);
+        expect(sub.poster).not.toContain('/images/poster/');
+        expect(dub.poster).not.toContain('/images/poster/');
     });
 
     test('per gli altri cataloghi il badge TMDB resta invariato', () => {

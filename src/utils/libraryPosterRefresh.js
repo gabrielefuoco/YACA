@@ -30,7 +30,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const { BADGE_IMG_VERSION } = require('../catalog/formatters/posterBadgeVersion');
+const { BADGE_IMG_VERSION, calcolaVersionePoster } = require('../catalog/formatters/posterBadgeVersion');
+const { erdbIdDaNomeFile } = require('../cache/posterDaEvento');
+const { posterFileName } = require('../../scripts/erdb-builder/build');
 const { normalizeLegacyPosterHost } = require('./libraryIdentity');
 
 const COMPOSED_PREFIX = '/images/poster/';
@@ -92,19 +94,7 @@ function refreshComposedPoster(poster, options = {}) {
     if (!parsed || !parsed.url.pathname.startsWith(COMPOSED_PREFIX)) return poster;
 
     const { url, isAbsolute } = parsed;
-    const badgeVersion = String(options.badgeVersion ?? BADGE_IMG_VERSION);
-    // ['', 'images', 'poster', tipo, id, episodio] oppure [..., versione]
-    const segments = url.pathname.split('/');
     let changed = false;
-
-    if (segments.length === 6) {
-        // Forma vecchia, senza segmento di versione: si aggiunge.
-        segments.push(badgeVersion);
-        changed = true;
-    } else if (segments.length >= 7 && segments[6] !== badgeVersion) {
-        segments[6] = badgeVersion;
-        changed = true;
-    }
 
     for (const key of ['original', 'fallback']) {
         const current = url.searchParams.get(key);
@@ -117,18 +107,36 @@ function refreshComposedPoster(poster, options = {}) {
         }
     }
 
+    // ['', 'images', 'poster', tipo, id, episodio] oppure [..., versione]
+    const segments = url.pathname.split('/');
+    const tipo = decodeURIComponent(segments[3] || '');
+    const id = decodeURIComponent(segments[4] || '');
+    const rawBadge = segments[5] === '_' ? null : decodeURIComponent(segments[5] || '');
+    const source = url.searchParams.get('original') || url.searchParams.get('fallback') || '';
+
+    const badgeVersion = String(options.badgeVersion ?? BADGE_IMG_VERSION);
+
+    if (segments.length === 6) {
+        // Forma vecchia, senza segmento di versione: si aggiunge.
+        segments.push(badgeVersion);
+        changed = true;
+    } else if (segments.length >= 7 && segments[6] !== badgeVersion) {
+        segments[6] = badgeVersion;
+        changed = true;
+    }
+
     if (!changed) return poster;
     url.pathname = segments.join('/');
     return isAbsolute ? url.toString() : `${url.pathname}${url.search}`;
 }
 
 /**
- * Riallinea un composto statico `/erdb-poster/<file>`: il parametro `t` diventa
- * l'`mtime` del file. Un file assente (cartella non montata) lascia l'URL intatto:
- * non si inventa un cache-busting per un'immagine che non c'è.
+ * Riallinea un composto statico `/erdb-poster/<file>`: il nome del file include
+ * la versione corrente (`<nome>-<versione>.jpg`), eliminando eventuali parametri `t`
+ * di cache-busting legacy. Un file non riconosciuto o non valido lascia l'URL intatto.
  *
  * @param {string} poster
- * @param {{ cacheDir?: string }} [options]
+ * @param {{ badgeVersion?: string|number, hostUrl?: string }} [options]
  * @returns {string}
  */
 function refreshStaticPoster(poster, options = {}) {
@@ -142,21 +150,40 @@ function refreshStaticPoster(poster, options = {}) {
         return poster;
     }
 
-    const cacheDir = options.cacheDir
-        || require('../api/staticPosters').getCacheDir();
-    let mtimeMs;
-    try {
-        const stats = fs.statSync(path.join(cacheDir, fileName));
-        if (!stats.isFile()) return poster;
-        mtimeMs = Math.floor(stats.mtimeMs);
-    } catch (_err) {
-        return poster; // file assente: l'URL di oggi resta valido
-    }
-    if (!Number.isFinite(mtimeMs) || mtimeMs <= 0) return poster;
+    const riconosciuto = erdbIdDaNomeFile(fileName);
+    if (!riconosciuto) return poster;
 
-    const stamp = String(mtimeMs);
-    if (url.searchParams.get('t') === stamp) return poster;
-    url.searchParams.set('t', stamp);
+    const { erdbId } = riconosciuto;
+    const badge = url.searchParams.get('badge') || riconosciuto.badge || null;
+    let source = url.searchParams.get('fallback') || url.searchParams.get('original') || null;
+    if (source) {
+        source = unwrapComposedSource(source);
+        if (options.hostUrl) source = normalizeLegacyPosterHost(source, options.hostUrl);
+    }
+
+    const version = options.badgeVersion !== undefined
+        ? String(options.badgeVersion)
+        : calcolaVersionePoster({ erdbId, badge, source });
+
+    let nuovoFile;
+    try {
+        nuovoFile = posterFileName({ erdbId, badge, version });
+    } catch {
+        return poster;
+    }
+
+    let changed = false;
+    if (fileName !== nuovoFile) {
+        url.pathname = `${STATIC_PREFIX}${nuovoFile}`;
+        changed = true;
+    }
+
+    if (url.searchParams.has('t')) {
+        url.searchParams.delete('t');
+        changed = true;
+    }
+
+    if (!changed) return poster;
     return isAbsolute ? url.toString() : `${url.pathname}${url.search}`;
 }
 

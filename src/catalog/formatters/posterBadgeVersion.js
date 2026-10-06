@@ -1,15 +1,49 @@
-/**
- * Versione del badge disegnato dalla rotta `/images/poster/...`.
- *
- * Vive in un modulo suo perché ha DUE lettori: il formatter, che la scrive nel percorso
- * dell'URL composto (`StremioFormatter`), e il refresh al sync, che la riporta a quella
- * corrente per gli item che Stremio ha in libreria con una versione vecchia
- * (`src/utils/libraryPosterRefresh.js`). Due copie della stessa costante divergerebbero
- * in silenzio, e il refresh riallineerebbe i poster a un numero che non esiste più.
- *
- * Resta un numero scritto a mano (decisione 3 del ticket 30: diventerà un valore derivato
- * dal contenuto nella sessione che tocca la rotta): qui è solo l'unica fonte di verità.
- */
-const BADGE_IMG_VERSION = 24;
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
-module.exports = { BADGE_IMG_VERSION };
+/**
+ * Versione del disegno del badge.
+ * Sostituisce il numero manuale (24) con un hash derivato dal contenuto dell'asset del badge
+ * (la font con cui si compone l'immagine).
+ * Cambia automaticamente quando cambia l'asset grafico, in questo punto solo (ticket 30, sessione 2).
+ */
+function calcolaVersioneDisegno() {
+    try {
+        const fontPath = path.join(__dirname, '../../assets/fonts/noto-sans.ttf');
+        if (fs.existsSync(fontPath)) {
+            const fontBytes = fs.readFileSync(fontPath);
+            return crypto.createHash('sha1').update(fontBytes).digest('hex').slice(0, 8);
+        }
+    } catch {
+        // Fallback di sicurezza
+    }
+    return crypto.createHash('sha1').update('noto-sans-badge-v1').digest('hex').slice(0, 8);
+}
+
+const BADGE_IMG_VERSION = calcolaVersioneDisegno();
+
+/**
+ * Versione del poster composto specifico: dipende dal disegno (BADGE_IMG_VERSION),
+ * dall'identificatore del titolo (id ERDB), dal badge testuale e dall'immagine sorgente.
+ * Cambia quando cambia l'immagine sorgente o il badge, garantendo cache-busting on demand.
+ */
+function calcolaVersionePoster({ erdbId, id, type, badge, source } = {}) {
+    const rawErdbId = erdbId || id || '';
+    const rawType = type || '';
+    const rawBadge = badge || '';
+    const rawSource = String(source || '').trim();
+
+    return crypto.createHash('sha1')
+        .update(`${BADGE_IMG_VERSION}|${rawErdbId}|${rawType}|${rawBadge}|${rawSource}`)
+        .digest('hex')
+        .slice(0, 8);
+}
+
+module.exports = {
+    BADGE_IMG_VERSION,
+    calcolaVersionePoster,
+    calcolaVersioneDisegno
+};
+
+

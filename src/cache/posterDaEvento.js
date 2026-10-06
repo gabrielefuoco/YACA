@@ -39,10 +39,51 @@ const TIPI_NOTI = new Set(['movie', 'tv']);
 // poster che la rotta chiederebbe (vedi `CONTENT_TYPES` in `src/api/staticPosters.js`).
 const ESTENSIONE_ROTTA = /\.(?:jpg|jpeg|webp)$/i;
 
-// Le due uniche famiglie di nomi note. Il gruppo del badge e' opzionale e ammette solo
-// `ITA`: un badge non previsto non viene "indovinato" (vedi nota sui buchi in fondo al file).
-const NOME_TMDB = /^tmdb-(movie|tv)-(\d+)(?:_(ITA))?$/;
-const NOME_KITSU = /^kitsu-(\d+)(?:_(ITA))?$/;
+// Le famiglie di nomi note: TMDB, Kitsu e IMDb.
+// Supportano la versione nel nome del file:
+// - prima del badge: `<id>-<versione>_<badge>` oppure `<id>-<versione>`
+// - dopo il badge: `<id>_<badge>-<versione>`
+const NOME_TMDB = /^tmdb-(movie|tv)-(\d+)(?:-([0-9a-zA-Z]+))?(?:_(.+))?$/;
+const NOME_KITSU = /^kitsu-(\d+)(?:-([0-9a-zA-Z]+))?(?:_(.+))?$/;
+const NOME_IMDB = /^(tt\d+)(?:-([0-9a-zA-Z]+))?(?:_(.+))?$/;
+
+/**
+ * Separa il badge e la versione da un nome file, gestendo entrambe le posizioni
+ * possibili della versione (`<id>-<versione>_<badge>` o `<id>_<badge>-<versione>`).
+ */
+function separaBadgeEVersione(badgeRaw, versioneRaw) {
+    let badge = badgeRaw;
+    let versione = versioneRaw || null;
+
+    if (badge && !versione) {
+        const vMatch = badge.match(/^(.*?)-([0-9a-zA-Z]+)$/);
+        if (vMatch) {
+            badge = vMatch[1];
+            versione = vMatch[2];
+        }
+    }
+
+    return {
+        badgeGrezzo: badge,
+        badge: badgeDaNomeFile(badge),
+        versione: versione ? String(versione).trim() : null
+    };
+}
+
+/**
+ * Verifica se il suffisso del badge corrisponde a un formato supportato (ITA, EP, Ep, S2, ecc.).
+ * Esclude suffissi lingua non supportati (es. ENG) come prescritto dai test di sicurezza.
+ */
+function isBadgeRiconosciuto(badgeStr) {
+    if (!badgeStr) return true;
+    return /^(?:ITA|EP[_\s-]|Ep[_\s-]|S\d|ITA[_\s-]|ITA_\d+)/i.test(badgeStr);
+}
+
+function badgeDaNomeFile(suffisso) {
+    if (suffisso === undefined || suffisso === null || suffisso === '') return null;
+    const badge = String(suffisso).replace(/_/g, ' ').trim();
+    return badge || null;
+}
 
 /**
  * Ricostruisce l'id ERDB di un evento: `tmdb:movie:27205`, `tmdb:tv:1396`, `kitsu:265`.
@@ -63,6 +104,9 @@ function erdbIdDaEvento({ tipo, id } = {}) {
 
     // Gli anime: id gia' in forma ERDB, il prefisso si riconosce da solo.
     if (idTesto.startsWith('kitsu:')) return idTesto;
+
+    // Gli id IMDb sono gia' una forma ERDB valida (`tt…`)
+    if (/^tt\d+$/.test(idTesto)) return idTesto;
 
     if (!TIPI_NOTI.has(tipo)) {
         throw new Error(`tipo sconosciuto nell'evento: ${JSON.stringify(tipo)} (id: ${idTesto})`);
@@ -96,10 +140,6 @@ function nomeFileDaEvento({ tipo, id, badge } = {}) {
  * nessun ingresso fa sollevare: un evento malformato si becca in coda, un nome strano
  * arriva dalla rete.
  *
- * Riconosce SOLO le forme note:
- *   `tmdb-movie-<cifre>[_ITA].jpg`, `tmdb-tv-<cifre>[_ITA].jpg`, `kitsu-<cifre>[_ITA].jpg`
- * (estensione anche `.jpeg`/`.webp`, come accetta la rotta). Tutto il resto -> `null`.
- *
  * @param {string} nomeFile nome grezzo, come arriva alla rotta (`tmdb-movie-27205_ITA.jpg`)
  * @returns {{erdbId: string, badge: string|null}|null} `badge` vale `null` se il nome non
  *   ne porta, altrimenti la stringa del suffisso (`'ITA'`).
@@ -125,12 +165,29 @@ function erdbIdDaNomeFile(nomeFile) {
 
     const tmdb = NOME_TMDB.exec(base);
     if (tmdb) {
-        return { erdbId: `tmdb:${tmdb[1]}:${tmdb[2]}`, badge: tmdb[3] || null };
+        const { badgeGrezzo, badge, versione } = separaBadgeEVersione(tmdb[4], tmdb[3]);
+        if (!isBadgeRiconosciuto(badgeGrezzo)) return null;
+        const res = { erdbId: `tmdb:${tmdb[1]}:${tmdb[2]}`, badge };
+        if (versione) res.versione = versione;
+        return res;
     }
 
     const kitsu = NOME_KITSU.exec(base);
     if (kitsu) {
-        return { erdbId: `kitsu:${kitsu[1]}`, badge: kitsu[2] || null };
+        const { badgeGrezzo, badge, versione } = separaBadgeEVersione(kitsu[3], kitsu[2]);
+        if (!isBadgeRiconosciuto(badgeGrezzo)) return null;
+        const res = { erdbId: `kitsu:${kitsu[1]}`, badge };
+        if (versione) res.versione = versione;
+        return res;
+    }
+
+    const imdb = NOME_IMDB.exec(base);
+    if (imdb) {
+        const { badgeGrezzo, badge, versione } = separaBadgeEVersione(imdb[3], imdb[2]);
+        if (!isBadgeRiconosciuto(badgeGrezzo)) return null;
+        const res = { erdbId: imdb[1], badge };
+        if (versione) res.versione = versione;
+        return res;
     }
 
     // Prefisso ignoto (`tmdb-xxx-...`, `anime-...`), id non numerico, nome troncato.

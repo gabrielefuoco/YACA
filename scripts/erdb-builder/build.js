@@ -62,10 +62,12 @@ function posterFileName(entry) {
     if (!erdbId) {
         throw new Error(`campo "erdbId" mancante o non valido: ${JSON.stringify(entry)}`);
     }
+    const version = entry.version || entry.v;
+    const versionPart = version ? `-${sanitizePart(version)}` : '';
     const badge = entry.badge === undefined || entry.badge === null || entry.badge === ''
         ? ''
         : `_${sanitizePart(entry.badge)}`;
-    return `${erdbId}${badge}.jpg`;
+    return `${erdbId}${versionPart}${badge}.jpg`;
 }
 
 /**

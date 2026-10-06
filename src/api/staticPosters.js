@@ -71,6 +71,41 @@ const filePresente = (filePath) => {
     }
 };
 
+// Host ammessi per il `fallback`: le stesse sorgenti immagini che il formatter produce.
+// Il `fallback` è un redirect, quindi un elenco chiuso evita che la rotta diventi un
+// trampolino verso un host qualunque (`/erdb-poster/x.jpg?fallback=https://evil…`).
+const FALLBACK_HOSTS = ['image.tmdb.org', 'media.kitsu.io', 'media.kitsu.app', 'images.metahub.space'];
+
+/**
+ * Il `fallback` in query, se è un'immagine di una sorgente ammessa. Altrimenti `null`:
+ * la rotta risponde 404 come prima, mai un redirect verso un host scelto dal chiamante.
+ */
+const fallbackAmmesso = (value) => {
+    if (typeof value !== 'string' || !value.trim()) return null;
+    try {
+        const parsed = new URL(value.trim());
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+        const ammesso = FALLBACK_HOSTS.some(host => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`));
+        return ammesso ? parsed.href : null;
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * Il badge richiesto in query, se è un testo utilizzabile. Il nome file è sanitizzato (perde
+ * la punteggiatura), quindi il testo esatto da disegnare viaggia a parte: senza, un poster
+ * `_EP_12` chiederebbe a ERDB il badge ricostruito e non quello originale.
+ * Tetto e niente caratteri di controllo: la query arriva dalla rete.
+ */
+const badgeDallaQuery = (value) => {
+    if (typeof value !== 'string') return null;
+    const badge = value.trim();
+    if (!badge || badge.length > 32) return null;
+    if (/[\u0000-\u001f\u007f]/.test(badge)) return null;
+    return badge;
+};
+
 /**
  * Mette l'evento in coda perché il drenatore (`scripts/drena-coda-poster.js`, ogni 10 minuti)
  * renda il poster più tardi, con i suoi 20 s di tempo.
@@ -96,9 +131,10 @@ const filePresente = (filePath) => {
  * Il nome che non è una forma nota non produce nessun evento (`eventoDaNomeFile` → `null`):
  * non c'è niente da chiedere, e inventare un id produrrebbe un file che nessuno cerca.
  */
-const mettiInCoda = (fileName) => {
+const mettiInCoda = (fileName, badge) => {
     const evento = eventoDaNomeFile(fileName);
     if (!evento) return;
+    if (badge) evento.badge = badge;
     const chiave = `${evento.tipo}|${evento.id}`;
 
     try {
@@ -145,7 +181,7 @@ const mettiInCoda = (fileName) => {
  *
  * @returns {Promise<boolean>} `true` se il file è stato scritto in cartella.
  */
-const chiediPosterAErdb = async (fileName, filePath) => {
+const chiediPosterAErdb = async (fileName, filePath, badge) => {
     // Senza base non c'è nessuna istanza da chiedere: il comportamento resta quello di oggi
     // (404), che è anche quello di sviluppo e dei test.
     const base = String(process.env.ERDB_LOCAL_BASE || '').trim();
@@ -158,14 +194,14 @@ const chiediPosterAErdb = async (fileName, filePath) => {
     if (!riconosciuto) return false;
 
     // L'indirizzo lo costruisce il costruttore (`?badge=` incluso): qui non si riscrive.
-    const url = posterUrl(base, riconosciuto);
+    const url = posterUrl(base, { erdbId: riconosciuto.erdbId, badge: badge || riconosciuto.badge });
 
     let buffer;
     try {
         buffer = await scarica(url, { fetchImpl: globalThis.fetch, timeoutMs: TIMEOUT_ERDB_MS });
     } catch (err) {
         console.warn(`[StaticPosters] ERDB non ha dato il poster di ${fileName}: ${err && err.message ? err.message : err}`);
-        mettiInCoda(fileName);
+        mettiInCoda(fileName, badge);
         return false;
     }
 
@@ -176,7 +212,7 @@ const chiediPosterAErdb = async (fileName, filePath) => {
         console.warn(`[StaticPosters] scrittura fallita per ${fileName}: ${err && err.message ? err.message : err}`);
         // Il render è riuscito ma il file non c'è: per l'utente è lo stesso 404, quindi
         // lo stesso evento da rendere più tardi (stavolta con ERDB già caldo).
-        mettiInCoda(fileName);
+        mettiInCoda(fileName, badge);
         return false;
     }
 
@@ -202,12 +238,14 @@ router.get('/erdb-poster/:file', (req, res) => {
         return sendNotFound(res);
     }
 
+    const badge = badgeDallaQuery(req.query.badge);
+
     // Il file può non esserci, e la cartella può non esistere (o non essere ancora montata):
-    // nessuna delle due è un errore, è un 404... se ERDB è raggiungibile, prima un tentativo.
+    // nessuna delle due è un errore, è un 404... se ERDB è raggiungibile, prima un tentativo on-miss.
     const chiedi = async () => {
         let reso;
         try {
-            reso = await chiediPosterAErdb(fileName, filePath);
+            reso = await chiediPosterAErdb(fileName, filePath, badge);
         } catch (err) {
             // Difesa in profondità: `chiediPosterAErdb` non lancia, ma una rotta che butta
             // un'eccezione su una rete che non risponde è un guasto nuovo.
@@ -216,8 +254,12 @@ router.get('/erdb-poster/:file', (req, res) => {
         }
         // Se il file ora c'è lo si serve da disco (stessi header di un file già presente:
         // il `Cache-Control` è quello da HIT perché il file è in cartella, ora).
-        // Se ERDB non ha risposto, è il 404 di prima: la rotta non serve mai mezzo poster.
-        return reso ? inviaFile(res, filePath, contentType) : sendNotFound(res);
+        if (reso) {
+            return inviaFile(res, filePath, contentType);
+        }
+        const fallback = fallbackAmmesso(req.query.fallback);
+        if (fallback) return res.redirect(302, fallback);
+        return sendNotFound(res);
     };
 
     if (!filePresente(filePath)) return chiedi();

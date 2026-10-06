@@ -143,7 +143,8 @@ describe('Ticket 50 — il fallback in lettura a due tipi ripara i film anime', 
         expect(result.metas).toHaveLength(2);
         for (const meta of result.metas) {
             expect(meta._itaBadge).toBe(true);
-            expect(meta.poster).toContain('/ITA/'); // chip sul poster (il file `_ITA` in cache è un'altra rotta)
+            expect(meta.poster).toContain('/erdb-poster/');
+            expect(meta.poster).toContain('_ITA.jpg');
         }
     });
 
@@ -159,7 +160,8 @@ describe('Ticket 50 — il fallback in lettura a due tipi ripara i film anime', 
         );
 
         expect(result.metas[0]._itaBadge).toBe(true);
-        expect(result.metas[0].poster).toContain('/ITA/');
+        expect(result.metas[0].poster).toContain('/erdb-poster/');
+        expect(result.metas[0].poster).toContain('_ITA.jpg');
     });
 
     test('3. GUARDIA: un film che non è un film anime NON prende il badge', async () => {

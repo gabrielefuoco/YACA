@@ -101,7 +101,8 @@ describe('Badge sulle copertine degli anime (fuori dal catalogo novità)', () =>
         expect(item._itaBadge).toBe(true);             // la colonna `ita` dice sì
         expect(item._forceBadgeText).toBeUndefined();  // niente numero di episodio
         expect(item._itaOnlyBadge).toBe(true);         // niente badge episodio/stagione
-        expect(String(item.poster)).toContain('/images/poster/'); // il badge c'è, sulla copertina
+        expect(String(item.poster)).toContain('/erdb-poster/'); // il badge c'è, sulla copertina
+        expect(String(item.poster)).toContain('_ITA.jpg');
     });
 
     test('anime NON doppiato: nessun badge sulla copertina (mai il badge episodio)', async () => {
@@ -112,6 +113,7 @@ describe('Badge sulle copertine degli anime (fuori dal catalogo novità)', () =>
         expect(item._itaBadge).toBe(false);
         expect(item._itaOnlyBadge).toBe(true);
         // La copertina NON viene riscritta: nessun badge disegnato sopra
+        expect(String(item.poster)).not.toContain('/erdb-poster/');
         expect(String(item.poster)).not.toContain('/images/poster/');
     });
 
