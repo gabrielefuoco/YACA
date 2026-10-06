@@ -108,55 +108,35 @@ describe('refreshComposedPoster — la versione nel percorso', () => {
     });
 });
 
-describe('refreshStaticPoster — il cache-busting dei composti statici', () => {
-    let dir;
-
-    beforeEach(() => {
-        dir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaca-poster-refresh-'));
-    });
-
-    afterEach(() => {
-        fs.rmSync(dir, { recursive: true, force: true });
-    });
-
-    test('il parametro t diventa l\'mtime del file (e il giro dopo non cambia più)', () => {
-        const file = path.join(dir, 'kitsu-142_ITA.jpg');
-        fs.writeFileSync(file, Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
-        const mtime = String(Math.floor(fs.statSync(file).mtimeMs));
-
+describe('refreshStaticPoster — il cache-busting dei composti statici con versione nel nome', () => {
+    test('un URL statico della sessione 1 con ?t=... riceve la versione nel nome e perde ?t', () => {
         const vecchio = `${HOST}/erdb-poster/kitsu-142_ITA.jpg?t=1`;
-        const nuovo = refreshStaticPoster(vecchio, { cacheDir: dir });
+        const nuovo = refreshStaticPoster(vecchio);
 
-        expect(new URL(nuovo).searchParams.get('t')).toBe(mtime);
-        expect(refreshStaticPoster(nuovo, { cacheDir: dir })).toBe(nuovo);
+        expect(nuovo).toMatch(/\/erdb-poster\/kitsu-142-[0-9a-f]{8}_ITA\.jpg$/);
+        expect(new URL(nuovo).searchParams.has('t')).toBe(false);
+        expect(refreshStaticPoster(nuovo)).toBe(nuovo);
     });
 
-    test('quando il drenatore riscrive il file, l\'URL cambia (i client lo riscaricano)', () => {
-        const file = path.join(dir, 'tmdb-movie-12477_ITA.jpg');
-        fs.writeFileSync(file, Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
-        const primo = refreshStaticPoster(`${HOST}/erdb-poster/tmdb-movie-12477_ITA.jpg?t=1`, { cacheDir: dir });
+    test('quando la versione cambia (es. opzione badgeVersion), l\'URL si aggiorna al nuovo nome', () => {
+        const primo = `${HOST}/erdb-poster/tmdb-movie-12477-vOld_ITA.jpg`;
+        const secondo = refreshStaticPoster(primo, { badgeVersion: 'vNew' });
 
-        const dopo = new Date(Date.now() + 120000);
-        fs.utimesSync(file, dopo, dopo);
-        const secondo = refreshStaticPoster(primo, { cacheDir: dir });
-
-        expect(secondo).not.toBe(primo);
-        expect(new URL(secondo).searchParams.get('t')).toBe(String(Math.floor(fs.statSync(file).mtimeMs)));
+        expect(secondo).toBe(`${HOST}/erdb-poster/tmdb-movie-12477-vNew_ITA.jpg`);
     });
 
-    test('un file assente (cartella non montata) lascia l\'URL intatto', () => {
-        const poster = `${HOST}/erdb-poster/inesistente_ITA.jpg?t=1`;
-        expect(refreshStaticPoster(poster, { cacheDir: dir })).toBe(poster);
-        expect(refreshStaticPoster(poster, { cacheDir: path.join(dir, 'non-esiste') })).toBe(poster);
+    test('è idempotente: un URL già alla versione specificata non viene riscritto', () => {
+        const corrente = `${HOST}/erdb-poster/tmdb-movie-12477-v24_ITA.jpg`;
+        expect(refreshStaticPoster(corrente, { badgeVersion: 'v24' })).toBe(corrente);
     });
 
     test('un nome che prova a uscire dalla cartella non viene toccato', () => {
         const poster = `${HOST}/erdb-poster/..%2Fsegreti.jpg?t=1`;
-        expect(refreshStaticPoster(poster, { cacheDir: dir })).toBe(poster);
+        expect(refreshStaticPoster(poster)).toBe(poster);
     });
 
     test('un file esterno non-composto resta identico', () => {
-        expect(refreshStaticPoster(TMDB, { cacheDir: dir })).toBe(TMDB);
+        expect(refreshStaticPoster(TMDB)).toBe(TMDB);
     });
 });
 
@@ -164,6 +144,8 @@ describe('refreshLibraryPoster — il dispatcher del sync', () => {
     test('manda i composti al ricalcolo e lascia stare gli altri', () => {
         const vecchio = composto({ versione: 23 });
         expect(refreshLibraryPoster(vecchio)).toContain(`/ITA/${BADGE_IMG_VERSION}?`);
+        const statico = `${HOST}/erdb-poster/kitsu-142_ITA.jpg?t=1`;
+        expect(refreshLibraryPoster(statico)).toMatch(/\/erdb-poster\/kitsu-142-[0-9a-f]{8}_ITA\.jpg$/);
         expect(refreshLibraryPoster(TMDB)).toBe(TMDB);
         expect(refreshLibraryPoster(null)).toBe(null);
         expect(refreshLibraryPoster('   ')).toBe('   ');

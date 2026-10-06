@@ -132,25 +132,25 @@ describe('Formatter: senza file (o cartella assente) l\'URL è quello di prima',
     });
 });
 
-describe('Formatter: la cache non può riprodurre i badge composti al volo', () => {
-    test('con badge episodio l\'URL resta quello della rotta /images/poster', () => {
+describe('Formatter: i badge composti al volo usano la rotta statica erdb-poster (rendering on-miss)', () => {
+    test('con badge episodio l\'URL punta alla rotta /erdb-poster con rendering on-miss', () => {
         const meta = sanitizeCatalogMeta(film({ _forceBadgeText: 'EP 12' }), {
             ...OPZIONI,
             shouldApplyEpisodeBadge: true
         });
-        expect(meta.poster).toContain('/images/poster/');
+        expect(meta.poster).toContain('/erdb-poster/');
         expect(meta.poster).toContain('EP%2012');
-        expect(meta.poster).not.toContain('/erdb-poster/');
+        expect(meta.poster).not.toContain('/images/poster/');
     });
 
-    test('con badge ITA + episodio (la card doppiata del catalogo novità) resta l\'URL di oggi', () => {
+    test('con badge ITA + episodio (la card doppiata del catalogo novità) punta a /erdb-poster', () => {
         const meta = sanitizeCatalogMeta(film({ _itaBadge: true, _forceBadgeText: 'ITA 8' }), {
             ...OPZIONI,
             shouldApplyEpisodeBadge: true
         });
-        expect(meta.poster).toContain('/images/poster/');
+        expect(meta.poster).toContain('/erdb-poster/');
         expect(meta.poster).toContain('ITA%208');
-        expect(meta.poster).not.toContain('/erdb-poster/');
+        expect(meta.poster).not.toContain('/images/poster/');
     });
 
     test('in landscape la cache non viene usata (i file sono solo poster)', () => {

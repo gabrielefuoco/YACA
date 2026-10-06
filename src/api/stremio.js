@@ -8,39 +8,11 @@ const UserConfig = require('../models/UserConfig');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
 const CacheManager = require('../cache/CacheManager');
-const sharp = require('sharp');
 const axios = require('axios');
 const path = require('path');
 const crypto = require('crypto');
-const TextToSVG = require('text-to-svg');
 
-let textToSVG = null;
-// Try bundled Noto Sans first, then text-to-svg's built-in default font (ipag.ttf)
-try {
-    const fontPath = path.join(__dirname, '../assets/fonts/noto-sans.ttf');
-    textToSVG = TextToSVG.loadSync(fontPath);
-    // console.log('[Badge] Font loaded: noto-sans.ttf from', fontPath);
-} catch (e1) {
-    console.warn('[Badge] Could not load noto-sans.ttf:', e1.message);
-    try {
-        textToSVG = TextToSVG.loadSync(); // uses built-in ipag.ttf from text-to-svg package
-        // console.log('[Badge] Font loaded: text-to-svg default (ipag.ttf)');
-    } catch (e2) {
-        console.error('[Badge] CRITICAL: No font available for badge rendering:', e2.message);
-    }
-}
-if (textToSVG) {
-    // Verify the font actually works
-    try {
-        const testPath = textToSVG.getPath('Test', { fontSize: 24, attributes: { fill: 'white' } });
-        // console.log('Badge] Font verification OK, test path length:', testPath.length);
-    } catch (ev) {
-        console.error('[Badge] Font verification FAILED:', ev.message);
-        textToSVG = null;
-    }
-}
-
-const BadgeDiskCache = require('../utils/BadgeDiskCache');
+const { urlPosterDaRottaLegacy } = require('../catalog/formatters/StremioFormatter');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler, isMetaDubbed } = require('../handlers/metaHandler');
 const { streamHandler } = require('../handlers/streamHandler');
@@ -532,224 +504,27 @@ router.get('/:userHandle/configure', (_req, res) => {
     res.redirect(302, '/');
 });
 
-// Dynamic image overlay route for episode badges
+// Rotta legacy `/images/poster/…`: trampolino 302 verso la rotta statica `/erdb-poster/…`.
+// Serve a spegnere la composizione nel processo (sharp) senza rompere i client che hanno
+// già in cache gli URL vecchi: vengono reindirizzati verso la rotta statica che serve il file
+// o lo rende al volo tramite ERDB on-miss.
 router.get(['/images/poster/:type/:id/:episode/:cacheBuster', '/images/poster/:type/:id/:episode'], async (req, res) => {
-    const { type, id } = req.params;
-    let episode = req.params.episode;
-    if (episode === '_') episode = null;
-    const tlBadge = req.query.tlBadge;
-    const originalUrl = req.query.original;
+    const { type, id, episode } = req.params;
+    const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
+    const source = req.query.original || req.query.fallback || null;
+    const destinazione = urlPosterDaRottaLegacy(hostUrl, {
+        type,
+        id,
+        episode,
+        tlBadge: req.query.tlBadge,
+        source
+    });
 
-    if (!originalUrl) {
-        return res.status(400).send('Original image URL is required');
-    }
+    // Id non riconoscibile: un 404 esplicito, mai un file inventato.
+    if (!destinazione) return res.status(404).send('Poster non disponibile');
 
-    // Security check: validate the original image URL host
-    try {
-        const parsedUrl = new URL(originalUrl);
-        // `easyratingsdb.com` non è più nell'elenco delle fonti: il formatter non produce più
-        // URL ERDB (le immagini vengono da TMDB, dalla cache locale o da Kitsu). Resta qui
-        // solo per i badge già composti e richiesti con la chiave di allora: toglierlo
-        // cambierebbe la risposta di quelle richieste da 302 a 403 senza guadagnare niente.
-        const allowedHosts = [
-            'image.tmdb.org',
-            'easyratingsdb.com',
-            'media.kitsu.io',
-            'media.kitsu.app'
-        ];
-        
-        const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
-        try {
-            allowedHosts.push(new URL(hostUrl).hostname);
-        } catch(e) {}
-        
-        const isAllowed = allowedHosts.some(host => 
-            parsedUrl.hostname === host || parsedUrl.hostname.endsWith('.' + host)
-        );
-
-        if (!isAllowed) {
-            console.warn(`[BadgeCache] Rejected unauthorized domain: ${parsedUrl.hostname}`);
-            return res.status(403).send('Unauthorized image domain');
-        }
-    } catch (e) {
-        return res.status(400).send('Invalid original image URL');
-    }
-
-    const bv = req.params.cacheBuster || req.query.bv || 'v16';
-    // La SORGENTE fa parte della chiave: un'immagine composta dal fallback TMDB non deve
-    // essere scambiata per quella di ERDB (e viceversa) restando poi in cache per giorni.
-    // Si usa host+path (senza query) perché la URL ERDB porta un tmdbKey variabile.
-    let sourceKey = 'src';
-    try {
-        const u = new URL(originalUrl);
-        sourceKey = crypto.createHash('sha1').update(`${u.hostname}${u.pathname}`).digest('hex').slice(0, 8);
-    } catch (_e) { /* l'URL è già stato validato sopra */ }
-    const cacheKey = `${id}_${episode}_${tlBadge}_${bv}_${sourceKey}`;
-    // console.log(`[Badge] Request: id=${id}, episode="${episode}", bv=${bv}, textToSVG=${!!textToSVG}`);
-
-    const createBadgeSvg = (text, isTopLeft) => {
-        const textLen = text.length;
-        const fontSize = 30; // +15% from 26
-        const badgeWidth = Math.max(isTopLeft ? 80 : 115, Math.round(textLen * 17.5 + 42)); // +15% proportional
-        const badgeHeight = 50; // +15% from 44
-        const rx = Math.round(badgeHeight / 2);
-
-        let svgContent;
-        if (textToSVG) {
-            const metrics = textToSVG.getMetrics(text, { fontSize });
-            const textWidth = metrics.width;
-            const x = (badgeWidth - textWidth) / 2;
-            const y = (badgeHeight / 2) + (metrics.ascender / 2) - 2;
-            const svgPath = textToSVG.getPath(text, {
-                x: x,
-                y: y,
-                fontSize: fontSize,
-                attributes: { fill: '#ffffff', stroke: '#ffffff', 'stroke-width': '1.0', 'font-weight': 'bold' }
-            });
-            svgContent = svgPath;
-        } else {
-            const xmlEscapedBadgeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-            svgContent = `<text x="${badgeWidth / 2}" y="${badgeHeight / 2}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${xmlEscapedBadgeText}</text>`;
-        }
-        
-        return {
-            width: badgeWidth,
-            height: badgeHeight,
-            rx: rx,
-            content: svgContent
-        };
-    };
-
-    // Helper to perform the download and composition
-    const generateBadgeImage = async (url, badgeText, topLeftBadgeText) => {
-        const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 10000 });
-        const baseImageBuffer = Buffer.from(response.data);
-
-        // Get original dimensions
-        const imgMeta = await sharp(baseImageBuffer).metadata();
-        const W = imgMeta.width || 342;
-        const H = imgMeta.height || 513;
-
-        const buildSvg = (badgeData) => `<svg width="${badgeData.width}" height="${badgeData.height}" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <linearGradient id="apple-glass-fill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12" />
-                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0.04" />
-                </linearGradient>
-                <linearGradient id="apple-glass-border" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25" />
-                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0.10" />
-                </linearGradient>
-                <filter id="apple-glass-shadow" x="-30%" y="-30%" width="160%" height="160%">
-                    <feGaussianBlur in="SourceAlpha" stdDeviation="2.8" />
-                    <feOffset dx="0" dy="3.2" result="offsetblur" />
-                    <feFlood flood-color="#000000" flood-opacity="0.54" result="glowcolor" />
-                    <feComposite in="glowcolor" in2="offsetblur" operator="in" result="glow" />
-                    <feMerge>
-                        <feMergeNode in="glow" />
-                        <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                </filter>
-                <filter id="text-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur in="SourceAlpha" stdDeviation="1.8" result="blur" />
-                    <feOffset dx="0" dy="1.2" in="blur" result="offsetBlur" />
-                    <feComponentTransfer in="offsetBlur" result="shadow">
-                        <feFuncA type="linear" slope="0.85" />
-                    </feComponentTransfer>
-                    <feMerge>
-                        <feMergeNode in="shadow" />
-                        <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                </filter>
-            </defs>
-            <rect x="0.5" y="0.5" width="${badgeData.width - 1}" height="${badgeData.height - 1}" rx="${badgeData.rx}" fill="url(#apple-glass-fill)" filter="url(#apple-glass-shadow)" />
-            <rect x="0.5" y="0.5" width="${badgeData.width - 1}" height="${badgeData.height - 1}" rx="${badgeData.rx}" fill="none" stroke="url(#apple-glass-border)" stroke-width="1" />
-            <g filter="url(#text-shadow)">
-                ${badgeData.content}
-            </g>
-        </svg>`;
-
-        const composites = [];
-        const badgeTop = 24;
-
-        if (badgeText && badgeText !== 'undefined' && badgeText !== 'null') {
-            const rightBadge = createBadgeSvg(badgeText, false);
-            const badgeRightOffset = 16;
-            const badgeLeft = Math.max(0, W - rightBadge.width - badgeRightOffset);
-            composites.push({
-                input: Buffer.from(buildSvg(rightBadge)),
-                top: badgeTop,
-                left: badgeLeft
-            });
-        }
-        
-        if (topLeftBadgeText && topLeftBadgeText !== 'undefined' && topLeftBadgeText !== 'null') {
-            const leftBadge = createBadgeSvg(topLeftBadgeText, true);
-            const badgeLeftOffset = 16;
-            composites.push({
-                input: Buffer.from(buildSvg(leftBadge)),
-                top: badgeTop,
-                left: badgeLeftOffset
-            });
-        }
-
-        if (composites.length > 0) {
-            return await sharp(baseImageBuffer)
-                .composite(composites)
-                .jpeg({ quality: 90 })
-                .toBuffer();
-        } else {
-            return await sharp(baseImageBuffer).jpeg({ quality: 90 }).toBuffer();
-        }
-    };
-
-    try {
-        // Check if image exists in Local/Mounted Storage
-        const filePath = await BadgeDiskCache.exists(cacheKey);
-        if (filePath) {
-            // Express sets ETag, Cache-Control and streams the file natively
-            return res.sendFile(filePath, { maxAge: 86400000, dotfiles: 'allow' }, (err) => {
-                if (err && !res.headersSent) {
-                    res.redirect(302, req.query.fallback || originalUrl);
-                }
-            });
-        }
-
-        // Cache miss: generate composite image
-        const processedBuffer = await generateBadgeImage(originalUrl, episode, tlBadge);
-
-        // Save to Local/Mounted Storage synchronously
-        const newFilePath = await BadgeDiskCache.upload(cacheKey, processedBuffer);
-
-        if (newFilePath) {
-            return res.sendFile(newFilePath, { maxAge: 86400000, dotfiles: 'allow' }, (err) => {
-                if (err && !res.headersSent) {
-                    res.redirect(302, req.query.fallback || originalUrl);
-                }
-            });
-        }
-
-        // Fallback: se il salvataggio su disco fallisce, inviamo il buffer
-        res.setHeader('Content-Type', 'image/jpeg');
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-        return res.send(processedBuffer);
-    } catch (err) {
-        // console.error(`[BadgeCache] Error generating badge for ${id}:`, err.message);
-
-        // Fail-safe: redirect to original URL or fallback
-        const fallbackUrl = req.query.fallback || originalUrl;
-        res.redirect(302, fallbackUrl);
-
-        // Asynchronously retry generation in the background so it's ready next time
-        setTimeout(async () => {
-            try {
-                const retryBuffer = await generateBadgeImage(originalUrl, episode, tlBadge);
-                await BadgeDiskCache.upload(cacheKey, retryBuffer);
-            } catch (retryErr) {
-                console.error(`[BadgeCache] Background retry failed for ${id}:`, retryErr.message);
-            }
-        }, 5000);
-    }
+    // 302 e non 301: se un domani la forma dell'URL cambia, i client non se la ricordano.
+    return res.redirect(302, destinazione);
 });
 
 // Cache dell'esistenza dei poster ERDB: su Redis (sopravvive ai riavvii) con TTL lungo per
