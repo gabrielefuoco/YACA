@@ -136,7 +136,17 @@ node_modules/
 # Antigravity Agent
 .agent/
 .agents/scratch/
-.scratch/
+# `.scratch/` è VERSIONATA: ci vivono le mappe di wayfinding, i ticket e i report
+# delle analisi — la memoria del lavoro, che va conservata e condivisa.
+# Restano fuori i derivati e i dati pesanti, che si rigenerano: senza queste
+# esclusioni un `git add` trascinerebbe centinaia di MB di fixture.
+.scratch/**/*.parquet
+.scratch/**/*.json.gz
+.scratch/**/*.ndjson
+.scratch/**/node_modules/
+.scratch/**/venv/
+.scratch/**/runs/
+.scratch/**/data/
 
 # Binaries
 *.exe
