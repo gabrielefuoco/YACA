@@ -61,7 +61,7 @@ class DuckDbStore {
                             await execPromise(`CREATE TABLE movies AS SELECT * FROM read_parquet('${this.moviesParquetPath.replace(/\\/g, '/')}');`);
                             await execPromise(`PRAGMA create_fts_index('movies', 'id', 'title', 'original_title');`);
                         } else {
-                            await execPromise(`CREATE TABLE IF NOT EXISTS movies (id BIGINT, title VARCHAR, original_title VARCHAR, overview VARCHAR, poster_path VARCHAR, backdrop_path VARCHAR, release_date VARCHAR, vote_average DOUBLE, vote_count BIGINT, popularity DOUBLE, genres VARCHAR, keywords VARCHAR, watch_providers_it VARCHAR, watch_providers_us VARCHAR, production_companies VARCHAR, production_countries VARCHAR, original_language VARCHAR, adult BOOLEAN);`);
+                            await execPromise(`CREATE TABLE IF NOT EXISTS movies (id BIGINT, title VARCHAR, original_title VARCHAR, overview VARCHAR, poster_path VARCHAR, backdrop_path VARCHAR, release_date VARCHAR, vote_average DOUBLE, vote_count BIGINT, popularity DOUBLE, genres VARCHAR, keywords VARCHAR, watch_providers_it VARCHAR, watch_providers_us VARCHAR, production_companies VARCHAR, production_countries VARCHAR, original_language VARCHAR, adult BOOLEAN, title_en VARCHAR);`);
                         }
                         
                         if (fs.existsSync(this.tvParquetPath)) {
@@ -69,7 +69,7 @@ class DuckDbStore {
                             await execPromise(`CREATE TABLE tv AS SELECT * FROM read_parquet('${this.tvParquetPath.replace(/\\/g, '/')}');`);
                             await execPromise(`PRAGMA create_fts_index('tv', 'id', 'name', 'original_name');`);
                         } else {
-                            await execPromise(`CREATE TABLE IF NOT EXISTS tv (id BIGINT, name VARCHAR, original_name VARCHAR, overview VARCHAR, poster_path VARCHAR, backdrop_path VARCHAR, first_air_date VARCHAR, vote_average DOUBLE, vote_count BIGINT, popularity DOUBLE, genres VARCHAR, keywords VARCHAR, watch_providers_it VARCHAR, watch_providers_us VARCHAR, networks VARCHAR, production_companies VARCHAR, production_countries VARCHAR, original_language VARCHAR, number_of_seasons INTEGER, number_of_episodes INTEGER, status VARCHAR, adult BOOLEAN);`);
+                            await execPromise(`CREATE TABLE IF NOT EXISTS tv (id BIGINT, name VARCHAR, original_name VARCHAR, overview VARCHAR, poster_path VARCHAR, backdrop_path VARCHAR, first_air_date VARCHAR, vote_average DOUBLE, vote_count BIGINT, popularity DOUBLE, genres VARCHAR, keywords VARCHAR, watch_providers_it VARCHAR, watch_providers_us VARCHAR, networks VARCHAR, production_companies VARCHAR, production_countries VARCHAR, original_language VARCHAR, number_of_seasons INTEGER, number_of_episodes INTEGER, status VARCHAR, adult BOOLEAN, name_en VARCHAR);`);
                         }
 
                         await execPromise(`CREATE TABLE IF NOT EXISTS anime_mappings (tmdb_id BIGINT PRIMARY KEY);`);
@@ -80,17 +80,21 @@ class DuckDbStore {
                         // mantenerla nullable evita query non portabili sui preset regionali.
                         await execPromise('ALTER TABLE movies ADD COLUMN IF NOT EXISTS watch_providers_us VARCHAR;');
                         await execPromise('ALTER TABLE tv ADD COLUMN IF NOT EXISTS watch_providers_us VARCHAR;');
+
+                        // Retrocompatibilità per parquet senza la colonna del titolo inglese (ticket #14)
+                        await execPromise('ALTER TABLE movies ADD COLUMN IF NOT EXISTS title_en VARCHAR;');
+                        await execPromise('ALTER TABLE tv ADD COLUMN IF NOT EXISTS name_en VARCHAR;');
                         this.isInitialized = true;
 
                         // Assicuriamoci di importare i mapping anime se sono già stati scaricati
                         const animeMappingStore = require('../data/animeMappingStore');
                         if (animeMappingStore.tmdbToAnimeNode && animeMappingStore.tmdbToAnimeNode.size > 0) {
                             const allTmdbAnimeIds = Array.from(animeMappingStore.tmdbToAnimeNode.keys());
-                            this.updateAnimeMapping(allTmdbAnimeIds).catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-init:', e));
+                            await this.updateAnimeMapping(allTmdbAnimeIds).catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-init:', e));
                         }
 
                         // Popola la cache dei Document Frequencies (DF) per la rarità dolce DNA
-                        this.buildDfCache().catch(e => console.warn('[DuckDB Store] Warning buildDfCache:', e.message));
+                        await this.buildDfCache().catch(e => console.warn('[DuckDB Store] Warning buildDfCache:', e.message));
 
                         resolve();
                     } catch (errExec) {
