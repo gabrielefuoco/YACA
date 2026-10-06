@@ -194,8 +194,29 @@ function sanitizeBigInt(val) {
     return val;
 }
 
+const CJK_REGEX = /[\u3040-\u30ff\u4e00-\u9faf]/;
+
+function resolveDisplayTitle(item, isMovie = true) {
+    const itTitle = isMovie ? (item.title || item.name) : (item.name || item.title);
+    const enTitle = isMovie ? (item.title_en || item.name_en) : (item.name_en || item.title_en);
+    const origTitle = isMovie ? (item.original_title || item.original_name) : (item.original_name || item.original_title);
+
+    // 1. Titolo italiano (se presente e non è un fallback CJK giapponese)
+    if (itTitle && !CJK_REGEX.test(itTitle)) {
+        return itTitle;
+    }
+
+    // 2. Titolo inglese (se disponibile e non CJK)
+    if (enTitle && !CJK_REGEX.test(enTitle)) {
+        return enTitle;
+    }
+
+    // 3. Fallback sull'originale o sul titolo disponibile
+    return itTitle || enTitle || origTitle || 'Unknown';
+}
+
 function mapDuckDbRowToMeta(item, isMovie = true) {
-    let name = item.title || item.name || item.original_title || item.original_name || 'Unknown';
+    let name = resolveDisplayTitle(item, isMovie);
     let poster = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null;
     let background = item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null;
     
@@ -229,8 +250,10 @@ function mapDuckDbRowToMeta(item, isMovie = true) {
 
     const rawTMDB = {
         id: sanitizeBigInt(item.id),
-        title: item.title || item.name,
+        title: name,
         original_title: item.original_title || item.original_name,
+        title_en: item.title_en || null,
+        name_en: item.name_en || null,
         overview: item.overview,
         poster_path: item.poster_path,
         backdrop_path: item.backdrop_path,

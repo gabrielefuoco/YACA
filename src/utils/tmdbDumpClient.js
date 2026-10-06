@@ -47,6 +47,84 @@ function extractCommonTmdbData(data) {
     };
 }
 
+const CJK_REGEX = /[\u3040-\u30ff\u4e00-\u9faf]/;
+
+function extractEnglishTitle(data, isMovie = true) {
+    const list = Array.isArray(data?.translations?.translations) ? data.translations.translations : [];
+    let usCandidate = null;
+    let anyEnCandidate = null;
+
+    for (const t of list) {
+        if (t.iso_639_1 === 'en') {
+            const val = isMovie ? t.data?.title : t.data?.name;
+            const cleaned = typeof val === 'string' ? val.trim() : '';
+            if (cleaned) {
+                if (t.iso_3166_1 === 'US' && !usCandidate) {
+                    usCandidate = cleaned;
+                } else if (!anyEnCandidate) {
+                    anyEnCandidate = cleaned;
+                }
+            }
+        }
+    }
+
+    if (usCandidate) return usCandidate;
+    if (anyEnCandidate) return anyEnCandidate;
+
+    if (data?.original_language === 'en') {
+        const orig = isMovie ? data.original_title : data.original_name;
+        if (typeof orig === 'string' && orig.trim()) {
+            return orig.trim();
+        }
+    }
+
+    return null;
+}
+
+function hasItalianTranslation(data, isMovie = true) {
+    if (data?.original_language === 'it') return true;
+    const list = Array.isArray(data?.translations?.translations) ? data.translations.translations : [];
+    return list.some(t => {
+        if (t.iso_639_1 === 'it') {
+            const val = isMovie ? t.data?.title : t.data?.name;
+            return typeof val === 'string' && val.trim().length > 0;
+        }
+        return false;
+    });
+}
+
+function resolveIngestTitle(data, isMovie = true) {
+    const rawIt = isMovie ? data.title : data.name;
+    const orig = isMovie ? data.original_title : data.original_name;
+    const enTitle = extractEnglishTitle(data, isMovie);
+
+    const hasIt = hasItalianTranslation(data, isMovie);
+    const isCjk = rawIt && CJK_REGEX.test(rawIt);
+
+    // Policy IT -> EN -> JA:
+    // 1. IT: Se esiste una traduzione italiana ufficiale, o se il titolo restituito da TMDB non è un fallback CJK
+    if (rawIt && (hasIt || !isCjk)) {
+        return {
+            title: rawIt,
+            title_en: enTitle
+        };
+    }
+
+    // 2. EN: Fallback sul titolo inglese se disponibile
+    if (enTitle) {
+        return {
+            title: enTitle,
+            title_en: enTitle
+        };
+    }
+
+    // 3. JA: Fallback sull'originale
+    return {
+        title: orig || rawIt || null,
+        title_en: null
+    };
+}
+
 class TmdbDumpClient {
     constructor(apiKey) {
         this.apiKey = apiKey;
@@ -117,7 +195,7 @@ class TmdbDumpClient {
     async fetchMovie(id, options = {}) {
         const data = await this.fetchWithRetry(`${this.baseUrl}/movie/${id}`, {
             language: 'it-IT',
-            append_to_response: 'keywords,credits,videos,images,recommendations,watch/providers,release_dates',
+            append_to_response: 'keywords,credits,videos,images,recommendations,watch/providers,release_dates,translations',
             include_image_language: 'it,en,null',
             include_video_language: 'it,en,null'
         });
@@ -134,11 +212,14 @@ class TmdbDumpClient {
         const usRelease = (data.release_dates?.results || []).find(r => r.iso_3166_1 === 'US');
         const content_rating = itRelease?.release_dates?.[0]?.certification || usRelease?.release_dates?.[0]?.certification || null;
 
+        const titleInfo = resolveIngestTitle(data, true);
+
         return {
             ...common,
             id: data.id,
             imdb_id: data.imdb_id,
-            title: data.title,
+            title: titleInfo.title,
+            title_en: titleInfo.title_en,
             original_title: data.original_title,
             original_language: data.original_language,
             overview: data.overview,
@@ -166,7 +247,7 @@ class TmdbDumpClient {
     async fetchTv(id, options = {}) {
         const data = await this.fetchWithRetry(`${this.baseUrl}/tv/${id}`, {
             language: 'it-IT',
-            append_to_response: 'keywords,credits,videos,images,recommendations,watch/providers,content_ratings,external_ids',
+            append_to_response: 'keywords,credits,videos,images,recommendations,watch/providers,content_ratings,external_ids,translations',
             include_image_language: 'it,en,null',
             include_video_language: 'it,en,null'
         });
@@ -189,12 +270,15 @@ class TmdbDumpClient {
         const usRating = (data.content_ratings?.results || []).find(r => r.iso_3166_1 === 'US');
         const content_rating = itRating?.rating || usRating?.rating || null;
 
+        const titleInfo = resolveIngestTitle(data, false);
+
         return {
             ...common,
             id: data.id,
             imdb_id: data.external_ids?.imdb_id || null,
             tvdb_id: data.external_ids?.tvdb_id || null,
-            name: data.name,
+            name: titleInfo.title,
+            name_en: titleInfo.title_en,
             original_name: data.original_name,
             original_language: data.original_language,
             overview: data.overview,
