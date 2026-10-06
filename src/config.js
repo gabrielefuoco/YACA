@@ -2,8 +2,6 @@
 module.exports = {
     // API Endpoints
     TMDB_ENDPOINT: 'https://api.themoviedb.org/3',
-    KITSU_ENDPOINT: 'https://kitsu.io/api/edge',
-    TRAKT_ENDPOINT: 'https://api.trakt.tv',
 
     // Paginators & Timeouts
     PAGES_PER_REQUEST: 3, // How many TMDB pages to fetch concurrently per Stremio request
@@ -41,34 +39,8 @@ module.exports = {
     RECOMMENDATIONS_CACHE_TTL_MS: 7 * 24 * 60 * 60 * 1000,  // 7 giorni
     RECOMMENDATIONS_SWR_MS: 60 * 60 * 1000,                 // 1 ora SWR
 
-    // Deep Enrichment Settings (Fase 9)
-
-    MOVIE_PRESENTATION_TTL_MS: 14 * 24 * 60 * 60 * 1000,  // 14 days base TTL for movies
-    MOVIE_PRESENTATION_SWR_MS: 7 * 24 * 60 * 60 * 1000,   // 7 days SWR window for movies
-    SERIES_FINISHED_PRESENTATION_TTL_MS: 24 * 60 * 60 * 1000,     // 1 day
-    SERIES_FINISHED_PRESENTATION_SWR_MS: 24 * 60 * 60 * 1000,     // 1 day SWR for ended series
-    SERIES_ONGOING_PRESENTATION_TTL_MS: 12 * 60 * 60 * 1000,      // 12 hours for ongoing series
-    SERIES_ONGOING_PRESENTATION_SWR_MS: 30 * 60 * 1000,            // 30 min SWR for ongoing series
-
     // Rating Configuration
     // Bayesian Weighted Rating parameters (IMDb formula)
     BAYESIAN_MIN_VOTES: 300,   // m: minimum votes required to be listed
-    BAYESIAN_MEAN_VOTE: 6.5,   // C: mean vote across all items
-
-    FORCED_FAST_CATALOG_IDS: ['yaca_anime_trending'],
-    FORCED_FAST_PRESET_IDS: ['preset_new_movies', 'preset_new_series', 'preset_new_series_eps', 'preset_new_anime', 'preset_new_anime_eps', 'preset_pop_anime'],
-    FORCED_SLOW_PRESET_IDS: ['preset_top_rated_movies', 'preset_top_rated_series', 'preset_80s_movies', 'preset_90s_movies', 'preset_00s_movies', 'preset_oscar_winners', 'preset_blockbusters'],
-    
-    // --- Landscape Configuration ---
-    LANDSCAPE_ENABLED_CATALOGS: new Set([
-        // Hero Catalogs (Home Page Suggestions)
-        'yaca_true_blend_movies',
-        'yaca_true_blend_series',
-        'yaca_seed_network_movies',
-        'yaca_seed_network_series',
-        'yaca_hidden_gems_movies',
-        'yaca_hidden_gems_series',
-        'yaca_trakt_filtered_movies',
-        'yaca_trakt_filtered_series'
-    ]),
+    BAYESIAN_MEAN_VOTE: 6.5    // C: mean vote across all items
 };

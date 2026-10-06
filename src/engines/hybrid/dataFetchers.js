@@ -6,13 +6,7 @@ const { normalizeContentId } = require('../../utils/contentId');
 const { rateLimitedMap } = require('../../utils/rateLimiter');
 const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
 const { applyKidsMode } = require('../../utils/kidsModeFilters');
-const { normalizeAnimeMarker } = require('../../utils/animeIdentity');
-
-function isItemAnime(item) {
-    if (!item) return false;
-    const target = item.data || item.rawTMDB || item;
-    return normalizeAnimeMarker(target) === true;
-}
+const { isItemAnime } = require('./animePolicy');
 
 const MAX_HERO_FALLBACK_FETCH = 200;
 const HERO_FALLBACK_LIMIT = 160;

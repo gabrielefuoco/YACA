@@ -12,15 +12,8 @@ const RecommendationImpression = require('../models/RecommendationImpression');
 const mongoose = require('mongoose');
 
 const { applyKidsMode, isItemInappropriateForKids } = require('../utils/kidsModeFilters');
-const { normalizeAnimeMarker } = require('../utils/animeIdentity');
-const { resolveAnimePolicy, getEffectiveTypeSelectors } = require('./hybrid/animePolicy');
+const { resolveAnimePolicy, getEffectiveTypeSelectors, isItemAnime } = require('./hybrid/animePolicy');
 const { isProfileSyncDue, isStremioSyncDue } = require('./profileStaleness');
-
-function isItemAnime(item) {
-    if (!item) return false;
-    const target = item.data || item.rawTMDB || item;
-    return normalizeAnimeMarker(target) === true;
-}
 
 function getActiveTypeSelectors(userConfig, context) {
     if (userConfig?.activeProfileSettings?.typeSelectors) {
@@ -109,17 +102,6 @@ function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, typ
 function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors }) {
     const animeSuffix = typeSelectors?.anime ? `_a_${typeSelectors.anime}` : '';
     return `${userId}_${context}_heroes_${HERO_CACHE_KEY_VERSION}_${mediaType}${kidsMode ? '_kids' : ''}${animeSuffix}`;
-}
-
-function compareContentIds(a, b) {
-    const idA = normalizeContentId(a ?? '');
-    const idB = normalizeContentId(b ?? '');
-    const numA = Number(idA);
-    const numB = Number(idB);
-    if (Number.isFinite(numA) && Number.isFinite(numB) && numA !== numB) return numA - numB;
-    if (idA < idB) return -1;
-    if (idA > idB) return 1;
-    return 0;
 }
 
 function getRecommendationId(item) {
@@ -650,22 +632,14 @@ module.exports = {
     getSharedHeroCatalogs,
     syncIncrementalRecommendations,
     fetchRecentHistory,
-    fetchRecentRatings,
     fetchTraktRecommendationsRaw,
-    fetchTraktRecommendationsRawDetailed,
     fetchTmdbSimilarCounts,
     calculateHybridScore,
     computeTopGenres,
     computeTopKeywords,
     fetchPopularFallbackIds,
-    fetchTopRatedPeriodFallbackIds,
-    fetchUndiscoveredFallbackIds,
-    fetchHiddenGemsFallbackIds,
     buildDirectPresetCatalog,
     buildHybridCatalog,
     buildTopGenresMixCatalog,
-    buildHiddenGemsCatalog,
-    buildTraktFilteredCatalog,
-    buildTraktFilteredCatalogWithMeta,
     recommendationsCache: hybridRecommendationsCache
 };
