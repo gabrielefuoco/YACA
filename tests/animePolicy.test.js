@@ -174,9 +174,10 @@ describe('Anime Policy (Ticket 26)', () => {
             expect(computeAnimeScoreMultiplier(westernAnimationMovie, 'only')).toBe(0.40);
             expect(computeAnimeScoreMultiplier(liveActionMovie, 'only')).toBe(0.40);
 
-            // favored: ×1.15 anime, ×1.00 non-anime
+            // favored: ×1.15 anime, ×0.85 non-anime (moltiplicatore simmetrico)
             expect(computeAnimeScoreMultiplier(animeMovie, 'favored')).toBe(1.15);
-            expect(computeAnimeScoreMultiplier(liveActionMovie, 'favored')).toBe(1.00);
+            expect(computeAnimeScoreMultiplier(liveActionMovie, 'favored')).toBe(0.85);
+            expect(computeAnimeScoreMultiplier(westernAnimationMovie, 'favored')).toBe(0.85);
 
             // neutral: ×1.00
             expect(computeAnimeScoreMultiplier(animeMovie, 'neutral')).toBe(1.00);

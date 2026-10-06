@@ -462,6 +462,14 @@ class ProfileScorer {
 
         // 2. Anime strand (Animation 16 + JA or anime keyword/overview)
         if (gids.includes(16) && (target.original_language === 'ja' || /anime|manga/i.test(target.overview || '') || kws.some(k => /anime/i.test(typeof k === 'object' ? k.name : k)))) {
+            const animeSubGenres = gids.filter(g => g !== 16 && g !== 10770);
+            const specificAnimeGenres = animeSubGenres.filter(g => g !== 18);
+            if (specificAnimeGenres.length > 0) {
+                return `strand:anime:${specificAnimeGenres[0]}`;
+            }
+            if (animeSubGenres.length > 0) {
+                return `strand:anime:${animeSubGenres[0]}`;
+            }
             return 'strand:anime';
         }
 
@@ -524,6 +532,7 @@ class ProfileScorer {
         const highMatchThreshold = caps?.highMatchThreshold ?? 3.8;
         const directorCap = caps?.director ?? 3;
         const strandCap = caps?.strand ?? caps?.filone ?? 3;
+        const animeStrandCap = caps?.animeStrand ?? strandCap;
         const genreCounts = new Map();
         const directorCounts = new Map();
         const strandCounts = new Map();
@@ -552,7 +561,9 @@ class ProfileScorer {
             // Check director cap
             const dirBlocked = directors.some(did => (directorCounts.get(did) || 0) >= directorCap);
             // Check strand cap
-            const strandBlocked = strand && (strandCounts.get(strand) || 0) >= strandCap;
+            const isAnimeStrand = strand && (strand === 'strand:anime' || strand.startsWith('strand:anime:'));
+            const effStrandCap = isAnimeStrand ? animeStrandCap : strandCap;
+            const strandBlocked = strand && (strandCounts.get(strand) || 0) >= effStrandCap;
 
             if (genreBlocked || dirBlocked || strandBlocked) continue;
 

@@ -55,7 +55,7 @@ function resolveTypeSelectors(user, context, directTypeSelectors = null) {
 
 const graph = require('../graph/HierarchicalGraph');
 
-const HERO_DIVERSITY_CAPS = Object.freeze({ genre: 3, highMatchGenreCap: 6, director: 1, strand: 3, highMatchThreshold: 3.8 });
+const HERO_DIVERSITY_CAPS = Object.freeze({ genre: 3, highMatchGenreCap: 6, director: 1, strand: 3, animeStrand: 6, highMatchThreshold: 3.8 });
 const HERO_COLLECTION_CAP = 1;
 const HIDDEN_CHILD_ORIENTED_GENRE_IDS = new Set(['16', '10751', '10762']);
 const HIDDEN_MUSIC_GENRE_ID = 10402;
@@ -197,7 +197,9 @@ function getProspectiveCapOverflow(item, genreCounts, directorCounts, strandCoun
         ? ProfileScorer.getItemNarrativeStrand(item)
         : null;
     if (strand && strandCounts) {
-        strandOverflow += Math.max((strandCounts.get(strand) || 0) + 1 - (caps?.strand ?? caps?.filone ?? 3), 0);
+        const isAnimeStrand = strand === 'strand:anime' || strand.startsWith('strand:anime:');
+        const effStrandCap = (isAnimeStrand && caps?.animeStrand) ? caps.animeStrand : (caps?.strand ?? caps?.filone ?? 3);
+        strandOverflow += Math.max((strandCounts.get(strand) || 0) + 1 - effStrandCap, 0);
     }
 
     // Penalità consecutiva: evita cluster di item dello stesso filone uno dopo l'altro nel catalogo
@@ -683,7 +685,7 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
             genreBaseWhere.push(F.notGenre(...ADULT_GENRE_IDS.split(',').map(Number)));
             genreBaseWhere.push(F.notKeyword(...ADULT_KEYWORD_IDS.split(',').map(Number)));
         }
-        if (animePolicy === ANIME_POLICY_MODES.ONLY) {
+        if (animePolicy === ANIME_POLICY_MODES.ONLY || animePolicy === ANIME_POLICY_MODES.FAVORED) {
             genreBaseWhere.push(F.anime);
         } else if (animePolicy === ANIME_POLICY_MODES.EXCLUDE) {
             genreBaseWhere.push(`NOT (${F.anime})`);
@@ -760,7 +762,7 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
     }
     
     if (candidatePool.length === 0) {
-        return fallbackFn(tmdbApiKey, mediaType, 160, isKidsMode, typeSelectors);
+        return fallbackFn(tmdbApiKey, mediaType, 160, isKidsMode, effectiveTypeSelectors);
     }
     
     const impressionMap = await getImpressionMap(userId, context, catalogId, candidatePool.map(m => String(m._tmdbId || m.id.split(':')[1])));
@@ -806,7 +808,7 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
     }
     
     if (finalItems.length === 0) {
-        return fallbackFn(tmdbApiKey, mediaType, 160, isKidsMode, typeSelectors);
+        return fallbackFn(tmdbApiKey, mediaType, 160, isKidsMode, effectiveTypeSelectors);
     }
     
     return finalItems.slice(0, 100).map(i => ({ 
@@ -956,7 +958,7 @@ function enforceMaxStrandRun(items, maxRun = HERO_DIVERSITY_CAPS.strand, options
     while (pending.length > 0) {
         const candidate = pending.shift();
         const strand = getStrand(candidate);
-        if (ignoredStrands.has(strand)) { result.push(candidate); continue; }
+        if (ignoredStrands.has(strand) || (ignoredStrands.has('strand:anime') && strand.startsWith('strand:anime'))) { result.push(candidate); continue; }
         if (strand !== currentStrand) {
             result.push(candidate);
             currentStrand = strand;

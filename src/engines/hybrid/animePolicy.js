@@ -117,7 +117,7 @@ function isItemAnime(item) {
 /**
  * Calcola il moltiplicatore di affinità per lo score VSM in base alla politica anime:
  * - only: ×1.25 per anime, ×0.40 per non-anime
- * - favored: ×1.15 per anime, ×1.00 per non-anime
+ * - favored: ×1.15 per anime, ×0.85 per non-anime
  * - neutral: ×1.00
  * - exclude: ×0.40 per anime, ×1.00 per non-anime
  * @param {Object} item
@@ -130,7 +130,7 @@ function computeAnimeScoreMultiplier(item, policy) {
         return isAnime ? 1.25 : 0.4;
     }
     if (policy === ANIME_POLICY_MODES.FAVORED) {
-        return isAnime ? 1.15 : 1.0;
+        return isAnime ? 1.15 : 0.85;
     }
     if (policy === ANIME_POLICY_MODES.EXCLUDE) {
         return isAnime ? 0.4 : 1.0;
