@@ -35,10 +35,24 @@ I file all'interno di [tests/](../tests) coprono diverse aree critiche:
    Testano il calcolo del match di un titolo a partire dal vettore `V_final` (il profilo di gusto dell'utente basato su Vector Space Model). Verificano che la combinazione delle componenti tematiche (generi e keyword) e autoriali (registi, attori) con pesi ponderati (`traktWeight` e `tmdbWeight`) calcoli correttamente il punteggio finale per l'utente.
 
 4. **Altri test significativi**:
-   - `addonConfigCatalogSchema.test.js`: Verifica l'integrità dello schema di configurazione dell'addon e dei cataloghi memorizzati.
+   - `addonConfigCatalogSchema.test.js`: Verifica l'integrità dello schema di configurazione dell'addon e dei cataloghi memorizzati. Copre anche la **tolleranza legacy**: un profilo salvato con catalogo `source: 'merged'` o `presentation_strategy: 'interleave'` (funzionalità rimosse) si carica senza errori.
    - `dnaExtractor.test.js`: Controlla l'estrazione del DNA (interessi e preferenze) dell'utente dai suoi metadati di visione.
    - `catalogStrategies.test.js`: Verifica le strategie di generazione dei cataloghi con DuckDB e filtri SQL nativi.
    - `retireTmdbScoringData.test.js`: Certifica il pensionamento del modello `TmdbScoringData` in favore del database locale Parquet.
+
+**Suite nate dalla tornata del 06/10/2026** (ognuna difende un invariante scoperto lavorando, non solo un comportamento):
+
+| Suite | Invariante che difende |
+|---|---|
+| `posterNameConcordance.test.js` | **App e dump offline costruiscono lo STESSO nome del poster.** Se divergono, il dump scrive file che l'app non chiede mai e la precomposizione diventa lavoro sprecato senza che nulla si rompa. È la guardia della concordanza. |
+| `posterRottaArchitettura.test.js` | Il trampolino della rotta legacy, il rendering on-miss, il versioning derivato dal contenuto e la **ricomposizione dopo un riavvio** (il caso che nessun test copriva e che aveva lasciato un buco). |
+| `libraryPosterRefresh.test.js` · `librarySyncPosterRefresh.test.js` | Il riallineamento della copertina al sync: versione riportata a quella corrente, annidamenti risolti, **idempotenza** (se non c'è nulla da cambiare la stringa resta identica). |
+| `libraryIdentityDuplicatesTicket19.test.js` | La cascata di elezione del primario e l'astensione sul tipo ambiguo: `AMBIGUOUS_TYPE` invece di indovinare. |
+| `libraryWatchedService.test.js` · `libraryWatchedEndpoint.test.js` | Che anteprima ed esecuzione contino la **stessa cosa**, e che il tombstone abbia `_mtime` fresco. |
+| `libraryReorder.test.js` | Che il riordino scriva `libraryOrder` **senza toccare** `_ctime`/`_mtime` e senza push a Stremio. |
+| `heroAnimeFavoredSeam.test.js` | Le quattro leve anime dei hero, con la quota attesa ≥ 80% in pagina 1. |
+| `dnaCharacterization.test.js` · `dnaEngineExtraction.test.js` (in `tests/characterization/`) | Il comportamento del motore DNA **congelato prima dell'estrazione** (40 test golden master) e la **purezza** del modulo, `globalDfCache` per identità compresa. Sono l'unica suite in una sottocartella: stanno lì perché il loro contratto è «il motore si è mosso senza cambiare», non «questa funzione fa X». |
+| `ticket14TitlePolicy.test.js` | La policy `IT → EN → JA` in ingestione e la lettura dei parquet vecchi senza le colonne nuove. |
 
 ### La suite di contratto `diag.recommender.*`
 

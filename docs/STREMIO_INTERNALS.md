@@ -185,3 +185,37 @@ YACA implementa una divisione netta del payload inviato a Stremio tramite la fun
 - **Per i Dettagli (Meta)**: Quando l'utente clicca su una specifica locandina, l'endpoint `/meta/` di `stremio.js` richiama il formatter passando il flag `isMetaDetail: true`. Questo flag "sblocca" l'inclusione controllata di campi pesanti: `videos` (essenziale per mostrare le stagioni e gli episodi), `behaviorHints`, `links`, e `trailers`.
 
 Questo approccio ibrido garantisce che i cataloghi siano "iper-digeribili" dal database e velocissimi da scorrere, pur restituendo i dati completi (inclusi i badge ITA o Kitsu applicati) quando l'utente si aspetta di guardare gli episodi o cliccare su un trailer.
+
+---
+
+## 6. La libreria utente (datastore Stremio)
+
+La libreria di Stremio vive nel **datastore** dell'utente e YACA ne tiene una copia locale in `UserLibraryItem`, per usarla come segnale del DNA e per mostrarla nella dashboard. Non è un semplice specchio: è un dato **riscritto in due direzioni**, e le regole qui sotto esistono perché le due direzioni non si contraddicano.
+
+### 6.1 L'identità: il DB è la legge sul tipo
+
+Un titolo **non può** esistere come film *e* serie *e* anime: se succede è un **bug**, non una scelta di UI. Il tipo canonico lo decide la risoluzione del DB (`libraryMediaTypeResolution`), che **non indovina mai**: se un id numerico compare sia fra i film sia fra le serie, si astiene e l'item resta in coda con l'esito `AMBIGUOUS_TYPE`, tracciato in un log strutturato invece che mascherato.
+
+L'unicità reale è l'indice `{addonUuid, itemId}`: i duplicati che si vedono in archivio **non** nascono da un `itemId` ripetuto, ma da `itemId` **diversi per la stessa opera** (`tt…`, `tmdb:…`, `kitsu:…`). Per questo esiste una **regola di elezione del primario**, a cascata e deterministica: non-rimosso → mappato → identificatore IMDb → più recente → `itemId` **lessicografico**. L'ultimo criterio serve a rendere l'elezione idempotente: senza, il primario poteva cambiare a ogni sync e i titoli "saltellavano" nella griglia. Gli altri diventano `duplicateOf`.
+
+`POST /library` usa **la stessa normalizzazione del sync** e non riscrive `_ctime`; la dedup lato UI usa una chiave canonica che porta il media type nel namespace, altrimenti confonderebbe un film e una serie con lo stesso id numerico.
+
+### 6.2 Il riordino: `_ctime` non serve, `_mtime` è pericoloso
+
+Verificato sul sorgente di **Stremio Core**: `_ctime` è persistito dal server ma **nessun client ordina per `_ctime`** (l'ordinamento manuale per drag non esiste nella UI di Stremio), mentre `_mtime` è `DateTime` **obbligatorio** ed è la chiave del merge (`if new.mtime > old.mtime`) e dell'ordinamento "Recenti".
+
+Quindi il riordino **non può** funzionare in Stremio, e retrodatare `_mtime` per creare un ordine è la parte dannosa: tocca il protocollo di merge multi-device, e l'ordine salta comunque al primo contenuto riprodotto. L'ordine vive in **`raw_ui_state.libraryOrder`** (un array di id nel profilo, come `catalogOrder` fa per i cataloghi) e i timestamp degli item non vengono più toccati.
+
+### 6.3 «Rimuovi titoli visti»
+
+Un'**azione** nella dashboard, non un filtro dei cataloghi. La fonte di "visto" è **solo lo stato di Stremio** (`state.timesWatched > 0` oppure `state.flaggedWatched === 1`): per le serie serve il completamento o la marcatura esplicita, perché un episodio visto non è una serie vista — rimuoverla romperebbe il *Continue Watching*.
+
+La cancellazione è un **tombstone**: `removed: true` con `_mtime` **fresco** (`max(now, max(_mtime noto)+1)`). Non si può fare `deleteMany` — il sync successivo riscaricherebbe i titoli da Stremio — e il timestamp deve **vincere** il merge, non perdere. Il push riusa l'`_id` che Stremio conosce: con un id normalizzato diverso, il tombstone finirebbe su un documento nuovo e l'originale risusciterebbe. `WatchHistory` **non viene letta né scritta**: è il seme del DNA.
+
+Anteprima ed esecuzione calcolano con la **stessa funzione sugli stessi dati**, così il numero dichiarato non può divergere da quello che sparisce.
+
+### 6.4 Le copertine al sync
+
+Il poster memorizzato per gli item con badge **non è un URL di Stremio**: è un URL che costruisce YACA, e Stremio se lo ritrova in libreria. Il sync lo ricopia verbatim, quindi un «refresh» che si limitasse a copiare **non cambierebbe niente**. Il valore va **ricalcolato**: `libraryPosterRefresh` riporta la versione nel percorso a quella corrente, risolve i `fallback`/`original` annidati fino all'immagine vera e normalizza l'host legacy. È idempotente — se non c'è nulla da cambiare torna la stringa identica, quindi nessun churn di cache a ogni giro.
+
+Il percorso gira su **tutte** le operazioni del sync, anche per gli item già `mapped: true` (che il convertitore non visita più). Vedi [EPISODE_BADGES.md](EPISODE_BADGES.md) per come nasce l'immagine a valle.
