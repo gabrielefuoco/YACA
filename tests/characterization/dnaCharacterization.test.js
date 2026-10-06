@@ -25,6 +25,7 @@ const {
     applyLogSaturation,
     getSoftRarityMultiplier,
     applySoftRarity,
+    computeActiveDNA,
     getGlobalDfCache,
     setGlobalDfCache,
 } = require('../../src/utils/dnaRarity');
@@ -457,20 +458,42 @@ describe('DNA characterization — clustering sparso (tasteClusters)', () => {
     });
 });
 
-describe('DNA characterization — scala di V_active (difetto noto, ticket 22)', () => {
-    it('OGGI ProfileBuilder persiste V_active saturato con somma libera, NON 100', () => {
-        const persisted = applyLogSaturation(RAW_ACTIVE, 100);
-        expect(sumVector(persisted)).toBeCloseTo(1472.744421476, 6);
-        expect(sumVector(persisted)).toBeGreaterThan(100);
-        expect(roundVector(persisted, 6)['g:18']).toBeCloseTo(207.944154, 6);
+describe('DNA characterization — scala di V_active (corretta nel passo 3, ticket 22)', () => {
+    it('V_active persistito è saturato e rinormalizzato a somma 100, come la rotta REST', () => {
+        const persisted = computeActiveDNA(RAW_ACTIVE);
+        expect(sumVector(persisted)).toBeCloseTo(100, 9);
+        expect(roundVector(persisted, 6)).toEqual({
+            'g:18': 14.1195,
+            'k:isekai': 13.212816,
+            'L1:c_85': 13.212816,
+            'L2:t_423': 9.413,
+            'L3:v_53': 3.191346,
+            'L4:m_14': 1.781465,
+            'L5:r_2': 0.395648,
+            'o:JP': 10.928155,
+            'g:878': 9.413,
+            'k:123': 9.413,
+            'g:12': 7.459626,
+            'o:US': 7.459626,
+        });
     });
 
-    it('OGGI la rotta REST POST /api/profiles/:id/dna porta lo stesso V_active a somma 100', () => {
-        const persisted = applyLogSaturation(RAW_ACTIVE, 100);
-        const viaRest = sanitizeDnaVector(persisted);
-        expect(sumVector(viaRest)).toBeCloseTo(100, 9);
-        // Stesso dato, due scale: è il difetto.
-        expect(roundVector(viaRest, 3)).not.toEqual(roundVector(persisted, 3));
+    it('applyLogSaturation resta l\'algebra interna a somma libera (pre-normalizzazione)', () => {
+        const saturated = applyLogSaturation(RAW_ACTIVE, 100);
+        expect(sumVector(saturated)).toBeCloseTo(1472.744421476, 6);
+        expect(roundVector(saturated, 6)['g:18']).toBeCloseTo(207.944154, 6);
+    });
+
+    it('la normalizzazione di V_active non cambia V_final: computeFinalDNA è invariante di scala', () => {
+        const saturated = applyLogSaturation(RAW_ACTIVE, 100);
+        const normalized = computeActiveDNA(RAW_ACTIVE);
+        const before = computeFinalDNA(V_STATIC, saturated, 150);
+        const after = computeFinalDNA(V_STATIC, normalized, 150);
+        for (const key of Object.keys(before)) {
+            expect(after[key]).toBeCloseTo(before[key], 12);
+        }
+        // Il confronto con la rotta REST è ora una stessa-scala, non più due scale.
+        expect(sumVector(sanitizeDnaVector(saturated))).toBeCloseTo(sumVector(normalized), 9);
     });
 });
 

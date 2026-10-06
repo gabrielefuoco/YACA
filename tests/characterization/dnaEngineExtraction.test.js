@@ -27,6 +27,7 @@ describe('estrazione DNA — thin-shim e identità del modulo', () => {
         expect(dnaRarity.getGlobalDfCache).toBe(dnaEngine.getGlobalDfCache);
         expect(dnaRarity.applySoftRarity).toBe(dnaEngine.applySoftRarity);
         expect(dnaRarity.applyLogSaturation).toBe(dnaEngine.applyLogSaturation);
+        expect(dnaRarity.computeActiveDNA).toBe(dnaEngine.computeActiveDNA);
         expect(dnaRarity.calculateFlatnessMetrics).toBe(dnaEngine.calculateFlatnessMetrics);
         expect(dnaRarity.DF_MIN_DEFAULT).toBe(dnaEngine.DF_MIN_DEFAULT);
         expect(dnaRarity.RARITY_MAX_WEIGHT).toBe(dnaEngine.RARITY_MAX_WEIGHT);

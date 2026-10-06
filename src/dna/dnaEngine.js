@@ -22,7 +22,7 @@
  * cache, la rarità ricadrebbe in silenzio sui fallback stimati.
  */
 
-const { isRetiredTmdbKeywordId } = require('../data/keywordIds');
+const { isRetiredTmdbKeywordId, sanitizeDnaVector } = require('../data/keywordIds');
 const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
 
 // ============================================================================
@@ -774,6 +774,23 @@ function computeFinalDNA(V_static, V_active, totalInteractions) {
     return V_final;
 }
 
+/**
+ * V_active canonico da persistere: saturazione logaritmica per chiave, poi
+ * normalizzazione alla scala di persistenza (somma 100) — la stessa che
+ * `sanitizeDnaVector` applica sul percorso REST (`POST /api/profiles/:id/dna`).
+ *
+ * Corregge il difetto del ticket 22: prima ProfileBuilder salvava
+ * `applyLogSaturation(rawActive, 100)` con somma libera (migliaia), mentre la
+ * rotta REST portava lo stesso vettore a 100. `computeFinalDNA` è invariante di
+ * scala (normalizza internamente), quindi questa normalizzazione cambia solo il
+ * documento persistito, non la matematica di V_final.
+ * @param {Record<string, number>} rawActive volumi attivi accumulati (pre-saturazione)
+ * @returns {Record<string, number>} somma ~100
+ */
+function computeActiveDNA(rawActive) {
+    return sanitizeDnaVector(applyLogSaturation(rawActive, 100));
+}
+
 module.exports = {
     // Anti-flat
     computeTimeDecay,
@@ -801,6 +818,7 @@ module.exports = {
     extractStaticDNAFromQueries,
     extractActiveDNAFromTmdbData,
     computeFinalDNA,
+    computeActiveDNA,
     calculateWeightedInteractions,
     normalizeVector,
     stripPersonKeys,

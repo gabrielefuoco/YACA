@@ -77,6 +77,10 @@ describe('H2 — V_active source DuckDB vs TmdbScoringData', () => {
         expect(vActive).toBeDefined();
         expect(vActive['g:28']).toBeGreaterThan(0);
         expect(vActive['k:596']).toBeGreaterThan(0);
+        // Ticket 22 (passo 3): V_active persistito è normalizzato a somma 100,
+        // la stessa scala applicata dalla rotta REST POST /api/profiles/:id/dna.
+        const sumActive = Object.values(vActive).reduce((a, b) => a + Number(b || 0), 0);
+        expect(sumActive).toBeCloseTo(100, 6);
         // Registi e cast non entrano più nel DNA (scelta di prodotto).
         expect(vActive['d:4590']).toBeUndefined();
         expect(vActive['a:45099']).toBeUndefined();

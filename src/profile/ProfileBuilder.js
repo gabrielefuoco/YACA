@@ -5,9 +5,9 @@ const UserAccount = require('../db/models/UserAccount');
 const {
     extractActiveDNAFromTmdbData,
     computeFinalDNA,
+    computeActiveDNA,
     calculateWeightedInteractions,
     computeTimeDecay,
-    applyLogSaturation,
     calculateProfileRelevance,
     calculateFlatnessMetrics,
     clusterTasteSignals,
@@ -300,8 +300,9 @@ class ProfileBuilder {
             }
         }
 
-        // Anti-flat: saturazione logaritmica per chiave (rendimenti decrescenti)
-        const vActive = applyLogSaturation(rawActive, 100);
+        // Anti-flat: saturazione logaritmica per chiave (rendimenti decrescenti),
+        // poi normalizzazione alla scala di persistenza (somma 100) come la rotta REST.
+        const vActive = computeActiveDNA(rawActive);
 
         const totalInteractions = calculateWeightedInteractions(historyDocs);
         const vFinal = computeFinalDNA(vStatic, vActive, totalInteractions);
