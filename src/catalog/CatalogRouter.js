@@ -4,7 +4,8 @@ const { getTraktCatalog } = require('./providers/TraktProvider');
 const { getEngineHybridCatalog, TASTE_BASED_IDS } = require('./providers/HybridProvider');
 const { executeCombinedSearch, executeUniversalPipeline } = require('./providers/AiDiscoveryProvider');
 const { getAiringStateCatalog } = require('./providers/AiringStateProvider');
-const { getDuckDbCatalogFromFilters, getDuckDbCatalogFromPreset, mapSortBy, buildPresetFromFilters } = require('./providers/DuckDbProvider');
+const DuckDbProvider = require('./providers/DuckDbProvider');
+const { getDuckDbCatalogFromFilters, mapSortBy, buildPresetFromFilters } = DuckDbProvider;
 const { normalizeToUniversalSchema } = require('../utils/resultMerger');
 const { getPresets } = require('../data/presets');
 const { getWatchlistCatalog } = require('./providers/WatchlistProvider');
@@ -20,6 +21,11 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
     const sortBy = extra.sortBy || null;
 
     const baseId = (id || '').startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : (id || '');
+    let effectiveMeta = catalogMeta;
+    if (!effectiveMeta && baseId.startsWith('preset_')) {
+        const presets = getPresets();
+        effectiveMeta = presets.find(p => p.id === baseId || p.id === id);
+    }
 
     // SCENARIO 1: RICERCA VIVA TESTUALE
     if (search) {
@@ -74,14 +80,14 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
     }
 
     // SCENARIO 5: SQL NATIVO (Nuova architettura DuckDB diretta)
-    if (catalogMeta?.where) {
-        let presetToRun = catalogMeta;
+    if (effectiveMeta?.where) {
+        let presetToRun = effectiveMeta;
         if (sortBy) {
-            const { mapSortBy } = require('./providers/DuckDbProvider');
-            presetToRun = { ...catalogMeta, orderBy: mapSortBy(sortBy, catalogMeta.type || type) };
+            const { applySortWithTieBreakers } = require('./catalogSorting');
+            presetToRun = { ...effectiveMeta, orderBy: applySortWithTieBreakers(effectiveMeta, sortBy, effectiveMeta.type || type) };
         }
-        const isPresetCatalog = baseId.startsWith('preset_') || String(catalogMeta?.id || '').startsWith('preset_');
-        return await getDuckDbCatalogFromPreset(presetToRun, skip, isPresetCatalog ? PRESET_PAGE_SIZE : 100, {
+        const isPresetCatalog = baseId.startsWith('preset_') || String(effectiveMeta?.id || '').startsWith('preset_');
+        return await DuckDbProvider.getDuckDbCatalogFromPreset(presetToRun, skip, isPresetCatalog ? PRESET_PAGE_SIZE : 100, {
             kidsMode: Boolean(activeProfileSettings?.kidsMode)
         });
     }

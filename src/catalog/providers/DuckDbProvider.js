@@ -12,38 +12,12 @@ const animeMappingStore = require('../../data/animeMappingStore');
 const { normalizeAnimeMarker } = require('../../utils/animeIdentity');
 const { applyKidsMode, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../../utils/kidsModeFilters');
 
-const SUPPORTED_SORT_BY = Object.freeze([
-    'popularity.desc',
-    'vote_average.desc',
-    'revenue.desc',
-    'primary_release_date.desc',
-    'first_air_date.desc',
-    'release_date.desc',
-    'primary_release_date.asc',
-    'first_air_date.asc',
-    'release_date.asc'
-]);
-
-function isMappedSortBy(s) {
-    return Boolean(s && SUPPORTED_SORT_BY.includes(s));
-}
-
-function mapSortBy(s, type = 'movie') {
-    const isTv = type === 'tv' || type === 'series';
-    if (!s) return S.POPULAR;
-    if (s === 'popularity.desc') return S.POPULAR;
-    if (s === 'vote_average.desc') return S.TOP_RATED;
-    if (s === 'revenue.desc') {
-        return isTv ? S.POPULAR : S.REVENUE;
-    }
-    if (s === 'primary_release_date.desc' || s === 'first_air_date.desc' || s === 'release_date.desc') {
-        return isTv ? S.NEWEST_TV : S.NEWEST_MOVIE;
-    }
-    if (s === 'primary_release_date.asc' || s === 'first_air_date.asc' || s === 'release_date.asc') {
-        return isTv ? '"first_air_date" ASC NULLS LAST' : '"release_date" ASC NULLS LAST';
-    }
-    return s.replace('.desc', ' DESC NULLS LAST').replace('.asc', ' ASC NULLS LAST');
-}
+const {
+    SUPPORTED_SORT_BY,
+    isMappedSortBy,
+    mapSortBy,
+    applySortWithTieBreakers
+} = require('../catalogSorting');
 
 function buildPresetFromFilters(q, type = 'movie', options = {}) {
     const where = [];
@@ -467,6 +441,7 @@ module.exports = {
     SUPPORTED_SORT_BY,
     isMappedSortBy,
     mapSortBy,
+    applySortWithTieBreakers,
     buildPresetFromFilters,
     applyKidsModeToPreset,
     getDuckDbCatalogFromFilters,

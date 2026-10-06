@@ -51,21 +51,11 @@ const { isCatalogConformant } = require('../catalog/catalogKind');
 // Rate limiter for sync-status polling (max 30 requests per minute per IP)
 const syncStatusLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
 
-const SORT_OPTIONS = ['Popolarità', 'Voto Medio', 'Data di Uscita', 'Incassi'];
-const SORT_MAP = {
-    'Popolarità': 'popularity.desc',
-    'Voto Medio': 'vote_average.desc',
-    'Data di Uscita': null,
-    'Incassi': 'revenue.desc'
-};
-
-function getSortByValue(sortOption, type) {
-    if (!sortOption || !Object.prototype.hasOwnProperty.call(SORT_MAP, sortOption)) return 'popularity.desc';
-    if (sortOption === 'Data di Uscita') {
-        return type === 'movie' ? 'primary_release_date.desc' : 'first_air_date.desc';
-    }
-    return SORT_MAP[sortOption];
-}
+const {
+    SORT_OPTIONS,
+    SORT_MAP,
+    getSortByValue
+} = require('../catalog/catalogSorting');
 
 const defaultExtra = [{ name: 'skip' }];
 const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
