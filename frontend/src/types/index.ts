@@ -66,7 +66,7 @@ export interface Catalog {
   source?: string;
   filters?: Record<string, unknown>;
   queries?: QueryBlock[];
-  presentation_strategy?: 'popularity' | 'interleave';
+  presentation_strategy?: 'popularity';
   showEpisodeBadge?: boolean;
   emoji?: string;
   isAnime?: boolean;
@@ -95,7 +95,7 @@ export interface Preset {
   emoji?: string;
   filters?: Record<string, unknown>;
   queries?: QueryBlock[];
-  presentation_strategy?: 'popularity' | 'interleave';
+  presentation_strategy?: 'popularity';
   showEpisodeBadge?: boolean;
   description?: string;
   isAnime?: boolean;

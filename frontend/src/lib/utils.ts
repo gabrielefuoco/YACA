@@ -49,7 +49,7 @@ interface BackendCatalog {
   source?: string;
   emoji?: string;
   queries?: import('@/types').QueryBlock[];
-  presentation_strategy?: 'popularity' | 'interleave';
+  presentation_strategy?: 'popularity';
 }
 
 export function sanitizeTypeSelectors(raw?: unknown): {
@@ -131,7 +131,7 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
   const rawUi = backendProfile.raw_ui_state ?? {};
   const bSettings = backendProfile.settings ?? {};
 
-  // Non-preset catalogs are the "existing" custom/AI/merged catalogs
+  // Non-preset catalogs are the "existing" custom/AI catalogs
   const existingCatalogs: Profile['existingCatalogs'] = bCatalogs
     .filter((c) => !c.id.startsWith('yaca_preset_'))
     .map((c) => ({

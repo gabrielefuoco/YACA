@@ -23,10 +23,8 @@ const catalogSchema = new mongoose.Schema({
     source: String,
     filters: mongoose.Schema.Types.Mixed,
     queries: [mongoose.Schema.Types.Mixed],
-    presentation_strategy: { type: String, enum: ['popularity', 'interleave'] },
     raw_prompt: String,
     emoji: String,
-    mergedFrom: [String],
     isAnime: Boolean
 }, { _id: false });
 

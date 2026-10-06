@@ -1,28 +1,9 @@
 const {
-    interleaveMultipleResults,
     normalizeToUniversalSchema,
     applyConsensusScoring
 } = require('../src/utils/resultMerger');
 
 describe('resultMerger', () => {
-    describe('interleaveMultipleResults', () => {
-        it('should correctly interleave and deduplicate items', () => {
-            const arr1 = [{ id: 1 }, { id: 3 }, { id: 5 }];
-            const arr2 = [{ id: 2 }, { id: 3 }, { id: 6 }];
-            const result = interleaveMultipleResults([arr1, arr2], 10, 0);
-            expect(result.map(i => i.id)).toEqual([1, 2, 3, 5, 6]);
-        });
-        
-        it('should respect limit and skip', () => {
-            const arr1 = [{ id: 1 }, { id: 3 }, { id: 5 }];
-            const arr2 = [{ id: 2 }, { id: 4 }, { id: 6 }];
-            const result = interleaveMultipleResults([arr1, arr2], 3, 2);
-            // interleaved: 1, 2, 3, 4, 5, 6
-            // skip 2, limit 3 -> 3, 4, 5
-            expect(result.map(i => i.id)).toEqual([3, 4, 5]);
-        });
-    });
-
     describe('normalizeToUniversalSchema', () => {
         it('should handle direct multi-query filters', () => {
             const directFilters = { queries: [{ strategy: 'discovery' }] };
@@ -30,14 +11,31 @@ describe('resultMerger', () => {
             expect(result.queries).toHaveLength(1);
         });
 
-        it('should handle legacy merge meta', () => {
-            const catalogMeta = { filters: { merge: { strategy: 'mixed' } } };
+        it('tollera un catalogo merged legacy senza crash (degrada a query discovery)', () => {
+            const catalogMeta = {
+                id: 'merged_a_b',
+                source: 'merged',
+                filters: { merge: { catalogs: ['a', 'b'], strategy: 'mixed' } }
+            };
             const result = normalizeToUniversalSchema(catalogMeta, null);
-            expect(result._isMerge).toBe(true);
-            expect(result.presentation_strategy).toBe('popularity'); // legacy defaults
+            expect(result.queries).toHaveLength(1);
+            expect(result.queries[0].strategy).toBe('discovery');
+            expect(result.presentation_strategy).toBe('popularity');
+        });
+
+        it('tollera un preset personalizzato legacy con presentazione interleave', () => {
+            const catalogMeta = {
+                id: 'custom_abc',
+                source: 'manual',
+                presentation_strategy: 'interleave',
+                queries: [{ strategy: 'discovery' }, { strategy: 'discovery' }]
+            };
+            const result = normalizeToUniversalSchema(catalogMeta, null);
+            expect(result.queries).toHaveLength(2);
+            expect(result.presentation_strategy).toBe('popularity');
         });
     });
-    
+
     describe('applyConsensusScoring', () => {
         it('should correctly calculate consensus count and bonus', () => {
             const arr1 = [{ id: 1, popularity: 10 }, { id: 2 }];

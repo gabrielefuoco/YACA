@@ -1,33 +1,5 @@
 const { getBaseId } = require('./contentId');
 
-
-
-/**
- * Interseca N liste di risultati alternandoli (interleaving generalizzato).
- * Deduplica per ID.
- */
-function interleaveMultipleResults(queryResultsArrays, limit, skip = 0) {
-    const seen = new Set();
-    const combined = [];
-    if (!Array.isArray(queryResultsArrays) || queryResultsArrays.length === 0) return [];
-    
-    const maxLen = Math.max(...queryResultsArrays.map(arr => (arr || []).length), 0);
-
-    for (let i = 0; i < maxLen; i++) {
-        for (const arr of queryResultsArrays) {
-            const item = (arr || [])[i];
-            if (!item) continue;
-            const itemId = item.id !== undefined && item.id !== null ? getBaseId(item.id) : null;
-            if (itemId) {
-                if (seen.has(itemId)) continue;
-                seen.add(itemId);
-            }
-            combined.push(item);
-        }
-    }
-    return combined.slice(skip, skip + limit);
-}
-
 /**
  * Normalizza qualsiasi catalogMeta (vecchio formato `filters` o nuovo `queries[]`)
  * nello Universal Catalog Schema. Garantisce backward compatibility.
@@ -51,22 +23,12 @@ function normalizeToUniversalSchema(catalogMeta, directFilters) {
         if (Array.isArray(directFilters.queries) && directFilters.queries.length > 0) {
             return {
                 queries: applyAnime(directFilters.queries),
-                presentation_strategy: directFilters.presentation_strategy || 'popularity',
+                presentation_strategy: 'popularity',
                 weights: directFilters.weights,
                 ...(isAnime ? { isAnime: true } : {})
             };
         }
 
-        // Merged catalog via directFilters
-        if (directFilters.merge) {
-            return {
-                queries: null, // Handled by legacy merge path
-                presentation_strategy: directFilters.merge.strategy === 'mixed' ? 'interleave' : 'popularity',
-                _isMerge: true,
-                _rawFilters: directFilters,
-                ...(isAnime ? { isAnime: true } : {})
-            };
-        }
         return {
             queries: applyAnime([{ strategy: 'discovery', ...directFilters }]),
             presentation_strategy: 'popularity',
@@ -80,7 +42,7 @@ function normalizeToUniversalSchema(catalogMeta, directFilters) {
     if (Array.isArray(catalogMeta.queries) && catalogMeta.queries.length > 0) {
         return {
             queries: applyAnime(catalogMeta.queries),
-            presentation_strategy: catalogMeta.presentation_strategy || 'popularity',
+            presentation_strategy: 'popularity',
             weights: catalogMeta.weights,
             ...(isAnime ? { isAnime: true } : {})
         };
@@ -88,19 +50,9 @@ function normalizeToUniversalSchema(catalogMeta, directFilters) {
 
     // Caso 3: Vecchio formato con filters (backward compat per DB documents esistenti)
     if (catalogMeta.filters && Object.keys(catalogMeta.filters).length > 0) {
-        // Merged catalog vecchio formato
-        if (catalogMeta.source === 'merged' || catalogMeta.sourceType === 'merged' || catalogMeta.filters.merge) {
-            return {
-                queries: null,
-                presentation_strategy: 'popularity',
-                _isMerge: true,
-                _rawFilters: catalogMeta.filters,
-                ...(isAnime ? { isAnime: true } : {})
-            };
-        }
         return {
             queries: applyAnime([{ strategy: 'discovery', ...catalogMeta.filters }]),
-            presentation_strategy: catalogMeta.presentation_strategy || 'popularity',
+            presentation_strategy: 'popularity',
             weights: catalogMeta.weights,
             ...(isAnime ? { isAnime: true } : {})
         };
@@ -109,7 +61,7 @@ function normalizeToUniversalSchema(catalogMeta, directFilters) {
     // Caso 4: Catalogo senza filtri (placeholder per trakt/signature che vengono intercettati prima)
     return {
         queries: applyAnime([{}]),
-        presentation_strategy: catalogMeta.presentation_strategy || 'popularity',
+        presentation_strategy: 'popularity',
         ...(isAnime ? { isAnime: true } : {})
     };
 }
@@ -150,7 +102,6 @@ function applyConsensusScoring(queryResults) {
 }
 
 module.exports = {
-    interleaveMultipleResults,
     normalizeToUniversalSchema,
     applyConsensusScoring
 };

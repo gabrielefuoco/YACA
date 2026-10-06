@@ -64,10 +64,10 @@ function isAlwaysVisible(catalogId) {
 }
 
 /**
- * Calcola il `kind` di un catalogo (preset, hero, custom, merged).
+ * Calcola il `kind` di un catalogo (preset, hero, custom).
  *
  * @param {Object|string} catalog - Catalogo (oggetto o ID)
- * @param {Object} [options] - Opzioni opzionali (catalogsMap per risoluzione merged)
+ * @param {Object} [options] - Opzioni opzionali (presetsMap per i preset canonici)
  * @returns {{ mediaSet: string[], anime: 'yes'|'no'|'mixed' }}
  */
 function getCatalogKind(catalog, options = {}) {
@@ -102,34 +102,7 @@ function getCatalogKind(catalog, options = {}) {
         };
     }
 
-    // 2. Catalogo Merged (unione di più sorgenti)
-    const mergedFrom = typeof catalog === 'object' ? catalog.mergedFrom : null;
-    if (Array.isArray(mergedFrom) && mergedFrom.length > 0) {
-        const sourceKinds = mergedFrom.map(sourceId => {
-            if (options.catalogsMap && options.catalogsMap.has(sourceId)) {
-                return getCatalogKind(options.catalogsMap.get(sourceId), options);
-            }
-            return getCatalogKind(sourceId, options);
-        });
-
-        const mediaUnion = new Set();
-        sourceKinds.forEach(sk => {
-            (sk.mediaSet || []).forEach(m => mediaUnion.add(m));
-        });
-
-        const allYes = sourceKinds.every(sk => sk.anime === 'yes');
-        const allNo = sourceKinds.every(sk => sk.anime === 'no');
-        let mergedAnime = 'mixed';
-        if (allYes) mergedAnime = 'yes';
-        else if (allNo) mergedAnime = 'no';
-
-        return {
-            mediaSet: Array.from(mediaUnion).sort(),
-            anime: mergedAnime
-        };
-    }
-
-    // 3. Risolvi se è un preset canonico da presets.js
+    // 2. Risolvi se è un preset canonico da presets.js
     const presetMap = options.presetsMap || getPresetMap();
     const canonPreset = presetMap.get(baseId) || presetMap.get(id);
 
@@ -138,7 +111,7 @@ function getCatalogKind(catalog, options = {}) {
         ? catalog.isAnime
         : (canonPreset?.isAnime === true);
 
-    // 4. Custom / Matchmaker
+    // 3. Custom / Matchmaker
     if (type === 'anime') {
         return {
             mediaSet: ['film', 'serie'], // mediaSet ignoto

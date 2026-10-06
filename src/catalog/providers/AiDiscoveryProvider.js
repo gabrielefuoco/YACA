@@ -1,7 +1,7 @@
 const { getTmdbIdByName, createTmdbClient } = require('../../clients/tmdb');
 const { routeLiveStremioSearch } = require('../../ai/router');
 const { getProfileDnaFilters } = require('../../utils/helpers');
-const { interleaveMultipleResults, applyConsensusScoring } = require('../../utils/resultMerger');
+const { applyConsensusScoring } = require('../../utils/resultMerger');
 const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
 const { normalizeAiDiscoveryQueries } = require('./AiQueryNormalizer');
 const TasteProfile = require('../../models/TasteProfile');
@@ -113,7 +113,6 @@ function getPagesToFetchForQuery(query, requestedPages) {
 
 // Fase 2: Processa qualsiasi catalogo tramite array "queries" (LookAhead, Consensus)
 async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey, type, skip, settings, cacheOptions) {
-    const { presentation_strategy } = universalCatalog;
     const queries = universalCatalog.queries || [];
 
     if (queries.length === 0) return [];
@@ -122,7 +121,6 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
     // genera un piano DuckDB leggero: per le liste compatibili un batch IN evita
     // decine di query full-table e rende skip un vero offset SQL.
     const canBatchManualList = queries.length > 1 &&
-        presentation_strategy !== 'interleave' &&
         queries.every(query => query.strategy === 'manual_list');
     if (canBatchManualList) {
         const items = collectManualListItems(queries);
@@ -229,19 +227,15 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
             })
         );
 
-        if (presentation_strategy === 'interleave') {
-            finalResults = interleaveMultipleResults(queryResults, PAGE_SIZE, skip);
-        } else {
-            const finalItems = applyConsensusScoring(queryResults);
-            
-            finalItems.sort((a, b) => {
-                const bonusDiff = (b.consensusBonus || 0) - (a.consensusBonus || 0);
-                if (bonusDiff !== 0) return bonusDiff;
-                return (b.popularity || 0) - (a.popularity || 0);
-            });
+        const finalItems = applyConsensusScoring(queryResults);
+        
+        finalItems.sort((a, b) => {
+            const bonusDiff = (b.consensusBonus || 0) - (a.consensusBonus || 0);
+            if (bonusDiff !== 0) return bonusDiff;
+            return (b.popularity || 0) - (a.popularity || 0);
+        });
 
-            finalResults = finalItems.slice(skip, skip + PAGE_SIZE);
-        }
+        finalResults = finalItems.slice(skip, skip + PAGE_SIZE);
     }
 
     return finalResults;

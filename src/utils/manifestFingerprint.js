@@ -28,8 +28,7 @@ function projectManifestCatalog(catalog) {
             id: null,
             name: null,
             type: null,
-            isAnime: null,
-            mergedFrom: []
+            isAnime: null
         };
     }
 
@@ -37,10 +36,7 @@ function projectManifestCatalog(catalog) {
         id: catalog.id ?? null,
         name: catalog.name ?? null,
         type: catalog.type ?? null,
-        isAnime: typeof catalog.isAnime === 'boolean' ? catalog.isAnime : null,
-        mergedFrom: Array.isArray(catalog.mergedFrom)
-            ? catalog.mergedFrom.map(sourceId => String(sourceId))
-            : []
+        isAnime: typeof catalog.isAnime === 'boolean' ? catalog.isAnime : null
     };
 }
 

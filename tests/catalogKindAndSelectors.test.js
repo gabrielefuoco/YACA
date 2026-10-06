@@ -61,36 +61,6 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
             expect(customSeriesAnime).toEqual({ mediaSet: ['serie'], anime: 'yes' });
         });
 
-        it('identifica cataloghi merged: unione sorgenti e classificazione anime (all yes, all no, mixed)', () => {
-            const catalogsMap = new Map([
-                ['src_film_no', { id: 'src_film_no', type: 'movie', isAnime: false }],
-                ['src_serie_no', { id: 'src_serie_no', type: 'series', isAnime: false }],
-                ['src_film_yes', { id: 'src_film_yes', type: 'movie', isAnime: true }],
-                ['src_serie_yes', { id: 'src_serie_yes', type: 'series', isAnime: true }],
-            ]);
-
-            // Merged tutti non-anime (film + serie)
-            const mergedNo = getCatalogKind({
-                id: 'merged_1',
-                mergedFrom: ['src_film_no', 'src_serie_no']
-            }, { catalogsMap });
-            expect(mergedNo).toEqual({ mediaSet: ['film', 'serie'], anime: 'no' });
-
-            // Merged tutti anime (film + serie)
-            const mergedYes = getCatalogKind({
-                id: 'merged_2',
-                mergedFrom: ['src_film_yes', 'src_serie_yes']
-            }, { catalogsMap });
-            expect(mergedYes).toEqual({ mediaSet: ['film', 'serie'], anime: 'yes' });
-
-            // Merged misto (anime + non anime)
-            const mergedMixed = getCatalogKind({
-                id: 'merged_3',
-                mergedFrom: ['src_film_no', 'src_serie_yes']
-            }, { catalogsMap });
-            expect(mergedMixed).toEqual({ mediaSet: ['film', 'serie'], anime: 'mixed' });
-        });
-
         it('riconosce i cataloghi alwaysVisible (utility e libreria)', () => {
             expect(isAlwaysVisible('yaca_search_standard')).toBe(true);
             expect(isAlwaysVisible('yaca_search_ai')).toBe(true);

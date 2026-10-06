@@ -1,24 +1,18 @@
 'use client';
 import { Catalog } from '@/types';
 import { PosterRow } from '@/components/shared/PosterRow';
-import { Wand2, GripVertical, Trash2, ArrowRight, Copy, Pencil, ChevronUp, ChevronDown } from 'lucide-react';
+import { GripVertical, Trash2, Copy, Pencil, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface CatalogItemProps {
   catalog: Catalog;
   onRemove?: () => void;
   onEdit?: () => void;
   onDuplicate?: () => void;
-  onMergeStart?: () => void;
-  onMergeSelect?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   isDragging?: boolean;
-  isMergeTarget?: boolean;
-  isMerging?: boolean; 
-  mergeSelectionInProgress?: boolean;
-  canBeMergeTarget?: boolean;
   isHiddenBySelectors?: boolean;
   hiddenReason?: string;
   onDragStart?: React.DragEventHandler;
@@ -33,17 +27,11 @@ export function CatalogItem({
   onRemove,
   onEdit,
   onDuplicate,
-  onMergeStart,
-  onMergeSelect,
   onMoveUp,
   onMoveDown,
   canMoveUp = false,
   canMoveDown = false,
   isDragging,
-  isMergeTarget,
-  isMerging,
-  mergeSelectionInProgress,
-  canBeMergeTarget = true,
   isHiddenBySelectors = false,
   hiddenReason,
   onDragStart,
@@ -105,22 +93,14 @@ export function CatalogItem({
 
   return (
     <div
-      draggable={!mergeSelectionInProgress}
+      draggable
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
-      onClick={mergeSelectionInProgress && !isMerging && canBeMergeTarget ? onMergeSelect : undefined}
       className={`group relative flex flex-col glass-card transition-all p-3 sm:p-5 shadow-sm border-2 ${
         isDragging ? 'opacity-30 scale-95 border-marrow-light/10' : 
-        isMerging ? 'border-primary ring-4 ring-primary/10 bg-primary/5 z-20 scale-[1.02] shadow-xl' :
-        isMergeTarget ? 'border-primary bg-primary/5 z-20 scale-[1.02] shadow-xl animate-pulse cursor-pointer' :
-        mergeSelectionInProgress ? (
-          isMerging ? 'opacity-100' : 
-          !canBeMergeTarget ? 'opacity-20 grayscale scale-[0.98] pointer-events-none border-marrow-light/5' :
-          'opacity-100 hover:border-primary/50 cursor-pointer shadow-md'
-        ) :
         isHiddenBySelectors ?
         'border-dashed border-amber-500/40 bg-slate-100/70 opacity-60 hover:opacity-90 transition-opacity sm:cursor-grab sm:active:cursor-grabbing' :
         'border-marrow-light/10 bg-white/60 hover:bg-white/90 hover:border-primary/30 sm:cursor-grab sm:active:cursor-grabbing'
@@ -129,42 +109,38 @@ export function CatalogItem({
       <div className="flex items-start justify-between mb-2 sm:mb-4 relative z-10">
         <div className="flex gap-2 sm:gap-4 items-center min-w-0">
           <div className="flex items-center gap-2 sm:gap-3">
-            {!mergeSelectionInProgress && (
-              <div className="flex items-center gap-1 shrink-0">
-                {(onMoveUp || onMoveDown) && (
-                  <div className="flex flex-col sm:hidden items-center justify-center bg-marrow-light/5 rounded-lg border border-marrow-light/10 divide-y divide-marrow-light/10 shrink-0">
-                    <button
-                      type="button"
-                      disabled={!canMoveUp}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onMoveUp?.();
-                      }}
-                      aria-label="Sposta su"
-                      className="w-8 h-7 text-marrow-light/60 hover:text-primary hover:bg-primary/5 active:bg-primary/15 disabled:opacity-20 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center rounded-t-lg"
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!canMoveDown}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onMoveDown?.();
-                      }}
-                      aria-label="Sposta giù"
-                      className="w-8 h-7 text-marrow-light/60 hover:text-primary hover:bg-primary/5 active:bg-primary/15 disabled:opacity-20 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center rounded-b-lg"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
-                <GripVertical className="hidden sm:block h-3.5 w-3.5 sm:h-4 sm:w-4 text-marrow-light/20 cursor-grab group-hover:text-primary/40 transition-colors shrink-0" />
-              </div>
-            )}
-            <div className={`size-9 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all ${
-              isMerging ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-white shadow-inner text-marrow-deep'
-            }`}>
+            <div className="flex items-center gap-1 shrink-0">
+              {(onMoveUp || onMoveDown) && (
+                <div className="flex flex-col sm:hidden items-center justify-center bg-marrow-light/5 rounded-lg border border-marrow-light/10 divide-y divide-marrow-light/10 shrink-0">
+                  <button
+                    type="button"
+                    disabled={!canMoveUp}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveUp?.();
+                    }}
+                    aria-label="Sposta su"
+                    className="w-8 h-7 text-marrow-light/60 hover:text-primary hover:bg-primary/5 active:bg-primary/15 disabled:opacity-20 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center rounded-t-lg"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!canMoveDown}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveDown?.();
+                    }}
+                    aria-label="Sposta giù"
+                    className="w-8 h-7 text-marrow-light/60 hover:text-primary hover:bg-primary/5 active:bg-primary/15 disabled:opacity-20 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center rounded-b-lg"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+              <GripVertical className="hidden sm:block h-3.5 w-3.5 sm:h-4 sm:w-4 text-marrow-light/20 cursor-grab group-hover:text-primary/40 transition-colors shrink-0" />
+            </div>
+            <div className="size-9 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all bg-white shadow-inner text-marrow-deep">
               <span className="text-lg sm:text-2xl">{catalog.emoji ?? '📋'}</span>
             </div>
           </div>
@@ -192,33 +168,23 @@ export function CatalogItem({
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          {!mergeSelectionInProgress ? (
-            <>
-              {onDuplicate && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-                  className="p-2 rounded-xl text-marrow-light/40 hover:text-primary hover:bg-primary/5 transition-all group/btn min-w-[40px] min-h-[40px] flex items-center justify-center touch-manipulation"
-                  title="Duplica catalogo"
-                >
-                  <Copy className="h-4.5 w-4.5 group-hover/btn:scale-110 transition-transform" />
-                </button>
-              )}
-              {onRemove && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                  className="p-2 rounded-xl text-marrow-light/40 hover:text-destructive hover:bg-destructive/5 transition-all group/btn min-w-[40px] min-h-[40px] flex items-center justify-center touch-manipulation"
-                  title="Rimuovi"
-                >
-                  <Trash2 className="h-4.5 w-4.5 group-hover/btn:scale-110 transition-transform" />
-                </button>
-              )}
-            </>
-          ) : (
-            isMerging && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary rounded-full text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 animate-bounce">
-                Sorgente <ArrowRight className="h-3 w-3" />
-              </div>
-            )
+          {onDuplicate && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+              className="p-2 rounded-xl text-marrow-light/40 hover:text-primary hover:bg-primary/5 transition-all group/btn min-w-[40px] min-h-[40px] flex items-center justify-center touch-manipulation"
+              title="Duplica catalogo"
+            >
+              <Copy className="h-4.5 w-4.5 group-hover/btn:scale-110 transition-transform" />
+            </button>
+          )}
+          {onRemove && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onRemove(); }}
+              className="p-2 rounded-xl text-marrow-light/40 hover:text-destructive hover:bg-destructive/5 transition-all group/btn min-w-[40px] min-h-[40px] flex items-center justify-center touch-manipulation"
+              title="Rimuovi"
+            >
+              <Trash2 className="h-4.5 w-4.5 group-hover/btn:scale-110 transition-transform" />
+            </button>
           )}
         </div>
       </div>
@@ -239,7 +205,7 @@ export function CatalogItem({
             <span className="uppercase tracking-tight">{catalog.type === 'movie' ? 'Film' : 'Serie'}</span>
           </div>
           <div className="w-1 h-1 rounded-full bg-marrow-light/20" />
-          {onEdit ? (
+          {!isPreset && onEdit ? (
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
               className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-marrow-light/60 hover:text-primary hover:bg-primary/5 px-2 py-1 rounded-md transition-all group/edit-btn cursor-pointer touch-manipulation min-h-[36px]"
@@ -254,25 +220,7 @@ export function CatalogItem({
             </div>
           )}
         </div>
-        
-        {!mergeSelectionInProgress && onMergeStart && (
-          <button 
-            onClick={(e) => { e.stopPropagation(); onMergeStart(); }}
-            className="flex items-center gap-1.5 text-[10px] font-black text-marrow-light hover:text-primary transition-colors uppercase tracking-widest border border-marrow-light/10 hover:border-primary/20 rounded-lg px-2.5 py-1.5 bg-white/40 group/btn touch-manipulation min-h-[36px]"
-            title="Fondi con un altro catalogo"
-          >
-            Fondi <Wand2 className="h-3 w-3 group-hover/btn:scale-110 transition-transform" />
-          </button>
-        )}
       </div>
-
-      {isMergeTarget && (
-        <div className="absolute inset-0 flex items-center justify-center bg-primary/5 -[2px] rounded-2xl border-4 border-primary pointer-events-none z-30">
-          <div className="bg-primary text-white px-4 py-2 rounded-full text-xs font-black uppercase tracking-[0.2em] shadow-2xl">
-            Clicca per Fondere
-          </div>
-        </div>
-      )}
     </div>
   );
 }

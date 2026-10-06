@@ -95,39 +95,6 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
     // SCENARIO 6: UNIVERSAL PIPELINE (AI/PRESETS Custom legacy)
     if (catalogMeta || directFilters) {
         const universalCatalog = normalizeToUniversalSchema(catalogMeta, directFilters);
-        
-        if (universalCatalog._isMerge) {
-            const raw = universalCatalog._rawFilters;
-            const mergedFrom = raw.merge?.sources || raw.merge?.catalogs || raw.mergedFrom || [];
-            if (mergedFrom.length > 0) {
-                const activeProfile = userConfig.profiles?.find(p => p.id === userConfig.activeProfileId);
-                const profileCatalogs = activeProfile?.existingCatalogs || activeProfile?.catalogs || [];
-                const userCustomCatalogs = userConfig.customCatalogs || [];
-                const allPresets = getPresets();
-                const sourceFilters = raw.merge?.sourceFilters || [];
-                const mergedQueries = [];
-                for (let i = 0; i < mergedFrom.length; i++) {
-                    const srcId = mergedFrom[i];
-                    let srcCat = profileCatalogs.find(c => c.id === srcId);
-                    if (!srcCat) {
-                        srcCat = userCustomCatalogs.find(c => c.id === srcId);
-                    }
-                    if (!srcCat) {
-                        srcCat = allPresets.find(p => p.id === srcId);
-                    }
-                    if (srcCat && srcCat.queries) {
-                        mergedQueries.push(...srcCat.queries);
-                    } else if (srcCat && srcCat.filters) {
-                        mergedQueries.push({ strategy: 'discovery', ...srcCat.filters });
-                    } else if (sourceFilters[i]) {
-                        mergedQueries.push({ strategy: 'discovery', ...sourceFilters[i] });
-                    }
-                }
-                universalCatalog.queries = mergedQueries.length > 0 ? mergedQueries : [{}];
-            } else {
-                universalCatalog.queries = [{}];
-            }
-        }
 
         if (sortBy && universalCatalog.queries) {
             for (const q of universalCatalog.queries) {
