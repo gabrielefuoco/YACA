@@ -98,6 +98,40 @@ Due conseguenze da ricordare quando si tocca questo percorso:
 - La **scheda** e il **catalogo** sono percorsi diversi: la scheda passa `itaCacheBadge` e mostra il badge anche
   quando la griglia no. Verificare sempre **entrambi** — il difetto del ticket 15 si vedeva solo nella griglia.
 
+## Come nasce l'immagine del poster (ticket 30)
+
+**YACA non disegna più nulla.** Fino al 06/10/2026 componeva i badge al volo in-process con `sharp` e `text-to-svg`, tenendone una cache su disco (`BadgeDiskCache`). Oggi la composizione la fa **ERDB** — l'istanza locale `erdb-mate`, sulla stessa macchina — e YACA fa da ponte.
+
+### La rotta `/erdb-poster/:file`
+
+1. **Il file c'è** → servito da disco, nessuna chiamata a ERDB.
+2. **Il file non c'è** → la rotta lo chiede all'istanza ERDB locale (`chiediPosterAErdb`), lo **scrive** in cache e lo serve.
+3. **ERDB non risponde** (o è lento oltre il tetto) → l'evento finisce nella coda Redis (`poster_events`) e il **drenatore** riprova in background: `yaca-poster-eventi.timer`, ogni 10 minuti. Se la scrittura fallisce dopo un render riuscito, l'evento in coda è lo stesso.
+
+Quindi i poster si materializzano **su richiesta**, guidati da cosa guardi: non c'è nessun giro che li prepari in anticipo.
+
+### La versione sta nel nome del file
+
+`<id-sanificato>-<versione>_<badge>.jpg` — es. `tmdb-movie-27205-460b8042_ITA.jpg`.
+
+La versione è **derivata dal contenuto**, non un numero scritto a mano: hash del **disegno** (la font con cui ERDB compone) + `erdbId` + badge. Cambia da sé quando cambia una di quelle cose, senza che nessuno debba ricordarsi di alzare una costante — che è esattamente il difetto che aveva lasciato 11 item fermi a `/ITA/23`.
+
+Perché **nel nome** e non nella query: perché la URL identifichi esattamente un contenuto. La prima versione di questo ticket teneva la versione in una mappa **in memoria**, e dopo un riavvio (Watchtower ne fa uno a ogni deploy) la mappa era vuota: la rotta registrava la versione richiesta e serviva il file vecchio, e il client cachava l'immagine sbagliata sotto la URL nuova. Con la versione nel nome non c'è niente da ricordare.
+
+### Chi costruisce il nome: app **e** dump offline
+
+Il nome lo producono **due lati**: l'app (che chiede `{host}/erdb-poster/{nome}`) e il **dump offline** di `scripts/erdb-builder`, che precompone i poster in blocco. La funzione è una sola — `posterFileName`, in `build.js` — e da qui **deriva la versione da sé**: chi costruisce un nome ottiene quello giusto, e i due lati non possono divergere per costruzione.
+
+> [!IMPORTANT]
+> La versione **non dipende dall'immagine sorgente**: la sorgente la conosce solo l'app, mentre il nome lo devono saper calcolare entrambi. Il prezzo dichiarato è che un cambio di poster *alla sorgente* non invalida il composto — lo stesso comportamento che i poster nudi hanno già.
+> La guardia è `tests/posterNameConcordance.test.js`: se qualcuno cambia una delle due sponde, rosseggia lì.
+
+I **poster nudi** (senza badge) restano col nome **senza** versione (`tmdb-movie-27205.jpg`) e sono quelli che il dump precompone: sono la maggioranza della cache (~104k) e si servono da disco senza passare da ERDB.
+
+### La rotta legacy è un trampolino
+
+`/images/poster/:type/:id/:episode/:versione` **non compone più**: risponde **302** verso la rotta statica col nome corrente. Serve ai client che hanno già in cache gli URL vecchi consegnati quando la composizione la faceva YACA — continuano a ricevere un'immagine, e nessuno resta con un buco.
+
 ### Anime
 
 Fuori dal catalogo novità un anime mostra **`ITA` secco**: niente numero di episodio, niente badge di stagione
