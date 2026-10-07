@@ -321,3 +321,32 @@ Ordine suggerito: **13** per primo (feature di selezione inefficace, misurata su
 6. **Un verdetto per catalogo, in una cartella sola**: il ri-giudizio cieco salvato in `review/preset/` ha sovrascritto 4 verdetti originali. Ora i controlli vivono fuori da `review/` e l'aggregatore segnala i duplicati.
 7. **Un dato del server può essere la cosa rotta che stai misurando**: il «100% anime» dei hero era il marcatore `_isAnime`, non il contenuto — e il marcatore era il bug (ticket 13). Prima di usare una metrica, verifica che misuri la cosa e non la sua etichetta.
 8. **La rubrica è più precisa del dato**: 25% dei verdetti a ridosso di una soglia e Δ 34 fra due giudici dicono che il ranking va pubblicato a bande, con l'evidenza accanto.
+
+---
+
+## 10. Esito della bonifica (07/10/2026) — deployato e verificato in produzione
+
+Immagine `2b27480` in produzione dal 07/10, **verificata sul campo** con un profilo di test «Solo Anime»:
+prima della bonifica serviva **14 titoli su 20** fuori perimetro (Mediterraneo, I Tenenbaum, Nebraska…);
+adesso **0 su 20**, e il builder Trakt non solleva più (`trakt_filtered builder failed`: 0 occorrenze nei log).
+
+| Ticket | Intervento | Effetto misurato |
+|---|---|---|
+| **13** | namespace TMDB film/serie nello store, nel marcatore e nel predicato SQL | dei 1363 film con id collidente, il predicato ne seleziona **1** (l'unico anime vero) contro 1363; «Solo Anime» non filtra più a vuoto |
+| **07** | durata minima 60' nei percorsi film dei hero | corti, backstage e anteprime spariscono dalle liste: **0** item sotto i 40' |
+| **16** | TDZ del builder Trakt (`types`, `tipo`, `dnaFilters`) | il hero «Suggeriti dalla Community» non degrada più via eccezione |
+| **02** | esclusione animazione nei 15 cataloghi non-anime | anime reali dal 4-79% a **0-2%** in 13 su 15 |
+| **06** | esclusi documentari + durata minima nei cataloghi di persona | documentari **0**, titoli sotto i 60' **0** (prima `with_runtime.gte` era una chiave ignorata) |
+| **17** | 12 cataloghi rifatti con le keyword del banco + 2 rinomini | fuori tema dal 10-40% al **0-4%** in dieci cataloghi, con pool in crescita (anime_shonen 15 → 129, italian_comedy 53 → 575, zombies 28 → 346, high_fantasy 7 → 62) |
+| **11** | harness di simulazione riparato | `profiles` parte, `teardown` non grida più all'anomalia del profilo reale, `fetch` non ricade più su `profiles[0]` |
+
+**Cosa questo report non dice più, e come si recupera.** I punteggi di §2 e §6 sono lo snapshot del 06/10: i
+cataloghi toccati sono cambiati, e i pochi rimasti sotto soglia sono elencati nei ticket **04** (pool: `mindfuck_series`
+28, `space_hard_scifi` 49, `treasure_hunters` 44, più i quattro registi ridotti dal ticket 06) e **15** (ordinamenti
+costruiti su pochi voti). Le due eccezioni dichiarate del ticket 17 sono `mindfuck_series` (11% fuori tema) e
+`extreme_survival` (6%): entrambe da rileggere, non da nascondere.
+
+**Il metodo resta valido** ed è la parte riusabile: le etichette «in tema / fuori tema» di `review/` sono la ground
+truth che il banco keyword usa per misurare le alternative (ticket 14), e la rubrica a 5 dimensioni è pronta per una
+seconda tornata di giudizio (ticket 12) sui cataloghi cambiati — le uniche voci che possono dire se la bonifica ha
+migliorato anche la *qualità percepita*, non solo i conteggi.
