@@ -23,7 +23,7 @@
     ]
   },
   "syntheticWatchlist": {
-    "note": "Righe account-level in `userlibraryitems` (addonUuid sim-uuid-yaca): la watchlist non ha context di profilo. Include 2 righe legacy con itemId:null per verificare che la query del WatchlistProvider non si rompa.",
+    "note": "Righe account-level in `userlibraryitems` (addonUuid sim-uuid-yaca): la watchlist non ha context di profilo. Include 1 sola riga legacy con itemId:null (l'indice unico addonUuid_1_itemId_1 non ammette duplicati null) per verificare che la query del WatchlistProvider non si rompa.",
     "items": [
       {
         "_id": "tt0111161",
@@ -133,19 +133,6 @@
         "temp": false,
         "mapped": false,
         "state": { "timesWatched": 0, "flaggedWatched": 0, "watched": "", "noNotif": false, "season": 0, "episode": 0 }
-      },
-      {
-        "_id": "sim:legacy:no-itemid-2",
-        "itemId": null,
-        "type": "series",
-        "name": "Legacy row senza itemId (series)",
-        "year": "",
-        "poster": "",
-        "posterShape": "poster",
-        "removed": false,
-        "temp": false,
-        "mapped": false,
-        "state": { "timesWatched": 0, "flaggedWatched": 0, "watched": "", "noNotif": false, "season": 0, "episode": 0 }
       }
     ]
   },
@@ -175,7 +162,7 @@
       "role": "realistico",
       "typeSelectors": { "film": false, "serie": false, "anime": null },
       "kidsMode": false,
-      "dna": { "source": "aa0b4082", "note": "Nolan/Tarantino/Scorsese a 2.94 + thriller/dystopia/heist/mafia/plot twist (29 chiavi)." },
+      "dna": { "source": "4159713d", "note": "Context reale 4159713d (Generale Tutto, cult/thriller; sostituisce il vecchio context aa0b4082 non più presente su Atlas)." },
       "catalogs": [
         "preset_nolan",
         "preset_tarantino",
@@ -307,7 +294,7 @@
       "role": "realistico",
       "typeSelectors": { "film": false, "serie": false, "anime": null },
       "kidsMode": true,
-      "dna": { "source": "a920b180", "note": "460 chiavi family/kids: g:10751, g:10762, k:kids, k:fairy tale, k:childhood." },
+      "dna": { "source": "global", "note": "DNA context reale global; il filtro bambini è governato da kidsMode:true (sostituisce il vecchio context a920b180 non più presente su Atlas)." },
       "catalogs": [
         "preset_pixar",
         "preset_dreamworks",

@@ -43,7 +43,7 @@ Crea/aggiorna in Atlas:
   `V_static`/`V_active`/`V_final`/`idNames` copiati, `lastUpdated` **riportato a now()** così il
   ramo "stale" di `hybridRecommendations` non scatta). Per il Freddo: `cold_absent` (delete) o
   `cold_empty` (`V_final:{}`).
-- `userlibraryitems` (watchlist account-level, 9 righe di cui **2 legacy con `itemId: null`**),
+- `userlibraryitems` (watchlist account-level, 8 righe di cui **1 legacy con `itemId: null`**; l'indice unico `addonUuid_1_itemId_1` non ammette duplicati null),
   `userlists` (1 lista), `watchhistories` (per `context` di profilo).
 
 I due scenari freddi sono **due giri**: `profiles` (absent) → `fetch` → `review`, poi
@@ -58,7 +58,7 @@ I due scenari freddi sono **due giri**: `profiles` (absent) → `fetch` → `rev
 | `--profiles a,b` | tutti | Filtra i profili (id o nome) |
 | `--only id1,id2` | tutti i cataloghi del manifest | Filtra i cataloghi (id completo o base id senza `yaca_preset_`) |
 | `--pages N` | `2` | Pagine per catalogo (`skip=0,20,…`) |
-| `--fresh` / `--cached` | `--fresh` | `--fresh` appende `_nocache=<ts>`; `--cached` non lo appende |
+| `--fresh` / `--cached` | `--fresh` | `--fresh` appende `?_nocache=<ts>`; `--cached` non lo appende. **Nota**: `_nocache` è una no-op lato server (non esiste in `src/`) |
 | `--include-search` | off | Include `yaca_search_standard`/`yaca_search_ai` (richiedono un parametro `search`, fuori dal protocollo 40 item) |
 | `--concurrency N` | `3` | Richieste parallele (max 5) |
 | `--pacing ms` | `60` | Pausa fra richieste dello stesso worker |
@@ -70,11 +70,11 @@ nel manifest (piano di copertura 160/160, `profiles-proposal.md` §C): vengono s
 registrati come `skippedCatalogs` in `run.json`. A fine fetch `activeProfileId` torna al default
 della spec.
 
-**Cache**: `_nocache` invalida la cache esterna delle richieste (`tmdb_catalog`, chiave hash che
-include utente/profilo/configVersion). La cache interna degli hero (`recommendation_cache`,
-chiave `userId_context_catalogId`) ha TTL 7 giorni e **non** è bypassabile via `_nocache`: per
-ripartire da zero usare `teardown` (che cancella anche le chiavi Redis `sim_*`) o attendere il TTL.
-I test di cache si fanno con due fetch: la prima `--fresh` (popola), la seconda `--cached` (hit).
+**Cache e no-op `_nocache`**: il parametro `?_nocache=<ts>` aggiunto da `--fresh` **non esiste lato server**
+(`grep -rn "_nocache" src/` restituisce zero occorrenze): è una **no-op** completa e non invalida
+alcuna cache. La cache interna degli hero (`recommendation_cache`, chiave `userId_context_catalogId`) ha TTL
+7 giorni e va resettata tramite pulizia esplicita di Redis (via `teardown` dove Redis è accessibile)
+o attendendo la naturale scadenza del TTL.
 
 ### `review`
 
@@ -116,8 +116,18 @@ vuoto↔pieno, variazione dell'overlap hero. È la base della verifica post-fix 
 Cancella per regex `^sim_user_`/`^sim-uuid-` da `useraccounts`, `addonconfigs`, `tasteprofiles`,
 `recommendationimpressions`, `userlists`, `userlibraryitems`, `watchhistories` e le chiavi Redis
 `*sim_user_yaca*`, `*sim-uuid-yaca*`, `*sim_prof_*`. **Mai `flushdb`.** Verifica finale che
-`REOZrGNRr3` (addonUuid `ff7084d8-…`) esista ancora con i suoi 17 `TasteProfile`; esce con codice 1
-in caso di anomalia o residui.
+`REOZrGNRr3` (addonUuid `ff7084d8-…`) esista ancora con i suoi 5 `TasteProfile` (conteggio derivato
+dinamicamente da `AddonConfig.profiles`, misurato a 5 profili a ottobre 2026; la precedente attesa di 17 era stantia);
+esce con codice 1 in caso di anomalia o residui.
+
+## Sequenza completa per una campagna QC
+
+1. **Dataset / parquet dump**: `node scripts/qa/top50-dump.js` (o rigenerazione dataset DuckDB).
+2. **Materializzazione profili**: `node scripts/qa/simulate.js profiles` (senza flag usa `profiles.spec.json` aggiornata ai contesti reali attuali su Atlas).
+3. **Scaricamento cataloghi**: `node scripts/qa/simulate.js fetch` (stampa la spec in uso, valida ciascun profilo contro l'AddonConfig su Atlas e scarica manifest + cataloghi).
+4. **Revisione strutturale**: `node scripts/qa/simulate.js review` (genera artefatti JSON e markdown per la rubric).
+5. **Confronto tra run (opzionale)**: `node scripts/qa/simulate.js compare <runA> <runB>`.
+6. **Teardown e verifica**: `node scripts/qa/simulate.js teardown` (elimina tutti i documenti `sim_*` e verifica che il profilo reale sia integro).
 
 ## Struttura degli artefatti
 
@@ -143,12 +153,17 @@ node scripts/qa/simulate.js fetch --profiles sim_prof_cinefilo,sim_prof_freddo \
 yaca_hidden_gems_movies,yaca_hidden_gems_series,yaca_trakt_filtered_movies,yaca_trakt_filtered_series,\
 preset_nolan,preset_pop_series
 node scripts/qa/simulate.js review
+node scripts/qa/simulate.js teardown
 ```
 
 ## Limiti noti
 
 - **Nessun token Trakt** negli account di test (per isolamento): gli hero `yaca_trakt_filtered_*`
   e la rete seed usano i fallback DuckDB/TMDB invece delle raccomandazioni Trakt.
+- **Caveat Redis su Windows**: da ambienti Windows locali, Redis non è raggiungibile (`teardown` emette
+  la nota informativa `Redis non raggiungibile: chiavi sim_* non pulite`). Le chiavi Redis di test
+  decadono autonomamente alla scadenza del loro TTL naturale (7 giorni). Su ambienti Linux con Redis locale
+  o tunnel configurato, la pulizia è immediata.
 - La cache interna degli hero ha TTL 7 giorni: se Redis non è raggiungibile da dove gira l'harness,
   `teardown` non può pulirla (viene segnalato) e i risultati hero possono restare quelli della prima build.
 - `recommendationimpressions` del solo utente di test vengono scritte durante i fetch hero e

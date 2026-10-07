@@ -20,9 +20,19 @@ async function connectDb() {
     if (!mongooseRef) mongooseRef = require('mongoose');
     if (mongooseRef.connection.readyState === 1) return mongooseRef.connection.db;
     if (!process.env.MONGODB_URI) fail('MONGODB_URI mancante: impossibile contattare Atlas.');
-    // Ritentativo: senza, un ESERVFAIL di due secondi chiude la simulazione (ticket 12).
+    // Ritentativo: senza, un ESERVFAIL o EREFUSED di due secondi chiude la simulazione (ticket 12).
     const { connectMongo } = require('../../../src/utils/mongoConnect');
-    await connectMongo(process.env.MONGODB_URI, { mongoose: mongooseRef });
+    const { isTransientError } = require('../../../src/utils/retry');
+    await connectMongo(process.env.MONGODB_URI, {
+        mongoose: mongooseRef,
+        retry: {
+            isTransient: (err) => {
+                const code = err?.code;
+                if (code === 'EREFUSED' || code === 'ESERVFAIL' || code === 'EAI_AGAIN') return true;
+                return isTransientError(err);
+            }
+        }
+    });
     return mongooseRef.connection.db;
 }
 
@@ -65,7 +75,14 @@ function resolveColdScenario(spec, coldFlag) {
  */
 async function cloneTasteProfile(db, sourceContext, targetOwner, targetContext, sourceOwner) {
     const src = await db.collection('tasteprofiles').findOne({ owner: sourceOwner, context: sourceContext });
-    if (!src) fail(`DNA sorgente non trovato: ${sourceOwner}/${sourceContext}`);
+    if (!src) {
+        const availableDocs = await db.collection('tasteprofiles')
+            .find({ owner: sourceOwner }, { projection: { context: 1 } })
+            .toArray();
+        const availableContexts = availableDocs.map(d => d.context).filter(Boolean);
+        const availableStr = availableContexts.length > 0 ? availableContexts.join(', ') : 'nessuno';
+        fail(`DNA sorgente non trovato: ${sourceOwner}/${sourceContext}. Context disponibili per ${sourceOwner}: [${availableStr}]`);
+    }
     const now = new Date();
     const doc = {
         owner: targetOwner,
@@ -432,7 +449,12 @@ async function teardownSimData(opts = {}) {
     const realUser = await db.collection('useraccounts').findOne({ userId: REAL_PROFILE.userId });
     const realConfig = await db.collection('addonconfigs').findOne({ uuid: REAL_PROFILE.addonUuid });
     const realTasteProfiles = await db.collection('tasteprofiles').countDocuments({ owner: REAL_PROFILE.userId });
-    const realIntact = Boolean(realUser) && Boolean(realConfig) && realTasteProfiles === REAL_PROFILE.expectedTasteProfiles;
+    // Calcola l'attesa dai profili configurati in AddonConfig (5 profili misurati a ottobre 2026:
+    // global, 4159713d, 1c1da0af, 0465f104, 3f2f4afd; la costante 17 in common.js era una vecchia configurazione).
+    const expectedTasteProfiles = Array.isArray(realConfig?.profiles) && realConfig.profiles.length > 0
+        ? realConfig.profiles.length
+        : 5;
+    const realIntact = Boolean(realUser) && Boolean(realConfig) && realTasteProfiles === expectedTasteProfiles;
 
     const leftovers = {
         useraccounts: await db.collection('useraccounts').countDocuments({ $or: [{ userId: regexUserId }, { addonUuid: regexUuid }] }),
@@ -453,7 +475,7 @@ async function teardownSimData(opts = {}) {
             userFound: Boolean(realUser),
             configFound: Boolean(realConfig),
             tasteProfiles: realTasteProfiles,
-            expectedTasteProfiles: REAL_PROFILE.expectedTasteProfiles,
+            expectedTasteProfiles,
             intact: realIntact
         },
         leftovers

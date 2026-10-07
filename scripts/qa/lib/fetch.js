@@ -185,7 +185,31 @@ async function runFetch(opts = {}) {
     });
     if (selectedProfiles.length === 0) fail(`Nessun profilo selezionato con --profiles=${opts.profiles}`);
 
+    log(`Spec in uso: ${spec._path}`);
+    log(`Profili risolti dalla spec (${selectedProfiles.length}): ${selectedProfiles.map(p => p.id).join(', ')}`);
+
     const db = await connectDb();
+
+    // Verifica che ciascun profilo esista nell'AddonConfig materializzato su Atlas (ticket 11 trap 4).
+    // Se un id profilo è assente, il server fa fallback su config.profiles[0], riscaricando
+    // 8 volte lo stesso catalogo senza avviso.
+    const addonConfig = await db.collection('addonconfigs').findOne({ uuid: spec.target.addonUuid });
+    if (!addonConfig) {
+        fail(`AddonConfig non trovato per uuid "${spec.target.addonUuid}". Esegui prima "node scripts/qa/simulate.js profiles${opts.spec ? ` --spec ${opts.spec}` : ''}" per materializzarlo.`);
+    }
+    const dbProfileIds = new Set((addonConfig.profiles || []).map(p => p.id));
+    const missingProfiles = selectedProfiles.filter(p => !dbProfileIds.has(p.id));
+    if (missingProfiles.length > 0) {
+        const missingList = missingProfiles.map(p => p.id).join(', ');
+        const availableList = [...dbProfileIds].join(', ') || 'nessuno';
+        fail(
+            `Profili della spec assenti in AddonConfig (${spec.target.addonUuid}): [${missingList}]. ` +
+            `Profili presenti su DB: [${availableList}]. ` +
+            `Rifiutato per evitare fallback silenzioso del server su profiles[0]. ` +
+            `Esegui prima "node scripts/qa/simulate.js profiles${opts.spec ? ` --spec ${opts.spec}` : ''}" per sincronizzare Atlas.`
+        );
+    }
+
     const run = {
         runDir,
         createdAt: new Date().toISOString(),
