@@ -920,14 +920,17 @@ async function collectRealSeeds({ userId, context, mediaType, user = null }) {
         if (toSeedMediaType(doc.type) !== targetType) continue;
         const id = normalizeSeedId(doc.tmdbId);
         if (!id) continue;
-        const fallbackAt = getSeedTimestamp(doc.lastWatchedAt, doc.createdAt);
+        const fallbackAt = getSeedTimestamp(doc.lastWatchedAt, doc.createdAt)
+            || (typeof doc.daysAgo === 'number' ? Date.now() - doc.daysAgo * 86400000 : 0);
         const signals = Array.isArray(doc.signals) && doc.signals.length > 0
             ? doc.signals
-            : [{ type: 'watched', at: doc.lastWatchedAt }];
+            : [{ type: 'watched', at: doc.lastWatchedAt, daysAgo: doc.daysAgo }];
         for (const signal of signals) {
             const bucket = buckets[signal?.type];
             if (!bucket) continue;
-            keepMostRecentSeed(bucket, id, getSeedTimestamp(signal.at) || fallbackAt);
+            const signalAt = getSeedTimestamp(signal.at)
+                || (typeof signal.daysAgo === 'number' ? Date.now() - signal.daysAgo * 86400000 : 0);
+            keepMostRecentSeed(bucket, id, signalAt || fallbackAt);
         }
     }
 
@@ -958,12 +961,23 @@ async function collectRealSeeds({ userId, context, mediaType, user = null }) {
 
     const seeds = new Map();
     const counts = { loved: 0, liked: 0, watched: 0, library: 0 };
+    const now = Date.now();
     for (const [type, bucket] of Object.entries(buckets)) {
-        const limit = SEED_SIGNAL_LIMITS[type] ?? 0;
-        const selected = [...bucket.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
-        counts[type] = selected.length;
-        for (const [id] of selected) {
-            seeds.set(id, (seeds.get(id) || 0) + SEED_SIGNAL_WEIGHTS[type]);
+        if (type === 'watched') {
+            const selected = [...bucket.entries()].sort((a, b) => b[1] - a[1]);
+            counts.watched = selected.length;
+            for (const [id, timestamp] of selected) {
+                const days = timestamp > 0 ? Math.max(0, (now - timestamp) / 86400000) : Infinity;
+                const weight = Math.max(0.20, Math.pow(0.5, days / 60));
+                seeds.set(id, (seeds.get(id) || 0) + weight);
+            }
+        } else {
+            const limit = SEED_SIGNAL_LIMITS[type] ?? 0;
+            const selected = [...bucket.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
+            counts[type] = selected.length;
+            for (const [id] of selected) {
+                seeds.set(id, (seeds.get(id) || 0) + SEED_SIGNAL_WEIGHTS[type]);
+            }
         }
     }
     return { seeds, counts };

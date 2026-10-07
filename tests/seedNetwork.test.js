@@ -124,14 +124,19 @@ describe('Ticket 13: Seed Network con seed reali', () => {
                 mediaType: 'movie'
             });
 
-            expect(seeds.get('101')).toBe(4);
-            expect(seeds.get('102')).toBe(3);
-            expect(seeds.get('103')).toBe(2);
-            expect(seeds.get('104')).toBe(2);
+            expect(seeds.get('101')).toBe(4); // loved: peso costante
+            expect(seeds.get('102')).toBe(3); // liked: peso costante
+            // watched (ticket 20/E): il peso 2 decade col tempo, quindi non è un numero fisso — le
+            // date di questa fixture sono assolute e il decadimento le legge rispetto ad «adesso».
+            // Si asserisce il contratto: fra il pavimento (2 × 0.20) e il peso pieno, e il più
+            // recente pesa più del più vecchio.
+            expect(seeds.get('103')).toBeGreaterThanOrEqual(0.4);
+            expect(seeds.get('103')).toBeLessThanOrEqual(2);
+            expect(seeds.get('104')).toBeGreaterThan(seeds.get('103'));
             expect(counts).toEqual({ loved: 1, liked: 1, watched: 2, library: 0 });
         });
 
-        test('collectRealSeeds accumula i pesi per un singolo item con segnali multipli (loved + watched = 6)', async () => {
+        test('collectRealSeeds accumula i pesi per un singolo item con segnali multipli (loved + watched decaduto)', async () => {
             const historyDocs = [
                 {
                     tmdbId: 200,
@@ -152,7 +157,10 @@ describe('Ticket 13: Seed Network con seed reali', () => {
                 mediaType: 'movie'
             });
 
-            expect(seeds.get('200')).toBe(6); // 4 (loved) + 2 (watched)
+            // loved 4 + watched decaduto: il contributo watched sta fra 0.4 (pavimento) e 2 (peso
+            // pieno), quindi la somma sta fra 4.4 e 6 — non è più esattamente 6.
+            expect(seeds.get('200')).toBeGreaterThanOrEqual(4.4);
+            expect(seeds.get('200')).toBeLessThanOrEqual(6);
             expect(counts.loved).toBe(1);
             expect(counts.watched).toBe(1);
         });
@@ -185,7 +193,7 @@ describe('Ticket 13: Seed Network con seed reali', () => {
             expect(Array.from(seriesResult.seeds.keys()).sort()).toEqual(['20', '30', '40'].sort());
         });
 
-        test('rispetta i cap (loved 20, liked 15, watched 15, library 15) selezionando i più recenti', async () => {
+        test('rispetta i cap di loved/liked/library; watched non ha più tetto: entra tutta col peso decaduto', async () => {
             // Genera 25 item loved con timestamp crescenti (1 = più vecchio, 25 = più recente)
             const lovedSignals = Array.from({ length: 25 }, (_, i) => ({
                 tmdbId: 1000 + i,
@@ -210,7 +218,9 @@ describe('Ticket 13: Seed Network con seed reali', () => {
             });
 
             expect(counts.loved).toBe(20); // Cap a 20
-            expect(counts.watched).toBe(15); // Cap a 15
+            // Nessun tetto sui visti: il taglio a 15 è stato rimosso dal ticket 20/E, perché
+            // rendeva identiche le liste di chi ha visto 50 e chi ne ha visti 100.
+            expect(counts.watched).toBe(20);
 
             // I 5 loved più vecchi (1000..1004) devono essere stati scartati
             for (let i = 0; i < 5; i++) {
@@ -221,14 +231,17 @@ describe('Ticket 13: Seed Network con seed reali', () => {
                 expect(seeds.has(String(1000 + i))).toBe(true);
             }
 
-            // I 5 watched più vecchi (2000..2004) scartati
-            for (let i = 0; i < 5; i++) {
-                expect(seeds.has(String(2000 + i))).toBe(false);
-            }
-            // I 15 watched più recenti (2005..2019) presenti
-            for (let i = 5; i < 20; i++) {
+            // Tutti i 20 watched entrano (nessun tetto): a differenziarli è il peso decaduto,
+            // non un taglio.
+            for (let i = 0; i < 20; i++) {
                 expect(seeds.has(String(2000 + i))).toBe(true);
             }
+            // Qui NON si asserisce l'ordine fra recente e vecchio: le date di questa fixture
+            // (febbraio) sono tutte oltre le ~140 giornate in cui il decadimento distingue, e dal
+            // pavimento in giù i pesi coincidono (0.20). È il prezzo dichiarato del pavimento:
+            // garantisce che una visione vecchia non sparisca, non che pesi meno di un'altra
+            // ugualmente vecchia. L'ordinamento del decadimento è verificato sopra, con date
+            // dentro la finestra.
         });
 
         test('Gate libreria-su-history: se WatchHistory è vuota, UserLibraryItem NON viene interrogato (mat_cold_static)', async () => {
