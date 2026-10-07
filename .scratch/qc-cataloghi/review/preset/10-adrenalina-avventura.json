@@ -1,0 +1,620 @@
+[
+  {
+    "id": "preset_heist",
+    "nome": "💰 Rapine & Colpi Grossi (Heist)",
+    "verdetto": "P",
+    "score": 88,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 65,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 39,
+        "titolo": "Ant-Man",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Cinecomic supereroistico Marvel che sfrutta la keyword heist come struttura secondaria della trama"
+      },
+      {
+        "pos": 43,
+        "titolo": "Il grande colpo",
+        "anno": "2014",
+        "tipo": "trash",
+        "nota": "Film TV per ragazzi (Swindle) di modesta levatura che stona con i classici del crimine"
+      }
+    ],
+    "motivo": "Catalogo di altissima pertinenza tematica che raccoglie i massimi capolavori storici e moderni del genere heist e caper movie. L'ordinamento per voto medio è rigorosamente rispettato, con solo isolate intromissioni minori.",
+    "evidenza": [
+      "Inception (2010)",
+      "I soliti sospetti (1995)",
+      "Le iene (1992)",
+      "Heat - La sfida (1995)",
+      "Rapina a mano armata (1956)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_war_movies",
+    "nome": "🪖 Film di Guerra",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "La tomba delle lucciole",
+        "anno": "1988",
+        "tipo": "fuori-promessa",
+        "nota": "Capolavoro d'animazione Ghibli presente nonostante il preset sia configurato con 'Anime: no'"
+      },
+      {
+        "pos": 20,
+        "titolo": "Saga of Tanya the Evil Movie",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Lungometraggio anime isekai presente in violazione del filtro 'Anime: no'"
+      },
+      {
+        "pos": 22,
+        "titolo": "20 Days in Mariupol",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario crudo di cronaca giornalistica reale, non opera bellica di finzione narrativa"
+      },
+      {
+        "pos": 34,
+        "titolo": "In questo angolo di mondo",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Anime drammatico storico presente nonostante la dichiarazione non-anime"
+      },
+      {
+        "pos": 37,
+        "titolo": "Virunga",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario naturalistico e politico sulla tutela dei gorilla, attinenza bellica secondaria"
+      }
+    ],
+    "motivo": "Selezione di straordinario valore artistico con una mediana voto vicina a 7.8 e pietre miliari del cinema bellico mondiale. La pertinenza cala leggermente per la presenza di documentari e di tre anime in un catalogo dichiarato senza anime.",
+    "evidenza": [
+      "Schindler's List (1993)",
+      "Apocalypse Now (1979)",
+      "Salvate il soldato Ryan (1998)",
+      "Orizzonti di gloria (1957)",
+      "Full Metal Jacket (1987)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_western",
+    "nome": "🤠 Western",
+    "verdetto": "P",
+    "score": 90,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 85,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 15,
+        "titolo": "Scooby-Doo! e il fantasma del Ranch",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione per bambini, del tutto fuori contesto tra i classici del western"
+      },
+      {
+        "pos": 9,
+        "titolo": "Riscatto d'amore",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Melodramma sentimentale a sfondo religioso, catalogato western solo per l'ambientazione storica del 1850"
+      },
+      {
+        "pos": 6,
+        "titolo": "El Infierno",
+        "anno": "2010",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia nera e satira criminale sul narcotraffico messicano moderno, non un western di frontiera"
+      },
+      {
+        "pos": 24,
+        "titolo": "Il gigante",
+        "anno": "1956",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma generazionale e saga petrolifera del Novecento, western solo di riflesso geografico"
+      }
+    ],
+    "motivo": "Catalogo autorevole che spazia dallo spaghetti western di Sergio Leone ai grandi classici di John Ford e Clint Eastwood. Si registrano solo rare anomalie di classificazione TMDB come uno spin-off animato di Scooby-Doo.",
+    "evidenza": [
+      "Il buono, il brutto, il cattivo (1966)",
+      "C'era una volta il West (1968)",
+      "Django Unchained (2012)",
+      "Gli spietati (1992)",
+      "Sentieri selvaggi (1956)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_spy_action",
+    "nome": "🕵️ Spionaggio & Agenti Segreti",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 40,
+      "distintivita": 100,
+      "coerenza": 95,
+      "completezza": 60
+    },
+    "itemGiudicati": 46,
+    "errori": [
+      {
+        "pos": 35,
+        "titolo": "Ballistic",
+        "anno": "2002",
+        "tipo": "trash",
+        "nota": "Flop d'azione clamoroso universalmente considerato tra i peggiori film mai prodotti (voto 4.358)"
+      },
+      {
+        "pos": 36,
+        "titolo": "Black Dawn - Tempesta Di Fuoco",
+        "anno": "2006",
+        "tipo": "trash",
+        "nota": "B-movie d'azione direct-to-video a basso costo con Steven Seagal (voto 4.1)"
+      },
+      {
+        "pos": 40,
+        "titolo": "The Foreigner - Lo straniero",
+        "anno": "2003",
+        "tipo": "trash",
+        "nota": "Action scadente per il mercato home video con Steven Seagal (voto 4.0)"
+      },
+      {
+        "pos": 29,
+        "titolo": "The Avengers - Agenti speciali",
+        "anno": "1998",
+        "tipo": "trash",
+        "nota": "Adattamento cinematografico disastroso e stroncato dalla critica (voto 4.44)"
+      },
+      {
+        "pos": 22,
+        "titolo": "Spy Kids 4 - È tempo di eroi",
+        "anno": "2011",
+        "tipo": "trash",
+        "nota": "Capitolo per ragazzi di qualità scadente e votazione pessima (4.7)"
+      }
+    ],
+    "motivo": "La pertinenza tematica è buona e l'ordinamento per incassi appare plausibile, ma il pool è limitato ad appena 46 titoli e appesantito da oltre un terzo di B-movie e scult d'azione sotto il 6.0.",
+    "evidenza": [
+      "Skyfall (2012)",
+      "Spectre (2015)",
+      "Mission: Impossible - Dead Reckoning Parte uno (2023)",
+      "Kingsman: Secret Service (2015)",
+      "True Lies (1994)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_disaster_movies",
+    "nome": "🌋 Disaster Movies",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 75,
+      "qualita": 40,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 27,
+        "titolo": "Megalopolis",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma filosofico e favola utopica di Francis Ford Coppola, estraneo al genere disaster movie"
+      },
+      {
+        "pos": 49,
+        "titolo": "Disaster Movie",
+        "anno": "2008",
+        "tipo": "trash",
+        "nota": "Parodia demenziale stroncata universalmente (voto 3.2), agganciata solo per il titolo"
+      },
+      {
+        "pos": 20,
+        "titolo": "Left Behind - La profezia",
+        "anno": "2014",
+        "tipo": "trash",
+        "nota": "B-movie apocalittico di infima qualità con Nicolas Cage (voto 4.303)"
+      },
+      {
+        "pos": 39,
+        "titolo": "Speed 2 - Senza limiti",
+        "anno": "1997",
+        "tipo": "fuori-promessa",
+        "nota": "Action su dirottamento navale di scarso valore (voto 4.6), estraneo alle catastrofi naturali"
+      },
+      {
+        "pos": 26,
+        "titolo": "Decisione critica",
+        "anno": "1996",
+        "tipo": "fuori-promessa",
+        "nota": "Thriller d'azione su incursione antiterrorismo a bordo di un aereo di linea"
+      }
+    ],
+    "motivo": "L'ordinamento per popolarità è rispettato e comprende capisaldi del genere catastrofico, ma la qualità media è penalizzata da oltre il 43% di titoli sotto la sufficienza e da intrusioni fuori genere come Megalopolis e la parodia Disaster Movie.",
+    "evidenza": [
+      "San Andreas (2015)",
+      "Twisters (2024)",
+      "Deep Impact (1998)",
+      "The Day After Tomorrow - L'alba del giorno dopo (2004)",
+      "Armageddon - Giudizio finale (1998)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_martial_arts",
+    "nome": "🥋 Arti Marziali & Kung Fu",
+    "verdetto": "P",
+    "score": 88,
+    "dimensioni": {
+      "pertinenza": 75,
+      "qualita": 85,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 17,
+        "titolo": "Big Hero 6",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione Disney sui supereroi per ragazzi, estraneo alla tradizione del cinema di arti marziali"
+      },
+      {
+        "pos": 46,
+        "titolo": "Serenity",
+        "anno": "2005",
+        "tipo": "fuori-promessa",
+        "nota": "Fantascienza spaziale inserita impropriamente per brevi sequenze di combattimento acrobatico"
+      },
+      {
+        "pos": 8,
+        "titolo": "Dragon Ball Super - Broly",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione giapponese presente nonostante il catalogo dichiari 'Anime: no'"
+      },
+      {
+        "pos": 9,
+        "titolo": "Dragon Ball Super - Super Hero",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Anime franchise shonen inserito in violazione del filtro non-anime"
+      },
+      {
+        "pos": 23,
+        "titolo": "Baki Hanma VS Kengan Ashura",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Crossover anime marziale presente in catalogo esplicitamente escluso da anime"
+      },
+      {
+        "pos": 39,
+        "titolo": "The Last: Naruto the Movie",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime shonen in catalogo dichiarato con 'Anime: no'"
+      },
+      {
+        "pos": 31,
+        "titolo": "Il corvo - The Crow",
+        "anno": "1994",
+        "tipo": "fuori-promessa",
+        "nota": "Action fantasy dark e vendetta gotica, privo dei tratti distintivi del genere arti marziali"
+      }
+    ],
+    "motivo": "Vetrina ricca dei massimi capolavori del kung fu e dell'action marziale (62% di produzioni asiatiche), con voti eccellenti e perfetto ordinamento. La pertinenza risente però dell'intrusione di 5 anime (10%) nonostante il vincolo 'Anime: no' e di titoli spuri come Big Hero 6.",
+    "evidenza": [
+      "Ip Man (2008)",
+      "The Raid 2: Berandal (2014)",
+      "Drunken Master (1978)",
+      "36ª camera dello Shaolin (1978)",
+      "I 3 dell'Operazione Drago (1973)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_big_sagas",
+    "nome": "💍 Le Grandi Saghe (Franchises)",
+    "verdetto": "P",
+    "score": 85,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 85,
+      "distintivita": 40,
+      "coerenza": 90,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "Spider-Man: Brand New Day",
+        "anno": "2026",
+        "tipo": "ordine-rotto",
+        "nota": "Titolo futuro non ancora distribuito collocato ai primissimi posti per incassi previsionali anomali"
+      },
+      {
+        "pos": 32,
+        "titolo": "Transformers 4 - L'era dell'estinzione",
+        "anno": "2014",
+        "tipo": "trash",
+        "nota": "Blockbuster di modesto valore qualitativo (voto 5.973), tra i pochissimi sotto la sufficienza"
+      }
+    ],
+    "motivo": "Pertinenza e popolarità impeccabili per le saghe più remunerative della storia, con ordinamento per incassi globale verosimile. La distintività è tuttavia gravemente compromessa dall'alta sovrapposizione (J@40 = 0.60) con il catalogo quasi-clone Blockbusters (Campioni d'Incasso).",
+    "evidenza": [
+      "Avengers: Endgame (2019)",
+      "Avatar: La via dell'acqua (2022)",
+      "Star Wars: Il risveglio della Forza (2015)",
+      "Harry Potter e i Doni della Morte - Parte 2 (2011)",
+      "Il Signore degli Anelli - Il ritorno del re (2003)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_action_blockbusters",
+    "nome": "🍿 Azione, Motori & Esplosioni",
+    "verdetto": "B",
+    "score": 74,
+    "dimensioni": {
+      "pertinenza": 50,
+      "qualita": 65,
+      "distintivita": 100,
+      "coerenza": 90,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 47,
+        "titolo": "Shark Tale",
+        "anno": "2004",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione DreamWorks con pesci antropomorfi, completamente aliena da motori ed esplosioni"
+      },
+      {
+        "pos": 19,
+        "titolo": "Big Hero 6",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione Disney per famiglie sui supereroi, del tutto estraneo al mondo dei motori"
+      },
+      {
+        "pos": 5,
+        "titolo": "Aquaman",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Cinecomic fantasy sottomarino senza alcun legame con inseguimenti su ruote o gare automobilistiche"
+      },
+      {
+        "pos": 6,
+        "titolo": "Hunger Games: La ragazza di fuoco",
+        "anno": "2013",
+        "tipo": "fuori-promessa",
+        "nota": "Distopia survival per ragazzi, priva di elementi legati a veicoli a motore o corse"
+      },
+      {
+        "pos": 21,
+        "titolo": "Gli Incredibili - Una \"normale\" famiglia di supereroi",
+        "anno": "2004",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione Pixar di supereroi priva di attinenza con la promessa dei motori"
+      }
+    ],
+    "motivo": "A dispetto del titolo che promette film su motori, corse e inseguimenti su gomma, la selezione è colonizzata da cinecomic di supereroi, distopie e animazione (tra cui Shark Tale). Solo la saga di Fast & Furious e Mad Max mantengono viva la componente motoristica.",
+    "evidenza": [
+      "Fast & Furious 7 (2015)",
+      "Fast & furious 6 (2013)",
+      "Fast & Furious 5 (2011)",
+      "Mad Max: Fury Road (2015)",
+      "Fast & furious - Solo parti originali (2009)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_treasure_hunters",
+    "nome": "🎬 Cacciatori di Tesori & Avventurieri",
+    "verdetto": "B",
+    "score": 77,
+    "dimensioni": {
+      "pertinenza": 75,
+      "qualita": 45,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 31,
+        "titolo": "A spasso con i dinosauri",
+        "anno": "2013",
+        "tipo": "fuori-promessa",
+        "nota": "Docu-fiction animata sulla paleontologia senza alcuna caccia al tesoro o avventurieri"
+      },
+      {
+        "pos": 34,
+        "titolo": "Highlander 3",
+        "anno": "1994",
+        "tipo": "fuori-promessa",
+        "nota": "Fantasy d'azione di serie B sugli immortali (voto 4.749), estraneo all'avventura archeologica"
+      },
+      {
+        "pos": 32,
+        "titolo": "Trappola in fondo al mare 2: Il tesoro degli abissi",
+        "anno": "2009",
+        "tipo": "trash",
+        "nota": "Sequel direct-to-video scadente con voto molto basso (5.071)"
+      },
+      {
+        "pos": 47,
+        "titolo": "Supercuccioli a caccia di tesori",
+        "anno": "2012",
+        "tipo": "trash",
+        "nota": "Film direct-to-video per bambini con cani parlanti, fuori contesto in un catalogo d'avventura"
+      },
+      {
+        "pos": 48,
+        "titolo": "Gli avventurieri della città perduta",
+        "anno": "1986",
+        "tipo": "trash",
+        "nota": "B-movie d'avventura grossolano e stroncato dalla critica (voto 4.8)"
+      },
+      {
+        "pos": 37,
+        "titolo": "One Piece - Per tutto l'oro del mondo",
+        "anno": "2000",
+        "tipo": "fuori-promessa",
+        "nota": "Anime movie presente nonostante la configurazione 'Anime: no' del preset"
+      }
+    ],
+    "motivo": "Include le saghe cardine dell'avventura archeologica (Indiana Jones, La mummia, Il mistero dei Templari), ma risente di un pool ridotto a 61 titoli, oltre un terzo di film sotto la sufficienza e alcune bizzarre intrusioni (paleontologia, cani parlanti).",
+    "evidenza": [
+      "I predatori dell'arca perduta (1981)",
+      "La mummia (1999)",
+      "Il mistero dei Templari (2004)",
+      "I Goonies (1985)",
+      "All'inseguimento della pietra verde (1984)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_extreme_survival",
+    "nome": "🏕️ Sopravvivenza Estrema",
+    "verdetto": "B",
+    "score": 77,
+    "dimensioni": {
+      "pertinenza": 50,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "L'attacco dei giganti: l'urlo del risveglio",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime franchise presente al secondo posto in palese contrasto con la dichiarazione 'Anime: no'"
+      },
+      {
+        "pos": 8,
+        "titolo": "Kizumonogatari Part 3: Reiketsu",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Anime dark fantasy soprannaturale su vampiri, privo di attinenza con la sopravvivenza estrema"
+      },
+      {
+        "pos": 11,
+        "titolo": "Sword Art Online The Movie: Progressive - Aria of a Starless Night",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Anime fantasy su videogiochi MMORPG che vìola il filtro non-anime"
+      },
+      {
+        "pos": 22,
+        "titolo": "L'uomo che venne dalla Terra",
+        "anno": "2007",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma filosofico da camera, catturato per match incidentale sul concetto di longevità"
+      },
+      {
+        "pos": 28,
+        "titolo": "La ragazza della palude",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma sentimentale e mistery investigativo, lontano dai canoni della sopravvivenza estrema"
+      },
+      {
+        "pos": 30,
+        "titolo": "L'alba dei morti dementi",
+        "anno": "2004",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia parodistica e satirica sugli zombie, fuori tono per un catalogo di tensione e sopravvivenza"
+      }
+    ],
+    "motivo": "Benché l'ordinamento e la qualità media dei singoli film siano ottimi, il catalogo è profondamente inquinato da una quota anime del 22% (11 titoli su 50) in contrasto con il filtro 'Anime: no', oltre che da match semantici casuali come L'uomo che venne dalla Terra.",
+    "evidenza": [
+      "Cast Away (2000)",
+      "Sopravvissuto - The Martian (2015)",
+      "Revenant - Redivivo (2015)",
+      "Vita di Pi (2012)",
+      "Apollo 13 (1995)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_sports_underdog",
+    "nome": "⚽ Storie di Sport & Riscatto",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 17,
+    "errori": [
+      {
+        "pos": 17,
+        "titolo": "Il re della spiaggia",
+        "anno": "1990",
+        "tipo": "trash",
+        "nota": "Commedia balneare per ragazzi con votazione scadente (5.341) e appena 41 voti"
+      },
+      {
+        "pos": 16,
+        "titolo": "Karate Kid II - La storia continua...",
+        "anno": "1986",
+        "tipo": "fuori-promessa",
+        "nota": "Faida di villaggio e scontro d'onore a Okinawa, estraneo al contesto dei tornei e del riscatto sportivo"
+      }
+    ],
+    "motivo": "I titoli presenti sono per lo più pertinenti ed emozionanti (Rocky, Creed, Rudy), ma il catalogo è gravemente menomato da un pool di soli 17 titoli (meno di una pagina Stremio da 20) dovuto a filtri keyword congiunti troppo restrittivi.",
+    "evidenza": [
+      "Rocky (1976)",
+      "Creed - Nato per combattere (2015)",
+      "Rudy - il successo di un sogno (1993)",
+      "L'arte di vincere (2011)",
+      "Eddie the Eagle - Il coraggio della follia (2016)"
+    ],
+    "fiducia": "alta"
+  }
+]

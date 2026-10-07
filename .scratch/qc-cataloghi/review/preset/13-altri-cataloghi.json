@@ -1,0 +1,196 @@
+[
+  {
+    "id": "preset_videogame_movies",
+    "nome": "Tratti da Videogiochi (Film)",
+    "verdetto": "P",
+    "score": 84,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 8,
+        "titolo": "Ralph Spaccatutto",
+        "anno": "2012",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione Disney originale a tema arcade, non tratto da un videogioco esistente"
+      },
+      {
+        "pos": 13,
+        "titolo": "Pixels",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Tratto da un cortometraggio animato indipendente, non adattamento ufficiale di un videogioco"
+      },
+      {
+        "pos": 17,
+        "titolo": "TRON: Legacy",
+        "anno": "2010",
+        "tipo": "fuori-promessa",
+        "nota": "Sequel del film cult fantascientifico del 1982, non nasce come adattamento da un videogioco"
+      },
+      {
+        "pos": 28,
+        "titolo": "Resident Evil - L'isola della morte",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime giapponese in CGI presente nonostante il flag Anime: no"
+      },
+      {
+        "pos": 30,
+        "titolo": "Resident Evil - Vendetta",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione anime in CGI presente in contrasto con Anime: no"
+      },
+      {
+        "pos": 43,
+        "titolo": "Street Fighter - Sfida finale",
+        "anno": "1994",
+        "tipo": "trash",
+        "nota": "B-movie cult stroncato dalla critica con voto 4.68"
+      },
+      {
+        "pos": 47,
+        "titolo": "Mortal Kombat - Distruzione totale",
+        "anno": "1997",
+        "tipo": "trash",
+        "nota": "Sequel di pessima qualità con voto medio 4.56"
+      },
+      {
+        "pos": 50,
+        "titolo": "In the Name of the King",
+        "anno": "2007",
+        "tipo": "trash",
+        "nota": "Trash movie fantasy di Uwe Boll con voto 4.78"
+      }
+    ],
+    "motivo": "Buona rappresentazione dei principali franchise videoludici sul grande schermo, compromessa da leak di keyword su pellicole a tema videogiochi non tratte da giochi (TRON: Legacy, Ralph Spaccatutto) e anime CGI inattesi.",
+    "evidenza": [
+      "Resident Evil: Welcome to Raccoon City (2021)",
+      "Super Mario Bros. - Il film (2023)",
+      "Uncharted (2022)",
+      "Sonic - Il film (2020)",
+      "Warcraft - L'inizio (2016)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_epic_historical",
+    "nome": "Kolossal & Epopee Storiche",
+    "verdetto": "B",
+    "score": 76,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 47,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "Il diritto di contare",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Biopic intimista su scienziate NASA, non un kolossal né un'epopea storica"
+      },
+      {
+        "pos": 8,
+        "titolo": "Il caso Spotlight",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma contemporaneo (2001) di inchiesta giornalistica, completamente estraneo a epopee o kolossal"
+      },
+      {
+        "pos": 11,
+        "titolo": "Il discorso del re",
+        "anno": "2010",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma biografico da camera, privo della scala o del respiro di un kolossal"
+      },
+      {
+        "pos": 13,
+        "titolo": "Il processo ai Chicago 7",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma giudiziario d'aula, non un kolossal o epopea storica"
+      },
+      {
+        "pos": 14,
+        "titolo": "长安三万里",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione cinese (anime) presente nonostante il vincolo Anime: no"
+      },
+      {
+        "pos": 18,
+        "titolo": "Il club del libro e della torta di bucce di patata di Guernsey",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma romantico intimista post-bellico, non un kolossal storico"
+      },
+      {
+        "pos": 19,
+        "titolo": "The Impossible",
+        "anno": "2012",
+        "tipo": "fuori-promessa",
+        "nota": "Survival movie catastrofico contemporaneo (2004), non un'epopea storica"
+      },
+      {
+        "pos": 37,
+        "titolo": "L'altra donna del re",
+        "anno": "2008",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma romantico in costume di corte, estraneo alla natura di kolossal epico"
+      }
+    ],
+    "motivo": "Il catalogo soffre di un pool troppo ristretto (47 titoli) e di evidenti leak da keyword che introducono drammi da camera e film giudiziari (Spotlight, Il processo ai Chicago 7) del tutto alieni dal concetto di epopea e kolossal.",
+    "evidenza": [
+      "Lawrence d'Arabia (1962)",
+      "Ben-Hur (1959)",
+      "I dieci comandamenti (1956)",
+      "Ran (1985)",
+      "Le crociate - Kingdom of Heaven (2005)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_adult_animation",
+    "nome": "Animazione per Adulti",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 31,
+        "titolo": "Velma",
+        "anno": "2023",
+        "tipo": "trash",
+        "nota": "Serie animata per adulti universalmente stroncata da pubblico e critica con voto medio 3.4"
+      }
+    ],
+    "motivo": "Catalogo eccellente che centra appieno la promessa riunendo le serie animate adulte più popolari senza alcuna infiltrazione infantile; penalizzato unicamente dalla presenza della stroncata Velma.",
+    "evidenza": [
+      "I Simpson (1989)",
+      "Rick and Morty (2013)",
+      "BoJack Horseman (2014)",
+      "South Park (1997)",
+      "Futurama (1999)"
+    ],
+    "fiducia": "alta"
+  }
+]

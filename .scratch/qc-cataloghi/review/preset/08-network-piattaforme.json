@@ -1,0 +1,574 @@
+[
+  {
+    "id": "preset_hbo",
+    "nome": "📺 Produzione HBO",
+    "verdetto": "P",
+    "score": 94,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 100,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo di assoluto prestigio incentrato sulle serie prodotte e trasmesse dal network via cavo HBO (network TMDB 49), ordinato con precisione per voto medio decrescente. La qualità complessiva è straordinaria (mediana 7.57, nessun titolo sotto il 7.6 in top 50), penalizzata solo dalla parziale sovrapposizione con Serie HBO & Max (J@40 0.311) e dal pool di 115 titoli.",
+    "evidenza": [
+      "Chernobyl (2019)",
+      "I Soprano (1999)",
+      "The Wire (2002)",
+      "Il Trono di Spade (2011)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_netflix",
+    "nome": "N Originali Netflix",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "सीआईडी",
+        "anno": "1998",
+        "tipo": "trash",
+        "nota": "Procedural poliziesco indiano di Sony TV con voto mediocre (5.7), estraneo all'identità degli Originali Netflix."
+      },
+      {
+        "pos": 4,
+        "titolo": "Sesamo apriti!",
+        "anno": "1969",
+        "tipo": "fuori-promessa",
+        "nota": "Programma prescolare storico PBS/HBO presente per mere licenze secondarie."
+      },
+      {
+        "pos": 5,
+        "titolo": "Good Mythical Morning",
+        "anno": "2012",
+        "tipo": "fuori-promessa",
+        "nota": "Web show giornaliero di YouTube associato impropriamente al network Netflix."
+      },
+      {
+        "pos": 10,
+        "titolo": "Star Wars: The Clone Wars",
+        "anno": "2008",
+        "tipo": "fuori-promessa",
+        "nota": "Produzione Lucasfilm/Cartoon Network presente solo per una licenza stagionale."
+      },
+      {
+        "pos": 22,
+        "titolo": "La Promessa",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Soap opera quotidiana di RTVE distribuita in syndication locale e non prodotta da Netflix."
+      }
+    ],
+    "motivo": "Catalogo molto ampio basato sull'id network TMDB di Netflix che include tutti i grandi successi originali della piattaforma con ordinamento per popolarità impeccabile. Risente tuttavia di web show, soap e syndication straniere nelle posizioni di vertice che non rappresentano produzioni originali.",
+    "evidenza": [
+      "Stranger Things (2016)",
+      "The Crown (2016)",
+      "Squid Game (2021)",
+      "BoJack Horseman (2014)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_amazon",
+    "nome": "A Amazon Prime Video",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 13,
+        "titolo": "AVN Awards",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Cerimonia di premiazione per l'industria per adulti (voto 5.9), anomala in un catalogo di serie TV."
+      },
+      {
+        "pos": 37,
+        "titolo": "Helluva Boss",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Web serie indipendente di YouTube associata al network Amazon per licenza terzi."
+      },
+      {
+        "pos": 42,
+        "titolo": "La que se avecina",
+        "anno": "2007",
+        "tipo": "fuori-promessa",
+        "nota": "Serie televisiva broadcast di Telecinco acquisita in syndication locale."
+      }
+    ],
+    "motivo": "Ottima raccolta delle serie prodotte e distribuite da Amazon (network TMDB 1024), con perfetta progressione della popolarità e pool consistente (480 titoli). La selezione è nel complesso solida, sporcata solo da sporadici eventi fuori contesto come gli AVN Awards o web serie animate.",
+    "evidenza": [
+      "Reacher (2022)",
+      "The Boys (2019)",
+      "Il Signore degli Anelli: Gli Anelli del Potere (2022)",
+      "Fallout (2024)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_disney_plus",
+    "nome": "🏰 Disney+",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 70,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "Dancing with the Stars",
+        "anno": "2005",
+        "tipo": "fuori-promessa",
+        "nota": "Show di intrattenimento generalista ABC in cima alla classifica per popolarità simulcast anziché serie originale Disney+."
+      },
+      {
+        "pos": 22,
+        "titolo": "Star Wars: Young Jedi Adventures",
+        "anno": "2023",
+        "tipo": "trash",
+        "nota": "Animazione prescolare con voto gravemente insufficiente (4.6)."
+      },
+      {
+        "pos": 36,
+        "titolo": "Ironheart",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Produzione Marvel accolta con riscontro ampiamente negativo (voto 5.29)."
+      },
+      {
+        "pos": 37,
+        "titolo": "La famiglia Proud - Più forte e orgogliosa",
+        "anno": "2022",
+        "tipo": "trash",
+        "nota": "Revival animato con valutazione molto bassa (5.3)."
+      },
+      {
+        "pos": 43,
+        "titolo": "The Acolyte: La seguace",
+        "anno": "2024",
+        "tipo": "trash",
+        "nota": "Capitolo del franchise Star Wars bocciato dal pubblico con voto 5.326."
+      }
+    ],
+    "motivo": "Catalogo fedele alle serie originali Disney+ incentrato sui franchise Marvel, Star Wars e Pixar con ordinamento per popolarità impeccabile. La qualità media risente tuttavia di diverse produzioni con valutazioni sotto il 5.5 e del reality broadcast Dancing with the Stars al primo posto.",
+    "evidenza": [
+      "Loki (2021)",
+      "The Mandalorian (2019)",
+      "Andor (2022)",
+      "WandaVision (2021)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_apple_tv",
+    "nome": "🍎 Apple TV+",
+    "verdetto": "P",
+    "score": 94,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 85,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo magistrale dedicato alle serie originali Apple TV+ (network TMDB 2552), con pertinenza assoluta, ordinamento per voto medio ineccepibile e zero titoli sotto il 7.2 tra i primi 50. L'unico limite è l'ampiezza contenuta del pool (83 titoli totali).",
+    "evidenza": [
+      "Ted Lasso (2020)",
+      "Scissione (2022)",
+      "Silo (2023)",
+      "Slow Horses (2022)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_netflix_movies",
+    "nome": "N Film su Netflix",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 4,
+        "titolo": "Demon Slayer: Il Castello dell'Infinito - Parte 1",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Lungometraggio anime giapponese presente a dispetto dell'esclusione esplicita Anime: no."
+      },
+      {
+        "pos": 13,
+        "titolo": "Il castello errante di Howl",
+        "anno": "2004",
+        "tipo": "fuori-promessa",
+        "nota": "Classico anime dello Studio Ghibli in violazione della regola Anime: no."
+      },
+      {
+        "pos": 20,
+        "titolo": "La città incantata",
+        "anno": "2001",
+        "tipo": "fuori-promessa",
+        "nota": "Celebre film d'animazione giapponese escluso dai parametri del preset."
+      },
+      {
+        "pos": 21,
+        "titolo": "KPop Demon Hunters",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione contrassegnato come anime in contrasto con Anime: no."
+      },
+      {
+        "pos": 43,
+        "titolo": "Your Name.",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime di Makoto Shinkai non consentito dal filtro Anime: no."
+      }
+    ],
+    "motivo": "Il catalogo riflette la disponibilità in streaming su Netflix Italia (tramite filtro watch provider IT e non le sole produzioni originali), offrendo grande varietà di blockbuster ordinati coerentemente per popolarità. Risulta tuttavia inquinato da diversi film anime in contrasto con il parametro Anime: no.",
+    "evidenza": [
+      "Interstellar (2014)",
+      "Blade Runner 2049 (2017)",
+      "Il Signore degli Anelli - La Compagnia dell'Anello (2001)",
+      "Matrix (1999)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_amazon_movies",
+    "nome": "A Film su Prime Video",
+    "verdetto": "P",
+    "score": 91,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 70,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 4,
+        "titolo": "La guerra dei mondi",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Flop fantascientifico con voto pesantemente insufficiente (4.032) al 4° posto per popolarità."
+      },
+      {
+        "pos": 6,
+        "titolo": "Demon Slayer: Il Castello dell'Infinito - Parte 1",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime giapponese in violazione del vincolo Anime: no."
+      },
+      {
+        "pos": 47,
+        "titolo": "Cinquanta sfumature di grigio",
+        "anno": "2015",
+        "tipo": "trash",
+        "nota": "Titolo commerciale con gradimento critico scadente (5.858)."
+      }
+    ],
+    "motivo": "Catalogo ricchissimo che riflette l'offerta dei film visibili su Prime Video Italia (watch provider IT e non solo Amazon Originals), ordinato rigorosamente per popolarità. L'esperienza è penalizzata solo dal film anime Demon Slayer (in contrasto con Anime: no) e dal flop La guerra dei mondi in cima alla classifica.",
+    "evidenza": [
+      "The Imitation Game (2014)",
+      "Blade Runner 2049 (2017)",
+      "Matrix (1999)",
+      "Dune (2021)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_disney_movies",
+    "nome": "🏰 Film su Disney+",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo perfetto per la fruizione cinematografica su Disney+ in Italia (watch provider IT), trainato dai blockbuster Marvel, Pixar, Star Wars e classici d'animazione. L'ordinamento per popolarità è impeccabile e la qualità è alta e costante, con fisiologica sovrapposizione verso il catalogo Blockbusters (J@40 0.212).",
+    "evidenza": [
+      "Avengers: Endgame (2019)",
+      "Inside Out (2015)",
+      "Il re leone (1994)",
+      "WALL•E (2008)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_hbo_max_movies",
+    "nome": "📺 Film HBO & Max",
+    "verdetto": "P",
+    "score": 87,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 20,
+        "titolo": "Il mio grosso grasso matrimonio greco 2",
+        "anno": "2016",
+        "tipo": "trash",
+        "nota": "Commedia commerciale con votazione insufficiente (5.986)."
+      },
+      {
+        "pos": 22,
+        "titolo": "Mountainhead",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Film TV con accoglienza pessima (voto 5.27)."
+      },
+      {
+        "pos": 25,
+        "titolo": "Fahrenheit 451",
+        "anno": "2018",
+        "tipo": "trash",
+        "nota": "Adattamento distopico accolto molto freddamente dal pubblico (voto 5.5)."
+      },
+      {
+        "pos": 48,
+        "titolo": "Un ponte di guai",
+        "anno": "1985",
+        "tipo": "trash",
+        "nota": "Commedia d'epoca mediocre con valutazione di 5.543."
+      }
+    ],
+    "motivo": "Catalogo incentrato sulle case di produzione HBO Films e Max Original (produzioni cinematografiche interne e film TV, escludendo i blockbuster theatrical Warner Bros). La coerenza societaria è rispettata ma la qualità media è modesta (mediana 6.6 e oltre il 15% sotto il 6.0).",
+    "evidenza": [
+      "Sex and the City (2008)",
+      "No Sudden Move (2021)",
+      "Elephant (2003)",
+      "The Normal Heart (2014)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_hbo_max_series",
+    "nome": "📺 Serie HBO & Max",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 100,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "Sesamo apriti!",
+        "anno": "1969",
+        "tipo": "fuori-promessa",
+        "nota": "Storico show prescolare presente per accordi di distribuzione con Max, incoerente al secondo posto."
+      },
+      {
+        "pos": 4,
+        "titolo": "Real Time with Bill Maher",
+        "anno": "2003",
+        "tipo": "fuori-promessa",
+        "nota": "Talk show settimanale con voto mediocre (6.0), poco pertinente tra le serie narrative."
+      },
+      {
+        "pos": 33,
+        "titolo": "VICE News Tonight",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Programma di informazione giornalistica quotidiana che stona nel catalogo."
+      }
+    ],
+    "motivo": "Catalogo eccellente che riunisce le serie di punta del network HBO e i Max Originals ordinati per popolarità, mantenendo una qualità artistica straordinaria (mediana 7.6). Si riscontra una naturale sovrapposizione con Produzione HBO (J@40 0.311) e qualche talk show o telegiornale nelle prime posizioni.",
+    "evidenza": [
+      "Il Trono di Spade (2011)",
+      "I Soprano (1999)",
+      "Hacks (2021)",
+      "Peacemaker (2022)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_hulu_series",
+    "nome": "🟩 Serie su Hulu",
+    "verdetto": "B",
+    "score": 79,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 70,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "WWE NXT",
+        "anno": "2010",
+        "tipo": "fuori-promessa",
+        "nota": "Show sportivo di wrestling della WWE presente per diritti televisivi americani anziché serie narrativa."
+      },
+      {
+        "pos": 4,
+        "titolo": "WWE Superstars",
+        "anno": "2009",
+        "tipo": "fuori-promessa",
+        "nota": "Altro evento sportivo WWE che occupa impropriamente le prime posizioni."
+      },
+      {
+        "pos": 7,
+        "titolo": "WWE Main Event",
+        "anno": "2012",
+        "tipo": "fuori-promessa",
+        "nota": "Terzo programma di wrestling nelle posizioni di vertice che abbassa la pertinenza."
+      },
+      {
+        "pos": 15,
+        "titolo": "Percy Jackson e gli dei dell'Olimpo",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Serie originale Disney+ comparsa nel network per via dell'integrazione di catalogo statunitense."
+      },
+      {
+        "pos": 16,
+        "titolo": "Enigmi alieni",
+        "anno": "2010",
+        "tipo": "fuori-promessa",
+        "nota": "Docu-serie via cavo di History Channel estranea alla linea produttiva originale di Hulu."
+      },
+      {
+        "pos": 18,
+        "titolo": "Oscars: La notte in diretta",
+        "anno": "1953",
+        "tipo": "fuori-promessa",
+        "nota": "Cerimonia degli Oscar priva di genere classificata come serie televisiva."
+      },
+      {
+        "pos": 37,
+        "titolo": "All's Fair",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Titolo con accoglienza pessima e voto nettamente insufficiente (4.7)."
+      },
+      {
+        "pos": 45,
+        "titolo": "Piccoli brividi",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Altra serie originale Disney+ comparsa impropriamente tra i titoli Hulu."
+      }
+    ],
+    "motivo": "Sebbene contenga serie acclamate come The Bear, Shōgun e Only Murders, il catalogo risente pesantemente della natura ibrida del network americano di Hulu, con programmi di wrestling WWE, la notte degli Oscar e docufiction via cavo nelle prime posizioni. Risulta disomogeneo e richiede una pulizia dei contenuti sportivi e broadcast.",
+    "evidenza": [
+      "Futurama (1999)",
+      "The Handmaid's Tale (2017)",
+      "The Bear (2022)",
+      "Only Murders in the Building (2021)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_paramount_series",
+    "nome": "🏔️ Serie su Paramount+",
+    "verdetto": "P",
+    "score": 85,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 75,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 20,
+        "titolo": "The Ultimate Fighter",
+        "anno": "2005",
+        "tipo": "fuori-promessa",
+        "nota": "Reality show sportivo di combattimento UFC trasmesso su canali affiliati Viacom."
+      },
+      {
+        "pos": 21,
+        "titolo": "The Challenge",
+        "anno": "1998",
+        "tipo": "fuori-promessa",
+        "nota": "Reality competition storico di MTV che stona tra le serie fiction."
+      },
+      {
+        "pos": 25,
+        "titolo": "Ink Master",
+        "anno": "2012",
+        "tipo": "fuori-promessa",
+        "nota": "Talent show via cavo di Spike/Paramount Network poco pertinente alle serie originali."
+      },
+      {
+        "pos": 28,
+        "titolo": "Star Trek: Starfleet Academy",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Nuova serie dell'universo Star Trek con valutazione al di sotto della sufficienza (5.4)."
+      },
+      {
+        "pos": 33,
+        "titolo": "RuPaul's Drag Race All Stars: UNTUCKED",
+        "anno": "2012",
+        "tipo": "trash",
+        "nota": "Spin-off di reality show con votazione mediocre (5.5)."
+      }
+    ],
+    "motivo": "Catalogo compatto ma efficace incentrato sulle serie esclusive e sui franchise di spicco di Paramount+ (Star Trek e l'universo narrativo di Taylor Sheridan), con ordinamento perfetto. È penalizzato principalmente dalle dimensioni esigue del pool (solo 61 titoli) e dall'intrusione di reality show del gruppo Viacom.",
+    "evidenza": [
+      "Operazione speciale: Lioness (2023)",
+      "Tulsa King (2022)",
+      "Star Trek: Strange New Worlds (2022)",
+      "1923 (2022)"
+    ],
+    "fiducia": "alta"
+  }
+]

@@ -180,3 +180,6 @@ public/cache/
 *serviceaccount*.json
 drive-backup-*.json
 gdrive-sa.json
+
+# Stato materializzato dall'harness di simulazione: derivato, si rigenera con `simulate.js profiles`
+.scratch/simulazione-profili/atlas-state.json

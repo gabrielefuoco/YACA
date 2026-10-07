@@ -1,0 +1,773 @@
+[
+  {
+    "id": "preset_feel_good",
+    "nome": "😊 Feel-Good (Umore Leggero)",
+    "verdetto": "P",
+    "score": 100,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "Wizards of Waverly Place: Wizard School",
+        "anno": "2008",
+        "tipo": "fuori-promessa",
+        "nota": "Film TV per ragazzi con voto sproporzionato (9.0) al primo posto del catalogo"
+      }
+    ],
+    "motivo": "Catalogo impeccabile che rispetta appieno la promessa di intrattenimento leggero e familiare, con ottimi voti medi, ordinamento rigoroso e nessun dramma pesante.",
+    "evidenza": [
+      "Toy Story 5 (2026)",
+      "Il gatto con gli stivali 2 - L'ultimo desiderio (2022)",
+      "Klaus - I segreti del Natale (2019)",
+      "Toy Story - Il mondo dei giocattoli (1995)",
+      "Ratatouille (2007)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_pure_comedy",
+    "nome": "😂 Commedia Pura (No Dramma)",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 9,
+        "titolo": "L'isola dei ricordi",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Anime presente in catalogo nonostante il filtro esplicito Anime: no"
+      },
+      {
+        "pos": 16,
+        "titolo": "KPop Demon Hunters",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Anime presente in catalogo nonostante il filtro esplicito Anime: no"
+      },
+      {
+        "pos": 28,
+        "titolo": "Il gatto... e il cappello matto",
+        "anno": "2003",
+        "tipo": "trash",
+        "nota": "Commedia per ragazzi con voto insufficiente (5.38)"
+      },
+      {
+        "pos": 8,
+        "titolo": "Deadpool & Wolverine",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Cinecomic d'azione spettacolare poco affine al concetto di commedia pura"
+      },
+      {
+        "pos": 33,
+        "titolo": "The Suicide Squad - Missione suicida",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Blockbuster d'azione violenta e supereroi estraneo alla commedia pura"
+      }
+    ],
+    "motivo": "Ottima selezione comica ad altissima popolarità e pool sterminato, intaccata solo da due anime non filtrati e da alcuni blockbuster d'azione Marvel/DC.",
+    "evidenza": [
+      "Coyote vs. Acme (2026)",
+      "Una notte da leoni (2009)",
+      "Ritorno al futuro (1985)",
+      "Barbie (2023)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_sad_romance",
+    "nome": "Storie d'Amore Drammatiche",
+    "verdetto": "P",
+    "score": 86,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 7,
+        "titolo": "Your Name.",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Anime presente in lista nonostante il preset dichiari Anime: no"
+      },
+      {
+        "pos": 10,
+        "titolo": "La Forma della Voce",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Anime presente in lista nonostante il preset dichiari Anime: no"
+      },
+      {
+        "pos": 11,
+        "titolo": "O Auto da Compadecida",
+        "anno": "2000",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia folkloristica picaresca brasiliana, estranea al dramma romantico"
+      },
+      {
+        "pos": 16,
+        "titolo": "Violet Evergarden - Il film",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Anime presente in lista nonostante il preset dichiari Anime: no"
+      },
+      {
+        "pos": 17,
+        "titolo": "Tempi moderni",
+        "anno": "1936",
+        "tipo": "fuori-promessa",
+        "nota": "Capolavoro comico di Chaplin, non una storia d'amore drammatica"
+      },
+      {
+        "pos": 25,
+        "titolo": "Voglio mangiare il tuo pancreas",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Anime presente in lista nonostante il preset dichiari Anime: no"
+      },
+      {
+        "pos": 28,
+        "titolo": "L'appartamento",
+        "anno": "1960",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia brillante romantica di Billy Wilder, lontana dal tono drammatico"
+      },
+      {
+        "pos": 36,
+        "titolo": "Scrivimi fermo posta",
+        "anno": "1940",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia romantica classica (rom-com) di Lubitsch priva di risvolti drammatici"
+      }
+    ],
+    "motivo": "Catalogo di qualità cinematografica eccellente ma sporcato da ben 7 anime sfuggiti al filtro Anime: no e dall'infiltrazione di commedie romantiche e slapstick classici.",
+    "evidenza": [
+      "Nuovo Cinema Paradiso (1988)",
+      "Casablanca (1943)",
+      "Se mi lasci ti cancello (2004)",
+      "In the Mood for Love (2000)",
+      "Ritratto della giovane in fiamme (2019)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_stand_up",
+    "nome": "🎤 Stand-Up Comedy",
+    "verdetto": "P",
+    "score": 91,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 8,
+        "titolo": "Ilana Glazer: Human Magic",
+        "anno": "2024",
+        "tipo": "trash",
+        "nota": "Speciale stand-up con valutazione mediocre (5.42)"
+      },
+      {
+        "pos": 19,
+        "titolo": "Sarah Squirm: Live + in the Flesh",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Speciale comico con voto ampiamente insufficiente (5.06)"
+      },
+      {
+        "pos": 23,
+        "titolo": "Katt Williams: Woke Foke",
+        "anno": "2024",
+        "tipo": "trash",
+        "nota": "Stand-up con voto insufficiente (5.34)"
+      },
+      {
+        "pos": 44,
+        "titolo": "Amy Schumer Presents: Parental Advisory",
+        "anno": "2022",
+        "tipo": "trash",
+        "nota": "Show collettivo con punteggio molto basso (4.60)"
+      }
+    ],
+    "motivo": "Pertinenza assoluta con soli spettacoli di stand-up comedy reali e ordinamento impeccabile; la qualità media è discreta ma presenta alcune esibizioni a basso gradimento.",
+    "evidenza": [
+      "Dave Chappelle: Sticks & Stones (2019)",
+      "George Carlin: It's Bad for Ya! (2008)",
+      "Ricky Gervais: Humanity (2018)",
+      "Eddie Murphy: Delirious (1983)",
+      "Bo Burnham: Inside (2021)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_musical",
+    "nome": "🎵 Musical & Film Musicali",
+    "verdetto": "P",
+    "score": 82,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "La leggenda del pianista sull'oceano",
+        "anno": "1998",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma biografico a tema pianistico di Tornatore al primo posto, non un film musical cantato"
+      },
+      {
+        "pos": 2,
+        "titolo": "KPop Demon Hunters",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Anime presente in catalogo nonostante il filtro Anime: no"
+      },
+      {
+        "pos": 29,
+        "titolo": "You, the Living",
+        "anno": "2007",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia drammatica surreale d'autore svedese, estranea al genere musical"
+      }
+    ],
+    "motivo": "Buona panoramica di grandi musical teatrali e d'animazione con ordinamento coerente; la pertinenza soffre per l'inclusione indebita al vertice di un dramma pianistico e di un anime.",
+    "evidenza": [
+      "Tutti insieme appassionatamente (1965)",
+      "Moulin Rouge! (2001)",
+      "My Fair Lady (1964)",
+      "Cabaret (1972)",
+      "Cappello a cilindro (1935)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_sketch_comedy",
+    "nome": "😂 Sketch Comedy",
+    "verdetto": "P",
+    "score": 86,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "30 Rock",
+        "anno": "2006",
+        "tipo": "fuori-promessa",
+        "nota": "Sitcom narrativa ambientata nel dietro le quinte di uno show comico, non uno sketch show"
+      },
+      {
+        "pos": 13,
+        "titolo": "Nick Cannon Presents: Wild 'N Out",
+        "anno": "2005",
+        "tipo": "fuori-promessa",
+        "nota": "Game show musicale basato su improvvisazione e battle rap"
+      },
+      {
+        "pos": 33,
+        "titolo": "Saturday Night Live UK",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Versione britannica di SNL con valutazione mediocre (4.90)"
+      },
+      {
+        "pos": 37,
+        "titolo": "TripTank",
+        "anno": "2014",
+        "tipo": "trash",
+        "nota": "Serie animata a sketch con rating insufficiente (5.21)"
+      },
+      {
+        "pos": 48,
+        "titolo": "La vita, Larry e la ricerca dell'infelicità: Una storia dell'America, o quasi",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Produzione comica con voto deludente (5.46)"
+      }
+    ],
+    "motivo": "Catalogo solido che raccoglie i mostri sacri della sketch comedy televisiva mondiale; unica pecca l'intrusione di una celebre sitcom e di un paio di titoli trash a fine lista.",
+    "evidenza": [
+      "Saturday Night Live (1975)",
+      "Key & Peele (2012)",
+      "Monty Python's Flying Circus (1969)",
+      "Chappelle's Show (2003)",
+      "In Living Color (1990)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_sitcoms",
+    "nome": "🛋️ Sitcom Americane",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 35,
+        "titolo": "Perfect Crown",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Serie sudcoreana (ko) del tutto estranea alla promessa di sitcom americane"
+      },
+      {
+        "pos": 40,
+        "titolo": "Caméra Café",
+        "anno": "2001",
+        "tipo": "fuori-promessa",
+        "nota": "Serie comica francese a sketch (fr), non una sitcom statunitense"
+      },
+      {
+        "pos": 50,
+        "titolo": "Amorcito Corazón",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Telenovela messicana (es), incongruente con le sitcom USA"
+      },
+      {
+        "pos": 34,
+        "titolo": "BoJack Horseman",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Serie drammatica d'animazione esistenziale (dramedy), distante dal formato sitcom puro"
+      },
+      {
+        "pos": 38,
+        "titolo": "Sex and the City",
+        "anno": "1998",
+        "tipo": "fuori-promessa",
+        "nota": "Dramedy seriale da 30 minuti, atipica rispetto alla classica sitcom televisiva"
+      }
+    ],
+    "motivo": "Catalogo di straordinaria qualità e ampiezza con tutti i pilastri storici della commedia USA, macchiato solo da filtri geografici permissivi che imbarcano tre serie straniere.",
+    "evidenza": [
+      "The Office (US) (2005)",
+      "Friends (1994)",
+      "Seinfeld (1989)",
+      "Modern Family (2009)",
+      "How I Met Your Mother (2005)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_medical_drama",
+    "nome": "🩺 Medical Drama",
+    "verdetto": "P",
+    "score": 82,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 34,
+        "titolo": "Откраднат живот",
+        "anno": "2016",
+        "tipo": "trash",
+        "nota": "Soap medica bulgara con voto disastroso (3.10)"
+      },
+      {
+        "pos": 22,
+        "titolo": "Doctors",
+        "anno": "2000",
+        "tipo": "trash",
+        "nota": "Soap opera medica pomeridiana con valutazione negativa (4.80)"
+      },
+      {
+        "pos": 28,
+        "titolo": "Watson",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Serie medica con gradimento pessimo (5.00)"
+      },
+      {
+        "pos": 8,
+        "titolo": "Holby City",
+        "anno": "1999",
+        "tipo": "trash",
+        "nota": "Soap ospedaliera britannica con voto insufficiente (5.80)"
+      },
+      {
+        "pos": 33,
+        "titolo": "Forever",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Procedurale poliziesco fantastico con medico legale, spurio rispetto al medical drama"
+      }
+    ],
+    "motivo": "Lista molto fedele e ricca dei più amati drammi ospedalieri mondiali; l'ordinamento per popolarità è corretto ma la qualità complessiva cala per l'ingresso di alcune soap a voto basso.",
+    "evidenza": [
+      "Grey's Anatomy (2005)",
+      "Dr. House - Medical Division (2004)",
+      "The Good Doctor (2017)",
+      "E.R. - Medici in prima linea (1994)",
+      "Chicago Med (2015)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_teen_drama",
+    "nome": "🎒 Teen Drama & Coming of Age",
+    "verdetto": "P",
+    "score": 97,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 14,
+        "titolo": "90210",
+        "anno": "2008",
+        "tipo": "trash",
+        "nota": "Reboot per adolescenti con voto mediocre (5.73)"
+      },
+      {
+        "pos": 43,
+        "titolo": "The Innocents",
+        "anno": "2018",
+        "tipo": "trash",
+        "nota": "Serie YA sovrannaturale con valutazione sotto la sufficienza (5.70)"
+      }
+    ],
+    "motivo": "Catalogo eccezionale che incarna alla perfezione l'essenza del teen drama generazionale dagli anni '90 a oggi, con voti eccellenti e perfetta coerenza di genere.",
+    "evidenza": [
+      "Beverly Hills 90210 (1990)",
+      "The O.C. (2003)",
+      "Gossip Girl (2007)",
+      "Dawson's Creek (1998)",
+      "One Tree Hill (2003)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_romcom",
+    "nome": "🎬 Commedie Romantiche",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 6,
+        "titolo": "Forrest Gump",
+        "anno": "1994",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma generazionale ed esistenziale, non una commedia romantica"
+      },
+      {
+        "pos": 12,
+        "titolo": "Povere creature!",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Favola grottesca e satirica d'autore d'avanguardia, incompatibile con il genere rom-com"
+      },
+      {
+        "pos": 14,
+        "titolo": "Shrek 2",
+        "anno": "2004",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione fantastica d'avventura familiare"
+      },
+      {
+        "pos": 22,
+        "titolo": "The Mask: Da zero a mito",
+        "anno": "1994",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia comica e fantastica slapstick con Jim Carrey"
+      },
+      {
+        "pos": 29,
+        "titolo": "Piccole canaglie",
+        "anno": "1994",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia slapstick per l'infanzia"
+      },
+      {
+        "pos": 32,
+        "titolo": "Anora",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma crudo e dramedy sul sex work, lontanissima dallo spirito spensierato della commedia romantica"
+      },
+      {
+        "pos": 41,
+        "titolo": "Hercules",
+        "anno": "1997",
+        "tipo": "fuori-promessa",
+        "nota": "Classico d'animazione Disney mitologico e d'azione"
+      },
+      {
+        "pos": 3,
+        "titolo": "Who's That Girl",
+        "anno": "1987",
+        "tipo": "trash",
+        "nota": "Commedia con Madonna dalla votazione scadente (5.53)"
+      }
+    ],
+    "motivo": "Il catalogo ospita grandi classici del genere ma l'assenza di filtri tematici negativi imbarca film d'autore grotteschi (Povere creature!, Anora), blockbuster d'animazione e commedie slapstick.",
+    "evidenza": [
+      "Pretty Woman (1990)",
+      "10 cose che odio di te (1999)",
+      "Tutti tranne te (2023)",
+      "C'è post@ per te (1998)",
+      "Ricatto d'amore (2009)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_italian_comedy",
+    "nome": "🇮🇹 Commedie Italiane",
+    "verdetto": "B",
+    "score": 68,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 40,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 49,
+        "titolo": "Bollenti spiriti",
+        "anno": "1981",
+        "tipo": "trash",
+        "nota": "B-movie comico/horror con voto pessimo (4.10)"
+      },
+      {
+        "pos": 11,
+        "titolo": "Quando le donne avevano la coda",
+        "anno": "1970",
+        "tipo": "trash",
+        "nota": "Commedia preistorica con votazione scadente (4.30)"
+      },
+      {
+        "pos": 17,
+        "titolo": "Saint Tropez, Saint Tropez",
+        "anno": "1992",
+        "tipo": "trash",
+        "nota": "Farsa balneare con punteggio insufficiente (4.31)"
+      },
+      {
+        "pos": 14,
+        "titolo": "L'infermiera di campagna",
+        "anno": "1982",
+        "tipo": "trash",
+        "nota": "Commedia sexy scollacciata con voto 4.60"
+      },
+      {
+        "pos": 28,
+        "titolo": "La fidanzata di papà",
+        "anno": "2008",
+        "tipo": "trash",
+        "nota": "Cinepanettone con rating molto basso (4.62)"
+      },
+      {
+        "pos": 29,
+        "titolo": "Abbronzatissimi",
+        "anno": "1991",
+        "tipo": "trash",
+        "nota": "Commedia vacanziera con voto ampiamente insufficiente (4.76)"
+      },
+      {
+        "pos": 6,
+        "titolo": "Il silenzio dei prosciutti",
+        "anno": "1994",
+        "tipo": "trash",
+        "nota": "Parodia demenziale flop con valutazione negativa (4.85)"
+      },
+      {
+        "pos": 44,
+        "titolo": "Natale a Miami",
+        "anno": "2005",
+        "tipo": "trash",
+        "nota": "Cinepanettone con votazione insufficiente (5.14)"
+      }
+    ],
+    "motivo": "Un filtro keyword restrittivo e fallace riduce il pool a soli 53 titoli ed esclude l'intera commedia all'italiana d'autore, riempiendo il catalogo di commedie sexy anni '70 e cinepanettoni (71.7% sotto 6.0).",
+    "evidenza": [
+      "I mostri (1963)",
+      "Ieri, oggi, domani (1963)",
+      "Boris - Il film (2011)",
+      "Vieni avanti cretino (1982)",
+      "Qualunquemente (2011)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_teen_drama_comedy",
+    "nome": "😂 High School & Teen Drama",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 75,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 16,
+    "errori": [
+      {
+        "pos": 5,
+        "titolo": "The Daily Life of the Immortal King",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Donghua/anime fantasy di coltivazione cinese, del tutto incongruo e in violazione del filtro Anime: no"
+      },
+      {
+        "pos": 7,
+        "titolo": "Bayside School - la nuova classe",
+        "anno": "1993",
+        "tipo": "trash",
+        "nota": "Spin-off poco riuscito con votazione sotto la sufficienza (5.89)"
+      }
+    ],
+    "motivo": "Catalogo gravemente limitato nel pool con soli 16 titoli disponibili (meno di una singola pagina da 20 su Stremio); i titoli presenti sono buone serie adolescenziali ma l'offerta è troppo scarna e include un donghua fantasy.",
+    "evidenza": [
+      "Victorious (2010)",
+      "Non ho mai... (2020)",
+      "Derry Girls (2018)",
+      "The Inbetweeners (2008)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_slapstick_comedy",
+    "nome": "😂 Commedia Demenziale",
+    "verdetto": "B",
+    "score": 76,
+    "dimensioni": {
+      "pertinenza": 70,
+      "qualita": 40,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 50,
+        "titolo": "3ciento - Chi l'ha duro... la vince!",
+        "anno": "2008",
+        "tipo": "trash",
+        "nota": "Parodia demenziale con voto disastroso (4.10)"
+      },
+      {
+        "pos": 44,
+        "titolo": "The Mask 2",
+        "anno": "2005",
+        "tipo": "trash",
+        "nota": "Sequel universalmente stroncato con voto pessimo (4.19)"
+      },
+      {
+        "pos": 21,
+        "titolo": "Scary Movie 5",
+        "anno": "2013",
+        "tipo": "trash",
+        "nota": "Capitolo peggiore della saga spoof con valutazione 4.80"
+      },
+      {
+        "pos": 46,
+        "titolo": "Home Sweet Home Alone - Mamma, ho perso l'aereo",
+        "anno": "2021",
+        "tipo": "trash",
+        "nota": "Reboot natalizio fallimentare con voto 4.82"
+      },
+      {
+        "pos": 17,
+        "titolo": "Emoji - Accendi le emozioni",
+        "anno": "2017",
+        "tipo": "trash",
+        "nota": "Film d'animazione mediocre con valutazione insufficiente (5.37)"
+      },
+      {
+        "pos": 22,
+        "titolo": "3 Idiots",
+        "anno": "2009",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia drammatica di formazione indiana, estranea al genere demenziale"
+      },
+      {
+        "pos": 25,
+        "titolo": "La ballata di Buster Scruggs",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Western antologico d'autore dei fratelli Coen, non una commedia demenziale"
+      },
+      {
+        "pos": 34,
+        "titolo": "Tempi moderni",
+        "anno": "1936",
+        "tipo": "fuori-promessa",
+        "nota": "Capolavoro muto e satira sociale di Chaplin, spurio rispetto alla commedia demenziale"
+      }
+    ],
+    "motivo": "Il catalogo raccoglie celebri saghe parodistiche (Scary Movie, Una pallottola spuntata, Austin Powers) ma soffre di diffusa bassa qualità (35% sotto 6.0) e include titoli autoriali o d'animazione familiare fuori bersaglio.",
+    "evidenza": [
+      "L'aereo più pazzo del mondo (1980)",
+      "Una pallottola spuntata (1988)",
+      "Balle spaziali (1987)",
+      "Austin Powers - La spia che ci provava (1999)",
+      "Ace Ventura - L'acchiappanimali (1994)"
+    ],
+    "fiducia": "alta"
+  }
+]

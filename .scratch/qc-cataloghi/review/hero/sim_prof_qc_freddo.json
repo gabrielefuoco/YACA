@@ -1,0 +1,376 @@
+[
+  {
+    "id": "sim_prof_qc_freddo::yaca_true_blend_movies",
+    "catalogo": "yaca_true_blend_movies",
+    "tipo": "movie",
+    "verdetto": "B",
+    "score": 68,
+    "dimensioni": {
+      "pertinenza": 40,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 50,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 29,
+        "titolo": "Grand Theft Auto VI: Una lunga anteprima",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Video promozionale/trailer videoludico di 27 minuti inserito in un catalogo di lungometraggi."
+      }
+    ],
+    "motivo": "Per un utente freddo privo di storico, il catalogo degrada silenziosamente verso una classifica dei film più popolari degli ultimi 36 mesi con punteggio di match azzerato. Non dichiarandosi esplicitamente come fallback di popolarità, contraddice la promessa di un blend personalizzato Scelto per Te. La qualità media è comunque elevata (mediana 7.6), con la sola intrusione di un trailer promozionale videoludico.",
+    "evidenza": [
+      "Spider-Man: Brand New Day (2026)",
+      "Resident Evil (2026)",
+      "L'ultima missione: Project Hail Mary (2026)",
+      "Grand Theft Auto VI: Una lunga anteprima (2026)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_freddo::yaca_true_blend_series",
+    "catalogo": "yaca_true_blend_series",
+    "tipo": "series",
+    "verdetto": "B",
+    "score": 68,
+    "dimensioni": {
+      "pertinenza": 40,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 50,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 10,
+        "titolo": "Monster: La storia di Lizzie Borden",
+        "anno": "2026",
+        "tipo": "duplicato",
+        "nota": "Violazione della promessa 1 per saga: franchise Monster già presente alla posizione 7 con Ed Gein."
+      },
+      {
+        "pos": 46,
+        "titolo": "Dating Naked UK",
+        "anno": "2024",
+        "tipo": "trash",
+        "nota": "Reality show di dating con soli 51 voti, fuori tono rispetto all'offerta seriale di qualità."
+      }
+    ],
+    "motivo": "In assenza totale di DNA, la selezione seriale serve il fallback delle serie recenti più popolari mantenendo match 0 e presentandosi fittiziamente come raccomandazione personale. Si riscontra una duplicazione di franchise in contrasto con la regola 1 per saga (due stagioni distinte di Monster) e l'infiltrazione anomala di un reality show. L'offerta generale rimane comunque di alto livello qualitativo con mediana 8.1.",
+    "evidenza": [
+      "Lanterns (2026)",
+      "The Pitt (2025)",
+      "Monster: La storia di Ed Gein (2025)",
+      "Monster: La storia di Lizzie Borden (2026)",
+      "Dating Naked UK (2024)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_freddo::yaca_seed_network_movies",
+    "catalogo": "yaca_seed_network_movies",
+    "tipo": "movie",
+    "verdetto": "B",
+    "score": 66,
+    "dimensioni": {
+      "pertinenza": 40,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 40,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 32,
+        "titolo": "Il bambino, la talpa, la volpe e il cavallo",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio animato di 35 minuti presente in un catalogo di film."
+      },
+      {
+        "pos": 40,
+        "titolo": "Squid Game: dietro le quinte",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Speciale documentario / retroscena di 28 minuti non assimilabile a un'opera filmica."
+      },
+      {
+        "pos": 42,
+        "titolo": "Once Upon a Studio",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio celebrativo Disney di 9 minuti inserito in un catalogo cinematografico."
+      },
+      {
+        "pos": 46,
+        "titolo": "Lontano dall'albero",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio di soli 7 minuti inserito in un catalogo di lungometraggi."
+      }
+    ],
+    "motivo": "Il catalogo viola la propria promessa cardine fingendosi La Rete dei tuoi Preferiti per un utente che non ha alcun seed né attività registrata. La lista degrada su una classifica di film acclamati recenti (mediana 8.0), ma risulta inquinata da cortometraggi di pochi minuti e speciali dietro le quinte. L'assenza di sovrapposizioni con gli altri hero garantisce un'ottima distintività tecnica, ma l'inquadramento editoriale per un profilo freddo è fallace.",
+    "evidenza": [
+      "Spider-Man: No Way Home (2021)",
+      "Oppenheimer (2023)",
+      "Il bambino, la talpa, la volpe e il cavallo (2022)",
+      "Squid Game: dietro le quinte (2025)",
+      "Once Upon a Studio (2023)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_freddo::yaca_seed_network_series",
+    "catalogo": "yaca_seed_network_series",
+    "tipo": "series",
+    "verdetto": "B",
+    "score": 68,
+    "dimensioni": {
+      "pertinenza": 40,
+      "qualita": 90,
+      "distintivita": 100,
+      "coerenza": 40,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 12,
+        "titolo": "The Kardashians",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Reality show inserito in una selezione di serie narrative d'eccellenza."
+      }
+    ],
+    "motivo": "Anche sul versante seriale la rete dei preferiti non ha semi da cui ramificarsi ed eroga una lista dei titoli con rating più alto del recente passato con match nullo. Pur vantando una caratura qualitativa eccellente (mediana 8.5) e completa indipendenza dagli altri hero, finge una personalizzazione inesistente invece di etichettarsi come fallback trasparente. L'unica sbavatura di genere è la presenza di un reality show in top 15.",
+    "evidenza": [
+      "Mercoledì (2022)",
+      "The Last of Us (2023)",
+      "House of the Dragon (2022)",
+      "Arcane (2021)",
+      "The Kardashians (2022)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_freddo::yaca_hidden_gems_movies",
+    "catalogo": "yaca_hidden_gems_movies",
+    "tipo": "movie",
+    "verdetto": "P",
+    "score": 88,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 80,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 27,
+        "titolo": "L'appuntamento di Carl",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Durata non conforme (8 minuti): violazione del requisito di durata minima >= 60 minuti."
+      },
+      {
+        "pos": 33,
+        "titolo": "Snoopy presenta: Anno nuovo vita nuova, Lucy",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Durata non conforme (38 minuti): violazione del requisito di durata minima >= 60 minuti."
+      }
+    ],
+    "motivo": "Catalogo che rispetta pienamente la natura oggettiva delle gemme nascoste, risultando perfettamente fruibile e pertinente anche per un utente privo di profilo di gusto. I parametri di popolarità (tutti <= 20) e volume di voti (tra 50 e 1000) sono rispettati al 100%, con due sole infrazioni riguardanti cortometraggi di durata inferiore a 60 minuti. La selezione vanta titoli di culto internazionali di buona qualità media (mediana 7.4).",
+    "evidenza": [
+      "The Transformers: The Movie (1986)",
+      "La valle dell'Eden (1955)",
+      "Addio mia concubina (1993)",
+      "L'appuntamento di Carl (2023)",
+      "Snoopy presenta: Anno nuovo vita nuova, Lucy (2021)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_freddo::yaca_hidden_gems_series",
+    "catalogo": "yaca_hidden_gems_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 97,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Esecuzione impeccabile della promessa dell'hero: zero violazioni di popolarità (tutte <= 20.0), voti compresi rigorosamente nella fascia 50-1000 e catalogazione seriale perfettamente a tema. Non dipendendo strettamente da preferenze pregresse, il catalogo offre una ricca e valida selezione di perle poco note ad altissima qualità (mediana 7.7, nessun voto sotto 7.1). Ottima diversificazione tra drammi d'autore, anime cult e commedie.",
+    "evidenza": [
+      "The Artful Dodger (2023)",
+      "Fraggle Rock (1983)",
+      "Treme (2010)",
+      "Ergo Proxy (2006)",
+      "Banana Fish (2018)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_freddo::yaca_trakt_filtered_movies",
+    "catalogo": "yaca_trakt_filtered_movies",
+    "tipo": "movie",
+    "verdetto": "B",
+    "score": 67,
+    "dimensioni": {
+      "pertinenza": 50,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 50,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 4,
+        "titolo": "The Last Photograph",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Voto sotto la sufficienza (5.9) con sole 14 valutazioni."
+      },
+      {
+        "pos": 7,
+        "titolo": "Legend of the White Dragon",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Voto scadente (5.6 con appena 17 voti), incoerente con una selezione di qualità."
+      },
+      {
+        "pos": 9,
+        "titolo": "Les matins merveilleux",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Valutazione insufficiente (5.8) con campione di soli 10 voti."
+      },
+      {
+        "pos": 11,
+        "titolo": "La Dernière Patiente",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Durata non valorizzata (0 minuti) e campione minimo di 10 voti."
+      },
+      {
+        "pos": 18,
+        "titolo": "Les Héros du Louvre",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Durata pari a 0 minuti e soli 13 voti registrati."
+      },
+      {
+        "pos": 28,
+        "titolo": "Onslaught - Assalto finale",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Voto mediocre (5.8 con 32 voti), disattendendo la promessa di fallback."
+      },
+      {
+        "pos": 41,
+        "titolo": "All Night Wrong",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Valutazione insufficiente (5.8) con sole 12 recensioni."
+      },
+      {
+        "pos": 46,
+        "titolo": "The Outer Threat",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Voto insufficiente (5.6) con sole 14 valutazioni."
+      }
+    ],
+    "motivo": "In mancanza di autenticazione Trakt il percorso degrada su un fallback di nuove uscite 2026 anziché su titoli autenticamente popolari e acclamati dalla community. Il catalogo presenta una qualità scadente (mediana 6.6 con 22 titoli sotto il 6.5 e diversi sotto il 6.0), campioni di voto microscopici (10-20 voti) e metadati di durata azzerati. La promessa di suggerimenti della community è completamente disattesa.",
+    "evidenza": [
+      "Motor City (2026)",
+      "The Last Photograph (2026)",
+      "Legend of the White Dragon (2026)",
+      "La Dernière Patiente (2026)",
+      "Onslaught - Assalto finale (2026)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_freddo::yaca_trakt_filtered_series",
+    "catalogo": "yaca_trakt_filtered_series",
+    "tipo": "series",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 70,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 11,
+        "titolo": "The Hawk",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Valutazione scadente (5.5) in contrasto con la promessa di titoli raccomandabili."
+      },
+      {
+        "pos": 25,
+        "titolo": "低智商犯罪",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Serie in lingua cinese non localizzata con un campione di sole 20 valutazioni."
+      },
+      {
+        "pos": 32,
+        "titolo": "เด็กชายไม่ไปสวรรค์",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Produzione thailandese priva di traslitterazione con appena 26 voti."
+      },
+      {
+        "pos": 35,
+        "titolo": "The Witness",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Valutazione mediocre (6.4 con 53 voti) inserita nel fallback."
+      },
+      {
+        "pos": 41,
+        "titolo": "The Cat and the Dragon",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Serie con campione di voto microscopico (21 voti) e popolarità trascurabile."
+      },
+      {
+        "pos": 50,
+        "titolo": "닥터 섬보이",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Titolo coreano privo di localizzazione o traslitterazione con sole 23 valutazioni."
+      }
+    ],
+    "motivo": "Fallback non autenticato per Trakt che propone 50 serie tutte uscite nel 2026. Sebbene la tenuta qualitativa media sia accettabile (mediana 7.8), la selezione soffre di una marcata presenza di titoli con un numero irrisorio di voti (20-30), produzioni asiatiche prive di localizzazione e un flop isolato (The Hawk a 5.5). Non rappresenta efficacemente un consenso solido della community globale.",
+    "evidenza": [
+      "Sparks of Tomorrow (2026)",
+      "The Hawk (2026)",
+      "低智商犯罪 (2026)",
+      "เด็กชายไม่ไปสวรรค์ (2026)",
+      "닥터 섬보이 (2026)"
+    ],
+    "fiducia": "alta"
+  }
+]

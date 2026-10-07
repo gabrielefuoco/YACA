@@ -1,0 +1,837 @@
+[
+  {
+    "id": "preset_blumhouse",
+    "nome": "🔪 Blumhouse Horror",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 40,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "The Uprising",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma storico d'azione Blumhouse privo di elementi horror"
+      },
+      {
+        "pos": 6,
+        "titolo": "Whiplash",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma musicale Blumhouse estraneo al genere horror"
+      },
+      {
+        "pos": 20,
+        "titolo": "The Lost Bus",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma thriller non horror"
+      },
+      {
+        "pos": 26,
+        "titolo": "Glass",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Cinecomic e thriller psicologico non horror"
+      },
+      {
+        "pos": 31,
+        "titolo": "Fantasy Island",
+        "anno": "2020",
+        "tipo": "trash",
+        "nota": "Pellicola di pessima qualità (voto 5.74)"
+      },
+      {
+        "pos": 33,
+        "titolo": "BlacKkKlansman",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia drammatica e storica non horror"
+      },
+      {
+        "pos": 41,
+        "titolo": "Night Swim",
+        "anno": "2024",
+        "tipo": "trash",
+        "nota": "Horror di scarsa levatura (voto 5.48)"
+      }
+    ],
+    "motivo": "Il filtro basato unicamente sull'id della casa di produzione include drammi celebri ma del tutto estranei all'horror come Whiplash e BlacKkKlansman. Inoltre la qualità complessiva soffre per una percentuale elevata di titoli sotto la sufficienza (42.5%).",
+    "evidenza": [
+      "The Uprising (2026)",
+      "Whiplash (2014)",
+      "BlacKkKlansman (2018)",
+      "Glass (2019)",
+      "Night Swim (2024)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_horror_all",
+    "nome": "👻 Horror: I Migliori",
+    "verdetto": "B",
+    "score": 79,
+    "dimensioni": {
+      "pertinenza": 50,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "La Leyenda de los Chaneques",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione per famiglie/bambini fuori contesto tra i migliori horror"
+      },
+      {
+        "pos": 4,
+        "titolo": "Las leyendas: El origen",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione infantile messicana della saga Las Leyendas"
+      },
+      {
+        "pos": 5,
+        "titolo": "Michael Jackson's Thriller",
+        "anno": "1983",
+        "tipo": "fuori-promessa",
+        "nota": "Videoclip musicale di 14 minuti, non un lungometraggio horror"
+      },
+      {
+        "pos": 6,
+        "titolo": "La leyenda del Charro Negro",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Altro capitolo della saga animata per bambini Las Leyendas"
+      },
+      {
+        "pos": 12,
+        "titolo": "Ghosts",
+        "anno": "1997",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio musicale di Michael Jackson"
+      },
+      {
+        "pos": 27,
+        "titolo": "Ninja Scroll",
+        "anno": "1993",
+        "tipo": "fuori-promessa",
+        "nota": "Anime presente in catalogo esplicitamente dichiarato Anime: no"
+      },
+      {
+        "pos": 33,
+        "titolo": "Happy Halloween Scooby-Doo!",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione investigativa per bambini di Scooby-Doo"
+      },
+      {
+        "pos": 38,
+        "titolo": "Vampire Hunter D - Bloodlust",
+        "anno": "2001",
+        "tipo": "fuori-promessa",
+        "nota": "Anime presente in catalogo con flag Anime: no"
+      }
+    ],
+    "motivo": "Nonostante ospiti grandi capolavori classici dell'horror, la vetta del catalogo è pesantemente inquinata da corti/videoclip musicali, anime non ammessi e animazioni per bambini (la saga messicana Las Leyendas e Scooby-Doo). È necessaria l'esclusione esplicita dei generi Animazione, Famiglia e Musica.",
+    "evidenza": [
+      "La Leyenda de los Chaneques (2023)",
+      "Las leyendas: El origen (2021)",
+      "Michael Jackson's Thriller (1983)",
+      "Happy Halloween Scooby-Doo! (2020)",
+      "Ninja Scroll (1993)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_scary_horror",
+    "nome": "👻 Horror Atmosferico & Soprannaturali",
+    "verdetto": "B",
+    "score": 79,
+    "dimensioni": {
+      "pertinenza": 50,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 6,
+        "titolo": "Happy Halloween Scooby-Doo!",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione comica infantile di Scooby-Doo del tutto inadatta a un horror atmosferico"
+      },
+      {
+        "pos": 8,
+        "titolo": "Scooby-Doo e l'isola degli zombie",
+        "anno": "1998",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione per bambini"
+      },
+      {
+        "pos": 11,
+        "titolo": "Halloween - La notte delle streghe",
+        "anno": "1978",
+        "tipo": "fuori-promessa",
+        "nota": "Puro archetipo dello slasher movie, appartiene a Slasher & Splatter Gore"
+      },
+      {
+        "pos": 16,
+        "titolo": "La casa 2",
+        "anno": "1987",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia splatter/gore d'eccellenza, non horror atmosferico sobrio"
+      },
+      {
+        "pos": 21,
+        "titolo": "Zombi",
+        "anno": "1978",
+        "tipo": "fuori-promessa",
+        "nota": "Classico splatter di zombie di Romero, fuori promessa"
+      },
+      {
+        "pos": 23,
+        "titolo": "The Rocky Horror Picture Show",
+        "anno": "1975",
+        "tipo": "fuori-promessa",
+        "nota": "Musical comedy cult, privo di atmosfera spaventosa"
+      },
+      {
+        "pos": 24,
+        "titolo": "La leggenda della Valle Addormentata",
+        "anno": "1949",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio d'animazione Disney per famiglie"
+      },
+      {
+        "pos": 25,
+        "titolo": "Scream",
+        "anno": "1996",
+        "tipo": "fuori-promessa",
+        "nota": "Slasher metanarrativo classico, fuori contesto"
+      }
+    ],
+    "motivo": "Il set di keyword attira slasher conclamati (Halloween, Scream), splatter sfrenati (La casa 2, Zombi), commedie musicali e cartoni animati (Scooby-Doo, Disney). Serve una separazione rigorosa dalle keyword slasher/gore e l'esclusione dell'animazione infantile.",
+    "evidenza": [
+      "Happy Halloween Scooby-Doo! (2020)",
+      "Halloween - La notte delle streghe (1978)",
+      "La casa 2 (1987)",
+      "Scream (1996)",
+      "The Rocky Horror Picture Show (1975)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_slasher_gore",
+    "nome": "🪓 Slasher & Splatter Gore",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 70,
+      "qualita": 40,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "Ice Cream Man",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "B-movie scadente in prima posizione (voto 4.836)"
+      },
+      {
+        "pos": 17,
+        "titolo": "Smile 2",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Horror psicologico e di possessione demoniaca, non slasher né splatter gore"
+      },
+      {
+        "pos": 18,
+        "titolo": "Black Phone",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Thriller soprannaturale con fantasmi, estraneo a slasher e splatter"
+      },
+      {
+        "pos": 26,
+        "titolo": "A Serbian Film",
+        "anno": "2010",
+        "tipo": "trash",
+        "nota": "Exploitation estremo dal punteggio pessimo (voto 5.44)"
+      },
+      {
+        "pos": 28,
+        "titolo": "Longlegs",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Thriller procedurale a sfondo occulto, non slasher né splatter"
+      },
+      {
+        "pos": 34,
+        "titolo": "Sinister",
+        "anno": "2012",
+        "tipo": "fuori-promessa",
+        "nota": "Horror su entità demoniaca soprannaturale (Bughuul)"
+      },
+      {
+        "pos": 38,
+        "titolo": "Split",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Thriller psicologico di Shyamalan privo di connotati slasher/gore"
+      },
+      {
+        "pos": 50,
+        "titolo": "Silent Hill",
+        "anno": "2006",
+        "tipo": "fuori-promessa",
+        "nota": "Horror soprannaturale/onirico tratto dal videogioco"
+      }
+    ],
+    "motivo": "La selezione contiene pilastri del genere ma è diluita da titoli soprannaturali e psicologici (Smile 2, Black Phone, Longlegs, Sinister). Inoltre, la qualità media è bassa (mediana 6.4 e 30% di titoli sotto il 6.0, guidati da Ice Cream Man al vertice).",
+    "evidenza": [
+      "Ice Cream Man (2026)",
+      "Smile 2 (2024)",
+      "Black Phone (2022)",
+      "Longlegs (2024)",
+      "Sinister (2012)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_apocalypse_survival",
+    "nome": "🏕️ Apocalisse & Sopravvivenza",
+    "verdetto": "B",
+    "score": 77,
+    "dimensioni": {
+      "pertinenza": 45,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 8,
+        "titolo": "Fight Club",
+        "anno": "1999",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma psicologico satirico, totalmente privo di apocalisse o sopravvivenza"
+      },
+      {
+        "pos": 12,
+        "titolo": "I Fantastici 4 - Gli inizi",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Cinecomic supereroistico Marvel"
+      },
+      {
+        "pos": 14,
+        "titolo": "WALL•E",
+        "anno": "2008",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione per famiglie Pixar, fuori contesto nella sezione Brivido & Paura"
+      },
+      {
+        "pos": 18,
+        "titolo": "The Truman Show",
+        "anno": "1998",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia drammatica e filosofica, nessun legame con apocalisse o horror"
+      },
+      {
+        "pos": 27,
+        "titolo": "Il quinto elemento",
+        "anno": "1997",
+        "tipo": "fuori-promessa",
+        "nota": "Space opera comica e d'azione"
+      },
+      {
+        "pos": 35,
+        "titolo": "Transformers: Il risveglio",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Blockbuster d'azione fantascientifica sui robot alieni"
+      },
+      {
+        "pos": 38,
+        "titolo": "Il pianista",
+        "anno": "2002",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma storico sull'Olocausto, totalmente fuori contesto in Brivido & Paura"
+      },
+      {
+        "pos": 44,
+        "titolo": "Ready Player One",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Avventura fantascientifica sul metaverso videoludico"
+      }
+    ],
+    "motivo": "L'uso indiscriminato di keyword come 'dystopia' e 'survival' senza vincoli di genere horror fa confluire nel catalogo film incongrui come Fight Club, The Truman Show, WALL-E e Il pianista. La promessa di sopravvivenza apocalittica è rispettata solo da metà dei titoli.",
+    "evidenza": [
+      "Fight Club (1999)",
+      "The Truman Show (1998)",
+      "WALL•E (2008)",
+      "Il pianista (2002)",
+      "I Fantastici 4 - Gli inizi (2025)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_tv_horror",
+    "nome": "👻 Serie Horror & Soprannaturali",
+    "verdetto": "B",
+    "score": 77,
+    "dimensioni": {
+      "pertinenza": 50,
+      "qualita": 85,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "La mia nobile nemica",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "K-drama romantico e commedia fantasy, zero brivido/horror"
+      },
+      {
+        "pos": 3,
+        "titolo": "Goblin",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma romantico fantasy coreano incentrato su storie d'amore"
+      },
+      {
+        "pos": 13,
+        "titolo": "Link Click",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Donghua animato cinese presente nonostante il vincolo Anime: no"
+      },
+      {
+        "pos": 16,
+        "titolo": "WandaVision",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Miniserie supereroistica Marvel/MCU basata su sitcom classiche"
+      },
+      {
+        "pos": 18,
+        "titolo": "Love Between Fairy and Devil",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Xianxia drama romantico cinese"
+      },
+      {
+        "pos": 27,
+        "titolo": "Strong Woman Do Bong Soon",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia romantica coreana con protagonista dotata di superforza"
+      },
+      {
+        "pos": 37,
+        "titolo": "H2O",
+        "anno": "2006",
+        "tipo": "fuori-promessa",
+        "nota": "Teen drama australiano per ragazzi sulle sirene, assurdo in un catalogo horror"
+      },
+      {
+        "pos": 46,
+        "titolo": "Good Witch",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Serie rassicurante e zuccherina di Hallmark Channel"
+      }
+    ],
+    "motivo": "La keyword generica 'supernatural' abbinata al genere Dramma fa confluire un'enorme quantità di K-drama sentimentali, favole per ragazzi (H2O), serie familiari zuccherine (Good Witch) e produzioni animate (Link Click). Manca del tutto il timbro horror per metà del pool.",
+    "evidenza": [
+      "La mia nobile nemica (2026)",
+      "Goblin (2016)",
+      "H2O (2006)",
+      "Good Witch (2015)",
+      "WandaVision (2021)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_a24_horror",
+    "nome": "💎 A24: Horror & Thriller",
+    "verdetto": "B",
+    "score": 77,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 45,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 26,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "False Positive",
+        "anno": "2021",
+        "tipo": "trash",
+        "nota": "Horror poco riuscito e sotto la sufficienza (voto 5.6)"
+      },
+      {
+        "pos": 6,
+        "titolo": "Marty Supreme",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma sportivo biografico su Marty Reisman, classificazione thriller forzata"
+      },
+      {
+        "pos": 8,
+        "titolo": "Highest 2 Lowest",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Thriller crime di scarso riscontro (voto 5.48)"
+      },
+      {
+        "pos": 12,
+        "titolo": "Babygirl",
+        "anno": "2024",
+        "tipo": "trash",
+        "nota": "Thriller erotico/drammatico con voto mediocre (5.7)"
+      },
+      {
+        "pos": 14,
+        "titolo": "Mother Mary",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Melodramma pop musicale con voto basso (5.7)"
+      },
+      {
+        "pos": 25,
+        "titolo": "Y2K: La rivolta digitale",
+        "anno": "2024",
+        "tipo": "trash",
+        "nota": "Commedia horror poco apprezzata (voto 5.2)"
+      },
+      {
+        "pos": 26,
+        "titolo": "The Front Room",
+        "anno": "2024",
+        "tipo": "trash",
+        "nota": "Horror psicologico stroncato da critica e pubblico (voto 5.09)"
+      }
+    ],
+    "motivo": "I titoli corrispondono puntualmente alla produzione A24 nei generi richiesti, ma il pool è esiguo (solo 26 film disponibili nel dump) e oltre un terzo dei titoli scende sotto la sufficienza, abbassando la qualità complessiva.",
+    "evidenza": [
+      "Backrooms (2026)",
+      "X - A Sexy Horror Story (2022)",
+      "The Lighthouse (2019)",
+      "Marty Supreme (2025)",
+      "The Front Room (2024)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_vampires_werewolves",
+    "nome": "🧛 Vampiri & Lupi Mannari",
+    "verdetto": "P",
+    "score": 88,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 50,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "Hotel Transylvania",
+        "anno": "2012",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione comica per famiglie pur incentrata su Dracula"
+      },
+      {
+        "pos": 13,
+        "titolo": "Blade: Trinity",
+        "anno": "2004",
+        "tipo": "trash",
+        "nota": "Capitolo conclusivo debole della trilogia (voto 5.86)"
+      },
+      {
+        "pos": 29,
+        "titolo": "Shadowhunters - Città di ossa",
+        "anno": "2013",
+        "tipo": "fuori-promessa",
+        "nota": "YA fantasy generico dove vampiri e licantropi sono comprimari marginali"
+      },
+      {
+        "pos": 39,
+        "titolo": "Morbius",
+        "anno": "2022",
+        "tipo": "trash",
+        "nota": "Cinecomic vampiresco stroncato (voto 5.89)"
+      },
+      {
+        "pos": 42,
+        "titolo": "Mordimi",
+        "anno": "2010",
+        "tipo": "trash",
+        "nota": "Parodia demenziale di pessima levatura (voto 4.4)"
+      },
+      {
+        "pos": 48,
+        "titolo": "Zombies 4 - L'alba dei vampiri",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Musical per ragazzi di Disney Channel, estraneo al target horror"
+      }
+    ],
+    "motivo": "Catalogo eccellente e perfettamente centrato sul tema dei vampiri e licantropi attraverso epoche e sottogeneri, da Dracula a Twilight passando per Blade e Underworld. Unico difetto è la qualità disomogenea con qualche parodia scadente e animazione per famiglie.",
+    "evidenza": [
+      "Nosferatu (2024)",
+      "Dracula di Bram Stoker (1992)",
+      "Blade (1998)",
+      "Underworld (2003)",
+      "Lasciami entrare (2008)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_zombies",
+    "nome": "🧟 Zombie & Infezioni",
+    "verdetto": "P",
+    "score": 87,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 35,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "Alice in Borderland",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Death game e sopravvivenza fantascientifica senza alcun elemento zombie o infettivo"
+      },
+      {
+        "pos": 11,
+        "titolo": "Resident Evil: La serie",
+        "anno": "2022",
+        "tipo": "trash",
+        "nota": "Adattamento seriale live-action fallimentare (voto 5.51)"
+      },
+      {
+        "pos": 28,
+        "titolo": "Generation Z",
+        "anno": "2024",
+        "tipo": "trash",
+        "nota": "Commedia zombie britannica poco apprezzata (voto 5.5)"
+      },
+      {
+        "pos": 33,
+        "titolo": "ZOMBIES: Addison's Moonstone Mystery",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Corto animato musicale per bambini di Disney Channel"
+      }
+    ],
+    "motivo": "Ottima aderenza tematica al filone zombie e pandemico, con franchise cardine (The Walking Dead, Resident Evil, Z Nation, Kingdom) e una qualità media solida (mediana 7.3). Il pool è ristretto a 35 titoli ed è presente l'intrusione isolata di Alice in Borderland.",
+    "evidenza": [
+      "The Walking Dead (2010)",
+      "Kingdom (2019)",
+      "Non siamo più vivi (2022)",
+      "Sweet Home (2020)",
+      "Dead Set (2008)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_zombies_movies",
+    "nome": "🧟 Zombie & Infezioni (Film)",
+    "verdetto": "N",
+    "score": 59,
+    "dimensioni": {
+      "pertinenza": 45,
+      "qualita": 20,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 32,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "Alien: Covenant",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Film del franchise di Alien, estraneo al filone zombie"
+      },
+      {
+        "pos": 7,
+        "titolo": "Resident Evil - L'isola della morte",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Produzione anime presente nonostante il catalogo sia Anime: no"
+      },
+      {
+        "pos": 8,
+        "titolo": "Resident Evil: Degeneration",
+        "anno": "2008",
+        "tipo": "fuori-promessa",
+        "nota": "Lungometraggio anime giapponese in violazione del filtro Anime: no"
+      },
+      {
+        "pos": 9,
+        "titolo": "Resident Evil - Damnation",
+        "anno": "2012",
+        "tipo": "fuori-promessa",
+        "nota": "Altro film anime in catalogo Anime: no"
+      },
+      {
+        "pos": 17,
+        "titolo": "Day of the Dead",
+        "anno": "2008",
+        "tipo": "trash",
+        "nota": "Remake direct-to-video scadente (voto 5.21)"
+      },
+      {
+        "pos": 20,
+        "titolo": "Dead Space - La forza oscura",
+        "anno": "2008",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione anime presente con Anime: no"
+      },
+      {
+        "pos": 25,
+        "titolo": "Zoombies",
+        "anno": "2016",
+        "tipo": "trash",
+        "nota": "B-movie trash The Asylum sugli animali zombie (voto 4.99)"
+      },
+      {
+        "pos": 29,
+        "titolo": "C.H.U.D. II: Bud the Chud",
+        "anno": "1989",
+        "tipo": "trash",
+        "nota": "Commedia horror spazzatura (voto 4.4)"
+      }
+    ],
+    "motivo": "L'intersezione obbligatoria tra Horror e Fantascienza ha decimato il catalogo a soli 32 titoli, escludendo quasi tutti i capolavori del cinema zombie e lasciando spazio a trash di infimo ordine (mediana 5.78, 56.3% sotto la sufficienza) e a 4 anime non autorizzati.",
+    "evidenza": [
+      "Resident Evil (2026)",
+      "28 giorni dopo (2002)",
+      "Zoombies (2016)",
+      "C.H.U.D. II: Bud the Chud (1989)",
+      "Resident Evil - L'isola della morte (2023)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_giant_monsters",
+    "nome": "🦖 Squali & Mostri Giganti",
+    "verdetto": "B",
+    "score": 73,
+    "dimensioni": {
+      "pertinenza": 55,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "The Suicide Squad - Missione suicida",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Cinecomic d'azione DC Comics, non un creature feature horror sui mostri giganti"
+      },
+      {
+        "pos": 7,
+        "titolo": "Ghostbusters (Acchiappafantasmi)",
+        "anno": "1984",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia fantastica cult, non un monster movie né B-movie di mostri giganti"
+      },
+      {
+        "pos": 18,
+        "titolo": "Attack on Titan: THE LAST ATTACK",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Anime presente in catalogo esplicitamente dichiarato Anime: no"
+      },
+      {
+        "pos": 22,
+        "titolo": "Kaiju No.8: Mission Recon",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Anime shonen presente con vincolo Anime: no"
+      },
+      {
+        "pos": 23,
+        "titolo": "Evolution",
+        "anno": "2001",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia fantascientifica aliena"
+      },
+      {
+        "pos": 27,
+        "titolo": "Godzilla - Mangiapianeti",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Lungometraggio anime in catalogo Anime: no"
+      },
+      {
+        "pos": 35,
+        "titolo": "L'attacco dei giganti - Il film - Parte 2: Le ali della libertà",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Film compilation anime presente in violazione di Anime: no"
+      },
+      {
+        "pos": 49,
+        "titolo": "The Lost Future",
+        "anno": "2010",
+        "tipo": "trash",
+        "nota": "B-movie televisivo di infima qualità (voto 4.93)"
+      }
+    ],
+    "motivo": "La promessa include gli 'Squali' ma non è presente nemmeno un film sul tema a causa dell'uso solitario della keyword 'giant monster'. Inoltre, il catalogo è dominato per oltre il 60% da kaiju giapponesi e include il 12% di anime (6 film) nonostante l'esclusione esplicita degli anime.",
+    "evidenza": [
+      "The Suicide Squad - Missione suicida (2021)",
+      "Godzilla e Kong - Il nuovo impero (2024)",
+      "Ghostbusters (Acchiappafantasmi) (1984)",
+      "Attack on Titan: THE LAST ATTACK (2024)",
+      "Shin Godzilla (2016)"
+    ],
+    "fiducia": "alta"
+  }
+]

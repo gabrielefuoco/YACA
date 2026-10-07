@@ -1,0 +1,795 @@
+[
+  {
+    "id": "preset_nordic_noir",
+    "nome": "❄️ Nordic Noir (Gialli Scandinavi)",
+    "verdetto": "P",
+    "score": 87,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 38,
+        "titolo": "Heder",
+        "anno": "2019",
+        "tipo": "trash",
+        "nota": "Voto critico molto basso (4.167), qualità scadente a centro classifica"
+      },
+      {
+        "pos": 27,
+        "titolo": "Hammarvik - Amori e altri omicidi",
+        "anno": "2020",
+        "tipo": "trash",
+        "nota": "Voto mediocre (5.5) e impostazione da soap opera che stona con il noir scandinavo puro"
+      }
+    ],
+    "motivo": "Ottima pertinenza geografica e tematica con serie svedesi, danesi e norvegesi di rilievo. La qualità media risente di qualche titolo sotto la sufficienza, ma la selezione è coerente.",
+    "evidenza": [
+      "The Bridge - La serie originale (2011)",
+      "The Killing (2007)",
+      "Wallander (2005)",
+      "L'uomo delle castagne (2021)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_spanish_thriller",
+    "nome": "🇪🇸 Thriller Spagnoli",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 70,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 10,
+        "titolo": "È colpa mia?",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Teen romance / dramma sentimentale giovanile, classificazione thriller forzata da tag secondari TMDB"
+      }
+    ],
+    "motivo": "Catalogo solido ordinato per voto che raccoglie il meglio del thriller in lingua spagnola (sia iberico che sudamericano). Presenza isolata di teen drama romantici ma tenuta qualitativa alta.",
+    "evidenza": [
+      "Contrattempo (2017)",
+      "Il segreto dei suoi occhi (2009)",
+      "Storie pazzesche (2014)",
+      "Tesis (1996)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_british_crime",
+    "nome": "🇬🇧 Gialli & Crime Inglesi (UK)",
+    "verdetto": "P",
+    "score": 91,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 85,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 32,
+        "titolo": "Omicidio a Easttown",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Produzione HBO statunitense ambientata in Pennsylvania, non britannica nonostante l'attrice protagonista"
+      },
+      {
+        "pos": 40,
+        "titolo": "NCIS: Sydney",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Produzione televisiva australiana (Paramount+/Network 10), non del Regno Unito"
+      }
+    ],
+    "motivo": "Eccellente catalogo di serie poliziesche e procedurali britanniche di altissimo livello. Uniche sbavature due produzioni non britanniche (USA e Australia) entrate per metadati spuri.",
+    "evidenza": [
+      "L'ispettore Barnaby (1997)",
+      "Poirot (1989)",
+      "Sherlock (2010)",
+      "Broadchurch (2013)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_german_dark",
+    "nome": "🇩🇪 Serie Tedesche (Dark & Thriller)",
+    "verdetto": "P",
+    "score": 84,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 65,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 46,
+        "titolo": "Sulla scena del delitto - Berlino",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Docuserie true-crime documentaristica non fiction in un catalogo di serie narrative"
+      },
+      {
+        "pos": 50,
+        "titolo": "Hausen",
+        "anno": "2020",
+        "tipo": "trash",
+        "nota": "Voto basso (5.273) a chiusura della selezione"
+      }
+    ],
+    "motivo": "Buona selezione di crime e mistery tedeschi, ma il pool complessivo di soli 51 titoli è molto ridotto per un catalogo generico. Presente un documentario isolato e qualche classico procedurale poco affine al tono Dark.",
+    "evidenza": [
+      "Dark (2017)",
+      "Babylon Berlin (2017)",
+      "1899 (2022)",
+      "Pagan Peak (2019)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_mindfuck",
+    "nome": "🤯 Mindfuck & Plot Twists",
+    "verdetto": "B",
+    "score": 75,
+    "dimensioni": {
+      "pertinenza": 65,
+      "qualita": 50,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 24,
+        "titolo": "Justice League: Crisis on Infinite Earths Part Three",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione supereroistico DC Comics, estraneo al concetto di thriller mindfuck/plot twist"
+      },
+      {
+        "pos": 27,
+        "titolo": "Justice League: Crisis on Infinite Earths Part One",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione supereroistico DC Comics fuori tema"
+      },
+      {
+        "pos": 33,
+        "titolo": "Justice League: Crisis on Infinite Earths Part Two",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione supereroistico DC Comics fuori tema"
+      },
+      {
+        "pos": 45,
+        "titolo": "Sonny & Pepper - Due irresistibili cowboy",
+        "anno": "1994",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia d'azione western urbana (The Cowboy Way), nessun nesso con trame psicologiche o plot twist"
+      },
+      {
+        "pos": 2,
+        "titolo": "Return to Silent Hill",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Sequel horror con rating stroncato (5.332) in seconda posizione"
+      },
+      {
+        "pos": 35,
+        "titolo": "Chiamata senza risposta",
+        "anno": "2008",
+        "tipo": "trash",
+        "nota": "Remake horror scadente con voto 5.4"
+      }
+    ],
+    "motivo": "Accanto a capolavori del genere compaiono film d'animazione sui supereroi DC e commedie western entrati per keyword generiche. La percentuale di titoli sotto 6.0 (20.5%) e la dispersione tematica abbassano il giudizio a Buono.",
+    "evidenza": [
+      "Shining (1980)",
+      "Source Code (2011)",
+      "Donnie Darko (2001)",
+      "Contrattempo (2017)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_whodunit",
+    "nome": "🔎 Whodunit & Indagini",
+    "verdetto": "P",
+    "score": 90,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 65,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 24,
+        "titolo": "Ave, Cesare!",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia satirica dei fratelli Coen sul cinema hollywoodiano anni '50, non un'indagine/giallo classico"
+      },
+      {
+        "pos": 7,
+        "titolo": "Un altro piccolo favore",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Sequel con voto insufficiente (5.796) collocato in settima posizione"
+      }
+    ],
+    "motivo": "Selezione esemplare che unisce classici immortali del giallo deduttivo e successi contemporanei di Agatha Christie e Rian Johnson. Solo pochissimi inserimenti spuri come Ave Cesare.",
+    "evidenza": [
+      "Cena con delitto - Knives Out (2019)",
+      "Assassinio sull'Orient Express (2017)",
+      "La finestra sul cortile (1954)",
+      "Signori, il delitto è servito (1985)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_whodunit_series",
+    "nome": "🔎 Whodunit & Indagini (Serie)",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 75,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 21,
+        "titolo": "Velma",
+        "anno": "2023",
+        "tipo": "trash",
+        "nota": "Spin-off animato universalmente stroncato con rating disastroso (3.426)"
+      },
+      {
+        "pos": 17,
+        "titolo": "Forensic Files",
+        "anno": "1996",
+        "tipo": "fuori-promessa",
+        "nota": "Docuserie true-crime non fiction inserita in una selezione di serie narrative"
+      }
+    ],
+    "motivo": "Ottima carrellata di gialli a indagine serializzati e whodunit televisivi di prestigio. Spicca come grave anomalia la serie animata Velma (3.426) assieme a un documentario non fiction.",
+    "evidenza": [
+      "Poirot (1989)",
+      "I segreti di Twin Peaks (1990)",
+      "True Detective (2014)",
+      "Only Murders in the Building (2021)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_neo_noir",
+    "nome": "🚬 Neo-Noir & Detective Oscuri",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 8,
+        "titolo": "Cena con delitto - Knives Out",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia brillante whodunit in villa, completamente aliena dai toni oscuri e hardboiled del neo-noir"
+      },
+      {
+        "pos": 34,
+        "titolo": "Kill Bill: The Whole Bloody Affair",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'azione pulp e arti marziali di vendetta, non un detective noir"
+      },
+      {
+        "pos": 46,
+        "titolo": "Serenity - L'isola dell'inganno",
+        "anno": "2019",
+        "tipo": "trash",
+        "nota": "Film con esito fallimentare (5.468) e plot twist meta-videoludico incongruo"
+      }
+    ],
+    "motivo": "Catalogo ricchissimo e di altissimo spessore con pool superiore a 400 titoli. Pochissime infiltrazioni incoerenti (Knives Out, Kill Bill) che non intaccano la forte identità neo-noir.",
+    "evidenza": [
+      "The Batman (2022)",
+      "Seven (1995)",
+      "L.A. Confidential (1997)",
+      "Drive (2011)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_neo_noir_series",
+    "nome": "🚬 Neo-Noir & Detective Oscuri (Serie)",
+    "verdetto": "P",
+    "score": 85,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 40,
+    "errori": [
+      {
+        "pos": 24,
+        "titolo": "Wonderfalls",
+        "anno": "2004",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia fantastica stravagante su una commessa che parla con souvenir parlanti, priva di nessi col noir"
+      },
+      {
+        "pos": 19,
+        "titolo": "Fastlane",
+        "anno": "2002",
+        "tipo": "fuori-promessa",
+        "nota": "Serie poliziesca d'azione frenetica e glamour dei primi anni 2000, lontana dal detective oscuro"
+      }
+    ],
+    "motivo": "Tone noir ben rappresentato da titoli di punta come True Detective, Fargo e Bosch, ma il pool complessivo di soli 40 titoli è ristretto per una categoria così rilevante. Presente qualche bizzarro errore di keyword (Wonderfalls).",
+    "evidenza": [
+      "Dexter (2006)",
+      "Fargo (2014)",
+      "True Detective (2014)",
+      "Bosch (2015)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_tv_mafia",
+    "nome": "🕴️ Mafia, Cartelli & Gangster",
+    "verdetto": "P",
+    "score": 88,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 7,
+        "titolo": "Ulice",
+        "anno": "2005",
+        "tipo": "trash",
+        "nota": "Soap opera quotidiana ceca (voto 4.9), nessun legame con la criminalità organizzata o i cartelli"
+      },
+      {
+        "pos": 11,
+        "titolo": "Batman: The Animated Series",
+        "anno": "1992",
+        "tipo": "fuori-promessa",
+        "nota": "Serie animata di supereroi inserita impropriamente in un catalogo non-animazione per adulti"
+      },
+      {
+        "pos": 42,
+        "titolo": "Volta por Cima",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Telenovela brasiliana quotidiana (Soap) estranea ai gangster drama"
+      },
+      {
+        "pos": 47,
+        "titolo": "มีสติหน่อยคุณธีร์",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Dramedy sentimentale thailandese priva di tematiche mafiose o di cartello"
+      }
+    ],
+    "motivo": "Catalogo che include pietre miliari indiscusse come I Soprano, Peaky Blinders, Gomorra e Narcos. Tuttavia alcune keyword generiche hanno agganciato soap opera straniere e una serie animata sui supereroi.",
+    "evidenza": [
+      "I Soprano (1999)",
+      "Boardwalk Empire - L'impero del crimine (2010)",
+      "Narcos (2015)",
+      "Gomorra - La Serie (2014)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_tv_politics",
+    "nome": "🏛️ Intrighi Politici & Potere",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 75,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 5,
+        "titolo": "Il monologo della Speziale",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Anime giapponese (🎌) presente in catalogo esplicitamente dichiarato non-anime"
+      },
+      {
+        "pos": 12,
+        "titolo": "Code Geass: Lelouch of the Rebellion",
+        "anno": "2006",
+        "tipo": "fuori-promessa",
+        "nota": "Anime giapponese (🎌) presente in catalogo non-anime"
+      },
+      {
+        "pos": 14,
+        "titolo": "Saga of Tanya the Evil",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Anime giapponese (🎌) presente in catalogo non-anime"
+      },
+      {
+        "pos": 22,
+        "titolo": "Akame ga Kill!",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Anime giapponese (🎌) presente in catalogo non-anime"
+      },
+      {
+        "pos": 23,
+        "titolo": "Raven of the Inner Palace",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Anime giapponese (🎌) presente in catalogo non-anime"
+      },
+      {
+        "pos": 32,
+        "titolo": "Amend: libertà in America",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Docuserie storica e civile inserita in un catalogo di fiction"
+      },
+      {
+        "pos": 46,
+        "titolo": "Lady Oscar",
+        "anno": "1979",
+        "tipo": "fuori-promessa",
+        "nota": "Anime classico (🎌) presente in catalogo non-anime"
+      },
+      {
+        "pos": 47,
+        "titolo": "Requiem of the Rose King",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Anime (🎌) con rating basso (5.3) presente in catalogo non-anime"
+      }
+    ],
+    "motivo": "Filtro anime gravemente difettoso: compaiono ben 8 serie anime (🎌) in un catalogo con restrizione non-anime, oltre a un documentario. I drammi politici occidentali presenti sono ottimi, ma l'infiltrazione è massiccia.",
+    "evidenza": [
+      "West Wing - Tutti gli uomini del Presidente (1999)",
+      "House of Cards (2013)",
+      "The Diplomat (2023)",
+      "Borgen - Il potere (2010)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_miniseries",
+    "nome": "📺 Miniserie di Qualità",
+    "verdetto": "P",
+    "score": 97,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 23,
+        "titolo": "Win or Lose",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Serie animata per ragazzi Pixar, isolata in un catalogo orientato a miniserie drammatiche adulte"
+      }
+    ],
+    "motivo": "Catalogo superbo con ordinamento impeccabile per voto medio e qualità altissima senza alcuna caduta di tono. Rispetta rigorosamente i limiti di una singola stagione ed episodi.",
+    "evidenza": [
+      "Chernobyl (2019)",
+      "Band of Brothers - Fratelli al fronte (2001)",
+      "La regina degli scacchi (2020)",
+      "When They See Us (2019)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anthology",
+    "nome": "📦 Serie Antologiche",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 75,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 15,
+        "titolo": "Climax!",
+        "anno": "1954",
+        "tipo": "trash",
+        "nota": "Antologia storica con voto disastroso (3.833) su 12 valutazioni"
+      },
+      {
+        "pos": 28,
+        "titolo": "Independent Lens",
+        "anno": "1999",
+        "tipo": "fuori-promessa",
+        "nota": "Vetrina documentaristica PBS non fiction in catalogo di serie fiction"
+      }
+    ],
+    "motivo": "Vasta rassegna di antologie sia stagionali (Fargo, True Detective, White Lotus) che a episodi autoconclusivi (Black Mirror, Twilight Zone). Solo qualche pezzo d'archivio con rating molto basso penalizza la qualità.",
+    "evidenza": [
+      "American Horror Story (2011)",
+      "Fargo (2014)",
+      "Black Mirror (2011)",
+      "True Detective (2014)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_crime_procedural",
+    "nome": "🚨 Procedurali (Crime)",
+    "verdetto": "P",
+    "score": 94,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 85,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 34,
+        "titolo": "The Wire",
+        "anno": "2002",
+        "tipo": "fuori-promessa",
+        "nota": "Serie orizzontale sociologica ad altissima serializzazione, concettualmente opposta alla formula procedurale"
+      },
+      {
+        "pos": 47,
+        "titolo": "F.B.I.",
+        "anno": "1965",
+        "tipo": "trash",
+        "nota": "Serie d'epoca con voto modesto (5.6)"
+      }
+    ],
+    "motivo": "Rappresentazione pressoché perfetta dei classici crime procedurali e polizieschi caso della settimana. Presenza massiccia dei franchise storici con qualità e popolarità eccellenti.",
+    "evidenza": [
+      "Law & Order - Unità vittime speciali (1999)",
+      "The Mentalist (2008)",
+      "NCIS - Unità anticrimine (2003)",
+      "CSI: Scena del crimine (2000)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_legal_drama",
+    "nome": "⚖️ Legal Drama & Tribunali",
+    "verdetto": "P",
+    "score": 90,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 75,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 18,
+        "titolo": "BMF",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Crime drama sul narcotraffico di strada (Black Mafia Family), non una serie giudiziaria o legale"
+      },
+      {
+        "pos": 24,
+        "titolo": "All's Fair",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Rating pesantemente insufficiente (4.7) su quasi 80 recensioni"
+      }
+    ],
+    "motivo": "Grande aderenza tematica al mondo forense, tra avvocati, procuratori e aule di tribunale americane e internazionali. Solo un'infiltrazione spuria (BMF) e un titolo flop.",
+    "evidenza": [
+      "Better Call Saul (2015)",
+      "The Good Fight (2017)",
+      "Avvocato di difesa - The Lincoln Lawyer (2022)",
+      "Avvocata Woo (2022)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_tv_thriller",
+    "nome": "😱 Thriller & Suspense (Serie)",
+    "verdetto": "P",
+    "score": 85,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 10,
+        "titolo": "Classroom of the Elite",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Anime giapponese (🎌) presente in catalogo esplicitamente contrassegnato Anime: no"
+      },
+      {
+        "pos": 11,
+        "titolo": "Death Note",
+        "anno": "2006",
+        "tipo": "fuori-promessa",
+        "nota": "Anime giapponese (🎌) presente in catalogo live-action non-anime"
+      },
+      {
+        "pos": 34,
+        "titolo": "Gyakkyou Burai Kaiji: Ultimate Survivor",
+        "anno": "2007",
+        "tipo": "fuori-promessa",
+        "nota": "Anime giapponese (🎌) presente in catalogo non-anime"
+      },
+      {
+        "pos": 35,
+        "titolo": "Psycho-Pass",
+        "anno": "2012",
+        "tipo": "fuori-promessa",
+        "nota": "Anime giapponese (🎌) presente in catalogo non-anime"
+      },
+      {
+        "pos": 38,
+        "titolo": "Higurashi no naku koro ni",
+        "anno": "2006",
+        "tipo": "fuori-promessa",
+        "nota": "Anime giapponese (🎌) presente in catalogo non-anime"
+      },
+      {
+        "pos": 42,
+        "titolo": "Hell Girl",
+        "anno": "2005",
+        "tipo": "fuori-promessa",
+        "nota": "Anime giapponese (🎌) presente in catalogo non-anime"
+      },
+      {
+        "pos": 45,
+        "titolo": "Link Click",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Serie d'animazione (donghua) presente in catalogo non-anime"
+      },
+      {
+        "pos": 50,
+        "titolo": "Moriarty the Patriot",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Anime giapponese (🎌) presente in catalogo non-anime"
+      }
+    ],
+    "motivo": "I titoli live-action sono di caratura straordinaria (Breaking Bad, Dexter, Severance), ma l'esclusione anime non ha funzionato, lasciando trapelare 9 serie animate. Il punteggio complessivo resta da Promosso grazie alla qualità altissima e alla solidità delle serie live-action.",
+    "evidenza": [
+      "Breaking Bad (2008)",
+      "Dexter (2006)",
+      "FROM (2022)",
+      "Scissione (2022)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_psych_thriller",
+    "nome": "😱 Thriller Psicologici",
+    "verdetto": "B",
+    "score": 68,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 40,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 45,
+    "errori": [
+      {
+        "pos": 5,
+        "titolo": "A Quiet Place II",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Creature feature / monster horror fantascientifico, privo delle dinamiche psicologiche del genere"
+      },
+      {
+        "pos": 37,
+        "titolo": "La zampa di scimmia",
+        "anno": "2013",
+        "tipo": "trash",
+        "nota": "B-horror mediocre con voto pesantemente insufficiente (4.828)"
+      },
+      {
+        "pos": 39,
+        "titolo": "Baskin: La porta dell'inferno",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Horror gore/splatter demoniaco allucinatorio, non affine al thriller psicologico"
+      },
+      {
+        "pos": 10,
+        "titolo": "La mano sulla culla",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Produzione scadente con voto 5.722 in decima posizione"
+      },
+      {
+        "pos": 26,
+        "titolo": "Pathology",
+        "anno": "2008",
+        "tipo": "trash",
+        "nota": "B-movie morboso con rating negativo (5.7)"
+      },
+      {
+        "pos": 29,
+        "titolo": "La setta dei dannati",
+        "anno": "2003",
+        "tipo": "fuori-promessa",
+        "nota": "Mistery religioso / horror sovrannaturale (voto 5.7) estraneo al filone psicologico"
+      }
+    ],
+    "motivo": "L'intersezione rigida tra Horror e Thriller taglia fuori i capisaldi del thriller psicologico privi di etichetta horror, riducendo il pool a soli 45 film e imbarcando molti B-horror di scarsa qualità (22.2% sotto 6.0).",
+    "evidenza": [
+      "Scappa - Get Out (2017)",
+      "Shining (1980)",
+      "Psyco (1960)",
+      "Il cigno nero (2010)"
+    ],
+    "fiducia": "alta"
+  }
+]

@@ -1,0 +1,623 @@
+[
+  {
+    "id": "sim_prof_qc_horror::yaca_true_blend_movies",
+    "catalogo": "yaca_true_blend_movies",
+    "tipo": "movie",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 90,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 13,
+        "titolo": "Super Mario Galaxy - Il film",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione per famiglie e commedia del tutto estranea al profilo horror"
+      },
+      {
+        "pos": 14,
+        "titolo": "Il Signore degli Anelli - Il ritorno del re",
+        "anno": "2003",
+        "tipo": "fuori-promessa",
+        "nota": "Fantasy epico/avventura inserito per rating elevato ma distante dal DNA horror/mistero"
+      },
+      {
+        "pos": 17,
+        "titolo": "Spider-Man: Across the Spider-Verse",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Cinecomic animato fuori target per un profilo horror"
+      },
+      {
+        "pos": 19,
+        "titolo": "Flow - Un mondo da salvare",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione per famiglie e avventura priva di elementi horror o mistero"
+      },
+      {
+        "pos": 24,
+        "titolo": "Swapped - Al tuo posto",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione/commedia per famiglie fuori tono per il profilo"
+      },
+      {
+        "pos": 34,
+        "titolo": "Questione di tempo",
+        "anno": "2013",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia romantica e dramma sentimentale non coerente con il gusto horror"
+      },
+      {
+        "pos": 43,
+        "titolo": "Soul",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione Pixar per famiglie fuori tema"
+      },
+      {
+        "pos": 45,
+        "titolo": "Pecore sotto copertura",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia per famiglie fuori target rispetto al DNA horror"
+      }
+    ],
+    "motivo": "Catalogo ottimamente tarato sul DNA horror e mistero, con grandi classici e uscite recenti ad alta affinità nei primi posti. La qualità complessiva è eccellente e la diversificazione evita dominanze di franchise. Si segnala solo qualche infiltrazione fuori tono di animazione per famiglie e cinecomic dovuta al blend su titoli ad alto rating.",
+    "evidenza": [
+      "28 giorni dopo (2002)",
+      "Contagion (2011)",
+      "Psyco (1960)",
+      "La cosa (1982)",
+      "Late Night with the Devil - In onda con il diavolo (2024)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_horror::yaca_true_blend_series",
+    "catalogo": "yaca_true_blend_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 94,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 95,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 19,
+        "titolo": "Avatar - La leggenda di Aang",
+        "anno": "2005",
+        "tipo": "fuori-promessa",
+        "nota": "Serie animata per ragazzi e avventura estranea al tono horror"
+      },
+      {
+        "pos": 28,
+        "titolo": "Sabrina, vita da strega",
+        "anno": "1996",
+        "tipo": "fuori-promessa",
+        "nota": "Sitcom teen e familiare anni 90 distante dall orrore e mistero maturo"
+      },
+      {
+        "pos": 38,
+        "titolo": "Os Dez Mandamentos",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Telenovela biblica e soap drammatica totalmente avulsa dal DNA horror"
+      },
+      {
+        "pos": 41,
+        "titolo": "Superman & Lois",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Serie di supereroi e dramma familiare fuori target"
+      },
+      {
+        "pos": 43,
+        "titolo": "Love Alarm",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "K-drama romantico adolescenziale fuori target"
+      },
+      {
+        "pos": 47,
+        "titolo": "Star Trek",
+        "anno": "1966",
+        "tipo": "fuori-promessa",
+        "nota": "Fantascienza classica non affine al tema horror e mistero"
+      }
+    ],
+    "motivo": "Proposta televisiva fortemente allineata al profilo horror e mistero, con ottima rappresentazione di antologie di genere, thriller sovrannaturali e il prequel di It. La qualità media delle serie è notevole e non vi sono sovrapposizioni tra cataloghi. Pochi titoli di stampo teen o soap opera biblica risultano fuori tono.",
+    "evidenza": [
+      "American Horror Story (2011)",
+      "Kingdom (2019)",
+      "Supernatural (2005)",
+      "The Haunting of Hill House (2018)",
+      "IT: Welcome to Derry (2025)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_horror::yaca_seed_network_movies",
+    "catalogo": "yaca_seed_network_movies",
+    "tipo": "movie",
+    "verdetto": "B",
+    "score": 79,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 65,
+      "completezza": 85
+    },
+    "itemGiudicati": 44,
+    "errori": [
+      {
+        "pos": 8,
+        "titolo": "Spider-Man: No Way Home",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Cinecomic d azione slegato dai seed horror (The Conjuring, Hereditary, Get Out, It)"
+      },
+      {
+        "pos": 9,
+        "titolo": "Il gatto con gli stivali 2 - L'ultimo desiderio",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione per famiglie e commedia priva di collegamenti tematici con i seed"
+      },
+      {
+        "pos": 12,
+        "titolo": "Ron - Un amico fuori programma",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione sci-fi per famiglie estranea alla rete dei preferiti horror"
+      },
+      {
+        "pos": 14,
+        "titolo": "Once Upon a Studio",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio celebrativo Disney di 9 minuti totalmente fuori promessa"
+      },
+      {
+        "pos": 19,
+        "titolo": "Dragon Trainer",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Fantasy per famiglie non collegato ai film horror di riferimento"
+      },
+      {
+        "pos": 34,
+        "titolo": "Luck",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione per bambini e famiglie non affine ai seed"
+      },
+      {
+        "pos": 37,
+        "titolo": "Il robot selvaggio",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Film d animazione per famiglie scollegato dal tema orrore"
+      },
+      {
+        "pos": 44,
+        "titolo": "Nimona",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione fantasy per ragazzi priva di attinenza con i seed orrorifici"
+      }
+    ],
+    "motivo": "I primi titoli rispecchiano fedelmente i seed recenti del profilo (franchise The Conjuring e It, opere collegate a James Wan e Blumhouse). Tuttavia, la rete si disperde presto su titoli animati e per famiglie del tutto estranei al genere horror. Il catalogo si ferma inoltre a 44 elementi su 50 attesi.",
+    "evidenza": [
+      "The Conjuring - Per ordine del diavolo (2021)",
+      "It - Capitolo due (2019)",
+      "Insidious (2011)",
+      "Black Phone (2022)",
+      "Candyman - Terrore dietro lo specchio (1992)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_horror::yaca_seed_network_series",
+    "catalogo": "yaca_seed_network_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 88,
+    "dimensioni": {
+      "pertinenza": 75,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 80,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 23,
+        "titolo": "The Amazing Digital Circus",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Web-serie animata surreale non strettamente collegata ai seed horror di riferimento"
+      },
+      {
+        "pos": 24,
+        "titolo": "Dinastía Casillas",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Telenovela e narconovela priva di affinità con i seed orrorifici"
+      },
+      {
+        "pos": 29,
+        "titolo": "La mia nobile nemica",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia romantica sudcoreana estranea alla rete horror"
+      },
+      {
+        "pos": 30,
+        "titolo": "Stuart Fails to Save the Universe",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia fantascientifica scollegata dai semi del profilo"
+      },
+      {
+        "pos": 40,
+        "titolo": "Halo",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Sci-fi militare e videogame non connesso ai seed sovrannaturali o horror"
+      },
+      {
+        "pos": 41,
+        "titolo": "A Knight of the Seven Kingdoms",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Spin-off fantasy medievale slegato dal tema orrore e mistero"
+      },
+      {
+        "pos": 47,
+        "titolo": "Peacemaker",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia di supereroi fuori dal perimetro horror e mistero"
+      },
+      {
+        "pos": 49,
+        "titolo": "Sonic Prime",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione per bambini (tag Kids) totalmente avulsa dal profilo horror"
+      }
+    ],
+    "motivo": "Rete seriale ricca di collegamenti pertinenti ai semi del profilo, con ottime serie horror, zombi e antologie di genere. La qualità media delle serie è molto alta e la distintività è totale rispetto agli altri cataloghi. Si nota solo una parziale deriva verso titoli d animazione o commedia supereroistica nella seconda metà della lista.",
+    "evidenza": [
+      "FROM (2022)",
+      "American Horror Stories (2021)",
+      "Guillermo del Toro's Cabinet of Curiosities (2022)",
+      "Non siamo più vivi (2022)",
+      "Creepshow (2019)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_horror::yaca_hidden_gems_movies",
+    "catalogo": "yaca_hidden_gems_movies",
+    "tipo": "movie",
+    "verdetto": "P",
+    "score": 91,
+    "dimensioni": {
+      "pertinenza": 75,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 7,
+        "titolo": "Justice League: Crisis on Infinite Earths Part One",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione supereroistica d azione fuori target per un profilo horror"
+      },
+      {
+        "pos": 8,
+        "titolo": "Brisby e il segreto di NIMH",
+        "anno": "1982",
+        "tipo": "fuori-promessa",
+        "nota": "Classico d animazione per famiglie non in tono con il gusto horror"
+      },
+      {
+        "pos": 15,
+        "titolo": "Il fantasma di Canterville",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione per famiglie e film TV fuori tema rispetto al DNA horror"
+      },
+      {
+        "pos": 16,
+        "titolo": "Il mio amico vampiro",
+        "anno": "2000",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia per ragazzi e famiglie lontana dall horror di nicchia maturo"
+      },
+      {
+        "pos": 19,
+        "titolo": "Steven Universe: Il film",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione musicale per famiglie e ragazzi fuori tema"
+      },
+      {
+        "pos": 41,
+        "titolo": "지금 만나러 갑니다",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma romantico coreano non attinente a horror o mistero"
+      },
+      {
+        "pos": 50,
+        "titolo": "The Amazing Digital Circus: L'Ultimo Atto",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione web non pertinente al profilo horror"
+      }
+    ],
+    "motivo": "Selezione di gemme nascoste di ottimo livello con autentiche perle di culto horror classico e moderno (Hammer, Bava, Wise, Bigelow). Tutti i vincoli della ricetta (popolarità <= 20, voti tra 50 e 1000, durata >= 60') sono pienamente rispettati senza alcuna violazione. Qualche inserimento di animazione per famiglie e cinecomic stona parzialmente rispetto al gusto horror.",
+    "evidenza": [
+      "Pontypool - Zitto o muori (2009)",
+      "Dracula il vampiro (1958)",
+      "I tre volti della paura (1963)",
+      "Gli invasati (1963)",
+      "Il buio si avvicina (1987)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_horror::yaca_hidden_gems_series",
+    "catalogo": "yaca_hidden_gems_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 13,
+        "titolo": "Doom at Your Service",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "K-drama romantico e fantastico fuori target per un profilo horror"
+      },
+      {
+        "pos": 17,
+        "titolo": "피노키오",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia drammatica romantica sudcoreana fuori tema"
+      },
+      {
+        "pos": 19,
+        "titolo": "Moon Lovers: Scarlet Heart Ryeo",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "K-drama storico e romantico non attinente all orrore o mistero"
+      },
+      {
+        "pos": 21,
+        "titolo": "Love Between Fairy and Devil",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Serie fantasy romantica cinese estranea ai generi horror e mistero"
+      },
+      {
+        "pos": 29,
+        "titolo": "My Holo Love",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma romantico fantascientifico coreano estraneo al profilo horror"
+      },
+      {
+        "pos": 37,
+        "titolo": "I Am Not an Animal",
+        "anno": "2004",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia animata satirica fuori tono rispetto ai generi del profilo"
+      }
+    ],
+    "motivo": "Raccolta eccellente per amanti dell'horror di nicchia, con titoli di valore come Marianne, Dead Set, 30 Coins e Usher. La coerenza con la promessa dell'hero è impeccabile: tutte le serie rispettano rigorosamente la soglia di popolarità (<= 20) e l'intervallo di voti (50-1000). Sono presenti solo alcuni K-drama a tema romantico che diluiscono la pertinenza di genere.",
+    "evidenza": [
+      "해피니스 (2021)",
+      "Marianne (2019)",
+      "Dead Set (2008)",
+      "30 Coins - Trenta denari (2020)",
+      "La caduta della casa degli Usher (2023)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_horror::yaca_trakt_filtered_movies",
+    "catalogo": "yaca_trakt_filtered_movies",
+    "tipo": "movie",
+    "verdetto": "B",
+    "score": 63,
+    "dimensioni": {
+      "pertinenza": 40,
+      "qualita": 60,
+      "distintivita": 85,
+      "coerenza": 60,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 6,
+        "titolo": "Amor es amor",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia romantica generica nel fallback non personalizzato di Trakt"
+      },
+      {
+        "pos": 7,
+        "titolo": "Legend of the White Dragon",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Rating scadente (5.6) con 17 voti in una lista che promette titoli ben votati"
+      },
+      {
+        "pos": 12,
+        "titolo": "Les matins merveilleux",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Commedia romantica con voto 5.8 e appena 10 voti"
+      },
+      {
+        "pos": 14,
+        "titolo": "The Love Hypothesis: Il teorema dell'amore",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia romantica priva di attinenza con il gusto horror"
+      },
+      {
+        "pos": 22,
+        "titolo": "PAW Patrol - Missione Dinosauri",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione prescolare per bambini in netto contrasto con il profilo horror"
+      },
+      {
+        "pos": 23,
+        "titolo": "Taddeo l’esploratore e la lampada magica",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione per famiglie con voto modesto (6.7) e 12 voti"
+      },
+      {
+        "pos": 40,
+        "titolo": "Onslaught - Assalto finale",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Action thriller di bassa caratura con rating 5.8"
+      },
+      {
+        "pos": 45,
+        "titolo": "Amori & incantesimi 2",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia romantica fantasy estranea al tema orrore"
+      }
+    ],
+    "motivo": "Il catalogo opera in modalità degradata/fallback su uscite recenti del 2026 a causa dell'assenza verificata di un token Trakt. L'output non ha personalizzazione né match score, risultando intercambiabile con un feed generico contenente animazione infantile e commedie romantiche. Anche la qualità media è mediocre (mediana 6.70 con diversi titoli sotto il 6.0).",
+    "evidenza": [
+      "Motor City (2026)",
+      "PAW Patrol - Missione Dinosauri (2026)",
+      "Insidious - Fuori dall’Altrove (2026)",
+      "Soulm8te (2026)",
+      "Spider-Man: Brand New Day (2026)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_horror::yaca_trakt_filtered_series",
+    "catalogo": "yaca_trakt_filtered_series",
+    "tipo": "series",
+    "verdetto": "B",
+    "score": 68,
+    "dimensioni": {
+      "pertinenza": 40,
+      "qualita": 80,
+      "distintivita": 85,
+      "coerenza": 65,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "Dragon Striker",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione sportiva per famiglie non attinente ai temi horror o mistero"
+      },
+      {
+        "pos": 15,
+        "titolo": "The Hawk",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Commedia con voto mediocre (5.5) su 54 voti inserita nel fallback"
+      },
+      {
+        "pos": 22,
+        "titolo": "Lucky Luke",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia western per famiglie non affine al profilo"
+      },
+      {
+        "pos": 34,
+        "titolo": "The Other Bennet Sister",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia romantica e dramma in costume fuori target"
+      },
+      {
+        "pos": 36,
+        "titolo": "La oficina",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Sitcom da ufficio priva di elementi di mistero o tensione"
+      },
+      {
+        "pos": 40,
+        "titolo": "Pompei: Fuori dal tempo con Tom Hiddleston",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario storico televisivo fuori tema"
+      },
+      {
+        "pos": 47,
+        "titolo": "Malcolm: Che vita!",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia televisiva non pertinente al DNA horror"
+      },
+      {
+        "pos": 48,
+        "titolo": "Rafa",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario sportivo su Rafael Nadal fuori contesto"
+      }
+    ],
+    "motivo": "Il catalogo è generato tramite fallback degradato su titoli del 2026 a causa dell'assenza verificata dell'account Trakt. I contenuti sono generici e non personalizzati, spaziando da commedie e telenovelas fino a documentari sportivi o storici. Sebbene i rating medi siano discreti, la pertinenza con il profilo horror rimane minima.",
+    "evidenza": [
+      "Stranger Things: Storie dal 1985 (2026)",
+      "The Boroughs - Ribelli senza tempo (2026)",
+      "Detective Hole (2026)",
+      "Cape Fear (2026)",
+      "La oficina (2026)"
+    ],
+    "fiducia": "alta"
+  }
+]

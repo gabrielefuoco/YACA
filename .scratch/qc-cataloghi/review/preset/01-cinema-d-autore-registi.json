@@ -1,0 +1,769 @@
+[
+  {
+    "id": "preset_nolan",
+    "nome": "⏳ Regia: Christopher Nolan",
+    "verdetto": "P",
+    "score": 91,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 14,
+    "errori": [],
+    "motivo": "Filmografia di Christopher Nolan di altissima caratura qualitativa e perfettamente ordinata per voto medio, penalizzata unicamente dalle ridotte dimensioni del pool complessivo (14 titoli).",
+    "evidenza": [
+      "Il cavaliere oscuro (2008)",
+      "Interstellar (2014)",
+      "Inception (2010)",
+      "Oppenheimer (2023)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_tarantino",
+    "nome": "🩸 Regia: Quentin Tarantino",
+    "verdetto": "P",
+    "score": 88,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 16,
+    "errori": [
+      {
+        "pos": 10,
+        "titolo": "Reservoir Dogs",
+        "anno": "1991",
+        "tipo": "duplicato",
+        "nota": "Duplicato a basso numero di voti di Le iene (1992) già presente al n. 4."
+      },
+      {
+        "pos": 5,
+        "titolo": "Kill Bill: The Whole Bloody Affair",
+        "anno": "2011",
+        "tipo": "duplicato",
+        "nota": "Versione montata integrale che duplica Kill Bill Vol. 1 e Vol. 2."
+      }
+    ],
+    "motivo": "Selezione eccellente della cinematografia di Quentin Tarantino con qualità media altissima, sporcata solo dalla presenza di duplicati e dal pool ridotto.",
+    "evidenza": [
+      "Pulp Fiction (1994)",
+      "Bastardi senza gloria (2009)",
+      "Django Unchained (2012)",
+      "Le iene (1992)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_scorsese",
+    "nome": "🔫 Regia: Martin Scorsese",
+    "verdetto": "P",
+    "score": 90,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 29,
+    "errori": [],
+    "motivo": "Catalogo impeccabile che copre con rigore l'intera carriera di Martin Scorsese, con ordine decrescente del voto medio perfettamente rispettato.",
+    "evidenza": [
+      "Quei bravi ragazzi (1990)",
+      "Taxi Driver (1976)",
+      "The Departed - Il bene e il male (2006)",
+      "The Wolf of Wall Street (2013)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_spielberg",
+    "nome": "🦖 Regia: Steven Spielberg",
+    "verdetto": "P",
+    "score": 90,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 42,
+    "errori": [],
+    "motivo": "Panoramica fedele e rappresentativa dei successi di Steven Spielberg, con ordinamento per incassi storici del tutto plausibile anche in assenza della colonna box-office.",
+    "evidenza": [
+      "Jurassic Park (1993)",
+      "E.T. l'extra-terrestre (1982)",
+      "Salvate il soldato Ryan (1998)",
+      "I predatori dell'arca perduta (1981)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_kubrick",
+    "nome": "👁️ Regia: Stanley Kubrick",
+    "verdetto": "P",
+    "score": 87,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 16,
+    "errori": [
+      {
+        "pos": 16,
+        "titolo": "The Seafarers",
+        "anno": "1953",
+        "tipo": "trash",
+        "nota": "Cortometraggio documentario d'esordio con voto mediocre (4.5)."
+      },
+      {
+        "pos": 15,
+        "titolo": "Il padre volante",
+        "anno": "1951",
+        "tipo": "trash",
+        "nota": "Corto documentario minore sotto la soglia di qualità (5.1)."
+      }
+    ],
+    "motivo": "Filmografia integrale di Stanley Kubrick dominata da capolavori immortali, con una lieve flessione qualitativa in coda dovuta ai corti documentari giovanili.",
+    "evidenza": [
+      "2001: Odissea nello spazio (1968)",
+      "Shining (1980)",
+      "Arancia meccanica (1971)",
+      "Full Metal Jacket (1987)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_villeneuve",
+    "nome": "🏜️ Regia: Denis Villeneuve",
+    "verdetto": "P",
+    "score": 91,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 10,
+    "errori": [],
+    "motivo": "Raccolta di altissimo livello qualitativo e precisione assoluta per Denis Villeneuve, limitata strutturalmente solo dall'esiguità del pool di 10 titoli.",
+    "evidenza": [
+      "Prisoners (2013)",
+      "Dune - Parte due (2024)",
+      "Blade Runner 2049 (2017)",
+      "Arrival (2016)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_fincher",
+    "nome": "🔦 Regia: David Fincher",
+    "verdetto": "P",
+    "score": 87,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 12,
+    "errori": [],
+    "motivo": "Rassegna completa e coerente della regia di David Fincher ordinata accuratamente per voto medio, con il solo difetto del pool ridotto a 12 film.",
+    "evidenza": [
+      "Fight Club (1999)",
+      "Seven (1995)",
+      "Zodiac (2007)",
+      "The Social Network (2010)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_burton",
+    "nome": "✂️ Regia: Tim Burton",
+    "verdetto": "P",
+    "score": 83,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 24,
+    "errori": [],
+    "motivo": "Filmografia completa di Tim Burton con ordinamento per popolarità impeccabile, con una qualità media appena sotto il 7.0 per via di alcuni titoli minori.",
+    "evidenza": [
+      "Edward mani di forbice (1990)",
+      "La sposa cadavere (2005)",
+      "Beetlejuice - Spiritello porcello (1988)",
+      "Batman (1989)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_wesanderson",
+    "nome": "🎨 Regia: Wes Anderson",
+    "verdetto": "P",
+    "score": 87,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 20,
+    "errori": [
+      {
+        "pos": 6,
+        "titolo": "La meravigliosa storia di Henry Sugar e altre tre storie",
+        "anno": "2024",
+        "tipo": "duplicato",
+        "nota": "Raccolta antologica che include i corti di Dahl già presenti singolarmente nel catalogo."
+      }
+    ],
+    "motivo": "Tutti i lavori di Wes Anderson presenti e ben ordinati per voto medio, con una lieve ridondanza tra la raccolta antologica e i singoli cortometraggi.",
+    "evidenza": [
+      "Grand Budapest Hotel (2014)",
+      "Fantastic Mr. Fox (2009)",
+      "Moonrise Kingdom - Una fuga d'amore (2012)",
+      "I Tenenbaum (2001)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_lynch",
+    "nome": "☕ Regia: David Lynch",
+    "verdetto": "P",
+    "score": 87,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 19,
+    "errori": [
+      {
+        "pos": 19,
+        "titolo": "The Amputee",
+        "anno": "1974",
+        "tipo": "trash",
+        "nota": "Corto studentesco sperimentale con voto basso (5.098)."
+      }
+    ],
+    "motivo": "Filmografia affascinante e completa di David Lynch ordinata per voto medio, che raccoglie sia i capolavori che i corti giovanili in coda.",
+    "evidenza": [
+      "Mulholland Drive (2001)",
+      "The Elephant Man (1980)",
+      "Velluto blu (1986)",
+      "Eraserhead - La mente che cancella (1977)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_scott",
+    "nome": "👽 Regia: Ridley Scott",
+    "verdetto": "P",
+    "score": 86,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 32,
+    "errori": [
+      {
+        "pos": 15,
+        "titolo": "The Counselor - Il procuratore",
+        "anno": "2013",
+        "tipo": "trash",
+        "nota": "Titolo controverso e poco apprezzato con voto 5.3 promosso in alto dalla popolarità."
+      }
+    ],
+    "motivo": "Carriera prolifica e completa di Ridley Scott ordinata coerentemente per popolarità decrescente, con qualche opera minore sotto la sufficienza.",
+    "evidenza": [
+      "Alien (1979)",
+      "Il gladiatore (2000)",
+      "Blade Runner (1982)",
+      "Sopravvissuto - The Martian (2015)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_actor_dicaprio",
+    "nome": "⭐ Starring: Leonardo DiCaprio",
+    "verdetto": "P",
+    "score": 88,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 33,
+    "errori": [
+      {
+        "pos": 11,
+        "titolo": "Spielberg",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario biografico su Spielberg in cui DiCaprio figura solo come intervistato."
+      },
+      {
+        "pos": 33,
+        "titolo": "Critters 3",
+        "anno": "1991",
+        "tipo": "trash",
+        "nota": "B-movie d'esordio con voto mediocre (5.3)."
+      }
+    ],
+    "motivo": "Catalogo di eccezionale caratura che celebra i ruoli più acclamati di Leonardo DiCaprio, ben ordinato per voto medio decrescente.",
+    "evidenza": [
+      "Inception (2010)",
+      "The Departed - Il bene e il male (2006)",
+      "The Wolf of Wall Street (2013)",
+      "Titanic (1997)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_actor_cruise",
+    "nome": "⭐ Starring: Tom Cruise",
+    "verdetto": "B",
+    "score": 79,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 46,
+        "titolo": "The Final - Attacco a Wembley",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario calcistico in cui Cruise appare solo come spettatore in materiale d'archivio."
+      },
+      {
+        "pos": 48,
+        "titolo": "Val",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario su Val Kilmer dove Cruise figura unicamente in immagini d'archivio."
+      },
+      {
+        "pos": 47,
+        "titolo": "Stanley Kubrick - Ein Leben für den Film",
+        "anno": "2001",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario su Kubrick in cui Cruise partecipa come intervistato."
+      },
+      {
+        "pos": 50,
+        "titolo": "Un week end da leone",
+        "anno": "1983",
+        "tipo": "trash",
+        "nota": "Commedia giovanile di qualità scadente con voto 4.957."
+      }
+    ],
+    "motivo": "Catalogo ricco dei grandi successi di Tom Cruise ordinato per popolarità, penalizzato verso la fine da documentari di repertorio e un voto mediano sotto 7.0.",
+    "evidenza": [
+      "Top Gun: Maverick (2022)",
+      "Mission: Impossible (1996)",
+      "Edge of Tomorrow - Senza domani (2014)",
+      "Minority Report (2002)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_actor_reeves",
+    "nome": "⭐ Starring: Keanu Reeves",
+    "verdetto": "P",
+    "score": 82,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 28,
+        "titolo": "Animatrix",
+        "anno": "2003",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione etichettato come anime (🎌) all'interno di un catalogo live-action occidentale."
+      },
+      {
+        "pos": 48,
+        "titolo": "Wick è dolore",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario promozionale fuori tema rispetto ai film interpretati dall'attore."
+      },
+      {
+        "pos": 43,
+        "titolo": "Siberia",
+        "anno": "2018",
+        "tipo": "trash",
+        "nota": "B-movie thriller scadente con voto molto basso (4.7)."
+      },
+      {
+        "pos": 31,
+        "titolo": "Nell'ombra di un delitto",
+        "anno": "2016",
+        "tipo": "trash",
+        "nota": "Thriller mediocre con voto sotto il 5.0 (4.934)."
+      }
+    ],
+    "motivo": "I film più celebri di Keanu Reeves ben ordinati per popolarità, inficiati nella parte bassa da diversi B-movie e dall'anomala inclusione anime di Animatrix.",
+    "evidenza": [
+      "Matrix (1999)",
+      "John Wick (2014)",
+      "Speed (1994)",
+      "L'avvocato del diavolo (1997)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_brad_pitt",
+    "nome": "👊 Starring: Brad Pitt",
+    "verdetto": "P",
+    "score": 90,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 49,
+    "errori": [
+      {
+        "pos": 49,
+        "titolo": "The Counselor - Il procuratore",
+        "anno": "2013",
+        "tipo": "trash",
+        "nota": "Ruolo secondario in un film poco apprezzato con voto 5.3."
+      }
+    ],
+    "motivo": "Filmografia eccellente di Brad Pitt ordinata con rigore per voto medio, priva di intrusioni estranee e con una tenuta qualitativa notevole.",
+    "evidenza": [
+      "Fight Club (1999)",
+      "Seven (1995)",
+      "Bastardi senza gloria (2009)",
+      "Snatch - Lo strappo (2000)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_de_niro",
+    "nome": "🚕 Starring: Robert De Niro",
+    "verdetto": "P",
+    "score": 84,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 24,
+        "titolo": "Val",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario su Val Kilmer dove De Niro è presente unicamente in materiale d'archivio."
+      },
+      {
+        "pos": 25,
+        "titolo": "Sly",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario biografico su Stallone in cui De Niro compare solo come intervistato."
+      }
+    ],
+    "motivo": "Straordinaria carrellata della carriera di Robert De Niro con vertici assoluti della storia del cinema, ordinata rigorosamente per voto medio.",
+    "evidenza": [
+      "Il padrino - Parte II (1974)",
+      "Quei bravi ragazzi (1990)",
+      "Taxi Driver (1976)",
+      "C'era una volta in America (1984)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_johnny_depp",
+    "nome": "🏴‍☠️ Starring: Johnny Depp",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 45,
+        "titolo": "London Fields",
+        "anno": "2018",
+        "tipo": "trash",
+        "nota": "Flop con comparsata non accreditata e voto pessimo (5.054)."
+      },
+      {
+        "pos": 30,
+        "titolo": "Nightmare 6 - La fine",
+        "anno": "1991",
+        "tipo": "trash",
+        "nota": "Cameo trascurabile sotto pseudonimo in sequel scadente (5.3)."
+      }
+    ],
+    "motivo": "Catalogo ampio e fedele incentrato sui ruoli iconici di Johnny Depp ben ordinato per popolarità, con qualche comparsata trascurabile sul fondo.",
+    "evidenza": [
+      "La maledizione della prima luna (2003)",
+      "Edward mani di forbice (1990)",
+      "Il mistero di Sleepy Hollow (1999)",
+      "Donnie Brasco (1997)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_denzel",
+    "nome": "👮 Starring: Denzel Washington",
+    "verdetto": "P",
+    "score": 86,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 46,
+    "errori": [
+      {
+        "pos": 46,
+        "titolo": "Highest 2 Lowest",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Titolo in coda con valutazione insufficiente (5.482)."
+      }
+    ],
+    "motivo": "Ottima raccolta completa delle interpretazioni di Denzel Washington, rigorosamente ordinata per voto medio e priva di intrusioni esterne.",
+    "evidenza": [
+      "Philadelphia (1993)",
+      "Training Day (2001)",
+      "American Gangster (2007)",
+      "Man on Fire - Il fuoco della vendetta (2004)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_nicolas_cage",
+    "nome": "🔥 La Follia di Nicolas Cage",
+    "verdetto": "P",
+    "score": 85,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 40,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 15,
+        "titolo": "Left Behind - La profezia",
+        "anno": "2014",
+        "tipo": "trash",
+        "nota": "B-movie apocalittico ampiamente stroncato da critica e pubblico (4.303)."
+      },
+      {
+        "pos": 50,
+        "titolo": "Il prescelto",
+        "anno": "2006",
+        "tipo": "trash",
+        "nota": "Celebre cult trash involontario con voto pessimo (4.3)."
+      },
+      {
+        "pos": 16,
+        "titolo": "Ghost Rider - Spirito di vendetta",
+        "anno": "2011",
+        "tipo": "trash",
+        "nota": "Sequel cinecomic di pessima fattura (5.0)."
+      },
+      {
+        "pos": 34,
+        "titolo": "Outcast - L'ultimo templare",
+        "anno": "2014",
+        "tipo": "trash",
+        "nota": "B-movie medievale stroncato con voto 5.2."
+      }
+    ],
+    "motivo": "Catalogo perfetto per pertinenza e ordinamento sulla filmografia folle di Nicolas Cage, inevitabilmente gravato dalla massiccia presenza di B-movie sotto la sufficienza (48.6%).",
+    "evidenza": [
+      "Face/Off - Due facce di un assassino (1997)",
+      "Con Air (1997)",
+      "Mandy (2018)",
+      "Il mistero dei Templari (2004)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_a24",
+    "nome": "💎 A24: Cinema Indipendente",
+    "verdetto": "P",
+    "score": 83,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 60,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 49,
+        "titolo": "False Positive",
+        "anno": "2021",
+        "tipo": "trash",
+        "nota": "Horror psicologico di scarso successo con voto 5.6."
+      },
+      {
+        "pos": 50,
+        "titolo": "Rumore bianco",
+        "anno": "2022",
+        "tipo": "trash",
+        "nota": "Titolo di chiusura con voto al limite (5.594)."
+      }
+    ],
+    "motivo": "Ottima selezione del catalogo indipendente A24 ordinata per voto medio, con moderata sovrapposizione con il canale A24 Horror & Thriller e pool discreto.",
+    "evidenza": [
+      "Everything Everywhere All at Once (2022)",
+      "The Whale (2022)",
+      "Past Lives (2023)",
+      "The Lighthouse (2019)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_french_cinema",
+    "nome": "Cinema Francese d'Autore",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 11,
+        "titolo": "Miraculous World: New York - Eroi uniti",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Film TV d'animazione per bambini, del tutto estraneo alla definizione di cinema d'autore."
+      },
+      {
+        "pos": 29,
+        "titolo": "Miraculous World: Shanghai - La leggenda di Ladydragon",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Speciale televisivo per ragazzi del franchise Miraculous, fuori contesto."
+      },
+      {
+        "pos": 2,
+        "titolo": "L'odissea di Shooom",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio d'animazione etichettato con badge anime (🎌) all'interno di un catalogo non-anime."
+      }
+    ],
+    "motivo": "Catalogo monumentale per completezza e qualità del cinema francese classico e contemporaneo, macchiato solo da intrusioni stonate del franchise d'animazione Miraculous.",
+    "evidenza": [
+      "I 400 colpi (1959)",
+      "Vite vendute (1953)",
+      "Ritratto della giovane in fiamme (2019)",
+      "Il favoloso mondo di Amélie (2001)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_italian_cinema",
+    "nome": "🇮🇹 Cinema Italiano",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 19,
+        "titolo": "Me contro Te: Il film - La vendetta del Signor S",
+        "anno": "2020",
+        "tipo": "trash",
+        "nota": "Film per bambini con voto drogato dai fan (8.04), intollerabile e grottesco tra i capolavori del cinema italiano."
+      },
+      {
+        "pos": 15,
+        "titolo": "“I Corti” di Aldo Giovanni e Giacomo",
+        "anno": "1996",
+        "tipo": "fuori-promessa",
+        "nota": "Spettacolo teatrale registrato, non un lungometraggio cinematografico."
+      },
+      {
+        "pos": 31,
+        "titolo": "Tel chi el telùn",
+        "anno": "1999",
+        "tipo": "fuori-promessa",
+        "nota": "Registrazione di spettacolo teatrale comico, improprio in una lista di cinema."
+      }
+    ],
+    "motivo": "Raccolta magnifica del patrimonio cinematografico italiano con pool sterminato e ordine perfetto, deturpata clamorosamente al n. 19 dall'inclusione di Me contro Te dovuta a voti gonfiati.",
+    "evidenza": [
+      "Il buono, il brutto, il cattivo (1966)",
+      "La vita è bella (1997)",
+      "Nuovo Cinema Paradiso (1988)",
+      "Ladri di biciclette (1948)"
+    ],
+    "fiducia": "alta"
+  }
+]

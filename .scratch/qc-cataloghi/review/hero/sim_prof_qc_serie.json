@@ -1,0 +1,503 @@
+[
+  {
+    "id": "sim_prof_qc_serie::yaca_true_blend_movies",
+    "catalogo": "yaca_true_blend_movies",
+    "tipo": "movie",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 90,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "GOAT - Sogna in grande",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione per famiglie in contrasto con il target adulto da binge-watcher."
+      },
+      {
+        "pos": 5,
+        "titolo": "Toy Story - Il mondo dei giocattoli",
+        "anno": "1995",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione Pixar per l'infanzia e la famiglia fuori dal perimetro del profilo."
+      },
+      {
+        "pos": 6,
+        "titolo": "Monsters & Co.",
+        "anno": "2001",
+        "tipo": "fuori-promessa",
+        "nota": "Classico per famiglie non coerente con la predilezione per crime e drama maturi."
+      },
+      {
+        "pos": 20,
+        "titolo": "Il gigante di ferro",
+        "anno": "1999",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione avventurosa per ragazzi distante dalle serie e temi crime di riferimento."
+      },
+      {
+        "pos": 25,
+        "titolo": "Il re leone",
+        "anno": "1994",
+        "tipo": "fuori-promessa",
+        "nota": "Pellicola animata Disney per famiglie estranea al gusto seriale."
+      }
+    ],
+    "motivo": "Ottimo bilanciamento di capolavori drammatici e polizieschi (Il silenzio degli innocenti, Il padrino, The Departed) e commedie generazionali affini ai keyword di DNA. La qualità media è straordinaria e la diversificazione rispetta la promessa evitando saghe multiple. L'unica pecca risiede nell'infiltrazione di diversi titoli d'animazione per famiglie.",
+    "evidenza": [
+      "Il silenzio degli innocenti (1991)",
+      "Forrest Gump (1994)",
+      "The Departed - Il bene e il male (2006)",
+      "Il padrino (1972)",
+      "Le ali della libertà (1994)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_serie::yaca_true_blend_series",
+    "catalogo": "yaca_true_blend_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 98,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 95,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 27,
+        "titolo": "La hija del Mariachi",
+        "anno": "2006",
+        "tipo": "fuori-promessa",
+        "nota": "Telenovela colombiana melodrammatica slegata dall'impronta prestige drama."
+      },
+      {
+        "pos": 28,
+        "titolo": "La casa nella prateria",
+        "anno": "1974",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma familiare/western vintage dal match DNA molto basso (31)."
+      },
+      {
+        "pos": 46,
+        "titolo": "O11CE",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Telenovela giovanile Disney per ragazzi fuori target per un profilo adulto."
+      }
+    ],
+    "motivo": "Catalogo pressoché perfetto per un profilo binge-watcher, con una convergenza totale su crimine d'autore, prestige drama, sitcom e adult animation. Include direttamente i titoli dell'attività recente e le loro estensioni naturali (I Soprano, Dexter, House of the Dragon, BoJack Horseman). Marginali le intrusioni di un paio di soap opera.",
+    "evidenza": [
+      "Breaking Bad (2008)",
+      "The Wire (2002)",
+      "Better Call Saul (2015)",
+      "I Soprano (1999)",
+      "House of the Dragon (2022)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_serie::yaca_seed_network_movies",
+    "catalogo": "yaca_seed_network_movies",
+    "tipo": "movie",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 95,
+      "distintivita": 100,
+      "coerenza": 55,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 4,
+        "titolo": "The Punisher: One Last Kill",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Mediometraggio/speciale di 50 minuti inserito in un catalogo di lungometraggi."
+      },
+      {
+        "pos": 9,
+        "titolo": "Il gatto con gli stivali 2 - L'ultimo desiderio",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione per famiglie priva di collegamenti con i semi crime/drama."
+      },
+      {
+        "pos": 10,
+        "titolo": "Sing 2 - Sempre più forte",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Cartone animato musicale per famiglie del tutto estraneo ai semi Breaking Bad e The Wire."
+      },
+      {
+        "pos": 12,
+        "titolo": "Super Mario Galaxy - Il film",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione per l'infanzia privo di connessione coi preferiti del profilo."
+      },
+      {
+        "pos": 15,
+        "titolo": "Toy Story 5",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Sequel d'animazione per famiglie introdotto come filler non pertinente."
+      },
+      {
+        "pos": 16,
+        "titolo": "Jumpers - Un salto tra gli animali",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione per bambini fuori tema rispetto al DNA seriale maturo."
+      },
+      {
+        "pos": 17,
+        "titolo": "Pecore sotto copertura",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia per bambini e famiglie slegata dalla rete tematica."
+      },
+      {
+        "pos": 48,
+        "titolo": "Il bambino, la talpa, la volpe e il cavallo",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio d'animazione per famiglie di 35 minuti inserito tra i film."
+      }
+    ],
+    "motivo": "L'apertura offre collegamenti eccellenti con i semi crime (Il padrino - Parte II, Quei bravi ragazzi, Bronx), ma la rete filmica si sfalda rapidamente accogliendo numerosi cartoni animati per famiglie e commedie romantiche prive di legami logici con Breaking Bad o The Wire. Si segnalano inoltre due anomalie di formato (durata 50 e 35 minuti).",
+    "evidenza": [
+      "Il padrino - Parte II (1974)",
+      "Il miglio verde (1999)",
+      "Quei bravi ragazzi (1990)",
+      "Bronx (1993)",
+      "Papillon (1973)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_serie::yaca_seed_network_series",
+    "catalogo": "yaca_seed_network_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 85,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "Tutto in famiglia",
+        "anno": "2001",
+        "tipo": "fuori-promessa",
+        "nota": "Sitcom familiare leggera non in tono con i toni drammatici e crudi dei seed."
+      },
+      {
+        "pos": 5,
+        "titolo": "Kenan & Kel",
+        "anno": "1996",
+        "tipo": "fuori-promessa",
+        "nota": "Sitcom per bambini/ragazzi Nickelodeon in netto contrasto con il target adulto."
+      },
+      {
+        "pos": 20,
+        "titolo": "Una bionda per papà",
+        "anno": "1991",
+        "tipo": "fuori-promessa",
+        "nota": "Sitcom familiare anni 90 distante dalle narrazioni complesse dei preferiti."
+      },
+      {
+        "pos": 24,
+        "titolo": "Dinastía Casillas",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Telenovela/soap melodrammatica che abbassa la coerenza tematica della rete."
+      }
+    ],
+    "motivo": "Rete seriale ricca di ramificazioni coerenti attorno ai capisaldi del profilo: Snowfall, Mr Inbetween, Avvocato di difesa e Hannibal sviluppano il filone crime/drama, mentre A Knight of the Seven Kingdoms e The Witcher ampliano il fantasy di Game of Thrones. Si nota solo una manciata di sitcom per ragazzi e telenovelas a bassa affinità.",
+    "evidenza": [
+      "Snowfall (2017)",
+      "A Knight of the Seven Kingdoms (2026)",
+      "Hannibal (2013)",
+      "Mr Inbetween (2018)",
+      "Avvocato di difesa - The Lincoln Lawyer (2022)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_serie::yaca_hidden_gems_movies",
+    "catalogo": "yaca_hidden_gems_movies",
+    "tipo": "movie",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "Ernest & Celestine",
+        "anno": "2012",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione per famiglie/bambini fuori target rispetto al gusto adulto del profilo."
+      },
+      {
+        "pos": 14,
+        "titolo": "Steven Universe: Il film",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Film animato per ragazzi e famiglie non coerente con i generi di preferenza."
+      },
+      {
+        "pos": 33,
+        "titolo": "Lucy Shimmers and the Prince of Peace",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma per famiglie di stampo edificante estraneo ai canoni del profilo."
+      }
+    ],
+    "motivo": "Pregevole collezione di gemme cinematografiche di nicchia orientate al noir, al poliziesco d'autore e al dramma (Indagine su un cittadino, El Infierno, A Brighter Summer Day). I criteri di nicchia dell'hero sono perfettamente soddisfatti con zero violazioni di popolarità, voti o durata minima. Si segnalano unicamente isolati titoli d'animazione per famiglie.",
+    "evidenza": [
+      "Vertigine (1944)",
+      "L'uomo ombra (1934)",
+      "Indagine su un cittadino al di sopra di ogni sospetto (1970)",
+      "El Infierno (2010)",
+      "A Brighter Summer Day (1991)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_serie::yaca_hidden_gems_series",
+    "catalogo": "yaca_hidden_gems_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 90,
+    "dimensioni": {
+      "pertinenza": 70,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 19,
+        "titolo": "Cuore selvaggio",
+        "anno": "1992",
+        "tipo": "fuori-promessa",
+        "nota": "Telenovela messicana lontana dalla promessa di serie per binge watcher adulti."
+      },
+      {
+        "pos": 20,
+        "titolo": "Amores verdaderos",
+        "anno": "2012",
+        "tipo": "fuori-promessa",
+        "nota": "Soap opera sentimentale latinoamericana priva di affinità con i temi crime/drama."
+      },
+      {
+        "pos": 22,
+        "titolo": "Corazón Indomable",
+        "anno": "2013",
+        "tipo": "fuori-promessa",
+        "nota": "Telenovela soap fuori contesto rispetto alle abitudini di visione del profilo."
+      },
+      {
+        "pos": 24,
+        "titolo": "La Doña",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Telenovela drammatica non adatta al pubblico di prestige series."
+      },
+      {
+        "pos": 28,
+        "titolo": "Verdades Secretas",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Soap opera brasiliana distante dai canoni qualitativi delle produzioni seguite."
+      },
+      {
+        "pos": 36,
+        "titolo": "Xica da Silva",
+        "anno": "1996",
+        "tipo": "fuori-promessa",
+        "nota": "Telenovela storica che impoverisce la pertinenza di genere."
+      },
+      {
+        "pos": 38,
+        "titolo": "I'm in the Band",
+        "anno": "2009",
+        "tipo": "fuori-promessa",
+        "nota": "Sitcom per ragazzi Disney XD fuori target per un profilo adulto."
+      }
+    ],
+    "motivo": "Presenza di notevoli perle seriali di nicchia (Derry Girls, River, Generation Kill, Love & Death, The Jinx) e rigoroso rispetto delle metriche dell'hero (zero violazioni su popolarità e voti). Tuttavia, la pertinenza complessiva risulta appesantita da un blocco consistente di telenovelas sudamericane e soap opera estranee al profilo.",
+    "evidenza": [
+      "Derry Girls (2018)",
+      "River (2015)",
+      "Generation Kill (2008)",
+      "Love & Death (2023)",
+      "The Jinx - La vita e le morti di Robert Durst (2015)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_serie::yaca_trakt_filtered_movies",
+    "catalogo": "yaca_trakt_filtered_movies",
+    "tipo": "movie",
+    "verdetto": "B",
+    "score": 65,
+    "dimensioni": {
+      "pertinenza": 45,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 50,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 4,
+        "titolo": "The Last Photograph",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Valutazione insufficiente (5.9) con un campione trascurabile di 14 voti."
+      },
+      {
+        "pos": 7,
+        "titolo": "Legend of the White Dragon",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Voto scadente (5.6 su 17 valutazioni) in palese contrasto con la promessa di titoli ben votati."
+      },
+      {
+        "pos": 12,
+        "titolo": "Les matins merveilleux",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Valutazione insufficiente (5.8) con sole 10 recensioni complessive."
+      },
+      {
+        "pos": 15,
+        "titolo": "La Dernière Patiente",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Metadato durata non disponibile (0 minuti) e campione minimo di 10 voti."
+      },
+      {
+        "pos": 20,
+        "titolo": "PAW Patrol - Missione Dinosauri",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione per la prima infanzia del tutto incongruo rispetto a un profilo maturo."
+      },
+      {
+        "pos": 25,
+        "titolo": "Les Héros du Louvre",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Durata pari a 0 minuti e bassissima significatività statistica (13 voti)."
+      },
+      {
+        "pos": 38,
+        "titolo": "Onslaught - Assalto finale",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Voto ampiamente mediocre (5.8) in contrasto con l'aspettativa di qualità del fallback."
+      }
+    ],
+    "motivo": "Il catalogo opera in modalità degradata di fallback per assenza del token Trakt e presenta uscite generiche del 2026 senza affinità con il DNA del profilo. La promessa di proporre novità popolari e ben votate fallisce: la mediana dei voti è di appena 6.7 con 17 titoli sotto il 6.5, durate azzerate e film per la primissima infanzia.",
+    "evidenza": [
+      "Spider-Man: Brand New Day (2026)",
+      "Coyote vs. Acme (2026)",
+      "Legend of the White Dragon (2026)",
+      "Onslaught - Assalto finale (2026)",
+      "PAW Patrol - Missione Dinosauri (2026)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_serie::yaca_trakt_filtered_series",
+    "catalogo": "yaca_trakt_filtered_series",
+    "tipo": "series",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 70,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 16,
+        "titolo": "The Hawk",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Valutazione insufficiente (5.5) in contrasto con la promessa di serie ben votate."
+      },
+      {
+        "pos": 25,
+        "titolo": "Lucky Luke",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Voto mediocre (6.4 con sole 28 recensioni) inserito nel fallback."
+      },
+      {
+        "pos": 34,
+        "titolo": "低智商犯罪",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Produzione asiatica priva di localizzazione inserita con appena 20 recensioni."
+      },
+      {
+        "pos": 43,
+        "titolo": "เด็กชายไม่ไปสวรรค์",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Titolo tailandese non tradotto né localizzato con sole 26 valutazioni."
+      },
+      {
+        "pos": 44,
+        "titolo": "月鳞绮纪",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Serie cinese priva di metadati localizzati con appena 20 valutazioni."
+      }
+    ],
+    "motivo": "Catalogo che opera in modalità degradata di fallback per assenza del token Trakt reale, offrendo novità seriali del 2026 prive di personalizzazione DNA. Nonostante una buona tenuta generale dei rating (mediana 7.8), include un flop evidente (The Hawk a 5.5), produzioni asiatiche non localizzate e titoli con campioni di voto microscopici.",
+    "evidenza": [
+      "The Boroughs - Ribelli senza tempo (2026)",
+      "Neagley (2026)",
+      "Detective Hole (2026)",
+      "The Hawk (2026)"
+    ],
+    "fiducia": "alta"
+  }
+]

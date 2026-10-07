@@ -1,0 +1,497 @@
+[
+  {
+    "id": "sim_prof_qc_otaku::yaca_true_blend_movies",
+    "catalogo": "yaca_true_blend_movies",
+    "tipo": "movie",
+    "verdetto": "B",
+    "score": 73,
+    "dimensioni": {
+      "pertinenza": 50,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 60,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 7,
+        "titolo": "Mediterraneo",
+        "anno": "1991",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia bellica italiana live-action del tutto incongrua con il DNA anime (match 50)."
+      },
+      {
+        "pos": 8,
+        "titolo": "L'alba del pianeta delle scimmie",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Film sci-fi live-action occidentale inserito in un profilo puramente otaku (match 48)."
+      },
+      {
+        "pos": 10,
+        "titolo": "I Tenenbaum",
+        "anno": "2001",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia live-action d'autore estranea al genere animazione (match 48)."
+      },
+      {
+        "pos": 14,
+        "titolo": "Laguna blu: Il risveglio",
+        "anno": "2012",
+        "tipo": "fuori-promessa",
+        "nota": "Film TV per ragazzi sentimentale live-action (match 44)."
+      },
+      {
+        "pos": 17,
+        "titolo": "A Night at the Roxbury",
+        "anno": "1998",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia demenziale USA live-action non affine all'utente (match 44)."
+      },
+      {
+        "pos": 20,
+        "titolo": "Il cavaliere pallido",
+        "anno": "1985",
+        "tipo": "fuori-promessa",
+        "nota": "Western live-action con Clint Eastwood con affinità minima al 22%."
+      },
+      {
+        "pos": 40,
+        "titolo": "Monster House",
+        "anno": "2006",
+        "tipo": "fuori-promessa",
+        "nota": "Lungometraggio animato occidentale CGI fuori target per un profilo otaku."
+      },
+      {
+        "pos": 44,
+        "titolo": "Dragon Ball Z - La battaglia degli Dei",
+        "anno": "2013",
+        "tipo": "duplicato",
+        "nota": "Secondo titolo del franchise Dragon Ball presente in lista assieme a Broly (pos 39)."
+      }
+    ],
+    "motivo": "Il catalogo parte in modo brillante con i migliori lungometraggi anime recenti, ma il vincolo di diversificazione (max 3 per genere) esaurisce la categoria Animazione riempiendo la lista con 19 film live-action occidentali e italiani (match nel range 22-50). La qualità media resta discreta, ma l'esperienza per un utente otaku risulta fortemente compromessa dall'intrusione di cinema live-action.",
+    "evidenza": [
+      "Weathering with You (2019)",
+      "Miyo - Un amore felino (2020)",
+      "La città incantata (2001)",
+      "Mediterraneo (1991)",
+      "Il cavaliere pallido (1985)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_otaku::yaca_true_blend_series",
+    "catalogo": "yaca_true_blend_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 96,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 85,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 7,
+        "titolo": "Vis a vis - Il prezzo del riscatto",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Serie carceraria spagnola live-action intromessa a sorpresa in una lista puramente anime (match 51)."
+      },
+      {
+        "pos": 39,
+        "titolo": "Boruto: Naruto Next Generations",
+        "anno": "2017",
+        "tipo": "duplicato",
+        "nota": "Presenza concomitante di Naruto (pos 45) e Boruto, in deroga al limite di 1 opera per franchise."
+      }
+    ],
+    "motivo": "Catalogo eccezionale che incarna alla perfezione l'identità otaku dell'utente, spaziando dai battle shonen ai capolavori seinen, mecha e slice of life con voti stellari. L'unica stonatura è l'inatteso inserimento della serie carceraria spagnola Vis a vis in settima posizione, assieme alla lieve ridondanza dell'universo di Naruto.",
+    "evidenza": [
+      "Haikyu!! L'asso del volley (2014)",
+      "Jujutsu Kaisen (2020)",
+      "Hajime no Ippo (2000)",
+      "Neon Genesis Evangelion (1995)",
+      "Vis a vis - Il prezzo del riscatto (2015)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_otaku::yaca_seed_network_movies",
+    "catalogo": "yaca_seed_network_movies",
+    "tipo": "movie",
+    "verdetto": "P",
+    "score": 84,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 80,
+      "completezza": 85
+    },
+    "itemGiudicati": 46,
+    "errori": [
+      {
+        "pos": 8,
+        "titolo": "The King's Daughter",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Film fantasy live-action americano con Pierce Brosnan del tutto scorrelato dai seed anime (match 44)."
+      },
+      {
+        "pos": 25,
+        "titolo": "The Transformers: The Movie",
+        "anno": "1986",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione robotica occidentale non affine alla rete dei preferiti anime."
+      }
+    ],
+    "motivo": "La rete dei preferiti espande con successo i seed dell'utente (Attack on Titan, Naruto, One Piece) includendo i rispettivi film cinematografici e produzioni shonen affini di alta rilevanza. La lista conta tuttavia solo 46 elementi sui 50 previsti ed è sporcata dal film live-action The King's Daughter a ridosso delle prime posizioni.",
+    "evidenza": [
+      "Made in Abyss: Dawn of the Deep Soul (2020)",
+      "L'attacco dei giganti: l'urlo del risveglio (2018)",
+      "The King's Daughter (2022)",
+      "Naruto - La via dei ninja (2012)",
+      "One Piece Film: Z (2012)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_otaku::yaca_seed_network_series",
+    "catalogo": "yaca_seed_network_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 80,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 7,
+        "titolo": "Hijack",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Serie thriller live-action con Idris Elba senza alcun legame con i seed anime (match 46)."
+      },
+      {
+        "pos": 25,
+        "titolo": "Tartarughe Ninja alla riscossa",
+        "anno": "1987",
+        "tipo": "fuori-promessa",
+        "nota": "Serie d'animazione statunitense estranea all'orizzonte degli anime giapponesi."
+      },
+      {
+        "pos": 28,
+        "titolo": "Adventure Time: Fionna and Cake",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Spin-off animato occidentale inserito nella rete di preferiti anime."
+      }
+    ],
+    "motivo": "Una selezione impeccabile per un appassionato di shonen e dark fantasy, che coglie connessioni profonde con Naruto, Jujutsu Kaisen e Attack on Titan proponendo serie correlate di grandissima fattura. Il catalogo sarebbe perfetto se non fosse per l'incomprensibile intrusione della serie thriller live-action Hijack in settima posizione.",
+    "evidenza": [
+      "Yu degli spettri (1992)",
+      "Bungou Stray Dogs (2016)",
+      "Hijack (2023)",
+      "BLUE LOCK (2022)",
+      "Monster (2004)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_otaku::yaca_hidden_gems_movies",
+    "catalogo": "yaca_hidden_gems_movies",
+    "tipo": "movie",
+    "verdetto": "P",
+    "score": 84,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 40,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "Haikyuu!! Movie 4: Battle of Concepts",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "79 voti: al di sotto della soglia minima richiesta di 100 voti per le gemme nascoste."
+      },
+      {
+        "pos": 4,
+        "titolo": "Made in Abyss: Journey's Dawn",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "88 voti: al di sotto della soglia minima di 100 voti."
+      },
+      {
+        "pos": 7,
+        "titolo": "El profe",
+        "anno": "1971",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia messicana live-action inserita a sorpresa in una rassegna di film anime (match 45)."
+      },
+      {
+        "pos": 8,
+        "titolo": "Twitches - Gemelle streghelle 2",
+        "anno": "2007",
+        "tipo": "fuori-promessa",
+        "nota": "Film TV Disney Channel live-action completamente fuori contesto (match 43)."
+      },
+      {
+        "pos": 9,
+        "titolo": "Mononoke - Il film: Lo spirito nella pioggia",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "83 voti: non soddisfa il requisito di 100 voti minimi."
+      },
+      {
+        "pos": 11,
+        "titolo": "Mobile Suit Gundam SEED FREEDOM",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "83 voti: violazione della soglia minima di 100 voti."
+      },
+      {
+        "pos": 15,
+        "titolo": "Le rose di Versailles - Lady Oscar",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "68 voti: opera troppo recente con voti insufficienti per la promessa."
+      },
+      {
+        "pos": 33,
+        "titolo": "The Girl from the Other Side",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "50 voti: violazione della soglia minima di 100 voti."
+      }
+    ],
+    "motivo": "Il catalogo raccoglie splendide gemme cinematografiche dell'animazione giapponese a bassa popolarità e alto rating, offrendo autentiche scoperte per un otaku. Paga tuttavia 10 violazioni del vincolo numerico dei 100 voti minimi (titoli con 50-88 voti) e l'intrusione immotivata di due film live-action alle posizioni 7 e 8.",
+    "evidenza": [
+      "Ano hana The Movie - Una lettera per menma (2013)",
+      "Ride Your Wave (2019)",
+      "El profe (1971)",
+      "In questo angolo di mondo (2016)",
+      "La scomparsa di Haruhi Suzumiya (2010)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_otaku::yaca_hidden_gems_series",
+    "catalogo": "yaca_hidden_gems_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 83,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 20,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "Mobile Suit Gundam",
+        "anno": "1979",
+        "tipo": "fuori-promessa",
+        "nota": "81 voti: al di sotto della soglia minima di 100 voti per le gemme nascoste."
+      },
+      {
+        "pos": 5,
+        "titolo": "Kino no tabi",
+        "anno": "2003",
+        "tipo": "fuori-promessa",
+        "nota": "53 voti: violazione della soglia minima di 100 voti."
+      },
+      {
+        "pos": 7,
+        "titolo": "Kally's Mashup",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Telenovela teen argentina live-action totalmente incompatibile con il DNA otaku (match 45)."
+      },
+      {
+        "pos": 8,
+        "titolo": "Dream Eater Merry",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "54 voti: violazione della soglia minima di 100 voti."
+      },
+      {
+        "pos": 15,
+        "titolo": "Remake Our Life!",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "63 voti: violazione della soglia minima di 100 voti."
+      },
+      {
+        "pos": 24,
+        "titolo": "Lovely Sara",
+        "anno": "1985",
+        "tipo": "fuori-promessa",
+        "nota": "50 voti: violazione della soglia minima di 100 voti."
+      },
+      {
+        "pos": 30,
+        "titolo": "Katanagatari",
+        "anno": "2010",
+        "tipo": "fuori-promessa",
+        "nota": "64 voti: violazione della soglia minima di 100 voti."
+      },
+      {
+        "pos": 49,
+        "titolo": "Sceriffi delle stelle",
+        "anno": "1987",
+        "tipo": "fuori-promessa",
+        "nota": "50 voti: violazione della soglia minima di 100 voti."
+      }
+    ],
+    "motivo": "Una miniera di serie anime storiche e d'autore che soddisfano appieno il gusto dell'otaku hardcore. Tuttavia, la ricetta delle gemme è gravemente compromessa sul piano metrico: 20 titoli su 50 hanno meno di 100 voti su TMDB, oltre alla bizzarra comparsa della telenovela sudamericana Kally's Mashup a ridosso dell'inizio.",
+    "evidenza": [
+      "I cieli di Escaflowne (1996)",
+      "Azumanga Daioh (2002)",
+      "Kally's Mashup (2017)",
+      "Nichijou My Ordinary Life (2011)",
+      "Katanagatari (2010)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_otaku::yaca_trakt_filtered_movies",
+    "catalogo": "yaca_trakt_filtered_movies",
+    "tipo": "movie",
+    "verdetto": "B",
+    "score": 66,
+    "dimensioni": {
+      "pertinenza": 40,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 40,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "I Spit on Your Grave",
+        "anno": "2010",
+        "tipo": "fuori-promessa",
+        "nota": "Horror/thriller rape-and-revenge live-action in prima posizione su un profilo anime (match 42)."
+      },
+      {
+        "pos": 2,
+        "titolo": "Malizia",
+        "anno": "1973",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia erotica italiana all'italiana in seconda posizione, estranea ai gusti dell'utente (match 44)."
+      },
+      {
+        "pos": 5,
+        "titolo": "Due irresistibili brontoloni",
+        "anno": "1993",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia brillante americana live-action con Jack Lemmon e Walter Matthau (match 44)."
+      },
+      {
+        "pos": 6,
+        "titolo": "L'ombra del dubbio",
+        "anno": "1943",
+        "tipo": "fuori-promessa",
+        "nota": "Classico thriller noir di Alfred Hitchcock fuori target per un profilo otaku (match 47)."
+      },
+      {
+        "pos": 20,
+        "titolo": "Fusi di testa",
+        "anno": "1992",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia cult demenziale live-action con affinità minima al 21%."
+      },
+      {
+        "pos": 23,
+        "titolo": "Il mio nome è Nessuno",
+        "anno": "1973",
+        "tipo": "fuori-promessa",
+        "nota": "Western comico italiano con Terence Hill (match 22) estraneo a un profilo anime."
+      },
+      {
+        "pos": 30,
+        "titolo": "Il cattivo tenente",
+        "anno": "1992",
+        "tipo": "fuori-promessa",
+        "nota": "Neo-noir poliziesco drammatico live-action di Abel Ferrara (match 44)."
+      },
+      {
+        "pos": 34,
+        "titolo": "Dragon Ball Z - La storia di Trunks",
+        "anno": "1993",
+        "tipo": "duplicato",
+        "nota": "Franchise spam: ben 9 film di Dragon Ball Z saturano la componente anime del fallback."
+      }
+    ],
+    "motivo": "In assenza di token Trakt sull'account di test, questo catalogo esegue il percorso degradato di fallback. Il risultato è gravemente incoerente: la lista apre con un horror exploitativo e una commedia erotica anni '70, disperde 14 pellicole live-action a basso match e appiattisce la componente anime su una sequela stancante di 9 film di Dragon Ball Z.",
+    "evidenza": [
+      "I Spit on Your Grave (2010)",
+      "Malizia (1973)",
+      "Naruto Shippuden: Il film - Eredi della volontà del Fuoco (2009)",
+      "Fusi di testa (1992)",
+      "Dragon Ball Z - Il Super Saiyan della leggenda (1993)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_otaku::yaca_trakt_filtered_series",
+    "catalogo": "yaca_trakt_filtered_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 95,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 90,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 19,
+        "titolo": "Braccio di Ferro",
+        "anno": "1960",
+        "tipo": "fuori-promessa",
+        "nota": "Cartone animato televisivo americano anni '60 incongruo rispetto alle serie anime del catalogo."
+      },
+      {
+        "pos": 50,
+        "titolo": "Saint Seiya: I Cavalieri dello zodiaco",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Remake CGI occidentale con ricezione modesta rispetto ai grandi anime della lista."
+      }
+    ],
+    "motivo": "Nonostante il profilo non abbia un token Trakt e ricada sul percorso degradato di fallback, la lista di serie TV risulta straordinariamente azzeccata. Propone una selezione coerente e variegata di serie anime di grande spessore e qualità, macchiata soltanto dalla presenza fuori luogo di Braccio di Ferro a metà catalogo.",
+    "evidenza": [
+      "Soul Eater (2008)",
+      "Kuroko's Basket (2012)",
+      "Sfondamento dei cieli Gurren Lagann (2007)",
+      "Braccio di Ferro (1960)",
+      "Berserk (1997)"
+    ],
+    "fiducia": "alta"
+  }
+]

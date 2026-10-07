@@ -1,0 +1,529 @@
+[
+  {
+    "id": "preset_true_story",
+    "nome": "📖 Biopic: Grandi Storie Vere",
+    "verdetto": "P",
+    "score": 95,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 49,
+        "titolo": "Si alza il vento",
+        "anno": "2013",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione giapponese (anime) presente in catalogo con vincolo Anime: no."
+      },
+      {
+        "pos": 29,
+        "titolo": "Titanic",
+        "anno": "1997",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma romantico e catastrofico d'invenzione su sfondo storico, non un biopic autentico."
+      }
+    ],
+    "motivo": "Catalogo straordinario per densità di capolavori biografici e storici con ordinamento per voto medio perfetto, intaccato solo da una violazione del vincolo anime alla posizione 49.",
+    "evidenza": [
+      "Schindler's List (1993)",
+      "Il pianista (2002)",
+      "Oppenheimer (2023)",
+      "The Elephant Man (1980)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_nature_docs",
+    "nome": "🌿 Documentari: Natura e Animali",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Selezione documentaristica impeccabile e totalmente aderente alla promessa su fauna e natura incontaminata, con ordinamento per voto medio perfettamente rispettato.",
+    "evidenza": [
+      "David Attenborough: una vita sul nostro pianeta (2020)",
+      "Il mio amico in fondo al mare (2020)",
+      "Microcosmos - Il popolo dell'erba (1996)",
+      "Il popolo migratore (2001)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_nature_series_docs",
+    "nome": "🌿 Docuserie: Natura e Animali",
+    "verdetto": "P",
+    "score": 95,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 35,
+        "titolo": "Pit Bulls and Parolees",
+        "anno": "2009",
+        "tipo": "fuori-promessa",
+        "nota": "Docu-reality su rifugio canino e recupero detenuti, estraneo alla docuserie naturalistica."
+      }
+    ],
+    "motivo": "Raccolta eccezionale delle più celebri e acclamate docuserie BBC e internazionali sulla natura, con qualità media elevatissima e ordinamento rigoroso.",
+    "evidenza": [
+      "Pianeta Terra II (2016)",
+      "Blue Planet II (2017)",
+      "Il nostro pianeta (2019)",
+      "Pianeta verde (2022)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_space_docs",
+    "nome": "🚀 Documentari: Cosmo e Spazio",
+    "verdetto": "P",
+    "score": 87,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 38,
+    "errori": [
+      {
+        "pos": 23,
+        "titolo": "Opération Lune",
+        "anno": "2002",
+        "tipo": "fuori-promessa",
+        "nota": "Mockumentary satirico francese di fanta-politica sullo sbarco lunare."
+      },
+      {
+        "pos": 25,
+        "titolo": "Moonshot - L'uomo sulla luna",
+        "anno": "2009",
+        "tipo": "fuori-promessa",
+        "nota": "Docudrama televisivo con attori e scene recitate, non documentario puro."
+      },
+      {
+        "pos": 38,
+        "titolo": "Elon Musk - Il vero Iron Man",
+        "anno": "2018",
+        "tipo": "trash",
+        "nota": "Instant-documentario biografico di bassa qualità con voto medio pari a 5.28."
+      }
+    ],
+    "motivo": "Ottima carrellata di documentari scientifici e storici sull'esplorazione spaziale, limitata unicamente dalla dimensione ridotta del pool complessivo (38 titoli).",
+    "evidenza": [
+      "Timelapse of the Future: A Journey to the End of Time (2019)",
+      "For All Mankind (1989)",
+      "In the Shadow of the Moon (2007)",
+      "Buonanotte Oppy (2022)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_sea_movie_docs",
+    "nome": "🌊 Documentari: Abissi e Oceani",
+    "verdetto": "P",
+    "score": 82,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 65,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 30,
+        "titolo": "Drain Alcatraz",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario storico-ingegneristico sulla baia e prigione di Alcatraz, non sugli abissi oceanici."
+      },
+      {
+        "pos": 50,
+        "titolo": "Exploring the Reef",
+        "anno": "2003",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio d'animazione promozionale Pixar legato a Alla ricerca di Nemo."
+      }
+    ],
+    "motivo": "Panoramica documentaristica marina ricca di classici ed esplorazioni oceaniche, con voto decrescente coerente e poche trascurabili derive fuori tema.",
+    "evidenza": [
+      "Il mio amico in fondo al mare (2020)",
+      "Blackfish (2013)",
+      "Chasing Coral (2017)",
+      "La vita negli oceani (2010)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_sea_series_docs",
+    "nome": "🌊 Docuserie: Abissi e Oceani",
+    "verdetto": "B",
+    "score": 79,
+    "dimensioni": {
+      "pertinenza": 65,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 16,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "Pianeta Terra II",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Docuserie incentrata sugli habitat terrestri (isole, montagne, giungle), non su abissi e oceani."
+      },
+      {
+        "pos": 7,
+        "titolo": "Earth: la potenza del pianeta",
+        "anno": "2007",
+        "tipo": "fuori-promessa",
+        "nota": "Docuserie scientifica globale su geologia e pianeta Terra, non specifica degli abissi marini."
+      },
+      {
+        "pos": 16,
+        "titolo": "100 Foot Wave",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Docuserie sportiva sul surf da onde giganti a Nazaré più che documentario oceanografico."
+      }
+    ],
+    "motivo": "Il catalogo conta appena 16 titoli complessivi nel dump (non riempie neanche una pagina Stremio da 20) e ospita serie naturalistiche terrestri generiche estranee al mondo sottomarino.",
+    "evidenza": [
+      "Blue Planet II (2017)",
+      "Pianeta Blu (2001)",
+      "I segreti del polpo (2024)",
+      "I Segreti delle Balene (2021)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_true_crime",
+    "nome": "🚨 Docuserie: True Crime",
+    "verdetto": "P",
+    "score": 95,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo monumentale sul true crime documentaristico senza infiltrazioni di fiction, con ordinamento per popolarità rigoroso e catalogo ben fornito.",
+    "evidenza": [
+      "The Jinx - La vita e le morti di Robert Durst (2015)",
+      "The Staircase (2004)",
+      "Conversazioni con un killer: Il caso Bundy (2019)",
+      "Tiger King (2020)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_sports_docs",
+    "nome": "🌍 Docuserie: Sport e Atleti",
+    "verdetto": "P",
+    "score": 91,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 49,
+        "titolo": "Fishing with John",
+        "anno": "1991",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia documentaristica surreale sulla pesca d'autore, non docuserie sportiva convenzionale."
+      }
+    ],
+    "motivo": "Eccellente proposta di docuserie dedicate a leggende e competizioni sportive internazionali, con perfetta progressione della popolarità.",
+    "evidenza": [
+      "Formula 1: Drive to Survive (2019)",
+      "The Last Dance (2020)",
+      "Welcome to Wrexham (2022)",
+      "30 for 30 (2009)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_doc_music_legends",
+    "nome": "🎸 Leggende della Musica",
+    "verdetto": "P",
+    "score": 88,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 20,
+    "errori": [
+      {
+        "pos": 16,
+        "titolo": "Mia Martini - Io sono Mia",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Film biografico di finzione interpretato da Serena Rossi, non un documentario musicale."
+      }
+    ],
+    "motivo": "Selezione di documentari musicali di altissimo livello qualitativo, limitata però da un pool di soli 20 titoli dovuto a filtri di combinazione troppo restrittivi.",
+    "evidenza": [
+      "Amy - The Girl Behind the Name (2015)",
+      "Cobain: Montage of Heck (2015)",
+      "No Direction Home: Bob Dylan (2005)",
+      "Summer of Soul (...Or, When the Revolution Could Not Be Televised) (2021)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_doc_food_travel",
+    "nome": "🍔 Cibo, Viaggi & Alta Cucina",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "Who Do You Think You Are?",
+        "anno": "2010",
+        "tipo": "fuori-promessa",
+        "nota": "Serie di ricerca genealogica e alberi genealogici di personaggi famosi, estranea a viaggi e cibo."
+      },
+      {
+        "pos": 46,
+        "titolo": "Bad Vegan: fama, frode e fuggitivi",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Docuserie true crime su truffe e vicende giudiziarie, estranea alla scoperta gastronomica."
+      }
+    ],
+    "motivo": "Affascinante catalogo di viaggi e gastronomia globale condotto da grandi firme, intaccato solo da isolate infiltrazioni di docuserie genealogiche o giudiziarie.",
+    "evidenza": [
+      "Bourdain: cucine segrete (2013)",
+      "Chef's Table (2015)",
+      "Stanley Tucci - Searching For Italy (2021)",
+      "Street Food: Asia (2019)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_doc_history_war",
+    "nome": "🪖 Storia & Guerre Mondiali",
+    "verdetto": "B",
+    "score": 77,
+    "dimensioni": {
+      "pertinenza": 55,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 9,
+        "titolo": "The Americas",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Docuserie naturalistica sulla fauna del continente americano, completamente fuori tema."
+      },
+      {
+        "pos": 18,
+        "titolo": "Cunk on...",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Mockumentary comico satirico britannico, non divulgazione storica documentaristica."
+      },
+      {
+        "pos": 19,
+        "titolo": "The Food That Built America",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Docuserie sull'industria alimentare americana, estranea al tema bellico e guerre mondiali."
+      },
+      {
+        "pos": 27,
+        "titolo": "Prophets of Science Fiction",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Serie documentaria su scrittori di fantascienza, non pertinente a storia bellica."
+      },
+      {
+        "pos": 34,
+        "titolo": "Pompei: Fuori dal tempo con Tom Hiddleston",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Docuserie archeologica sull'antica Pompei, fuori dal tema conflitti e guerre mondiali."
+      },
+      {
+        "pos": 47,
+        "titolo": "A History of Horror",
+        "anno": "2010",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario storico sul cinema horror, estraneo a conflitti mondiali e storia militare."
+      },
+      {
+        "pos": 50,
+        "titolo": "Omicidio tra i mormoni",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Docuserie true crime su attentati e falsificazioni religiose nel mondo mormone."
+      }
+    ],
+    "motivo": "Il catalogo contiene pietre miliari sui conflitti mondiali, ma è inquinato da oltre un quarto di titoli estranei alla storia bellica (natura, cibo industriale, cinema horror, comicità mockumentary).",
+    "evidenza": [
+      "The World at War (1973)",
+      "Apocalypse - La Seconda Guerra Mondiale (2009)",
+      "The Nazis: A Warning from History (1997)",
+      "World War II in Colour (2009)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_doc_tech_future",
+    "nome": "💻 Tecnologia, AI & Futuro",
+    "verdetto": "B",
+    "score": 77,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 65,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 19,
+    "errori": [
+      {
+        "pos": 12,
+        "titolo": "Beware the Slenderman",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Docufilm true crime su omicidio giovanile legato a una creepypasta, marginale rispetto all'innovazione tecnologica."
+      },
+      {
+        "pos": 13,
+        "titolo": "Capturing Avatar",
+        "anno": "2010",
+        "tipo": "fuori-promessa",
+        "nota": "Dietro le quinte / making-of sul film Avatar anziché opera documentaristica autonoma su tech e AI."
+      },
+      {
+        "pos": 17,
+        "titolo": "Talhotblond",
+        "anno": "2009",
+        "tipo": "fuori-promessa",
+        "nota": "Caso di cronaca nera su catfishing in chat, estraneo ai progressi tecnologici e al futuro."
+      }
+    ],
+    "motivo": "Catalogo afflitto da un pool eccessivamente ristretto di soli 19 titoli per un tema così vasto, con alcune deviazioni verso la cronaca nera web.",
+    "evidenza": [
+      "The Social Dilemma (2020)",
+      "AlphaGo (2017)",
+      "The Internet's Own Boy: The Story of Aaron Swartz (2014)",
+      "Coded Bias (2020)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_reality_shows",
+    "nome": "🎬 Reality Show & Competizioni",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 70,
+      "qualita": 40,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "Raw",
+        "anno": "1993",
+        "tipo": "fuori-promessa",
+        "nota": "Show settimanale di wrestling WWE, intrattenimento sportivo sceneggiato fuori promessa reality."
+      },
+      {
+        "pos": 12,
+        "titolo": "Die Harald Schmidt Show",
+        "anno": "1995",
+        "tipo": "fuori-promessa",
+        "nota": "Late-night talk show tedesco, genere Talk espressamente escluso dai filtri del preset."
+      },
+      {
+        "pos": 25,
+        "titolo": "Big Brother",
+        "anno": "2000",
+        "tipo": "duplicato",
+        "nota": "Voce duplicata del format Big Brother già presente alla posizione 14."
+      },
+      {
+        "pos": 31,
+        "titolo": "Beyond Belief: Fact or Fiction",
+        "anno": "1997",
+        "tipo": "fuori-promessa",
+        "nota": "Serie antologica di finzione e mistero recitata da attori, non un reality show."
+      },
+      {
+        "pos": 42,
+        "titolo": "A Fazenda",
+        "anno": "2009",
+        "tipo": "trash",
+        "nota": "Reality show brasiliano di bassissima caratura qualitativa con voto medio 3.2."
+      },
+      {
+        "pos": 46,
+        "titolo": "Dimension 20",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Spettacolo di giochi di ruolo da tavolo (D&D), non un reality show o competizione televisiva."
+      }
+    ],
+    "motivo": "Nonostante l'abbondanza di titoli e l'ordine popolare corretto, il catalogo soffre di vistose infiltrazioni di wrestling WWE, un talk show escluso dai filtri, un duplicato e una diffusa presenza di programmi trash sotto la sufficienza.",
+    "evidenza": [
+      "Survivor (2000)",
+      "RuPaul's Drag Race (2009)",
+      "The Amazing Race (2001)",
+      "Hell's Kitchen - Il diavolo in cucina (2005)"
+    ],
+    "fiducia": "alta"
+  }
+]

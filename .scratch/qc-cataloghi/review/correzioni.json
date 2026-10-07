@@ -1,0 +1,16 @@
+[
+  {
+    "id": "preset_anime_shonen",
+    "score": 76,
+    "verdetto": "B",
+    "dimensioni": { "pertinenza": 62, "qualita": 100, "distintivita": 90, "coerenza": 100, "completezza": 40 },
+    "motivo": "Adjudication dell'orchestratore sul disaccordo fra i due giudici (N 57 vs P 91, Δ 34). I fatti sono concordi e verificati nel dump: pool di 15 titoli (completezza 40, il catalogo non riempie una pagina Stremio) e keyword 14643 che serve anche titoli non battle shonen. La pertinenza reale è intermedia: 10 dei 15 titoli sono in genere (Yu-Gi-Oh, Black Clover, Dragon Ball Super, Gachiakuta, Super Dragon Ball Heroes, Naruto-adiacenti), 5 no (Fate/stay night, Fate/Grand Order, Persona 4 The Animation, Maken-Ki!, Houseki no Kuni) più SSSS.DYNAZENON (mecha). Il giudice 1 ha letto la promessa in modo severo (25), il giudice 2 l'ha letta in modo letterale e ha dato il tetto aritmetico (100): il valore difendibile sta in mezzo.",
+    "fonte": "orchestratore (verifica D8)",
+    "evidenza": [
+      "dump: pool 15 titoli su 15 restituiti (runs/top50/top50/preset_anime_shonen.json)",
+      "fuori genere stimati: Fate/stay night: Unlimited Blade Works, Fate/Grand Order Absolute Demonic Front: Babylonia, Persona 4 The Animation, Maken-Ki! Battling Venus, Houseki no Kuni - Land of the Lustrous, SSSS.DYNAZENON",
+      "secondo giro cieco: runs/top50/ri-giudizio.json (score 91, zero errori segnalati)"
+    ],
+    "nota": "La divergenza non è aritmetica ma interpretativa: la rubrica non distingue fra 'promessa letterale' e 'promessa tematica' ed è questo il difetto da correggere prima di una seconda campagna."
+  }
+]

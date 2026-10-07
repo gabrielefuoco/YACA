@@ -1,0 +1,843 @@
+[
+  {
+    "id": "preset_marvel",
+    "nome": "🦸 Marvel Cinematic Universe",
+    "verdetto": "P",
+    "score": 82,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 80,
+      "distintivita": 80,
+      "coerenza": 80,
+      "completezza": 60
+    },
+    "itemGiudicati": 32,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "Spider-Man: Brand New Day",
+        "anno": "2026",
+        "tipo": "ordine-rotto",
+        "nota": "Voce futura/placeholder con box office fittizio su TMDB che la colloca erroneamente sopra Infinity War."
+      },
+      {
+        "pos": 30,
+        "titolo": "Captain America: Brave New World",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Valutazione critica sotto la sufficienza (5.952) per una delle uscite più deboli del franchise."
+      },
+      {
+        "pos": 32,
+        "titolo": "The Marvels",
+        "anno": "2023",
+        "tipo": "trash",
+        "nota": "Valutazione critica scadente (5.905) e flop d'incassi."
+      }
+    ],
+    "motivo": "Il catalogo raccoglie con grande precisione i titoli del MCU ordinati coerentemente per incassi globali, senza dispersioni esterne. L'unica sbavatura è la presenza anomala del futuro capitolo di Spider-Man al 2° posto per via di dati d'incasso fittizi su TMDB, unitamente a un pool limitato a 32 film.",
+    "evidenza": [
+      "Avengers: Endgame (2019)",
+      "Avengers: Infinity War (2018)",
+      "Spider-Man: No Way Home (2021)",
+      "The Avengers (2012)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_dc",
+    "nome": "🦇 DC Comics (Film)",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 16,
+    "errori": [
+      {
+        "pos": 10,
+        "titolo": "Suicide Squad",
+        "anno": "2016",
+        "tipo": "trash",
+        "nota": "Voto insufficiente (5.9) e qualità unanimemente stroncata da critica e pubblico."
+      },
+      {
+        "pos": 11,
+        "titolo": "Wonder Woman 1984",
+        "anno": "2020",
+        "tipo": "trash",
+        "nota": "Sequel debole con voto mediocre (6.347) che appesantisce la qualità media."
+      },
+      {
+        "pos": 16,
+        "titolo": "Shazam! Furia degli dei",
+        "anno": "2023",
+        "tipo": "trash",
+        "nota": "Sequel mediocre con accoglienza tiepida (voto 6.384)."
+      }
+    ],
+    "motivo": "Il catalogo è gravemente menomato dal filtro sulla casa di produzione (DC Films, id 128064), che riduce il pool a soli 16 titoli escludendo pietre miliari storiche come la trilogia del Cavaliere Oscuro, Man of Steel e i classici di Batman e Superman. I 16 titoli presenti sono pertinenti e ben ordinati, ma non riempiono nemmeno una pagina di Stremio.",
+    "evidenza": [
+      "The Batman (2022)",
+      "Joker (2019)",
+      "The Suicide Squad - Missione suicida (2021)",
+      "Zack Snyder's Justice League (2021)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_mindfuck_series",
+    "nome": "🤯 Mindfuck & Plot Twists (Serie)",
+    "verdetto": "B",
+    "score": 71,
+    "dimensioni": {
+      "pertinenza": 45,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 43,
+    "errori": [
+      {
+        "pos": 4,
+        "titolo": "Riverdale",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Teen drama a tinte soap opera inserito solo per keyword incidentali, del tutto fuori contesto rispetto a serie mindfuck/plot twist."
+      },
+      {
+        "pos": 8,
+        "titolo": "Andromeda",
+        "anno": "2000",
+        "tipo": "fuori-promessa",
+        "nota": "Space opera avventurosa convenzionale priva di complessità narrativa o colpi di scena mindfuck."
+      },
+      {
+        "pos": 14,
+        "titolo": "Le Bureau - Sotto copertura",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma di spionaggio realistico francese, non una serie mystery/sci-fi con twist mentali."
+      },
+      {
+        "pos": 16,
+        "titolo": "Pennyworth",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Crime drama d'azione sulle origini del maggiordomo di Batman."
+      },
+      {
+        "pos": 20,
+        "titolo": "Terra Nova",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Serie d'avventura per famiglie con dinosauri, priva di risvolti psicologici o complessi."
+      },
+      {
+        "pos": 24,
+        "titolo": "Liaison",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Thriller cospirativo e spionistico ordinario senza elementi mindfuck."
+      },
+      {
+        "pos": 26,
+        "titolo": "La donna nella casa di fronte alla ragazza dalla finestra",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Parodia comica dei thriller psicologici, non un vero mistero sci-fi con plot twist."
+      }
+    ],
+    "motivo": "L'uso di keyword ampie e poco selettive (come identity crisis e multiple personality) combinate al genere Drama attrae oltre un terzo di serie del tutto estranee alla promessa 'mindfuck', da teen drama a spy story e avventure con dinosauri. Ottime le punte di diamante (Dark, Legion, Bodies), ma il preset richiede un filtraggio tematico molto più rigoroso.",
+    "evidenza": [
+      "Dark (2017)",
+      "Legion (2017)",
+      "Inside No. 9 (2014)",
+      "Bodies (2023)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_cyberpunk",
+    "nome": "🤖 Cyberpunk & Futuro Distopico",
+    "verdetto": "B",
+    "score": 72,
+    "dimensioni": {
+      "pertinenza": 50,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "Akira",
+        "anno": "1988",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime giapponese presente ai primi posti nonostante il filtro esplicito Anime: no."
+      },
+      {
+        "pos": 3,
+        "titolo": "Ghost in the Shell",
+        "anno": "1995",
+        "tipo": "fuori-promessa",
+        "nota": "Capolavoro anime che elude la restrizione non-anime del catalogo."
+      },
+      {
+        "pos": 5,
+        "titolo": "Kin-dza-dza!",
+        "anno": "1986",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia satirica fantascientifica sovietica grottesca, priva di elementi cyberpunk."
+      },
+      {
+        "pos": 6,
+        "titolo": "Ghost in the Shell - Stand Alone Complex: L'uomo che ride",
+        "anno": "2005",
+        "tipo": "duplicato",
+        "nota": "Uno dei ben 9 titoli tra film, OAV e riassunti di Ghost in the Shell che saturano il catalogo."
+      },
+      {
+        "pos": 9,
+        "titolo": "Psycho-Pass 3: Primo Ispettore",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Anime cinematografico legato a un franchise televisivo."
+      },
+      {
+        "pos": 16,
+        "titolo": "Futurama - Il colpo grosso di Bender",
+        "anno": "2007",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione comica satirica americana, fuori target rispetto a un catalogo cyberpunk distopico."
+      },
+      {
+        "pos": 47,
+        "titolo": "Appleseed Alpha",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Ennesimo film d'animazione giapponese che vìola il divieto di anime."
+      }
+    ],
+    "motivo": "Il catalogo è gravemente compromesso dalla presenza massiccia di produzioni animate (19 anime contrassegnati e cartoni occidentali) a dispetto del filtro 'Anime: no', con il franchise di Ghost in the Shell che da solo occupa 9 posizioni. I film live-action presenti sono classici eccellenti (Matrix, Blade Runner), ma la promessa di catalogo non-anime è tradita per oltre un terzo dei titoli.",
+    "evidenza": [
+      "Matrix (1999)",
+      "Blade Runner (1982)",
+      "Blade Runner 2049 (2017)",
+      "L'esercito delle 12 scimmie (1995)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_space_hard_scifi",
+    "nome": "🚀 Hard Sci-Fi & Spazio Profondo",
+    "verdetto": "B",
+    "score": 73,
+    "dimensioni": {
+      "pertinenza": 50,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "L'Impero colpisce ancora",
+        "anno": "1980",
+        "tipo": "fuori-promessa",
+        "nota": "Space fantasy/space opera pura di Star Wars, in contrasto con la promessa hard sci-fi."
+      },
+      {
+        "pos": 5,
+        "titolo": "La cosa",
+        "anno": "1982",
+        "tipo": "fuori-promessa",
+        "nota": "Horror fantascientifico ambientato in una base antartica terrestre, estraneo allo spazio profondo."
+      },
+      {
+        "pos": 8,
+        "titolo": "Guardiani della Galassia",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Cinecomic Marvel d'azione e commedia fantastica, opposto concettualmente alla hard sci-fi."
+      },
+      {
+        "pos": 9,
+        "titolo": "Il ritorno dello Jedi",
+        "anno": "1983",
+        "tipo": "fuori-promessa",
+        "nota": "Capitolo di Star Wars space fantasy privo di rigore scientifico hard sci-fi."
+      },
+      {
+        "pos": 31,
+        "titolo": "The Creator",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Azione sci-fi terrestre su intelligenza artificiale e guerra, non spazio profondo."
+      },
+      {
+        "pos": 34,
+        "titolo": "Independence Day",
+        "anno": "1996",
+        "tipo": "fuori-promessa",
+        "nota": "Blockbuster di invasione aliena ambientato sulla Terra."
+      },
+      {
+        "pos": 36,
+        "titolo": "Venom",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Cinecomic su simbionti ambientato a San Francisco, clamorosamente fuori tema."
+      }
+    ],
+    "motivo": "Il preset fallisce nel delimitare la rigorosa fantascienza hard e l'esplorazione dello spazio profondo, lasciando filtrare space fantasy (Star Wars), cinecomic (Guardiani della Galassia, Venom) e invasioni terrestri (La cosa, Independence Day). Nonostante i capisaldi autentici come 2001, Interstellar e The Martian, circa metà dei titoli tradisce la promessa tematica.",
+    "evidenza": [
+      "2001: Odissea nello spazio (1968)",
+      "Interstellar (2014)",
+      "Sopravvissuto - The Martian (2015)",
+      "Solaris (1972)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_time_travel_movies",
+    "nome": "⏱️ Viaggi nel Tempo (Film)",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 65,
+      "qualita": 65,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 11,
+        "titolo": "Doraemon - Il film 2",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime per ragazzi presente in catalogo esplicitamente dichiarato Anime: no."
+      },
+      {
+        "pos": 13,
+        "titolo": "La ragazza che saltava nel tempo",
+        "anno": "2006",
+        "tipo": "fuori-promessa",
+        "nota": "Celebre lungometraggio anime che vìola il filtro non-anime."
+      },
+      {
+        "pos": 14,
+        "titolo": "The Tunnel to Summer, the Exit of Goodbyes",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Altro film anime romantico/fantascientifico non escluso dal preset."
+      },
+      {
+        "pos": 19,
+        "titolo": "Dragon Ball Z - La storia di Trunks",
+        "anno": "1993",
+        "tipo": "fuori-promessa",
+        "nota": "OAV anime di Dragon Ball in un catalogo non-anime."
+      },
+      {
+        "pos": 21,
+        "titolo": "Steins;Gate: The Movie - Load Region of Déjà Vu",
+        "anno": "2013",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime collegato alla serie Steins;Gate che elude i filtri."
+      },
+      {
+        "pos": 29,
+        "titolo": "Doraemon - Il film",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Secondo titolo del franchise anime per bambini Doraemon."
+      },
+      {
+        "pos": 45,
+        "titolo": "Teen Titans Go! - Il film",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione slapstick per ragazzi dove il viaggio temporale è un mero espediente comico."
+      },
+      {
+        "pos": 48,
+        "titolo": "Galaxy Quest",
+        "anno": "1999",
+        "tipo": "fuori-promessa",
+        "nota": "Parodia spaziale cult priva di viaggio nel tempo come tema centrale (solo breve gag di riavvolgimento)."
+      }
+    ],
+    "motivo": "La selezione dei film live-action sui viaggi nel tempo è ricca e ben ordinata per voto medio decrescente, ma l'inclusione di ben 8 titoli anime in un catalogo con vincolo 'Anime: no' abbassa sensibilmente pertinenza e qualità complessiva. Rimandato per sanare il filtro di esclusione dell'animazione giapponese.",
+    "evidenza": [
+      "Ritorno al futuro (1985)",
+      "Terminator 2 - Il giorno del giudizio (1991)",
+      "Edge of Tomorrow - Senza domani (2014)",
+      "L'esercito delle 12 scimmie (1995)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_tv_high_fantasy",
+    "nome": "🧙 High Fantasy (Spade & Draghi)",
+    "verdetto": "N",
+    "score": 59,
+    "dimensioni": {
+      "pertinenza": 10,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 28,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "Mushoku Tensei: Jobless Reincarnation",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Isekai anime al 1° posto assoluto di un catalogo dichiarato Anime: no."
+      },
+      {
+        "pos": 3,
+        "titolo": "Frieren - Oltre la Fine del Viaggio",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Serie anime in palese violazione del vincolo di esclusione anime."
+      },
+      {
+        "pos": 5,
+        "titolo": "Dungeon Food",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Serie anime fantasy/culinaria non filtrata."
+      },
+      {
+        "pos": 6,
+        "titolo": "Goblin Slayer",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Dark fantasy anime che elude il blocco."
+      },
+      {
+        "pos": 12,
+        "titolo": "Suicide Squad ISEKAI",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Spin-off anime isekai di supereroi, lontano dall'high fantasy classico di spade e draghi."
+      },
+      {
+        "pos": 14,
+        "titolo": "No Game No Life",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Isekai anime incentrato sui giochi."
+      },
+      {
+        "pos": 25,
+        "titolo": "The Daily Life of a Middle-Aged Online Shopper in Another World",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Isekai anime a tema e-commerce."
+      },
+      {
+        "pos": 28,
+        "titolo": "The Legend of Hanuman",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione CGI indiana su leggende mitologiche."
+      }
+    ],
+    "motivo": "Il catalogo è totalmente bocciato: a fronte della promessa 'High Fantasy (Spade & Draghi)' con filtro esplicito 'Anime: no', ben 22 titoli su 28 (il 78.6%) sono anime o isekai giapponesi. I titoli live-action sono ridotti a 5 sole produzioni e mancano completamente i pilastri del genere come Game of Thrones, House of the Dragon e The Witcher.",
+    "evidenza": [
+      "Il Signore degli Anelli: Gli Anelli del Potere (2022)",
+      "La ruota del tempo (2021)",
+      "Willow: La serie (2022)",
+      "Le nebbie di Avalon (2001)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_tv_dystopia",
+    "nome": "🏆 Futuri Distopici",
+    "verdetto": "B",
+    "score": 79,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 43,
+    "errori": [
+      {
+        "pos": 5,
+        "titolo": "Star Trek: Strange New Worlds",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "L'universo della Flotta Stellare di Star Trek è un'utopia post-scarsità, concettualmente opposta alla distopia."
+      },
+      {
+        "pos": 7,
+        "titolo": "Star Trek: Picard",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Seconda serie di Star Trek inserita indebitamente in un catalogo distopico."
+      },
+      {
+        "pos": 11,
+        "titolo": "Sweet Home",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Horror coreano apocalittico su mostri ed epidemie, non un dramma distopico socio-politico."
+      },
+      {
+        "pos": 27,
+        "titolo": "TekWar",
+        "anno": "1994",
+        "tipo": "trash",
+        "nota": "Produzione canadese datata e mediocre con voto 5.8."
+      },
+      {
+        "pos": 29,
+        "titolo": "The I-Land",
+        "anno": "2019",
+        "tipo": "trash",
+        "nota": "Miniserie unanimemente stroncata da critica e pubblico con voto 5.426."
+      },
+      {
+        "pos": 32,
+        "titolo": "DMZ",
+        "anno": "2022",
+        "tipo": "trash",
+        "nota": "Miniserie debole e fallimentare con voto 5.549."
+      },
+      {
+        "pos": 35,
+        "titolo": "Cleverman",
+        "anno": "2016",
+        "tipo": "trash",
+        "nota": "Serie australiana sotto la sufficienza qualitativa (voto 5.763)."
+      },
+      {
+        "pos": 43,
+        "titolo": "Trepalium",
+        "anno": "2016",
+        "tipo": "trash",
+        "nota": "Miniserie francese mediocre con voto 5.6."
+      }
+    ],
+    "motivo": "Buona pertinenza complessiva guidata da capisaldi come Silo, Black Mirror e The Handmaid's Tale, ma la qualità media è zavorrata da ben 8 produzioni sotto il 6.0 (18.6% del totale). Da segnalare inoltre l'incongrua presenza di due serie dell'utopia di Star Trek per cattura accidentale di keyword.",
+    "evidenza": [
+      "Silo (2023)",
+      "Black Mirror (2011)",
+      "The Handmaid's Tale (2017)",
+      "Snowpiercer (2020)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_tv_superheroes_dark",
+    "nome": "🦸‍♂️ Supereroi (Toni Oscuri)",
+    "verdetto": "B",
+    "score": 75,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 75,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 31,
+    "errori": [
+      {
+        "pos": 8,
+        "titolo": "My Hero Academia: Vigilantes",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Shonen anime presente in catalogo nonostante il vincolo esplicito Anime: no."
+      },
+      {
+        "pos": 11,
+        "titolo": "My Hero Academia",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Shonen anime dai toni tipicamente solari ed eroici, privo dei toni oscuri promessi, oltre a violare il filtro non-anime."
+      },
+      {
+        "pos": 12,
+        "titolo": "Zorro",
+        "anno": "1957",
+        "tipo": "fuori-promessa",
+        "nota": "Serie Disney western classica per famiglie in bianco e nero, del tutto avulsa dai supereroi oscuri."
+      },
+      {
+        "pos": 19,
+        "titolo": "Mortal Kombat: Conquest",
+        "anno": "1998",
+        "tipo": "fuori-promessa",
+        "nota": "Serie d'avventura e arti marziali tratta dal videogioco, non cinecomic di supereroi."
+      },
+      {
+        "pos": 21,
+        "titolo": "The Cape",
+        "anno": "2011",
+        "tipo": "trash",
+        "nota": "Serie flop stroncata e cancellata dopo pochi episodi (voto 5.1)."
+      },
+      {
+        "pos": 24,
+        "titolo": "Zorro",
+        "anno": "1990",
+        "tipo": "fuori-promessa",
+        "nota": "Seconda serie d'avventura su Zorro priva di connotati da cinecomic cupo."
+      },
+      {
+        "pos": 28,
+        "titolo": "The Super Powers Team: Galactic Guardians",
+        "anno": "1985",
+        "tipo": "fuori-promessa",
+        "nota": "Cartone animato per bambini dei Super Amici anni '80, antitetico ai toni oscuri o maturi."
+      },
+      {
+        "pos": 30,
+        "titolo": "The Phantom",
+        "anno": "2009",
+        "tipo": "trash",
+        "nota": "Miniserie canadese scadente con voto 4.932."
+      }
+    ],
+    "motivo": "Il catalogo vanta titoli eccellenti in cima (The Boys, Daredevil, The Sandman, Watchmen), ma soffre di un filtraggio poroso che immette 7 serie anime in un preset non-anime e bizzarrie storiche come le serie anni '50 e '90 di Zorro o i Super Amici del 1985. Pool limitato a soli 31 titoli.",
+    "evidenza": [
+      "The Boys (2019)",
+      "Daredevil (2015)",
+      "The Sandman (2022)",
+      "Watchmen (2019)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_time_travel",
+    "nome": "⏱️ Viaggi nel Tempo (Serie)",
+    "verdetto": "P",
+    "score": 90,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 90,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 27,
+        "titolo": "Babylon 5",
+        "anno": "1994",
+        "tipo": "fuori-promessa",
+        "nota": "Space opera incentrata su intrighi galattici; il viaggio temporale compare solo in un singolo arco narrativo."
+      },
+      {
+        "pos": 30,
+        "titolo": "Vita da strega",
+        "anno": "1964",
+        "tipo": "fuori-promessa",
+        "nota": "Sitcom comica sulla magia domestica, con viaggi nel tempo solo accidentali in sporadiche puntate."
+      },
+      {
+        "pos": 32,
+        "titolo": "Strega per amore",
+        "anno": "1965",
+        "tipo": "fuori-promessa",
+        "nota": "Sitcom comica sul genio della lampada, non una serie di fantascienza sui viaggi temporali."
+      },
+      {
+        "pos": 49,
+        "titolo": "The Dead Zone",
+        "anno": "2002",
+        "tipo": "fuori-promessa",
+        "nota": "Serie basata su chiaroveggenza e visioni psichiche del passato/futuro, non viaggio nel tempo fisico."
+      }
+    ],
+    "motivo": "Catalogo di altissima levatura qualitativa (mediana 7.65, 0% sotto 6.0) con ordinamento per voto medio perfetto. Ricchissima la componente di K-drama time-slip e grandi classici occidentali (Dark, 22.11.63, Doctor Who, Travelers), con solo rare presenze spurie dovute a keyword deboli.",
+    "evidenza": [
+      "Dark (2017)",
+      "22.11.63 (2016)",
+      "Doctor Who (2005)",
+      "Travelers (2016)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_cyberpunk_series",
+    "nome": "🤖 Cyberpunk & Distopia (Serie)",
+    "verdetto": "B",
+    "score": 67,
+    "dimensioni": {
+      "pertinenza": 25,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 5,
+        "titolo": "Overlord",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Isekai anime dark fantasy che vìola sia il divieto anime sia il genere cyberpunk."
+      },
+      {
+        "pos": 17,
+        "titolo": "Yu-Gi-Oh VRAINS",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Anime promozionale di battaglie con le carte per ragazzi in realtà virtuale."
+      },
+      {
+        "pos": 19,
+        "titolo": "Sfondamento dei cieli Gurren Lagann",
+        "anno": "2007",
+        "tipo": "fuori-promessa",
+        "nota": "Super robot anime epico privo di elementi cyberpunk o distopici classici."
+      },
+      {
+        "pos": 22,
+        "titolo": "BOFURI",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia anime spensierata su un videogioco VR, antitetica ai temi cupi di cyberpunk e distopia."
+      },
+      {
+        "pos": 24,
+        "titolo": "Future Man",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia slapstick/demenziale sui viaggi nel tempo."
+      },
+      {
+        "pos": 31,
+        "titolo": "Dorohedoro",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Dark fantasy splatter e magico con stregoni, estraneo al cyberpunk."
+      },
+      {
+        "pos": 44,
+        "titolo": "Divine Gate",
+        "anno": "2016",
+        "tipo": "trash",
+        "nota": "Anime fantasy tratto da mobile game con voto scadente (5.741)."
+      },
+      {
+        "pos": 48,
+        "titolo": "Cross Ange: Rondo of Angels and Dragons",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Anime mecha fantasy con draghi in netto contrasto con la promessa."
+      }
+    ],
+    "motivo": "La promessa di serie live-action cyberpunk e distopiche viene stravolta da un'invasione di 29 anime giapponesi (58% dei titoli mostrati) a dispetto della configurazione 'Anime: no', molti dei quali non c'entrano nulla col genere (Overlord, Yu-Gi-Oh, Gurren Lagann, BOFURI). Le poche serie occidentali presenti (Silo, Black Mirror, Handmaid's Tale) sono ottime ma soffocate dal disordine dei filtri.",
+    "evidenza": [
+      "Silo (2023)",
+      "Black Mirror (2011)",
+      "The Handmaid's Tale (2017)",
+      "Altered Carbon (2018)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_fantasy_magic",
+    "nome": "🧙 Grandi Saghe Fantasy & Magia",
+    "verdetto": "B",
+    "score": 72,
+    "dimensioni": {
+      "pertinenza": 65,
+      "qualita": 50,
+      "distintivita": 100,
+      "coerenza": 80,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 18,
+        "titolo": "Pacific Rim - La rivolta",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Fantascienza d'azione mecha vs kaiju, totalmente aliena a un catalogo di magia e fantasy epico."
+      },
+      {
+        "pos": 30,
+        "titolo": "I racconti di Terramare",
+        "anno": "2006",
+        "tipo": "fuori-promessa",
+        "nota": "Lungometraggio anime dello Studio Ghibli presente nonostante il filtro esplicito Anime: no."
+      },
+      {
+        "pos": 32,
+        "titolo": "Dragonball Evolution",
+        "anno": "2009",
+        "tipo": "trash",
+        "nota": "Notorio flop stroncato universalmente con voto disastroso di 2.935."
+      },
+      {
+        "pos": 34,
+        "titolo": "Sua maestà",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia parodistica demenziale e volgare, priva dello spirito delle grandi saghe fantasy."
+      },
+      {
+        "pos": 39,
+        "titolo": "Dungeons & Dragons - Che il gioco abbia inizio",
+        "anno": "2000",
+        "tipo": "trash",
+        "nota": "Adattamento cinematografico di scarsissima qualità (voto 4.366)."
+      },
+      {
+        "pos": 41,
+        "titolo": "In the Name of the King",
+        "anno": "2007",
+        "tipo": "trash",
+        "nota": "B-movie trash fantasy diretto da Uwe Boll (voto 4.782)."
+      },
+      {
+        "pos": 44,
+        "titolo": "Il castello nel cielo",
+        "anno": "1986",
+        "tipo": "fuori-promessa",
+        "nota": "Classico anime dello Studio Ghibli che vìola la promessa non-anime."
+      },
+      {
+        "pos": 47,
+        "titolo": "Beowulf",
+        "anno": "1999",
+        "tipo": "trash",
+        "nota": "Produzione B-movie scadente con voto 4.367."
+      }
+    ],
+    "motivo": "Il catalogo è fortemente sbilanciato dalla keyword 'dragon' che trasforma la promessa delle grandi saghe in una rassegna di film sui draghi e fiabe per ragazzi, mancando quasi tutti i capitoli di Harry Potter e del Signore degli Anelli. Inoltre, la qualità media precipita con oltre il 25% dei titoli sotto il 6.0 e la presenza di famigerati flop trash (Dragonball Evolution, Uwe Boll, D&D 2000).",
+    "evidenza": [
+      "Il Signore degli Anelli - Il ritorno del re (2003)",
+      "Harry Potter e il calice di fuoco (2005)",
+      "Dungeons & Dragons - L'onore dei ladri (2023)",
+      "Dragon Trainer (2010)"
+    ],
+    "fiducia": "alta"
+  }
+]

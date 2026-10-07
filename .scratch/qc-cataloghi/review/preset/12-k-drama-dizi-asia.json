@@ -1,0 +1,316 @@
+[
+  {
+    "id": "preset_kdrama_romance",
+    "nome": "K-Drama: Romantici",
+    "verdetto": "P",
+    "score": 99,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo impeccabile che copre i più grandi successi e classici del romanticismo coreano, con una qualità media eccellente e ordinamento per popolarità rigoroso.",
+    "evidenza": [
+      "Crash Landing on You (2019)",
+      "Goblin (2016)",
+      "True Beauty (2020)",
+      "Business Proposal (2022)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_kdrama_thriller",
+    "nome": "K-Drama: Thriller & Mistero",
+    "verdetto": "P",
+    "score": 86,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 26,
+        "titolo": "천상의 약속",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Daily soap makjang da 102 episodi con voto 3.5, non un prime drama thriller"
+      },
+      {
+        "pos": 37,
+        "titolo": "Still 17",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia romantica e drama di formazione, non appartiene al genere thriller/mistero"
+      }
+    ],
+    "motivo": "Ottima selezione di thriller e polizieschi coreani di alto profilo e con ordinamento impeccabile, macchiata solo dall'infiltrazione di una soap quotidiana (voto 3.5) e di una commedia romantica.",
+    "evidenza": [
+      "Mouse (2021)",
+      "Big Mouth! (2022)",
+      "Signal (2016)",
+      "Stranger (2017)",
+      "My Name (2021)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_asian_action",
+    "nome": "Azione Asiatica (JP, KR, HK)",
+    "verdetto": "B",
+    "score": 71,
+    "dimensioni": {
+      "pertinenza": 40,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 4,
+        "titolo": "Gintama The Movie: Yoshiwara in Fiamme",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione (anime) presente in catalogo live-action con flag Anime: no"
+      },
+      {
+        "pos": 6,
+        "titolo": "The Last: Naruto the Movie",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione (anime) del franchise Naruto contrario al flag Anime: no"
+      },
+      {
+        "pos": 8,
+        "titolo": "Dragon Ball Z - La resurrezione di 'F'",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime Dragon Ball presente nonostante la promessa escluda l'animazione"
+      },
+      {
+        "pos": 11,
+        "titolo": "Dragon Ball Z - La battaglia degli Dei",
+        "anno": "2013",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime Dragon Ball in violazione del vincolo Anime: no"
+      },
+      {
+        "pos": 13,
+        "titolo": "Dragon Ball Super - Super Hero",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione anime presente in catalogo riservato al live-action"
+      },
+      {
+        "pos": 15,
+        "titolo": "Dragon Ball - La leggenda delle sette sfere",
+        "anno": "1986",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime di Dragon Ball non pertinente per un catalogo di cinema d'azione live-action"
+      },
+      {
+        "pos": 16,
+        "titolo": "Dragon Ball Z - Il destino dei Saiyan",
+        "anno": "1991",
+        "tipo": "fuori-promessa",
+        "nota": "Lungometraggio anime Dragon Ball fuori promessa"
+      },
+      {
+        "pos": 18,
+        "titolo": "Dragon Ball Z - L'eroe del pianeta Conuts",
+        "anno": "1995",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime Dragon Ball presente nonostante la promessa escluda gli anime"
+      }
+    ],
+    "motivo": "Il catalogo è gravemente inquinato da film d'animazione (22 su 50 titoli, pari al 44%), dominati dal franchise Dragon Ball, disattendendo la promessa Anime: no; l'utente in cerca di film d'azione live-action resta spiazzato.",
+    "evidenza": [
+      "I sette samurai (1954)",
+      "La tigre e il dragone (2000)",
+      "The Man from Nowhere (2010)",
+      "Harakiri (1962)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_cinema_coreano",
+    "nome": "Cinema Coreano (Film)",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "BTS World Tour: Love Yourself - Japan Edition",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Concerto/docufilm musicale K-pop spinto in vetta dai voti dei fan, non cinema di finzione"
+      },
+      {
+        "pos": 5,
+        "titolo": "Squid Game - Stagione 2: dietro le quinte",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Speciale documentario dietro le quinte di una serie TV, non un'opera cinematografica"
+      },
+      {
+        "pos": 6,
+        "titolo": "브링 더 소울: 더 무비",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Docufilm musicale/concerto dei BTS fuori contesto rispetto al cinema narrativo coreano"
+      },
+      {
+        "pos": 7,
+        "titolo": "Burn the Stage: The Movie",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Docufilm concerto dei BTS"
+      },
+      {
+        "pos": 10,
+        "titolo": "BTS World Tour: Love Yourself in Seoul",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Film concerto musicale dei BTS"
+      },
+      {
+        "pos": 14,
+        "titolo": "Blackpink: Light Up The Sky",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario musicale promozionale sulle Blackpink"
+      }
+    ],
+    "motivo": "Straordinaria rassegna del cinema coreano con capolavori distribuiti su più decenni e generi, la cui classifica è tuttavia sporcata in vetta da docufilm/concerti K-pop e da uno speciale backstage televisivo.",
+    "evidenza": [
+      "Parasite (2019)",
+      "Old Boy (2003)",
+      "Memorie di un assassino (2003)",
+      "Mademoiselle (2016)",
+      "Train to Busan (2016)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_bollywood",
+    "nome": "Bollywood & Cinema Indiano",
+    "verdetto": "P",
+    "score": 85,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 6,
+        "titolo": "अल्फा",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Titolo recente con voto 5.1 e appena 27 voti"
+      },
+      {
+        "pos": 8,
+        "titolo": "धमाल ४",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Commedia di scarsa qualità con voto 4.3 e appena 13 voti posizionata in top 10"
+      },
+      {
+        "pos": 10,
+        "titolo": "Lust Stories 2",
+        "anno": "2023",
+        "tipo": "trash",
+        "nota": "Voto mediocre di 5.6 con sole 62 recensioni"
+      },
+      {
+        "pos": 22,
+        "titolo": "Bhooth Bangla - Nozze maledette",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Horror comedy con voto 5.609 e 64 voti"
+      },
+      {
+        "pos": 25,
+        "titolo": "Welcome To The Jungle",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Titolo con voto 5.1 e appena 39 valutazioni"
+      },
+      {
+        "pos": 27,
+        "titolo": "कॉकटेल २",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Commedia con voto 5.597 e sole 36 recensioni"
+      },
+      {
+        "pos": 35,
+        "titolo": "Chashme Baddoor",
+        "anno": "2013",
+        "tipo": "trash",
+        "nota": "Commedia con voto 4.7 e 29 voti"
+      },
+      {
+        "pos": 48,
+        "titolo": "ज़बरिया जोड़ी",
+        "anno": "2019",
+        "tipo": "trash",
+        "nota": "Titolo con voto 4.5 e sole 13 valutazioni"
+      }
+    ],
+    "motivo": "Il catalogo è pertinente per lingua hindi e produzione indiana, ma la soglia di soli 10 voti lascia risalire per popolarità titoli recenti scadenti (oltre il 21% sotto il 6.0 e alcuni sotto il 5.0).",
+    "evidenza": [
+      "3 Idiots (2009)",
+      "Il coraggioso prenderà la sposa (1995)",
+      "Il mio nome è Khan (2010)",
+      "Dangal (2016)",
+      "Stelle sulla terra (2007)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_turkish_dizi",
+    "nome": "Serie Turche (Dizi)",
+    "verdetto": "P",
+    "score": 95,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo solido ed esaustivo delle produzioni televisive turche, che spazia con equilibrio tra drammi storici ed epici, melodrammi e soap opera con ordinamento per popolarità perfetto.",
+    "evidenza": [
+      "Kuruluş Osman (2019)",
+      "Muhteşem Yüzyıl (2011)",
+      "Love Is in the Air (2020)",
+      "Daydreamer - Le ali del sogno (2018)",
+      "Endless Love (2015)"
+    ],
+    "fiducia": "alta"
+  }
+]

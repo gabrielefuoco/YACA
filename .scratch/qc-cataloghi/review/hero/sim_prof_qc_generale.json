@@ -1,0 +1,391 @@
+[
+  {
+    "id": "sim_prof_qc_generale::yaca_true_blend_movies",
+    "catalogo": "yaca_true_blend_movies",
+    "tipo": "movie",
+    "verdetto": "P",
+    "score": 97,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 90,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 26,
+        "titolo": "In a Heartbeat",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio animato di 4 minuti presente in un catalogo di lungometraggi."
+      },
+      {
+        "pos": 36,
+        "titolo": "Piper",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio Pixar di 4 minuti inserito in un catalogo di lungometraggi."
+      }
+    ],
+    "motivo": "Il catalogo rispecchia fedelmente l'impronta omnivora e sci-fi/cult del profilo, con titoli di altissimo livello e ottima diversificazione per franchise. I punteggi di affinità decrescono in modo coerente e la qualità media è eccellente, con l'unica sbavatura data dalla presenza di due cortometraggi animati.",
+    "evidenza": [
+      "Interstellar (2014)",
+      "2001: Odissea nello spazio (1968)",
+      "Blade Runner (1982)",
+      "Matrix (1999)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_generale::yaca_true_blend_series",
+    "catalogo": "yaca_true_blend_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 97,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 90,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 41,
+        "titolo": "Miraculous - Le storie di Ladybug e Chat Noir",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Serie per un pubblico infantile non in linea con i seed adulti del profilo."
+      },
+      {
+        "pos": 50,
+        "titolo": "Le Superchicche",
+        "anno": "1998",
+        "tipo": "fuori-promessa",
+        "nota": "Cartone per bambini/kids poco coerente con il DNA omnivoro adulto."
+      }
+    ],
+    "motivo": "Selezione seriale solida e perfettamente allineata con l'inclinazione per fantascienza e serie cult del profilo. Ottima alternanza tra sci-fi d'autore, animazione matura e fantasy, con rari inserimenti discutibili provenienti dal target per bambini.",
+    "evidenza": [
+      "The Expanse (2015)",
+      "Star Trek: Voyager (1995)",
+      "Futurama (1999)",
+      "Silo (2023)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_generale::yaca_seed_network_movies",
+    "catalogo": "yaca_seed_network_movies",
+    "tipo": "movie",
+    "verdetto": "B",
+    "score": 73,
+    "dimensioni": {
+      "pertinenza": 65,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 60,
+      "completezza": 65
+    },
+    "itemGiudicati": 34,
+    "errori": [
+      {
+        "pos": 21,
+        "titolo": "Grand Theft Auto VI: Una lunga anteprima",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Video promozionale/trailer di un videogioco di 27 minuti inserito come film."
+      },
+      {
+        "pos": 13,
+        "titolo": "Once Upon a Studio",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio celebrativo Disney di 9 minuti estraneo ai semi del profilo."
+      },
+      {
+        "pos": 14,
+        "titolo": "Lontano dall'albero",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio di 7 minuti senza pertinenza con i registi o franchise seed."
+      },
+      {
+        "pos": 17,
+        "titolo": "Il bambino, la talpa, la volpe e il cavallo",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio animato di 35 minuti estraneo al concept dei seed."
+      },
+      {
+        "pos": 7,
+        "titolo": "Il gatto con gli stivali 2 - L'ultimo desiderio",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione per famiglie scollegata dai registi e generi dei seed."
+      },
+      {
+        "pos": 22,
+        "titolo": "Toy Story 5",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Filler d'animazione commerciale privo di connessione con i seed."
+      }
+    ],
+    "motivo": "Il catalogo soffre di incompletezza con sole 34 voci e si allontana dalla promessa di rete dei semi: salvo i titoli legati a Batman, i collegamenti con Tarantino, Fincher e Nolan sono deboli. La lista è invasa da cartoni animati per famiglie, cortometraggi e persino un trailer videoludico promozionale.",
+    "evidenza": [
+      "Batman (1989)",
+      "Dune - Parte due (2024)",
+      "The Creator (2023)",
+      "Grand Theft Auto VI: Una lunga anteprima (2026)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_generale::yaca_seed_network_series",
+    "catalogo": "yaca_seed_network_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 88,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 80,
+      "completezza": 85
+    },
+    "itemGiudicati": 45,
+    "errori": [
+      {
+        "pos": 10,
+        "titolo": "Vuoi sposare mio marito?",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "K-drama romantico/revenge privo di legami con i seed del profilo."
+      },
+      {
+        "pos": 13,
+        "titolo": "Lovely Runner",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma romantico coreano non coerente con la rete dei preferiti."
+      },
+      {
+        "pos": 20,
+        "titolo": "La mia nobile nemica",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Produzione asiatica slegata dall'universo tematico dei titoli seed."
+      }
+    ],
+    "motivo": "Buona trasposizione seriale della rete di seed: ottimi i legami fantascientifici (Star Trek, Stargate), l'universo DC e il collegamento a Fincher tramite Love, Death & Robots. La lista conta 45 titoli e include qualche K-drama fuori contesto, ma mantiene un'alta qualità complessiva.",
+    "evidenza": [
+      "Star Trek: Enterprise (2001)",
+      "Love, Death & Robots (2019)",
+      "Lanterns (2026)",
+      "Arcane (2021)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_generale::yaca_hidden_gems_movies",
+    "catalogo": "yaca_hidden_gems_movies",
+    "tipo": "movie",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 41,
+        "titolo": "Me contro Te: Il film - La vendetta del Signor S",
+        "anno": "2020",
+        "tipo": "trash",
+        "nota": "Prodotto per l'infanzia inserito per via dei filtri numerici ma totalmente fuori target."
+      }
+    ],
+    "motivo": "Catalogo ricco di autentiche gemme sci-fi e cinema cult di nicchia ben mirate sul profilo. I vincoli della ricetta (popolarità <= 20, voti 50-1000, durata >= 60') sono pienamente rispettati senza violazioni; si riscontra solo l'intrusione anomala di un film per bambini (Me contro Te), ma la tenuta qualitativa ed editoriale è eccellente.",
+    "evidenza": [
+      "Kin-dza-dza! (1986)",
+      "Capricorn One (1977)",
+      "Sul globo d'argento (1989)",
+      "Dimensione terrore (1986)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_generale::yaca_hidden_gems_series",
+    "catalogo": "yaca_hidden_gems_series",
+    "tipo": "series",
+    "verdetto": "P",
+    "score": 90,
+    "dimensioni": {
+      "pertinenza": 70,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 27,
+        "titolo": "Le guide di Headspace: meditazione",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Contenuto documentaristico di meditazione con soli 83 voti."
+      },
+      {
+        "pos": 50,
+        "titolo": "O krtkovi",
+        "anno": "1957",
+        "tipo": "fuori-promessa",
+        "nota": "Serie per la prima infanzia con 72 voti e match DNA minimo (18)."
+      }
+    ],
+    "motivo": "Catalogo che intercetta ottime gemme seriali di fantascienza, nel pieno rispetto dei vincoli della ricetta (popolarità <= 20, voti 50-1000). Permangono alcune intrusioni fuori target (contenuti di meditazione e serie per la prima infanzia con match minimo a 18) che abbassano la pertinenza complessiva.",
+    "evidenza": [
+      "Missions (2017)",
+      "Dark Crystal: La resistenza (2019)",
+      "Archive 81 - Universi alternativi (2022)",
+      "Philip K. Dick's Electric Dreams (2017)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_generale::yaca_trakt_filtered_movies",
+    "catalogo": "yaca_trakt_filtered_movies",
+    "tipo": "movie",
+    "verdetto": "B",
+    "score": 67,
+    "dimensioni": {
+      "pertinenza": 50,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 50,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 7,
+        "titolo": "Legend of the White Dragon",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Voto mediocre (5.6 con sole 17 recensioni), in contrasto con l'idea di titoli ben votati."
+      },
+      {
+        "pos": 12,
+        "titolo": "Les matins merveilleux",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Valutazione insufficiente (5.8) con sole 10 recensioni."
+      },
+      {
+        "pos": 16,
+        "titolo": "La Dernière Patiente",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Durata non valorizzata (0 minuti) e campione di soli 10 voti."
+      },
+      {
+        "pos": 26,
+        "titolo": "Les Héros du Louvre",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Durata pari a 0 minuti e bassissima rilevanza (13 voti)."
+      },
+      {
+        "pos": 39,
+        "titolo": "Onslaught - Assalto finale",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Voto mediocre (5.8) in contraddizione con la promessa di fallback di qualità."
+      },
+      {
+        "pos": 4,
+        "titolo": "The Last Photograph",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Voto sotto la sufficienza (5.9 con 14 voti)."
+      }
+    ],
+    "motivo": "Catalogo in modalità degradata (fallback senza autenticazione Trakt) composto interamente da uscite del 2026. La promessa di offrire titoli popolari e ben votati è disattesa: la mediana è di appena 6.7, con svariati film sotto il 6.0 e metadati di durata azzerati.",
+    "evidenza": [
+      "Spider-Man: Brand New Day (2026)",
+      "Coyote vs. Acme (2026)",
+      "Legend of the White Dragon (2026)",
+      "Onslaught - Assalto finale (2026)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "sim_prof_qc_generale::yaca_trakt_filtered_series",
+    "catalogo": "yaca_trakt_filtered_series",
+    "tipo": "series",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 70,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 15,
+        "titolo": "The Hawk",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Valutazione scadente (5.5) in contrasto con la promessa di titoli ben votati."
+      },
+      {
+        "pos": 23,
+        "titolo": "Lucky Luke",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Voto mediocre (6.4 con sole 28 valutazioni) inserito nel fallback."
+      },
+      {
+        "pos": 32,
+        "titolo": "低智商犯罪",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Titolo asiatico privo di localizzazione con sole 20 recensioni."
+      },
+      {
+        "pos": 43,
+        "titolo": "เด็กชายไม่ไปสวรรค์",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Produzione thai priva di traduzione con soli 26 voti totali."
+      },
+      {
+        "pos": 45,
+        "titolo": "月鳞绮纪",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Titolo privo di localizzazione inserito con sole 20 valutazioni."
+      }
+    ],
+    "motivo": "Percorso degradato dovuto all'assenza del token Trakt, che riversa un fallback di serie del 2026 con match nullo. Nonostante una mediana di voto elevata (8.0), il catalogo pesca serie con campioni di voto microscopici, titoli asiatici non localizzati e un flop isolato (The Hawk).",
+    "evidenza": [
+      "Spider-Noir (2026)",
+      "The Boroughs - Ribelli senza tempo (2026)",
+      "Neagley (2026)",
+      "The Hawk (2026)"
+    ],
+    "fiducia": "alta"
+  }
+]

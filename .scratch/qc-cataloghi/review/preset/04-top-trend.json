@@ -1,0 +1,694 @@
+[
+  {
+    "id": "preset_pop_movies",
+    "nome": "🌟 Film Popolari",
+    "verdetto": "P",
+    "score": 96,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 19,
+        "titolo": "Ice Cream Man",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Horror a bassissimo gradimento (voto 4.84) che abbassa la qualità del catalogo"
+      },
+      {
+        "pos": 27,
+        "titolo": "La guerra dei mondi",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Flop fantascientifico con voto 4.03"
+      }
+    ],
+    "motivo": "Catalogo eccellente che rispecchia in pieno la promessa di popolarità globale, con ordinamento impeccabile ed enorme ampiezza di catalogo, sporcato solo marginalmente da un paio di B-movie a basso voto.",
+    "evidenza": [
+      "Spider-Man: Brand New Day (2026)",
+      "Avengers: Endgame (2019)",
+      "Interstellar (2014)",
+      "Toy Story 5 (2026)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_pop_series",
+    "nome": "🌟 Serie TV Popolari",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "Watch What Happens Live with Andy Cohen",
+        "anno": "2009",
+        "tipo": "trash",
+        "nota": "Talk show quotidiano con voto mediocre (5.01) al primo posto del catalogo"
+      },
+      {
+        "pos": 2,
+        "titolo": "The Tonight Show Starring Jimmy Fallon",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Talk show a trasmissione giornaliera, estraneo al concetto di serie TV narrative"
+      },
+      {
+        "pos": 3,
+        "titolo": "The Tonight Show Starring Johnny Carson",
+        "anno": "1962",
+        "tipo": "fuori-promessa",
+        "nota": "Talk show d'epoca del 1962 gonfiato dalle metriche di popolarità TMDB"
+      },
+      {
+        "pos": 5,
+        "titolo": "The Late Late Show with James Corden",
+        "anno": "2015",
+        "tipo": "trash",
+        "nota": "Talk show con valutazione insufficiente (5.15)"
+      },
+      {
+        "pos": 6,
+        "titolo": "Tagesschau",
+        "anno": "1952",
+        "tipo": "fuori-promessa",
+        "nota": "Telegiornale quotidiano tedesco del 1952 completamente fuori contesto"
+      },
+      {
+        "pos": 13,
+        "titolo": "Late Night with Seth Meyers",
+        "anno": "2014",
+        "tipo": "trash",
+        "nota": "Altro talk show con valutazione molto bassa (5.09)"
+      },
+      {
+        "pos": 39,
+        "titolo": "Binnelanders",
+        "anno": "2005",
+        "tipo": "trash",
+        "nota": "Soap opera sudafricana con voto 5.50"
+      }
+    ],
+    "motivo": "L'assenza di filtri sui generi Talk e News fa sì che programmi quotidiani e late show invadano i primi posti a causa dell'algoritmo di popolarità di TMDB, penalizzando la pertinenza complessiva.",
+    "evidenza": [
+      "Reacher (2022)",
+      "Law & Order - Unità vittime speciali (1999)",
+      "The Mentalist (2008)",
+      "Grey's Anatomy (2005)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_top_rated_movies",
+    "nome": "🏆 Film Più Votati (All Time)",
+    "verdetto": "P",
+    "score": 90,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "Avatar Aang: L’ultimo dominatore dell’aria",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Uscita del 2026 con appena 1249 voti che scavalca i capisaldi della storia del cinema per inerzia statistica"
+      },
+      {
+        "pos": 2,
+        "titolo": "Swapped - Al tuo posto",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Film del 2026 con votazione acerba posizionato davanti a Il padrino"
+      },
+      {
+        "pos": 46,
+        "titolo": "Gabriel's Inferno",
+        "anno": "2020",
+        "tipo": "trash",
+        "nota": "Film sentimentale con voti palesemente brigadati dalla fanbase"
+      },
+      {
+        "pos": 49,
+        "titolo": "Gabriel's Inferno: Part III",
+        "anno": "2020",
+        "tipo": "trash",
+        "nota": "Sequel a voti manipolati presente unicamente per via della soglia di 1000 voti"
+      }
+    ],
+    "motivo": "Selezione eccezionale dei più grandi film di sempre con ordinamento matematico perfetto, leggermente scalfita dalla soglia di 1000 voti che lascia salire in vetta novità del 2026 e titoli a voto brigadato.",
+    "evidenza": [
+      "Le ali della libertà (1994)",
+      "Il padrino (1972)",
+      "Schindler's List (1993)",
+      "Il cavaliere oscuro (2008)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_top_rated_series",
+    "nome": "🏆 Serie Più Votate (All Time)",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "Lezioni vere",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Novità 2026 con meno di 1000 voti al primo posto all-time sopra Breaking Bad"
+      },
+      {
+        "pos": 2,
+        "titolo": "Dutton Ranch",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Serie del 2026 con soli 608 voti in seconda posizione assoluta"
+      },
+      {
+        "pos": 4,
+        "titolo": "Off Campus",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Altra produzione 2026 a votazione acerba nei primissimi posti"
+      },
+      {
+        "pos": 32,
+        "titolo": "O11CE",
+        "anno": "2017",
+        "tipo": "trash",
+        "nota": "Teen telenovela sportiva con voti gonfiati rispetto al profilo qualitativo all-time"
+      }
+    ],
+    "motivo": "Catalogo di altissima qualità dominato dalle pietre miliari della serialità televisiva, in cui la soglia di 500 voti permette tuttavia a recentissime produzioni 2026 di scalare indebitamente la vetta.",
+    "evidenza": [
+      "Breaking Bad (2008)",
+      "Chernobyl (2019)",
+      "Better Call Saul (2015)",
+      "I Soprano (1999)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_new_movies",
+    "nome": "🆕 Film: Nuove Uscite",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 44,
+        "titolo": "Hot Spot",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "B-movie a bassissima valutazione (4.61)"
+      },
+      {
+        "pos": 27,
+        "titolo": "Io+Te - Soli contro tutti",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Dramma romantico con voto insufficiente (5.60)"
+      },
+      {
+        "pos": 37,
+        "titolo": "Livestream from Hell",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Horror di scarsa qualità (5.63)"
+      }
+    ],
+    "motivo": "Finestra temporale di rilascio di due mesi rispettata alla perfezione con titoli nuovissimi e ordinamento rigoroso, penalizzato unicamente dalla presenza di qualche B-movie a basso voto.",
+    "evidenza": [
+      "Resident Evil (2026)",
+      "The Rush - Corsa contro il tempo (2026)",
+      "Coyote vs. Acme (2026)",
+      "La fine di Oak Street (2026)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_new_series",
+    "nome": "🆕 Serie TV: Novità",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 100,
+      "distintivita": 60,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo ottimamente congegnato con serie freschissime del semestre e gradimento elevato, limitato solo dalla moderata sovrapposizione (J=0.36) con il catalogo di episodi recenti.",
+    "evidenza": [
+      "Lanterns (2026)",
+      "Monster: La storia di Lizzie Borden (2026)",
+      "Off Campus (2026)",
+      "Dutton Ranch (2026)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_new_series_eps",
+    "nome": "🆕 Serie: Episodi Recenti",
+    "verdetto": "B",
+    "score": 77,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 80,
+      "distintivita": 60,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 42,
+    "errori": [
+      {
+        "pos": 39,
+        "titolo": "Uncle's Obsession with Cute Things",
+        "anno": "2026",
+        "tipo": "vuoto",
+        "nota": "Titolo anime con voto 0 e 0 voti totali, privo di rilevanza"
+      },
+      {
+        "pos": 27,
+        "titolo": "Magical Explorer",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Anime sfuggito all'esclusione di genere con appena 2 voti"
+      },
+      {
+        "pos": 37,
+        "titolo": "La bambola",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Produzione polacca con valutazione insufficiente (5.9)"
+      }
+    ],
+    "motivo": "Pool molto ristretto di soli 42 titoli che ricalca quasi interamente le novità del 2026 sovrapponendosi a 'Serie TV: Novità' (J=0.36), con qualche infiltrazione anime e titoli a voto nullo.",
+    "evidenza": [
+      "Scandalo e passione (2026)",
+      "Coven Academy - L'accademia delle streghe (2026)",
+      "La valle dell'Eden (2026)",
+      "Neagley (2026)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_80s_movies",
+    "nome": "Cult Anni '80",
+    "verdetto": "P",
+    "score": 90,
+    "dimensioni": {
+      "pertinenza": 70,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 7,
+        "titolo": "Michael Jackson's Thriller",
+        "anno": "1983",
+        "tipo": "fuori-promessa",
+        "nota": "Videoclip musicale di 14 minuti invece di un film cinematografico"
+      },
+      {
+        "pos": 2,
+        "titolo": "La tomba delle lucciole",
+        "anno": "1988",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime sfuggito al filtro 'Anime: no'"
+      },
+      {
+        "pos": 12,
+        "titolo": "Ilha das Flores",
+        "anno": "1989",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio documentario di 13 minuti anziché lungometraggio"
+      },
+      {
+        "pos": 48,
+        "titolo": "Vincent",
+        "anno": "1982",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio d'animazione di 6 minuti"
+      }
+    ],
+    "motivo": "Straordinaria rassegna dei film simbolo degli anni '80 con qualità eccellente e ordinamento perfetto, scalfita solo dall'infiltrazione di cortometraggi/videoclip e titoli anime.",
+    "evidenza": [
+      "L'Impero colpisce ancora (1980)",
+      "Ritorno al futuro (1985)",
+      "Shining (1980)",
+      "Blade Runner (1982)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_90s_movies",
+    "nome": "Classici Anni '90",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 13,
+        "titolo": "Princess Mononoke",
+        "anno": "1997",
+        "tipo": "fuori-promessa",
+        "nota": "Film anime sfuggito al filtro 'Anime: no'"
+      },
+      {
+        "pos": 30,
+        "titolo": "Ghosts",
+        "anno": "1997",
+        "tipo": "fuori-promessa",
+        "nota": "Mediometraggio musicale di Michael Jackson di 38 minuti"
+      },
+      {
+        "pos": 33,
+        "titolo": "“I Corti” di Aldo Giovanni e Giacomo",
+        "anno": "1996",
+        "tipo": "fuori-promessa",
+        "nota": "Registrazione di sketch teatrali comici, non un'opera cinematografica unitaria"
+      },
+      {
+        "pos": 18,
+        "titolo": "Giuseppe",
+        "anno": "1995",
+        "tipo": "fuori-promessa",
+        "nota": "Film TV biblico fuori contesto rispetto ai grandi classici del cinema"
+      }
+    ],
+    "motivo": "Catalogo pressoché perfetto che raccoglie il meglio assoluto del cinema anni '90 con ordinamento per voto medio ineccepibile e pochissimi elementi anomali.",
+    "evidenza": [
+      "Le ali della libertà (1994)",
+      "Schindler's List (1993)",
+      "Pulp Fiction (1994)",
+      "Fight Club (1999)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_00s_movies",
+    "nome": "💿 I favolosi Anni 2000",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "Wizards of Waverly Place: Wizard School",
+        "anno": "2008",
+        "tipo": "trash",
+        "nota": "Film TV per ragazzi con appena 259 voti in cima alla classifica del decennio"
+      },
+      {
+        "pos": 4,
+        "titolo": "La città incantata",
+        "anno": "2001",
+        "tipo": "fuori-promessa",
+        "nota": "Anime sfuggito al filtro 'Anime: no'"
+      },
+      {
+        "pos": 43,
+        "titolo": "Medici per la vita",
+        "anno": "2004",
+        "tipo": "fuori-promessa",
+        "nota": "Film TV a bassa diffusione (327 voti)"
+      },
+      {
+        "pos": 49,
+        "titolo": "Codename: Kids Next Door: Operation Z.E.R.O.",
+        "anno": "2006",
+        "tipo": "fuori-promessa",
+        "nota": "Speciale televisivo a cartoni animati per ragazzi"
+      }
+    ],
+    "motivo": "Compendio magistrale dei capolavori cinematografici degli anni 2000; l'unico difetto è la soglia di 200 voti che fa salire in prima posizione uno speciale Disney Channel.",
+    "evidenza": [
+      "Il cavaliere oscuro (2008)",
+      "Il Signore degli Anelli - Il ritorno del re (2003)",
+      "Il gladiatore (2000)",
+      "The Departed - Il bene e il male (2006)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_oscar_winners",
+    "nome": "📰 Acclamati dalla Critica",
+    "verdetto": "P",
+    "score": 90,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 4,
+        "titolo": "Obsession",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Horror commerciale trainato da recensioni del pubblico, distante dal concetto di acclamato dalla critica"
+      },
+      {
+        "pos": 5,
+        "titolo": "Colony",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Horror d'azione sudcoreano presente solo per via della soglia di voto utente"
+      },
+      {
+        "pos": 48,
+        "titolo": "The Punisher: One Last Kill",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Action movie da franchise commerciale, estraneo al prestigio critico"
+      }
+    ],
+    "motivo": "Catalogo di altissimo gradimento che rispetta rigorosamente i filtri impostati (voto >=7.8, voti >=1000), ma dove la mancanza di filtri su festival e premi include vari blockbuster di puro intrattenimento.",
+    "evidenza": [
+      "Oppenheimer (2023)",
+      "Le ali della libertà (1994)",
+      "Il padrino (1972)",
+      "Matrix (1999)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_cult_classics",
+    "nome": "🙌 Film Cult (Venerati dai fan)",
+    "verdetto": "B",
+    "score": 64,
+    "dimensioni": {
+      "pertinenza": 40,
+      "qualita": 40,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 50,
+        "titolo": "Hell House LLC II: The Abaddon Hotel",
+        "anno": "2018",
+        "tipo": "trash",
+        "nota": "Sequel horror di serie B a bassissima valutazione (5.80)"
+      },
+      {
+        "pos": 49,
+        "titolo": "A Classic Horror Story",
+        "anno": "2021",
+        "tipo": "trash",
+        "nota": "Horror mediocre (5.85) spacciato per cult venerato"
+      },
+      {
+        "pos": 48,
+        "titolo": "Baskin: La porta dell'inferno",
+        "anno": "2015",
+        "tipo": "trash",
+        "nota": "Horror turco di scarso gradimento (5.89)"
+      },
+      {
+        "pos": 46,
+        "titolo": "Paranormal Activity 3",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Sequel commerciale da franchise (5.90) privo di statuto di cult"
+      },
+      {
+        "pos": 40,
+        "titolo": "Paranormal Activity - Parente prossimo",
+        "anno": "2021",
+        "tipo": "trash",
+        "nota": "Capitolo minore di saga horror con voto mediocre (6.10)"
+      },
+      {
+        "pos": 34,
+        "titolo": "L'uomo ragno",
+        "anno": "1977",
+        "tipo": "trash",
+        "nota": "Pilot televisivo a basso budget presente per via della singola keyword TMDB"
+      },
+      {
+        "pos": 43,
+        "titolo": "Stuff - Il gelato che uccide",
+        "anno": "1985",
+        "tipo": "trash",
+        "nota": "B-movie da 6.00 che mostra il livello qualitativo decadente del fondo classifica"
+      }
+    ],
+    "motivo": "L'uso esclusivo della keyword 6158 restringe il pool a soli 64 titoli e lo popola prevalentemente di B-horror scadenti (mediana 6.3, 31% sotto 6.0), lasciando fuori i veri capisaldi cult del cinema.",
+    "evidenza": [
+      "Love Exposure (2008)",
+      "Eyes Wide Shut (1999)",
+      "L'uomo di vimini (1973)",
+      "Martyrs (2008)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_blockbusters",
+    "nome": "Blockbusters (Campioni d'Incasso)",
+    "verdetto": "P",
+    "score": 81,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 80,
+      "distintivita": 40,
+      "coerenza": 80,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "Spider-Man: Brand New Day",
+        "anno": "2026",
+        "tipo": "ordine-rotto",
+        "nota": "Titolo del 2026 inserito tra i massimi incassi di sempre presumibilmente per dati di box-office fittizi su TMDB"
+      },
+      {
+        "pos": 11,
+        "titolo": "Odissea",
+        "anno": "2026",
+        "tipo": "ordine-rotto",
+        "nota": "Film del 2026 con valore di incasso anomalo prima dell'effettivo ciclo distributivo"
+      },
+      {
+        "pos": 42,
+        "titolo": "Transformers 4 - L'era dell'estinzione",
+        "anno": "2014",
+        "tipo": "trash",
+        "nota": "Blockbuster a bassa valutazione critica (5.97)"
+      }
+    ],
+    "motivo": "L'ordinamento rispecchia con notevole plausibilità la reale classifica dei campioni d'incasso mondiali (stimata senza dato esplicito nel dump), ma soffre di un marcato clone overlap con 'Le Grandi Saghe (Franchises)' (J=0.60).",
+    "evidenza": [
+      "Avengers: Endgame (2019)",
+      "Avatar (2009)",
+      "Titanic (1997)",
+      "Star Wars: Il risveglio della Forza (2015)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_top_current_year",
+    "nome": "Il meglio dell'anno",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 6,
+        "titolo": "Grand Theft Auto VI: Una lunga anteprima",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Contenuto promozionale di un videogioco classificato come film su TMDB"
+      },
+      {
+        "pos": 5,
+        "titolo": "The Amazing Digital Circus: L'Ultimo Atto",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Corto web animato per YouTube anziché lungometraggio distribuito"
+      },
+      {
+        "pos": 29,
+        "titolo": "Cosmic Princess Kaguya!",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Anime sfuggito al filtro 'Anime: no'"
+      }
+    ],
+    "motivo": "Ottima fotografia dei film più apprezzati del 2026 ordinati fedelmente per voto; la bassa soglia di 100 voti lascia filtrare un paio di video promozionali e corti web.",
+    "evidenza": [
+      "Avatar Aang: L’ultimo dominatore dell’aria (2026)",
+      "L'ultima missione: Project Hail Mary (2026)",
+      "Michael (2026)",
+      "Toy Story 5 (2026)"
+    ],
+    "fiducia": "alta"
+  }
+]

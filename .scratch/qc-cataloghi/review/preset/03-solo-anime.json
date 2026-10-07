@@ -1,0 +1,586 @@
+[
+  {
+    "id": "preset_pop_anime",
+    "nome": "🌟 Anime Popolari",
+    "verdetto": "P",
+    "score": 91,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 100,
+      "distintivita": 40,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo eccellente che offre i maggiori successi dell'animazione giapponese con perfetto ordinamento decrescente. Soffre unicamente di elevata sovrapposizione (J@40 0.569) con il catalogo Azione & Combattimento.",
+    "evidenza": [
+      "Doraemon (2005)",
+      "Bleach (2004)",
+      "Naruto (2002)",
+      "Jujutsu Kaisen (2020)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_ghibli",
+    "nome": "🍃 Studio Ghibli",
+    "verdetto": "P",
+    "score": 85,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 95,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 24,
+    "errori": [
+      {
+        "pos": 18,
+        "titolo": "Ghost in the Shell: L'attacco dei cyborg",
+        "anno": "2004",
+        "tipo": "fuori-promessa",
+        "nota": "Co-produzione Production I.G / Ghibli, non percepito come classico film Ghibli"
+      }
+    ],
+    "motivo": "Rassegna completa e autorevole dei film dello Studio Ghibli ordinata per voto medio impeccabile. Il pool limitato a 24 item riflette la produzione storica dello studio, con la sola anomalia della co-produzione di Ghost in the Shell 2.",
+    "evidenza": [
+      "La città incantata (2001)",
+      "La tomba delle lucciole (1988)",
+      "Il castello errante di Howl (2004)",
+      "Princess Mononoke (1997)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_shonen",
+    "nome": "🔥 Anime: Battle Shōnen",
+    "verdetto": "N",
+    "score": 57,
+    "dimensioni": {
+      "pertinenza": 25,
+      "qualita": 70,
+      "distintivita": 90,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 15,
+    "errori": [
+      {
+        "pos": 6,
+        "titolo": "Maken-Ki! Battling Venus",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Ecchi harem scolastico, estraneo al target del battle shōnen classico"
+      },
+      {
+        "pos": 7,
+        "titolo": "Super Dragon Ball Heroes",
+        "anno": "2018",
+        "tipo": "trash",
+        "nota": "Anime promozionale per cabinati arcade composto da corti a basso budget"
+      },
+      {
+        "pos": 9,
+        "titolo": "SSSS.DYNAZENON",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Serie mecha / tokusatsu originale, non battle shōnen"
+      },
+      {
+        "pos": 12,
+        "titolo": "SCARLET NEXUS",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Adattamento promozionale di un videogioco d'azione JRPG"
+      },
+      {
+        "pos": 14,
+        "titolo": "Houseki no Kuni - Land of the Lustrous",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Manga seinen serializzato su Monthly Afternoon, target demografico errato"
+      },
+      {
+        "pos": 15,
+        "titolo": "Persona 4 The Animation",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Adattamento di videogioco JRPG investigation fantasy"
+      }
+    ],
+    "motivo": "Catalogo gravemente mutilato da un filtro keyword (14643) troppo restrittivo: conta solo 15 titoli (meno di una pagina Stremio), manca di tutti i giganti del genere e include seinen e videogiochi. Da rifare completamente.",
+    "evidenza": [
+      "Yu-Gi-Oh-Duel Monsters (2000)",
+      "Black Clover (2017)",
+      "Dragon Ball Super (2015)",
+      "Maken-Ki! Battling Venus (2011)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_seinen",
+    "nome": "🍷 Anime: Seinen (Maturi)",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 95,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 30,
+        "titolo": "Higehiro: After Being Rejected, I Shaved and Took in a High School Runaway",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Adattamento manga serializzato su Monthly Shōnen Ace, target demografico shōnen"
+      }
+    ],
+    "motivo": "Straordinaria selezione di anime seinen maturi e complessi con ordinamento per voto medio calibrato alla perfezione. Il catalogo rispetta pienamente la promessa mantenendo buona distintività dai titoli dark.",
+    "evidenza": [
+      "Berserk (1997)",
+      "Vinland Saga (2019)",
+      "Monster (2004)",
+      "Kaguya-sama: Love is War (2019)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_shoujo",
+    "nome": "🌸 Anime: Shōjo (Romantico)",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 90,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "The Ramparts of Ice",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Webtoon serializzato su Shōnen Jump+, demografica shōnen e non shōjo"
+      },
+      {
+        "pos": 42,
+        "titolo": "The Helpful Fox Senko-san",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Manga seinen (Comic Newtype) slice of life per pubblico maschile"
+      }
+    ],
+    "motivo": "Rappresentanza solida e ricca di classici e novità del panorama shōjo e romantico, ordinata coerentemente per popolarità. Il pool è tuttavia modesto (55 titoli) e registra un paio di intrusioni da riviste seinen/shōnen.",
+    "evidenza": [
+      "Sailor Moon (1992)",
+      "Fruits Basket (2019)",
+      "Arrivare a te (2009)",
+      "Nana (2006)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_slice_of_life",
+    "nome": "☕ Anime: Slice of Life",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza": 85,
+      "qualita": 95,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 47,
+        "titolo": "Beelzebub",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Battle shōnen d'azione soprannaturale con risse, fuori dal target slice of life puro"
+      },
+      {
+        "pos": 50,
+        "titolo": "L'estate in cui Hikaru è morto",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Horror psicologico e mystery inquietante, dissonante con la promessa del catalogo"
+      }
+    ],
+    "motivo": "Catalogo ricco e rilassante che raggruppa le migliori opere slice of life e commedia, con ordinamento per voto medio solido. Sporadiche opere d'azione o horror soprannaturale compaiono nelle posizioni di coda.",
+    "evidenza": [
+      "Horimiya (2021)",
+      "BOCCHI THE ROCK! (2022)",
+      "Nichijou My Ordinary Life (2011)",
+      "Laid-Back Camp (2018)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_mecha",
+    "nome": "🤖 Anime: Mecha & Robot",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 90,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 36,
+        "titolo": "VERTEX FORCE",
+        "anno": "2026",
+        "tipo": "vuoto",
+        "nota": "Titolo annunciato non ancora distribuito, con voto 0 e 0 recensioni"
+      }
+    ],
+    "motivo": "Rassegna storica eccezionale di robottoni giganti e serie mecha dagli anni '70 a oggi, perfettamente pertinente e coerente. Il pool di 52 titoli è compatto ma copre tutti i franchise chiave.",
+    "evidenza": [
+      "Neon Genesis Evangelion (1995)",
+      "Sfondamento dei cieli Gurren Lagann (2007)",
+      "Mobile Suit Gundam (1979)",
+      "Atlas UFO Robot (1975)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_isekai",
+    "nome": "🌀 Anime: Isekai & Fantasy",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 85,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 41,
+        "titolo": "World Trigger",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Battle shōnen fantascientifico con varchi dimensionali, estraneo alla convenzione isekai"
+      }
+    ],
+    "motivo": "Catalogo focalizzato e divertente che raccoglie l'intero spettro dell'isekai moderno e retro senza diluizioni. Ordinamento per popolarità e consistenza tematica esemplari.",
+    "evidenza": [
+      "Mushoku Tensei: Jobless Reincarnation (2021)",
+      "Re:ZERO -Starting Life in Another World- (2016)",
+      "That Time I Got Reincarnated as a Slime (2018)",
+      "Konosuba! - This Wonderful World (2016)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_dark",
+    "nome": "💀 Anime: Dark & Psicologico",
+    "verdetto": "P",
+    "score": 91,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 95,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 19,
+        "titolo": "Una porta socchiusa ai confini del sole",
+        "anno": "1994",
+        "tipo": "fuori-promessa",
+        "nota": "Fantasy d'avventura per ragazze (Magic Knight Rayearth), stonato in un catalogo dark/psicologico"
+      }
+    ],
+    "motivo": "Curatela impeccabile che raccoglie le vette del brivido psicologico e del dark fantasy giapponese. Ordinamento per voto calibrato e distintività soddisfacente.",
+    "evidenza": [
+      "Death Note (2006)",
+      "Neon Genesis Evangelion (1995)",
+      "Berserk (1997)",
+      "Puella Magi Madoka Magica (2011)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_action",
+    "nome": "💥 Anime: Azione & Combattimento",
+    "verdetto": "B",
+    "score": 79,
+    "dimensioni": {
+      "pertinenza": 70,
+      "qualita": 90,
+      "distintivita": 40,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "Doraemon",
+        "anno": "2005",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia/fantasia per l'infanzia al primo posto assoluto di Azione & Combattimento"
+      },
+      {
+        "pos": 13,
+        "titolo": "Doraemon",
+        "anno": "1979",
+        "tipo": "fuori-promessa",
+        "nota": "Serie per bambini classificata per errore Azione&Avventura su TMDB"
+      },
+      {
+        "pos": 22,
+        "titolo": "BLUE LOCK",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Spokon sportivo calcistico, non serie d'azione/combattimento"
+      },
+      {
+        "pos": 25,
+        "titolo": "Initial D",
+        "anno": "1998",
+        "tipo": "fuori-promessa",
+        "nota": "Anime di corse automobilistiche su strada, privo di combattimenti"
+      },
+      {
+        "pos": 48,
+        "titolo": "Pesca la tua carta Sakura",
+        "anno": "1998",
+        "tipo": "fuori-promessa",
+        "nota": "Mahō shōjo per bambine/ragazze con toni fiabeschi e leggeri"
+      }
+    ],
+    "motivo": "Catalogo quasi identico ad Anime Popolari (overlap J@40 0.569) a causa del tag generico Azione&Avventura di TMDB, che porta Doraemon al primo posto. Necessita di un filtro per escludere anime per l'infanzia e differenziarsi.",
+    "evidenza": [
+      "Doraemon (2005)",
+      "Bleach (2004)",
+      "Naruto (2002)",
+      "Dragon Ball Z (1989)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_sports",
+    "nome": "🏐 Anime: Sport & Competizione",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 95,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 31,
+    "errori": [],
+    "motivo": "Catalogo di spokon puro ed entusiasmante, con una selezione di altissimo livello qualitativo e ordinamento per voto medio perfetto. Il pool conta 31 elementi, sufficiente ma ampliabile.",
+    "evidenza": [
+      "Slam Dunk (1993)",
+      "Hajime no Ippo (2000)",
+      "Haikyu!! L'asso del volley (2014)",
+      "BLUE LOCK (2022)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_donghua",
+    "nome": "🇨🇳 Donghua (Animazione Cinese)",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 39,
+        "titolo": "神墓",
+        "anno": "2022",
+        "tipo": "trash",
+        "nota": "Voto scarso (5.5) con metadati grezzi e titolo non localizzato"
+      },
+      {
+        "pos": 43,
+        "titolo": "两不疑",
+        "anno": "2021",
+        "tipo": "trash",
+        "nota": "Voto insufficiente (5.89) con metadati minimi non tradotti"
+      }
+    ],
+    "motivo": "Ottima panoramica sull'animazione cinese (donghua) che mantiene al 100% la promessa di lingua e origine. La qualità complessiva è buona ma penalizzata da metadati spesso privi di traduzione italiana e titoli di scarso rilievo.",
+    "evidenza": [
+      "Scissor Seven (2018)",
+      "Link Click (2021)",
+      "The Daily Life of the Immortal King (2020)",
+      "Renegade Immortal (2023)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_classic",
+    "nome": "Anime Classici ('80/'90)",
+    "verdetto": "P",
+    "score": 97,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 100,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo favoloso che racchiude i più grandi capolavori dell'animazione giapponese vintage degli anni '80 e '90. Filtro temporale e ordinamento per voto medio rispettati in modo magistrale.",
+    "evidenza": [
+      "Cowboy Bebop (1998)",
+      "Neon Genesis Evangelion (1995)",
+      "Dragon Ball Z (1989)",
+      "I Cavalieri dello Zodiaco (1986)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_00s",
+    "nome": "💿 Anime Anni 2000",
+    "verdetto": "P",
+    "score": 98,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 95,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 12,
+        "titolo": "ドッとＫＯＮＩちゃん",
+        "anno": "2000",
+        "tipo": "trash",
+        "nota": "Commedia minore con titolo giapponese originale privo di localizzazione italiana"
+      }
+    ],
+    "motivo": "Rappresentazione memorabile dell'epoca d'oro degli anni 2000 per l'animazione seriale nipponica. Il filtro temporale, il pool abbondante e l'ordinamento per voto medio funzionano a perfezione.",
+    "evidenza": [
+      "Fullmetal Alchemist: Brotherhood (2009)",
+      "Death Note (2006)",
+      "Monster (2004)",
+      "Samurai Champloo (2004)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_movies_top",
+    "nome": "🏆 Capolavori Anime (Film)",
+    "verdetto": "P",
+    "score": 94,
+    "dimensioni": {
+      "pertinenza": 95,
+      "qualita": 85,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 9,
+        "titolo": "L'attacco dei giganti: l'urlo del risveglio",
+        "anno": "2018",
+        "tipo": "duplicato",
+        "nota": "Film di montaggio riassuntivo (recap) della seconda stagione della serie TV"
+      },
+      {
+        "pos": 24,
+        "titolo": "L'attacco dei giganti - Il film - Parte 2: Le ali della libertà",
+        "anno": "2015",
+        "tipo": "duplicato",
+        "nota": "Film di montaggio riassuntivo (recap) della prima stagione"
+      },
+      {
+        "pos": 30,
+        "titolo": "L'attacco dei giganti - Il film - Parte 1: L'arco e la freccia cremisi",
+        "anno": "2014",
+        "tipo": "duplicato",
+        "nota": "Film di montaggio riassuntivo (recap) della prima stagione"
+      },
+      {
+        "pos": 50,
+        "titolo": "Death Note Rewrite - Il Dio Visionario",
+        "anno": "2007",
+        "tipo": "duplicato",
+        "nota": "Special televisivo riassuntivo della prima parte della serie TV"
+      }
+    ],
+    "motivo": "Vetrina straordinaria dei capolavori del cinema d'animazione giapponese, con ordinamento per voto medio solidissimo. L'unico difetto risiede nei film riassuntivi (recap TV di Attack on Titan e Death Note) che andrebbero filtrati.",
+    "evidenza": [
+      "La città incantata (2001)",
+      "Your Name. (2016)",
+      "La tomba delle lucciole (1988)",
+      "Perfect Blue (1998)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_movies_romance",
+    "nome": "🎥 Film Anime Romantici",
+    "verdetto": "P",
+    "score": 90,
+    "dimensioni": {
+      "pertinenza": 90,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 18,
+        "titolo": "Mind Game",
+        "anno": "2004",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'animazione sperimentale di Masaaki Yuasa, privo della componente romantica"
+      },
+      {
+        "pos": 36,
+        "titolo": "Un'estate con Coo",
+        "anno": "2007",
+        "tipo": "fuori-promessa",
+        "nota": "Fiaba ecologica e avventura con un kappa mitologico, priva di romanticismo"
+      }
+    ],
+    "motivo": "Rassegna romantica cinematografica di grande impatto emotivo e ben ordinata per popolarità. Pochissime incongruenze dovute a generi attribuiti impropriamente da TMDB a film sperimentali o per famiglie.",
+    "evidenza": [
+      "Your Name. (2016)",
+      "La Forma della Voce (2016)",
+      "5 cm al secondo (2007)",
+      "Il giardino delle parole (2013)"
+    ],
+    "fiducia": "alta"
+  }
+]

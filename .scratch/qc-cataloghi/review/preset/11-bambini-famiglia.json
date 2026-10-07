@@ -1,0 +1,427 @@
+[
+  {
+    "id": "preset_pixar",
+    "nome": "Disney Pixar",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo impeccabile che copre l'intera filmografia Pixar tra classici e cortometraggi storici, con ordinamento per voto medio decrescente rigorosamente rispettato.",
+    "evidenza": [
+      "Toy Story 5 (2026)",
+      "Coco (2017)",
+      "WALL•E (2008)",
+      "Soul (2020)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_dreamworks",
+    "nome": "DreamWorks Animation",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo pienamente conforme alla filmografia dello studio DreamWorks Animation, con ordinamento per voto medio decrescente coerente e nessuna anomalia fuori tema.",
+    "evidenza": [
+      "Il robot selvaggio (2024)",
+      "Il gatto con gli stivali 2 - L'ultimo desiderio (2022)",
+      "Shrek (2001)",
+      "Dragon Trainer (2010)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_disney_animation",
+    "nome": "Disney Classici & Animazione",
+    "verdetto": "B",
+    "score": 79,
+    "dimensioni": {
+      "pertinenza": 80,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 10,
+        "titolo": "Onward - Oltre la magia",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Film Pixar presente nel catalogo Disney Classici a causa del company ID generico"
+      },
+      {
+        "pos": 17,
+        "titolo": "Cars - Motori ruggenti",
+        "anno": "2006",
+        "tipo": "fuori-promessa",
+        "nota": "Produzione Pixar che duplica il catalogo dedicato"
+      },
+      {
+        "pos": 29,
+        "titolo": "Cars 3",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Sequel Pixar fuori dal canone dell'animazione classica Disney"
+      },
+      {
+        "pos": 45,
+        "titolo": "Cars 2",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Produzione Pixar fuori dal canone classico Disney"
+      },
+      {
+        "pos": 50,
+        "titolo": "Il gobbo di Notre Dame II - Il segreto della campana",
+        "anno": "2002",
+        "tipo": "trash",
+        "nota": "Direct-to-video di bassa qualità con voto medio 5.38"
+      }
+    ],
+    "motivo": "Il pool nel dump è di soli 50 titoli ed esclude gran parte dei veri Classici Disney, mentre il filtro su company ID generico fa filtrare diversi lungometraggi Pixar.",
+    "evidenza": [
+      "Il re leone (1994)",
+      "Mulan (1998)",
+      "La bella e la bestia (1991)",
+      "Onward - Oltre la magia (2020)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_family_movies_live",
+    "nome": "Film per Famiglie (Live)",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 8,
+        "titolo": "Il gatto... e il cappello matto",
+        "anno": "2003",
+        "tipo": "trash",
+        "nota": "Live-action con accoglienza pessima e voto 5.38"
+      },
+      {
+        "pos": 14,
+        "titolo": "Biancaneve",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Voto pessimo (4.2) per il live action recente"
+      },
+      {
+        "pos": 32,
+        "titolo": "Peter Pan & Wendy",
+        "anno": "2023",
+        "tipo": "trash",
+        "nota": "Remake live-action Disney con voto 5.40"
+      }
+    ],
+    "motivo": "Ampio catalogo di film per famiglie rigorosamente live-action, con ordinamento per popolarità impeccabile e assenza di contenuti per adulti.",
+    "evidenza": [
+      "Coyote vs. Acme (2026)",
+      "Sonic 3: Il film (2024)",
+      "Un ponte per Terabithia (2007)",
+      "La fabbrica di cioccolato (2005)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_kids_series",
+    "nome": "Cartoni in TV & Serie Kids",
+    "verdetto": "P",
+    "score": 96,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo eccellente e sicuro per bambini con tutti i franchise di punta televisivi, perfettamente ordinato per popolarità decrescente.",
+    "evidenza": [
+      "Sesamo apriti! (1969)",
+      "Miraculous - Le storie di Ladybug e Chat Noir (2015)",
+      "PAW Patrol - La squadra dei cuccioli (2013)",
+      "Bluey (2018)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_teen_preteen_tv",
+    "nome": "Teen & Pre-Teen TV (Live)",
+    "verdetto": "B",
+    "score": 79,
+    "dimensioni": {
+      "pertinenza": 60,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "Sesamo apriti!",
+        "anno": "1969",
+        "tipo": "fuori-promessa",
+        "nota": "Show prescolare per la prima infanzia in un catalogo dichiarato per adolescenti e pre-teen"
+      },
+      {
+        "pos": 12,
+        "titolo": "Barney & Friends",
+        "anno": "1992",
+        "tipo": "fuori-promessa",
+        "nota": "Serie prescolare palesemente fuori target per adolescenti"
+      },
+      {
+        "pos": 17,
+        "titolo": "The Wiggles",
+        "anno": "1998",
+        "tipo": "fuori-promessa",
+        "nota": "Show per bambini in età prescolare, non adatto a un pubblico teen"
+      },
+      {
+        "pos": 27,
+        "titolo": "Mister Rogers' Neighborhood",
+        "anno": "1968",
+        "tipo": "fuori-promessa",
+        "nota": "Classico prescolare pedagogico fuori dal target teen"
+      },
+      {
+        "pos": 32,
+        "titolo": "Teletubbies",
+        "anno": "1997",
+        "tipo": "trash",
+        "nota": "Serie per neonati e primissima infanzia con voto 4.4, totalmente fuori contesto"
+      },
+      {
+        "pos": 37,
+        "titolo": "Vecinos",
+        "anno": "2005",
+        "tipo": "fuori-promessa",
+        "nota": "Sitcom messicana generale per famiglie estranea al circuito teen"
+      },
+      {
+        "pos": 46,
+        "titolo": "Bear nella grande casa blu",
+        "anno": "1997",
+        "tipo": "fuori-promessa",
+        "nota": "Produzione prescolare per la prima infanzia fuori target"
+      },
+      {
+        "pos": 49,
+        "titolo": "Banane in pigiama",
+        "anno": "1992",
+        "tipo": "fuori-promessa",
+        "nota": "Serie per bambini piccolissimi fuori target teen"
+      }
+    ],
+    "motivo": "Il catalogo è inquinato da celebri show per la primissima infanzia (Teletubbies, Barney, Sesamo apriti!) a causa del filtro generico sul genere Kids senza distinzione di fascia d'età.",
+    "evidenza": [
+      "Henry Danger (2014)",
+      "Piccoli brividi (1995)",
+      "Victorious (2010)",
+      "Teletubbies (1997)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_fairy_tales",
+    "nome": "Fiabe, Castelli & Principesse",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 8,
+        "titolo": "Biancaneve",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Live-action recente con voto molto basso (4.2)"
+      },
+      {
+        "pos": 18,
+        "titolo": "Peter Pan & Wendy",
+        "anno": "2023",
+        "tipo": "trash",
+        "nota": "Remake live-action Disney con valutazione critica insufficiente (5.40)"
+      },
+      {
+        "pos": 44,
+        "titolo": "Cenerentola e gli 007 nani",
+        "anno": "2007",
+        "tipo": "trash",
+        "nota": "Animazione a basso costo con voto 5.1"
+      },
+      {
+        "pos": 50,
+        "titolo": "La sirenetta - The Little Mermaid",
+        "anno": "2018",
+        "tipo": "trash",
+        "nota": "B-movie live-action con voto 5.03"
+      }
+    ],
+    "motivo": "Ottima pertinenza alla promessa fiabesca e di principesse; l'ordinamento tiene bene, con un calo qualitativo circoscritto a produzioni secondarie o remake divisivi.",
+    "evidenza": [
+      "Shrek (2001)",
+      "Rapunzel - L'intreccio della torre (2010)",
+      "La bella e la bestia (1991)",
+      "Frozen - Il regno di ghiaccio (2013)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_animal_protagonists",
+    "nome": "Animali Protagonisti",
+    "verdetto": "B",
+    "score": 68,
+    "dimensioni": {
+      "pertinenza": 40,
+      "qualita": 60,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 3,
+        "titolo": "Super Mario Galaxy - Il film",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Protagonista umano (Mario) in un catalogo di animali protagonisti"
+      },
+      {
+        "pos": 19,
+        "titolo": "Le streghe",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Film con genere Horror e protagonisti umani, difetto critico in un catalogo bambini"
+      },
+      {
+        "pos": 25,
+        "titolo": "Pinocchio",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Protagonista burattino di legno, non un animale"
+      },
+      {
+        "pos": 30,
+        "titolo": "Thumbelina - Pollicina",
+        "anno": "1994",
+        "tipo": "fuori-promessa",
+        "nota": "Protagonista umana/fatina in miniatura, non un animale"
+      },
+      {
+        "pos": 34,
+        "titolo": "Il Signore dello Zoo",
+        "anno": "2011",
+        "tipo": "trash",
+        "nota": "Commedia mediocre con voto 5.45 e guardiano umano come protagonista"
+      },
+      {
+        "pos": 40,
+        "titolo": "Un bambino chiamato Natale",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Protagonista umano (un bambino) non attinente alla promessa"
+      }
+    ],
+    "motivo": "Pertinenza gravemente compromessa dalla presenza del film horror Le streghe e di titoli con protagonisti umani come Super Mario e Pinocchio.",
+    "evidenza": [
+      "Zootropolis 2 (2025)",
+      "PAW Patrol - Missione Dinosauri (2026)",
+      "Le streghe (2020)",
+      "Super Mario Galaxy - Il film (2026)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_kids_series",
+    "nome": "Anime per Bambini (Serie)",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 100,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 33,
+        "titolo": "Yu Gi Oh Sevens",
+        "anno": "2020",
+        "tipo": "trash",
+        "nota": "Voto molto basso (5.0) per questa stagione del franchise"
+      }
+    ],
+    "motivo": "Catalogo kodomo esemplare (Doraemon, Pokémon, Pretty Cure, Hamtaro), totalmente esente da infiltrazioni di anime maturi o per adolescenti.",
+    "evidenza": [
+      "Doraemon (2005)",
+      "Orizzonti Pokémon: La Serie (2023)",
+      "Sailor Moon (1992)",
+      "Hamtaro - Piccoli criceti, grandi avventure (2000)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_kids_movies",
+    "nome": "Anime per Bambini (Film)",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Selezione ideale di film anime per famiglie (franchise sicuri come Doraemon e Pokémon affiancati ai capolavori Ghibli più accessibili ai bambini).",
+    "evidenza": [
+      "Doraemon the Movie: New Nobita and the Castle of the Undersea Devil (2026)",
+      "La città incantata (2001)",
+      "Il mio vicino Totoro (1988)",
+      "Wolf Children - Ame e Yuki i bambini lupo (2012)"
+    ],
+    "fiducia": "alta"
+  }
+]
