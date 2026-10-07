@@ -1,0 +1,41 @@
+{
+  "id": "sim_prof_gen_100::yaca_true_blend_movies",
+  "catalogo": "yaca_true_blend_movies",
+  "tipo": "movie",
+  "livello": 100,
+  "verdetto": "P",
+  "score": 93,
+  "dimensioni": {
+    "pertinenza": 95,
+    "qualita": 95,
+    "distintivita": 95,
+    "coerenza": 90,
+    "completezza": 90
+  },
+  "itemGiudicati": 50,
+  "errori": [
+    {
+      "pos": 4,
+      "titolo": "Shrek",
+      "anno": "2001",
+      "tipo": "fuori-promessa",
+      "nota": "Animazione per famiglie."
+    },
+    {
+      "pos": 6,
+      "titolo": "Il gatto con gli stivali 2 - L'ultimo desiderio",
+      "anno": "2022",
+      "tipo": "fuori-promessa",
+      "nota": "Animazione per famiglie."
+    }
+  ],
+  "motivo": "Identico a livello 0 e 50. La lista conferma stabilità e pertinenza eccellente sul gusto cult/sci-fi, evidenziando che l'incremento di cronologia non produce modifiche senza ricalcolo esplicito del TasteProfile.",
+  "evidenza": [
+    "Il Signore degli Anelli - Il ritorno del re (2003)",
+    "Interstellar (2014)",
+    "L'Impero colpisce ancora (1980)",
+    "2001: Odissea nello spazio (1968)",
+    "Blade Runner (1982)"
+  ],
+  "fiducia": "alta"
+}

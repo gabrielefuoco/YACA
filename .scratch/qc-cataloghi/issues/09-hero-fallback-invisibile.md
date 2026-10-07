@@ -46,3 +46,21 @@ avviene per gli anime col `animeStrand`), e verificare che il reflusso non super
 ## Fuori ambito
 
 Il riscaldamento del profilo (chiedere all'utente di votare qualcosa): è onboarding, non questo ticket.
+
+## Esito (07/10/2026) — decisione dell'utente: **lasciare com'è**
+
+La misura è stata rifatta col codice di oggi (ticket 19, sezione «Cold start vero»): per un profilo **senza DNA e senza
+cronologia** `true_blend_movies` ha il **56,9%** di titoli in comune con `preset_pop_movies` (29 su 40 — era il 100%
+del 06/10; i filtri runtime del ticket 07 e la deduplica hanno abbassato il numero senza cambiarne la sostanza: anno
+mediano **2026**, popolarità mediana **72**, cioè blockbuster commerciali). Verdetto del giudice: **B 68**, «popolari
+travestiti». `seed_network` a zero dati devia su una lista di *top-rated recenti* (B 66, «falsa rete»).
+
+L'utente ha deciso di **non intervenire**: nessuna rinomina e nessun nascondimento. Il catalogo resta utile anche se il
+nome promette personalizzazione che, senza onboarding, non esiste; per un utente appena arrivato è meglio di una
+schermata vuota.
+
+**Cosa resta scritto**: la decisione è consapevole, non una svista. Se in futuro il prodotto vorrà dichiarare il
+fallback, la misura e la proposta (nome dinamico nel manifest) sono qui sopra. Il resto di questo ticket — `seed_network`
+inquinata, cap di diversità, pochi item Trakt — è stato chiuso dalle misure del ticket 19: la `seed_network` resta da
+ripulire dall'animazione per famiglie (44% in un profilo adulto → ticket 21 §3), il reflusso live-action nel profilo
+anime è **risolto** dal fix del marker (0 live-action su 50), e i pochi item Trakt sono il ticket 21 §1.

@@ -1,0 +1,48 @@
+{
+  "id": "sim_prof_gen_100::yaca_seed_network_movies",
+  "catalogo": "yaca_seed_network_movies",
+  "tipo": "movie",
+  "livello": 100,
+  "verdetto": "B",
+  "score": 76,
+  "dimensioni": {
+    "pertinenza": 75,
+    "qualita": 80,
+    "distintivita": 95,
+    "coerenza": 65,
+    "completezza": 100
+  },
+  "itemGiudicati": 50,
+  "errori": [
+    {
+      "pos": 7,
+      "titolo": "Boxtrolls - Le scatole magiche",
+      "anno": "2014",
+      "tipo": "fuori-promessa",
+      "nota": "Inquinamento da animazione per famiglie."
+    },
+    {
+      "pos": 12,
+      "titolo": "Phineas e Ferb: Il film",
+      "anno": "2020",
+      "tipo": "fuori-promessa",
+      "nota": "Cartone per ragazzi."
+    },
+    {
+      "pos": 13,
+      "titolo": "Ritorno al Bosco dei 100 Acri",
+      "anno": "2018",
+      "tipo": "fuori-promessa",
+      "nota": "Film per bambini."
+    }
+  ],
+  "motivo": "Identico al livello 50 (50 su 50 titoli identici). La causa architetturale è il tetto SEED_SIGNAL_LIMITS.watched=15, che campiona solo i 15 titoli più recenti dalla cronologia. Oltre i 15 titoli visti, accumulare dati non apporta alcun cambiamento alla lista servita.",
+  "evidenza": [
+    "L'ultima missione: Project Hail Mary (2026)",
+    "Avengers: Infinity War (2018)",
+    "Dune (2021)",
+    "Harry Potter e il calice di fuoco (2005)",
+    "Terminator (1984)"
+  ],
+  "fiducia": "alta"
+}

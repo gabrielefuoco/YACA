@@ -1,0 +1,55 @@
+{
+  "id": "sim_prof_gen_0::yaca_trakt_filtered_movies",
+  "catalogo": "yaca_trakt_filtered_movies",
+  "tipo": "movie",
+  "livello": 0,
+  "verdetto": "B",
+  "score": 66,
+  "dimensioni": {
+    "pertinenza": 60,
+    "qualita": 65,
+    "distintivita": 85,
+    "coerenza": 65,
+    "completezza": 90
+  },
+  "itemGiudicati": 50,
+  "errori": [
+    {
+      "pos": 1,
+      "titolo": "Motor City",
+      "anno": "2026",
+      "tipo": "trash",
+      "nota": "Titolo futuro a basso rating (6.2) e scarsa riconoscibilità."
+    },
+    {
+      "pos": 4,
+      "titolo": "The Last Photograph",
+      "anno": "2026",
+      "tipo": "trash",
+      "nota": "Rating 5.9, titolo sconosciuto."
+    },
+    {
+      "pos": 7,
+      "titolo": "Legend of the White Dragon",
+      "anno": "2026",
+      "tipo": "trash",
+      "nota": "Rating 5.7, B-movie."
+    },
+    {
+      "pos": 11,
+      "titolo": "Les matins merveilleux",
+      "anno": "2026",
+      "tipo": "trash",
+      "nota": "Rating 5.8."
+    }
+  ],
+  "motivo": "In assenza di credenziali Trakt, il catalogo degrada silenziosamente al fallback interno 'undiscovered'. Il catalogo è saturo di film del 2026 non ancora distribuiti o di scarsa levatura (rating mediano 6.9, popolarità 36.3). Promette suggerimenti dalla community ma serve un flusso di titoli futuri di bassa qualità.",
+  "evidenza": [
+    "Motor City (2026)",
+    "The Brink of War (2026)",
+    "Idiots (2026)",
+    "The Last Photograph (2026)",
+    "Super Troopers 3 (2026)"
+  ],
+  "fiducia": "alta"
+}

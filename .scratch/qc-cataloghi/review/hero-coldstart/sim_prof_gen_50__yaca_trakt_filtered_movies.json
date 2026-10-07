@@ -1,0 +1,40 @@
+{
+  "id": "sim_prof_gen_50::yaca_trakt_filtered_movies",
+  "catalogo": "yaca_trakt_filtered_movies",
+  "tipo": "movie",
+  "livello": 50,
+  "verdetto": "B",
+  "score": 66,
+  "dimensioni": {
+    "pertinenza": 60,
+    "qualita": 65,
+    "distintivita": 85,
+    "coerenza": 65,
+    "completezza": 90
+  },
+  "itemGiudicati": 50,
+  "errori": [
+    {
+      "pos": 1,
+      "titolo": "Motor City",
+      "anno": "2026",
+      "tipo": "trash",
+      "nota": "Titolo futuro a basso rating (6.2)."
+    },
+    {
+      "pos": 7,
+      "titolo": "Legend of the White Dragon",
+      "anno": "2026",
+      "tipo": "trash",
+      "nota": "Rating 5.7."
+    }
+  ],
+  "motivo": "La presenza di 50 titoli in cronologia non ha alcun effetto su trakt_filtered nel percorso degradato senza token. La lista resta identica (49 su 50 titoli comuni con livello 0, 1 di scarto per assegnazione disgiunta), confermando il degrado fisso.",
+  "evidenza": [
+    "Motor City (2026)",
+    "The Brink of War (2026)",
+    "Idiots (2026)",
+    "Super Troopers 3 (2026)"
+  ],
+  "fiducia": "alta"
+}

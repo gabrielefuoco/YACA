@@ -1,0 +1,55 @@
+{
+  "id": "sim_prof_gen_0::yaca_seed_network_movies",
+  "catalogo": "yaca_seed_network_movies",
+  "tipo": "movie",
+  "livello": 0,
+  "verdetto": "B",
+  "score": 68,
+  "dimensioni": {
+    "pertinenza": 55,
+    "qualita": 75,
+    "distintivita": 90,
+    "coerenza": 60,
+    "completezza": 60
+  },
+  "itemGiudicati": 33,
+  "errori": [
+    {
+      "pos": 1,
+      "titolo": "Raya e l'ultimo drago",
+      "anno": "2021",
+      "tipo": "fuori-promessa",
+      "nota": "Fallback casuale animazione senza alcun seed reale presente nel profilo."
+    },
+    {
+      "pos": 3,
+      "titolo": "SpongeBob - Amici in fuga",
+      "anno": "2020",
+      "tipo": "trash",
+      "nota": "Cartone slapstick per bambini spacciato per Rete dei Preferiti."
+    },
+    {
+      "pos": 8,
+      "titolo": "Wonder Park",
+      "anno": "2019",
+      "tipo": "fuori-promessa",
+      "nota": "Animazione per famiglie incoerente con il profilo."
+    },
+    {
+      "pos": 10,
+      "titolo": "Ron - Un amico fuori programma",
+      "anno": "2021",
+      "tipo": "fuori-promessa",
+      "nota": "Animazione per famiglie presente nel fallback."
+    }
+  ],
+  "motivo": "A zero dati cronologici e libreria, la Rete dei Preferiti non possiede semi. Il builder cade su un fallback non dichiarato, servendo solo 33 titoli (incompleto) infarciti di cartoni per famiglie (SpongeBob, Wonder Park, Ron, Raya). È un degrado travestito che promette una rete di preferiti inesistente.",
+  "evidenza": [
+    "Raya e l'ultimo drago (2021)",
+    "Resident Evil (2026)",
+    "SpongeBob - Amici in fuga (2020)",
+    "Maze Runner - La fuga (2015)",
+    "Fire and Ice - Fuoco e ghiaccio (1983)"
+  ],
+  "fiducia": "alta"
+}

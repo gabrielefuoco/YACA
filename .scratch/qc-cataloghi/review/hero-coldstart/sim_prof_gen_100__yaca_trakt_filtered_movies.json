@@ -1,0 +1,40 @@
+{
+  "id": "sim_prof_gen_100::yaca_trakt_filtered_movies",
+  "catalogo": "yaca_trakt_filtered_movies",
+  "tipo": "movie",
+  "livello": 100,
+  "verdetto": "B",
+  "score": 66,
+  "dimensioni": {
+    "pertinenza": 60,
+    "qualita": 65,
+    "distintivita": 85,
+    "coerenza": 65,
+    "completezza": 90
+  },
+  "itemGiudicati": 50,
+  "errori": [
+    {
+      "pos": 1,
+      "titolo": "Motor City",
+      "anno": "2026",
+      "tipo": "trash",
+      "nota": "Titolo futuro a basso rating (6.2)."
+    },
+    {
+      "pos": 7,
+      "titolo": "Legend of the White Dragon",
+      "anno": "2026",
+      "tipo": "trash",
+      "nota": "Rating 5.7."
+    }
+  ],
+  "motivo": "Identico al livello 50. Il catalogo continua a servire il fallback uscite 2026 senza alcuna evoluzione legata ai dati dell'utente.",
+  "evidenza": [
+    "Motor City (2026)",
+    "The Brink of War (2026)",
+    "Idiots (2026)",
+    "Super Troopers 3 (2026)"
+  ],
+  "fiducia": "alta"
+}

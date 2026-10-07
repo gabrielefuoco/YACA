@@ -1,0 +1,41 @@
+{
+  "id": "sim_prof_gen_0::yaca_true_blend_movies",
+  "catalogo": "yaca_true_blend_movies",
+  "tipo": "movie",
+  "livello": 0,
+  "verdetto": "P",
+  "score": 93,
+  "dimensioni": {
+    "pertinenza": 95,
+    "qualita": 95,
+    "distintivita": 95,
+    "coerenza": 90,
+    "completezza": 90
+  },
+  "itemGiudicati": 50,
+  "errori": [
+    {
+      "pos": 4,
+      "titolo": "Shrek",
+      "anno": "2001",
+      "tipo": "fuori-promessa",
+      "nota": "Animazione per famiglie inserita in una selezione prevalente di cult/sci-fi adulto."
+    },
+    {
+      "pos": 6,
+      "titolo": "Il gatto con gli stivali 2 - L'ultimo desiderio",
+      "anno": "2022",
+      "tipo": "fuori-promessa",
+      "nota": "Film d'animazione DreamWorks per famiglie presente tra i primi 10."
+    }
+  ],
+  "motivo": "Con DNA clonato (1406 chiavi VSM), true_blend è già personalizzato e di alta qualità (voto mediano 7.8, anno 2003) anche a 0 titoli visti in cronologia. Jaccard vs fallback popolare è bassissimo (1.3%, 1/40): non è affatto un fallback popolare travestito, bensì una raccomandazione derivata dai vettori statici di onboarding.",
+  "evidenza": [
+    "Il Signore degli Anelli - Il ritorno del re (2003)",
+    "Interstellar (2014)",
+    "L'Impero colpisce ancora (1980)",
+    "2001: Odissea nello spazio (1968)",
+    "Blade Runner (1982)"
+  ],
+  "fiducia": "alta"
+}

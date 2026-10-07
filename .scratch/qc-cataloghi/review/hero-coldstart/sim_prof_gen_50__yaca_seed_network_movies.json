@@ -1,0 +1,62 @@
+{
+  "id": "sim_prof_gen_50::yaca_seed_network_movies",
+  "catalogo": "yaca_seed_network_movies",
+  "tipo": "movie",
+  "livello": 50,
+  "verdetto": "B",
+  "score": 76,
+  "dimensioni": {
+    "pertinenza": 75,
+    "qualita": 80,
+    "distintivita": 95,
+    "coerenza": 65,
+    "completezza": 100
+  },
+  "itemGiudicati": 50,
+  "errori": [
+    {
+      "pos": 7,
+      "titolo": "Boxtrolls - Le scatole magiche",
+      "anno": "2014",
+      "tipo": "fuori-promessa",
+      "nota": "Inquinamento da animazione per famiglie (difetto 1 noto)."
+    },
+    {
+      "pos": 8,
+      "titolo": "La piccola principessa",
+      "anno": "1995",
+      "tipo": "fuori-promessa",
+      "nota": "Dramma per famiglie/ragazzi distante dal gusto blockbuster/cult."
+    },
+    {
+      "pos": 12,
+      "titolo": "Phineas e Ferb: Il film",
+      "anno": "2020",
+      "tipo": "fuori-promessa",
+      "nota": "Cartone per ragazzi Disney Channel."
+    },
+    {
+      "pos": 13,
+      "titolo": "Ritorno al Bosco dei 100 Acri",
+      "anno": "2018",
+      "tipo": "fuori-promessa",
+      "nota": "Film Disney per bambini."
+    },
+    {
+      "pos": 32,
+      "titolo": "Super Mario Galaxy - Il film",
+      "anno": "2026",
+      "tipo": "fuori-promessa",
+      "nota": "Contenuto kids/videogiochi d'animazione."
+    }
+  ],
+  "motivo": "A 50 titoli visti la personalizzazione diventa pienamente reale: i primi titoli (Project Hail Mary, Avengers Infinity War, Dune, Harry Potter, Terminator) nascono direttamente dai semi visti. Tuttavia il catalogo è pesantemente inquinato da animazione e family movie (22 su 50, 44%), confermando in pieno il difetto 1 noto.",
+  "evidenza": [
+    "L'ultima missione: Project Hail Mary (2026)",
+    "Avengers: Infinity War (2018)",
+    "Dune (2021)",
+    "Harry Potter e il calice di fuoco (2005)",
+    "Terminator (1984)"
+  ],
+  "fiducia": "alta"
+}
