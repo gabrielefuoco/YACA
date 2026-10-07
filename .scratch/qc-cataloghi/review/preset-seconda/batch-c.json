@@ -1,0 +1,393 @@
+[
+  {
+    "id": "preset_cyberpunk",
+    "nome": "🤖 Cyberpunk & Futuro Distopico",
+    "verdetto": "P",
+    "score": 85,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 90,
+      "pertinenza": 94,
+      "qualita": 60,
+      "distintivita": 85,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 21,
+        "titolo": "Blade Runner 2049 - 2036: Nexus Dawn",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio promozionale di 6 minuti presente in catalogo di lungometraggi"
+      },
+      {
+        "pos": 23,
+        "titolo": "Blade Runner 2049 - 2048: Nowhere to Run",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio promozionale di 6 minuti presente in catalogo di lungometraggi"
+      }
+    ],
+    "motivo": "Il catalogo rispetta rigorosamente i filtri formali e propone una selezione eccellente del filone cyberpunk e distopico. La qualità mediana (6.76) risente della presenza di diversi B-movie di culto che abbassano il punteggio medio pur senza sfociare nel trash. L'unica sbavatura riguarda l'inclusione di due corti promozionali collegati a Blade Runner 2049.",
+    "evidenza": [
+      "Matrix (1999)",
+      "Blade Runner (1982)",
+      "Blade Runner 2049 (2017)",
+      "RoboCop (1987)",
+      "Strange Days (1995)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_time_travel_movies",
+    "nome": "⏱️ Viaggi nel Tempo (Film)",
+    "verdetto": "P",
+    "score": 89,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 90,
+      "pertinenza": 94,
+      "qualita": 80,
+      "distintivita": 90,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 6,
+        "titolo": "La jetée",
+        "anno": "1962",
+        "tipo": "fuori-promessa",
+        "nota": "Fotoromanzo / mediometraggio sperimentale di 28 minuti, atipico per un catalogo di lungometraggi"
+      },
+      {
+        "pos": 17,
+        "titolo": "Kung Fury",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Cortometraggio parodistico di 31 minuti"
+      },
+      {
+        "pos": 33,
+        "titolo": "Galaxy Quest",
+        "anno": "1999",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia spaziale in cui il viaggio nel tempo è solo un breve riavvolgimento di 13 secondi nel finale"
+      }
+    ],
+    "motivo": "La lista soddisfa pienamente sia i filtri dichiarati che le aspettative tematiche, raccogliendo i capisaldi del cinema sui viaggi nel tempo. La qualità complessiva è alta (mediana 7.28, nessun voto sotto 6.78) e l'ordinamento decrescente per voto medio è perfetto. Le uniche lievi imperfezioni sono costituite da due corti e dall'inclusione marginale di Galaxy Quest.",
+    "evidenza": [
+      "Ritorno al futuro (1985)",
+      "Terminator 2 - Il giorno del giudizio (1991)",
+      "L'esercito delle 12 scimmie (1995)",
+      "Predestination (2014)",
+      "Timecrimes (2007)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_tv_superheroes_dark",
+    "nome": "🦸‍♂️ Supereroi (Toni Oscuri)",
+    "verdetto": "B",
+    "score": 69,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 60,
+      "pertinenza": 76,
+      "qualita": 60,
+      "distintivita": 60,
+      "coerenza": 100,
+      "completezza": 40
+    },
+    "itemGiudicati": 24,
+    "errori": [
+      {
+        "pos": 10,
+        "titolo": "Zorro",
+        "anno": "1957",
+        "tipo": "fuori-promessa",
+        "nota": "Serie Disney per famiglie e ragazzi, priva di toni oscuri o connotati supereroistici moderni"
+      },
+      {
+        "pos": 12,
+        "titolo": "Justice League",
+        "anno": "2001",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione classica DC rivolta al grande pubblico e ragazzi, non a toni oscuri"
+      },
+      {
+        "pos": 17,
+        "titolo": "Mortal Kombat: Conquest",
+        "anno": "1998",
+        "tipo": "fuori-promessa",
+        "nota": "Adattamento fantasy di videogioco picchiaduro, estraneo al genere supereroi"
+      },
+      {
+        "pos": 19,
+        "titolo": "The Cape",
+        "anno": "2011",
+        "tipo": "trash",
+        "nota": "Voto 5.1, serie di scarsa qualità stroncata dalla critica"
+      },
+      {
+        "pos": 20,
+        "titolo": "Bad and Crazy",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "K-drama poliziesco incentrato su un alter-ego, estraneo al genere supereroi"
+      },
+      {
+        "pos": 22,
+        "titolo": "Zorro",
+        "anno": "1990",
+        "tipo": "fuori-promessa",
+        "nota": "Serie d'avventura per famiglie, fuori target per toni oscuri"
+      },
+      {
+        "pos": 23,
+        "titolo": "The Super Powers Team: Galactic Guardians",
+        "anno": "1985",
+        "tipo": "fuori-promessa",
+        "nota": "Cartone animato mattutino anni '80 (Super Friends), l'antitesi dei toni oscuri"
+      },
+      {
+        "pos": 24,
+        "titolo": "The Phantom",
+        "anno": "2009",
+        "tipo": "trash",
+        "nota": "Voto 4.932 con soli 44 voti, miniserie ampiamente insufficiente"
+      }
+    ],
+    "motivo": "I filtri TMDB sono formalmente rispettati (pertinenza_filtri 100), ma la promessa del nome è tradita da oltre il 30% dei titoli (pertinenza_nome 60), con serie per famiglie e cartoni mattutini privi di toni oscuri. Con appena 24 titoli a pool la selezione appare impoverita e costretta a includere show fallimentari come The Cape e The Phantom. Il catalogo necessita di una revisione stringente di keyword e di un ampliamento del pool.",
+    "evidenza": [
+      "The Boys (2019)",
+      "Daredevil (2015)",
+      "Watchmen (2019)",
+      "Zorro (1957)",
+      "The Super Powers Team: Galactic Guardians (1985)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_extreme_survival",
+    "nome": "🏕️ Sopravvivenza Estrema",
+    "verdetto": "P",
+    "score": 86,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 80,
+      "pertinenza": 88,
+      "qualita": 80,
+      "distintivita": 70,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 12,
+        "titolo": "L'uomo che venne dalla Terra",
+        "anno": "2007",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma filosofico da camera dove professori dialogano attorno a un camino, privo di azione o survival"
+      },
+      {
+        "pos": 18,
+        "titolo": "La ragazza della palude",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma romantico e giudiziario, con il tema della sopravvivenza solo come sfondo marginale"
+      },
+      {
+        "pos": 38,
+        "titolo": "La marcia dei pinguini",
+        "anno": "2005",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario naturalistico sugli animali, totalmente fuori tono nella categoria Adrenalina & Avventura"
+      },
+      {
+        "pos": 46,
+        "titolo": "Triangle of Sadness",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Satira sociale e commedia nera sul mondo della moda e del lusso, non un survival estremo"
+      }
+    ],
+    "motivo": "I criteri di ricerca soddisfano la query basata sulla keyword survival, ma l'eccessiva ampiezza semantica lascia filtrare pellicole prive di attinenza con la sopravvivenza estrema come The Man from Earth e La marcia dei pinguini. La qualità complessiva resta comunque solida (mediana 7.4) grazie a titoli eccellenti del genere come Cast Away e The Martian. Si riscontra una consistente sovrapposizione con i cataloghi bellici e horror post-apocalittici.",
+    "evidenza": [
+      "Cast Away (2000)",
+      "Sopravvissuto - The Martian (2015)",
+      "Revenant - Redivivo (2015)",
+      "L'uomo che venne dalla Terra (2007)",
+      "La marcia dei pinguini (2005)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_epic_historical",
+    "nome": "⚔️ Kolossal & Epopee Storiche",
+    "verdetto": "B",
+    "score": 74,
+    "dimensioni": {
+      "pertinenza_filtri": 80,
+      "pertinenza_nome": 60,
+      "pertinenza": 68,
+      "qualita": 70,
+      "distintivita": 60,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "火天の城",
+        "anno": "2009",
+        "tipo": "fuori-promessa",
+        "nota": "Soglia minima di soli 10 voti porta in seconda posizione un film con appena 14 valutazioni"
+      },
+      {
+        "pos": 3,
+        "titolo": "Il diritto di contare",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Biopic drammatico da ufficio sulla NASA, privo della dimensione di kolossal epico"
+      },
+      {
+        "pos": 9,
+        "titolo": "Il caso Spotlight",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma investigativo/giornalistico contemporaneo, non un kolossal o epopea storica"
+      },
+      {
+        "pos": 12,
+        "titolo": "Il discorso del re",
+        "anno": "2010",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma biografico intimista, lontano dalla portata di un kolossal"
+      },
+      {
+        "pos": 14,
+        "titolo": "Il processo ai Chicago 7",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma processuale e politico da aula di tribunale, non un kolossal storico"
+      },
+      {
+        "pos": 16,
+        "titolo": "长安三万里",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Titolo anime (marcato 🎌) presente in un catalogo dichiarato Anime: no"
+      },
+      {
+        "pos": 20,
+        "titolo": "Il club del libro e della torta di bucce di patata di Guernsey",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia drammatica romantica d'epoca, del tutto fuori dal perimetro del kolossal"
+      },
+      {
+        "pos": 40,
+        "titolo": "Lincoln",
+        "anno": "2012",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma politico istituzionale da camera, privo della scala epica dichiarata"
+      }
+    ],
+    "motivo": "I filtri sul genere Storia sono soddisfatti ma la promessa del nome è ampiamente tradita: circa la metà dei titoli è costituita da drammi investigativi, processuali o biopic intimi (Spotlight, Il diritto di contare, Chicago 7) privi del respiro del kolossal, con un gap netto tra pertinenza filtri (80) e pertinenza nome (60). Il difetto è diffuso su oltre il 40% del catalogo a causa di keyword troppo generiche. La soglia minima di 10 voti favorisce inoltre titoli semisconosciuti e compare persino un anime nonostante l'esclusione esplicita.",
+    "evidenza": [
+      "Schindler's List (1993)",
+      "Lawrence d'Arabia (1962)",
+      "Ben-Hur (1959)",
+      "Il caso Spotlight (2015)",
+      "Il diritto di contare (2016)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_pop_movies",
+    "nome": "🌟 Film Popolari",
+    "verdetto": "P",
+    "score": 85,
+    "dimensioni": {
+      "pertinenza_filtri": 90,
+      "pertinenza_nome": 90,
+      "pertinenza": 90,
+      "qualita": 70,
+      "distintivita": 60,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 19,
+        "titolo": "Ice Cream Man",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Voto 4.836 con 116 voti, titolo di scarsa fattura spinto dal trend momentaneo"
+      },
+      {
+        "pos": 27,
+        "titolo": "La guerra dei mondi",
+        "anno": "2025",
+        "tipo": "trash",
+        "nota": "Voto 4.032 con 1156 voti, pellicola fortemente stroncata dal pubblico"
+      },
+      {
+        "pos": 39,
+        "titolo": "Demon Slayer: Il Castello dell'Infinito - Parte 1",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Titolo anime (marcato 🎌) presente in catalogo marcato con Anime: no"
+      },
+      {
+        "pos": 41,
+        "titolo": "Grand Theft Auto VI: Una lunga anteprima",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Speciale promozionale/anteprima su un videogioco, improprio per una lista di film popolari"
+      }
+    ],
+    "motivo": "Il catalogo riflette perfettamente il flusso dei titoli di tendenza e grande richiamo globale su TMDB, garantendo completezza massima e ordinamento impeccabile. La qualità mediana è buona (7.62) ma l'assenza di filtri qualitativi fa emergere isolati titoli trash con voti intorno al 4. Si rileva inoltre la presenza dell'anime Demon Slayer in contrasto con l'impostazione Anime: no.",
+    "evidenza": [
+      "Spider-Man: Brand New Day (2026)",
+      "Avengers: Endgame (2019)",
+      "Deadpool & Wolverine (2024)",
+      "Demon Slayer: Il Castello dell'Infinito - Parte 1 (2025)",
+      "La guerra dei mondi (2025)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_hbo",
+    "nome": "📺 Produzione HBO",
+    "verdetto": "P",
+    "score": 96,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 100,
+      "pertinenza": 100,
+      "qualita": 100,
+      "distintivita": 95,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo di qualità straordinaria che rispetta pienamente ogni parametro di filtro, pertinenza di brand e ordinamento. La totalità delle serie presenti costituisce l'apice della produzione storica e contemporanea di HBO, con una mediana dei voti superiore a 8.0 e nessun punteggio sotto 7.6. Non si ravvisa alcuna anomalia o errore nell'intera selezione esaminata.",
+    "evidenza": [
+      "Chernobyl (2019)",
+      "I Soprano (1999)",
+      "The Wire (2002)",
+      "Band of Brothers - Fratelli al fronte (2001)",
+      "Il Trono di Spade (2011)"
+    ],
+    "fiducia": "alta"
+  }
+]

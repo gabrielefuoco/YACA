@@ -1,0 +1,513 @@
+[
+  {
+    "id": "preset_cult_classics",
+    "nome": "🙌 Film Cult (Venerati dai fan)",
+    "verdetto": "P",
+    "score": 82,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 80,
+      "pertinenza": 88,
+      "qualita": 60,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "Going Clear: Scientology e la prigione della fede",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Documentario sulle sette religiose (Scientology), non un film cult cinematografico"
+      },
+      {
+        "pos": 12,
+        "titolo": "Colonia",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma storico sulla setta di Colonia Dignidad, falso positivo della keyword cult"
+      },
+      {
+        "pos": 16,
+        "titolo": "28 anni dopo - Il tempio delle ossa",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Uscita recente/futura del 2026, non può essere un cult venerato dai fan"
+      },
+      {
+        "pos": 21,
+        "titolo": "Ti uccideranno",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Horror del 2026 su una setta criminale, falso positivo da keyword cult/setta"
+      },
+      {
+        "pos": 35,
+        "titolo": "Florence",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Biopic/commedia convenzionale, non un film cult"
+      },
+      {
+        "pos": 36,
+        "titolo": "Blood & Gold",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'azione bellico recente, non uno storico cult movie"
+      },
+      {
+        "pos": 37,
+        "titolo": "28 anni dopo",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Sequel recente del 2025, prematuro per lo status di cult classico"
+      },
+      {
+        "pos": 41,
+        "titolo": "La fuga di Martha",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Thriller su una setta/comune, falso positivo per omonimia semantica"
+      }
+    ],
+    "motivo": "I filtri tecnici dichiarati sono pienamente rispettati (100), ma l'uso della keyword generica per 'cult' introduce un equivoco semantico attirando documentari e drammi su sette religiose anziché opere di culto cinematografiche. Oltre l'80% della lista contiene autentici capisaldi di culto (The Rocky Horror Picture Show, Splatters, House), ma la presenza di titoli su sette e uscite 2025-2026 indebolisce la promessa nominale. Con mediana voto di 6.8 e pool limitato a 71, il catalogo ottiene una promozione di misura.",
+    "evidenza": [
+      "Going Clear: Scientology e la prigione della fede (2015)",
+      "The Rocky Horror Picture Show (1975)",
+      "Colonia (2016)",
+      "Splatters - Gli schizzacervelli (1992)",
+      "28 anni dopo - Il tempio delle ossa (2026)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_zombies_movies",
+    "nome": "🧟 Zombie & Infezioni (Film)",
+    "verdetto": "P",
+    "score": 85,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 80,
+      "pertinenza": 88,
+      "qualita": 60,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 30,
+        "titolo": "Wolf Man",
+        "anno": "2025",
+        "tipo": "fuori-promessa",
+        "nota": "Film sui lupi mannari / licantropia, non un'infezione o zombie"
+      },
+      {
+        "pos": 32,
+        "titolo": "Piccoli Brividi 2 - I fantasmi di Halloween",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia horror per ragazzi su pupazzi e mostri di Halloween, estraneo al tema"
+      },
+      {
+        "pos": 35,
+        "titolo": "Un'avventura spaziale - Un film dei Looney Tunes",
+        "anno": "2024",
+        "tipo": "fuori-promessa",
+        "nota": "Animazione Looney Tunes con Daffy e Porky, intrusione comica assurda"
+      },
+      {
+        "pos": 40,
+        "titolo": "I morti non muoiono",
+        "anno": "2019",
+        "tipo": "trash",
+        "nota": "Voto medio molto basso (5.4) per una commedia zombie deludente"
+      },
+      {
+        "pos": 43,
+        "titolo": "Night of the Living Dead",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Remake/b-movie con voto gravemente insufficiente (4.9)"
+      },
+      {
+        "pos": 49,
+        "titolo": "Vita da vampiro - What We Do in the Shadows",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Mockumentary incentrato sui vampiri, estraneo a zombie e pandemie virali"
+      },
+      {
+        "pos": 50,
+        "titolo": "The Black Hole - Il buco nero",
+        "anno": "1979",
+        "tipo": "fuori-promessa",
+        "nota": "Fantascienza spaziale Disney classica, del tutto estranea a zombie o epidemie"
+      }
+    ],
+    "motivo": "I filtri horror e fantascienza sono rispettati matematicamente (100) e il catalogo offre la spina dorsale del cinema zombie (Train to Busan, 28 giorni dopo, Romero, Resident Evil). Tuttavia, l'apertura alla fantascienza senza restrizioni di keyword semantiche fa filtrare clamorosi fuoriluogo come un cartoon dei Looney Tunes, vampiri e fantascienza spaziale Disney. La qualità media resta contenuta (6.7) con alcuni titoli scadenti sotto il 5.5, ma l'ampiezza del pool (346) e l'ordinamento impeccabile garantiscono la promozione.",
+    "evidenza": [
+      "Train to Busan (2016)",
+      "28 giorni dopo (2002)",
+      "Un'avventura spaziale - Un film dei Looney Tunes (2024)",
+      "Contagion (2011)",
+      "The Black Hole - Il buco nero (1979)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_psych_thriller",
+    "nome": "😱 Thriller Psicologici",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 60,
+      "pertinenza": 76,
+      "qualita": 70,
+      "distintivita": 60,
+      "coerenza": 100,
+      "completezza": 90
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 9,
+        "titolo": "Cinquanta sfumature di grigio",
+        "anno": "2015",
+        "tipo": "fuori-promessa",
+        "nota": "Romance erotico/drammatico, non un thriller psicologico"
+      },
+      {
+        "pos": 14,
+        "titolo": "Predator",
+        "anno": "1987",
+        "tipo": "fuori-promessa",
+        "nota": "Action/sci-fi con mostro alieno, estraneo al thriller psicologico"
+      },
+      {
+        "pos": 15,
+        "titolo": "Aliens - Scontro finale",
+        "anno": "1986",
+        "tipo": "fuori-promessa",
+        "nota": "Azione fantascientifica e guerra contro xenomorfi, non psicologico"
+      },
+      {
+        "pos": 16,
+        "titolo": "La guerra dei mondi",
+        "anno": "2005",
+        "tipo": "fuori-promessa",
+        "nota": "Disaster movie sci-fi su invasione aliena"
+      },
+      {
+        "pos": 19,
+        "titolo": "Prey",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'azione/sopravvivenza della saga Predator"
+      },
+      {
+        "pos": 26,
+        "titolo": "Planet of the Apes - Il pianeta delle scimmie",
+        "anno": "2001",
+        "tipo": "fuori-promessa",
+        "nota": "Avventura/azione sci-fi, non thriller psicologico"
+      },
+      {
+        "pos": 30,
+        "titolo": "Aliens vs. Predator 2",
+        "anno": "2007",
+        "tipo": "trash",
+        "nota": "B-movie splatter e sci-fi di qualità infima (5.15) del tutto fuori luogo"
+      },
+      {
+        "pos": 33,
+        "titolo": "Sono il numero quattro",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Teen action fantascientifico su alieni con superpoteri"
+      }
+    ],
+    "motivo": "I filtri tecnici dichiarati sono rispettati alla lettera (100), ma una keyword errata cattura invasioni aliene e mostri sci-fi, facendo crollare la pertinenza nominale (60): 16+ e il difetto è diffuso (circa il 32% del lotto) appartengono al franchise di Predator, Aliens o disaster movie spaziali, insieme a romance erotici come Cinquanta sfumature. Accanto a capisaldi assoluti come Shutter Island, Psycho e Memento, questa massiccia contaminazione rende il catalogo ibrido e poco distintivo (60). Verdetto B: la configurazione dei filtri va ripulita dalle keyword aliene/monster.",
+    "evidenza": [
+      "Shutter Island (2010)",
+      "Cinquanta sfumature di grigio (2015)",
+      "Predator (1987)",
+      "Memento (2000)",
+      "Aliens vs. Predator 2 (2007)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_italian_comedy",
+    "nome": "🇮🇹 Commedie Italiane",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 90,
+      "pertinenza": 94,
+      "qualita": 80,
+      "distintivita": 90,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 26,
+        "titolo": "Le notti di Cabiria",
+        "anno": "1957",
+        "tipo": "fuori-promessa",
+        "nota": "Capolavoro drammatico di Fellini, la componente comica è secondaria"
+      },
+      {
+        "pos": 34,
+        "titolo": "I racconti di Canterbury",
+        "anno": "1972",
+        "tipo": "fuori-promessa",
+        "nota": "Opera erotico-letteraria di Pasolini, lontana dalla classica fruizione di commedia"
+      }
+    ],
+    "motivo": "Catalogo eccellente che abbraccia tutta la storia della commedia italiana, dai classici di Monicelli e Risi ai successi popolari di Bud Spencer & Terence Hill, Verdone e Cortellesi. I filtri sono rispettati senza sbavature (100) e la pertinenza nominale è altissima (90), con pochissime inclusioni più marcatamente drammatiche (Fellini, Pasolini). Qualità solida (mediana 7.07, nessun titolo sotto il 6.0), ordinamento impeccabile e pool ricchissimo (575).",
+    "evidenza": [
+      "La vita è bella (1997)",
+      "Lo chiamavano Trinità... (1970)",
+      "Amici miei (1975)",
+      "C'è ancora domani (2023)",
+      "Borotalco (1982)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_mindfuck",
+    "nome": "🤯 Mindfuck & Plot Twists",
+    "verdetto": "B",
+    "score": 75,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 80,
+      "pertinenza": 88,
+      "qualita": 40,
+      "distintivita": 60,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 2,
+        "titolo": "Return to Silent Hill",
+        "anno": "2026",
+        "tipo": "trash",
+        "nota": "Voto mediocre (5.33) e collocazione dubbia per un horror recente"
+      },
+      {
+        "pos": 12,
+        "titolo": "Fuze - Conto alla rovescia",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Thriller d'azione convenzionale su disinnesco ordigni, non un mindfuck"
+      },
+      {
+        "pos": 23,
+        "titolo": "The Beach",
+        "anno": "2000",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma d'avventura esotico, non un'opera incentrata su mindfuck o plot twist"
+      },
+      {
+        "pos": 28,
+        "titolo": "The Cloverfield Paradox",
+        "anno": "2018",
+        "tipo": "trash",
+        "nota": "Capitolo mediocre del franchise (5.64) con sceneggiatura confusa"
+      },
+      {
+        "pos": 31,
+        "titolo": "Chiamata senza risposta",
+        "anno": "2008",
+        "tipo": "trash",
+        "nota": "Remake horror scadente con voto 5.4, privo della complessità richiesta"
+      },
+      {
+        "pos": 47,
+        "titolo": "La truffa perfetta",
+        "anno": "2012",
+        "tipo": "trash",
+        "nota": "Thriller di serie B con voto 5.40, nessun vero plot twist degno di nota"
+      },
+      {
+        "pos": 49,
+        "titolo": "Senza apparente motivo",
+        "anno": "2008",
+        "tipo": "trash",
+        "nota": "Dramma insipido con valutazione insufficiente (5.38)"
+      },
+      {
+        "pos": 50,
+        "titolo": "The Singing Detective",
+        "anno": "2003",
+        "tipo": "trash",
+        "nota": "Punteggio pessimo (5.11), commedia musicale/noir lontana dall'aspettativa del catalogo"
+      }
+    ],
+    "motivo": "Sebbene il catalogo contenga ottimi esempi del genere come Contrattempo, Donnie Darko e Source Code, soffre di un grave problema qualitativo: la mediana dei voti è inferiore a 6.5 (6.46) e la seconda metà della lista è appesantita da B-movie e titoli sotto il 5.5. I filtri sono rispettati (100) ma il pool è molto ridotto (72 titoli) e la sovrapposizione con i thriller psicologici è marcata (60). Verdetto B: occorre alzare la soglia di voto minimo per eliminare i fondi di barile.",
+    "evidenza": [
+      "Contrattempo (2017)",
+      "Donnie Darko (2001)",
+      "Return to Silent Hill (2026)",
+      "Chiamata senza risposta (2008)",
+      "The Singing Detective (2003)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_mindfuck_series",
+    "nome": "🤯 Mindfuck & Plot Twists (Serie)",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 60,
+      "pertinenza": 76,
+      "qualita": 90,
+      "distintivita": 60,
+      "coerenza": 100,
+      "completezza": 60
+    },
+    "itemGiudicati": 28,
+    "errori": [
+      {
+        "pos": 1,
+        "titolo": "Doctor Who",
+        "anno": "1963",
+        "tipo": "fuori-promessa",
+        "nota": "Classica avventura sci-fi/fantastica britannica, non una serie mindfuck"
+      },
+      {
+        "pos": 4,
+        "titolo": "Riverdale",
+        "anno": "2017",
+        "tipo": "fuori-promessa",
+        "nota": "Teen drama / soap mystery per ragazzi, estraneo al genere mindfuck"
+      },
+      {
+        "pos": 5,
+        "titolo": "What If...?",
+        "anno": "2021",
+        "tipo": "fuori-promessa",
+        "nota": "Serie d'animazione antologica di supereroi Marvel"
+      },
+      {
+        "pos": 8,
+        "titolo": "Andromeda",
+        "anno": "2000",
+        "tipo": "fuori-promessa",
+        "nota": "Space opera lineare e avventurosa, non una narrazione mindfuck"
+      },
+      {
+        "pos": 9,
+        "titolo": "I viaggiatori",
+        "anno": "1995",
+        "tipo": "fuori-promessa",
+        "nota": "Serie anni '90 sui mondi paralleli ad andamento procedurale, non mindfuck"
+      },
+      {
+        "pos": 10,
+        "titolo": "His Dark Materials - Queste oscure materie",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "High fantasy di stampo young-adult / fiabesco"
+      },
+      {
+        "pos": 12,
+        "titolo": "Lexx",
+        "anno": "1997",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia fantascientifica bizzarra e camp, lontana dai plot twist complessi"
+      },
+      {
+        "pos": 16,
+        "titolo": "Terra Nova",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma fantascientifico familiare con dinosauri, nessun mindfuck"
+      }
+    ],
+    "motivo": "Il catalogo è fortemente asfittico: il pool conta appena 28 titoli in totale, incapace perfino di popolare 50 posizioni. Inoltre, 10+ e il difetto è diffuso (circa il 40% del lotto) sono serie avventurose o teen drama lineari (Doctor Who, Riverdale, Andromeda) ben lontane dai mindfuck psicologici complessi come Dark o Inside No. 9. Verdetto B: la formula va ripensata per ampliare il pool e includere i pilastri del genere (Severance, Mr. Robot, Westworld) escludendo l'avventura generica.",
+    "evidenza": [
+      "Dark (2017)",
+      "Riverdale (2017)",
+      "Inside No. 9 (2014)",
+      "Doctor Who (1963)",
+      "Andromeda (2000)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_fantasy_magic",
+    "nome": "🧙 Grandi Saghe Fantasy & Magia",
+    "verdetto": "P",
+    "score": 86,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 80,
+      "pertinenza": 88,
+      "qualita": 80,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 25,
+        "titolo": "I Puffi",
+        "anno": "2011",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia infantile per famiglie, fuori scala rispetto alle grandi saghe epiche"
+      },
+      {
+        "pos": 37,
+        "titolo": "Pacific Rim - La rivolta",
+        "anno": "2018",
+        "tipo": "fuori-promessa",
+        "nota": "Film d'azione sci-fi con robot mecha e mostri kaiju, privo di elementi magici"
+      },
+      {
+        "pos": 38,
+        "titolo": "Eragon",
+        "anno": "2006",
+        "tipo": "trash",
+        "nota": "Adattamento cinematografico ampiamente bocciato da critica e pubblico (5.10)"
+      },
+      {
+        "pos": 46,
+        "titolo": "Asterix alle olimpiadi",
+        "anno": "2008",
+        "tipo": "trash",
+        "nota": "Commedia farsesca con voto scadente (5.20), inadatta alle saghe fantasy serie"
+      },
+      {
+        "pos": 48,
+        "titolo": "Mortal Kombat II",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Adattamento di videogioco picchiaduro, estraneo all'immaginario fantasy & magia"
+      }
+    ],
+    "motivo": "Catalogo solido e perfettamente allineato alla promessa nominale: racchiude l'intera saga di Harry Potter, Il Signore degli Anelli, Lo Hobbit, Narnia e Animali Fantastici, ordinati impeccabilmente per incassi storici al botteghino. I filtri combinati Fantasy e Avventura sono soddisfatti al 100% e la pertinenza nominale è molto buona (80), macchiata solo da qualche bizzarria di genere come Pacific Rim e I Puffi. Qualità elevata (mediana 7.27) e pool di 134 titoli ne determinano la piena promozione.",
+    "evidenza": [
+      "Harry Potter e i Doni della Morte - Parte 2 (2011)",
+      "Il Signore degli Anelli - Il ritorno del re (2003)",
+      "Lo Hobbit: Un viaggio inaspettato (2012)",
+      "Pacific Rim - La rivolta (2018)",
+      "Eragon (2006)"
+    ],
+    "fiducia": "alta"
+  }
+]

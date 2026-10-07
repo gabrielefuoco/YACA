@@ -1,0 +1,357 @@
+[
+  {
+    "id": "preset_space_hard_scifi",
+    "nome": "🚀 Spazio Profondo & Odissee Cosmiche",
+    "verdetto": "P",
+    "score": 82,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 70,
+      "pertinenza": 82,
+      "qualita": 80,
+      "distintivita": 70,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 5,
+        "titolo": "La cosa",
+        "anno": "1982",
+        "tipo": "fuori-promessa",
+        "nota": "Horror fantascientifico ambientato in una base di ricerca in Antartide, nessun viaggio nello spazio."
+      },
+      {
+        "pos": 13,
+        "titolo": "Arrival",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Primo contatto alieno ambientato sulla Terra, privo di viaggi nello spazio profondo."
+      },
+      {
+        "pos": 15,
+        "titolo": "Gattaca - La porta dell'universo",
+        "anno": "1997",
+        "tipo": "fuori-promessa",
+        "nota": "Distopia genetica interamente ambientata sulla Terra; il viaggio spaziale è solo un'aspirazione finale."
+      },
+      {
+        "pos": 18,
+        "titolo": "Ultimatum alla Terra",
+        "anno": "1951",
+        "tipo": "fuori-promessa",
+        "nota": "Classico dell'atterraggio alieno a Washington, senza alcuna odissea cosmica."
+      },
+      {
+        "pos": 31,
+        "titolo": "The Creator",
+        "anno": "2023",
+        "tipo": "fuori-promessa",
+        "nota": "Guerra fanta-tecnologica tra umani e IA ambientata sulla Terra, non nello spazio profondo."
+      },
+      {
+        "pos": 34,
+        "titolo": "Independence Day",
+        "anno": "1996",
+        "tipo": "fuori-promessa",
+        "nota": "Invasione aliena su scala terrestre con battaglie nell'atmosfera terrestre."
+      },
+      {
+        "pos": 38,
+        "titolo": "Capricorn One",
+        "anno": "1977",
+        "tipo": "fuori-promessa",
+        "nota": "Thriller su una finta missione su Marte inscenata in uno studio sulla Terra."
+      },
+      {
+        "pos": 39,
+        "titolo": "Alive in Joburg",
+        "anno": "2005",
+        "tipo": "fuori-promessa",
+        "nota": "Mockumentary sui rifugiati extraterrestri confinati a Johannesburg."
+      }
+    ],
+    "motivo": "I filtri tecnici sono pienamente rispettati, ma la promessa del nome presenta discrepanze: 10+ titoli e il difetto è diffuso (~20% del catalogo è ambientato sulla Terra anziché nello spazio profondo, per via di keyword generiche su alieni/extraterrestri). La qualità media resta solida (mediana 7.21 senza trash) e i grandi capisaldi del viaggio cosmico sono tutti presenti.",
+    "evidenza": [
+      "2001: Odissea nello spazio (1968)",
+      "Interstellar (2014)",
+      "Solaris (1972)",
+      "Sopravvissuto - The Martian (2015)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_action_blockbusters",
+    "nome": "🍿 Blockbuster d'Azione",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 100,
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 100
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo che incarna alla perfezione la promessa del nome e i filtri impostati, raccogliendo i maggiori successi commerciali d'azione ad alto budget ordinati per incassi. La qualità media è solida (mediana 7.08 senza alcun titolo sotto 5.5) e il pool è molto capiente (329 titoli). La sovrapposizione naturale con franchise supereroistici e fanta-action non ne intacca l'efficacia.",
+    "evidenza": [
+      "Spider-Man: No Way Home (2021)",
+      "Fast & Furious 7 (2015)",
+      "Inception (2010)",
+      "Mad Max: Fury Road (2015)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_anime_shonen",
+    "nome": "🔥 Anime: Battle Shōnen",
+    "verdetto": "P",
+    "score": 93,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 90,
+      "pertinenza": 94,
+      "qualita": 100,
+      "distintivita": 90,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 49,
+        "titolo": "The Disastrous Life of Saiki K.",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Commedia gag/slice-of-life su poteri psichici da Weekly Shonen Jump, non un battle shōnen."
+      }
+    ],
+    "motivo": "Selezione eccellente dei titoli cardine del genere Battle Shōnen ordinati puntualmente per popolarità. I filtri sono rispettati senza alcuna eccezione e la qualità percepita è straordinaria con una mediana voto pari a 8.21. Unico neo trascurabile è la presenza isolata di una commedia scolastica priva di battaglie.",
+    "evidenza": [
+      "Dragon Ball Z (1989)",
+      "Naruto (2002)",
+      "One Piece (1999)",
+      "Jujutsu Kaisen (2020)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_heist",
+    "nome": "💰 Rapine & Colpi Grossi (Heist)",
+    "verdetto": "P",
+    "score": 92,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 100,
+      "pertinenza": 100,
+      "qualita": 80,
+      "distintivita": 90,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [],
+    "motivo": "Catalogo impeccabile che centra al 100% la tematica delle rapine e dei colpi grossi spaziando dai capolavori storici del genere a successi moderni. Tutti i filtri tecnici sono verificati e l'ordinamento per voto medio decresce con assoluta precisione. La specificità del sottogenere è perfettamente distinta dai generici film polizieschi o gangster.",
+    "evidenza": [
+      "Heat - La sfida (1995)",
+      "I soliti ignoti (1958)",
+      "Rififi (1955)",
+      "Ocean's Eleven - Fate il vostro gioco (2001)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_treasure_hunters",
+    "nome": "🎬 Cacciatori di Tesori & Avventurieri",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 80,
+      "pertinenza": 88,
+      "qualita": 40,
+      "distintivita": 80,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 30,
+        "titolo": "I nuovi mini ninja",
+        "anno": "1994",
+        "tipo": "fuori-promessa",
+        "nota": "Film per ragazzi di arti marziali e baseball con legame quasi nullo ai cacciatori di tesori."
+      },
+      {
+        "pos": 36,
+        "titolo": "Supercuccioli a caccia di tesori",
+        "anno": "2012",
+        "tipo": "trash",
+        "nota": "Direct-to-video per bambini con cuccioli parlanti di qualità bassissima."
+      }
+    ],
+    "motivo": "I filtri tecnici sono rispettati e il tema risponde alla promessa, ma il catalogo soffre di un pool limitato (61 titoli) che costringe a includere ben 4 adattamenti identici de L'isola del tesoro e produzioni per l'infanzia marginali. La qualità complessiva è severamente penalizzata con una mediana voto pari a 6.30 (fascia < 6.5). Si sceglie la fascia B (78) in virtù del livello qualitativo modesto dell'offerta.",
+    "evidenza": [
+      "I predatori dell'arca perduta (1981)",
+      "La mummia (1999)",
+      "Uncharted (2022)",
+      "Il mistero dei Templari (2004)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_tv_high_fantasy",
+    "nome": "🧙 High Fantasy (Spade & Draghi)",
+    "verdetto": "B",
+    "score": 73,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 50,
+      "pertinenza": 70,
+      "qualita": 60,
+      "distintivita": 60,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 7,
+        "titolo": "Sleepy Hollow",
+        "anno": "2013",
+        "tipo": "fuori-promessa",
+        "nota": "Procedurale poliziesco e sovrannaturale ambientato nel presente, non high fantasy né spade e draghi."
+      },
+      {
+        "pos": 10,
+        "titolo": "Millennium",
+        "anno": "1996",
+        "tipo": "fuori-promessa",
+        "nota": "Thriller investigativo contemporaneo dell'FBI su serial killer, totalmente alieno all'high fantasy."
+      },
+      {
+        "pos": 11,
+        "titolo": "I racconti della cripta",
+        "anno": "1989",
+        "tipo": "fuori-promessa",
+        "nota": "Antologia horror/grottesca contemporanea priva di elementi high fantasy."
+      },
+      {
+        "pos": 17,
+        "titolo": "Carnivàle",
+        "anno": "2003",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma dark fantasy circense ambientato negli Stati Uniti della Grande Depressione."
+      },
+      {
+        "pos": 19,
+        "titolo": "Constantine",
+        "anno": "2014",
+        "tipo": "fuori-promessa",
+        "nota": "Urban fantasy dell'occulto moderno basato su Hellblazer della DC Comics."
+      },
+      {
+        "pos": 20,
+        "titolo": "Guillermo del Toro's Cabinet of Curiosities",
+        "anno": "2022",
+        "tipo": "fuori-promessa",
+        "nota": "Antologia horror gotico-moderna senza alcuna attinenza con spade e draghi."
+      },
+      {
+        "pos": 23,
+        "titolo": "L'ombra dello scorpione",
+        "anno": "1994",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma pandemico post-apocalittico e soprannaturale tratto da Stephen King."
+      },
+      {
+        "pos": 42,
+        "titolo": "Beowulf: Return to the Shieldlands",
+        "anno": "2016",
+        "tipo": "trash",
+        "nota": "Serie fantasy con voto medio insufficiente pari a 5.36 (< 5.5)."
+      }
+    ],
+    "motivo": "I filtri tecnici sono formalmente soddisfatti, ma la promessa del nome è gravemente disattesa: 15+ titoli e il difetto è diffuso (~30% del catalogo è costituito da antologie horror, procedurali polizieschi contemporanei o apocalissi virali dovute a keyword troppo generiche). La qualità è inoltre intaccata dalla presenza isolata di Beowulf con voto 5.36, determinando una fascia B (73).",
+    "evidenza": [
+      "Il Trono di Spade (2011)",
+      "House of the Dragon (2022)",
+      "Il Signore degli Anelli: Gli Anelli del Potere (2022)",
+      "The Witcher (2019)"
+    ],
+    "fiducia": "alta"
+  },
+  {
+    "id": "preset_cyberpunk_series",
+    "nome": "🤖 Cyberpunk & Distopia (Serie)",
+    "verdetto": "B",
+    "score": 78,
+    "dimensioni": {
+      "pertinenza_filtri": 100,
+      "pertinenza_nome": 70,
+      "pertinenza": 82,
+      "qualita": 60,
+      "distintivita": 70,
+      "coerenza": 100,
+      "completezza": 80
+    },
+    "itemGiudicati": 50,
+    "errori": [
+      {
+        "pos": 4,
+        "titolo": "For All Mankind",
+        "anno": "2019",
+        "tipo": "fuori-promessa",
+        "nota": "Ucronia sulla corsa allo spazio tra USA e URSS, non una distopia né cyberpunk."
+      },
+      {
+        "pos": 14,
+        "titolo": "Sweet Home",
+        "anno": "2020",
+        "tipo": "fuori-promessa",
+        "nota": "Horror coreano apocalittico su mutazioni mostruose, non cyberpunk o distopia."
+      },
+      {
+        "pos": 15,
+        "titolo": "Van Helsing",
+        "anno": "2016",
+        "tipo": "fuori-promessa",
+        "nota": "Dark fantasy/action horror con apocalisse vampirica post-catastrofica."
+      },
+      {
+        "pos": 27,
+        "titolo": "Star City",
+        "anno": "2026",
+        "tipo": "fuori-promessa",
+        "nota": "Dramma storico/ucronico sul programma cosmonautico sovietico."
+      },
+      {
+        "pos": 28,
+        "titolo": "L'ombra dello scorpione",
+        "anno": "1994",
+        "tipo": "fuori-promessa",
+        "nota": "Post-apocalisse virale pandemica e soprannaturale, non distopia tecnologica."
+      },
+      {
+        "pos": 50,
+        "titolo": "The I-Land",
+        "anno": "2019",
+        "tipo": "trash",
+        "nota": "Miniserie su simulazione carceraria stroncata dalla critica, voto medio 5.426 (< 5.5)."
+      }
+    ],
+    "motivo": "I filtri tecnici sono conformi ma la promessa del nome è indebolita da evidenti intrusioni nelle prime posizioni: drammi spaziali ucronici come For All Mankind (pos 4) o Star City e serie horror di mostri/vampiri (Sweet Home, Van Helsing). La qualità risente della presenza alla posizione 50 del titolo trash The I-Land (voto 5.426), attestando il giudizio nella fascia B (78).",
+    "evidenza": [
+      "Silo (2023)",
+      "Black Mirror (2011)",
+      "The Handmaid's Tale (2017)",
+      "Altered Carbon (2018)"
+    ],
+    "fiducia": "alta"
+  }
+]
