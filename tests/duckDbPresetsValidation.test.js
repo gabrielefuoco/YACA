@@ -13,7 +13,8 @@ describe('DuckDB Native Presets & Architectural Optimizations', () => {
 
     test('All presets define native where and orderBy except simulcast', async () => {
         const presets = getPresets();
-        expect(presets.length).toBe(161);
+        // 161 + «I Grandi Registi» e «Piccolissimi (0-3)», nati dal ticket 08.
+        expect(presets.length).toBe(163);
 
         for (const preset of presets) {
             if (preset.id === 'preset_anime_simulcast') {
