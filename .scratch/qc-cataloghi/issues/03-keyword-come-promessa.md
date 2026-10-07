@@ -1,6 +1,6 @@
 # 03 — Promesse appoggiate a una singola keyword
 
-**Stato**: `ready-for-agent` · **Causa**: C2 · **Fonte**: [report §3 C2](../ricerche/01-report-qc-cataloghi.md)
+**Stato**: `chiuso` 07/10/2026 · coperto dai tre giri del banco keyword (17 cataloghi riscritti)
 
 ## Problema
 

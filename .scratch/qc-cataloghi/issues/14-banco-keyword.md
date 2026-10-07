@@ -1,6 +1,6 @@
 # 14 — Banco di prova keyword (includere ed escludere)
 
-**Stato**: `ready-for-agent` · **Causa**: C2 della campagna QC · **Fonte**: [report §3 C2](../ricerche/01-report-qc-cataloghi.md)
+**Stato**: `chiuso` 06/10/2026 · `scripts/qa/keyword-bench.js` costruito e usato per tre giri di misure (commit `2b27480`)
 
 ## Problema
 

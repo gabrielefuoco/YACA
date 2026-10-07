@@ -1,6 +1,6 @@
 # 17 — Applicare le proposte del banco keyword
 
-**Stato**: `ready-for-agent` · **Causa**: C2 della campagna QC (follow-up del ticket 14) · **Fonte**: [`ricerche/02-banco-keyword.md`](../ricerche/02-banco-keyword.md)
+**Stato**: `chiuso` 07/10/2026 · 12 proposte applicate + 2 rinomine; secondo giro su 5 cataloghi (commit `2b27480`)
 
 ## Problema
 

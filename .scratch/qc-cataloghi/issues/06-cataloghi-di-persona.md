@@ -1,6 +1,6 @@
 # 06 — Cataloghi di persona: documentari, corti e cameo
 
-**Stato**: `ready-for-agent` · **Causa**: C5 · **Fonte**: [report §3 C5](../ricerche/01-report-qc-cataloghi.md)
+**Stato**: `chiuso` 06/10/2026 · documentari fuori e durata minima 60' (commit `2b27480`)
 
 ## Problema
 

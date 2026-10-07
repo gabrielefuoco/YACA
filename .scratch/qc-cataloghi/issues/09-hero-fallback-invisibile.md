@@ -1,6 +1,6 @@
 # 09 — Hero: il fallback non deve travestirsi da raccomandazione
 
-**Stato**: `ready-for-agent` · **Causa**: dai giudizi hero (profilo freddo, `seed_network`, `true_blend` anime) · **Fonte**: [report §6](../ricerche/01-report-qc-cataloghi.md)
+**Stato**: `chiuso` 07/10/2026 · misurato (cold start vero 56,9%) e **deciso con l'utente: lasciare com'è** — vedi «Esito» in fondo
 
 ## Problema
 

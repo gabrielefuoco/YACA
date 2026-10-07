@@ -1,6 +1,6 @@
 # 21 — Motore hero: pool a monte, flag sdoppiato, cap famiglia
 
-**Stato**: `ready-for-agent` · **Causa**: tre difetti misurati dal ticket 19 · **Fonte**: [ricerca 04](../ricerche/04-hero-cold-start.md)
+**Stato**: `in corso` · assegnato (pool a monte, flag sdoppiato, cap famiglia)
 
 Tre interventi sul motore dei suggerimenti, tutti con la misura prima/dopo. L'ordine è quello di priorità.
 

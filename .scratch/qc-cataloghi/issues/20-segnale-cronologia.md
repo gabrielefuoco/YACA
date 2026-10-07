@@ -1,6 +1,6 @@
 # 20 — Il segnale della cronologia: 30 recenti + il DNA del resto
 
-**Stato**: `ready-for-agent` · **Causa**: la personalizzazione si ferma a 15 titoli visti (ticket 19 §3.2) · **Fonte**: [ricerca 04](../ricerche/04-hero-cold-start.md)
+**Stato**: `in corso` · assegnato (sperimentazione offline, 6 opzioni)
 
 ## Problema
 

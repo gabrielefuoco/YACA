@@ -1,6 +1,6 @@
 # 13 — `Solo Anime` non filtra i hero: il marcatore `_isAnime` è `true` su tutto
 
-**Stato**: `ready-for-agent` · **Gravità**: alta · **Trovato**: 07/10/2026 durante la campagna QC · **Causa radice**: identificata (§ Causa)
+**Stato**: `chiuso` 06/10/2026 · collisione di namespace risolta su store, marker, SQL e percorsi hero; 1363 film collidenti → 1 (commit `c2e4ce5`)
 
 ## Sintomo
 

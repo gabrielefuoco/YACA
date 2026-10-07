@@ -1,6 +1,6 @@
 # 02 — Anime fuori promessa nei cataloghi occidentali
 
-**Stato**: `ready-for-agent` · **Causa**: C1 · **Fonte**: [report §3 C1](../ricerche/01-report-qc-cataloghi.md)
+**Stato**: `chiuso` 07/10/2026 · 15 cataloghi, anime 4-79% → 0-2% in 13 su 15 (commit `c2e4ce5`)
 
 ## Problema
 

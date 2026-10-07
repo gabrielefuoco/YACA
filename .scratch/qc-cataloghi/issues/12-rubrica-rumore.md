@@ -1,6 +1,6 @@
 # 12 — Rubrica: rumore del giudice e promessa tematica
 
-**Stato**: `ready-for-agent` · **Causa**: metodo della campagna · **Fonte**: [report §5](../ricerche/01-report-qc-cataloghi.md)
+**Stato**: `chiuso` 07/10/2026 · rubrica v2 con pertinenza sdoppiata; rumore misurato su due controlli: Δ medio 6,5, max 11 punti (`b707b4a`)
 
 ## Problema
 

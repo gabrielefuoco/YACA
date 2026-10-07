@@ -1,6 +1,6 @@
 # 04 — Pool sotto la pagina Stremio
 
-**Stato**: `ready-for-agent` · **Causa**: C3 · **Fonte**: [report §3 C3](../ricerche/01-report-qc-cataloghi.md)
+**Stato**: `chiuso` 07/10/2026 · sotto 20: 12 → 8 · 20-59: 30 → 21 · 13 cataloghi portati a pool ≥ 60 · i 7 registi accettati corti + nuovo «I Grandi Registi» (`0127a9a`, `a356108`)
 
 ## Problema
 

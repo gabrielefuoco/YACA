@@ -1,6 +1,6 @@
 # 07 — Corti, backstage e trailer serviti come film
 
-**Stato**: `ready-for-agent` · **Causa**: nuova (emersa dalla lettura delle liste hero) · **Fonte**: [report §4 e §6](../ricerche/01-report-qc-cataloghi.md)
+**Stato**: `chiuso` 06/10/2026 · `F.minRuntime(60)` nei percorsi hero e di persona; 23 item sotto i 40' → 0 (commit `2b27480`)
 
 ## Problema
 

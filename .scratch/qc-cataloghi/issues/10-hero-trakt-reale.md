@@ -1,6 +1,6 @@
 # 10 — Hero `trakt_filtered`: percorso reale mai misurato
 
-**Stato**: `ready-for-agent` · **Causa**: dai giudizi hero (fallback Trakt) · **Fonte**: [report §6.3](../ricerche/01-report-qc-cataloghi.md)
+**Stato**: `chiuso` 07/10/2026 · percorso reale funzionante (P 88 film, P 86 serie) — vedi «Esito» in fondo
 
 ## Problema
 

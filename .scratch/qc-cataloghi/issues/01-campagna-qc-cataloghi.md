@@ -1,6 +1,6 @@
 # 01 — Campagna QC cataloghi (preset + hero)
 
-**Stato**: eseguito il 06/10/2026 · **Aperto**: 06/10/2026 · **Mappa**: `qc-cataloghi` · **Esito**: report in [`../ricerche/01-report-qc-cataloghi.md`](../ricerche/01-report-qc-cataloghi.md), 11 ticket di bonifica (02-12)
+**Stato**: `eseguito` 06/10/2026 · **Aperto**: solo 20 e 21 (il resto è chiuso; il deploy attende il motore hero)
 **Tipo**: enhancement (qualità/QA, one-off con artefatti permanenti)
 
 ## Problem Statement

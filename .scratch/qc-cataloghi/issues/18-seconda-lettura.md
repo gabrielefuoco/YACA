@@ -1,6 +1,6 @@
 # 18 — Seconda lettura: i cataloghi bonificati sono anche migliori?
 
-**Stato**: `ready-for-agent` (serve la quota agy dei giudici) · **Causa**: metodo della campagna (seguito del ticket 12) · **Fonte**: [report](../ricerche/01-report-qc-cataloghi.md) §10
+**Stato**: `chiuso` 07/10/2026 · 21 cataloghi ri-giudicati: 8 migliorati **oltre** il rumore misurato, nessuno peggiorato (`b707b4a`)
 
 ## Problema
 

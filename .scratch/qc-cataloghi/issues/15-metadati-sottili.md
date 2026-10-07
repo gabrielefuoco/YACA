@@ -1,6 +1,6 @@
 # 15 — Metadati sottili: classifiche costruite su pochi voti
 
-**Stato**: `ready-for-agent` · **Causa**: C7 della campagna QC · **Fonte**: [report §3 C7](../ricerche/01-report-qc-cataloghi.md)
+**Stato**: `chiuso` 07/10/2026 · 6 cataloghi con soglia a 50 voti (rumore a 0%) e 5 documentaristici passati a popolarità (`9a2564a`)
 
 ## Problema
 

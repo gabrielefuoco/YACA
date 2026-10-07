@@ -1,6 +1,6 @@
 # 08 — Nome e filtro che non dicono la stessa cosa
 
-**Stato**: `ready-for-agent` · **Causa**: C6 · **Fonte**: [report §3 C6](../ricerche/01-report-qc-cataloghi.md)
+**Stato**: `chiuso` 07/10/2026 · 5 cataloghi decisi con l'utente: 2 rinominati, 1 filtrato, 1 accettato, 1 nuovo catalogo 0-3 (`5e9d0d5`)
 
 ## Problema
 

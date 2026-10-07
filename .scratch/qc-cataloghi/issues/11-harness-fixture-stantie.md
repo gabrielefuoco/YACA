@@ -1,6 +1,6 @@
 # 11 — Harness della campagna: fixture stantie e comandi che ingannano
 
-**Stato**: `ready-for-agent` · **Causa**: infrastruttura · **Fonte**: [report §9](../ricerche/01-report-qc-cataloghi.md)
+**Stato**: `chiuso` 06/10/2026 · contesti rimappati, attesa 5/5 calcolata, fetch validato contro AddonConfig (commit `478b6bb`)
 
 ## Problema
 

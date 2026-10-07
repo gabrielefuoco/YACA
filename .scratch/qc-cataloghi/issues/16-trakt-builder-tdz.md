@@ -1,6 +1,6 @@
 # 16 — Il builder Trakt solleva un errore di inizializzazione e degrada sempre
 
-**Stato**: `ready-for-agent` · **Gravità**: media (percorso mai pulito, degrado silenzioso raddoppiato) · **Trovato**: 07/10/2026, durante la verifica del ticket 13
+**Stato**: `chiuso` 06/10/2026 · variabili issate prima di `buildFallback`: l'errore è sparito dai log di produzione (commit `2b27480`)
 
 ## Sintomo
 

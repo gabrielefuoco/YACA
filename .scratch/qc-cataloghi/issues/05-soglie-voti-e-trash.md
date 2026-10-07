@@ -1,6 +1,6 @@
 # 05 — Soglie di voto e anti-trash
 
-**Stato**: `ready-for-agent` · **Causa**: C4 + C7 · **Fonte**: [report §3 C4 e C7](../ricerche/01-report-qc-cataloghi.md)
+**Stato**: `chiuso` 07/10/2026 · soglie di voto alzate su oltre 20 cataloghi nei tre giri del banco; il pavimento 5.5-6.0 ha azzerato i B-movie trash dove serviva
 
 ## Problema
 

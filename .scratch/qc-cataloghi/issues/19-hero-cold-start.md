@@ -1,6 +1,6 @@
 # 19 — Hero: cosa succede con zero, 50 e 100 titoli visti
 
-**Stato**: `ready-for-agent` · **Causa**: difetti misurati sui suggerimenti (campagna §6) · **Fonte**: [report](../ricerche/01-report-qc-cataloghi.md) §6, [ticket 09](09-hero-fallback-invisibile.md)
+**Stato**: `chiuso` 07/10/2026 · 48 combinazioni misurate, 3 difetti e 1 scoperta (il tetto dei 15 titoli); le decisioni sono diventate i ticket 20 e 21
 
 ## Problema
 
