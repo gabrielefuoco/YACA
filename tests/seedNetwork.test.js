@@ -126,12 +126,14 @@ describe('Ticket 13: Seed Network con seed reali', () => {
 
             expect(seeds.get('101')).toBe(4); // loved: peso costante
             expect(seeds.get('102')).toBe(3); // liked: peso costante
-            // watched (ticket 20/E): il peso 2 decade col tempo, quindi non è un numero fisso — le
+            // watched (ticket 20/E): il peso decade col tempo, quindi non è un numero fisso — le
             // date di questa fixture sono assolute e il decadimento le legge rispetto ad «adesso».
-            // Si asserisce il contratto: fra il pavimento (2 × 0.20) e il peso pieno, e il più
-            // recente pesa più del più vecchio.
-            expect(seeds.get('103')).toBeGreaterThanOrEqual(0.4);
-            expect(seeds.get('103')).toBeLessThanOrEqual(2);
+            // Si asserisce il contratto: fra il pavimento (0.20) e il peso pieno (1.0), e il più
+            // recente pesa più del più vecchio. Nota: il peso di un visto non è più moltiplicato
+            // per `SEED_SIGNAL_WEIGHTS.watched` — un visto fresco vale 1.0, contro i 4.0 di un
+            // «amato»: è ciò che tiene i preferiti espliciti saldamente in testa.
+            expect(seeds.get('103')).toBeGreaterThanOrEqual(0.2);
+            expect(seeds.get('103')).toBeLessThanOrEqual(1);
             expect(seeds.get('104')).toBeGreaterThan(seeds.get('103'));
             expect(counts).toEqual({ loved: 1, liked: 1, watched: 2, library: 0 });
         });
@@ -157,10 +159,10 @@ describe('Ticket 13: Seed Network con seed reali', () => {
                 mediaType: 'movie'
             });
 
-            // loved 4 + watched decaduto: il contributo watched sta fra 0.4 (pavimento) e 2 (peso
-            // pieno), quindi la somma sta fra 4.4 e 6 — non è più esattamente 6.
-            expect(seeds.get('200')).toBeGreaterThanOrEqual(4.4);
-            expect(seeds.get('200')).toBeLessThanOrEqual(6);
+            // loved 4 + watched decaduto: il contributo watched sta fra 0.20 (pavimento) e 1.0
+            // (peso pieno), quindi la somma sta fra 4.20 e 5 — non è più esattamente 6.
+            expect(seeds.get('200')).toBeGreaterThanOrEqual(4.2);
+            expect(seeds.get('200')).toBeLessThanOrEqual(5);
             expect(counts.loved).toBe(1);
             expect(counts.watched).toBe(1);
         });
