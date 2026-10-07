@@ -1,6 +1,6 @@
 # 20 — Il segnale della cronologia: 30 recenti + il DNA del resto
 
-**Stato**: `in corso` · assegnato (sperimentazione offline, 6 opzioni)
+**Stato**: `chiuso` 07/10/2026 · sei opzioni simulate, scelta E (decadimento) applicata e in produzione (immagine `19a6d63`)
 
 ## Problema
 

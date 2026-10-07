@@ -1,6 +1,6 @@
 # 21 — Motore hero: pool a monte, flag sdoppiato, cap famiglia
 
-**Stato**: `in corso` · assegnato (pool a monte, flag sdoppiato, cap famiglia)
+**Stato**: `chiuso` 07/10/2026 · pool a monte (17-19 → 75-100 item), flag sdoppiato, cap famiglia; in produzione (immagine `19a6d63`)
 
 Tre interventi sul motore dei suggerimenti, tutti con la misura prima/dopo. L'ordine è quello di priorità.
 

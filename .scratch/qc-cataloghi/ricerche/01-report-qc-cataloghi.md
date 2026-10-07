@@ -352,3 +352,82 @@ costruiti su pochi voti). Le due eccezioni dichiarate del ticket 17 sono `mindfu
 truth che il banco keyword usa per misurare le alternative (ticket 14), e la rubrica a 5 dimensioni è pronta per una
 seconda tornata di giudizio (ticket 12) sui cataloghi cambiati — le uniche voci che possono dire se la bonifica ha
 migliorato anche la *qualità percepita*, non solo i conteggi.
+
+## 11. Seconda tornata: i cataloghi bonificati sono anche migliori? (07/10/2026)
+
+La domanda di §10 ha avuto risposta, e la risposta è misurata **contro il rumore del giudice**, non a naso.
+
+### 11.1 Il rumore, prima dei risultati
+
+La rubrica v2 ha sdoppiato la pertinenza in due letture — *aderenza ai filtri dichiarati* (verificabile a macchina) e
+*aderenza alla promessa del nome* (giudizio) — perché era lì che i giudici divergevano (Δ fino a 34 punti nella prima
+tornata). Per sapere se la correzione funziona, due cataloghi **mai toccati** sono stati ri-giudicati alla cieca:
+`pop_movies` (96 → 85) e `hbo` (94 → 96).
+
+**Δ medio 6,5 · Δ massimo 11 punti.** Questa è la banda: sotto di essa un cambiamento fra le due letture **non è un
+fatto**. Tutti i numeri che seguono stanno sopra la banda, o sono dichiarati come rumore.
+
+### 11.2 Cosa è migliorato (21 cataloghi ri-giudicati)
+
+Otto cataloghi migliorano **oltre la banda**, e nessuno peggiora oltre la banda:
+
+| Catalogo | Prima | Dopo |
+|---|---|---|
+| `anime_shonen` | **N 57** | **P 93** (+36) |
+| `zombies_movies` | **N 59** | **P 85** (+26) |
+| `italian_comedy` | B 68 | **P 92** (+24) |
+| `action_blockbusters` | B 74 | **P 93** (+19) — il rinomino ha funzionato |
+| `cult_classics` | B 64 | **P 82** (+18) |
+| `tv_high_fantasy` | **N 59** | B 73 (+14) |
+| `fantasy_magic` | B 72 | **P 86** (+14) |
+| `cyberpunk` | B 72 | **P 85** (+13) |
+
+Dentro la banda non si conclude nulla (`psych_thriller` +10, `cyberpunk_series` +11, `tv_superheroes_dark` −6): sono
+oscillazioni, e presentarle come miglioramenti sarebbe stato disonesto.
+
+### 11.3 Terzo giro del banco: i difetti che i giudici avevano *nominato*
+
+L'ultimo giro non ha misurato metriche generiche ma gli `errori` dei giudici, uno per uno. Verifica indipendente
+(titolo+anno sulla top-50 nuova): **dei 40 titoli segnalati, dopo la correzione ne restano 3** — *Cinquanta sfumature
+di grigio* in `psych_thriller`, *Fuze* e *The Beach* in `mindfuck`. Singoli, non sistematici.
+
+`mindfuck_series` è il caso esemplare: pool **28 → 69** e procedurali/teen drama estranei da 8 a 0. Anche i due
+cataloghi che il giudice aveva stroncato per il *tono* sono stati corretti con una misura: `epic_historical` ora tiene
+i kolossal (*Schindler's List*, *Ran*, *Lawrence d'Arabia*, *1917*, *Ben-Hur*) e non i drammi d'ufficio;
+`tv_superheroes_dark` ha 0 difetti e **Batman TAS e Invincible ancora in top-5** (verifica di regressione sul canone,
+prescritta perché l'animazione lì è una decisione del proprietario, non un difetto).
+
+### 11.4 Gli hero: tre difetti chiusi e una scoperta
+
+Le misure sugli hero (48 combinazioni: 2 archetipi × 3 livelli di attività × 8 hero) stanno in
+[`04-hero-cold-start.md`](04-hero-cold-start.md). In sintesi:
+
+- **Reflusso live-action nel profilo anime: risolto** (100% anime, 0 intrusioni) — era un sintomo del bug del marker
+  del ticket 13, non un difetto del cap di diversità.
+- **Corti nella `seed_network`: risolti** dal ticket 07. **Animazione per famiglie: era il 44%** di un profilo adulto
+  → cap sul genere Famiglia, ora 2 su 42 (nei profili kids il cap non si applica, verificato).
+- **Tre hero serie del profilo Otaku servivano 17-19 titoli invece di 50**: pool a monte da 160 a 250 nei contesti
+  stretti → 98, 100 e 75 item, **senza** peggiorare la latenza (serie 8,5 s, film 10,4 s) e con la disgiunzione
+  intatta (0 sovrapposizioni).
+- **La scoperta che nessun ticket aveva previsto**: il motore usava solo i **15 titoli visti più recenti**, quindi un
+  utente con 50 e uno con 100 visioni ricevevano **la stessa lista** (Jaccard 1.000) e l'85% della cronologia era
+  invisibile. Sei opzioni simulate ([`05-segnale-cronologia.md`](05-segnale-cronologia.md)); scelto il **decadimento
+  temporale** (`w = max(0.20, 0.5^(giorni/60))`): Jaccard **0.600**, copertura **100%**, i preferiti espliciti ancora
+  in testa (#1-#3 a 4.0 contro 1.0 di un visto fresco), latenza invariata.
+
+**Il flag che mentiva**: `fallbackUsed=false` copriva anche il caso «Trakt ha risposto con 0 titoli conformi, ho
+riempito col top-up interno» — misurato sul profilo reale, dove il catalogo era al 100% top-up e il flag diceva che
+andava tutto bene. Ora è sdoppiato in `traktAvailable`, `traktSourcedCount`, `fallbackTopUpCount`,
+`isDegradedFallback`.
+
+### 11.5 Stato finale
+
+Immagine **`19a6d63`** in produzione dal 07/10, verificata *dentro il container* (non solo «è su»): i marcatori dei tre
+interventi sul motore, i due cataloghi nuovi e i **163 preset** sono presenti nel codice in esecuzione; manifest e
+catalogo rispondono 200. Suite: **1746 passati**, con le sole 5 fallite ambientali note (ERDB locale e parquet di
+produzione in `.cache`).
+
+Restano aperti, per scelta o per dichiarazione: i due pool corti per natura (`tv_high_fantasy` 46, `cyberpunk_series`
+39) e i quattro accettati corti (i registi, `tv_superheroes_dark` 19, `epic_historical` 47); i tre titoli residui del
+§11.3; e le lacune dichiarate di §8, fra cui il percorso Trakt dei quattro profili non attivi dell'account reale
+(misurarlo richiederebbe una scrittura sulla configurazione dell'utente).
