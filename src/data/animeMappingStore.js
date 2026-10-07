@@ -1,5 +1,8 @@
 const axios = require('axios');
 const duckDbStore = require('../db/duckDbStore');
+// Tabella alias del tipo (movie/tv/series/anime) in un posto solo: `utils/animeIdentity`
+// non ha require di livello superiore, quindi questa dipendenza non chiude nessun ciclo.
+const { normalizeTipoAnime } = require('../utils/animeIdentity');
 // Logger non standard rimosso, usiamo console
 
 let loadAnimeOverrides;
@@ -55,7 +58,11 @@ class AnimeMappingStore {
         this.anibridgeShowTmdbIds = new Set();
         this.anibridgeMovieTmdbIds = new Set();
         this.certifiedTmdbIds = new Set();
-        this.animeTmdbIds = new Set();
+        // Due namespace tipizzati separati (contratto ticket 13):
+        // animeTmdbIdsMovie contiene SOLO film, animeTmdbIdsShow contiene SOLO serie.
+        this.animeTmdbIdsMovie = new Set();
+        this.animeTmdbIdsShow = new Set();
+        this._warnedMissingTipo = false;
         
         this.etags = {
             anibridge: null,
@@ -156,10 +163,13 @@ class AnimeMappingStore {
             
             console.log(`[AnimeMappingStore] Sincronizzazione completata. TMDB chiavi: ${this.tmdbToAnimeNode.size}, certificati: ${this.certifiedTmdbIds.size}`);
             
-            // POPOLIAMO LA TABELLA ANIME IN DUCKDB PER LE QUERY SQL
-            const idsToUpdate = this.animeTmdbIds.size > 0 ? Array.from(this.animeTmdbIds) : Array.from(this.tmdbToAnimeNode.keys());
-            if (idsToUpdate.length > 0) {
-                await duckDbStore.updateAnimeMapping(idsToUpdate).catch(e => {
+            // POPOLIAMO LA TABELLA ANIME IN DUCKDB PER LE QUERY SQL (nuovo contratto { movie, tv })
+            const idsByType = {
+                movie: Array.from(this.animeTmdbIdsMovie || []),
+                tv: Array.from(this.animeTmdbIdsShow || [])
+            };
+            if (idsByType.movie.length > 0 || idsByType.tv.length > 0) {
+                await duckDbStore.updateAnimeMapping(idsByType).catch(e => {
                     console.error('[AnimeMappingStore] Impossibile aggiornare DuckDB:', e.message);
                 });
             }
@@ -170,29 +180,61 @@ class AnimeMappingStore {
     }
 
     _rebuildAnimeTmdbIds() {
-        const combined = new Set(this.anibridgeTmdbIds || []);
-        if (this.tmdbToAnimeNode) {
-            for (const key of this.tmdbToAnimeNode.keys()) {
-                const id = key.split(':')[0];
-                if (id) combined.add(String(id));
+        // Due namespace tipizzati: film e serie separati per evitare che un film TMDB
+        // collida con una serie anime avente lo stesso numero ID (ticket 13).
+        const movieSet = new Set();
+        const showSet = new Set();
+
+        // 1. Film anime: anibridgeMovieTmdbIds + chiavi tmdbToKitsuMovie
+        if (this.anibridgeMovieTmdbIds) {
+            for (const id of this.anibridgeMovieTmdbIds) {
+                movieSet.add(String(id));
             }
         }
         if (this.tmdbToKitsuMovie) {
             for (const id of this.tmdbToKitsuMovie.keys()) {
-                combined.add(String(id));
+                movieSet.add(String(id));
+            }
+        }
+
+        // 2. Serie anime: anibridgeShowTmdbIds + chiavi tmdbToKitsu
+        if (this.anibridgeShowTmdbIds) {
+            for (const id of this.anibridgeShowTmdbIds) {
+                showSet.add(String(id));
             }
         }
         if (this.tmdbToKitsu) {
             for (const id of this.tmdbToKitsu.keys()) {
-                combined.add(String(id));
+                showSet.add(String(id));
             }
         }
+
+        // 3. Titoli certificati: validi per entrambi i namespace
         if (this.certifiedTmdbIds) {
             for (const id of this.certifiedTmdbIds) {
-                combined.add(String(id));
+                const clean = String(id).trim();
+                if (clean) {
+                    movieSet.add(clean);
+                    showSet.add(clean);
+                }
             }
         }
-        this.animeTmdbIds = combined;
+
+        this.animeTmdbIdsMovie = movieSet;
+        this.animeTmdbIdsShow = showSet;
+
+        // Log di sintesi dell'ambiguità: quanti id esistono solo come serie e quanti solo come film
+        if (movieSet.size > 0 || showSet.size > 0) {
+            let onlyMovie = 0;
+            for (const id of movieSet) {
+                if (!showSet.has(id)) onlyMovie++;
+            }
+            let onlyShow = 0;
+            for (const id of showSet) {
+                if (!movieSet.has(id)) onlyShow++;
+            }
+            console.log(`[AnimeMappingStore] Build indici completata: ${onlyShow} solo serie, ${onlyMovie} solo film (totale film: ${movieSet.size}, serie: ${showSet.size})`);
+        }
     }
 
     buildFribbIndex(fribbData) {
@@ -255,18 +297,20 @@ class AnimeMappingStore {
                         if (detectedType) {
                             newKitsuToTmdbType.set(String(item.kitsu_id), detectedType);
                         }
-                        // Indice piatto: TUTTE le varianti TMDB del gruppo (movie e tv
-                        // insieme) tornano al loro Kitsu. È l'unico modo che ha chi ha
-                        // solo l'id TMDB dell'evento, senza stagione né episodio.
-                        for (const tmdbId of tmdbIds) {
-                            newTmdbToKitsu.set(String(tmdbId), item.kitsu_id);
-                        }
                         if (item.mal_id) {
                             newMalToTmdb.set(String(item.mal_id), primaryTmdb);
                         }
-                        if (detectedType === 'movie' || item.type === 'Movie' || (typeof rawTmdb === 'object' && rawTmdb !== null && rawTmdb.movie)) {
+
+                        // Allineamento namespace Kitsu (ticket 13):
+                        // se detectedType è 'movie', l'id appartiene al namespace film TMDB (tmdbToKitsuMovie);
+                        // altrimenti appartiene al namespace serie/tv TMDB (tmdbToKitsu).
+                        if (detectedType === 'movie') {
                             for (const tmdbId of tmdbIds) {
                                 newTmdbToKitsuMovie.set(String(tmdbId), item.kitsu_id);
+                            }
+                        } else {
+                            for (const tmdbId of tmdbIds) {
+                                newTmdbToKitsu.set(String(tmdbId), item.kitsu_id);
                             }
                         }
                     }
@@ -567,7 +611,7 @@ class AnimeMappingStore {
         // (Anibridge, overrides certificati) non è "non è un anime": è un anime di cui
         // lo store non sa ancora il Kitsu. Motivo diverso, così il chiamante non lo
         // liquida come "titolo normale da saltare".
-        if (this.isAnimeTmdbId(idPuro)) {
+        if (this.isAnimeTmdbId(idPuro, tipoNorm)) {
             return { kitsuId: null, motivo: MOTIVI_RESOLVE_KITSU.ANIME_SENZA_KITSU, tmdbId: idPuro };
         }
 
@@ -587,18 +631,55 @@ class AnimeMappingStore {
     }
 
     /**
-     * Verifica in O(1) se un ID TMDB appartiene a un anime presente nello store (Anibridge o Fribb).
-     * @param {string|number} id ID TMDB (supporta anche formati "tmdb:123" o "123:1")
+     * Unione esplicita tra i namespace movie e show, per i chiamanti che per mestiere
+     * devono scoprire il tipo e non possono fornirlo a priori (es. backfill-mediatype-anime.js).
+     * @param {string|number} id ID TMDB (accetta anche formati "tmdb:123", "tmdb:tv:123", "123:1")
      * @returns {boolean}
      */
-    isAnimeTmdbId(id) {
-        if (id === null || id === undefined || id === '') return false;
-        const cleanId = String(id).replace(/^tmdb:(tv:|movie:)?/i, '').split(':')[0].trim();
+    isAnimeTmdbIdAny(id) {
+        const cleanId = this._tmdbIdPuro(id);
         if (!cleanId) return false;
-        if (this.animeTmdbIds.has(cleanId)) return true;
-        if (this.certifiedTmdbIds?.has(cleanId)) return true;
-        if (this.tmdbToKitsuMovie?.has(cleanId)) return true;
-        return false;
+        return (this.animeTmdbIdsMovie?.has(cleanId) === true) || (this.animeTmdbIdsShow?.has(cleanId) === true);
+    }
+
+    /**
+     * Verifica in O(1) se un ID TMDB appartiene a un anime presente nello store.
+     * Consapevole del tipo (contratto ticket 13): impedisce che un film TMDB (es. Mediterraneo, 38251)
+     * collida con una serie anime (Toriko, 38251).
+     *
+     * @param {string|number} id ID TMDB (accetta anche formati "tmdb:123", "tmdb:tv:123", "123:1")
+     * @param {'movie'|'tv'|'series'|'anime'|undefined} [tipo] Se specificato, consulta SOLO quel namespace.
+     *                                                        Senza tipo, mantiene l'unione ed emette un console.warn
+     *                                                        una sola volta citando lo stack del chiamante.
+     * @returns {boolean}
+     */
+    isAnimeTmdbId(id, tipo) {
+        const cleanId = this._tmdbIdPuro(id);
+        if (!cleanId) return false;
+
+        if (tipo !== undefined && tipo !== null) {
+            // Tabella alias in un posto solo (`normalizeTipoAnime`): 'series'/'anime' sono lo
+            // stesso namespace delle serie. Un tipo fornito ma non riconosciuto non ha
+            // namespace: meglio `false` che interrogare l'unione e riaprire la collisione.
+            const t = normalizeTipoAnime(tipo);
+            if (t === 'movie') return this.animeTmdbIdsMovie?.has(cleanId) === true;
+            if (t === 'tv') return this.animeTmdbIdsShow?.has(cleanId) === true;
+            return false;
+        }
+
+        // Senza tipo: unione legacy con console.warn una sola volta per tracciare il chiamante
+        if (!this._warnedMissingTipo) {
+            this._warnedMissingTipo = true;
+            const err = new Error();
+            const stack = (err.stack || '')
+                .split('\n')
+                .slice(2, 6)
+                .map(line => line.trim())
+                .join('\n  ');
+            console.warn(`[AnimeMappingStore] Chiamata a isAnimeTmdbId senza 'tipo' (fallback su unione legacy). Stack del chiamante:\n  ${stack}`);
+        }
+
+        return this.isAnimeTmdbIdAny(cleanId);
     }
 }
 

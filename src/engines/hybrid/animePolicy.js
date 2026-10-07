@@ -106,12 +106,13 @@ function getEffectiveTypeSelectors(profile, typeSelectors = null, options = {}) 
 /**
  * Determina se un item è un anime secondo la regola canonica.
  * @param {Object} item
+ * @param {string} [tipo] - Tipo opzionale ('movie' o 'tv') per disambiguare l'ID TMDB
  * @returns {boolean}
  */
-function isItemAnime(item) {
+function isItemAnime(item, tipo) {
     if (!item) return false;
     const target = item.data || item.rawTMDB || item;
-    return normalizeAnimeMarker(target) === true;
+    return normalizeAnimeMarker(target, tipo ? { tipo } : undefined) === true;
 }
 
 /**
@@ -122,10 +123,11 @@ function isItemAnime(item) {
  * - exclude: ×0.40 per anime, ×1.00 per non-anime
  * @param {Object} item
  * @param {'only'|'favored'|'neutral'|'exclude'} policy
+ * @param {string} [tipo] - Tipo opzionale ('movie' o 'tv') per disambiguare l'ID TMDB
  * @returns {number}
  */
-function computeAnimeScoreMultiplier(item, policy) {
-    const isAnime = isItemAnime(item);
+function computeAnimeScoreMultiplier(item, policy, tipo) {
+    const isAnime = isItemAnime(item, tipo);
     if (policy === ANIME_POLICY_MODES.ONLY) {
         return isAnime ? 1.25 : 0.4;
     }

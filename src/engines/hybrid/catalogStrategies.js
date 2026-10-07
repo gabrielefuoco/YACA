@@ -32,14 +32,14 @@ const {
     ANIME_POLICY_MODES
 } = require('./animePolicy');
 
-function matchesTypeSelectors(item, typeSelectors) {
+function matchesTypeSelectors(item, typeSelectors, tipo) {
     if (!typeSelectors) return true;
     const animeSelector = typeSelectors.anime;
     if (animeSelector === 'only') {
-        return isItemAnime(item);
+        return isItemAnime(item, tipo);
     }
     if (animeSelector === 'exclude') {
-        return !isItemAnime(item);
+        return !isItemAnime(item, tipo);
     }
     return true;
 }
@@ -364,6 +364,11 @@ function passesQualityFloor(item, mediaType = 'movie', isHiddenGems = false) {
     if (mediaType === 'movie') {
         if (isCompilationOrBoxSet(item)) return false;
 
+        // Ticket 07: durata minima 60' per i film. Le durate 0/nulle (metadato assente su inediti)
+        // non vengono escluse per definizione: vengono scartati solo i cortometraggi/speciali con durata nota < 60'.
+        const runtime = Number(target.runtime ?? item.runtime);
+        if (Number.isFinite(runtime) && runtime > 0 && runtime < 60) return false;
+
         const rawGenres = target.genre_ids || (target.genres ? target.genres.map(g => (typeof g === 'object' && g !== null ? (g.id ?? g) : g)) : []);
         const gids = rawGenres.map(Number);
         const kws = Array.isArray(target.keywords)
@@ -371,7 +376,6 @@ function passesQualityFloor(item, mediaType = 'movie', isHiddenGems = false) {
             : (target.keywords?.results || target.keywords?.keywords || []);
         const title = target.title || target.name || item.name || '';
         const isSpecialOrEpisode = target.episode_number !== undefined
-            || (target.runtime && target.runtime <= 20)
             || (gids.includes(10770) && kws.some(k => /tv episode|special/i.test(typeof k === 'object' ? k.name : k)))
             || /special|abominevole sposa/i.test(title);
         if (isSpecialOrEpisode) return false;
@@ -411,7 +415,7 @@ function hasAffinityForAny(vector, prefix, ids) {
  * generi da cui provengono (così il Cinefilo non eredita anime/kids da
  * `comedy`, mentre Otaku e Famiglia li mantengono).
  */
-function isHiddenGemAlignedWithProfile(item, profile) {
+function isHiddenGemAlignedWithProfile(item, profile, tipo) {
     const vector = profile?.compiledVectors?.V_final;
     if (!vector || typeof vector !== 'object' || Object.keys(vector).length === 0) return true;
 
@@ -433,7 +437,8 @@ function isHiddenGemAlignedWithProfile(item, profile) {
         tmdbId: data.id ?? data._tmdbId,
         genreIds,
         originalLanguage: data.original_language,
-        keywords: keywordItems
+        keywords: keywordItems,
+        tipo
     });
     const isMangaAdaptation = keywordItems.some(keyword => (
         typeof keyword?.name === 'string' && /based on manga/i.test(keyword.name)
@@ -534,9 +539,10 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
                 40,
                 {}
             ).catch(() => []);
+            const presetTipo = tmdbType === 'movie' ? 'movie' : 'tv';
             for (const item of results) {
                 if (isKidsMode && isItemInappropriateForKids(item)) continue;
-                if (!matchesTypeSelectors(item, directTypeSelectors)) continue;
+                if (!matchesTypeSelectors(item, directTypeSelectors, presetTipo)) continue;
                 const nId = normalizeContentId(item.id);
                 if (nId && !existingIds.has(nId)) {
                     existingIds.add(nId);
@@ -640,13 +646,13 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
             where.push(F.any(...cluster.keywords.map(k => F.keywordStr(k))));
         }
         
-        // Applichiamo la Quota Anime
+        // Applichiamo la Quota Anime (Ticket 13: predicato tipizzato film/serie)
         if (animePolicy === ANIME_POLICY_MODES.ONLY) {
-            where.push(F.anime); // Deve essere strettamente anime
+            where.push(F.animeOf(types)); // Deve essere strettamente anime
         } else if (animePolicy === ANIME_POLICY_MODES.EXCLUDE) {
-            where.push(`NOT (${F.anime})`);
+            where.push(`NOT (${F.animeOf(types)})`);
         } else if (index < animeQueriesLimit) {
-            where.push(F.anime);
+            where.push(F.animeOf(types));
         }
         
         // Ticket 22: i canali dei cluster ordinano per QUALITÀ (media bayesiana, popolarità
@@ -686,9 +692,9 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
             genreBaseWhere.push(F.notKeyword(...ADULT_KEYWORD_IDS.split(',').map(Number)));
         }
         if (animePolicy === ANIME_POLICY_MODES.ONLY || animePolicy === ANIME_POLICY_MODES.FAVORED) {
-            genreBaseWhere.push(F.anime);
+            genreBaseWhere.push(F.animeOf(types));
         } else if (animePolicy === ANIME_POLICY_MODES.EXCLUDE) {
-            genreBaseWhere.push(`NOT (${F.anime})`);
+            genreBaseWhere.push(`NOT (${F.animeOf(types)})`);
         }
         genreBaseWhere.push(F.any(...mappedTopGenres.map(g => F.genre(Number(g)))));
 
@@ -732,10 +738,11 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
     if (isKidsMode) {
         finalPool = applyKidsMode(finalPool);
     }
+    const poolTipo = types === 'movie' ? 'movie' : 'tv';
     if (animePolicy === ANIME_POLICY_MODES.ONLY) {
-        finalPool = finalPool.filter(isItemAnime);
+        finalPool = finalPool.filter(item => isItemAnime(item, poolTipo));
     } else if (animePolicy === ANIME_POLICY_MODES.EXCLUDE) {
-        finalPool = finalPool.filter(item => !isItemAnime(item));
+        finalPool = finalPool.filter(item => !isItemAnime(item, poolTipo));
     }
     return { pool: finalPool, animeRatio, animePolicy };
 }
@@ -751,14 +758,15 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
     profile.context = context;
     
     const { pool } = await fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters, 1000, isKidsMode, effectiveTypeSelectors);
+    const contentTipo = mediaType === 'movie' ? 'movie' : 'tv';
     let candidatePool = pool;
     if (isKidsMode) {
         candidatePool = applyKidsMode(pool);
     }
     if (animePolicy === ANIME_POLICY_MODES.ONLY) {
-        candidatePool = candidatePool.filter(isItemAnime);
+        candidatePool = candidatePool.filter(item => isItemAnime(item, contentTipo));
     } else if (animePolicy === ANIME_POLICY_MODES.EXCLUDE) {
-        candidatePool = candidatePool.filter(item => !isItemAnime(item));
+        candidatePool = candidatePool.filter(item => !isItemAnime(item, contentTipo));
     }
     
     if (candidatePool.length === 0) {
@@ -777,10 +785,10 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
         if (isKidsMode && isItemInappropriateForKids(tmdbData)) return null;
         if (!passesQualityFloor(tmdbData, mediaType, isHiddenGems)) return null;
         if (isHiddenGems && !isHiddenGemPopularityAllowed(tmdbData.popularity ?? item.popularity)) return null;
-        if (isHiddenGems && !isHiddenGemAlignedWithProfile(tmdbData, profile)) return null;
-        if (!matchesTypeSelectors(tmdbData, effectiveTypeSelectors)) return null;
-        if (animePolicy === ANIME_POLICY_MODES.ONLY && !isItemAnime(tmdbData)) return null;
-        if (animePolicy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(tmdbData)) return null;
+        if (isHiddenGems && !isHiddenGemAlignedWithProfile(tmdbData, profile, contentTipo)) return null;
+        if (!matchesTypeSelectors(tmdbData, effectiveTypeSelectors, contentTipo)) return null;
+        if (animePolicy === ANIME_POLICY_MODES.ONLY && !isItemAnime(tmdbData, contentTipo)) return null;
+        if (animePolicy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(tmdbData, contentTipo)) return null;
         if (typeof tmdbData.vote_count !== 'number') {
             tmdbData.vote_count = typeof item.vote_count === 'number' ? item.vote_count : 0;
         }
@@ -800,11 +808,11 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
     if (isKidsMode) {
         finalItems = applyKidsMode(finalItems);
     }
-    finalItems = finalItems.filter(item => matchesTypeSelectors(item.data || item, effectiveTypeSelectors));
+    finalItems = finalItems.filter(item => matchesTypeSelectors(item.data || item, effectiveTypeSelectors, contentTipo));
     if (animePolicy === ANIME_POLICY_MODES.ONLY) {
-        finalItems = finalItems.filter(isItemAnime);
+        finalItems = finalItems.filter(item => isItemAnime(item, contentTipo));
     } else if (animePolicy === ANIME_POLICY_MODES.EXCLUDE) {
-        finalItems = finalItems.filter(item => !isItemAnime(item));
+        finalItems = finalItems.filter(item => !isItemAnime(item, contentTipo));
     }
     
     if (finalItems.length === 0) {
@@ -824,6 +832,8 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
 async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType, isKidsMode = false, typeSelectors = null) {
     const catalogId = mediaType === 'movie' ? 'yaca_true_blend_movies' : 'yaca_true_blend_series';
     const baseFilters = [F.minVotes(1000)];
+    // Ticket 07: durata minima 60' per i film in True Blend
+    if (mediaType === 'movie') baseFilters.push(F.minRuntime(60));
     return buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fetchPopularFallbackIds, isKidsMode, typeSelectors);
 }
 
@@ -1002,9 +1012,12 @@ async function buildSeedNetworkFill({ finalItems, tmdbApiKey, mediaType, types, 
     let fallbackIds = await fetchSeedFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode, fallbackSelectors);
     if (policy === ANIME_POLICY_MODES.ONLY) {
         try {
+            const where = [F.animeOf(types), F.minScore(6.5), F.minVotes(mediaType === 'movie' ? 100 : 50)];
+            // Ticket 07: durata minima 60' per i film nel fill del seed network
+            if (mediaType === 'movie') where.push(F.minRuntime(60));
             const animePreset = {
                 type: types,
-                where: [F.anime, F.minScore(6.5), F.minVotes(mediaType === 'movie' ? 100 : 50)],
+                where,
                 orderBy: S.POPULAR
             };
             const extraRows = await getDuckDbCatalogFromPreset(animePreset, 0, 100);
@@ -1034,9 +1047,10 @@ async function buildSeedNetworkFill({ finalItems, tmdbApiKey, mediaType, types, 
         if (!raw) continue;
         if (isKidsMode && isItemInappropriateForKids(raw)) continue;
         if (!passesQualityFloor(raw, mediaType, false)) continue;
-        if (!matchesTypeSelectors(raw, effectiveSelectors)) continue;
-        if (policy === ANIME_POLICY_MODES.ONLY && !isItemAnime(raw)) continue;
-        if (policy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(raw)) continue;
+        const seedTipo = (types === 'movie' || mediaType === 'movie') ? 'movie' : 'tv';
+        if (!matchesTypeSelectors(raw, effectiveSelectors, seedTipo)) continue;
+        if (policy === ANIME_POLICY_MODES.ONLY && !isItemAnime(raw, seedTipo)) continue;
+        if (policy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(raw, seedTipo)) continue;
         if (!passesSeedNetworkDnaGate(raw, effectiveMappedTopGenres)) continue;
         const score = ProfileScorer.calculateItemMatch(raw, profile, { dnaFilters, globalProfile, kidsMode: isKidsMode, typeSelectors: effectiveSelectors, animePolicy: policy });
         if (isKidsMode && score <= 0) continue;
@@ -1062,6 +1076,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     if (!profile) return fetchSeedFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode, fallbackSelectors);
 
     const types = mediaType === 'movie' ? 'movie' : 'series';
+    const tipo = mediaType === 'movie' ? 'movie' : 'tv';
     const tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
     const dnaFilters = getProfileDnaFilters(user, context);
 
@@ -1108,7 +1123,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
             let animeSeedIdSet = new Set();
             if (cleanIds.length > 0) {
                 try {
-                    const rows = await duckDbStore.query(`SELECT id FROM ${table} WHERE id IN (${cleanIds.join(',')}) AND (${F.anime})`);
+                    const rows = await duckDbStore.query(`SELECT id FROM ${table} WHERE id IN (${cleanIds.join(',')}) AND (${F.animeOf(table === 'movies' ? 'movie' : 'tv')})`);
                     animeSeedIdSet = new Set(rows.map(r => String(r.id)));
                 } catch (_e) {}
             }
@@ -1130,7 +1145,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
             let nonAnimeSeedIdSet = new Set();
             if (cleanIds.length > 0) {
                 try {
-                    const rows = await duckDbStore.query(`SELECT id FROM ${table} WHERE id IN (${cleanIds.join(',')}) AND NOT (${F.anime})`);
+                    const rows = await duckDbStore.query(`SELECT id FROM ${table} WHERE id IN (${cleanIds.join(',')}) AND NOT (${F.animeOf(table === 'movies' ? 'movie' : 'tv')})`);
                     nonAnimeSeedIdSet = new Set(rows.map(r => String(r.id)));
                 } catch (_e) {}
             }
@@ -1153,9 +1168,9 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         where.push(F.notKeyword(...ADULT_KEYWORD_IDS.split(',').map(Number)));
     }
     if (animePolicy === ANIME_POLICY_MODES.ONLY) {
-        where.push(F.anime);
+        where.push(F.animeOf(types));
     } else if (animePolicy === ANIME_POLICY_MODES.EXCLUDE) {
-        where.push(`NOT (${F.anime})`);
+        where.push(`NOT (${F.animeOf(types)})`);
     }
     if (mappedTopGenres.length > 0) {
         where.push(F.any(...mappedTopGenres.map(g => F.genre(Number(g)))));
@@ -1175,6 +1190,9 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     }
     
     if (where.length > 0 && (realSeeds.size + traktIds.length) < SEED_DNA_MIN_REAL_SEEDS) {
+        if (types === 'movie') {
+            where.push(F.minRuntime(60));
+        }
         const preset = { type: types, where, orderBy: S.POPULAR };
         console.log(`\n======================================================`);
         console.log(`[Catalog Debug] Seed Network - profile context=${context}`);
@@ -1198,9 +1216,11 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     if (allSeedsMap.size === 0) {
         if (animePolicy === ANIME_POLICY_MODES.ONLY) {
             try {
+                const animeWhere = [F.animeOf(types), F.minScore(6.5), F.minVotes(types === 'movie' ? 100 : 50)];
+                if (types === 'movie') animeWhere.push(F.minRuntime(60));
                 const animePreset = {
                     type: types,
-                    where: [F.anime, F.minScore(6.5), F.minVotes(types === 'movie' ? 100 : 50)],
+                    where: animeWhere,
                     orderBy: S.POPULAR
                 };
                 const popAnime = await getDuckDbCatalogFromPreset(animePreset, 0, 10);
@@ -1252,9 +1272,9 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         if (!rawItem) continue;
         if (isKidsMode && isItemInappropriateForKids(rawItem)) continue;
         if (!passesQualityFloor(rawItem, mediaType, false)) continue;
-        if (!matchesTypeSelectors(rawItem, effectiveTypeSelectors)) continue;
-        if (animePolicy === ANIME_POLICY_MODES.ONLY && !isItemAnime(rawItem)) continue;
-        if (animePolicy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(rawItem)) continue;
+        if (!matchesTypeSelectors(rawItem, effectiveTypeSelectors, tipo)) continue;
+        if (animePolicy === ANIME_POLICY_MODES.ONLY && !isItemAnime(rawItem, tipo)) continue;
+        if (animePolicy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(rawItem, tipo)) continue;
         if (!passesSeedNetworkDnaGate(rawItem, mappedTopGenres)) continue;
         const itemGenres = rawItem.genre_ids || [];
         
@@ -1270,7 +1290,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
         hybridScore *= dnaMultiplier;
         const animeMultiplier = typeof ProfileScorer.computeAnimeMultiplier === 'function'
             ? ProfileScorer.computeAnimeMultiplier(rawItem, profile, { typeSelectors: effectiveTypeSelectors, animePolicy })
-            : computeAnimeScoreMultiplier(rawItem, animePolicy);
+            : computeAnimeScoreMultiplier(rawItem, animePolicy, tipo);
         hybridScore *= animeMultiplier;
 
         candidates.push({ data: rawItem, hybridScore });
@@ -1306,9 +1326,9 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
             const tmdbData = details || data.rawTMDB || data;
             if (isKidsMode && isItemInappropriateForKids(tmdbData)) return null;
             if (!passesQualityFloor(tmdbData, mediaType, false)) return null;
-            if (!matchesTypeSelectors(tmdbData, effectiveTypeSelectors)) return null;
-            if (animePolicy === ANIME_POLICY_MODES.ONLY && !isItemAnime(tmdbData)) return null;
-            if (animePolicy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(tmdbData)) return null;
+            if (!matchesTypeSelectors(tmdbData, effectiveTypeSelectors, tipo)) return null;
+            if (animePolicy === ANIME_POLICY_MODES.ONLY && !isItemAnime(tmdbData, tipo)) return null;
+            if (animePolicy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(tmdbData, tipo)) return null;
             if (!passesSeedNetworkDnaGate(tmdbData, mappedTopGenres)) return null;
             if (typeof tmdbData.vote_count !== 'number') {
                 tmdbData.vote_count = typeof data.vote_count === 'number' ? data.vote_count : (data.rawTMDB?.vote_count ?? 0);
@@ -1358,7 +1378,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     if (isKidsMode) {
         finalItems = applyKidsMode(finalItems);
     }
-    finalItems = finalItems.filter(item => matchesTypeSelectors(item.data || item, effectiveTypeSelectors));
+    finalItems = finalItems.filter(item => matchesTypeSelectors(item.data || item, effectiveTypeSelectors, tipo));
 
     // Ticket 13: il refill dei cap può ricreare lunghi run dello stesso filone (nei cataloghi generali).
     if (animePolicy !== ANIME_POLICY_MODES.ONLY) {
@@ -1383,9 +1403,9 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     }
 
     if (animePolicy === ANIME_POLICY_MODES.ONLY) {
-        finalItems = finalItems.filter(isItemAnime);
+        finalItems = finalItems.filter(item => isItemAnime(item, tipo));
     } else if (animePolicy === ANIME_POLICY_MODES.EXCLUDE) {
-        finalItems = finalItems.filter(item => !isItemAnime(item));
+        finalItems = finalItems.filter(item => !isItemAnime(item, tipo));
     }
 
     if (finalItems.length === 0) {
@@ -1420,16 +1440,28 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
     const animePolicy = resolveAnimePolicy(profile, typeSelectors, { isKidsMode });
     const effectiveTypeSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
 
+    // Ticket 16: queste costanti stanno qui perché il fallback le usa prima del ramo caldo.
+    // In JavaScript le variabili 'const' risiedono nella Temporal Dead Zone (TDZ) finché la loro
+    // dichiarazione non viene valutata. Se un profilo non ha ancora un TasteProfile (!profile) o si entra nel
+    // fallback anime, fetchAnimeFallbackItems legge 'types' e 'dnaFilters': se dichiarate sotto, sollevavano
+    // ReferenceError prima dell'inizializzazione, facendo fallire l'intero builder e mascherando il reale percorso Trakt.
+    const types = mediaType === 'movie' ? 'movie' : 'series';
+    const tipo = mediaType === 'movie' ? 'movie' : 'tv';
+    const dnaFilters = getProfileDnaFilters(user, context);
+
     const fetchAnimeFallbackItems = async (limit = 350) => {
+        const where = [
+            F.animeOf(types),
+            F.minScore(6.5),
+            // Ticket 26: stesso pavimento del catalogo (`passesQualityFloor`: voti >= 300).
+            // Prima erano 100/50: gli item fra 50 e 299 voti entravano qui e violavano il pavimento.
+            F.minVotes(300)
+        ];
+        // Ticket 07: durata minima 60' per i film nel fallback anime di Trakt
+        if (mediaType === 'movie') where.push(F.minRuntime(60));
         const preset = {
             type: types,
-            where: [
-                F.anime,
-                F.minScore(6.5),
-                // Ticket 26: stesso pavimento del catalogo (`passesQualityFloor`: voti >= 300).
-                // Prima erano 100/50: gli item fra 50 e 299 voti entravano qui e violavano il pavimento.
-                F.minVotes(300)
-            ],
+            where,
             orderBy: S.POPULAR
         };
         const rows = await getDuckDbCatalogFromPreset(preset, 0, limit);
@@ -1471,8 +1503,6 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
 
     if (!profile) return buildFallback(false);
 
-    const types = mediaType === 'movie' ? 'movie' : 'series';
-    const dnaFilters = getProfileDnaFilters(user, context);
     const traktResult = await fetchTraktRecommendationResult(
         traktToken,
         mediaType === 'movie' ? 'movies' : 'shows',
@@ -1502,9 +1532,9 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
             if (!details) return null;
             if (isKidsMode && isItemInappropriateForKids(details)) return null;
             if (!passesQualityFloor(details, mediaType, false)) return null;
-            if (!matchesTypeSelectors(details, effectiveTypeSelectors)) return null;
-            if (animePolicy === ANIME_POLICY_MODES.ONLY && !isItemAnime(details)) return null;
-            if (animePolicy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(details)) return null;
+            if (!matchesTypeSelectors(details, effectiveTypeSelectors, tipo)) return null;
+            if (animePolicy === ANIME_POLICY_MODES.ONLY && !isItemAnime(details, tipo)) return null;
+            if (animePolicy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(details, tipo)) return null;
             const score = ProfileScorer.calculateItemMatch(details, profile, { dnaFilters, globalProfile, kidsMode: isKidsMode, typeSelectors: effectiveTypeSelectors, animePolicy });
             if (isKidsMode && score <= 0) return null;
             return { data: { ...details, id: details.id ?? id }, score: score * penaltyMultiplier };
@@ -1518,11 +1548,11 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
         const safeIds = new Set(applyKidsMode(finalItems.map(item => item.data)).map(item => normalizeContentId(item.id)));
         finalItems = finalItems.filter(item => safeIds.has(normalizeContentId(item.data.id)));
     }
-    finalItems = finalItems.filter(item => matchesTypeSelectors(item.data || item, effectiveTypeSelectors));
+    finalItems = finalItems.filter(item => matchesTypeSelectors(item.data || item, effectiveTypeSelectors, tipo));
     if (animePolicy === ANIME_POLICY_MODES.ONLY) {
-        finalItems = finalItems.filter(isItemAnime);
+        finalItems = finalItems.filter(item => isItemAnime(item, tipo));
     } else if (animePolicy === ANIME_POLICY_MODES.EXCLUDE) {
-        finalItems = finalItems.filter(item => !isItemAnime(item));
+        finalItems = finalItems.filter(item => !isItemAnime(item, tipo));
     }
 
     let poolItems = finalItems.map(item => ({

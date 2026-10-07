@@ -227,4 +227,55 @@ describe('Anime Policy (Ticket 26)', () => {
             expect(scoreOnly).toBeCloseTo(Math.min(10, scoreNeutral * 1.25), 4);
         });
     });
+
+    describe('Inoltro tipo a store su voci di pool (Ticket 13)', () => {
+        afterEach(() => {
+            jest.restoreAllMocks();
+        });
+
+        it('voce di pool con solo id inoltra esattamente movie e tv allo store', () => {
+            const animeMappingStore = require('../src/data/animeMappingStore');
+            const calls = [];
+            jest.spyOn(animeMappingStore, 'isAnimeTmdbId').mockImplementation((id, tipo) => {
+                calls.push({ id, tipo });
+                return tipo === 'tv';
+            });
+
+            // Voce di pool con solo id (nessun genres, nessun type)
+            const poolItemMovie = { id: '38251', matchScore: 90 };
+            const isMovie = isItemAnime(poolItemMovie, 'movie');
+
+            const poolItemTv = { id: '38251', matchScore: 90 };
+            const isTv = isItemAnime(poolItemTv, 'tv');
+
+            expect(calls).toEqual([
+                { id: '38251', tipo: 'movie' },
+                { id: '38251', tipo: 'tv' }
+            ]);
+            expect(isMovie).toBe(false);
+            expect(isTv).toBe(true);
+        });
+
+        it('computeAnimeScoreMultiplier inoltra tipo alla voce di pool', () => {
+            const animeMappingStore = require('../src/data/animeMappingStore');
+            const calls = [];
+            jest.spyOn(animeMappingStore, 'isAnimeTmdbId').mockImplementation((id, tipo) => {
+                calls.push({ id, tipo });
+                return tipo === 'tv';
+            });
+
+            const poolItemMovie = { id: '38251', matchScore: 90 };
+            const multMovie = computeAnimeScoreMultiplier(poolItemMovie, 'only', 'movie');
+
+            const poolItemTv = { id: '38251', matchScore: 90 };
+            const multTv = computeAnimeScoreMultiplier(poolItemTv, 'only', 'tv');
+
+            expect(calls).toEqual([
+                { id: '38251', tipo: 'movie' },
+                { id: '38251', tipo: 'tv' }
+            ]);
+            expect(multMovie).toBe(0.40);
+            expect(multTv).toBe(1.25);
+        });
+    });
 });

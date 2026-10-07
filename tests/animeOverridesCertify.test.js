@@ -11,7 +11,7 @@ describe('Anime Overrides - Certify & F.anime Integration', () => {
         duckDbStore.close();
     });
 
-    test('carica i titoli da certify in anime-overrides.json e li riconosce in isAnimeTmdbId', () => {
+    test('carica i titoli da certify in anime-overrides.json e li riconosce in isAnimeTmdbId (in entrambi i namespace)', () => {
         animeMappingStore.loadOverrides({
             version: 1,
             identities: [],
@@ -21,14 +21,19 @@ describe('Anime Overrides - Certify & F.anime Integration', () => {
             ]
         });
 
-        expect(animeMappingStore.isAnimeTmdbId(198182)).toBe(true);
-        expect(animeMappingStore.isAnimeTmdbId('198182')).toBe(true);
-        expect(animeMappingStore.isAnimeTmdbId('tmdb:198182')).toBe(true);
-        expect(animeMappingStore.isAnimeTmdbId(223911)).toBe(true);
-        expect(animeMappingStore.isAnimeTmdbId(99999999)).toBe(false);
+        // Un ID certificato a mano vale per entrambi i namespace
+        expect(animeMappingStore.isAnimeTmdbId(198182, 'tv')).toBe(true);
+        expect(animeMappingStore.isAnimeTmdbId(198182, 'movie')).toBe(true);
+        expect(animeMappingStore.isAnimeTmdbId('198182', 'tv')).toBe(true);
+        expect(animeMappingStore.isAnimeTmdbId('198182', 'movie')).toBe(true);
+        expect(animeMappingStore.isAnimeTmdbId('tmdb:198182', 'tv')).toBe(true);
+        expect(animeMappingStore.isAnimeTmdbId(223911, 'tv')).toBe(true);
+        expect(animeMappingStore.isAnimeTmdbId(223911, 'movie')).toBe(true);
+        expect(animeMappingStore.isAnimeTmdbId(99999999, 'tv')).toBe(false);
+        expect(animeMappingStore.isAnimeTmdbId(99999999, 'movie')).toBe(false);
     });
 
-    test('rebuildAnimeTmdbIds preserva i titoli certificati assieme agli indici Anibridge/Fribb', () => {
+    test('rebuildAnimeTmdbIds preserva i titoli certificati assieme agli indici Anibridge/Fribb nei rispettivi namespace', () => {
         animeMappingStore.loadOverrides({
             version: 1,
             identities: [],
@@ -41,10 +46,17 @@ describe('Anime Overrides - Certify & F.anime Integration', () => {
             }
         });
 
-        expect(animeMappingStore.isAnimeTmdbId(106449)).toBe(true);
-        expect(animeMappingStore.isAnimeTmdbId(12345)).toBe(true);
-        expect(animeMappingStore.animeTmdbIds.has('106449')).toBe(true);
-        expect(animeMappingStore.animeTmdbIds.has('12345')).toBe(true);
+        // Il certificato nasce in ENTRAMBI i namespace
+        expect(animeMappingStore.isAnimeTmdbId(106449, 'tv')).toBe(true);
+        expect(animeMappingStore.isAnimeTmdbId(106449, 'movie')).toBe(true);
+        expect(animeMappingStore.animeTmdbIdsMovie.has('106449')).toBe(true);
+        expect(animeMappingStore.animeTmdbIdsShow.has('106449')).toBe(true);
+
+        // La serie da Anibridge è SOLO serie
+        expect(animeMappingStore.isAnimeTmdbId(12345, 'tv')).toBe(true);
+        expect(animeMappingStore.isAnimeTmdbId(12345, 'movie')).toBe(false);
+        expect(animeMappingStore.animeTmdbIdsShow.has('12345')).toBe(true);
+        expect(animeMappingStore.animeTmdbIdsMovie.has('12345')).toBe(false);
     });
 
     test('updateAnimeMapping popola DuckDB RAM e F.anime include i titoli certificati', async () => {
@@ -57,14 +69,18 @@ describe('Anime Overrides - Certify & F.anime Integration', () => {
             ]
         });
 
-        const ids = Array.from(animeMappingStore.animeTmdbIds);
-        await duckDbStore.updateAnimeMapping(ids);
+        // Nuovo contratto per updateAnimeMapping: oggetto { movie, tv }
+        const idsByType = {
+            movie: Array.from(animeMappingStore.animeTmdbIdsMovie),
+            tv: Array.from(animeMappingStore.animeTmdbIdsShow)
+        };
+        await duckDbStore.updateAnimeMapping(idsByType);
 
-        // Query diretta su DuckDB: i titoli zh con genere 16 certificati devono soddisfare F.anime
+        // Query diretta su DuckDB: i titoli zh con genere 16 certificati devono soddisfare F.animeOf('tv')
         const rows = await duckDbStore.query(`
             SELECT id, name, original_language 
             FROM tv 
-            WHERE id IN (106449, 223911) AND (${F.anime})
+            WHERE id IN (106449, 223911) AND (${F.animeOf('tv')})
         `);
 
         expect(rows.length).toBe(2);

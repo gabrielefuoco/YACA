@@ -72,7 +72,10 @@ class DuckDbStore {
                             await execPromise(`CREATE TABLE IF NOT EXISTS tv (id BIGINT, name VARCHAR, original_name VARCHAR, overview VARCHAR, poster_path VARCHAR, backdrop_path VARCHAR, first_air_date VARCHAR, vote_average DOUBLE, vote_count BIGINT, popularity DOUBLE, genres VARCHAR, keywords VARCHAR, watch_providers_it VARCHAR, watch_providers_us VARCHAR, networks VARCHAR, production_companies VARCHAR, production_countries VARCHAR, original_language VARCHAR, number_of_seasons INTEGER, number_of_episodes INTEGER, status VARCHAR, adult BOOLEAN, name_en VARCHAR);`);
                         }
 
-                        await execPromise(`CREATE TABLE IF NOT EXISTS anime_mappings (tmdb_id BIGINT PRIMARY KEY);`);
+                        // Ticket 13: Tabella anime_mappings con colonna 'tipo' per separare i namespace film e serie.
+                        // DROP TABLE IF EXISTS prima della CREATE garantisce la pulizia di schemi precedenti al boot.
+                        await execPromise(`DROP TABLE IF EXISTS anime_mappings;`);
+                        await execPromise(`CREATE TABLE anime_mappings (tmdb_id BIGINT, tipo VARCHAR, PRIMARY KEY (tmdb_id, tipo));`);
 
                         console.log(`[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.`);
 
@@ -86,11 +89,14 @@ class DuckDbStore {
                         await execPromise('ALTER TABLE tv ADD COLUMN IF NOT EXISTS name_en VARCHAR;');
                         this.isInitialized = true;
 
-                        // Assicuriamoci di importare i mapping anime se sono già stati scaricati
+                        // Ticket 13: seeding post-init usando i set tipizzati animeTmdbIdsMovie e animeTmdbIdsShow dello store
                         const animeMappingStore = require('../data/animeMappingStore');
-                        if (animeMappingStore.tmdbToAnimeNode && animeMappingStore.tmdbToAnimeNode.size > 0) {
-                            const allTmdbAnimeIds = Array.from(animeMappingStore.tmdbToAnimeNode.keys());
-                            await this.updateAnimeMapping(allTmdbAnimeIds).catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-init:', e));
+                        if (animeMappingStore.animeTmdbIdsMovie || animeMappingStore.animeTmdbIdsShow) {
+                            const movieIds = animeMappingStore.animeTmdbIdsMovie ? Array.from(animeMappingStore.animeTmdbIdsMovie) : [];
+                            const tvIds = animeMappingStore.animeTmdbIdsShow ? Array.from(animeMappingStore.animeTmdbIdsShow) : [];
+                            if (movieIds.length > 0 || tvIds.length > 0) {
+                                await this.updateAnimeMapping({ movie: movieIds, tv: tvIds }).catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-init:', e));
+                            }
                         }
 
                         // Popola la cache dei Document Frequencies (DF) per la rarità dolce DNA
@@ -108,31 +114,33 @@ class DuckDbStore {
         return this.initPromise;
     }
 
-    async updateAnimeMapping(tmdbIds) {
+    async updateAnimeMapping(idsByType) {
         if (!this.isInitialized) {
             console.warn('[DuckDB Store] DB non inizializzato, ignoro updateAnimeMapping.');
             return;
         }
         
-        return new Promise((resolve, reject) => {
-            let sql = `
-                DROP TABLE IF EXISTS anime_mappings;
-                CREATE TABLE anime_mappings (tmdb_id BIGINT PRIMARY KEY);
-            `;
-            
-            let rawList = [];
-            if (Array.isArray(tmdbIds)) {
-                rawList = tmdbIds;
-            } else if (tmdbIds && typeof tmdbIds[Symbol.iterator] === 'function') {
-                rawList = Array.from(tmdbIds);
-            } else if (tmdbIds !== null && tmdbIds !== undefined) {
-                rawList = [tmdbIds];
+        // Ticket 13: validazione rigorosa della forma { movie, tv }. Qualsiasi altra forma genera console.warn e no-op (mai indovinare il tipo).
+        const isValidIterable = (val) => Array.isArray(val) || (val !== null && typeof val === 'object' && typeof val[Symbol.iterator] === 'function');
+        if (!idsByType || typeof idsByType !== 'object' || Array.isArray(idsByType) || !isValidIterable(idsByType.movie) || !isValidIterable(idsByType.tv)) {
+            console.warn('[DuckDB Store] updateAnimeMapping: forma non valida (richiesto { movie: [...], tv: [...] }), no-op');
+            return;
+        }
+
+        const normalizeList = (rawList) => {
+            let list = [];
+            if (Array.isArray(rawList)) {
+                list = rawList;
+            } else if (rawList && typeof rawList[Symbol.iterator] === 'function') {
+                list = Array.from(rawList);
+            } else if (rawList !== null && rawList !== undefined) {
+                list = [rawList];
             }
 
             const validIds = [];
             let invalidCount = 0;
 
-            for (const rawId of rawList) {
+            for (const rawId of list) {
                 let str = String(rawId || '').trim();
                 if (!str) {
                     invalidCount++;
@@ -151,27 +159,39 @@ class DuckDbStore {
             }
 
             const uniqueIds = Array.from(new Set(validIds));
-            const duplicatesCount = validIds.length - uniqueIds.length;
-            const totalDiscarded = rawList.length - uniqueIds.length;
+            return { uniqueIds, invalidCount, totalCount: list.length };
+        };
 
-            if (uniqueIds.length > 0) {
-                const values = uniqueIds.map(id => `(${id})`).join(',');
-                sql += `\nINSERT INTO anime_mappings VALUES ${values};`;
+        const movieNorm = normalizeList(idsByType.movie);
+        const tvNorm = normalizeList(idsByType.tv);
+
+        return new Promise((resolve, reject) => {
+            let sql = `
+                DROP TABLE IF EXISTS anime_mappings;
+                CREATE TABLE anime_mappings (tmdb_id BIGINT, tipo VARCHAR, PRIMARY KEY (tmdb_id, tipo));
+            `;
+
+            const rows = [
+                ...movieNorm.uniqueIds.map(id => `(${id}, 'movie')`),
+                ...tvNorm.uniqueIds.map(id => `(${id}, 'tv')`)
+            ];
+
+            if (rows.length > 0) {
+                // Inserimento a blocchi per evitare limiti su dimensioni query SQL
+                const chunkSize = 2000;
+                for (let i = 0; i < rows.length; i += chunkSize) {
+                    const chunk = rows.slice(i, i + chunkSize);
+                    sql += `\nINSERT INTO anime_mappings VALUES ${chunk.join(',')};`;
+                }
             }
-            
+
             this.con.exec(sql, (err) => {
                 if (err) {
                     console.error('[DuckDB Store] Errore aggiornamento tabella anime_mappings:', err);
                     return reject(err);
                 }
-                let discardedMsg = '';
-                if (totalDiscarded > 0) {
-                    const details = [];
-                    if (duplicatesCount > 0) details.push(`${duplicatesCount} ${duplicatesCount === 1 ? 'duplicato' : 'duplicati'}`);
-                    if (invalidCount > 0) details.push(`${invalidCount} non ${invalidCount === 1 ? 'valido' : 'validi'}`);
-                    discardedMsg = ` (${totalDiscarded} ${totalDiscarded === 1 ? 'scartato' : 'scartati'}: ${details.join(', ')})`;
-                }
-                console.log(`[DuckDB Store] Tabella anime_mappings creata in RAM con ${uniqueIds.length} anime certificati${discardedMsg}.`);
+                const totalInserted = movieNorm.uniqueIds.length + tvNorm.uniqueIds.length;
+                console.log(`[DuckDB Store] Tabella anime_mappings creata in RAM con ${totalInserted} anime certificati (${movieNorm.uniqueIds.length} movie, ${tvNorm.uniqueIds.length} tv).`);
                 resolve();
             });
         });

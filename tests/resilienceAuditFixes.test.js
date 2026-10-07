@@ -50,17 +50,17 @@ describe('Resilience Audit Fixes (10 Critical Vulnerabilities)', () => {
             const duckDbStore = require('../src/db/duckDbStore');
             await duckDbStore.init();
 
-            await duckDbStore.updateAnimeMapping(['12345:1', '12345:2', '67890:7']);
+            await duckDbStore.updateAnimeMapping({ movie: [], tv: ['12345:1', '12345:2', '67890:7'] });
             const rows = await duckDbStore.query('SELECT COUNT(*) FROM anime_mappings');
             const count = Number(Object.values(rows[0])[0]);
             expect(count).toBe(2);
 
-            await duckDbStore.updateAnimeMapping(['42']);
+            await duckDbStore.updateAnimeMapping({ movie: ['42'], tv: [] });
             const singleRows = await duckDbStore.query('SELECT COUNT(*) FROM anime_mappings');
             const singleCount = Number(Object.values(singleRows[0])[0]);
             expect(singleCount).toBe(1);
 
-            await duckDbStore.updateAnimeMapping(['tmdb_show:12345:1', 'tmdb_movie:67890', 'invalid', '']);
+            await duckDbStore.updateAnimeMapping({ movie: ['tmdb_movie:67890', ''], tv: ['tmdb_show:12345:1', 'invalid'] });
             const defensiveRows = await duckDbStore.query('SELECT COUNT(*) FROM anime_mappings');
             const defensiveCount = Number(Object.values(defensiveRows[0])[0]);
             expect(defensiveCount).toBe(2);

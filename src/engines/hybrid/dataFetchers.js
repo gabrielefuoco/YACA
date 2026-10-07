@@ -4,7 +4,8 @@ const AddonConfig = require('../../db/models/AddonConfig');
 const { traktClient } = require('../../clients/trakt');
 const { normalizeContentId } = require('../../utils/contentId');
 const { rateLimitedMap } = require('../../utils/rateLimiter');
-const { getDuckDbCatalogFromFilters } = require('../../catalog/providers/DuckDbProvider');
+const DuckDbProvider = require('../../catalog/providers/DuckDbProvider');
+const { F } = require('../../data/filters');
 const { applyKidsMode } = require('../../utils/kidsModeFilters');
 const { isItemAnime } = require('./animePolicy');
 
@@ -62,19 +63,24 @@ async function fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors
     } else if (typeSelectors?.anime === 'exclude') {
         effectiveFilters.notAnime = true;
     }
+    // Ticket 07: vincolo di durata minima (60') per i film nei fallback hero
+    if (type === 'movie') {
+        effectiveFilters['with_runtime.gte'] = 60;
+    }
     let pending;
     try {
-        pending = getDuckDbCatalogFromFilters(effectiveFilters, type, 0, fetchLimit, {});
+        pending = DuckDbProvider.getDuckDbCatalogFromFilters(effectiveFilters, type, 0, fetchLimit, {});
     } catch (_error) {
         return [];
     }
     const results = await Promise.resolve(pending).catch(() => []);
     if (!Array.isArray(results)) return [];
     let processed = isKidsMode ? applyKidsMode(results) : results;
+    const tipo = type === 'movie' ? 'movie' : 'tv';
     if (typeSelectors?.anime === 'only') {
-        processed = processed.filter(isItemAnime);
+        processed = processed.filter(item => isItemAnime(item, tipo));
     } else if (typeSelectors?.anime === 'exclude') {
-        processed = processed.filter(item => !isItemAnime(item));
+        processed = processed.filter(item => !isItemAnime(item, tipo));
     }
     return processed;
 }
@@ -276,6 +282,7 @@ async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLB
         ...(isMovie ? { 'primary_release_date.gte': rollingDateStart(36) } : { 'first_air_date.gte': rollingDateStart(36) })
     };
     const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
+    // Ticket 07: vincolo di durata minima (60') per i film nei fallback popolari hero gestito in fetchFallbackRows
     const results = await fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors);
     return mapStableFallbackIds(
         results,
@@ -287,6 +294,7 @@ async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLB
 
 async function fetchTopRatedPeriodFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false, typeSelectors = null) {
     const type = mediaType === 'movie' ? 'movie' : 'series';
+    const isMovie = type === 'movie';
     const baseFilters = {
         sort_by: 'vote_average.desc',
         'primary_release_date.gte': rollingDateStart(TOP_RATED_FALLBACK_MONTHS),
@@ -294,6 +302,7 @@ async function fetchTopRatedPeriodFallbackIds(tmdbApiKey, mediaType, limit = HER
         'vote_average.gte': 6.5
     };
     const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
+    // Ticket 07: vincolo di durata minima (60') per i film nei fallback top-rated hero gestito in fetchFallbackRows
     const results = await fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors);
     return mapStableFallbackIds(results, limit, (a, b) => {
         const scoreDelta = getNumericSortValue(b, 'vote_average') - getNumericSortValue(a, 'vote_average');
@@ -303,13 +312,15 @@ async function fetchTopRatedPeriodFallbackIds(tmdbApiKey, mediaType, limit = HER
 
 async function fetchUndiscoveredFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false, typeSelectors = null) {
     const type = mediaType === 'movie' ? 'movie' : 'series';
+    const isMovie = type === 'movie';
     const baseFilters = {
-        sort_by: type === 'movie' ? 'primary_release_date.desc' : 'first_air_date.desc',
+        sort_by: isMovie ? 'primary_release_date.desc' : 'first_air_date.desc',
         'primary_release_date.gte': rollingDateStart(DISCOVERY_FALLBACK_MONTHS[type]),
-        'vote_count.gte': type === 'movie' ? 10 : 20,
+        'vote_count.gte': isMovie ? 10 : 20,
         'vote_average.gte': 5.5
     };
     const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
+    // Ticket 07: vincolo di durata minima (60') per i film nel fallback discovery hero gestito in fetchFallbackRows
     const results = await fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors);
     return mapStableFallbackIds(results, limit, (a, b) => {
         const dateDelta = getDateSortValue(b) - getDateSortValue(a);
@@ -319,6 +330,7 @@ async function fetchUndiscoveredFallbackIds(tmdbApiKey, mediaType, limit = HERO_
 
 async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false, typeSelectors = null) {
     const type = mediaType === 'movie' ? 'movie' : 'series';
+    const isMovie = type === 'movie';
     const baseFilters = {
         sort_by: 'popularity.desc',
         'vote_count.gte': 100,
@@ -327,6 +339,7 @@ async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = HERO_FA
         'popularity.lte': HIDDEN_GEMS_MAX_POPULARITY
     };
     const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
+    // Nelle gemme nascoste la durata minima fa già parte del criterio esplicito della lista
     const results = (await fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors))
         .filter(item => isHiddenGemPopularity(item.popularity));
     return mapStableFallbackIds(results, limit, (a, b) => {

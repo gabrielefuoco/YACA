@@ -30,7 +30,7 @@ describe('Anime Identity & Canonical Rule (Zero-Network Synthetic Tests)', () =>
         });
     });
 
-    describe('AnimeMappingStore.isAnimeTmdbId O(1) Lookup', () => {
+    describe('AnimeMappingStore.isAnimeTmdbId O(1) Lookup (Namespace tipizzati movie/tv)', () => {
         beforeAll(() => {
             // Popolamento sintetico in memoria senza I/O di rete
             animeMappingStore.buildAnibridgeIndex({
@@ -56,25 +56,75 @@ describe('Anime Identity & Canonical Rule (Zero-Network Synthetic Tests)', () =>
             ]);
         });
 
-        test('store-hit serie (chiave con stagione su Anibridge)', () => {
+        test('store-hit serie su namespace tv (Anibridge)', () => {
+            // Riconosciuto come serie/tv
+            expect(animeMappingStore.isAnimeTmdbId('12345', 'tv')).toBe(true);
+            expect(animeMappingStore.isAnimeTmdbId(12345, 'tv')).toBe(true);
+            expect(animeMappingStore.isAnimeTmdbId('12345:1', 'tv')).toBe(true);
+            expect(animeMappingStore.isAnimeTmdbId('tmdb:12345', 'tv')).toBe(true);
+            expect(animeMappingStore.isAnimeTmdbId('54321', 'tv')).toBe(true);
+            // Alias ammessi per tv: series e anime
+            expect(animeMappingStore.isAnimeTmdbId('12345', 'series')).toBe(true);
+            expect(animeMappingStore.isAnimeTmdbId('12345', 'anime')).toBe(true);
+
+            // CRITICO: la serie anime NON deve essere riconosciuta come movie (prevenzione collisione id)
+            expect(animeMappingStore.isAnimeTmdbId('12345', 'movie')).toBe(false);
+            expect(animeMappingStore.isAnimeTmdbId('54321', 'movie')).toBe(false);
+        });
+
+        test('store-hit film su namespace movie (Fribb)', () => {
+            // Riconosciuto come movie
+            expect(animeMappingStore.isAnimeTmdbId('67890', 'movie')).toBe(true);
+            expect(animeMappingStore.isAnimeTmdbId(67890, 'movie')).toBe(true);
+            expect(animeMappingStore.isAnimeTmdbId('tmdb:67890', 'movie')).toBe(true);
+            expect(animeMappingStore.isAnimeTmdbId(77777, 'movie')).toBe(true);
+
+            // CRITICO: il film anime NON deve essere riconosciuto come serie/tv
+            expect(animeMappingStore.isAnimeTmdbId('67890', 'tv')).toBe(false);
+            expect(animeMappingStore.isAnimeTmdbId(77777, 'tv')).toBe(false);
+        });
+
+        test('isAnimeTmdbIdAny fornisce unione esplicita senza warning', () => {
+            expect(animeMappingStore.isAnimeTmdbIdAny('12345')).toBe(true);
+            expect(animeMappingStore.isAnimeTmdbIdAny('67890')).toBe(true);
+            expect(animeMappingStore.isAnimeTmdbIdAny('99999')).toBe(false);
+            expect(animeMappingStore.isAnimeTmdbIdAny(null)).toBe(false);
+        });
+
+        test('i set interni animeTmdbIdsMovie e animeTmdbIdsShow sono disgiunti e il vecchio animeTmdbIds è rimosso', () => {
+            expect(animeMappingStore.animeTmdbIdsMovie.has('67890')).toBe(true);
+            expect(animeMappingStore.animeTmdbIdsMovie.has('12345')).toBe(false);
+
+            expect(animeMappingStore.animeTmdbIdsShow.has('12345')).toBe(true);
+            expect(animeMappingStore.animeTmdbIdsShow.has('67890')).toBe(false);
+
+            // Il vecchio campo unione deve essere rimosso per contratto
+            expect(animeMappingStore.animeTmdbIds).toBeUndefined();
+        });
+
+        test('chiamata legacy senza tipo: mantiene unione ed emette warning una sola volta', () => {
+            const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+            animeMappingStore._warnedMissingTipo = false; // Reset per il test isolato
+
+            // Prima chiamata senza tipo: emette warning
             expect(animeMappingStore.isAnimeTmdbId('12345')).toBe(true);
-            expect(animeMappingStore.isAnimeTmdbId(12345)).toBe(true);
-            expect(animeMappingStore.isAnimeTmdbId('12345:1')).toBe(true);
-            expect(animeMappingStore.isAnimeTmdbId('tmdb:12345')).toBe(true);
-            expect(animeMappingStore.isAnimeTmdbId('54321')).toBe(true);
-        });
+            expect(warnSpy).toHaveBeenCalledTimes(1);
+            expect(warnSpy.mock.calls[0][0]).toMatch(/fallback.*unione/i);
 
-        test('store-hit film (chiave film su Fribb)', () => {
+            // Seconda chiamata senza tipo: non emette ulteriore warning
             expect(animeMappingStore.isAnimeTmdbId('67890')).toBe(true);
-            expect(animeMappingStore.isAnimeTmdbId(67890)).toBe(true);
-            expect(animeMappingStore.isAnimeTmdbId('tmdb:67890')).toBe(true);
-            expect(animeMappingStore.isAnimeTmdbId(77777)).toBe(true);
+            expect(animeMappingStore.isAnimeTmdbId('99999')).toBe(false);
+            expect(warnSpy).toHaveBeenCalledTimes(1);
+
+            warnSpy.mockRestore();
         });
 
-        test('store miss returns false for non-store titles', () => {
-            expect(animeMappingStore.isAnimeTmdbId('99999')).toBe(false);
-            expect(animeMappingStore.isAnimeTmdbId(null)).toBe(false);
-            expect(animeMappingStore.isAnimeTmdbId('')).toBe(false);
+        test('store miss returns false for non-store titles o input invalidi', () => {
+            expect(animeMappingStore.isAnimeTmdbId('99999', 'movie')).toBe(false);
+            expect(animeMappingStore.isAnimeTmdbId('99999', 'tv')).toBe(false);
+            expect(animeMappingStore.isAnimeTmdbId(null, 'movie')).toBe(false);
+            expect(animeMappingStore.isAnimeTmdbId('', 'tv')).toBe(false);
+            expect(animeMappingStore.isAnimeTmdbId('12345', 'unknown_type')).toBe(false);
         });
     });
 

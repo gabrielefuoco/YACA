@@ -272,4 +272,84 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
             );
         });
     });
+
+    describe('Ticket 07: corti, backstage e trailer serviti come film (minRuntime 60)', () => {
+        const { passesQualityFloor } = require('../src/engines/hybrid/catalogStrategies');
+
+        it('passesQualityFloor scarta i film con durata nota < 60 minuti', () => {
+            const shortMovie = {
+                title: 'Grand Theft Auto VI: Una lunga anteprima',
+                runtime: 27,
+                vote_count: 500,
+                vote_average: 7.0
+            };
+            expect(passesQualityFloor(shortMovie, 'movie')).toBe(false);
+
+            const backstageSpecial = {
+                title: 'Squid Game: dietro le quinte',
+                runtime: 28,
+                vote_count: 500,
+                vote_average: 7.0
+            };
+            expect(passesQualityFloor(backstageSpecial, 'movie')).toBe(false);
+        });
+
+        it('passesQualityFloor accetta i film con durata >= 60 minuti', () => {
+            const featureMovie = {
+                title: 'Dune: Part Two',
+                runtime: 166,
+                vote_count: 500,
+                vote_average: 8.5
+            };
+            expect(passesQualityFloor(featureMovie, 'movie')).toBe(true);
+        });
+
+        it('passesQualityFloor non scarta i film con durata 0 o nulla (inediti)', () => {
+            const unreleasedZero = {
+                title: 'Unreleased Movie Zero',
+                runtime: 0,
+                vote_count: 500,
+                vote_average: 7.0
+            };
+            expect(passesQualityFloor(unreleasedZero, 'movie')).toBe(true);
+
+            const unreleasedNull = {
+                title: 'Unreleased Movie Null',
+                runtime: null,
+                vote_count: 500,
+                vote_average: 7.0
+            };
+            expect(passesQualityFloor(unreleasedNull, 'movie')).toBe(true);
+        });
+
+        it('passesQualityFloor non applica il filtro di durata alle serie', () => {
+            const animeShort = {
+                name: 'Short Anime Series',
+                runtime: 24,
+                vote_count: 500,
+                vote_average: 7.5
+            };
+            expect(passesQualityFloor(animeShort, 'tv')).toBe(true);
+            expect(passesQualityFloor(animeShort, 'series')).toBe(true);
+        });
+
+        it('dataFetchers applica F.minRuntime(60) solo ai film', async () => {
+            const duckDb = require('../src/catalog/providers/DuckDbProvider');
+            const spyFilters = jest.spyOn(duckDb, 'getDuckDbCatalogFromFilters').mockResolvedValue([]);
+
+            await dataFetchers.fetchPopularFallbackIds('fake_key', 'movie', 20);
+            expect(spyFilters).toHaveBeenCalled();
+            const movieCallFilters = spyFilters.mock.calls[0][0];
+            expect(movieCallFilters['with_runtime.gte']).toBe(60);
+
+            spyFilters.mockClear();
+            await dataFetchers.fetchPopularFallbackIds('fake_key', 'tv', 20);
+            expect(spyFilters).toHaveBeenCalled();
+            const seriesCallFilters = spyFilters.mock.calls[0][0];
+            expect(seriesCallFilters['with_runtime.gte']).toBeUndefined();
+
+            spyFilters.mockRestore();
+        });
+    });
 });
+

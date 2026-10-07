@@ -788,12 +788,14 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}, option
     }
 
     // Early anime detection: skip expensive TMDB episode fetching for anime series
+    // Ticket 13: inoltriamo il tipo per disambiguare film vs serie nello store anime
     const isAnime = normalizeAnimeMarker(meta, {
         tmdbId,
         genreIds: (data.genres || []).map(g => g.id),
         originalLanguage: data.original_language,
         keywords: rawKwList,
-        mappingStore: animeMappingStore
+        mappingStore: animeMappingStore,
+        tipo: type === 'movie' ? 'movie' : 'tv'
     });
 
     // Store necessary properties for fallback TMDB episode fetching if Kitsu mapping fails

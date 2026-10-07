@@ -233,7 +233,7 @@ function decideMediaType(doc, mappingStore, opzioni = {}) {
     // 3. La mappa è pronta? Se no, nessuna decisione (vedi il blocco in testa al file).
     if (!mappingStore || mappingStore.isReady !== true ||
         typeof mappingStore.resolveKitsuMovie !== 'function' ||
-        typeof mappingStore.isAnimeTmdbId !== 'function') {
+        (typeof mappingStore.isAnimeTmdbIdAny !== 'function' && typeof mappingStore.isAnimeTmdbId !== 'function')) {
         return { ...base, azione: AZIONI.BLOCCA, motivo: MOTIVI.MAPPA_NON_PRONTA, da: null, a: null };
     }
 
@@ -249,7 +249,11 @@ function decideMediaType(doc, mappingStore, opzioni = {}) {
     // 5. Non è un film. Se la mappa conosce l'id come anime, è una serie: `tv`, detto per quello
     //    che è. Se non lo conosce, `tv` lo stesso ma con un motivo diverso — i due casi non si
     //    confondono, perché il secondo è una lacuna della mappa e va contato.
-    const noto = mappingStore.isAnimeTmdbId(tmdbId) === true;
+    // Chiamante legittimato a scoprire il tipo: usa isAnimeTmdbIdAny (unione esplicita).
+    const isAnimeAny = typeof mappingStore.isAnimeTmdbIdAny === 'function'
+        ? mappingStore.isAnimeTmdbIdAny(tmdbId)
+        : mappingStore.isAnimeTmdbId(tmdbId);
+    const noto = isAnimeAny === true;
     return {
         ...base,
         azione: AZIONI.SCRIVI,

@@ -107,7 +107,16 @@ const F = {
     // --- Identity / Speciali ---
     // Regola canonica in SQL: store OR (genere 16 AND original_language = 'ja').
     // Le keyword non vengono valutate in SQL per evitare fragilità e falsi positivi (es. "anime-inspired").
-    anime: `("id" IN (SELECT "tmdb_id" FROM anime_mappings) OR (${jsonHas('genres', 16)} AND "original_language" = 'ja'))`,
+    // Ticket 13: separazione dei namespace TMDB film e serie per evitare collisioni id.
+    // La tabella degli alias sta in un posto solo (`normalizeTipoAnime`); require pigro perché
+    // `filters.js` è la DSL caricata per prima e non deve dipendere dallo store all'avvio.
+    animeOf: (tipo) => {
+        const { normalizeTipoAnime } = require('../utils/animeIdentity');
+        const t = normalizeTipoAnime(tipo);
+        // Un tipo non riconosciuto qui è un errore di programmazione, non un caso da indovinare.
+        if (!t) throw new Error(`F.animeOf: tipo non riconosciuto: ${tipo}`);
+        return `("id" IN (SELECT "tmdb_id" FROM anime_mappings WHERE tipo = '${t}') OR (${jsonHas('genres', 16)} AND "original_language" = 'ja'))`;
+    },
     franchise: '"collection_id" IS NOT NULL',
     validBoxOffice: '"revenue" > 1000000 AND "budget" > 500000',
     shortFilm: '"runtime" BETWEEN 1 AND 45',

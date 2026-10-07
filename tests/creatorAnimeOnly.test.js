@@ -5,7 +5,7 @@ const { F } = require('../src/data/filters');
 
 describe('Creator Solo Anime Tag & Engine Filtering', () => {
     describe('(a) Catalog with "solo anime" tag produces expected anime filter', () => {
-        it('buildPresetFromFilters includes F.anime in where clause when isAnime: true in query', () => {
+        it('buildPresetFromFilters includes F.animeOf("movie") in where clause when isAnime: true in query', () => {
             const queryWithAnime = {
                 strategy: 'discovery',
                 with_genres: '28',
@@ -13,17 +13,27 @@ describe('Creator Solo Anime Tag & Engine Filtering', () => {
             };
 
             const preset = buildPresetFromFilters(queryWithAnime, 'movie');
-            expect(preset.where).toContain(F.anime);
+            expect(preset.where).toContain(F.animeOf('movie'));
         });
 
-        it('buildPresetFromFilters includes F.anime when options.isAnime: true', () => {
+        it('buildPresetFromFilters includes F.animeOf("tv") when options.isAnime: true', () => {
             const query = {
                 strategy: 'discovery',
                 with_genres: '28'
             };
 
             const preset = buildPresetFromFilters(query, 'series', { isAnime: true });
-            expect(preset.where).toContain(F.anime);
+            expect(preset.where).toContain(F.animeOf('tv'));
+        });
+
+        it('F.animeOf recognizes "anime" as tv alias and throws on unrecognized types', () => {
+            expect(F.animeOf('anime')).toBe(F.animeOf('tv'));
+            expect(F.animeOf('series')).toBe(F.animeOf('tv'));
+            expect(F.animeOf('movie')).not.toBe(F.animeOf('tv'));
+            expect(() => F.animeOf(undefined)).toThrow('F.animeOf: tipo non riconosciuto: undefined');
+            expect(() => F.animeOf(null)).toThrow('F.animeOf: tipo non riconosciuto: null');
+            expect(() => F.animeOf('')).toThrow('F.animeOf: tipo non riconosciuto: ');
+            expect(() => F.animeOf('unknown')).toThrow('F.animeOf: tipo non riconosciuto: unknown');
         });
 
         it('normalizeToUniversalSchema propagates isAnime to all queries and top-level schema', () => {
@@ -67,14 +77,14 @@ describe('Creator Solo Anime Tag & Engine Filtering', () => {
     });
 
     describe('(b) Standard catalog without anime tag remains untouched', () => {
-        it('buildPresetFromFilters does NOT include F.anime when isAnime is not specified', () => {
+        it('buildPresetFromFilters does NOT include F.animeOf when isAnime is not specified', () => {
             const standardQuery = {
                 strategy: 'discovery',
                 with_genres: '28'
             };
 
             const preset = buildPresetFromFilters(standardQuery, 'movie');
-            expect(preset.where).not.toContain(F.anime);
+            expect(preset.where).not.toContain(F.animeOf('movie'));
         });
 
         it('normalizeToUniversalSchema leaves non-anime catalog intact without injecting isAnime', () => {
@@ -138,7 +148,7 @@ describe('Creator Solo Anime Tag & Engine Filtering', () => {
 
             // Normalized schema execution in DuckDB preset builder
             const preset = buildPresetFromFilters(sanitized.queries[0], 'series');
-            expect(preset.where).toContain(F.anime);
+            expect(preset.where).toContain(F.animeOf('tv'));
         });
 
         it('legacy kitsu catalog without explicit isAnime still normalizes to tmdb without breaking', () => {
@@ -159,7 +169,7 @@ describe('Creator Solo Anime Tag & Engine Filtering', () => {
 
             const preset = buildPresetFromFilters(sanitized.filters, 'series');
             expect(preset).toBeDefined();
-            expect(preset.where).not.toContain(F.anime);
+            expect(preset.where).not.toContain(F.animeOf('tv'));
         });
     });
 });

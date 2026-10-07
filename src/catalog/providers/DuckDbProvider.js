@@ -34,10 +34,12 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
         where.push({ _similar: true, tmdbId: q.similar_to });
     }
 
+    // Ticket 13: usa F.animeOf(tipo) per selezionare la partizione corretta (film vs serie)
+    const animeTipo = isTv ? 'tv' : 'movie';
     if (q.isAnime || options?.isAnime) {
-        where.push(F.anime);
+        where.push(F.animeOf(animeTipo));
     } else if (q.notAnime || options?.notAnime) {
-        where.push(`NOT (${F.anime})`);
+        where.push(`NOT (${F.animeOf(animeTipo)})`);
     }
 
     if (q.permissive_recent && q['vote_count.gte']) {
@@ -60,6 +62,8 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
     if (q['vote_count.lte']) where.push(F.maxVotes(q['vote_count.lte']));
     if (q['vote_average.gte']) where.push(F.minScore(q['vote_average.gte']));
     if (q['popularity.lte']) where.push(F.maxPopularity(q['popularity.lte']));
+    // Durata minima in minuti (F.maxRuntime non esiste nella DSL filters.js, supportato solo with_runtime.gte)
+    if (q['with_runtime.gte']) where.push(F.minRuntime(q['with_runtime.gte']));
     if (q.with_status) where.push(F.status(q.with_status));
     if (q['number_of_seasons.lte'] !== undefined) where.push(F.maxSeasons(q['number_of_seasons.lte']));
     if (q['number_of_episodes.lte'] !== undefined) where.push(F.maxEpisodes(q['number_of_episodes.lte']));
@@ -308,7 +312,11 @@ function mapDuckDbRowToMeta(item, isMovie = true) {
         rawTMDB
     };
 
-    normalizeAnimeMarker(meta, { mappingStore: animeMappingStore });
+    // Ticket 13: inoltriamo il tipo ('movie' o 'tv') per isolare il namespace dello store anime
+    normalizeAnimeMarker(meta, {
+        mappingStore: animeMappingStore,
+        tipo: isMovie ? 'movie' : 'tv'
+    });
     return meta;
 }
 
@@ -438,11 +446,13 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
         };
 
         metaObj._originalLanguage = item.original_language;
+        // Ticket 13: inoltriamo il tipo ('movie' o 'tv') per isolare il namespace dello store anime
         normalizeAnimeMarker(metaObj, {
             tmdbId: item.id,
             originalLanguage: item.original_language,
             keywords: parsedKeywords,
-            mappingStore: animeMappingStore
+            mappingStore: animeMappingStore,
+            tipo: isMovie ? 'movie' : 'tv'
         });
 
         if (!isMovie) {

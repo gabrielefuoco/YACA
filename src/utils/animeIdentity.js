@@ -81,9 +81,10 @@ function hasAnimationGenre(genreIds) {
  * @param {string} [params.originalLanguage] - Codice lingua ISO (es. 'ja', 'en')
  * @param {Array<string|Object>|Object|string} [params.keywords] - Lista o oggetto keywords TMDB
  * @param {Object} [params.mappingStore] - Istanza dello store di mapping anime (opzionale)
+ * @param {string} [params.tipo] - Tipo del contenuto ('movie' | 'tv' | 'series' | 'anime') per disambiguare lo store
  * @returns {boolean}
  */
-function isAnimeContent({ tmdbId, genreIds, originalLanguage, keywords, mappingStore } = {}) {
+function isAnimeContent({ tmdbId, genreIds, originalLanguage, keywords, mappingStore, tipo } = {}) {
     let store = mappingStore;
     if (store === undefined) {
         try {
@@ -94,8 +95,17 @@ function isAnimeContent({ tmdbId, genreIds, originalLanguage, keywords, mappingS
     }
 
     // 1. Lookup rapido nello store certificato (Anibridge / Fribb)
+    // Se tipo è specificato, lo inoltriamo a store.isAnimeTmdbId(tmdbId, tipo) per interrogare
+    // la sola partizione coerente (movie vs tv) ed evitare collisioni di ID TMDB (ticket 13).
+    // Se tipo è assente/undefined, preserviamo la chiamata legacy senza tipo per retrocompatibilità.
+    // Un tipo *fornito* ma non riconosciuto vale "nessun namespace": non si ricade sull'unione,
+    // altrimenti un errore di scrittura riaprirebbe la collisione in silenzio.
     if (tmdbId && store && typeof store.isAnimeTmdbId === 'function') {
-        if (store.isAnimeTmdbId(tmdbId)) {
+        const storeTipo = normalizeTipoAnime(tipo);
+        const storeMatch = storeTipo
+            ? store.isAnimeTmdbId(tmdbId, storeTipo)
+            : (tipo === undefined ? store.isAnimeTmdbId(tmdbId) : false);
+        if (storeMatch) {
             return true;
         }
     }
@@ -202,6 +212,21 @@ function normalizeAnimeMarker(item, options = {}) {
         || rawId.startsWith('anilist:');
 
     if (!isAnime) {
+        // Ticket 13: ricaviamo il tipo ('movie' o 'tv') da options.tipo o da item.type per inoltrarlo
+        // a isAnimeContent ed evitare collisioni di ID TMDB fra film e serie.
+        let tipo = opts.tipo;
+        if (!tipo && item.type) {
+            tipo = item.type;
+        }
+        // La tabella degli alias sta in un posto solo: `normalizeTipoAnime`.
+        const tipoNormalizzato = normalizeTipoAnime(tipo);
+        if (tipoNormalizzato) {
+            tipo = tipoNormalizzato;
+        } else if (tipo !== undefined) {
+            // Tipo fornito ma non riconosciuto: nessun namespace, come nello store.
+            tipo = null;
+        }
+
         isAnime = isAnimeContent({
             tmdbId: opts.tmdbId ?? extractAnimeTmdbId(item),
             genreIds: opts.genreIds ?? extractAnimeGenreIds(item),
@@ -211,7 +236,8 @@ function normalizeAnimeMarker(item, options = {}) {
                 ?? item._originalLanguage
                 ?? item.rawTMDB?.original_language,
             keywords: opts.keywords ?? item.keywords ?? item.rawTMDB?.keywords,
-            mappingStore: opts.mappingStore
+            mappingStore: opts.mappingStore,
+            tipo
         });
     }
 
@@ -222,8 +248,29 @@ function normalizeAnimeMarker(item, options = {}) {
     return isAnime;
 }
 
+/**
+ * Normalizza il tipo di contenuto nella coppia canonica che lo store anime usa davvero.
+ *
+ * PERCHÉ ESISTE: TMDB tiene **id separati** per film e serie, quindi il tipo è ciò che
+ * disambigua una collisione di numero (il film *Mediterraneo* e la serie anime *Toriko*
+ * condividono il 38251). La tabella degli alias vive qui e in nessun altro posto:
+ * una seconda copia altrove è il modo in cui un giorno si riapre quel bug in silenzio.
+ *
+ * @param {string} [tipo] `'movie' | 'series' | 'tv' | 'anime'`
+ * @returns {'movie'|'tv'|null} `null` quando il tipo è assente o non riconosciuto: il
+ *   chiamante decide se è un errore (la DSL dei filtri solleva) o "nessun namespace" (lo store).
+ */
+function normalizeTipoAnime(tipo) {
+    if (tipo === undefined || tipo === null) return null;
+    const t = String(tipo).trim().toLowerCase();
+    if (t === 'movie') return 'movie';
+    if (t === 'tv' || t === 'series' || t === 'anime') return 'tv';
+    return null;
+}
+
 module.exports = {
     ANIME_MARKER_DEFAULT,
+    normalizeTipoAnime,
     normalizeAnimeMarker,
     extractAnimeTmdbId,
     isAnimeContent,

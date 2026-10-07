@@ -73,7 +73,8 @@ function classifySyncItemType(item, resolvedTmdbId = null, mappingStore = animeM
         genreIds,
         originalLanguage,
         keywords,
-        mappingStore
+        mappingStore,
+        tipo: item.type ? (item.type === 'movie' ? 'movie' : 'tv') : undefined
     });
 
     if (isAnime) {
