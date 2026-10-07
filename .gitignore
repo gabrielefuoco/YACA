@@ -183,3 +183,6 @@ gdrive-sa.json
 
 # Stato materializzato dall'harness di simulazione: derivato, si rigenera con `simulate.js profiles`
 .scratch/simulazione-profili/atlas-state.json
+
+# pi-artifacts: i commenti della vista web (casella di posta, non memoria del progetto)
+*.comments.jsonl
