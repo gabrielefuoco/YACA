@@ -73,6 +73,11 @@ const getPresets = () => {
         // =============================================
         // --- 🎬 CINEMA, REGISTI & AUTORI ---
         // =============================================
+        // Ordinamento per vote_average.desc con vote_count.gte: 100: i primi titoli sono
+        // capolavori storici indiscussi (Schindler's List, Il cavaliere oscuro, Interstellar,
+        // Twin Peaks, Pulp Fiction) senza le derive di popolarità temporanea (es. Disclosure Day).
+        // Soglia 100 preserva inoltre le prime opere d'autore di Villeneuve e Lynch (pool 205).
+        { id: 'preset_grandi_registi', name: 'I Grandi Registi', emoji: '🎬', category: "🎬 Cinema d'Autore & Registi", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_crew: `${TMDB_PEOPLE.Nolan}|${TMDB_PEOPLE.Tarantino}|${TMDB_PEOPLE.Spielberg}|${TMDB_PEOPLE.Scorsese}|${TMDB_PEOPLE.Kubrick}|${TMDB_PEOPLE.Villeneuve}|${TMDB_PEOPLE.Fincher}|${TMDB_PEOPLE.Burton}|${TMDB_PEOPLE.WesAnderson}|${TMDB_PEOPLE.Lynch}|${TMDB_PEOPLE.Scott}`, without_genres: TMDB_GENRES.MOVIE.Documentary, 'with_runtime.gte': 60, sort_by: 'vote_average.desc', 'vote_count.gte': 100 }] },
         { id: 'preset_nolan', name: 'Regia: Christopher Nolan', emoji: '⏳', category: "🎬 Cinema d'Autore & Registi", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_crew: TMDB_PEOPLE.Nolan, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
         { id: 'preset_tarantino', name: 'Regia: Quentin Tarantino', emoji: '🩸', category: "🎬 Cinema d'Autore & Registi", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_crew: TMDB_PEOPLE.Tarantino, without_genres: TMDB_GENRES.MOVIE.Documentary, 'with_runtime.gte': 60, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
         { id: 'preset_scorsese', name: 'Regia: Martin Scorsese', emoji: '🔫', category: "🎬 Cinema d'Autore & Registi", type: 'movie', presentation_strategy: 'popularity', queries: [{ strategy: 'discovery', with_crew: TMDB_PEOPLE.Scorsese, sort_by: 'vote_average.desc', 'vote_count.gte': 200 }] },
@@ -320,10 +325,19 @@ const getPresets = () => {
             };
         }
         if (!p.where) {
-            const duck = buildPresetFromFilters(p.queries?.[0], p.type);
+            const q0 = p.queries?.[0];
+            const duck = buildPresetFromFilters(q0, p.type);
+            let where = duck.where;
+            if (q0?.with_crew && String(q0.with_crew).includes('|')) {
+                // F.crew in DuckDbProvider non splitta su '|': espandiamo i singoli ID con F.crew uniti da OR
+                const crewIds = String(q0.with_crew).split('|').map(Number).filter(n => Number.isFinite(n) && n > 0);
+                const invalidClause = F.crew(q0.with_crew);
+                const validClause = `(${crewIds.map(id => F.crew(id)).join(' OR ')})`;
+                where = where.map(w => w === invalidClause ? validClause : w);
+            }
             return {
                 ...p,
-                where: duck.where,
+                where,
                 orderBy: p.orderBy || duck.orderBy,
                 sortable: p.sortable !== undefined ? p.sortable : true
             };
@@ -496,7 +510,7 @@ const profileTemplates = [
         description: 'Il meglio del cinema d\'autore internazionale',
         typeSelectors: { film: false, serie: false, anime: null },
         presets: [
-            'preset_a24', 'preset_romcom', 'preset_action_blockbusters', 'preset_psych_thriller', 'preset_italian_comedy', 'preset_netflix_movies', 'preset_amazon_movies', 'preset_disney_movies', 'preset_hbo_max_movies', 'preset_nolan', 'preset_cyberpunk', 'preset_kubrick', 'preset_villeneuve',
+            'preset_grandi_registi', 'preset_a24', 'preset_romcom', 'preset_action_blockbusters', 'preset_psych_thriller', 'preset_italian_comedy', 'preset_netflix_movies', 'preset_amazon_movies', 'preset_disney_movies', 'preset_hbo_max_movies', 'preset_nolan', 'preset_cyberpunk', 'preset_kubrick', 'preset_villeneuve',
             'preset_ghibli', 'preset_fincher', 'preset_wesanderson', 'preset_lynch',
             'preset_french_cinema', 'preset_italian_comedy', 'preset_turkish_dizi', 'preset_cinema_coreano', 'preset_italian_cinema',
             'preset_oscar_winners', 'preset_a24_horror'
