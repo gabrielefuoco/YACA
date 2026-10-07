@@ -340,6 +340,8 @@ adesso **0 su 20**, e il builder Trakt non solleva più (`trakt_filtered builder
 | **17** | 12 cataloghi rifatti con le keyword del banco + 2 rinomini | fuori tema dal 10-40% al **0-4%** in dieci cataloghi, con pool in crescita (anime_shonen 15 → 129, italian_comedy 53 → 575, zombies 28 → 346, high_fantasy 7 → 62) |
 | **11** | harness di simulazione riparato | `profiles` parte, `teardown` non grida più all'anomalia del profilo reale, `fetch` non ricade più su `profiles[0]` |
 
+| **10** | misurato il percorso Trakt **reale** sul profilo attivo dell'account reale | il percorso autenticato gira (`traktAvailable=true`, nessun degrado): **P 88** film e **P 86** serie, contro B 63-78 del percorso degradato. Quindi i verdetti bassi di §6 riguardano i profili **senza token**, non il prodotto. Due cose che il flag non dice: la lista film è in realtà il top-up anime interno (Trakt contribuì 0 item per quel profilo) e la lista serie ha 8 titoli, prosciugata dall'assegnazione disgiunta |
+
 **Cosa questo report non dice più, e come si recupera.** I punteggi di §2 e §6 sono lo snapshot del 06/10: i
 cataloghi toccati sono cambiati, e i pochi rimasti sotto soglia sono elencati nei ticket **04** (pool: `mindfuck_series`
 28, `space_hard_scifi` 49, `treasure_hunters` 44, più i quattro registi ridotti dal ticket 06) e **15** (ordinamenti
