@@ -310,7 +310,13 @@ describe('Ticket 21: shared hero diversity', () => {
         expect(group.trakt).toEqual({
             available: false,
             fallbackUsed: true,
-            hiddenForInsufficientFallback: false
+            hiddenForInsufficientFallback: false,
+            // Ticket 21: il flag unico non distingueva «Trakt ha contribuito» da «ho riempito
+            // col top-up interno». Questi quattro campi lo rendono impossibile da mascherare.
+            traktAvailable: false,
+            traktSourcedCount: 0,
+            fallbackTopUpCount: 30,
+            isDegradedFallback: true
         });
     });
 

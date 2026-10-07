@@ -9,7 +9,8 @@ const { F } = require('../../data/filters');
 const { applyKidsMode } = require('../../utils/kidsModeFilters');
 const { isItemAnime } = require('./animePolicy');
 
-const MAX_HERO_FALLBACK_FETCH = 200;
+// Ticket 21: ampliato a 260 per consentire il pool allargato a monte (250) nei contesti stretti
+const MAX_HERO_FALLBACK_FETCH = 260;
 const HERO_FALLBACK_LIMIT = 160;
 // 20 separa le code lunghe dai titoli già mainstream (i falsi positivi osservati
 // nel ticket 23 partivano da 41.4), mantenendo comunque ampia la finestra.

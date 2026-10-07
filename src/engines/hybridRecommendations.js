@@ -177,23 +177,47 @@ async function runPoolBuilder(builder, fallbackBuilder, label, args) {
 
 /** Costruisce una sola volta tutti i pool e poi applica l'assegnazione disgiunta. */
 async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig, typeSelectors }) {
+    // Ticket 21: Determinazione del "contesto stretto".
+    // Nei contesti ampi (generali), il bacino complessivo di titoli TMDB/DuckDB conta decine di migliaia di voci,
+    // rendendo sufficiente un pool a monte di 160 candidati per catalogo hero: 4 x 50 = 200 titoli disgiunti
+    // vengono raggiunti senza problemi di sovrapposizione e senza sprecare latenza TMDB/DuckDB.
+    // Nei contesti stretti (es. profilo Otaku o quando animePolicy === 'only'), l'intero universo di anime TV
+    // che superano il pavimento di qualità è ridotto a sole poche centinaia di titoli (~150-250 serie in DuckDB).
+    // Con un pool a monte di 160, true_blend (primo nella priorità) consuma 50 item, impoverendo a cascata
+    // seed_network, hidden_gems e trakt_filtered (che precipitavano a 17-19 item).
+    // Allargando il pool di candidati a monte a 250 ESCLUSIVAMENTE nei contesti stretti, ciascun hero può servire ~50 titoli
+    // preservando al 100% l'invariante di disgiunzione (0 sovrapposizioni tra i 4 cataloghi).
+    const { profile, user } = await fetchProfileContext(userId, context).catch(() => ({}));
+    const effectiveSelectors = typeSelectors
+        || getActiveTypeSelectors(userConfig, context)
+        || getActiveTypeSelectors(user, context);
+    const animePolicy = resolveAnimePolicy(profile, effectiveSelectors, { isKidsMode: kidsMode });
+    const isTightContext = (animePolicy === 'only' || effectiveSelectors?.anime === 'only');
+    const heroCandidateLimit = isTightContext ? 250 : 160;
+
     const seedFallback = async () => {
         const fetcher = typeof fetchTopRatedPeriodFallbackIds === 'function'
             ? fetchTopRatedPeriodFallbackIds
             : fetchPopularFallbackIds;
-        return fetcher(tmdbApiKey, mediaType, 160, kidsMode, typeSelectors);
+        return fetcher(tmdbApiKey, mediaType, heroCandidateLimit, kidsMode, effectiveSelectors);
     };
     const communityFallback = async () => {
         const fetcher = typeof fetchUndiscoveredFallbackIds === 'function'
             ? fetchUndiscoveredFallbackIds
             : fetchPopularFallbackIds;
-        return fetcher(tmdbApiKey, mediaType, 160, kidsMode, typeSelectors);
+        return fetcher(tmdbApiKey, mediaType, heroCandidateLimit, kidsMode, effectiveSelectors);
     };
-    const communityFallbackWithMeta = async () => ({
-        ids: await communityFallback(),
-        traktAvailable: false,
-        fallbackUsed: true
-    });
+    const communityFallbackWithMeta = async () => {
+        const fallbackIds = await communityFallback();
+        return {
+            ids: fallbackIds,
+            traktAvailable: false,
+            traktSourcedCount: 0,
+            fallbackTopUpCount: fallbackIds.length,
+            isDegradedFallback: true,
+            fallbackUsed: true
+        };
+    };
 
     const hasDetailedTraktFetch = typeof fetchTraktRecommendationsRawDetailed === 'function';
     let sharedTraktResult = hasDetailedTraktFetch
@@ -220,22 +244,54 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
     }
 
     const [trueBlendResult, seedResult, hiddenResult, traktResult] = await Promise.all([
-        runPoolBuilder(buildTopGenresMixCatalog, () => fetchPopularFallbackIds(tmdbApiKey, mediaType, 160, kidsMode, typeSelectors), 'true_blend', [userId, context, tmdbApiKey, mediaType, kidsMode, typeSelectors]),
-        runPoolBuilder(buildHybridCatalog, seedFallback, 'seed_network', [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult, typeSelectors]),
-        runPoolBuilder(buildHiddenGemsCatalog, () => fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, 160, kidsMode, typeSelectors), 'hidden_gems', [userId, context, tmdbApiKey, mediaType, kidsMode, typeSelectors]),
+        runPoolBuilder(
+            buildTopGenresMixCatalog,
+            () => fetchPopularFallbackIds(tmdbApiKey, mediaType, heroCandidateLimit, kidsMode, effectiveSelectors),
+            'true_blend',
+            [userId, context, tmdbApiKey, mediaType, kidsMode, effectiveSelectors, heroCandidateLimit]
+        ),
+        runPoolBuilder(
+            buildHybridCatalog,
+            seedFallback,
+            'seed_network',
+            [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult, effectiveSelectors, heroCandidateLimit]
+        ),
+        runPoolBuilder(
+            buildHiddenGemsCatalog,
+            () => fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, heroCandidateLimit, kidsMode, effectiveSelectors),
+            'hidden_gems',
+            [userId, context, tmdbApiKey, mediaType, kidsMode, effectiveSelectors, heroCandidateLimit]
+        ),
         typeof buildTraktFilteredCatalogWithMeta === 'function'
-            ? runPoolBuilder(buildTraktFilteredCatalogWithMeta, communityFallbackWithMeta, 'trakt_filtered', [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult, typeSelectors])
-            : runPoolBuilder(buildTraktFilteredCatalog, communityFallbackWithMeta, 'trakt_filtered', [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult, typeSelectors])
+            ? runPoolBuilder(
+                buildTraktFilteredCatalogWithMeta,
+                communityFallbackWithMeta,
+                'trakt_filtered',
+                [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult, effectiveSelectors, heroCandidateLimit]
+            )
+            : runPoolBuilder(
+                buildTraktFilteredCatalog,
+                communityFallbackWithMeta,
+                'trakt_filtered',
+                [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult, effectiveSelectors, heroCandidateLimit]
+            )
     ]);
 
     const traktCatalogId = getHeroCatalogId('trakt_filtered', mediaType);
-    const rawTraktResult = Array.isArray(traktResult)
-        ? { ids: traktResult, traktAvailable: true, fallbackUsed: false }
-        : {
-            ids: normalizePoolResult(traktResult),
-            traktAvailable: traktResult?.traktAvailable === true,
-            fallbackUsed: traktResult?.fallbackUsed === true || traktResult?.traktAvailable === false
-        };
+    const traktSourcedCount = traktResult?.traktSourcedCount ?? (Array.isArray(traktResult) ? traktResult.length : 0);
+    const fallbackTopUpCount = traktResult?.fallbackTopUpCount ?? 0;
+    const isDegradedFallback = traktResult?.isDegradedFallback ?? (traktSourcedCount === 0);
+    const traktAvailable = traktResult?.traktAvailable === true;
+    const fallbackUsed = traktResult?.fallbackUsed === true || isDegradedFallback;
+
+    const rawTraktResult = {
+        ids: normalizePoolResult(traktResult),
+        traktAvailable,
+        traktSourcedCount,
+        fallbackTopUpCount,
+        isDegradedFallback,
+        fallbackUsed
+    };
     const pools = {
         [getHeroCatalogId('true_blend', mediaType)]: normalizePoolResult(trueBlendResult),
         [getHeroCatalogId('seed_network', mediaType)]: normalizePoolResult(seedResult),
@@ -244,8 +300,9 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
     };
     const assigned = assignHeroPools(pools, mediaType);
     let hiddenForInsufficientFallback = false;
-    if (rawTraktResult.fallbackUsed) {
-        console.warn(`[HeroPool] Degrado Trakt confermato per pool ${traktCatalogId}: fallbackUsed=true, traktAvailable=${rawTraktResult.traktAvailable}`);
+    console.log(`[HeroPool] Trakt status per ${traktCatalogId}: traktAvailable=${rawTraktResult.traktAvailable}, traktSourcedCount=${rawTraktResult.traktSourcedCount}, fallbackTopUpCount=${rawTraktResult.fallbackTopUpCount}, isDegradedFallback=${rawTraktResult.isDegradedFallback}, fallbackUsed=${rawTraktResult.fallbackUsed}`);
+    if (rawTraktResult.isDegradedFallback) {
+        console.warn(`[HeroPool] Degrado Trakt confermato per pool ${traktCatalogId}: traktAvailable=${rawTraktResult.traktAvailable}, traktSourcedCount=${rawTraktResult.traktSourcedCount}, fallbackTopUpCount=${rawTraktResult.fallbackTopUpCount}`);
     }
     if (rawTraktResult.fallbackUsed && assigned[traktCatalogId].length < HERO_MIN_FALLBACK_ITEMS) {
         assigned[traktCatalogId] = [];
@@ -258,6 +315,10 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         catalogs: assigned,
         trakt: {
             available: rawTraktResult.traktAvailable,
+            traktAvailable: rawTraktResult.traktAvailable,
+            traktSourcedCount: rawTraktResult.traktSourcedCount,
+            fallbackTopUpCount: rawTraktResult.fallbackTopUpCount,
+            isDegradedFallback: rawTraktResult.isDegradedFallback,
             fallbackUsed: rawTraktResult.fallbackUsed,
             hiddenForInsufficientFallback
         }

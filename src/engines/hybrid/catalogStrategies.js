@@ -55,7 +55,23 @@ function resolveTypeSelectors(user, context, directTypeSelectors = null) {
 
 const graph = require('../graph/HierarchicalGraph');
 
-const HERO_DIVERSITY_CAPS = Object.freeze({ genre: 3, highMatchGenreCap: 6, director: 1, strand: 3, animeStrand: 6, highMatchThreshold: 3.8 });
+const HERO_DIVERSITY_CAPS = Object.freeze({
+    genre: 3,
+    highMatchGenreCap: 6,
+    director: 1,
+    strand: 3,
+    animeStrand: 6,
+    highMatchThreshold: 3.8,
+    family: 2 // Ticket 21: cap esplicito sul genere Famiglia (10751) nei profili adulti
+});
+
+function getHeroDiversityCaps(isKidsMode = false) {
+    if (isKidsMode) {
+        const { family: _f, ...rest } = HERO_DIVERSITY_CAPS;
+        return rest;
+    }
+    return HERO_DIVERSITY_CAPS;
+}
 const HERO_COLLECTION_CAP = 1;
 const HIDDEN_CHILD_ORIENTED_GENRE_IDS = new Set(['16', '10751', '10762']);
 const HIDDEN_MUSIC_GENRE_ID = 10402;
@@ -183,8 +199,14 @@ function getProspectiveCapOverflow(item, genreCounts, directorCounts, strandCoun
     let genreOverflow = 0;
     const score = item.score ?? item.rawScore ?? ((item.matchScore ?? 0) / 10);
     const effGenreCap = (score >= (caps?.highMatchThreshold ?? 3.8)) ? (caps?.highMatchGenreCap ?? (caps?.genre ?? 3)) : (caps?.genre ?? 3);
+    const familyCap = (caps?.family !== undefined && caps?.family !== null) ? caps.family : null;
     for (const genreId of checkGenres) {
-        genreOverflow += Math.max((genreCounts.get(genreId) || 0) + 1 - effGenreCap, 0);
+        const isFamily = String(genreId) === '10751';
+        if (isFamily && familyCap !== null && (genreCounts.get(genreId) || 0) >= familyCap) {
+            return Infinity; // Ticket 21: Cap rigido su genere Famiglia (10751), come per le saghe
+        }
+        const cap = (isFamily && familyCap !== null) ? familyCap : effGenreCap;
+        genreOverflow += Math.max((genreCounts.get(genreId) || 0) + 1 - cap, 0);
     }
 
     let directorOverflow = 0;
@@ -258,17 +280,21 @@ function finalizeHeroQualityCandidates(items, caps = HERO_DIVERSITY_CAPS, target
 
     const remaining = uniqueItems.filter(item => !strictSet.has(item));
     while (selected.length < cappedTarget && remaining.length > 0) {
-        let bestIndex = 0;
+        let bestIndex = -1;
         let bestOverflow = Infinity;
         for (let index = 0; index < remaining.length; index++) {
             const overflow = getProspectiveCapOverflow(
                 remaining[index], genreCounts, directorCounts, strandCounts, caps, selected
             );
+            if (!Number.isFinite(overflow)) continue;
             if (overflow < bestOverflow) {
                 bestOverflow = overflow;
                 bestIndex = index;
                 if (overflow === 0) break;
             }
+        }
+        if (bestIndex === -1 || !Number.isFinite(bestOverflow)) {
+            break;
         }
         const [next] = remaining.splice(bestIndex, 1);
         selected.push(next);
@@ -747,12 +773,13 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
     return { pool: finalPool, animeRatio, animePolicy };
 }
 
-async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fallbackFn, isKidsMode = false, directTypeSelectors = null) {
+async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fallbackFn, isKidsMode = false, directTypeSelectors = null, targetCandidateSize = 100) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     const typeSelectors = resolveTypeSelectors(user, context, directTypeSelectors);
     const animePolicy = resolveAnimePolicy(profile, typeSelectors, { isKidsMode });
     const effectiveTypeSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
-    if (!profile) return fallbackFn(tmdbApiKey, mediaType, 160, isKidsMode, typeSelectors);
+    const fallbackLimit = Math.max(160, targetCandidateSize);
+    if (!profile) return fallbackFn(tmdbApiKey, mediaType, fallbackLimit, isKidsMode, typeSelectors);
     
     profile.user = user;
     profile.context = context;
@@ -770,7 +797,7 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
     }
     
     if (candidatePool.length === 0) {
-        return fallbackFn(tmdbApiKey, mediaType, 160, isKidsMode, effectiveTypeSelectors);
+        return fallbackFn(tmdbApiKey, mediaType, fallbackLimit, isKidsMode, effectiveTypeSelectors);
     }
     
     const impressionMap = await getImpressionMap(userId, context, catalogId, candidatePool.map(m => String(m._tmdbId || m.id.split(':')[1])));
@@ -804,7 +831,7 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
     }).filter(Boolean);
     
     const sorted = sortScoredByScore(scored, item => item.score);
-    let finalItems = finalizeHeroQualityCandidates(sorted, HERO_DIVERSITY_CAPS);
+    let finalItems = finalizeHeroQualityCandidates(sorted, getHeroDiversityCaps(isKidsMode), targetCandidateSize);
     if (isKidsMode) {
         finalItems = applyKidsMode(finalItems);
     }
@@ -816,10 +843,10 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
     }
     
     if (finalItems.length === 0) {
-        return fallbackFn(tmdbApiKey, mediaType, 160, isKidsMode, effectiveTypeSelectors);
+        return fallbackFn(tmdbApiKey, mediaType, fallbackLimit, isKidsMode, effectiveTypeSelectors);
     }
     
-    return finalItems.slice(0, 100).map(i => ({ 
+    return finalItems.slice(0, targetCandidateSize).map(i => ({ 
         id: String(i.data.id), 
         matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))),
         genres: i.data.genres
@@ -829,12 +856,12 @@ async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, cata
 /**
  * 🎯 Hero Catalog 1: True Blend ("Scelti per Te")
  */
-async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType, isKidsMode = false, typeSelectors = null) {
+async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType, isKidsMode = false, typeSelectors = null, targetCandidateSize = 100) {
     const catalogId = mediaType === 'movie' ? 'yaca_true_blend_movies' : 'yaca_true_blend_series';
     const baseFilters = [F.minVotes(1000)];
     // Ticket 07: durata minima 60' per i film in True Blend
     if (mediaType === 'movie') baseFilters.push(F.minRuntime(60));
-    return buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fetchPopularFallbackIds, isKidsMode, typeSelectors);
+    return buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fetchPopularFallbackIds, isKidsMode, typeSelectors, targetCandidateSize);
 }
 
 /**
@@ -997,8 +1024,8 @@ function enforceMaxStrandRun(items, maxRun = HERO_DIVERSITY_CAPS.strand, options
  * il fallback top-rated del periodo viene idratato da DuckDB, filtrato dal
  * pavimento di qualità e ordinato con lo stesso score VSM del profilo.
  */
-async function buildSeedNetworkFill({ finalItems, tmdbApiKey, mediaType, types, isKidsMode, profile, dnaFilters, globalProfile, typeSelectors = null, animePolicy = null, mappedTopGenres = null }) {
-    const target = Math.max(0, SEED_NETWORK_TARGET_SIZE - finalItems.length);
+async function buildSeedNetworkFill({ finalItems = [], tmdbApiKey, mediaType, types, isKidsMode = false, profile, dnaFilters, globalProfile, typeSelectors = null, animePolicy = null, mappedTopGenres = null, targetSize = SEED_NETWORK_TARGET_SIZE }) {
+    const target = Math.max(0, (Number(targetSize) || SEED_NETWORK_TARGET_SIZE) - finalItems.length);
     if (target === 0) return [];
 
     const effectiveSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
@@ -1009,7 +1036,8 @@ async function buildSeedNetworkFill({ finalItems, tmdbApiKey, mediaType, types, 
 
     const usedIds = new Set(finalItems.map(item => normalizeContentId(item?.data?.id ?? '')).filter(Boolean));
     const fallbackSelectors = (policy === ANIME_POLICY_MODES.ONLY || policy === ANIME_POLICY_MODES.EXCLUDE) ? effectiveSelectors : (typeSelectors || null);
-    let fallbackIds = await fetchSeedFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode, fallbackSelectors);
+    const fallbackFetchLimit = Math.max(160, Number(targetSize) || 160);
+    let fallbackIds = await fetchSeedFallbackIds(tmdbApiKey, mediaType, fallbackFetchLimit, isKidsMode, fallbackSelectors);
     if (policy === ANIME_POLICY_MODES.ONLY) {
         try {
             const where = [F.animeOf(types), F.minScore(6.5), F.minVotes(mediaType === 'movie' ? 100 : 50)];
@@ -1020,7 +1048,7 @@ async function buildSeedNetworkFill({ finalItems, tmdbApiKey, mediaType, types, 
                 where,
                 orderBy: S.POPULAR
             };
-            const extraRows = await getDuckDbCatalogFromPreset(animePreset, 0, 100);
+            const extraRows = await getDuckDbCatalogFromPreset(animePreset, 0, Math.max(100, Number(targetSize) || 100));
             const rawList = Array.isArray(fallbackIds) ? [...fallbackIds] : [];
             for (const r of extraRows) {
                 const rawId = String(r._tmdbId || r.id.replace(/^tmdb:/i, ''));
@@ -1052,6 +1080,19 @@ async function buildSeedNetworkFill({ finalItems, tmdbApiKey, mediaType, types, 
         if (policy === ANIME_POLICY_MODES.ONLY && !isItemAnime(raw, seedTipo)) continue;
         if (policy === ANIME_POLICY_MODES.EXCLUDE && isItemAnime(raw, seedTipo)) continue;
         if (!passesSeedNetworkDnaGate(raw, effectiveMappedTopGenres)) continue;
+        if (!isKidsMode) {
+            const rawGids = (raw.genre_ids || (raw.genres ? raw.genres.map(g => g.id || g) : [])).map(String);
+            if (rawGids.includes('10751')) {
+                const existingFamCount = finalItems.filter(f => {
+                    const g = (f.data?.genre_ids || (f.data?.genres ? f.data.genres.map(x => x.id || x) : [])).map(String);
+                    return g.includes('10751');
+                }).length + fillItems.filter(f => {
+                    const g = (f.data?.genre_ids || (f.data?.genres ? f.data.genres.map(x => x.id || x) : [])).map(String);
+                    return g.includes('10751');
+                }).length;
+                if (existingFamCount >= (HERO_DIVERSITY_CAPS.family ?? 2)) continue;
+            }
+        }
         const score = ProfileScorer.calculateItemMatch(raw, profile, { dnaFilters, globalProfile, kidsMode: isKidsMode, typeSelectors: effectiveSelectors, animePolicy: policy });
         if (isKidsMode && score <= 0) continue;
         usedIds.add(id);
@@ -1067,13 +1108,14 @@ async function buildSeedNetworkFill({ finalItems, tmdbApiKey, mediaType, types, 
     return fillItems;
 }
 
-async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false, providedTraktResult = null, directTypeSelectors = null) {
+async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false, providedTraktResult = null, directTypeSelectors = null, targetCandidateSize = SEED_NETWORK_TARGET_SIZE) {
+    const target = Math.max(SEED_NETWORK_TARGET_SIZE, Number(targetCandidateSize) || 0);
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     const typeSelectors = resolveTypeSelectors(user, context, directTypeSelectors);
     const animePolicy = resolveAnimePolicy(profile, typeSelectors, { isKidsMode });
     const effectiveTypeSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
     const fallbackSelectors = (animePolicy === ANIME_POLICY_MODES.ONLY || animePolicy === ANIME_POLICY_MODES.EXCLUDE) ? effectiveTypeSelectors : (typeSelectors || null);
-    if (!profile) return fetchSeedFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode, fallbackSelectors);
+    if (!profile) return fetchSeedFallbackIds(tmdbApiKey, mediaType, Math.max(160, target), isKidsMode, fallbackSelectors);
 
     const types = mediaType === 'movie' ? 'movie' : 'series';
     const tipo = mediaType === 'movie' ? 'movie' : 'tv';
@@ -1311,7 +1353,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     // Pre-diversifica il pool completo prima delle chiamate TMDB: i cap non
     // possono più essere neutralizzati dal cutoff e il dettaglio viene idratato
     // solo per i candidati che possono davvero entrare nel catalogo.
-    const scoringCandidates = finalizeHeroQualityCandidates(filteredCandidates, HERO_DIVERSITY_CAPS, 120);
+    const scoringCandidates = finalizeHeroQualityCandidates(filteredCandidates, getHeroDiversityCaps(isKidsMode), Math.max(120, target));
     const candidateIds = scoringCandidates.map(c => String(c.data.id));
     const catalogId = mediaType === 'movie' ? 'yaca_seed_network_movies' : 'yaca_seed_network_series';
     const impressionMap = await getImpressionMap(userId, context, catalogId, candidateIds);
@@ -1374,7 +1416,7 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     });
 
     const sorted = sortScoredByScore(scoredWithCombined, item => item.combinedScore);
-    let finalItems = finalizeHeroQualityCandidates(sorted, HERO_DIVERSITY_CAPS);
+    let finalItems = finalizeHeroQualityCandidates(sorted, getHeroDiversityCaps(isKidsMode), target);
     if (isKidsMode) {
         finalItems = applyKidsMode(finalItems);
     }
@@ -1387,15 +1429,15 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
 
     // Profilo freddo: se i segnali reali non bastano, completa con il fallback
     // top-rated (pavimento qualità + VSM) invece di lasciare pagine corte.
-    if (finalItems.length < SEED_NETWORK_TARGET_SIZE) {
+    if (finalItems.length < target) {
         const fillItems = await buildSeedNetworkFill({
-            finalItems, tmdbApiKey, mediaType, types, isKidsMode, profile, dnaFilters, globalProfile, typeSelectors: fallbackSelectors, animePolicy, mappedTopGenres
+            finalItems, tmdbApiKey, mediaType, types, isKidsMode, profile, dnaFilters, globalProfile, typeSelectors: fallbackSelectors, animePolicy, mappedTopGenres, targetSize: target
         });
         if (fillItems.length > 0) {
             const combined = finalizeHeroQualityCandidates(
                 [...finalItems, ...fillItems],
-                HERO_DIVERSITY_CAPS,
-                SEED_NETWORK_TARGET_SIZE
+                getHeroDiversityCaps(isKidsMode),
+                target
             );
             finalItems = enforceMaxStrandRun(combined, HERO_DIVERSITY_CAPS.strand, animePolicy === ANIME_POLICY_MODES.ONLY ? { ignoreStrands: ['strand:anime'] } : {});
             console.log(`[Catalog Debug] Seed Network - Fill: +${fillItems.length} fallback (totale=${finalItems.length})`);
@@ -1409,16 +1451,16 @@ async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, media
     }
 
     if (finalItems.length === 0) {
-        return fetchSeedFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode, fallbackSelectors);
+        return fetchSeedFallbackIds(tmdbApiKey, mediaType, Math.max(160, target), isKidsMode, fallbackSelectors);
     }
 
-    return finalItems.slice(0, SEED_NETWORK_TARGET_SIZE).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
+    return finalItems.slice(0, target).map(i => ({ id: String(i.data.id), matchScore: Math.min(100, Math.max(1, Math.round(i.score * 10))) }));
 }
 
 /**
  * 💎 Hero Catalog 3: Hidden Gems ("Gemme Nascoste" / Anti-Trash)
  */
-async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType, isKidsMode = false, typeSelectors = null) {
+async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType, isKidsMode = false, typeSelectors = null, targetCandidateSize = 100) {
     const catalogId = mediaType === 'movie' ? 'yaca_hidden_gems_movies' : 'yaca_hidden_gems_series';
     const baseFilters = [
         F.minScore(6.5),
@@ -1428,13 +1470,13 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType, is
     ];
     if (mediaType === 'movie') baseFilters.push(F.minRuntime(60));
     
-    return buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fetchHiddenGemsFallbackIds, isKidsMode, typeSelectors);
+    return buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fetchHiddenGemsFallbackIds, isKidsMode, typeSelectors, targetCandidateSize);
 }
 
 /**
  * 🌐 Hero Catalog 4: Trakt Filtered ("Suggeriti dalla Community")
  */
-async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false, providedTraktResult = null, directTypeSelectors = null) {
+async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false, providedTraktResult = null, directTypeSelectors = null, targetCandidateSize = 100) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
     const typeSelectors = resolveTypeSelectors(user, context, directTypeSelectors);
     const animePolicy = resolveAnimePolicy(profile, typeSelectors, { isKidsMode });
@@ -1482,21 +1524,27 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
         if (animePolicy === ANIME_POLICY_MODES.ONLY) {
             const animeItems = await fetchAnimeFallbackItems(350);
             return {
-                ids: animeItems.map(item => ({ ...item, traktAvailable, fallbackUsed: true })),
+                ids: animeItems.map(item => ({ ...item, traktAvailable, traktSourcedCount: 0, fallbackTopUpCount: animeItems.length, isDegradedFallback: true, fallbackUsed: true })),
                 traktAvailable,
+                traktSourcedCount: 0,
+                fallbackTopUpCount: animeItems.length,
+                isDegradedFallback: true,
                 fallbackUsed: true
             };
         }
         const fallbackSelectors = (animePolicy === ANIME_POLICY_MODES.ONLY || animePolicy === ANIME_POLICY_MODES.EXCLUDE) ? effectiveTypeSelectors : (typeSelectors || null);
-        const fallbackIds = await fetchCommunityFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode, fallbackSelectors);
+        const fallbackIds = await fetchCommunityFallbackIds(tmdbApiKey, mediaType, Math.max(160, Number(targetCandidateSize) || 160), isKidsMode, fallbackSelectors);
         return {
             ids: fallbackIds.map(id => {
                 if (typeof id === 'object' && id !== null) {
-                    return { ...id, traktAvailable, fallbackUsed: true };
+                    return { ...id, traktAvailable, traktSourcedCount: 0, fallbackTopUpCount: fallbackIds.length, isDegradedFallback: true, fallbackUsed: true };
                 }
-                return { id: String(id), traktAvailable, fallbackUsed: true };
+                return { id: String(id), traktAvailable, traktSourcedCount: 0, fallbackTopUpCount: fallbackIds.length, isDegradedFallback: true, fallbackUsed: true };
             }),
             traktAvailable,
+            traktSourcedCount: 0,
+            fallbackTopUpCount: fallbackIds.length,
+            isDegradedFallback: true,
             fallbackUsed: true
         };
     };
@@ -1543,7 +1591,7 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
     );
 
     const sorted = sortScoredByScore(scored.filter(Boolean), item => item.score);
-    let finalItems = finalizeHeroQualityCandidates(sorted, HERO_DIVERSITY_CAPS);
+    let finalItems = finalizeHeroQualityCandidates(sorted, getHeroDiversityCaps(isKidsMode));
     if (isKidsMode) {
         const safeIds = new Set(applyKidsMode(finalItems.map(item => item.data)).map(item => normalizeContentId(item.id)));
         finalItems = finalItems.filter(item => safeIds.has(normalizeContentId(item.data.id)));
@@ -1562,25 +1610,27 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
         fallbackUsed: false
     }));
 
+    const traktSourcedCount = poolItems.length;
+    let fallbackTopUpCount = 0;
+
     if (animePolicy === ANIME_POLICY_MODES.ONLY) {
-        // Ticket 26: se dopo il filtro restano meno di ~10 item (o catalogo incompleto), completa con fallback anime.
-        // Il completamento anime NON è un degrado distruttivo: se Trakt ha risposto, fallbackUsed resta false
-        // per evitare che il gate HERO_MIN_FALLBACK_ITEMS azzeri il catalogo in caso di pochi item post-dedup.
-        if (poolItems.length < 40) {
-            console.log(`[HeroPool] Trakt Filtered Anime top-up per ${mediaType}: trovati solo ${poolItems.length} item, integro con fallback anime.`);
+        // Ticket 26 & 21: se dopo il filtro restano meno di 50 item (o catalogo incompleto), completa con fallback anime.
+        if (poolItems.length < 50) {
             const usedIds = new Set(poolItems.map(p => normalizeContentId(p.id)));
             const fallbackAnime = await fetchAnimeFallbackItems(350);
             for (const fb of fallbackAnime) {
                 const fid = normalizeContentId(fb.id);
                 if (!fid || usedIds.has(fid)) continue;
                 usedIds.add(fid);
+                fallbackTopUpCount++;
                 poolItems.push({
                     ...fb,
                     traktAvailable: true,
-                    fallbackUsed: false
+                    fallbackUsed: traktSourcedCount === 0
                 });
                 if (poolItems.length >= 350) break;
             }
+            console.log(`[HeroPool] Trakt Filtered Anime top-up per ${mediaType}: traktAvailable=true, traktSourcedCount=${traktSourcedCount}, fallbackTopUpCount=${fallbackTopUpCount}, isDegradedFallback=${traktSourcedCount === 0}`);
         }
     } else {
         if (poolItems.length === 0) {
@@ -1592,15 +1642,19 @@ async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tm
         return buildFallback(true);
     }
 
+    const isDegradedFallback = traktSourcedCount === 0;
     return {
         ids: poolItems.slice(0, 350),
         traktAvailable: true,
-        fallbackUsed: false
+        traktSourcedCount,
+        fallbackTopUpCount,
+        isDegradedFallback,
+        fallbackUsed: isDegradedFallback
     };
 }
 
-async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false, directTypeSelectors = null) {
-    const result = await buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode, null, directTypeSelectors);
+async function buildTraktFilteredCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false, directTypeSelectors = null, targetCandidateSize = 100) {
+    const result = await buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode, null, directTypeSelectors, targetCandidateSize);
     return result.ids;
 }
 

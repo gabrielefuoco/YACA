@@ -530,6 +530,7 @@ class ProfileScorer {
         const genreCap = caps?.genre ?? 10;
         const highMatchGenreCap = caps?.highMatchGenreCap ?? genreCap;
         const highMatchThreshold = caps?.highMatchThreshold ?? 3.8;
+        const familyCap = (caps?.family !== undefined && caps?.family !== null) ? caps.family : null;
         const directorCap = caps?.director ?? 3;
         const strandCap = caps?.strand ?? caps?.filone ?? 3;
         const animeStrandCap = caps?.animeStrand ?? strandCap;
@@ -556,8 +557,12 @@ class ProfileScorer {
             const score = item.score ?? item.rawScore ?? ((item.matchScore ?? 0) / 10);
             const effGenreCap = (score >= highMatchThreshold) ? highMatchGenreCap : genreCap;
 
-            // Check genre cap
-            const genreBlocked = genresToCheck.some(gid => (genreCounts.get(gid) || 0) >= effGenreCap);
+            // Check genre cap (ticket 21: cap esplicito per Famiglia 10751)
+            const genreBlocked = genresToCheck.some(gid => {
+                const isFamily = String(gid) === '10751';
+                const cap = (isFamily && familyCap !== null) ? familyCap : effGenreCap;
+                return (genreCounts.get(gid) || 0) >= cap;
+            });
             // Check director cap
             const dirBlocked = directors.some(did => (directorCounts.get(did) || 0) >= directorCap);
             // Check strand cap
