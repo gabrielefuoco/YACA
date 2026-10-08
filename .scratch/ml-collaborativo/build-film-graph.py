@@ -62,10 +62,11 @@ movies = pd.read_parquet(PQ / "movies.parquet", columns=["id", "title", "keyword
 tv = pd.read_parquet(PQ / "tv.parquet", columns=["id", "name", "keywords", "genres", "first_air_date",
                                                  "vote_count", "vote_average", "original_language",
                                                  "production_countries", "popularity", "cast", "created_by",
-                                                 "content_rating", "number_of_seasons"])
+                                                 "content_rating", "number_of_seasons", "networks"])
 movies["number_of_seasons"] = np.nan
 tv["budget"] = np.nan; tv["revenue"] = np.nan; tv["collection_id"] = np.nan
 tv["directors"] = tv["created_by"]
+movies["networks"] = np.nan          # le reti sono solo per le serie
 movies["type"] = "movie"; tv["type"] = "tv"
 movies["date"] = movies["release_date"]; tv["date"] = tv["first_air_date"]
 tv["title"] = tv["name"]; tv["runtime"] = np.nan
@@ -206,12 +207,29 @@ def json_list(s, key):
             out.append(int(x))
     return out
 
-cat["countries"] = cat["production_countries"].map(lambda x: json_list(x, "iso_3166_1"))
+# ATTENZIONE: `production_countries` e' una lista di STRINGHE (["US"]), non di dizionari con la
+# chiave `iso_3166_1`: la versione precedente leggeva la chiave sbagliata e dava copertura 0% — e il
+# log lo stampava. Un 0% di copertura e' un bug, non un fatto. Si accettano entrambe le forme.
+def _countries(x):
+    if not isinstance(x, str) or not x:
+        return []
+    try:
+        v = json.loads(x)
+    except Exception:
+        return []
+    out = []
+    for e in (v if isinstance(v, list) else []):
+        if isinstance(e, str):
+            out.append(e)
+        elif isinstance(e, dict) and e.get("iso_3166_1"):
+            out.append(e["iso_3166_1"])
+    return out
+cat["countries"] = cat["production_countries"].map(_countries)
 cat["people"] = cat.apply(lambda r: json_list(r["cast"], "id")[:8] + json_list(r["directors"], "id"), axis=1)
 cat["collections"] = cat["collection_id"].map(lambda x: [] if pd.isna(x) else [int(x)])
 lang_vocab = {l: i for i, l in enumerate(cat["original_language"].dropna().value_counts().head(25).index)}
 country_vocab = {c: i for i, (c, _) in enumerate(Counter(c for lst in cat["countries"] for c in lst).most_common(40))}
-people_vocab = {p: i for i, (p, _) in enumerate(Counter(p for lst in cat["people"] for p in lst).most_common(3000))}
+people_vocab = {p: i for i, (p, _) in enumerate(Counter(p for lst in cat["people"] for p in lst).most_common(8000))}
 coll_vocab = {c: i for i, (c, _) in enumerate(Counter(c for lst in cat["collections"] for c in lst).most_common(800))}
 rows_x, cols_x, vals_x = [], [], []
 for i in range(len(cat)):
@@ -241,6 +259,40 @@ F = sparse.hstack([F,
 log(f"  feature ESTESE: {len(lang_vocab)} lingue · {len(country_vocab)} paesi · {len(people_vocab)} persone "
     f"· {len(coll_vocab)} franchise · 3 numeriche · copertura paesi {100*(cat['countries'].map(len)>0).mean():.0f}% "
     f"persone {100*(cat['people'].map(len)>0).mean():.0f}% franchise {100*(cat['collections'].map(len)>0).mean():.0f}%")
+
+# --- RETI TV (colonna presente nel parquet, mai usata): canale serie-specifico, come i paesi per i film
+def _networks(x):
+    if not isinstance(x, str) or not x:
+        return []
+    try:
+        v = json.loads(x)
+    except Exception:
+        return []
+    return [str(e.get("id")) for e in (v if isinstance(v, list) else []) if isinstance(e, dict) and e.get("id") is not None]
+cat["nets"] = cat["networks"].map(_networks)
+net_vocab = {n: i for i, (n, _) in enumerate(Counter(x for L in cat["nets"] for x in L).most_common(60))}
+rows_n, cols_n = [], []
+for i in range(len(cat)):
+    for n in cat["nets"].iloc[i]:
+        if n in net_vocab:
+            rows_n.append(i); cols_n.append(net_vocab[n])
+if rows_n:
+    F = sparse.hstack([F, sparse.csr_matrix((np.ones(len(rows_n), dtype=np.float32), (rows_n, cols_n)),
+                                            shape=(len(cat), len(net_vocab)))]).tocsr()
+log(f"  RETI: {len(net_vocab)} reti · copertura {100*(cat['nets'].map(len)>0).mean():.0f}% (solo serie)")
+
+# --- NORMALIZZAZIONE DELLE FEATURE (la leva piu' economica che restava)
+# 1. IDF sui blocchi binari: una persona rara e' piu' informativa di una onnipresente.
+# 2. standardizzazione delle 8 numeriche: oggi convivono scale diverse sotto lo stesso alpha.
+NB = F.shape[1] - 8
+Fbin = F[:, :NB].tocsr()
+_df = np.asarray((Fbin > 0).sum(axis=0)).ravel().astype(np.float32)
+_idf = np.log(Fbin.shape[0] / np.maximum(_df, 1.0)).astype(np.float32)
+_num = np.asarray(F[:, NB:].todense(), dtype=np.float32)
+_mu, _sd = _num.mean(axis=0), _num.std(axis=0) + 1e-6
+F = sparse.hstack([Fbin @ sparse.diags(_idf), sparse.csr_matrix((_num - _mu) / _sd)]).tocsr()
+log(f"  NORMALIZZAZIONE: IDF su {NB:,} colonne binarie (idf mediano {np.median(_idf):.2f}) · 8 numeriche standardizzate")
+
 log(f"  feature: {F.shape[1]} colonne ({N_TOPO} nodi del sottografo + {len(genres_vocab)} generi + 5 numeriche) · titoli con topoi {topo_done}/{len(cat)}")
 
 trainable = np.array([i for i, p in enumerate(to_pos) if p >= 0], dtype="int64")
@@ -259,7 +311,9 @@ for i in trainable:
 # quindi peso 0,5: imparano la collocazione senza dominare il compito dei film.
 POSF = ROOT / ".cache" / "movielens" / "positions.json"
 pseudo_idx = np.array([], dtype="int64")
-if POSF.exists():
+# DISATTIVATO: il tentativo (ricerca 17) ha peggiorato tutto (rinforzo circolare dell'asse tipo:
+# AUC tipo 0,979 -> 0,995, ponte serie<->film 0,157 -> 0,095). Si riattiva solo con POSF_PSEUDO=1.
+if os.environ.get("POSF_PSEUDO") == "1" and POSF.exists():
     pos = json.loads(POSF.read_text())
     rows_p = []
     for i in range(len(cat)):
