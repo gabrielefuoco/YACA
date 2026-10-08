@@ -39,7 +39,16 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
     } else {
         console.log('[bench] L1_adjacency ASSENTE (stato di produzione)');
     }
-    const trials = JSON.parse(fs.readFileSync(path.join(CACHE, process.env.CAND_FILE || 'graph-candidates.json'), 'utf8'));
+    const trials0 = JSON.parse(fs.readFileSync(path.join(CACHE, process.env.CAND_FILE || 'graph-candidates.json'), 'utf8'));
+    // SLICE=a:b — per girare in parallelo su piu' processi (12 core, oggi se ne usa uno).
+    // Il seme del campionamento casuale e' PER TRIAL (dipende dal ctx, non dalla posizione nel
+    // ciclo): senza questo, spezzare i trial cambierebbe i controlli casuali di ogni fetta.
+    let trials = trials0;
+    if (process.env.SLICE) {
+        const [a, b] = process.env.SLICE.split(':').map(Number);
+        trials = trials.slice(a, b);
+        console.log(`[slice] trial ${a}-${b} di ${trials0.length}`);
+    }
 
     const keys = new Set();
     for (const t of trials) { for (const k of [...t.seeds, ...t.gold, ...t.onehop, ...t.twohop, ...t.cluster]) keys.add(k); }
@@ -130,9 +139,11 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
     let seedState = 4242;
     const rnd = () => { seedState = (seedState * 1103515245 + 12345) % 2147483648; return seedState / 2147483648; };
     const sample = (arr, n) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, n); };
+    const seedFor = ctx => 4242 + ([...(String(ctx))].reduce((x, c) => (x * 31 + c.charCodeAt(0)) % 100000, 7));
 
     const rowsOut = [];
     for (const t of trials) {
+        seedState = seedFor(t.ctx);            // il caso di ogni trial non dipende dalla posizione
         const seeds = t.seeds.map(k => items.get(k)).filter(Boolean);
         if (seeds.length < 2) continue;
         const profile = productionProfile(seeds);
@@ -168,6 +179,12 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
         }
     }
 
+    if (process.env.ROWS_OUT) {
+        fs.writeFileSync(process.env.ROWS_OUT, JSON.stringify(rowsOut));
+        console.log(`[rows] ${rowsOut.length} righe scritte in ${process.env.ROWS_OUT}`);
+        db.close();
+        return;
+    }
     const bySource = new Map();
     for (const r of rowsOut) {
         if (!bySource.has(r.source)) bySource.set(r.source, []);
