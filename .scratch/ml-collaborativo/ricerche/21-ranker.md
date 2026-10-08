@@ -95,3 +95,26 @@ AUC del ranker: **0.873** (0.862 senza le feature del grafo).
    3k) e la feature `prod` sarebbe stata inutile. **L'ho scoperto perché il pool era 3× quello del banco**,
    non perché me l'aspettassi. Il controllo che ha funzionato è stato il confronto fra due strumenti.
 2. La riga del "soffitto" nel primo run confrontava le righe con sé stesse (100% per costruzione).
+
+## Il soffitto vero: il collo di bottiglia non è l'ordinamento
+
+Calcolato dopo il run (e non era nella tabella sopra): la verità **raggiungibile** nell'universo di
+candidati è **8.101 titoli su 35.573 = 22,8%**. Il resto — **il 77% di ciò che gli utenti guardano
+dopo** — non è nemmeno fra i candidati: non sta nel pool di produzione né fra i vicini del grafo.
+
+Questo rilegge i numeri in modo più onesto e più utile:
+
+| ordinamento | @50 | quota del raggiungibile (22,8%) |
+|---|---|---|
+| popolarità | 12,5% | 55% |
+| scorer di produzione | 8,0% | 35% |
+| **RANKER** | **17,9%** | **78%** |
+
+**Il ranker prende il 78% di tutto ciò che si può prendere in 50 posti.** Non c'è molto margine per
+ordinare meglio: **il margine è nei candidati.** Il dibattito di tutto il giorno (popolarità contro
+scorer contro ranker) si svolge dentro il 23% — e il 77% si perde *prima*, nella generazione.
+
+Questa è la conclusione più importante del filone, e non l'avevo prevista: la parte che ho inseguito per
+giorni (l'ordinamento, il ranker, il matcher) è **quasi risolta**; la parte che perde davvero è **la
+scelta dei candidati**, ed è esattamente ciò che il grafo collaborativo dovrebbe migliorare — ma il
+grafo, da solo, non basta: il suo 2 hop copre una parte piccola di ciò che serve.
