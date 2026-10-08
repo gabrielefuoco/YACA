@@ -187,3 +187,20 @@ insieme. Il grafo appreso è il primo input comportamentale nella struttura.
 
 E il catalogo ha una colonna **`recommendations`** popolata al **100%** (film *e* serie) che nessuno usa:
 è l'unico segnale comportamentale disponibile per le serie, dove il teacher è cieco ([ticket 22](issues/22-raccomandazioni-tmdb.md)).
+
+## Da ritrattare, dopo la propagazione (08/10/2026)
+
+La propagazione ([ricerca 15](ricerche/15-le-due-strade.md)) ha spostato il frame: **un film è
+rappresentato dai suoi vicini, non dalle sue keyword** (64 dim battono 5.842, e sul cold-start
+0,539 contro 0,494). Questo riapre cose date per scontate.
+
+| # | cosa | perché va ritrattata | priorità |
+|---|---|---|---|
+| 1 | **Il ranker** | il tema debole non è il *modello* ma lo *spazio* in cui si ordina: il punteggio tematico è linguistico (keyword), mentre ora abbiamo **posizioni collaborative** per ogni titolo. Ordinare per coseno nello spazio collaborativo è testabile nel banco **subito** | **alta** |
+| 2 | **Il DNA/profilo** | il profilo è un vettore di keyword: potrebbe diventare un **punto nello spazio collaborativo** (media delle posizioni dei titoli amati). Unisce i due filoni e cambia lo scorer alla radice | **alta** |
+| 3 | **«Il 55% del catalogo è rumore»** | la propagazione dà una posizione ai film poco votati **dai loro vicini**, che sono meglio misurati: il rumore potrebbe non essere un muro. Da misurare **per fascia di popolarità** | **alta** |
+| 4 | **Raccomandazioni TMDB** | scartate come *adiacenza di cluster* (0,491). Ma sono **archi fra film** — cioè un grafo su cui propagare. È l'uso giusto, e per le serie è l'unico disponibile | media |
+| 5 | **Il grafo dei film** | è costruito sulle posizioni dello *student*: con posizioni **propagate** (migliori) i vicini sarebbero migliori → ciclo virtuoso da testare | media |
+| 6 | **L'adiacenza appresa (livello cluster)** | il risultato 0,699 resta valido, ma il livello che conta è **film**, non cluster: priorità ridimensionata | bassa |
+| 7 | **Lo student** | se la propagazione batte i metadati, il suo ruolo si riduce a: posizioni per chi **non ha vicini** + embedding iniziali del grafo. Non si elimina, si ridimensiona | bassa |
+| 8 | **OCEAN** | resta respinto, e il principio che l'ha respinto («denso serve solo se porta informazione nuova») ora è **dimostrato**: la propagazione è densa e porta informazione nuova | — |
