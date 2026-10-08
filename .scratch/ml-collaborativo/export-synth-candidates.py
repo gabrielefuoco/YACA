@@ -3,7 +3,8 @@ import json, os, pathlib
 import numpy as np
 ROOT = pathlib.Path(__file__).resolve().parents[2]; CACHE = ROOT / ".cache" / "movielens"
 MAX_TRIALS = int(os.environ.get("MAX_TRIALS", "80"))
-CAP_TWO, CAP_CLU = 1200, 3000
+CAP_TWO = int(os.environ.get("CAP_TWO", "1200"))   # il taglio del 2 hop: era 1200, tagliava il 46% della verita'
+CAP_CLU = int(os.environ.get("CAP_CLU", "3000"))
 g = np.load(CACHE / "film-graph-idf05.npz", allow_pickle=True)
 member, ids, types, edges = g["member"], g["ids"], g["types"], g["edges"]
 row_of = {f"{str(t)}:{int(i)}": k for k, (t, i) in enumerate(zip(types, ids))}
@@ -42,5 +43,6 @@ for st in ("fondo", "resto"):
     s = [t for t in out if t["strato"] == st]
     if s:
         print(f"  {st}: {len(s)} · cronologia mediana {int(np.median([len(t['seeds']) for t in s]))} · verita' {int(np.median([len(t['gold']) for t in s]))}")
-(CACHE / "graph-candidates-synth.json").write_text(json.dumps(out))
-print("scritto graph-candidates-synth.json")
+OUTNAME = os.environ.get("CAND_OUT", "graph-candidates-synth.json")
+(CACHE / OUTNAME).write_text(json.dumps(out))
+print(f"scritto {OUTNAME}")
