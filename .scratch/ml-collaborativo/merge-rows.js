@@ -23,13 +23,13 @@ for (const r of rowsOut) {
 }
 const ctxs = new Set(rowsOut.map(r => r.ctx));
 console.log(`\n== IL GRAFO DAVANTI ALLO SCORER, A PARITA' DI BUDGET (${ctxs.size} trial, ${files.length} processi) ==\n`);
-console.log('| sorgente di candidati | candidati (mediana) | recall@50 | recall@200 | se ordinassi per POPOLARITÀ | voti mediani | ≥1000 voti |');
-console.log('|---|---|---|---|---|---|---|');
+console.log('| sorgente di candidati | candidati (mediana) | recall@50 | recall@200 | se ordinassi per POPOLARITÀ | **per POSIZIONE COLLABORATIVA** | voti mediani | ≥1000 voti |');
+console.log('|---|---|---|---|---|---|---|---|');
 for (const name of ['graph 1 hop', 'CASO = |1 hop| dal pool vero', 'graph 2 hop', 'CASO = |2 hop| dal pool vero', 'graph cluster+vicini', 'POOL VERO (fetchSmartAndPool)', 'pool proxy (generi condivisi)']) {
     const g = bySource.get(name);
     if (!g) continue;
     const p = n => `${(100 * mean(g.map(r => r[n]).filter(v => v !== null))).toFixed(1)}%`;
-    console.log(`| ${name} | ${median(g.map(r => r.size))} | ${p('r50')} | ${p('r200')} | ${p('pop50')} | ${median(g.map(r => r.medVotes))} | ${(100 * mean(g.map(r => r.popWins))).toFixed(0)}% |`);
+    console.log(`| ${name} | ${median(g.map(r => r.size))} | ${p('r50')} | ${p('r200')} | ${p('pop50')} | ${p('col50')} | ${median(g.map(r => r.medVotes))} | ${(100 * mean(g.map(r => r.popWins))).toFixed(0)}% |`);
 }
 
 const strata = [...new Set(rowsOut.map(r => r.strato).filter(s => s && s !== '?'))];

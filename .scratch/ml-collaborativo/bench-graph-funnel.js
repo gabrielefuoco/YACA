@@ -88,6 +88,9 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
         }
     }
     console.log(`titoli totali con metadati: ${items.size}`);
+    // POSIZIONI COLLABORATIVE (dalla propagazione sui vicini): il ranker alternativo.
+    const POS = JSON.parse(fs.readFileSync(path.join(CACHE, 'positions.json'), 'utf8'));
+    console.log(`posizioni collaborative caricate: ${Object.keys(POS).length}`);
 
     const productionProfile = seeds => {
         const raw = {};
@@ -147,6 +150,17 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
         const seeds = t.seeds.map(k => items.get(k)).filter(Boolean);
         if (seeds.length < 2) continue;
         const profile = productionProfile(seeds);
+        // profilo nello SPAZIO COLLABORATIVO: media delle posizioni dei titoli che l'utente ha
+        let profVec = null;
+        {
+            const vs = t.seeds.map(k => POS[k]).filter(Boolean);
+            if (vs.length) {
+                const v = new Array(vs[0].length).fill(0);
+                for (const x of vs) for (let i = 0; i < v.length; i++) v[i] += x[i];
+                const nn = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1;
+                profVec = v.map(x => x / nn);
+            }
+        }
         const gold = t.gold.filter(k => items.has(k));
         if (!gold.length) continue;
         const seedKeys = new Set(t.seeds);
@@ -171,9 +185,13 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
         for (const [name, cands] of Object.entries(sets)) {
             const order = rank(cands, profile);
             const popOrder = rankByPopularity(cands);
+            const colOrder = profVec ? cands.map(k => ({ k, s: POS[k] ? POS[k].reduce((s, x, i) => s + x * profVec[i], 0) : -1 }))
+                .sort((a, b) => (b.s - a.s) || a.k.localeCompare(b.k)).map(x => x.k) : [];
             rowsOut.push({ ctx: t.ctx, strato: t.strato || '?', source: name, size: cands.length,
                 r50: recall(order, gold, 50), r200: recall(order, gold, 200),
                 pop50: recall(popOrder, gold, 50),
+                col50: profVec ? recall(colOrder, gold, 50) : null,
+                col200: profVec ? recall(colOrder, gold, 200) : null,
                 medVotes: median(cands.map(k => items.get(k)?.voteCount || 0)),
                 popWins: cands.filter(k => (items.get(k)?.voteCount || 0) >= 1000).length / Math.max(1, cands.length) });
         }
@@ -191,13 +209,13 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
         bySource.get(r.source).push(r);
     }
     console.log(`\n== IL GRAFO DAVANTI ALLO SCORER, A PARITA' DI BUDGET (${trials.length} trial${process.env.CAND_FILE ? ' · TEST SET CONGELATO' : ' · 5 profili reali'}) ==\n`);
-    console.log('| sorgente di candidati | candidati (mediana) | recall@50 | recall@200 | se ordinassi per POPOLARITÀ | voti mediani | ≥1000 voti |');
-    console.log('|---|---|---|---|---|---|---|');
+    console.log('| sorgente di candidati | candidati (mediana) | recall@50 | recall@200 | se ordinassi per POPOLARITÀ | **per POSIZIONE COLLABORATIVA** | voti mediani | ≥1000 voti |');
+    console.log('|---|---|---|---|---|---|---|---|');
     for (const name of ['graph 1 hop', 'CASO = |1 hop| dal pool vero', 'graph 2 hop', 'CASO = |2 hop| dal pool vero', 'graph cluster+vicini', 'POOL VERO (fetchSmartAndPool)', , 'pool proxy (generi condivisi)']) {
         const g = bySource.get(name);
         if (!g) continue;
         const p = n => `${(100 * mean(g.map(r => r[n]).filter(v => v !== null))).toFixed(1)}%`;
-        console.log(`| ${name} | ${median(g.map(r => r.size))} | ${p('r50')} | ${p('r200')} | ${p('pop50')} | ${median(g.map(r => r.medVotes))} | ${(100 * mean(g.map(r => r.popWins))).toFixed(0)}% |`);
+        console.log(`| ${name} | ${median(g.map(r => r.size))} | ${p('r50')} | ${p('r200')} | ${p('pop50')} | ${p('col50')} | ${median(g.map(r => r.medVotes))} | ${(100 * mean(g.map(r => r.popWins))).toFixed(0)}% |`);
     }
     const strata = [...new Set(rowsOut.map(r => r.strato).filter(s => s && s !== '?'))];
     if (strata.length > 1) {

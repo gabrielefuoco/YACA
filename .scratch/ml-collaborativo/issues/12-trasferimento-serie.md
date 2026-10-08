@@ -41,3 +41,16 @@ Per una serie il meccanismo e naturale: i suoi vicini nel grafo sono FILM, che i
 **Prossimo passo di questo ticket**: misurare quante serie hanno almeno un vicino film con un teacher
 e con quale qualita (la propagazione funziona per 49.650 film su 49.709: 99,9%). Se la copertura serie
 e alta, il ticket si chiude con un meccanismo invece che con un 0%.
+
+---
+
+## MISURATO (08/10/2026): il meccanismo c e, la copertura no
+
+[Ricerca 16](../ricerche/16-serie-grafo-ranker.md): 16.550 serie nel grafo, **78% con almeno un vicino
+film**, **59% con una posizione stimata** (9.724), stabilita della stima **0,573** (contro 0,702 dei film).
+
+**Il collo di bottiglia e la connettivita: una serie ha 2 vicini FILM di mediana, un film ne ha 16.** Le
+serie stanno vicine alle serie perche il grafo e costruito sui metadati.
+
+Cura: un grafo costruito sulle POSIZIONI PROPAGATE (collaborative) metterebbe le serie vicino ai film.
+Il 41% scoperto non e un limite del metodo ma del grafo.

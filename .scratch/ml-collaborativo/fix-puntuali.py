@@ -465,3 +465,23 @@ for lbl, M in [("one-hot (oggi)", F),
 log("\n  (riferimenti: one-hot A->B 0,362 · cold-start 0,494 · controllo 0,507 · banale 0,224)")
 log("   avvertenza dichiarata: il GRAFO dei film e' costruito dalle previsioni dello student, quindi la")
 log("   strada 1 porta una circolarita' residua — la si misura come INCREMENTO su one-hot, non da sola)")
+
+# ============================================================ 7. PER FASCIA: il rumore e' alta varianza?
+# La domanda dell'utente («anche il rumore puo' essere utile, per discriminare il vero segnale»).
+# Se la propagazione stima i film poco votati DAI LORO VICINI (meglio misurati), il 55% a bassa
+# stabilita' non e' un muro: e' ALTA VARIANZA, e i vicini la mediano.
+log("\n=== 7. PER FASCIA DI POPOLARITA': rumore inutile o alta varianza? ===")
+log("  film nel test: " + " · ".join(f"{['<100 voti','100-1k','1k+'][b]}: {int((band[idx]==b).sum()):,}" for b in range(3)))
+log("\n  | feature | <100 voti | 100-1k | 1k+ |")
+log("  |---|---|---|---|")
+for lbl, M in [("one-hot (metadati)", F),
+               ("strada 1 da sola (vicini)", sparse.csr_matrix(FE3)),
+               ("one-hot + strada 1", sparse.hstack([F, sparse.csr_matrix(FE3)]).tocsr())]:
+    m = Ridge(alpha=30.0, solver="lsqr", max_iter=1000).fit(M[idx], YA[idx])
+    p = m.predict(M[idx])
+    per = [cos(p[band[idx] == b], YB[idx][band[idx] == b]).mean() if (band[idx] == b).sum() > 0 else float("nan") for b in range(3)]
+    log(f"  | {lbl} | {per[0]:.3f} | {per[1]:.3f} | {per[2]:.3f} |")
+has_prop = np.abs(FE3).sum(1) > 0
+log("\n  copertura della propagazione per fascia: " +
+    " · ".join(f"{['<100','100-1k','1k+'][b]}: {100*has_prop[idx][band[idx]==b].mean():.0f}%" for b in range(3)))
+log("  (se la propagazione regge sui poco votati, il 'rumore' e' alta varianza che i vicini mediano)")
