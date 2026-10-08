@@ -176,3 +176,14 @@ i risultati → selezione. Nessuno di questi numeri è *falso*: sono **provvisor
 - Il test set non è però sufficiente: misura **profili freddi su film tendenzialmente popolari**. La
   metà nicchia/cult della tesi **non è validabile con MovieLens** e resta affidata all'utente reale.
   Necessario, non sufficiente — la lezione della giornata, applicata allo strumento nuovo.
+
+## Il grafo originale è *linguistico*, non comportamentale (verificato 08/10/2026)
+
+`build_graph.py:20-26`: la similarità fra keyword è **40% PPMI** (co-occorrenza nel nostro catalogo) +
+**60% semantica delle parole** secondo `BAAI/bge-small-en-v1.5`, soglia 0,75, Leiden a res 150.
+**Nessuna raccomandazione TMDB.** È la spiegazione del ρ = +0,087 dell'audit: il grafo misura quanto
+due *parole* si somigliano per un piccolo modello di linguaggio, non quanto due titoli si guardano
+insieme. Il grafo appreso è il primo input comportamentale nella struttura.
+
+E il catalogo ha una colonna **`recommendations`** popolata al **100%** (film *e* serie) che nessuno usa:
+è l'unico segnale comportamentale disponibile per le serie, dove il teacher è cieco ([ticket 22](issues/22-raccomandazioni-tmdb.md)).
