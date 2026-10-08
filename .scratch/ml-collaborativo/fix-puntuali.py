@@ -201,3 +201,36 @@ for label, M in [("grezze", F), ("righe normalizzate (solo binarie)", Fnorm)]:
         te = cos(m.predict(M[test_idx]), Y[test_idx]).mean()
         ins = cos(m.predict(M[train_idx]), Y[train_idx]).mean()
         log(f"  | {label} | {alpha} | {te:.3f} | {ins:.3f} | {ins-te:+.3f} |")
+
+# ============================================================ 3. IL BERSAGLIO RUMOROSO
+# Il soffitto (report 13) dice: stabilita' del bersaglio 0,270 sotto i 100 voti, 0,530 fra 100 e
+# 1.000, 0,831 sopra. Oltre meta' del training set e' rumore e il modello lo sta imparando.
+# Qui si pesa la perdita per l'affidabilita' MISURATA. Previsto, dichiarato prima: held-out migliore
+# SUL SOTTOINSIEME AFFIDABILE, e l'aggregato lo nasconde -> si riporta per fascia.
+votes = pd.to_numeric(cat["vote_count"], errors="coerce").fillna(0).to_numpy()
+reliab = np.where(votes >= 1000, 0.831, np.where(votes >= 100, 0.530, 0.270))
+band = np.where(votes >= 1000, 2, np.where(votes >= 100, 1, 0))
+log("\n=== 3. IL BERSAGLIO RUMOROSO (peso per affidabilita' misurata) ===")
+log("  fasce di verifica: " + " · ".join(f"{['<100','100-1k','1k+'][b]}: {int((band[test_idx]==b).sum())} film" for b in range(3)))
+log("\n  | modello | held-out | <100 voti | 100-1k | 1k+ | in-sample |")
+log("  |---|---|---|---|---|---|")
+def evaluate(label, M, w=None, model="ridge", alpha=30.0):
+    if model == "mlp":
+        from sklearn.neural_network import MLPRegressor
+        m = MLPRegressor(hidden_layer_sizes=(256,), alpha=1e-2, max_iter=60, early_stopping=True,
+                         random_state=20261008, verbose=False)
+    else:
+        m = Ridge(alpha=alpha, solver="lsqr", max_iter=1000)
+    if w is None:
+        m.fit(M[train_idx], Y[train_idx])
+    else:
+        m.fit(M[train_idx], Y[train_idx], sample_weight=w[train_idx])
+    p_te = m.predict(M[test_idx]); p_tr = m.predict(M[train_idx])
+    per = [cos(p_te[band[test_idx] == b], Y[test_idx][band[test_idx] == b]).mean()
+           if (band[test_idx] == b).sum() > 0 else float("nan") for b in range(3)]
+    log(f"  | {label} | {cos(p_te, Y[test_idx]).mean():.3f} | {per[0]:.3f} | {per[1]:.3f} | {per[2]:.3f} | {cos(p_tr, Y[train_idx]).mean():.3f} |")
+evaluate("Ridge alpha 30 (oggi)", F)
+evaluate("+ peso per affidabilita'", F, w=reliab)
+evaluate("+ peso, alpha 100", F, w=reliab, alpha=100.0)
+evaluate("MLP 256 (capacita')", F, model="mlp")
+log("\n  (previsione dichiarata prima: il peso aiuta SUL SOTTOINSIEME AFFIDABILE, l'MLP non batte il Ridge)")

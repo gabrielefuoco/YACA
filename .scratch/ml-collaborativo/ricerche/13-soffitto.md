@@ -71,3 +71,56 @@ Il soffitto misurato così è **conservativo**: ogni metà ha metà utenti, quin
 teacher intero — ed è per questo che si corregge con Spearman-Brown. Se il teacher intero fosse
 *perfettamente* affidabile, il soffitto sarebbe 1,0 e lo student starebbe al 35%. Con la correzione,
 il numero difendibile è 0,594.
+
+---
+
+## Correzione (08/10/2026) — il soffitto è la RADICE dell'affidabilità, non l'affidabilità
+
+**Errore mio, trovato grazie a una domanda dell'utente.** Se il bersaglio è `segnale + rumore`, il coseno
+di una predizione *perfetta* col bersaglio rumoroso non è l'affidabilità: è **√(affidabilità)**. Il rumore
+attenua il coseno anche contro una predizione esatta.
+
+| | split-half | teacher intero (2r/(1+r)) | **soffitto = √** | studente | **quota del massimo** |
+|---|---|---|---|---|---|
+| **aggregato** | 0,422 | 0,594 | **0,771** | 0,500 | **50%** |
+| <100 voti | 0,270 | 0,425 | 0,652 | 0,468 | 57% |
+| 100-1k | 0,530 | 0,693 | 0,833 | 0,566 | 56% |
+| **1k+ voti** | 0,831 | 0,908 | **0,953** | 0,507 | **39%** |
+
+**Il "75%" era sbagliato: il modello è al 50% del massimo raggiungibile.** E la distribuzione si
+ribalta: **il margine più grande è sui film dove il bersaglio è BUONO** (1k+: 39%), non su quelli
+rumorosi. Perché sui film ben votati il bersaglio è preciso, e una predizione dai soli metadati resta
+generica; sui film poco votati il bersaglio è sfocato e la predizione generica gli somiglia di più.
+
+## L'esperimento che conferma la diagnosi (stesso giorno)
+
+Peso della perdita per l'affidabilità misurata, e un MLP per testare la capacità (previsione dichiarata
+prima: il peso aiuta sul sottoinsieme affidabile, l'MLP non batte il Ridge):
+
+| modello | held-out | <100 | 100-1k | **1k+** | in-sample |
+|---|---|---|---|---|---|
+| Ridge alpha 30 (oggi) | **0,500** | 0,468 | 0,566 | 0,507 | 0,581 |
+| **+ peso per affidabilità** | 0,494 | 0,452 | 0,568 | **0,541** | 0,553 |
+| + peso, alpha 100 | 0,484 | 0,443 | 0,557 | 0,525 | 0,522 |
+| **MLP 256 (capacità)** | 0,496 | 0,464 | 0,562 | 0,501 | **0,646** |
+
+1. **Il peso funziona dove previsto**: 1k+ passa da 0,507 a **0,541 (+0,034)**, e l'aggregato lo
+   nascondeva (0,500 → 0,494) — perché il costo cade sulla fascia rumorosa, che è la maggioranza.
+   **Conferma la diagnosi: il modello stava imparando rumore.**
+2. **L'MLP non batte il Ridge** (0,496) e allarga il gap (in-sample 0,646): più capacità = più
+   memorizzazione. La previsione regge.
+
+## La conseguenza che l'utente ha visto prima di me
+
+**«Film con pochi voti» e «serie» sono la stessa classe di problema**: generalizzare dove il segnale
+collaborativo è debole o assente. Non è un problema di capacità — è di **trasferimento**. E indica tre
+mosse:
+
+1. **Bersaglio denoised**: esistono DUE teacher indipendenti (dalla misura dello split-half). Addestrare
+   sulla loro **media** (meno rumore) e validare sull'altro — o addestrare su A e validare su B: misura
+   esattamente il segnale trasferibile.
+2. **Valutazione cold-start costruita sui film**: tenere fuori dall'addestramento i film a basso segnale
+   (o interi franchise/persone) e misurare lì. **È l'analogo su film del caso serie**, e ha la verità
+   di riferimento: risolve il «non possiamo validare sulle serie».
+3. **Levigatezza**: ridurre le feature ad alta cardinalità a embedding (node2vec, ticket 09) — un modello
+   liscio nei metadati trasferisce, uno con un peso enorme su una singola persona no.
