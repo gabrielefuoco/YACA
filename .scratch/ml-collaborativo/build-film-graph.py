@@ -287,11 +287,11 @@ log(f"  RETI: {len(net_vocab)} reti · copertura {100*(cat['nets'].map(len)>0).m
 NB = F.shape[1] - 8
 Fbin = F[:, :NB].tocsr()
 _df = np.asarray((Fbin > 0).sum(axis=0)).ravel().astype(np.float32)
-_idf = np.log(Fbin.shape[0] / np.maximum(_df, 1.0)).astype(np.float32)
+_idf = np.log(Fbin.shape[0] / np.maximum(_df, 1.0)).astype(np.float32) ** float(os.environ.get("IDF_POW", "1.0"))
 _num = np.asarray(F[:, NB:].todense(), dtype=np.float32)
 _mu, _sd = _num.mean(axis=0), _num.std(axis=0) + 1e-6
 F = sparse.hstack([Fbin @ sparse.diags(_idf), sparse.csr_matrix((_num - _mu) / _sd)]).tocsr()
-log(f"  NORMALIZZAZIONE: IDF su {NB:,} colonne binarie (idf mediano {np.median(_idf):.2f}) · 8 numeriche standardizzate")
+log(f"  NORMALIZZAZIONE: IDF^{os.environ.get('IDF_POW','1.0')} su {NB:,} colonne binarie (idf mediano {np.median(_idf):.2f}) · 8 numeriche standardizzate")
 
 log(f"  feature: {F.shape[1]} colonne ({N_TOPO} nodi del sottografo + {len(genres_vocab)} generi + 5 numeriche) · titoli con topoi {topo_done}/{len(cat)}")
 

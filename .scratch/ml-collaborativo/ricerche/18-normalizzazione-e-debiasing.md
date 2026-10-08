@@ -86,3 +86,42 @@ Quindi il ponte film↔serie può venire **solo** da:
 Trakt resta utile per altro: è una **validazione esterna della struttura within-type** (i nostri vicini
 di una serie, confrontati con quelli di Trakt, sono un metro che non dipende da noi) e una fonte di
 **relazioni same-type di qualità** se un giorno servisse rinforzare quel lato.
+
+---
+
+## Il dosaggio dell'IDF (08/10/2026): il ginocchio è a 0,5, ma il ponte non è un numero solo
+
+| IDF^ | accuratezza film | AUC tipo | serie↔film | vicini film | scoperte |
+|---|---|---|---|---|---|
+| **0,0** (nessuno) | **0,448** | 0,966 | +0,137 | 4 | 13% |
+| **0,5** | **0,430** | **0,870** | **+0,154** | **7** | **3%** |
+| 1,0 | 0,425 | 0,875 | +0,148 | 7 | 3% |
+
+**Due scoperte:**
+
+1. **Isolamento dell'attribuzione**: `IDF^0,0` dà **esattamente** i numeri di v2 (0,448 / 0,966 / 4 /
+   13%) → **la standardizzazione delle numeriche e le reti TV non hanno contribuito nulla**. Tutto
+   l'effetto è dell'IDF. (E la dose-risposta è monotòna: 0,448 → 0,430 → 0,425, firma di un effetto reale.)
+2. **IDF^0,5 domina IDF^1,0**: meglio sull'accuratezza film e uguale o migliore su ogni asse strutturale.
+   È il ginocchio della curva.
+
+### Ma la tabella a occhio dice che il ponte non è un numero solo
+
+| grafo | GoT↔Crociate | BB↔Padrino | Mandalorian↔Star Wars | **AoT↔Your Name** | Padrino↔Bravi |
+|---|---|---|---|---|---|
+| idf00 | +0,257 #28.628 | +0,105 | +0,069 | **+0,476** | +0,444 #14 |
+| idf05 | +0,295 #23.666 | +0,037 | −0,019 | **+0,442** | +0,439 #10 |
+| idf10 | +0,305 #19.965 | +0,046 | +0,009 | **+0,368** | +0,442 #13 |
+
+**L'IDF non è uniformemente buono**: aiuta GoT↔Le crociate (monotòno) ma **peggiora il ponte anime**
+(+0,476 → +0,442 → +0,368) e la coppia franchise. E il ponte anime è **l'unico cross-tipo validato** che
+abbiamo (i metadati si sovrappongono davvero).
+
+**Quindi**: l'IDF compra *copertura strutturale* (vicini film 4 → 7, serie scoperte 13% → 3%, asse tipo
+0,966 → 0,870) pagando *segnale reale* su alcune coppie. Non è una vittoria netta: è una **scelta di
+compromesso**, e va presa sapendo cosa si compra e cosa si vende.
+
+**Raccomandazione**: **IDF^0,5** come default (massima copertura, minima perdita di accuratezza), e la
+consapevolezza che il ponte anime — l'unico verificabile — chiede di *non* alzare l'esponente.
+
+Artefatti: `film-graph-idf00.npz`, `film-graph-idf05.npz`, `film-graph-v3.npz` (= idf10), `film-graph-v2.npz`.
