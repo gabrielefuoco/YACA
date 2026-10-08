@@ -130,3 +130,49 @@ E il file di produzione non è riproducibile dal builder del repo ([ticket 16](i
 **Conseguenza per questo filone**: il termine di paragone di tutte le misure dell'imbuto è il grafo vecchio
 **con il segnale laterale spento**. Riaccenderlo costa quasi zero e va fatto *prima* di dichiarare che il
 grafo nuovo vince.
+
+## Cosa è provvisorio (e perché) — 08/10/2026, dopo il test set
+
+Il test set congelato ([ticket 21](issues/21-test-set.md)) ha rivelato che il banco su cui è stato
+misurato quasi tutto oggi poggia su **un solo essere umano** (5 contesti di `REOZrGNRr3`, ricampionati
+15 volte) e che il teacher contiene già tutti gli utenti MovieLens. Le affermazioni del filone vanno
+quindi separate per **quanto è indipendente la loro evidenza**, non per quanto erano convincenti.
+
+### 1. Reggono come sono — fatti sul codice, non statistiche
+
+- La `L1_adjacency` è **morta in produzione** ([13](issues/13-l1-adjacency.md)): il codice la legge, il
+  JSON non ce l'ha, il builder la scrive. Verifica strutturale, non misura.
+- I namespace sbagliati (`tmdbId`/`movieId` nel probe, nomi/ID in `getKeywordsForNodeIds`,
+  `children_L1` solo su L2): letture del codice.
+- Il JSON di produzione non è riproducibile dal builder del repo ([16](issues/16-json-non-riproducibile.md)).
+- Il **soffitto di rumore** dell'audit (ρ = 0,692) e i protocolli a split sugli item: dichiarati *prima*.
+
+### 2. Reggono come misure, ma vanno confermate a valle — protocollo autosufficiente
+
+- **L'audit esterno** ([17](issues/17-audit-esterno.md)) e **l'adiacenza appresa**
+  ([18](issues/18-adiacenza-appresa.md)): bersaglio esterno, split sugli item, controllo appaiato per
+  taglia. L'unica esposizione è che il bersaglio è un **proxy** (coseno fra centroidi) e che il teacher
+  è costruito con tutti gli utenti. Da ri-auditare col teacher de-leakato: se il +0,068 sopravvive, è
+  confermato.
+- Il **cancello di prodotto** di quella misura è **già fallito**: la struttura migliore non si è
+  trasferita alle liste in modo automatico. Questo *ridimensiona* il valore della scoperta, non la
+  invalida.
+
+### 3. Vanno rifatte — statistiche prese sul banco vecchio
+
+- I numeri dell'imbuto: **3,1× il pool**, 2 hop **5,9% @50** e **10,7% @200**, pool **1,9/4,2**.
+- Il **compromesso testa/profondità** della diffusione e la conclusione «teniamola, è utile»
+  ([20](issues/20-dosaggio-diffusione.md)).
+- Il confronto fra le sorgenti di candidati (1 hop, 2 hop, cluster, pool proxy).
+
+**Perché**: (a) l'errore standard non era quello di 75 trial indipendenti ma di **una persona**
+(ricampionata); (b) nessun intervallo di confidenza; (c) su quel banco ho scelto **~6 bracci** guardando
+i risultati → selezione. Nessuno di questi numeri è *falso*: sono **provvisori**.
+
+### La regola da qui in avanti
+
+- Affermazioni **nuove**: solo sul test set congelato, per strato, coi 4 passi del ticket 21.
+- Il banco vecchio resta come **prova di fumo** (veloce, indica una direzione), mai come evidenza.
+- Il test set non è però sufficiente: misura **profili freddi su film tendenzialmente popolari**. La
+  metà nicchia/cult della tesi **non è validabile con MovieLens** e resta affidata all'utente reale.
+  Necessario, non sufficiente — la lezione della giornata, applicata allo strumento nuovo.
