@@ -1,6 +1,6 @@
 # 18 — L'adiacenza appresa: il peso si impara dal teacher
 
-**Status**: `ready-for-agent` · **Type**: `prototype` · **Aperto**: 08/10/2026 · **Blocked by**: 17 (fatto)
+**Status**: `claimed` · **Type**: `prototype` · **Aperto**: 08/10/2026 · **Blocked by**: 17 (fatto)
 
 ## L'idea
 
@@ -31,3 +31,24 @@ teacher). Un modello lineare su feature a costo zero la predice:
 
 Controllo di popolarità obbligatorio: il bersaglio (centroidi del teacher) è dominato dai titoli visti da
 tutti. Senza normalizzare, si impara "popolare" e lo si serve travestito da gusto.
+
+---
+
+## Cancello 1 SUPERATO (08/10/2026)
+
+Report: [`ricerche/08-adiacenza-appresa.md`](../ricerche/08-adiacenza-appresa.md) · output `l1-adjacency-learned.json`
+
+| | PPMI (oggi) | **appresa** |
+|---|---|---|
+| AUC esterna, a parita di taglia | 0,631 | **0,699** |
+| Spearman col bersaglio, coppie mai viste | +0,192 | **+0,566** (82% del soffitto 0,692) |
+| coppie in comune col grafo di oggi | | **60%** |
+
+Il vantaggio e massimo sui cluster **piccoli** (Q1: 0,624 -> 0,719), minimo sui grandi: la firma di un
+guadagno reale, non di un artefatto di taglia.
+
+La feature dominante e **la distribuzione dei generi** (rho +0,498): la leva piu grossa non sono le
+keyword, e il genere oggi non entra nel segnale dell adiacenza.
+
+**Resta aperto il cancello 2**: ricostruire il grafo dei film sull adiacenza appresa e rimisurare
+l imbuto (2 hop >= 5,9% @50 e >= 9,2% @200).
