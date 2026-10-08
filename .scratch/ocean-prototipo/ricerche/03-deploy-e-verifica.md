@@ -32,7 +32,34 @@
 
 Ogni chiave numerica ha ora il suo nome, e i livelli gerarchici passano da ~480 a ~795 per profilo. Predizione della mappa (copertura 99,9%): rispettata.
 
-Scoperta collaterale: `V_static` è **vuoto** in tutti i profili reali (0 chiavi). Tutto il DNA viene dalla cronologia **più la libreria Stremio dell'account** (`ProfileBuilder.recomputeVectorsForUser` legge `UserLibraryItem` con peso 1 per titolo): è per questo che il clone senza libreria ha 900 chiavi contro le 2065 del profilo vero.
+### Correzione: `V_static` non è vuoto — è vuoto solo in `global`
+
+Nella prima stesura di questo report ho scritto che `V_static` è vuoto in tutti i profili reali: **era falso**, e
+nasceva dall'avere controllato un profilo solo (quello sbagliato). Il dato vero:
+
+| contesto | chiavi `V_static` | `k:` numero | `k:` nome | livelli | coppie id+nome | peso dichiarato / comportamentale |
+|---|---|---|---|---|---|---|
+| `global` | **0** | 0 | 0 | 0 | — | 0% / **100%** (il caso degenere di `computeFinalDNA`) |
+| `4159713d` | 135 | 33 | 32 | 61 | **32/32** | 52% / 48% |
+| `1c1da0af` | 61 | 12 | 12 | 34 | **12/12** | 52% / 48% |
+| `0465f104` | 117 | 23 | 23 | 61 | **23/23** | 52% / 48% |
+| `3f2f4afd` | 150 | 32 | 32 | 79 | **32/32** | 52% / 48% |
+
+Cosa vuol dire:
+
+1. **`global` non ha DNA dichiarato perché non ha cataloghi configurati** (0 preset): è il profilo generico di
+   fallback, e la sua metà dichiarata non esiste. Lì `computeFinalDNA` prende il ramo degenere: peso 1,0 al
+   vettore comportamentale.
+2. **Gli altri quattro sono in salute**: ogni keyword numerica ha il suo gemello a nome (32/32, 12/12, 23/23,
+   32/32) e i livelli gerarchici ci sono. È anche il motivo per cui il fix non ha dovuto toccarli: la
+   ricostruzione riscrive solo `V_active` e `V_final`, mentre `V_static` cambia quando si **risalva la
+   configurazione** (`profileProcessor` → `extractStaticDNAFromQueries`) — e con il fix appena messo, un
+   risalvataggio produrrebbe le chiavi complete anche lì.
+3. **L'asimmetria che conta**: con T ≈ 66, la curva `0,85·T/(T+50)` dà alla metà **dichiarata** il **52%** del
+   peso. Cioè: metà del DNA poggia su ~100 chiavi (i preset che hai scelto) e metà su ~2.000 chiavi (quello che
+   hai guardato). Nel vettore fuso una chiave dichiarata vale circa **20 volte** una comportamentale. Questa è
+   un'ipotesi — non una conclusione — su perché le liste dei profili generali sembrino generiche: la leva non
+   sarebbe un ingrediente nuovo, ma il **dosaggio** fra le due metà.
 
 ## 3. Le liste servite: quanto è cambiato
 
@@ -101,3 +128,14 @@ node .scratch/ocean-prototipo/runs/compare-analisi.js
 
 Svuotare la cache prima di un fetch "dopo", altrimenti si misura il passato:
 `POST /api/admin/system/flush {"namespace":"recommendation_cache"}`.
+
+---
+
+## Correzione del 08/10/2026 (sera) — due affermazioni erano sbagliate
+
+1. **«`V_static` è vuoto in tutti i profili reali»**: falso, era l'errore di aver controllato un solo profilo
+   (`global`, l'unico senza cataloghi configurati). Gli altri quattro hanno 61-150 chiavi statiche, tutte con la
+   coppia id+nome e i livelli. Vedi la sezione corretta qui sopra.
+2. **Il padrone della libreria nel confronto**: il clone senza `UserLibraryItem` ha 900 chiavi contro le 2.065
+   del profilo vero, quindi il fetch sugli hero è fedele al DNA clonato (che include la libreria) ma il clone
+   **non** riproduce il ramo libreria se lo si ricostruisce. Per questo il confronto usa DNA clonati, non ricostruiti.
