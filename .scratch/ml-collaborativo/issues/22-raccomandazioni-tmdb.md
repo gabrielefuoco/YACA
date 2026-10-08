@@ -1,6 +1,6 @@
 # 22 — Le raccomandazioni TMDB: il segnale comportamentale che copre anche le serie
 
-**Status**: `ready-for-agent` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `claimed` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
 
 ## Da dove nasce
 
@@ -44,3 +44,22 @@ disponibile per le serie** — e coprono anche film e uscite recenti.
 - **Circolarità**: se sono in parte guidate dai metadati, usarle per costruire un grafo di metadati è
   in parte auto-referenziale. L'audit contro il teacher misura esattamente questo.
 - **Cap a 10**: segnale sparso (1,17M coppie su 117k titoli), ma sufficiente per un'adiacenza top-50.
+
+---
+
+## Passo 1 FATTO (08/10/2026): portano segnale vero, ma sono un proxy debole
+
+Report: [`ricerche/12-audit-raccomandazioni-tmdb.md`](../ricerche/12-audit-raccomandazioni-tmdb.md) · 4.995 film
+
+| | coseno collaborativo |
+|---|---|
+| raccomandazioni TMDB | **+0,181** |
+| controllo appaiato per popolarita | +0,046 |
+| vicini collaborativi veri | +0,845 |
+
+**AUC 0,768** · **precision@10 contro i top-100 collaborativi 3,6% contro 0,20% del caso = 18x**.
+Ma sul coseno stanno al **17%** del percorso fra controllo e massimo chiedibile: la co-visione reale
+dice 4,7 volte di piu. E TMDB raccomanda titoli piu popolari della sorgente (265 contro 61 voti).
+
+**Gerarchia confermata**: co-visione primaria, raccomandazioni dove il teacher e cieco (serie, ticket
+12) e come feature nell adiacenza appresa (passo 2).
