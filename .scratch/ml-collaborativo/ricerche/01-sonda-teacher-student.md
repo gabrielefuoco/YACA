@@ -108,3 +108,59 @@ lo split per item, dava 0,920 — quello è il numero da usare).
 Nel setting misto, per quel poco che vale, il blend batte il baseline **sulle serie @50** (14,0% vs 11,6%)
 ma **peggiora** su film (2,1% vs 5,4%) e su serie @200 (30,7% vs 32,1%): nessuna vittoria netta, e con un
 baseline mutilato non si può concludere nulla.
+
+---
+
+## Il banco definitivo (bench-transfer.js) — **cancello 3: NON passa**
+
+Impianto corretto: i punteggi dei modelli appresi li produce Python (`export-student-scores.py`,
+student addestrato sul target `npmi` con split **per item**: **AUC 0,920**, controllo popolarità 0,782),
+e il **baseline lo calcola il codice di produzione** in Node — `extractActiveDNAFromTmdbData` →
+`computeActiveDNA` → `computeFinalDNA` → `ProfileScorer._computeThematicScoreForVector`, cioè con la
+gerarchia L1-L5 e la mappa id→nome. Pool 3.210 titoli (2.002 film + 1.208 serie), 50 trial, 5 profili reali.
+
+### Setting realistico (semi misti) — il caso d'uso
+
+| modello | film @50 | **serie @50** | serie @200 | film @200 |
+|---|---|---|---|---|
+| **base (produzione, L1-L5)** | 4,1% | **13,0%** | **41,7%** | 13,6% |
+| student (metadati → collaborativo) | 3,8% | 9,9% | 26,0% | 12,2% |
+| pop (controllo popolarità) | 0,0% | 1,0% | 9,2% | 0,8% |
+| blend base+student | 3,1% | 15,0% | 34,0% | 15,9% |
+
+*(caso casuale @50 ≈ 1,6% · @200 ≈ 6,2%)*
+
+Lo student **non batte** il baseline: 9,9% contro 13,0% @50 sulle serie, 26,0% contro 41,7% @200. Il blend
+vince solo su un numero (serie @50: 15,0% vs 13,0%) e perde su tutti gli altri. Il controllo di popolarità
+(1,0%) dice che non è nemmeno una questione di fama: il segnale appreso semplicemente non aggiunge.
+
+### Setting di trasferimento puro (semi solo film → serie nascoste)
+
+| modello | serie @50 | serie @200 |
+|---|---|---|
+| base (produzione) | **2,1%** | **11,0%** |
+| student | 0,0% | 1,1% |
+| blend | 1,3% | 4,5% |
+
+Qui **tutti** sono ai limiti del caso (1,6% @50): con un pool misto, i film affollano la testa della lista e
+le poche serie recuperabili restano in coda. Il trasferimento film→serie **esiste** ma va misurato su un
+pool di sole serie (come il catalogo serie reale): lì il banco Node aveva dato **18,2% @50 contro 4,1%**.
+Questo setting non aggiunge informazione: la aggiunge quello misto, dove però vince il baseline.
+
+### Il difetto dello student, identificato (una riga)
+
+Le feature dello student sono: keyword pesate IDF, generi, distanza d'anno, distanza di voti, durata,
+lingua. **Manca la gerarchia L1-L5** — cioè proprio lo strato che le keyword usano per generalizzare (ed è
+il ponte film→serie). Chiedere a un modello di estendere il grafo *senza dargli il grafo* è la spiegazione
+più probabile del risultato: lo student vede solo le keyword grezze, che il baseline già sfrutta meglio.
+
+### Verdetto e prossimo passo
+
+**Cancello 3 non superato**: così com'è, il segnale collaborativo non migliora il recupero della cronologia
+reale. Le due cose che avrebbero senso, in ordine:
+
+1. **Dare la gerarchia allo student** (L1/L2/L3 come feature: quanti nodi condivide la coppia, con che peso).
+   È l'unico modo in cui «distillare il collaborativo» può *estendere* il grafo invece di duplicarne una
+   versione peggiore. Costo: mezza giornata, esito binario.
+2. Se anche così non batte il baseline, **chiudere il filone**: il collaborativo MovieLens non porta valore
+   sui nostri dati (che sono per l'80% serie, dove MovieLens è cieco).
