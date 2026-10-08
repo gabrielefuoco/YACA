@@ -16,6 +16,7 @@ Due cose in un giro, piu' l'export che serve al banco.
 Uso: offline_graph_builder/venv/Scripts/python.exe .scratch/ml-collaborativo/posizioni-e-serie.py
 """
 import json
+import os
 import pathlib
 
 import numpy as np
@@ -33,7 +34,7 @@ z = np.load(CACHE / "teacher-Z-heldout.npz"); Z, mids = z["Z"], z["mids"]
 row_of = {int(m): i for i, m in enumerate(mids)}
 links = pd.read_csv(CACHE / "ml-32m" / "links.csv").dropna(subset=["tmdbId"]).astype({"tmdbId": "int64", "movieId": "int64"})
 mid_by_tmdb = dict(zip(links["tmdbId"], links["movieId"]))
-fg = np.load(CACHE / "film-graph-heldout.npz", allow_pickle=True)
+fg = np.load(CACHE / os.environ.get("FG", "film-graph-heldout.npz"), allow_pickle=True)
 member, ids, types, edges = fg["member"], fg["ids"], fg["types"], fg["edges"]
 key_of = {k: f"{str(t)}:{int(i)}" for k, (t, i) in enumerate(zip(types, ids))}
 NEIGH = [[] for _ in range(len(member))]

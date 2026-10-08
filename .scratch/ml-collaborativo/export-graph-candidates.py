@@ -14,15 +14,19 @@ for node, cl in enumerate(member.tolist()):
     cl_members.setdefault(cl, []).append(node)
 hist = json.loads((ROOT / ".cache/movielens/histories.json").read_text())
 rng = np.random.default_rng(20261008)
-K, DRAWS = 3, 15
+K, DRAWS = 30, 15   # 30 semi: un profilo con massa, non 3 titoli
 trials = []
 for ctx, by in hist.items():
     inside = [("movie", int(x)) for x in by.get("movie", [])] + [("tv", int(x)) for x in by.get("tv", [])]
     inside = [w for w in inside if w in row_of]
+    log(f"  {ctx}: {len(inside)} titoli nel grafo") if "log" in dir() else print(f"  {ctx}: {len(inside)} titoli nel grafo")
     for d in range(DRAWS):
+        # K ADATTIVO: la cronologia di un contesto puo' avere meno di K titoli NEL GRAFO
+        # (il contesto "global" ne ha 21): senza adattare, la verita' resterebbe vuota.
+        k_ctx = max(3, min(K, len(inside) - 5))
         perm = rng.permutation(len(inside))
-        seeds = [inside[i] for i in perm[:K]]
-        gold = [inside[i] for i in perm[K:]]
+        seeds = [inside[i] for i in perm[:k_ctx]]
+        gold = [inside[i] for i in perm[k_ctx:]]
         srows = [row_of[s] for s in seeds]
         one, two, clus = set(), set(), set()
         for r in srows:
