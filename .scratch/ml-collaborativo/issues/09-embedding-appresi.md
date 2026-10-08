@@ -29,3 +29,31 @@ strutturale per l'embedding di nodo esiste già.
 
 **Interpretazione, decisa prima**: se (1) sale e (2) no → lo student è «abbastanza buono», il collo di
 bottiglia è altrove (copertura del teacher, statistica debole) e si chiude qui. Se salgono entrambe → strada.
+
+---
+
+## Aggiornamento (08/10/2026) — dove si colloca, dopo l'audit esterno
+
+L'[audit](17-audit-esterno.md) ha misurato il grafo su cui l'embedding andrebbe costruito:
+
+| | |
+|---|---|
+| AUC dell'adiacenza contro la co-visione reale | **0,629** |
+| Spearman fra peso dell'arco e vicinanza reale | **+0,087** |
+
+Conseguenza sul disegno: embeddare **il grafo di oggi** (pesi che ordinano la realtà all'8,7%) spreca
+l'idea. L'ordine giusto è:
+
+1. **prima** l'[adiacenza appresa](18-adiacenza-appresa.md) (il peso calibrato sul teacher);
+2. **poi** l'embedding di nodo sul grafo *giusto*.
+
+Quindi questo ticket diventa **due bracci della stessa gara**, con lo stesso metro (audit + imbuto):
+
+| braccio | grafo | inserimento del film |
+|---|---|---|
+| **A** | adiacenza di oggi (PPMI) | node2vec |
+| **B** | adiacenza appresa (ticket 18) | node2vec |
+
+L'ipotesi da verificare, dichiarata **prima** della misura: A **non** batterà le feature binarie di oggi
+(il grafo che embedda descrive la realtà all'8,7%); B sì. Se sbaglio su A, la struttura conta più di
+quanto dica il ρ — e sarà il ρ a essere sospetto, non l'ipotesi.
